@@ -1,0 +1,48 @@
+{
+  "name": "basic",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A Strapi application",
+  "scripts": {
+    "build": "strapi build",
+    "console": "strapi console",
+    "deploy": "strapi deploy",
+    "dev": "strapi develop",
+    "develop": "strapi develop",
+    "start": "strapi start",
+    "strapi": "strapi",
+    "upgrade": "npx @strapi/upgrade latest",
+    "upgrade:dry": "npx @strapi/upgrade latest --dry",
+    "lint": "node ../scripts/lint.js",
+    "lint:fix": "node ../scripts/lint.js --fix"
+  },
+  "dependencies": {
+    "@strapi/plugin-cloud": "5.47.0",
+    "@strapi/plugin-users-permissions": "5.47.0",
+    "@strapi/strapi": "5.47.0",
+    "ali-oss": "^6.23.0",
+    "esbuild": "^0.28.0",
+    "pg": "8.20.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "react-router-dom": "^6.0.0",
+    "styled-components": "^6.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "eslint": "^10.4.1",
+    "typescript": "^5",
+    "typescript-eslint": "^8.60.1"
+  },
+  "engines": {
+    "node": ">=20.0.0 <=24.x.x",
+    "npm": ">=6.0.0"
+  },
+  "strapi": {
+    "uuid": "8512c41f-4769-4335-a6d8-3feebf8cd9f4",
+    "installId": "5467ac06912cfe5d188cff3c4af50bd2f57e1b6dc17c09a6903d861c7ee87f32"
+  }
+}
