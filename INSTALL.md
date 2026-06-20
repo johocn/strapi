@@ -35,7 +35,7 @@
 ### 1. 克隆项目
 
 ```bash
-git clone git@github.com:johocn/strapi.git
+git clone -b main git@github.com:johocn/strapi.git
 cd strapi
 ```
 
@@ -143,7 +143,7 @@ npm start
 
 ```bash
 # 1. 克隆项目
-git clone git@github.com:johocn/strapi.git
+git clone -b main git@github.com:johocn/strapi.git
 cd strapi
 
 # 2. 配置 npm 镜像
