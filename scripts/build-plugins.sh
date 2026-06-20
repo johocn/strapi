@@ -42,9 +42,9 @@ for plugin_dir in "$PLUGINS_DIR"/zhao-*; do
             echo "清理旧依赖..."
             rm -rf node_modules package-lock.json
             
-            # 先安装依赖
+            # 先安装依赖 - 限制内存使用
             echo "安装依赖..."
-            npm install --legacy-peer-deps
+            NODE_OPTIONS="--max-old-space-size=512" npm install --legacy-peer-deps --prefer-offline --maxsockets 5
             
             # 检查是否有 build 脚本
             if grep -q '"build"' package.json; then
