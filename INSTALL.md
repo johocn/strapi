@@ -185,11 +185,13 @@ zhao-oss (存储)
 
 ## 数据库初始化
 
-首次运行时，Strapi 会自动创建数据库表结构。如需手动迁移：
+首次运行时，Strapi 会自动创建数据库表结构。无需手动运行迁移命令。
 
 ```bash
-npm run strapi migration:run
+npm run dev
 ```
+
+启动后访问 `http://localhost:1337/admin` 完成初始化。
 
 ## 常见问题
 
