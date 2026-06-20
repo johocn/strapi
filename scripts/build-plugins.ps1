@@ -38,8 +38,14 @@ Get-ChildItem -Path $PLUGINS_DIR -Directory -Filter "zhao-*" | ForEach-Object {
         if ($packageJson.scripts.build) {
             try {
                 npm run build
-                $SUCCESS++
-                Write-Host "✅ $plugin_name 构建成功" -ForegroundColor Green
+                if ($LASTEXITCODE -eq 0) {
+                    $SUCCESS++
+                    Write-Host "✅ $plugin_name 构建成功" -ForegroundColor Green
+                }
+                else {
+                    $FAILED++
+                    Write-Host "❌ $plugin_name 构建失败" -ForegroundColor Red
+                }
             }
             catch {
                 $FAILED++
