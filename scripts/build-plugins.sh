@@ -40,7 +40,7 @@ for plugin_dir in "$PLUGINS_DIR"/zhao-*; do
         if [ -f "package.json" ]; then
             # 检查是否有 build 脚本
             if grep -q '"build"' package.json; then
-                npx @strapi/sdk-plugin build
+                npx -y @strapi/sdk-plugin build
                 if [ $? -eq 0 ]; then
                     SUCCESS=$((SUCCESS + 1))
                     echo "✅ $plugin_name 构建成功"
