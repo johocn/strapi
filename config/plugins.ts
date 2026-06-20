@@ -35,53 +35,8 @@ const config = ({ env }: Core.Config.Shared.ConfigParams): Core.Config.Plugin =>
         resolve: "./plugins/zhao-common",
     },
     "zhao-third": {
-        enabled: true,
+        enabled: false,  // 插件目录不存在，暂时禁用
         resolve: "./plugins/zhao-third",
-        config: {
-            platforms: {
-                wechat: {
-                    subTypes: {
-                        official_account: {
-                            authorizeUrl: "https://open.weixin.qq.com/connect/oauth2/authorize",
-                            parameters: {
-                                response_type: "code",
-                                scope: "snsapi_base",
-                            },
-                        },
-                        mini_program: {},
-                        open_platform: {
-                            authorizeUrl: "https://open.weixin.qq.com/connect/qrconnect",
-                            parameters: {
-                                response_type: "code",
-                                scope: "snsapi_login",
-                            },
-                        },
-                    },
-                },
-                alipay: {
-                    subTypes: {
-                        default: {
-                            authorizeUrl: "https://openauth.alipay.com/oauth2/publicAppAuthorize.htm",
-                            parameters: {
-                                response_type: "code",
-                                scope: "auth_user",
-                            },
-                        },
-                    },
-                },
-                douyin: {
-                    subTypes: {
-                        default: {
-                            authorizeUrl: "https://open.douyin.com/platform/oauth/connect",
-                            parameters: {
-                                response_type: "code",
-                                scope: "user_info",
-                            },
-                        },
-                    },
-                },
-            },
-        },
     },
     "zhao-course": {
         enabled: true,
@@ -117,24 +72,19 @@ const config = ({ env }: Core.Config.Shared.ConfigParams): Core.Config.Plugin =>
         },
     },
     "zhao-sso": {
-        enabled: true,
+        enabled: false,  // 插件目录不存在，暂时禁用
         resolve: "./plugins/zhao-sso",
-        config: {
-            jwt: {
-                secret: env("SSO_JWT_SECRET"),
-            },
-        },
     },
     "zhao-tag": {
-        enabled: true,
+        enabled: false,  // 插件目录不存在，暂时禁用
         resolve: "./plugins/zhao-tag",
     },
     "zhao-wealth": {
-        enabled: true,
+        enabled: false,  // 插件目录不存在，暂时禁用
         resolve: "./plugins/zhao-wealth",
     },
     "zhao-studio": {
-        enabled: true,
+        enabled: false,  // 插件目录不存在，暂时禁用
         resolve: "./plugins/zhao-studio",
     },
 });
