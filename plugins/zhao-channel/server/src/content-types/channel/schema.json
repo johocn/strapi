@@ -1,0 +1,64 @@
+{
+  "kind": "collectionType",
+  "collectionName": "zhao_channels",
+  "info": {
+    "singularName": "channel",
+    "pluralName": "channels",
+    "displayName": "Channel",
+    "description": "渠道"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true,
+      "maxLength": 100
+    },
+    "code": {
+      "type": "string",
+      "required": true,
+      "unique": true,
+      "maxLength": 32
+    },
+    "channelTier": {
+      "type": "enumeration",
+      "enum": ["root","core","senior","global","authorized","official","partner","agent","national","regional","city","county","local","store"],
+      "default": "store",
+      "required": true
+    },
+    "parentChannel": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-channel.channel",
+      "inversedBy": "childChannels"
+    },
+    "childChannels": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-channel.channel",
+      "mappedBy": "parentChannel"
+    },
+    "status": {
+      "type": "boolean",
+      "default": true
+    },
+    "description": {
+      "type": "text"
+    },
+    "path": {
+      "type": "text"
+    },
+    "depth": {
+      "type": "integer",
+      "default": 0,
+      "min": 0,
+      "max": 7
+    },
+    "deletedAt": {
+      "type": "datetime",
+      "default": null
+    }
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "kind": "collectionType",
+  "collectionName": "zhao_channel_members",
+  "info": {
+    "singularName": "channel-member",
+    "pluralName": "channel-members",
+    "displayName": "Channel Member",
+    "description": "渠道成员关联"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "channel": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-channel.channel",
+      "inversedBy": "members"
+    },
+    "user": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user"
+    },
+    "role": {
+      "type": "enumeration",
+      "enum": ["owner", "admin", "member"],
+      "default": "member",
+      "required": true
+    },
+    "invitedBy": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user"
+    },
+    "isCurrent": {
+      "type": "boolean",
+      "default": false
+    }
+  }
+}

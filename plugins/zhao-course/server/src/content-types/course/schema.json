@@ -1,0 +1,211 @@
+{
+  "kind": "collectionType",
+  "collectionName": "zhao_courses",
+  "info": {
+    "singularName": "course",
+    "pluralName": "courses",
+    "displayName": "课程"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "title": {
+      "type": "string",
+      "required": true
+    },
+    "slug": {
+      "type": "uid",
+      "targetField": "title",
+      "required": false
+    },
+    "description": {
+      "type": "text"
+    },
+    "cover": {
+      "type": "media",
+      "multiple": false,
+      "required": false
+    },
+    "thumbnail": {
+      "type": "media",
+      "multiple": false,
+      "required": false
+    },
+    "author": {
+      "type": "string"
+    },
+    "difficulty": {
+      "type": "enumeration",
+      "enum": ["beginner", "intermediate", "advanced", "expert"],
+      "default": "beginner"
+    },
+    "duration": {
+      "type": "string"
+    },
+    "level": {
+      "type": "enumeration",
+      "enum": ["introductory", "foundation", "advanced", "professional"],
+      "default": "introductory"
+    },
+    "language": {
+      "type": "enumeration",
+      "enum": ["zh-CN", "zh-TW", "en-US", "ja-JP", "ko-KR"],
+      "default": "zh-CN"
+    },
+    "keywords": {
+      "type": "json"
+    },
+    "studentCount": {
+      "type": "integer",
+      "default": 0
+    },
+    "viewCount": {
+      "type": "integer",
+      "default": 0
+    },
+    "likeCount": {
+      "type": "integer",
+      "default": 0
+    },
+    "isFeatured": {
+      "type": "boolean",
+      "default": false
+    },
+    "isFree": {
+      "type": "boolean",
+      "default": false
+    },
+    "originalPrice": {
+      "type": "decimal",
+      "precision": 10,
+      "scale": 2,
+      "default": 0
+    },
+    "discountPrice": {
+      "type": "decimal",
+      "precision": 10,
+      "scale": 2,
+      "default": 0
+    },
+    "enrollStartDate": {
+      "type": "datetime"
+    },
+    "enrollEndDate": {
+      "type": "datetime"
+    },
+    "courseStartDate": {
+      "type": "datetime"
+    },
+    "courseEndDate": {
+      "type": "datetime"
+    },
+    "publishDate": {
+      "type": "datetime"
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": ["draft", "pending", "published", "archived"],
+      "default": "draft"
+    },
+    "auditStatus": {
+      "type": "enumeration",
+      "enum": ["pending", "approved", "rejected"],
+      "default": "pending"
+    },
+    "rating": {
+      "type": "decimal",
+      "precision": 3,
+      "scale": 1,
+      "default": 0
+    },
+    "ratingCount": {
+      "type": "integer",
+      "default": 0
+    },
+    "category": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-course.course-category",
+      "inversedBy": "courses"
+    },
+    "tags": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "plugin::zhao-tag.tag",
+      "inversedBy": "courses"
+    },
+    "lessons": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-course.course-lesson",
+      "mappedBy": "course"
+    },
+    "knowledgePoints": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "plugin::zhao-tag.knowledge-point"
+    },
+    "quizzes": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-quiz.quiz",
+      "mappedBy": "course"
+    },
+    "exams": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-quiz.quiz-exam",
+      "mappedBy": "course"
+    },
+    "sort": {
+      "type": "integer",
+      "default": 0
+    },
+    "enablePoints": {
+      "type": "boolean",
+      "default": false
+    },
+    "points": {
+      "type": "integer",
+      "default": 0
+    },
+    "pointsType": {
+      "type": "enumeration",
+      "enum": ["course_points", "lesson_points"],
+      "default": "course_points"
+    },
+    "isPaid": {
+      "type": "boolean",
+      "default": false
+    },
+    "price": {
+      "type": "decimal",
+      "precision": 10,
+      "scale": 2,
+      "default": 0
+    },
+    "channelScope": {
+      "type": "enumeration",
+      "enum": ["all", "specific"],
+      "default": "all"
+    },
+    "channelIds": {
+      "type": "json",
+      "default": "[]"
+    },
+    "allowCrossChannel": {
+      "type": "boolean",
+      "default": true
+    },
+    "pointChannel": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-channel.channel"
+    },
+    "deletedAt": {
+      "type": "datetime",
+      "default": null
+    }
+  }
+}

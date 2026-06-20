@@ -1,0 +1,130 @@
+{
+  "kind": "collectionType",
+  "collectionName": "zhao_course_lessons",
+  "info": {
+    "singularName": "course-lesson",
+    "pluralName": "course-lessons",
+    "displayName": "课时"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "title": {
+      "type": "string",
+      "required": true
+    },
+    "slug": {
+      "type": "uid",
+      "targetField": "title",
+      "required": false
+    },
+    "type": {
+      "type": "enumeration",
+      "enum": ["video", "audio", "article", "quiz"],
+      "default": "video"
+    },
+    "thumbnail": {
+      "type": "media",
+      "multiple": false,
+      "required": false
+    },
+    "summary": {
+      "type": "text"
+    },
+    "content": {
+      "type": "richtext"
+    },
+    "video_url": {
+      "type": "string"
+    },
+    "audio_url": {
+      "type": "string"
+    },
+    "images": {
+      "type": "media",
+      "multiple": true,
+      "required": false
+    },
+    "attachments": {
+      "type": "media",
+      "multiple": true,
+      "required": false
+    },
+    "duration": {
+      "type": "integer",
+      "default": 0
+    },
+    "isFreePreview": {
+      "type": "boolean",
+      "default": false
+    },
+    "previewDuration": {
+      "type": "integer",
+      "default": 0
+    },
+    "sequenceNumber": {
+      "type": "integer",
+      "default": 0
+    },
+    "learningObjectives": {
+      "type": "text"
+    },
+    "prerequisites": {
+      "type": "text"
+    },
+    "completionThreshold": {
+      "type": "integer",
+      "default": 100
+    },
+    "isRequired": {
+      "type": "boolean",
+      "default": true
+    },
+    "course": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-course.course",
+      "inversedBy": "lessons"
+    },
+    "tags": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "plugin::zhao-tag.tag",
+      "inversedBy": "lessons"
+    },
+    "quizzes": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-quiz.quiz",
+      "mappedBy": "lesson"
+    },
+    "exams": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-quiz.quiz-exam",
+      "mappedBy": "lesson"
+    },
+    "sort": {
+      "type": "integer",
+      "default": 0
+    },
+    "enablePoints": {
+      "type": "boolean",
+      "default": false
+    },
+    "points": {
+      "type": "integer",
+      "default": 0
+    },
+    "pointsType": {
+      "type": "enumeration",
+      "enum": ["lesson_points", "quiz_points"],
+      "default": "lesson_points"
+    },
+    "deletedAt": {
+      "type": "datetime",
+      "default": null
+    }
+  }
+}

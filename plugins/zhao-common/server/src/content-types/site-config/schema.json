@@ -1,0 +1,70 @@
+{
+  "kind": "collectionType",
+  "collectionName": "zhao_site_configs",
+  "info": {
+    "singularName": "site-config",
+    "pluralName": "site-configs",
+    "displayName": "站点配置",
+    "description": "站点通用配置（单例）"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "siteName": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "siteDescription": {
+      "type": "text"
+    },
+    "logo": {
+      "type": "media",
+      "multiple": false,
+      "required": false,
+      "allowedTypes": ["images"]
+    },
+    "favicon": {
+      "type": "media",
+      "multiple": false,
+      "required": false,
+      "allowedTypes": ["images"]
+    },
+    "icpNumber": {
+      "type": "string",
+      "maxLength": 50
+    },
+    "seoKeywords": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "seoDescription": {
+      "type": "text"
+    },
+    "tencentMapKey": {
+      "type": "string",
+      "maxLength": 64
+    },
+    "shareTitle": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "shareDescription": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "shareImage": {
+      "type": "media",
+      "multiple": false,
+      "required": false,
+      "allowedTypes": ["images"]
+    },
+    "customerServiceUrl": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "extraConfig": {
+      "type": "json"
+    }
+  }
+}

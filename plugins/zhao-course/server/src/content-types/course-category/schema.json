@@ -1,0 +1,48 @@
+{
+  "kind": "collectionType",
+  "collectionName": "zhao_course_categories",
+  "info": {
+    "singularName": "course-category",
+    "pluralName": "course-categories",
+    "displayName": "课程分类"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "description": {
+      "type": "text"
+    },
+    "sort": {
+      "type": "integer",
+      "default": 0
+    },
+    "courses": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-course.course",
+      "mappedBy": "category"
+    },
+    "channelScope": {
+      "type": "enumeration",
+      "enum": ["all", "specific"],
+      "default": "all"
+    },
+    "channelIds": {
+      "type": "json",
+      "default": "[]"
+    },
+    "allowCrossChannel": {
+      "type": "boolean",
+      "default": true
+    },
+    "deletedAt": {
+      "type": "datetime",
+      "default": null
+    }
+  }
+}

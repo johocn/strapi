@@ -1,0 +1,6 @@
+{
+  "name": "@zhao-point/admin",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Admin UI for zhao-point plugin"
+}

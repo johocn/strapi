@@ -1,0 +1,30 @@
+{
+  "kind": "collectionType",
+  "collectionName": "zhao_user_channels",
+  "info": {
+    "singularName": "user-channel",
+    "pluralName": "user-channels",
+    "displayName": "User Channel",
+    "description": "用户-渠道关联"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "user": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user"
+    },
+    "channel": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-channel.channel"
+    },
+    "grantedBy": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user"
+    }
+  }
+}

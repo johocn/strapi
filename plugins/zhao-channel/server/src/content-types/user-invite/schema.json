@@ -1,0 +1,50 @@
+{
+  "kind": "collectionType",
+  "collectionName": "zhao_user_invites",
+  "info": {
+    "singularName": "user-invite",
+    "pluralName": "user-invites",
+    "displayName": "User Invite",
+    "description": "用户邀请码与分销链信息"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "user": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "plugin::users-permissions.user"
+    },
+    "inviteCode": {
+      "type": "string",
+      "unique": true,
+      "required": true,
+      "maxLength": 16
+    },
+    "invitedBy": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user"
+    },
+    "inviteChannel": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-channel.channel"
+    },
+    "inviteMethod": {
+      "type": "enumeration",
+      "enum": ["invite_code", "organic"],
+      "default": "organic"
+    },
+    "distributionPath": {
+      "type": "text"
+    },
+    "distributionDepth": {
+      "type": "integer",
+      "default": 0,
+      "min": 0,
+      "max": 2
+    }
+  }
+}

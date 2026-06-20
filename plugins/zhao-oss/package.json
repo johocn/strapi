@@ -1,0 +1,79 @@
+{
+  "name": "zhao-oss",
+  "version": "1.0.0",
+  "description": "多媒体文件统一存储备份迁移方案 - 阿里云OSS备份与多供应商支持",
+  "private": true,
+  "keywords": [],
+  "type": "commonjs",
+  "exports": {
+    "./package.json": "./package.json",
+    "./strapi-server": {
+      "types": "./dist/server/src/index.d.ts",
+      "source": "./server/src/index.ts",
+      "import": "./dist/server/index.mjs",
+      "require": "./dist/server/index.js",
+      "default": "./dist/server/index.js"
+    },
+    "./strapi-admin": {
+      "types": "./dist/admin/src/index.d.ts",
+      "source": "./admin/src/index.ts",
+      "import": "./dist/admin/index.mjs",
+      "require": "./dist/admin/index.js",
+      "default": "./dist/admin/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "strapi-plugin build",
+    "watch": "strapi-plugin watch",
+    "watch:link": "strapi-plugin watch:link",
+    "verify": "strapi-plugin verify",
+    "test": "jest --config tests/jest.config.ts",
+    "test:ts:front": "tsc -p admin/tsconfig.json",
+    "test:ts:back": "tsc -p server/tsconfig.json"
+  },
+  "dependencies": {
+    "ali-oss": "^6.20.0"
+  },
+  "devDependencies": {
+    "@strapi/design-system": "^2.2.0",
+    "@strapi/icons": "^2.2.0",
+    "@strapi/sdk-plugin": "^6.1.0",
+    "@strapi/strapi": "^5.45.0",
+    "@strapi/typescript-utils": "^5.45.0",
+    "@types/ali-oss": "^6.16.9",
+    "@types/jest": "^30.0.0",
+    "@types/react": "^18.3.28",
+    "@types/react-dom": "^18.3.7",
+    "jest": "^30.4.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-intl": "^6.8.9",
+    "react-router-dom": "^6.30.3",
+    "styled-components": "^6.4.1",
+    "ts-jest": "^29.4.11",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  },
+  "peerDependencies": {
+    "@strapi/sdk-plugin": "^6.1.0",
+    "@strapi/strapi": "^5.45.0",
+    "@strapi/design-system": "^2.2.0",
+    "@strapi/icons": "^2.2.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-intl": "^6.8.9",
+    "react-router-dom": "^6.30.3",
+    "styled-components": "^6.4.1"
+  },
+  "strapi": {
+    "kind": "plugin",
+    "name": "zhao-oss",
+    "displayName": "Zhao OSS",
+    "description": "多媒体文件统一存储备份 - 阿里云OSS备份"
+  },
+  "license": "MIT",
+  "author": "zhao yitao <johocn@163.com>"
+}

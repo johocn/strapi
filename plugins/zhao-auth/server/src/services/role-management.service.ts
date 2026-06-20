@@ -1,0 +1,465 @@
+import type { Core } from "@strapi/strapi";
+import type { UserPermissions } from "../utils/types";
+import { PERMISSIONS as PERMISSIONS_MAP, type PermissionEntry } from "../permissions";
+
+const USER_UID = "plugin::users-permissions.user";
+
+function throwErr(code: string, status: number, message: string): never {
+  const e: any = new Error(message);
+  e.code = code;
+  e.status = status;
+  throw e;
+}
+
+/**
+ * 角色层级定义 - 数值越高权限越大
+ */
+export const ROLE_HIERARCHY: Record<string, number> = {
+  admin: 100,
+  'channel-admin': 80,
+  'plugin-manager': 60,
+  instructor: 40,
+  user: 20,
+};
+
+/**
+ * 角色继承关系 - 定义各角色继承的父角色
+ */
+export const ROLE_INHERITANCE: Record<string, string[]> = {
+  admin: ['channel-admin', 'plugin-manager', 'instructor', 'user'],
+  'channel-admin': ['plugin-manager', 'instructor', 'user'],
+  'plugin-manager': ['instructor', 'user'],
+  instructor: ['user'],
+  user: [],
+};
+
+const CACHE_TTL = 300000;
+
+const permissionCache = new Map<number, { data: UserPermissions; timestamp: number }>();
+
+function invalidateUserCache(userId: number): void {
+  permissionCache.delete(userId);
+}
+
+function extractRoleNames(user: any): string[] {
+  // 优先级：zhaoRoles(JSON 字符串数组) > roles > role
+  if (Array.isArray(user.zhaoRoles) && user.zhaoRoles.length > 0) {
+    return user.zhaoRoles
+      .map((r: any) => (typeof r === "string" ? r : String(r)))
+      .filter((name: string) => name && name.trim());
+  }
+  if (Array.isArray(user.roles) && user.roles.length > 0) {
+    return user.roles
+      .map((r: any) => typeof r === "string" ? r : (r?.name || r?.type))
+      .filter((name: string) => name && name.trim());
+  }
+  if (user.role) {
+    if (Array.isArray(user.role)) {
+      return user.role
+        .map((r: any) => r?.name || r?.type)
+        .filter((name: string) => name && name.trim());
+    }
+    const name = user.role.name || user.role.type;
+    return name ? [name] : [];
+  }
+  return [];
+}
+
+export default ({ strapi }: { strapi: Core.Strapi }) => {
+  async function getUserEffectivePermissions(userId: number): Promise<UserPermissions> {
+    const cached = permissionCache.get(userId);
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+      return cached.data;
+    }
+
+    const user = await strapi.db.query(USER_UID).findOne({
+      where: { id: userId },
+      select: ["id", "zhaoRoles"],
+      populate: ['role'],
+    });
+
+    if (!user) {
+      return { direct: [], inherited: [], effective: [] };
+    }
+
+    // 从 zhaoRoles 读取角色名数组，回退到 role.type
+    let directRoles: string[] = [];
+    if (Array.isArray(user.zhaoRoles) && user.zhaoRoles.length > 0) {
+      directRoles = user.zhaoRoles
+        .map((r: any) => (typeof r === "string" ? r : String(r)))
+        .filter((name: string) => name && name.trim());
+    } else if (user.role?.type) {
+      directRoles = [user.role.type];
+    } else if (user.role?.name) {
+      directRoles = [user.role.name];
+    }
+
+    const inheritedRoles: string[] = [];
+    for (const role of directRoles) {
+      const parents = ROLE_INHERITANCE[role];
+      if (parents) {
+        for (const parent of parents) {
+          if (!inheritedRoles.includes(parent)) {
+            inheritedRoles.push(parent);
+          }
+        }
+      }
+    }
+
+    const effective = [...directRoles, ...inheritedRoles];
+
+    const permissions: UserPermissions = {
+      direct: directRoles,
+      inherited: inheritedRoles,
+      effective,
+    };
+
+    permissionCache.set(userId, { data: permissions, timestamp: Date.now() });
+
+    return permissions;
+  }
+
+  return ({
+  /**
+   * 查询用户列表
+   * @param filters 筛选条件
+   * @param page 页码
+   * @param pageSize 每页数量
+   */
+  async findUsers(filters: Record<string, any> = {}, page = 1, pageSize = 20) {
+    const where: Record<string, any> = {};
+
+    if (filters['filters[username][$contains]']) {
+      where.username = { $contains: filters['filters[username][$contains]'] };
+    } else if (filters.username) {
+      where.username = { $contains: filters.username };
+    }
+
+    if (filters['filters[email][$contains]']) {
+      where.email = { $contains: filters['filters[email][$contains]'] };
+    } else if (filters.email) {
+      where.email = { $contains: filters.email };
+    }
+
+    const users = await strapi.db.query(USER_UID).findMany({
+      where,
+      select: ["id", "email", "username", "createdAt", "zhaoRoles"],
+      populate: ['role'],
+      orderBy: { id: "asc" },
+      offset: (page - 1) * pageSize,
+      limit: pageSize,
+    });
+
+    const total = await strapi.db.query(USER_UID).count({ where });
+
+    const list = users.map((user: any) => ({
+      id: user.id,
+      documentId: user.id,
+      username: user.username,
+      email: user.email,
+      roles: extractRoleNames(user),
+      createdAt: user.createdAt,
+    }));
+
+    return {
+      data: list,
+      pagination: {
+        page,
+        pageSize,
+        total,
+        pageCount: Math.ceil(total / pageSize),
+      },
+    };
+  },
+
+  /**
+   * 分配角色给用户
+   * @param userId 用户ID
+   * @param role 角色名称
+   * @param operatorId 操作人ID
+   * @param reason 操作原因
+   */
+  async assignRole(
+    userId: number,
+    role: string,
+    operatorId: number,
+    reason?: string
+  ) {
+    if (!role || typeof role !== "string" || !role.trim()) {
+      throwErr("INVALID_ROLE", 400, `角色名不能为空`);
+    }
+    const normalizedRole = role.trim();
+
+    const user = await strapi.db.query(USER_UID).findOne({
+      where: { id: userId },
+      select: ["id", "zhaoRoles"],
+      populate: ['role'],
+    });
+
+    if (!user) {
+      throwErr("USER_NOT_FOUND", 404, "用户不存在");
+    }
+
+    const currentRoles = extractRoleNames(user);
+
+    if (currentRoles.includes(normalizedRole)) {
+      throwErr("ROLE_ALREADY_ASSIGNED", 409, `用户已拥有角色: ${normalizedRole}`);
+    }
+
+    const newRoles = [...currentRoles, normalizedRole];
+
+    await strapi.db.query(USER_UID).update({
+      where: { id: userId },
+      data: { zhaoRoles: newRoles },
+    });
+
+    invalidateUserCache(userId);
+    await this.logAction(operatorId, userId, "assign", role, reason);
+
+    return {
+      success: true,
+      message: `角色 ${role} 分配成功`,
+      user: {
+        id: userId,
+        roles: newRoles,
+      },
+    };
+  },
+
+  async revokeRole(
+    userId: number,
+    role: string,
+    operatorId: number,
+    reason?: string
+  ) {
+    const user = await strapi.db.query(USER_UID).findOne({
+      where: { id: userId },
+      select: ["id", "zhaoRoles"],
+      populate: ['role'],
+    });
+
+    if (!user) {
+      throwErr("USER_NOT_FOUND", 404, "用户不存在");
+    }
+
+    const currentRoles = extractRoleNames(user);
+
+    if (!currentRoles.includes(role)) {
+      throwErr("ROLE_NOT_ASSIGNED", 400, `用户未拥有角色: ${role}`);
+    }
+
+    if (currentRoles.length === 1) {
+      throwErr("MIN_ROLE_REQUIRED", 400, "用户至少需要拥有一个角色");
+    }
+
+    const newRoles = currentRoles.filter((r: string) => r !== role);
+
+    await strapi.db.query(USER_UID).update({
+      where: { id: userId },
+      data: { zhaoRoles: newRoles },
+    });
+
+    invalidateUserCache(userId);
+    await this.logAction(operatorId, userId, "revoke", role, reason);
+
+    return {
+      success: true,
+      message: `角色 ${role} 撤销成功`,
+      user: {
+        id: userId,
+        roles: newRoles,
+      },
+    };
+  },
+
+  /**
+   * 获取用户角色列表
+   * @param userId 用户ID
+   */
+  async getUserRoles(userId: number) {
+    const user = await strapi.db.query(USER_UID).findOne({
+      where: { id: userId },
+      select: ["id", "email", "username", "zhaoRoles"],
+      populate: ['role'],
+    });
+
+    if (!user) {
+      throwErr("USER_NOT_FOUND", 404, "用户不存在");
+    }
+
+    const roleNames = extractRoleNames(user);
+
+    const roles = roleNames.map((name: string) => {
+      const roleObj = user.role;
+      return {
+        id: roleObj?.id,
+        name,
+        description: roleObj?.description,
+      };
+    });
+
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+      },
+      roles,
+    };
+  },
+
+  /**
+   * 批量分配角色
+   * @param userIds 用户ID列表
+   * @param role 角色名称
+   * @param operatorId 操作人ID
+   * @param reason 操作原因
+   */
+  async batchAssignRoles(
+    userIds: number[],
+    role: string,
+    operatorId: number,
+    reason?: string
+  ) {
+    const results: { userId: number; success: boolean; message: string }[] = [];
+
+    for (const userId of userIds) {
+      try {
+        await this.assignRole(userId, role, operatorId, reason);
+        results.push({ userId, success: true, message: "分配成功" });
+      } catch (error: any) {
+        results.push({ userId, success: false, message: error.message });
+      }
+    }
+
+    const successCount = results.filter((r) => r.success).length;
+    const failCount = results.filter((r) => !r.success).length;
+
+    return {
+      success: failCount === 0,
+      message: `批量分配完成: ${successCount} 成功, ${failCount} 失败`,
+      results,
+    };
+  },
+
+  /**
+   * 记录操作日志
+   * @param operatorId 操作人ID
+   * @param targetUserId 目标用户ID
+   * @param action 操作类型
+   * @param role 角色名称
+   * @param reason 操作原因
+   */
+  async logAction(
+    operatorId: number,
+    targetUserId: number,
+    action: "assign" | "revoke",
+    role: string,
+    reason?: string
+  ) {
+    try {
+      const logEntry = {
+        operatorId,
+        targetUserId,
+        action,
+        role,
+        reason,
+        timestamp: new Date().toISOString(),
+      };
+      
+      strapi.log.info(`[zhao-auth] Role action: ${action} ${role} for user ${targetUserId} by operator ${operatorId}`);
+      
+      await strapi.db.query("plugin::zhao-auth.role-action-log").create({
+        data: logEntry,
+      });
+    } catch (error) {
+      strapi.log.error(`[zhao-auth] Failed to log role action: ${error}`);
+    }
+  },
+
+  /**
+   * 获取角色操作日志
+   * @param userId 可选，按目标用户筛选
+   * @param operatorId 可选，按操作人筛选
+   * @param page 页码
+   * @param pageSize 每页数量
+   */
+  async getActionLogs(
+    userId?: number,
+    operatorId?: number,
+    page = 1,
+    pageSize = 20
+  ) {
+    const filters: Record<string, any> = {};
+    
+    if (userId) {
+      filters.targetUserId = userId;
+    }
+    if (operatorId) {
+      filters.operatorId = operatorId;
+    }
+
+    const logs = await strapi.db.query("plugin::zhao-auth.role-action-log").findMany({
+      where: filters,
+      orderBy: { timestamp: "desc" },
+      offset: (page - 1) * pageSize,
+      limit: pageSize,
+    });
+
+    const total = await strapi.db.query("plugin::zhao-auth.role-action-log").count({
+      where: filters,
+    });
+
+    return {
+      data: logs,
+      pagination: {
+        page,
+        pageSize,
+        total,
+        pageCount: Math.ceil(total / pageSize),
+      },
+    };
+  },
+
+  /**
+   * 检查用户是否具有特定权限（包含继承权限）
+   * @param userId 用户ID
+   * @param requiredRole 所需角色
+   * @returns 是否具有权限
+   */
+  async checkPermission(userId: number, requiredRole: string): Promise<boolean> {
+    const effectiveRoles = await getUserEffectivePermissions(userId);
+    return effectiveRoles.effective.includes(requiredRole);
+  },
+
+  /**
+   * 获取用户有效权限信息
+   * @param userId 用户ID
+   * @returns 用户权限信息
+   */
+  async getUserEffectivePermissions(userId: number): Promise<UserPermissions> {
+    return await getUserEffectivePermissions(userId);
+  },
+
+  /**
+   * 清除用户权限缓存
+   * @param userId 用户ID
+   */
+  async invalidateUserCache(userId: number): Promise<void> {
+    invalidateUserCache(userId);
+  },
+
+  /**
+   * 根据角色列表计算权限映射
+   * @param roles 用户角色列表
+   * @returns 角色和权限映射
+   */
+  computePermissions(roles: string[]) {
+    const permissions: Record<string, boolean> = {};
+    for (const [action, entry] of Object.entries(PERMISSIONS_MAP) as [string, PermissionEntry][]) {
+      permissions[action] = entry.allowRoles.some((r: string) => roles.includes(r));
+    }
+    return { roles, permissions };
+  },
+});
+};

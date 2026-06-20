@@ -1,0 +1,61 @@
+{
+  "kind": "collectionType",
+  "collectionName": "zhao_rule_templates",
+  "info": {
+    "singularName": "rule-template",
+    "pluralName": "rule-templates",
+    "displayName": "规则模板",
+    "description": "积分规则模板"
+  },
+  "options": {
+    "draftAndPublish": false,
+    "comment": ""
+  },
+  "pluginOptions": {
+    "content-manager": {
+      "visible": true
+    },
+    "content-type-builder": {
+      "visible": false
+    }
+  },
+  "attributes": {
+    "name": {
+      "type": "string",
+      "maxLength": 100,
+      "required": true
+    },
+    "description": {
+      "type": "text"
+    },
+    "category": {
+      "type": "enumeration",
+      "enum": ["increase", "decrease"],
+      "required": true
+    },
+    "defaultPoints": {
+      "type": "integer",
+      "default": 0
+    },
+    "defaultLimitPerDay": {
+      "type": "integer",
+      "default": 0
+    },
+    "defaultIsOneTime": {
+      "type": "boolean",
+      "default": false
+    },
+    "configSchema": {
+      "type": "json",
+      "required": true
+    },
+    "builtIn": {
+      "type": "boolean",
+      "default": false
+    },
+    "enabled": {
+      "type": "boolean",
+      "default": true
+    }
+  }
+}

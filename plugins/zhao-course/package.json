@@ -1,0 +1,75 @@
+{
+  "name": "zhao-course",
+  "version": "1.0.0",
+  "description": "课程管理插件 - 课程、课时、知识点、积分、授权、学习进度",
+  "private": true,
+  "keywords": [],
+  "type": "commonjs",
+  "exports": {
+    "./package.json": "./package.json",
+    "./strapi-server": {
+      "types": "./dist/server/src/index.d.ts",
+      "source": "./server/src/index.ts",
+      "import": "./dist/server/index.mjs",
+      "require": "./dist/server/index.js",
+      "default": "./dist/server/index.js"
+    },
+    "./strapi-admin": {
+      "types": "./dist/admin/src/index.d.ts",
+      "source": "./admin/src/index.ts",
+      "import": "./dist/admin/index.mjs",
+      "require": "./dist/admin/index.js",
+      "default": "./dist/admin/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "strapi-plugin build",
+    "build:ts": "tsc -p tsconfig.server.json --noEmit && tsc -p tsconfig.admin.json --noEmit",
+    "watch": "strapi-plugin watch",
+    "watch:link": "strapi-plugin watch:link",
+    "verify": "strapi-plugin verify",
+    "test:ts:back": "tsc -p tsconfig.server.json --noEmit",
+    "test:ts:front": "tsc -p tsconfig.admin.json --noEmit",
+    "test": "cd tests && jest --forceExit --detectOpenHandles --config jest.config.js"
+  },
+  "devDependencies": {
+    "@strapi/design-system": "^2.2.0",
+    "@strapi/icons": "^2.2.0",
+    "@strapi/sdk-plugin": "^6.1.0",
+    "@strapi/strapi": "^5.45.0",
+    "@strapi/typescript-utils": "^5.45.0",
+    "@types/jest": "^30.0.0",
+    "@types/react": "^18.3.28",
+    "@types/react-dom": "^18.3.7",
+    "jest": "^30.4.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-intl": "^6.8.9",
+    "react-router-dom": "^6.30.3",
+    "styled-components": "^6.4.1",
+    "ts-jest": "^29.4.9",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  },
+  "peerDependencies": {
+    "@strapi/design-system": "^2.2.0",
+    "@strapi/icons": "^2.2.0",
+    "@strapi/sdk-plugin": "^6.1.0",
+    "@strapi/strapi": "^5.45.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-intl": "^6.8.9",
+    "react-router-dom": "^6.30.3",
+    "styled-components": "^6.4.1"
+  },
+  "strapi": {
+    "kind": "plugin",
+    "name": "zhao-course",
+    "displayName": "Zhao Course",
+    "description": "课程管理插件 - 课程、课时、知识点、积分、授权、学习进度"
+  },
+  "license": "MIT"
+}

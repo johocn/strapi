@@ -1,0 +1,57 @@
+{
+  "kind": "collectionType",
+  "collectionName": "zhao_course_progresses",
+  "info": {
+    "singularName": "course-progress",
+    "pluralName": "course-progresses",
+    "displayName": "课程学习记录"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "user": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user"
+    },
+    "course": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-course.course"
+    },
+    "completedLessons": {
+      "type": "integer",
+      "default": 0
+    },
+    "totalLessons": {
+      "type": "integer",
+      "default": 0
+    },
+    "progress": {
+      "type": "decimal",
+      "precision": 5,
+      "scale": 2,
+      "default": 0
+    },
+    "isCompleted": {
+      "type": "boolean",
+      "default": false
+    },
+    "pointsEarned": {
+      "type": "integer",
+      "default": 0
+    },
+    "isPointsClaimed": {
+      "type": "boolean",
+      "default": false
+    },
+    "lessonPointsSummary": {
+      "type": "json",
+      "default": {}
+    },
+    "lastStudyAt": {
+      "type": "datetime"
+    }
+  }
+}

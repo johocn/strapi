@@ -1,0 +1,74 @@
+{
+  "kind": "collectionType",
+  "collectionName": "zhao_lesson_progresses",
+  "info": {
+    "singularName": "lesson-progress",
+    "pluralName": "lesson-progresses",
+    "displayName": "课时学习记录"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "user": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user"
+    },
+    "lesson": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-course.course-lesson"
+    },
+    "course": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-course.course"
+    },
+    "progress": {
+      "type": "decimal",
+      "precision": 5,
+      "scale": 2,
+      "default": 0
+    },
+    "playPosition": {
+      "type": "integer",
+      "default": 0
+    },
+    "duration": {
+      "type": "integer",
+      "default": 0
+    },
+    "isCompleted": {
+      "type": "boolean",
+      "default": false
+    },
+    "isAnswered": {
+      "type": "boolean",
+      "default": false
+    },
+    "isCorrect": {
+      "type": "boolean",
+      "default": false
+    },
+    "pointsEarned": {
+      "type": "integer",
+      "default": 0
+    },
+    "isPointsClaimed": {
+      "type": "boolean",
+      "default": false
+    },
+    "calculatedPoints": {
+      "type": "integer",
+      "default": 0
+    },
+    "quizPointsDetail": {
+      "type": "json",
+      "default": {}
+    },
+    "lastStudyAt": {
+      "type": "datetime"
+    }
+  }
+}

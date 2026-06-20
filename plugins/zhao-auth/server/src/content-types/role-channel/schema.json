@@ -1,0 +1,29 @@
+{
+  "kind": "collectionType",
+  "collectionName": "zhao_role_channels",
+  "info": {
+    "singularName": "role-channel",
+    "pluralName": "role-channels",
+    "displayName": "Role Channel",
+    "description": "角色-渠道关联"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "role": {
+      "type": "string",
+      "required": true
+    },
+    "channel": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-channel.channel"
+    },
+    "grantedBy": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user"
+    }
+  }
+}

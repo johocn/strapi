@@ -1,0 +1,45 @@
+{
+  "kind": "collectionType",
+  "collectionName": "zhao_user_course_auths",
+  "info": {
+    "singularName": "user-course-auth",
+    "pluralName": "user-course-auths",
+    "displayName": "用户课程授权"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "user": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user"
+    },
+    "course": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-course.course"
+    },
+    "authType": {
+      "type": "enumeration",
+      "enum": ["free", "paid", "admin_grant"],
+      "default": "free"
+    },
+    "expiresAt": {
+      "type": "datetime"
+    },
+    "isExpired": {
+      "type": "boolean",
+      "default": false
+    },
+    "channel": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-channel.channel"
+    },
+    "deletedAt": {
+      "type": "datetime",
+      "default": null
+    }
+  }
+}

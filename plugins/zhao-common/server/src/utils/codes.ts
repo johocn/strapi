@@ -1,0 +1,32 @@
+/**
+ * 错误码枚举
+ * 格式: <DOMAIN>_<具体错误>
+ */
+export const ErrorCodes = {
+  // ── 通用 (COMMON) ──
+  UNKNOWN_ERROR: "COMMON_001",
+  VALIDATION_ERROR: "COMMON_002",
+  NOT_FOUND: "COMMON_003",
+  FORBIDDEN: "COMMON_004",
+  UNAUTHORIZED: "COMMON_005",
+  CONFIG_ERROR: "COMMON_006",
+  INTERNAL_ERROR: "COMMON_007",
+
+  // ── 渠道 (CHANNEL) ──
+  CHANNEL_NOT_FOUND: "CHANNEL_001",
+  CHANNEL_DEPTH_EXCEEDED: "CHANNEL_002",
+  CHANNEL_DISABLED: "CHANNEL_003",
+  INVITE_CODE_INVALID: "CHANNEL_004",
+  MEMBER_NOT_FOUND: "CHANNEL_005",
+  CHANNEL_DUPLICATE: "CHANNEL_006",
+  USER_NOT_LINKED: "CHANNEL_007",
+
+  // ── 认证 (AUTH) ──
+  TOKEN_MISSING: "AUTH_001",
+  TOKEN_INVALID: "AUTH_002",
+  ROLE_INSUFFICIENT: "AUTH_003",
+  SCOPE_FORBIDDEN: "AUTH_004",
+  RESOURCE_OWNER_MISMATCH: "AUTH_005",
+} as const;
+
+export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes];

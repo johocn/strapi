@@ -1,0 +1,6 @@
+{
+  "name": "@zhao-point/server",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Server-side code for zhao-point plugin"
+}

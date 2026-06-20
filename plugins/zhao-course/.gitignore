@@ -1,0 +1,8 @@
+node_modules
+dist
+.cache
+.tmp
+*.js.map
+*.d.ts
+!server/src/**/*.d.ts
+!admin/src/**/*.d.ts
