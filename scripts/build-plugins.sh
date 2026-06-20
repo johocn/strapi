@@ -38,6 +38,10 @@ for plugin_dir in "$PLUGINS_DIR"/zhao-*; do
         
         # 检查是否有 package.json 和 build 脚本
         if [ -f "package.json" ]; then
+            # 先安装依赖
+            echo "安装依赖..."
+            npm install --legacy-peer-deps
+            
             # 检查是否有 build 脚本
             if grep -q '"build"' package.json; then
                 npx -y @strapi/sdk-plugin build
