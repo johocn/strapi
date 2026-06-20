@@ -1,16 +1,14 @@
 #!/bin/bash
 
-# 构建所有 zhao-* 插件的脚本
+# 构建所有 zhao-* 插件的脚本（节省内存方案）
+# 依赖已收集到项目根目录 package.json，不再每个插件单独安装
 # 用法: ./scripts/build-plugins.sh
 
 set -e
 
 echo "开始构建所有插件..."
 
-# 获取项目根目录
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-
-# 查找所有 zhao-* 插件
 PLUGINS_DIR="$PROJECT_ROOT/plugins"
 
 if [ ! -d "$PLUGINS_DIR" ]; then
@@ -18,12 +16,10 @@ if [ ! -d "$PLUGINS_DIR" ]; then
     exit 1
 fi
 
-# 统计
 TOTAL=0
 SUCCESS=0
 FAILED=0
 
-# 遍历所有 zhao-* 插件目录
 for plugin_dir in "$PLUGINS_DIR"/zhao-*; do
     if [ -d "$plugin_dir" ]; then
         plugin_name=$(basename "$plugin_dir")
@@ -36,17 +32,7 @@ for plugin_dir in "$PLUGINS_DIR"/zhao-*; do
         
         cd "$plugin_dir"
         
-        # 检查是否有 package.json 和 build 脚本
         if [ -f "package.json" ]; then
-            # 删除旧依赖避免冲突
-            echo "清理旧依赖..."
-            rm -rf node_modules package-lock.json
-            
-            # 先安装依赖 - 限制内存使用
-            echo "安装依赖..."
-            NODE_OPTIONS="--max-old-space-size=512" npm install --legacy-peer-deps --prefer-offline --maxsockets 5
-            
-            # 检查是否有 build 脚本
             if grep -q '"build"' package.json; then
                 npx -y @strapi/sdk-plugin build
                 if [ $? -eq 0 ]; then
