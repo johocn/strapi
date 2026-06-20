@@ -44,10 +44,22 @@
       "target": "plugin::zhao-tag.tag",
       "mappedBy": "parent"
     },
+    "lessons": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "plugin::zhao-course.course-lesson",
+      "mappedBy": "tags"
+    },
     "courses": {
       "type": "relation",
       "relation": "manyToMany",
       "target": "plugin::zhao-course.course",
+      "mappedBy": "tags"
+    },
+    "knowledgePoints": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "plugin::zhao-course.knowledge-point",
       "mappedBy": "tags"
     },
     "sort": {
