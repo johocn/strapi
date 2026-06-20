@@ -15,20 +15,20 @@
 
 ## 插件列表
 
-| 插件名称 | 描述 | 依赖 |
+| 插件名称 | 描述 | 状态 |
 |----------|------|------|
-| zhao-auth | 统一认证策略中间件 - JWT验证、角色授权、渠道权限 | bcryptjs, jsonwebtoken |
-| zhao-channel | 渠道管理 - 三级渠道、注册控制、渠道信息 | bull, ioredis, pg |
-| zhao-common | 通用基础设施 - 日志、配置、异常处理、国际化 | 无额外依赖 |
-| zhao-course | 课程管理 - 课程、课时、知识点、学习进度 | 无额外依赖 |
-| zhao-oss | 多媒体存储 - 阿里云OSS备份与多供应商支持 | ali-oss |
-| zhao-point | 积分管理 - 积分获取、消费、兑换 | 无额外依赖 |
-| zhao-quiz | 测验管理 - 多题型、批量导入、关联课程 | xlsx |
-| zhao-sso | 单点登录 - OAuth2授权码模式 | bcryptjs, uuid |
-| zhao-tag | 标签管理 - 分组、预设、全局检索 | 无额外依赖 |
-| zhao-third | 三方登录 - 微信/支付宝/抖音 | jsonwebtoken |
-| zhao-wealth | 财富管理 - Bull队列 | bull |
-| zhao-studio | 工作室管理 | 无额外依赖 |
+| zhao-auth | 统一认证策略中间件 - JWT验证、角色授权、渠道权限 | ✅ 启用 |
+| zhao-channel | 渠道管理 - 三级渠道、注册控制、渠道信息 | ✅ 启用 |
+| zhao-common | 通用基础设施 - 日志、配置、异常处理、国际化 | ✅ 启用 |
+| zhao-course | 课程管理 - 课程、课时、知识点、学习进度 | ✅ 启用 |
+| zhao-oss | 多媒体存储 - 阿里云OSS备份与多供应商支持 | ✅ 启用 |
+| zhao-point | 积分管理 - 积分获取、消费、兑换 | ✅ 启用 |
+| zhao-quiz | 测验管理 - 多题型、批量导入、关联课程 | ✅ 启用 |
+| zhao-sso | 单点登录 - OAuth2授权码模式 | ❌ 暂禁用（插件目录不存在） |
+| zhao-tag | 标签管理 - 分组、预设、全局检索 | ❌ 暂禁用（插件目录不存在） |
+| zhao-third | 三方登录 - 微信/支付宝/抖音 | ❌ 暂禁用（插件目录不存在） |
+| zhao-wealth | 财富管理 - Bull队列 | ❌ 暂禁用（插件目录不存在） |
+| zhao-studio | 工作室管理 | ❌ 暂禁用（插件目录不存在） |
 
 ## 安装步骤
 
@@ -39,13 +39,26 @@ git clone git@github.com:johocn/strapi.git
 cd strapi
 ```
 
-### 2. 安装依赖
+### 2. 配置 npm 镜像（推荐）
 
 ```bash
-npm install
+npm config set registry https://registry.npmmirror.com
+npm config get registry
 ```
 
-### 3. 配置环境变量
+### 3. 安装依赖
+
+```bash
+npm install --legacy-peer-deps
+```
+
+**说明**：所有插件的依赖已合并到项目根目录 `package.json`，包括：
+- bcryptjs, jsonwebtoken (zhao-auth)
+- bull, ioredis (zhao-channel)
+- xlsx (zhao-quiz)
+- ali-oss (zhao-oss)
+
+### 4. 配置环境变量
 
 复制 `.env.example` 到 `.env` 并修改配置：
 
@@ -84,42 +97,6 @@ ALIYUN_OSS_ACCESS_KEY_ID=your-access-key-id
 ALIYUN_OSS_ACCESS_KEY_SECRET=your-access-key-secret
 ALIYUN_OSS_BUCKET=your-bucket-name
 ALIYUN_OSS_REGION=oss-cn-hangzhou
-
-# SSO配置 (zhao-sso插件需要)
-SSO_JWT_SECRET=your-sso-jwt-secret
-```
-
-### 4. 配置插件路径
-
-项目提供两种插件配置方案：
-
-#### 方案A：相对路径方案（推荐）
-
-使用 `config/plugins.ts`，插件目录位于项目内的 `./plugins/`：
-
-```typescript
-"zhao-auth": {
-    enabled: true,
-    resolve: "./plugins/zhao-auth",
-},
-```
-
-#### 方案B：Windows 绝对路径方案
-
-使用 `config/plugins-windows.ts`，插件目录位于 `E:/code/plugins/`：
-
-```typescript
-"zhao-auth": {
-    enabled: true,
-    resolve: "E:/code/plugins/zhao-auth",
-},
-```
-
-切换方案：
-```bash
-# 使用 Windows 绝对路径方案
-mv config/plugins.ts config/plugins-relative.ts
-mv config/plugins-windows.ts config/plugins.ts
 ```
 
 ### 5. 构建插件
@@ -143,7 +120,7 @@ chmod +x scripts/build-plugins.sh
 
 ```bash
 cd plugins/zhao-channel
-npm run build
+npx -y @strapi/sdk-plugin build
 ```
 
 ### 6. 构建 Strapi 项目
@@ -169,21 +146,24 @@ npm start
 git clone git@github.com:johocn/strapi.git
 cd strapi
 
-# 2. 安装依赖
-npm install
+# 2. 配置 npm 镜像
+npm config set registry https://registry.npmmirror.com
 
-# 3. 配置环境变量
+# 3. 安装依赖
+npm install --legacy-peer-deps
+
+# 4. 配置环境变量
 cp .env.example .env
 # 编辑 .env 文件，填写真实配置
 
-# 4. 构建所有插件
+# 5. 构建所有插件
 chmod +x scripts/build-plugins.sh
 ./scripts/build-plugins.sh
 
-# 5. 构建 Strapi
+# 6. 构建 Strapi
 npm run build
 
-# 6. 启动服务
+# 7. 启动服务
 npm start
 # 或使用 PM2
 pm2 start npm --name "strapi" -- start
@@ -194,17 +174,13 @@ pm2 start npm --name "strapi" -- start
 ```
 zhao-common (基础)
     ↓
-zhao-auth (认证) ← zhao-third (三方登录) ← zhao-sso (单点登录)
+zhao-auth (认证)
     ↓
 zhao-channel (渠道)
     ↓
 zhao-course (课程) ← zhao-quiz (测验) ← zhao-point (积分)
     ↓
-zhao-tag (标签)
-    ↓
 zhao-oss (存储)
-    ↓
-zhao-wealth (财富) ← zhao-studio (工作室)
 ```
 
 ## 数据库初始化
@@ -265,6 +241,32 @@ redis-cli ping
 psql -U postgres -d strapi -h localhost
 ```
 
+### Q6: npm install 被系统杀死（内存不足）
+
+**错误信息**：
+```
+Killed                  npm install --legacy-peer-deps
+```
+
+**原因**：服务器内存不足（OOM Killer）
+
+**解决方案**：
+1. 确保使用国内 npm 镜像
+2. 依赖已合并到根目录，只需一次安装
+3. 构建脚本已优化，不再每个插件单独安装依赖
+
+### Q7: 类型声明缺失
+
+**错误信息**：
+```
+Cannot find module 'bull' or its corresponding type declarations
+```
+
+**解决方案**：类型声明已包含在根目录 `devDependencies` 中：
+```bash
+npm install --legacy-peer-deps
+```
+
 ## 目录结构
 
 ```
@@ -289,12 +291,7 @@ basic/
 │   ├── zhao-course/
 │   ├── zhao-oss/
 │   ├── zhao-point/
-│   ├── zhao-quiz/
-│   ├── zhao-sso/
-│   ├── zhao-tag/
-│   ├── zhao-third/
-│   ├── zhao-wealth/
-│   └── zhao-studio/
+│   └── zhao-quiz/
 └── .env              # 环境变量
 ```
 
@@ -344,7 +341,7 @@ echo "拉取最新代码..."
 git pull
 
 echo "安装依赖..."
-npm install
+npm install --legacy-peer-deps
 
 echo "构建插件..."
 ./scripts/build-plugins.sh
