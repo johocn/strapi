@@ -38,6 +38,10 @@ for plugin_dir in "$PLUGINS_DIR"/zhao-*; do
         
         # 检查是否有 package.json 和 build 脚本
         if [ -f "package.json" ]; then
+            # 删除旧依赖避免冲突
+            echo "清理旧依赖..."
+            rm -rf node_modules package-lock.json
+            
             # 先安装依赖
             echo "安装依赖..."
             npm install --legacy-peer-deps
