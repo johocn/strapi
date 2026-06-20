@@ -6,10 +6,12 @@
 
 ## 系统要求
 
-- Node.js: >= 20.0.0 <= 24.x.x
-- npm: >= 6.0.0
-- PostgreSQL: 8.x+ (推荐)
-- Redis: 6.x+ (用于 zhao-channel 插件)
+| 组件 | 版本要求 | 说明 |
+|------|----------|------|
+| Node.js | >= 20.0.0 <= 24.x.x | 推荐 20.x LTS |
+| npm | >= 6.0.0 | 随 Node.js 安装 |
+| PostgreSQL | 8.x+ | 主数据库 |
+| Redis | 6.x+ | zhao-channel 插件需要 |
 
 ## 插件列表
 
@@ -25,6 +27,8 @@
 | zhao-sso | 单点登录 - OAuth2授权码模式 | bcryptjs, uuid |
 | zhao-tag | 标签管理 - 分组、预设、全局检索 | 无额外依赖 |
 | zhao-third | 三方登录 - 微信/支付宝/抖音 | jsonwebtoken |
+| zhao-wealth | 财富管理 - Bull队列 | bull |
+| zhao-studio | 工作室管理 | 无额外依赖 |
 
 ## 安装步骤
 
@@ -87,57 +91,102 @@ SSO_JWT_SECRET=your-sso-jwt-secret
 
 ### 4. 配置插件路径
 
-编辑 `config/plugins.ts`，修改插件 `resolve` 路径为实际路径：
+项目提供两种插件配置方案：
+
+#### 方案A：相对路径方案（推荐）
+
+使用 `config/plugins.ts`，插件目录位于项目内的 `./plugins/`：
 
 ```typescript
-// 开发环境 - 使用绝对路径
 "zhao-auth": {
     enabled: true,
-    resolve: "./plugins/zhao-auth",  // 相对路径
+    resolve: "./plugins/zhao-auth",
 },
+```
 
-// 生产环境 - 使用 npm 包
+#### 方案B：Windows 绝对路径方案
+
+使用 `config/plugins-windows.ts`，插件目录位于 `E:/code/plugins/`：
+
+```typescript
 "zhao-auth": {
     enabled: true,
-    // resolve 可省略，通过 npm 安装
+    resolve: "E:/code/plugins/zhao-auth",
 },
+```
+
+切换方案：
+```bash
+# 使用 Windows 绝对路径方案
+mv config/plugins.ts config/plugins-relative.ts
+mv config/plugins-windows.ts config/plugins.ts
 ```
 
 ### 5. 构建插件
 
-每个插件需要单独构建：
+**重要**：插件的 `dist` 目录不会提交到仓库，需要在本地/服务器构建。
+
+#### Linux/Mac 批量构建
 
 ```bash
-# 进入插件目录构建
-cd plugins/zhao-auth && npm run build
-cd plugins/zhao-channel && npm run build
-cd plugins/zhao-common && npm run build
-cd plugins/zhao-course && npm run build
-cd plugins/zhao-oss && npm run build
-cd plugins/zhao-point && npm run build
-cd plugins/zhao-quiz && npm run build
-cd plugins/zhao-sso && npm run build
-cd plugins/zhao-tag && npm run build
-cd plugins/zhao-third && npm run build
+chmod +x scripts/build-plugins.sh
+./scripts/build-plugins.sh
 ```
 
-或批量构建：
+#### Windows 批量构建
+
+```powershell
+.\scripts\build-plugins.ps1
+```
+
+#### 单个插件构建
 
 ```bash
-for plugin in zhao-auth zhao-channel zhao-common zhao-course zhao-oss zhao-point zhao-quiz zhao-sso zhao-tag zhao-third; do
-    cd plugins/$plugin && npm run build && cd ../..
-done
+cd plugins/zhao-channel
+npm run build
 ```
 
-### 6. 启动项目
+### 6. 构建 Strapi 项目
+
+```bash
+npm run build
+```
+
+### 7. 启动项目
 
 ```bash
 # 开发模式
 npm run dev
 
 # 生产模式
-npm run build
 npm start
+```
+
+## 服务器部署完整流程
+
+```bash
+# 1. 克隆项目
+git clone git@github.com:johocn/strapi.git
+cd strapi
+
+# 2. 安装依赖
+npm install
+
+# 3. 配置环境变量
+cp .env.example .env
+# 编辑 .env 文件，填写真实配置
+
+# 4. 构建所有插件
+chmod +x scripts/build-plugins.sh
+./scripts/build-plugins.sh
+
+# 5. 构建 Strapi
+npm run build
+
+# 6. 启动服务
+npm start
+# 或使用 PM2
+pm2 start npm --name "strapi" -- start
 ```
 
 ## 插件依赖关系图
@@ -154,6 +203,8 @@ zhao-course (课程) ← zhao-quiz (测验) ← zhao-point (积分)
 zhao-tag (标签)
     ↓
 zhao-oss (存储)
+    ↓
+zhao-wealth (财富) ← zhao-studio (工作室)
 ```
 
 ## 数据库初始化
@@ -168,25 +219,46 @@ npm run strapi migration:run
 
 ### Q1: 插件路径找不到
 
-确保 `config/plugins.ts` 中的 `resolve` 路径正确：
-- Windows: 使用 `E:/code/plugins/zhao-xxx` 或 `./plugins/zhao-xxx`
-- Linux/Mac: 使用 `/path/to/plugins/zhao-xxx` 或 `./plugins/zhao-xxx`
+**错误信息**：
+```
+Could not resolve "../../plugins/zhao-channel/./dist/admin/index.mjs"
+```
 
-### Q2: Redis 连接失败
+**解决方案**：
+1. 确保已构建插件：`./scripts/build-plugins.sh`
+2. 检查 `config/plugins.ts` 中的 `resolve` 路径是否正确
+
+### Q2: 构建产物缺失
+
+**错误信息**：
+```
+Building admin panel [ERROR] Could not resolve "...dist/admin/index.mjs"
+```
+
+**原因**：`.gitignore` 忽略了 `dist` 目录，构建产物不会提交到仓库。
+
+**解决方案**：在服务器上运行构建脚本：
+```bash
+./scripts/build-plugins.sh
+npm run build
+```
+
+### Q3: Redis 连接失败
 
 检查 Redis 服务状态：
 ```bash
 redis-cli ping
+# 应返回 PONG
 ```
 
-### Q3: OSS 上传失败
+### Q4: OSS 上传失败
 
 检查阿里云 OSS 配置：
 - accessKeyId 和 accessKeySecret 是否正确
 - bucket 是否存在
 - region 是否匹配
 
-### Q4: 数据库连接失败
+### Q5: 数据库连接失败
 
 检查 PostgreSQL：
 ```bash
@@ -198,7 +270,8 @@ psql -U postgres -d strapi -h localhost
 ```
 basic/
 ├── config/           # Strapi 配置
-│   ├── plugins.ts    # 插件配置
+│   ├── plugins.ts    # 插件配置（相对路径方案）
+│   ├── plugins-windows.ts  # 插件配置（Windows绝对路径方案）
 │   ├── database.ts   # 数据库配置
 │   └── server.ts     # 服务器配置
 ├── src/
@@ -206,7 +279,10 @@ basic/
 │   └── extensions/   # 扩展内置插件
 ├── public/           # 静态资源
 ├── database/         # 数据库迁移
-├── plugins/          # 自定义插件目录 (需创建)
+├── scripts/          # 工具脚本
+│   ├── build-plugins.sh    # Linux/Mac 构建脚本
+│   └── build-plugins.ps1   # Windows 构建脚本
+├── plugins/          # 自定义插件目录
 │   ├── zhao-auth/
 │   ├── zhao-channel/
 │   ├── zhao-common/
@@ -216,18 +292,24 @@ basic/
 │   ├── zhao-quiz/
 │   ├── zhao-sso/
 │   ├── zhao-tag/
-│   └── zhao-third/
+│   ├── zhao-third/
+│   ├── zhao-wealth/
+│   └── zhao-studio/
 └── .env              # 环境变量
 ```
 
 ## 生产部署建议
 
-1. 使用 PM2 管理进程：
+### 1. 使用 PM2 管理进程
+
 ```bash
 pm2 start npm --name "strapi" -- start
+pm2 save
+pm2 startup
 ```
 
-2. 配置 Nginx 反向代理：
+### 2. 配置 Nginx 反向代理
+
 ```nginx
 server {
     listen 80;
@@ -244,9 +326,36 @@ server {
 }
 ```
 
-3. 启用 SSL：
+### 3. 启用 SSL
+
 ```bash
 certbot --nginx -d your-domain.com
+```
+
+### 4. 自动化部署脚本
+
+创建 `deploy.sh`：
+
+```bash
+#!/bin/bash
+set -e
+
+echo "拉取最新代码..."
+git pull
+
+echo "安装依赖..."
+npm install
+
+echo "构建插件..."
+./scripts/build-plugins.sh
+
+echo "构建 Strapi..."
+npm run build
+
+echo "重启服务..."
+pm2 restart strapi
+
+echo "部署完成！"
 ```
 
 ## 技术支持
