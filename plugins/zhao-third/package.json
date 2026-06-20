@@ -1,0 +1,39 @@
+{
+  "name": "zhao-third",
+  "version": "1.0.0",
+  "description": "三方登录插件 - 微信/支付宝/抖音",
+  "private": true,
+  "type": "commonjs",
+  "exports": {
+    "./package.json": "./package.json",
+    "./strapi-server": {
+      "types": "./dist/server/src/index.d.ts",
+      "source": "./server/src/index.ts",
+      "import": "./dist/server/index.mjs",
+      "require": "./dist/server/index.js",
+      "default": "./dist/server/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "strapi-plugin build",
+    "watch": "strapi-plugin watch",
+    "verify": "strapi-plugin verify"
+  },
+  "devDependencies": {
+    "@strapi/sdk-plugin": "^6.1.0",
+    "@strapi/strapi": "^5.45.0",
+    "@strapi/typescript-utils": "^5.45.0",
+    "typescript": "^5.9.3"
+  },
+  "peerDependencies": {
+    "@strapi/strapi": "^5.45.0"
+  },
+  "strapi": {
+    "kind": "plugin",
+    "name": "zhao-third",
+    "displayName": "Zhao Third",
+    "description": "三方登录插件 - 微信/支付宝/抖音"
+  },
+  "license": "MIT"
+}

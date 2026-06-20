@@ -35,7 +35,7 @@ const config = ({ env }: Core.Config.Shared.ConfigParams): Core.Config.Plugin =>
         resolve: "./plugins/zhao-common",
     },
     "zhao-third": {
-        enabled: false,  // 插件目录不存在，暂时禁用
+        enabled: true,
         resolve: "./plugins/zhao-third",
     },
     "zhao-course": {
@@ -72,19 +72,19 @@ const config = ({ env }: Core.Config.Shared.ConfigParams): Core.Config.Plugin =>
         },
     },
     "zhao-sso": {
-        enabled: false,  // 插件目录不存在，暂时禁用
+        enabled: true,
         resolve: "./plugins/zhao-sso",
     },
     "zhao-tag": {
-        enabled: false,  // 插件目录不存在，暂时禁用
+        enabled: true,
         resolve: "./plugins/zhao-tag",
     },
     "zhao-wealth": {
-        enabled: false,  // 插件目录不存在，暂时禁用
+        enabled: true,
         resolve: "./plugins/zhao-wealth",
     },
     "zhao-studio": {
-        enabled: false,  // 插件目录不存在，暂时禁用
+        enabled: true,
         resolve: "./plugins/zhao-studio",
     },
 });
