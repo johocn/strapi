@@ -1,0 +1,50 @@
+﻿{
+  "kind": "collectionType",
+  "collectionName": "zhao_quiz_exam_attempts",
+  "info": {
+    "singularName": "quiz-exam-attempt",
+    "pluralName": "quiz-exam-attempts",
+    "displayName": "考试记录"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "user": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user"
+    },
+    "exam": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-quiz.quiz-exam"
+    },
+    "answers": {
+      "type": "json"
+    },
+    "totalScore": {
+      "type": "decimal",
+      "precision": 5,
+      "scale": 2,
+      "default": 0
+    },
+    "isPassed": {
+      "type": "boolean"
+    },
+    "startedAt": {
+      "type": "datetime"
+    },
+    "submittedAt": {
+      "type": "datetime"
+    },
+    "duration": {
+      "type": "integer",
+      "default": 0
+    },
+    "attemptNumber": {
+      "type": "integer",
+      "default": 1
+    }
+  }
+}

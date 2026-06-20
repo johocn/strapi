@@ -1,0 +1,60 @@
+{
+  "kind": "collectionType",
+  "collectionName": "zhao_quiz_batches",
+  "info": {
+    "singularName": "quiz-batch",
+    "pluralName": "quiz-batches",
+    "displayName": "批量导入"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "file": {
+      "type": "media",
+      "multiple": false
+    },
+    "templateFile": {
+      "type": "media",
+      "multiple": false
+    },
+    "totalCount": {
+      "type": "integer",
+      "default": 0
+    },
+    "successCount": {
+      "type": "integer",
+      "default": 0
+    },
+    "errorCount": {
+      "type": "integer",
+      "default": 0
+    },
+    "errors": {
+      "type": "json"
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": ["pending","processing","completed","failed"],
+      "default": "pending"
+    },
+    "course": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-course.course"
+    },
+    "lesson": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-course.course-lesson"
+    },
+    "deletedAt": {
+      "type": "datetime",
+      "default": null
+    }
+  }
+}

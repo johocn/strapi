@@ -1,0 +1,87 @@
+import type { Core } from "@strapi/strapi";
+
+const wrap = (data: any, meta: any = {}) => ({ data, meta });
+const wrapList = (result: any) => {
+  if (result && typeof result === "object" && !Array.isArray(result) && "results" in result) {
+    return { data: result.results, meta: { pagination: result.pagination || {} } };
+  }
+  if (result && typeof result === "object" && !Array.isArray(result) && "list" in result) {
+    return { data: result.list, meta: { pagination: result.pagination || {} } };
+  }
+  if (result && typeof result === "object" && !Array.isArray(result) && "data" in result && "pagination" in result) {
+    return { data: result.data, meta: { pagination: result.pagination } };
+  }
+  if (Array.isArray(result)) {
+    return { data: result, meta: {} };
+  }
+  return { data: result, meta: {} };
+};
+
+export default ({ strapi }: { strapi: Core.Strapi }) => ({
+  async find(ctx: any) {
+    try {
+      ctx.body = wrapList(await strapi.plugin("zhao-quiz").service("quiz-batch").find(ctx.query));
+    } catch (err) {
+      ctx.status = (err as any).status || 400; ctx.body = { error: (err as Error).message }; return;
+    }
+  },
+
+  async findOne(ctx: any) {
+    try {
+      const { documentId } = ctx.params;
+      const result = await strapi.plugin("zhao-quiz").service("quiz-batch").findOne(documentId);
+      if (!result) { ctx.status = 404; ctx.body = { error: "批量导入记录不存在" }; return; }
+      ctx.body = wrap(result);
+    } catch (err) {
+      ctx.status = (err as any).status || 400; ctx.body = { error: (err as Error).message }; return;
+    }
+  },
+
+  async create(ctx: any) {
+    try {
+      ctx.body = wrap(await strapi.plugin("zhao-quiz").service("quiz-batch").create(ctx.request.body));
+      ctx.status = 201;
+    } catch (err) {
+      ctx.status = (err as any).status || 400; ctx.body = { error: (err as Error).message }; return;
+    }
+  },
+
+  async update(ctx: any) {
+    try {
+      const { documentId } = ctx.params;
+      const body = ctx.request.body?.data || ctx.request.body;
+      ctx.body = wrap(await strapi.plugin("zhao-quiz").service("quiz-batch").update(documentId, body));
+    } catch (err) {
+      ctx.status = (err as any).status || 400; ctx.body = { error: (err as Error).message }; return;
+    }
+  },
+
+  async delete(ctx: any) {
+    try {
+      const { documentId } = ctx.params;
+      ctx.body = wrap(await strapi.plugin("zhao-quiz").service("quiz-batch").delete(documentId));
+    } catch (err) {
+      ctx.status = (err as any).status || 400; ctx.body = { error: (err as Error).message }; return;
+    }
+  },
+
+  async importFile(ctx: any) {
+    try {
+      const { documentId } = ctx.params;
+      ctx.body = wrap(await strapi.plugin("zhao-quiz").service("quiz-batch").importFromFile(documentId));
+    } catch (err: any) {
+      ctx.status = err.status || 400; ctx.body = { error: err.message || err }; return;
+    }
+  },
+
+  async downloadTemplate(ctx: any) {
+    try {
+      const buffer = await strapi.plugin("zhao-quiz").service("quiz-batch").downloadTemplate();
+      ctx.set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+      ctx.set("Content-Disposition", "attachment; filename=quiz_import_template.xlsx");
+      ctx.body = buffer;
+    } catch (err: any) {
+      ctx.status = (err as any).status || 400; ctx.body = { error: (err as Error).message }; return;
+    }
+  },
+});
