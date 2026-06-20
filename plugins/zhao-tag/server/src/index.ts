@@ -1,12 +1,8 @@
-import contentTypes from './content-types';
+import contentTypes from "./content-types";
 
 export default {
-  register({ strapi }) {
-    strapi.contentTypes = {
-      ...strapi.contentTypes,
-      ...contentTypes,
-    };
-  },
+  register() {},
   bootstrap() {},
   destroy() {},
+  contentTypes,
 };

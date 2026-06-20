@@ -1,7 +1,7 @@
-import tag from './tag';
-import knowledgePoint from './knowledge-point';
+import tagSchema from "./tag/schema.json";
+import knowledgePointSchema from "./knowledge-point/schema.json";
 
 export default {
-  tag,
-  'knowledge-point': knowledgePoint,
+  tag: { schema: tagSchema },
+  "knowledge-point": { schema: knowledgePointSchema },
 };
