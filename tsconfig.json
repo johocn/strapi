@@ -1,4 +1,4 @@
-{
+﻿{
   "compilerOptions": {
     "module": "CommonJS",
     "moduleResolution": "Node",
@@ -33,12 +33,13 @@
     ".cache/",
     ".tmp/",
     ".strapi/",
-
+    "plugins/",
     // Do not include admin files in the server compilation
     "src/admin/",
     // Do not include test files
     "**/*.test.*",
     // Do not include plugins in the server compilation
-    "src/plugins/**"
+    "src/plugins/**",
+    "plugins/**"
   ]
 }

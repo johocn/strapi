@@ -30,6 +30,8 @@ $RECYCLE.BIN/
 *.msi
 *.msm
 *.msp
+nul
+**/nul
 
 
 ############################
