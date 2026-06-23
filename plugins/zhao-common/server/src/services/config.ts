@@ -6,11 +6,24 @@ import type { Core } from "@strapi/strapi";
  */
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
   // ========== 站点配置 ==========
-  async getSiteConfig() {
+  async getSiteConfig(siteId?: string) {
     try {
       const service = strapi.plugin("zhao-common")?.service("site-config");
       if (service && typeof service.getConfig === "function") {
-        return await service.getConfig();
+        const siteConfig = await service.getConfig(siteId);
+        // 合并模板预设值
+        if (siteConfig) {
+          const templateService = strapi.plugin("zhao-common")?.service("site-template");
+          if (templateService && typeof templateService.getMergedConfig === "function") {
+            const { config, meta } = await templateService.getMergedConfig(siteConfig);
+            return {
+              ...siteConfig,
+              extraConfig: config,
+              _meta: meta,
+            };
+          }
+        }
+        return siteConfig;
       }
       return null;
     } catch (error) {
@@ -19,16 +32,32 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     }
   },
 
-  async updateSiteConfig(data: any) {
+  async updateSiteConfig(data: any, siteId?: string) {
     try {
+      // 约束校验已移至 controller 层（对 extraData 校验，而非整个 data）
+
       const service = strapi.plugin("zhao-common")?.service("site-config");
-      if (service && typeof service.updateConfig === "function") {
-        return await service.updateConfig(data);
+      if (service) {
+        if (data.documentId) {
+          const { documentId, ...updateData } = data;
+          if (typeof service.updateConfig === "function") {
+            return await service.updateConfig(documentId, updateData);
+          }
+        } else {
+          // 无 documentId，先查当前配置再更新
+          const currentConfig: any = await service.getConfig(siteId);
+          if (currentConfig?.documentId && typeof service.updateConfig === "function") {
+            return await service.updateConfig(currentConfig.documentId, data);
+          }
+          if (typeof service.createConfig === "function") {
+            return await service.createConfig(data);
+          }
+        }
       }
       return null;
     } catch (error) {
       strapi.log.warn("[config] updateSiteConfig failed:", (error as Error).message);
-      return null;
+      throw error;
     }
   },
 
@@ -185,71 +214,99 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   },
 
   // ========== 公开配置（只返回非敏感字段，统一从 extraConfig 读取） ==========
-  async getPublicConfig() {
+  async getPublicConfig(siteId?: string) {
     const result: Record<string, any> = {};
 
-    // 站点配置公开字段
-    try {
-      const service = strapi.plugin("zhao-common")?.service("site-config");
-      if (service && typeof service.getPublicConfig === "function") {
-        result.site = await service.getPublicConfig();
-      }
-    } catch (error) {
-      strapi.log.warn("[config] getPublicConfig site failed:", (error as Error).message);
-    }
-
-    // 从 extraConfig 统一读取所有配置
     try {
       const siteConfigService = strapi.plugin("zhao-common")?.service("site-config");
-      if (siteConfigService) {
-        const fullConfig: any = await siteConfigService.getConfig();
-        const ec = fullConfig?.extraConfig || {};
+      const templateService = strapi.plugin("zhao-common")?.service("site-template");
+      if (!siteConfigService) return result;
 
-        // 认证配置
-        result.auth = {
-          mode: ec.authMode || "local",
-          methods: ["password", "sms"],
-          wechatEnabled: ec.thirdPartyEnabled ?? ec.wechatMiniProgramEnabled ?? false,
-          thirdPartyEnabled: ec.thirdPartyEnabled ?? false,
-          ssoEnabled: ec.ssoEnabled ?? false,
-          ssoLoginUrl: ec.ssoLoginUrl || null,
-          registerEnabled: ec.registerEnabled ?? true,
-          inviteCodeRequired: ec.inviteCodeRequired ?? false,
-        };
+      // 一次查询获取完整站点配置
+      const fullConfig: any = await siteConfigService.getConfig(siteId);
 
-        // 功能开关
-        result.featureFlags = {
-          pointsEnabled: ec.pointsEnabled ?? true,
-          coursePreviewEnabled: ec.coursePreviewEnabled ?? true,
-          lessonProgressEnabled: ec.lessonProgressEnabled ?? true,
-          courseEnrollEnabled: ec.courseEnrollEnabled ?? true,
-          channelInviteEnabled: ec.channelInviteEnabled ?? true,
-          allowCrossChannel: ec.allowCrossChannel ?? false,
-          redemptionEnabled: ec.redemptionEnabled ?? false,
-          courseCommentEnabled: ec.courseCommentEnabled ?? false,
-          courseRatingEnabled: ec.courseRatingEnabled ?? false,
-          paymentEnabled: ec.paymentEnabled ?? false,
-          smsEnabled: ec.smsEnabled ?? false,
-          emailEnabled: ec.emailEnabled ?? false,
-          captchaEnabled: ec.captchaEnabled ?? false,
-          rateLimitEnabled: ec.rateLimitEnabled ?? true,
-          maintenanceMode: ec.maintenanceMode ?? false,
-          debugMode: ec.debugMode ?? false,
-        };
-
-        // 积分配置
-        result.points = {
-          moduleEnabled: ec.pointsEnabled ?? true,
-          earnEnabled: true,
-          redeemEnabled: ec.redemptionEnabled ?? false,
-          signInEnabled: true,
-          tasksEnabled: true,
-          signInPoints: ec.signInPoints ?? 10,
-          maxPointsPerDay: ec.maxPointsPerDay ?? 100,
-        };
+      // 站点公开字段
+      const PUBLIC_FIELDS = [
+        "siteName", "siteDescription", "seoKeywords", "seoDescription",
+        "tencentMapKey", "shareTitle", "shareDescription", "icpNumber",
+        "customerServiceUrl", "domain",
+      ];
+      const DEFAULT_CONFIG: Record<string, string> = {
+        siteName: "", siteDescription: "", seoKeywords: "", seoDescription: "",
+        tencentMapKey: "", shareTitle: "", shareDescription: "", icpNumber: "",
+        customerServiceUrl: "", domain: "",
+      };
+      const sitePublic: Record<string, any> = {};
+      for (const key of PUBLIC_FIELDS) {
+        sitePublic[key] = fullConfig?.[key] ?? DEFAULT_CONFIG[key];
       }
+      if (fullConfig?.logo) sitePublic.logo = fullConfig.logo;
+      if (fullConfig?.favicon) sitePublic.favicon = fullConfig.favicon;
+      if (fullConfig?.shareImage) sitePublic.shareImage = fullConfig.shareImage;
+      result.site = sitePublic;
+
+      // 合并模板预设值
+      let ec: Record<string, any> = fullConfig?.extraConfig ?? {};
+      if (templateService && typeof templateService.getMergedConfig === "function" && fullConfig) {
+        const { config } = await templateService.getMergedConfig(fullConfig);
+        ec = config ?? {};
+      }
+
+      // sharePath 在 extraConfig 中，合并后写入 site
+      sitePublic.sharePath = ec.sharePath ?? "/pages/index/index";
+
+      // 认证配置
+      const authMode = ec.authMode ?? "local";
+      const methods: string[] = ["password", "sms"];
+      if (authMode === "third" || ec.thirdPartyEnabled || ec.wechatMiniProgramEnabled) {
+        methods.push("wechat");
+      }
+      if (authMode === "sso" || ec.ssoEnabled) {
+        methods.push("sso");
+      }
+      result.auth = {
+        mode: authMode,
+        methods,
+        wechatEnabled: ec.thirdPartyEnabled ?? ec.wechatMiniProgramEnabled ?? false,
+        thirdPartyEnabled: ec.thirdPartyEnabled ?? false,
+        ssoEnabled: ec.ssoEnabled ?? false,
+        ssoLoginUrl: ec.ssoLoginUrl ?? null,
+        registerEnabled: ec.registerEnabled ?? true,
+        inviteCodeRequired: ec.inviteCodeRequired ?? false,
+      };
+
+      // 功能开关
+      result.featureFlags = {
+        pointsEnabled: ec.pointsEnabled ?? true,
+        coursePreviewEnabled: ec.coursePreviewEnabled ?? true,
+        lessonProgressEnabled: ec.lessonProgressEnabled ?? true,
+        courseEnrollEnabled: ec.courseEnrollEnabled ?? true,
+        channelInviteEnabled: ec.channelInviteEnabled ?? true,
+        allowCrossChannel: ec.allowCrossChannel ?? false,
+        redemptionEnabled: ec.redemptionEnabled ?? true,
+        courseCommentEnabled: ec.courseCommentEnabled ?? false,
+        courseRatingEnabled: ec.courseRatingEnabled ?? false,
+        paymentEnabled: ec.paymentEnabled ?? false,
+        smsEnabled: ec.smsEnabled ?? false,
+        emailEnabled: ec.emailEnabled ?? false,
+        captchaEnabled: ec.captchaEnabled ?? false,
+        rateLimitEnabled: ec.rateLimitEnabled ?? true,
+        maintenanceMode: ec.maintenanceMode ?? false,
+        debugMode: ec.debugMode ?? false,
+      };
+
+      // 积分配置
+      result.points = {
+        moduleEnabled: ec.pointsEnabled ?? true,
+        earnEnabled: true,
+        redeemEnabled: ec.redemptionEnabled ?? true,
+        signInEnabled: true,
+        tasksEnabled: true,
+        signInPoints: ec.signInPoints ?? 10,
+        maxPointsPerDay: ec.maxPointsPerDay ?? 0,
+      };
     } catch (error) {
-      strapi.log.warn("[config] getPublicConfig extraConfig failed:", (error as Error).message);
+      strapi.log.warn("[config] getPublicConfig failed:", (error as Error).message);
     }
 
     return result;

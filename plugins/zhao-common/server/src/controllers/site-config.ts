@@ -7,7 +7,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       const config = await service.getConfig();
       ctx.body = { data: config };
     } catch (e: any) {
-      ctx.status = (e as any).status || 400;
+      ctx.status = (e as any).status ?? 400;
       ctx.body = { error: e.message };
     }
   },
@@ -19,7 +19,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       const config = await service.updateConfig(body);
       ctx.body = { data: config };
     } catch (e: any) {
-      ctx.status = (e as any).status || 400;
+      ctx.status = (e as any).status ?? 400;
       ctx.body = { error: e.message };
     }
   },
@@ -30,7 +30,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       const config = await service.getPublicConfig();
       ctx.body = { data: config };
     } catch (e: any) {
-      ctx.status = (e as any).status || 400;
+      ctx.status = (e as any).status ?? 400;
       ctx.body = { error: e.message };
     }
   },

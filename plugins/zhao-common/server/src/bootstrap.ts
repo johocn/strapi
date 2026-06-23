@@ -1,6 +1,8 @@
 import type { Core } from "@strapi/strapi";
+import siteResolver from "./middlewares/site-resolver";
 
 const SITE_CONFIG_UID = "plugin::zhao-common.site-config";
+const TEMPLATE_UID = "plugin::zhao-common.site-template";
 
 const DEFAULT_SITE_CONFIG = {
   siteName: "圣麟教育",
@@ -35,7 +37,7 @@ const DEFAULT_SITE_CONFIG = {
     // 积分
     pointsEnabled: true,
     signInPoints: 10,
-    maxPointsPerDay: 100,
+    maxPointsPerDay: 0,
     redemptionEnabled: true,
     pointsExpireDays: 0,
     pointsMinRedemption: 100,
@@ -45,8 +47,8 @@ const DEFAULT_SITE_CONFIG = {
     coursePreviewEnabled: true,
     lessonProgressEnabled: true,
     courseEnrollEnabled: true,
-    courseCommentEnabled: true,
-    courseRatingEnabled: true,
+    courseCommentEnabled: false,
+    courseRatingEnabled: false,
 
     // 用户
     userAvatarRequired: false,
@@ -96,10 +98,40 @@ const addDeletedAtFilter = (event: any) => {
 };
 
 const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
+  // 注册站点识别中间件（在认证之前）
+  strapi.server.use(siteResolver({}, { strapi }));
+
   // 站点配置初始化
   const existingConfig = await strapi.documents(SITE_CONFIG_UID).findMany();
   if (!existingConfig || (Array.isArray(existingConfig) && existingConfig.length === 0)) {
-    await strapi.documents(SITE_CONFIG_UID).create({ data: DEFAULT_SITE_CONFIG });
+    // 先确保默认模板存在
+    let defaultTemplate: any = null;
+    const existingTemplates = await strapi.documents(TEMPLATE_UID).findMany({
+      filters: { isDefault: true },
+    });
+    if (Array.isArray(existingTemplates) && existingTemplates.length > 0) {
+      defaultTemplate = existingTemplates[0];
+    } else {
+      defaultTemplate = await strapi.documents(TEMPLATE_UID).create({
+        data: {
+          name: "默认模板",
+          description: "系统默认配置模板，所有字段均可编辑",
+          presetConfig: DEFAULT_SITE_CONFIG.extraConfig,
+          fieldConstraints: {},
+          enabled: true,
+          isDefault: true,
+        },
+      });
+      strapi.log.info(`[zhao-common] 默认模板已初始化`);
+    }
+
+    await strapi.documents(SITE_CONFIG_UID).create({
+      data: {
+        ...DEFAULT_SITE_CONFIG,
+        extraConfig: {}, // 差异存储：默认站点关联默认模板，无需重复存储预设值
+        template: defaultTemplate?.documentId ?? null,
+      },
+    });
     strapi.log.info(`[zhao-common] 站点配置已初始化`);
   }
 

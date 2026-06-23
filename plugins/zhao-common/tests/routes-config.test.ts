@@ -32,28 +32,6 @@ describe("zhao-common routes configuration structure", () => {
       expect(contentApi.routes.length).toBeGreaterThanOrEqual(3);
     });
 
-    it("should register /v1/site-config route", () => {
-      const contentApi = contentApiRoutes() as any;
-      const route = contentApi.routes.find(
-        (r: any) => r.path === "/v1/site-config"
-      );
-      expect(route).toBeDefined();
-      expect(route.method).toBe("GET");
-      expect(route.handler).toBe("site-config.getPublic");
-      expect(route.config.auth).toBe(false);
-    });
-
-    it("should register /v1/site-config/public route", () => {
-      const contentApi = contentApiRoutes() as any;
-      const route = contentApi.routes.find(
-        (r: any) => r.path === "/v1/site-config/public"
-      );
-      expect(route).toBeDefined();
-      expect(route.method).toBe("GET");
-      expect(route.handler).toBe("site-config.getPublic");
-      expect(route.config.auth).toBe(false);
-    });
-
     it("should register /v1/public/config route", () => {
       const contentApi = contentApiRoutes() as any;
       const route = contentApi.routes.find(

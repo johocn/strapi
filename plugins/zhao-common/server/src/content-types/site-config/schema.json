@@ -5,7 +5,7 @@
     "singularName": "site-config",
     "pluralName": "site-configs",
     "displayName": "站点配置",
-    "description": "站点通用配置（单例）"
+    "description": "站点通用配置（多租户）"
   },
   "options": {
     "draftAndPublish": false
@@ -62,6 +62,35 @@
     "customerServiceUrl": {
       "type": "string",
       "maxLength": 500
+    },
+    "domain": {
+      "type": "string",
+      "maxLength": 255,
+      "unique": true
+    },
+    "channels": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-channel.channel",
+      "inversedBy": "site"
+    },
+    "featureFlags": {
+      "type": "json",
+      "default": {
+        "sso": false,
+        "points": true,
+        "quiz": true,
+        "course": true,
+        "channel": true,
+        "thirdParty": true,
+        "oss": false
+      }
+    },
+    "template": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-common.site-template",
+      "inversedBy": "sites"
     },
     "extraConfig": {
       "type": "json"

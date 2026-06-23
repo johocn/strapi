@@ -25,7 +25,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       // 公开路由或无 token 时，标记游客，应用 allowCrossChannel 过滤
       const channelScope = ctx.state.channelScope
         || (publicOnly ? { all: true, channelIds: [], isGuest: true } : { all: true, channelIds: [], isGuest: false });
-      ctx.body = wrapList(await strapi.plugin("zhao-course").service("course").find(ctx.query, publicOnly, channelScope));
+      const siteChannelId = ctx.state.siteChannelId;
+      ctx.body = wrapList(await strapi.plugin("zhao-course").service("course").find(ctx.query, publicOnly, channelScope, siteChannelId));
     } catch (err) {
       ctx.status = (err as any).status || 400;
       ctx.body = { error: (err as Error).message };

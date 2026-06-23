@@ -40,6 +40,12 @@
       "target": "plugin::zhao-channel.channel",
       "mappedBy": "parentChannel"
     },
+    "site": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-common.site-config",
+      "inversedBy": "channels"
+    },
     "status": {
       "type": "boolean",
       "default": true

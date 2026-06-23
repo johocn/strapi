@@ -180,7 +180,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     }
     return invalid;
   },
-  async find(query: any = {}, publicOnly: boolean = false, channelScope?: { all: boolean; channelIds: number[]; isGuest?: boolean }) {
+  async find(query: any = {}, publicOnly: boolean = false, channelScope?: { all: boolean; channelIds: number[]; isGuest?: boolean }, siteChannelId?: number | string) {
     const { filters, populate, sort, pagination, fields, locale } = query;
     const mergedFilters: any = { ...filters };
     const userChannelIds = channelScope?.channelIds || [];
@@ -243,6 +243,19 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         // 指定渠道且不允许跨渠道：检查用户渠道是否匹配
         const courseChannelIds = course.channelIds || [];
         return courseChannelIds.some(cid => userChannelIds.some(uid => String(uid) === String(cid)));
+      });
+    }
+
+    // 站点渠道过滤：仅返回全局课程或属于该站点渠道的课程
+    if (siteChannelId != null) {
+      filteredList = filteredList.filter(course => {
+        if (course.channelScope === "all") return true;
+        if (course.channelScope === null) return true; // 兼容旧数据
+        if (course.channelScope === "specific") {
+          const courseChannelIds = Array.isArray(course.channelIds) ? course.channelIds : [];
+          return courseChannelIds.some(cid => String(cid) === String(siteChannelId));
+        }
+        return false;
       });
     }
 

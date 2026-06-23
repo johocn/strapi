@@ -14,12 +14,6 @@ const mockStrapi = {
               handler: 'config.getPublic',
               config: { auth: false },
             },
-            {
-              method: 'GET',
-              path: '/v1/site-config',
-              handler: 'site-config.getPublic',
-              config: { auth: false },
-            },
           ],
         },
         'admin': {
@@ -76,20 +70,6 @@ describe('zhao-common routes', () => {
       expect(publicConfigRoute.method).toBe('GET');
       expect(publicConfigRoute.handler).toBe('config.getPublic');
       expect(publicConfigRoute.config.auth).toBe(false);
-    });
-
-    it('should register /v1/site-config route', async () => {
-      const strapi = global.strapi as any;
-      const routes = strapi.plugins['zhao-common']?.routes;
-
-      const siteConfigRoute = routes['content-api'].routes.find(
-        (r: any) => r.path === '/v1/site-config'
-      );
-
-      expect(siteConfigRoute).toBeDefined();
-      expect(siteConfigRoute.method).toBe('GET');
-      expect(siteConfigRoute.handler).toBe('site-config.getPublic');
-      expect(siteConfigRoute.config.auth).toBe(false);
     });
   });
 

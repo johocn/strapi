@@ -1311,12 +1311,20 @@ export interface PluginZhaoCommonSiteConfig
     draftAndPublish: false;
   };
   attributes: {
+    channel: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-channel.channel'
+    >;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     customerServiceUrl: Schema.Attribute.String &
       Schema.Attribute.SetMinMaxLength<{
         maxLength: 500;
+      }>;
+    domain: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 255;
       }>;
     extraConfig: Schema.Attribute.JSON;
     favicon: Schema.Attribute.Media<'images'>;
@@ -2706,1105 +2714,6 @@ export interface PluginZhaoQuizQuizRecord extends Struct.CollectionTypeSchema {
   };
 }
 
-export interface PluginZhaoSsoSsoApp extends Struct.CollectionTypeSchema {
-  collectionName: 'sso_apps';
-  info: {
-    displayName: 'SSO App';
-    pluralName: 'sso-apps';
-    singularName: 'sso-app';
-  };
-  options: {
-    draftAndPublish: false;
-  };
-  attributes: {
-    allowed_grant_types: Schema.Attribute.JSON & Schema.Attribute.Required;
-    app_code: Schema.Attribute.String &
-      Schema.Attribute.Required &
-      Schema.Attribute.Unique;
-    app_name: Schema.Attribute.String & Schema.Attribute.Required;
-    app_secret: Schema.Attribute.String & Schema.Attribute.Required;
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    description: Schema.Attribute.String;
-    is_active: Schema.Attribute.Boolean &
-      Schema.Attribute.Required &
-      Schema.Attribute.DefaultTo<true>;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'plugin::zhao-sso.sso-app'
-    > &
-      Schema.Attribute.Private;
-    publishedAt: Schema.Attribute.DateTime;
-    redirect_uris: Schema.Attribute.JSON & Schema.Attribute.Required;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-  };
-}
-
-export interface PluginZhaoSsoSsoAuthCode extends Struct.CollectionTypeSchema {
-  collectionName: 'sso_auth_codes';
-  info: {
-    displayName: 'SSO Auth Code';
-    pluralName: 'sso-auth-codes';
-    singularName: 'sso-auth-code';
-  };
-  options: {
-    draftAndPublish: false;
-  };
-  attributes: {
-    app_code: Schema.Attribute.String & Schema.Attribute.Required;
-    channel_code: Schema.Attribute.String;
-    code: Schema.Attribute.String &
-      Schema.Attribute.Required &
-      Schema.Attribute.Unique;
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    expires_at: Schema.Attribute.DateTime & Schema.Attribute.Required;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'plugin::zhao-sso.sso-auth-code'
-    > &
-      Schema.Attribute.Private;
-    publishedAt: Schema.Attribute.DateTime;
-    redirect_uri: Schema.Attribute.Text & Schema.Attribute.Required;
-    scopes: Schema.Attribute.JSON;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    used: Schema.Attribute.Boolean &
-      Schema.Attribute.Required &
-      Schema.Attribute.DefaultTo<false>;
-    user: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-sso.sso-user'>;
-  };
-}
-
-export interface PluginZhaoSsoSsoChannel extends Struct.CollectionTypeSchema {
-  collectionName: 'sso_channels';
-  info: {
-    displayName: 'SSO Channel';
-    pluralName: 'sso-channels';
-    singularName: 'sso-channel';
-  };
-  options: {
-    draftAndPublish: false;
-  };
-  attributes: {
-    channel_code: Schema.Attribute.String &
-      Schema.Attribute.Required &
-      Schema.Attribute.Unique;
-    channel_name: Schema.Attribute.String & Schema.Attribute.Required;
-    channel_type: Schema.Attribute.String & Schema.Attribute.Required;
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    description: Schema.Attribute.String;
-    is_active: Schema.Attribute.Boolean &
-      Schema.Attribute.Required &
-      Schema.Attribute.DefaultTo<true>;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'plugin::zhao-sso.sso-channel'
-    > &
-      Schema.Attribute.Private;
-    publishedAt: Schema.Attribute.DateTime;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    utm_template: Schema.Attribute.JSON;
-  };
-}
-
-export interface PluginZhaoSsoSsoInviteCode
-  extends Struct.CollectionTypeSchema {
-  collectionName: 'sso_invite_codes';
-  info: {
-    displayName: 'SSO Invite Code';
-    pluralName: 'sso-invite-codes';
-    singularName: 'sso-invite-code';
-  };
-  options: {
-    draftAndPublish: false;
-  };
-  attributes: {
-    bonus_tags: Schema.Attribute.JSON;
-    code: Schema.Attribute.String &
-      Schema.Attribute.Required &
-      Schema.Attribute.Unique;
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    creator: Schema.Attribute.Relation<
-      'manyToOne',
-      'plugin::zhao-sso.sso-user'
-    >;
-    invite_type: Schema.Attribute.Enumeration<['system', 'user_campaign']> &
-      Schema.Attribute.Required;
-    is_active: Schema.Attribute.Boolean &
-      Schema.Attribute.Required &
-      Schema.Attribute.DefaultTo<true>;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'plugin::zhao-sso.sso-invite-code'
-    > &
-      Schema.Attribute.Private;
-    max_uses: Schema.Attribute.Integer;
-    per_user_limit: Schema.Attribute.Integer &
-      Schema.Attribute.Required &
-      Schema.Attribute.DefaultTo<1>;
-    publishedAt: Schema.Attribute.DateTime;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    use_count: Schema.Attribute.Integer &
-      Schema.Attribute.Required &
-      Schema.Attribute.DefaultTo<0>;
-    valid_from: Schema.Attribute.DateTime;
-    valid_until: Schema.Attribute.DateTime;
-  };
-}
-
-export interface PluginZhaoSsoSsoInviteStats
-  extends Struct.CollectionTypeSchema {
-  collectionName: 'sso_invite_stats';
-  info: {
-    displayName: 'SSO Invite Stats';
-    pluralName: 'sso-invite-stats';
-    singularName: 'sso-invite-stats';
-  };
-  options: {
-    draftAndPublish: false;
-  };
-  attributes: {
-    active_invites: Schema.Attribute.Integer & Schema.Attribute.Required;
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    invite_code: Schema.Attribute.Relation<
-      'oneToOne',
-      'plugin::zhao-sso.sso-invite-code'
-    >;
-    last_invited_at: Schema.Attribute.DateTime;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'plugin::zhao-sso.sso-invite-stats'
-    > &
-      Schema.Attribute.Private;
-    publishedAt: Schema.Attribute.DateTime;
-    total_invites: Schema.Attribute.Integer & Schema.Attribute.Required;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-  };
-}
-
-export interface PluginZhaoSsoSsoInviteUsage
-  extends Struct.CollectionTypeSchema {
-  collectionName: 'sso_invite_usages';
-  info: {
-    displayName: 'SSO Invite Usage';
-    pluralName: 'sso-invite-usages';
-    singularName: 'sso-invite-usage';
-  };
-  options: {
-    draftAndPublish: false;
-  };
-  attributes: {
-    app_code: Schema.Attribute.String;
-    channel_code: Schema.Attribute.String;
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    invite_code: Schema.Attribute.Relation<
-      'manyToOne',
-      'plugin::zhao-sso.sso-invite-code'
-    >;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'plugin::zhao-sso.sso-invite-usage'
-    > &
-      Schema.Attribute.Private;
-    publishedAt: Schema.Attribute.DateTime;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    used_at: Schema.Attribute.DateTime & Schema.Attribute.Required;
-    user: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-sso.sso-user'>;
-  };
-}
-
-export interface PluginZhaoSsoSsoLoginLog extends Struct.CollectionTypeSchema {
-  collectionName: 'sso_login_logs';
-  info: {
-    displayName: 'SSO Login Log';
-    pluralName: 'sso-login-logs';
-    singularName: 'sso-login-log';
-  };
-  options: {
-    draftAndPublish: false;
-  };
-  attributes: {
-    app_code: Schema.Attribute.String;
-    channel_code: Schema.Attribute.String;
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    fail_reason: Schema.Attribute.String;
-    ip: Schema.Attribute.String;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'plugin::zhao-sso.sso-login-log'
-    > &
-      Schema.Attribute.Private;
-    login_type: Schema.Attribute.String & Schema.Attribute.Required;
-    provider: Schema.Attribute.String;
-    publishedAt: Schema.Attribute.DateTime;
-    success: Schema.Attribute.Boolean & Schema.Attribute.Required;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    user: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-sso.sso-user'>;
-    user_agent: Schema.Attribute.String;
-  };
-}
-
-export interface PluginZhaoSsoSsoReferralRelation
-  extends Struct.CollectionTypeSchema {
-  collectionName: 'sso_referral_relations';
-  info: {
-    displayName: 'SSO Referral Relation';
-    pluralName: 'sso-referral-relations';
-    singularName: 'sso-referral-relation';
-  };
-  options: {
-    draftAndPublish: false;
-  };
-  attributes: {
-    channel_code: Schema.Attribute.String;
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    invite_code: Schema.Attribute.Relation<
-      'manyToOne',
-      'plugin::zhao-sso.sso-invite-code'
-    >;
-    invitee: Schema.Attribute.Relation<
-      'manyToOne',
-      'plugin::zhao-sso.sso-user'
-    >;
-    inviter: Schema.Attribute.Relation<
-      'manyToOne',
-      'plugin::zhao-sso.sso-user'
-    >;
-    level: Schema.Attribute.Integer & Schema.Attribute.Required;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'plugin::zhao-sso.sso-referral-relation'
-    > &
-      Schema.Attribute.Private;
-    publishedAt: Schema.Attribute.DateTime;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-  };
-}
-
-export interface PluginZhaoSsoSsoThirdPartyBinding
-  extends Struct.CollectionTypeSchema {
-  collectionName: 'sso_third_party_bindings';
-  info: {
-    displayName: 'SSO Third Party Binding';
-    pluralName: 'sso-third-party-bindings';
-    singularName: 'sso-third-party-binding';
-  };
-  options: {
-    draftAndPublish: false;
-  };
-  attributes: {
-    bound_at: Schema.Attribute.DateTime & Schema.Attribute.Required;
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'plugin::zhao-sso.sso-third-party-binding'
-    > &
-      Schema.Attribute.Private;
-    provider: Schema.Attribute.String & Schema.Attribute.Required;
-    provider_avatar: Schema.Attribute.String;
-    provider_data: Schema.Attribute.JSON;
-    provider_nickname: Schema.Attribute.String;
-    provider_union_id: Schema.Attribute.String;
-    provider_user_id: Schema.Attribute.String & Schema.Attribute.Required;
-    publishedAt: Schema.Attribute.DateTime;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    user: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-sso.sso-user'>;
-  };
-}
-
-export interface PluginZhaoSsoSsoToken extends Struct.CollectionTypeSchema {
-  collectionName: 'sso_tokens';
-  info: {
-    displayName: 'SSO Token';
-    pluralName: 'sso-tokens';
-    singularName: 'sso-token';
-  };
-  options: {
-    draftAndPublish: false;
-  };
-  attributes: {
-    access_token_jti: Schema.Attribute.Text &
-      Schema.Attribute.Required &
-      Schema.Attribute.Unique;
-    app_code: Schema.Attribute.String & Schema.Attribute.Required;
-    channel_code: Schema.Attribute.String;
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'plugin::zhao-sso.sso-token'
-    > &
-      Schema.Attribute.Private;
-    publishedAt: Schema.Attribute.DateTime;
-    refresh_expires_at: Schema.Attribute.DateTime & Schema.Attribute.Required;
-    refresh_token: Schema.Attribute.Text &
-      Schema.Attribute.Required &
-      Schema.Attribute.Unique;
-    revoked: Schema.Attribute.Boolean &
-      Schema.Attribute.Required &
-      Schema.Attribute.DefaultTo<false>;
-    revoked_at: Schema.Attribute.DateTime;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    user: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-sso.sso-user'>;
-  };
-}
-
-export interface PluginZhaoSsoSsoUser extends Struct.CollectionTypeSchema {
-  collectionName: 'sso_users';
-  info: {
-    displayName: 'SSO User';
-    pluralName: 'sso-users';
-    singularName: 'sso-user';
-  };
-  options: {
-    draftAndPublish: false;
-  };
-  attributes: {
-    avatar_url: Schema.Attribute.String;
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    email: Schema.Attribute.Email & Schema.Attribute.Unique;
-    invite_code_used: Schema.Attribute.String;
-    invited_by: Schema.Attribute.Integer;
-    last_login_at: Schema.Attribute.DateTime;
-    last_login_channel: Schema.Attribute.String;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'plugin::zhao-sso.sso-user'
-    > &
-      Schema.Attribute.Private;
-    login_count: Schema.Attribute.Integer &
-      Schema.Attribute.Required &
-      Schema.Attribute.DefaultTo<0>;
-    mobile: Schema.Attribute.String & Schema.Attribute.Unique;
-    nickname: Schema.Attribute.String;
-    password_changed_at: Schema.Attribute.DateTime;
-    password_hash: Schema.Attribute.String;
-    publishedAt: Schema.Attribute.DateTime;
-    register_channel: Schema.Attribute.String;
-    status: Schema.Attribute.Enumeration<['active', 'blocked', 'inactive']> &
-      Schema.Attribute.Required &
-      Schema.Attribute.DefaultTo<'active'>;
-    third_party_bindings: Schema.Attribute.Relation<
-      'oneToMany',
-      'plugin::zhao-sso.sso-third-party-binding'
-    >;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    username: Schema.Attribute.String & Schema.Attribute.Unique;
-    utm_campaign: Schema.Attribute.String;
-    utm_medium: Schema.Attribute.String;
-    utm_source: Schema.Attribute.String;
-    uuid: Schema.Attribute.String &
-      Schema.Attribute.Required &
-      Schema.Attribute.Unique;
-  };
-}
-
-export interface PluginZhaoSsoSsoUserAppRole
-  extends Struct.CollectionTypeSchema {
-  collectionName: 'sso_user_app_roles';
-  info: {
-    displayName: 'SSO User App Role';
-    pluralName: 'sso-user-app-roles';
-    singularName: 'sso-user-app-role';
-  };
-  options: {
-    draftAndPublish: false;
-  };
-  attributes: {
-    app_code: Schema.Attribute.String & Schema.Attribute.Required;
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'plugin::zhao-sso.sso-user-app-role'
-    > &
-      Schema.Attribute.Private;
-    publishedAt: Schema.Attribute.DateTime;
-    role: Schema.Attribute.String & Schema.Attribute.Required;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    user: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-sso.sso-user'>;
-  };
-}
-
-export interface PluginZhaoStudioAdSlot extends Struct.CollectionTypeSchema {
-  collectionName: 'zhao_ad_slots';
-  info: {
-    description: '\u5E7F\u544A\u4F4D\u914D\u7F6E\u7BA1\u7406';
-    displayName: '\u5E7F\u544A\u4F4D';
-    pluralName: 'ad-slots';
-    singularName: 'ad-slot';
-  };
-  options: {
-    draftAndPublish: false;
-  };
-  pluginOptions: {
-    'content-manager': {
-      visible: true;
-    };
-    'content-type-builder': {
-      visible: true;
-    };
-  };
-  attributes: {
-    browserLogs: Schema.Attribute.Relation<
-      'oneToMany',
-      'plugin::zhao-studio.browser-log'
-    >;
-    code: Schema.Attribute.String &
-      Schema.Attribute.Required &
-      Schema.Attribute.Unique;
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    imageUrl: Schema.Attribute.String;
-    isActive: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'plugin::zhao-studio.ad-slot'
-    > &
-      Schema.Attribute.Private;
-    name: Schema.Attribute.String & Schema.Attribute.Required;
-    position: Schema.Attribute.Enumeration<
-      [
-        'article-content',
-        'sidebar',
-        'footer',
-        'header',
-        'list-page',
-        'home-page',
-      ]
-    > &
-      Schema.Attribute.DefaultTo<'article-content'>;
-    productId: Schema.Attribute.String;
-    publishedAt: Schema.Attribute.DateTime;
-    statSummaries: Schema.Attribute.Relation<
-      'oneToMany',
-      'plugin::zhao-studio.stat-summary'
-    >;
-    targetUrl: Schema.Attribute.String;
-    type: Schema.Attribute.Enumeration<
-      ['product-link', 'banner', 'popup', 'native']
-    > &
-      Schema.Attribute.DefaultTo<'product-link'>;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-  };
-}
-
-export interface PluginZhaoStudioArticleDraft
-  extends Struct.CollectionTypeSchema {
-  collectionName: 'zhao_article_drafts';
-  info: {
-    description: '\u91C7\u96C6\u5E76\u52A0\u5DE5\u540E\u7684\u8349\u7A3F\u6587\u7AE0';
-    displayName: '\u8349\u7A3F\u6587\u7AE0';
-    pluralName: 'article-drafts';
-    singularName: 'article-draft';
-  };
-  options: {
-    draftAndPublish: true;
-  };
-  pluginOptions: {
-    'content-manager': {
-      visible: true;
-    };
-    'content-type-builder': {
-      visible: true;
-    };
-  };
-  attributes: {
-    aiOptimizedTitle: Schema.Attribute.String;
-    aiProcessed: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
-    aiSummary: Schema.Attribute.Text;
-    browserLogs: Schema.Attribute.Relation<
-      'oneToMany',
-      'plugin::zhao-studio.browser-log'
-    >;
-    category: Schema.Attribute.String;
-    content: Schema.Attribute.RichText & Schema.Attribute.Required;
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'plugin::zhao-studio.article-draft'
-    > &
-      Schema.Attribute.Private;
-    publishedAt: Schema.Attribute.DateTime;
-    publishRecords: Schema.Attribute.Relation<
-      'oneToMany',
-      'plugin::zhao-studio.publish-record'
-    >;
-    sourceAuthor: Schema.Attribute.String;
-    sourcePublishedAt: Schema.Attribute.DateTime;
-    sourceTitle: Schema.Attribute.String;
-    sourceUrl: Schema.Attribute.String;
-    statSummaries: Schema.Attribute.Relation<
-      'oneToMany',
-      'plugin::zhao-studio.stat-summary'
-    >;
-    status: Schema.Attribute.Enumeration<
-      ['draft', 'processing', 'ready', 'published']
-    > &
-      Schema.Attribute.DefaultTo<'draft'>;
-    title: Schema.Attribute.String &
-      Schema.Attribute.Required &
-      Schema.Attribute.SetMinMaxLength<{
-        maxLength: 200;
-      }>;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-  };
-}
-
-export interface PluginZhaoStudioBrowserLog
-  extends Struct.CollectionTypeSchema {
-  collectionName: 'zhao_browser_logs';
-  info: {
-    description: '\u7528\u6237\u6D4F\u89C8\u5668\u4FE1\u606F\u548C\u884C\u4E3A\u65E5\u5FD7';
-    displayName: '\u6D4F\u89C8\u5668\u65E5\u5FD7';
-    pluralName: 'browser-logs';
-    singularName: 'browser-log';
-  };
-  options: {
-    draftAndPublish: false;
-  };
-  pluginOptions: {
-    'content-manager': {
-      visible: true;
-    };
-    'content-type-builder': {
-      visible: true;
-    };
-  };
-  attributes: {
-    adSlot: Schema.Attribute.Relation<
-      'manyToOne',
-      'plugin::zhao-studio.ad-slot'
-    >;
-    article: Schema.Attribute.Relation<
-      'manyToOne',
-      'plugin::zhao-studio.article-draft'
-    >;
-    browser: Schema.Attribute.String;
-    browserVersion: Schema.Attribute.String;
-    city: Schema.Attribute.String;
-    country: Schema.Attribute.String;
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    deviceType: Schema.Attribute.Enumeration<['desktop', 'mobile', 'tablet']> &
-      Schema.Attribute.DefaultTo<'desktop'>;
-    eventType: Schema.Attribute.Enumeration<
-      ['page-view', 'ad-click', 'scroll', 'read-duration', 'user-register']
-    > &
-      Schema.Attribute.Required;
-    ip: Schema.Attribute.String;
-    isRegistered: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
-    language: Schema.Attribute.String;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'plugin::zhao-studio.browser-log'
-    > &
-      Schema.Attribute.Private;
-    os: Schema.Attribute.String;
-    osVersion: Schema.Attribute.String;
-    platform: Schema.Attribute.String;
-    publishedAt: Schema.Attribute.DateTime;
-    readDuration: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
-    referrer: Schema.Attribute.String;
-    referrerDomain: Schema.Attribute.String;
-    registeredAt: Schema.Attribute.DateTime;
-    screenHeight: Schema.Attribute.Integer;
-    screenWidth: Schema.Attribute.Integer;
-    scrollDepth: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
-    sessionId: Schema.Attribute.String & Schema.Attribute.Required;
-    timestamp: Schema.Attribute.DateTime & Schema.Attribute.Required;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    user: Schema.Attribute.Relation<'manyToOne', 'admin::user'>;
-    userAgent: Schema.Attribute.String;
-    userId: Schema.Attribute.String;
-  };
-}
-
-export interface PluginZhaoStudioCollectSource
-  extends Struct.CollectionTypeSchema {
-  collectionName: 'zhao_collect_sources';
-  info: {
-    description: '\u5185\u5BB9\u91C7\u96C6\u6E90\u914D\u7F6E';
-    displayName: '\u91C7\u96C6\u6E90';
-    pluralName: 'collect-sources';
-    singularName: 'collect-source';
-  };
-  options: {
-    draftAndPublish: false;
-  };
-  pluginOptions: {
-    'content-manager': {
-      visible: true;
-    };
-    'content-type-builder': {
-      visible: true;
-    };
-  };
-  attributes: {
-    authorSelector: Schema.Attribute.String;
-    contentSelector: Schema.Attribute.String;
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    dateSelector: Schema.Attribute.String;
-    isActive: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
-    lastCollectedAt: Schema.Attribute.DateTime;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'plugin::zhao-studio.collect-source'
-    > &
-      Schema.Attribute.Private;
-    name: Schema.Attribute.String &
-      Schema.Attribute.Required &
-      Schema.Attribute.SetMinMaxLength<{
-        maxLength: 100;
-      }>;
-    publishedAt: Schema.Attribute.DateTime;
-    tasks: Schema.Attribute.Relation<
-      'oneToMany',
-      'plugin::zhao-studio.collect-task'
-    >;
-    template: Schema.Attribute.String;
-    titleSelector: Schema.Attribute.String;
-    type: Schema.Attribute.Enumeration<['template', 'custom']> &
-      Schema.Attribute.DefaultTo<'template'>;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    url: Schema.Attribute.String & Schema.Attribute.Required;
-  };
-}
-
-export interface PluginZhaoStudioCollectTask
-  extends Struct.CollectionTypeSchema {
-  collectionName: 'zhao_collect_tasks';
-  info: {
-    description: '\u5185\u5BB9\u91C7\u96C6\u4EFB\u52A1\u4E34\u65F6\u72B6\u6001';
-    displayName: '\u91C7\u96C6\u4EFB\u52A1';
-    pluralName: 'collect-tasks';
-    singularName: 'collect-task';
-  };
-  options: {
-    draftAndPublish: false;
-  };
-  pluginOptions: {
-    'content-manager': {
-      visible: true;
-    };
-    'content-type-builder': {
-      visible: true;
-    };
-  };
-  attributes: {
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    error: Schema.Attribute.Text;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'plugin::zhao-studio.collect-task'
-    > &
-      Schema.Attribute.Private;
-    publishedAt: Schema.Attribute.DateTime;
-    retryCount: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
-    selectedTitles: Schema.Attribute.JSON;
-    source: Schema.Attribute.Relation<
-      'manyToOne',
-      'plugin::zhao-studio.collect-source'
-    >;
-    status: Schema.Attribute.Enumeration<
-      [
-        'pending',
-        'fetching_titles',
-        'waiting_selection',
-        'fetching_content',
-        'completed',
-        'failed',
-      ]
-    > &
-      Schema.Attribute.DefaultTo<'pending'>;
-    titles: Schema.Attribute.JSON;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-  };
-}
-
-export interface PluginZhaoStudioKnowledgePointIndex
-  extends Struct.CollectionTypeSchema {
-  collectionName: 'zhao_knowledge_point_indices';
-  info: {
-    description: '\u6587\u7AE0\u4E0E\u77E5\u8BC6\u70B9\u7684\u5173\u8054\u7D22\u5F15';
-    displayName: '\u77E5\u8BC6\u70B9\u7D22\u5F15';
-    pluralName: 'knowledge-point-indices';
-    singularName: 'knowledge-point-index';
-  };
-  options: {
-    draftAndPublish: false;
-  };
-  pluginOptions: {
-    'content-manager': {
-      visible: true;
-    };
-    'content-type-builder': {
-      visible: true;
-    };
-  };
-  attributes: {
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    knowledgePoint: Schema.Attribute.Relation<
-      'manyToOne',
-      'plugin::zhao-tag.knowledge-point'
-    >;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'plugin::zhao-studio.knowledge-point-index'
-    > &
-      Schema.Attribute.Private;
-    publishedAt: Schema.Attribute.DateTime;
-    targetId: Schema.Attribute.String & Schema.Attribute.Required;
-    targetType: Schema.Attribute.String & Schema.Attribute.Required;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-  };
-}
-
-export interface PluginZhaoStudioPublishAccount
-  extends Struct.CollectionTypeSchema {
-  collectionName: 'zhao_publish_accounts';
-  info: {
-    description: '\u53D1\u5E03\u8D26\u53F7\u914D\u7F6E\uFF08\u4E00\u4E2A\u5E73\u53F0\u53EF\u6709\u591A\u4E2A\u8D26\u53F7\uFF09';
-    displayName: '\u53D1\u5E03\u8D26\u53F7';
-    pluralName: 'publish-accounts';
-    singularName: 'publish-account';
-  };
-  options: {
-    draftAndPublish: false;
-  };
-  pluginOptions: {
-    'content-manager': {
-      visible: true;
-    };
-    'content-type-builder': {
-      visible: true;
-    };
-  };
-  attributes: {
-    config: Schema.Attribute.JSON;
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    isActive: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
-    lastPublishedAt: Schema.Attribute.DateTime;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'plugin::zhao-studio.publish-account'
-    > &
-      Schema.Attribute.Private;
-    name: Schema.Attribute.String &
-      Schema.Attribute.Required &
-      Schema.Attribute.SetMinMaxLength<{
-        maxLength: 100;
-      }>;
-    platform: Schema.Attribute.Relation<
-      'manyToOne',
-      'plugin::zhao-studio.publish-platform'
-    >;
-    publishedAt: Schema.Attribute.DateTime;
-    publishRecords: Schema.Attribute.Relation<
-      'oneToMany',
-      'plugin::zhao-studio.publish-record'
-    >;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-  };
-}
-
-export interface PluginZhaoStudioPublishPlatform
-  extends Struct.CollectionTypeSchema {
-  collectionName: 'zhao_publish_platforms';
-  info: {
-    description: '\u53D1\u5E03\u5E73\u53F0\u7C7B\u578B\u914D\u7F6E';
-    displayName: '\u53D1\u5E03\u5E73\u53F0';
-    pluralName: 'publish-platforms';
-    singularName: 'publish-platform';
-  };
-  options: {
-    draftAndPublish: false;
-  };
-  pluginOptions: {
-    'content-manager': {
-      visible: true;
-    };
-    'content-type-builder': {
-      visible: true;
-    };
-  };
-  attributes: {
-    accounts: Schema.Attribute.Relation<
-      'oneToMany',
-      'plugin::zhao-studio.publish-account'
-    >;
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    description: Schema.Attribute.Text;
-    isActive: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'plugin::zhao-studio.publish-platform'
-    > &
-      Schema.Attribute.Private;
-    name: Schema.Attribute.String &
-      Schema.Attribute.Required &
-      Schema.Attribute.SetMinMaxLength<{
-        maxLength: 100;
-      }>;
-    publishedAt: Schema.Attribute.DateTime;
-    type: Schema.Attribute.Enumeration<
-      ['toutiao', 'xiaohongshu', 'wechat', 'custom', 'internal']
-    > &
-      Schema.Attribute.Required;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-  };
-}
-
-export interface PluginZhaoStudioPublishRecord
-  extends Struct.CollectionTypeSchema {
-  collectionName: 'zhao_publish_records';
-  info: {
-    description: '\u6587\u7AE0\u53D1\u5E03\u5230\u8D26\u53F7\u7684\u8BB0\u5F55';
-    displayName: '\u53D1\u5E03\u8BB0\u5F55';
-    pluralName: 'publish-records';
-    singularName: 'publish-record';
-  };
-  options: {
-    draftAndPublish: false;
-  };
-  pluginOptions: {
-    'content-manager': {
-      visible: true;
-    };
-    'content-type-builder': {
-      visible: true;
-    };
-  };
-  attributes: {
-    account: Schema.Attribute.Relation<
-      'manyToOne',
-      'plugin::zhao-studio.publish-account'
-    >;
-    article: Schema.Attribute.Relation<
-      'manyToOne',
-      'plugin::zhao-studio.article-draft'
-    >;
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    error: Schema.Attribute.Text;
-    externalId: Schema.Attribute.String;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'plugin::zhao-studio.publish-record'
-    > &
-      Schema.Attribute.Private;
-    publishedAt: Schema.Attribute.DateTime;
-    retryCount: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
-    status: Schema.Attribute.Enumeration<['pending', 'success', 'failed']> &
-      Schema.Attribute.DefaultTo<'pending'>;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-  };
-}
-
-export interface PluginZhaoStudioStatSummary
-  extends Struct.CollectionTypeSchema {
-  collectionName: 'zhao_stat_summaries';
-  info: {
-    description: '\u6309\u65E5\u671F\u805A\u5408\u7684\u7EDF\u8BA1\u6570\u636E';
-    displayName: '\u7EDF\u8BA1\u6C47\u603B';
-    pluralName: 'stat-summaries';
-    singularName: 'stat-summary';
-  };
-  options: {
-    draftAndPublish: false;
-  };
-  pluginOptions: {
-    'content-manager': {
-      visible: true;
-    };
-    'content-type-builder': {
-      visible: true;
-    };
-  };
-  attributes: {
-    adSlot: Schema.Attribute.Relation<
-      'manyToOne',
-      'plugin::zhao-studio.ad-slot'
-    >;
-    article: Schema.Attribute.Relation<
-      'manyToOne',
-      'plugin::zhao-studio.article-draft'
-    >;
-    avgReadDuration: Schema.Attribute.Float & Schema.Attribute.DefaultTo<0>;
-    avgScrollDepth: Schema.Attribute.Float & Schema.Attribute.DefaultTo<0>;
-    clickCount: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
-    clickRate: Schema.Attribute.Float & Schema.Attribute.DefaultTo<0>;
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    date: Schema.Attribute.Date & Schema.Attribute.Required;
-    deviceStats: Schema.Attribute.JSON;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'plugin::zhao-studio.stat-summary'
-    > &
-      Schema.Attribute.Private;
-    publishedAt: Schema.Attribute.DateTime;
-    pv: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
-    referrerStats: Schema.Attribute.JSON;
-    regionStats: Schema.Attribute.JSON;
-    summaryType: Schema.Attribute.Enumeration<
-      [
-        'article-daily',
-        'ad-slot-daily',
-        'global-daily',
-        'device-daily',
-        'region-daily',
-      ]
-    > &
-      Schema.Attribute.Required;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    uv: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
-  };
-}
-
-export interface PluginZhaoTagCategoryPreset
-  extends Struct.CollectionTypeSchema {
-  collectionName: 'zhao_category_presets';
-  info: {
-    displayName: '\u5206\u7C7B\u9884\u8BBE';
-    pluralName: 'category-presets';
-    singularName: 'category-preset';
-  };
-  options: {
-    draftAndPublish: false;
-  };
-  attributes: {
-    categoryName: Schema.Attribute.String & Schema.Attribute.Required;
-    categoryType: Schema.Attribute.Enumeration<
-      ['course', 'knowledge', 'article', 'video']
-    > &
-      Schema.Attribute.Required &
-      Schema.Attribute.DefaultTo<'course'>;
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    deletedAt: Schema.Attribute.DateTime;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'plugin::zhao-tag.category-preset'
-    > &
-      Schema.Attribute.Private;
-    presetTags: Schema.Attribute.JSON;
-    publishedAt: Schema.Attribute.DateTime;
-    sort: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
-    tagGroup: Schema.Attribute.Relation<
-      'manyToOne',
-      'plugin::zhao-tag.tag-group'
-    >;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-  };
-}
-
 export interface PluginZhaoTagKnowledgePoint
   extends Struct.CollectionTypeSchema {
   collectionName: 'zhao_knowledge_points';
@@ -3817,40 +2726,11 @@ export interface PluginZhaoTagKnowledgePoint
     draftAndPublish: false;
   };
   attributes: {
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    deletedAt: Schema.Attribute.DateTime;
-    description: Schema.Attribute.Text;
-    group: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-tag.tag-group'>;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
+    children: Schema.Attribute.Relation<
       'oneToMany',
       'plugin::zhao-tag.knowledge-point'
-    > &
-      Schema.Attribute.Private;
-    name: Schema.Attribute.String & Schema.Attribute.Required;
-    publishedAt: Schema.Attribute.DateTime;
-    slug: Schema.Attribute.UID<'name'>;
-    sort: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    usageCount: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
-  };
-}
-
-export interface PluginZhaoTagTag extends Struct.CollectionTypeSchema {
-  collectionName: 'zhao_tags';
-  info: {
-    displayName: '\u901A\u7528\u6807\u7B7E';
-    pluralName: 'tags';
-    singularName: 'tag';
-  };
-  options: {
-    draftAndPublish: false;
-  };
-  attributes: {
+    >;
+    code: Schema.Attribute.String;
     courses: Schema.Attribute.Relation<
       'manyToMany',
       'plugin::zhao-course.course'
@@ -3859,7 +2739,59 @@ export interface PluginZhaoTagTag extends Struct.CollectionTypeSchema {
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     deletedAt: Schema.Attribute.DateTime;
-    group: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-tag.tag-group'>;
+    description: Schema.Attribute.Text;
+    level: Schema.Attribute.Enumeration<['basic', 'intermediate', 'advanced']> &
+      Schema.Attribute.DefaultTo<'basic'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-tag.knowledge-point'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    parent: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-tag.knowledge-point'
+    >;
+    publishedAt: Schema.Attribute.DateTime;
+    slug: Schema.Attribute.UID<'name'>;
+    sort: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface PluginZhaoTagTag extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_tags';
+  info: {
+    displayName: '\u6807\u7B7E';
+    pluralName: 'tags';
+    singularName: 'tag';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    children: Schema.Attribute.Relation<'oneToMany', 'plugin::zhao-tag.tag'>;
+    color: Schema.Attribute.String;
+    courses: Schema.Attribute.Relation<
+      'manyToMany',
+      'plugin::zhao-course.course'
+    >;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    deletedAt: Schema.Attribute.DateTime;
+    description: Schema.Attribute.Text;
+    group: Schema.Attribute.String;
+    icon: Schema.Attribute.Media;
+    isPreset: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    isPublic: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    knowledgePoints: Schema.Attribute.Relation<
+      'manyToMany',
+      'plugin::zhao-course.knowledge-point'
+    >;
     lessons: Schema.Attribute.Relation<
       'manyToMany',
       'plugin::zhao-course.course-lesson'
@@ -3871,77 +2803,10 @@ export interface PluginZhaoTagTag extends Struct.CollectionTypeSchema {
     > &
       Schema.Attribute.Private;
     name: Schema.Attribute.String & Schema.Attribute.Required;
+    parent: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-tag.tag'>;
     publishedAt: Schema.Attribute.DateTime;
     slug: Schema.Attribute.UID<'name'>;
     sort: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    usageCount: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
-  };
-}
-
-export interface PluginZhaoTagTagGroup extends Struct.CollectionTypeSchema {
-  collectionName: 'zhao_tag_groups';
-  info: {
-    displayName: '\u6807\u7B7E\u5206\u7EC4';
-    pluralName: 'tag-groups';
-    singularName: 'tag-group';
-  };
-  options: {
-    draftAndPublish: false;
-  };
-  attributes: {
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    deletedAt: Schema.Attribute.DateTime;
-    description: Schema.Attribute.String;
-    knowledgePoints: Schema.Attribute.Relation<
-      'oneToMany',
-      'plugin::zhao-tag.knowledge-point'
-    >;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'plugin::zhao-tag.tag-group'
-    > &
-      Schema.Attribute.Private;
-    name: Schema.Attribute.String & Schema.Attribute.Required;
-    publishedAt: Schema.Attribute.DateTime;
-    slug: Schema.Attribute.UID<'name'>;
-    sort: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
-    tags: Schema.Attribute.Relation<'oneToMany', 'plugin::zhao-tag.tag'>;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-  };
-}
-
-export interface PluginZhaoTagTagIndex extends Struct.CollectionTypeSchema {
-  collectionName: 'zhao_tag_indices';
-  info: {
-    displayName: '\u6807\u7B7E\u7D22\u5F15';
-    pluralName: 'tag-indices';
-    singularName: 'tag-index';
-  };
-  options: {
-    draftAndPublish: false;
-  };
-  attributes: {
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'plugin::zhao-tag.tag-index'
-    > &
-      Schema.Attribute.Private;
-    publishedAt: Schema.Attribute.DateTime;
-    tag: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-tag.tag'>;
-    targetId: Schema.Attribute.String & Schema.Attribute.Required;
-    targetType: Schema.Attribute.String & Schema.Attribute.Required;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -3952,25 +2817,24 @@ export interface PluginZhaoThirdThirdPartyAccount
   extends Struct.CollectionTypeSchema {
   collectionName: 'third_party_accounts';
   info: {
-    description: '\u4E09\u65B9\u5E73\u53F0\u8D26\u53F7\u7ED1\u5B9A';
-    displayName: 'Third Party Account';
+    displayName: '\u4E09\u65B9\u8D26\u53F7\u7ED1\u5B9A';
     pluralName: 'third-party-accounts';
     singularName: 'third-party-account';
   };
   options: {
     draftAndPublish: false;
   };
+  pluginOptions: {
+    'content-manager': {
+      visible: false;
+    };
+  };
   attributes: {
     appType: Schema.Attribute.Enumeration<
-      ['official_account', 'mini_program', 'open_platform', 'default']
+      ['official_account', 'mini_program', 'open_platform', 'h5', 'app']
     > &
-      Schema.Attribute.Required &
-      Schema.Attribute.DefaultTo<'default'>;
-    avatar: Schema.Attribute.String &
-      Schema.Attribute.SetMinMaxLength<{
-        maxLength: 500;
-      }>;
-    boundAt: Schema.Attribute.DateTime;
+      Schema.Attribute.Required;
+    avatar: Schema.Attribute.String;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -3980,31 +2844,19 @@ export interface PluginZhaoThirdThirdPartyAccount
       'plugin::zhao-third.third-party-account'
     > &
       Schema.Attribute.Private;
-    nickname: Schema.Attribute.String &
-      Schema.Attribute.SetMinMaxLength<{
-        maxLength: 100;
-      }>;
-    openId: Schema.Attribute.String &
-      Schema.Attribute.Required &
-      Schema.Attribute.SetMinMaxLength<{
-        maxLength: 128;
-      }>;
+    nickname: Schema.Attribute.String;
+    openId: Schema.Attribute.String & Schema.Attribute.Required;
     platform: Schema.Attribute.Enumeration<['wechat', 'alipay', 'douyin']> &
       Schema.Attribute.Required;
     publishedAt: Schema.Attribute.DateTime;
-    rawProfile: Schema.Attribute.JSON;
-    unionId: Schema.Attribute.String &
-      Schema.Attribute.SetMinMaxLength<{
-        maxLength: 128;
-      }>;
+    unionId: Schema.Attribute.String;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     user: Schema.Attribute.Relation<
       'manyToOne',
       'plugin::users-permissions.user'
-    > &
-      Schema.Attribute.Required;
+    >;
   };
 }
 
@@ -4012,440 +2864,46 @@ export interface PluginZhaoThirdThirdPartyConfig
   extends Struct.CollectionTypeSchema {
   collectionName: 'third_party_configs';
   info: {
-    description: '\u4E09\u65B9\u767B\u5F55\u5E73\u53F0\u914D\u7F6E';
-    displayName: 'Third Party Config';
+    displayName: '\u4E09\u65B9\u767B\u5F55\u914D\u7F6E';
     pluralName: 'third-party-configs';
     singularName: 'third-party-config';
   };
   options: {
     draftAndPublish: false;
   };
+  pluginOptions: {
+    'content-manager': {
+      visible: false;
+    };
+  };
   attributes: {
-    appId: Schema.Attribute.String &
-      Schema.Attribute.Required &
-      Schema.Attribute.SetMinMaxLength<{
-        maxLength: 64;
-      }>;
-    appSecret: Schema.Attribute.String &
-      Schema.Attribute.Required &
-      Schema.Attribute.SetMinMaxLength<{
-        maxLength: 128;
-      }>;
+    appId: Schema.Attribute.String & Schema.Attribute.Required;
+    appSecret: Schema.Attribute.String & Schema.Attribute.Required;
     appType: Schema.Attribute.Enumeration<
-      ['official_account', 'mini_program', 'open_platform', 'default']
+      ['official_account', 'mini_program', 'open_platform', 'h5', 'app']
     > &
       Schema.Attribute.Required;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     enabled: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
-    extraConfig: Schema.Attribute.JSON;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
       'plugin::zhao-third.third-party-config'
     > &
       Schema.Attribute.Private;
-    name: Schema.Attribute.String &
-      Schema.Attribute.SetMinMaxLength<{
-        maxLength: 64;
-      }>;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
     platform: Schema.Attribute.Enumeration<['wechat', 'alipay', 'douyin']> &
       Schema.Attribute.Required;
     publishedAt: Schema.Attribute.DateTime;
-    requireAuth: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-  };
-}
-
-export interface PluginZhaoWealthWealthAnnualSnapshot
-  extends Struct.CollectionTypeSchema {
-  collectionName: 'wealth_annual_snapshots';
-  info: {
-    description: '\u5404\u5468\u671F\u5E74\u5316\u6536\u76CA\u5FEB\u7167';
-    displayName: '\u5E74\u5316\u5FEB\u7167';
-    pluralName: 'wealth-annual-snapshots';
-    singularName: 'wealth-annual-snapshot';
-  };
-  options: {
-    draftAndPublish: false;
-  };
-  attributes: {
-    annual1d: Schema.Attribute.Decimal;
-    annual1m: Schema.Attribute.Decimal;
-    annual1y: Schema.Attribute.Decimal;
-    annual2w: Schema.Attribute.Decimal;
-    annual3d: Schema.Attribute.Decimal;
-    annual3m: Schema.Attribute.Decimal;
-    annual6m: Schema.Attribute.Decimal;
-    annual7d: Schema.Attribute.Decimal;
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    isEstimate: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'plugin::zhao-wealth.wealth-annual-snapshot'
-    > &
-      Schema.Attribute.Private;
-    product: Schema.Attribute.Relation<
+    site: Schema.Attribute.Relation<
       'manyToOne',
-      'plugin::zhao-wealth.wealth-product'
+      'plugin::zhao-common.site-config'
     >;
-    publishedAt: Schema.Attribute.DateTime;
-    snapshotDate: Schema.Attribute.Date & Schema.Attribute.Required;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-  };
-}
-
-export interface PluginZhaoWealthWealthCollectConfig
-  extends Struct.CollectionTypeSchema {
-  collectionName: 'wealth_collect_configs';
-  info: {
-    description: '\u4EA7\u54C1\u6570\u636E\u91C7\u96C6\u914D\u7F6E';
-    displayName: '\u91C7\u96C6\u914D\u7F6E';
-    pluralName: 'wealth-collect-configs';
-    singularName: 'wealth-collect-config';
-  };
-  options: {
-    draftAndPublish: false;
-  };
-  attributes: {
-    collectMethod: Schema.Attribute.Enumeration<
-      ['web-crawler', 'zip-pdf', 'manual', 'api']
-    > &
-      Schema.Attribute.DefaultTo<'web-crawler'>;
-    collectRules: Schema.Attribute.JSON;
-    collectStatus: Schema.Attribute.Enumeration<
-      ['pending', 'success', 'failed']
-    > &
-      Schema.Attribute.DefaultTo<'pending'>;
-    collectUrl: Schema.Attribute.String;
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    failCount: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
-    failReason: Schema.Attribute.Text;
-    lastCollectTime: Schema.Attribute.DateTime;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'plugin::zhao-wealth.wealth-collect-config'
-    > &
-      Schema.Attribute.Private;
-    product: Schema.Attribute.Relation<
-      'oneToOne',
-      'plugin::zhao-wealth.wealth-product'
-    >;
-    publishedAt: Schema.Attribute.DateTime;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-  };
-}
-
-export interface PluginZhaoWealthWealthCompany
-  extends Struct.CollectionTypeSchema {
-  collectionName: 'wealth_companies';
-  info: {
-    description: '\u94F6\u884C\u7406\u8D22\u516C\u53F8\u4FE1\u606F\u7BA1\u7406';
-    displayName: '\u7406\u8D22\u516C\u53F8';
-    pluralName: 'wealth-companies';
-    singularName: 'wealth-company';
-  };
-  options: {
-    draftAndPublish: false;
-  };
-  attributes: {
-    companyType: Schema.Attribute.Enumeration<['bank', 'bank-subsidiary']> &
-      Schema.Attribute.DefaultTo<'bank-subsidiary'>;
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'plugin::zhao-wealth.wealth-company'
-    > &
-      Schema.Attribute.Private;
-    name: Schema.Attribute.String & Schema.Attribute.Required;
-    products: Schema.Attribute.Relation<
-      'oneToMany',
-      'plugin::zhao-wealth.wealth-product'
-    >;
-    publishedAt: Schema.Attribute.DateTime;
-    shortName: Schema.Attribute.String;
-    status: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    website: Schema.Attribute.String;
-  };
-}
-
-export interface PluginZhaoWealthWealthCustomerProduct
-  extends Struct.CollectionTypeSchema {
-  collectionName: 'wealth_customer_products';
-  info: {
-    description: '\u5BA2\u6237\u5173\u6CE8\u7684\u4EA7\u54C1\u5217\u8868';
-    displayName: '\u5BA2\u6237\u81EA\u9009\u4EA7\u54C1';
-    pluralName: 'wealth-customer-products';
-    singularName: 'wealth-customer-product';
-  };
-  options: {
-    draftAndPublish: false;
-  };
-  attributes: {
-    channel: Schema.Attribute.Relation<
-      'manyToOne',
-      'plugin::zhao-channel.channel'
-    >;
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    followTime: Schema.Attribute.DateTime;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'plugin::zhao-wealth.wealth-customer-product'
-    > &
-      Schema.Attribute.Private;
-    product: Schema.Attribute.Relation<
-      'manyToOne',
-      'plugin::zhao-wealth.wealth-product'
-    >;
-    publishedAt: Schema.Attribute.DateTime;
-    remark: Schema.Attribute.String;
-    sortOrder: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    user: Schema.Attribute.Relation<
-      'manyToOne',
-      'plugin::users-permissions.user'
-    >;
-  };
-}
-
-export interface PluginZhaoWealthWealthMoneyIncome
-  extends Struct.CollectionTypeSchema {
-  collectionName: 'wealth_money_incomes';
-  info: {
-    description: '\u8D27\u5E01\u57FA\u91D1\u4E07\u4EFD\u6536\u76CA\u6570\u636E';
-    displayName: '\u8D27\u5E01\u57FA\u91D1\u6536\u76CA';
-    pluralName: 'wealth-money-incomes';
-    singularName: 'wealth-money-income';
-  };
-  options: {
-    draftAndPublish: false;
-  };
-  attributes: {
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    dataSource: Schema.Attribute.Enumeration<['crawler', 'manual']> &
-      Schema.Attribute.DefaultTo<'crawler'>;
-    incomeDate: Schema.Attribute.Date & Schema.Attribute.Required;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'plugin::zhao-wealth.wealth-money-income'
-    > &
-      Schema.Attribute.Private;
-    product: Schema.Attribute.Relation<
-      'manyToOne',
-      'plugin::zhao-wealth.wealth-product'
-    >;
-    publishedAt: Schema.Attribute.DateTime;
-    sevenDayAnnual: Schema.Attribute.Decimal;
-    tenThousandIncome: Schema.Attribute.Decimal;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-  };
-}
-
-export interface PluginZhaoWealthWealthNav extends Struct.CollectionTypeSchema {
-  collectionName: 'wealth_navs';
-  info: {
-    description: '\u7406\u8D22/\u57FA\u91D1\u51C0\u503C\u6570\u636E\uFF08\u4E0D\u542B\u8D27\u5E01\u57FA\u91D1\uFF09';
-    displayName: '\u51C0\u503C\u6570\u636E';
-    pluralName: 'wealth-navs';
-    singularName: 'wealth-nav';
-  };
-  options: {
-    draftAndPublish: false;
-  };
-  attributes: {
-    accNav: Schema.Attribute.Decimal;
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    dataSource: Schema.Attribute.Enumeration<['crawler', 'manual']> &
-      Schema.Attribute.DefaultTo<'crawler'>;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'plugin::zhao-wealth.wealth-nav'
-    > &
-      Schema.Attribute.Private;
-    navDate: Schema.Attribute.Date & Schema.Attribute.Required;
-    product: Schema.Attribute.Relation<
-      'manyToOne',
-      'plugin::zhao-wealth.wealth-product'
-    >;
-    publishedAt: Schema.Attribute.DateTime;
-    unitNav: Schema.Attribute.Decimal;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-  };
-}
-
-export interface PluginZhaoWealthWealthProduct
-  extends Struct.CollectionTypeSchema {
-  collectionName: 'wealth_products';
-  info: {
-    description: '\u7406\u8D22/\u57FA\u91D1\u4EA7\u54C1\u4FE1\u606F';
-    displayName: '\u7406\u8D22\u4EA7\u54C1';
-    pluralName: 'wealth-products';
-    singularName: 'wealth-product';
-  };
-  options: {
-    draftAndPublish: false;
-  };
-  attributes: {
-    annualSnapshots: Schema.Attribute.Relation<
-      'oneToMany',
-      'plugin::zhao-wealth.wealth-annual-snapshot'
-    >;
-    company: Schema.Attribute.Relation<
-      'manyToOne',
-      'plugin::zhao-wealth.wealth-company'
-    >;
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    issueDate: Schema.Attribute.Date;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'plugin::zhao-wealth.wealth-product'
-    > &
-      Schema.Attribute.Private;
-    maturityDate: Schema.Attribute.Date;
-    moneyIncomes: Schema.Attribute.Relation<
-      'oneToMany',
-      'plugin::zhao-wealth.wealth-money-income'
-    >;
-    navs: Schema.Attribute.Relation<
-      'oneToMany',
-      'plugin::zhao-wealth.wealth-nav'
-    >;
-    productCode: Schema.Attribute.String &
-      Schema.Attribute.Required &
-      Schema.Attribute.Unique;
-    productName: Schema.Attribute.String & Schema.Attribute.Required;
-    productType: Schema.Attribute.Enumeration<
-      ['bank-wealth', 'stock-fund', 'bond-fund', 'mixed-fund', 'money-fund']
-    > &
-      Schema.Attribute.Required;
-    publishedAt: Schema.Attribute.DateTime;
-    recommendTags: Schema.Attribute.JSON;
-    recommendWeight: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
-    registerCode: Schema.Attribute.String & Schema.Attribute.Unique;
-    riskLevel: Schema.Attribute.Enumeration<['R1', 'R2', 'R3', 'R4', 'R5']> &
-      Schema.Attribute.DefaultTo<'R2'>;
-    status: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
-    termType: Schema.Attribute.Enumeration<['short', 'medium', 'long']>;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    yearlyReturns: Schema.Attribute.Relation<
-      'oneToMany',
-      'plugin::zhao-wealth.wealth-yearly-return'
-    >;
-  };
-}
-
-export interface PluginZhaoWealthWealthRecommendConfig
-  extends Struct.CollectionTypeSchema {
-  collectionName: 'wealth_recommend_configs';
-  info: {
-    description: '\u624B\u52A8\u63A8\u8350\u4EA7\u54C1\u914D\u7F6E';
-    displayName: '\u63A8\u8350\u914D\u7F6E';
-    pluralName: 'wealth-recommend-configs';
-    singularName: 'wealth-recommend-config';
-  };
-  options: {
-    draftAndPublish: false;
-  };
-  attributes: {
-    channel: Schema.Attribute.Relation<
-      'manyToOne',
-      'plugin::zhao-channel.channel'
-    >;
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'plugin::zhao-wealth.wealth-recommend-config'
-    > &
-      Schema.Attribute.Private;
-    product: Schema.Attribute.Relation<
-      'oneToOne',
-      'plugin::zhao-wealth.wealth-product'
-    >;
-    publishedAt: Schema.Attribute.DateTime;
-    recommendOrder: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
-    recommendReason: Schema.Attribute.Text;
-    status: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-  };
-}
-
-export interface PluginZhaoWealthWealthYearlyReturn
-  extends Struct.CollectionTypeSchema {
-  collectionName: 'wealth_yearly_returns';
-  info: {
-    description: '\u5386\u5E74\u5E74\u5EA6\u6536\u76CA\u7EDF\u8BA1';
-    displayName: '\u5E74\u5EA6\u6536\u76CA';
-    pluralName: 'wealth-yearly-returns';
-    singularName: 'wealth-yearly-return';
-  };
-  options: {
-    draftAndPublish: false;
-  };
-  attributes: {
-    annualReturn: Schema.Attribute.Decimal;
-    baseDays: Schema.Attribute.Integer;
-    createdAt: Schema.Attribute.DateTime;
-    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
-    localizations: Schema.Attribute.Relation<
-      'oneToMany',
-      'plugin::zhao-wealth.wealth-yearly-return'
-    > &
-      Schema.Attribute.Private;
-    product: Schema.Attribute.Relation<
-      'manyToOne',
-      'plugin::zhao-wealth.wealth-product'
-    >;
-    publishedAt: Schema.Attribute.DateTime;
-    updatedAt: Schema.Attribute.DateTime;
-    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
-      Schema.Attribute.Private;
-    year: Schema.Attribute.Integer & Schema.Attribute.Required;
   };
 }
 
@@ -4500,44 +2958,10 @@ declare module '@strapi/strapi' {
       'plugin::zhao-quiz.quiz-exam': PluginZhaoQuizQuizExam;
       'plugin::zhao-quiz.quiz-exam-attempt': PluginZhaoQuizQuizExamAttempt;
       'plugin::zhao-quiz.quiz-record': PluginZhaoQuizQuizRecord;
-      'plugin::zhao-sso.sso-app': PluginZhaoSsoSsoApp;
-      'plugin::zhao-sso.sso-auth-code': PluginZhaoSsoSsoAuthCode;
-      'plugin::zhao-sso.sso-channel': PluginZhaoSsoSsoChannel;
-      'plugin::zhao-sso.sso-invite-code': PluginZhaoSsoSsoInviteCode;
-      'plugin::zhao-sso.sso-invite-stats': PluginZhaoSsoSsoInviteStats;
-      'plugin::zhao-sso.sso-invite-usage': PluginZhaoSsoSsoInviteUsage;
-      'plugin::zhao-sso.sso-login-log': PluginZhaoSsoSsoLoginLog;
-      'plugin::zhao-sso.sso-referral-relation': PluginZhaoSsoSsoReferralRelation;
-      'plugin::zhao-sso.sso-third-party-binding': PluginZhaoSsoSsoThirdPartyBinding;
-      'plugin::zhao-sso.sso-token': PluginZhaoSsoSsoToken;
-      'plugin::zhao-sso.sso-user': PluginZhaoSsoSsoUser;
-      'plugin::zhao-sso.sso-user-app-role': PluginZhaoSsoSsoUserAppRole;
-      'plugin::zhao-studio.ad-slot': PluginZhaoStudioAdSlot;
-      'plugin::zhao-studio.article-draft': PluginZhaoStudioArticleDraft;
-      'plugin::zhao-studio.browser-log': PluginZhaoStudioBrowserLog;
-      'plugin::zhao-studio.collect-source': PluginZhaoStudioCollectSource;
-      'plugin::zhao-studio.collect-task': PluginZhaoStudioCollectTask;
-      'plugin::zhao-studio.knowledge-point-index': PluginZhaoStudioKnowledgePointIndex;
-      'plugin::zhao-studio.publish-account': PluginZhaoStudioPublishAccount;
-      'plugin::zhao-studio.publish-platform': PluginZhaoStudioPublishPlatform;
-      'plugin::zhao-studio.publish-record': PluginZhaoStudioPublishRecord;
-      'plugin::zhao-studio.stat-summary': PluginZhaoStudioStatSummary;
-      'plugin::zhao-tag.category-preset': PluginZhaoTagCategoryPreset;
       'plugin::zhao-tag.knowledge-point': PluginZhaoTagKnowledgePoint;
       'plugin::zhao-tag.tag': PluginZhaoTagTag;
-      'plugin::zhao-tag.tag-group': PluginZhaoTagTagGroup;
-      'plugin::zhao-tag.tag-index': PluginZhaoTagTagIndex;
       'plugin::zhao-third.third-party-account': PluginZhaoThirdThirdPartyAccount;
       'plugin::zhao-third.third-party-config': PluginZhaoThirdThirdPartyConfig;
-      'plugin::zhao-wealth.wealth-annual-snapshot': PluginZhaoWealthWealthAnnualSnapshot;
-      'plugin::zhao-wealth.wealth-collect-config': PluginZhaoWealthWealthCollectConfig;
-      'plugin::zhao-wealth.wealth-company': PluginZhaoWealthWealthCompany;
-      'plugin::zhao-wealth.wealth-customer-product': PluginZhaoWealthWealthCustomerProduct;
-      'plugin::zhao-wealth.wealth-money-income': PluginZhaoWealthWealthMoneyIncome;
-      'plugin::zhao-wealth.wealth-nav': PluginZhaoWealthWealthNav;
-      'plugin::zhao-wealth.wealth-product': PluginZhaoWealthWealthProduct;
-      'plugin::zhao-wealth.wealth-recommend-config': PluginZhaoWealthWealthRecommendConfig;
-      'plugin::zhao-wealth.wealth-yearly-return': PluginZhaoWealthWealthYearlyReturn;
     }
   }
 }

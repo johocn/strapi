@@ -80,6 +80,46 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     }
   },
 
+  async adminLocal(ctx: any) {
+    try {
+      const { identifier, password } = ctx.request.body;
+      if (!identifier || !password) {
+        ctx.status = 400; ctx.body = { error: "请提供 identifier 和 password" }; return;
+      }
+
+      const authService = strapi.plugin("zhao-auth").service("auth");
+      const result = await authService.localLogin(identifier, password);
+      if (!result.success) {
+        ctx.status = 400; ctx.body = { error: result.error }; return;
+      }
+
+      const { user, roles, formattedRole } = result;
+
+      // 管理端登录：验证用户有管理角色
+      const adminRoles = ["admin", "super-admin", "manager"];
+      const hasAdminRole = roles.some((r: string) => adminRoles.includes(r));
+      if (!hasAdminRole) {
+        ctx.status = 403; ctx.body = { error: "无管理后台访问权限" }; return;
+      }
+
+      const jwtService = strapi.plugin("zhao-auth").service("jwt");
+      const jwt = await jwtService.sign({ id: user.id, email: user.email, username: user.username, zhaoRoles: roles });
+
+      ctx.body = {
+        jwt,
+        user: {
+          id: user.id,
+          email: user.email,
+          username: user.username,
+          role: formattedRole,
+        },
+      };
+    } catch (error: any) {
+      strapi.log.error(`[zhao-auth] Admin login failed: ${error.message}`);
+      ctx.status = (error as any).status || 400; ctx.body = { error: error.message };
+    }
+  },
+
   async login(ctx: any) {
     try {
       const authService = strapi.plugin("zhao-auth").service("auth");

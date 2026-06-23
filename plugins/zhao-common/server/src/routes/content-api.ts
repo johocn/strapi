@@ -24,16 +24,12 @@ export default () => ({
   type: "content-api" as const,
   routes: [
     // ===== 公开路由 =====
-    publicRoute("GET", "/site-config", "site-config.getPublic"),
-    publicRoute("GET", "/site-config/public", "site-config.getPublic"),
     publicRoute("GET", "/public/config", "config.getPublic"),
 
     // ===== 管理端路由 =====
     adminRoute("POST", "/soft-delete/:contentType/:documentId", "soft-delete.softDelete", "soft-delete.manage"),
     adminRoute("POST", "/soft-delete/:contentType/:documentId/restore", "soft-delete.restore", "soft-delete.manage"),
     adminRoute("GET", "/soft-delete/:contentType/deleted", "soft-delete.findDeleted", "soft-delete.read"),
-    adminRoute("GET", "/site-config", "site-config.get", "site-config.read"),
-    adminRoute("PUT", "/site-config", "site-config.update", "site-config.update"),
     // 统一配置路由
     adminRoute("GET", "/config/site", "config.getSite", "config.read"),
     adminRoute("PUT", "/config/site", "config.updateSite", "config.update"),
@@ -51,5 +47,12 @@ export default () => ({
     adminRoute("POST", "/config/sso", "config.createSso", "config.create"),
     adminRoute("PUT", "/config/sso/:documentId", "config.updateSso", "config.update"),
     adminRoute("DELETE", "/config/sso/:documentId", "config.deleteSso", "config.delete"),
+    // 模板管理路由
+    adminRoute("GET", "/templates", "site-template.list", "template.read"),
+    adminRoute("GET", "/templates/:documentId", "site-template.get", "template.read"),
+    adminRoute("POST", "/templates", "site-template.create", "template.create"),
+    adminRoute("PUT", "/templates/:documentId", "site-template.update", "template.update"),
+    adminRoute("DELETE", "/templates/:documentId", "site-template.delete", "template.delete"),
+    adminRoute("POST", "/templates/apply", "site-template.applyToSite", "template.update"),
   ],
 });

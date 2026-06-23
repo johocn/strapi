@@ -40,6 +40,7 @@ export default () => ({
   routes: [
     publicRoute("GET", "/auth/config", "auth.config"),
     publicRoute("POST", "/login", "auth.login"),
+    publicRoute("POST", "/admin/auth/local", "auth.adminLocal"),
     publicRoute("POST", "/register", "auth.register"),
     publicRoute("POST", "/reset-password", "auth.resetPassword"),
 
