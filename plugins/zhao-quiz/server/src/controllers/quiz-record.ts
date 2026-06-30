@@ -18,9 +18,26 @@ const wrapList = (result: any) => {
 };
 
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
+  // 渠道范围过滤工具
+  _scopeSvc() {
+    return strapi.plugin("zhao-auth")?.service("channel-scope");
+  },
+  _channelFilterDeep(ctx: any, path: string[]): Record<string, any> | null {
+    return this._scopeSvc()?.buildChannelFilterDeep?.(ctx.state?.channelScope, path) ?? null;
+  },
+  _assertInScope(ctx: any, record: any, field: string): void {
+    this._scopeSvc()?.assertRecordInScope?.(ctx.state?.channelScope, record, field);
+  },
+
   async find(ctx: any) {
     try {
-      ctx.body = wrapList(await strapi.plugin("zhao-quiz").service("quiz-record").find(ctx.query));
+      const query = { ...ctx.query };
+      // quiz-record 无直接 channel 字段，通过 course 间接过滤
+      const cf = this._channelFilterDeep(ctx, ["course", "channel"]);
+      if (cf) {
+        query.filters = { ...(query.filters ?? {}), ...cf };
+      }
+      ctx.body = wrapList(await strapi.plugin("zhao-quiz").service("quiz-record").find(query));
     } catch (err) {
       ctx.status = (err as any).status || 400; ctx.body = { error: (err as Error).message }; return;
     }
@@ -31,6 +48,20 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       const { documentId } = ctx.params;
       const result = await strapi.plugin("zhao-quiz").service("quiz-record").findOne(documentId);
       if (!result) { ctx.status = 404; ctx.body = { error: "答题记录不存在" }; return; }
+      // 校验渠道归属：通过 course.channel 间接校验
+      // course 可能是数字 id 或对象，需 populate 后才能拿到 channel
+      if (result.course != null) {
+        const courseDocId = typeof result.course === "object" ? result.course?.documentId : result.course;
+        if (courseDocId) {
+          const course = await strapi.db.query("plugin::zhao-course.course").findOne({
+            where: { documentId: courseDocId },
+            populate: { channel: { select: ["id"] } },
+          });
+          if (course?.channel) {
+            this._assertInScope(ctx, course, "channel");
+          }
+        }
+      }
       ctx.body = wrap(result);
     } catch (err) {
       ctx.status = (err as any).status || 400; ctx.body = { error: (err as Error).message }; return;

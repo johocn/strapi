@@ -24,10 +24,25 @@ import {
 } from "../validators";
 
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
+  // 渠道范围过滤工具
+  _scopeSvc() {
+    return strapi.plugin("zhao-auth")?.service("channel-scope");
+  },
+  _channelFilter(ctx: any, field: string): Record<string, any> | null {
+    return this._scopeSvc()?.buildChannelFilter?.(ctx.state?.channelScope, field) ?? null;
+  },
+  _assertInScope(ctx: any, record: any, field: string): void {
+    this._scopeSvc()?.assertRecordInScope?.(ctx.state?.channelScope, record, field);
+  },
+
   async find(ctx) {
     try {
       const service = strapi.plugin("zhao-channel").service("user-invite");
-      const result = await service.find(ctx.query);
+      const query = { ...ctx.query };
+      // 渠道范围过滤（inviteChannel 字段）
+      const cf = this._channelFilter(ctx, "inviteChannel");
+      if (cf) Object.assign(query, cf);
+      const result = await service.find(query);
       ctx.body = wrapList(result);
     } catch (e: any) {
       ctx.status = (e as any).status || 400; ctx.body = { error: e.message, code: e.code };
@@ -41,6 +56,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       const service = strapi.plugin("zhao-channel").service("user-invite");
       const result = await service.findOne(parsed.id);
       if (!result) { ctx.status = 404; ctx.body = { error: "Invite not found" }; return; }
+      // 校验渠道归属
+      this._assertInScope(ctx, result, "inviteChannel");
       ctx.body = wrap(result);
     } catch (e: any) {
       ctx.status = (e as any).status || 400; ctx.body = { error: e.message, code: e.code };
@@ -50,6 +67,19 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async create(ctx) {
     try {
       const body = ctx.request.body?.data || ctx.request.body;
+      // 校验 body.inviteChannel（documentId）是否在 scope 内
+      if (body?.inviteChannel) {
+        const channelDocId = typeof body.inviteChannel === "string" ? body.inviteChannel : body.inviteChannel?.documentId;
+        if (channelDocId) {
+          const channel = await strapi.db.query("plugin::zhao-channel.channel").findOne({
+            where: { documentId: channelDocId },
+            select: ["id"],
+          });
+          if (channel) {
+            this._assertInScope(ctx, channel, "id");
+          }
+        }
+      }
       const service = strapi.plugin("zhao-channel").service("user-invite");
       const result = await service.create(body);
       ctx.body = wrap(result);
@@ -63,8 +93,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       const paramParsed = validateOrThrow(channelIdParam, ctx.params, ctx);
       if (!paramParsed) return;
       const service = strapi.plugin("zhao-channel").service("user-invite");
+      // 先查目标记录，校验渠道归属
+      const existing = await service.findOne(paramParsed.id);
+      if (!existing) { ctx.status = 404; ctx.body = { error: "Invite not found" }; return; }
+      this._assertInScope(ctx, existing, "inviteChannel");
       const result = await service.update(paramParsed.id, ctx.request.body);
-      if (!result) { ctx.status = 404; ctx.body = { error: "Invite not found" }; return; }
       ctx.body = wrap(result);
     } catch (e: any) {
       ctx.status = (e as any).status || 400; ctx.body = { error: e.message, code: e.code };
@@ -76,6 +109,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       const parsed = validateOrThrow(channelIdParam, ctx.params, ctx);
       if (!parsed) return;
       const service = strapi.plugin("zhao-channel").service("user-invite");
+      // 先查目标记录，校验渠道归属
+      const existing = await service.findOne(parsed.id);
+      if (!existing) { ctx.status = 404; ctx.body = { error: "Invite not found" }; return; }
+      this._assertInScope(ctx, existing, "inviteChannel");
       const result = await service.delete(parsed.id);
       ctx.body = wrap(result);
     } catch (e: any) {

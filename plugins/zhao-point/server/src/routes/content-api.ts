@@ -72,8 +72,8 @@ export default () => ({
     userRoute("GET", "/my/point/tasks", "point.getTasks"),
 
     // ===== 管理员路由（需渠道作用域） =====
-    adminRoute("POST", "/point/earn", "point.earn", "point.grant"),
-    adminRoute("POST", "/point/deduct", "point.deduct", "point.grant"),
+    channelScopeRoute("POST", "/point/earn", "point.earn", "point.grant"),
+    channelScopeRoute("POST", "/point/deduct", "point.deduct", "point.grant"),
 
     // 积分类型
     channelScopeRoute("GET", "/point-types", "point-admin.findTypes", "point-type.read"),

@@ -104,11 +104,15 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     page?: number;
     pageSize?: number;
     userId?: string | number;
+    extraWhere?: Record<string, any>;
   }) => {
-    const { status, deliveryType, name, page = 1, pageSize = 20, userId } = filters || {};
+    const { status, deliveryType, name, page = 1, pageSize = 20, userId, extraWhere } = filters || {};
     const where: any = { deletedAt: null, status: status || "on_shelf" };
     if (deliveryType) where.deliveryType = deliveryType;
     if (name) where.name = { $containsi: name };
+    if (extraWhere && typeof extraWhere === "object" && !Array.isArray(extraWhere)) {
+      Object.assign(where, extraWhere);
+    }
 
     // 如果传入了 userId，按渠道过滤商品
     if (userId) {
@@ -642,8 +646,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     pageSize?: number;
     startDate?: string;
     endDate?: string;
+    extraWhere?: Record<string, any>;
   }) => {
-    const { status, userId, deliveryType, page = 1, pageSize = 20, startDate, endDate } = filters || {};
+    const { status, userId, deliveryType, page = 1, pageSize = 20, startDate, endDate, extraWhere } = filters || {};
     const where: any = { deletedAt: null };
     if (status) where.status = status;
     if (userId) where.user = userId;
@@ -652,6 +657,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       where.createdAt = {};
       if (startDate) where.createdAt.$gte = startDate;
       if (endDate) where.createdAt.$lte = endDate;
+    }
+    if (extraWhere && typeof extraWhere === "object" && !Array.isArray(extraWhere)) {
+      Object.assign(where, extraWhere);
     }
 
     const [records, total] = await Promise.all([

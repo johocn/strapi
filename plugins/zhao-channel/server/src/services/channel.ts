@@ -58,7 +58,40 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
    * 查询渠道列表
    */
   async find(query: any = {}) {
-    const { page = 1, pageSize = 20, ...filters } = query;
+    const { page = 1, pageSize = 20, site, filters: queryFilters, ...rest } = query;
+
+    // 合并 filters：兼容 ?site=xxx 和 ?filters[site]=xxx 两种形式
+    const filters: any = { ...queryFilters, ...rest };
+
+    // site 参数转为 manyToMany 关系查询（channel.sites）
+    // Strapi v5 db.query 对 manyToMany 关系过滤语法不稳定，改用直接查中间表 + $in 过滤
+    const siteValue = site || filters.site;
+    if (siteValue) {
+      delete filters.site;
+      const siteConfig = await strapi.db.query("plugin::zhao-common.site-config").findOne({
+        where: { documentId: siteValue },
+        select: ["id"],
+      });
+      if (!siteConfig) {
+        return {
+          list: [],
+          pagination: { page: Number(page), pageSize: Number(pageSize), total: 0, pageCount: 0 },
+        };
+      }
+      // 直接查中间表 zhao_channels_sites_lnk 拿到该站点关联的所有 channel_id
+      const knex = strapi.db.connection;
+      const linkRows = await knex("zhao_channels_sites_lnk")
+        .where("site_config_id", siteConfig.id)
+        .select("channel_id");
+      const channelIds = linkRows.map((r: any) => r.channel_id);
+      if (channelIds.length === 0) {
+        return {
+          list: [],
+          pagination: { page: Number(page), pageSize: Number(pageSize), total: 0, pageCount: 0 },
+        };
+      }
+      filters.id = { $in: channelIds };
+    }
 
     const channels = await strapi.db.query(CHANNEL_UID).findMany({
       where: filters,

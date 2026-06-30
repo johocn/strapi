@@ -4,7 +4,10 @@ const publicRoute = (method: Method, path: string, handler: string) => ({
   method,
   path: `/v1${path}`,
   handler,
-  config: { auth: false },
+  config: {
+    auth: false,
+    policies: ["plugin::zhao-auth.has-channel-scope"],
+  },
 });
 
 const userRoute = (method: Method, path: string, handler: string) => ({

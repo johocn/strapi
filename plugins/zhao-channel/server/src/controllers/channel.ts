@@ -29,6 +29,17 @@ import {
 } from "../validators";
 
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
+  // 渠道范围过滤工具
+  _scopeSvc() {
+    return strapi.plugin("zhao-auth")?.service("channel-scope");
+  },
+  _channelFilter(ctx: any, field: string): Record<string, any> | null {
+    return this._scopeSvc()?.buildChannelFilter?.(ctx.state?.channelScope, field) ?? null;
+  },
+  _assertInScope(ctx: any, record: any, field: string): void {
+    this._scopeSvc()?.assertRecordInScope?.(ctx.state?.channelScope, record, field);
+  },
+
   async find(ctx) {
     try {
       const service = strapi.plugin("zhao-channel").service("channel");
@@ -194,7 +205,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async adminFind(ctx) {
     try {
       const service = strapi.plugin("zhao-channel").service("channel");
-      ctx.body = wrapList(await service.find(ctx.query));
+      // 渠道自身过滤：非 admin 仅返回 channelIds 范围内的渠道
+      const query = { ...ctx.query };
+      const cf = this._channelFilter(ctx, "id");
+      if (cf) Object.assign(query, cf);
+      ctx.body = wrapList(await service.find(query));
     } catch (e: any) {
       ctx.status = (e as any).status || 400; ctx.body = { error: e.message, code: e.code };
     }
@@ -207,6 +222,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       const service = strapi.plugin("zhao-channel").service("channel");
       const result = await service.findOne(parsed.id);
       if (!result) { ctx.status = 404; ctx.body = { error: "Channel not found" }; return; }
+      // 校验渠道归属：channel 自身用 id 字段
+      this._assertInScope(ctx, { id: result.id }, "id");
       ctx.body = wrap(result);
     } catch (e: any) {
       ctx.status = (e as any).status || 400; ctx.body = { error: e.message, code: e.code };
@@ -218,6 +235,17 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       const body = ctx.request.body?.data || ctx.request.body;
       const service = strapi.plugin("zhao-channel").service("channel");
       if (body.parentChannel) {
+        // 校验 parentChannel 是否在 scope 内
+        const parentDocId = typeof body.parentChannel === "string" ? body.parentChannel : body.parentChannel?.documentId;
+        if (parentDocId) {
+          const parent = await strapi.db.query("plugin::zhao-channel.channel").findOne({
+            where: { documentId: parentDocId },
+            select: ["id"],
+          });
+          if (parent) {
+            this._assertInScope(ctx, parent, "id");
+          }
+        }
         const parsed = validateOrThrow(channelCreateSchema, body, ctx);
         if (!parsed) return;
         ctx.body = wrap(await service.create(parsed));
@@ -247,6 +275,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     try {
       const parsed = validateOrThrow(channelIdParam, ctx.params, ctx);
       if (!parsed) return;
+      // 校验父渠道在 scope 内
+      this._assertInScope(ctx, { id: parsed.id }, "id");
       const service = strapi.plugin("zhao-channel").service("channel");
       const network = await service.getNetwork(parsed.id);
       ctx.body = wrapList(network?.children || []);
@@ -259,6 +289,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     try {
       const parsed = validateOrThrow(channelIdParam, ctx.params, ctx);
       if (!parsed) return;
+      // 校验目标渠道在 scope 内
+      this._assertInScope(ctx, { id: parsed.id }, "id");
       const service = strapi.plugin("zhao-channel").service("channel");
       const result = await service.getHierarchy(parsed.id);
       if (!result) { ctx.status = 404; ctx.body = { error: "Channel not found" }; return; }
@@ -272,6 +304,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     try {
       const paramParsed = validateOrThrow(channelIdParam, ctx.params, ctx);
       if (!paramParsed) return;
+      // 校验目标渠道在 scope 内
+      this._assertInScope(ctx, { id: paramParsed.id }, "id");
       const body = ctx.request.body?.data || ctx.request.body;
       const bodyParsed = validateOrThrow(channelUpdateSchema, body, ctx);
       if (!bodyParsed) return;
@@ -288,6 +322,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     try {
       const parsed = validateOrThrow(channelIdParam, ctx.params, ctx);
       if (!parsed) return;
+      // 校验目标渠道在 scope 内
+      this._assertInScope(ctx, { id: parsed.id }, "id");
       const service = strapi.plugin("zhao-channel").service("channel");
       ctx.body = wrap(await service.delete(parsed.id));
     } catch (e: any) {

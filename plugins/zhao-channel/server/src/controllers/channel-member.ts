@@ -25,10 +25,28 @@ import {
 } from "../validators";
 
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
+  // 渠道范围过滤工具
+  _scopeSvc() {
+    return strapi.plugin("zhao-auth")?.service("channel-scope");
+  },
+  _channelFilter(ctx: any, field: string): Record<string, any> | null {
+    return this._scopeSvc()?.buildChannelFilter?.(ctx.state?.channelScope, field) ?? null;
+  },
+  _assertInScope(ctx: any, record: any, field: string): void {
+    this._scopeSvc()?.assertRecordInScope?.(ctx.state?.channelScope, record, field);
+  },
+
   async find(ctx) {
     try {
       const service = strapi.plugin("zhao-channel").service("channel-member");
-      const result = await service.find(ctx.query);
+      const query = { ...ctx.query };
+      // 渠道范围过滤
+      const cf = this._channelFilter(ctx, "channel");
+      if (cf) {
+        // 合并到 query：service.find 用 channel 字段做 documentId 过滤，这里用 channel.id
+        query.channel = query.channel ? { $and: [{ documentId: query.channel }, cf.channel] } : cf.channel;
+      }
+      const result = await service.find(query);
       ctx.body = wrapList(result);
     } catch (e: any) {
       ctx.status = (e as any).status || 400; ctx.body = { error: e.message, code: e.code };
@@ -42,6 +60,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       const service = strapi.plugin("zhao-channel").service("channel-member");
       const result = await service.findOne(parsed.id);
       if (!result) { ctx.status = 404; ctx.body = { error: "Member not found" }; return; }
+      // 校验渠道归属
+      this._assertInScope(ctx, result, "channel");
       ctx.body = wrap(result);
     } catch (e: any) {
       ctx.status = (e as any).status || 400; ctx.body = { error: e.message, code: e.code };
@@ -51,6 +71,17 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async create(ctx) {
     try {
       const body = ctx.request.body?.data || ctx.request.body;
+      // 校验 channelId 是否在 scope 内（两个分支都需要）
+      const channelDocId = body.channelId ?? body.channel?.documentId ?? body.channel;
+      if (channelDocId) {
+        const channel = await strapi.db.query("plugin::zhao-channel.channel").findOne({
+          where: { documentId: typeof channelDocId === "string" ? channelDocId : String(channelDocId) },
+          select: ["id"],
+        });
+        if (channel) {
+          this._assertInScope(ctx, channel, "id");
+        }
+      }
       if (body.channelId !== undefined || body.inviterId !== undefined) {
         const parsed = validateOrThrow(memberInviteSchema, body, ctx);
         if (!parsed) return;
@@ -76,12 +107,15 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     try {
       const paramParsed = validateOrThrow(channelIdParam, ctx.params, ctx);
       if (!paramParsed) return;
+      // 先查目标记录，校验渠道归属
+      const service = strapi.plugin("zhao-channel").service("channel-member");
+      const existing = await service.findOne(paramParsed.id);
+      if (!existing) { ctx.status = 404; ctx.body = { error: "Member not found" }; return; }
+      this._assertInScope(ctx, existing, "channel");
       const body = ctx.request.body?.data || ctx.request.body;
       const bodyParsed = validateOrThrow(memberUpdateSchema, body, ctx);
       if (!bodyParsed) return;
-      const service = strapi.plugin("zhao-channel").service("channel-member");
       const result = await service.updateMember(paramParsed.id, bodyParsed);
-      if (!result) { ctx.status = 404; ctx.body = { error: "Member not found" }; return; }
       ctx.body = wrap(result);
     } catch (e: any) {
       ctx.status = (e as any).status || 400; ctx.body = { error: e.message, code: e.code };
@@ -92,7 +126,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     try {
       const parsed = validateOrThrow(channelIdParam, ctx.params, ctx);
       if (!parsed) return;
+      // 先查目标记录，校验渠道归属
       const service = strapi.plugin("zhao-channel").service("channel-member");
+      const existing = await service.findOne(parsed.id);
+      if (!existing) { ctx.status = 404; ctx.body = { error: "Member not found" }; return; }
+      this._assertInScope(ctx, existing, "channel");
       const result = await service.deleteMember(parsed.id);
       ctx.body = wrap(result);
     } catch (e: any) {

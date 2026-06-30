@@ -51,8 +51,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
           : streakRule.extraConfig;
       } catch {}
 
-      const milestones: number[] = extraConfig.streakMilestones || [];
-      const bonusPoints: number[] = extraConfig.streakBonusPoints || [];
+      const milestones: number[] = Array.isArray(extraConfig.streakMilestones) ? extraConfig.streakMilestones : [];
+      const bonusPoints: number[] = Array.isArray(extraConfig.streakBonusPoints) ? extraConfig.streakBonusPoints : [];
 
       const milestoneIdx = milestones.indexOf(streakDays);
       if (milestoneIdx !== -1 && bonusPoints[milestoneIdx]) {

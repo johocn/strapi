@@ -18,9 +18,30 @@ const wrapList = (result: any) => {
 };
 
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
+  // 渠道范围过滤工具
+  _scopeSvc() {
+    return strapi.plugin("zhao-auth")?.service("channel-scope");
+  },
+  _channelFilter(ctx: any, field: string): Record<string, any> | null {
+    return this._scopeSvc()?.buildChannelFilter?.(ctx.state?.channelScope, field) ?? null;
+  },
+  _assertInScope(ctx: any, record: any, field: string): void {
+    this._scopeSvc()?.assertRecordInScope?.(ctx.state?.channelScope, record, field);
+  },
+  // 通过 channel documentId 校验是否在 scope 内（复用 channel-scope.service）
+  async _assertChannelDocIdInScope(ctx: any, channelDocumentId: string): Promise<void> {
+    await this._scopeSvc()?.assertChannelDocIdInScope?.(ctx.state?.channelScope, channelDocumentId);
+  },
+
   async find(ctx: any) {
     try {
-      ctx.body = wrapList(await strapi.plugin("zhao-course").service("user-course-auth").find(ctx.query));
+      const query = { ...ctx.query };
+      // 注入 channel 渠道过滤
+      const cf = this._channelFilter(ctx, "channel");
+      if (cf) {
+        query.filters = { ...(query.filters ?? {}), ...cf };
+      }
+      ctx.body = wrapList(await strapi.plugin("zhao-course").service("user-course-auth").find(query));
     } catch (err) {
       ctx.status = (err as any).status || 400; ctx.body = { error: (err as Error).message }; return;
     }
@@ -31,6 +52,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       const { documentId } = ctx.params;
       const result = await strapi.plugin("zhao-course").service("user-course-auth").findOne(documentId);
       if (!result) { ctx.status = 404; ctx.body = { error: "授权记录不存在" }; return; }
+      // 校验渠道归属
+      if (result.channel != null) {
+        const normalized = typeof result.channel === "number" ? { id: result.channel } : result.channel;
+        this._assertInScope(ctx, { channel: normalized }, "channel");
+      }
       ctx.body = wrap(result);
     } catch (err) {
       ctx.status = (err as any).status || 400; ctx.body = { error: (err as Error).message }; return;
@@ -73,6 +99,13 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async grant(ctx: any) {
     try {
       const data = ctx.request.body?.data || ctx.request.body;
+      // 校验 body.channel（documentId）是否在 scope 内
+      if (data?.channel) {
+        const channelDocId = typeof data.channel === "string" ? data.channel : data.channel?.documentId;
+        if (channelDocId) {
+          await this._assertChannelDocIdInScope(ctx, channelDocId);
+        }
+      }
       const result = await strapi.plugin("zhao-course").service("user-course-auth").create(data);
       ctx.status = 201;
       ctx.body = wrap(result);
@@ -87,6 +120,13 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async revoke(ctx: any) {
     try {
       const { documentId } = ctx.params;
+      // 先查目标记录，校验渠道归属
+      const existing = await strapi.plugin("zhao-course").service("user-course-auth").findOne(documentId);
+      if (!existing) { ctx.status = 404; ctx.body = { error: "授权记录不存在" }; return; }
+      if (existing.channel != null) {
+        const normalized = typeof existing.channel === "number" ? { id: existing.channel } : existing.channel;
+        this._assertInScope(ctx, { channel: normalized }, "channel");
+      }
       ctx.body = wrap(await strapi.plugin("zhao-course").service("user-course-auth").delete(documentId));
     } catch (err) {
       ctx.status = (err as any).status || 400; ctx.body = { error: (err as Error).message }; return;

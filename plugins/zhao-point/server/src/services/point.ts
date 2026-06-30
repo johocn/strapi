@@ -636,8 +636,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     endDate?: string;
     page: number;
     pageSize: number;
+    extraWhere?: Record<string, any>;
   }) => {
-    const { userId, action, type, startDate, endDate, page, pageSize } = params;
+    const { userId, action, type, startDate, endDate, page, pageSize, extraWhere } = params;
     const where: any = {};
     if (userId) where.user = userId;
     if (action) where.action = action;
@@ -646,6 +647,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       where.createdAt = {};
       if (startDate) where.createdAt.$gte = startDate;
       if (endDate) where.createdAt.$lte = endDate;
+    }
+    if (extraWhere && typeof extraWhere === "object" && !Array.isArray(extraWhere)) {
+      Object.assign(where, extraWhere);
     }
     const [records, total] = await Promise.all([
       strapi.db.query(RECORD_UID).findMany({

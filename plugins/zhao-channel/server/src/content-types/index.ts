@@ -44,6 +44,12 @@ export default {
           target: "plugin::zhao-channel.channel",
           mappedBy: "parentChannel"
         },
+        sites: {
+          type: "relation",
+          relation: "manyToMany",
+          target: "plugin::zhao-common.site-config",
+          inversedBy: "channels"
+        },
         members: {
           type: "relation",
           relation: "oneToMany",

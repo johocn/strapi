@@ -272,6 +272,16 @@ export const PERMISSION_TREE: Record<string, PermissionItem> = {
       "menu.sso-user": { label: "SSO 用户", type: "menu" },
       "menu.sso-channel": { label: "SSO 渠道", type: "menu" },
       "menu.sso-log": { label: "SSO 日志", type: "menu" },
+      "menu.tenant": {
+        label: "租户管理",
+        type: "menu",
+        children: {
+          "tenant.read": { label: "查看租户", type: "button" },
+          "tenant.create": { label: "新建租户", type: "button" },
+          "tenant.update": { label: "编辑租户", type: "button" },
+          "tenant.delete": { label: "删除租户", type: "button" },
+        },
+      },
     },
   },
   "menu.tag-center": {
@@ -400,9 +410,17 @@ export const PERMISSIONS: Record<string, PermissionEntry> = {
 
 export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
   [ROLES.ADMIN]: flattenPermissions(PERMISSION_TREE),
-  [ROLES.CHANNEL_ADMIN]: flattenPermissions(PERMISSION_TREE).filter(
-    (k) => !k.startsWith("menu.system-center")
-  ),
+  [ROLES.CHANNEL_ADMIN]: [
+    ...flattenPermissions(PERMISSION_TREE).filter(
+      (k) => !k.startsWith("menu.system-center")
+    ),
+    "menu.tenant",
+    "tenant.read",
+    "tenant.create",
+    "tenant.update",
+    "tenant.delete",
+    "role.read",
+  ],
   [ROLES.PLUGIN_MANAGER]: flattenPermissions(
     ((t: Record<string, PermissionItem>) => {
       const result: Record<string, PermissionItem> = {};
