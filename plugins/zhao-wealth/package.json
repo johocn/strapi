@@ -1,7 +1,7 @@
 {
   "name": "zhao-wealth",
   "version": "1.0.0",
-  "description": "财富管理插件 - Bull队列",
+  "description": "理财基金管理插件",
   "private": true,
   "type": "commonjs",
   "exports": {
@@ -12,28 +12,50 @@
       "import": "./dist/server/index.mjs",
       "require": "./dist/server/index.js",
       "default": "./dist/server/index.js"
+    },
+    "./strapi-admin": {
+      "types": "./dist/admin/src/index.d.ts",
+      "source": "./admin/src/index.ts",
+      "import": "./dist/admin/index.mjs",
+      "require": "./dist/admin/index.js",
+      "default": "./dist/admin/index.js"
     }
   },
   "files": ["dist"],
   "scripts": {
     "build": "strapi-plugin build",
     "watch": "strapi-plugin watch",
+    "watch:link": "strapi-plugin watch:link",
     "verify": "strapi-plugin verify"
+  },
+  "dependencies": {
+    "axios": "^1.7.0",
+    "cheerio": "^1.0.0",
+    "bull": "^4.16.5"
   },
   "devDependencies": {
     "@strapi/sdk-plugin": "^6.1.0",
     "@strapi/strapi": "^5.45.0",
     "@strapi/typescript-utils": "^5.45.0",
+    "@types/node": "^20.11.0",
     "typescript": "^5.9.3"
   },
   "peerDependencies": {
-    "@strapi/strapi": "^5.45.0"
+    "@strapi/sdk-plugin": "^6.1.0",
+    "@strapi/strapi": "^5.45.0",
+    "@strapi/design-system": "^2.2.0",
+    "@strapi/icons": "^2.2.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.30.3",
+    "styled-components": "^6.4.1",
+    "ioredis": "^5.6.1"
   },
   "strapi": {
     "kind": "plugin",
     "name": "zhao-wealth",
     "displayName": "Zhao Wealth",
-    "description": "财富管理插件 - Bull队列"
+    "description": "理财基金管理插件"
   },
   "license": "MIT"
 }
