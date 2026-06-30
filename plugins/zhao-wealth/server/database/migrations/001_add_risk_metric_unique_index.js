@@ -2,20 +2,21 @@
 
 module.exports = {
   /**
-   * 为 wealth_risk_metrics 表添加复合唯一索引
-   * (product_id, snapshot_date, period, metric_name)
-   * 防止同日同周期同指标重复写入
+   * 为 wealth_risk_metrics 表添加查询优化索引
+   * Strapi v5 manyToOne 关系通过关联表实现，主表无 product_id 列，
+   * 因此无法创建数据库级唯一约束。唯一性由应用层 delete+create 保证。
+   * 此索引加速按日期+周期+指标名的查询。
    */
-  async up(db) {
+  async up({ db }) {
     await db.raw(`
-      CREATE UNIQUE INDEX IF NOT EXISTS wealth_risk_metrics_unique_idx
-      ON wealth_risk_metrics (product_id, snapshot_date, period, metric_name)
+      CREATE INDEX IF NOT EXISTS wealth_risk_metrics_lookup_idx
+      ON wealth_risk_metrics (snapshot_date, period, metric_name)
     `);
   },
 
-  async down(db) {
+  async down({ db }) {
     await db.raw(`
-      DROP INDEX IF EXISTS wealth_risk_metrics_unique_idx
+      DROP INDEX IF EXISTS wealth_risk_metrics_lookup_idx
     `);
   },
 };

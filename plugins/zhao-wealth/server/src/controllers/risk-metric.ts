@@ -14,9 +14,9 @@ export default ({ strapi }) => ({
       const periodQuery = ctx.query.period as string;
       const periods = periodQuery
         ? periodQuery.split(',').map(p => p.trim())
-        : ['1m', '3m', '6m', '1y'];
+        : ['m1', 'm3', 'm6', 'y1'];
 
-      const validPeriods = ['1m', '3m', '6m', '1y'];
+      const validPeriods = ['m1', 'm3', 'm6', 'y1'];
       const invalidPeriods = periods.filter(p => !validPeriods.includes(p));
       if (invalidPeriods.length > 0) {
         ctx.status = 400;

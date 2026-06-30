@@ -6,10 +6,21 @@ import pluginConfig from '../config';
  * 周期对应的天数
  */
 const PERIOD_DAYS: Record<string, number> = {
-  '1m': 30,
-  '3m': 90,
-  '6m': 180,
-  '1y': 365,
+  'm1': 30,
+  'm3': 90,
+  'm6': 180,
+  'y1': 365,
+};
+
+/**
+ * 周期到 wealth-annual-snapshot 字段的映射
+ * Strapi v5 枚举值不能以数字开头，故用 m1/m3/m6/y1，但表字段是 annual1m/annual3m 等
+ */
+const PERIOD_TO_ANNUAL_FIELD: Record<string, string> = {
+  'm1': 'annual1m',
+  'm3': 'annual3m',
+  'm6': 'annual6m',
+  'y1': 'annual1y',
 };
 
 /**
@@ -116,7 +127,7 @@ export default ({ strapi }) => ({
     const maxDrawdown = calculateMaxDrawdown(navs);
 
     // 取对应周期的年化收益（从 wealth-annual-snapshot）
-    const annualField = `annual${period}`;
+    const annualField = PERIOD_TO_ANNUAL_FIELD[period];
     const snapshot = await strapi.db.query('plugin::zhao-wealth.wealth-annual-snapshot').findOne({
       where: {
         product: productId,
@@ -137,7 +148,7 @@ export default ({ strapi }) => ({
    * rankPercentile = (rank / total) × 100
    */
   async calculateRankPercentile(productId: number, snapshotDate: Date, period: string): Promise<number | null> {
-    const annualField = `annual${period}`;
+    const annualField = PERIOD_TO_ANNUAL_FIELD[period];
 
     // 取当前产品
     const product = await strapi.db.query('plugin::zhao-wealth.wealth-product').findOne({

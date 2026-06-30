@@ -23,7 +23,7 @@
     },
     "period": {
       "type": "enumeration",
-      "enum": ["1m", "3m", "6m", "1y"],
+      "enum": ["m1", "m3", "m6", "y1"],
       "required": true
     },
     "metricName": {
