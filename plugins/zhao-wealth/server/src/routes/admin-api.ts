@@ -144,5 +144,34 @@ export default {
       path: '/recalculate-risk-metric',
       handler: 'risk-metric.recalculate',
     },
+
+    // 统计聚合（仪表盘）
+    {
+      method: 'GET',
+      path: '/stats/overview',
+      handler: 'admin-api.statsOverview',
+    },
+    {
+      method: 'GET',
+      path: '/stats/anomalies',
+      handler: 'admin-api.statsAnomalies',
+    },
+
+    // 指标中心聚合
+    {
+      method: 'GET',
+      path: '/risk-metrics/admin/aggregate',
+      handler: 'risk-metric.adminAggregate',
+    },
+    {
+      method: 'GET',
+      path: '/risk-metrics/admin/trend',
+      handler: 'risk-metric.adminTrend',
+    },
+    {
+      method: 'GET',
+      path: '/risk-metrics/admin/peers',
+      handler: 'risk-metric.adminPeers',
+    },
   ],
 };

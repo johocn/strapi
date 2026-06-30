@@ -17,4 +17,11 @@ export default {
   'wealth-customer-product': {
     actions: ['find', 'create', 'delete'],
   },
+  // 新增：统计与风险指标 admin 接口权限
+  'wealth-stats': {
+    actions: ['overview', 'anomalies'],
+  },
+  'wealth-risk-metric': {
+    actions: ['aggregate', 'trend', 'peers', 'recalculate'],
+  },
 };
