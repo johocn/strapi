@@ -24,6 +24,7 @@
     "moneyIncomes": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-money-income", "mappedBy": "product" },
     "annualSnapshots": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-annual-snapshot", "mappedBy": "product" },
     "yearlyReturns": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-yearly-return", "mappedBy": "product" },
+    "riskMetrics": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-risk-metric", "mappedBy": "product" },
     "recommendWeight": { "type": "integer", "default": 0 },
     "recommendTags": { "type": "json" },
     "status": { "type": "boolean", "default": true },

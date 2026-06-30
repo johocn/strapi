@@ -9,6 +9,7 @@ import wealthAnnualSnapshot from './wealth-annual-snapshot/schema.json';
 import wealthYearlyReturn from './wealth-yearly-return/schema.json';
 import wealthCustomerProduct from './wealth-customer-product/schema.json';
 import wealthRecommendConfig from './wealth-recommend-config/schema.json';
+import wealthRiskMetric from './wealth-risk-metric/schema.json';
 
 export default {
   'wealth-company': { schema: wealthCompany },
@@ -20,4 +21,5 @@ export default {
   'wealth-yearly-return': { schema: wealthYearlyReturn },
   'wealth-customer-product': { schema: wealthCustomerProduct },
   'wealth-recommend-config': { schema: wealthRecommendConfig },
+  'wealth-risk-metric': { schema: wealthRiskMetric },
 };
