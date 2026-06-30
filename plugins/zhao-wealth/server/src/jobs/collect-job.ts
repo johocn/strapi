@@ -1,4 +1,4 @@
-﻿'use strict';
+'use strict';
 
 import { getCollectQueue } from './queue-setup';
 import { getCollector } from '../collectors';
@@ -6,6 +6,10 @@ import { isTradingDay, acquireLock, releaseLock } from '../utils';
 
 export function registerCollectJobs(strapi: any) {
   const queue = getCollectQueue();
+  if (!queue) {
+    strapi.log.warn('[zhao-wealth] collect queue 不可用，跳过 job 注册');
+    return;
+  }
 
   // 单产品采集
   queue.process('collect-single', async (job) => {
@@ -48,7 +52,9 @@ export function registerCollectJobs(strapi: any) {
 
       // 触发年化计算
       const calculateQueue = getCollectQueue();
-      calculateQueue.add('calculate-snapshot', { productId });
+      if (calculateQueue) {
+        calculateQueue.add('calculate-snapshot', { productId });
+      }
     } catch (error) {
       strapi.log.error(`[zhao-wealth] 产品${productId}采集失败: ${error.message}`);
 
@@ -69,7 +75,7 @@ export function registerCollectJobs(strapi: any) {
     const acquired = await acquireLock(lockKey, 30 * 60);
 
     if (!acquired) {
-      strapi.log.warn('[zhao-wealth] 采集任务已在执行中');
+      strapi.log.warn('[zhao-wealth] 采集任务已在执行中或 Redis 不可用');
       return;
     }
 

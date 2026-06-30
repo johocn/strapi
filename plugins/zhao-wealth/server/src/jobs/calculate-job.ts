@@ -1,10 +1,14 @@
-﻿'use strict';
+'use strict';
 
 import { getCalculateQueue, getRecalculateQueue } from './queue-setup';
 import { acquireLock, releaseLock } from '../utils';
 
 export function registerCalculateJobs(strapi: any) {
   const queue = getCalculateQueue();
+  if (!queue) {
+    strapi.log.warn('[zhao-wealth] calculate queue 不可用，跳过 job 注册');
+    return;
+  }
 
   // 单产品当日快照计算
   queue.process('calculate-snapshot', async (job) => {
@@ -43,12 +47,17 @@ export function registerCalculateJobs(strapi: any) {
 
   // 全量重算
   const recalcQueue = getRecalculateQueue();
+  if (!recalcQueue) {
+    strapi.log.warn('[zhao-wealth] recalculate queue 不可用，跳过 recalculate-all 注册');
+    return;
+  }
+
   recalcQueue.process('recalculate-all', async (job) => {
     const lockKey = 'wealth:recalculate:lock';
     const acquired = await acquireLock(lockKey, 60 * 60);
 
     if (!acquired) {
-      strapi.log.warn('[zhao-wealth] 重算任务已在执行中');
+      strapi.log.warn('[zhao-wealth] 重算任务已在执行中或 Redis 不可用');
       return;
     }
 
