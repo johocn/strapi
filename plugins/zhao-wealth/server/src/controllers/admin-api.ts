@@ -433,4 +433,26 @@ export default ({ strapi }) => ({
       ctx.body = errorResponse(500, '查询失败');
     }
   },
+
+  // ===== 仪表盘聚合（新）=====
+  async statsOverview(ctx) {
+    try {
+      const result = await strapi.plugin('zhao-wealth').service('stats').getOverview();
+      ctx.body = successResponse(result);
+    } catch (error) {
+      strapi.log.error(`[zhao-wealth] 概览统计失败: ${error.message}`);
+      ctx.body = errorResponse(500, '查询失败');
+    }
+  },
+
+  async statsAnomalies(ctx) {
+    try {
+      const { limit = 10 } = ctx.query;
+      const result = await strapi.plugin('zhao-wealth').service('stats').getAnomalies(Number(limit));
+      ctx.body = successResponse(result);
+    } catch (error) {
+      strapi.log.error(`[zhao-wealth] 异常列表查询失败: ${error.message}`);
+      ctx.body = errorResponse(500, '查询失败');
+    }
+  },
 });
