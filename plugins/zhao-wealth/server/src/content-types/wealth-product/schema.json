@@ -27,6 +27,8 @@
     "riskMetrics": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-risk-metric", "mappedBy": "product" },
     "recommendWeight": { "type": "integer", "default": 0 },
     "recommendTags": { "type": "json" },
+    "recommendEnabled": { "type": "boolean", "default": false },
+    "recommendReason": { "type": "text" },
     "status": { "type": "boolean", "default": true },
     "createdAt": { "type": "datetime" },
     "updatedAt": { "type": "datetime" }
