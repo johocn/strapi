@@ -268,4 +268,109 @@ export default ({ strapi }) => ({
 
     strapi.log.info(`[zhao-wealth] 全量重算完成`);
   },
+
+  /**
+   * 指标中心：聚合查询
+   * 返回最新 snapshotDate 的 4 指标值
+   */
+  async adminAggregate(productId: number, period: string) {
+    const metricNames = ['volatility', 'maxDrawdown', 'sharpe', 'rankPercentile'];
+    const result: Record<string, number | null> = {};
+
+    for (const metricName of metricNames) {
+      const records = await strapi.db.query('plugin::zhao-wealth.wealth-risk-metric').findMany({
+        where: { product: productId, period, metricName },
+        orderBy: { snapshotDate: 'desc' },
+        limit: 1,
+      });
+      result[metricName] = records.length > 0 ? records[0].metricValue : null;
+    }
+
+    return result;
+  },
+
+  /**
+   * 指标中心：历史趋势
+   * 返回 4 指标按 snapshotDate 排序的时序数据
+   */
+  async adminTrend(productId: number) {
+    const records = await strapi.db.query('plugin::zhao-wealth.wealth-risk-metric').findMany({
+      where: { product: productId },
+      orderBy: [{ snapshotDate: 'asc' }, { period: 'asc' }],
+      limit: 500,
+    });
+
+    // 按 period 分组，再按日期排序
+    const trend: Record<string, { snapshotDate: string; volatility: number | null; maxDrawdown: number | null; sharpe: number | null; rankPercentile: number | null }[]> = {
+      m1: [], m3: [], m6: [], y1: [],
+    };
+
+    // 按 (snapshotDate, period) 聚合
+    const grouped: Record<string, Record<string, any>> = {};
+    for (const r of records) {
+      const key = `${r.snapshotDate}_${r.period}`;
+      if (!grouped[key]) {
+        grouped[key] = {
+          snapshotDate: r.snapshotDate,
+          period: r.period,
+          volatility: null,
+          maxDrawdown: null,
+          sharpe: null,
+          rankPercentile: null,
+        };
+      }
+      grouped[key][r.metricName] = r.metricValue;
+    }
+
+    for (const key of Object.keys(grouped)) {
+      const item = grouped[key];
+      if (trend[item.period]) {
+        trend[item.period].push(item);
+      }
+    }
+
+    return trend;
+  },
+
+  /**
+   * 指标中心：同类对比
+   * 返回同 period + metricName 下所有产品的排名
+   */
+  async adminPeers(period: string, metricName: string, limit = 50) {
+    // 取最新 snapshotDate
+    const latest = await strapi.db.query('plugin::zhao-wealth.wealth-risk-metric').findMany({
+      where: { period, metricName },
+      orderBy: { snapshotDate: 'desc' },
+      limit: 1,
+    });
+
+    if (latest.length === 0) return [];
+
+    const snapshotDate = latest[0].snapshotDate;
+
+    // 查同 snapshotDate + period + metricName 的所有产品
+    const records = await strapi.db.query('plugin::zhao-wealth.wealth-risk-metric').findMany({
+      where: { snapshotDate, period, metricName },
+      populate: ['product'],
+      limit,
+    });
+
+    // 过滤 null 值并排序
+    const valid = records.filter(r => r.metricValue !== null && r.product);
+
+    // 排序方向：maxDrawdown 升序（越小越好），其他降序
+    if (metricName === 'maxDrawdown') {
+      valid.sort((a, b) => a.metricValue - b.metricValue);
+    } else {
+      valid.sort((a, b) => b.metricValue - a.metricValue);
+    }
+
+    return valid.map((r, index) => ({
+      rank: index + 1,
+      productId: r.product.id,
+      productName: r.product.productName,
+      productType: r.product.productType,
+      metricValue: r.metricValue,
+    }));
+  },
 });

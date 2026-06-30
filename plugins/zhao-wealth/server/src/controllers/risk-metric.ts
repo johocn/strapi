@@ -97,4 +97,82 @@ export default ({ strapi }) => ({
       ctx.body = errorResponse(500, '触发失败');
     }
   },
+
+  /**
+   * 指标中心：聚合查询
+   * GET /wealth-admin/v1/risk-metrics/admin/aggregate?productId=1&period=m1
+   */
+  async adminAggregate(ctx) {
+    try {
+      const { productId, period } = ctx.query;
+      if (!productId || !period) {
+        ctx.status = 400;
+        ctx.body = errorResponse(400, 'productId 和 period 必填');
+        return;
+      }
+
+      const validPeriods = ['m1', 'm3', 'm6', 'y1'];
+      if (!validPeriods.includes(period)) {
+        ctx.status = 400;
+        ctx.body = errorResponse(400, '无效的 period');
+        return;
+      }
+
+      const result = await strapi.plugin('zhao-wealth').service('risk-metric').adminAggregate(Number(productId), period);
+      ctx.body = successResponse(result);
+    } catch (error) {
+      strapi.log.error(`[zhao-wealth] 指标聚合查询失败: ${error.message}`);
+      ctx.body = errorResponse(500, '查询失败');
+    }
+  },
+
+  /**
+   * 指标中心：历史趋势
+   * GET /wealth-admin/v1/risk-metrics/admin/trend?productId=1
+   */
+  async adminTrend(ctx) {
+    try {
+      const { productId } = ctx.query;
+      if (!productId) {
+        ctx.status = 400;
+        ctx.body = errorResponse(400, 'productId 必填');
+        return;
+      }
+
+      const result = await strapi.plugin('zhao-wealth').service('risk-metric').adminTrend(Number(productId));
+      ctx.body = successResponse(result);
+    } catch (error) {
+      strapi.log.error(`[zhao-wealth] 指标趋势查询失败: ${error.message}`);
+      ctx.body = errorResponse(500, '查询失败');
+    }
+  },
+
+  /**
+   * 指标中心：同类对比
+   * GET /wealth-admin/v1/risk-metrics/admin/peers?period=m1&metricName=volatility
+   */
+  async adminPeers(ctx) {
+    try {
+      const { period, metricName, limit } = ctx.query;
+      if (!period || !metricName) {
+        ctx.status = 400;
+        ctx.body = errorResponse(400, 'period 和 metricName 必填');
+        return;
+      }
+
+      const validPeriods = ['m1', 'm3', 'm6', 'y1'];
+      const validMetrics = ['volatility', 'maxDrawdown', 'sharpe', 'rankPercentile'];
+      if (!validPeriods.includes(period) || !validMetrics.includes(metricName)) {
+        ctx.status = 400;
+        ctx.body = errorResponse(400, '无效的 period 或 metricName');
+        return;
+      }
+
+      const result = await strapi.plugin('zhao-wealth').service('risk-metric').adminPeers(period, metricName, Number(limit) || 50);
+      ctx.body = successResponse(result);
+    } catch (error) {
+      strapi.log.error(`[zhao-wealth] 同类对比查询失败: ${error.message}`);
+      ctx.body = errorResponse(500, '查询失败');
+    }
+  },
 });
