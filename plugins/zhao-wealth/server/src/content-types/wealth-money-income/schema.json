@@ -1,0 +1,22 @@
+{
+  "kind": "collectionType",
+  "collectionName": "wealth_money_incomes",
+  "info": {
+    "singularName": "wealth-money-income",
+    "pluralName": "wealth-money-incomes",
+    "displayName": "货币基金收益",
+    "description": "货币基金万份收益数据"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "product": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-product", "inversedBy": "moneyIncomes" },
+    "incomeDate": { "type": "date", "required": true },
+    "tenThousandIncome": { "type": "decimal", "precision": 10, "scale": 6 },
+    "sevenDayAnnual": { "type": "decimal", "precision": 10, "scale": 4 },
+    "dataSource": { "type": "enumeration", "enum": ["crawler", "manual"], "default": "crawler" },
+    "createdAt": { "type": "datetime" },
+    "updatedAt": { "type": "datetime" }
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "kind": "collectionType",
+  "collectionName": "wealth_collect_configs",
+  "info": {
+    "singularName": "wealth-collect-config",
+    "pluralName": "wealth-collect-configs",
+    "displayName": "采集配置",
+    "description": "产品数据采集配置"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "product": { "type": "relation", "relation": "oneToOne", "target": "plugin::zhao-wealth.wealth-product" },
+    "collectMethod": { "type": "enumeration", "enum": ["web-crawler", "zip-pdf", "manual", "api"], "default": "web-crawler" },
+    "collectUrl": { "type": "string" },
+    "collectRules": { "type": "json" },
+    "collectStatus": { "type": "enumeration", "enum": ["pending", "success", "failed"], "default": "pending" },
+    "lastCollectTime": { "type": "datetime" },
+    "failCount": { "type": "integer", "default": 0 },
+    "failReason": { "type": "text" },
+    "createdAt": { "type": "datetime" },
+    "updatedAt": { "type": "datetime" }
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "kind": "collectionType",
+  "collectionName": "wealth_customer_products",
+  "info": {
+    "singularName": "wealth-customer-product",
+    "pluralName": "wealth-customer-products",
+    "displayName": "客户自选产品",
+    "description": "客户关注的产品列表"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::users-permissions.user" },
+    "product": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-product" },
+    "channel": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-channel.channel" },
+    "followTime": { "type": "datetime" },
+    "sortOrder": { "type": "integer", "default": 0 },
+    "remark": { "type": "string" },
+    "createdAt": { "type": "datetime" },
+    "updatedAt": { "type": "datetime" }
+  }
+}

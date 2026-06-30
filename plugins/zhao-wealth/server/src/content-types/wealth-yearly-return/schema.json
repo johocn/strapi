@@ -1,0 +1,21 @@
+{
+  "kind": "collectionType",
+  "collectionName": "wealth_yearly_returns",
+  "info": {
+    "singularName": "wealth-yearly-return",
+    "pluralName": "wealth-yearly-returns",
+    "displayName": "年度收益",
+    "description": "历年年度收益统计"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "product": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-product", "inversedBy": "yearlyReturns" },
+    "year": { "type": "integer", "required": true },
+    "annualReturn": { "type": "decimal", "precision": 10, "scale": 6 },
+    "baseDays": { "type": "integer" },
+    "createdAt": { "type": "datetime" },
+    "updatedAt": { "type": "datetime" }
+  }
+}
