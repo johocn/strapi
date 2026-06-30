@@ -1,6 +1,7 @@
-﻿'use strict';
+'use strict';
 
 import { successResponse, errorResponse } from '../utils';
+import { getCollectQueue, getCalculateQueue, getRecalculateQueue } from '../jobs/queue-setup';
 
 export default ({ strapi }) => ({
   /**
@@ -9,9 +10,13 @@ export default ({ strapi }) => ({
   async trigger(ctx) {
     try {
       const { productId } = ctx.request.body;
+      const queue = getCollectQueue();
 
-      // 加入采集队列
-      const queue = strapi.plugin('zhao-wealth').queue('wealth-collect');
+      if (!queue) {
+        ctx.status = 503;
+        ctx.body = errorResponse(503, '采集服务暂不可用（Redis 未就绪）');
+        return;
+      }
 
       if (productId) {
         queue.add('collect-single', { productId });
@@ -58,17 +63,32 @@ export default ({ strapi }) => ({
   async recalculate(ctx) {
     try {
       const { productId, startDate, endDate } = ctx.request.body;
-
-      const queue = strapi.plugin('zhao-wealth').queue('wealth-calculate');
+      const queue = getCalculateQueue();
+      const recalcQueue = getRecalculateQueue();
 
       if (productId && startDate && endDate) {
+        if (!queue) {
+          ctx.status = 503;
+          ctx.body = errorResponse(503, '计算服务暂不可用（Redis 未就绪）');
+          return;
+        }
         queue.add('recalculate-range', { productId, startDate, endDate });
         ctx.body = successResponse({ productId }, '指定范围重算任务已触发');
       } else if (productId) {
+        if (!queue) {
+          ctx.status = 503;
+          ctx.body = errorResponse(503, '计算服务暂不可用（Redis 未就绪）');
+          return;
+        }
         queue.add('recalculate-product', { productId });
         ctx.body = successResponse({ productId }, '单产品重算任务已触发');
       } else {
-        queue.add('recalculate-all', {});
+        if (!recalcQueue) {
+          ctx.status = 503;
+          ctx.body = errorResponse(503, '计算服务暂不可用（Redis 未就绪）');
+          return;
+        }
+        recalcQueue.add('recalculate-all', {});
         ctx.body = successResponse({}, '全量重算任务已触发');
       }
     } catch (error) {
