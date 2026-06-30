@@ -1,0 +1,53 @@
+{
+  "kind": "collectionType",
+  "collectionName": "zhao_collect_tasks",
+  "info": {
+    "singularName": "collect-task",
+    "pluralName": "collect-tasks",
+    "displayName": "采集任务",
+    "description": "内容采集任务临时状态"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "content-manager": {
+      "visible": true
+    },
+    "content-type-builder": {
+      "visible": true
+    }
+  },
+  "attributes": {
+    "source": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-studio.collect-source",
+      "inversedBy": "tasks"
+    },
+    "titles": {
+      "type": "json"
+    },
+    "selectedTitles": {
+      "type": "json"
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": ["pending", "fetching_titles", "waiting_selection", "fetching_content", "completed", "failed"],
+      "default": "pending"
+    },
+    "error": {
+      "type": "text"
+    },
+    "retryCount": {
+      "type": "integer",
+      "default": 0
+    },
+    "createdAt": {
+      "type": "datetime"
+    },
+    "updatedAt": {
+      "type": "datetime"
+    }
+  }
+}

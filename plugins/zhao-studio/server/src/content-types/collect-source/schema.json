@@ -1,0 +1,71 @@
+{
+  "kind": "collectionType",
+  "collectionName": "zhao_collect_sources",
+  "info": {
+    "singularName": "collect-source",
+    "pluralName": "collect-sources",
+    "displayName": "采集源",
+    "description": "内容采集源配置"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "content-manager": {
+      "visible": true
+    },
+    "content-type-builder": {
+      "visible": true
+    }
+  },
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true,
+      "maxLength": 100
+    },
+    "url": {
+      "type": "string",
+      "required": true
+    },
+    "type": {
+      "type": "enumeration",
+      "enum": ["template", "custom"],
+      "default": "template"
+    },
+    "template": {
+      "type": "string"
+    },
+    "titleSelector": {
+      "type": "string"
+    },
+    "contentSelector": {
+      "type": "string"
+    },
+    "authorSelector": {
+      "type": "string"
+    },
+    "dateSelector": {
+      "type": "string"
+    },
+    "isActive": {
+      "type": "boolean",
+      "default": true
+    },
+    "tasks": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-studio.collect-task",
+      "mappedBy": "source"
+    },
+    "lastCollectedAt": {
+      "type": "datetime"
+    },
+    "createdAt": {
+      "type": "datetime"
+    },
+    "updatedAt": {
+      "type": "datetime"
+    }
+  }
+}

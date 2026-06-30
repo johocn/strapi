@@ -1,0 +1,59 @@
+{
+  "kind": "collectionType",
+  "collectionName": "zhao_publish_records",
+  "info": {
+    "singularName": "publish-record",
+    "pluralName": "publish-records",
+    "displayName": "发布记录",
+    "description": "文章发布到账号的记录"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "content-manager": {
+      "visible": true
+    },
+    "content-type-builder": {
+      "visible": true
+    }
+  },
+  "attributes": {
+    "article": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-studio.article-draft",
+      "inversedBy": "publishRecords"
+    },
+    "account": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-studio.publish-account",
+      "inversedBy": "publishRecords"
+    },
+    "externalId": {
+      "type": "string"
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": ["pending", "success", "failed"],
+      "default": "pending"
+    },
+    "error": {
+      "type": "text"
+    },
+    "retryCount": {
+      "type": "integer",
+      "default": 0
+    },
+    "publishedAt": {
+      "type": "datetime"
+    },
+    "createdAt": {
+      "type": "datetime"
+    },
+    "updatedAt": {
+      "type": "datetime"
+    }
+  }
+}

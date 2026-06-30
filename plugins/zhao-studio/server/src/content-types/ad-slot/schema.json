@@ -1,0 +1,53 @@
+{
+  "kind": "collectionType",
+  "collectionName": "zhao_ad_slots",
+  "info": {
+    "singularName": "ad-slot",
+    "pluralName": "ad-slots",
+    "displayName": "广告位",
+    "description": "广告位配置管理"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "content-manager": {
+      "visible": true
+    },
+    "content-type-builder": {
+      "visible": true
+    }
+  },
+  "attributes": {
+    "name": { "type": "string", "required": true },
+    "code": { "type": "string", "required": true, "unique": true },
+    "position": {
+      "type": "enumeration",
+      "enum": ["article-content", "sidebar", "footer", "header", "list-page", "home-page"],
+      "default": "article-content"
+    },
+    "type": {
+      "type": "enumeration",
+      "enum": ["product-link", "banner", "popup", "native"],
+      "default": "product-link"
+    },
+    "targetUrl": { "type": "string" },
+    "productId": { "type": "string" },
+    "imageUrl": { "type": "string" },
+    "isActive": { "type": "boolean", "default": true },
+    "browserLogs": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-studio.browser-log",
+      "mappedBy": "adSlot"
+    },
+    "statSummaries": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-studio.stat-summary",
+      "mappedBy": "adSlot"
+    },
+    "createdAt": { "type": "datetime" },
+    "updatedAt": { "type": "datetime" }
+  }
+}

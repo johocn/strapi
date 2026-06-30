@@ -1,0 +1,56 @@
+{
+  "kind": "collectionType",
+  "collectionName": "zhao_publish_accounts",
+  "info": {
+    "singularName": "publish-account",
+    "pluralName": "publish-accounts",
+    "displayName": "发布账号",
+    "description": "发布账号配置（一个平台可有多个账号）"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "content-manager": {
+      "visible": true
+    },
+    "content-type-builder": {
+      "visible": true
+    }
+  },
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true,
+      "maxLength": 100
+    },
+    "platform": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-studio.publish-platform",
+      "inversedBy": "accounts"
+    },
+    "config": {
+      "type": "json"
+    },
+    "isActive": {
+      "type": "boolean",
+      "default": true
+    },
+    "publishRecords": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-studio.publish-record",
+      "mappedBy": "account"
+    },
+    "lastPublishedAt": {
+      "type": "datetime"
+    },
+    "createdAt": {
+      "type": "datetime"
+    },
+    "updatedAt": {
+      "type": "datetime"
+    }
+  }
+}
