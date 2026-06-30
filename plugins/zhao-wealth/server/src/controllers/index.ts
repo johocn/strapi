@@ -7,6 +7,7 @@ import recommend from './recommend';
 import customerProduct from './customer-product';
 import collect from './collect';
 import adminApi from './admin-api';
+import riskMetric from './risk-metric';
 
 export default {
   product,
@@ -16,4 +17,5 @@ export default {
   'customer-product': customerProduct,
   collect,
   'admin-api': adminApi,
+  'risk-metric': riskMetric,
 };
