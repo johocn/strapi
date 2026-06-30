@@ -1,23 +1,12 @@
 {
+  "extends": "@strapi/typescript-utils/tsconfigs/server",
   "compilerOptions": {
-    "target": "ES2020",
-    "module": "CommonJS",
-    "moduleResolution": "node",
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "declaration": true,
-    "declarationMap": true,
+    "outDir": "dist",
+    "rootDir": ".",
     "sourceMap": true,
-    "outDir": "./dist",
-    "rootDir": "./server/src",
-    "baseUrl": ".",
-    "paths": {
-      "@strapi/strapi": ["../../node_modules/@strapi/strapi"],
-      "@strapi/utils": ["../../node_modules/@strapi/utils"]
-    },
-    "types": ["node"]
+    "esModuleInterop": true,
+    "resolveJsonModule": true
   },
-  "include": ["server/src/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["server/src"],
+  "exclude": ["node_modules", "dist", "tests"]
 }

@@ -1,0 +1,19 @@
+{
+  "kind": "collectionType",
+  "collectionName": "sso_apps",
+  "info": {
+    "singularName": "sso-app",
+    "pluralName": "sso-apps",
+    "displayName": "SSO App"
+  },
+  "options": { "draftAndPublish": false },
+  "attributes": {
+    "app_code": { "type": "string", "unique": true, "required": true },
+    "app_name": { "type": "string", "required": true },
+    "app_secret": { "type": "string", "required": true },
+    "redirect_uris": { "type": "json", "required": true },
+    "allowed_grant_types": { "type": "json", "required": true },
+    "is_active": { "type": "boolean", "default": true, "required": true },
+    "description": { "type": "string" }
+  }
+}
