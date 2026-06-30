@@ -13,7 +13,7 @@ export default {
         defaultMessage: "理财基金管理",
       },
       Component: async () => {
-        const { App } = await import("./pages/App");
+        const { App } = await import("./App");
 
         return App;
       },
