@@ -3,19 +3,35 @@ import type { Core } from "@strapi/strapi";
 const TEMPLATE_UID = "plugin::zhao-common.site-template";
 const SITE_CONFIG_UID = "plugin::zhao-common.site-config";
 
+/**
+ * 解析 extraConfig：兼容对象/字符串两种返回形式
+ * Strapi v5 Document Service 对 JSON 字段在某些情况下返回字符串而非对象
+ */
+function parseExtraConfig(raw: any): Record<string, any> {
+  if (raw && typeof raw === "object" && !Array.isArray(raw)) return raw;
+  if (typeof raw === "string" && raw.trim()) {
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return {};
+    }
+  }
+  return {};
+}
+
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
   /**
    * 列出模板
    */
   async listTemplates(filters: Record<string, any> = {}) {
-    return strapi.documents(TEMPLATE_UID).findMany({ filters, populate: { sites: { select: ["documentId"] } } });
+    return strapi.documents(TEMPLATE_UID).findMany({ filters, populate: { sites: { select: ["documentId"] } } as any });
   },
 
   /**
    * 获取模板
    */
   async getTemplate(documentId: string) {
-    return strapi.documents(TEMPLATE_UID).findOne({ documentId, populate: "*" });
+    return strapi.documents(TEMPLATE_UID).findOne({ documentId, populate: { sites: { select: ["documentId"] } } as any });
   },
 
   /**
@@ -107,7 +123,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         const extraConfig = { ...presetConfig, ...safeExtra };
         await strapi.documents(SITE_CONFIG_UID).update({
           documentId: site.documentId,
-          data: { template: null, extraConfig },
+          data: { template: null, extraConfig } as any,
         });
       }
     }
@@ -155,7 +171,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     // 校验站点存在（两种模式都需要）
     const currentSite: any = await strapi.documents(SITE_CONFIG_UID).findOne({
       documentId: siteDocumentId,
-      populate: "*",
+      populate: ["template"],
     });
     if (!currentSite) {
       const e: any = new Error("站点不存在");
@@ -191,7 +207,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       data: {
         extraConfig,
         template: template.documentId,
-      },
+      } as any,
     });
 
     return { success: true, templateName: template.name, mode };
@@ -214,27 +230,35 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       template = await this.getTemplate(templateId);
     }
 
+    const tenantEc = parseExtraConfig(siteConfig.extraConfig);
+    // 历史数据兼容：若 extraConfig 自身又嵌套了 extraConfig 字段（旧保存逻辑 bug），提取内层
+    if (tenantEc.extraConfig) {
+      const inner = parseExtraConfig(tenantEc.extraConfig);
+      Object.assign(tenantEc, inner);
+      delete tenantEc.extraConfig;
+    }
+
     // 没有关联模板或模板被禁用，直接返回租户配置
     if (!template || template.enabled === false) {
       return {
-        config: siteConfig.extraConfig ?? {},
+        config: tenantEc,
         meta: null,
       };
     }
 
     // 合并：模板预设值 ← 租户自定义值
-    const preset = (template.presetConfig && typeof template.presetConfig === "object" && !Array.isArray(template.presetConfig))
-      ? template.presetConfig : {};
+    const preset = parseExtraConfig(template.presetConfig);
     const mergedConfig = {
       ...preset,
-      ...(siteConfig.extraConfig ?? {}),
+      ...tenantEc,
     };
+
+    const fieldConstraints = parseExtraConfig(template.fieldConstraints);
 
     const meta = {
       templateId: template.documentId,
       templateName: template.name,
-      fieldConstraints: (template.fieldConstraints && typeof template.fieldConstraints === "object" && !Array.isArray(template.fieldConstraints))
-        ? template.fieldConstraints : {},
+      fieldConstraints,
       presetKeys: Object.keys(preset),
     };
 
@@ -299,7 +323,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         if (tpl.documentId !== excludeDocumentId) {
           await strapi.documents(TEMPLATE_UID).update({
             documentId: tpl.documentId,
-            data: { isDefault: false },
+            data: { isDefault: false } as any,
           });
         }
       }

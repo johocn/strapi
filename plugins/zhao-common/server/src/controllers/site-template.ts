@@ -8,7 +8,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       ctx.body = { data };
     } catch (error: any) {
       strapi.log.error(`[zhao-common] 获取模板列表失败: ${error.message}`);
-      ctx.status = error.status ?? 400;
+      ctx.status = error.status ?? 500;
       ctx.body = { error: error.message };
     }
   },
@@ -26,20 +26,20 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       ctx.body = { data };
     } catch (error: any) {
       strapi.log.error(`[zhao-common] 获取模板失败: ${error.message}`);
-      ctx.status = error.status ?? 400;
+      ctx.status = error.status ?? 500;
       ctx.body = { error: error.message };
     }
   },
 
   async create(ctx: any) {
     try {
-      const body = ctx.request.body?.data || ctx.request.body;
+      const body = ctx.request.body?.data ?? ctx.request.body;
       const service = strapi.plugin("zhao-common").service("site-template");
       const data = await service.createTemplate(body);
       ctx.body = { data };
     } catch (error: any) {
       strapi.log.error(`[zhao-common] 创建模板失败: ${error.message}`);
-      ctx.status = error.status ?? 400;
+      ctx.status = error.status ?? 500;
       ctx.body = { error: error.message };
     }
   },
@@ -47,13 +47,13 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async update(ctx: any) {
     try {
       const { documentId } = ctx.params;
-      const body = ctx.request.body?.data || ctx.request.body;
+      const body = ctx.request.body?.data ?? ctx.request.body;
       const service = strapi.plugin("zhao-common").service("site-template");
       const data = await service.updateTemplate(documentId, body);
       ctx.body = { data };
     } catch (error: any) {
       strapi.log.error(`[zhao-common] 更新模板失败: ${error.message}`);
-      ctx.status = error.status ?? 400;
+      ctx.status = error.status ?? 500;
       ctx.body = { error: error.message };
     }
   },
@@ -66,7 +66,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       ctx.body = { data };
     } catch (error: any) {
       strapi.log.error(`[zhao-common] 删除模板失败: ${error.message}`);
-      ctx.status = error.status ?? 400;
+      ctx.status = error.status ?? 500;
       ctx.body = { error: error.message };
     }
   },
@@ -90,7 +90,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       ctx.body = { data };
     } catch (error: any) {
       strapi.log.error(`[zhao-common] 应用模板失败: ${error.message}`);
-      ctx.status = error.status ?? 400;
+      ctx.status = error.status ?? 500;
       ctx.body = { error: error.message };
     }
   },

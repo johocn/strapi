@@ -6,7 +6,10 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./server/src/*"]
-    }
+    },
+    "noEmit": false,
+    "noEmitOnError": false,
+    "skipLibCheck": true
   },
   "include": [
     "server/src/**/*.ts"

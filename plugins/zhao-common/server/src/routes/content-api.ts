@@ -16,6 +16,8 @@ const adminRoute = (method: Method, path: string, handler: string, permission: s
     policies: [
       "plugin::zhao-auth.is-authenticated",
       { name: "plugin::zhao-auth.has-permission", config: { action: permission } },
+      // 非阻断：注入 ctx.state.channelScope 供控制器过滤
+      "plugin::zhao-auth.has-channel-scope",
     ],
   },
 });
@@ -31,8 +33,13 @@ export default () => ({
     adminRoute("POST", "/soft-delete/:contentType/:documentId/restore", "soft-delete.restore", "soft-delete.manage"),
     adminRoute("GET", "/soft-delete/:contentType/deleted", "soft-delete.findDeleted", "soft-delete.read"),
     // 统一配置路由
+    adminRoute("GET", "/config/sites", "config.getSiteList", "config.read"),
     adminRoute("GET", "/config/site", "config.getSite", "config.read"),
+    adminRoute("GET", "/config/site/:documentId", "config.getSiteOne", "config.read"),
+    adminRoute("POST", "/config/site", "config.createSite", "config.create"),
     adminRoute("PUT", "/config/site", "config.updateSite", "config.update"),
+    adminRoute("PUT", "/config/site/:documentId", "config.updateSiteById", "config.update"),
+    adminRoute("DELETE", "/config/site/:documentId", "config.deleteSite", "config.delete"),
     adminRoute("GET", "/config/third", "config.getThird", "config.read"),
     adminRoute("GET", "/config/third/:documentId", "config.getThirdOne", "config.read"),
     adminRoute("POST", "/config/third", "config.createThird", "config.create"),

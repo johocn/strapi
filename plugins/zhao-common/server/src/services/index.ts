@@ -6,6 +6,7 @@ import softDelete from "./soft-delete";
 import siteConfig from "./site-config";
 import siteTemplate from "./site-template";
 import config from "./config";
+import migrationRunner from "./migration-runner";
 
 export default {
   logger,
@@ -16,4 +17,5 @@ export default {
   "site-config": siteConfig,
   "site-template": siteTemplate,
   config,
+  "migration-runner": migrationRunner,
 };

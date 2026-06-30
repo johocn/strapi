@@ -89,14 +89,28 @@ async function runTests() {
       failed++;
     }
 
-    // 测试6: auth 包含 wechatEnabled 字段
-    console.log("\n测试6: auth 包含 wechatEnabled 字段");
-    if (data.auth && typeof data.auth.wechatEnabled === "boolean") {
-      console.log(`  ✓ PASS: wechatEnabled = ${data.auth.wechatEnabled}`);
+    // 测试6: auth 包含三方登录细分开关字段
+    console.log("\n测试6: auth 包含三方登录细分开关字段");
+    const thirdPartyFields = [
+      "wechatOfficialAccountEnabled",
+      "wechatMiniProgramEnabled",
+      "wechatOpenPlatformEnabled",
+      "alipayEnabled",
+      "douyinEnabled",
+      "thirdPartyEnabled"
+    ];
+    let allFieldsOk = true;
+    for (const f of thirdPartyFields) {
+      if (!data.auth || typeof data.auth[f] !== "boolean") {
+        allFieldsOk = false;
+        errors.push(`FAIL: auth.${f} 缺失或非布尔, 实际: ${data.auth?.[f]}`);
+        console.log(`  ✗ FAIL: auth.${f} 缺失或非布尔`);
+      }
+    }
+    if (allFieldsOk) {
+      console.log(`  ✓ PASS: 三方登录细分开关字段齐全`);
       passed++;
     } else {
-      errors.push(`FAIL: auth.wechatEnabled 缺失或非布尔, 实际: ${data.auth?.wechatEnabled}`);
-      console.log(`  ✗ FAIL: auth.wechatEnabled 缺失或非布尔`);
       failed++;
     }
 
@@ -114,7 +128,7 @@ async function runTests() {
     // 测试8: auth 不包含敏感信息
     console.log("\n测试8: auth 不包含敏感信息（无 secret/key/password）");
     const authStr = JSON.stringify(data.auth || {});
-    const hasSecret = /secret|key|password|token/i.test(authStr) && !/wechatEnabled|ssoEnabled|registerEnabled/.test(authStr);
+    const hasSecret = /secret|key|password|token/i.test(authStr) && !/wechatOfficialAccountEnabled|wechatMiniProgramEnabled|wechatOpenPlatformEnabled|alipayEnabled|douyinEnabled|thirdPartyEnabled|ssoEnabled|registerEnabled|inviteCodeRequired/.test(authStr);
     if (!hasSecret) {
       console.log("  ✓ PASS: 无敏感信息泄露");
       passed++;

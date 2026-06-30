@@ -25,16 +25,12 @@ const PUBLIC_FIELDS = [
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
   /**
    * 获取站点配置，支持按 documentId 查询
+   * 多租户安全：siteId 为空时不兜底，返回空配置，避免泄露其他租户数据
    */
   async getConfig(siteId?: string) {
     if (siteId) {
-      const record = await strapi.documents(UID).findOne({ documentId: siteId, populate: "*" });
+      const record = await strapi.documents(UID).findOne({ documentId: siteId, populate: ["channels", "template"] });
       if (record) return record;
-    }
-    // 兜底：返回第一条
-    const records = await strapi.documents(UID).findMany({ populate: "*" });
-    if (Array.isArray(records) && records.length > 0) {
-      return records[0];
     }
     return { ...DEFAULT_CONFIG };
   },
@@ -45,7 +41,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async getConfigByDomain(domain: string) {
     const records = await strapi.documents(UID).findMany({
       filters: { domain },
-      populate: "*",
+      populate: ["channels", "template"],
     });
     if (Array.isArray(records) && records.length > 0) {
       return records[0];
@@ -89,6 +85,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       await this._validateDomainUnique(data.domain);
     }
     return strapi.documents(UID).create({ data });
+  },
+
+  async deleteConfig(documentId: string) {
+    return strapi.documents(UID).delete({ documentId });
   },
 
   /**

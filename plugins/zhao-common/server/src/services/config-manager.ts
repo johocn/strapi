@@ -9,11 +9,11 @@ export interface ConfigManager {
 
 export default ({ strapi }: { strapi: Core.Strapi }): ConfigManager => ({
   get<T = unknown>(key: string, defaultValue?: T): T {
-    const pluginConfig = (strapi.plugin("zhao-common")?.config || {}) as unknown as Record<string, unknown>;
+    const pluginConfig = (strapi.plugin("zhao-common")?.config ?? {}) as unknown as Record<string, unknown>;
     return (pluginConfig[key] as T) ?? (defaultValue as T);
   },
 
   getAll(): Record<string, unknown> {
-    return (strapi.plugin("zhao-common")?.config || {}) as unknown as Record<string, unknown>;
+    return (strapi.plugin("zhao-common")?.config ?? {}) as unknown as Record<string, unknown>;
   },
 });

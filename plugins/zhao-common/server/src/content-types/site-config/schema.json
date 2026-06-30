@@ -70,9 +70,9 @@
     },
     "channels": {
       "type": "relation",
-      "relation": "oneToMany",
+      "relation": "manyToMany",
       "target": "plugin::zhao-channel.channel",
-      "inversedBy": "site"
+      "mappedBy": "sites"
     },
     "featureFlags": {
       "type": "json",

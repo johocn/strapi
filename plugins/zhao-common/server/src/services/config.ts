@@ -32,6 +32,33 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     }
   },
 
+  async getSiteConfigList(params: any = {}) {
+    try {
+      const { page = 1, pageSize = 20, filters = {}, sort } = params;
+      const query: any = {
+        filters,
+        populate: ["channels", "template"],
+      };
+      if (sort) query.sort = sort;
+      if (page && pageSize) {
+        const [results, total] = await Promise.all([
+          strapi.documents("plugin::zhao-common.site-config").findMany({
+            ...query,
+            page,
+            pageSize,
+          }),
+          strapi.documents("plugin::zhao-common.site-config").count({ filters }),
+        ]);
+        return { results, pagination: { page, pageSize, total } };
+      }
+      const results = await strapi.documents("plugin::zhao-common.site-config").findMany(query);
+      return { results, pagination: null };
+    } catch (error) {
+      strapi.log.warn("[config] getSiteConfigList failed:", (error as Error).message);
+      return { results: [], pagination: null };
+    }
+  },
+
   async updateSiteConfig(data: any, siteId?: string) {
     try {
       // 约束校验已移至 controller 层（对 extraData 校验，而非整个 data）
@@ -66,7 +93,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     try {
       const results = await strapi.documents("plugin::zhao-third.third-party-config").findMany({
         filters,
-        populate: "*",
+        populate: [],
       });
       return results;
     } catch (error) {
@@ -147,7 +174,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         const primaryProvider = service.getPrimaryProvider();
         return {
           activeProviders,
-          primaryProvider: primaryProvider ? activeProviders[0] : null,
+          primaryProvider: primaryProvider ?? activeProviders[0] ?? null,
           providerTypes: service.getProviderTypes(),
         };
       }
@@ -160,8 +187,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
   async updateOssConfig(data: any) {
     // OSS配置通过插件配置文件管理，此方法预留
-    strapi.log.warn("[config] updateOssConfig: OSS config managed via plugin config file");
-    return null;
+    const e: any = new Error("OSS配置更新功能未实现");
+    e.status = 501;
+    throw e;
   },
 
   // ========== SSO应用（插件不存在时返回空） ==========
@@ -169,7 +197,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     try {
       return await strapi.documents("plugin::zhao-sso.sso-app").findMany({
         filters,
-        populate: "*",
+        populate: [],
       });
     } catch (error) {
       strapi.log.warn("[config] getSsoApps: plugin not available");
@@ -246,7 +274,24 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       result.site = sitePublic;
 
       // 合并模板预设值
-      let ec: Record<string, any> = fullConfig?.extraConfig ?? {};
+      let ec: Record<string, any> = {};
+      const rawEc = fullConfig?.extraConfig;
+      if (rawEc && typeof rawEc === "object" && !Array.isArray(rawEc)) {
+        ec = rawEc as Record<string, any>;
+      } else if (typeof rawEc === "string" && rawEc.trim()) {
+        try { ec = JSON.parse(rawEc); } catch { ec = {}; }
+      }
+      // 历史数据兼容：若 ec 自身又嵌套了 extraConfig 字段（旧保存逻辑 bug），提取内层
+      if (ec.extraConfig && typeof ec.extraConfig === "object" && !Array.isArray(ec.extraConfig)) {
+        ec = { ...ec, ...ec.extraConfig };
+        delete ec.extraConfig;
+      } else if (typeof ec.extraConfig === "string" && ec.extraConfig.trim()) {
+        try {
+          const inner = JSON.parse(ec.extraConfig);
+          ec = { ...ec, ...inner };
+          delete ec.extraConfig;
+        } catch { /* ignore */ }
+      }
       if (templateService && typeof templateService.getMergedConfig === "function" && fullConfig) {
         const { config } = await templateService.getMergedConfig(fullConfig);
         ec = config ?? {};
@@ -257,8 +302,21 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
       // 认证配置
       const authMode = ec.authMode ?? "local";
+      // 细分开关（任一 true 即视为启用三方登录）
+      const wechatOfficialAccountEnabled = ec.wechatOfficialAccountEnabled === true;
+      const wechatMiniProgramEnabled = ec.wechatMiniProgramEnabled === true;
+      const wechatOpenPlatformEnabled = ec.wechatOpenPlatformEnabled === true;
+      const alipayEnabled = ec.alipayEnabled === true;
+      const douyinEnabled = ec.douyinEnabled === true;
+      const thirdPartyEnabled =
+        wechatOfficialAccountEnabled ||
+        wechatMiniProgramEnabled ||
+        wechatOpenPlatformEnabled ||
+        alipayEnabled ||
+        douyinEnabled;
+
       const methods: string[] = ["password", "sms"];
-      if (authMode === "third" || ec.thirdPartyEnabled || ec.wechatMiniProgramEnabled) {
+      if (authMode === "third" || thirdPartyEnabled) {
         methods.push("wechat");
       }
       if (authMode === "sso" || ec.ssoEnabled) {
@@ -267,11 +325,15 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       result.auth = {
         mode: authMode,
         methods,
-        wechatEnabled: ec.thirdPartyEnabled ?? ec.wechatMiniProgramEnabled ?? false,
-        thirdPartyEnabled: ec.thirdPartyEnabled ?? false,
+        wechatOfficialAccountEnabled,
+        wechatMiniProgramEnabled,
+        wechatOpenPlatformEnabled,
+        alipayEnabled,
+        douyinEnabled,
+        thirdPartyEnabled,
         ssoEnabled: ec.ssoEnabled ?? false,
         ssoLoginUrl: ec.ssoLoginUrl ?? null,
-        registerEnabled: ec.registerEnabled ?? true,
+        registerEnabled: ec.registerEnabled ?? false,
         inviteCodeRequired: ec.inviteCodeRequired ?? false,
       };
 

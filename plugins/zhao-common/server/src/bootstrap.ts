@@ -17,13 +17,13 @@ const DEFAULT_SITE_CONFIG = {
   extraConfig: {
     // 认证
     authMode: "local",
-    thirdPartyEnabled: false,
     ssoEnabled: false,
     ssoLoginUrl: "",
     registerEnabled: true,
     inviteCodeRequired: false,
-    wechatMiniProgramEnabled: false,
     wechatOfficialAccountEnabled: false,
+    wechatMiniProgramEnabled: false,
+    wechatOpenPlatformEnabled: false,
     alipayEnabled: false,
     douyinEnabled: false,
     passwordMinLength: 6,
@@ -80,7 +80,7 @@ const DEFAULT_SITE_CONFIG = {
  */
 const getSoftDeleteModels = (strapi: Core.Strapi): string[] =>
   Object.keys(strapi.contentTypes).filter(
-    (uid) => "deletedAt" in strapi.contentTypes[uid].attributes
+    (uid) => uid.startsWith("plugin::zhao-") && "deletedAt" in strapi.contentTypes[uid].attributes
   );
 
 /**
@@ -89,19 +89,39 @@ const getSoftDeleteModels = (strapi: Core.Strapi): string[] =>
  */
 const addDeletedAtFilter = (event: any) => {
   const { params } = event;
+  if (!params) return;
   if (!params.where) {
     params.where = {};
   }
-  // 已显式指定 deletedAt 条件时跳过
+  // 已显式指定 deletedAt 条件时跳过（包括 $ne 用于查询已删除记录）
   if ("deletedAt" in params.where) return;
   params.where.deletedAt = null;
 };
 
 const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
-  // 注册站点识别中间件（在认证之前）
-  strapi.server.use(siteResolver({}, { strapi }));
+  try {
+    const migrationService = strapi.plugin("zhao-common").service("migration-runner");
+    if (migrationService && typeof migrationService.runAllMigrations === "function") {
+      await migrationService.runAllMigrations();
+    }
+  } catch (err: any) {
+    strapi.log.error(`[zhao-common] 数据库迁移执行失败: ${err.message}`);
+    throw err;
+  }
+
+  strapi.server.use(async (ctx: any, next: any) => {
+    if (ctx.path?.startsWith("/admin") || ctx.path?.startsWith("/content-manager") || ctx.path?.startsWith("/health")) {
+      return next();
+    }
+    const middleware = siteResolver({}, { strapi });
+    if (typeof middleware === 'function') {
+      return middleware(ctx, next);
+    }
+    return next();
+  });
 
   // 站点配置初始化
+  // 注意：多实例并发启动时此处存在竞态条件，建议未来引入分布式锁或 upsert 模式
   const existingConfig = await strapi.documents(SITE_CONFIG_UID).findMany();
   if (!existingConfig || (Array.isArray(existingConfig) && existingConfig.length === 0)) {
     // 先确保默认模板存在
