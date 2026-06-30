@@ -4,9 +4,9 @@ import jobs from './jobs';
 import { isTradingDay } from './utils';
 import { getCollectQueue, getCalculateQueue } from './jobs/queue-setup';
 
-export default ({ strapi }) => {
+export default async ({ strapi }) => {
   // 初始化队列任务
-  jobs({ strapi });
+  await jobs({ strapi });
 
   // 注册 Cron 定时任务
   // 8:00 交易日判断（仅日志）

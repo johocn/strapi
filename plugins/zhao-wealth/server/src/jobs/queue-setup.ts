@@ -1,18 +1,28 @@
 'use strict';
 
 import Queue from 'bull';
-import { markRedisUnavailable } from '../utils';
+import { markRedisUnavailable, ensureRedisAvailable } from '../utils';
 
 let collectQueue: Queue.Queue | null = null;
 let calculateQueue: Queue.Queue | null = null;
 let recalculateQueue: Queue.Queue | null = null;
 let queueSetupFailed = false;
 
-export function setupQueues(strapi: any) {
+export async function setupQueues(strapi: any) {
   const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 
+  // 预探测 Redis 可用性，不可用则直接跳过队列创建（避免 Bull 内部 ioredis 崩溃进程）
+  const available = await ensureRedisAvailable();
+  if (!available) {
+    queueSetupFailed = true;
+    markRedisUnavailable();
+    strapi.log.warn('[zhao-wealth] Redis 不可用，队列功能降级（API 与手动操作仍可用）');
+    return;
+  }
+
   try {
-    collectQueue = new Queue('wealth-collect', redisUrl, {
+    // Bull 构造参数使用对象形式，maxRetriesPerRequest: 1 作为兜底防护
+    collectQueue = new Queue('wealth-collect', { redis: redisUrl, maxRetriesPerRequest: 1 }, {
       defaultJobOptions: {
         attempts: 3,
         backoff: { type: 'fixed', delay: 5 * 60 * 1000 },
@@ -21,7 +31,7 @@ export function setupQueues(strapi: any) {
       },
     });
 
-    calculateQueue = new Queue('wealth-calculate', redisUrl, {
+    calculateQueue = new Queue('wealth-calculate', { redis: redisUrl, maxRetriesPerRequest: 1 }, {
       defaultJobOptions: {
         attempts: 2,
         backoff: { type: 'fixed', delay: 1 * 60 * 1000 },
@@ -30,7 +40,7 @@ export function setupQueues(strapi: any) {
       },
     });
 
-    recalculateQueue = new Queue('wealth-recalculate', redisUrl, {
+    recalculateQueue = new Queue('wealth-recalculate', { redis: redisUrl, maxRetriesPerRequest: 1 }, {
       defaultJobOptions: {
         attempts: 1,
         removeOnComplete: true,

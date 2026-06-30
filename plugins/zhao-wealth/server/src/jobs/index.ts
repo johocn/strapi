@@ -5,8 +5,8 @@ import { registerCollectJobs } from './collect-job';
 import { registerCalculateJobs } from './calculate-job';
 import { registerRiskMetricJobs } from './risk-metric-job';
 
-export default ({ strapi }) => {
-  setupQueues(strapi);
+export default async ({ strapi }) => {
+  await setupQueues(strapi);
   registerCollectJobs(strapi);
   registerCalculateJobs(strapi);
   registerRiskMetricJobs(strapi);
