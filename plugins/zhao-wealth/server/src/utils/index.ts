@@ -2,7 +2,7 @@
 
 import { isTradingDay, getTradingDays, getPreviousTradingDay, getNaturalDays } from './trading-day';
 import { calculateAnnualReturn, calculateMoneyFundAnnual, calculateYearlyReturn, isEstimateValue } from './annual-formula';
-import { getRedisClient, acquireLock, releaseLock } from './redis-client';
+import { getRedisClient, acquireLock, releaseLock, ensureRedisAvailable, markRedisUnavailable, closeRedisClient } from './redis-client';
 import { successResponse, errorResponse, paginatedResponse } from './response';
 
 export {
@@ -17,6 +17,9 @@ export {
   getRedisClient,
   acquireLock,
   releaseLock,
+  ensureRedisAvailable,
+  markRedisUnavailable,
+  closeRedisClient,
   successResponse,
   errorResponse,
   paginatedResponse,
