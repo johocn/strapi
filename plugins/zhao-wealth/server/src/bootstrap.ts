@@ -74,5 +74,35 @@ export default ({ strapi }) => {
     },
   });
 
+  // 20:30 交易日风险指标计算
+  strapi.cron.add({
+    'wealth-risk-metric-trigger': {
+      task: async ({ strapi }) => {
+        const today = new Date();
+        if (!isTradingDay(today)) {
+          strapi.log.info('[zhao-wealth] 非交易日，跳过风险指标计算');
+          return;
+        }
+
+        const queue = getCalculateQueue();
+        if (!queue) {
+          strapi.log.warn('[zhao-wealth] 计算队列不可用（Redis 未就绪），跳过风险指标计算');
+          return;
+        }
+
+        const products = await strapi.db.query('plugin::zhao-wealth.wealth-product').findMany({
+          where: { status: true },
+        });
+
+        for (const product of products) {
+          queue.add('calculate-risk-metric', { productId: product.id, snapshotDate: today });
+        }
+
+        strapi.log.info(`[zhao-wealth] 20:30 风险指标计算任务已触发，${products.length}个产品`);
+      },
+      options: '30 20 * * *',
+    },
+  });
+
   strapi.log.info('[zhao-wealth] 插件已启动');
 };
