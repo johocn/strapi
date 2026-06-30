@@ -1,4 +1,4 @@
-'use strict';
+﻿'use strict';
 
 export default ({ strapi }) => ({
   /**
@@ -8,7 +8,7 @@ export default ({ strapi }) => ({
     const recommendations: any[] = [];
 
     // 1. 手动配置推荐（最高优先级）
-    const manualRecommend = await strapi.db.query('api::wealth-recommend-config.wealth-recommend-config').findMany({
+    const manualRecommend = await strapi.db.query('plugin::zhao-wealth.wealth-recommend-config').findMany({
       where: {
         channel: channelId,
         status: true,
@@ -19,7 +19,7 @@ export default ({ strapi }) => ({
     });
 
     for (const config of manualRecommend) {
-      const latestSnapshot = await strapi.db.query('api::wealth-annual-snapshot.wealth-annual-snapshot').findOne({
+      const latestSnapshot = await strapi.db.query('plugin::zhao-wealth.wealth-annual-snapshot').findOne({
         where: { product: config.product.id },
         orderBy: { snapshotDate: 'desc' },
       });
@@ -43,7 +43,7 @@ export default ({ strapi }) => ({
       });
 
       if (user && user.riskPreference) {
-        const matchedProducts = await strapi.db.query('api::wealth-product.wealth-product').findMany({
+        const matchedProducts = await strapi.db.query('plugin::zhao-wealth.wealth-product').findMany({
           where: {
             riskLevel: { $lte: user.riskPreference },
             status: true,
@@ -55,7 +55,7 @@ export default ({ strapi }) => ({
         for (const product of matchedProducts) {
           if (recommendations.some(r => r.productId === product.id)) continue;
 
-          const latestSnapshot = await strapi.db.query('api::wealth-annual-snapshot.wealth-annual-snapshot').findOne({
+          const latestSnapshot = await strapi.db.query('plugin::zhao-wealth.wealth-annual-snapshot').findOne({
             where: { product: product.id },
             orderBy: { snapshotDate: 'desc' },
           });
@@ -76,7 +76,7 @@ export default ({ strapi }) => ({
 
     // 3. 若仍不足limit条，补充年化收益排名
     if (recommendations.length < limit) {
-      const topProducts = await strapi.db.query('api::wealth-annual-snapshot.wealth-annual-snapshot').findMany({
+      const topProducts = await strapi.db.query('plugin::zhao-wealth.wealth-annual-snapshot').findMany({
         where: {
           annual1y: { $ne: null },
         },

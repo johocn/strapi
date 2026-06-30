@@ -1,4 +1,4 @@
-'use strict';
+﻿'use strict';
 
 import { getCalculateQueue, getRecalculateQueue } from './queue-setup';
 import { acquireLock, releaseLock } from '../utils';
@@ -14,7 +14,7 @@ export function registerCalculateJobs(strapi: any) {
     const snapshot = await strapi.service('plugin::zhao-wealth.nav-calculator').calculateSnapshot(productId, today);
 
     if (snapshot) {
-      await strapi.db.query('api::wealth-annual-snapshot.wealth-annual-snapshot').create({ data: snapshot });
+      await strapi.db.query('plugin::zhao-wealth.wealth-annual-snapshot').create({ data: snapshot });
       strapi.log.info(`[zhao-wealth] 产品${productId}年化快照计算完成`);
     }
   });
@@ -23,7 +23,7 @@ export function registerCalculateJobs(strapi: any) {
   queue.process('recalculate-product', async (job) => {
     const { productId } = job.data;
 
-    const navs = await strapi.db.query('api::wealth-nav.wealth-nav').findMany({
+    const navs = await strapi.db.query('plugin::zhao-wealth.wealth-nav').findMany({
       where: { product: productId },
       orderBy: { navDate: 'asc' },
     });

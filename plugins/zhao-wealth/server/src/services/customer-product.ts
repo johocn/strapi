@@ -1,4 +1,4 @@
-'use strict';
+﻿'use strict';
 
 export default ({ strapi }) => ({
   /**
@@ -8,7 +8,7 @@ export default ({ strapi }) => ({
     const limit = Math.min(pageSize, 500);
     const offset = (page - 1) * limit;
 
-    const customerProducts = await strapi.db.query('api::wealth-customer-product.wealth-customer-product').findMany({
+    const customerProducts = await strapi.db.query('plugin::zhao-wealth.wealth-customer-product').findMany({
       where: { user: userId },
       limit,
       offset,
@@ -16,18 +16,18 @@ export default ({ strapi }) => ({
       populate: ['product'],
     });
 
-    const total = await strapi.db.query('api::wealth-customer-product.wealth-customer-product').count({
+    const total = await strapi.db.query('plugin::zhao-wealth.wealth-customer-product').count({
       where: { user: userId },
     });
 
     // 补充最新净值和年化
     const list = await Promise.all(customerProducts.map(async (cp) => {
-      const latestNav = await strapi.db.query('api::wealth-nav.wealth-nav').findOne({
+      const latestNav = await strapi.db.query('plugin::zhao-wealth.wealth-nav').findOne({
         where: { product: cp.product.id },
         orderBy: { navDate: 'desc' },
       });
 
-      const latestSnapshot = await strapi.db.query('api::wealth-annual-snapshot.wealth-annual-snapshot').findOne({
+      const latestSnapshot = await strapi.db.query('plugin::zhao-wealth.wealth-annual-snapshot').findOne({
         where: { product: cp.product.id },
         orderBy: { snapshotDate: 'desc' },
       });
@@ -47,7 +47,7 @@ export default ({ strapi }) => ({
    */
   async addProduct(userId: number, productId: number, channelId: number) {
     // 检查是否已存在
-    const existing = await strapi.db.query('api::wealth-customer-product.wealth-customer-product').findOne({
+    const existing = await strapi.db.query('plugin::zhao-wealth.wealth-customer-product').findOne({
       where: { user: userId, product: productId },
     });
 
@@ -55,7 +55,7 @@ export default ({ strapi }) => ({
       return existing;
     }
 
-    return await strapi.db.query('api::wealth-customer-product.wealth-customer-product').create({
+    return await strapi.db.query('plugin::zhao-wealth.wealth-customer-product').create({
       data: {
         user: userId,
         product: productId,
@@ -70,7 +70,7 @@ export default ({ strapi }) => ({
    * 删除自选产品
    */
   async removeProduct(userId: number, customerProductId: number) {
-    const cp = await strapi.db.query('api::wealth-customer-product.wealth-customer-product').findOne({
+    const cp = await strapi.db.query('plugin::zhao-wealth.wealth-customer-product').findOne({
       where: { id: customerProductId },
     });
 
@@ -78,7 +78,7 @@ export default ({ strapi }) => ({
       return null;
     }
 
-    return await strapi.db.query('api::wealth-customer-product.wealth-customer-product').delete({
+    return await strapi.db.query('plugin::zhao-wealth.wealth-customer-product').delete({
       where: { id: customerProductId },
     });
   },
@@ -87,7 +87,7 @@ export default ({ strapi }) => ({
    * 获取渠道下所有客户自选统计
    */
   async getChannelProductsStats(channelId: number) {
-    const stats = await strapi.db.query('api::wealth-customer-product.wealth-customer-product').findMany({
+    const stats = await strapi.db.query('plugin::zhao-wealth.wealth-customer-product').findMany({
       where: { channel: channelId },
       populate: ['product', 'user'],
     });

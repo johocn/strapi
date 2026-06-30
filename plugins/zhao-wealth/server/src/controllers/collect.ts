@@ -1,4 +1,4 @@
-'use strict';
+﻿'use strict';
 
 import { successResponse, errorResponse } from '../utils';
 
@@ -34,13 +34,13 @@ export default ({ strapi }) => ({
       const { productId } = ctx.query;
 
       if (productId) {
-        const config = await strapi.db.query('api::wealth-collect-config.wealth-collect-config').findOne({
+        const config = await strapi.db.query('plugin::zhao-wealth.wealth-collect-config').findOne({
           where: { product: Number(productId) },
         });
 
         ctx.body = successResponse(config);
       } else {
-        const configs = await strapi.db.query('api::wealth-collect-config.wealth-collect-config').findMany({
+        const configs = await strapi.db.query('plugin::zhao-wealth.wealth-collect-config').findMany({
           populate: ['product'],
         });
 

@@ -1,4 +1,4 @@
-'use strict';
+﻿'use strict';
 
 export default ({ strapi }) => ({
   /**
@@ -8,14 +8,14 @@ export default ({ strapi }) => ({
     const limit = Math.min(pageSize, 500);
     const offset = (page - 1) * limit;
 
-    const products = await strapi.db.query('api::wealth-product.wealth-product').findMany({
+    const products = await strapi.db.query('plugin::zhao-wealth.wealth-product').findMany({
       where: filters,
       limit,
       offset,
       populate: ['company'],
     });
 
-    const total = await strapi.db.query('api::wealth-product.wealth-product').count({
+    const total = await strapi.db.query('plugin::zhao-wealth.wealth-product').count({
       where: filters,
     });
 
@@ -26,13 +26,13 @@ export default ({ strapi }) => ({
    * 获取产品详情
    */
   async findOne(id: number) {
-    const product = await strapi.db.query('api::wealth-product.wealth-product').findOne({
+    const product = await strapi.db.query('plugin::zhao-wealth.wealth-product').findOne({
       where: { id },
       populate: ['company'],
     });
 
     // 获取最新净值
-    const latestNav = await strapi.db.query('api::wealth-nav.wealth-nav').findOne({
+    const latestNav = await strapi.db.query('plugin::zhao-wealth.wealth-nav').findOne({
       where: { product: id },
       orderBy: { navDate: 'desc' },
     });
@@ -47,14 +47,14 @@ export default ({ strapi }) => ({
    * 创建产品
    */
   async create(data: any) {
-    return strapi.db.query('api::wealth-product.wealth-product').create({ data });
+    return strapi.db.query('plugin::zhao-wealth.wealth-product').create({ data });
   },
 
   /**
    * 更新产品
    */
   async update(id: number, data: any) {
-    return strapi.db.query('api::wealth-product.wealth-product').update({
+    return strapi.db.query('plugin::zhao-wealth.wealth-product').update({
       where: { id },
       data,
     });
@@ -64,7 +64,7 @@ export default ({ strapi }) => ({
    * 删除产品
    */
   async delete(id: number) {
-    return strapi.db.query('api::wealth-product.wealth-product').delete({
+    return strapi.db.query('plugin::zhao-wealth.wealth-product').delete({
       where: { id },
     });
   },

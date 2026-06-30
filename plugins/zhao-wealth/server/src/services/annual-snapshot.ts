@@ -1,4 +1,4 @@
-'use strict';
+﻿'use strict';
 
 export default ({ strapi }) => ({
   /**
@@ -8,7 +8,7 @@ export default ({ strapi }) => ({
     const limit = Math.min(pageSize, 500);
     const offset = (page - 1) * limit;
 
-    const snapshots = await strapi.db.query('api::wealth-annual-snapshot.wealth-annual-snapshot').findMany({
+    const snapshots = await strapi.db.query('plugin::zhao-wealth.wealth-annual-snapshot').findMany({
       where: {
         product: productId,
         snapshotDate: { $gte: startDate, $lte: endDate },
@@ -18,7 +18,7 @@ export default ({ strapi }) => ({
       orderBy: { snapshotDate: 'desc' },
     });
 
-    const total = await strapi.db.query('api::wealth-annual-snapshot.wealth-annual-snapshot').count({
+    const total = await strapi.db.query('plugin::zhao-wealth.wealth-annual-snapshot').count({
       where: {
         product: productId,
         snapshotDate: { $gte: startDate, $lte: endDate },
@@ -32,7 +32,7 @@ export default ({ strapi }) => ({
    * 获取年度收益列表
    */
   async getYearlyReturns(productId: number) {
-    const returns = await strapi.db.query('api::wealth-yearly-return.wealth-yearly-return').findMany({
+    const returns = await strapi.db.query('plugin::zhao-wealth.wealth-yearly-return').findMany({
       where: { product: productId },
       orderBy: { year: 'desc' },
     });
@@ -44,7 +44,7 @@ export default ({ strapi }) => ({
    * 计算并保存年度收益
    */
   async calculateYearlyReturn(productId: number, year: number) {
-    const product = await strapi.db.query('api::wealth-product.wealth-product').findOne({
+    const product = await strapi.db.query('plugin::zhao-wealth.wealth-product').findOne({
       where: { id: productId },
     });
 
@@ -57,7 +57,7 @@ export default ({ strapi }) => ({
       const yearStart = new Date(year, 0, 1);
       const yearEnd = new Date(year, 11, 31);
 
-      const incomes = await strapi.db.query('api::wealth-money-income.wealth-money-income').findMany({
+      const incomes = await strapi.db.query('plugin::zhao-wealth.wealth-money-income').findMany({
         where: {
           product: productId,
           incomeDate: { $gte: yearStart, $lte: yearEnd },
@@ -73,7 +73,7 @@ export default ({ strapi }) => ({
       const avgIncome = totalIncome / incomes.length;
       const annualReturn = avgIncome * 365 / 10000;
 
-      return await strapi.db.query('api::wealth-yearly-return.wealth-yearly-return').create({
+      return await strapi.db.query('plugin::zhao-wealth.wealth-yearly-return').create({
         data: {
           product: productId,
           year,
@@ -83,12 +83,12 @@ export default ({ strapi }) => ({
       });
     } else {
       // 理财/普通基金年度收益计算
-      const yearStartNav = await strapi.db.query('api::wealth-nav.wealth-nav').findOne({
+      const yearStartNav = await strapi.db.query('plugin::zhao-wealth.wealth-nav').findOne({
         where: { product: productId },
         orderBy: { navDate: 'asc' },
       });
 
-      const yearEndNav = await strapi.db.query('api::wealth-nav.wealth-nav').findOne({
+      const yearEndNav = await strapi.db.query('plugin::zhao-wealth.wealth-nav').findOne({
         where: { product: productId },
         orderBy: { navDate: 'desc' },
       });
@@ -109,7 +109,7 @@ export default ({ strapi }) => ({
 
       const annualReturn = Math.pow(yearEndNav.unitNav / yearStartNav.unitNav, 365 / 365) - 1;
 
-      return await strapi.db.query('api::wealth-yearly-return.wealth-yearly-return').create({
+      return await strapi.db.query('plugin::zhao-wealth.wealth-yearly-return').create({
         data: {
           product: productId,
           year,

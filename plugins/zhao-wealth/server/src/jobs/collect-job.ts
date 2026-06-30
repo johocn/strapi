@@ -1,4 +1,4 @@
-'use strict';
+﻿'use strict';
 
 import { getCollectQueue } from './queue-setup';
 import { getCollector } from '../collectors';
@@ -11,7 +11,7 @@ export function registerCollectJobs(strapi: any) {
   queue.process('collect-single', async (job) => {
     const { productId } = job.data;
 
-    const config = await strapi.db.query('api::wealth-collect-config.wealth-collect-config').findOne({
+    const config = await strapi.db.query('plugin::zhao-wealth.wealth-collect-config').findOne({
       where: { product: productId },
       populate: ['product'],
     });
@@ -27,7 +27,7 @@ export function registerCollectJobs(strapi: any) {
       const navData = await collector.collectNavData(config.product.productCode);
 
       for (const nav of navData) {
-        await strapi.db.query('api::wealth-nav.wealth-nav').create({
+        await strapi.db.query('plugin::zhao-wealth.wealth-nav').create({
           data: {
             product: productId,
             ...nav,
@@ -35,7 +35,7 @@ export function registerCollectJobs(strapi: any) {
         });
       }
 
-      await strapi.db.query('api::wealth-collect-config.wealth-collect-config').update({
+      await strapi.db.query('plugin::zhao-wealth.wealth-collect-config').update({
         where: { id: config.id },
         data: {
           collectStatus: 'success',
@@ -52,7 +52,7 @@ export function registerCollectJobs(strapi: any) {
     } catch (error) {
       strapi.log.error(`[zhao-wealth] 产品${productId}采集失败: ${error.message}`);
 
-      await strapi.db.query('api::wealth-collect-config.wealth-collect-config').update({
+      await strapi.db.query('plugin::zhao-wealth.wealth-collect-config').update({
         where: { id: config.id },
         data: {
           collectStatus: 'failed',
@@ -74,7 +74,7 @@ export function registerCollectJobs(strapi: any) {
     }
 
     try {
-      const configs = await strapi.db.query('api::wealth-collect-config.wealth-collect-config').findMany({
+      const configs = await strapi.db.query('plugin::zhao-wealth.wealth-collect-config').findMany({
         populate: ['product'],
       });
 

@@ -1,4 +1,4 @@
-'use strict';
+﻿'use strict';
 
 import { successResponse, paginatedResponse, errorResponse } from '../utils';
 
@@ -14,7 +14,7 @@ export default ({ strapi }) => ({
       const start = startDate ? new Date(startDate) : new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
       const end = endDate ? new Date(endDate) : new Date();
 
-      const navs = await strapi.db.query('api::wealth-nav.wealth-nav').findMany({
+      const navs = await strapi.db.query('plugin::zhao-wealth.wealth-nav').findMany({
         where: {
           product: Number(id),
           navDate: { $gte: start, $lte: end },
@@ -24,7 +24,7 @@ export default ({ strapi }) => ({
         orderBy: { navDate: 'desc' },
       });
 
-      const total = await strapi.db.query('api::wealth-nav.wealth-nav').count({
+      const total = await strapi.db.query('plugin::zhao-wealth.wealth-nav').count({
         where: {
           product: Number(id),
           navDate: { $gte: start, $lte: end },

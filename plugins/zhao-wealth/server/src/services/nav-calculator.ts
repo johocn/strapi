@@ -1,4 +1,4 @@
-'use strict';
+﻿'use strict';
 
 import { getPreviousTradingDay, getNaturalDays, calculateAnnualReturn, calculateMoneyFundAnnual, isEstimateValue } from '../utils';
 
@@ -7,7 +7,7 @@ export default ({ strapi }) => ({
    * 计算单个产品的年化快照
    */
   async calculateSnapshot(productId: number, snapshotDate: Date) {
-    const product = await strapi.db.query('api::wealth-product.wealth-product').findOne({
+    const product = await strapi.db.query('plugin::zhao-wealth.wealth-product').findOne({
       where: { id: productId },
     });
 
@@ -46,7 +46,7 @@ export default ({ strapi }) => ({
     };
 
     // 获取当日净值
-    const currentNav = await strapi.db.query('api::wealth-nav.wealth-nav').findOne({
+    const currentNav = await strapi.db.query('plugin::zhao-wealth.wealth-nav').findOne({
       where: { product: productId, navDate: snapshotDate },
     });
 
@@ -63,7 +63,7 @@ export default ({ strapi }) => ({
         continue;
       }
 
-      const prevNav = await strapi.db.query('api::wealth-nav.wealth-nav').findOne({
+      const prevNav = await strapi.db.query('plugin::zhao-wealth.wealth-nav').findOne({
         where: { product: productId, navDate: prevDate },
       });
 
@@ -111,7 +111,7 @@ export default ({ strapi }) => ({
       const startDate = new Date(snapshotDate);
       startDate.setDate(startDate.getDate() - period.days);
 
-      const incomes = await strapi.db.query('api::wealth-money-income.wealth-money-income').findMany({
+      const incomes = await strapi.db.query('plugin::zhao-wealth.wealth-money-income').findMany({
         where: {
           product: productId,
           incomeDate: { $gte: startDate, $lte: snapshotDate },
@@ -138,7 +138,7 @@ export default ({ strapi }) => ({
    * 批量重算年化快照
    */
   async recalculateSnapshots(productId: number, startDate: Date, endDate: Date) {
-    const navs = await strapi.db.query('api::wealth-nav.wealth-nav').findMany({
+    const navs = await strapi.db.query('plugin::zhao-wealth.wealth-nav').findMany({
       where: {
         product: productId,
         navDate: { $gte: startDate, $lte: endDate },
@@ -151,17 +151,17 @@ export default ({ strapi }) => ({
 
       if (snapshot) {
         // 更新或创建快照
-        const existing = await strapi.db.query('api::wealth-annual-snapshot.wealth-annual-snapshot').findOne({
+        const existing = await strapi.db.query('plugin::zhao-wealth.wealth-annual-snapshot').findOne({
           where: { product: productId, snapshotDate: nav.navDate },
         });
 
         if (existing) {
-          await strapi.db.query('api::wealth-annual-snapshot.wealth-annual-snapshot').update({
+          await strapi.db.query('plugin::zhao-wealth.wealth-annual-snapshot').update({
             where: { id: existing.id },
             data: snapshot,
           });
         } else {
-          await strapi.db.query('api::wealth-annual-snapshot.wealth-annual-snapshot').create({ data: snapshot });
+          await strapi.db.query('plugin::zhao-wealth.wealth-annual-snapshot').create({ data: snapshot });
         }
       }
     }
@@ -173,10 +173,10 @@ export default ({ strapi }) => ({
    * 全量重算所有产品年化快照
    */
   async recalculateAll() {
-    const products = await strapi.db.query('api::wealth-product.wealth-product').findMany();
+    const products = await strapi.db.query('plugin::zhao-wealth.wealth-product').findMany();
 
     for (const product of products) {
-      const navs = await strapi.db.query('api::wealth-nav.wealth-nav').findMany({
+      const navs = await strapi.db.query('plugin::zhao-wealth.wealth-nav').findMany({
         where: { product: product.id },
         orderBy: { navDate: 'asc' },
       });
