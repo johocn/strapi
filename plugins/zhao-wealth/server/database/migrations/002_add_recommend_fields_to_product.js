@@ -48,9 +48,9 @@ module.exports = {
         WHERE table_name = ?
       `, [linkTable]);
 
-      const colNames = cols.rows.map((r: any) => r.column_name);
-      const configCol = colNames.find((c: string) => c.includes('recommend_config')) || colNames[0];
-      const productCol = colNames.find((c: string) => c.includes('product')) || colNames[1];
+      const colNames = cols.rows.map((r) => r.column_name);
+      const configCol = colNames.find((c) => c.includes('recommend_config')) || colNames[0];
+      const productCol = colNames.find((c) => c.includes('product')) || colNames[1];
 
       const configs = await db.raw(`
         SELECT
