@@ -1,71 +1,96 @@
 // server/src/routes/content-api.ts
 
+type Method = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+
+const publicRoute = (method: Method, path: string, handler: string) => ({
+  method,
+  path: `/v1${path}`,
+  handler,
+  config: { auth: false },
+});
+
+const adminRoute = (method: Method, path: string, handler: string, permission: string) => ({
+  method,
+  path: `/v1/admin${path}`,
+  handler,
+  config: {
+    auth: false,
+    policies: [
+      'plugin::zhao-auth.is-authenticated',
+      { name: 'plugin::zhao-auth.has-permission', config: { action: permission } },
+      'plugin::zhao-auth.has-channel-scope',
+    ],
+  },
+});
+
 export default {
+  type: 'content-api' as const,
   routes: [
-    // 文章列表（C端访问）
-    {
-      method: 'GET',
-      path: '/v1/articles',
-      handler: 'internal-api.listArticles',
-      config: { auth: false },
-    },
+    // ===== 公开路由（C端访问） =====
+    publicRoute('GET', '/articles', 'internal-api.listArticles'),
+    publicRoute('GET', '/articles/:id', 'internal-api.getArticle'),
+    publicRoute('GET', '/articles/search', 'internal-api.searchArticles'),
+    publicRoute('GET', '/categories', 'internal-api.getCategories'),
+    publicRoute('GET', '/channels', 'internal-api.getChannels'),
+    publicRoute('POST', '/analytics/page-view', 'analytics.trackPageView'),
+    publicRoute('POST', '/analytics/ad-click', 'analytics.trackAdClick'),
+    publicRoute('POST', '/analytics/read-behavior', 'analytics.trackReadBehavior'),
+    publicRoute('POST', '/analytics/user-register', 'analytics.trackUserRegister'),
 
-    // 文章详情（C端访问）
-    {
-      method: 'GET',
-      path: '/v1/articles/:id',
-      handler: 'internal-api.getArticle',
-      config: { auth: false },
-    },
+    // ===== 采集源管理 =====
+    adminRoute('GET', '/sources', 'collect.listSources', 'zhao-studio.read'),
+    adminRoute('POST', '/sources', 'collect.createSource', 'zhao-studio.create'),
+    adminRoute('PUT', '/sources/:id', 'collect.updateSource', 'zhao-studio.update'),
+    adminRoute('DELETE', '/sources/:id', 'collect.deleteSource', 'zhao-studio.delete'),
 
-    // 文章搜索（C端访问）
-    {
-      method: 'GET',
-      path: '/v1/articles/search',
-      handler: 'internal-api.searchArticles',
-      config: { auth: false },
-    },
+    // ===== 采集任务管理 =====
+    adminRoute('POST', '/tasks', 'collect.createTask', 'zhao-studio.create'),
+    adminRoute('GET', '/tasks', 'collect.listTasks', 'zhao-studio.read'),
+    adminRoute('GET', '/tasks/:id', 'collect.getTask', 'zhao-studio.read'),
+    adminRoute('POST', '/tasks/:taskId/content', 'collect.fetchSelectedContent', 'zhao-studio.create'),
+    adminRoute('POST', '/tasks/:taskId/confirm', 'collect.confirmImport', 'zhao-studio.create'),
 
-    // 分类列表（C端访问）
-    {
-      method: 'GET',
-      path: '/v1/categories',
-      handler: 'internal-api.getCategories',
-      config: { auth: false },
-    },
+    // ===== 发布平台管理 =====
+    adminRoute('GET', '/platforms', 'publish.listPlatforms', 'zhao-studio.read'),
+    adminRoute('POST', '/platforms', 'publish.createPlatform', 'zhao-studio.create'),
+    adminRoute('PUT', '/platforms/:id', 'publish.updatePlatform', 'zhao-studio.update'),
+    adminRoute('DELETE', '/platforms/:id', 'publish.deletePlatform', 'zhao-studio.delete'),
 
-    // 渠道列表（C端访问）
-    {
-      method: 'GET',
-      path: '/v1/channels',
-      handler: 'internal-api.getChannels',
-      config: { auth: false },
-    },
+    // ===== 发布账号管理 =====
+    adminRoute('GET', '/accounts', 'publish.listAccounts', 'zhao-studio.read'),
+    adminRoute('POST', '/accounts', 'publish.createAccount', 'zhao-studio.create'),
+    adminRoute('PUT', '/accounts/:id', 'publish.updateAccount', 'zhao-studio.update'),
+    adminRoute('DELETE', '/accounts/:id', 'publish.deleteAccount', 'zhao-studio.delete'),
 
-    // 统计上报接口（公开访问）
-    {
-      method: 'POST',
-      path: '/v1/analytics/page-view',
-      handler: 'analytics.trackPageView',
-      config: { auth: false },
-    },
-    {
-      method: 'POST',
-      path: '/v1/analytics/ad-click',
-      handler: 'analytics.trackAdClick',
-      config: { auth: false },
-    },
-    {
-      method: 'POST',
-      path: '/v1/analytics/read-behavior',
-      handler: 'analytics.trackReadBehavior',
-      config: { auth: false },
-    },
-    {
-      method: 'POST',
-      path: '/v1/analytics/user-register',
-      handler: 'analytics.trackUserRegister',
-      config: { auth: false },
-    },
+    // ===== 发布操作 =====
+    adminRoute('POST', '/articles/:articleId/publish', 'publish.publishArticle', 'zhao-studio.create'),
+    adminRoute('GET', '/records', 'publish.listRecords', 'zhao-studio.read'),
+    adminRoute('POST', '/records/:recordId/retry', 'publish.retryPublish', 'zhao-studio.update'),
+    adminRoute('POST', '/articles/:articleId/sync', 'publish.syncStatus', 'zhao-studio.update'),
+
+    // ===== AI配置管理 =====
+    adminRoute('GET', '/ai/config', 'ai.getConfig', 'zhao-studio.read'),
+    adminRoute('POST', '/ai/config', 'ai.updateConfig', 'zhao-studio.update'),
+    adminRoute('POST', '/ai/test', 'ai.testConnection', 'zhao-studio.update'),
+
+    // ===== AI操作 =====
+    adminRoute('POST', '/ai/articles/:articleId/summary', 'ai.generateSummary', 'zhao-studio.update'),
+    adminRoute('POST', '/ai/articles/:articleId/title', 'ai.optimizeTitle', 'zhao-studio.update'),
+    adminRoute('POST', '/ai/articles/:articleId/rewrite', 'ai.rewriteContent', 'zhao-studio.update'),
+    adminRoute('POST', '/ai/articles/:articleId/convert', 'ai.convertLanguage', 'zhao-studio.update'),
+
+    // ===== 广告位管理 =====
+    adminRoute('GET', '/ad-slots', 'analytics.listAdSlots', 'zhao-studio.read'),
+    adminRoute('POST', '/ad-slots', 'analytics.createAdSlot', 'zhao-studio.create'),
+    adminRoute('PUT', '/ad-slots/:id', 'analytics.updateAdSlot', 'zhao-studio.update'),
+    adminRoute('DELETE', '/ad-slots/:id', 'analytics.deleteAdSlot', 'zhao-studio.delete'),
+
+    // ===== 统计查询 =====
+    adminRoute('GET', '/stats/overview', 'analytics.getOverview', 'zhao-studio.read'),
+    adminRoute('GET', '/stats/articles', 'analytics.getArticleStats', 'zhao-studio.read'),
+    adminRoute('GET', '/stats/ad-slots', 'analytics.getAdSlotStats', 'zhao-studio.read'),
+    adminRoute('GET', '/stats/devices', 'analytics.getDeviceStats', 'zhao-studio.read'),
+    adminRoute('GET', '/stats/regions', 'analytics.getRegionStats', 'zhao-studio.read'),
+    adminRoute('GET', '/stats/users', 'analytics.getUserStats', 'zhao-studio.read'),
   ],
 };
