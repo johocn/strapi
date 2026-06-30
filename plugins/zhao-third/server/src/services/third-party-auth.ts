@@ -374,13 +374,20 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
   /**
    * 微信 JS-SDK 签名
+   * 公众号网页优先用 official_account 配置(公众号 appId/secret 也能调用 JS-SDK)
+   * fallback 到 open_platform(开放平台)
    */
   async getJssdkSignature(url: string, siteId?: string) {
     const configService = strapi.plugin("zhao-third").service("third-party-config");
-    const config = await configService.findByPlatformAndAppType("wechat", "open_platform", siteId);
+    // 优先公众号(微信公众号网页场景)
+    let config = await configService.findByPlatformAndAppType("wechat", "official_account", siteId);
+    // fallback 开放平台
+    if (!config) {
+      config = await configService.findByPlatformAndAppType("wechat", "open_platform", siteId);
+    }
 
     if (!config) {
-      const e: any = new Error("未找到微信开放平台配置");
+      const e: any = new Error("未找到微信公众号或开放平台配置");
       e.status = 404;
       throw e;
     }

@@ -6,9 +6,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       const configService = strapi.plugin("zhao-third").service("third-party-config");
       const filters: Record<string, any> = {};
 
-      const siteId = ctx.state?.siteId;
-      if (siteId) {
-        filters.site = { documentId: siteId };
+      const siteParam = ctx.query?.site;
+      const stateSiteId = ctx.state?.siteId;
+      const effectiveSiteId = siteParam || stateSiteId;
+      if (effectiveSiteId) {
+        filters.site = { documentId: effectiveSiteId };
       }
 
       const result = await configService.findConfigs(filters);
