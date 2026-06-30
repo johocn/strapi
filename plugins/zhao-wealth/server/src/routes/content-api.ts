@@ -83,5 +83,14 @@ export default {
         policies: ['plugin::zhao-auth.is-authenticated'],
       },
     },
+    // 风险指标查询
+    {
+      method: 'GET',
+      path: '/v1/wealth/products/:id/risk-metrics',
+      handler: 'risk-metric.getMetrics',
+      config: {
+        policies: ['plugin::zhao-auth.has-channel-access'],
+      },
+    },
   ],
 };

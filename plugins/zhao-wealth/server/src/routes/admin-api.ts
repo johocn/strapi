@@ -137,5 +137,12 @@ export default {
       path: '/stats',
       handler: 'admin-api.stats',
     },
+
+    // 风险指标重算
+    {
+      method: 'POST',
+      path: '/recalculate-risk-metric',
+      handler: 'risk-metric.recalculate',
+    },
   ],
 };
