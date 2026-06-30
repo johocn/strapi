@@ -1,4 +1,4 @@
-﻿'use strict';
+'use strict';
 
 export default ({ strapi }) => ({
   /**
@@ -82,14 +82,23 @@ export default ({ strapi }) => ({
         },
       });
     } else {
-      // 理财/普通基金年度收益计算
+      // 理财/普通基金年度收益计算（修复：按当年日期范围过滤，避免取到全历史首尾）
+      const yearStart = new Date(year, 0, 1);
+      const yearEnd = new Date(year, 11, 31);
+
       const yearStartNav = await strapi.db.query('plugin::zhao-wealth.wealth-nav').findOne({
-        where: { product: productId },
+        where: {
+          product: productId,
+          navDate: { $gte: yearStart, $lte: yearEnd },
+        },
         orderBy: { navDate: 'asc' },
       });
 
       const yearEndNav = await strapi.db.query('plugin::zhao-wealth.wealth-nav').findOne({
-        where: { product: productId },
+        where: {
+          product: productId,
+          navDate: { $gte: yearStart, $lte: yearEnd },
+        },
         orderBy: { navDate: 'desc' },
       });
 
@@ -98,16 +107,7 @@ export default ({ strapi }) => ({
         return null;
       }
 
-      // 检查是否为完整年度
-      const startYear = new Date(yearStartNav.navDate).getFullYear();
-      const endYear = new Date(yearEndNav.navDate).getFullYear();
-
-      if (startYear !== year || endYear !== year) {
-        strapi.log.warn(`[zhao-wealth] 产品${productId} ${year}年存续不足完整年度`);
-        return null;
-      }
-
-      const annualReturn = Math.pow(yearEndNav.unitNav / yearStartNav.unitNav, 365 / 365) - 1;
+      const annualReturn = yearEndNav.unitNav / yearStartNav.unitNav - 1;
 
       return await strapi.db.query('plugin::zhao-wealth.wealth-yearly-return').create({
         data: {
