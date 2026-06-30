@@ -1,11 +1,11 @@
 import pluginId from './pluginId';
-import { Information } from '@strapi/icons';
+import { PluginIcon } from './components/PluginIcon';
 
 export default {
   register(app: any) {
     app.addMenuLink({
       to: `/plugins/${pluginId}`,
-      icon: Information,
+      icon: PluginIcon,
       intlLabel: {
         id: `${pluginId}.plugin.name`,
         defaultMessage: '内容工作室',
@@ -26,7 +26,5 @@ export default {
       name: '内容工作室',
     });
   },
-  bootstrap(app: any) {
-    // Bootstrap logic
-  },
+  bootstrap(app: any) {},
 };

@@ -1,6 +1,6 @@
-import React from 'react';
-import { Information } from '@strapi/icons';
+import { RobotOutlined } from '@ant-design/icons';
 
-const PluginIcon = () => <Information />;
+const PluginIcon = () => <RobotOutlined />;
 
+export { PluginIcon };
 export default PluginIcon;

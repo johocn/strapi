@@ -1,16 +1,19 @@
-import React from 'react';
-import { Box, Typography } from '@strapi/design-system';
+import { useEffect, useRef } from 'react';
+import pluginId from '../pluginId';
 
-const Initializer = ({ setPlugin }: { setPlugin: any }) => {
-  React.useEffect(() => {
-    setPlugin('zhao-studio', true);
-  }, [setPlugin]);
-
-  return (
-    <Box>
-      <Typography>Loading zhao-studio...</Typography>
-    </Box>
-  );
+type InitializerProps = {
+  setPlugin: (id: string) => void;
 };
 
+const Initializer = ({ setPlugin }: InitializerProps) => {
+  const ref = useRef(setPlugin);
+
+  useEffect(() => {
+    ref.current(pluginId);
+  }, []);
+
+  return null;
+};
+
+export { Initializer };
 export default Initializer;
