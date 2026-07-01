@@ -1,59 +1,61 @@
-// admin/src/hooks/usePublishActions.ts
+import React from 'react';
 
-import { useState } from 'react';
-import { publishApi } from '../utils/publishApi';
+const API_BASE = '/api/zhao-studio/v1/admin';
 
-export function usePublishActions() {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+interface PublishParams {
+  articleIds: string[];
+  platformId: string;
+  accountId: string;
+}
 
+export const usePublishActions = () => {
+  const [loading, setLoading] = React.useState(false);
+
+  // 批量发布：循环调用单文章发布接口
+  const publish = async ({ articleIds, platformId, accountId }: PublishParams) => {
+    setLoading(true);
+    try {
+      const results = await Promise.all(
+        articleIds.map(articleId =>
+          fetch(`${API_BASE}/articles/${articleId}/publish`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ platformId, accountId }),
+          })
+        )
+      );
+      const failed = results.filter(r => !r.ok);
+      if (failed.length > 0) {
+        throw new Error(`${failed.length} 篇文章发布失败`);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 单文章发布（保留原有方法，兼容旧代码）
   const publishArticle = async (articleId: string, accountIds: string[]) => {
     setLoading(true);
-    setError(null);
     try {
-      const response = await publishApi.publishArticle(articleId, accountIds);
-      return response.data;
-    } catch (err: unknown) {
-      setError((err as Error).message);
-      throw err;
+      const results = await Promise.all(
+        accountIds.map(accountId =>
+          fetch(`${API_BASE}/articles/${articleId}/publish`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ accountId }),
+          })
+        )
+      );
+      const failed = results.filter(r => !r.ok);
+      if (failed.length > 0) {
+        throw new Error(`${failed.length} 个账号发布失败`);
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  const retryPublish = async (recordId: string) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await publishApi.retryPublish(recordId);
-      return response.data;
-    } catch (err: unknown) {
-      setError((err as Error).message);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
+  return { publish, publishArticle, loading };
+};
 
-  const syncStatus = async (articleId: string) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await publishApi.syncStatus(articleId);
-      return response.data;
-    } catch (err: unknown) {
-      setError((err as Error).message);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return {
-    loading,
-    error,
-    publishArticle,
-    retryPublish,
-    syncStatus,
-  };
-}
+export default usePublishActions;

@@ -1,89 +1,69 @@
-// admin/src/hooks/usePublishPlatforms.ts
+import React from 'react';
+import { normalizeList } from '../utils/fieldNormalizer';
 
-import { useState, useEffect } from 'react';
-import { publishApi } from '../utils/publishApi';
-
-export interface PublishPlatform {
-  documentId: string;
+interface PublishPlatform {
+  id: string;
+  documentId?: string;
   name: string;
-  type: string;
+  type?: string;
+  appId?: string;
+  appSecret?: string;
+  callbackUrl?: string;
   description?: string;
-  isActive: boolean;
+  isActive?: boolean;
 }
 
-export function usePublishPlatforms() {
-  const [platforms, setPlatforms] = useState<PublishPlatform[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+const API_BASE = '/api/zhao-studio/v1/admin';
 
-  const fetchPlatforms = async () => {
+export const usePublishPlatforms = () => {
+  const [platforms, setPlatforms] = React.useState<PublishPlatform[]>([]);
+  const [loading, setLoading] = React.useState(false);
+
+  const fetchPlatforms = React.useCallback(async () => {
     setLoading(true);
-    setError(null);
     try {
-      const response = await publishApi.listPlatforms();
-      setPlatforms(response.data || []);
-    } catch (err: unknown) {
-      setError((err as Error).message);
+      const res = await fetch(`${API_BASE}/platforms`);
+      const json = await res.json();
+      setPlatforms(normalizeList(json.data || []));
+    } catch (err) {
+      console.error('fetchPlatforms error:', err);
+      setPlatforms([]);
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  const createPlatform = async (data: Partial<PublishPlatform>) => {
+    const res = await fetch(`${API_BASE}/platforms`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error('创建失败');
+    await fetchPlatforms();
   };
 
-  const createPlatform = async (data: any) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await publishApi.createPlatform(data);
-      setPlatforms([...platforms, response.data]);
-      return response.data;
-    } catch (err: unknown) {
-      setError((err as Error).message);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const updatePlatform = async (id: string, data: any) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await publishApi.updatePlatform(id, data);
-      setPlatforms(platforms.map((p) => (p.documentId === id ? response.data : p)));
-      return response.data;
-    } catch (err: unknown) {
-      setError((err as Error).message);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
+  const updatePlatform = async (id: string, data: Partial<PublishPlatform>) => {
+    const res = await fetch(`${API_BASE}/platforms/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error('更新失败');
+    await fetchPlatforms();
   };
 
   const deletePlatform = async (id: string) => {
-    setLoading(true);
-    setError(null);
-    try {
-      await publishApi.deletePlatform(id);
-      setPlatforms(platforms.filter((p) => p.documentId !== id));
-    } catch (err: unknown) {
-      setError((err as Error).message);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
+    const res = await fetch(`${API_BASE}/platforms/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('删除失败');
+    await fetchPlatforms();
   };
 
-  useEffect(() => {
+  React.useEffect(() => {
     fetchPlatforms();
-  }, []);
+  }, [fetchPlatforms]);
 
-  return {
-    platforms,
-    loading,
-    error,
-    fetchPlatforms,
-    createPlatform,
-    updatePlatform,
-    deletePlatform,
-  };
-}
+  return { platforms, loading, createPlatform, updatePlatform, deletePlatform };
+};
+
+export default usePublishPlatforms;
