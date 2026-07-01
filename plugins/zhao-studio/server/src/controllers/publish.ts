@@ -71,9 +71,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   },
 
   async listRecords(ctx: any) {
-    const { articleId } = ctx.query;
+    const { articleId, platformId, accountId } = ctx.query;
     const publishService = strapi.plugin('zhao-studio').service('publish');
-    const records = await publishService.listRecords(articleId);
+    const records = await publishService.listRecords({ articleId, platformId, accountId });
     ctx.body = { data: records };
   },
 

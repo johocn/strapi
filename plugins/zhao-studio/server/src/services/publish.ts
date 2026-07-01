@@ -180,16 +180,23 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       .delete({ documentId: accountId });
   },
 
-  async listRecords(articleId?: string) {
-    const filters: any = {};
+  async listRecords(filters: { articleId?: string; platformId?: string; accountId?: string } = {}) {
+    const { articleId, platformId, accountId } = filters;
+    const queryFilters: any = {};
     if (articleId) {
-      filters.article = articleId;
+      queryFilters.article = articleId;
+    }
+    if (platformId) {
+      queryFilters.platform = platformId;
+    }
+    if (accountId) {
+      queryFilters.account = accountId;
     }
 
     const records = await strapi
       .documents('plugin::zhao-studio.publish-record')
       .findMany({
-        filters,
+        filters: queryFilters,
         sort: 'publishedAt:desc',
       });
 
