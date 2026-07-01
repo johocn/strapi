@@ -1,12 +1,12 @@
-// admin/src/pages/CollectPage.tsx
-
 import React from 'react';
-import { Box, Typography, Button, Badge, Flex } from '@strapi/design-system';
+import { Card, Typography, Button, Badge, Space, Modal, List, Tag } from 'antd';
 import { useCollectSources } from '../hooks/useCollectSources';
 import { useCollectTasks } from '../hooks/useCollectTasks';
 import SourceConfig from '../components/SourceConfig';
 import TitleSelector from '../components/TitleSelector';
 import ContentPreview from '../components/ContentPreview';
+
+const { Title, Text } = Typography;
 
 const CollectPage = () => {
   const {
@@ -73,54 +73,55 @@ const CollectPage = () => {
   };
 
   return (
-    <Box padding={4}>
-      <Typography variant="alpha">采集管理</Typography>
-      <Typography variant="pi" color="neutral600">定向采集内容</Typography>
+    <Space direction="vertical" size="large" style={{ width: '100%' }}>
+      <div>
+        <Title level={3}>采集管理</Title>
+        <Text type="secondary">定向采集内容</Text>
+      </div>
 
       {step === 'list' && (
-        <Box marginTop={4}>
-          <Flex justifyContent="space-between" marginBottom={4}>
-            <Typography variant="beta">采集源列表</Typography>
-            <Button onClick={handleCreateSource}>创建采集源</Button>
-          </Flex>
-
-          <Flex direction="column" gap={2}>
-            {sources.map((source: any) => (
-              <Box key={source.id} padding={3} background="neutral100">
-                <Flex justifyContent="space-between" alignItems="center">
-                  <Box>
-                    <Typography fontWeight="bold">{source.name}</Typography>
-                    <Typography variant="pi" color="neutral600">{source.url}</Typography>
-                  </Box>
-                  <Flex gap={2}>
-                    <Badge variant={source.type === 'template' ? 'success' : 'warning'}>
-                      {source.type === 'template' ? '模板' : '自定义'}
-                    </Badge>
-                    <Badge variant={source.isActive ? 'success' : 'danger'}>
-                      {source.isActive ? '启用' : '禁用'}
-                    </Badge>
-                  </Flex>
-                  <Flex gap={2}>
-                    <Button variant="secondary" onClick={() => handleEditSource(source)}>
-                      编辑
-                    </Button>
-                    <Button onClick={() => handleStartCollect(source.id)}>
-                      开始采集
-                    </Button>
-                    <Button variant="danger" onClick={() => deleteSource(source.id)}>
-                      删除
-                    </Button>
-                  </Flex>
-                </Flex>
-              </Box>
-            ))}
-          </Flex>
-        </Box>
+        <Card
+          title="采集源列表"
+          extra={<Button type="primary" onClick={handleCreateSource}>创建采集源</Button>}
+        >
+          <List
+            loading={sourcesLoading}
+            dataSource={sources}
+            renderItem={(source: any) => (
+              <List.Item
+                actions={[
+                  <Button key="edit" onClick={() => handleEditSource(source)}>编辑</Button>,
+                  <Button key="collect" type="primary" onClick={() => handleStartCollect(source.id)}>
+                    开始采集
+                  </Button>,
+                  <Button key="delete" danger onClick={() => deleteSource(source.id)}>
+                    删除
+                  </Button>,
+                ]}
+              >
+                <List.Item.Meta
+                  title={
+                    <Space>
+                      <Text strong>{source.name}</Text>
+                      <Tag color={source.type === 'template' ? 'success' : 'warning'}>
+                        {source.type === 'template' ? '模板' : '自定义'}
+                      </Tag>
+                      <Tag color={source.isActive ? 'success' : 'error'}>
+                        {source.isActive ? '启用' : '禁用'}
+                      </Tag>
+                    </Space>
+                  }
+                  description={<Text type="secondary">{source.url}</Text>}
+                />
+              </List.Item>
+            )}
+          />
+        </Card>
       )}
 
       {step === 'select' && currentTask && (
         <TitleSelector
-          titles={currentTask.titles}
+          titles={currentTask.titles || []}
           onSelectionChange={setSelectedTitles}
           onFetchContent={handleFetchContent}
         />
@@ -134,37 +135,20 @@ const CollectPage = () => {
         />
       )}
 
-      {showSourceModal && (
-        <Box
-          position="fixed"
-          top="0"
-          left="0"
-          width="100%"
-          height="100%"
-          background="neutral1000"
-          zIndex={100}
-          onClick={() => setShowSourceModal(false)}
-        >
-          <Box
-            position="absolute"
-            top="50%"
-            left="50%"
-            transform="translate(-50%, -50%)"
-            background="neutral0"
-            padding={4}
-            borderRadius={4}
-            shadow="tableShadow"
-            onClick={(e: React.MouseEvent) => e.stopPropagation()}
-          >
-            <SourceConfig
-              source={editingSource}
-              onSave={handleSaveSource}
-              onCancel={() => setShowSourceModal(false)}
-            />
-          </Box>
-        </Box>
-      )}
-    </Box>
+      <Modal
+        open={showSourceModal}
+        title={editingSource ? '编辑采集源' : '创建采集源'}
+        onCancel={() => setShowSourceModal(false)}
+        footer={null}
+        destroyOnClose
+      >
+        <SourceConfig
+          source={editingSource}
+          onSave={handleSaveSource}
+          onCancel={() => setShowSourceModal(false)}
+        />
+      </Modal>
+    </Space>
   );
 };
 

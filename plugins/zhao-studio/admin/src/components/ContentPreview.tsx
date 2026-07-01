@@ -1,92 +1,86 @@
-// admin/src/components/ContentPreview.tsx
-
 import React from 'react';
-import { Box, Typography, Card, CardBody, Badge, Button, Flex } from '@strapi/design-system';
-import { getQualityLabel, isQualityAcceptable } from '../utils/qualityCalculator';
+import { Card, Button, Space, Typography, Tag, List } from 'antd';
+
+const { Title, Paragraph, Text } = Typography;
+
+interface ContentItem {
+  title: string;
+  content: string;
+  author?: string;
+  date?: string;
+  url?: string;
+}
 
 interface ContentPreviewProps {
-  contents: any[];
-  onConfirm: (confirmed: any[]) => void;
+  contents: ContentItem[];
+  onConfirm: (confirmed: ContentItem[]) => void;
   onCancel: () => void;
 }
 
-const ContentPreview: React.FC<ContentPreviewProps> = ({
-  contents,
-  onConfirm,
-  onCancel,
-}) => {
-  const [confirmedContents, setConfirmedContents] = React.useState<any[]>([]);
+const ContentPreview: React.FC<ContentPreviewProps> = ({ contents, onConfirm, onCancel }) => {
+  const [excluded, setExcluded] = React.useState<string[]>([]);
 
-  const handleToggle = (content: any) => {
-    const isConfirmed = confirmedContents.find((c) => c.sourceUrl === content.sourceUrl);
-    if (isConfirmed) {
-      setConfirmedContents(confirmedContents.filter((c) => c.sourceUrl !== content.sourceUrl));
-    } else {
-      setConfirmedContents([...confirmedContents, content]);
-    }
+  const handleToggle = (title: string) => {
+    setExcluded((prev) =>
+      prev.includes(title) ? prev.filter((t) => t !== title) : [...prev, title]
+    );
   };
 
-  const handleConfirmAll = () => {
-    const acceptable = contents.filter((c) => isQualityAcceptable(c.qualityScore.total));
-    setConfirmedContents(acceptable);
+  const handleConfirm = () => {
+    const confirmed = contents.filter((c) => !excluded.includes(c.title));
+    onConfirm(confirmed);
   };
 
   return (
-    <Box padding={4}>
-      <Typography variant="delta">内容预览与质量评估</Typography>
-
-      <Flex marginTop={2} gap={2}>
-        <Button variant="secondary" onClick={handleConfirmAll}>
-          确认所有合格内容
-        </Button>
-        <Button onClick={() => onConfirm(confirmedContents)} disabled={confirmedContents.length === 0}>
-          入库 ({confirmedContents.length})
-        </Button>
-        <Button variant="secondary" onClick={onCancel}>
-          取消
-        </Button>
-      </Flex>
-
-      <Flex direction="column" gap={4} marginTop={4}>
-        {contents.map((content, index) => (
-          <Card key={index}>
-            <CardBody>
-              <Flex justifyContent="space-between">
-                <Typography fontWeight="bold">{content.title || '无标题'}</Typography>
-                <Badge variant={content.qualityScore.total >= 70 ? 'success' : content.qualityScore.total >= 50 ? 'warning' : 'danger'}>
-                  {getQualityLabel(content.qualityScore.total)} ({content.qualityScore.total}分)
-                </Badge>
-              </Flex>
-
-              <Box marginTop={2}>
-                <Typography variant="pi">
-                  {content.content?.substring(0, 200)}...
-                </Typography>
-              </Box>
-
-              <Box marginTop={2}>
-                <Typography variant="pi">作者: {content.sourceAuthor || '未知'}</Typography>
-                <Typography variant="pi">日期: {content.sourcePublishedAt || '未知'}</Typography>
-                <Typography variant="pi">图片: {content.images?.length || 0}张</Typography>
-              </Box>
-
-              <Flex marginTop={2} gap={2}>
-                <Button
-                  variant="secondary"
-                  onClick={() => handleToggle(content)}
-                  disabled={!isQualityAcceptable(content.qualityScore.total)}
-                >
-                  {confirmedContents.find((c) => c.sourceUrl === content.sourceUrl) ? '取消入库' : '确认入库'}
-                </Button>
-                {content.error && (
-                  <Badge variant="danger">错误: {content.error}</Badge>
-                )}
-              </Flex>
-            </CardBody>
-          </Card>
-        ))}
-      </Flex>
-    </Box>
+    <Card
+      title="内容预览"
+      extra={
+        <Space>
+          <Button onClick={onCancel}>返回</Button>
+          <Button type="primary" onClick={handleConfirm}>
+            确认导入（{contents.length - excluded.length}）
+          </Button>
+        </Space>
+      }
+    >
+      <List
+        dataSource={contents}
+        renderItem={(item) => (
+          <List.Item
+            actions={[
+              <Button
+                size="small"
+                onClick={() => handleToggle(item.title)}
+                key="toggle"
+              >
+                {excluded.includes(item.title) ? '恢复' : '排除'}
+              </Button>,
+            ]}
+          >
+            <List.Item.Meta
+              title={
+                <Space>
+                  <Text strong>{item.title}</Text>
+                  {excluded.includes(item.title) && <Tag color="error">已排除</Tag>}
+                </Space>
+              }
+              description={
+                <>
+                  {item.author && <Text type="secondary">作者: {item.author}</Text>}
+                  {item.date && <Text type="secondary"> 日期: {item.date}</Text>}
+                  <Paragraph
+                    ellipsis={{ rows: 3 }}
+                    style={{ marginTop: 8, marginBottom: 0 }}
+                  >
+                    {item.content}
+                  </Paragraph>
+                </>
+              }
+            />
+          </List.Item>
+        )}
+      />
+    </Card>
   );
 };
 
