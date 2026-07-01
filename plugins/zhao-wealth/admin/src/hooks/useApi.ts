@@ -54,5 +54,9 @@ export const useApi = () => {
     getMetricAggregate: (productId: number, period: string) => call('get', `/admin/plugins/${PLUGIN_ID}/risk-metrics/admin/aggregate`, undefined, { productId, period }),
     getMetricTrend: (productId: number) => call('get', `/admin/plugins/${PLUGIN_ID}/risk-metrics/admin/trend`, undefined, { productId }),
     getMetricPeers: (period: string, metricName: string, limit = 50) => call('get', `/admin/plugins/${PLUGIN_ID}/risk-metrics/admin/peers`, undefined, { period, metricName, limit }),
+
+    // 采集与校验
+    collectProduct: (source: string, query: string) => call('post', `/admin/plugins/${PLUGIN_ID}/products/collect`, { source, query }),
+    collectConfirm: (data: any) => call('post', `/admin/plugins/${PLUGIN_ID}/products/collect/confirm`, data),
   };
 };
