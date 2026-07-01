@@ -3,10 +3,23 @@
 import jobs from './jobs';
 import { isTradingDay } from './utils';
 import { getCollectQueue, getCalculateQueue } from './jobs/queue-setup';
+import { initBrowser, destroyBrowser } from './playwright-manager';
 
 export default async ({ strapi }) => {
   // 初始化队列任务
   await jobs({ strapi });
+
+  // 初始化 Playwright Browser 单例
+  const pwBrowser = await initBrowser();
+  if (pwBrowser) {
+    strapi.log.info('[zhao-wealth] Playwright Browser 已就绪');
+  } else {
+    strapi.log.warn('[zhao-wealth] Playwright Browser 不可用，采集功能将降级');
+  }
+
+  // 注册销毁钩子
+  process.on('SIGTERM', async () => { await destroyBrowser(); });
+  process.on('SIGINT', async () => { await destroyBrowser(); });
 
   // 注册 Cron 定时任务
   // 8:00 交易日判断（仅日志）
