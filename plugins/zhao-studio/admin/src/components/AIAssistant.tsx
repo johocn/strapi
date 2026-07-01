@@ -1,196 +1,141 @@
-// admin/src/components/AIAssistant.tsx
-
 import React from 'react';
-import { Box, Typography, Button, Flex, Badge } from '@strapi/design-system';
+import { Card, Input, Button, Space, Avatar, Spin, Typography } from 'antd';
+import { RobotOutlined, UserOutlined, SendOutlined } from '@ant-design/icons';
 import { useAIActions } from '../hooks/useAIActions';
 
-interface AIAssistantProps {
-  articleId: string;
-  article: any;
-  onApply: (field: string, value: string) => void;
+const { Text, Paragraph } = Typography;
+
+interface Message {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
 }
 
-const AIAssistant: React.FC<AIAssistantProps> = ({ articleId, article, onApply }) => {
-  const {
-    loading,
-    error,
-    generateSummary,
-    optimizeTitle,
-    rewriteContent,
-    convertLanguage,
-  } = useAIActions();
+const AIAssistant: React.FC = () => {
+  const { chat, loading } = useAIActions();
+  const [messages, setMessages] = React.useState<Message[]>([]);
+  const [input, setInput] = React.useState('');
+  const containerRef = React.useRef<HTMLDivElement>(null);
 
-  const [showModal, setShowModal] = React.useState(false);
-  const [modalContent, setModalContent] = React.useState<string>('');
-  const [modalField, setModalField] = React.useState<string>('');
-  const [titleStyle, setTitleStyle] = React.useState<'formal' | 'casual' | 'shocking' | null>(null);
-  const [rewriteTone, setRewriteTone] = React.useState<'formal' | 'casual' | 'humorous' | null>(null);
-  const [convertTarget, setConvertTarget] = React.useState<'simplified' | 'traditional' | null>(null);
-
-  const handleGenerateSummary = async () => {
-    try {
-      const result = await generateSummary(articleId, 150);
-      setModalContent(result.summary);
-      setModalField('aiSummary');
-      setShowModal(true);
-    } catch (err) {
-      // error handled by hook
+  React.useEffect(() => {
+    if (containerRef.current) {
+      containerRef.current.scrollTop = containerRef.current.scrollHeight;
     }
-  };
+  }, [messages]);
 
-  const handleOptimizeTitle = async (style: 'formal' | 'casual' | 'shocking') => {
-    setTitleStyle(null);
+  const handleSend = async () => {
+    if (!input.trim()) return;
+    const userMsg: Message = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: input.trim(),
+    };
+    setMessages((prev) => [...prev, userMsg]);
+    setInput('');
+
     try {
-      const result = await optimizeTitle(articleId, style);
-      setModalContent(result.optimizedTitle);
-      setModalField('aiOptimizedTitle');
-      setShowModal(true);
-    } catch (err) {
-      // error handled by hook
+      const response = await chat(userMsg.content);
+      const assistantMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: response.content || '（无回复）',
+      };
+      setMessages((prev) => [...prev, assistantMsg]);
+    } catch {
+      const errorMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: '抱歉，发生了错误，请稍后再试。',
+      };
+      setMessages((prev) => [...prev, errorMsg]);
     }
-  };
-
-  const handleRewriteContent = async (tone: 'formal' | 'casual' | 'humorous') => {
-    setRewriteTone(null);
-    try {
-      const result = await rewriteContent(articleId, tone);
-      setModalContent(result.rewrittenContent);
-      setModalField('content');
-      setShowModal(true);
-    } catch (err) {
-      // error handled by hook
-    }
-  };
-
-  const handleConvertLanguage = async (target: 'simplified' | 'traditional') => {
-    setConvertTarget(null);
-    try {
-      const result = await convertLanguage(articleId, target);
-      setModalContent(result.convertedContent);
-      setModalField('content');
-      setShowModal(true);
-    } catch (err) {
-      // error handled by hook
-    }
-  };
-
-  const handleApply = () => {
-    onApply(modalField, modalContent);
-    setShowModal(false);
   };
 
   return (
-    <Box padding={4}>
-      <Typography variant="delta">AI辅助</Typography>
-
-      {error && (
-        <Box marginTop={2}>
-          <Badge variant="danger">{error}</Badge>
-        </Box>
-      )}
-
-      <Flex marginTop={4} gap={4} direction="column">
-        <Button onClick={handleGenerateSummary} disabled={loading}>
-          {loading ? '处理中...' : '生成摘要'}
-        </Button>
-
-        <Box>
-          <Typography variant="pi">优化标题</Typography>
-          <Flex gap={2} marginTop={1}>
-            <Button variant={titleStyle === 'formal' ? 'default' : 'secondary'} onClick={() => setTitleStyle('formal')} disabled={loading}>
-              正式风格
-            </Button>
-            <Button variant={titleStyle === 'casual' ? 'default' : 'secondary'} onClick={() => setTitleStyle('casual')} disabled={loading}>
-              轻松风格
-            </Button>
-            <Button variant={titleStyle === 'shocking' ? 'default' : 'secondary'} onClick={() => setTitleStyle('shocking')} disabled={loading}>
-              震惊风格
-            </Button>
-          </Flex>
-          {titleStyle && (
-            <Button marginTop={2} onClick={() => handleOptimizeTitle(titleStyle)} disabled={loading}>
-              {loading ? '处理中...' : '执行优化'}
-            </Button>
-          )}
-        </Box>
-
-        <Box>
-          <Typography variant="pi">改写内容</Typography>
-          <Flex gap={2} marginTop={1}>
-            <Button variant={rewriteTone === 'formal' ? 'default' : 'secondary'} onClick={() => setRewriteTone('formal')} disabled={loading}>
-              正式语气
-            </Button>
-            <Button variant={rewriteTone === 'casual' ? 'default' : 'secondary'} onClick={() => setRewriteTone('casual')} disabled={loading}>
-              轻松语气
-            </Button>
-            <Button variant={rewriteTone === 'humorous' ? 'default' : 'secondary'} onClick={() => setRewriteTone('humorous')} disabled={loading}>
-              幽默语气
-            </Button>
-          </Flex>
-          {rewriteTone && (
-            <Button marginTop={2} onClick={() => handleRewriteContent(rewriteTone)} disabled={loading}>
-              {loading ? '处理中...' : '执行改写'}
-            </Button>
-          )}
-        </Box>
-
-        <Box>
-          <Typography variant="pi">繁简转换</Typography>
-          <Flex gap={2} marginTop={1}>
-            <Button variant={convertTarget === 'simplified' ? 'default' : 'secondary'} onClick={() => setConvertTarget('simplified')} disabled={loading}>
-              转为简体
-            </Button>
-            <Button variant={convertTarget === 'traditional' ? 'default' : 'secondary'} onClick={() => setConvertTarget('traditional')} disabled={loading}>
-              转为繁体
-            </Button>
-          </Flex>
-          {convertTarget && (
-            <Button marginTop={2} onClick={() => handleConvertLanguage(convertTarget)} disabled={loading}>
-              {loading ? '处理中...' : '执行转换'}
-            </Button>
-          )}
-        </Box>
-      </Flex>
-
-      {showModal && (
-        <Box
-          position="fixed"
-          top="0"
-          left="0"
-          width="100%"
-          height="100%"
-          background="neutral1000"
-          zIndex={100}
-          onClick={() => setShowModal(false)}
-        >
-          <Box
-            position="absolute"
-            top="50%"
-            left="50%"
-            transform="translate(-50%, -50%)"
-            background="neutral0"
-            padding={4}
-            borderRadius={4}
-            shadow="tableShadow"
-            maxWidth="600px"
-            onClick={(e: React.MouseEvent) => e.stopPropagation()}
+    <Card
+      title={
+        <Space>
+          <RobotOutlined />
+          <span>AI 助手</span>
+        </Space>
+      }
+      bodyStyle={{ padding: 0 }}
+    >
+      <div
+        ref={containerRef}
+        style={{
+          height: 400,
+          overflowY: 'auto',
+          padding: 16,
+          background: '#fafafa',
+        }}
+      >
+        {messages.length === 0 && (
+          <div style={{ textAlign: 'center', color: '#999', marginTop: 100 }}>
+            <RobotOutlined style={{ fontSize: 48, marginBottom: 16 }} />
+            <div>有什么可以帮你的吗？</div>
+          </div>
+        )}
+        {messages.map((msg) => (
+          <div
+            key={msg.id}
+            style={{
+              display: 'flex',
+              flexDirection: msg.role === 'user' ? 'row-reverse' : 'row',
+              marginBottom: 16,
+            }}
           >
-            <Typography variant="delta">AI生成结果</Typography>
-            <Box marginTop={4} maxHeight="300px" overflow="auto">
-              <Typography>{modalContent.substring(0, 500)}{modalContent.length > 500 ? '...' : ''}</Typography>
-            </Box>
-            <Flex marginTop={4} justifyContent="flex-end" gap={2}>
-              <Button variant="secondary" onClick={() => setShowModal(false)}>
-                取消
-              </Button>
-              <Button onClick={handleApply}>
-                应用到文章
-              </Button>
-            </Flex>
-          </Box>
-        </Box>
-      )}
-    </Box>
+            <Avatar
+              icon={msg.role === 'user' ? <UserOutlined /> : <RobotOutlined />}
+              style={{
+                backgroundColor: msg.role === 'user' ? '#1677ff' : '#52c41a',
+                marginRight: msg.role === 'user' ? 0 : 8,
+                marginLeft: msg.role === 'user' ? 8 : 0,
+              }}
+            />
+            <div
+              style={{
+                maxWidth: '70%',
+                padding: '8px 12px',
+                background: msg.role === 'user' ? '#1677ff' : '#fff',
+                color: msg.role === 'user' ? '#fff' : '#000',
+                borderRadius: 8,
+                border: msg.role === 'user' ? 'none' : '1px solid #e8e8e8',
+              }}
+            >
+              <Paragraph style={{ margin: 0, color: 'inherit', whiteSpace: 'pre-wrap' }}>
+                {msg.content}
+              </Paragraph>
+            </div>
+          </div>
+        ))}
+        {loading && (
+          <div style={{ textAlign: 'center', padding: 16 }}>
+            <Spin />
+          </div>
+        )}
+      </div>
+      <div style={{ padding: 16, borderTop: '1px solid #f0f0f0' }}>
+        <Space.Compact style={{ width: '100%' }}>
+          <Input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onPressEnter={handleSend}
+            placeholder="输入消息..."
+            disabled={loading}
+          />
+          <Button
+            type="primary"
+            icon={<SendOutlined />}
+            onClick={handleSend}
+            loading={loading}
+            disabled={!input.trim()}
+          >
+            发送
+          </Button>
+        </Space.Compact>
+      </div>
+    </Card>
   );
 };
 
