@@ -48,7 +48,7 @@ export const usePublishRecords = (params?: UsePublishRecordsParams) => {
       }
       // 字段标准化：展平嵌套对象 + 补 id
       const normalized = list.map(r => {
-        const normalized = normalizeRecord(r);
+        const normalized = normalizeRecord<PublishRecord>(r);
         return {
           ...normalized,
           platformName: r.platformName || r.platform?.name || '-',

@@ -25,7 +25,7 @@ export const usePublishAccounts = () => {
     try {
       const res = await fetch(`${API_BASE}/accounts`);
       const json = await res.json();
-      let list = normalizeList(json.data || []);
+      let list = normalizeList<PublishAccount>(json.data || []);
       // 前端过滤（按 platformId）
       if (platformId) {
         list = list.filter(a =>
