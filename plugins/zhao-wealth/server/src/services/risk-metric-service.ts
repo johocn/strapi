@@ -300,13 +300,13 @@ export default ({ strapi }) => ({
       limit: 500,
     });
 
-    // 按 period 分组，再按日期排序
-    const trend: Record<string, { snapshotDate: string; volatility: number | null; maxDrawdown: number | null; sharpe: number | null; rankPercentile: number | null }[]> = {
+    type MetricItem = { snapshotDate: string; period: string; volatility: number | null; maxDrawdown: number | null; sharpe: number | null; rankPercentile: number | null };
+
+    const trend: Record<string, MetricItem[]> = {
       m1: [], m3: [], m6: [], y1: [],
     };
 
-    // 按 (snapshotDate, period) 聚合
-    const grouped: Record<string, { snapshotDate: string; period: string; volatility: number | null; maxDrawdown: number | null; sharpe: number | null; rankPercentile: number | null }> = {};
+    const grouped: Record<string, MetricItem> = {};
     for (const r of records) {
       const key = `${r.snapshotDate}_${r.period}`;
       if (!grouped[key]) {
@@ -319,7 +319,7 @@ export default ({ strapi }) => ({
           rankPercentile: null,
         };
       }
-      grouped[key][r.metricName as keyof typeof grouped[key]] = r.metricValue;
+      grouped[key][r.metricName as keyof MetricItem] = r.metricValue;
     }
 
     for (const key of Object.keys(grouped)) {

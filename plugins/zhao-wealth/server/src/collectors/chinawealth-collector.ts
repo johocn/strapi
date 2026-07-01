@@ -81,7 +81,7 @@ export default class ChinawealthCollector extends BaseCollector {
         // 取第一行
         const firstRow = rows[0];
         const cells = firstRow.querySelectorAll('td, .cell');
-        const texts = Array.from(cells).map(cell => cell.textContent?.trim() || '');
+        const texts = Array.from(cells as NodeListOf<Element>).map(cell => cell.textContent?.trim() || '');
 
         return {
           rawTexts: texts,

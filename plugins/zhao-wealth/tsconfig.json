@@ -5,7 +5,8 @@
     "rootDir": ".",
     "sourceMap": true,
     "esModuleInterop": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "lib": ["ES2020", "DOM"]
   },
   "include": ["server/src"],
   "exclude": ["node_modules", "dist"]
