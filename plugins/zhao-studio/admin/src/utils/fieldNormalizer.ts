@@ -3,8 +3,11 @@
 export const normalizeRecord = <T extends { documentId?: string; id?: string }>(
   record: T
 ): T & { id: string } => {
-  if (!record) return record;
-  return { ...record, id: record.documentId || record.id };
+  if (!record) {
+    // 空值兜底：返回带空 id 的对象，避免 undefined 导致组件崩溃
+    return { ...record, id: '' };
+  }
+  return { ...record, id: record.documentId || record.id || '' };
 };
 
 export const normalizeList = <T extends { documentId?: string; id?: string }>(
