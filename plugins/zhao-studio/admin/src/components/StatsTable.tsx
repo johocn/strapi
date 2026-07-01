@@ -1,56 +1,51 @@
-// admin/src/components/StatsTable.tsx
-
 import React from 'react';
-import { Box, Typography, Flex, Badge } from '@strapi/design-system';
+import { Table, Tag } from 'antd';
 
-interface StatsTableProps {
-  columns: { key: string; label: string }[];
-  data: Record<string, any>[];
-  title: string;
+interface StatsTableRow {
+  key: string;
+  name: string;
+  value: number;
+  change?: number;
+  unit?: string;
 }
 
-const StatsTable: React.FC<StatsTableProps> = ({ columns, data, title }) => {
+interface StatsTableProps {
+  data: StatsTableRow[];
+  loading?: boolean;
+  title?: string;
+}
+
+const StatsTable: React.FC<StatsTableProps> = ({ data, loading = false }) => {
+  const columns = [
+    { title: '指标', dataIndex: 'name', key: 'name' },
+    {
+      title: '数值',
+      dataIndex: 'value',
+      key: 'value',
+      render: (value: number, record: StatsTableRow) =>
+        `${value.toLocaleString()}${record.unit ? ' ' + record.unit : ''}`,
+    },
+    {
+      title: '变化',
+      dataIndex: 'change',
+      key: 'change',
+      render: (change?: number) => {
+        if (change === undefined || change === 0) return <Tag>持平</Tag>;
+        return change > 0
+          ? <Tag color="success">↑ {change}%</Tag>
+          : <Tag color="error">↓ {Math.abs(change)}%</Tag>;
+      },
+    },
+  ];
+
   return (
-    <Box padding={4} background="neutral100" hasRadius>
-      <Typography variant="delta">{title}</Typography>
-
-      <Box marginTop={3}>
-        {/* 表头 */}
-        <Flex gap={2} background="neutral200" padding={2} hasRadius>
-          {columns.map((col) => (
-            <Box key={col.key} flex={1}>
-              <Typography variant="pi" fontWeight="bold">
-                {col.label}
-              </Typography>
-            </Box>
-          ))}
-        </Flex>
-
-        {/* 数据行 */}
-        {data.length === 0 ? (
-          <Flex padding={4} justifyContent="center">
-            <Typography variant="pi" textColor="neutral600">
-              暂无数据
-            </Typography>
-          </Flex>
-        ) : (
-          data.map((row, index) => (
-            <Flex key={row.id || index} gap={2} padding={2} background={index % 2 === 0 ? 'neutral0' : 'neutral50'}>
-              {columns.map((col) => (
-                <Box key={col.key} flex={1}>
-                  {col.key === 'change' ? (
-                    <Badge variant={row[col.key] >= 0 ? 'success' : 'danger'}>{row[col.key] >= 0 ? '+' : ''}
-                      {row[col.key]}%</Badge>
-                  ) : (
-                    <Typography variant="pi">{row[col.key]}</Typography>
-                  )}
-                </Box>
-              ))}
-            </Flex>
-          ))
-        )}
-      </Box>
-    </Box>
+    <Table
+      columns={columns}
+      dataSource={data}
+      loading={loading}
+      pagination={false}
+      rowKey="key"
+    />
   );
 };
 

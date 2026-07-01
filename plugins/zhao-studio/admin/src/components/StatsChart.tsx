@@ -1,74 +1,51 @@
-// admin/src/components/StatsChart.tsx
-
 import React from 'react';
-import { Box, Typography, Flex, Badge } from '@strapi/design-system';
-import { formatNumber } from '../utils/statsCalculator';
+import ReactECharts from 'echarts-for-react';
+import { Spin } from 'antd';
 
-interface StatsChartProps {
-  type: 'line' | 'bar' | 'pie';
-  data: { label: string; value: number }[];
-  title: string;
+interface ChartData {
+  date: string;
+  value: number;
 }
 
-const StatsChart: React.FC<StatsChartProps> = ({ type, data, title }) => {
-  const maxValue = Math.max(...data.map((d) => d.value), 1);
+interface StatsChartProps {
+  data: ChartData[];
+  type?: 'line' | 'bar';
+  height?: number;
+  loading?: boolean;
+  title?: string;
+}
 
-  return (
-    <Box padding={4} background="neutral100" hasRadius>
-      <Typography variant="delta">{title}</Typography>
+const StatsChart: React.FC<StatsChartProps> = ({
+  data,
+  type = 'line',
+  height = 300,
+  loading = false,
+  title,
+}) => {
+  const option = {
+    title: title ? { text: title } : undefined,
+    tooltip: { trigger: 'axis' },
+    xAxis: {
+      type: 'category',
+      data: data.map((d) => d.date),
+    },
+    yAxis: { type: 'value' },
+    series: [
+      {
+        data: data.map((d) => d.value),
+        type,
+        smooth: type === 'line',
+        itemStyle: { color: '#1677ff' },
+      },
+    ],
+    grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+  };
 
-      {type === 'bar' && (
-        <Flex marginTop={3} gap={2} direction="column">
-          {data.map((item) => (
-            <Box key={item.label} width="100%">
-              <Flex justifyContent="space-between" marginBottom={1}>
-                <Typography variant="pi">{item.label}</Typography>
-                <Badge>{formatNumber(item.value)}</Badge>
-              </Flex>
-              <Box background="neutral200" height="8px" hasRadius>
-                <Box
-                  background="primary500"
-                  height="100%"
-                  hasRadius
-                  style={{ width: `${(item.value / maxValue) * 100}%` }}
-                />
-              </Box>
-            </Box>
-          ))}
-        </Flex>
-      )}
+  if (loading) {
+    return <div style={{ height, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Spin /></div>;
+  }
 
-      {type === 'pie' && (
-        <Flex marginTop={3} gap={3} direction="column">
-          {data.map((item) => {
-            const percent = ((item.value / data.reduce((sum, d) => sum + d.value, 0)) * 100).toFixed(1);
-            return (
-              <Flex key={item.label} justifyContent="space-between" alignItems="center">
-                <Typography variant="pi">{item.label}</Typography>
-                <Flex gap={2}>
-                  <Typography variant="pi" textColor="neutral600">
-                    {percent}%
-                  </Typography>
-                  <Badge>{formatNumber(item.value)}</Badge>
-                </Flex>
-              </Flex>
-            );
-          })}
-        </Flex>
-      )}
-
-      {type === 'line' && (
-        <Flex marginTop={3} gap={2} direction="column">
-          {data.map((item) => (
-            <Flex key={item.label} justifyContent="space-between">
-              <Typography variant="pi">{item.label}</Typography>
-              <Badge>{formatNumber(item.value)}</Badge>
-            </Flex>
-          ))}
-        </Flex>
-      )}
-    </Box>
-  );
+  return <ReactECharts option={option} style={{ height }} />;
 };
 
 export default StatsChart;
