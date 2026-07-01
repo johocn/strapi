@@ -1,5 +1,5 @@
 import React from 'react';
-import { normalizeList } from '../utils/fieldNormalizer';
+import { normalizeRecord } from '../utils/fieldNormalizer';
 
 // 枚举值映射（组件 ← → 后端）
 const POSITION_TO_BACKEND = {
