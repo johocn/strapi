@@ -1,8 +1,8 @@
-// admin/src/components/OverviewCard.tsx
-
 import React from 'react';
-import { Box, Typography, Flex, Badge } from '@strapi/design-system';
+import { Card, Typography, Tag } from 'antd';
 import { formatNumber, formatPercent } from '../utils/statsCalculator';
+
+const { Text, Title } = Typography;
 
 interface OverviewCardProps {
   title: string;
@@ -25,40 +25,24 @@ const OverviewCard: React.FC<OverviewCardProps> = ({ title, value, change, unit 
     return formatNumber(value) + (unit ? ` ${unit}` : '');
   };
 
-  const getChangeBadge = () => {
+  const getChangeTag = () => {
     if (change === 0) {
-      return (
-        <Badge variant="neutral" size="S">
-          持平
-        </Badge>
-      );
+      return <Tag>持平</Tag>;
     }
     if (change > 0) {
-      return (
-        <Badge variant="success" size="S">
-          ↑ {change}%
-        </Badge>
-      );
+      return <Tag color="success">↑ {change}%</Tag>;
     }
-    return (
-      <Badge variant="danger" size="S">
-        ↓ {Math.abs(change)}%
-      </Badge>
-    );
+    return <Tag color="error">↓ {Math.abs(change)}%</Tag>;
   };
 
   return (
-    <Box padding={4} background="neutral100" hasRadius>
-      <Typography variant="pi" textColor="neutral600">
-        {title}
-      </Typography>
-      <Flex marginTop={2} gap={2} alignItems="baseline">
-        <Typography variant="delta" fontWeight="bold">
-          {formatValue()}
-        </Typography>
-      </Flex>
-      <Flex marginTop={2}>{getChangeBadge()}</Flex>
-    </Box>
+    <Card>
+      <Text type="secondary">{title}</Text>
+      <Title level={3} style={{ marginTop: 8, marginBottom: 8 }}>
+        {formatValue()}
+      </Title>
+      {getChangeTag()}
+    </Card>
   );
 };
 
