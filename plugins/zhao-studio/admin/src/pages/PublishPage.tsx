@@ -16,7 +16,7 @@ const PublishPage = () => {
     {
       title: '选择',
       key: 'select',
-      render: (_, record) => ({
+      render: (_: any, record: any) => ({
         children: (
           <input
             type="checkbox"

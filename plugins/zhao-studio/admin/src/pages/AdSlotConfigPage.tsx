@@ -23,7 +23,7 @@ const AdSlotConfigPage = () => {
     {
       title: '操作',
       key: 'action',
-      render: (_, record) => (
+      render: (_: any, record: any) => (
         <Space>
           <Button size="small" onClick={() => { setEditing(record); setShowModal(true); }}>编辑</Button>
           <Popconfirm

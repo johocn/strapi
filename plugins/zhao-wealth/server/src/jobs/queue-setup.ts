@@ -22,7 +22,7 @@ export async function setupQueues(strapi: any) {
 
   try {
     collectQueue = new Queue('wealth-collect', {
-      redis: { url: redisUrl, maxRetriesPerRequest: 1 },
+      redis: { maxRetriesPerRequest: 1, url: redisUrl } as any,
       defaultJobOptions: {
         attempts: 3,
         backoff: { type: 'fixed', delay: 5 * 60 * 1000 },
@@ -32,7 +32,7 @@ export async function setupQueues(strapi: any) {
     });
 
     calculateQueue = new Queue('wealth-calculate', {
-      redis: { url: redisUrl, maxRetriesPerRequest: 1 },
+      redis: { maxRetriesPerRequest: 1, url: redisUrl } as any,
       defaultJobOptions: {
         attempts: 2,
         backoff: { type: 'fixed', delay: 1 * 60 * 1000 },
@@ -42,7 +42,7 @@ export async function setupQueues(strapi: any) {
     });
 
     recalculateQueue = new Queue('wealth-recalculate', {
-      redis: { url: redisUrl, maxRetriesPerRequest: 1 },
+      redis: { maxRetriesPerRequest: 1, url: redisUrl } as any,
       defaultJobOptions: {
         attempts: 1,
         removeOnComplete: true,
