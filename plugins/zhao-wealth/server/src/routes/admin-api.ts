@@ -157,6 +157,18 @@ export default {
       handler: 'admin-api.statsAnomalies',
     },
 
+    // 采集与校验
+    {
+      method: 'POST',
+      path: '/products/collect',
+      handler: 'admin-api.collect',
+    },
+    {
+      method: 'POST',
+      path: '/products/collect/confirm',
+      handler: 'admin-api.collectConfirm',
+    },
+
     // 指标中心聚合
     {
       method: 'GET',

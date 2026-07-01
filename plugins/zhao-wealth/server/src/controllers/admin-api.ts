@@ -455,4 +455,192 @@ export default ({ strapi }) => ({
       ctx.body = errorResponse(500, '查询失败');
     }
   },
+
+  // ===== 采集与校验 =====
+  async collect(ctx) {
+    try {
+      const { source, query } = ctx.request.body;
+
+      if (!source || !query) {
+        ctx.body = errorResponse(400, '缺少 source 或 query 参数');
+        return;
+      }
+
+      const { getCollector, getChinawealthCollector } = require('../collectors/collector-factory');
+
+      // 1. 从数据源采集
+      const collector = getCollector(source);
+      if (!collector) {
+        ctx.body = errorResponse(400, `不支持的数据源: ${source}`);
+        return;
+      }
+
+      const sourceData = await collector.collectProductInfo(query);
+      if (!sourceData) {
+        ctx.body = errorResponse(404, '未找到匹配产品');
+        return;
+      }
+
+      // 2. 用登记编码查询中国理财网校验
+      let officialData = null;
+      let verification: any = { status: 'no_register_code', matchScore: 0, differences: [] };
+
+      if (sourceData.registerCode) {
+        try {
+          const cwCollector = getChinawealthCollector();
+          officialData = await cwCollector.collectByRegisterCode(sourceData.registerCode);
+
+          if (officialData) {
+            verification = this.compareData(sourceData, officialData);
+          } else {
+            verification = { status: 'not_found_on_official', matchScore: 0, differences: [] };
+          }
+        } catch (error) {
+          strapi.log.warn(`[zhao-wealth] 中国理财网校验失败: ${error.message}`);
+          verification = { status: 'verification_failed', matchScore: 0, differences: [], error: error.message };
+        }
+      }
+
+      ctx.body = successResponse({
+        sourceData,
+        officialData,
+        verification,
+      });
+    } catch (error) {
+      strapi.log.error(`[zhao-wealth] 采集失败: ${error.message}`);
+      ctx.body = errorResponse(500, `采集失败: ${error.message}`);
+    }
+  },
+
+  async collectConfirm(ctx) {
+    try {
+      const data = ctx.request.body;
+
+      // 检查产品代码是否已存在
+      const existing = await strapi.db.query('plugin::zhao-wealth.wealth-product').findOne({
+        where: { productCode: data.productCode },
+      });
+
+      if (existing) {
+        ctx.body = errorResponse(400, `产品代码 ${data.productCode} 已存在`);
+        return;
+      }
+
+      // 创建产品
+      const product = await strapi.db.query('plugin::zhao-wealth.wealth-product').create({
+        data: {
+          productCode: data.productCode,
+          productName: data.productName,
+          productType: data.productType,
+          registerCode: data.registerCode || null,
+          riskLevel: data.riskLevel || 'R2',
+          termType: data.termType || null,
+          issueDate: data.issueDate || null,
+          maturityDate: data.maturityDate || null,
+          benchmark: data.benchmark || null,
+          remark: data.remark || null,
+          company: data.company || null,
+          recommendEnabled: data.recommendEnabled ?? false,
+          status: data.status ?? true,
+        },
+      });
+
+      // 自动创建采集配置
+      await strapi.db.query('plugin::zhao-wealth.wealth-collect-config').create({
+        data: {
+          product: product.id,
+          collectMethod: 'web-crawler',
+          collectStatus: 'pending',
+        },
+      });
+
+      ctx.body = successResponse(product, '采集入库成功');
+    } catch (error) {
+      strapi.log.error(`[zhao-wealth] 采集入库失败: ${error.message}`);
+      ctx.body = errorResponse(500, `入库失败: ${error.message}`);
+    }
+  },
+
+  /**
+   * 对比双源数据，返回差异列表
+   */
+  compareData(sourceData: any, officialData: any) {
+    const differences: Array<{
+      field: string;
+      sourceValue: string;
+      officialValue: string;
+      severity: 'info' | 'warning' | 'error';
+      description: string;
+    }> = [];
+
+    // 产品名称：包含关系
+    if (sourceData.productName && officialData.productName) {
+      if (!officialData.productName.includes(sourceData.productName) && !sourceData.productName.includes(officialData.productName)) {
+        differences.push({
+          field: 'productName',
+          sourceValue: sourceData.productName,
+          officialValue: officialData.productName,
+          severity: 'warning',
+          description: '产品名称差异较大，请确认是否为同一产品',
+        });
+      } else if (sourceData.productName !== officialData.productName) {
+        differences.push({
+          field: 'productName',
+          sourceValue: sourceData.productName,
+          officialValue: officialData.productName,
+          severity: 'info',
+          description: '官网简称 vs 理财网全称',
+        });
+      }
+    }
+
+    // 登记编码：精确匹配
+    if (sourceData.registerCode && officialData.registerCode && sourceData.registerCode !== officialData.registerCode) {
+      differences.push({
+        field: 'registerCode',
+        sourceValue: sourceData.registerCode,
+        officialValue: officialData.registerCode,
+        severity: 'error',
+        description: '登记编码不匹配，请确认是否为同一产品',
+      });
+    }
+
+    // 风险等级
+    if (sourceData.riskLevel && officialData.riskLevel && sourceData.riskLevel !== officialData.riskLevel) {
+      differences.push({
+        field: 'riskLevel',
+        sourceValue: sourceData.riskLevelRaw || sourceData.riskLevel,
+        officialValue: officialData.riskLevelRaw || officialData.riskLevel,
+        severity: 'warning',
+        description: '风险等级不一致',
+      });
+    }
+
+    // 期限类型
+    if (sourceData.termType && officialData.termType && sourceData.termType !== officialData.termType) {
+      differences.push({
+        field: 'termType',
+        sourceValue: sourceData.termTypeRaw || sourceData.termType,
+        officialValue: officialData.termTypeRaw || officialData.termType,
+        severity: 'info',
+        description: '期限类型表述不同',
+      });
+    }
+
+    // 产品类型
+    if (sourceData.productType && officialData.productType && sourceData.productType !== officialData.productType) {
+      differences.push({
+        field: 'productType',
+        sourceValue: sourceData.productTypeRaw || sourceData.productType,
+        officialValue: officialData.productTypeRaw || officialData.productType,
+        severity: 'warning',
+        description: '投资性质不一致',
+      });
+    }
+
+    const matchScore = differences.length === 0 ? 1.0 : differences.some(d => d.severity === 'error') ? 0.3 : 0.8;
+    const status = matchScore === 1.0 ? 'full_match' : matchScore >= 0.8 ? 'partial_match' : 'mismatch';
+
+    return { status, matchScore, differences };
+  },
 });

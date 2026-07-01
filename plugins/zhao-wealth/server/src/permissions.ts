@@ -3,7 +3,7 @@
 export default {
   // 插件权限定义
   'wealth-product': {
-    actions: ['find', 'findOne', 'create', 'update', 'delete'],
+    actions: ['find', 'findOne', 'create', 'update', 'delete', 'collect', 'collectConfirm'],
   },
   'wealth-nav': {
     actions: ['find', 'findOne', 'create', 'update'],
