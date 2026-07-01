@@ -1,130 +1,83 @@
-// admin/src/components/AIConfigForm.tsx
-
 import React from 'react';
-import { Box, Typography, TextInput, Button, Flex, Badge } from '@strapi/design-system';
-import { getAllProviders, AIProvider } from '../utils/aiProviders';
+import { Form, Input, Select, Switch, Button, Space, Divider, message } from 'antd';
+import { useAIConfig } from '../hooks/useAIConfig';
 
 interface AIConfigFormProps {
-  config: any;
+  config?: any;
   onSave: (data: any) => void;
-  onTest: (provider: string, apiKey: string, endpoint?: string) => void;
+  onCancel: () => void;
 }
 
-const AIConfigForm: React.FC<AIConfigFormProps> = ({ config, onSave, onTest }) => {
-  const [formData, setFormData] = React.useState({
-    enabled: config.enabled || false,
-    provider: config.provider || 'qwen',
-    apiKey: config.apiKey || '',
-    endpoint: config.endpoint || '',
-    model: config.model || '',
-    maxTokens: config.maxTokens || 2000,
-    temperature: config.temperature || 0.7,
-  });
+const AIConfigForm: React.FC<AIConfigFormProps> = ({ config, onSave, onCancel }) => {
+  const [form] = Form.useForm();
+  const { testConfig } = useAIConfig();
 
-  const providers = getAllProviders();
-  const selectedProvider = providers.find((p) => p.name === formData.provider);
+  React.useEffect(() => {
+    if (config) {
+      form.setFieldsValue(config);
+    } else {
+      form.resetFields();
+    }
+  }, [config, form]);
 
-  const handleTest = () => {
-    onTest(formData.provider, formData.apiKey, formData.endpoint);
+  const handleSubmit = () => {
+    form.validateFields().then((values) => onSave(values));
   };
 
-  const handleSave = () => {
-    onSave(formData);
+  const handleTest = async () => {
+    try {
+      const values = await form.validateFields();
+      await testConfig(values);
+      message.success('配置测试成功');
+    } catch {
+      message.error('配置测试失败');
+    }
   };
 
   return (
-    <Box padding={4}>
-      <Typography variant="delta">AI配置</Typography>
-
-      <Flex marginTop={4} gap={4} direction="column">
-        <Box>
-          <Typography variant="pi">启用AI功能</Typography>
-          <Flex gap={2} marginTop={1}>
-            <Button variant={formData.enabled ? 'default' : 'secondary'} onClick={() => setFormData({ ...formData, enabled: true })}>
-              启用
-            </Button>
-            <Button variant={!formData.enabled ? 'default' : 'secondary'} onClick={() => setFormData({ ...formData, enabled: false })}>
-              禁用
-            </Button>
-          </Flex>
-        </Box>
-
-        {formData.enabled && (
-          <>
-            <Box>
-              <Typography variant="pi">AI提供商</Typography>
-              <Flex gap={2} marginTop={1}>
-                {providers.map((p) => (
-                  <Button key={p.name} variant={formData.provider === p.name ? 'default' : 'secondary'} onClick={() => setFormData({ ...formData, provider: p.name })}>
-                    {p.displayName}
-                  </Button>
-                ))}
-              </Flex>
-            </Box>
-
-            <Box>
-              <Typography variant="pi">API密钥</Typography>
-              <TextInput
-                value={formData.apiKey}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, apiKey: e.target.value })}
-              />
-            </Box>
-
-            {formData.provider === 'custom' && (
-              <Box>
-                <Typography variant="pi">自定义接口URL</Typography>
-                <TextInput
-                  value={formData.endpoint}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, endpoint: e.target.value })}
-                />
-              </Box>
-            )}
-
-            {selectedProvider && selectedProvider.models.length > 0 && (
-              <Box>
-                <Typography variant="pi">模型</Typography>
-                <Flex gap={2} marginTop={1}>
-                  {selectedProvider.models.map((m) => (
-                    <Button key={m} variant={(formData.model || selectedProvider.defaultModel) === m ? 'default' : 'secondary'} onClick={() => setFormData({ ...formData, model: m })}>
-                      {m}
-                    </Button>
-                  ))}
-                </Flex>
-              </Box>
-            )}
-
-            <Box>
-              <Typography variant="pi">最大Token数</Typography>
-              <TextInput
-                type="number"
-                value={formData.maxTokens.toString()}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, maxTokens: parseInt(e.target.value) || 2000 })}
-              />
-            </Box>
-
-            <Box>
-              <Typography variant="pi">温度参数 (0-1)</Typography>
-              <TextInput
-                type="number"
-                value={formData.temperature.toString()}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, temperature: parseFloat(e.target.value) || 0.7 })}
-              />
-            </Box>
-          </>
-        )}
-      </Flex>
-
-      <Flex marginTop={4} justifyContent="flex-end" gap={2}>
-        {formData.enabled && (
-          <Button variant="secondary" onClick={handleTest}>
-            测试连接
-          </Button>
-        )}
-        <Button onClick={handleSave}>
-          保存配置
-        </Button>
-      </Flex>
-    </Box>
+    <Form form={form} layout="vertical">
+      <Form.Item name="provider" label="AI 服务商" rules={[{ required: true }]}>
+        <Select options={[
+          { value: 'openai', label: 'OpenAI' },
+          { value: 'azure', label: 'Azure OpenAI' },
+          { value: 'claude', label: 'Anthropic Claude' },
+          { value: 'qwen', label: '阿里通义千问' },
+          { value: 'wenxin', label: '百度文心一言' },
+          { value: 'zhipu', label: '智谱 GLM' },
+        ]} />
+      </Form.Item>
+      <Form.Item name="apiKey" label="API Key" rules={[{ required: true }]}>
+        <Input.Password />
+      </Form.Item>
+      <Form.Item name="apiBase" label="API Base URL">
+        <Input placeholder="留空使用默认" />
+      </Form.Item>
+      <Form.Item name="model" label="模型名称">
+        <Input placeholder="gpt-4, gpt-3.5-turbo 等" />
+      </Form.Item>
+      <Form.Item name="temperature" label="温度参数" initialValue={0.7}>
+        <Select options={[
+          { value: 0, label: '0 (精确)' },
+          { value: 0.3, label: '0.3 (低)' },
+          { value: 0.7, label: '0.7 (中)' },
+          { value: 1, label: '1.0 (高)' },
+        ]} />
+      </Form.Item>
+      <Form.Item name="maxTokens" label="最大 Token 数">
+        <Input />
+      </Form.Item>
+      <Divider />
+      <Form.Item name="isActive" label="启用" valuePropName="checked" initialValue={true}>
+        <Switch />
+      </Form.Item>
+      <Form.Item>
+        <Space>
+          <Button type="primary" onClick={handleSubmit}>保存</Button>
+          <Button onClick={handleTest}>测试配置</Button>
+          <Button onClick={onCancel}>取消</Button>
+        </Space>
+      </Form.Item>
+    </Form>
   );
 };
 
