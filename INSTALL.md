@@ -213,7 +213,7 @@ Could not resolve "../../plugins/zhao-channel/./dist/admin/index.mjs"
 Building admin panel [ERROR] Could not resolve "...dist/admin/index.mjs"
 ```
 
-**原因**：`.gitignore` 忽略了 `dist` 目录，构建产物不会提交到仓库。
+**原因**：`.gitignore` 忽略了 `dist` 目录，构建产物不会提交到仓库。服务器拉取代码后，所有插件的 `dist` 目录均为空。
 
 **解决方案**：在服务器上运行构建脚本：
 ```bash
@@ -221,7 +221,40 @@ Building admin panel [ERROR] Could not resolve "...dist/admin/index.mjs"
 npm run build
 ```
 
-### Q3: Redis 连接失败
+### Q3: zhao-sso 插件 admin 导出错误
+
+**错误信息**：
+```
+"default" is not exported by "plugins/zhao-sso/strapi-admin.js"
+```
+
+**原因**：zhao-sso 插件缺少前端开发依赖（`@strapi/design-system`、`@strapi/icons`、`react`、`react-dom` 等），导致 `strapi-plugin build` 无法正确编译 admin 模块。
+
+**解决方案**：确保 `plugins/zhao-sso/package.json` 的 `devDependencies` 包含以下依赖：
+```json
+{
+  "@strapi/design-system": "^2.2.0",
+  "@strapi/icons": "^2.2.0",
+  "@types/react": "^18.3.28",
+  "@types/react-dom": "^18.3.7",
+  "react": "^18.3.1",
+  "react-dom": "^18.3.1",
+  "react-intl": "^6.8.9",
+  "react-router-dom": "^6.30.3",
+  "styled-components": "^6.4.1"
+}
+```
+
+重新安装依赖并构建：
+```bash
+cd plugins/zhao-sso
+npm install
+npm run build
+cd ../..
+npm run build
+```
+
+### Q4: Redis 连接失败
 
 检查 Redis 服务状态：
 ```bash
@@ -229,21 +262,21 @@ redis-cli ping
 # 应返回 PONG
 ```
 
-### Q4: OSS 上传失败
+### Q5: OSS 上传失败
 
 检查阿里云 OSS 配置：
 - accessKeyId 和 accessKeySecret 是否正确
 - bucket 是否存在
 - region 是否匹配
 
-### Q5: 数据库连接失败
+### Q6: 数据库连接失败
 
 检查 PostgreSQL：
 ```bash
 psql -U postgres -d strapi -h localhost
 ```
 
-### Q6: npm install 被系统杀死（内存不足）
+### Q7: npm install 被系统杀死（内存不足）
 
 **错误信息**：
 ```
@@ -257,7 +290,7 @@ Killed                  npm install --legacy-peer-deps
 2. 依赖已合并到根目录，只需一次安装
 3. 构建脚本已优化，不再每个插件单独安装依赖
 
-### Q7: 类型声明缺失
+### Q8: 类型声明缺失
 
 **错误信息**：
 ```
