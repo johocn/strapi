@@ -1,11 +1,12 @@
 import { ProTable, type ProColumns, type ActionType } from '@ant-design/pro-components';
 import { Button, Popconfirm, message, Tag } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useApi } from '../../hooks/useApi';
 import { PRODUCT_TYPES, RISK_LEVELS } from '../../constants/enums';
 import { useState, useRef } from 'react';
 import ProductForm from './ProductForm';
+import CollectDrawer from './CollectDrawer';
 
 const riskColors: Record<string, string> = { R1: 'green', R2: 'blue', R3: 'orange', R4: 'red', R5: 'magenta' };
 
@@ -14,6 +15,7 @@ const ProductList = () => {
   const navigate = useNavigate();
   const actionRef = useRef<ActionType>(null);
   const [formOpen, setFormOpen] = useState(false);
+  const [collectOpen, setCollectOpen] = useState(false);
   const [current, setCurrent] = useState<any>(undefined);
 
   const columns: ProColumns<any>[] = [
@@ -54,6 +56,7 @@ const ProductList = () => {
           return { data: res.records || [], total: res.total || 0, success: true };
         }}
         toolBarRender={() => [
+          <Button key="collect" icon={<SearchOutlined />} onClick={() => setCollectOpen(true)}>采集产品</Button>,
           <Button key="new" type="primary" icon={<PlusOutlined />} onClick={() => { setCurrent(undefined); setFormOpen(true); }}>新建产品</Button>,
         ]}
       />
@@ -62,6 +65,11 @@ const ProductList = () => {
         onClose={() => setFormOpen(false)}
         initialValues={current}
         onSuccess={() => { setFormOpen(false); actionRef.current?.reload(); }}
+      />
+      <CollectDrawer
+        open={collectOpen}
+        onClose={() => setCollectOpen(false)}
+        onSuccess={() => actionRef.current?.reload()}
       />
     </>
   );
