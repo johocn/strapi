@@ -1,199 +1,120 @@
-// admin/src/hooks/useStats.ts
+import React from 'react';
 
-import { useState, useCallback } from 'react';
-import { analyticsApi } from '../utils/analyticsApi';
-import { getDateRange } from '../utils/statsCalculator';
+type StatsType = 'basic' | 'advanced' | 'pro';
 
-export interface OverviewData {
-  pv: number;
-  uv: number;
-  clickCount: number;
-  clickRate: number;
-  avgReadDuration: number;
-  avgScrollDepth: number;
-  pvChange: number;
-  uvChange: number;
-  clickChange: number;
+interface UseStatsParams {
+  type: StatsType;
 }
 
-export interface ArticleStats {
-  articleId: string;
-  title: string;
-  pv: number;
-  uv: number;
-  avgReadDuration: number;
-  avgScrollDepth: number;
-}
-
-export interface AdSlotStats {
-  adSlotId: string;
+interface StatsRow {
+  key: string;
   name: string;
-  code: string;
-  position: string;
-  clickCount: number;
-  clickRate: number;
+  value: number;
+  change?: number;
+  unit?: string;
 }
 
-export interface DeviceStats {
-  desktop: number;
-  mobile: number;
-  tablet: number;
+interface ChartData {
+  date: string;
+  value: number;
 }
 
-export interface RegionStats {
-  country: string;
-  city?: string;
-  count: number;
-}
+const API_BASE = '/api/zhao-studio/v1/admin/stats';
 
-export interface UserStats {
-  total: number;
-  registered: number;
-  unregistered: number;
-  registerRate: number;
-}
+const STAT_NAMES: Record<string, string> = {
+  totalArticles: '总文章数',
+  totalViews: '总浏览量',
+  totalPublishes: '总发布数',
+  totalRevenue: '总收入',
+  totalUsers: '总用户数',
+  totalAdClicks: '广告点击数',
+  avgReadTime: '平均阅读时长',
+  totalPageViews: '页面浏览量',
+};
 
-export type StatsType = 'basic' | 'advanced' | 'pro';
+export const useStats = ({ type }: UseStatsParams) => {
+  const [stats, setStats] = React.useState<StatsRow[]>([]);
+  const [chartData, setChartData] = React.useState<ChartData[]>([]);
+  const [loading, setLoading] = React.useState(false);
 
-export function useStats(type: StatsType = 'basic') {
-  const [overview, setOverview] = useState<OverviewData | null>(null);
-  const [articleStats, setArticleStats] = useState<ArticleStats[]>([]);
-  const [adSlotStats, setAdSlotStats] = useState<AdSlotStats[]>([]);
-  const [deviceStats, setDeviceStats] = useState<DeviceStats | null>(null);
-  const [regionStats, setRegionStats] = useState<RegionStats[]>([]);
-  const [userStats, setUserStats] = useState<UserStats | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  React.useEffect(() => {
+    const fetchAll = async () => {
+      setLoading(true);
+      try {
+        // 根据 type 决定调用哪些接口
+        const endpoints =
+          type === 'basic'
+            ? ['/overview']
+            : type === 'advanced'
+            ? ['/overview', '/articles']
+            : ['/overview', '/articles', '/ad-slots', '/devices'];
 
-  const fetchOverview = useCallback(async (dateRange?: { startDate: string; endDate: string }) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const range = dateRange || getDateRange('today');
-      const response = await analyticsApi.getOverview(range);
-      setOverview(response.data);
-    } catch (err: unknown) {
-      const error = err instanceof Error ? err : new Error(String(err));
-      setError(error.message);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+        const responses = await Promise.all(
+          endpoints.map(e =>
+            fetch(`${API_BASE}${e}`).then(r => r.json()).catch(() => ({ data: {} }))
+          )
+        );
 
-  const fetchArticleStats = useCallback(async (params: { articleId?: string; startDate: string; endDate: string }) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await analyticsApi.getArticleStats(params);
-      setArticleStats(response.data || []);
-    } catch (err: unknown) {
-      const error = err instanceof Error ? err : new Error(String(err));
-      setError(error.message);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+        // 聚合为 stats 表格数据
+        const allStats: StatsRow[] = [];
 
-  const fetchAdSlotStats = useCallback(async (params: { adSlotId?: string; startDate: string; endDate: string }) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await analyticsApi.getAdSlotStats(params);
-      setAdSlotStats(response.data || []);
-    } catch (err: unknown) {
-      const error = err instanceof Error ? err : new Error(String(err));
-      setError(error.message);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+        responses.forEach((json, i) => {
+          const data = json.data || {};
+          if (i === 0) {
+            // overview → 基础指标（对象结构）
+            Object.entries(data).forEach(([key, value]) => {
+              if (typeof value === 'number' || typeof value === 'string') {
+                const numValue = Number(value);
+                if (!isNaN(numValue)) {
+                  allStats.push({
+                    key,
+                    name: STAT_NAMES[key] || key,
+                    value: numValue,
+                  });
+                }
+              }
+            });
+          } else if (Array.isArray(data)) {
+            // 其他接口 → 数组结构
+            data.forEach(item => {
+              allStats.push({
+                key: item.id || item.documentId || item.name || Math.random().toString(),
+                name: item.name || item.title || item.platformName || '未命名',
+                value: Number(item.value || item.count || item.views || 0),
+                unit: item.unit,
+              });
+            });
+          }
+        });
 
-  const fetchDeviceStats = useCallback(async (params: { startDate: string; endDate: string }) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await analyticsApi.getDeviceStats(params);
-      setDeviceStats(response.data);
-    } catch (err: unknown) {
-      const error = err instanceof Error ? err : new Error(String(err));
-      setError(error.message);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+        setStats(allStats);
 
-  const fetchRegionStats = useCallback(async (params: { startDate: string; endDate: string }) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await analyticsApi.getRegionStats(params);
-      setRegionStats(response.data || []);
-    } catch (err: unknown) {
-      const error = err instanceof Error ? err : new Error(String(err));
-      setError(error.message);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const fetchUserStats = useCallback(async (params: { startDate: string; endDate: string }) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await analyticsApi.getUserStats(params);
-      setUserStats(response.data);
-    } catch (err: unknown) {
-      const error = err instanceof Error ? err : new Error(String(err));
-      setError(error.message);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const fetchAll = useCallback(async (dateRange?: { startDate: string; endDate: string }) => {
-    const range = dateRange || getDateRange('today');
-    setLoading(true);
-    setError(null);
-    try {
-      const [overviewRes, adSlotRes] = await Promise.all([analyticsApi.getOverview(range), analyticsApi.getAdSlotStats(range as { adSlotId?: string; startDate: string; endDate: string })]);
-
-      setOverview(overviewRes.data);
-      setAdSlotStats(adSlotRes.data || []);
-
-      if (type === 'advanced' || type === 'pro') {
-        const [articleRes] = await Promise.all([analyticsApi.getArticleStats(range as { articleId?: string; startDate: string; endDate: string })]);
-        setArticleStats(articleRes.data || []);
+        // 组装 chartData（从 overview 提取时间序列）
+        const overview = responses[0]?.data || {};
+        const chart = overview.timeSeries || overview.daily || overview.timeline || [];
+        if (Array.isArray(chart)) {
+          setChartData(
+            chart.map((d: any) => ({
+              date: d.date || d.time || d.dateKey || '',
+              value: Number(d.value || d.count || d.views || 0),
+            }))
+          );
+        } else {
+          setChartData([]);
+        }
+      } catch (err) {
+        console.error('useStats fetchAll error:', err);
+        setStats([]);
+        setChartData([]);
+      } finally {
+        setLoading(false);
       }
+    };
 
-      if (type === 'pro') {
-        const [deviceRes, regionRes, userRes] = await Promise.all([analyticsApi.getDeviceStats(range), analyticsApi.getRegionStats(range), analyticsApi.getUserStats(range)]);
-        setDeviceStats(deviceRes.data);
-        setRegionStats(regionRes.data || []);
-        setUserStats(userRes.data);
-      }
-    } catch (err: unknown) {
-      const error = err instanceof Error ? err : new Error(String(err));
-      setError(error.message);
-    } finally {
-      setLoading(false);
-    }
+    fetchAll();
   }, [type]);
 
-  return {
-    overview,
-    articleStats,
-    adSlotStats,
-    deviceStats,
-    regionStats,
-    userStats,
-    loading,
-    error,
-    fetchOverview,
-    fetchArticleStats,
-    fetchAdSlotStats,
-    fetchDeviceStats,
-    fetchRegionStats,
-    fetchUserStats,
-    fetchAll,
-  };
-}
+  return { stats, chartData, loading };
+};
+
+export default useStats;
