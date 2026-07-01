@@ -3,7 +3,7 @@ import type { Core } from "@strapi/strapi";
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async login(ctx: any) {
     const body = ctx.request.body?.data || ctx.request.body;
-    const { type, identifier, password, app_code, channel_code } = body;
+    const { type, identifier, password, code, app_code, channel_code } = body;
 
     if (!type) { ctx.status = 400; ctx.body = { error: "type 必填" }; return; }
     if (!app_code) { ctx.status = 400; ctx.body = { error: "app_code 必填" }; return; }
@@ -15,6 +15,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         type,
         identifier,
         password,
+        code,
         appCode: app_code,
         channelCode: channel_code,
         ip: ctx.request.ip,
@@ -23,6 +24,22 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       ctx.body = result;
     } catch (e: any) {
       ctx.status = (e as any).status || 401;
+      ctx.body = { error: e.message };
+    }
+  },
+
+  async sendSms(ctx: any) {
+    const body = ctx.request.body?.data || ctx.request.body;
+    const { mobile, scene } = body;
+
+    if (!mobile) { ctx.status = 400; ctx.body = { error: "mobile 必填" }; return; }
+
+    const smsService = strapi.plugin("zhao-sso").service("sso-sms");
+    try {
+      const result = await smsService.sendCode(mobile, scene || "login", ctx.request.ip);
+      ctx.body = result;
+    } catch (e: any) {
+      ctx.status = (e as any).status || 400;
       ctx.body = { error: e.message };
     }
   },

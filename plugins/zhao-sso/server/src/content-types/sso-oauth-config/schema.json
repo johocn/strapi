@@ -1,0 +1,20 @@
+{
+  "kind": "collectionType",
+  "collectionName": "sso_oauth_configs",
+  "info": {
+    "singularName": "sso-oauth-config",
+    "pluralName": "sso-oauth-configs",
+    "displayName": "SSO OAuth Config"
+  },
+  "options": { "draftAndPublish": false },
+  "attributes": {
+    "provider": { "type": "string", "required": true },
+    "app_id": { "type": "string", "required": true },
+    "app_secret": { "type": "string", "required": true },
+    "scope": { "type": "string" },
+    "extra_config": { "type": "json" },
+    "redirect_uris": { "type": "json" },
+    "is_enabled": { "type": "boolean", "default": true, "required": true },
+    "description": { "type": "string" }
+  }
+}

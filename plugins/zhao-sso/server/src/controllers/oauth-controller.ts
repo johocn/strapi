@@ -86,10 +86,15 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
   async wechatRedirect(ctx: any) {
     try {
-      const { app_code, channel_code } = ctx.query;
+      const { app_code, channel_code, redirect_uri } = ctx.query;
+      if (!redirect_uri) { ctx.status = 400; ctx.body = { error: "redirect_uri 必填" }; return; }
       const wechatService = strapi.plugin("zhao-sso").service("sso-wechat");
-      const state = Buffer.from(JSON.stringify({ app_code: app_code || "default", channel_code: channel_code || "" })).toString("base64url");
-      const url = wechatService.getAuthorizeUrl(state);
+      const state = Buffer.from(JSON.stringify({
+        app_code: app_code || "default",
+        channel_code: channel_code || "",
+        redirect_uri,
+      })).toString("base64url");
+      const url = await wechatService.getAuthorizeUrl(state);
       ctx.redirect(url);
     } catch (e: any) {
       ctx.status = (e as any).status || 400; ctx.body = { error: e.message };
@@ -103,6 +108,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     let stateData: any = {};
     try { stateData = JSON.parse(Buffer.from(state, "base64url").toString()); } catch { /* ignore */ }
 
+    const redirectUri = stateData.redirect_uri;
+    if (!redirectUri) { ctx.status = 400; ctx.body = { error: "state 中 redirect_uri 缺失" }; return; }
+
     const wechatService = strapi.plugin("zhao-sso").service("sso-wechat");
     const oauthService = strapi.plugin("zhao-sso").service("sso-oauth");
 
@@ -113,11 +121,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       const authCode = await oauthService.generateAuthCode({
         userId,
         appCode,
-        redirectUri: stateData.redirect_uri || "http://localhost:5173/sso/callback",
+        redirectUri,
         channelCode: stateData.channel_code,
       });
 
-      const redirectUri = stateData.redirect_uri || "http://localhost:5173/sso/callback";
       const separator = redirectUri.includes("?") ? "&" : "?";
       ctx.redirect(`${redirectUri}${separator}code=${authCode}&state=${state}`);
     } catch (e: any) {
@@ -128,10 +135,15 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
   async alipayRedirect(ctx: any) {
     try {
-      const { app_code, channel_code } = ctx.query;
+      const { app_code, channel_code, redirect_uri } = ctx.query;
+      if (!redirect_uri) { ctx.status = 400; ctx.body = { error: "redirect_uri 必填" }; return; }
       const alipayService = strapi.plugin("zhao-sso").service("sso-alipay");
-      const state = Buffer.from(JSON.stringify({ app_code: app_code || "default", channel_code: channel_code || "" })).toString("base64url");
-      const url = alipayService.getAuthorizeUrl(state);
+      const state = Buffer.from(JSON.stringify({
+        app_code: app_code || "default",
+        channel_code: channel_code || "",
+        redirect_uri,
+      })).toString("base64url");
+      const url = await alipayService.getAuthorizeUrl(state);
       ctx.redirect(url);
     } catch (e: any) {
       ctx.status = (e as any).status || 400; ctx.body = { error: e.message };
@@ -145,6 +157,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     let stateData: any = {};
     try { stateData = JSON.parse(Buffer.from(state, "base64url").toString()); } catch { /* ignore */ }
 
+    const redirectUri = stateData.redirect_uri;
+    if (!redirectUri) { ctx.status = 400; ctx.body = { error: "state 中 redirect_uri 缺失" }; return; }
+
     const alipayService = strapi.plugin("zhao-sso").service("sso-alipay");
     const oauthService = strapi.plugin("zhao-sso").service("sso-oauth");
 
@@ -155,11 +170,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       const authCode = await oauthService.generateAuthCode({
         userId,
         appCode,
-        redirectUri: stateData.redirect_uri || "http://localhost:5173/sso/callback",
+        redirectUri,
         channelCode: stateData.channel_code,
       });
 
-      const redirectUri = stateData.redirect_uri || "http://localhost:5173/sso/callback";
       const separator = redirectUri.includes("?") ? "&" : "?";
       ctx.redirect(`${redirectUri}${separator}code=${authCode}&state=${state}`);
     } catch (e: any) {

@@ -4129,7 +4129,9 @@ export interface PluginZhaoWealthWealthCompany
     draftAndPublish: false;
   };
   attributes: {
-    companyType: Schema.Attribute.Enumeration<['bank', 'bank-subsidiary']> &
+    companyType: Schema.Attribute.Enumeration<
+      ['bank', 'bank-subsidiary', 'joint-venture']
+    > &
       Schema.Attribute.DefaultTo<'bank-subsidiary'>;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
@@ -4291,6 +4293,7 @@ export interface PluginZhaoWealthWealthProduct
       'oneToMany',
       'plugin::zhao-wealth.wealth-annual-snapshot'
     >;
+    benchmark: Schema.Attribute.String;
     company: Schema.Attribute.Relation<
       'manyToOne',
       'plugin::zhao-wealth.wealth-company'
@@ -4323,9 +4326,13 @@ export interface PluginZhaoWealthWealthProduct
     > &
       Schema.Attribute.Required;
     publishedAt: Schema.Attribute.DateTime;
+    recommendEnabled: Schema.Attribute.Boolean &
+      Schema.Attribute.DefaultTo<false>;
+    recommendReason: Schema.Attribute.Text;
     recommendTags: Schema.Attribute.JSON;
     recommendWeight: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
     registerCode: Schema.Attribute.String & Schema.Attribute.Unique;
+    remark: Schema.Attribute.Text;
     riskLevel: Schema.Attribute.Enumeration<['R1', 'R2', 'R3', 'R4', 'R5']> &
       Schema.Attribute.DefaultTo<'R2'>;
     riskMetrics: Schema.Attribute.Relation<

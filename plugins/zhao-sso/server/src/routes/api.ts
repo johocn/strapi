@@ -16,6 +16,12 @@ export default () => ({
     },
     {
       method: "POST",
+      path: "/v1/auth/send-sms",
+      handler: "auth-controller.sendSms",
+      config: { auth: false },
+    },
+    {
+      method: "POST",
       path: "/v1/auth/refresh",
       handler: "auth-controller.refresh",
       config: { auth: false },

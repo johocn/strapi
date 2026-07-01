@@ -1,3 +1,4 @@
+import bcrypt from "bcryptjs";
 import type { Core } from "@strapi/strapi";
 
 const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
@@ -8,8 +9,12 @@ const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
   });
 
   if (!defaultApp) {
-    const bcrypt = require("bcryptjs");
-    const rawSecret = "sso_default_secret_change_me";
+    // 从环境变量读取默认密钥,未配置时跳过创建(避免硬编码密钥上生产)
+    const rawSecret = process.env.SSO_DEFAULT_APP_SECRET;
+    if (!rawSecret) {
+      strapi.log.warn("[zhao-sso] SSO_DEFAULT_APP_SECRET 未配置,跳过默认应用创建(请在 .env 中设置)");
+      return;
+    }
     await strapi.db.query("plugin::zhao-sso.sso-app").create({
       data: {
         app_code: "default",

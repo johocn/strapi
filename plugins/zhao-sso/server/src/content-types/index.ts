@@ -10,6 +10,8 @@ import ssoInviteCode from "./sso-invite-code";
 import ssoInviteUsage from "./sso-invite-usage";
 import ssoReferralRelation from "./sso-referral-relation";
 import ssoInviteStats from "./sso-invite-stats";
+import ssoOauthConfig from "./sso-oauth-config";
+import ssoSmsCode from "./sso-sms-code";
 
 export default {
   "sso-user": ssoUser,
@@ -24,4 +26,6 @@ export default {
   "sso-invite-usage": ssoInviteUsage,
   "sso-referral-relation": ssoReferralRelation,
   "sso-invite-stats": ssoInviteStats,
+  "sso-oauth-config": ssoOauthConfig,
+  "sso-sms-code": ssoSmsCode,
 };

@@ -8,6 +8,8 @@ import ssoWechat from "./sso-wechat";
 import ssoAlipay from "./sso-alipay";
 import channelSync from "./channel-sync";
 import ssoApp from "./sso-app";
+import ssoOauthConfig from "./sso-oauth-config";
+import ssoSms from "./sso-sms";
 
 export default {
   "sso-jwt": ssoJwt,
@@ -20,4 +22,6 @@ export default {
   "sso-alipay": ssoAlipay,
   "channel-sync": channelSync,
   "sso-app": ssoApp,
+  "sso-oauth-config": ssoOauthConfig,
+  "sso-sms": ssoSms,
 };

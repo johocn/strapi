@@ -57,12 +57,13 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     type: string;
     identifier?: string;
     password?: string;
+    code?: string;
     appCode: string;
     channelCode?: string;
     ip?: string;
     userAgent?: string;
   }) => {
-    const { type, identifier, password, appCode, channelCode, ip, userAgent } = params;
+    const { type, identifier, password, code, appCode, channelCode, ip, userAgent } = params;
 
     const maxAttempts = 5;
     if (ip) {
@@ -107,6 +108,45 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       await loginLogService().log({ userId: user.id, loginType: type, channelCode, appCode, ip, userAgent, success: true });
 
       // 分销双写
+      await syncChannelInvite(user.id, undefined, channelCode);
+
+      return {
+        ...tokenPair,
+        user: sanitizeUser(user),
+      };
+    }
+
+    if (type === "sms") {
+      if (!identifier || !code) throwErr("SSO_AUTH_002", 400, "identifier(mobile) 和 code 必填");
+
+      // 校验验证码
+      const smsService = strapi.plugin("zhao-sso").service("sso-sms");
+      await smsService.verifyCode(identifier, code, "login");
+
+      const user = await userService().findByIdentifier(identifier);
+      if (!user) {
+        await loginLogService().log({ loginType: type, channelCode, appCode, ip, userAgent, success: false, failReason: "user_not_found" });
+        throwErr("SSO_AUTH_003", 401, "手机号未注册");
+      }
+
+      if (await userService().isBlocked(user)) {
+        await loginLogService().log({ userId: user.id, loginType: type, channelCode, appCode, ip, userAgent, success: false, failReason: "user_blocked" });
+        throwErr("SSO_AUTH_004", 403, "账号已被封禁");
+      }
+
+      await userService().updateLoginInfo(user.id, channelCode);
+      const roles = await getUserRoles(user.id, appCode);
+      const tokenPair = await jwtService().signTokenPair({
+        sub: user.uuid,
+        app_code: appCode,
+        roles,
+        channel: channelCode,
+      });
+
+      await saveTokenRecord(user.id, appCode, tokenPair, channelCode);
+
+      await loginLogService().log({ userId: user.id, loginType: type, channelCode, appCode, ip, userAgent, success: true });
+
       await syncChannelInvite(user.id, undefined, channelCode);
 
       return {

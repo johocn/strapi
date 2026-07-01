@@ -13,31 +13,33 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     throw e;
   }
 
-  return {
-  getAuthorizeUrl(state: string): string {
-    const pluginConfig = strapi.config.get("plugin::zhao-sso") as any;
-    const { appId, scope } = pluginConfig?.oauth?.wechat || {};
-    if (!appId) throwErr("SSO_WECHAT_001", 500, "[zhao-sso] WeChat appId not configured");
+  async function getConfig() {
+    const configService = strapi.plugin("zhao-sso").service("sso-oauth-config");
+    const config = await configService.findByProvider("wechat");
+    if (!config) throwErr("SSO_WECHAT_001", 500, "[zhao-sso] WeChat OAuth 配置未找到(请在后台配置 provider=wechat)");
+    return config;
+  }
 
+  return {
+  async getAuthorizeUrl(state: string): Promise<string> {
+    const config = await getConfig();
     const serverUrl = strapi.config.get("server.url", "http://localhost:1337");
     const redirectUri = `${serverUrl}/api/zhao-sso/auth/wechat/callback`;
     const params = new URLSearchParams({
-      appid: appId,
+      appid: config.appId,
       redirect_uri: redirectUri,
       response_type: "code",
-      scope: scope || "snsapi_login",
+      scope: config.scope || "snsapi_login",
       state,
     });
     return `https://open.weixin.qq.com/connect/qrconnect?${params.toString()}#wechat_redirect`;
   },
 
   async handleCallback(code: string) {
-    const pluginConfig = strapi.config.get("plugin::zhao-sso") as any;
-    const { appId, appSecret } = pluginConfig?.oauth?.wechat || {};
-    if (!appId || !appSecret) throwErr("SSO_WECHAT_002", 500, "WeChat OAuth not configured");
+    const config = await getConfig();
 
     const tokenRes = await axios.get("https://api.weixin.qq.com/sns/oauth2/access_token", {
-      params: { appid: appId, secret: appSecret, code, grant_type: "authorization_code" },
+      params: { appid: config.appId, secret: config.appSecret, code, grant_type: "authorization_code" },
     });
 
     if (tokenRes.data.errcode) throwErr("SSO_WECHAT_003", 502, `WeChat OAuth error: ${tokenRes.data.errmsg}`);

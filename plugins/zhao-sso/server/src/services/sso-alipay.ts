@@ -14,16 +14,23 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     throw e;
   }
 
-  return {
-  getAuthorizeUrl(state: string): string {
-    const pluginConfig = strapi.config.get("plugin::zhao-sso") as any;
-    const { appId } = pluginConfig?.oauth?.alipay || {};
-    if (!appId) throwErr("SSO_ALIPAY_001", 500, "[zhao-sso] Alipay appId not configured");
+  async function getConfig() {
+    const configService = strapi.plugin("zhao-sso").service("sso-oauth-config");
+    const config = await configService.findByProvider("alipay");
+    if (!config) throwErr("SSO_ALIPAY_001", 500, "[zhao-sso] Alipay OAuth 配置未找到(请在后台配置 provider=alipay)");
+    // 支付宝需要 privateKey,从 extraConfig 读取
+    const privateKey = config.extraConfig?.privateKey;
+    if (!privateKey) throwErr("SSO_ALIPAY_002", 500, "Alipay OAuth privateKey 未配置(extraConfig.privateKey)");
+    return { ...config, privateKey };
+  }
 
+  return {
+  async getAuthorizeUrl(state: string): Promise<string> {
+    const config = await getConfig();
     const serverUrl = strapi.config.get("server.url", "http://localhost:1337");
     const redirectUri = `${serverUrl}/api/zhao-sso/auth/alipay/callback`;
     const params = new URLSearchParams({
-      app_id: appId,
+      app_id: config.appId,
       redirect_uri: redirectUri,
       scope: "auth_user",
       state,
@@ -32,11 +39,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   },
 
   async handleCallback(code: string) {
-    const pluginConfig = strapi.config.get("plugin::zhao-sso") as any;
-    const { appId, privateKey } = pluginConfig?.oauth?.alipay || {};
-    if (!appId || !privateKey) throwErr("SSO_ALIPAY_002", 500, "Alipay OAuth not configured");
+    const config = await getConfig();
 
-    const tokenRes = await this.requestToken(appId, privateKey, code);
+    const tokenRes = await this.requestToken(config.appId, config.privateKey, code);
     const userId = tokenRes.user_id;
 
     const binding = await strapi.db.query(BINDING_UID).findOne({
