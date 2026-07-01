@@ -1,112 +1,94 @@
-// admin/src/pages/AccountConfigPage.tsx
-
 import React from 'react';
-import { Box, Typography, Button, Flex, Badge } from '@strapi/design-system';
+import { Card, Typography, Button, Table, Tag, Space, Modal, Popconfirm, message } from 'antd';
 import { usePublishAccounts } from '../hooks/usePublishAccounts';
 import { usePublishPlatforms } from '../hooks/usePublishPlatforms';
 import AccountForm from '../components/AccountForm';
 
+const { Title, Text } = Typography;
+
 const AccountConfigPage = () => {
-  const { accounts, loading, error, createAccount, updateAccount, deleteAccount } = usePublishAccounts();
+  const { accounts, loading, createAccount, updateAccount, deleteAccount } = usePublishAccounts();
   const { platforms } = usePublishPlatforms();
-  const [showForm, setShowForm] = React.useState(false);
-  const [editingAccount, setEditingAccount] = React.useState<any>(null);
+  const [showModal, setShowModal] = React.useState(false);
+  const [editing, setEditing] = React.useState<any>(null);
 
-  const handleCreate = () => {
-    setEditingAccount(null);
-    setShowForm(true);
-  };
-
-  const handleEdit = (account: any) => {
-    setEditingAccount(account);
-    setShowForm(true);
-  };
-
-  const handleDelete = async (accountId: string) => {
-    if (window.confirm('确定要删除此账号吗？')) {
-      await deleteAccount(accountId);
-    }
-  };
-
-  const handleSave = async (data: any) => {
-    if (editingAccount) {
-      await updateAccount(editingAccount.documentId, data);
-    } else {
-      await createAccount(data);
-    }
-    setShowForm(false);
-    setEditingAccount(null);
-  };
-
-  const handleCancel = () => {
-    setShowForm(false);
-    setEditingAccount(null);
-  };
+  const columns = [
+    { title: '名称', dataIndex: 'name', key: 'name' },
+    {
+      title: '平台',
+      dataIndex: 'platformName',
+      key: 'platformName',
+      render: (v: string) => v || '-',
+    },
+    {
+      title: '状态',
+      dataIndex: 'isActive',
+      key: 'isActive',
+      render: (v: boolean) => <Tag color={v ? 'success' : 'error'}>{v ? '启用' : '禁用'}</Tag>,
+    },
+    {
+      title: '操作',
+      key: 'action',
+      render: (_, record) => (
+        <Space>
+          <Button size="small" onClick={() => { setEditing(record); setShowModal(true); }}>编辑</Button>
+          <Popconfirm
+            title="确认删除?"
+            onConfirm={async () => {
+              try {
+                await deleteAccount(record.documentId || record.id);
+                message.success('删除成功');
+              } catch {
+                message.error('删除失败');
+              }
+            }}
+          >
+            <Button size="small" danger>删除</Button>
+          </Popconfirm>
+        </Space>
+      ),
+    },
+  ];
 
   return (
-    <Box padding={4}>
-      <Flex justifyContent="space-between" alignItems="center">
-        <Box>
-          <Typography variant="alpha">发布账号配置</Typography>
-          <Typography variant="pi" color="neutral600">管理发布账号和API密钥</Typography>
-        </Box>
-        <Button onClick={handleCreate}>新建账号</Button>
-      </Flex>
-
-      {error && (
-        <Box marginTop={4}>
-          <Badge variant="danger">{error}</Badge>
-        </Box>
-      )}
-
-      {showForm ? (
-        <Box marginTop={4}>
-          <AccountForm
-            account={editingAccount}
-            platforms={platforms}
-            onSave={handleSave}
-            onCancel={handleCancel}
-          />
-        </Box>
-      ) : (
-        <Flex marginTop={4} gap={4} direction="column">
-          {loading ? (
-            <Badge>加载中...</Badge>
-          ) : accounts.length === 0 ? (
-            <Badge variant="warning">暂无账号配置</Badge>
-          ) : (
-            accounts.map((account) => (
-              <Box key={account.documentId} padding={3} background="neutral100" hasRadius>
-                <Flex justifyContent="space-between" alignItems="center">
-                  <Flex gap={2} alignItems="center">
-                    <Typography variant="pi" fontWeight="bold">{account.name}</Typography>
-                    <Badge>{account.platform?.name || '未知平台'}</Badge>
-                    {!account.isActive && <Badge variant="warning">已禁用</Badge>}
-                  </Flex>
-
-                  <Flex gap={2}>
-                    <Button variant="secondary" onClick={() => handleEdit(account)}>
-                      编辑
-                    </Button>
-                    <Button variant="danger" onClick={() => handleDelete(account.documentId)}>
-                      删除
-                    </Button>
-                  </Flex>
-                </Flex>
-
-                {account.lastPublishedAt && (
-                  <Box marginTop={2}>
-                    <Typography variant="pi" color="neutral600">
-                      最后发布: {new Date(account.lastPublishedAt).toLocaleString()}
-                    </Typography>
-                  </Box>
-                )}
-              </Box>
-            ))
-          )}
-        </Flex>
-      )}
-    </Box>
+    <Space direction="vertical" size="large" style={{ width: '100%' }}>
+      <div>
+        <Title level={3}>账号配置</Title>
+        <Text type="secondary">管理各平台的发布账号</Text>
+      </div>
+      <Card
+        title="账号列表"
+        extra={<Button type="primary" onClick={() => { setEditing(null); setShowModal(true); }}>新增账号</Button>}
+      >
+        <Table columns={columns} dataSource={accounts} rowKey={(r) => r.documentId || r.id} loading={loading} />
+      </Card>
+      <Modal
+        open={showModal}
+        title={editing ? '编辑账号' : '新增账号'}
+        onCancel={() => setShowModal(false)}
+        footer={null}
+        destroyOnClose
+      >
+        <AccountForm
+          account={editing}
+          platforms={platforms}
+          onSave={async (data) => {
+            try {
+              if (editing) {
+                await updateAccount(editing.documentId || editing.id, data);
+              } else {
+                await createAccount(data);
+              }
+              message.success('保存成功');
+              setShowModal(false);
+            } catch {
+              message.error('保存失败');
+            }
+          }}
+          onCancel={() => setShowModal(false)}
+        />
+      </Modal>
+    </Space>
   );
 };
 

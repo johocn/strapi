@@ -1,111 +1,86 @@
-// admin/src/pages/PlatformConfigPage.tsx
-
 import React from 'react';
-import { Box, Typography, Button, Flex, Badge } from '@strapi/design-system';
+import { Card, Typography, Button, Table, Tag, Space, Modal, Popconfirm, message } from 'antd';
 import { usePublishPlatforms } from '../hooks/usePublishPlatforms';
 import PlatformForm from '../components/PlatformForm';
-import { getPlatformType } from '../utils/platformTypes';
+
+const { Title, Text } = Typography;
 
 const PlatformConfigPage = () => {
-  const { platforms, loading, error, createPlatform, updatePlatform, deletePlatform } = usePublishPlatforms();
-  const [showForm, setShowForm] = React.useState(false);
-  const [editingPlatform, setEditingPlatform] = React.useState<any>(null);
+  const { platforms, loading, createPlatform, updatePlatform, deletePlatform } = usePublishPlatforms();
+  const [showModal, setShowModal] = React.useState(false);
+  const [editing, setEditing] = React.useState<any>(null);
 
-  const handleCreate = () => {
-    setEditingPlatform(null);
-    setShowForm(true);
-  };
-
-  const handleEdit = (platform: any) => {
-    setEditingPlatform(platform);
-    setShowForm(true);
-  };
-
-  const handleDelete = async (platformId: string) => {
-    if (window.confirm('确定要删除此平台吗？')) {
-      await deletePlatform(platformId);
-    }
-  };
-
-  const handleSave = async (data: any) => {
-    if (editingPlatform) {
-      await updatePlatform(editingPlatform.documentId, data);
-    } else {
-      await createPlatform(data);
-    }
-    setShowForm(false);
-    setEditingPlatform(null);
-  };
-
-  const handleCancel = () => {
-    setShowForm(false);
-    setEditingPlatform(null);
-  };
+  const columns = [
+    { title: '名称', dataIndex: 'name', key: 'name' },
+    { title: '类型', dataIndex: 'type', key: 'type' },
+    {
+      title: '状态',
+      dataIndex: 'isActive',
+      key: 'isActive',
+      render: (v: boolean) => <Tag color={v ? 'success' : 'error'}>{v ? '启用' : '禁用'}</Tag>,
+    },
+    {
+      title: '操作',
+      key: 'action',
+      render: (_, record) => (
+        <Space>
+          <Button size="small" onClick={() => { setEditing(record); setShowModal(true); }}>编辑</Button>
+          <Popconfirm
+            title="确认删除?"
+            onConfirm={async () => {
+              try {
+                await deletePlatform(record.documentId || record.id);
+                message.success('删除成功');
+              } catch {
+                message.error('删除失败');
+              }
+            }}
+          >
+            <Button size="small" danger>删除</Button>
+          </Popconfirm>
+        </Space>
+      ),
+    },
+  ];
 
   return (
-    <Box padding={4}>
-      <Flex justifyContent="space-between" alignItems="center">
-        <Box>
-          <Typography variant="alpha">发布平台配置</Typography>
-          <Typography variant="pi" color="neutral600">管理发布平台类型和参数</Typography>
-        </Box>
-        <Button onClick={handleCreate}>新建平台</Button>
-      </Flex>
-
-      {error && (
-        <Box marginTop={4}>
-          <Badge variant="danger">{error}</Badge>
-        </Box>
-      )}
-
-      {showForm ? (
-        <Box marginTop={4}>
-          <PlatformForm
-            platform={editingPlatform}
-            onSave={handleSave}
-            onCancel={handleCancel}
-          />
-        </Box>
-      ) : (
-        <Flex marginTop={4} gap={4} direction="column">
-          {loading ? (
-            <Badge>加载中...</Badge>
-          ) : platforms.length === 0 ? (
-            <Badge variant="warning">暂无平台配置</Badge>
-          ) : (
-            platforms.map((platform) => {
-              const platformType = getPlatformType(platform.type);
-              return (
-                <Box key={platform.documentId} padding={3} background="neutral100" hasRadius>
-                  <Flex justifyContent="space-between" alignItems="center">
-                    <Flex gap={2} alignItems="center">
-                      <Typography variant="pi" fontWeight="bold">{platform.name}</Typography>
-                      <Badge>{platformType?.displayName || '自定义'}</Badge>
-                      {!platform.isActive && <Badge variant="warning">已禁用</Badge>}
-                    </Flex>
-
-                    <Flex gap={2}>
-                      <Button variant="secondary" onClick={() => handleEdit(platform)}>
-                        编辑
-                      </Button>
-                      <Button variant="danger" onClick={() => handleDelete(platform.documentId)}>
-                        删除
-                      </Button>
-                    </Flex>
-                  </Flex>
-
-                  {platform.description && (
-                    <Box marginTop={2}>
-                      <Typography variant="pi" color="neutral600">{platform.description}</Typography>
-                    </Box>
-                  )}
-                </Box>
-              );
-            })
-          )}
-        </Flex>
-      )}
-    </Box>
+    <Space direction="vertical" size="large" style={{ width: '100%' }}>
+      <div>
+        <Title level={3}>平台配置</Title>
+        <Text type="secondary">管理发布平台</Text>
+      </div>
+      <Card
+        title="平台列表"
+        extra={<Button type="primary" onClick={() => { setEditing(null); setShowModal(true); }}>新增平台</Button>}
+      >
+        <Table columns={columns} dataSource={platforms} rowKey={(r) => r.documentId || r.id} loading={loading} />
+      </Card>
+      <Modal
+        open={showModal}
+        title={editing ? '编辑平台' : '新增平台'}
+        onCancel={() => setShowModal(false)}
+        footer={null}
+        destroyOnClose
+      >
+        <PlatformForm
+          platform={editing}
+          onSave={async (data) => {
+            try {
+              if (editing) {
+                await updatePlatform(editing.documentId || editing.id, data);
+              } else {
+                await createPlatform(data);
+              }
+              message.success('保存成功');
+              setShowModal(false);
+            } catch {
+              message.error('保存失败');
+            }
+          }}
+          onCancel={() => setShowModal(false)}
+        />
+      </Modal>
+    </Space>
   );
 };
 

@@ -1,147 +1,66 @@
-// admin/src/components/AdSlotForm.tsx
-
 import React from 'react';
-import { Box, Typography, TextInput, Button, Flex, Badge } from '@strapi/design-system';
-import { AdSlot } from '../hooks/useAdSlots';
+import { Form, Input, InputNumber, Select, Switch, Button, Space } from 'antd';
 
 interface AdSlotFormProps {
-  adSlot?: AdSlot | null;
-  onSave: (data: Partial<AdSlot>) => void;
+  slot?: any;
+  onSave: (data: any) => void;
   onCancel: () => void;
 }
 
-const POSITION_OPTIONS = [
-  { value: 'article-content', label: '文章内容' },
-  { value: 'sidebar', label: '侧边栏' },
-  { value: 'footer', label: '底部' },
-  { value: 'header', label: '顶部' },
-  { value: 'list-page', label: '列表页' },
-  { value: 'home-page', label: '首页' },
-];
+const AdSlotForm: React.FC<AdSlotFormProps> = ({ slot, onSave, onCancel }) => {
+  const [form] = Form.useForm();
 
-const TYPE_OPTIONS = [
-  { value: 'product-link', label: '产品链接' },
-  { value: 'banner', label: '横幅广告' },
-  { value: 'popup', label: '弹窗广告' },
-  { value: 'native', label: '原生广告' },
-];
+  React.useEffect(() => {
+    if (slot) {
+      form.setFieldsValue(slot);
+    } else {
+      form.resetFields();
+    }
+  }, [slot, form]);
 
-const AdSlotForm: React.FC<AdSlotFormProps> = ({ adSlot, onSave, onCancel }) => {
-  const [formData, setFormData] = React.useState<Partial<AdSlot>>({
-    name: adSlot?.name || '',
-    code: adSlot?.code || '',
-    position: adSlot?.position || 'article-content',
-    type: adSlot?.type || 'product-link',
-    targetUrl: adSlot?.targetUrl || '',
-    productId: adSlot?.productId || '',
-    imageUrl: adSlot?.imageUrl || '',
-    isActive: adSlot?.isActive ?? true,
-  });
-
-  const handleSave = () => {
-    onSave(formData);
+  const handleSubmit = () => {
+    form.validateFields().then((values) => onSave(values));
   };
 
   return (
-    <Box padding={4} background="neutral100" hasRadius>
-      <Typography variant="delta">{adSlot ? '编辑广告位' : '新建广告位'}</Typography>
-
-      <Flex marginTop={4} gap={4} direction="column">
-        <Box>
-          <Typography variant="pi">名称 *</Typography>
-          <TextInput
-            value={formData.name || ''}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, name: e.target.value })}
-            placeholder="输入广告位名称"
-          />
-        </Box>
-
-        <Box>
-          <Typography variant="pi">代码 *</Typography>
-          <TextInput
-            value={formData.code || ''}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, code: e.target.value })}
-            placeholder="唯一标识符，如 home-banner-1"
-          />
-        </Box>
-
-        <Box>
-          <Typography variant="pi">位置</Typography>
-          <Flex gap={2} marginTop={1}>
-            {POSITION_OPTIONS.map((opt) => (
-              <Button
-                key={opt.value}
-                variant={formData.position === opt.value ? 'default' : 'secondary'}
-                onClick={() => setFormData({ ...formData, position: opt.value as AdSlot['position'] })}
-              >
-                {opt.label}
-              </Button>
-            ))}
-          </Flex>
-        </Box>
-
-        <Box>
-          <Typography variant="pi">类型</Typography>
-          <Flex gap={2} marginTop={1}>
-            {TYPE_OPTIONS.map((opt) => (
-              <Button
-                key={opt.value}
-                variant={formData.type === opt.value ? 'default' : 'secondary'}
-                onClick={() => setFormData({ ...formData, type: opt.value as AdSlot['type'] })}
-              >
-                {opt.label}
-              </Button>
-            ))}
-          </Flex>
-        </Box>
-
-        <Box>
-          <Typography variant="pi">目标URL</Typography>
-          <TextInput
-            value={formData.targetUrl || ''}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, targetUrl: e.target.value })}
-            placeholder="点击跳转链接"
-          />
-        </Box>
-
-        <Box>
-          <Typography variant="pi">产品ID</Typography>
-          <TextInput
-            value={formData.productId || ''}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, productId: e.target.value })}
-            placeholder="关联产品ID（可选）"
-          />
-        </Box>
-
-        <Box>
-          <Typography variant="pi">图片URL</Typography>
-          <TextInput
-            value={formData.imageUrl || ''}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, imageUrl: e.target.value })}
-            placeholder="广告图片地址"
-          />
-        </Box>
-
-        <Box>
-          <Typography variant="pi">状态</Typography>
-          <Flex gap={2} marginTop={1}>
-            <Button variant={formData.isActive ? 'default' : 'secondary'} onClick={() => setFormData({ ...formData, isActive: true })}>
-              启用
-            </Button>
-            <Button variant={!formData.isActive ? 'default' : 'secondary'} onClick={() => setFormData({ ...formData, isActive: false })}>
-              禁用
-            </Button>
-          </Flex>
-        </Box>
-      </Flex>
-
-      <Flex marginTop={4} justifyContent="flex-end" gap={2}>
-        <Button variant="secondary" onClick={onCancel}>
-          取消
-        </Button>
-        <Button onClick={handleSave}>保存</Button>
-      </Flex>
-    </Box>
+    <Form form={form} layout="vertical">
+      <Form.Item name="name" label="广告位名称" rules={[{ required: true }]}>
+        <Input />
+      </Form.Item>
+      <Form.Item name="position" label="广告位置" rules={[{ required: true }]}>
+        <Select options={[
+          { value: 'header', label: '顶部' },
+          { value: 'footer', label: '底部' },
+          { value: 'sidebar', label: '侧边栏' },
+          { value: 'inarticle', label: '文章内嵌' },
+        ]} />
+      </Form.Item>
+      <Form.Item name="type" label="广告类型">
+        <Select options={[
+          { value: 'image', label: '图片' },
+          { value: 'text', label: '文字' },
+          { value: 'video', label: '视频' },
+        ]} />
+      </Form.Item>
+      <Form.Item name="width" label="宽度">
+        <InputNumber />
+      </Form.Item>
+      <Form.Item name="height" label="高度">
+        <InputNumber />
+      </Form.Item>
+      <Form.Item name="adCode" label="广告代码">
+        <Input.TextArea rows={4} />
+      </Form.Item>
+      <Form.Item name="isActive" label="启用" valuePropName="checked" initialValue={true}>
+        <Switch />
+      </Form.Item>
+      <Form.Item>
+        <Space>
+          <Button type="primary" onClick={handleSubmit}>保存</Button>
+          <Button onClick={onCancel}>取消</Button>
+        </Space>
+      </Form.Item>
+    </Form>
   );
 };
 

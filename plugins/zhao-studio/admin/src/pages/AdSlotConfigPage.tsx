@@ -1,130 +1,87 @@
-// admin/src/pages/AdSlotConfigPage.tsx
-
 import React from 'react';
-import { Box, Typography, Button, Flex, Badge } from '@strapi/design-system';
-import { useAdSlots, AdSlot } from '../hooks/useAdSlots';
+import { Card, Typography, Button, Table, Tag, Space, Modal, Popconfirm, message } from 'antd';
+import { useAdSlots } from '../hooks/useAdSlots';
 import AdSlotForm from '../components/AdSlotForm';
 
-const POSITION_LABELS: Record<string, string> = {
-  'article-content': '文章内容',
-  sidebar: '侧边栏',
-  footer: '底部',
-  header: '顶部',
-  'list-page': '列表页',
-  'home-page': '首页',
-};
-
-const TYPE_LABELS: Record<string, string> = {
-  'product-link': '产品链接',
-  banner: '横幅广告',
-  popup: '弹窗广告',
-  native: '原生广告',
-};
+const { Title, Text } = Typography;
 
 const AdSlotConfigPage = () => {
-  const { adSlots, loading, error, createAdSlot, updateAdSlot, deleteAdSlot, toggleAdSlot } = useAdSlots();
-  const [showForm, setShowForm] = React.useState(false);
-  const [editingSlot, setEditingSlot] = React.useState<AdSlot | null>(null);
+  const { slots, loading, createSlot, updateSlot, deleteSlot } = useAdSlots();
+  const [showModal, setShowModal] = React.useState(false);
+  const [editing, setEditing] = React.useState<any>(null);
 
-  const handleCreate = () => {
-    setEditingSlot(null);
-    setShowForm(true);
-  };
-
-  const handleEdit = (slot: AdSlot) => {
-    setEditingSlot(slot);
-    setShowForm(true);
-  };
-
-  const handleDelete = async (slot: AdSlot) => {
-    if (window.confirm(`确定删除广告位 "${slot.name}"？`)) {
-      await deleteAdSlot(slot.documentId);
-    }
-  };
-
-  const handleToggle = async (slot: AdSlot) => {
-    await toggleAdSlot(slot.documentId, !slot.isActive);
-  };
-
-  const handleSave = async (data: Partial<AdSlot>) => {
-    try {
-      if (editingSlot) {
-        await updateAdSlot(editingSlot.documentId, data);
-      } else {
-        await createAdSlot(data);
-      }
-      setShowForm(false);
-      setEditingSlot(null);
-    } catch (err) {
-      console.error('保存失败:', err);
-    }
-  };
-
-  const handleCancel = () => {
-    setShowForm(false);
-    setEditingSlot(null);
-  };
+  const columns = [
+    { title: '名称', dataIndex: 'name', key: 'name' },
+    { title: '位置', dataIndex: 'position', key: 'position' },
+    { title: '类型', dataIndex: 'type', key: 'type' },
+    {
+      title: '状态',
+      dataIndex: 'isActive',
+      key: 'isActive',
+      render: (v: boolean) => <Tag color={v ? 'success' : 'error'}>{v ? '启用' : '禁用'}</Tag>,
+    },
+    {
+      title: '操作',
+      key: 'action',
+      render: (_, record) => (
+        <Space>
+          <Button size="small" onClick={() => { setEditing(record); setShowModal(true); }}>编辑</Button>
+          <Popconfirm
+            title="确认删除?"
+            onConfirm={async () => {
+              try {
+                await deleteSlot(record.documentId || record.id);
+                message.success('删除成功');
+              } catch {
+                message.error('删除失败');
+              }
+            }}
+          >
+            <Button size="small" danger>删除</Button>
+          </Popconfirm>
+        </Space>
+      ),
+    },
+  ];
 
   return (
-    <Box padding={4}>
-      <Flex justifyContent="space-between" alignItems="center">
-        <Typography variant="delta">广告位配置</Typography>
-        <Button onClick={handleCreate}>新建广告位</Button>
-      </Flex>
-
-      {error && (
-        <Box marginTop={4} padding={3} background="danger100" hasRadius>
-          <Typography variant="pi" textColor="danger700">{error}</Typography>
-        </Box>
-      )}
-
-      {loading && !showForm && (
-        <Box marginTop={4} padding={4}>
-          <Typography variant="pi" textColor="neutral600">加载中...</Typography>
-        </Box>
-      )}
-
-      {/* 广告位列表 */}
-      <Flex marginTop={4} gap={3} direction="column">
-        {adSlots.map((slot) => (
-          <Box key={slot.documentId} padding={3} background="neutral100" hasRadius>
-            <Flex justifyContent="space-between" alignItems="center">
-              <Flex gap={2} alignItems="center">
-                <Typography variant="pi" fontWeight="bold">{slot.name}</Typography>
-                <Badge>{POSITION_LABELS[slot.position] || slot.position}</Badge>
-                <Badge>{TYPE_LABELS[slot.type] || slot.type}</Badge>
-                <Typography variant="pi" textColor="neutral600">{slot.code}</Typography>
-                {!slot.isActive && <Badge variant="warning">已禁用</Badge>}
-              </Flex>
-              <Flex gap={2}>
-                <Button variant="secondary" size="S" onClick={() => handleToggle(slot)}>
-                  {slot.isActive ? '禁用' : '启用'}
-                </Button>
-                <Button variant="secondary" size="S" onClick={() => handleEdit(slot)}>
-                  编辑
-                </Button>
-                <Button variant="danger" size="S" onClick={() => handleDelete(slot)}>
-                  删除
-                </Button>
-              </Flex>
-            </Flex>
-          </Box>
-        ))}
-
-        {adSlots.length === 0 && !loading && (
-          <Box padding={4} background="neutral100" hasRadius>
-            <Typography variant="pi" textColor="neutral600">暂无广告位配置</Typography>
-          </Box>
-        )}
-      </Flex>
-
-      {/* 表单 */}
-      {showForm && (
-        <Box marginTop={4}>
-          <AdSlotForm adSlot={editingSlot} onSave={handleSave} onCancel={handleCancel} />
-        </Box>
-      )}
-    </Box>
+    <Space direction="vertical" size="large" style={{ width: '100%' }}>
+      <div>
+        <Title level={3}>广告位配置</Title>
+        <Text type="secondary">管理广告位</Text>
+      </div>
+      <Card
+        title="广告位列表"
+        extra={<Button type="primary" onClick={() => { setEditing(null); setShowModal(true); }}>新增广告位</Button>}
+      >
+        <Table columns={columns} dataSource={slots} rowKey={(r) => r.documentId || r.id} loading={loading} />
+      </Card>
+      <Modal
+        open={showModal}
+        title={editing ? '编辑广告位' : '新增广告位'}
+        onCancel={() => setShowModal(false)}
+        footer={null}
+        destroyOnClose
+      >
+        <AdSlotForm
+          slot={editing}
+          onSave={async (data) => {
+            try {
+              if (editing) {
+                await updateSlot(editing.documentId || editing.id, data);
+              } else {
+                await createSlot(data);
+              }
+              message.success('保存成功');
+              setShowModal(false);
+            } catch {
+              message.error('保存失败');
+            }
+          }}
+          onCancel={() => setShowModal(false)}
+        />
+      </Modal>
+    </Space>
   );
 };
 
