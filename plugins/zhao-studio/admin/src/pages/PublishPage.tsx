@@ -1,67 +1,65 @@
-// admin/src/pages/PublishPage.tsx
-
 import React from 'react';
-import { Box, Typography, Button, Flex, Badge, TextInput } from '@strapi/design-system';
+import { Card, Typography, Space, Table, Button } from 'antd';
 import PublishPanel from '../components/PublishPanel';
-import PublishRecordList from '../components/PublishRecordList';
+
+const { Title, Text } = Typography;
 
 const PublishPage = () => {
-  const [selectedArticleId, setSelectedArticleId] = React.useState<string>('');
-  const [selectedArticle, setSelectedArticle] = React.useState<any>(null);
-  const [showPublishPanel, setShowPublishPanel] = React.useState(false);
+  const [selectedArticleIds, setSelectedArticleIds] = React.useState<string[]>([]);
+  const [articles, setArticles] = React.useState<any[]>([]);
 
-  const handleArticleSelect = () => {
-    // 简化实现：用户输入文章ID
-    // 实际应该从草稿列表中选择
-    if (selectedArticleId) {
-      setSelectedArticle({ documentId: selectedArticleId, title: '示例文章' });
-      setShowPublishPanel(true);
-    }
-  };
+  React.useEffect(() => {
+    setArticles([]);
+  }, []);
 
-  const handlePublishComplete = () => {
-    setShowPublishPanel(false);
-  };
+  const columns = [
+    {
+      title: '选择',
+      key: 'select',
+      render: (_, record) => ({
+        children: (
+          <input
+            type="checkbox"
+            checked={selectedArticleIds.includes(record.id)}
+            onChange={(e) => {
+              setSelectedArticleIds((prev) =>
+                e.target.checked
+                  ? [...prev, record.id]
+                  : prev.filter((id) => id !== record.id)
+              );
+            }}
+          />
+        ),
+      }),
+    },
+    { title: '标题', dataIndex: 'title', key: 'title' },
+    { title: '状态', dataIndex: 'status', key: 'status' },
+    { title: '创建时间', dataIndex: 'createdAt', key: 'createdAt' },
+  ];
 
   return (
-    <Box padding={4}>
-      <Box>
-        <Typography variant="alpha">发布管理</Typography>
-        <Typography variant="pi" color="neutral600">将文章发布到多个平台</Typography>
-      </Box>
+    <Space direction="vertical" size="large" style={{ width: '100%' }}>
+      <div>
+        <Title level={3}>内容发布</Title>
+        <Text type="secondary">多渠道内容分发</Text>
+      </div>
 
-      <Box marginTop={4}>
-        <Typography variant="pi" fontWeight="bold">文章ID</Typography>
-        <Flex gap={2} marginTop={2} alignItems="flex-end">
-          <Box flex={1}>
-            <TextInput
-              name="articleId"
-              value={selectedArticleId}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSelectedArticleId(e.target.value)}
-              placeholder="请输入文章ID"
-            />
-          </Box>
-          <Button onClick={handleArticleSelect} disabled={!selectedArticleId}>
-            选择文章
-          </Button>
-        </Flex>
-      </Box>
+      <Card title="待发布文章">
+        <Table
+          columns={columns}
+          dataSource={articles}
+          rowKey="id"
+          pagination={{ pageSize: 10 }}
+          locale={{ emptyText: '暂无待发布文章' }}
+        />
+      </Card>
 
-      {showPublishPanel && selectedArticle && (
-        <Box marginTop={4}>
-          <PublishPanel
-            articleId={selectedArticle.documentId}
-            article={selectedArticle}
-            onPublishComplete={handlePublishComplete}
-          />
-        </Box>
+      {selectedArticleIds.length > 0 && (
+        <Card title="发布操作">
+          <PublishPanel articleIds={selectedArticleIds} />
+        </Card>
       )}
-
-      <Box marginTop={4}>
-        <Typography variant="delta" fontWeight="bold">发布记录</Typography>
-        <PublishRecordList articleId={selectedArticleId} />
-      </Box>
-    </Box>
+    </Space>
   );
 };
 
