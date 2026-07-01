@@ -71,4 +71,18 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       ctx.body = { data: { success: false, message: error.message } };
     }
   },
+
+  async chat(ctx) {
+    const { messages } = ctx.request.body;
+    if (!Array.isArray(messages) || messages.length === 0) {
+      return ctx.badRequest('messages is required');
+    }
+    try {
+      const aiService = strapi.plugin('zhao-studio').service('ai-assist');
+      const result = await aiService.chat(messages);
+      ctx.body = { data: result };
+    } catch (error) {
+      ctx.body = { data: { error: error.message } };
+    }
+  },
 });

@@ -249,4 +249,35 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
     return convertedContent;
   },
+
+  async chat(messages: Array<{ role: string; content: string }>) {
+    const config = strapi.config.get('plugin.zhao-studio.ai') as AIConfig;
+
+    if (!config?.enabled) {
+      throw new Error('AI功能未启用');
+    }
+
+    // 将 messages 数组拼接为 prompt（最简实现，复用现有 callAI）
+    const systemMessages = messages.filter(m => m.role === 'system');
+    const conversationMessages = messages.filter(m => m.role !== 'system');
+
+    const systemPrompt = systemMessages.map(m => m.content).join('\n');
+    const conversationPrompt = conversationMessages
+      .map(m => `${m.role === 'user' ? '用户' : '助手'}：${m.content}`)
+      .join('\n\n');
+
+    const fullPrompt = systemPrompt
+      ? `${systemPrompt}\n\n${conversationPrompt}\n\n助手：`
+      : `${conversationPrompt}\n\n助手：`;
+
+    const content = await this.callAI({
+      prompt: fullPrompt,
+      type: 'chat',
+    });
+
+    return {
+      content: content || '（无回复）',
+      role: 'assistant',
+    };
+  },
 });

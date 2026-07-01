@@ -79,6 +79,9 @@ export default {
     adminRoute('POST', '/ai/articles/:articleId/rewrite', 'ai.rewriteContent', 'zhao-studio.update'),
     adminRoute('POST', '/ai/articles/:articleId/convert', 'ai.convertLanguage', 'zhao-studio.update'),
 
+    // ===== AI 对话 =====
+    adminRoute('POST', '/ai/chat', 'ai.chat', 'zhao-studio.read'),
+
     // ===== 广告位管理 =====
     adminRoute('GET', '/ad-slots', 'analytics.listAdSlots', 'zhao-studio.read'),
     adminRoute('POST', '/ad-slots', 'analytics.createAdSlot', 'zhao-studio.create'),
