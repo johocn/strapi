@@ -32,20 +32,7 @@ export const usePublishRecords = (params?: UsePublishRecordsParams) => {
       const url = `/api/zhao-studio/v1/admin/records${query.toString() ? '?' + query : ''}`;
       const res = await fetch(url);
       const json = await res.json();
-      let list: PublishRecord[] = json.data || [];
-      // 前端过滤兜底（后端不支持过滤参数时）
-      if (params?.platformId) {
-        list = list.filter(r =>
-          r.platform?.documentId === params.platformId ||
-          (r as any).platformId === params.platformId
-        );
-      }
-      if (params?.accountId) {
-        list = list.filter(r =>
-          r.account?.documentId === params.accountId ||
-          (r as any).accountId === params.accountId
-        );
-      }
+      const list: PublishRecord[] = json.data || [];
       // 字段标准化：展平嵌套对象 + 补 id
       const normalized = list.map(r => {
         const normalized = normalizeRecord<PublishRecord>(r);
