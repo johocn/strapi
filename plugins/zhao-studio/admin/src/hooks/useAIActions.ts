@@ -1,78 +1,95 @@
-// admin/src/hooks/useAIActions.ts
+import React from 'react';
 
-import { useState } from 'react';
-import { aiApi } from '../utils/aiApi';
+const API_BASE = '/api/zhao-studio/v1/admin/ai';
 
-export function useAIActions() {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const generateSummary = async (articleId: string, length?: number) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await aiApi.generateSummary(articleId, length);
-      return response.data;
-    } catch (err: unknown) {
-      const error = err instanceof Error ? err : new Error(String(err));
-      setError(error.message);
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const optimizeTitle = async (articleId: string, style: 'formal' | 'casual' | 'shocking') => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await aiApi.optimizeTitle(articleId, style);
-      return response.data;
-    } catch (err: unknown) {
-      const error = err instanceof Error ? err : new Error(String(err));
-      setError(error.message);
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const rewriteContent = async (articleId: string, tone: 'formal' | 'casual' | 'humorous') => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await aiApi.rewriteContent(articleId, tone);
-      return response.data;
-    } catch (err: unknown) {
-      const error = err instanceof Error ? err : new Error(String(err));
-      setError(error.message);
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const convertLanguage = async (articleId: string, target: 'simplified' | 'traditional') => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await aiApi.convertLanguage(articleId, target);
-      return response.data;
-    } catch (err: unknown) {
-      const error = err instanceof Error ? err : new Error(String(err));
-      setError(error.message);
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return {
-    loading,
-    error,
-    generateSummary,
-    optimizeTitle,
-    rewriteContent,
-    convertLanguage,
-  };
+interface ChatResponse {
+  content: string;
+  role: string;
 }
+
+export const useAIActions = () => {
+  const [loading, setLoading] = React.useState(false);
+
+  // 通用对话（新增，调用后端 /ai/chat）
+  const chat = async (content: string): Promise<ChatResponse> => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [{ role: 'user', content }],
+        }),
+      });
+      if (!res.ok) throw new Error('对话失败');
+      const json = await res.json();
+      return json.data || { content: '（无回复）', role: 'assistant' };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const generateSummary = async (articleId: string, options?: { length?: number }) => {
+    setLoading(true);
+    try {
+      const query = options?.length ? `?length=${options.length}` : '';
+      const res = await fetch(`${API_BASE}/articles/${articleId}/summary${query}`, {
+        method: 'POST',
+      });
+      if (!res.ok) throw new Error('生成摘要失败');
+      const json = await res.json();
+      return json.data?.summary || '';
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const optimizeTitle = async (articleId: string, style?: string) => {
+    setLoading(true);
+    try {
+      const query = style ? `?style=${style}` : '';
+      const res = await fetch(`${API_BASE}/articles/${articleId}/title${query}`, {
+        method: 'POST',
+      });
+      if (!res.ok) throw new Error('优化标题失败');
+      const json = await res.json();
+      return json.data?.optimizedTitle || '';
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const rewriteContent = async (articleId: string, tone?: string) => {
+    setLoading(true);
+    try {
+      const query = tone ? `?tone=${tone}` : '';
+      const res = await fetch(`${API_BASE}/articles/${articleId}/rewrite${query}`, {
+        method: 'POST',
+      });
+      if (!res.ok) throw new Error('改写内容失败');
+      const json = await res.json();
+      return json.data?.rewrittenContent || '';
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const convertLanguage = async (articleId: string, target?: string) => {
+    setLoading(true);
+    try {
+      const query = target ? `?target=${target}` : '';
+      const res = await fetch(`${API_BASE}/articles/${articleId}/convert${query}`, {
+        method: 'POST',
+      });
+      if (!res.ok) throw new Error('语言转换失败');
+      const json = await res.json();
+      return json.data?.convertedContent || '';
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { chat, generateSummary, optimizeTitle, rewriteContent, convertLanguage, loading };
+};
+
+export default useAIActions;

@@ -1,81 +1,66 @@
-// admin/src/hooks/useAIConfig.ts
+import React from 'react';
 
-import { useState, useEffect } from 'react';
-import { aiApi } from '../utils/aiApi';
+const API_BASE = '/api/zhao-studio/v1/admin/ai';
 
-export interface AIConfig {
-  enabled: boolean;
-  provider: string;
+interface AIConfig {
+  enabled?: boolean;
+  provider?: string;
   apiKey?: string;
   endpoint?: string;
+  apiBase?: string;
   model?: string;
   maxTokens?: number;
   temperature?: number;
+  isActive?: boolean;
 }
 
-export function useAIConfig() {
-  const [config, setConfig] = useState<AIConfig>({
-    enabled: false,
-    provider: 'qwen',
-  });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+export const useAIConfig = () => {
+  const [config, setConfig] = React.useState<AIConfig | null>(null);
+  const [loading, setLoading] = React.useState(false);
 
-  const fetchConfig = async () => {
+  const fetchConfig = React.useCallback(async () => {
     setLoading(true);
-    setError(null);
     try {
-      const response = await aiApi.getConfig();
-      setConfig(response.data || { enabled: false, provider: 'qwen' });
-    } catch (err: unknown) {
-      const error = err instanceof Error ? err : new Error(String(err));
-      setError(error.message);
+      const res = await fetch(`${API_BASE}/config`);
+      const json = await res.json();
+      setConfig(json.data || null);
+    } catch (err) {
+      console.error('fetchConfig error:', err);
+      setConfig(null);
     } finally {
       setLoading(false);
     }
-  };
-
-  const updateConfig = async (data: AIConfig) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await aiApi.updateConfig(data);
-      setConfig(data);
-      return response.data;
-    } catch (err: unknown) {
-      const error = err instanceof Error ? err : new Error(String(err));
-      setError(error.message);
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const testConnection = async (provider: string, apiKey: string, endpoint?: string) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await aiApi.testConnection(provider, apiKey, endpoint);
-      return response.data;
-    } catch (err: unknown) {
-      const error = err instanceof Error ? err : new Error(String(err));
-      setError(error.message);
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchConfig();
   }, []);
 
-  return {
-    config,
-    loading,
-    error,
-    fetchConfig,
-    updateConfig,
-    testConnection,
+  const updateConfig = async (data: Partial<AIConfig>) => {
+    const res = await fetch(`${API_BASE}/config`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error('保存失败');
+    await fetchConfig();
   };
-}
+
+  const testConfig = async (data: Partial<AIConfig>) => {
+    const res = await fetch(`${API_BASE}/test`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        provider: data.provider,
+        apiKey: data.apiKey,
+        endpoint: data.endpoint || data.apiBase,
+      }),
+    });
+    if (!res.ok) throw new Error('测试失败');
+    return res.json();
+  };
+
+  React.useEffect(() => {
+    fetchConfig();
+  }, [fetchConfig]);
+
+  return { config, loading, updateConfig, testConfig };
+};
+
+export default useAIConfig;
