@@ -21,8 +21,9 @@ export async function setupQueues(strapi: any) {
   }
 
   try {
-    // Bull 构造参数使用对象形式，maxRetriesPerRequest: 1 作为兜底防护
-    collectQueue = new Queue('wealth-collect', { redis: redisUrl, maxRetriesPerRequest: 1 }, {
+    collectQueue = new Queue('wealth-collect', {
+      redis: redisUrl,
+      maxRetriesPerRequest: 1,
       defaultJobOptions: {
         attempts: 3,
         backoff: { type: 'fixed', delay: 5 * 60 * 1000 },
@@ -31,7 +32,9 @@ export async function setupQueues(strapi: any) {
       },
     });
 
-    calculateQueue = new Queue('wealth-calculate', { redis: redisUrl, maxRetriesPerRequest: 1 }, {
+    calculateQueue = new Queue('wealth-calculate', {
+      redis: redisUrl,
+      maxRetriesPerRequest: 1,
       defaultJobOptions: {
         attempts: 2,
         backoff: { type: 'fixed', delay: 1 * 60 * 1000 },
@@ -40,7 +43,9 @@ export async function setupQueues(strapi: any) {
       },
     });
 
-    recalculateQueue = new Queue('wealth-recalculate', { redis: redisUrl, maxRetriesPerRequest: 1 }, {
+    recalculateQueue = new Queue('wealth-recalculate', {
+      redis: redisUrl,
+      maxRetriesPerRequest: 1,
       defaultJobOptions: {
         attempts: 1,
         removeOnComplete: true,

@@ -12,6 +12,7 @@
     "outDir": "./dist",
     "rootDir": "./server/src",
     "baseUrl": ".",
+    "resolveJsonModule": true,
     "paths": {
       "@strapi/strapi": ["../../node_modules/@strapi/strapi"],
       "@strapi/utils": ["../../node_modules/@strapi/utils"]

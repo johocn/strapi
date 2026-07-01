@@ -26,7 +26,7 @@ const AnomalyTable = () => {
   return (
     <Card title="近期异常">
       <Table
-        rowKey={(r, i) => i}
+        rowKey={(r, i) => String(i)}
         columns={columns}
         dataSource={data}
         loading={loading}

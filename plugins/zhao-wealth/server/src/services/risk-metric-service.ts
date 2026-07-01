@@ -306,7 +306,7 @@ export default ({ strapi }) => ({
     };
 
     // 按 (snapshotDate, period) 聚合
-    const grouped: Record<string, Record<string, any>> = {};
+    const grouped: Record<string, { snapshotDate: string; period: string; volatility: number | null; maxDrawdown: number | null; sharpe: number | null; rankPercentile: number | null }> = {};
     for (const r of records) {
       const key = `${r.snapshotDate}_${r.period}`;
       if (!grouped[key]) {
@@ -319,7 +319,7 @@ export default ({ strapi }) => ({
           rankPercentile: null,
         };
       }
-      grouped[key][r.metricName] = r.metricValue;
+      grouped[key][r.metricName as keyof typeof grouped[key]] = r.metricValue;
     }
 
     for (const key of Object.keys(grouped)) {

@@ -10,7 +10,7 @@ const NavTab = () => {
   const api = useApi();
   const [products, setProducts] = useState<any[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<number | undefined>(undefined);
-  const [dateRange, setDateRange] = useState<[any, any]>(undefined);
+  const [dateRange, setDateRange] = useState<[any, any] | undefined>(undefined);
   const [navData, setNavData] = useState<any[]>([]);
   const [formOpen, setFormOpen] = useState(false);
 

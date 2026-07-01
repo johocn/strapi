@@ -55,7 +55,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
 
     let userInfo: any = {};
     try {
-      userInfo = await this.fetchUserInfo(appId, privateKey, tokenRes.access_token);
+      userInfo = await this.fetchUserInfo(config.appId, config.privateKey, tokenRes.access_token);
     } catch { /* ignore */ }
 
     const user = await strapi.db.query(USER_UID).create({

@@ -278,7 +278,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       await this.aggregateRegionDaily(yesterday);
 
       return { success: true, date: yesterday };
-    } catch (error) {
+    } catch (error: any) {
       return { success: false, error: error.message, date: yesterday };
     }
   },

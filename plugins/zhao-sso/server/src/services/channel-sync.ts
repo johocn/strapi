@@ -74,7 +74,7 @@ export const createRemoteChannelSync = ({
 
         if (response.ok) {
           const data = await response.json();
-          return { success: true, message: data };
+          return { success: true, message: typeof data === "string" ? data : JSON.stringify(data) };
         }
 
         // 4xx 错误不重试
@@ -106,10 +106,11 @@ export const createRemoteChannelSync = ({
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
   getSync(): IChannelSyncService | null {
     const config = strapi.config.get("plugin::zhao-sso.channelSync") || strapi.plugin("zhao-sso")?.config("channelSync");
-    const mode = config?.mode || "local";
+    const configTyped = config as { mode?: string; remoteUrl?: string; appCode?: string; appSecret?: string } | undefined;
+    const mode = configTyped?.mode || "local";
 
     if (mode === "off") return null;
-    if (mode === "remote") return createRemoteChannelSync({ strapi, config });
+    if (mode === "remote") return createRemoteChannelSync({ strapi, config: configTyped || {} });
     return createLocalChannelSync({ strapi });
   },
 });
