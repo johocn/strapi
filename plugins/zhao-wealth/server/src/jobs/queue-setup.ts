@@ -10,6 +10,13 @@ let queueSetupFailed = false;
 
 export async function setupQueues(strapi: any) {
   const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+  const url = new URL(redisUrl);
+  const redisConfig = {
+    host: url.hostname,
+    port: parseInt(url.port) || 6379,
+    password: url.password || undefined,
+    maxRetriesPerRequest: 1,
+  };
 
   // 预探测 Redis 可用性，不可用则直接跳过队列创建（避免 Bull 内部 ioredis 崩溃进程）
   const available = await ensureRedisAvailable();
@@ -21,9 +28,8 @@ export async function setupQueues(strapi: any) {
   }
 
   try {
-    const redisOpts = { maxRetriesPerRequest: 1, url: redisUrl };
     collectQueue = new Queue('wealth-collect', {
-      redis: redisOpts as any,
+      redis: redisConfig,
       defaultJobOptions: {
         attempts: 3,
         backoff: { type: 'fixed', delay: 5 * 60 * 1000 },
@@ -33,7 +39,7 @@ export async function setupQueues(strapi: any) {
     });
 
     calculateQueue = new Queue('wealth-calculate', {
-      redis: redisOpts as any,
+      redis: redisConfig,
       defaultJobOptions: {
         attempts: 2,
         backoff: { type: 'fixed', delay: 1 * 60 * 1000 },
@@ -43,7 +49,7 @@ export async function setupQueues(strapi: any) {
     });
 
     recalculateQueue = new Queue('wealth-recalculate', {
-      redis: redisOpts as any,
+      redis: redisConfig,
       defaultJobOptions: {
         attempts: 1,
         removeOnComplete: true,
