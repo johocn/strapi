@@ -75,7 +75,7 @@ export default class ChinawealthCollector extends BaseCollector {
 
       // 6. 从结果列表中提取第一条数据
       const result = await page.evaluate(() => {
-        const doc = document as any;
+        const doc = (globalThis as any).document || {};
         const rows = doc.querySelectorAll('.el-table__body-wrapper tbody tr, .result-item, .product-list-item');
         if (rows.length === 0) return null;
 
@@ -103,7 +103,7 @@ export default class ChinawealthCollector extends BaseCollector {
 
       // 8. 从详情页提取结构化数据
       const detail = await page.evaluate(() => {
-        const doc = document as any;
+        const doc = (globalThis as any).document || {};
         const getText = (label: string) => {
           // 尝试多种结构查找标签对应的值
           const allCells = doc.querySelectorAll('td, .el-descriptions__cell, .info-item');

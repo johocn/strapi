@@ -43,7 +43,7 @@ export default class CbhbCollector extends BaseCollector {
 
       // 提取产品信息 - 渤银官网详情页结构
       const productInfo = await page.evaluate(() => {
-        const doc = document as any;
+        const doc = (globalThis as any).document || {};
         const getText = (selector: string) => {
           const el = doc.querySelector(selector);
           return el ? el.textContent?.trim() || '' : '';
@@ -107,7 +107,7 @@ export default class CbhbCollector extends BaseCollector {
 
       // 在列表中查找匹配产品
       const found = await page.evaluate((code) => {
-        const doc = document as any;
+        const doc = (globalThis as any).document || {};
         const items = doc.querySelectorAll('.product-item, .pro-item, .list-item, tr');
         for (const item of items) {
           const text = item.textContent || '';
