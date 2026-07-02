@@ -319,7 +319,7 @@ export default ({ strapi }) => ({
           rankPercentile: null,
         };
       }
-      grouped[key][r.metricName as keyof MetricItem] = r.metricValue;
+      (grouped[key] as any)[r.metricName] = r.metricValue;
     }
 
     for (const key of Object.keys(grouped)) {
