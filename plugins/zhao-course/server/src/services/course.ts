@@ -207,7 +207,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
 
     const docParams: any = {
       filters: mergedFilters,
-      status: publicOnly ? "published" : undefined, // 管理接口查询所有状态
+      status: publicOnly ? "published" : ["published", "draft"], // 管理接口查询所有状态
       populate: {
         category: true,
         tags: true,
@@ -225,18 +225,34 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       strapi.documents(UID).findMany(docParams),
     ]);
 
+    // 去重：admin 查询 draft+published 时，同一 documentId 可能返回两条，优先保留 published 版本
+    let dedupedList = list;
+    if (!publicOnly) {
+      const seen = new Map<string, any>();
+      for (const item of list) {
+        const key = item.documentId;
+        if (!seen.has(key)) {
+          seen.set(key, item);
+        } else if (item.publishedAt) {
+          // 当前项是 published，替换之前的 draft
+          seen.set(key, item);
+        }
+      }
+      dedupedList = Array.from(seen.values());
+    }
+
     // 内存中过滤
-    let filteredList = list;
+    let filteredList = dedupedList;
     if (channelScope?.isGuest) {
       // 游客：只显示 all 或 allowCrossChannel=true 的课程
-      filteredList = list.filter(course => 
+      filteredList = dedupedList.filter(course => 
         course.channelScope === "all" || 
         course.channelScope === null || // 兼容旧数据
         (course.channelScope === "specific" && course.allowCrossChannel === true)
       );
     } else if (channelScope && !channelScope.all && userChannelIds.length > 0) {
       // 登录用户：过滤 channelIds
-      filteredList = list.filter(course => {
+      filteredList = dedupedList.filter(course => {
         if (course.channelScope === "all") return true;
         if (course.channelScope === null) return true; // 兼容旧数据
         if (course.channelScope === "specific" && course.allowCrossChannel === true) return true;
