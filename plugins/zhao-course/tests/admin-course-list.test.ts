@@ -43,3 +43,56 @@ describe("admin 课程列表 status 参数修复", () => {
     expect(mockFindMany.mock.calls[0][0].status).toBe("published");
   });
 });
+
+describe("admin 课程列表不应被 siteChannelId 过滤", () => {
+  let strapi: any;
+  let mockFindMany: jest.Mock;
+
+  beforeEach(() => {
+    strapi = createMockStrapi();
+    mockFindMany = jest.fn();
+    strapi.documents = jest.fn().mockReturnValue({ findMany: mockFindMany });
+  });
+
+  it("admin (channelScope.all=true) + siteChannelId 设置时，应返回所有课程", async () => {
+    const service = courseFactory({ strapi });
+    const allCourse = { documentId: "d1", title: "全渠道课程", channelScope: "all", channelIds: [] };
+    const specificCourseA = { documentId: "d2", title: "站点A课程", channelScope: "specific", channelIds: [1] };
+    const specificCourseB = { documentId: "d3", title: "站点B课程", channelScope: "specific", channelIds: [2] };
+
+    mockFindMany.mockResolvedValue([allCourse, specificCourseA, specificCourseB]);
+
+    // admin 全渠道，但 siteChannelId=1（多租户场景）
+    const result = await service.find(
+      {},
+      false,
+      { all: true, channelIds: [] },
+      1 // siteChannelId
+    );
+
+    expect(result.list).toHaveLength(3);
+  });
+
+  it("非 admin 用户 + siteChannelId 设置时，仍应按 siteChannelId 过滤 specific 课程", async () => {
+    const service = courseFactory({ strapi });
+    const allCourse = { documentId: "d1", title: "全渠道课程", channelScope: "all", channelIds: [] };
+    const specificCourseA = { documentId: "d2", title: "站点A课程", channelScope: "specific", channelIds: [1] };
+    const specificCourseB = { documentId: "d3", title: "站点B课程", channelScope: "specific", channelIds: [2] };
+
+    mockFindMany.mockResolvedValue([allCourse, specificCourseA, specificCourseB]);
+
+    // 非 admin，渠道范围=[1]，siteChannelId=1
+    const result = await service.find(
+      {},
+      false,
+      { all: false, channelIds: [1] },
+      1 // siteChannelId
+    );
+
+    // specific 课程中只有 channelIds 包含 1 的保留
+    const titles = result.list.map((c: any) => c.title);
+    expect(titles).toContain("全渠道课程");
+    expect(titles).toContain("站点A课程");
+    expect(titles).not.toContain("站点B课程");
+  });
+});

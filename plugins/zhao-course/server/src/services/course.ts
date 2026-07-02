@@ -246,8 +246,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       });
     }
 
-    // 站点渠道过滤：仅返回全局课程或属于该站点渠道的课程
-    if (siteChannelId != null) {
+    // 站点渠道过滤：admin 全渠道可见，跳过站点过滤
+    if (siteChannelId != null && !(channelScope?.all)) {
       filteredList = filteredList.filter(course => {
         if (course.channelScope === "all") return true;
         if (course.channelScope === null) return true; // 兼容旧数据
