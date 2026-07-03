@@ -65,6 +65,10 @@
     "deletedAt": {
       "type": "datetime",
       "default": null
+    },
+    "extraConfig": {
+      "type": "json",
+      "default": "{}"
     }
   }
 }

@@ -965,6 +965,15 @@ export interface PluginZhaoAuthPermission extends Struct.CollectionTypeSchema {
     isSystem: Schema.Attribute.Boolean &
       Schema.Attribute.Required &
       Schema.Attribute.DefaultTo<false>;
+    level: Schema.Attribute.Integer &
+      Schema.Attribute.SetMinMax<
+        {
+          max: 100;
+          min: 1;
+        },
+        number
+      > &
+      Schema.Attribute.DefaultTo<20>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
@@ -1027,7 +1036,7 @@ export interface PluginZhaoAuthRoleActionLog
 export interface PluginZhaoAuthRoleChannel extends Struct.CollectionTypeSchema {
   collectionName: 'zhao_role_channels';
   info: {
-    description: '\u89D2\u8272-\u6E20\u9053\u5173\u8054';
+    description: '\u89D2\u8272\u4E0E\u6E20\u9053\u7684\u7ED1\u5B9A\u5173\u7CFB';
     displayName: 'Role Channel';
     pluralName: 'role-channels';
     singularName: 'role-channel';
@@ -1036,6 +1045,7 @@ export interface PluginZhaoAuthRoleChannel extends Struct.CollectionTypeSchema {
     draftAndPublish: false;
   };
   attributes: {
+    assignedBy: Schema.Attribute.Integer;
     channel: Schema.Attribute.Relation<
       'manyToOne',
       'plugin::zhao-channel.channel'
@@ -1043,10 +1053,6 @@ export interface PluginZhaoAuthRoleChannel extends Struct.CollectionTypeSchema {
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    grantedBy: Schema.Attribute.Relation<
-      'manyToOne',
-      'plugin::users-permissions.user'
-    >;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
@@ -1116,6 +1122,7 @@ export interface PluginZhaoChannelChannel extends Struct.CollectionTypeSchema {
       > &
       Schema.Attribute.DefaultTo<0>;
     description: Schema.Attribute.Text;
+    extraConfig: Schema.Attribute.JSON & Schema.Attribute.DefaultTo<'{}'>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
@@ -3047,6 +3054,44 @@ export interface PluginZhaoSsoSsoLoginLog extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface PluginZhaoSsoSsoOauthConfig
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'sso_oauth_configs';
+  info: {
+    displayName: 'SSO OAuth Config';
+    pluralName: 'sso-oauth-configs';
+    singularName: 'sso-oauth-config';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    app_id: Schema.Attribute.String & Schema.Attribute.Required;
+    app_secret: Schema.Attribute.String & Schema.Attribute.Required;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    description: Schema.Attribute.String;
+    extra_config: Schema.Attribute.JSON;
+    is_enabled: Schema.Attribute.Boolean &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<true>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-sso.sso-oauth-config'
+    > &
+      Schema.Attribute.Private;
+    provider: Schema.Attribute.String & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    redirect_uris: Schema.Attribute.JSON;
+    scope: Schema.Attribute.String;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
 export interface PluginZhaoSsoSsoReferralRelation
   extends Struct.CollectionTypeSchema {
   collectionName: 'sso_referral_relations';
@@ -3086,6 +3131,44 @@ export interface PluginZhaoSsoSsoReferralRelation
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+  };
+}
+
+export interface PluginZhaoSsoSsoSmsCode extends Struct.CollectionTypeSchema {
+  collectionName: 'sso_sms_codes';
+  info: {
+    displayName: 'SSO SMS Code';
+    pluralName: 'sso-sms-codes';
+    singularName: 'sso-sms-code';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    code: Schema.Attribute.String & Schema.Attribute.Required;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    expires_at: Schema.Attribute.DateTime & Schema.Attribute.Required;
+    ip: Schema.Attribute.String;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-sso.sso-sms-code'
+    > &
+      Schema.Attribute.Private;
+    mobile: Schema.Attribute.String & Schema.Attribute.Required;
+    provider: Schema.Attribute.String & Schema.Attribute.DefaultTo<'mock'>;
+    publishedAt: Schema.Attribute.DateTime;
+    scene: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'login'>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    used: Schema.Attribute.Boolean &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<false>;
   };
 }
 
@@ -4527,7 +4610,9 @@ declare module '@strapi/strapi' {
       'plugin::zhao-sso.sso-invite-stats': PluginZhaoSsoSsoInviteStats;
       'plugin::zhao-sso.sso-invite-usage': PluginZhaoSsoSsoInviteUsage;
       'plugin::zhao-sso.sso-login-log': PluginZhaoSsoSsoLoginLog;
+      'plugin::zhao-sso.sso-oauth-config': PluginZhaoSsoSsoOauthConfig;
       'plugin::zhao-sso.sso-referral-relation': PluginZhaoSsoSsoReferralRelation;
+      'plugin::zhao-sso.sso-sms-code': PluginZhaoSsoSsoSmsCode;
       'plugin::zhao-sso.sso-third-party-binding': PluginZhaoSsoSsoThirdPartyBinding;
       'plugin::zhao-sso.sso-token': PluginZhaoSsoSsoToken;
       'plugin::zhao-sso.sso-user': PluginZhaoSsoSsoUser;

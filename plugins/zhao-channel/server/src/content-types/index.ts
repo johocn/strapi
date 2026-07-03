@@ -71,6 +71,10 @@ export default {
           default: 0,
           min: 0,
           max: MAX_CHANNEL_DEPTH
+        },
+        extraConfig: {
+          type: "json",
+          default: "{}"
         }
       }
     }
