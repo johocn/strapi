@@ -24,14 +24,16 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
    * 列出模板
    */
   async listTemplates(filters: Record<string, any> = {}) {
-    return strapi.documents(TEMPLATE_UID).findMany({ filters, populate: { sites: { select: ["documentId"] } } as any });
+    // 过滤掉分页等非 filters 字段（Document Service 不接受 pageSize 等 key）
+    const { pageSize, page, sort, ...safeFilters } = filters as any;
+    return strapi.documents(TEMPLATE_UID).findMany({ filters: safeFilters, populate: { sites: { fields: ["documentId"] } } as any });
   },
 
   /**
    * 获取模板
    */
   async getTemplate(documentId: string) {
-    return strapi.documents(TEMPLATE_UID).findOne({ documentId, populate: { sites: { select: ["documentId"] } } as any });
+    return strapi.documents(TEMPLATE_UID).findOne({ documentId, populate: { sites: { fields: ["documentId"] } } as any });
   },
 
   /**

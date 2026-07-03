@@ -29,7 +29,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
    */
   async getConfig(siteId?: string) {
     if (siteId) {
-      const record = await strapi.documents(UID).findOne({ documentId: siteId, populate: ["channels", "template"] });
+      const record = await strapi.documents(UID).findOne({ documentId: siteId, populate: ["channels", "template", "logo", "favicon", "shareImage"] });
       if (record) return record;
     }
     return { ...DEFAULT_CONFIG };
@@ -41,7 +41,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async getConfigByDomain(domain: string) {
     const records = await strapi.documents(UID).findMany({
       filters: { domain },
-      populate: ["channels", "template"],
+      populate: ["channels", "template", "logo", "favicon", "shareImage"],
     });
     if (Array.isArray(records) && records.length > 0) {
       return records[0];

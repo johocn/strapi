@@ -229,7 +229,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         "siteName", "siteDescription", "logo", "favicon", "icpNumber",
         "seoKeywords", "seoDescription", "tencentMapKey", "shareTitle",
         "shareDescription", "shareImage", "customerServiceUrl",
-        "featureFlags", "domain", "template",
+        "featureFlags", "domain", "template", "themeConfig",
       ]);
       const RELATION_FIELDS = new Set([]);
       const CHANNELS_FIELD = "channels";
@@ -451,7 +451,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         "siteName", "siteDescription", "logo", "favicon", "icpNumber",
         "seoKeywords", "seoDescription", "tencentMapKey", "shareTitle",
         "shareDescription", "shareImage", "customerServiceUrl",
-        "featureFlags", "domain", "template",
+        "featureFlags", "domain", "template", "themeConfig",
       ]);
       const RELATION_FIELDS = new Set([]);
       const CHANNELS_FIELD = "channels";
