@@ -180,6 +180,108 @@ const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
       `[zhao-common] soft-delete 自动过滤已注册，覆盖 ${softDeleteModels.length} 个 content-type`
     );
   }
+
+  // 生成预设模板（C 端样式配置）
+  await initDefaultTemplates();
 };
+
+async function initDefaultTemplates() {
+  const TEMPLATE_UID = "plugin::zhao-common.site-template";
+  try {
+    // 按预设 name 检查，避免与已有"默认模板"冲突导致跳过
+    const existing = await strapi.db.query(TEMPLATE_UID).count({ where: { name: "coursera-blue" } });
+    if (existing > 0) return;
+
+    const presets = [
+      {
+        name: "coursera-blue",
+        displayName: "Coursera 学术蓝",
+        presetConfig: {},
+        fieldConstraints: {},
+        themeConfig: JSON.stringify({
+          primaryColor: "#0056D2",
+          secondaryColor: "#F4F7F6",
+          navStyle: "default",
+          cardStyle: "shadow",
+          tabBarColor: "#0056D2",
+          tabBarActiveColor: "#FFFFFF",
+        }),
+        enabled: true,
+        isDefault: true,
+      },
+      {
+        name: "khan-green",
+        displayName: "Khan 学院绿",
+        presetConfig: {},
+        fieldConstraints: {},
+        themeConfig: JSON.stringify({
+          primaryColor: "#14BF95",
+          secondaryColor: "#F5F9F8",
+          navStyle: "default",
+          cardStyle: "rounded",
+          tabBarColor: "#14BF95",
+          tabBarActiveColor: "#FFFFFF",
+        }),
+        enabled: true,
+        isDefault: false,
+      },
+      {
+        name: "udemy-violet",
+        displayName: "Udemy 鲜艳紫",
+        presetConfig: {},
+        fieldConstraints: {},
+        themeConfig: JSON.stringify({
+          primaryColor: "#A435F0",
+          secondaryColor: "#FAF7FF",
+          navStyle: "gradient",
+          cardStyle: "shadow",
+          tabBarColor: "#1C1D1F",
+          tabBarActiveColor: "#A435F0",
+        }),
+        enabled: true,
+        isDefault: false,
+      },
+      {
+        name: "edx-deep",
+        displayName: "edX 深蓝学术",
+        presetConfig: {},
+        fieldConstraints: {},
+        themeConfig: JSON.stringify({
+          primaryColor: "#02262B",
+          secondaryColor: "#E8ECEF",
+          navStyle: "default",
+          cardStyle: "default",
+          tabBarColor: "#02262B",
+          tabBarActiveColor: "#FFFFFF",
+        }),
+        enabled: true,
+        isDefault: false,
+      },
+      {
+        name: "netease-red",
+        displayName: "网易课堂红",
+        presetConfig: {},
+        fieldConstraints: {},
+        themeConfig: JSON.stringify({
+          primaryColor: "#D8232A",
+          secondaryColor: "#FFF5F5",
+          navStyle: "default",
+          cardStyle: "shadow",
+          tabBarColor: "#D8232A",
+          tabBarActiveColor: "#FFFFFF",
+        }),
+        enabled: true,
+        isDefault: false,
+      },
+    ];
+
+    for (const preset of presets) {
+      await strapi.db.query(TEMPLATE_UID).create({ data: preset });
+    }
+    strapi.log.info(`[bootstrap] 已生成 ${presets.length} 套预设模板`);
+  } catch (e) {
+    strapi.log.warn("[bootstrap] initDefaultTemplates failed:", (e as Error).message);
+  }
+}
 
 export default bootstrap;
