@@ -29,6 +29,11 @@ function extractHost(input: string): string {
  */
 const siteResolver: Core.MiddlewareFactory = (config, { strapi }) => {
   return async (ctx: any, next: any) => {
+    // 若上游 tenant-context-resolver 已通过 x-site-id header / ?siteId 设置 siteId，跳过域名识别
+    if (ctx.state?.siteId) {
+      return await next();
+    }
+
     const raw =
       (typeof ctx.query?.domain === "string" && ctx.query.domain) ||
       (typeof ctx.request?.header?.["x-site-domain"] === "string" && ctx.request.header["x-site-domain"]) ||

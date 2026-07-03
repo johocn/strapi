@@ -1,5 +1,6 @@
 import type { Core } from "@strapi/strapi";
 import siteResolver from "./middlewares/site-resolver";
+import tenantContextResolver from "./middlewares/tenant-context-resolver";
 
 const SITE_CONFIG_UID = "plugin::zhao-common.site-config";
 const TEMPLATE_UID = "plugin::zhao-common.site-template";
@@ -108,6 +109,17 @@ const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
     strapi.log.error(`[zhao-common] 数据库迁移执行失败: ${err.message}`);
     throw err;
   }
+
+  strapi.server.use(async (ctx: any, next: any) => {
+    if (ctx.path?.startsWith("/admin") || ctx.path?.startsWith("/content-manager") || ctx.path?.startsWith("/health")) {
+      return next();
+    }
+    const middleware = tenantContextResolver({}, { strapi });
+    if (typeof middleware === 'function') {
+      return middleware(ctx, next);
+    }
+    return next();
+  });
 
   strapi.server.use(async (ctx: any, next: any) => {
     if (ctx.path?.startsWith("/admin") || ctx.path?.startsWith("/content-manager") || ctx.path?.startsWith("/health")) {
