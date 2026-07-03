@@ -1,6 +1,6 @@
 import type { Core } from "@strapi/strapi";
 import type { UserPermissions } from "../utils/types";
-import { PERMISSIONS as PERMISSIONS_MAP, type PermissionEntry } from "../permissions";
+import { DEFAULT_ROLE_PERMISSIONS } from "../permissions";
 
 const USER_UID = "plugin::users-permissions.user";
 
@@ -456,8 +456,12 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
    */
   computePermissions(roles: string[]) {
     const permissions: Record<string, boolean> = {};
-    for (const [action, entry] of Object.entries(PERMISSIONS_MAP) as [string, PermissionEntry][]) {
-      permissions[action] = entry.allowRoles.some((r: string) => roles.includes(r));
+    // 用 DEFAULT_ROLE_PERMISSIONS 计算权限
+    for (const role of roles) {
+      const rolePerms = DEFAULT_ROLE_PERMISSIONS[role] || [];
+      for (const action of rolePerms) {
+        permissions[action] = true;
+      }
     }
     return { roles, permissions };
   },
