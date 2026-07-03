@@ -1389,6 +1389,7 @@ export interface PluginZhaoCommonSiteConfig
       Schema.Attribute.SetMinMaxLength<{
         maxLength: 64;
       }>;
+    themeConfig: Schema.Attribute.JSON & Schema.Attribute.DefaultTo<'{}'>;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -1412,6 +1413,10 @@ export interface PluginZhaoCommonSiteTemplate
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     description: Schema.Attribute.Text;
+    displayName: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
     enabled: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
     fieldConstraints: Schema.Attribute.JSON & Schema.Attribute.Required;
     isDefault: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
@@ -1432,6 +1437,7 @@ export interface PluginZhaoCommonSiteTemplate
       'oneToMany',
       'plugin::zhao-common.site-config'
     >;
+    themeConfig: Schema.Attribute.JSON & Schema.Attribute.DefaultTo<'{}'>;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;

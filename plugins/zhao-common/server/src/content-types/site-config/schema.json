@@ -94,6 +94,10 @@
     },
     "extraConfig": {
       "type": "json"
+    },
+    "themeConfig": {
+      "type": "json",
+      "default": "{}"
     }
   }
 }
