@@ -65,6 +65,36 @@ function extractRoleNames(user: any): string[] {
   return [];
 }
 
+const PERMISSION_UID = "plugin::zhao-auth.permission";
+
+/**
+ * 获取角色层级（支持自定义角色，查 zhao_permissions 表）
+ */
+async function getRoleLevel(role: string): Promise<number> {
+  if (ROLE_HIERARCHY[role] != null) return ROLE_HIERARCHY[role];
+  const roleRecord = await strapi.db.query(PERMISSION_UID).findOne({
+    where: { role },
+    select: ["level"],
+  });
+  return (roleRecord as any)?.level ?? 20;
+}
+
+/**
+ * 获取用户层级（取用户所有角色中的最高层级）
+ */
+async function getUserLevel(userId: number): Promise<number> {
+  const user = await strapi.db.query(USER_UID).findOne({
+    where: { id: userId },
+    select: ["zhaoRoles"],
+    populate: ["role"],
+  });
+  if (!user) return 20;
+  const roles = extractRoleNames(user);
+  if (roles.length === 0) return 20;
+  const levels = await Promise.all(roles.map(getRoleLevel));
+  return Math.max(...levels);
+}
+
 export default ({ strapi }: { strapi: Core.Strapi }) => {
   async function getUserEffectivePermissions(userId: number): Promise<UserPermissions> {
     const cached = permissionCache.get(userId);
@@ -204,6 +234,15 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
 
     if (currentRoles.includes(normalizedRole)) {
       throwErr("ROLE_ALREADY_ASSIGNED", 409, `用户已拥有角色: ${normalizedRole}`);
+    }
+
+    // 层级校验（非 admin）
+    const operatorLevel = await getUserLevel(operatorId);
+    if (operatorLevel < 100) {
+      const targetLevel = await getRoleLevel(normalizedRole);
+      if (targetLevel > operatorLevel) {
+        throwErr("ROLE_004", 403, "不能分配同级或更高层级角色");
+      }
     }
 
     const newRoles = [...currentRoles, normalizedRole];
@@ -447,6 +486,15 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
    */
   async invalidateUserCache(userId: number): Promise<void> {
     invalidateUserCache(userId);
+  },
+
+  /**
+   * 获取用户层级（取所有角色中的最高层级）
+   * @param userId 用户ID
+   * @returns 层级数值（1-100）
+   */
+  async getUserLevel(userId: number): Promise<number> {
+    return getUserLevel(userId);
   },
 
   /**
