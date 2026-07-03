@@ -18,6 +18,7 @@ const adminRoute = (method: Method, path: string, handler: string, permission: s
       { name: "plugin::zhao-auth.has-permission", config: { action: permission } },
       // 非阻断：注入 ctx.state.channelScope 供控制器过滤
       "plugin::zhao-auth.has-channel-scope",
+      "plugin::zhao-auth.has-tenant-access",
     ],
   },
 });

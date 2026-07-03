@@ -19,6 +19,7 @@ const adminRoute = (method: Method, path: string, handler: string, permission: s
       'plugin::zhao-auth.is-authenticated',
       { name: 'plugin::zhao-auth.has-permission', config: { action: permission } },
       'plugin::zhao-auth.has-channel-scope',
+      'plugin::zhao-auth.has-tenant-access',
     ],
   },
 });

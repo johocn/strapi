@@ -8,7 +8,7 @@ export default {
       path: '/v1/wealth/products',
       handler: 'product.list',
       config: {
-        policies: ['plugin::zhao-auth.has-channel-access'],
+        policies: ['plugin::zhao-auth.has-channel-access', 'plugin::zhao-auth.has-tenant-access'],
       },
     },
     // 产品详情
@@ -17,7 +17,7 @@ export default {
       path: '/v1/wealth/products/:id',
       handler: 'product.detail',
       config: {
-        policies: ['plugin::zhao-auth.has-channel-access'],
+        policies: ['plugin::zhao-auth.has-channel-access', 'plugin::zhao-auth.has-tenant-access'],
       },
     },
     // 净值时序
@@ -26,7 +26,7 @@ export default {
       path: '/v1/wealth/products/:id/nav',
       handler: 'nav.timeSeries',
       config: {
-        policies: ['plugin::zhao-auth.has-channel-access'],
+        policies: ['plugin::zhao-auth.has-channel-access', 'plugin::zhao-auth.has-tenant-access'],
       },
     },
     // 年化快照时序
@@ -35,7 +35,7 @@ export default {
       path: '/v1/wealth/products/:id/annual-snapshot',
       handler: 'annual.snapshotTimeSeries',
       config: {
-        policies: ['plugin::zhao-auth.has-channel-access'],
+        policies: ['plugin::zhao-auth.has-channel-access', 'plugin::zhao-auth.has-tenant-access'],
       },
     },
     // 年度收益列表
@@ -44,7 +44,7 @@ export default {
       path: '/v1/wealth/products/:id/yearly-return',
       handler: 'annual.yearlyReturns',
       config: {
-        policies: ['plugin::zhao-auth.has-channel-access'],
+        policies: ['plugin::zhao-auth.has-channel-access', 'plugin::zhao-auth.has-tenant-access'],
       },
     },
     // 推荐产品列表
@@ -89,7 +89,7 @@ export default {
       path: '/v1/wealth/products/:id/risk-metrics',
       handler: 'risk-metric.getMetrics',
       config: {
-        policies: ['plugin::zhao-auth.has-channel-access'],
+        policies: ['plugin::zhao-auth.has-channel-access', 'plugin::zhao-auth.has-tenant-access'],
       },
     },
   ],
