@@ -438,6 +438,42 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         signInPoints: ec.signInPoints ?? 10,
         maxPointsPerDay: ec.maxPointsPerDay ?? 0,
       };
+
+      // 主题配置
+      let themeConfig: Record<string, any> = {};
+      try {
+        const rawTheme = fullConfig?.themeConfig;
+        if (rawTheme && typeof rawTheme === "object" && !Array.isArray(rawTheme)) {
+          themeConfig = rawTheme as Record<string, any>;
+        } else if (typeof rawTheme === "string" && rawTheme.trim()) {
+          themeConfig = JSON.parse(rawTheme);
+        }
+      } catch { /* ignore */ }
+
+      // 若 themeConfig 为空，从关联的 site-template 读取
+      if (Object.keys(themeConfig).length === 0 && fullConfig?.template) {
+        try {
+          const templateId = typeof fullConfig.template === "object" ? fullConfig.template.id : fullConfig.template;
+          const template = await strapi.db.query("plugin::zhao-common.site-template").findOne({
+            where: { id: templateId },
+            select: ["themeConfig"],
+          });
+          if (template?.themeConfig) {
+            themeConfig = typeof template.themeConfig === "string"
+              ? JSON.parse(template.themeConfig)
+              : template.themeConfig;
+          }
+        } catch { /* ignore */ }
+      }
+
+      result.theme = {
+        primaryColor: themeConfig.primaryColor ?? "#667eea",
+        secondaryColor: themeConfig.secondaryColor ?? "#f0f2f5",
+        navStyle: themeConfig.navStyle ?? "default",
+        cardStyle: themeConfig.cardStyle ?? "default",
+        tabBarColor: themeConfig.tabBarColor ?? "#667eea",
+        tabBarActiveColor: themeConfig.tabBarActiveColor ?? "#ffffff",
+      };
     } catch (error) {
       strapi.log.warn("[config] getPublicConfig failed:", (error as Error).message);
     }
