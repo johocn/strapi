@@ -100,7 +100,9 @@ export const PERMISSION_TREE: Record<string, PermissionItem> = {
         label: "题库管理",
         type: "menu",
         children: {
+          "quiz.read": { label: "查看题目", type: "button" },
           "quiz.create": { label: "新增题目", type: "button" },
+          "quiz.update": { label: "编辑题目", type: "button" },
           "quiz.delete": { label: "删除题目", type: "button" },
         },
       },
@@ -108,24 +110,101 @@ export const PERMISSION_TREE: Record<string, PermissionItem> = {
         label: "考试管理",
         type: "menu",
         children: {
+          "exam.read": { label: "查看考试", type: "button" },
           "exam.create": { label: "新增考试", type: "button" },
+          "exam.update": { label: "编辑考试", type: "button" },
           "exam.delete": { label: "删除考试", type: "button" },
         },
       },
-      "menu.quiz-record": { label: "答题记录", type: "menu" },
+      "menu.quiz-record": {
+        label: "答题记录",
+        type: "menu",
+        children: {
+          "quiz-record.read": { label: "查看答题记录", type: "button" },
+        },
+      },
     },
   },
   "menu.point-center": {
     label: "积分体系",
     type: "menu",
     children: {
-      "menu.point-type": { label: "积分类型", type: "menu" },
-      "menu.point-rule": { label: "积分规则", type: "menu" },
-      "menu.point-record": { label: "积分记录", type: "menu" },
-      "menu.product": { label: "积分产品", type: "menu" },
-      "menu.exchange": { label: "兑换记录", type: "menu" },
-      "menu.point-stat": { label: "积分统计", type: "menu" },
-      "menu.point-config": { label: "积分配置", type: "menu" },
+      "menu.point-type": {
+        label: "积分类型",
+        type: "menu",
+        children: {
+          "point-type.read": { label: "查看积分类型", type: "button" },
+          "point-type.create": { label: "新增积分类型", type: "button" },
+          "point-type.update": { label: "编辑积分类型", type: "button" },
+          "point-type.delete": { label: "删除积分类型", type: "button" },
+        },
+      },
+      "menu.point-rule": {
+        label: "积分规则",
+        type: "menu",
+        children: {
+          "point-rule.read": { label: "查看规则", type: "button" },
+          "point-rule.create": { label: "新增规则", type: "button" },
+          "point-rule.update": { label: "编辑规则", type: "button" },
+          "point-rule.delete": { label: "删除规则", type: "button" },
+        },
+      },
+      "menu.point-record": {
+        label: "积分记录",
+        type: "menu",
+        children: {
+          "point-record.read": { label: "查看记录", type: "button" },
+        },
+      },
+      "menu.product": {
+        label: "积分产品",
+        type: "menu",
+        children: {
+          "point-product.read": { label: "查看产品", type: "button" },
+          "point-product.create": { label: "新增产品", type: "button" },
+          "point-product.update": { label: "编辑产品", type: "button" },
+          "point-product.delete": { label: "删除产品", type: "button" },
+        },
+      },
+      "menu.exchange": {
+        label: "兑换记录",
+        type: "menu",
+        children: {
+          "point-exchange.read": { label: "查看兑换", type: "button" },
+        },
+      },
+      "menu.point-stat": {
+        label: "积分统计",
+        type: "menu",
+        children: {
+          "point-dashboard.read": { label: "查看统计", type: "button" },
+        },
+      },
+      "menu.point-config": {
+        label: "积分配置",
+        type: "menu",
+        children: {
+          "point-config.read": { label: "查看配置", type: "button" },
+          "point-config.update": { label: "修改配置", type: "button" },
+        },
+      },
+      "menu.pickup-location": {
+        label: "自提点",
+        type: "menu",
+        children: {
+          "pickup-location.read": { label: "查看自提点", type: "button" },
+          "pickup-location.create": { label: "新增自提点", type: "button" },
+          "pickup-location.update": { label: "编辑自提点", type: "button" },
+          "pickup-location.delete": { label: "删除自提点", type: "button" },
+        },
+      },
+      "menu.point-verification": {
+        label: "积分核销",
+        type: "menu",
+        children: {
+          "point-verification.read": { label: "查看核销记录", type: "button" },
+        },
+      },
     },
   },
   "menu.marketing-center": {
@@ -140,6 +219,7 @@ export const PERMISSION_TREE: Record<string, PermissionItem> = {
           "channel.create": { label: "新增渠道", type: "button" },
           "channel.update": { label: "编辑渠道", type: "button" },
           "channel.delete": { label: "删除渠道", type: "button" },
+          "channel.config.update": { label: "修改渠道配置", type: "button" },
         },
       },
       "menu.network": {
@@ -195,18 +275,31 @@ export const PERMISSION_TREE: Record<string, PermissionItem> = {
     type: "menu",
     children: {
       "menu.media": { label: "媒体资源", type: "menu" },
+      "menu.soft-delete": {
+        label: "回收站",
+        type: "menu",
+        children: {
+          "soft-delete.read": { label: "查看回收站", type: "button" },
+          "soft-delete.manage": { label: "管理回收站", type: "button" },
+        },
+      },
       "menu.feature-flag": {
         label: "功能开关",
         type: "menu",
         children: {
-          "feature-flag.update": { label: "修改开关", type: "button" },
+          "feature-flag.update": { label: "修改粗粒度开关", type: "button" },
+          "config.feature.update": { label: "修改细粒度配置", type: "button" },
         },
       },
       "menu.site-config": {
         label: "站点配置",
         type: "menu",
         children: {
-          "site-config.update": { label: "修改配置", type: "button" },
+          "config.read": { label: "查看配置", type: "button" },
+          "config.create": { label: "新增配置", type: "button" },
+          "config.update": { label: "修改配置", type: "button" },
+          "config.delete": { label: "删除配置", type: "button" },
+          "site-config.update": { label: "修改站点配置", type: "button" },
         },
       },
       "menu.verification": { label: "验证记录", type: "menu" },
@@ -234,6 +327,9 @@ export const PERMISSION_TREE: Record<string, PermissionItem> = {
         label: "OSS 管理",
         type: "menu",
         children: {
+          "oss.read": { label: "查看 OSS", type: "button" },
+          "oss.upload": { label: "上传文件", type: "button" },
+          "oss.delete": { label: "删除文件", type: "button" },
           "oss.dashboard": { label: "查看仪表盘", type: "button" },
           "oss.record": { label: "查看同步记录", type: "button" },
           "oss.settings": { label: "修改存储设置", type: "button" },
@@ -267,11 +363,6 @@ export const PERMISSION_TREE: Record<string, PermissionItem> = {
           "sso.log-read": { label: "查看日志", type: "button" },
         },
       },
-      "menu.sso-center": { label: "SSO 中心", type: "menu" },
-      "menu.sso-dashboard": { label: "SSO 仪表盘", type: "menu" },
-      "menu.sso-user": { label: "SSO 用户", type: "menu" },
-      "menu.sso-channel": { label: "SSO 渠道", type: "menu" },
-      "menu.sso-log": { label: "SSO 日志", type: "menu" },
       "menu.tenant": {
         label: "租户管理",
         type: "menu",
@@ -280,6 +371,16 @@ export const PERMISSION_TREE: Record<string, PermissionItem> = {
           "tenant.create": { label: "新建租户", type: "button" },
           "tenant.update": { label: "编辑租户", type: "button" },
           "tenant.delete": { label: "删除租户", type: "button" },
+        },
+      },
+      "menu.template": {
+        label: "模板管理",
+        type: "menu",
+        children: {
+          "template.read": { label: "查看模板", type: "button" },
+          "template.create": { label: "新增模板", type: "button" },
+          "template.update": { label: "编辑模板", type: "button" },
+          "template.delete": { label: "删除模板", type: "button" },
         },
       },
     },
@@ -320,6 +421,22 @@ export const PERMISSION_TREE: Record<string, PermissionItem> = {
       },
       "menu.tag-preset": { label: "分类预设", type: "menu" },
       "menu.tag-search": { label: "全局检索", type: "menu" },
+    },
+  },
+  "menu.studio-center": {
+    label: "直播工作室",
+    type: "menu",
+    children: {
+      "menu.studio": {
+        label: "工作室管理",
+        type: "menu",
+        children: {
+          "zhao-studio.read": { label: "查看工作室", type: "button" },
+          "zhao-studio.create": { label: "新增工作室", type: "button" },
+          "zhao-studio.update": { label: "编辑工作室", type: "button" },
+          "zhao-studio.delete": { label: "删除工作室", type: "button" },
+        },
+      },
     },
   },
 };
@@ -387,25 +504,6 @@ export function getPermissionLabel(
   return null;
 }
 
-// ===== 向后兼容：保留旧 PERMISSIONS 常量 =====
-
-export interface PermissionEntry {
-  allowRoles: string[];
-}
-
-export const PERMISSIONS: Record<string, PermissionEntry> = {
-  "role.read": {
-    allowRoles: [ROLES.ADMIN, ROLES.CHANNEL_ADMIN, ROLES.PLUGIN_MANAGER],
-  },
-  "role.assign": {
-    allowRoles: [ROLES.ADMIN, ROLES.CHANNEL_ADMIN, ROLES.PLUGIN_MANAGER],
-  },
-  "role.revoke": { allowRoles: [ROLES.ADMIN, ROLES.CHANNEL_ADMIN] },
-  "role.read-logs": {
-    allowRoles: [ROLES.ADMIN, ROLES.CHANNEL_ADMIN, ROLES.PLUGIN_MANAGER],
-  },
-};
-
 // ===== 默认角色权限映射 =====
 
 export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
@@ -419,7 +517,20 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
     "tenant.create",
     "tenant.update",
     "tenant.delete",
+    "menu.site-config",
+    "site-config.update",
+    "config.read",
+    "config.update",
+    "menu.feature-flag",
+    "feature-flag.update",
+    "config.feature.update",
+    "channel.config.update",
+    "menu.user-roles",
     "role.read",
+    "role.assign",
+    "role.revoke",
+    "role.create",
+    "role.read-logs",
   ],
   [ROLES.PLUGIN_MANAGER]: flattenPermissions(
     ((t: Record<string, PermissionItem>) => {
@@ -429,25 +540,58 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
         "menu.quiz-center",
         "menu.point-center",
         "menu.tag-center",
+        "menu.studio-center",
       ]) {
         if (t[key]) result[key] = t[key];
       }
       return result;
     })(PERMISSION_TREE)
-  ),
+  ).concat([
+    "menu.site-config",
+    "site-config.update",
+    "config.read",
+    "config.update",
+    "config.feature.update",
+    "channel.config.update",
+  ]),
   [ROLES.INSTRUCTOR]: [
+    // 课程中心
     "menu.course-center",
     "menu.course",
+    "course.read",
+    "course.create",
+    "course.update",
+    "course.publish",
     "menu.lesson",
+    "lesson.read",
+    "lesson.create",
+    "lesson.update",
+    "lesson.delete",
     "menu.category",
-    "menu.tag-center",
-    "menu.tag",
-    "menu.knowledge",
+    "course-category.read",
+    "course-category.create",
+    "course-category.update",
+    "menu.auth",
+    "user-course.read",
+    "user-course.grant",
+    // 学习数据
     "menu.study-center",
     "menu.progress",
+    "course-progress.read",
+    "course-progress.update",
     "menu.lesson-progress",
+    "lesson-progress.read",
+    "lesson-progress.update",
+    // 标签体系
+    "menu.tag-center",
+    "menu.tag",
+    "tag.read",
+    "tag.create",
+    "tag.update",
+    "menu.knowledge",
+    "knowledge-point.read",
+    "knowledge-point.create",
+    "knowledge-point.update",
   ],
   [ROLES.USER]: [],
 };
-
-export default PERMISSIONS;
