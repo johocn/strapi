@@ -74,21 +74,37 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
    */
   async createRole(ctx: any) {
     try {
-      const { role, displayName, description, permissions } = ctx.request.body;
+      const { role, displayName, description, permissions, level } = ctx.request.body;
       if (!role || !displayName) {
         ctx.status = 400;
         ctx.body = { error: "角色名和显示名称必填" };
         return;
       }
+      const operatorId = ctx.state?.user?.id;
+      if (!operatorId) {
+        ctx.status = 401;
+        ctx.body = { error: "未认证" };
+        return;
+      }
+      const operatorLevel = await strapi
+        .plugin("zhao-auth")
+        .service("role-management")
+        .getUserLevel(operatorId);
       const result = await strapi
         .plugin("zhao-auth")
         .service("permission")
-        .createRole({
-          role,
-          displayName,
-          description,
-          permissions: Array.isArray(permissions) ? permissions : [],
-        });
+        .createRole(
+          {
+            role,
+            displayName,
+            description,
+            permissions: Array.isArray(permissions) ? permissions : [],
+            level: typeof level === "number" ? level : undefined,
+          },
+          operatorId,
+          operatorLevel
+        );
+      ctx.status = 201;
       ctx.body = result;
     } catch (error: any) {
       ctx.status = error.status || 400;

@@ -125,11 +125,23 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   /**
    * 创建角色
    */
-  async createRole(data: { role: string; displayName: string; description?: string; permissions?: string[]; isSystem?: boolean }) {
+  async createRole(
+    data: { role: string; displayName: string; description?: string; permissions?: string[]; isSystem?: boolean; level?: number },
+    operatorId: number,
+    operatorLevel: number
+  ) {
     const role = normalizeRoleName(data.role);
     if (!role) {
       const e: any = new Error("角色名不能为空");
       e.status = 400;
+      throw e;
+    }
+
+    const targetLevel = data.level ?? 20;
+    if (operatorLevel < 100 && targetLevel >= operatorLevel) {
+      const e: any = new Error("不能创建同级或更高层级角色");
+      e.code = "ROLE_003";
+      e.status = 403;
       throw e;
     }
 
@@ -149,6 +161,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         description: data.description || "",
         permissions: data.permissions || [],
         isSystem: !!data.isSystem,
+        level: targetLevel,
       },
     });
 
@@ -161,6 +174,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       description: created.description || "",
       isSystem: !!created.isSystem,
       permissions: created.permissions || [],
+      level: created.level ?? targetLevel,
     };
   },
 
