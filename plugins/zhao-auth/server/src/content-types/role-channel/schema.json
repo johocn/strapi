@@ -5,7 +5,7 @@
     "singularName": "role-channel",
     "pluralName": "role-channels",
     "displayName": "Role Channel",
-    "description": "角色-渠道关联"
+    "description": "角色与渠道的绑定关系"
   },
   "options": {
     "draftAndPublish": false
@@ -20,10 +20,8 @@
       "relation": "manyToOne",
       "target": "plugin::zhao-channel.channel"
     },
-    "grantedBy": {
-      "type": "relation",
-      "relation": "manyToOne",
-      "target": "plugin::users-permissions.user"
+    "assignedBy": {
+      "type": "integer"
     }
   }
 }
