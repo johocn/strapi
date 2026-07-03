@@ -242,7 +242,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   },
 
   // ========== 公开配置（只返回非敏感字段，统一从 extraConfig 读取） ==========
-  async getPublicConfig(siteId?: string) {
+  async getPublicConfig(siteId?: string, channelId?: string | number) {
     const result: Record<string, any> = {};
 
     try {
@@ -334,6 +334,28 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       if (templateService && typeof templateService.getMergedConfig === "function" && fullConfig) {
         const { config } = await templateService.getMergedConfig(fullConfig);
         ec = config ?? {};
+      }
+
+      // 渠道级 extraConfig 覆盖（浅合并）
+      if (channelId != null) {
+        try {
+          const isNumericId = typeof channelId === "number" || (typeof channelId === "string" && /^\d+$/.test(channelId));
+          const channel = await strapi.db.query("plugin::zhao-channel.channel").findOne({
+            where: isNumericId ? { id: Number(channelId) } : { documentId: channelId },
+            select: ["extraConfig"],
+          });
+          if (channel?.extraConfig) {
+            let channelEc: Record<string, any> = {};
+            if (typeof channel.extraConfig === "string") {
+              try { channelEc = JSON.parse(channel.extraConfig); } catch { /* ignore */ }
+            } else if (typeof channel.extraConfig === "object") {
+              channelEc = channel.extraConfig;
+            }
+            ec = { ...ec, ...channelEc };
+          }
+        } catch (e) {
+          strapi.log.warn("[config] channel extraConfig merge failed:", (e as Error).message);
+        }
       }
 
       // sharePath 在 extraConfig 中，合并后写入 site

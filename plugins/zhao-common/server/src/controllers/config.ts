@@ -803,8 +803,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async getPublic(ctx: any) {
     try {
       const siteId = ctx.state?.siteId;
+      const channelId = ctx.query.channel || ctx.state?.channelId;
       const service = strapi.plugin("zhao-common").service("config");
-      const data = await service.getPublicConfig(siteId);
+      const data = await service.getPublicConfig(siteId, channelId);
       ctx.body = { data };
     } catch (error: any) {
       ctx.status = error.status ?? 500;
