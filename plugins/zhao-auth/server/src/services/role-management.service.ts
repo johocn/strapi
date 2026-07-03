@@ -245,12 +245,53 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       }
     }
 
+    // 渠道成员校验（非 admin）
+    if (operatorLevel < 100) {
+      // 1. 查询操作者归属渠道（isCurrent=true 的渠道）
+      const operatorChannels = await strapi.db.query("plugin::zhao-channel.channel-member").findMany({
+        where: { user: operatorId, isCurrent: true },
+        populate: { channel: { select: ["id"] } },
+      });
+      const operatorChannelIds = operatorChannels.map((cm: any) => cm.channel?.id).filter(Boolean);
+      if (operatorChannelIds.length === 0) {
+        throwErr("ROLE_005", 403, "操作者未归属任何渠道");
+      }
+
+      // 2. 校验被分配用户是操作者渠道成员
+      const targetUserChannels = await strapi.db.query("plugin::zhao-channel.channel-member").findMany({
+        where: { user: userId, channel: { id: { $in: operatorChannelIds } } },
+      });
+      if (targetUserChannels.length === 0) {
+        throwErr("ROLE_005", 403, "只能分配自己渠道内成员");
+      }
+    }
+
     const newRoles = [...currentRoles, normalizedRole];
 
     await strapi.db.query(USER_UID).update({
       where: { id: userId },
       data: { zhaoRoles: newRoles },
     });
+
+    // 非 admin 自动创建 role-channel 记录
+    if (operatorLevel < 100) {
+      const operatorChannels = await strapi.db.query("plugin::zhao-channel.channel-member").findMany({
+        where: { user: operatorId, isCurrent: true },
+        populate: { channel: { select: ["id"] } },
+      });
+      const currentChannelId = operatorChannels[0]?.channel?.id;
+      if (currentChannelId != null) {
+        // 检查是否已存在记录（幂等）
+        const existing = await strapi.db.query("plugin::zhao-auth.role-channel").findOne({
+          where: { role: normalizedRole, channel: currentChannelId },
+        });
+        if (!existing) {
+          await strapi.db.query("plugin::zhao-auth.role-channel").create({
+            data: { role: normalizedRole, channel: currentChannelId, assignedBy: operatorId },
+          });
+        }
+      }
+    }
 
     invalidateUserCache(userId);
     await this.logAction(operatorId, userId, "assign", role, reason);
