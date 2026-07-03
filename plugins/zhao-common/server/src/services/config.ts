@@ -253,6 +253,45 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       // 一次查询获取完整站点配置
       const fullConfig: any = await siteConfigService.getConfig(siteId);
 
+      // siteId 为 null（域名未匹配）时返回完整默认配置
+      if (!fullConfig) {
+        return {
+          site: {
+            siteName: "", siteDescription: "", logo: "", favicon: "",
+            shareTitle: "", shareDescription: "", shareImage: "",
+            sharePath: "/pages/index/index", domain: "",
+          },
+          auth: {
+            mode: "local",
+            methods: ["password", "sms"],
+            thirdPartyEnabled: false,
+            ssoEnabled: false,
+            ssoLoginUrl: null,
+            registerEnabled: true,
+            inviteCodeRequired: false,
+          },
+          featureFlags: {
+            sso: false, points: true, quiz: true, course: true,
+            channel: true, thirdParty: true, oss: false,
+            pointsEnabled: true, coursePreviewEnabled: true,
+            lessonProgressEnabled: true, courseEnrollEnabled: true,
+            channelInviteEnabled: true, allowCrossChannel: false,
+            redemptionEnabled: true, courseCommentEnabled: false,
+            courseRatingEnabled: false, paymentEnabled: false,
+          },
+          points: {
+            moduleEnabled: true, earnEnabled: true, redeemEnabled: true,
+            signInEnabled: true, tasksEnabled: true,
+            signInPoints: 10, maxPointsPerDay: 0,
+          },
+          theme: {
+            primaryColor: "#667eea", secondaryColor: "#f0f2f5",
+            navStyle: "default", cardStyle: "default",
+            tabBarColor: "#667eea", tabBarActiveColor: "#ffffff",
+          },
+        };
+      }
+
       // 站点公开字段
       const PUBLIC_FIELDS = [
         "siteName", "siteDescription", "seoKeywords", "seoDescription",
@@ -337,8 +376,18 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         inviteCodeRequired: ec.inviteCodeRequired ?? false,
       };
 
-      // 功能开关
+      // 功能开关（粗粒度模块总开关 + 细粒度）
+      const siteFeatureFlags = fullConfig?.featureFlags || {};
       result.featureFlags = {
+        // 粗粒度模块总开关（从 site-config.featureFlags 列读取）
+        sso: siteFeatureFlags.sso ?? false,
+        points: siteFeatureFlags.points ?? true,
+        quiz: siteFeatureFlags.quiz ?? true,
+        course: siteFeatureFlags.course ?? true,
+        channel: siteFeatureFlags.channel ?? true,
+        thirdParty: siteFeatureFlags.thirdParty ?? true,
+        oss: siteFeatureFlags.oss ?? false,
+        // 细粒度开关（从 extraConfig 合并后的 ec 读取）
         pointsEnabled: ec.pointsEnabled ?? true,
         coursePreviewEnabled: ec.coursePreviewEnabled ?? true,
         lessonProgressEnabled: ec.lessonProgressEnabled ?? true,
