@@ -4,6 +4,7 @@ import roleManagementService from "./role-management.service";
 import permissionService from "./permission.service";
 import channelScopeService from "./channel-scope.service";
 import roleChannelService from "./role-channel.service";
+import tenantService from "./tenant.service";
 
 export default {
   auth: authService,
@@ -12,4 +13,5 @@ export default {
   permission: permissionService,
   "channel-scope": channelScopeService,
   "role-channel": roleChannelService,
+  tenant: tenantService,
 };
