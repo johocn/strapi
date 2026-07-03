@@ -369,18 +369,13 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       const wechatOpenPlatformEnabled = ec.wechatOpenPlatformEnabled === true;
       const alipayEnabled = ec.alipayEnabled === true;
       const douyinEnabled = ec.douyinEnabled === true;
-      const thirdPartyEnabled =
-        wechatOfficialAccountEnabled ||
-        wechatMiniProgramEnabled ||
-        wechatOpenPlatformEnabled ||
-        alipayEnabled ||
-        douyinEnabled;
+      const thirdPartyEnabled = siteFeatureFlags.thirdParty ?? false;
 
       const methods: string[] = ["password", "sms"];
       if (authMode === "third" || thirdPartyEnabled) {
         methods.push("wechat");
       }
-      if (authMode === "sso" || ec.ssoEnabled) {
+      if (authMode === "sso" || siteFeatureFlags.sso) {
         methods.push("sso");
       }
       result.auth = {
@@ -392,7 +387,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         alipayEnabled,
         douyinEnabled,
         thirdPartyEnabled,
-        ssoEnabled: ec.ssoEnabled ?? false,
+        ssoEnabled: siteFeatureFlags.sso ?? false,
         ssoLoginUrl: ec.ssoLoginUrl ?? null,
         registerEnabled: ec.registerEnabled ?? false,
         inviteCodeRequired: ec.inviteCodeRequired ?? false,
@@ -410,7 +405,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         thirdParty: siteFeatureFlags.thirdParty ?? true,
         oss: siteFeatureFlags.oss ?? false,
         // 细粒度开关（从 extraConfig 合并后的 ec 读取）
-        pointsEnabled: ec.pointsEnabled ?? true,
+        pointsEnabled: siteFeatureFlags.points ?? true,
         coursePreviewEnabled: ec.coursePreviewEnabled ?? true,
         lessonProgressEnabled: ec.lessonProgressEnabled ?? true,
         courseEnrollEnabled: ec.courseEnrollEnabled ?? true,
@@ -430,7 +425,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
       // 积分配置
       result.points = {
-        moduleEnabled: ec.pointsEnabled ?? true,
+        moduleEnabled: siteFeatureFlags.points ?? true,
         earnEnabled: true,
         redeemEnabled: ec.redemptionEnabled ?? true,
         signInEnabled: true,
