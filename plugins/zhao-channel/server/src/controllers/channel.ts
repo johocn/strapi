@@ -318,6 +318,30 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     }
   },
 
+  async updateConfig(ctx) {
+    try {
+      const paramParsed = validateOrThrow(channelIdParam, ctx.params, ctx);
+      if (!paramParsed) return;
+      // 校验目标渠道在 scope 内
+      this._assertInScope(ctx, { id: paramParsed.id }, "id");
+      let data = ctx.request.body?.data || ctx.request.body;
+      if (typeof data === "string") {
+        try { data = JSON.parse(data); } catch {
+          ctx.status = 400;
+          ctx.body = { error: "无效的 JSON 数据" };
+          return;
+        }
+      }
+      const cleaned = { extraConfig: data.extraConfig || {} };
+      const service = strapi.plugin("zhao-channel").service("channel");
+      const result = await service.update(paramParsed.id, cleaned);
+      if (!result) { ctx.status = 404; ctx.body = { error: "Channel not found" }; return; }
+      ctx.body = wrap(result);
+    } catch (e: any) {
+      ctx.status = (e as any).status || 400; ctx.body = { error: e.message, code: e.code };
+    }
+  },
+
   async adminDelete(ctx) {
     try {
       const parsed = validateOrThrow(channelIdParam, ctx.params, ctx);

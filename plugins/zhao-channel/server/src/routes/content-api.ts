@@ -93,6 +93,7 @@ export default () => ({
     channelScopeRoute("GET", "/channels/:id", "channel.adminFindOne", "channel.read"),
     channelScopeRoute("POST", "/channels", "channel.adminCreate", "channel.create"),
     channelScopeRoute("PUT", "/channels/:id", "channel.adminUpdate", "channel.update"),
+    channelScopeRoute("PUT", "/channels/:id/config", "channel.updateConfig", "channel.config.update"),
     channelScopeRoute("DELETE", "/channels/:id", "channel.adminDelete", "channel.delete"),
 
     channelScopeRoute("GET", "/channel-members", "channel-member.find", "channel-member.read"),
