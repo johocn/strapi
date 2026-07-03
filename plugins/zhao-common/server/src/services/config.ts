@@ -361,6 +361,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       // sharePath 在 extraConfig 中，合并后写入 site
       sitePublic.sharePath = ec.sharePath ?? "/pages/index/index";
 
+      // 功能开关（粗粒度模块总开关，提前定义供认证配置引用）
+      const siteFeatureFlags = fullConfig?.featureFlags || {};
+
       // 认证配置
       const authMode = ec.authMode ?? "local";
       // 细分开关（任一 true 即视为启用三方登录）
@@ -369,7 +372,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       const wechatOpenPlatformEnabled = ec.wechatOpenPlatformEnabled === true;
       const alipayEnabled = ec.alipayEnabled === true;
       const douyinEnabled = ec.douyinEnabled === true;
-      const thirdPartyEnabled = siteFeatureFlags.thirdParty ?? false;
+      const thirdPartyEnabled = siteFeatureFlags.thirdParty ?? true;
 
       const methods: string[] = ["password", "sms"];
       if (authMode === "third" || thirdPartyEnabled) {
@@ -394,7 +397,6 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       };
 
       // 功能开关（粗粒度模块总开关 + 细粒度）
-      const siteFeatureFlags = fullConfig?.featureFlags || {};
       result.featureFlags = {
         // 粗粒度模块总开关（从 site-config.featureFlags 列读取）
         sso: siteFeatureFlags.sso ?? false,
