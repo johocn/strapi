@@ -132,8 +132,7 @@
     "tags": {
       "type": "relation",
       "relation": "manyToMany",
-      "target": "plugin::zhao-tag.tag",
-      "inversedBy": "courses"
+      "target": "plugin::zhao-tag.tag"
     },
     "lessons": {
       "type": "relation",
