@@ -56,6 +56,12 @@
       "type": "boolean",
       "default": true
     },
+    "indexes": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-tag.tag-index",
+      "mappedBy": "tag"
+    },
     "deletedAt": {
       "type": "datetime",
       "default": null
