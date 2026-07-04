@@ -1,0 +1,59 @@
+{
+  "kind": "collectionType",
+  "collectionName": "zhao_tag_groups",
+  "info": {
+    "singularName": "tag-group",
+    "pluralName": "tag-groups",
+    "displayName": "标签分组"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "slug": {
+      "type": "uid",
+      "targetField": "name",
+      "required": false
+    },
+    "description": {
+      "type": "text"
+    },
+    "color": {
+      "type": "string"
+    },
+    "icon": {
+      "type": "media",
+      "multiple": false
+    },
+    "sort": {
+      "type": "integer",
+      "default": 0
+    },
+    "parent": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-tag.tag-group",
+      "inversedBy": "children"
+    },
+    "children": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-tag.tag-group",
+      "mappedBy": "parent"
+    },
+    "tags": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-tag.tag",
+      "mappedBy": "tagGroup"
+    },
+    "deletedAt": {
+      "type": "datetime",
+      "default": null
+    }
+  }
+}
