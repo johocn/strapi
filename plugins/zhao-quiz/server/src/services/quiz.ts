@@ -34,7 +34,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       strapi.documents(UID).findMany({
         ...query,
         filters: mergedFilters,
-        populate: { course: true, lesson: true, knowledgePoints: true, ...(query.populate || {}) },
+        populate: { course: true, lesson: true, ...(query.populate || {}) },
         pagination: { page, pageSize },
       }),
       strapi.documents(UID).count({ filters: mergedFilters }),
@@ -54,7 +54,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   async findOne(documentId: string) {
     return strapi.documents(UID).findOne({
       documentId,
-      populate: { course: true, lesson: true, knowledgePoints: true },
+      populate: { course: true, lesson: true },
     });
   },
 
@@ -98,14 +98,6 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       ...query,
       filters: { lesson: { documentId: lessonDocumentId }, ...(query.filters || {}) },
       populate: { course: true, lesson: true },
-    });
-  },
-
-  async findByKnowledgePoint(kpDocumentId: string, query: any = {}) {
-    return strapi.documents(UID).findMany({
-      ...query,
-      filters: { knowledgePoints: { documentId: kpDocumentId }, ...(query.filters || {}) },
-      populate: { knowledgePoints: true },
     });
   },
 
