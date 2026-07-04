@@ -42,12 +42,6 @@
       "target": "plugin::zhao-tag.knowledge-point",
       "mappedBy": "parent"
     },
-    "courses": {
-      "type": "relation",
-      "relation": "manyToMany",
-      "target": "plugin::zhao-course.course",
-      "inversedBy": "knowledgePoints"
-    },
     "sort": {
       "type": "integer",
       "default": 0
