@@ -90,8 +90,7 @@
     "tags": {
       "type": "relation",
       "relation": "manyToMany",
-      "target": "plugin::zhao-tag.tag",
-      "inversedBy": "lessons"
+      "target": "plugin::zhao-tag.tag"
     },
     "quizzes": {
       "type": "relation",
