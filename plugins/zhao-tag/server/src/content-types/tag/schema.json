@@ -29,8 +29,11 @@
       "type": "media",
       "multiple": false
     },
-    "group": {
-      "type": "string"
+    "tagGroup": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-tag.tag-group",
+      "inversedBy": "tags"
     },
     "parent": {
       "type": "relation",
