@@ -31,9 +31,6 @@ export default () => ({
     // ===== 公开路由（tag） =====
     publicRoute("GET", "/tags", "tag.find"),
     publicRoute("GET", "/tags/:documentId", "tag.findOne"),
-    // ===== 公开路由（knowledge-point） =====
-    publicRoute("GET", "/knowledge-points", "knowledge-point.find"),
-    publicRoute("GET", "/knowledge-points/:documentId", "knowledge-point.findOne"),
 
     // ===== 管理路由（tag） =====
     channelScopeRoute("GET", "/tags", "tag.find", "tag.read"),
@@ -41,13 +38,6 @@ export default () => ({
     channelScopeRoute("POST", "/tags", "tag.create", "tag.create"),
     channelScopeRoute("PUT", "/tags/:documentId", "tag.update", "tag.update"),
     channelScopeRoute("DELETE", "/tags/:documentId", "tag.delete", "tag.delete"),
-
-    // ===== 管理路由（knowledge-point） =====
-    channelScopeRoute("GET", "/knowledge-points", "knowledge-point.find", "knowledge-point.read"),
-    channelScopeRoute("GET", "/knowledge-points/:documentId", "knowledge-point.findOne", "knowledge-point.read"),
-    channelScopeRoute("POST", "/knowledge-points", "knowledge-point.create", "knowledge-point.create"),
-    channelScopeRoute("PUT", "/knowledge-points/:documentId", "knowledge-point.update", "knowledge-point.update"),
-    channelScopeRoute("DELETE", "/knowledge-points/:documentId", "knowledge-point.delete", "knowledge-point.delete"),
 
     // ===== 公开路由（tag-group） =====
     publicRoute("GET", "/tag-groups", "tag-group.find"),
