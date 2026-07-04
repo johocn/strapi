@@ -75,7 +75,15 @@ const TAG_TO_GROUP = {
         console.log(`[SKIP] tag-group 已存在: "${g.name}" (id=${existing.id})`);
         groupNameToId[g.name] = existing.id;
       } else {
+        // 生成 Strapi v5 风格的 documentId（25 位小写字母数字）
+        const generateDocId = () => {
+          const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+          let id = '';
+          for (let i = 0; i < 25; i++) id += chars.charAt(Math.floor(Math.random() * chars.length));
+          return id;
+        };
         const inserted = await knex('zhao_tag_groups').insert({
+          document_id: generateDocId(),
           name: g.name,
           slug: g.slug,
           description: g.description,

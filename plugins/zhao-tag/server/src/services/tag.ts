@@ -18,14 +18,24 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       const knex = strapi.db.connection;
       let tagGroupId: number | null = null;
 
+      // 解析 $eq 操作符（Strapi v5 filter 语法）
+      const resolveEq = (val: any) => {
+        if (val && typeof val === 'object' && '$eq' in val) return val.$eq;
+        return val;
+      };
+
       if (tagGroupFilter.documentId) {
-        const group = await knex('zhao_tag_groups').where('document_id', tagGroupFilter.documentId).first();
+        const docId = resolveEq(tagGroupFilter.documentId);
+        const group = await knex('zhao_tag_groups').where('document_id', docId).first();
         tagGroupId = group?.id;
       } else if (tagGroupFilter.id) {
-        tagGroupId = Number(tagGroupFilter.id);
-      } else if (tagGroupFilter.slug && tagGroupFilter.slug.$eq) {
-        const group = await knex('zhao_tag_groups').where('slug', tagGroupFilter.slug.$eq).first();
-        tagGroupId = group?.id;
+        tagGroupId = Number(resolveEq(tagGroupFilter.id));
+      } else if (tagGroupFilter.slug) {
+        const slug = resolveEq(tagGroupFilter.slug);
+        if (slug) {
+          const group = await knex('zhao_tag_groups').where('slug', slug).first();
+          tagGroupId = group?.id;
+        }
       }
 
       if (tagGroupId) {
