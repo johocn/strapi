@@ -57,11 +57,6 @@
       "target": "plugin::zhao-course.course-lesson",
       "inversedBy": "quizzes"
     },
-    "knowledgePoints": {
-      "type": "relation",
-      "relation": "manyToMany",
-      "target": "plugin::zhao-tag.knowledge-point"
-    },
     "tags": {
       "type": "relation",
       "relation": "manyToMany",
