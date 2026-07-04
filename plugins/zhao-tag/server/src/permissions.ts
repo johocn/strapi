@@ -26,6 +26,11 @@ export const PERMISSIONS: Record<string, PermissionEntry> = {
   "knowledge-point.delete": { allowRoles: [ROLES.ADMIN, ROLES.CHANNEL_ADMIN, ROLES.PLUGIN_MANAGER] },
 
   "tag-index.read": { allowRoles: [ROLES.ADMIN, ROLES.CHANNEL_ADMIN, ROLES.PLUGIN_MANAGER] },
+
+  "tag-group.read": { allowRoles: [ROLES.ADMIN, ROLES.CHANNEL_ADMIN, ROLES.PLUGIN_MANAGER, ROLES.INSTRUCTOR, ROLES.USER] },
+  "tag-group.create": { allowRoles: [ROLES.ADMIN, ROLES.CHANNEL_ADMIN, ROLES.PLUGIN_MANAGER] },
+  "tag-group.update": { allowRoles: [ROLES.ADMIN, ROLES.CHANNEL_ADMIN, ROLES.PLUGIN_MANAGER] },
+  "tag-group.delete": { allowRoles: [ROLES.ADMIN, ROLES.CHANNEL_ADMIN] },
 };
 
 export default PERMISSIONS;
