@@ -140,11 +140,6 @@
       "target": "plugin::zhao-course.course-lesson",
       "mappedBy": "course"
     },
-    "knowledgePoints": {
-      "type": "relation",
-      "relation": "manyToMany",
-      "target": "plugin::zhao-tag.knowledge-point"
-    },
     "quizzes": {
       "type": "relation",
       "relation": "oneToMany",
