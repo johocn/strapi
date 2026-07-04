@@ -234,10 +234,13 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
     const tenantEc = parseExtraConfig(siteConfig.extraConfig);
     // 历史数据兼容：若 extraConfig 自身又嵌套了 extraConfig 字段（旧保存逻辑 bug），提取内层
+    // 注意：外层为租户最新值，优先；内层为历史脏数据，仅补缺（不能让内层覆盖外层）
     if (tenantEc.extraConfig) {
       const inner = parseExtraConfig(tenantEc.extraConfig);
-      Object.assign(tenantEc, inner);
       delete tenantEc.extraConfig;
+      for (const [k, v] of Object.entries(inner)) {
+        if (!(k in tenantEc) || tenantEc[k] === undefined) tenantEc[k] = v;
+      }
     }
 
     // 没有关联模板或模板被禁用，直接返回租户配置

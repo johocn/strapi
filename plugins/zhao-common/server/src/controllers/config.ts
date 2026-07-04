@@ -391,6 +391,21 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       for (const key of deleteKeys) {
         delete mergedExtra[key];
       }
+      // 清理历史 bug 残留的嵌套 extraConfig（外层为新值，优先；内层为历史脏数据，仅补缺）
+      if (mergedExtra.extraConfig !== undefined) {
+        let inner: Record<string, any> | null = null;
+        if (mergedExtra.extraConfig && typeof mergedExtra.extraConfig === "object" && !Array.isArray(mergedExtra.extraConfig)) {
+          inner = mergedExtra.extraConfig as Record<string, any>;
+        } else if (typeof mergedExtra.extraConfig === "string" && mergedExtra.extraConfig.trim()) {
+          try { inner = JSON.parse(mergedExtra.extraConfig); } catch { inner = null; }
+        }
+        delete mergedExtra.extraConfig;
+        if (inner && typeof inner === "object") {
+          for (const [k, v] of Object.entries(inner)) {
+            if (!(k in mergedExtra) || mergedExtra[k] === undefined) mergedExtra[k] = v;
+          }
+        }
+      }
 
       if (templateService && typeof templateService.getTemplate === "function" && currentConfig) {
         const templateId = currentConfig.template?.documentId ?? currentConfig.template;
@@ -527,6 +542,21 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       const mergedExtra = { ...safeCurrentExtra, ...extraData };
       for (const key of deleteKeys) {
         delete mergedExtra[key];
+      }
+      // 清理历史 bug 残留的嵌套 extraConfig（外层为新值，优先；内层为历史脏数据，仅补缺）
+      if (mergedExtra.extraConfig !== undefined) {
+        let inner: Record<string, any> | null = null;
+        if (mergedExtra.extraConfig && typeof mergedExtra.extraConfig === "object" && !Array.isArray(mergedExtra.extraConfig)) {
+          inner = mergedExtra.extraConfig as Record<string, any>;
+        } else if (typeof mergedExtra.extraConfig === "string" && mergedExtra.extraConfig.trim()) {
+          try { inner = JSON.parse(mergedExtra.extraConfig); } catch { inner = null; }
+        }
+        delete mergedExtra.extraConfig;
+        if (inner && typeof inner === "object") {
+          for (const [k, v] of Object.entries(inner)) {
+            if (!(k in mergedExtra) || mergedExtra[k] === undefined) mergedExtra[k] = v;
+          }
+        }
       }
 
       if (templateService && typeof templateService.getTemplate === "function" && currentConfig) {

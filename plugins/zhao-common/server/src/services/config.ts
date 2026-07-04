@@ -321,14 +321,20 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         try { ec = JSON.parse(rawEc); } catch { ec = {}; }
       }
       // 历史数据兼容：若 ec 自身又嵌套了 extraConfig 字段（旧保存逻辑 bug），提取内层
+      // 注意：外层为租户最新值，优先；内层为历史脏数据，仅补缺（不能让内层覆盖外层）
       if (ec.extraConfig && typeof ec.extraConfig === "object" && !Array.isArray(ec.extraConfig)) {
-        ec = { ...ec, ...ec.extraConfig };
+        const inner = ec.extraConfig as Record<string, any>;
         delete ec.extraConfig;
+        for (const [k, v] of Object.entries(inner)) {
+          if (!(k in ec) || ec[k] === undefined) ec[k] = v;
+        }
       } else if (typeof ec.extraConfig === "string" && ec.extraConfig.trim()) {
         try {
           const inner = JSON.parse(ec.extraConfig);
-          ec = { ...ec, ...inner };
           delete ec.extraConfig;
+          for (const [k, v] of Object.entries(inner)) {
+            if (!(k in ec) || ec[k] === undefined) ec[k] = v;
+          }
         } catch { /* ignore */ }
       }
       if (templateService && typeof templateService.getMergedConfig === "function" && fullConfig) {
