@@ -184,6 +184,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     const { filters, populate, sort, pagination, fields, locale } = query;
     const mergedFilters: any = { ...filters };
     const userChannelIds = channelScope?.channelIds || [];
+    const isAdmin = !!channelScope?.all && !channelScope?.isGuest;
 
     // 渠道过滤策略：
     // 1) 游客（isGuest=true）：仅展示 channelScope="all" 或 (channelScope="specific" + allowCrossChannel=true) 的课程
@@ -205,57 +206,118 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     const page = Number(pagination?.page) || 1;
     const pageSize = Number(pagination?.pageSize) || 25;
 
-    const docParams: any = {
-      filters: mergedFilters,
-      status: publicOnly ? "published" : "draft", // 管理接口查 draft（每门课程都有 draft 版本）；公开接口查 published
-      populate: {
-        category: true,
-        tags: true,
-        cover: true,
-        thumbnail: true,
-        ...(populate || {}),
-      },
-    };
-    if (sort) docParams.sort = sort;
-    docParams.pagination = { page: 1, pageSize: 1000 };
-    if (fields) docParams.fields = fields;
-    if (locale) docParams.locale = locale;
+    let list: any[] = [];
 
-    const [list] = await Promise.all([
-      strapi.documents(UID).findMany(docParams),
-    ]);
+    if (isAdmin) {
+      // admin 查询：直接用 db.query 绕过 D&P 机制，查所有 deleted_at IS NULL 的记录
+      // 每个 document_id 可能有多行（draft + published），优先取 draft 行（published_at IS NULL）
+      const dbWhere: any = { deletedAt: null };
+      // 保留业务 filters（如 title 搜索、status 过滤、category 过滤）
+      if (filters?.title?.$contains) dbWhere.title = { $contains: filters.title.$contains };
+      if (filters?.status) dbWhere.status = filters.status;
+      if (filters?.category?.documentId) {
+        // category 是 manyToOne 关系，需通过 documentId 查 id
+        const cat = await strapi.db.query("plugin::zhao-course.course-category").findOne({
+          where: { documentId: filters.category.documentId },
+          select: ["id"],
+        });
+        if (cat) dbWhere.category = cat.id;
+      }
+
+      const dbQueryParams: any = {
+        where: dbWhere,
+        limit: 1000,
+        orderBy: { id: "asc" },
+      };
+      // populate 关系字段
+      const dbPopulate: string[] = ["category", "tags", "cover", "thumbnail"];
+      if (dbPopulate.length > 0) dbQueryParams.populate = dbPopulate;
+
+      const allRows = await strapi.db.query(UID).findMany(dbQueryParams);
+
+      // 按 document_id 去重，优先保留 draft 行（published_at IS NULL）
+      const docMap = new Map<string, any>();
+      for (const row of allRows) {
+        const docId = row.documentId;
+        const existing = docMap.get(docId);
+        if (!existing) {
+          docMap.set(docId, row);
+        } else {
+          // 已存在，优先保留 published_at IS NULL 的行
+          const existingIsDraft = existing.publishedAt == null;
+          const currentIsDraft = row.publishedAt == null;
+          if (currentIsDraft && !existingIsDraft) {
+            docMap.set(docId, row);
+          }
+        }
+      }
+      list = Array.from(docMap.values());
+    } else {
+      // 非 admin：保留原 documents API 查询逻辑（受 D&P 机制控制）
+      const docParams: any = {
+        filters: mergedFilters,
+        status: publicOnly ? "published" : "draft",
+        populate: {
+          category: true,
+          tags: true,
+          cover: true,
+          thumbnail: true,
+          ...(populate || {}),
+        },
+      };
+      if (sort) docParams.sort = sort;
+      docParams.pagination = { page: 1, pageSize: 1000 };
+      if (fields) docParams.fields = fields;
+      if (locale) docParams.locale = locale;
+
+      list = await strapi.documents(UID).findMany(docParams);
+    }
 
     // 内存中过滤
     let filteredList = list;
     if (channelScope?.isGuest) {
-      // 游客：只显示 all 或 allowCrossChannel=true 的课程
-      filteredList = list.filter(course => 
-        course.channelScope === "all" || 
-        course.channelScope === null || // 兼容旧数据
-        (course.channelScope === "specific" && course.allowCrossChannel === true)
-      );
-    } else if (channelScope && !channelScope.all && userChannelIds.length > 0) {
-      // 登录用户：过滤 channelIds
+      // 游客：显示 all 或 allowCrossChannel=true 或租户渠道的课程
       filteredList = list.filter(course => {
         if (course.channelScope === "all") return true;
         if (course.channelScope === null) return true; // 兼容旧数据
         if (course.channelScope === "specific" && course.allowCrossChannel === true) return true;
-        // 指定渠道且不允许跨渠道：检查用户渠道是否匹配
-        const courseChannelIds = course.channelIds || [];
-        return courseChannelIds.some(cid => userChannelIds.some(uid => String(uid) === String(cid)));
+        // 租户渠道课程
+        if (course.channelScope === "specific") {
+          const courseChannelIds = Array.isArray(course.channelIds) ? course.channelIds : [];
+          return siteChannelId != null && courseChannelIds.some(cid => String(cid) === String(siteChannelId));
+        }
+        return false;
+      });
+    } else if (channelScope && !channelScope.all && userChannelIds.length > 0) {
+      // 登录用户：specific 课程满足以下任一条件即可（OR 关系）：
+      //   1. allowCrossChannel=true（跨渠道课程）
+      //   2. course.channelIds 包含 siteChannelId（租户渠道课程）
+      //   3. course.channelIds 与 userChannelIds 有交集（用户归属渠道课程）
+      filteredList = list.filter(course => {
+        if (course.channelScope === "all") return true;
+        if (course.channelScope === null) return true; // 兼容旧数据
+        if (course.channelScope === "specific" && course.allowCrossChannel === true) return true;
+        // 指定渠道且不允许跨渠道：租户渠道 OR 用户归属渠道
+        const courseChannelIds = Array.isArray(course.channelIds) ? course.channelIds : [];
+        const matchSite = siteChannelId != null && courseChannelIds.some(cid => String(cid) === String(siteChannelId));
+        const matchUser = courseChannelIds.some(cid => userChannelIds.some(uid => String(uid) === String(cid)));
+        return matchSite || matchUser;
       });
     }
 
-    // 站点渠道过滤：admin 全渠道可见，跳过站点过滤
-    if (siteChannelId != null && !(channelScope?.all)) {
-      filteredList = filteredList.filter(course => {
-        if (course.channelScope === "all") return true;
-        if (course.channelScope === null) return true; // 兼容旧数据
-        if (course.channelScope === "specific") {
-          const courseChannelIds = Array.isArray(course.channelIds) ? course.channelIds : [];
-          return courseChannelIds.some(cid => String(cid) === String(siteChannelId));
-        }
-        return false;
+    // 排序
+    if (sort) {
+      const sortField = typeof sort === "string" ? sort : Object.keys(sort)[0];
+      const sortOrder = typeof sort === "string" ? "asc" : (sort[sortField] === "desc" ? "desc" : "asc");
+      filteredList.sort((a: any, b: any) => {
+        const av = a?.[sortField];
+        const bv = b?.[sortField];
+        if (av == null && bv == null) return 0;
+        if (av == null) return sortOrder === "asc" ? -1 : 1;
+        if (bv == null) return sortOrder === "asc" ? 1 : -1;
+        if (av < bv) return sortOrder === "asc" ? -1 : 1;
+        if (av > bv) return sortOrder === "asc" ? 1 : -1;
+        return 0;
       });
     }
 
