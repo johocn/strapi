@@ -469,6 +469,13 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       let channelsTouched = false;
       for (const [key, value] of Object.entries(body)) {
         if (BLOCKED_FIELDS.has(key)) continue;
+        // 防御：前端若传顶层 extraConfig 对象（旧客户端行为），展开为 extraData 字段
+        if (key === "extraConfig" && value && typeof value === "object" && !Array.isArray(value)) {
+          for (const [ek, ev] of Object.entries(value as Record<string, any>)) {
+            extraData[ek] = ev;
+          }
+          continue;
+        }
         if (key === CHANNELS_FIELD) {
           channelsTouched = true;
           if (Array.isArray(value)) {
