@@ -75,14 +75,15 @@ const TAG_TO_GROUP = {
         console.log(`[SKIP] tag-group 已存在: "${g.name}" (id=${existing.id})`);
         groupNameToId[g.name] = existing.id;
       } else {
-        const [id] = await knex('zhao_tag_groups').insert({
+        const inserted = await knex('zhao_tag_groups').insert({
           name: g.name,
           slug: g.slug,
           description: g.description,
           sort: 0,
           created_at: new Date(),
           updated_at: new Date(),
-        });
+        }).returning('id');
+        const id = Array.isArray(inserted) ? (typeof inserted[0] === 'object' ? inserted[0].id : inserted[0]) : inserted;
         console.log(`[OK] 创建 tag-group: "${g.name}" (id=${id}, slug=${g.slug})`);
         groupNameToId[g.name] = id;
       }

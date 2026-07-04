@@ -56,7 +56,7 @@ require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
         console.log(`[SKIP] tag 已存在: "${kp.name}" (id=${existingTag.id})`);
         kpIdToTagId[kp.id] = existingTag.id;
       } else {
-        const [tagId] = await knex('zhao_tags').insert({
+        const inserted = await knex('zhao_tags').insert({
           document_id: kp.document_id,
           name: kp.name,
           slug: null,
@@ -64,7 +64,8 @@ require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
           sort: kp.sort || 0,
           created_at: new Date(),
           updated_at: new Date(),
-        });
+        }).returning('id');
+        const tagId = Array.isArray(inserted) ? (typeof inserted[0] === 'object' ? inserted[0].id : inserted[0]) : inserted;
         console.log(`[OK] 创建 tag: "${kp.name}" (id=${tagId})`);
         kpIdToTagId[kp.id] = tagId;
       }
