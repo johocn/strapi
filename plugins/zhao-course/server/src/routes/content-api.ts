@@ -43,8 +43,6 @@ export default () => ({
     publicRoute("GET", "/courses/:documentId", "course.findOne"),
     publicRoute("GET", "/course-categories", "course-category.find"),
     publicRoute("GET", "/course-categories/:documentId", "course-category.findOne"),
-    publicRoute("GET", "/knowledge-points", "knowledge-point.find"),
-    publicRoute("GET", "/knowledge-points/:documentId", "knowledge-point.findOne"),
     publicRoute("GET", "/course-lessons", "course-lesson.find"),
     publicRoute("GET", "/course-lessons/:documentId", "course-lesson.findOne"),
     publicRoute("GET", "/lessons", "course-lesson.find"),
@@ -75,12 +73,6 @@ export default () => ({
     channelScopeRoute("POST", "/course-categories", "course-category.create", "course-category.create"),
     channelScopeRoute("PUT", "/course-categories/:documentId", "course-category.update", "course-category.update"),
     channelScopeRoute("DELETE", "/course-categories/:documentId", "course-category.delete", "course-category.delete"),
-
-    channelScopeRoute("GET", "/knowledge-points", "knowledge-point.find", "knowledge-point.read"),
-    channelScopeRoute("GET", "/knowledge-points/:documentId", "knowledge-point.findOne", "knowledge-point.read"),
-    channelScopeRoute("POST", "/knowledge-points", "knowledge-point.create", "knowledge-point.create"),
-    channelScopeRoute("PUT", "/knowledge-points/:documentId", "knowledge-point.update", "knowledge-point.update"),
-    channelScopeRoute("DELETE", "/knowledge-points/:documentId", "knowledge-point.delete", "knowledge-point.delete"),
 
     channelScopeRoute("GET", "/course-lessons", "course-lesson.find", "lesson.read"),
     channelScopeRoute("GET", "/course-lessons/:documentId", "course-lesson.findOne", "lesson.read"),
