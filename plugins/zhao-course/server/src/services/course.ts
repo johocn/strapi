@@ -108,7 +108,6 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         cover: true,
         thumbnail: true,
         lessons: true,
-        knowledgePoints: true,
       },
     });
   };
@@ -130,7 +129,6 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         cover: true,
         thumbnail: true,
         lessons: true,
-        knowledgePoints: true,
       },
     });
   };
@@ -344,7 +342,6 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         cover: true,
         thumbnail: true,
         lessons: true,
-        knowledgePoints: true,
         pointChannel: true,
       },
     };
@@ -373,7 +370,6 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         cover: true,
         thumbnail: true,
         lessons: true,
-        knowledgePoints: true,
       },
     });
     if (needPublish && result?.documentId) {
@@ -410,28 +406,6 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       }
     }
     
-    // 验证 knowledgePoints 中的 documentId 是否存在
-    if (Array.isArray(data.knowledgePoints) && data.knowledgePoints.length > 0) {
-      const kpIds = data.knowledgePoints.map((kp: any) => kp.documentId || kp.id).filter(Boolean);
-      const existingKps = await strapi.documents("plugin::zhao-tag.knowledge-point").findMany({
-        filters: { documentId: { $in: kpIds } },
-        fields: ["documentId"],
-      });
-      const existingKpIds = new Set(existingKps.map((kp: any) => kp.documentId));
-      const missingIds = kpIds.filter(id => !existingKpIds.has(id));
-      if (missingIds.length > 0) {
-        const err: any = new Error(`知识点不存在: ${missingIds.join(', ')}`);
-        err.code = "COURSE_002";
-        err.status = 400;
-        throw err;
-      }
-    }
-    
-    // 处理 knowledgePoints：如果是空数组，删除它以避免 Strapi 处理问题
-    if (Array.isArray(data.knowledgePoints) && data.knowledgePoints.length === 0) {
-      delete data.knowledgePoints;
-    }
-    
     const cleaned = cleanDateFields(data);
     const needPublish = cleaned.status === "published";
     const result = await strapi.documents(UID).update({
@@ -443,7 +417,6 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         cover: true,
         thumbnail: true,
         lessons: true,
-        knowledgePoints: true,
       },
     });
     if (needPublish && result?.documentId) {
