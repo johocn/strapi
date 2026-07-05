@@ -384,8 +384,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     return result;
   },
 
-  async create(data: any) {
-    validateChannelConfig(data, strapi, undefined);
+  async create(data: any, options?: { siteId?: string }) {
+    validateChannelConfig(data, strapi, options?.siteId);
     
     // 转换 pointChannel 格式：数字 -> 对象格式
     if (data.pointChannel != null && typeof data.pointChannel !== 'object') {
@@ -413,8 +413,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     return result;
   },
 
-  async update(documentId: string, data: any) {
-    validateChannelConfig(data, strapi, undefined);
+  async update(documentId: string, data: any, options?: { siteId?: string }) {
+    validateChannelConfig(data, strapi, options?.siteId);
     
     // 转换 pointChannel 格式：数字 -> 对象格式
     if (data.pointChannel != null && typeof data.pointChannel !== 'object') {
