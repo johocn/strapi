@@ -98,6 +98,12 @@
     "themeConfig": {
       "type": "json",
       "default": "{}"
+    },
+    "channelUsage": {
+      "type": "enumeration",
+      "enum": ["site_only", "site_and_cross", "site_cross_user"],
+      "default": "site_cross_user",
+      "required": true
     }
   }
 }
