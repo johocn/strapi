@@ -106,4 +106,58 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     if (config.shareImage) result.shareImage = config.shareImage;
     return result;
   },
+
+  /**
+   * 获取用户可访问渠道（site channels ∪ user direct channels，按 numeric id 去重）
+   * 跨插件复用：zhao-point getProducts 等场景调用
+   * @param siteId site-config documentId
+   * @param userId 用户 id
+   * @returns 渠道列表 [{ id, documentId, name }]
+   */
+  async getAvailableChannels(siteId?: string, userId?: string | number) {
+    const siteChannels: any[] = [];
+    if (siteId) {
+      const siteConfig: any = await this.getConfig(siteId);
+      if (siteConfig?.channels && Array.isArray(siteConfig.channels)) {
+        for (const ch of siteConfig.channels) {
+          siteChannels.push({
+            id: ch.id,
+            documentId: ch.documentId,
+            name: ch.name,
+          });
+        }
+      }
+    }
+
+    const userChannels: any[] = [];
+    if (userId) {
+      const channelPermissionService = strapi.plugin("zhao-channel")?.service("channel-permission");
+      if (channelPermissionService && typeof channelPermissionService.getUserDirectChannels === "function") {
+        const userChannelIds = await channelPermissionService.getUserDirectChannels(userId);
+        if (Array.isArray(userChannelIds)) {
+          const channels = await strapi.db.query("plugin::zhao-channel.channel").findMany({
+            where: { id: { $in: userChannelIds } },
+            select: ["id", "documentId", "name"],
+          });
+          for (const ch of channels) {
+            userChannels.push({
+              id: ch.id,
+              documentId: ch.documentId,
+              name: ch.name,
+            });
+          }
+        }
+      }
+    }
+
+    // 合并去重（按 numeric id）
+    const merged = new Map();
+    for (const ch of [...siteChannels, ...userChannels]) {
+      const key = String(ch.id);
+      if (!merged.has(key)) {
+        merged.set(key, ch);
+      }
+    }
+    return Array.from(merged.values());
+  },
 });
