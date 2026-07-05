@@ -152,6 +152,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   async listProducts(ctx: any) {
     try {
       const userId = ctx.state.user?.id;
+      const siteId = ctx.state?.siteId;
       const { status, deliveryType, page, pageSize } = ctx.query;
       const result = await strapi.plugin("zhao-point").service("redemption").getProducts({
         status: status || "on_shelf",
@@ -159,6 +160,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         page: page ? parseInt(page) : 1,
         pageSize: pageSize ? parseInt(pageSize) : 20,
         userId,
+        siteId,
       });
       ctx.body = wrapList(result);
     } catch (e: any) {

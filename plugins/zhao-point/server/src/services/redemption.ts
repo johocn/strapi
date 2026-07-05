@@ -104,9 +104,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     page?: number;
     pageSize?: number;
     userId?: string | number;
+    siteId?: string;
     extraWhere?: Record<string, any>;
   }) => {
-    const { status, deliveryType, name, page = 1, pageSize = 20, userId, extraWhere } = filters || {};
+    const { status, deliveryType, name, page = 1, pageSize = 20, userId, siteId, extraWhere } = filters || {};
     const where: any = { deletedAt: null, status: status || "on_shelf" };
     if (deliveryType) where.deliveryType = deliveryType;
     if (name) where.name = { $containsi: name };
@@ -114,21 +115,33 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       Object.assign(where, extraWhere);
     }
 
-    // 如果传入了 userId，按渠道过滤商品
-    if (userId) {
+    // 使用 zhao-common available channels（site ∪ user）过滤
+    if (userId && siteId) {
+      const availableChannels = await strapi.plugin("zhao-common").service("site-config").getAvailableChannels(siteId, userId);
+      const channelIds = availableChannels.map((c: any) => c.id).filter(Boolean);
+
+      if (channelIds.length > 0) {
+        where.$or = [
+          { channel: { $in: channelIds } },
+          { allowCrossChannel: true },
+        ];
+      } else {
+        // 用户与站点皆无渠道，仅看跨渠道商品
+        where.allowCrossChannel = true;
+      }
+    } else if (userId) {
+      // 无 siteId 兜底：退回 user channels 查询
       const members = await strapi.db.query(CHANNEL_MEMBER_UID).findMany({
         where: { user: userId },
         populate: { channel: { select: ['id'] } },
       });
       const userChannelIds = members.map((m: any) => m.channel?.id || m.channel).filter(Boolean);
-
       if (userChannelIds.length > 0) {
         where.$or = [
           { channel: { $in: userChannelIds } },
           { allowCrossChannel: true },
         ];
       } else {
-        // 用户没有渠道归属，只看跨渠道商品
         where.allowCrossChannel = true;
       }
     }
