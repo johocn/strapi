@@ -16,11 +16,19 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       fields?: string[];
       populate?: any;
     } = {},
-    channelScope?: { all: boolean; channelIds: number[]; isGuest?: boolean }
+    ctxState?: {
+      channelScope?: { all: boolean; channelIds: number[]; isGuest?: boolean };
+      mergedChannelIds: number[];
+      siteChannelIds: number[];
+      crossChannelEnabled: boolean;
+    }
   ) {
+    const channelScope = ctxState?.channelScope;
+    const mergedChannelIds = ctxState?.mergedChannelIds || [];
+    const siteChannelIds = ctxState?.siteChannelIds || [];
+    const crossChannelEnabled = ctxState?.crossChannelEnabled ?? true;
     const page = Number(query.pagination?.page) || 1;
     const pageSize = Number(query.pagination?.pageSize) || 25;
-    const userChannelIds = channelScope?.channelIds || [];
 
     // 先获取所有数据
     const [list] = await Promise.all([
@@ -31,30 +39,24 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       }),
     ]);
 
-    // 内存中过滤：根据用户类型和渠道权限
+    // 内存中过滤：统一公式
     let filteredList = list;
-    // 如果没有 channelScope 或 channelScope 无效，按游客处理
-    const isGuest = !channelScope || channelScope.isGuest || (!channelScope.all && !channelScope.channelIds?.length);
+    const isGuest = !channelScope || channelScope.isGuest === true
+      || (!channelScope.all && !(channelScope.channelIds?.length));
     if (!channelScope?.all) {
+      // mergedChannelIds 计算：游客退化为 siteChannelIds
+      const effectiveMergedIds = isGuest ? siteChannelIds : mergedChannelIds;
       filteredList = list.filter((category: any) => {
-        // 全渠道分类：所有人可见
         if (category.channelScope === "all") return true;
-        // 兼容旧数据：无渠道配置的分类可见
         if (category.channelScope === null) return true;
-        
-        // 指定渠道分类
         if (category.channelScope === "specific") {
-          // 游客：只显示允许跨渠道访问的分类
-          if (isGuest) {
-            return category.allowCrossChannel === true;
-          }
-          // 登录用户：检查渠道权限
+          if (crossChannelEnabled && category.allowCrossChannel === true) return true;
           const categoryChannelIds = category.channelIds || [];
           return categoryChannelIds.some((cid: any) =>
-            userChannelIds.some((uid: any) => String(uid) === String(cid))
+            effectiveMergedIds.some((mid: number) => String(mid) === String(cid))
           );
         }
-        return true;
+        return false;
       });
     }
 
