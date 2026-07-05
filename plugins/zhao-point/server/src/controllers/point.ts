@@ -204,8 +204,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
           },
           select: ['id'],
         });
-        if (ch) where.channels = ch.id;
-        else where.channels = -1; // 无匹配，返回空
+        if (ch) where.channels = { id: ch.id };
+        else where.channels = { id: -1 }; // 无匹配，返回空
       }
 
       const [records, total] = await Promise.all([
