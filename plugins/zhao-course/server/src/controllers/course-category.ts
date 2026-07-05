@@ -20,7 +20,14 @@ const wrapList = (result: any) => {
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async find(ctx: any) {
     try {
-      ctx.body = wrapList(await strapi.plugin("zhao-course").service("course-category").find(ctx.query, ctx.state.channelScope));
+      const channelScope = ctx.state.channelScope
+        || { all: true, channelIds: [], isGuest: true };
+      ctx.body = wrapList(await strapi.plugin("zhao-course").service("course-category").find(ctx.query, {
+        channelScope,
+        mergedChannelIds: ctx.state.mergedChannelIds || [],
+        siteChannelIds: ctx.state.siteChannelIds || [],
+        crossChannelEnabled: ctx.state.crossChannelEnabled ?? true,
+      }));
     } catch (err) {
       ctx.status = (err as any).status || 400; ctx.body = { error: (err as Error).message }; return;
     }
@@ -45,11 +52,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
           ctx.body = wrap(result);
           return;
         }
-        // 指定渠道且不允许跨渠道：检查用户渠道权限
+        // 指定渠道且不允许跨渠道：检查 mergedChannelIds 交集
         if (ch.channelScope === "specific" && ch.allowCrossChannel === false) {
-          const userChannelIds = ctx.state.channelScope?.channelIds || [];
+          const mergedChannelIds = ctx.state.mergedChannelIds || ctx.state.channelScope?.channelIds || [];
           const categoryChannelIds = Array.isArray(ch.channelIds) ? ch.channelIds : [];
-          const hasAccess = userChannelIds.some(uid => categoryChannelIds.some(cid => String(uid) === String(cid)));
+          const hasAccess = mergedChannelIds.some((mid: any) => categoryChannelIds.some(cid => String(mid) === String(cid)));
           if (!hasAccess) {
             ctx.status = 403;
             ctx.body = { error: "无权访问此分类" };
@@ -67,7 +74,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async create(ctx: any) {
     try {
       const data = ctx.request.body?.data || ctx.request.body;
-      const result = await strapi.plugin("zhao-course").service("course-category").create(data);
+      const result = await strapi.plugin("zhao-course").service("course-category").create(data, { siteId: ctx.state?.siteId });
       ctx.status = 201;
       ctx.body = wrap(result);
     } catch (err) {
@@ -79,7 +86,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     try {
       const { documentId } = ctx.params;
       const data = ctx.request.body?.data || ctx.request.body;
-      ctx.body = wrap(await strapi.plugin("zhao-course").service("course-category").update(documentId, data));
+      ctx.body = wrap(await strapi.plugin("zhao-course").service("course-category").update(documentId, data, { siteId: ctx.state?.siteId }));
     } catch (err) {
       ctx.status = (err as any).status || 400; ctx.body = { error: (err as Error).message }; return;
     }
