@@ -24,7 +24,7 @@ function cleanDateFields(data: any) {
  * - channelScope="all" 时 pointChannel 应清空（归一化）
  * - 抛 COURSE_001 阻断异常数据
  */
-function validateChannelConfig(data: any) {
+async function validateChannelConfig(data: any, strapi: any, siteId?: string) {
   const scope = data.channelScope;
   if (scope === "specific") {
     const ids = data.channelIds;
@@ -65,6 +65,30 @@ function validateChannelConfig(data: any) {
   if (scope === "all") {
     data.channelIds = [];
     data.pointChannel = null;
+  }
+
+  // 跨渠道功能开关校验：site_only 模式下不允许 allowCrossChannel=true
+  if (data.allowCrossChannel === true) {
+    const channelUsage = await getSiteChannelUsage(strapi, siteId);
+    if (channelUsage === 'site_only') {
+      const err: any = new Error('当前租户未开启跨渠道功能，不允许设置 allowCrossChannel=true');
+      err.code = 'COURSE_003';
+      err.status = 400;
+      throw err;
+    }
+  }
+}
+
+async function getSiteChannelUsage(strapi: any, siteId?: string): Promise<string> {
+  if (!siteId) return 'site_cross_user';
+  try {
+    const site = await strapi.db.query('plugin::zhao-common.site-config').findOne({
+      where: { documentId: siteId },
+      select: ['channelUsage'],
+    });
+    return site?.channelUsage || 'site_cross_user';
+  } catch {
+    return 'site_cross_user';
   }
 }
 
@@ -361,7 +385,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   },
 
   async create(data: any) {
-    validateChannelConfig(data);
+    validateChannelConfig(data, strapi, undefined);
     
     // 转换 pointChannel 格式：数字 -> 对象格式
     if (data.pointChannel != null && typeof data.pointChannel !== 'object') {
@@ -390,7 +414,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   },
 
   async update(documentId: string, data: any) {
-    validateChannelConfig(data);
+    validateChannelConfig(data, strapi, undefined);
     
     // 转换 pointChannel 格式：数字 -> 对象格式
     if (data.pointChannel != null && typeof data.pointChannel !== 'object') {
