@@ -178,10 +178,18 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     }
     return invalid;
   },
-  async find(query: any = {}, publicOnly: boolean = false, channelScope?: { all: boolean; channelIds: number[]; isGuest?: boolean }, siteChannelId?: number | string) {
+  async find(query: any = {}, publicOnly: boolean = false, ctxState?: {
+    channelScope?: { all: boolean; channelIds: number[]; isGuest?: boolean };
+    mergedChannelIds: number[];
+    siteChannelIds: number[];
+    crossChannelEnabled: boolean;
+  }) {
     const { filters, populate, sort, pagination, fields, locale } = query;
     const mergedFilters: any = { ...filters };
-    const userChannelIds = channelScope?.channelIds || [];
+    const channelScope = ctxState?.channelScope;
+    const mergedChannelIds = ctxState?.mergedChannelIds || [];
+    const siteChannelIds = ctxState?.siteChannelIds || [];
+    const crossChannelEnabled = ctxState?.crossChannelEnabled ?? true;
     const isAdmin = !!channelScope?.all && !channelScope?.isGuest;
 
     // 渠道过滤策略：
@@ -274,32 +282,32 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     // 内存中过滤
     let filteredList = list;
     if (channelScope?.isGuest) {
-      // 游客：显示 all 或 allowCrossChannel=true 或租户渠道的课程
+      // 游客：mergedChannelIds 退化为 siteChannelIds（无 userChannelIds）
+      const guestMergedIds = crossChannelEnabled ? siteChannelIds : siteChannelIds;
       filteredList = list.filter(course => {
         if (course.channelScope === "all") return true;
-        if (course.channelScope === null) return true; // 兼容旧数据
-        if (course.channelScope === "specific" && course.allowCrossChannel === true) return true;
-        // 租户渠道课程
+        if (course.channelScope === null) return true;
+        if (crossChannelEnabled && course.channelScope === "specific" && course.allowCrossChannel === true) return true;
         if (course.channelScope === "specific") {
           const courseChannelIds = Array.isArray(course.channelIds) ? course.channelIds : [];
-          return siteChannelId != null && courseChannelIds.some(cid => String(cid) === String(siteChannelId));
+          return courseChannelIds.some(cid => guestMergedIds.some(mid => String(mid) === String(cid)));
         }
         return false;
       });
-    } else if (channelScope && !channelScope.all && userChannelIds.length > 0) {
-      // 登录用户：specific 课程满足以下任一条件即可（OR 关系）：
-      //   1. allowCrossChannel=true（跨渠道课程）
-      //   2. course.channelIds 包含 siteChannelId（租户渠道课程）
-      //   3. course.channelIds 与 userChannelIds 有交集（用户归属渠道课程）
+    } else if (channelScope && !channelScope.all) {
+      // 登录用户：统一过滤公式
+      // 1. channelScope=all → 可见
+      // 2. crossChannelEnabled && allowCrossChannel=true → 可见
+      // 3. specific && channelIds ∩ mergedChannelIds 非空 → 可见
       filteredList = list.filter(course => {
         if (course.channelScope === "all") return true;
-        if (course.channelScope === null) return true; // 兼容旧数据
-        if (course.channelScope === "specific" && course.allowCrossChannel === true) return true;
-        // 指定渠道且不允许跨渠道：租户渠道 OR 用户归属渠道
-        const courseChannelIds = Array.isArray(course.channelIds) ? course.channelIds : [];
-        const matchSite = siteChannelId != null && courseChannelIds.some(cid => String(cid) === String(siteChannelId));
-        const matchUser = courseChannelIds.some(cid => userChannelIds.some(uid => String(uid) === String(cid)));
-        return matchSite || matchUser;
+        if (course.channelScope === null) return true;
+        if (crossChannelEnabled && course.channelScope === "specific" && course.allowCrossChannel === true) return true;
+        if (course.channelScope === "specific") {
+          const courseChannelIds = Array.isArray(course.channelIds) ? course.channelIds : [];
+          return courseChannelIds.some(cid => mergedChannelIds.some(mid => String(mid) === String(cid)));
+        }
+        return false;
       });
     }
 
