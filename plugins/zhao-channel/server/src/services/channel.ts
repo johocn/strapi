@@ -36,6 +36,7 @@ function formatChannel(channel: any) {
   if (!channel) return null;
   return {
     id: channel.id,
+    documentId: channel.documentId,
     attributes: {
       name: channel.name,
       code: channel.code,
