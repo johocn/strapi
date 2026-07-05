@@ -94,7 +94,17 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       if (!product) throwError("POINT_013", "商品不存在");
       numericId = product.id;
     }
-    return await strapi.db.query(PRODUCT_UID).update({ where: { id: numericId }, data });
+    await strapi.db.query(PRODUCT_UID).update({ where: { id: numericId }, data });
+    // 二次查询 populate channel 等关联字段返回
+    return await strapi.db.query(PRODUCT_UID).findOne({
+      where: { id: numericId },
+      populate: {
+        channel: { select: ['id', 'documentId', 'name'] },
+        coverImage: true,
+        images: true,
+        video: true,
+      },
+    });
   };
 
   const deleteProduct = async (id: string | number) => {
