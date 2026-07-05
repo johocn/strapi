@@ -242,25 +242,46 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     });
     const channelIds: any[] = Array.isArray(course?.channelIds) ? course.channelIds : [];
     const pointChannelId = course?.pointChannel?.id ?? course?.pointChannel ?? null;
-    let finalChannelId: number | string | null = selectedChannelId ?? pointChannelId;
+    const finalChannelRaw: number | string | null = selectedChannelId ?? pointChannelId;
 
     // 必传校验：selectedChannelId 与 pointChannelId 都为空时报错
-    if (!finalChannelId) {
+    if (!finalChannelRaw) {
       const e: any = new Error("必须选择积分充值渠道");
       e.code = "QUIZ_020";
       e.status = 400;
       throw e;
     }
 
-    // specific 模式：校验 finalChannelId ∈ channelIds
-    if (course?.channelScope === "specific" && finalChannelId) {
-      const inScope = channelIds.some((id: any) => String(id) === String(finalChannelId));
+    // specific 模式：基于字符串/documentId 比对 finalChannelRaw ∈ channelIds
+    if (course?.channelScope === "specific" && finalChannelRaw) {
+      const inScope = channelIds.some((id: any) => String(id) === String(finalChannelRaw));
       if (!inScope) {
         const e: any = new Error("所选渠道不在课程所属渠道范围内");
         e.code = "QUIZ_018";
         e.status = 400;
         throw e;
       }
+    }
+
+    // documentId → numeric id 转换（参考 redemption.ts:322-335 范式）
+    const resolveChannelNumericId = async (channelId: number | string): Promise<number | null> => {
+      const ch = await strapi.db.query("plugin::zhao-channel.channel").findOne({
+        where: {
+          $or: [
+            { id: !isNaN(Number(channelId)) ? Number(channelId) : -1 },
+            { documentId: String(channelId) },
+          ],
+        },
+        select: ['id'],
+      });
+      return ch?.id ?? null;
+    };
+    const finalChannelId = await resolveChannelNumericId(finalChannelRaw);
+    if (!finalChannelId) {
+      const e: any = new Error("所选渠道不存在");
+      e.code = "QUIZ_021";
+      e.status = 400;
+      throw e;
     }
 
     // 用户当前渠道
@@ -285,7 +306,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
           points: totalPoints,
           source: dedupeSource,
           remark: `答题获得${totalPoints}积分`,
-          channelId: finalChannelId ?? undefined,
+          channelId: finalChannelId,
           userChannelId: userChannelId ?? undefined,
         } as any);
       }

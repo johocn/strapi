@@ -20,6 +20,7 @@ const register = ({ strapi }: { strapi: Core.Strapi }) => {
       QUIZ_016: "课时不存在",
       QUIZ_017: "请先完成课时内容再答题",
       QUIZ_020: "必须选择积分充值渠道",
+      QUIZ_021: "所选渠道不存在",
     });
   } catch {
     // zhao-common 插件未启用时静默忽略
