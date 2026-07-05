@@ -2,6 +2,31 @@ import type { Core } from "@strapi/strapi";
 
 const UID = "plugin::zhao-course.course-category";
 
+async function getSiteChannelUsage(strapi: any, siteId?: string): Promise<string> {
+  if (!siteId) return 'site_cross_user';
+  try {
+    const site = await strapi.db.query('plugin::zhao-common.site-config').findOne({
+      where: { documentId: siteId },
+      select: ['channelUsage'],
+    });
+    return site?.channelUsage || 'site_cross_user';
+  } catch {
+    return 'site_cross_user';
+  }
+}
+
+async function validateCategoryChannelConfig(data: any, strapi: any, siteId?: string) {
+  if (data.allowCrossChannel === true) {
+    const channelUsage = await getSiteChannelUsage(strapi, siteId);
+    if (channelUsage === 'site_only') {
+      const err: any = new Error('当前租户未开启跨渠道功能，不允许设置 allowCrossChannel=true');
+      err.code = 'COURSE_003';
+      err.status = 400;
+      throw err;
+    }
+  }
+}
+
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
   /**
    * 查询分类列表（支持渠道过滤和分页）
@@ -74,11 +99,13 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     return strapi.documents(UID).findOne({ documentId, ...params });
   },
 
-  async create(data: Record<string, any>) {
+  async create(data: Record<string, any>, options?: { siteId?: string }) {
+    await validateCategoryChannelConfig(data, strapi, options?.siteId);
     return strapi.documents(UID).create({ data });
   },
 
-  async update(documentId: string, data: Record<string, any>) {
+  async update(documentId: string, data: Record<string, any>, options?: { siteId?: string }) {
+    await validateCategoryChannelConfig(data, strapi, options?.siteId);
     return strapi.documents(UID).update({ documentId, data });
   },
 
