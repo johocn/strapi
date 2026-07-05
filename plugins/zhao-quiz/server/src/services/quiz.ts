@@ -244,6 +244,14 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     const pointChannelId = course?.pointChannel?.id ?? course?.pointChannel ?? null;
     let finalChannelId: number | string | null = selectedChannelId ?? pointChannelId;
 
+    // 必传校验：selectedChannelId 与 pointChannelId 都为空时报错
+    if (!finalChannelId) {
+      const e: any = new Error("必须选择积分充值渠道");
+      e.code = "QUIZ_020";
+      e.status = 400;
+      throw e;
+    }
+
     // specific 模式：校验 finalChannelId ∈ channelIds
     if (course?.channelScope === "specific" && finalChannelId) {
       const inScope = channelIds.some((id: any) => String(id) === String(finalChannelId));
@@ -261,7 +269,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       const channelMemberService = strapi.plugin("zhao-channel")?.service("channel-member");
       if (channelMemberService?.getMyChannel) {
         const myCh = await channelMemberService.getMyChannel(userId);
-        userChannelId = myCh?.id ?? null;
+        userChannelId = myCh?.channel?.id ?? null;
       }
     } catch {
       // ignore
