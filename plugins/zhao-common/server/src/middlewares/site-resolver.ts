@@ -52,7 +52,7 @@ const siteResolver: Core.MiddlewareFactory = (config, { strapi }) => {
         if (Array.isArray(records) && records.length > 0) {
           const site = records[0];
           ctx.state.siteId = site.documentId;
-          ctx.state.siteChannelId = (site as any).channels?.[0]?.documentId ?? null;
+          // siteChannelIds 数组由 resolve-channel-scope 策略统一注入
         }
       }
     } catch (error) {
