@@ -584,13 +584,19 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
             return ch?.id;
           })
         );
-        data.channels = channelIds.filter(Boolean);
+        // 去重：避免 documentId 与 numeric id 混合传参指向同一渠道导致重复写入
+        data.channels = [...new Set(channelIds.filter(Boolean))];
       }
       // 解析 coverImage / businessLicense：可能是文件 id 或 media 对象
       if (data.coverImage && typeof data.coverImage !== 'number') data.coverImage = Number(data.coverImage) || undefined;
       if (data.businessLicense && typeof data.businessLicense !== 'number') data.businessLicense = Number(data.businessLicense) || undefined;
       const location = await strapi.db.query(LOCATION_UID).create({ data });
-      ctx.body = { data: location };
+      // 二次查询 populate channels 返回，保证响应体含渠道关系
+      const populated = await strapi.db.query(LOCATION_UID).findOne({
+        where: { documentId: location.documentId },
+        populate: { coverImage: true, businessLicense: true, channels: { select: ['id', 'documentId', 'name'] } },
+      });
+      ctx.body = { data: populated };
     } catch (e: any) {
       ctx.status = (e as any).status || 400; ctx.body = { error: e.message }; return;
     }
