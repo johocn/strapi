@@ -10,6 +10,19 @@ const publicRoute = (method: Method, path: string, handler: string) => ({
   },
 });
 
+const publicChannelScopeRoute = (method: Method, path: string, handler: string) => ({
+  method,
+  path: `/v1${path}`,
+  handler,
+  config: {
+    auth: false,
+    policies: [
+      "plugin::zhao-auth.has-channel-scope",
+      "plugin::zhao-common.resolve-channel-scope",
+    ],
+  },
+});
+
 const userRoute = (method: Method, path: string, handler: string) => ({
   method,
   path: `/v1${path}`,
@@ -39,10 +52,10 @@ export default () => ({
   type: "content-api" as const,
   routes: [
     // ===== 公开路由 =====
-    publicRoute("GET", "/courses", "course.find"),
-    publicRoute("GET", "/courses/:documentId", "course.findOne"),
-    publicRoute("GET", "/course-categories", "course-category.find"),
-    publicRoute("GET", "/course-categories/:documentId", "course-category.findOne"),
+    publicChannelScopeRoute("GET", "/courses", "course.find"),
+    publicChannelScopeRoute("GET", "/courses/:documentId", "course.findOne"),
+    publicChannelScopeRoute("GET", "/course-categories", "course-category.find"),
+    publicChannelScopeRoute("GET", "/course-categories/:documentId", "course-category.findOne"),
     publicRoute("GET", "/course-lessons", "course-lesson.find"),
     publicRoute("GET", "/course-lessons/:documentId", "course-lesson.findOne"),
     publicRoute("GET", "/lessons", "course-lesson.find"),
