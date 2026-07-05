@@ -300,6 +300,80 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   },
 
   /**
+   * 获取用户直接关联的渠道（不扩展子树）
+   * 与 getUserAllChannels 的差异：不调用 getDescendantIdsByPath，仅返回三源直接关联的渠道 id
+   * 适用场景：/channels/available 等仅需直接渠道的端点
+   * 不走 Redis 缓存，直接查 DB
+   */
+  async getUserDirectChannels(userId: number): Promise<number[]> {
+    const channelIds = new Set<number>();
+
+    // 源 1：user-channel 表（直接授权）
+    const userChannels = await strapi.db.query(USER_CHANNEL_UID).findMany({
+      where: { user: userId },
+      populate: ["channel"],
+    });
+    for (const uc of userChannels) {
+      if (uc.channel) {
+        const cid = uc.channel.id || uc.channel;
+        channelIds.add(cid);
+      }
+    }
+
+    // 源 2：role-channel 表（角色授权）；admin 返回全部渠道
+    const user = await strapi.db.query(USER_UID).findOne({
+      where: { id: userId },
+      select: ["id", "zhaoRoles"],
+      populate: ["role"],
+    });
+
+    if (user) {
+      let roleNames: string[] = [];
+      const zhaoRoles = (user as any).zhaoRoles;
+      if (Array.isArray(zhaoRoles) && zhaoRoles.length > 0) {
+        roleNames = zhaoRoles.filter((r: any) => typeof r === "string");
+      } else if ((user as any).role?.type) {
+        roleNames = [(user as any).role.type];
+      }
+
+      if (roleNames.includes("admin")) {
+        const allChannels = await strapi.db.query("plugin::zhao-channel.channel").findMany({
+          select: ["id"],
+        });
+        for (const ch of allChannels) {
+          const cid = (ch as any).id;
+          if (cid) channelIds.add(cid);
+        }
+      } else {
+        for (const roleName of roleNames) {
+          const roleChannels = await strapi.db.query(ROLE_CHANNEL_UID).findMany({
+            where: { role: roleName },
+            populate: ["channel"],
+          });
+          for (const rc of roleChannels) {
+            if ((rc as any).channel) {
+              const cid = (rc as any).channel.id || (rc as any).channel;
+              channelIds.add(cid);
+            }
+          }
+        }
+      }
+    }
+
+    // 源 3：channel-member 表（isCurrent=true，使用 findOne 与 getUserAllChannels 一致）
+    const currentMember = await strapi.db.query(CHANNEL_MEMBER_UID).findOne({
+      where: { user: userId, isCurrent: true },
+      populate: ["channel"],
+    });
+    if (currentMember?.channel) {
+      const cid = currentMember.channel.id || currentMember.channel;
+      channelIds.add(cid);
+    }
+
+    return Array.from(channelIds);
+  },
+
+  /**
    * 角色等级映射
    */
   ROLE_LEVELS: { owner: 30, admin: 20, member: 10 } as Record<string, number>,

@@ -856,4 +856,68 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       ctx.body = { error: error.message };
     }
   },
+
+  // ========== 获取可用渠道（站点渠道 + 用户渠道） ==========
+  async getAvailableChannels(ctx: any) {
+    try {
+      const siteId = ctx.state?.siteId;
+      const userId = ctx.state?.user?.id;
+
+      if (!siteId) {
+        ctx.status = 400;
+        ctx.body = { error: "缺少站点标识" };
+        return;
+      }
+
+      const siteConfigService = strapi.plugin("zhao-common")?.service("site-config");
+      const siteConfig: any = await siteConfigService.getConfig(siteId);
+
+      const siteChannels: any[] = [];
+      if (siteConfig?.channels && Array.isArray(siteConfig.channels)) {
+        for (const ch of siteConfig.channels) {
+          siteChannels.push({
+            id: ch.id,
+            documentId: ch.documentId,
+            name: ch.name,
+          });
+        }
+      }
+
+      const userChannels: any[] = [];
+      if (userId) {
+        const channelPermissionService = strapi.plugin("zhao-channel")?.service("channel-permission");
+        if (channelPermissionService && typeof channelPermissionService.getUserDirectChannels === "function") {
+          const userChannelIds = await channelPermissionService.getUserDirectChannels(userId);
+          if (Array.isArray(userChannelIds)) {
+            const channels = await strapi.db.query("plugin::zhao-channel.channel").findMany({
+              where: { id: { $in: userChannelIds } },
+              select: ["id", "documentId", "name"],
+            });
+            for (const ch of channels) {
+              userChannels.push({
+                id: ch.id,
+                documentId: ch.documentId,
+                name: ch.name,
+              });
+            }
+          }
+        }
+      }
+
+      const mergedChannels = new Map();
+      for (const ch of [...siteChannels, ...userChannels]) {
+        const key = String(ch.id);
+        if (!mergedChannels.has(key)) {
+          mergedChannels.set(key, ch);
+        }
+      }
+
+      ctx.body = {
+        data: Array.from(mergedChannels.values()),
+      };
+    } catch (error: any) {
+      ctx.status = error.status ?? 500;
+      ctx.body = { error: error.message };
+    }
+  },
 });

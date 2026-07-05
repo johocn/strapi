@@ -23,6 +23,48 @@ const adminRoute = (method: Method, path: string, handler: string, permission: s
   },
 });
 
+const userRoute = (method: Method, path: string, handler: string) => ({
+  method,
+  path: `/v1${path}`,
+  handler,
+  config: {
+    auth: false,
+    policies: [
+      "plugin::zhao-auth.is-authenticated",
+      "plugin::zhao-auth.has-channel-scope",
+      "plugin::zhao-auth.has-tenant-access",
+    ],
+  },
+});
+
+const looseUserRoute = (method: Method, path: string, handler: string) => ({
+  method,
+  path: `/v1${path}`,
+  handler,
+  config: {
+    auth: false,
+    policies: [
+      "plugin::zhao-auth.is-authenticated",
+      "plugin::zhao-auth.has-channel-scope",
+      "plugin::zhao-common.has-tenant-access-loose",
+    ],
+  },
+});
+
+const strictUserRoute = (method: Method, path: string, handler: string) => ({
+  method,
+  path: `/v1${path}`,
+  handler,
+  config: {
+    auth: false,
+    policies: [
+      "plugin::zhao-auth.is-authenticated",
+      "plugin::zhao-auth.has-channel-scope",
+      "plugin::zhao-common.has-tenant-access-strict",
+    ],
+  },
+});
+
 export default () => ({
   type: "content-api" as const,
   routes: [
@@ -62,5 +104,8 @@ export default () => ({
     adminRoute("PUT", "/templates/:documentId", "site-template.update", "template.update"),
     adminRoute("DELETE", "/templates/:documentId", "site-template.delete", "template.delete"),
     adminRoute("POST", "/templates/apply", "site-template.applyToSite", "template.update"),
+
+    // 获取可用渠道（站点渠道 + 用户直接渠道，不扩展子树）- strict 策略
+    strictUserRoute("GET", "/channels/available", "config.getAvailableChannels"),
   ],
 });
