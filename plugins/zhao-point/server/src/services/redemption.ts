@@ -48,7 +48,17 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       if (ch) data.channel = ch.id;
       else delete data.channel;
     }
-    return await strapi.db.query(PRODUCT_UID).create({ data });
+    const created = await strapi.db.query(PRODUCT_UID).create({ data });
+    // 二次查询 populate channel 等关联字段返回
+    return await strapi.db.query(PRODUCT_UID).findOne({
+      where: { id: created.id },
+      populate: {
+        channel: { select: ['id', 'documentId', 'name'] },
+        coverImage: true,
+        images: true,
+        video: true,
+      },
+    });
   };
 
   const updateProduct = async (id: string | number, data: any) => {
