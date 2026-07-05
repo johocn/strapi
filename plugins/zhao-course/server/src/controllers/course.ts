@@ -22,11 +22,15 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     try {
       const isAdmin = ctx.path?.includes("/admin/") ?? false;
       const publicOnly = !isAdmin;
-      // 公开路由或无 token 时，标记游客，应用 allowCrossChannel 过滤
       const channelScope = ctx.state.channelScope
         || (publicOnly ? { all: true, channelIds: [], isGuest: true } : { all: true, channelIds: [], isGuest: false });
-      const siteChannelId = ctx.state.siteChannelId;
-      ctx.body = wrapList(await strapi.plugin("zhao-course").service("course").find(ctx.query, publicOnly, channelScope, siteChannelId));
+
+      ctx.body = wrapList(await strapi.plugin("zhao-course").service("course").find(ctx.query, publicOnly, {
+        channelScope,
+        mergedChannelIds: ctx.state.mergedChannelIds || [],
+        siteChannelIds: ctx.state.siteChannelIds || [],
+        crossChannelEnabled: ctx.state.crossChannelEnabled ?? true,
+      }));
     } catch (err) {
       ctx.status = (err as any).status || 400;
       ctx.body = { error: (err as Error).message };
@@ -78,11 +82,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       if (ch.channelScope === "specific" && ch.allowCrossChannel === true) {
         return true;
       }
-      // 指定渠道且不允许跨渠道：检查用户渠道权限
+      // 指定渠道且不允许跨渠道：检查 mergedChannelIds 交集
       if (ch.channelScope === "specific" && ch.allowCrossChannel === false) {
-        const userChannelIds = ctx.state.channelScope?.channelIds || [];
+        const mergedChannelIds = ctx.state.mergedChannelIds || ctx.state.channelScope?.channelIds || [];
         const courseChannelIds = Array.isArray(ch.channelIds) ? ch.channelIds : [];
-        const hasAccess = userChannelIds.some(uid => courseChannelIds.some(cid => String(uid) === String(cid)));
+        const hasAccess = mergedChannelIds.some((mid: any) => courseChannelIds.some(cid => String(mid) === String(cid)));
         if (!hasAccess) {
           return false;
         }
@@ -117,7 +121,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         return;
       }
 
-      const result = await strapi.plugin("zhao-course").service("course").create(data);
+      const result = await strapi.plugin("zhao-course").service("course").create(data, { siteId: ctx.state?.siteId });
       ctx.status = 201;
       ctx.body = result;
     } catch (err) {
@@ -148,7 +152,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         }
       }
 
-      ctx.body = wrap(await strapi.plugin("zhao-course").service("course").update(documentId, data));
+      ctx.body = wrap(await strapi.plugin("zhao-course").service("course").update(documentId, data, { siteId: ctx.state?.siteId }));
     } catch (err) {
       ctx.status = (err as any).status || 400;
       ctx.body = { error: (err as Error).message };
