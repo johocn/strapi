@@ -8,8 +8,17 @@ const USER_UID = "plugin::users-permissions.user";
 
 const USER_INVITE_UID = "plugin::zhao-channel.user-invite";
 const CHANNEL_MEMBER_UID = "plugin::zhao-channel.channel-member";
+const CHANNEL_UID = "plugin::zhao-channel.channel";
 
 export default ({ strapi }: { strapi: Core.Strapi }) => {
+  setTimeout(async () => {
+    try {
+      await initDefaultRootChannel(strapi);
+    } catch (err: any) {
+      strapi.log.warn(`[zhao-channel] 默认根渠道初始化失败（可通过后台手动创建）: ${err.message}`);
+    }
+  }, 5000);
+
   // ─── User lifecycle hook: 用户注册时自动生成邀请码 ───
   strapi.db.lifecycles.subscribe({
     models: [USER_UID],
@@ -273,3 +282,80 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     });
   }
 };
+
+async function initDefaultRootChannel(strapi: Core.Strapi) {
+  const existingRoot = await strapi.db.query(CHANNEL_UID).findOne({
+    where: { channelTier: "root" },
+  });
+
+  if (existingRoot) {
+    strapi.log.info(`[zhao-channel] 根渠道已存在，跳过初始化 (ID: ${existingRoot.id})`);
+    return;
+  }
+
+  const channelService = strapi.plugin("zhao-channel").service("channel");
+  const rootChannel = await channelService.createRoot({
+    name: "平台根渠道",
+    description: "系统自动创建的根渠道，所有渠道的顶级父渠道",
+  });
+
+  strapi.log.info(`[zhao-channel] 默认根渠道创建成功 (ID: ${rootChannel.id}, Code: ${rootChannel.code})`);
+
+  const adminUser = await strapi.db.query(USER_UID).findOne({
+    where: { role: { type: "admin" } },
+  });
+
+  if (adminUser) {
+    const existingMember = await strapi.db.query(CHANNEL_MEMBER_UID).findOne({
+      where: { user: adminUser.id, channel: rootChannel.id },
+    });
+
+    if (!existingMember) {
+      await strapi.db.query(CHANNEL_MEMBER_UID).create({
+        data: {
+          channel: rootChannel.id,
+          user: adminUser.id,
+          role: "owner",
+          isCurrent: true,
+        },
+      });
+      strapi.log.info(`[zhao-channel] admin 用户已关联到根渠道作为 owner (User ID: ${adminUser.id})`);
+    }
+  }
+
+  const adminRole = await strapi.db.query("plugin::users-permissions.role").findOne({
+    where: { type: "admin" },
+  });
+
+  if (adminRole) {
+    const existingRoleChannel = await strapi.db.query(ROLE_CHANNEL_UID).findOne({
+      where: { role: adminRole.id, channel: rootChannel.id },
+    });
+
+    if (!existingRoleChannel) {
+      await strapi.db.query(ROLE_CHANNEL_UID).create({
+        data: {
+          role: adminRole.id,
+          channel: rootChannel.id,
+          grantedBy: "system",
+        },
+      });
+      strapi.log.info(`[zhao-channel] admin 角色已关联到根渠道 (Role ID: ${adminRole.id})`);
+    }
+  }
+
+  const existingUserChannel = await strapi.db.query(USER_CHANNEL_UID).findOne({
+    where: { channel: rootChannel.id },
+  });
+
+  if (!existingUserChannel && adminUser) {
+    await strapi.db.query(USER_CHANNEL_UID).create({
+      data: {
+        user: adminUser.id,
+        channel: rootChannel.id,
+        grantedBy: "system",
+      },
+    });
+    strapi.log.info(`[zhao-channel] admin 用户渠道权限已授予 (User ID: ${adminUser.id})`);
+  }
+}

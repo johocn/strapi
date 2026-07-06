@@ -2,6 +2,7 @@ import type { Core } from "@strapi/strapi";
 import * as crypto from "crypto";
 import * as fs from "fs/promises";
 import * as path from "path";
+import sharp from "sharp";
 
 const FOLDER_UID = "plugin::upload.folder";
 const FILE_UID = "plugin::upload.file";
@@ -130,6 +131,19 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     await fs.writeFile(localFilePath, fileBuffer);
     const localUrl = `${storagePath}/${localFileName}`;
 
+    let width: number | null = null;
+    let height: number | null = null;
+    let formats: Record<string, any> = {};
+    if (mimeType.startsWith("image/")) {
+      try {
+        const metadata = await sharp(fileBuffer).metadata();
+        width = metadata.width ?? null;
+        height = metadata.height ?? null;
+      } catch {
+        // ignore
+      }
+    }
+
     let ossUrl: string | null = null;
     let ossStatus: "success" | "pending" = "pending";
     let providerName = "zhao-oss-local";
@@ -157,9 +171,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         name: fileName,
         alternativeText: null,
         caption: null,
-        width: null,
-        height: null,
-        formats: {},
+        width,
+        height,
+        formats,
         hash: fileHash,
         ext,
         mime: mimeType,

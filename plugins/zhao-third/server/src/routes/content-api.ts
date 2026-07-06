@@ -42,6 +42,7 @@ export default () => ({
     publicRoute("POST", "/third/auth-url", "third-party-auth.authUrl"),
     publicRoute("POST", "/third/qrconnect-url", "third-party-auth.qrconnectUrl"),
     publicRoute("POST", "/third/callback", "third-party-auth.callback"),
+    publicRoute("GET", "/wechat/callback", "third-party-auth.wechatRedirectCallback"),
     publicRoute("GET", "/third/config/:platform/:appType", "third-party-auth.publicConfig"),
     publicRoute("POST", "/third/jssdk-signature", "third-party-auth.jssdkSignature"),
 

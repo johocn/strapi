@@ -22,18 +22,15 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     const userRoles: string[] = Array.isArray(user.roles) && user.roles.length > 0
       ? user.roles
       : (Array.isArray(user.zhaoRoles) ? user.zhaoRoles : []);
-    strapi.log.info(`[channel-scope:resolve] 用户 ${user.id}, roles=${JSON.stringify(userRoles)}`);
 
     // admin 角色全渠道可见
     if (userRoles.includes("admin")) {
-      strapi.log.info(`[channel-scope:resolve] 用户是 admin，返回全渠道`);
       return { all: true, channelIds: [] };
     }
 
     try {
       const channelPermService = strapi.plugin("zhao-channel").service("channel-permission");
       const channelIds = await channelPermService.getUserAllChannels(user.id);
-      strapi.log.info(`[channel-scope:resolve] getUserAllChannels 返回: ${JSON.stringify(channelIds)}`);
       return { all: false, channelIds };
     } catch (err) {
       strapi.log.warn(`[zhao-auth:channel-scope] zhao-channel 服务不可用: ${(err as Error).message}`);

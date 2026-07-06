@@ -1494,10 +1494,6 @@ export interface PluginZhaoCourseCourse extends Struct.CollectionTypeSchema {
     isFree: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
     isPaid: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
     keywords: Schema.Attribute.JSON;
-    knowledgePoints: Schema.Attribute.Relation<
-      'manyToMany',
-      'plugin::zhao-tag.knowledge-point'
-    >;
     language: Schema.Attribute.Enumeration<
       ['zh-CN', 'zh-TW', 'en-US', 'ja-JP', 'ko-KR']
     > &
@@ -2554,10 +2550,6 @@ export interface PluginZhaoQuizQuiz extends Struct.CollectionTypeSchema {
     >;
     explanation: Schema.Attribute.RichText;
     isPublished: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
-    knowledgePoints: Schema.Attribute.Relation<
-      'manyToMany',
-      'plugin::zhao-tag.knowledge-point'
-    >;
     lesson: Schema.Attribute.Relation<
       'manyToOne',
       'plugin::zhao-course.course-lesson'
@@ -2572,6 +2564,7 @@ export interface PluginZhaoQuizQuiz extends Struct.CollectionTypeSchema {
     points: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
     publishedAt: Schema.Attribute.DateTime;
     sort: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    tags: Schema.Attribute.Relation<'manyToMany', 'plugin::zhao-tag.tag'>;
     title: Schema.Attribute.RichText & Schema.Attribute.Required;
     type: Schema.Attribute.Enumeration<
       [
@@ -3940,10 +3933,6 @@ export interface PluginZhaoTagKnowledgePoint
       'plugin::zhao-tag.knowledge-point'
     >;
     code: Schema.Attribute.String;
-    courses: Schema.Attribute.Relation<
-      'manyToMany',
-      'plugin::zhao-course.course'
-    >;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -3984,27 +3973,18 @@ export interface PluginZhaoTagTag extends Struct.CollectionTypeSchema {
   attributes: {
     children: Schema.Attribute.Relation<'oneToMany', 'plugin::zhao-tag.tag'>;
     color: Schema.Attribute.String;
-    courses: Schema.Attribute.Relation<
-      'manyToMany',
-      'plugin::zhao-course.course'
-    >;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     deletedAt: Schema.Attribute.DateTime;
     description: Schema.Attribute.Text;
-    group: Schema.Attribute.String;
     icon: Schema.Attribute.Media;
+    indexes: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-tag.tag-index'
+    >;
     isPreset: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
     isPublic: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
-    knowledgePoints: Schema.Attribute.Relation<
-      'manyToMany',
-      'plugin::zhao-course.knowledge-point'
-    >;
-    lessons: Schema.Attribute.Relation<
-      'manyToMany',
-      'plugin::zhao-course.course-lesson'
-    >;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
@@ -4016,6 +3996,83 @@ export interface PluginZhaoTagTag extends Struct.CollectionTypeSchema {
     publishedAt: Schema.Attribute.DateTime;
     slug: Schema.Attribute.UID<'name'>;
     sort: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    tagGroup: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-tag.tag-group'
+    >;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface PluginZhaoTagTagGroup extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_tag_groups';
+  info: {
+    displayName: '\u6807\u7B7E\u5206\u7EC4';
+    pluralName: 'tag-groups';
+    singularName: 'tag-group';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    children: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-tag.tag-group'
+    >;
+    color: Schema.Attribute.String;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    deletedAt: Schema.Attribute.DateTime;
+    description: Schema.Attribute.Text;
+    icon: Schema.Attribute.Media;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-tag.tag-group'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    parent: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-tag.tag-group'
+    >;
+    publishedAt: Schema.Attribute.DateTime;
+    slug: Schema.Attribute.UID<'name'>;
+    sort: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    tags: Schema.Attribute.Relation<'oneToMany', 'plugin::zhao-tag.tag'>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface PluginZhaoTagTagIndex extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_tag_indexes';
+  info: {
+    displayName: '\u6807\u7B7E\u7D22\u5F15';
+    pluralName: 'tag-indexes';
+    singularName: 'tag-index';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-tag.tag-index'
+    > &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    tag: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-tag.tag'>;
+    targetId: Schema.Attribute.String & Schema.Attribute.Required;
+    targetType: Schema.Attribute.String & Schema.Attribute.Required;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -4635,6 +4692,8 @@ declare module '@strapi/strapi' {
       'plugin::zhao-studio.stat-summary': PluginZhaoStudioStatSummary;
       'plugin::zhao-tag.knowledge-point': PluginZhaoTagKnowledgePoint;
       'plugin::zhao-tag.tag': PluginZhaoTagTag;
+      'plugin::zhao-tag.tag-group': PluginZhaoTagTagGroup;
+      'plugin::zhao-tag.tag-index': PluginZhaoTagTagIndex;
       'plugin::zhao-third.third-party-account': PluginZhaoThirdThirdPartyAccount;
       'plugin::zhao-third.third-party-config': PluginZhaoThirdThirdPartyConfig;
       'plugin::zhao-wealth.wealth-annual-snapshot': PluginZhaoWealthWealthAnnualSnapshot;

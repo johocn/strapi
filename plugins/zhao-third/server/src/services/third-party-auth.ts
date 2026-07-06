@@ -455,4 +455,76 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
     return { success: true };
   },
+
+  /**
+   * 微信授权中转回调
+   * 接收微信回调的 code，完成 token 交换后 302 重定向到前端页面
+   * @param ctx - Koa context，包含 code、state、host
+   */
+  async wechatRedirectCallback(ctx: any) {
+    const { code, state } = ctx.query;
+
+    if (!code) {
+      return this.handleAuthError(ctx, "缺少 code 参数");
+    }
+
+    const host = ctx.request.host;
+    let siteId: string | undefined;
+
+    try {
+      const configService = strapi.plugin("zhao-common").service("config");
+      if (configService) {
+        const site = await configService.getSiteByDomain(host);
+        if (site) {
+          siteId = site.documentId;
+        }
+      }
+    } catch (e) {
+      strapi.log.warn(`[zhao-third] 无法根据域名 ${host} 获取站点配置: ${(e as Error).message}`);
+    }
+
+    try {
+      const result = await this.handleCallback({
+        platform: "wechat",
+        appType: "official_account",
+        code,
+        siteId,
+      });
+
+      const redirectUrl = this.buildFrontendRedirectUrl(ctx, result, state);
+      ctx.response.redirect(redirectUrl);
+    } catch (e: any) {
+      strapi.log.error(`[zhao-third] 微信中转回调处理失败: ${e.message}`);
+      return this.handleAuthError(ctx, e.message);
+    }
+  },
+
+  /**
+   * 构建前端重定向 URL
+   */
+  buildFrontendRedirectUrl(ctx: any, result: any, state?: string): string {
+    const protocol = ctx.request.protocol;
+    const host = ctx.request.host;
+    const queryParams: Record<string, string> = {};
+
+    if (result.jwt) queryParams.token = result.jwt;
+    if (result.user?.id) queryParams.userId = String(result.user.id);
+    if (result.isNew !== undefined) queryParams.isNew = String(result.isNew);
+    if (state) queryParams.state = state;
+
+    const queryString = new URLSearchParams(queryParams).toString();
+    const authCallbackPath = "/#/pages/auth-callback/auth-callback";
+
+    return `${protocol}://${host}${authCallbackPath}${queryString ? `?${queryString}` : ""}`;
+  },
+
+  /**
+   * 处理授权错误
+   */
+  handleAuthError(ctx: any, message: string): void {
+    const protocol = ctx.request.protocol;
+    const host = ctx.request.host;
+    const errorUrl = `${protocol}://${host}/#/pages/auth-callback/auth-callback?error=${encodeURIComponent(message)}`;
+    ctx.response.redirect(errorUrl);
+  },
 });
