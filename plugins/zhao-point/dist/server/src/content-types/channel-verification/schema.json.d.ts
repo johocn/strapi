@@ -1,0 +1,77 @@
+declare const _default: {
+  "kind": "collectionType",
+  "collectionName": "zhao_channel_verifications",
+  "info": {
+    "singularName": "channel-verification",
+    "pluralName": "channel-verifications",
+    "displayName": "渠道核销",
+    "description": "渠道核销审计日志"
+  },
+  "options": {
+    "draftAndPublish": false,
+    "comment": ""
+  },
+  "pluginOptions": {
+    "content-manager": {
+      "visible": true
+    },
+    "content-type-builder": {
+      "visible": false
+    }
+  },
+  "attributes": {
+    "verifier": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user",
+      "required": true
+    },
+    "verifiedUser": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user",
+      "required": true
+    },
+    "channel": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-channel.channel",
+      "required": true
+    },
+    "direction": {
+      "type": "enumeration",
+      "enum": ["superior_to_subordinate", "subordinate_to_superior"],
+      "required": true
+    },
+    "method": {
+      "type": "enumeration",
+      "enum": ["qr_scan", "manual"],
+      "required": true
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": ["pending", "approved", "rejected"],
+      "default": "pending"
+    },
+    "qrCodeToken": {
+      "type": "string",
+      "maxLength": 64,
+      "unique": true
+    },
+    "qrCodeExpiresAt": {
+      "type": "datetime"
+    },
+    "location": {
+      "type": "json"
+    },
+    "remark": {
+      "type": "text"
+    },
+    "verifiedAt": {
+      "type": "datetime"
+    }
+  }
+}
+;
+
+export default _default;

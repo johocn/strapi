@@ -1,0 +1,13 @@
+import { default as Redis } from 'ioredis';
+export declare function getRedisClient(): Redis | null;
+export declare function closeRedisClient(): Promise<void>;
+export declare function setUserChannelCache(userId: number, channelIds: number[]): Promise<void>;
+export declare function getUserChannelCache(userId: number): Promise<number[] | null>;
+export declare function deleteUserChannelCache(userId: number): Promise<void>;
+export declare function setRoleChannelCache(roleId: number | string, channelIds: number[]): Promise<void>;
+export declare function getRoleChannelCache(roleId: number): Promise<number[] | null>;
+export declare function deleteRoleChannelCache(roleId: number | string): Promise<void>;
+export declare function deleteUserAllChannelsCache(userId: number): Promise<void>;
+export declare function setUserAllChannelsCache(userId: number, channelIds: number[]): Promise<void>;
+export declare function getUserAllChannelsCache(userId: number): Promise<number[] | null>;
+export declare function clearAllChannelCache(): Promise<void>;

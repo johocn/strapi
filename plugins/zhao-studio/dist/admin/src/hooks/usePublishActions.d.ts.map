@@ -1,0 +1,1 @@
+{"version":3,"file":"usePublishActions.d.ts","sourceRoot":"","sources":["../../../../admin/src/hooks/usePublishActions.ts"],"names":[],"mappings":"AAIA,UAAU,aAAa;IACrB,UAAU,EAAE,MAAM,EAAE,CAAC;IACrB,UAAU,EAAE,MAAM,CAAC;IACnB,SAAS,EAAE,MAAM,CAAC;CACnB;AAED,eAAO,MAAM,iBAAiB;qDAIkC,aAAa;gCAsBlC,MAAM,cAAc,MAAM,EAAE;;CAsBtE,CAAC;AAEF,eAAe,iBAAiB,CAAC"}

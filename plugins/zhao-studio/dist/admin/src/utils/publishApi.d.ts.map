@@ -1,0 +1,1 @@
+{"version":3,"file":"publishApi.d.ts","sourceRoot":"","sources":["../../../../admin/src/utils/publishApi.ts"],"names":[],"mappings":"AAMA,eAAO,MAAM,UAAU;;yBAOM,GAAG;uBASL,MAAM,QAAQ,GAAG;uBASjB,MAAM;8BAQC,MAAM;wBAMZ,GAAG;sBASL,MAAM,QAAQ,GAAG;sBASjB,MAAM;8BAQE,MAAM,cAAc,MAAM,EAAE;4BAS9B,MAAM;2BAMP,MAAM;0BAOP,MAAM;CAMnC,CAAC"}

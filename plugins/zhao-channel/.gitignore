@@ -99,7 +99,8 @@ public/uploads/*
 # Build
 ############################
 
-dist
+# dist 目录已提交到仓库（服务器内存不足无法构建）
+# dist
 build
 
 

@@ -1,0 +1,20 @@
+declare const _default: {
+  "kind": "collectionType",
+  "collectionName": "sso_referral_relations",
+  "info": {
+    "singularName": "sso-referral-relation",
+    "pluralName": "sso-referral-relations",
+    "displayName": "SSO Referral Relation"
+  },
+  "options": { "draftAndPublish": false },
+  "attributes": {
+    "inviter": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user" },
+    "invitee": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user" },
+    "invite_code": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-invite-code" },
+    "level": { "type": "integer", "required": true },
+    "channel_code": { "type": "string" }
+  }
+}
+;
+
+export default _default;

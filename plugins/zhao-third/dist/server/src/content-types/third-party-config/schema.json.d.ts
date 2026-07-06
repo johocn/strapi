@@ -1,0 +1,53 @@
+declare const _default: {
+  "kind": "collectionType",
+  "collectionName": "third_party_configs",
+  "info": {
+    "singularName": "third-party-config",
+    "pluralName": "third-party-configs",
+    "displayName": "三方登录配置"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "content-manager": {
+      "visible": false
+    }
+  },
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "platform": {
+      "type": "enumeration",
+      "enum": ["wechat", "alipay", "douyin"],
+      "required": true
+    },
+    "appType": {
+      "type": "enumeration",
+      "enum": ["official_account", "mini_program", "open_platform", "h5", "app"],
+      "required": true
+    },
+    "appId": {
+      "type": "string",
+      "required": true
+    },
+    "appSecret": {
+      "type": "string",
+      "required": true
+    },
+    "enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "site": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-common.site-config"
+    }
+  }
+}
+;
+
+export default _default;

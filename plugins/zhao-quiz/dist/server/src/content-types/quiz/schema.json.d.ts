@@ -1,0 +1,88 @@
+declare const _default: {
+  "kind": "collectionType",
+  "collectionName": "zhao_quizzes",
+  "info": {
+    "singularName": "quiz",
+    "pluralName": "quizzes",
+    "displayName": "题目"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "title": {
+      "type": "richtext",
+      "required": true
+    },
+    "type": {
+      "type": "enumeration",
+      "enum": ["single_choice","multiple_choice","true_false","fill_blank","short_answer","essay","matching","ordering"],
+      "required": true
+    },
+    "options": {
+      "type": "json"
+    },
+    "answer": {
+      "type": "text"
+    },
+    "explanation": {
+      "type": "richtext"
+    },
+    "difficulty": {
+      "type": "enumeration",
+      "enum": ["easy","medium","hard"],
+      "default": "medium"
+    },
+    "points": {
+      "type": "integer",
+      "default": 0
+    },
+    "sort": {
+      "type": "integer",
+      "default": 0
+    },
+    "isPublished": {
+      "type": "boolean",
+      "default": false
+    },
+    "course": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-course.course",
+      "inversedBy": "quizzes"
+    },
+    "lesson": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-course.course-lesson",
+      "inversedBy": "quizzes"
+    },
+    "tags": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "plugin::zhao-tag.tag"
+    },
+    "exams": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "plugin::zhao-quiz.quiz-exam",
+      "mappedBy": "questions"
+    },
+    "channelScope": {
+      "type": "enumeration",
+      "enum": ["all", "specific"],
+      "default": "all"
+    },
+    "channelIds": {
+      "type": "json",
+      "default": "[]"
+    },
+    "deletedAt": {
+      "type": "datetime",
+      "default": null
+    }
+  }
+}
+;
+
+export default _default;

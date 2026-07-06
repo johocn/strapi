@@ -1,0 +1,56 @@
+declare const _default: {
+  "kind": "collectionType",
+  "collectionName": "zhao_point_types",
+  "info": {
+    "singularName": "point-type",
+    "pluralName": "point-types",
+    "displayName": "积分类型",
+    "description": "积分分类管理"
+  },
+  "options": {
+    "draftAndPublish": false,
+    "comment": ""
+  },
+  "pluginOptions": {
+    "content-manager": {
+      "visible": true
+    },
+    "content-type-builder": {
+      "visible": false
+    }
+  },
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "code": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "canExpire": {
+      "type": "boolean",
+      "default": false
+    },
+    "expireDays": {
+      "type": "integer",
+      "default": 365
+    },
+    "deletedAt": {
+      "type": "datetime",
+      "default": null
+    }
+  }
+}
+;
+
+export default _default;

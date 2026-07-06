@@ -1,0 +1,1 @@
+{"version":3,"file":"ipLocationParser.d.ts","sourceRoot":"","sources":["../../../../server/src/utils/ipLocationParser.ts"],"names":[],"mappings":"AAIA,MAAM,WAAW,cAAc;IAC7B,OAAO,EAAE,MAAM,CAAC;IAChB,IAAI,EAAE,MAAM,CAAC;CACd;AAKD,wBAAsB,eAAe,CAAC,EAAE,EAAE,MAAM,GAAG,OAAO,CAAC,cAAc,CAAC,CAyBzE;AAGD,wBAAgB,qBAAqB,CAAC,QAAQ,EAAE,MAAM,GAAG,MAAM,CAW9D"}

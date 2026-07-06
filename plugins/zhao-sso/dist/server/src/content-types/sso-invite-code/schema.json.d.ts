@@ -1,0 +1,25 @@
+declare const _default: {
+  "kind": "collectionType",
+  "collectionName": "sso_invite_codes",
+  "info": {
+    "singularName": "sso-invite-code",
+    "pluralName": "sso-invite-codes",
+    "displayName": "SSO Invite Code"
+  },
+  "options": { "draftAndPublish": false },
+  "attributes": {
+    "code": { "type": "string", "unique": true, "required": true },
+    "creator": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user" },
+    "invite_type": { "type": "enumeration", "enum": ["system", "user_campaign"], "required": true },
+    "max_uses": { "type": "integer" },
+    "use_count": { "type": "integer", "default": 0, "required": true },
+    "per_user_limit": { "type": "integer", "default": 1, "required": true },
+    "valid_from": { "type": "datetime" },
+    "valid_until": { "type": "datetime" },
+    "bonus_tags": { "type": "json" },
+    "is_active": { "type": "boolean", "default": true, "required": true }
+  }
+}
+;
+
+export default _default;

@@ -1,0 +1,54 @@
+declare const _default: {
+  "kind": "collectionType",
+  "collectionName": "zhao_publish_platforms",
+  "info": {
+    "singularName": "publish-platform",
+    "pluralName": "publish-platforms",
+    "displayName": "发布平台",
+    "description": "发布平台类型配置"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "content-manager": {
+      "visible": true
+    },
+    "content-type-builder": {
+      "visible": true
+    }
+  },
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true,
+      "maxLength": 100
+    },
+    "type": {
+      "type": "enumeration",
+      "enum": ["toutiao", "xiaohongshu", "wechat", "custom", "internal"],
+      "required": true
+    },
+    "description": {
+      "type": "text"
+    },
+    "isActive": {
+      "type": "boolean",
+      "default": true
+    },
+    "accounts": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-studio.publish-account",
+      "mappedBy": "platform"
+    },
+    "createdAt": {
+      "type": "datetime"
+    },
+    "updatedAt": {
+      "type": "datetime"
+    }
+  }
+};
+
+export default _default;

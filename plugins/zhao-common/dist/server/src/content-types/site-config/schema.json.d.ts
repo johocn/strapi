@@ -1,0 +1,112 @@
+declare const _default: {
+  "kind": "collectionType",
+  "collectionName": "zhao_site_configs",
+  "info": {
+    "singularName": "site-config",
+    "pluralName": "site-configs",
+    "displayName": "站点配置",
+    "description": "站点通用配置（多租户）"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "siteName": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "siteDescription": {
+      "type": "text"
+    },
+    "logo": {
+      "type": "media",
+      "multiple": false,
+      "required": false,
+      "allowedTypes": ["images"]
+    },
+    "favicon": {
+      "type": "media",
+      "multiple": false,
+      "required": false,
+      "allowedTypes": ["images"]
+    },
+    "icpNumber": {
+      "type": "string",
+      "maxLength": 50
+    },
+    "seoKeywords": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "seoDescription": {
+      "type": "text"
+    },
+    "tencentMapKey": {
+      "type": "string",
+      "maxLength": 64
+    },
+    "shareTitle": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "shareDescription": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "shareImage": {
+      "type": "media",
+      "multiple": false,
+      "required": false,
+      "allowedTypes": ["images"]
+    },
+    "customerServiceUrl": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "domain": {
+      "type": "string",
+      "maxLength": 255,
+      "unique": true
+    },
+    "channels": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "plugin::zhao-channel.channel",
+      "mappedBy": "sites"
+    },
+    "featureFlags": {
+      "type": "json",
+      "default": {
+        "sso": false,
+        "points": true,
+        "quiz": true,
+        "course": true,
+        "channel": true,
+        "thirdParty": true,
+        "oss": false
+      }
+    },
+    "template": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-common.site-template",
+      "inversedBy": "sites"
+    },
+    "extraConfig": {
+      "type": "json"
+    },
+    "themeConfig": {
+      "type": "json",
+      "default": "{}"
+    },
+    "channelUsage": {
+      "type": "enumeration",
+      "enum": ["site_only", "site_and_cross", "site_cross_user"],
+      "default": "site_cross_user",
+      "required": true
+    }
+  }
+}
+;
+
+export default _default;

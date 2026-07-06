@@ -1,0 +1,41 @@
+declare const _default: {
+  "kind": "collectionType",
+  "collectionName": "wealth_products",
+  "info": {
+    "singularName": "wealth-product",
+    "pluralName": "wealth-products",
+    "displayName": "理财产品",
+    "description": "理财/基金产品信息"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "productCode": { "type": "string", "unique": true, "required": true },
+    "productName": { "type": "string", "required": true },
+    "productType": { "type": "enumeration", "enum": ["bank-wealth", "stock-fund", "bond-fund", "mixed-fund", "money-fund"], "required": true },
+    "registerCode": { "type": "string", "unique": true },
+    "riskLevel": { "type": "enumeration", "enum": ["R1", "R2", "R3", "R4", "R5"], "default": "R2" },
+    "termType": { "type": "enumeration", "enum": ["short", "medium", "long"] },
+    "issueDate": { "type": "date" },
+    "maturityDate": { "type": "date" },
+    "company": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-company", "inversedBy": "products" },
+    "navs": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-nav", "mappedBy": "product" },
+    "moneyIncomes": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-money-income", "mappedBy": "product" },
+    "annualSnapshots": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-annual-snapshot", "mappedBy": "product" },
+    "yearlyReturns": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-yearly-return", "mappedBy": "product" },
+    "riskMetrics": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-risk-metric", "mappedBy": "product" },
+    "recommendWeight": { "type": "integer", "default": 0 },
+    "recommendTags": { "type": "json" },
+    "recommendEnabled": { "type": "boolean", "default": false },
+    "recommendReason": { "type": "text" },
+    "status": { "type": "boolean", "default": true },
+    "benchmark": { "type": "string" },
+    "remark": { "type": "text" },
+    "createdAt": { "type": "datetime" },
+    "updatedAt": { "type": "datetime" }
+  }
+}
+;
+
+export default _default;

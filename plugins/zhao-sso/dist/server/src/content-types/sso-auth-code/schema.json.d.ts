@@ -1,0 +1,23 @@
+declare const _default: {
+  "kind": "collectionType",
+  "collectionName": "sso_auth_codes",
+  "info": {
+    "singularName": "sso-auth-code",
+    "pluralName": "sso-auth-codes",
+    "displayName": "SSO Auth Code"
+  },
+  "options": { "draftAndPublish": false },
+  "attributes": {
+    "code": { "type": "string", "unique": true, "required": true },
+    "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user" },
+    "app_code": { "type": "string", "required": true },
+    "redirect_uri": { "type": "text", "required": true },
+    "channel_code": { "type": "string" },
+    "scopes": { "type": "json" },
+    "expires_at": { "type": "datetime", "required": true },
+    "used": { "type": "boolean", "default": false, "required": true }
+  }
+}
+;
+
+export default _default;

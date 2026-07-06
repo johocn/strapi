@@ -1,0 +1,18 @@
+declare const _default: {
+  "kind": "collectionType",
+  "collectionName": "sso_user_app_roles",
+  "info": {
+    "singularName": "sso-user-app-role",
+    "pluralName": "sso-user-app-roles",
+    "displayName": "SSO User App Role"
+  },
+  "options": { "draftAndPublish": false },
+  "attributes": {
+    "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user" },
+    "app_code": { "type": "string", "required": true },
+    "role": { "type": "string", "required": true }
+  }
+}
+;
+
+export default _default;

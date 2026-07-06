@@ -1,0 +1,14 @@
+declare const _default: {
+    "content-api": {
+        type: string;
+        routes: {
+            method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
+            path: string;
+            handler: string;
+            config: {
+                auth: boolean;
+            };
+        }[];
+    };
+};
+export default _default;

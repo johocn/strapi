@@ -1,0 +1,1 @@
+{"version":3,"file":"aiApi.d.ts","sourceRoot":"","sources":["../../../../admin/src/utils/aiApi.ts"],"names":[],"mappings":"AAMA,eAAO,MAAM,KAAK;;uBAMS,GAAG;6BASG,MAAM,UAAU,MAAM,aAAa,MAAM;+BASvC,MAAM,WAAW,MAAM;6BAOzB,MAAM,SAAS,QAAQ,GAAG,QAAQ,GAAG,UAAU;8BAO9C,MAAM,QAAQ,QAAQ,GAAG,QAAQ,GAAG,UAAU;+BAO7C,MAAM,UAAU,YAAY,GAAG,aAAa;CAM9E,CAAC"}

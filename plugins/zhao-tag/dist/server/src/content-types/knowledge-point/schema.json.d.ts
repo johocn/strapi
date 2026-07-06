@@ -1,0 +1,56 @@
+declare const _default: {
+  "kind": "collectionType",
+  "collectionName": "zhao_knowledge_points",
+  "info": {
+    "singularName": "knowledge-point",
+    "pluralName": "knowledge-points",
+    "displayName": "知识点"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "slug": {
+      "type": "uid",
+      "targetField": "name",
+      "required": false
+    },
+    "description": {
+      "type": "text"
+    },
+    "code": {
+      "type": "string"
+    },
+    "level": {
+      "type": "enumeration",
+      "enum": ["basic", "intermediate", "advanced"],
+      "default": "basic"
+    },
+    "parent": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-tag.knowledge-point",
+      "inversedBy": "children"
+    },
+    "children": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-tag.knowledge-point",
+      "mappedBy": "parent"
+    },
+    "sort": {
+      "type": "integer",
+      "default": 0
+    },
+    "deletedAt": {
+      "type": "datetime",
+      "default": null
+    }
+  }
+};
+
+export default _default;

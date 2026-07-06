@@ -1,0 +1,31 @@
+declare const _default: {
+  "kind": "collectionType",
+  "collectionName": "wealth_annual_snapshots",
+  "info": {
+    "singularName": "wealth-annual-snapshot",
+    "pluralName": "wealth-annual-snapshots",
+    "displayName": "年化快照",
+    "description": "各周期年化收益快照"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "product": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-product", "inversedBy": "annualSnapshots" },
+    "snapshotDate": { "type": "date", "required": true },
+    "annual1d": { "type": "decimal", "precision": 10, "scale": 6 },
+    "annual3d": { "type": "decimal", "precision": 10, "scale": 6 },
+    "annual7d": { "type": "decimal", "precision": 10, "scale": 6 },
+    "annual2w": { "type": "decimal", "precision": 10, "scale": 6 },
+    "annual1m": { "type": "decimal", "precision": 10, "scale": 6 },
+    "annual3m": { "type": "decimal", "precision": 10, "scale": 6 },
+    "annual6m": { "type": "decimal", "precision": 10, "scale": 6 },
+    "annual1y": { "type": "decimal", "precision": 10, "scale": 6 },
+    "isEstimate": { "type": "boolean", "default": false },
+    "createdAt": { "type": "datetime" },
+    "updatedAt": { "type": "datetime" }
+  }
+}
+;
+
+export default _default;

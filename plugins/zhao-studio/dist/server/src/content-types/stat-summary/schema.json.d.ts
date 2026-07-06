@@ -1,0 +1,51 @@
+declare const _default: {
+  "kind": "collectionType",
+  "collectionName": "zhao_stat_summaries",
+  "info": {
+    "singularName": "stat-summary",
+    "pluralName": "stat-summaries",
+    "displayName": "统计汇总",
+    "description": "按日期聚合的统计数据"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "content-manager": {
+      "visible": true
+    },
+    "content-type-builder": {
+      "visible": true
+    }
+  },
+  "attributes": {
+    "date": { "type": "date", "required": true },
+    "article": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-studio.article-draft"
+    },
+    "adSlot": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-studio.ad-slot"
+    },
+    "summaryType": {
+      "type": "enumeration",
+      "enum": ["article-daily", "ad-slot-daily", "global-daily", "device-daily", "region-daily"],
+      "required": true
+    },
+    "pv": { "type": "integer", "default": 0 },
+    "uv": { "type": "integer", "default": 0 },
+    "clickCount": { "type": "integer", "default": 0 },
+    "clickRate": { "type": "float", "default": 0 },
+    "avgReadDuration": { "type": "float", "default": 0 },
+    "avgScrollDepth": { "type": "float", "default": 0 },
+    "deviceStats": { "type": "json" },
+    "regionStats": { "type": "json" },
+    "referrerStats": { "type": "json" },
+    "createdAt": { "type": "datetime" }
+  }
+};
+
+export default _default;

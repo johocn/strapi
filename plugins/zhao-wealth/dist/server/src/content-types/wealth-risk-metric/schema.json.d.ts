@@ -1,0 +1,45 @@
+declare const _default: {
+  "kind": "collectionType",
+  "collectionName": "wealth_risk_metrics",
+  "info": {
+    "singularName": "wealth-risk-metric",
+    "pluralName": "wealth-risk-metrics",
+    "displayName": "风险指标",
+    "description": "业绩归因指标（波动率/最大回撤/夏普/同类排名）"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "product": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-wealth.wealth-product",
+      "inversedBy": "riskMetrics"
+    },
+    "snapshotDate": {
+      "type": "date",
+      "required": true
+    },
+    "period": {
+      "type": "enumeration",
+      "enum": ["m1", "m3", "m6", "y1"],
+      "required": true
+    },
+    "metricName": {
+      "type": "enumeration",
+      "enum": ["volatility", "maxDrawdown", "sharpe", "rankPercentile"],
+      "required": true
+    },
+    "metricValue": {
+      "type": "decimal",
+      "precision": 12,
+      "scale": 6
+    },
+    "createdAt": { "type": "datetime" },
+    "updatedAt": { "type": "datetime" }
+  }
+}
+;
+
+export default _default;

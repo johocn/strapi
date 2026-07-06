@@ -1,0 +1,86 @@
+declare const _default: {
+  "kind": "collectionType",
+  "collectionName": "zhao_pickup_locations",
+  "info": {
+    "singularName": "pickup-location",
+    "pluralName": "pickup-locations",
+    "displayName": "自提点",
+    "description": "商品自提点信息"
+  },
+  "options": {
+    "draftAndPublish": false,
+    "comment": ""
+  },
+  "pluginOptions": {
+    "content-manager": {
+      "visible": true
+    },
+    "content-type-builder": {
+      "visible": false
+    }
+  },
+  "attributes": {
+    "name": {
+      "type": "string",
+      "maxLength": 100,
+      "required": true
+    },
+    "address": {
+      "type": "text"
+    },
+    "latitude": {
+      "type": "decimal",
+      "precision": 10,
+      "scale": 7
+    },
+    "longitude": {
+      "type": "decimal",
+      "precision": 10,
+      "scale": 7
+    },
+    "phone": {
+      "type": "string",
+      "maxLength": 20
+    },
+    "businessHours": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "businessLicense": {
+      "type": "media",
+      "multiple": false,
+      "required": false,
+      "allowedTypes": ["images"]
+    },
+    "coverImage": {
+      "type": "media",
+      "multiple": false,
+      "required": false,
+      "allowedTypes": ["images"]
+    },
+    "description": {
+      "type": "text"
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": ["active", "inactive"],
+      "default": "active"
+    },
+    "sortOrder": {
+      "type": "integer",
+      "default": 0
+    },
+    "channels": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "plugin::zhao-channel.channel"
+    },
+    "deletedAt": {
+      "type": "datetime",
+      "default": null
+    }
+  }
+}
+;
+
+export default _default;

@@ -1,0 +1,1 @@
+{"version":3,"file":"internal-api.d.ts","sourceRoot":"","sources":["../../../../server/src/controllers/internal-api.ts"],"names":[],"mappings":"AAEA,OAAO,KAAK,EAAE,IAAI,EAAE,MAAM,gBAAgB,CAAC;yBAE3B,YAAY;IAAE,MAAM,EAAE,IAAI,CAAC,MAAM,CAAA;CAAE;sBACzB,GAAG;oBAeL,GAAG;wBASC,GAAG;uBAiBJ,GAAG;qBAOL,GAAG;;AAjD5B,wBAuDG"}

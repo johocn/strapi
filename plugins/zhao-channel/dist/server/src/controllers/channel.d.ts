@@ -1,0 +1,31 @@
+import { Core } from '@strapi/strapi';
+declare const _default: ({ strapi }: {
+    strapi: Core.Strapi;
+}) => {
+    _scopeSvc(): Core.Service;
+    _channelFilter(ctx: any, field: string): Record<string, any> | null;
+    _assertInScope(ctx: any, record: any, field: string): void;
+    find(ctx: any): Promise<void>;
+    findOne(ctx: any): Promise<void>;
+    create(ctx: any): Promise<void>;
+    update(ctx: any): Promise<void>;
+    delete(ctx: any): Promise<void>;
+    register(ctx: any): Promise<void>;
+    validate(ctx: any): Promise<void>;
+    validatePublic(ctx: any): Promise<void>;
+    registerPublic(ctx: any): Promise<void>;
+    getNetwork(ctx: any): Promise<void>;
+    getStats(ctx: any): Promise<void>;
+    getPublic(ctx: any): Promise<void>;
+    adminFind(ctx: any): Promise<void>;
+    adminFindOne(ctx: any): Promise<void>;
+    adminCreate(ctx: any): Promise<void>;
+    adminCreateRoot(ctx: any): Promise<void>;
+    adminGetChildren(ctx: any): Promise<void>;
+    adminGetHierarchy(ctx: any): Promise<void>;
+    adminUpdate(ctx: any): Promise<void>;
+    updateConfig(ctx: any): Promise<void>;
+    adminDelete(ctx: any): Promise<void>;
+    adminGetTierTree(ctx: any): Promise<void>;
+};
+export default _default;

@@ -131,3 +131,6 @@ dist
 build
 .strapi-updater.json
 .strapi-cloud.json
+
+# 允许插件构建产物提交（服务器内存不足无法构建）
+!plugins/*/dist/

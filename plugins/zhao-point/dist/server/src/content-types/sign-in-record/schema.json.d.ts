@@ -1,0 +1,49 @@
+declare const _default: {
+  "kind": "collectionType",
+  "collectionName": "zhao_point_sign_in_records",
+  "info": {
+    "singularName": "sign-in-record",
+    "pluralName": "sign-in-records",
+    "displayName": "签到记录",
+    "description": "用户签到记录"
+  },
+  "options": {
+    "draftAndPublish": false,
+    "comment": ""
+  },
+  "pluginOptions": {
+    "content-manager": {
+      "visible": true
+    },
+    "content-type-builder": {
+      "visible": false
+    }
+  },
+  "attributes": {
+    "user": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user",
+      "required": true
+    },
+    "signInDate": {
+      "type": "date",
+      "required": true
+    },
+    "streakDays": {
+      "type": "integer",
+      "default": 1
+    },
+    "pointsEarned": {
+      "type": "integer",
+      "default": 0
+    },
+    "isStreakReward": {
+      "type": "boolean",
+      "default": false
+    }
+  }
+}
+;
+
+export default _default;
