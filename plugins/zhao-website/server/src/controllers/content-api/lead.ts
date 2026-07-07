@@ -20,12 +20,26 @@ export default {
 
   async track(ctx: any) {
     const siteId = ctx.state.siteId;
-    const { type, targetId, action } = ctx.request.body;
-    await strapi.plugin("zhao-website").service("interaction").toggle(siteId, {
-      type, targetId, action,
-      ipAddress: ctx.request.ip,
-      userAgent: ctx.request.headers["user-agent"],
-    });
-    ctx.body = { success: true };
+    const { type, targetType, targetId, visitorId, userId } = ctx.request.body;
+
+    // 必填校验
+    if (!type || !targetType || !targetId || !visitorId) {
+      return ctx.badRequest("Missing required fields: type, targetType, targetId, visitorId");
+    }
+
+    try {
+      const result = await strapi.plugin("zhao-website").service("interaction").toggle(siteId, {
+        type,
+        targetType,
+        targetId,
+        visitorId,
+        userId,
+        ctx, // service 内部用 ctx.request.ip / userAgent
+      });
+      ctx.body = { success: true, action: result.action };
+    } catch (err) {
+      ctx.status = (err as any).status || 500;
+      ctx.body = { error: (err as Error).message };
+    }
   },
 };
