@@ -24,8 +24,8 @@ export default {
 
   async manifest(ctx) {
     const siteId = ctx.state.siteId;
-    const brandInfo = await strapi.plugin("zhao-website").service("brand-info").get(siteId);
-    const seoConfig = await strapi.plugin("zhao-website").service("seo-config").get(siteId);
+    const brandInfo = await strapi.plugin("zhao-website").service("brand-info").find(siteId);
+    const seoConfig = await strapi.plugin("zhao-website").service("seo-config").find(siteId);
     ctx.body = {
       name: brandInfo?.companyName || "",
       short_name: brandInfo?.shortName || "",
