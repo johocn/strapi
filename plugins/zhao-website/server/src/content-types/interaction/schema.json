@@ -1,0 +1,62 @@
+{
+  "kind": "collectionType",
+  "collectionName": "zhao_website_interactions",
+  "info": {
+    "singularName": "interaction",
+    "pluralName": "interactions",
+    "displayName": "内容互动记录"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "content-manager": { "visible": false },
+    "content-type-builder": { "visible": false }
+  },
+  "attributes": {
+    "site": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-common.site-config",
+      "required": true,
+      "inversedBy": "website_interactions"
+    },
+    "type": {
+      "type": "enumeration",
+      "enum": ["like", "collect", "share"],
+      "required": true
+    },
+    "targetType": {
+      "type": "string",
+      "maxLength": 30,
+      "required": true
+    },
+    "targetId": {
+      "type": "string",
+      "required": true
+    },
+    "visitorId": {
+      "type": "string",
+      "maxLength": 100,
+      "required": true
+    },
+    "userId": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user",
+      "inversedBy": "website_interactions"
+    },
+    "ipAddress": {
+      "type": "string",
+      "maxLength": 50
+    },
+    "userAgent": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "deletedAt": {
+      "type": "datetime",
+      "default": null
+    }
+  }
+}

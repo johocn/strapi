@@ -1,0 +1,122 @@
+{
+  "kind": "collectionType",
+  "collectionName": "zhao_website_leads",
+  "info": {
+    "singularName": "lead",
+    "pluralName": "leads",
+    "displayName": "线索/留资"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "content-manager": { "visible": false },
+    "content-type-builder": { "visible": false }
+  },
+  "attributes": {
+    "site": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-common.site-config",
+      "required": true,
+      "inversedBy": "website_leads"
+    },
+    "type": {
+      "type": "enumeration",
+      "enum": ["contact", "download", "quote", "appointment", "demo", "partner"],
+      "required": true
+    },
+    "contactName": {
+      "type": "string",
+      "maxLength": 50
+    },
+    "contactPhone": {
+      "type": "string",
+      "maxLength": 30
+    },
+    "contactEmail": {
+      "type": "email"
+    },
+    "contactCompany": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "contactTitle": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "message": {
+      "type": "text"
+    },
+    "sourceType": {
+      "type": "string",
+      "maxLength": 30
+    },
+    "sourceId": {
+      "type": "string"
+    },
+    "sourceUrl": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "downloadFileId": {
+      "type": "string"
+    },
+    "utmSource": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "utmMedium": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "utmCampaign": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "utmContent": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "utmTerm": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "referrer": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "userAgent": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "ipAddress": {
+      "type": "string",
+      "maxLength": 50
+    },
+    "assignedTo": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "admin::user",
+      "inversedBy": "website_leads"
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": ["new", "contacted", "qualified", "unqualified", "converted", "invalid"],
+      "default": "new"
+    },
+    "followUpRecords": {
+      "type": "json"
+    },
+    "remark": {
+      "type": "text"
+    },
+    "convertedAt": {
+      "type": "datetime"
+    },
+    "deletedAt": {
+      "type": "datetime",
+      "default": null
+    }
+  }
+}
