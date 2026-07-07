@@ -213,6 +213,21 @@ const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
     },
   });
 
+  // 监听 site-config 创建 → 自动创建站点默认媒体文件夹
+  strapi.db?.lifecycles.subscribe({
+    models: ["plugin::zhao-common.site-config"],
+    async afterCreate(event: any) {
+      const siteId = event.result?.id;
+      if (!siteId) return;
+      try {
+        await strapi.plugin("zhao-oss").service("media-service").ensureSiteDefaultFolders(siteId);
+        if (!isTest) logger.info(`[zhao-oss] Created default folders for site ${siteId}`);
+      } catch (err) {
+        logger.error(`[zhao-oss] Failed to create default folders for site ${siteId}:`, { error: (err as Error).message });
+      }
+    },
+  });
+
   if (!isTest) logger.info("[zhao-oss] Upload lifecycle hooks registered successfully");
 
   // 3.5 注册 URL 重写中间件（Koa middleware，拦截响应替换媒体 URL）
