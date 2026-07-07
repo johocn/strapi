@@ -349,6 +349,148 @@ async function seedTags(knex) {
   return tagIdMap;
 }
 
+// ============ 模块 4: article ============
+
+const ARTICLES = [
+  // 圣麟主站 (localhost) - 3 published + 1 draft + 1 archived
+  { siteDomain: 'localhost', seq: 1, title: '多租户架构设计：一套代码支撑 100+ 官网', slug: 'test-art-1', category: 'main-product-news', tags: ['多租户', 'SSR', '内容管理'], status: 'published', isFeatured: true, author: '技术团队', excerpt: '深入解析多租户架构设计', content: '<p>多租户架构是企业级 SaaS 平台的核心能力...</p>', readingTime: 8 },
+  { siteDomain: 'localhost', seq: 2, title: 'SSR + 同域反代：SEO 最优解', slug: 'test-art-2', category: 'main-industry-insights', tags: ['SSR', 'SEO优化'], status: 'published', isFeatured: false, author: '技术团队', excerpt: 'SSR 与 SPA 的 SEO 差异', content: '<p>企业官网的 SEO 是核心能力...</p>', readingTime: 6 },
+  { siteDomain: 'localhost', seq: 3, title: '模板系统演进：从代码到配置', slug: 'test-art-3', category: 'main-product-news', tags: ['模板系统', '内容管理'], status: 'published', isFeatured: false, author: '产品团队', excerpt: '模板系统的渐进式设计', content: '<p>模板系统平衡灵活性与复杂度...</p>', readingTime: 7 },
+  { siteDomain: 'localhost', seq: 4, title: '知识图谱 + 真值管理实战', slug: 'test-art-4', category: 'main-product-news', tags: ['知识图谱', '真值管理', 'AI摘要'], status: 'draft', isFeatured: false, author: '产品团队', excerpt: '让 AI 理解你的内容', content: '<p>大模型时代，结构化知识至关重要...</p>', readingTime: 9 },
+  { siteDomain: 'localhost', seq: 5, title: 'Studio Bridge 一键发布闭环', slug: 'test-art-5', category: 'main-product-tutorials', tags: ['Studio Bridge', '内容管理'], status: 'archived', isFeatured: false, author: '产品团队', excerpt: '草稿到官网一键发布', content: '<p>内容生产流程效率优化...</p>', readingTime: 5 },
+  // 昭易科技 (tenant-a.local)
+  { siteDomain: 'tenant-a.local', seq: 6, title: '企业官网数字化转型指南', slug: 'test-art-6', category: 'a-solutions', tags: ['企业服务', '数字化转型'], status: 'published', isFeatured: true, author: '昭易团队', excerpt: '企业官网如何数字化', content: '<p>数字化转型是企业必经之路...</p>', readingTime: 8 },
+  { siteDomain: 'tenant-a.local', seq: 7, title: 'B2B 内容营销策略', slug: 'test-art-7', category: 'a-company-news', tags: ['B2B', '企业服务'], status: 'published', isFeatured: false, author: '昭易团队', excerpt: 'B2B 内容营销方法', content: '<p>B2B 内容营销的核心是信任...</p>', readingTime: 6 },
+  { siteDomain: 'tenant-a.local', seq: 8, title: '多渠道获客方法', slug: 'test-art-8', category: 'a-solutions', tags: ['企业服务', '数字化转型'], status: 'published', isFeatured: false, author: '昭易团队', excerpt: '多渠道获客实践', content: '<p>获客渠道的多样化策略...</p>', readingTime: 7 },
+  { siteDomain: 'tenant-a.local', seq: 9, title: '官网性能优化实践', slug: 'test-art-9', category: 'a-tech-sharing', tags: ['SSR', 'SEO优化'], status: 'draft', isFeatured: false, author: '昭易团队', excerpt: '性能优化方法', content: '<p>官网性能影响用户体验和 SEO...</p>', readingTime: 5 },
+  { siteDomain: 'tenant-a.local', seq: 10, title: 'SEO 收录加速技巧', slug: 'test-art-10', category: 'a-tech-sharing', tags: ['SEO优化'], status: 'archived', isFeatured: false, author: '昭易团队', excerpt: 'SEO 收录加速', content: '<p>加速搜索引擎收录的技巧...</p>', readingTime: 4 },
+  // 智教云 (tenant-b.local)
+  { siteDomain: 'tenant-b.local', seq: 11, title: '教育机构官网建设指南', slug: 'test-art-11', category: 'b-course-news', tags: ['教育科技', '内容管理'], status: 'published', isFeatured: true, author: '智教团队', excerpt: '教育机构官网如何建', content: '<p>教育机构官网的核心需求...</p>', readingTime: 8 },
+  { siteDomain: 'tenant-b.local', seq: 12, title: '在线课程展示技巧', slug: 'test-art-12', category: 'b-course-news', tags: ['教育科技'], status: 'published', isFeatured: false, author: '智教团队', excerpt: '课程展示优化', content: '<p>课程展示影响转化率...</p>', readingTime: 6 },
+  { siteDomain: 'tenant-b.local', seq: 13, title: '招生转化提升方法', slug: 'test-art-13', category: 'b-teaching-cases', tags: ['教育科技', '留资转化'], status: 'published', isFeatured: false, author: '智教团队', excerpt: '招生转化策略', content: '<p>招生转化的关键因素...</p>', readingTime: 7 },
+  { siteDomain: 'tenant-b.local', seq: 14, title: '学习社区运营经验', slug: 'test-art-14', category: 'b-learning-insights', tags: ['教育科技'], status: 'draft', isFeatured: false, author: '智教团队', excerpt: '社区运营方法', content: '<p>学习社区提升用户粘性...</p>', readingTime: 5 },
+  { siteDomain: 'tenant-b.local', seq: 15, title: '教学案例分享', slug: 'test-art-15', category: 'b-teaching-cases', tags: ['教育科技'], status: 'archived', isFeatured: false, author: '智教团队', excerpt: '教学案例', content: '<p>教学案例的分享价值...</p>', readingTime: 4 },
+];
+
+async function seedArticles(knex, siteIdMap, categoryIdMap, tagIdMap) {
+  console.log('[5/12] 插入 article...');
+  const articleIdMap = {}; // slug → numeric id
+  const now = new Date();
+  const publishedDate = new Date('2026-07-01');
+
+  for (const a of ARTICLES) {
+    const docId = genDocId('testart', a.seq);
+    const siteId = siteIdMap[a.siteDomain];
+    const categoryId = categoryIdMap[a.category];
+    const data = {
+      document_id: docId,
+      site_id: siteId,
+      title: a.title,
+      slug: a.slug,
+      excerpt: a.excerpt,
+      content: a.content,
+      category_id: categoryId,
+      author: a.author,
+      is_featured: a.isFeatured,
+      reading_time: a.readingTime,
+      word_count: a.content.length,
+      view_count: Math.floor(Math.random() * 1000) + 100,
+      like_count: Math.floor(Math.random() * 50),
+      allow_index: true,
+      sitemap_priority: 0.7,
+      sitemap_frequency: 'weekly',
+      source_type: 'original',
+      status: a.status,
+      published_at: a.status === 'published' ? publishedDate : null,
+      deleted_at: a.status === 'archived' ? now : null,
+      created_at: now,
+      updated_at: now,
+    };
+    const id = await insertIfNotExists(knex, 'zhao_website_articles', data, docId);
+    articleIdMap[a.slug] = id;
+
+    // 插入 tags 关联（join 表 zhao_website_articles_tags_lnk）
+    for (const tagName of a.tags) {
+      const tagId = tagIdMap[tagName];
+      if (tagId) {
+        const existing = await knex('zhao_website_articles_tags_lnk')
+          .where({ article_id: id, tag_id: tagId }).first();
+        if (!existing) {
+          await knex('zhao_website_articles_tags_lnk').insert({
+            article_id: id,
+            tag_id: tagId,
+            tag_ord: 0,
+          });
+        }
+      }
+    }
+  }
+  console.log(`  - 插入 article: ${ARTICLES.length} 条`);
+  return articleIdMap;
+}
+
+// ============ 模块 5: product ============
+
+const PRODUCTS = [
+  { siteDomain: 'localhost', seq: 1, name: '交互官网平台', slug: 'test-prod-1', tagline: '多租户官网平台', category: 'main-product-news', tags: ['多租户', 'SSR', '内容管理'], isFeatured: true, status: 'published', description: '<p>交互官网平台是企业级官网建设解决方案...</p>', features: JSON.stringify(['多租户隔离', 'SSR 渲染', '模板系统']), specifications: JSON.stringify({ techStack: 'Strapi v5 + Nuxt 3' }), scenarios: JSON.stringify([{ name: '企业官网', desc: 'B2B 品牌展示' }]), priceRange: '联系咨询' },
+  { siteDomain: 'tenant-a.local', seq: 2, name: '企业 CMS 系统', slug: 'test-prod-2', tagline: '企业内容管理', category: 'a-solutions', tags: ['内容管理', '企业服务'], isFeatured: false, status: 'published', description: '<p>企业 CMS 系统帮助企业管理内容...</p>', features: JSON.stringify(['内容编辑', '权限管理', '多站点']), specifications: JSON.stringify({ techStack: 'Strapi v5' }), scenarios: JSON.stringify([{ name: '企业内部', desc: '知识库管理' }]), priceRange: '5万起' },
+  { siteDomain: 'tenant-b.local', seq: 3, name: '在线教育平台', slug: 'test-prod-3', tagline: '教育机构专属', category: 'b-course-news', tags: ['教育科技', '内容管理'], isFeatured: true, status: 'published', description: '<p>在线教育平台面向教育机构...</p>', features: JSON.stringify(['课程管理', '学员管理', '直播']), specifications: JSON.stringify({ techStack: 'Strapi + uni-app' }), scenarios: JSON.stringify([{ name: '培训机构', desc: '在线课程销售' }]), priceRange: '3万起' },
+  { siteDomain: 'tenant-b.local', seq: 4, name: '课程商城', slug: 'test-prod-4', tagline: '课程电商', category: 'b-course-news', tags: ['教育科技', 'B2B'], isFeatured: false, status: 'draft', description: '<p>课程商城支持在线售卖课程...</p>', features: JSON.stringify(['购物车', '支付', '订单']), specifications: JSON.stringify({ techStack: 'uni-app' }), scenarios: JSON.stringify([{ name: '教育电商', desc: '课程零售' }]), priceRange: '2万起' },
+];
+
+async function seedProducts(knex, siteIdMap, categoryIdMap, tagIdMap) {
+  console.log('[6/12] 插入 product...');
+  const productIdMap = {}; // slug → numeric id
+  const now = new Date();
+  const publishedDate = new Date('2026-07-01');
+
+  for (const p of PRODUCTS) {
+    const docId = genDocId('testprod', p.seq);
+    const siteId = siteIdMap[p.siteDomain];
+    const categoryId = categoryIdMap[p.category];
+    const data = {
+      document_id: docId,
+      site_id: siteId,
+      name: p.name,
+      slug: p.slug,
+      tagline: p.tagline,
+      description: p.description,
+      category_id: categoryId,
+      is_featured: p.isFeatured,
+      features: p.features,
+      specifications: p.specifications,
+      scenarios: p.scenarios,
+      price_range: p.priceRange,
+      view_count: Math.floor(Math.random() * 500) + 50,
+      allow_index: true,
+      status: p.status,
+      published_at: p.status === 'published' ? publishedDate : null,
+      created_at: now,
+      updated_at: now,
+    };
+    const id = await insertIfNotExists(knex, 'zhao_website_products', data, docId);
+    productIdMap[p.slug] = id;
+
+    // tags 关联（join 表 zhao_website_products_tags_lnk）
+    for (const tagName of p.tags) {
+      const tagId = tagIdMap[tagName];
+      if (tagId) {
+        const existing = await knex('zhao_website_products_tags_lnk')
+          .where({ product_id: id, tag_id: tagId }).first();
+        if (!existing) {
+          await knex('zhao_website_products_tags_lnk').insert({
+            product_id: id,
+            tag_id: tagId,
+            tag_ord: 0,
+          });
+        }
+      }
+    }
+  }
+  console.log(`  - 插入 product: ${PRODUCTS.length} 条`);
+  return productIdMap;
+}
+
 // ============ 主入口 ============
 
 (async () => {
@@ -367,6 +509,8 @@ async function seedTags(knex) {
       const { siteIdMap, channelIdMap } = await seedSites(knex);
       const categoryIdMap = await seedCategories(knex, siteIdMap);
       const tagIdMap = await seedTags(knex);
+      const articleIdMap = await seedArticles(knex, siteIdMap, categoryIdMap, tagIdMap);
+      const productIdMap = await seedProducts(knex, siteIdMap, categoryIdMap, tagIdMap);
       console.log('[DONE] 测试数据插入完成');
     }
   } catch (err) {
