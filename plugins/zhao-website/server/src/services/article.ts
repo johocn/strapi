@@ -7,12 +7,46 @@ const UID = "plugin::zhao-website.article";
 
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async find(siteId: number, query: any = {}) {
-    const { page = 1, pageSize = 20, category, tag, status, isFeatured, q } = query;
+    const { page = 1, pageSize = 20, category, tag, exclude, status, isFeatured, q } = query;
     const filters: any = { site: siteId, deletedAt: null };
     if (status) filters.status = status;
     else filters.status = "published"; // 默认只查 published
     if (category) filters.category = category;
     if (isFeatured !== undefined) filters.isFeatured = isFeatured === "true" || isFeatured === true;
+
+    // tag 过滤：knex 查 join 表拿 article_id 列表（OR 语义）
+    if (tag) {
+      const tagIds = String(tag).split(",").map((s) => s.trim()).filter(Boolean);
+      if (tagIds.length > 0) {
+        try {
+          const db = strapi.db.connection;
+          const rows = await db
+            .select("article_id")
+            .from("zhao_website_articles_tags_lnk")
+            .whereIn("tag_id", tagIds);
+          const articleIds = [...new Set(rows.map((r: any) => r.article_id))];
+          if (articleIds.length === 0) return []; // 短路，避免 IN () 报错
+          filters.id = { $in: articleIds };
+        } catch (err) {
+          strapi.log.warn("[zhao-website] tag filter knex failed, fallback to no-tag:", (err as Error).message);
+        }
+      }
+    }
+
+    // exclude 过滤：排除指定 documentId 对应的 article
+    if (exclude) {
+      const excludeIds = String(exclude).split(",").map((s) => s.trim()).filter(Boolean);
+      if (excludeIds.length > 0) {
+        const excludeRows = await strapi.db.query(UID).findMany({
+          where: { documentId: { $in: excludeIds } },
+          select: ["id"],
+        });
+        const excludeNumericIds = excludeRows.map((r: any) => r.id);
+        if (excludeNumericIds.length > 0) {
+          filters.id = { ...(filters.id || {}), $notIn: excludeNumericIds };
+        }
+      }
+    }
 
     return strapi.db.query(UID).findMany({
       where: filters,
