@@ -1,0 +1,117 @@
+{
+  "kind": "collectionType",
+  "collectionName": "zhao_website_knowledge_entities",
+  "info": {
+    "singularName": "knowledge-entity",
+    "pluralName": "knowledge-entities",
+    "displayName": "知识图谱实体"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "content-manager": { "visible": true },
+    "content-type-builder": { "visible": false }
+  },
+  "attributes": {
+    "site": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-common.site-config",
+      "required": true,
+      "inversedBy": "website_knowledge_entities"
+    },
+    "entityType": {
+      "type": "enumeration",
+      "enum": [
+        "Organization",
+        "Person",
+        "Product",
+        "Service",
+        "Place",
+        "Event",
+        "CreativeWork",
+        "Article",
+        "CaseStudy",
+        "Offer",
+        "Review",
+        "FAQ",
+        "HowTo",
+        "BreadcrumbList",
+        "Brand",
+        "ContactPoint",
+        "QuantitativeValue",
+        "DefinedTerm"
+      ],
+      "required": true
+    },
+    "name": {
+      "type": "string",
+      "maxLength": 200,
+      "required": true
+    },
+    "slug": {
+      "type": "uid",
+      "targetField": "name",
+      "required": true
+    },
+    "identifier": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "description": {
+      "type": "text"
+    },
+    "sameAs": {
+      "type": "json"
+    },
+    "image": {
+      "type": "media"
+    },
+    "url": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "properties": {
+      "type": "json"
+    },
+    "refTargetType": {
+      "type": "string",
+      "maxLength": 30
+    },
+    "refTargetId": {
+      "type": "string"
+    },
+    "confidence": {
+      "type": "decimal",
+      "default": 1.0
+    },
+    "sourceType": {
+      "type": "enumeration",
+      "enum": ["official", "derived", "manual", "imported"],
+      "default": "official"
+    },
+    "lastVerifiedAt": {
+      "type": "datetime"
+    },
+    "verificationStatus": {
+      "type": "enumeration",
+      "enum": ["verified", "pending", "outdated", "conflict"],
+      "default": "verified"
+    },
+    "verifiedBy": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "admin::user",
+      "inversedBy": "website_knowledge_entities"
+    },
+    "status": {
+      "type": "boolean",
+      "default": true
+    },
+    "deletedAt": {
+      "type": "datetime",
+      "default": null
+    }
+  }
+}

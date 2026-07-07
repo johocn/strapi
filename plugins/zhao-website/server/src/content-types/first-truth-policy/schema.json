@@ -1,0 +1,100 @@
+{
+  "kind": "collectionType",
+  "collectionName": "zhao_website_first_truths",
+  "info": {
+    "singularName": "first-truth-policy",
+    "pluralName": "first-truth-policies",
+    "displayName": "第一真值策略声明"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "content-manager": { "visible": true },
+    "content-type-builder": { "visible": false }
+  },
+  "attributes": {
+    "site": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-common.site-config",
+      "required": true,
+      "inversedBy": "website_first_truths"
+    },
+    "claim": {
+      "type": "string",
+      "maxLength": 200,
+      "required": true
+    },
+    "claimKey": {
+      "type": "string",
+      "maxLength": 100,
+      "required": true
+    },
+    "claimCategory": {
+      "type": "enumeration",
+      "enum": [
+        "business_license",
+        "brand_claim",
+        "technical_spec",
+        "certification",
+        "financial",
+        "other"
+      ],
+      "default": "brand_claim"
+    },
+    "canonicalEntity": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-website.knowledge-entity",
+      "inversedBy": "firstTruthPolicies"
+    },
+    "canonicalValue": {
+      "type": "text",
+      "required": true
+    },
+    "canonicalValueType": {
+      "type": "enumeration",
+      "enum": ["text", "number", "date", "url", "json"],
+      "default": "text"
+    },
+    "canonicalSourceUrl": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "canonicalSourceType": {
+      "type": "enumeration",
+      "enum": ["government", "official_site", "third_party_verified", "internal"],
+      "default": "official_site"
+    },
+    "conflictResolution": {
+      "type": "enumeration",
+      "enum": ["latest", "earliest", "highest_confidence", "manual"],
+      "default": "manual"
+    },
+    "lastVerifiedAt": {
+      "type": "datetime",
+      "required": true
+    },
+    "verificationStatus": {
+      "type": "enumeration",
+      "enum": ["verified", "pending", "outdated", "conflict"],
+      "default": "verified"
+    },
+    "conflictDetails": {
+      "type": "json"
+    },
+    "priority": {
+      "type": "integer",
+      "default": 100
+    },
+    "status": {
+      "type": "boolean",
+      "default": true
+    },
+    "deletedAt": {
+      "type": "datetime",
+      "default": null
+    }
+  }
+}
