@@ -16,6 +16,9 @@ export interface UploadParams {
   fileSize: number;
   folderInput?: string;
   folderIdInput?: string;
+  siteId?: number;
+  category?: string;
+  uploader?: number;
 }
 
 export interface UploadResult {
@@ -99,7 +102,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
    * 上传文件：本地存储 + OSS 同步 + 数据库记录
    */
   async uploadFile(params: UploadParams): Promise<UploadResult> {
-    const { fileBuffer, originalName, customName, mimeType, fileSize, folderInput = "/general", folderIdInput } = params;
+    const { fileBuffer, originalName, customName, mimeType, fileSize, folderInput = "/general", folderIdInput, siteId, category, uploader } = params;
 
     const fileHash = crypto.createHash("md5").update(fileBuffer).digest("hex");
     const ext = originalName ? `.${originalName.split(".").pop()}` : "";
@@ -200,6 +203,29 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         retryCount: 0,
       },
     });
+
+    // 写入 media-meta 租户关联（如果提供了 siteId）
+    if (siteId) {
+      try {
+        await strapi.db.query("plugin::zhao-oss.media-meta").create({
+          data: {
+            site: siteId,
+            file: uploadFile.id,
+            fileId: uploadFile.id,
+            folder: folderRecord?.id || null,
+            category: category || "general",
+            uploader: uploader || null,
+            originalFilename: originalName,
+            mimeType,
+            fileSize,
+            fileExt: ext,
+            isPublic: true,
+          },
+        });
+      } catch (metaErr) {
+        strapi.log.warn(`[zhao-oss] Failed to create media-meta: ${(metaErr as Error).message}`);
+      }
+    }
 
     return {
       id: uploadFile.id,
@@ -466,5 +492,57 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     }
 
     return results;
+  },
+
+  /**
+   * 为站点创建默认媒体文件夹（site-config 创建时调用）
+   */
+  async ensureSiteDefaultFolders(siteId: number): Promise<any> {
+    const SITE_DEFAULT_FOLDERS = [
+      { name: "general", category: "general" },
+      { name: "articles", category: "article" },
+      { name: "products", category: "product" },
+      { name: "cases", category: "case" },
+      { name: "compliance", category: "compliance" },
+      { name: "faqs", category: "faq" },
+      { name: "tutorials", category: "tutorial" },
+      { name: "downloads", category: "download" },
+      { name: "brand", category: "brand" },
+    ];
+    const siteRoot = await this.ensureFolderByPath(`site-${siteId}`);
+    for (const folder of SITE_DEFAULT_FOLDERS) {
+      await this.ensureFolderByPath(`site-${siteId}/${folder.name}`);
+    }
+    return siteRoot;
+  },
+
+  /**
+   * 按站点查询媒体文件（通过 media-meta 关联表）
+   */
+  async listFilesBySite(siteId: number, params: { page?: number; pageSize?: number; category?: string } = {}): Promise<{ list: any[]; pagination: any }> {
+    const { page = 1, pageSize = 20, category } = params;
+    const where: any = { site: siteId, deletedAt: null };
+    if (category) where.category = category;
+
+    const [metas, total] = await Promise.all([
+      strapi.db.query("plugin::zhao-oss.media-meta").findMany({
+        where,
+        limit: Number(pageSize),
+        offset: (Number(page) - 1) * Number(pageSize),
+        populate: ["file"],
+        orderBy: { createdAt: "DESC" },
+      }),
+      strapi.db.query("plugin::zhao-oss.media-meta").count({ where }),
+    ]);
+
+    return {
+      list: metas.map((m: any) => m.file).filter(Boolean),
+      pagination: {
+        page: Number(page),
+        pageSize: Number(pageSize),
+        total,
+        pageCount: Math.ceil(total / Number(pageSize)),
+      },
+    };
   },
 });
