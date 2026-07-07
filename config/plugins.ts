@@ -114,6 +114,10 @@ const config = ({ env }: Core.Config.Shared.ConfigParams): Core.Config.Plugin =>
         enabled: true,
         resolve: "./plugins/zhao-studio",
     },
+    "zhao-website": {
+        enabled: true,
+        resolve: "./plugins/zhao-website",
+    },
 });
 
 export default config;

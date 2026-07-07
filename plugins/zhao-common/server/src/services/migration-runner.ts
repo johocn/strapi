@@ -17,6 +17,7 @@ const PLUGIN_ORDER = [
   "zhao-wealth",
   "zhao-sso",
   "zhao-studio",
+  "zhao-website",
 ];
 
 function getPluginRoot(plugin: string): string {

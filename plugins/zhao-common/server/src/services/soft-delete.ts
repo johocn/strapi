@@ -21,6 +21,27 @@ const SOFT_DELETE_WHITELIST = new Set([
   "plugin::zhao-point.point-redemption",
   "plugin::zhao-point.point-product",
   "plugin::zhao-point.pickup-location",
+  // zhao-website CTs (18)
+  "plugin::zhao-website.seo-config",
+  "plugin::zhao-website.brand-info",
+  "plugin::zhao-website.article",
+  "plugin::zhao-website.article-category",
+  "plugin::zhao-website.product",
+  "plugin::zhao-website.case",
+  "plugin::zhao-website.compliance",
+  "plugin::zhao-website.faq",
+  "plugin::zhao-website.tutorial",
+  "plugin::zhao-website.lead",
+  "plugin::zhao-website.visit-log",
+  "plugin::zhao-website.interaction",
+  "plugin::zhao-website.search-log",
+  "plugin::zhao-website.knowledge-entity",
+  "plugin::zhao-website.knowledge-relation",
+  "plugin::zhao-website.ai-content-summary",
+  "plugin::zhao-website.first-truth-policy",
+  "plugin::zhao-website.download",
+  // zhao-oss media-meta
+  "plugin::zhao-oss.media-meta",
 ]);
 
 // 校验 uid 是否在白名单内，不在则抛 400
