@@ -7,7 +7,6 @@ const config: Core.Config.Middlewares = [
   {
     name: 'strapi::cors',
     config: {
-      enabled: true,
       headers: ['Content-Type', 'Authorization', 'x-site-id', 'x-site-domain'],
     },
   },
