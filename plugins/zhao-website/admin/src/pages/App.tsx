@@ -8,6 +8,7 @@ import StudioBridgePage from './StudioBridgePage';
 import KnowledgeGraphPage from './KnowledgeGraphPage';
 import FirstTruthPage from './FirstTruthPage';
 import AISummariesPage from './AISummariesPage';
+import SEOOutputPage from './SEOOutputPage';
 
 const App = () => (
   <ConfigProvider prefixCls="zw" iconPrefixCls="zw-icon" locale={zhCN}>
@@ -18,6 +19,7 @@ const App = () => (
         <Route path="/knowledge-graph" element={<KnowledgeGraphPage />} />
         <Route path="/first-truth" element={<FirstTruthPage />} />
         <Route path="/ai-summaries" element={<AISummariesPage />} />
+        <Route path="/seo-output" element={<SEOOutputPage />} />
         <Route path="*" element={<div>页面建设中</div>} />
       </Routes>
     </PluginLayout>

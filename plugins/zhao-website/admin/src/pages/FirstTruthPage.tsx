@@ -14,7 +14,7 @@ const FirstTruthPage = () => {
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
 
-  const { data: truths, loading } = useFetch<any[]>(API.ftFind(listParams));
+  const { data: truths, loading, refetch: refetchTruths } = useFetch<any[]>(API.ftFind(listParams));
   const { data: conflicts, loading: loadingConflicts } = useFetch<any[]>(
     activeTab === 'conflicts' ? API.ftConflicts : null
   );
@@ -42,6 +42,7 @@ const FirstTruthPage = () => {
         message.success('已创建');
       }
       setModalOpen(false);
+      refetchTruths();
     } catch (err) {
       message.error(`操作失败: ${(err as Error).message}`);
     } finally {
@@ -53,6 +54,7 @@ const FirstTruthPage = () => {
     try {
       await postJSON(API.ftVerify(documentId), {});
       message.success('已标记为 verified');
+      refetchTruths();
     } catch (err) {
       message.error(`操作失败: ${(err as Error).message}`);
     }
@@ -62,6 +64,7 @@ const FirstTruthPage = () => {
     try {
       await deleteJSON(API.ftDelete(documentId));
       message.success('已删除');
+      refetchTruths();
     } catch (err) {
       message.error(`删除失败: ${(err as Error).message}`);
     }
