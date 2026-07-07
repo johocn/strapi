@@ -9,6 +9,9 @@ const config: Config = {
   collectCoverageFrom: ['src/**/*.ts'],
   coverageDirectory: 'coverage',
   setupFilesAfterEnv: ['./helpers/strapi-setup.ts'],
+  transform: {
+    '^.+\\.tsx?$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.json' }],
+  },
 };
 
 export default config;

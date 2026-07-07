@@ -1,9 +1,19 @@
 {
-  "extends": "../server/tsconfig.json",
+  "extends": "@strapi/typescript-utils/tsconfigs/server",
   "compilerOptions": {
     "rootDir": ".",
-    "outDir": "./dist"
+    "outDir": "./dist",
+    "baseUrl": "..",
+    "paths": { "@/*": ["./server/src/*"] },
+    "declaration": false,
+    "declarationMap": false,
+    "sourceMap": false,
+    "noEmitOnError": false,
+    "incremental": false,
+    "tsBuildInfoFile": null,
+    "isolatedModules": true,
+    "noEmit": false
   },
-  "include": ["**/*"],
+  "include": ["**/*.ts", "../server/src/**/*.ts"],
   "exclude": ["node_modules", "dist"]
 }

@@ -1,10 +1,13 @@
-import { Strapi } from '@strapi/strapi';
+// Integration-test helper: loads a real Strapi instance.
+// Unit tests use createMockStrapi instead and never call these functions,
+// so the real @strapi/strapi import is lazy to avoid pulling it into unit-test compilation.
 
-let instance: Strapi;
+let instance: any;
 
 export async function setupStrapi() {
   if (!instance) {
-    instance = await Strapi().load();
+    const { createStrapi } = await import('@strapi/strapi');
+    instance = await createStrapi().load();
   }
   return instance;
 }
