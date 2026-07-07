@@ -98,6 +98,129 @@ async function cleanTestData(knex) {
   console.log('[DONE] 清理完成');
 }
 
+// ============ 模块 1: site-config + channel ============
+
+const SITES = [
+  {
+    docIdSeq: 1,
+    siteName: '圣麟主站',
+    domain: 'localhost',
+    siteDescription: '圣麟主站 - 多租户官网平台演示',
+    icpNumber: '沪ICP备2026000001号',
+    seoKeywords: '多租户,官网平台,内容管理',
+    customerServiceUrl: 'https://www.joho.cn',
+    templateName: 'default',
+    channelCode: 'test-official',
+    channelName: '官方直营',
+    channelTier: 'official',
+    parentChannelCode: null,
+  },
+  {
+    docIdSeq: 2,
+    siteName: '昭易科技',
+    domain: 'tenant-a.local',
+    siteDescription: '昭易科技 - 企业官网演示',
+    icpNumber: '沪ICP备2026000002号',
+    seoKeywords: '企业官网,数字化转型',
+    customerServiceUrl: 'https://www.joho.cn',
+    templateName: 'coursera-blue',
+    channelCode: 'test-regional',
+    channelName: '华东大区',
+    channelTier: 'regional',
+    parentChannelCode: 'test-official',
+  },
+  {
+    docIdSeq: 3,
+    siteName: '智教云',
+    domain: 'tenant-b.local',
+    siteDescription: '智教云 - 教育机构官网演示',
+    icpNumber: '沪ICP备2026000003号',
+    seoKeywords: '教育官网,在线课程',
+    customerServiceUrl: 'https://www.joho.cn',
+    templateName: 'netease-red',
+    channelCode: 'test-city',
+    channelName: '上海分部',
+    channelTier: 'city',
+    parentChannelCode: 'test-regional',
+  },
+];
+
+async function seedSites(knex) {
+  console.log('[2/12] 插入 site-config + channel...');
+  const siteIdMap = {}; // domain → numeric id
+  const channelIdMap = {}; // channelCode → numeric id
+
+  // 1. 查询 template 的 id
+  const templates = await knex('zhao_site_templates').select('id', 'name');
+  const templateIdMap = {};
+  templates.forEach(t => { templateIdMap[t.name] = t.id; });
+
+  // 2. 插入 site-config
+  for (const s of SITES) {
+    const docId = genDocId('testsite', s.docIdSeq);
+    const templateId = templateIdMap[s.templateName] || null;
+    const data = {
+      document_id: docId,
+      site_name: s.siteName,
+      site_description: s.siteDescription,
+      domain: s.domain,
+      icp_number: s.icpNumber,
+      seo_keywords: s.seoKeywords,
+      customer_service_url: s.customerServiceUrl,
+      template_id: templateId,
+      channel_usage: 'site_cross_user',
+      feature_flags: JSON.stringify({ sso: false, points: false, quiz: false, course: false, channel: true, thirdParty: false, oss: true }),
+      theme_config: JSON.stringify({}),
+      extra_config: JSON.stringify({}),
+      created_at: new Date(),
+      updated_at: new Date(),
+    };
+    const id = await insertIfNotExists(knex, 'zhao_site_configs', data, docId);
+    siteIdMap[s.domain] = id;
+    console.log(`  - site-config: ${s.siteName} (${s.domain}) id=${id}`);
+  }
+
+  // 3. 插入 channel（含树形结构）
+  for (const s of SITES) {
+    const docId = genDocId('testch', s.docIdSeq);
+    const parentId = s.parentChannelCode ? channelIdMap[s.parentChannelCode] : null;
+    const data = {
+      document_id: docId,
+      name: s.channelName,
+      code: s.channelCode,
+      channel_tier: s.channelTier,
+      parent_channel_id: parentId,
+      status: true,
+      depth: parentId ? 1 : 0,
+      path: parentId ? `/test-official/${s.channelCode}` : `/${s.channelCode}`,
+      extra_config: JSON.stringify({}),
+      created_at: new Date(),
+      updated_at: new Date(),
+    };
+    const id = await insertIfNotExists(knex, 'zhao_channels', data, docId);
+    channelIdMap[s.channelCode] = id;
+    console.log(`  - channel: ${s.channelName} (${s.channelCode}) id=${id}`);
+  }
+
+  // 4. 关联 site-config ↔ channel（M2M join 表）
+  for (const s of SITES) {
+    const siteId = siteIdMap[s.domain];
+    const channelId = channelIdMap[s.channelCode];
+    const existing = await knex('zhao_channels_site_configs_lnk')
+      .where({ site_config_id: siteId, channel_id: channelId }).first();
+    if (!existing) {
+      await knex('zhao_channels_site_configs_lnk').insert({
+        site_config_id: siteId,
+        channel_id: channelId,
+        site_config_ord: 0,
+        channel_ord: 0,
+      });
+    }
+  }
+
+  return { siteIdMap, channelIdMap };
+}
+
 // ============ 主入口 ============
 
 (async () => {
@@ -113,9 +236,7 @@ async function cleanTestData(knex) {
     }
     if (isSeed) {
       console.log('\n[INFO] 开始插入测试数据...');
-      // 各模块函数将在后续 Task 中实现
-      // await seedSites(knex);
-      // ...
+      const { siteIdMap, channelIdMap } = await seedSites(knex);
       console.log('[DONE] 测试数据插入完成');
     }
   } catch (err) {
