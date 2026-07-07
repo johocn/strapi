@@ -5,6 +5,7 @@ import { Routes, Route } from 'react-router-dom';
 import { PluginLayout } from '../components/PluginLayout';
 import DashboardPage from './DashboardPage';
 import StudioBridgePage from './StudioBridgePage';
+import KnowledgeGraphPage from './KnowledgeGraphPage';
 
 const App = () => (
   <ConfigProvider prefixCls="zw" iconPrefixCls="zw-icon" locale={zhCN}>
@@ -12,6 +13,7 @@ const App = () => (
       <Routes>
         <Route path="/" element={<DashboardPage />} />
         <Route path="/studio-bridge" element={<StudioBridgePage />} />
+        <Route path="/knowledge-graph" element={<KnowledgeGraphPage />} />
         <Route path="*" element={<div>页面建设中</div>} />
       </Routes>
     </PluginLayout>
