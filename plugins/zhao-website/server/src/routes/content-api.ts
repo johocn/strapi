@@ -48,5 +48,7 @@ export default () => ({
     publicRoute("GET", "/robots.txt", "content-api.seo-output.robots"),
     publicRoute("GET", "/llms.txt", "content-api.seo-output.llmsTxt"),
     publicRoute("GET", "/manifest.json", "content-api.seo-output.manifest"),
+    // ===== 站点信息 =====
+    publicRoute("GET", "/site-info", "content-api.site-info.info"),
   ],
 });
