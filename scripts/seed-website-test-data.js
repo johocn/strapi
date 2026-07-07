@@ -491,6 +491,284 @@ async function seedProducts(knex, siteIdMap, categoryIdMap, tagIdMap) {
   return productIdMap;
 }
 
+// ============ 模块 6: case ============
+
+const CASES = [
+  { siteDomain: 'localhost', seq: 1, title: '某制造业集团官网矩阵建设', slug: 'test-case-1', clientName: '某制造业集团', clientIndustry: '制造业', challenge: '<p>20+ 子品牌官网各自维护...</p>', solution: '<p>采用多租户架构统一管理...</p>', results: JSON.stringify([{ metric: '建站效率', value: '提升 80%' }, { metric: '运维成本', value: '降低 60%' }]), testimonial: '2 个月内全部上线', testimonialAuthor: '张总监', testimonialTitle: '数字化负责人', tags: ['多租户', '企业服务'], relatedProducts: ['test-prod-1'], isFeatured: true, status: 'published' },
+  { siteDomain: 'localhost', seq: 2, title: '某 SaaS 公司品牌升级', slug: 'test-case-2', clientName: '某 SaaS 公司', clientIndustry: 'SaaS', challenge: '<p>品牌形象老旧...</p>', solution: '<p>全新官网 + 品牌升级...</p>', results: JSON.stringify([{ metric: '访问量', value: '提升 200%' }]), testimonial: '品牌形象焕然一新', testimonialAuthor: '李总', testimonialTitle: '市场总监', tags: ['企业服务', '数字化转型'], relatedProducts: ['test-prod-1'], isFeatured: false, status: 'published' },
+  { siteDomain: 'tenant-a.local', seq: 3, title: '某零售企业数字化转型', slug: 'test-case-3', clientName: '某零售企业', clientIndustry: '零售', challenge: '<p>线下门店为主...</p>', solution: '<p>线上线下融合...</p>', results: JSON.stringify([{ metric: '线上销售', value: '提升 150%' }]), testimonial: '数字化转型成功', testimonialAuthor: '王总', testimonialTitle: '运营总监', tags: ['企业服务', '数字化转型'], relatedProducts: ['test-prod-2'], isFeatured: false, status: 'published' },
+  { siteDomain: 'tenant-a.local', seq: 4, title: '某金融机构官网重构', slug: 'test-case-4', clientName: '某金融机构', clientIndustry: '金融', challenge: '<p>官网老旧不安全...</p>', solution: '<p>安全重构 + 性能优化...</p>', results: JSON.stringify([{ metric: '安全性', value: '等保三级' }]), testimonial: '安全可靠', testimonialAuthor: '赵总', testimonialTitle: 'IT 负责人', tags: ['企业服务'], relatedProducts: ['test-prod-2'], isFeatured: false, status: 'published' },
+  { siteDomain: 'tenant-b.local', seq: 5, title: '某教育机构招生官网', slug: 'test-case-5', clientName: '某教育机构', clientIndustry: '教育', challenge: '<p>招生渠道单一...</p>', solution: '<p>官网 + 留资 + 课程展示...</p>', results: JSON.stringify([{ metric: '招生转化', value: '提升 120%' }]), testimonial: '招生量翻倍', testimonialAuthor: '孙校长', testimonialTitle: '校长', tags: ['教育科技', '留资转化'], relatedProducts: ['test-prod-3'], isFeatured: true, status: 'published' },
+  { siteDomain: 'tenant-b.local', seq: 6, title: '某培训学校在线商城', slug: 'test-case-6', clientName: '某培训学校', clientIndustry: '教育', challenge: '<p>课程销售线下为主...</p>', solution: '<p>在线课程商城...</p>', results: JSON.stringify([{ metric: '线上收入', value: '提升 80%' }]), testimonial: '线上收入大幅增长', testimonialAuthor: '周校长', testimonialTitle: '校长', tags: ['教育科技'], relatedProducts: ['test-prod-4'], isFeatured: false, status: 'published' },
+  { siteDomain: 'tenant-b.local', seq: 7, title: '某大学门户建设', slug: 'test-case-7', clientName: '某大学', clientIndustry: '教育', challenge: '<p>信息分散...</p>', solution: '<p>统一门户 + 多院系子站...</p>', results: JSON.stringify([{ metric: '信息整合', value: '100%' }]), testimonial: '门户建设成功', testimonialAuthor: '吴主任', testimonialTitle: '信息中心主任', tags: ['教育科技', '多租户'], relatedProducts: ['test-prod-3'], isFeatured: false, status: 'archived' },
+];
+
+async function seedCases(knex, siteIdMap, tagIdMap, productIdMap) {
+  console.log('[7/12] 插入 case...');
+  const now = new Date();
+  const publishedDate = new Date('2026-07-01');
+
+  for (const c of CASES) {
+    const docId = genDocId('testcase', c.seq);
+    const siteId = siteIdMap[c.siteDomain];
+    const data = {
+      document_id: docId,
+      site_id: siteId,
+      title: c.title,
+      slug: c.slug,
+      client_name: c.clientName,
+      client_industry: c.clientIndustry,
+      challenge: c.challenge,
+      solution: c.solution,
+      results: c.results,
+      testimonial: c.testimonial,
+      testimonial_author: c.testimonialAuthor,
+      testimonial_title: c.testimonialTitle,
+      is_featured: c.isFeatured,
+      view_count: Math.floor(Math.random() * 300) + 50,
+      allow_index: true,
+      status: c.status,
+      published_at: c.status === 'published' ? publishedDate : null,
+      deleted_at: c.status === 'archived' ? now : null,
+      created_at: now,
+      updated_at: now,
+    };
+    const id = await insertIfNotExists(knex, 'zhao_website_cases', data, docId);
+
+    // tags 关联
+    for (const tagName of c.tags) {
+      const tagId = tagIdMap[tagName];
+      if (tagId) {
+        const existing = await knex('zhao_website_cases_tags_lnk')
+          .where({ case_id: id, tag_id: tagId }).first();
+        if (!existing) {
+          await knex('zhao_website_cases_tags_lnk').insert({ case_id: id, tag_id: tagId, tag_ord: 0 });
+        }
+      }
+    }
+
+    // relatedProducts 关联
+    for (const prodSlug of c.relatedProducts) {
+      const prodId = productIdMap[prodSlug];
+      if (prodId) {
+        const existing = await knex('zhao_website_cases_products_lnk')
+          .where({ case_id: id, product_id: prodId }).first();
+        if (!existing) {
+          await knex('zhao_website_cases_products_lnk').insert({ case_id: id, product_id: prodId, product_ord: 0 });
+        }
+      }
+    }
+  }
+  console.log(`  - 插入 case: ${CASES.length} 条`);
+}
+
+// ============ 模块 7: faq + tutorial + compliance + download ============
+
+const FAQS = [
+  // 圣麟主站
+  { siteDomain: 'localhost', seq: 1, question: '交互官网平台支持多少个租户？', answer: '单实例支撑 100+ 租户站点。', order: 1, isFeatured: true, category: 'main-product-news', status: 'published' },
+  { siteDomain: 'localhost', seq: 2, question: '如何配置自定义域名？', answer: '三步完成：DNS CNAME + site-config.domain + Nginx server_name。', order: 2, isFeatured: true, category: 'main-product-tutorials', status: 'published' },
+  { siteDomain: 'localhost', seq: 3, question: '是否支持多语言？', answer: '首期单语言，架构已预留 i18n 扩展点。', order: 3, isFeatured: false, category: 'main-product-news', status: 'published' },
+  { siteDomain: 'localhost', seq: 4, question: 'SEO 效果如何保证？', answer: 'SSR + useSeoMeta + sitemap + JSON-LD 四重保障。', order: 4, isFeatured: true, category: 'main-industry-insights', status: 'published' },
+  { siteDomain: 'localhost', seq: 5, question: '内容发布流程是什么？', answer: 'draft → published → archived 三态流转。', order: 5, isFeatured: false, category: 'main-product-tutorials', status: 'published' },
+  // 昭易科技
+  { siteDomain: 'tenant-a.local', seq: 6, question: '是否支持私有化部署？', answer: '支持 Docker Compose 一键部署。', order: 1, isFeatured: true, category: 'a-solutions', status: 'published' },
+  { siteDomain: 'tenant-a.local', seq: 7, question: '与 Strapi 原生有什么增强？', answer: '多租户 + 7 业务 CT + 知识图谱 + AI 摘要 + Studio Bridge。', order: 2, isFeatured: true, category: 'a-solutions', status: 'published' },
+  { siteDomain: 'tenant-a.local', seq: 8, question: '如何对接 CRM？', answer: '通过留资 API + webhook 推送。', order: 3, isFeatured: false, category: 'a-user-guides', status: 'published' },
+  { siteDomain: 'tenant-a.local', seq: 9, question: '支持哪些数据库？', answer: 'PostgreSQL/MySQL/SQLite。', order: 4, isFeatured: false, category: 'a-tech-sharing', status: 'published' },
+  { siteDomain: 'tenant-a.local', seq: 10, question: '如何备份？', answer: 'mysqldump/pgdump + uploads 目录 + .env。', order: 5, isFeatured: false, category: 'a-user-guides', status: 'published' },
+  // 智教云
+  { siteDomain: 'tenant-b.local', seq: 11, question: '支持在线支付吗？', answer: '支持微信/支付宝支付。', order: 1, isFeatured: true, category: 'b-course-news', status: 'published' },
+  { siteDomain: 'tenant-b.local', seq: 12, question: '课程如何管理？', answer: '通过课程 CT + 课时 CT 管理。', order: 2, isFeatured: true, category: 'b-operation-manuals', status: 'published' },
+  { siteDomain: 'tenant-b.local', seq: 13, question: '学员如何注册？', answer: '支持手机号/微信注册。', order: 3, isFeatured: false, category: 'b-operation-manuals', status: 'published' },
+  { siteDomain: 'tenant-b.local', seq: 14, question: '支持直播吗？', answer: '支持接入第三方直播服务。', order: 4, isFeatured: false, category: 'b-course-news', status: 'published' },
+  { siteDomain: 'tenant-b.local', seq: 15, question: '如何查看学习进度？', answer: '学员中心有进度统计。', order: 5, isFeatured: false, category: 'b-learning-insights', status: 'published' },
+];
+
+async function seedFaqs(knex, siteIdMap, categoryIdMap) {
+  console.log('[8/12] 插入 faq...');
+  const now = new Date();
+  const publishedDate = new Date('2026-07-01');
+
+  for (const f of FAQS) {
+    const docId = genDocId('testfaq', f.seq);
+    const siteId = siteIdMap[f.siteDomain];
+    const categoryId = categoryIdMap[f.category];
+    const data = {
+      document_id: docId,
+      site_id: siteId,
+      question: f.question,
+      answer: f.answer,
+      slug: `test-faq-${f.seq}`,
+      order: f.order,
+      is_featured: f.isFeatured,
+      category_id: categoryId,
+      view_count: Math.floor(Math.random() * 200) + 20,
+      status: f.status,
+      published_at: publishedDate,
+      created_at: now,
+      updated_at: now,
+    };
+    await insertIfNotExists(knex, 'zhao_website_faqs', data, docId);
+  }
+  console.log(`  - 插入 faq: ${FAQS.length} 条`);
+}
+
+const TUTORIALS = [
+  { siteDomain: 'localhost', seq: 1, title: '5 分钟搭建第一个官网站点', slug: 'test-tu-1', difficulty: 'beginner', estimatedTime: '5 分钟', category: 'main-product-tutorials', tags: ['多租户', '内容管理'], isFeatured: true, status: 'published', description: '从零搭建官网站点', steps: JSON.stringify([{ title: '启动 Strapi', content: 'npm run develop' }, { title: '配置 site-config', content: '编辑默认 site-config' }, { title: '启动 dsite', content: 'npm run dev' }]), materials: JSON.stringify([{ name: 'Node.js 20+', desc: '运行时' }]), result: '访问 localhost:3000 看到首页' },
+  { siteDomain: 'localhost', seq: 2, title: '多租户配置完整流程', slug: 'test-tu-2', difficulty: 'intermediate', estimatedTime: '30 分钟', category: 'main-product-tutorials', tags: ['多租户', '企业服务'], isFeatured: false, status: 'published', description: '多租户配置指南', steps: JSON.stringify([{ title: '创建 site-template', content: '配置模板' }, { title: '创建 site-config', content: '配置租户' }, { title: '创建 channel', content: '配置渠道' }, { title: '关联', content: '关联 channel 到 site-config' }, { title: '配置 DNS', content: 'CNAME 指向' }, { title: '验证', content: '访问域名' }]), materials: JSON.stringify([{ name: '域名', desc: '租户域名' }]), result: '租户专属站点可访问' },
+  { siteDomain: 'localhost', seq: 3, title: '自定义模板开发指南', slug: 'test-tu-3', difficulty: 'advanced', estimatedTime: '2 小时', category: 'main-product-tutorials', tags: ['模板系统', '内容管理'], isFeatured: true, status: 'published', description: '自定义模板开发', steps: JSON.stringify([{ title: '创建模板文件', content: 'layouts/templates/<name>.vue' }, { title: '编排 sections', content: '组合 components/sections/*' }, { title: '创建主题样式', content: 'assets/css/themes/<name>.css' }, { title: '注册主题', content: 'nuxt.config.ts css 数组' }, { title: '更新入口', content: 'layouts/default.vue v-if 分支' }, { title: '创建 site-template', content: 'Strapi 后台新建记录' }, { title: '绑定 site-config', content: '关联 template' }, { title: '验证', content: '访问站点确认' }]), materials: JSON.stringify([{ name: 'dsite 源码', desc: '前端代码' }]), result: '新模板布局生效' },
+  { siteDomain: 'tenant-a.local', seq: 4, title: 'API 集成指南', slug: 'test-tu-4', difficulty: 'advanced', estimatedTime: '1.5 小时', category: 'a-tech-sharing', tags: ['企业服务'], isFeatured: false, status: 'published', description: '对接外部系统', steps: JSON.stringify([{ title: '获取 API token', content: 'Strapi 后台创建 token' }, { title: '调用列表接口', content: 'GET /api/zhao-website/v1/articles' }, { title: '调用详情接口', content: 'GET /api/zhao-website/v1/articles/:slug' }, { title: '调用留资接口', content: 'POST /api/zhao-website/v1/leads' }, { title: 'webhook 配置', content: '配置回调 URL' }, { title: '错误处理', content: '处理 4xx/5xx' }, { title: '限流', content: '注意 rate limit' }]), materials: JSON.stringify([{ name: 'API 文档', desc: '接口文档' }]), result: '外部系统对接成功' },
+  { siteDomain: 'tenant-a.local', seq: 5, title: '权限配置完整教程', slug: 'test-tu-5', difficulty: 'intermediate', estimatedTime: '20 分钟', category: 'a-user-guides', tags: ['企业服务'], isFeatured: false, status: 'published', description: '权限配置指南', steps: JSON.stringify([{ title: '创建角色', content: 'Strapi 后台 → 角色' }, { title: '配置权限', content: '勾选 CT 权限' }, { title: '创建用户', content: '分配角色' }, { title: '验证', content: '登录验证权限' }, { title: '调整', content: '按需调整' }]), materials: JSON.stringify([]), result: '权限体系配置完成' },
+  { siteDomain: 'tenant-b.local', seq: 6, title: '性能优化最佳实践', slug: 'test-tu-6', difficulty: 'advanced', estimatedTime: '1 小时', category: 'b-operation-manuals', tags: ['SSR', 'SEO优化'], isFeatured: true, status: 'published', description: '性能优化指南', steps: JSON.stringify([{ title: '开启 SSR 缓存', content: 'routeRules ISR' }, { title: '图片优化', content: 'Nuxt Image' }, { title: '数据库索引', content: '检查索引' }, { title: 'CDN 配置', content: '静态资源 CDN' }, { title: 'gzip 压缩', content: 'Nginx gzip' }, { title: '监控', content: '性能监控' }]), materials: JSON.stringify([]), result: '性能提升 50%+' },
+  { siteDomain: 'tenant-b.local', seq: 7, title: '课程发布教程', slug: 'test-tu-7', difficulty: 'beginner', estimatedTime: '10 分钟', category: 'b-operation-manuals', tags: ['教育科技'], isFeatured: false, status: 'published', description: '课程发布流程', steps: JSON.stringify([{ title: '创建课程', content: '填写课程信息' }, { title: '添加课时', content: '添加章节' }, { title: '发布', content: '点击发布' }]), materials: JSON.stringify([]), result: '课程上线' },
+  { siteDomain: 'tenant-b.local', seq: 8, title: '学员管理指南', slug: 'test-tu-8', difficulty: 'intermediate', estimatedTime: '15 分钟', category: 'b-operation-manuals', tags: ['教育科技'], isFeatured: false, status: 'draft', description: '学员管理', steps: JSON.stringify([{ title: '查看学员列表', content: '后台 → 学员' }, { title: '分配课程', content: '关联课程' }, { title: '查看进度', content: '学习进度' }, { title: '导出', content: '导出学员数据' }]), materials: JSON.stringify([]), result: '学员管理完成' },
+  { siteDomain: 'tenant-b.local', seq: 9, title: '数据备份与恢复', slug: 'test-tu-9', difficulty: 'advanced', estimatedTime: '30 分钟', category: 'b-operation-manuals', tags: ['企业服务'], isFeatured: false, status: 'archived', description: '数据备份恢复', steps: JSON.stringify([{ title: '备份数据库', content: 'pg_dump' }, { title: '备份文件', content: 'uploads 目录' }, { title: '恢复数据库', content: 'pg_restore' }, { title: '验证', content: '验证数据' }]), materials: JSON.stringify([]), result: '备份恢复成功' },
+];
+
+async function seedTutorials(knex, siteIdMap, categoryIdMap, tagIdMap) {
+  console.log('[9/12] 插入 tutorial...');
+  const now = new Date();
+  const publishedDate = new Date('2026-07-01');
+
+  for (const t of TUTORIALS) {
+    const docId = genDocId('testtu', t.seq);
+    const siteId = siteIdMap[t.siteDomain];
+    const categoryId = categoryIdMap[t.category];
+    const data = {
+      document_id: docId,
+      site_id: siteId,
+      title: t.title,
+      slug: t.slug,
+      description: t.description,
+      steps: t.steps,
+      materials: t.materials,
+      estimated_time: t.estimatedTime,
+      difficulty: t.difficulty,
+      result: t.result,
+      category_id: categoryId,
+      is_featured: t.isFeatured,
+      view_count: Math.floor(Math.random() * 400) + 50,
+      status: t.status,
+      published_at: t.status === 'published' ? publishedDate : null,
+      deleted_at: t.status === 'archived' ? now : null,
+      created_at: now,
+      updated_at: now,
+    };
+    const id = await insertIfNotExists(knex, 'zhao_website_tutorials', data, docId);
+
+    for (const tagName of t.tags) {
+      const tagId = tagIdMap[tagName];
+      if (tagId) {
+        const existing = await knex('zhao_website_tutorials_tags_lnk')
+          .where({ tutorial_id: id, tag_id: tagId }).first();
+        if (!existing) {
+          await knex('zhao_website_tutorials_tags_lnk').insert({ tutorial_id: id, tag_id: tagId, tag_ord: 0 });
+        }
+      }
+    }
+  }
+  console.log(`  - 插入 tutorial: ${TUTORIALS.length} 条`);
+}
+
+const COMPLIANCES = [
+  // 圣麟主站
+  { siteDomain: 'localhost', seq: 1, title: '服务协议', slug: 'test-cp-1', category: 'agreement', isPinned: true, allowIndex: false, effectiveDate: '2026-01-01', content: '<h2>服务内容</h2><p>提供多租户官网建设服务...</p>' },
+  { siteDomain: 'localhost', seq: 2, title: '隐私政策', slug: 'test-cp-2', category: 'policy', isPinned: true, allowIndex: true, effectiveDate: '2026-01-01', content: '<h2>信息收集</h2><p>收集注册信息、留资、日志...</p>' },
+  { siteDomain: 'localhost', seq: 3, title: '数据处理协议', slug: 'test-cp-3', category: 'agreement', isPinned: false, allowIndex: false, effectiveDate: '2026-01-01', content: '<h2>数据处理</h2><p>作为数据处理者...</p>' },
+  { siteDomain: 'localhost', seq: 4, title: '等保三级备案', slug: 'test-cp-4', category: 'certificate', isPinned: false, allowIndex: true, effectiveDate: '2026-01-01', expiryDate: '2028-12-31', content: '<h2>备案信息</h2><p>等级：第三级...</p>' },
+  // 昭易科技
+  { siteDomain: 'tenant-a.local', seq: 5, title: '服务协议', slug: 'test-cp-5', category: 'agreement', isPinned: true, allowIndex: false, effectiveDate: '2026-01-01', content: '<h2>服务内容</h2><p>提供企业官网服务...</p>' },
+  { siteDomain: 'tenant-a.local', seq: 6, title: '隐私政策', slug: 'test-cp-6', category: 'policy', isPinned: true, allowIndex: true, effectiveDate: '2026-01-01', content: '<h2>信息收集</h2><p>收集用户信息...</p>' },
+  { siteDomain: 'tenant-a.local', seq: 7, title: 'ISO27001 认证', slug: 'test-cp-7', category: 'certificate', isPinned: false, allowIndex: true, effectiveDate: '2025-06-01', expiryDate: '2028-06-01', content: '<h2>认证信息</h2><p>ISO27001 信息安全管理体系...</p>' },
+  { siteDomain: 'tenant-a.local', seq: 8, title: '高新技术企业认证', slug: 'test-cp-8', category: 'certificate', isPinned: false, allowIndex: true, effectiveDate: '2025-12-01', expiryDate: '2028-12-01', content: '<h2>认证信息</h2><p>国家高新技术企业...</p>' },
+  // 智教云
+  { siteDomain: 'tenant-b.local', seq: 9, title: '服务协议', slug: 'test-cp-9', category: 'agreement', isPinned: true, allowIndex: false, effectiveDate: '2026-01-01', content: '<h2>服务内容</h2><p>提供教育平台服务...</p>' },
+  { siteDomain: 'tenant-b.local', seq: 10, title: '隐私政策', slug: 'test-cp-10', category: 'policy', isPinned: true, allowIndex: true, effectiveDate: '2026-01-01', content: '<h2>信息收集</h2><p>收集学员信息...</p>' },
+  { siteDomain: 'tenant-b.local', seq: 11, title: '软件著作权登记', slug: 'test-cp-11', category: 'certificate', isPinned: false, allowIndex: true, effectiveDate: '2025-03-01', content: '<h2>登记信息</h2><p>软件著作权登记证书...</p>' },
+  { siteDomain: 'tenant-b.local', seq: 12, title: '平台公告', slug: 'test-cp-12', category: 'notice', isPinned: false, allowIndex: true, effectiveDate: '2026-07-01', content: '<h2>公告</h2><p>平台升级公告...</p>' },
+];
+
+async function seedCompliances(knex, siteIdMap) {
+  console.log('[10/12] 插入 compliance...');
+  const now = new Date();
+  const publishedDate = new Date('2026-07-01');
+
+  for (const c of COMPLIANCES) {
+    const docId = genDocId('testcp', c.seq);
+    const siteId = siteIdMap[c.siteDomain];
+    const data = {
+      document_id: docId,
+      site_id: siteId,
+      title: c.title,
+      slug: c.slug,
+      category: c.category,
+      content: c.content,
+      effective_date: c.effectiveDate,
+      expiry_date: c.expiryDate || null,
+      is_pinned: c.isPinned,
+      allow_index: c.allowIndex,
+      status: 'published',
+      published_at: publishedDate,
+      created_at: now,
+      updated_at: now,
+    };
+    await insertIfNotExists(knex, 'zhao_website_compliances', data, docId);
+  }
+  console.log(`  - 插入 compliance: ${COMPLIANCES.length} 条`);
+}
+
+const DOWNLOADS = [
+  { siteDomain: 'localhost', seq: 1, name: '交互官网平台白皮书', fileType: 'whitepaper', requireLead: true, isFeatured: true, category: 'main-product-news', fileSize: 5242880, description: '平台白皮书', tags: ['多租户', 'SSR'] },
+  { siteDomain: 'localhost', seq: 2, name: '产品功能数据表', fileType: 'datasheet', requireLead: false, isFeatured: false, category: 'main-product-news', fileSize: 1048576, description: '功能数据表', tags: ['内容管理'] },
+  { siteDomain: 'tenant-a.local', seq: 3, name: '企业 CMS 技术指南', fileType: 'guide', requireLead: true, isFeatured: true, category: 'a-tech-sharing', fileSize: 3145728, description: '技术指南', tags: ['内容管理', '企业服务'] },
+  { siteDomain: 'tenant-a.local', seq: 4, name: '解决方案手册', fileType: 'brochure', requireLead: false, isFeatured: false, category: 'a-solutions', fileSize: 2097152, description: '解决方案手册', tags: ['企业服务'] },
+  { siteDomain: 'tenant-b.local', seq: 5, name: '在线教育平台介绍', fileType: 'brochure', requireLead: true, isFeatured: true, category: 'b-course-news', fileSize: 1572864, description: '平台介绍', tags: ['教育科技'] },
+  { siteDomain: 'tenant-b.local', seq: 6, name: '课程商城操作手册', fileType: 'guide', requireLead: false, isFeatured: false, category: 'b-operation-manuals', fileSize: 8388608, description: '操作手册', tags: ['教育科技'] },
+];
+
+async function seedDownloads(knex, siteIdMap, categoryIdMap, tagIdMap) {
+  console.log('[11/12] 插入 download...');
+  const now = new Date();
+  const publishedDate = new Date('2026-07-01');
+
+  for (const d of DOWNLOADS) {
+    const docId = genDocId('testdl', d.seq);
+    const siteId = siteIdMap[d.siteDomain];
+    const categoryId = categoryIdMap[d.category];
+    const data = {
+      document_id: docId,
+      site_id: siteId,
+      name: d.name,
+      description: d.description,
+      file_type: d.fileType,
+      file_size: d.fileSize,
+      category_id: categoryId,
+      require_lead: d.requireLead,
+      download_count: Math.floor(Math.random() * 5000) + 100,
+      is_featured: d.isFeatured,
+      order: d.seq,
+      status: 'published',
+      published_at: publishedDate,
+      created_at: now,
+      updated_at: now,
+    };
+    const id = await insertIfNotExists(knex, 'zhao_website_downloads', data, docId);
+
+    for (const tagName of d.tags) {
+      const tagId = tagIdMap[tagName];
+      if (tagId) {
+        const existing = await knex('zhao_website_downloads_tags_lnk')
+          .where({ download_id: id, tag_id: tagId }).first();
+        if (!existing) {
+          await knex('zhao_website_downloads_tags_lnk').insert({ download_id: id, tag_id: tagId, tag_ord: 0 });
+        }
+      }
+    }
+  }
+  console.log(`  - 插入 download: ${DOWNLOADS.length} 条`);
+}
+
 // ============ 主入口 ============
 
 (async () => {
@@ -511,6 +789,11 @@ async function seedProducts(knex, siteIdMap, categoryIdMap, tagIdMap) {
       const tagIdMap = await seedTags(knex);
       const articleIdMap = await seedArticles(knex, siteIdMap, categoryIdMap, tagIdMap);
       const productIdMap = await seedProducts(knex, siteIdMap, categoryIdMap, tagIdMap);
+      await seedCases(knex, siteIdMap, tagIdMap, productIdMap);
+      await seedFaqs(knex, siteIdMap, categoryIdMap);
+      await seedTutorials(knex, siteIdMap, categoryIdMap, tagIdMap);
+      await seedCompliances(knex, siteIdMap);
+      await seedDownloads(knex, siteIdMap, categoryIdMap, tagIdMap);
       console.log('[DONE] 测试数据插入完成');
     }
   } catch (err) {
