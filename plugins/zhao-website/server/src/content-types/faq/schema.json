@@ -1,0 +1,86 @@
+{
+  "kind": "collectionType",
+  "collectionName": "zhao_website_faqs",
+  "info": {
+    "singularName": "faq",
+    "pluralName": "faqs",
+    "displayName": "常见问答"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "content-manager": { "visible": true },
+    "content-type-builder": { "visible": false }
+  },
+  "attributes": {
+    "site": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-common.site-config",
+      "required": true,
+      "inversedBy": "website_faqs"
+    },
+    "question": {
+      "type": "text",
+      "required": true
+    },
+    "answer": {
+      "type": "text",
+      "required": true
+    },
+    "slug": {
+      "type": "uid",
+      "targetField": "question",
+      "required": true
+    },
+    "category": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-website.article-category",
+      "inversedBy": "faqs"
+    },
+    "tags": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "plugin::zhao-tag.tag",
+      "inversedBy": "website_faqs"
+    },
+    "order": {
+      "type": "integer",
+      "default": 0
+    },
+    "isFeatured": {
+      "type": "boolean",
+      "default": false
+    },
+    "viewCount": {
+      "type": "biginteger",
+      "default": 0
+    },
+    "mainEntity": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-website.knowledge-entity",
+      "inversedBy": "faqMainEntities"
+    },
+    "mentionedEntities": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "plugin::zhao-website.knowledge-entity",
+      "inversedBy": "faqMentions"
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": ["draft", "published", "archived"],
+      "default": "draft"
+    },
+    "publishedAt": {
+      "type": "datetime"
+    },
+    "deletedAt": {
+      "type": "datetime",
+      "default": null
+    }
+  }
+}

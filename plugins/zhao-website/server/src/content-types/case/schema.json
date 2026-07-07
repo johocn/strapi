@@ -1,0 +1,139 @@
+{
+  "kind": "collectionType",
+  "collectionName": "zhao_website_cases",
+  "info": {
+    "singularName": "case",
+    "pluralName": "cases",
+    "displayName": "落地案例"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "content-manager": { "visible": true },
+    "content-type-builder": { "visible": false }
+  },
+  "attributes": {
+    "site": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-common.site-config",
+      "required": true,
+      "inversedBy": "website_cases"
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 200,
+      "required": true
+    },
+    "slug": {
+      "type": "uid",
+      "targetField": "title",
+      "required": true
+    },
+    "clientName": {
+      "type": "string",
+      "maxLength": 100,
+      "required": true
+    },
+    "clientLogo": {
+      "type": "media"
+    },
+    "clientIndustry": {
+      "type": "string",
+      "maxLength": 50
+    },
+    "clientDescription": {
+      "type": "text"
+    },
+    "challenge": {
+      "type": "text",
+      "required": true
+    },
+    "solution": {
+      "type": "text",
+      "required": true
+    },
+    "results": {
+      "type": "json",
+      "required": true
+    },
+    "testimonial": {
+      "type": "text"
+    },
+    "testimonialAuthor": {
+      "type": "string",
+      "maxLength": 50
+    },
+    "testimonialTitle": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "coverImage": {
+      "type": "media"
+    },
+    "images": {
+      "type": "media",
+      "multiple": true
+    },
+    "tags": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "plugin::zhao-tag.tag",
+      "inversedBy": "website_cases"
+    },
+    "relatedProducts": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "plugin::zhao-website.product",
+      "inversedBy": "cases"
+    },
+    "isFeatured": {
+      "type": "boolean",
+      "default": false
+    },
+    "viewCount": {
+      "type": "biginteger",
+      "default": 0
+    },
+    "seoTitle": {
+      "type": "string",
+      "maxLength": 60
+    },
+    "seoDescription": {
+      "type": "string",
+      "maxLength": 160
+    },
+    "allowIndex": {
+      "type": "boolean",
+      "default": true
+    },
+    "mainEntity": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-website.knowledge-entity",
+      "inversedBy": "caseMainEntities"
+    },
+    "mentionedEntities": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "plugin::zhao-website.knowledge-entity",
+      "inversedBy": "caseMentions"
+    },
+    "structuredData": {
+      "type": "json"
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": ["draft", "published", "archived"],
+      "default": "draft"
+    },
+    "publishedAt": {
+      "type": "datetime"
+    },
+    "deletedAt": {
+      "type": "datetime",
+      "default": null
+    }
+  }
+}

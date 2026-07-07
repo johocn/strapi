@@ -1,0 +1,84 @@
+{
+  "kind": "collectionType",
+  "collectionName": "zhao_website_compliances",
+  "info": {
+    "singularName": "compliance",
+    "pluralName": "compliances",
+    "displayName": "合规公示"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "content-manager": { "visible": true },
+    "content-type-builder": { "visible": false }
+  },
+  "attributes": {
+    "site": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-common.site-config",
+      "required": true,
+      "inversedBy": "website_compliances"
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 200,
+      "required": true
+    },
+    "slug": {
+      "type": "uid",
+      "targetField": "title",
+      "required": true
+    },
+    "category": {
+      "type": "enumeration",
+      "enum": ["notice", "policy", "report", "certificate", "agreement"],
+      "required": true
+    },
+    "content": {
+      "type": "text",
+      "required": true
+    },
+    "effectiveDate": {
+      "type": "date"
+    },
+    "expiryDate": {
+      "type": "date"
+    },
+    "tags": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "plugin::zhao-tag.tag",
+      "inversedBy": "website_compliances"
+    },
+    "isPinned": {
+      "type": "boolean",
+      "default": false
+    },
+    "seoTitle": {
+      "type": "string",
+      "maxLength": 60
+    },
+    "seoDescription": {
+      "type": "string",
+      "maxLength": 160
+    },
+    "allowIndex": {
+      "type": "boolean",
+      "default": true
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": ["draft", "published", "archived"],
+      "default": "draft"
+    },
+    "publishedAt": {
+      "type": "datetime"
+    },
+    "deletedAt": {
+      "type": "datetime",
+      "default": null
+    }
+  }
+}
