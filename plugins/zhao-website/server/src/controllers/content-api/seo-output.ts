@@ -1,5 +1,5 @@
 export default {
-  async sitemap(ctx) {
+  async sitemap(ctx: any) {
     const siteId = ctx.state.siteId;
     const siteUrl = `https://${ctx.request.host}`;
     const xml = await strapi.plugin("zhao-website").service("sitemap").generate(siteId, siteUrl);
@@ -7,7 +7,7 @@ export default {
     ctx.body = xml;
   },
 
-  async robots(ctx) {
+  async robots(ctx: any) {
     const siteId = ctx.state.siteId;
     const siteUrl = `https://${ctx.request.host}`;
     const txt = await strapi.plugin("zhao-website").service("robots").generate(siteId, siteUrl);
@@ -15,14 +15,14 @@ export default {
     ctx.body = txt;
   },
 
-  async llmsTxt(ctx) {
+  async llmsTxt(ctx: any) {
     const siteId = ctx.state.siteId;
     const txt = await strapi.plugin("zhao-website").service("llms-txt").generate(siteId);
     ctx.type = "text/plain";
     ctx.body = txt;
   },
 
-  async manifest(ctx) {
+  async manifest(ctx: any) {
     const siteId = ctx.state.siteId;
     const brandInfo = await strapi.plugin("zhao-website").service("brand-info").find(siteId);
     const seoConfig = await strapi.plugin("zhao-website").service("seo-config").find(siteId);

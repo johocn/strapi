@@ -1,10 +1,10 @@
 export default {
-  async find(ctx) {
+  async find(ctx: any) {
     const siteId = ctx.state.siteId;
     ctx.body = await strapi.plugin("zhao-website").service("article").findAdmin(siteId, ctx.query);
   },
 
-  async findOne(ctx) {
+  async findOne(ctx: any) {
     const siteId = ctx.state.siteId;
     const { documentId } = ctx.params;
     const item = await strapi.plugin("zhao-website").service("article").findOneAdmin(siteId, documentId);
@@ -12,37 +12,37 @@ export default {
     ctx.body = item;
   },
 
-  async create(ctx) {
+  async create(ctx: any) {
     const siteId = ctx.state.siteId;
     ctx.body = await strapi.plugin("zhao-website").service("article").create(siteId, ctx.request.body);
   },
 
-  async update(ctx) {
+  async update(ctx: any) {
     const siteId = ctx.state.siteId;
     const { documentId } = ctx.params;
     ctx.body = await strapi.plugin("zhao-website").service("article").update(siteId, documentId, ctx.request.body);
   },
 
-  async delete(ctx) {
+  async delete(ctx: any) {
     const siteId = ctx.state.siteId;
     const { documentId } = ctx.params;
     await strapi.plugin("zhao-website").service("article").softDelete(siteId, documentId);
     ctx.body = { success: true };
   },
 
-  async publish(ctx) {
+  async publish(ctx: any) {
     const siteId = ctx.state.siteId;
     const { documentId } = ctx.params;
     ctx.body = await strapi.plugin("zhao-website").service("article").publish(siteId, documentId);
   },
 
-  async archive(ctx) {
+  async archive(ctx: any) {
     const siteId = ctx.state.siteId;
     const { documentId } = ctx.params;
     ctx.body = await strapi.plugin("zhao-website").service("article").archive(siteId, documentId);
   },
 
-  async batch(ctx) {
+  async batch(ctx: any) {
     const siteId = ctx.state.siteId;
     const { action, documentIds } = ctx.request.body;
     const results = [];

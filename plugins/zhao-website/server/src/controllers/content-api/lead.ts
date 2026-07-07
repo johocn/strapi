@@ -1,5 +1,5 @@
 export default {
-  async submit(ctx) {
+  async submit(ctx: any) {
     const siteId = ctx.state.siteId;
     // honeypot 检测
     if (ctx.request.body.website) {
@@ -18,7 +18,7 @@ export default {
     ctx.body = { success: true, id: lead.documentId };
   },
 
-  async track(ctx) {
+  async track(ctx: any) {
     const siteId = ctx.state.siteId;
     const { type, targetId, action } = ctx.request.body;
     await strapi.plugin("zhao-website").service("interaction").toggle(siteId, {

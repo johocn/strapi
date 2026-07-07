@@ -1,20 +1,20 @@
 function createGenericController(serviceName: string) {
   return {
-    async find(ctx) {
+    async find(ctx: any) {
       ctx.body = await strapi.plugin("zhao-website").service(serviceName).findAdmin(ctx.state.siteId, ctx.query);
     },
-    async findOne(ctx) {
+    async findOne(ctx: any) {
       const item = await strapi.plugin("zhao-website").service(serviceName).findOneAdmin(ctx.state.siteId, ctx.params.documentId);
       if (!item) return ctx.notFound();
       ctx.body = item;
     },
-    async create(ctx) {
+    async create(ctx: any) {
       ctx.body = await strapi.plugin("zhao-website").service(serviceName).create(ctx.state.siteId, ctx.request.body);
     },
-    async update(ctx) {
+    async update(ctx: any) {
       ctx.body = await strapi.plugin("zhao-website").service(serviceName).update(ctx.state.siteId, ctx.params.documentId, ctx.request.body);
     },
-    async delete(ctx) {
+    async delete(ctx: any) {
       await strapi.plugin("zhao-website").service(serviceName).softDelete(ctx.state.siteId, ctx.params.documentId);
       ctx.body = { success: true };
     },

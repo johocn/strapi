@@ -1,5 +1,5 @@
 export default {
-  async list(ctx) {
+  async list(ctx: any) {
     const siteId = ctx.state.siteId;
     const { page = 1, pageSize = 10, category, tag, sort = "publishedAt:DESC" } = ctx.query;
     const result = await strapi.plugin("zhao-website").service("article").find(siteId, {
@@ -8,7 +8,7 @@ export default {
     ctx.body = result;
   },
 
-  async detail(ctx) {
+  async detail(ctx: any) {
     const siteId = ctx.state.siteId;
     const { slug } = ctx.params;
     const article = await strapi.plugin("zhao-website").service("article").findOne(siteId, slug);
@@ -18,7 +18,7 @@ export default {
     ctx.body = article;
   },
 
-  async byCategory(ctx) {
+  async byCategory(ctx: any) {
     const siteId = ctx.state.siteId;
     const { categorySlug } = ctx.params;
     const result = await strapi.plugin("zhao-website").service("article").find(siteId, {
@@ -28,13 +28,13 @@ export default {
     ctx.body = result;
   },
 
-  async featured(ctx) {
+  async featured(ctx: any) {
     const siteId = ctx.state.siteId;
     const result = await strapi.plugin("zhao-website").service("article").findFeatured(siteId, Number(ctx.query.limit) || 5);
     ctx.body = result;
   },
 
-  async related(ctx) {
+  async related(ctx: any) {
     const siteId = ctx.state.siteId;
     const { slug } = ctx.params;
     const article = await strapi.plugin("zhao-website").service("article").findOne(siteId, slug);

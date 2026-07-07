@@ -1,11 +1,11 @@
 export default {
-  async list(ctx) {
+  async list(ctx: any) {
     const siteId = ctx.state.siteId;
     const result = await strapi.plugin("zhao-website").service("download").find(siteId, ctx.query);
     ctx.body = result;
   },
 
-  async download(ctx) {
+  async download(ctx: any) {
     const siteId = ctx.state.siteId;
     const { slug } = ctx.params;
     const item = await strapi.plugin("zhao-website").service("download").findOne(siteId, slug);
