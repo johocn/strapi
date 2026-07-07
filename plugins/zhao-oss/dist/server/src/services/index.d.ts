@@ -55,6 +55,15 @@ declare const _default: {
             };
         }>;
         repairFolders(): Promise<string[]>;
+        ensureSiteDefaultFolders(siteId: number): Promise<any>;
+        listFilesBySite(siteId: number, params?: {
+            page?: number;
+            pageSize?: number;
+            category?: string;
+        }): Promise<{
+            list: any[];
+            pagination: any;
+        }>;
     };
 };
 export default _default;

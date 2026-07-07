@@ -198,6 +198,19 @@ const bootstrap = async ({ strapi }) => {
       }
     }
   });
+  strapi.db?.lifecycles.subscribe({
+    models: ["plugin::zhao-common.site-config"],
+    async afterCreate(event) {
+      const siteId = event.result?.id;
+      if (!siteId) return;
+      try {
+        await strapi.plugin("zhao-oss").service("media-service").ensureSiteDefaultFolders(siteId);
+        if (!isTest) logger.info(`[zhao-oss] Created default folders for site ${siteId}`);
+      } catch (err) {
+        logger.error(`[zhao-oss] Failed to create default folders for site ${siteId}:`, { error: err.message });
+      }
+    }
+  });
   if (!isTest) logger.info("[zhao-oss] Upload lifecycle hooks registered successfully");
   strapi.server.use(async (ctx, next) => {
     await next();
@@ -321,8 +334,70 @@ const syncRecord = {
     }
   }
 };
+const mediaMeta = {
+  schema: {
+    collectionName: "zhao_oss_media_metas",
+    info: {
+      singularName: "media-meta",
+      pluralName: "media-metas",
+      displayName: "Media Meta",
+      description: "媒体业务元信息（租户/上传者/分类）"
+    },
+    options: { draftAndPublish: false },
+    pluginOptions: {
+      "content-manager": { visible: false },
+      "content-type-builder": { visible: false }
+    },
+    attributes: {
+      site: {
+        type: "relation",
+        relation: "manyToOne",
+        target: "plugin::zhao-common.site-config",
+        required: true
+      },
+      file: {
+        type: "relation",
+        relation: "oneToOne",
+        target: "plugin::upload.file",
+        required: true
+      },
+      fileId: { type: "integer", required: true },
+      folder: {
+        type: "relation",
+        relation: "manyToOne",
+        target: "plugin::upload.folder"
+      },
+      category: {
+        type: "enumeration",
+        enum: ["brand", "article", "product", "case", "compliance", "faq", "tutorial", "download", "avatar", "general", "other"],
+        default: "general"
+      },
+      uploader: {
+        type: "relation",
+        relation: "manyToOne",
+        target: "admin::user"
+      },
+      uploaderRole: { type: "string", maxLength: 50 },
+      modifier: {
+        type: "relation",
+        relation: "manyToOne",
+        target: "admin::user"
+      },
+      originalFilename: { type: "string", maxLength: 500 },
+      mimeType: { type: "string", maxLength: 100 },
+      fileSize: { type: "biginteger" },
+      fileExt: { type: "string", maxLength: 20 },
+      usageCount: { type: "integer", default: 0 },
+      lastUsedAt: { type: "datetime" },
+      isPublic: { type: "boolean", default: true },
+      tags: { type: "json" },
+      deletedAt: { type: "datetime", default: null }
+    }
+  }
+};
 const contentTypes = {
-  "sync-record": syncRecord
+  "sync-record": syncRecord,
+  "media-meta": mediaMeta
 };
 const syncController = ({ strapi }) => ({
   async getDashboard(ctx) {
@@ -1236,7 +1311,7 @@ const mediaService = ({ strapi }) => ({
    * 上传文件：本地存储 + OSS 同步 + 数据库记录
    */
   async uploadFile(params) {
-    const { fileBuffer, originalName, customName, mimeType, fileSize, folderInput = "/general", folderIdInput } = params;
+    const { fileBuffer, originalName, customName, mimeType, fileSize, folderInput = "/general", folderIdInput, siteId, category, uploader } = params;
     const fileHash = crypto.createHash("md5").update(fileBuffer).digest("hex");
     const ext = originalName ? `.${originalName.split(".").pop()}` : "";
     const fileName = customName || originalName || `file_${Date.now()}`;
@@ -1327,6 +1402,27 @@ const mediaService = ({ strapi }) => ({
         retryCount: 0
       }
     });
+    if (siteId) {
+      try {
+        await strapi.db.query("plugin::zhao-oss.media-meta").create({
+          data: {
+            site: siteId,
+            file: uploadFile.id,
+            fileId: uploadFile.id,
+            folder: folderRecord?.id || null,
+            category: category || "general",
+            uploader: uploader || null,
+            originalFilename: originalName,
+            mimeType,
+            fileSize,
+            fileExt: ext,
+            isPublic: true
+          }
+        });
+      } catch (metaErr) {
+        strapi.log.warn(`[zhao-oss] Failed to create media-meta: ${metaErr.message}`);
+      }
+    }
     return {
       id: uploadFile.id,
       documentId: uploadFile.documentId,
@@ -1545,6 +1641,54 @@ const mediaService = ({ strapi }) => ({
       }
     }
     return results;
+  },
+  /**
+   * 为站点创建默认媒体文件夹（site-config 创建时调用）
+   */
+  async ensureSiteDefaultFolders(siteId) {
+    const SITE_DEFAULT_FOLDERS = [
+      { name: "general", category: "general" },
+      { name: "articles", category: "article" },
+      { name: "products", category: "product" },
+      { name: "cases", category: "case" },
+      { name: "compliance", category: "compliance" },
+      { name: "faqs", category: "faq" },
+      { name: "tutorials", category: "tutorial" },
+      { name: "downloads", category: "download" },
+      { name: "brand", category: "brand" }
+    ];
+    const siteRoot = await this.ensureFolderByPath(`site-${siteId}`);
+    for (const folder of SITE_DEFAULT_FOLDERS) {
+      await this.ensureFolderByPath(`site-${siteId}/${folder.name}`);
+    }
+    return siteRoot;
+  },
+  /**
+   * 按站点查询媒体文件（通过 media-meta 关联表）
+   */
+  async listFilesBySite(siteId, params = {}) {
+    const { page = 1, pageSize = 20, category } = params;
+    const where = { site: siteId, deletedAt: null };
+    if (category) where.category = category;
+    const [metas, total] = await Promise.all([
+      strapi.db.query("plugin::zhao-oss.media-meta").findMany({
+        where,
+        limit: Number(pageSize),
+        offset: (Number(page) - 1) * Number(pageSize),
+        populate: ["file"],
+        orderBy: { createdAt: "DESC" }
+      }),
+      strapi.db.query("plugin::zhao-oss.media-meta").count({ where })
+    ]);
+    return {
+      list: metas.map((m) => m.file).filter(Boolean),
+      pagination: {
+        page: Number(page),
+        pageSize: Number(pageSize),
+        total,
+        pageCount: Math.ceil(total / Number(pageSize))
+      }
+    };
   }
 });
 const services = {

@@ -7,6 +7,9 @@ export interface UploadParams {
     fileSize: number;
     folderInput?: string;
     folderIdInput?: string;
+    siteId?: number;
+    category?: string;
+    uploader?: number;
 }
 export interface UploadResult {
     id: number;
@@ -107,5 +110,20 @@ declare const _default: ({ strapi }: {
      * 修复文件夹结构：删除无效的数字名文件夹 + 修复文件的 folderPath
      */
     repairFolders(): Promise<string[]>;
+    /**
+     * 为站点创建默认媒体文件夹（site-config 创建时调用）
+     */
+    ensureSiteDefaultFolders(siteId: number): Promise<any>;
+    /**
+     * 按站点查询媒体文件（通过 media-meta 关联表）
+     */
+    listFilesBySite(siteId: number, params?: {
+        page?: number;
+        pageSize?: number;
+        category?: string;
+    }): Promise<{
+        list: any[];
+        pagination: any;
+    }>;
 };
 export default _default;
