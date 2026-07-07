@@ -139,4 +139,15 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       ctx.body = { error: error.message };
     }
   },
+
+  async wechatRedirectCallback(ctx: any) {
+    try {
+      const authService = strapi.plugin("zhao-third").service("third-party-auth");
+      await authService.wechatRedirectCallback(ctx);
+    } catch (error: any) {
+      strapi.log.error(`[zhao-third] 微信中转回调失败: ${error.message}`);
+      ctx.status = error.status || 500;
+      ctx.body = { error: error.message };
+    }
+  },
 });

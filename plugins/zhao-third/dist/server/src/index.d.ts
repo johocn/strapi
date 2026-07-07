@@ -162,6 +162,7 @@ declare const _default: {
             publicConfig(ctx: any): Promise<void>;
             updateProfile(ctx: any): Promise<void>;
             jssdkSignature(ctx: any): Promise<void>;
+            wechatRedirectCallback(ctx: any): Promise<void>;
         };
         "third-party-config": ({ strapi }: {
             strapi: import('@strapi/types/dist/core').Strapi;

@@ -8,6 +8,7 @@ declare const _default: ({ strapi }: {
     publicConfig(ctx: any): Promise<void>;
     updateProfile(ctx: any): Promise<void>;
     jssdkSignature(ctx: any): Promise<void>;
+    wechatRedirectCallback(ctx: any): Promise<void>;
 };
 export default _default;
 //# sourceMappingURL=third-party-auth.d.ts.map
