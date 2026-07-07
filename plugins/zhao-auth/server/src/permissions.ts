@@ -439,6 +439,184 @@ export const PERMISSION_TREE: Record<string, PermissionItem> = {
       },
     },
   },
+  "menu.website-center": {
+    label: "官网中心",
+    type: "menu",
+    children: {
+      "menu.website-seo": {
+        label: "SEO 配置",
+        type: "menu",
+        children: {
+          "seo-config.read": { label: "查看 SEO", type: "button" },
+          "seo-config.update": { label: "编辑 SEO", type: "button" },
+        },
+      },
+      "menu.website-brand": {
+        label: "品牌信息",
+        type: "menu",
+        children: {
+          "brand-info.read": { label: "查看品牌", type: "button" },
+          "brand-info.update": { label: "编辑品牌", type: "button" },
+        },
+      },
+      "menu.website-article": {
+        label: "文章管理",
+        type: "menu",
+        children: {
+          "article.read": { label: "查看文章", type: "button" },
+          "article.create": { label: "新增文章", type: "button" },
+          "article.update": { label: "编辑文章", type: "button" },
+          "article.delete": { label: "删除文章", type: "button" },
+          "article.publish": { label: "发布文章", type: "button" },
+        },
+      },
+      "menu.website-article-category": {
+        label: "文章分类",
+        type: "menu",
+        children: {
+          "article-category.read": { label: "查看分类", type: "button" },
+          "article-category.create": { label: "新增分类", type: "button" },
+          "article-category.update": { label: "编辑分类", type: "button" },
+          "article-category.delete": { label: "删除分类", type: "button" },
+        },
+      },
+      "menu.website-product": {
+        label: "产品管理",
+        type: "menu",
+        children: {
+          "product.read": { label: "查看产品", type: "button" },
+          "product.create": { label: "新增产品", type: "button" },
+          "product.update": { label: "编辑产品", type: "button" },
+          "product.delete": { label: "删除产品", type: "button" },
+        },
+      },
+      "menu.website-case": {
+        label: "案例管理",
+        type: "menu",
+        children: {
+          "case.read": { label: "查看案例", type: "button" },
+          "case.create": { label: "新增案例", type: "button" },
+          "case.update": { label: "编辑案例", type: "button" },
+          "case.delete": { label: "删除案例", type: "button" },
+        },
+      },
+      "menu.website-compliance": {
+        label: "合规公示",
+        type: "menu",
+        children: {
+          "compliance.read": { label: "查看合规", type: "button" },
+          "compliance.create": { label: "新增合规", type: "button" },
+          "compliance.update": { label: "编辑合规", type: "button" },
+          "compliance.delete": { label: "删除合规", type: "button" },
+        },
+      },
+      "menu.website-faq": {
+        label: "FAQ 管理",
+        type: "menu",
+        children: {
+          "faq.read": { label: "查看 FAQ", type: "button" },
+          "faq.create": { label: "新增 FAQ", type: "button" },
+          "faq.update": { label: "编辑 FAQ", type: "button" },
+          "faq.delete": { label: "删除 FAQ", type: "button" },
+        },
+      },
+      "menu.website-tutorial": {
+        label: "教程管理",
+        type: "menu",
+        children: {
+          "tutorial.read": { label: "查看教程", type: "button" },
+          "tutorial.create": { label: "新增教程", type: "button" },
+          "tutorial.update": { label: "编辑教程", type: "button" },
+          "tutorial.delete": { label: "删除教程", type: "button" },
+        },
+      },
+      "menu.website-download": {
+        label: "下载管理",
+        type: "menu",
+        children: {
+          "download.read": { label: "查看下载", type: "button" },
+          "download.create": { label: "新增下载", type: "button" },
+          "download.update": { label: "编辑下载", type: "button" },
+          "download.delete": { label: "删除下载", type: "button" },
+        },
+      },
+      "menu.website-lead": {
+        label: "线索管理",
+        type: "menu",
+        children: {
+          "lead.read": { label: "查看线索", type: "button" },
+          "lead.update": { label: "更新线索", type: "button" },
+          "lead.delete": { label: "删除线索", type: "button" },
+        },
+      },
+      "menu.website-visit-log": {
+        label: "访问日志",
+        type: "menu",
+        children: {
+          "visit-log.read": { label: "查看日志", type: "button" },
+          "visit-log.delete": { label: "删除日志", type: "button" },
+        },
+      },
+      "menu.website-interaction": {
+        label: "互动记录",
+        type: "menu",
+        children: {
+          "interaction.read": { label: "查看互动", type: "button" },
+          "interaction.delete": { label: "删除互动", type: "button" },
+        },
+      },
+      "menu.website-search-log": {
+        label: "搜索日志",
+        type: "menu",
+        children: {
+          "search-log.read": { label: "查看搜索日志", type: "button" },
+          "search-log.delete": { label: "删除搜索日志", type: "button" },
+        },
+      },
+      "menu.website-knowledge-entity": {
+        label: "知识实体",
+        type: "menu",
+        children: {
+          "knowledge-entity.read": { label: "查看实体", type: "button" },
+          "knowledge-entity.create": { label: "新增实体", type: "button" },
+          "knowledge-entity.update": { label: "编辑实体", type: "button" },
+          "knowledge-entity.delete": { label: "删除实体", type: "button" },
+          "knowledge-entity.manage": { label: "实体管理", type: "button" },
+        },
+      },
+      "menu.website-knowledge-relation": {
+        label: "知识关系",
+        type: "menu",
+        children: {
+          "knowledge-relation.read": { label: "查看关系", type: "button" },
+          "knowledge-relation.create": { label: "新增关系", type: "button" },
+          "knowledge-relation.update": { label: "编辑关系", type: "button" },
+          "knowledge-relation.delete": { label: "删除关系", type: "button" },
+        },
+      },
+      "menu.website-ai-summary": {
+        label: "AI 摘要",
+        type: "menu",
+        children: {
+          "ai-summary.read": { label: "查看摘要", type: "button" },
+          "ai-summary.create": { label: "新增摘要", type: "button" },
+          "ai-summary.update": { label: "编辑摘要", type: "button" },
+          "ai-summary.delete": { label: "删除摘要", type: "button" },
+        },
+      },
+      "menu.website-first-truth": {
+        label: "第一真值",
+        type: "menu",
+        children: {
+          "first-truth.read": { label: "查看真值", type: "button" },
+          "first-truth.create": { label: "新增真值", type: "button" },
+          "first-truth.update": { label: "编辑真值", type: "button" },
+          "first-truth.delete": { label: "删除真值", type: "button" },
+          "first-truth.manage": { label: "真值管理", type: "button" },
+        },
+      },
+    },
+  },
 };
 
 // ===== 工具函数 =====
@@ -531,6 +709,26 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
     "role.revoke",
     "role.create",
     "role.read-logs",
+    // 官网中心
+    "menu.website-center",
+    "menu.website-seo", "seo-config.read", "seo-config.update",
+    "menu.website-brand", "brand-info.read", "brand-info.update",
+    "menu.website-article", "article.read", "article.create", "article.update", "article.publish",
+    "menu.website-article-category", "article-category.read", "article-category.create", "article-category.update", "article-category.delete",
+    "menu.website-product", "product.read", "product.create", "product.update", "product.delete",
+    "menu.website-case", "case.read", "case.create", "case.update", "case.delete",
+    "menu.website-compliance", "compliance.read", "compliance.create", "compliance.update",
+    "menu.website-faq", "faq.read", "faq.create", "faq.update", "faq.delete",
+    "menu.website-tutorial", "tutorial.read", "tutorial.create", "tutorial.update", "tutorial.delete",
+    "menu.website-download", "download.read", "download.create", "download.update", "download.delete",
+    "menu.website-lead", "lead.read", "lead.update", "lead.delete",
+    "menu.website-visit-log", "visit-log.read",
+    "menu.website-interaction", "interaction.read",
+    "menu.website-search-log", "search-log.read",
+    "menu.website-knowledge-entity", "knowledge-entity.read", "knowledge-entity.create", "knowledge-entity.update", "knowledge-entity.delete",
+    "menu.website-knowledge-relation", "knowledge-relation.read", "knowledge-relation.create", "knowledge-relation.update", "knowledge-relation.delete",
+    "menu.website-ai-summary", "ai-summary.read", "ai-summary.create", "ai-summary.update", "ai-summary.delete",
+    "menu.website-first-truth", "first-truth.read", "first-truth.create", "first-truth.update", "first-truth.delete",
   ],
   [ROLES.PLUGIN_MANAGER]: flattenPermissions(
     ((t: Record<string, PermissionItem>) => {
@@ -553,6 +751,26 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
     "config.update",
     "config.feature.update",
     "channel.config.update",
+    // 官网中心（read/create/update，不含 delete/manage）
+    "menu.website-center",
+    "menu.website-seo", "seo-config.read",
+    "menu.website-brand", "brand-info.read",
+    "menu.website-article", "article.read", "article.create", "article.update",
+    "menu.website-article-category", "article-category.read", "article-category.create", "article-category.update",
+    "menu.website-product", "product.read", "product.create", "product.update",
+    "menu.website-case", "case.read", "case.create", "case.update",
+    "menu.website-compliance", "compliance.read", "compliance.create", "compliance.update",
+    "menu.website-faq", "faq.read", "faq.create", "faq.update",
+    "menu.website-tutorial", "tutorial.read", "tutorial.create", "tutorial.update",
+    "menu.website-download", "download.read", "download.create", "download.update",
+    "menu.website-lead", "lead.read", "lead.update",
+    "menu.website-visit-log", "visit-log.read",
+    "menu.website-interaction", "interaction.read",
+    "menu.website-search-log", "search-log.read",
+    "menu.website-knowledge-entity", "knowledge-entity.read",
+    "menu.website-knowledge-relation", "knowledge-relation.read",
+    "menu.website-ai-summary", "ai-summary.read", "ai-summary.create",
+    "menu.website-first-truth", "first-truth.read",
   ]),
   [ROLES.INSTRUCTOR]: [
     // 课程中心
@@ -592,6 +810,17 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
     "knowledge-point.read",
     "knowledge-point.create",
     "knowledge-point.update",
+    // 官网中心（只读）
+    "menu.website-center",
+    "menu.website-brand", "brand-info.read",
+    "menu.website-article", "article.read",
+    "menu.website-product", "product.read",
+    "menu.website-case", "case.read",
+    "menu.website-compliance", "compliance.read",
+    "menu.website-faq", "faq.read",
+    "menu.website-tutorial", "tutorial.read",
+    "menu.website-download", "download.read",
+    "menu.website-lead", "lead.read",
   ],
   [ROLES.USER]: [],
 };
