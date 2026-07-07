@@ -221,6 +221,134 @@ async function seedSites(knex) {
   return { siteIdMap, channelIdMap };
 }
 
+// ============ 模块 2: article-category ============
+
+const CATEGORIES = [
+  // 圣麟主站 (localhost)
+  { siteDomain: 'localhost', name: '产品动态', slug: 'main-product-news', seq: 1 },
+  { siteDomain: 'localhost', name: '行业洞察', slug: 'main-industry-insights', seq: 2 },
+  { siteDomain: 'localhost', name: '客户故事', slug: 'main-customer-stories', seq: 3 },
+  { siteDomain: 'localhost', name: '产品教程', slug: 'main-product-tutorials', seq: 4 },
+  { siteDomain: 'localhost', name: '公告通知', slug: 'main-announcements', seq: 5 },
+  // 昭易科技 (tenant-a.local)
+  { siteDomain: 'tenant-a.local', name: '解决方案', slug: 'a-solutions', seq: 6 },
+  { siteDomain: 'tenant-a.local', name: '技术分享', slug: 'a-tech-sharing', seq: 7 },
+  { siteDomain: 'tenant-a.local', name: '客户案例', slug: 'a-customer-cases', seq: 8 },
+  { siteDomain: 'tenant-a.local', name: '使用指南', slug: 'a-user-guides', seq: 9 },
+  { siteDomain: 'tenant-a.local', name: '公司新闻', slug: 'a-company-news', seq: 10 },
+  // 智教云 (tenant-b.local)
+  { siteDomain: 'tenant-b.local', name: '课程资讯', slug: 'b-course-news', seq: 11 },
+  { siteDomain: 'tenant-b.local', name: '学习心得', slug: 'b-learning-insights', seq: 12 },
+  { siteDomain: 'tenant-b.local', name: '教学案例', slug: 'b-teaching-cases', seq: 13 },
+  { siteDomain: 'tenant-b.local', name: '操作手册', slug: 'b-operation-manuals', seq: 14 },
+  { siteDomain: 'tenant-b.local', name: '平台公告', slug: 'b-platform-announcements', seq: 15 },
+];
+
+async function seedCategories(knex, siteIdMap) {
+  console.log('[3/12] 插入 article-category...');
+  const categoryIdMap = {}; // slug → numeric id
+
+  for (const c of CATEGORIES) {
+    const docId = genDocId('testcat', c.seq);
+    const siteId = siteIdMap[c.siteDomain];
+    const data = {
+      document_id: docId,
+      site_id: siteId,
+      name: c.name,
+      slug: c.slug,
+      description: `${c.name} 分类`,
+      order: c.seq,
+      status: true,
+      created_at: new Date(),
+      updated_at: new Date(),
+    };
+    const id = await insertIfNotExists(knex, 'zhao_website_article_categories', data, docId);
+    categoryIdMap[c.slug] = id;
+  }
+  console.log(`  - 插入 article-category: ${CATEGORIES.length} 条`);
+  return categoryIdMap;
+}
+
+// ============ 模块 3: tag + tag-group ============
+
+const TAG_GROUPS = [
+  { name: '测试-产品类', slug: 'test-product-tags', description: '产品相关标签（测试）', seq: 1 },
+  { name: '测试-行业类', slug: 'test-industry-tags', description: '行业相关标签（测试）', seq: 2 },
+  { name: '测试-功能类', slug: 'test-feature-tags', description: '功能相关标签（测试）', seq: 3 },
+];
+
+const TAGS = [
+  // 产品类
+  { name: '多租户', slug: 'test-duozuhu', group: '测试-产品类', seq: 1 },
+  { name: 'SSR', slug: 'test-ssr', group: '测试-产品类', seq: 2 },
+  { name: 'SEO优化', slug: 'test-seo', group: '测试-产品类', seq: 3 },
+  { name: '内容管理', slug: 'test-cms', group: '测试-产品类', seq: 4 },
+  { name: '模板系统', slug: 'test-template', group: '测试-产品类', seq: 5 },
+  // 行业类
+  { name: '企业服务', slug: 'test-enterprise', group: '测试-行业类', seq: 6 },
+  { name: 'SaaS', slug: 'test-saas', group: '测试-行业类', seq: 7 },
+  { name: 'B2B', slug: 'test-b2b', group: '测试-行业类', seq: 8 },
+  { name: '数字化转型', slug: 'test-digital', group: '测试-行业类', seq: 9 },
+  { name: '教育科技', slug: 'test-edutech', group: '测试-行业类', seq: 10 },
+  // 功能类
+  { name: '知识图谱', slug: 'test-kg', group: '测试-功能类', seq: 11 },
+  { name: '真值管理', slug: 'test-truth', group: '测试-功能类', seq: 12 },
+  { name: 'AI摘要', slug: 'test-aisummary', group: '测试-功能类', seq: 13 },
+  { name: 'Studio Bridge', slug: 'test-studio', group: '测试-功能类', seq: 14 },
+  { name: '留资转化', slug: 'test-lead', group: '测试-功能类', seq: 15 },
+];
+
+async function seedTags(knex) {
+  console.log('[4/12] 插入 tag + tag-group...');
+  const tagIdMap = {}; // tag name → numeric id
+  const tagGroupIdMap = {}; // group name → numeric id
+
+  // 1. 插入 tag-group
+  for (const g of TAG_GROUPS) {
+    const existing = await knex('zhao_tag_groups').where('slug', g.slug).first();
+    let id;
+    if (existing) {
+      id = existing.id;
+    } else {
+      const docId = genDocId('testtg', g.seq);
+      const inserted = await knex('zhao_tag_groups').insert({
+        document_id: docId,
+        name: g.name,
+        slug: g.slug,
+        description: g.description,
+        sort: g.seq,
+        created_at: new Date(),
+        updated_at: new Date(),
+      }).returning('id');
+      id = Array.isArray(inserted) ? (typeof inserted[0] === 'object' ? inserted[0].id : inserted[0]) : inserted;
+    }
+    tagGroupIdMap[g.name] = id;
+  }
+  console.log(`  - 插入 tag-group: ${TAG_GROUPS.length} 条`);
+
+  // 2. 插入 tag
+  for (const t of TAGS) {
+    const docId = genDocId('testtag', t.seq);
+    const data = {
+      document_id: docId,
+      name: t.name,
+      slug: t.slug,
+      description: `${t.name} 标签（测试）`,
+      sort: t.seq,
+      is_preset: false,
+      is_public: true,
+      tag_group_id: tagGroupIdMap[t.group],
+      created_at: new Date(),
+      updated_at: new Date(),
+    };
+    const id = await insertIfNotExists(knex, 'zhao_tags', data, docId);
+    tagIdMap[t.name] = id;
+  }
+  console.log(`  - 插入 tag: ${TAGS.length} 条`);
+
+  return tagIdMap;
+}
+
 // ============ 主入口 ============
 
 (async () => {
@@ -237,6 +365,8 @@ async function seedSites(knex) {
     if (isSeed) {
       console.log('\n[INFO] 开始插入测试数据...');
       const { siteIdMap, channelIdMap } = await seedSites(knex);
+      const categoryIdMap = await seedCategories(knex, siteIdMap);
+      const tagIdMap = await seedTags(knex);
       console.log('[DONE] 测试数据插入完成');
     }
   } catch (err) {
