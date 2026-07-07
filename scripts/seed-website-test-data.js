@@ -769,6 +769,281 @@ async function seedDownloads(knex, siteIdMap, categoryIdMap, tagIdMap) {
   console.log(`  - 插入 download: ${DOWNLOADS.length} 条`);
 }
 
+// ============ 模块 8: knowledge-entity + knowledge-relation ============
+
+const KNOWLEDGE_ENTITIES = [
+  // 圣麟主站
+  { siteDomain: 'localhost', seq: 1, name: '交互官网平台', entityType: 'Organization', slug: 'test-ke-1', description: '多租户官网平台', url: 'https://www.joho.cn', identifier: 'org-joho-001' },
+  { siteDomain: 'localhost', seq: 2, name: '张某', entityType: 'Person', slug: 'test-ke-2', description: '创始人', url: '', identifier: 'person-zhang-001' },
+  { siteDomain: 'localhost', seq: 3, name: '多租户架构', entityType: 'Technology', slug: 'test-ke-3', description: '多租户技术架构', url: '', identifier: 'tech-mt-001' },
+  // 昭易科技
+  { siteDomain: 'tenant-a.local', seq: 4, name: '昭易科技', entityType: 'Organization', slug: 'test-ke-4', description: '昭易科技公司', url: 'https://www.joho.cn', identifier: 'org-zhaoyi-001' },
+  { siteDomain: 'tenant-a.local', seq: 5, name: '企业CMS', entityType: 'Product', slug: 'test-ke-5', description: '企业CMS系统', url: '', identifier: 'prod-cms-001' },
+  { siteDomain: 'tenant-a.local', seq: 6, name: '李某', entityType: 'Person', slug: 'test-ke-6', description: 'CTO', url: '', identifier: 'person-li-001' },
+  // 智教云
+  { siteDomain: 'tenant-b.local', seq: 7, name: '智教云', entityType: 'Organization', slug: 'test-ke-7', description: '智教云公司', url: 'https://www.joho.cn', identifier: 'org-zhijiao-001' },
+  { siteDomain: 'tenant-b.local', seq: 8, name: '在线教育平台', entityType: 'Product', slug: 'test-ke-8', description: '在线教育平台', url: '', identifier: 'prod-edu-001' },
+  { siteDomain: 'tenant-b.local', seq: 9, name: '王某', entityType: 'Person', slug: 'test-ke-9', description: 'CEO', url: '', identifier: 'person-wang-001' },
+];
+
+async function seedKnowledgeEntities(knex, siteIdMap) {
+  console.log('[12/12] 插入 knowledge-entity + relation...');
+  const entityIdMap = {}; // slug → numeric id
+  const now = new Date();
+
+  for (const e of KNOWLEDGE_ENTITIES) {
+    const docId = genDocId('testke', e.seq);
+    const siteId = siteIdMap[e.siteDomain];
+    const data = {
+      document_id: docId,
+      site_id: siteId,
+      entity_type: e.entityType,
+      name: e.name,
+      slug: e.slug,
+      identifier: e.identifier,
+      description: e.description,
+      url: e.url,
+      confidence: 1.0,
+      source_type: 'official',
+      verification_status: 'verified',
+      last_verified_at: now,
+      status: true,
+      created_at: now,
+      updated_at: now,
+    };
+    const id = await insertIfNotExists(knex, 'zhao_website_knowledge_entities', data, docId);
+    entityIdMap[e.slug] = id;
+  }
+  console.log(`  - 插入 knowledge-entity: ${KNOWLEDGE_ENTITIES.length} 条`);
+
+  // 关系：Organization → founder → Person, Organization → produces → Product/Technology
+  const RELATIONS = [
+    { seq: 1, siteDomain: 'localhost', subject: 'test-ke-1', predicate: 'founder', object: 'test-ke-2' },
+    { seq: 2, siteDomain: 'localhost', subject: 'test-ke-1', predicate: 'uses', object: 'test-ke-3' },
+    { seq: 3, siteDomain: 'tenant-a.local', subject: 'test-ke-4', predicate: 'produces', object: 'test-ke-5' },
+    { seq: 4, siteDomain: 'tenant-a.local', subject: 'test-ke-4', predicate: 'founder', object: 'test-ke-6' },
+    { seq: 5, siteDomain: 'tenant-b.local', subject: 'test-ke-7', predicate: 'produces', object: 'test-ke-8' },
+    { seq: 6, siteDomain: 'tenant-b.local', subject: 'test-ke-7', predicate: 'founder', object: 'test-ke-9' },
+  ];
+
+  for (const r of RELATIONS) {
+    const docId = genDocId('testkr', r.seq);
+    const siteId = siteIdMap[r.siteDomain];
+    const subjectId = entityIdMap[r.subject];
+    const objectId = entityIdMap[r.object];
+    const data = {
+      document_id: docId,
+      site_id: siteId,
+      subject_entity_id: subjectId,
+      predicate: r.predicate,
+      object_entity_id: objectId,
+      source_type: 'official',
+      confidence: 1.0,
+      verification_status: 'verified',
+      last_verified_at: now,
+      status: true,
+      created_at: now,
+      updated_at: now,
+    };
+    await insertIfNotExists(knex, 'zhao_website_knowledge_relations', data, docId);
+  }
+  console.log(`  - 插入 knowledge-relation: ${RELATIONS.length} 条`);
+
+  return entityIdMap;
+}
+
+// ============ 模块 9: first-truth + ai-summary ============
+
+const FIRST_TRUTHS = [
+  // 圣麟主站
+  { siteDomain: 'localhost', seq: 1, claim: '成立年份', claimKey: 'foundingYear', claimCategory: 'business_license', canonicalValue: '2015', verificationStatus: 'verified' },
+  { siteDomain: 'localhost', seq: 2, claim: '员工数量', claimKey: 'employeeCount', claimCategory: 'brand_claim', canonicalValue: '200', verificationStatus: 'verified' },
+  { siteDomain: 'localhost', seq: 3, claim: '服务客户数', claimKey: 'serviceCount', claimCategory: 'brand_claim', canonicalValue: '100+', verificationStatus: 'pending' },
+  // 昭易科技
+  { siteDomain: 'tenant-a.local', seq: 4, claim: '成立年份', claimKey: 'foundingYear', claimCategory: 'business_license', canonicalValue: '2018', verificationStatus: 'verified' },
+  { siteDomain: 'tenant-a.local', seq: 5, claim: '员工数量', claimKey: 'employeeCount', claimCategory: 'brand_claim', canonicalValue: '50', verificationStatus: 'verified' },
+  { siteDomain: 'tenant-a.local', seq: 6, claim: '产品数量', claimKey: 'productCount', claimCategory: 'brand_claim', canonicalValue: '3', verificationStatus: 'pending' },
+  // 智教云
+  { siteDomain: 'tenant-b.local', seq: 7, claim: '成立年份', claimKey: 'foundingYear', claimCategory: 'business_license', canonicalValue: '2020', verificationStatus: 'verified' },
+  { siteDomain: 'tenant-b.local', seq: 8, claim: '员工数量', claimKey: 'employeeCount', claimCategory: 'brand_claim', canonicalValue: '80', verificationStatus: 'verified' },
+  { siteDomain: 'tenant-b.local', seq: 9, claim: '课程数量', claimKey: 'courseCount', claimCategory: 'brand_claim', canonicalValue: '500+', verificationStatus: 'pending' },
+];
+
+async function seedFirstTruths(knex, siteIdMap) {
+  console.log('[13/14] 插入 first-truth...');
+  const now = new Date();
+
+  for (const f of FIRST_TRUTHS) {
+    const docId = genDocId('testft', f.seq);
+    const siteId = siteIdMap[f.siteDomain];
+    const data = {
+      document_id: docId,
+      site_id: siteId,
+      claim: f.claim,
+      claim_key: f.claimKey,
+      claim_category: f.claimCategory,
+      canonical_value: f.canonicalValue,
+      canonical_value_type: 'text',
+      canonical_source_type: 'official_site',
+      conflict_resolution: 'manual',
+      last_verified_at: now,
+      verification_status: f.verificationStatus,
+      priority: 100,
+      status: true,
+      created_at: now,
+      updated_at: now,
+    };
+    await insertIfNotExists(knex, 'zhao_website_first_truths', data, docId);
+  }
+  console.log(`  - 插入 first-truth: ${FIRST_TRUTHS.length} 条`);
+}
+
+const AI_SUMMARIES = [
+  { siteDomain: 'localhost', seq: 1, targetType: 'article', targetId: 'testart0000000000000001', summaryType: 'tldr', contentText: '本文解析多租户架构，支撑 100+ 站点，QPS 800+。', content: JSON.stringify({ tldr: '多租户架构支撑 100+ 站点' }) },
+  { siteDomain: 'localhost', seq: 2, targetType: 'product', targetId: 'testprod00000000000000001', summaryType: 'technical_spec', contentText: '交互官网平台基于 Strapi v5 + Nuxt 3，支持多租户隔离。', content: JSON.stringify({ spec: 'Strapi v5 + Nuxt 3' }) },
+  { siteDomain: 'tenant-a.local', seq: 3, targetType: 'article', targetId: 'testart0000000000000006', summaryType: 'tldr', contentText: '企业官网数字化转型指南，含实践案例。', content: JSON.stringify({ tldr: '数字化转型指南' }) },
+  { siteDomain: 'tenant-a.local', seq: 4, targetType: 'product', targetId: 'testprod00000000000000002', summaryType: 'technical_spec', contentText: '企业 CMS 系统支持内容编辑、权限管理、多站点。', content: JSON.stringify({ spec: 'Strapi v5 CMS' }) },
+  { siteDomain: 'tenant-b.local', seq: 5, targetType: 'article', targetId: 'testart0000000000000011', summaryType: 'tldr', contentText: '教育机构官网建设指南，含课程展示与招生转化。', content: JSON.stringify({ tldr: '教育官网建设' }) },
+  { siteDomain: 'tenant-b.local', seq: 6, targetType: 'product', targetId: 'testprod00000000000000003', summaryType: 'technical_spec', contentText: '在线教育平台支持课程管理、学员管理、直播。', content: JSON.stringify({ spec: 'Strapi + uni-app' }) },
+];
+
+async function seedAiSummaries(knex, siteIdMap) {
+  console.log('[14/15] 插入 ai-summary...');
+  const now = new Date();
+
+  for (const s of AI_SUMMARIES) {
+    const docId = genDocId('testai', s.seq);
+    const siteId = siteIdMap[s.siteDomain];
+    const data = {
+      document_id: docId,
+      site_id: siteId,
+      target_type: s.targetType,
+      target_id: s.targetId,
+      summary_type: s.summaryType,
+      content: s.content,
+      content_text: s.contentText,
+      language: 'zh-CN',
+      version: 1,
+      generated_by: 'manual',
+      generated_at: now,
+      verification_status: 'verified',
+      verified_at: now,
+      status: true,
+      created_at: now,
+      updated_at: now,
+    };
+    await insertIfNotExists(knex, 'zhao_website_ai_summaries', data, docId);
+  }
+  console.log(`  - 插入 ai-summary: ${AI_SUMMARIES.length} 条`);
+}
+
+// ============ 模块 10: lead + interaction ============
+
+const LEADS = [
+  // 圣麟主站
+  { siteDomain: 'localhost', seq: 1, type: 'contact', contactName: '张三', contactPhone: '13800138001', contactEmail: 'test1@joho.cn', contactCompany: '测试公司A', message: '了解多租户方案', status: 'new', sourceUrl: '/contact' },
+  { siteDomain: 'localhost', seq: 2, type: 'download', contactName: '李四', contactPhone: '13800138002', contactEmail: 'test2@joho.cn', contactCompany: '测试公司B', message: '下载白皮书', status: 'new', sourceUrl: '/downloads' },
+  { siteDomain: 'localhost', seq: 3, type: 'contact', contactName: '王五', contactPhone: '13800138003', contactEmail: 'test3@joho.cn', contactCompany: '测试公司C', message: '咨询价格', status: 'contacted', sourceUrl: '/contact' },
+  { siteDomain: 'localhost', seq: 4, type: 'appointment', contactName: '赵六', contactPhone: '13800138004', contactEmail: 'test4@joho.cn', contactCompany: '测试公司D', message: '预约演示', status: 'contacted', sourceUrl: '/products/test-prod-1' },
+  { siteDomain: 'localhost', seq: 5, type: 'contact', contactName: '钱七', contactPhone: '13800138005', contactEmail: 'test5@joho.cn', contactCompany: '测试公司E', message: '已签约', status: 'converted', sourceUrl: '/contact' },
+  // 昭易科技
+  { siteDomain: 'tenant-a.local', seq: 6, type: 'contact', contactName: '孙八', contactPhone: '13800138006', contactEmail: 'test6@joho.cn', contactCompany: '测试公司F', message: '咨询企业 CMS', status: 'new', sourceUrl: '/contact' },
+  { siteDomain: 'tenant-a.local', seq: 7, type: 'quote', contactName: '周九', contactPhone: '13800138007', contactEmail: 'test7@joho.cn', contactCompany: '测试公司G', message: '请求报价', status: 'new', sourceUrl: '/contact' },
+  { siteDomain: 'tenant-a.local', seq: 8, type: 'contact', contactName: '吴十', contactPhone: '13800138008', contactEmail: 'test8@joho.cn', contactCompany: '测试公司H', message: '已联系', status: 'contacted', sourceUrl: '/products/test-prod-2' },
+  { siteDomain: 'tenant-a.local', seq: 9, type: 'contact', contactName: '郑十一', contactPhone: '13800138009', contactEmail: 'test9@joho.cn', contactCompany: '测试公司I', message: '已联系', status: 'contacted', sourceUrl: '/contact' },
+  { siteDomain: 'tenant-a.local', seq: 10, type: 'partner', contactName: '王十二', contactPhone: '13800138010', contactEmail: 'test10@joho.cn', contactCompany: '测试公司J', message: '渠道合作', status: 'converted', sourceUrl: '/contact' },
+  // 智教云
+  { siteDomain: 'tenant-b.local', seq: 11, type: 'contact', contactName: '李十三', contactPhone: '13800138011', contactEmail: 'test11@joho.cn', contactCompany: '测试学校A', message: '咨询教育平台', status: 'new', sourceUrl: '/contact' },
+  { siteDomain: 'tenant-b.local', seq: 12, type: 'demo', contactName: '张十四', contactPhone: '13800138012', contactEmail: 'test12@joho.cn', contactCompany: '测试学校B', message: '预约演示', status: 'new', sourceUrl: '/products/test-prod-3' },
+  { siteDomain: 'tenant-b.local', seq: 13, type: 'contact', contactName: '陈十五', contactPhone: '13800138013', contactEmail: 'test13@joho.cn', contactCompany: '测试学校C', message: '已联系', status: 'contacted', sourceUrl: '/contact' },
+  { siteDomain: 'tenant-b.local', seq: 14, type: 'contact', contactName: '林十六', contactPhone: '13800138014', contactEmail: 'test14@joho.cn', contactCompany: '测试学校D', message: '已联系', status: 'contacted', sourceUrl: '/contact' },
+  { siteDomain: 'tenant-b.local', seq: 15, type: 'contact', contactName: '黄十七', contactPhone: '13800138015', contactEmail: 'test15@joho.cn', contactCompany: '测试学校E', message: '已签约', status: 'converted', sourceUrl: '/contact' },
+];
+
+async function seedLeads(knex, siteIdMap) {
+  console.log('[15/16] 插入 lead...');
+  const now = new Date();
+
+  for (const l of LEADS) {
+    const docId = genDocId('testlead', l.seq);
+    const siteId = siteIdMap[l.siteDomain];
+    const data = {
+      document_id: docId,
+      site_id: siteId,
+      type: l.type,
+      contact_name: l.contactName,
+      contact_phone: l.contactPhone,
+      contact_email: l.contactEmail,
+      contact_company: l.contactCompany,
+      message: l.message,
+      source_url: l.sourceUrl,
+      user_agent: 'Mozilla/5.0 (Test Browser)',
+      ip_address: `192.168.1.${l.seq}`,
+      status: l.status,
+      converted_at: l.status === 'converted' ? now : null,
+      created_at: now,
+      updated_at: now,
+    };
+    await insertIfNotExists(knex, 'zhao_website_leads', data, docId);
+  }
+  console.log(`  - 插入 lead: ${LEADS.length} 条`);
+}
+
+const INTERACTIONS = [
+  // 每站点 8 条：3 search + 3 view + 1 click + 1 share
+  // 圣麟主站
+  { siteDomain: 'localhost', seq: 1, type: 'like', targetType: 'article', targetId: 'testart0000000000000001', visitorId: 'test-visitor-001' },
+  { siteDomain: 'localhost', seq: 2, type: 'collect', targetType: 'article', targetId: 'testart0000000000000002', visitorId: 'test-visitor-001' },
+  { siteDomain: 'localhost', seq: 3, type: 'share', targetType: 'article', targetId: 'testart0000000000000003', visitorId: 'test-visitor-002' },
+  { siteDomain: 'localhost', seq: 4, type: 'like', targetType: 'product', targetId: 'testprod00000000000000001', visitorId: 'test-visitor-002' },
+  { siteDomain: 'localhost', seq: 5, type: 'collect', targetType: 'product', targetId: 'testprod00000000000000001', visitorId: 'test-visitor-003' },
+  { siteDomain: 'localhost', seq: 6, type: 'share', targetType: 'case', targetId: 'testcase0000000000000001', visitorId: 'test-visitor-003' },
+  { siteDomain: 'localhost', seq: 7, type: 'like', targetType: 'tutorial', targetId: 'testtu00000000000000001', visitorId: 'test-visitor-004' },
+  { siteDomain: 'localhost', seq: 8, type: 'collect', targetType: 'faq', targetId: 'testfaq0000000000000001', visitorId: 'test-visitor-004' },
+  // 昭易科技
+  { siteDomain: 'tenant-a.local', seq: 9, type: 'like', targetType: 'article', targetId: 'testart0000000000000006', visitorId: 'test-visitor-005' },
+  { siteDomain: 'tenant-a.local', seq: 10, type: 'collect', targetType: 'article', targetId: 'testart0000000000000007', visitorId: 'test-visitor-005' },
+  { siteDomain: 'tenant-a.local', seq: 11, type: 'share', targetType: 'article', targetId: 'testart0000000000000008', visitorId: 'test-visitor-006' },
+  { siteDomain: 'tenant-a.local', seq: 12, type: 'like', targetType: 'product', targetId: 'testprod00000000000000002', visitorId: 'test-visitor-006' },
+  { siteDomain: 'tenant-a.local', seq: 13, type: 'collect', targetType: 'case', targetId: 'testcase0000000000000003', visitorId: 'test-visitor-007' },
+  { siteDomain: 'tenant-a.local', seq: 14, type: 'share', targetType: 'tutorial', targetId: 'testtu0000000000000004', visitorId: 'test-visitor-007' },
+  { siteDomain: 'tenant-a.local', seq: 15, type: 'like', targetType: 'faq', targetId: 'testfaq0000000000000006', visitorId: 'test-visitor-008' },
+  { siteDomain: 'tenant-a.local', seq: 16, type: 'collect', targetType: 'download', targetId: 'testdl0000000000000003', visitorId: 'test-visitor-008' },
+  // 智教云
+  { siteDomain: 'tenant-b.local', seq: 17, type: 'like', targetType: 'article', targetId: 'testart0000000000000011', visitorId: 'test-visitor-009' },
+  { siteDomain: 'tenant-b.local', seq: 18, type: 'collect', targetType: 'article', targetId: 'testart0000000000000012', visitorId: 'test-visitor-009' },
+  { siteDomain: 'tenant-b.local', seq: 19, type: 'share', targetType: 'article', targetId: 'testart0000000000000013', visitorId: 'test-visitor-010' },
+  { siteDomain: 'tenant-b.local', seq: 20, type: 'like', targetType: 'product', targetId: 'testprod00000000000000003', visitorId: 'test-visitor-010' },
+  { siteDomain: 'tenant-b.local', seq: 21, type: 'collect', targetType: 'case', targetId: 'testcase0000000000000005', visitorId: 'test-visitor-011' },
+  { siteDomain: 'tenant-b.local', seq: 22, type: 'share', targetType: 'tutorial', targetId: 'testtu0000000000000006', visitorId: 'test-visitor-011' },
+  { siteDomain: 'tenant-b.local', seq: 23, type: 'like', targetType: 'faq', targetId: 'testfaq0000000000000011', visitorId: 'test-visitor-012' },
+  { siteDomain: 'tenant-b.local', seq: 24, type: 'collect', targetType: 'download', targetId: 'testdl0000000000000005', visitorId: 'test-visitor-012' },
+];
+
+async function seedInteractions(knex, siteIdMap) {
+  console.log('[16/16] 插入 interaction...');
+  const now = new Date();
+
+  for (const i of INTERACTIONS) {
+    const docId = genDocId('testint', i.seq);
+    const siteId = siteIdMap[i.siteDomain];
+    const data = {
+      document_id: docId,
+      site_id: siteId,
+      type: i.type,
+      target_type: i.targetType,
+      target_id: i.targetId,
+      visitor_id: i.visitorId,
+      ip_address: `192.168.1.${100 + i.seq}`,
+      user_agent: 'Mozilla/5.0 (Test Browser)',
+      created_at: now,
+      updated_at: now,
+    };
+    await insertIfNotExists(knex, 'zhao_website_interactions', data, docId);
+  }
+  console.log(`  - 插入 interaction: ${INTERACTIONS.length} 条`);
+}
+
 // ============ 主入口 ============
 
 (async () => {
@@ -794,7 +1069,12 @@ async function seedDownloads(knex, siteIdMap, categoryIdMap, tagIdMap) {
       await seedTutorials(knex, siteIdMap, categoryIdMap, tagIdMap);
       await seedCompliances(knex, siteIdMap);
       await seedDownloads(knex, siteIdMap, categoryIdMap, tagIdMap);
-      console.log('[DONE] 测试数据插入完成');
+      await seedKnowledgeEntities(knex, siteIdMap);
+      await seedFirstTruths(knex, siteIdMap);
+      await seedAiSummaries(knex, siteIdMap);
+      await seedLeads(knex, siteIdMap);
+      await seedInteractions(knex, siteIdMap);
+      console.log('\n[DONE] 测试数据插入完成，总计约 175 条');
     }
   } catch (err) {
     console.error('[ERROR]', err.message);
