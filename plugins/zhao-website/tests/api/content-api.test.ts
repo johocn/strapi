@@ -91,3 +91,146 @@ describe("Content API - interaction track", () => {
     expect(interactionService.toggle).not.toHaveBeenCalled();
   });
 });
+
+describe("Content API - article list/detail/featured/related", () => {
+  let mockStrapi: any;
+  let articleService: any;
+  let articleController: any;
+
+  beforeEach(() => {
+    articleService = {
+      find: jest.fn().mockResolvedValue([{ id: 1, title: "Test" }]),
+      findOne: jest.fn().mockResolvedValue({ id: 1, documentId: "doc-1", title: "Test", tags: [{ documentId: "tag-1" }] }),
+      findFeatured: jest.fn().mockResolvedValue([{ id: 2, title: "Featured" }]),
+      incrementViewCount: jest.fn().mockResolvedValue(undefined),
+    };
+    mockStrapi = createMockStrapi({
+      plugin: jest.fn().mockReturnValue({
+        service: jest.fn().mockReturnValue(articleService),
+      }),
+    });
+    articleController = require("../../server/src/controllers/content-api/article").default;
+  });
+
+  test("GET /articles → service.find(siteId, query)", async () => {
+    const ctx = createMockCtx({
+      query: { page: "1", pageSize: "10", category: "news" },
+    });
+
+    await articleController.list(ctx);
+
+    expect(articleService.find).toHaveBeenCalledWith(1, expect.objectContaining({
+      page: 1, pageSize: 10, category: "news",
+    }));
+    expect(ctx.body).toEqual([{ id: 1, title: "Test" }]);
+  });
+
+  test("GET /articles/:slug → service.findOne + incrementViewCount", async () => {
+    const ctx = createMockCtx({ params: { slug: "test-slug" } });
+
+    await articleController.detail(ctx);
+
+    expect(articleService.findOne).toHaveBeenCalledWith(1, "test-slug");
+    expect(articleService.incrementViewCount).toHaveBeenCalledWith(1, "doc-1");
+    expect(ctx.body).toEqual(expect.objectContaining({ title: "Test" }));
+  });
+
+  test("GET /articles/featured → service.findFeatured(limit)", async () => {
+    const ctx = createMockCtx({ query: { limit: "3" } });
+
+    await articleController.featured(ctx);
+
+    expect(articleService.findFeatured).toHaveBeenCalledWith(1, 3);
+    expect(ctx.body).toEqual([{ id: 2, title: "Featured" }]);
+  });
+
+  test("GET /articles/:slug/related → service.findOne + find(tag, exclude)", async () => {
+    const ctx = createMockCtx({ params: { slug: "test-slug" } });
+
+    await articleController.related(ctx);
+
+    expect(articleService.findOne).toHaveBeenCalledWith(1, "test-slug");
+    expect(articleService.find).toHaveBeenCalledWith(1, expect.objectContaining({
+      tag: "tag-1",
+      exclude: "doc-1",
+    }));
+  });
+});
+
+describe("Content API - leads submit + honeypot", () => {
+  let mockStrapi: any;
+  let leadService: any;
+  let leadController: any;
+
+  beforeEach(() => {
+    leadService = {
+      createPublic: jest.fn().mockResolvedValue({ documentId: "lead-1" }),
+    };
+    mockStrapi = createMockStrapi({
+      plugin: jest.fn().mockReturnValue({
+        service: jest.fn().mockReturnValue(leadService),
+      }),
+    });
+    leadController = require("../../server/src/controllers/content-api/lead").default;
+  });
+
+  test("POST /leads/submit → service.createPublic", async () => {
+    const ctx = createMockCtx({
+      request: {
+        body: { name: "张三", phone: "13800138000", message: "测试", type: "contact" },
+        headers: {},
+        ip: "127.0.0.1",
+      },
+    });
+
+    await leadController.submit(ctx);
+
+    expect(leadService.createPublic).toHaveBeenCalled();
+    expect(ctx.body).toEqual(expect.objectContaining({ success: true }));
+  });
+
+  test("POST /leads/submit 带 honeypot → 不调用 createPublic，直接返回 success", async () => {
+    const ctx = createMockCtx({
+      request: {
+        body: { name: "bot", website: "spam", message: "spam" },
+        headers: {},
+        ip: "127.0.0.1",
+      },
+    });
+
+    await leadController.submit(ctx);
+
+    expect(leadService.createPublic).not.toHaveBeenCalled();
+    expect(ctx.body).toEqual({ success: true });
+  });
+});
+
+describe("Content API - sitemap", () => {
+  let mockStrapi: any;
+  let sitemapService: any;
+  let seoOutputController: any;
+
+  beforeEach(() => {
+    sitemapService = {
+      generate: jest.fn().mockResolvedValue("<?xml version=\"1.0\"?><urlset></urlset>"),
+    };
+    mockStrapi = createMockStrapi({
+      plugin: jest.fn().mockReturnValue({
+        service: jest.fn().mockReturnValue(sitemapService),
+      }),
+    });
+    seoOutputController = require("../../server/src/controllers/content-api/seo-output").default;
+  });
+
+  test("GET /sitemap.xml → service.sitemap.generate", async () => {
+    const ctx = createMockCtx({
+      state: { siteId: 1 },
+      request: { host: "example.com", headers: {}, ip: "127.0.0.1", body: {}, query: {} },
+    });
+
+    await seoOutputController.sitemap(ctx);
+
+    expect(sitemapService.generate).toHaveBeenCalledWith(1, "https://example.com");
+    expect(ctx.body).toContain("<?xml");
+  });
+});
