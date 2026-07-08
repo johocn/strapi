@@ -24,6 +24,13 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     });
   },
 
+  async findOneAdmin(siteId: number, documentId: string) {
+    return strapi.db.query(UID).findOne({
+      where: { site: siteId, documentId, deletedAt: null },
+      populate: ["parent", "children"],
+    });
+  },
+
   async create(siteId: number, data: any) {
     return strapi.db.query(UID).create({
       data: { ...data, site: siteId },

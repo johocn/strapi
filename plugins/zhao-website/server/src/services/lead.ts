@@ -44,6 +44,28 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     });
   },
 
+  async findOneAdmin(siteId: number, documentId: string) {
+    return strapi.db.query(UID).findOne({
+      where: { site: siteId, documentId, deletedAt: null },
+      populate: ["assignedTo"],
+    });
+  },
+
+  async update(siteId: number, documentId: string, data: any) {
+    const existing = await strapi.db.query(UID).findOne({
+      where: { site: siteId, documentId, deletedAt: null },
+    });
+    if (!existing) {
+      const e: any = new Error("Lead not found");
+      e.status = 404;
+      throw e;
+    }
+    return strapi.db.query(UID).update({
+      where: { id: existing.id },
+      data,
+    });
+  },
+
   async assign(siteId: number, documentId: string, assignedToId: number) {
     const existing = await strapi.db.query(UID).findOne({
       where: { site: siteId, documentId, deletedAt: null },
