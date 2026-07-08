@@ -105,6 +105,18 @@
       "enum": ["site_only", "site_and_cross", "site_cross_user"],
       "default": "site_cross_user",
       "required": true
+    },
+    "tags": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-tag.tag",
+      "mappedBy": "site"
+    },
+    "tagGroups": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-tag.tag-group",
+      "mappedBy": "site"
     }
   }
 }
