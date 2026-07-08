@@ -272,7 +272,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
           },
           featureFlags: {
             sso: false, points: true, quiz: true, course: true,
-            channel: true, thirdParty: true, oss: false,
+            channel: true, thirdParty: true, oss: false, website: true,
             pointsEnabled: true, coursePreviewEnabled: true,
             lessonProgressEnabled: true, courseEnrollEnabled: true,
             channelInviteEnabled: true, allowCrossChannel: false,
@@ -412,6 +412,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         channel: siteFeatureFlags.channel ?? true,
         thirdParty: siteFeatureFlags.thirdParty ?? true,
         oss: siteFeatureFlags.oss ?? false,
+        website: siteFeatureFlags.website ?? true,
         // 细粒度开关（从 extraConfig 合并后的 ec 读取）
         pointsEnabled: siteFeatureFlags.points ?? true,
         coursePreviewEnabled: ec.coursePreviewEnabled ?? true,
