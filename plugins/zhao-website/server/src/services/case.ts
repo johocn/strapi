@@ -96,15 +96,15 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
       orderBy: { updatedAt: "DESC" },
-      populate: ["coverImage", "clientLogo", "tags", "tags.tagGroup"],
+      populate: ["coverImage", "clientLogo", { tags: { populate: { tagGroup: true } } }],
     });
   },
 
   async findOneAdmin(siteId: number, documentId: string) {
     return strapi.db.query(UID).findOne({
       where: { site: siteId, documentId, deletedAt: null },
-      populate: ["coverImage", "clientLogo", "tags", "tags.tagGroup", "mainEntity", "images", "mentionedEntities",
-                 "relatedProducts", "structuredData"],
+      populate: ["coverImage", "clientLogo", { tags: { populate: { tagGroup: true } } },
+                 "mainEntity", "images", "mentionedEntities", "relatedProducts", "structuredData"],
     });
   },
 

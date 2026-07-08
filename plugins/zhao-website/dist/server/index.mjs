@@ -1279,7 +1279,7 @@ const article = ({ strapi: strapi2 }) => ({
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
       orderBy: { updatedAt: "DESC" },
-      populate: ["coverImage", "category", "tags", "tags.tagGroup"]
+      populate: ["coverImage", "category", { tags: { populate: { tagGroup: true } } }]
     });
   },
   async findOneAdmin(siteId, documentId) {
@@ -1288,8 +1288,7 @@ const article = ({ strapi: strapi2 }) => ({
       populate: [
         "coverImage",
         "category",
-        "tags",
-        "tags.tagGroup",
+        { tags: { populate: { tagGroup: true } } },
         "mainEntity",
         "mentionedEntities",
         "ogImage",
@@ -1515,7 +1514,7 @@ const product = ({ strapi: strapi2 }) => ({
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
       orderBy: { updatedAt: "DESC" },
-      populate: ["coverImage", "category", "tags", "tags.tagGroup"]
+      populate: ["coverImage", "category", { tags: { populate: { tagGroup: true } } }]
     });
   },
   async findOneAdmin(siteId, documentId) {
@@ -1524,8 +1523,7 @@ const product = ({ strapi: strapi2 }) => ({
       populate: [
         "coverImage",
         "category",
-        "tags",
-        "tags.tagGroup",
+        { tags: { populate: { tagGroup: true } } },
         "mainEntity",
         "images",
         "mentionedEntities",
@@ -1685,7 +1683,7 @@ const caseService = ({ strapi: strapi2 }) => ({
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
       orderBy: { updatedAt: "DESC" },
-      populate: ["coverImage", "clientLogo", "tags", "tags.tagGroup"]
+      populate: ["coverImage", "clientLogo", { tags: { populate: { tagGroup: true } } }]
     });
   },
   async findOneAdmin(siteId, documentId) {
@@ -1694,8 +1692,7 @@ const caseService = ({ strapi: strapi2 }) => ({
       populate: [
         "coverImage",
         "clientLogo",
-        "tags",
-        "tags.tagGroup",
+        { tags: { populate: { tagGroup: true } } },
         "mainEntity",
         "images",
         "mentionedEntities",
@@ -1847,13 +1844,13 @@ const compliance = ({ strapi: strapi2 }) => ({
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
       orderBy: { updatedAt: "DESC" },
-      populate: ["tags", "tags.tagGroup"]
+      populate: [{ tags: { populate: { tagGroup: true } } }]
     });
   },
   async findOneAdmin(siteId, documentId) {
     return strapi2.db.query(UID$9).findOne({
       where: { site: siteId, documentId, deletedAt: null },
-      populate: ["tags", "tags.tagGroup"]
+      populate: [{ tags: { populate: { tagGroup: true } } }]
     });
   },
   async create(siteId, data) {
@@ -2007,13 +2004,18 @@ const faq = ({ strapi: strapi2 }) => ({
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
       orderBy: { updatedAt: "DESC" },
-      populate: ["category", "tags", "tags.tagGroup"]
+      populate: ["category", { tags: { populate: { tagGroup: true } } }]
     });
   },
   async findOneAdmin(siteId, documentId) {
     return strapi2.db.query(UID$8).findOne({
       where: { site: siteId, documentId, deletedAt: null },
-      populate: ["category", "tags", "tags.tagGroup", "mainEntity", "mentionedEntities"]
+      populate: [
+        "category",
+        { tags: { populate: { tagGroup: true } } },
+        "mainEntity",
+        "mentionedEntities"
+      ]
     });
   },
   async create(siteId, data) {
@@ -2168,13 +2170,19 @@ const tutorial = ({ strapi: strapi2 }) => ({
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
       orderBy: { updatedAt: "DESC" },
-      populate: ["coverImage", "category", "tags", "tags.tagGroup"]
+      populate: ["coverImage", "category", { tags: { populate: { tagGroup: true } } }]
     });
   },
   async findOneAdmin(siteId, documentId) {
     return strapi2.db.query(UID$7).findOne({
       where: { site: siteId, documentId, deletedAt: null },
-      populate: ["coverImage", "category", "tags", "tags.tagGroup", "mainEntity", "mentionedEntities"]
+      populate: [
+        "coverImage",
+        "category",
+        { tags: { populate: { tagGroup: true } } },
+        "mainEntity",
+        "mentionedEntities"
+      ]
     });
   },
   async create(siteId, data) {
@@ -2328,13 +2336,13 @@ const download = ({ strapi: strapi2 }) => ({
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
       orderBy: { updatedAt: "DESC" },
-      populate: ["tags", "tags.tagGroup", "file"]
+      populate: [{ tags: { populate: { tagGroup: true } } }, "file"]
     });
   },
   async findOneAdmin(siteId, documentId) {
     return strapi2.db.query(UID$6).findOne({
       where: { site: siteId, documentId, deletedAt: null },
-      populate: ["tags", "tags.tagGroup", "file"]
+      populate: [{ tags: { populate: { tagGroup: true } } }, "file"]
     });
   },
   async create(siteId, data) {
@@ -2448,14 +2456,12 @@ const lead = ({ strapi: strapi2 }) => ({
       where: filters,
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
-      orderBy: { createdAt: "DESC" },
-      populate: ["assignedTo"]
+      orderBy: { createdAt: "DESC" }
     });
   },
   async findOneAdmin(siteId, documentId) {
     return strapi2.db.query(UID$5).findOne({
-      where: { site: siteId, documentId, deletedAt: null },
-      populate: ["assignedTo"]
+      where: { site: siteId, documentId, deletedAt: null }
     });
   },
   async update(siteId, documentId, data) {

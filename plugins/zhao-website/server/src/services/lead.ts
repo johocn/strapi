@@ -40,14 +40,12 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
       orderBy: { createdAt: "DESC" },
-      populate: ["assignedTo"],
     });
   },
 
   async findOneAdmin(siteId: number, documentId: string) {
     return strapi.db.query(UID).findOne({
       where: { site: siteId, documentId, deletedAt: null },
-      populate: ["assignedTo"],
     });
   },
 
