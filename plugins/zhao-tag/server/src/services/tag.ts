@@ -2,15 +2,47 @@ import type { Core } from "@strapi/strapi";
 
 const UID = "plugin::zhao-tag.tag";
 
+function validatePublicSite(data: any) {
+  if (data.isPublic === true && data.site) {
+    const e: any = new Error("公共标签不能关联站点");
+    e.status = 400;
+    throw e;
+  }
+  if (data.isPublic === false && !data.site) {
+    const e: any = new Error("站点标签必须关联站点");
+    e.status = 400;
+    throw e;
+  }
+}
+
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async find(query: any = {}) {
-    const { filters, populate, sort, pagination, fields, locale } = query;
+    const { filters, populate, sort, pagination, fields, locale, siteId, isPublic } = query;
     const page = Number(pagination?.page) || 1;
     const pageSize = Number(pagination?.pageSize) || 25;
 
     // 提取 tagGroup 过滤条件，改用 knex 查 join 表（Strapi v5 manyToOne filter 不稳定）
     const tagGroupFilter = filters?.tagGroup;
     let effectiveFilters = { ...filters };
+
+    // siteId 筛选：返回公共标签 + 本站标签
+    if (siteId) {
+      const knex = strapi.db.connection;
+      const siteRow = await knex('zhao_site_configs').where('document_id', siteId).first();
+      const siteNumericId = siteRow?.id;
+      if (siteNumericId) {
+        effectiveFilters.$or = [
+          { isPublic: true },
+          { site: siteNumericId },
+        ];
+      }
+    }
+
+    // isPublic 显式筛选
+    if (isPublic !== undefined) {
+      effectiveFilters.isPublic = isPublic === "true" || isPublic === true;
+    }
+
     let tagIdScope: number[] | null = null;
 
     if (tagGroupFilter) {
@@ -84,17 +116,19 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   },
 
   async create(data: any) {
+    validatePublicSite(data);
     return strapi.documents(UID).create({
       data,
-      populate: { parent: true, children: true, icon: true, tagGroup: true },
+      populate: { parent: true, children: true, icon: true, tagGroup: true, site: true },
     });
   },
 
   async update(documentId: string, data: any) {
+    validatePublicSite(data);
     return strapi.documents(UID).update({
       documentId,
       data,
-      populate: { parent: true, children: true, icon: true, tagGroup: true },
+      populate: { parent: true, children: true, icon: true, tagGroup: true, site: true },
     });
   },
 
