@@ -1,0 +1,211 @@
+declare const _default: {
+  "kind": "collectionType",
+  "collectionName": "zhao_website_articles",
+  "info": {
+    "singularName": "article",
+    "pluralName": "articles",
+    "displayName": "资讯文章"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "i18n": { "localized": true },
+    "content-manager": { "visible": true },
+    "content-type-builder": { "visible": false }
+  },
+  "attributes": {
+    "site": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-common.site-config",
+      "required": true,
+      "inversedBy": "website_articles"
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 200,
+      "required": true,
+      "localized": true
+    },
+    "slug": {
+      "type": "uid",
+      "targetField": "title",
+      "required": true,
+      "localized": true
+    },
+    "excerpt": {
+      "type": "text",
+      "localized": true
+    },
+    "content": {
+      "type": "text",
+      "required": true,
+      "localized": true
+    },
+    "coverImage": {
+      "type": "media"
+    },
+    "category": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-website.article-category",
+      "inversedBy": "articles"
+    },
+    "tags": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "plugin::zhao-tag.tag",
+      "inversedBy": "website_articles"
+    },
+    "author": {
+      "type": "string",
+      "maxLength": 50
+    },
+    "authorTitle": {
+      "type": "string",
+      "maxLength": 50
+    },
+    "isFeatured": {
+      "type": "boolean",
+      "default": false
+    },
+    "isPinned": {
+      "type": "boolean",
+      "default": false
+    },
+    "viewCount": {
+      "type": "biginteger",
+      "default": 0
+    },
+    "likeCount": {
+      "type": "biginteger",
+      "default": 0
+    },
+    "collectCount": {
+      "type": "biginteger",
+      "default": 0
+    },
+    "shareCount": {
+      "type": "biginteger",
+      "default": 0
+    },
+    "readingTime": {
+      "type": "integer"
+    },
+    "wordCount": {
+      "type": "integer"
+    },
+    "seoTitle": {
+      "type": "string",
+      "maxLength": 60,
+      "localized": true
+    },
+    "seoDescription": {
+      "type": "string",
+      "maxLength": 160,
+      "localized": true
+    },
+    "seoKeywords": {
+      "type": "string",
+      "maxLength": 200,
+      "localized": true
+    },
+    "canonicalUrl": {
+      "type": "string",
+      "maxLength": 500,
+      "localized": true
+    },
+    "ogTitle": {
+      "type": "string",
+      "maxLength": 200,
+      "localized": true
+    },
+    "ogDescription": {
+      "type": "text",
+      "localized": true
+    },
+    "ogImage": {
+      "type": "media"
+    },
+    "ogType": {
+      "type": "enumeration",
+      "enum": ["article", "product", "website", "video"],
+      "default": "article"
+    },
+    "twitterCard": {
+      "type": "enumeration",
+      "enum": ["summary", "summary_large_image", "product"],
+      "default": "summary_large_image"
+    },
+    "schemaType": {
+      "type": "string",
+      "maxLength": 50
+    },
+    "schemaJson": {
+      "type": "json",
+      "localized": true
+    },
+    "allowIndex": {
+      "type": "boolean",
+      "default": true
+    },
+    "noFollow": {
+      "type": "boolean",
+      "default": false
+    },
+    "sitemapPriority": {
+      "type": "decimal",
+      "default": 0.7
+    },
+    "sitemapFrequency": {
+      "type": "enumeration",
+      "enum": ["always", "hourly", "daily", "weekly", "monthly", "yearly", "never"],
+      "default": "weekly"
+    },
+    "sourceType": {
+      "type": "enumeration",
+      "enum": ["original", "studio", "external"],
+      "default": "original"
+    },
+    "sourceUrl": {
+      "type": "string"
+    },
+    "sourceArticleDraft": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-studio.article-draft",
+      "inversedBy": "websiteArticles"
+    },
+    "mainEntity": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-website.knowledge-entity",
+      "inversedBy": "articleMainEntities"
+    },
+    "mentionedEntities": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "plugin::zhao-website.knowledge-entity",
+      "inversedBy": "articleMentions"
+    },
+    "structuredData": {
+      "type": "json"
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": ["draft", "published", "archived"],
+      "default": "draft"
+    },
+    "publishedAt": {
+      "type": "datetime"
+    },
+    "deletedAt": {
+      "type": "datetime",
+      "default": null
+    }
+  }
+}
+;
+
+export default _default;

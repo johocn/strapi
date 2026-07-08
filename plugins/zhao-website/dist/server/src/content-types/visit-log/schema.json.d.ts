@@ -1,0 +1,128 @@
+declare const _default: {
+  "kind": "collectionType",
+  "collectionName": "zhao_website_visit_logs",
+  "info": {
+    "singularName": "visit-log",
+    "pluralName": "visit-logs",
+    "displayName": "访问日志"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "content-manager": { "visible": false },
+    "content-type-builder": { "visible": false }
+  },
+  "attributes": {
+    "site": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-common.site-config",
+      "required": true,
+      "inversedBy": "website_visit_logs"
+    },
+    "type": {
+      "type": "enumeration",
+      "enum": ["page_view", "article_view", "product_view", "case_view", "download_click", "cta_click", "search", "external_click"],
+      "required": true
+    },
+    "pageUrl": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "pageTitle": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "targetType": {
+      "type": "string",
+      "maxLength": 30
+    },
+    "targetId": {
+      "type": "string"
+    },
+    "referrer": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "referrerDomain": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "searchKeyword": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "utmSource": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "utmMedium": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "utmCampaign": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "userAgent": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "deviceType": {
+      "type": "enumeration",
+      "enum": ["desktop", "mobile", "tablet"],
+      "default": "desktop"
+    },
+    "browser": {
+      "type": "string",
+      "maxLength": 50
+    },
+    "os": {
+      "type": "string",
+      "maxLength": 50
+    },
+    "ipAddress": {
+      "type": "string",
+      "maxLength": 50
+    },
+    "country": {
+      "type": "string",
+      "maxLength": 50
+    },
+    "region": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "city": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "sessionId": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "visitorId": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "userId": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user"
+    },
+    "dwellTime": {
+      "type": "integer"
+    },
+    "scrollDepth": {
+      "type": "integer"
+    },
+    "deletedAt": {
+      "type": "datetime",
+      "default": null
+    }
+  }
+}
+;
+
+export default _default;

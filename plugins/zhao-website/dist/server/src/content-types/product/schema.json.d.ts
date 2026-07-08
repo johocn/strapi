@@ -1,0 +1,168 @@
+declare const _default: {
+  "kind": "collectionType",
+  "collectionName": "zhao_website_products",
+  "info": {
+    "singularName": "product",
+    "pluralName": "products",
+    "displayName": "产品/方案"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "i18n": { "localized": true },
+    "content-manager": { "visible": true },
+    "content-type-builder": { "visible": false }
+  },
+  "attributes": {
+    "site": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-common.site-config",
+      "required": true,
+      "inversedBy": "website_products"
+    },
+    "name": {
+      "type": "string",
+      "maxLength": 200,
+      "required": true,
+      "localized": true
+    },
+    "slug": {
+      "type": "uid",
+      "targetField": "name",
+      "required": true,
+      "localized": true
+    },
+    "tagline": {
+      "type": "string",
+      "maxLength": 200,
+      "localized": true
+    },
+    "description": {
+      "type": "text",
+      "localized": true
+    },
+    "content": {
+      "type": "text",
+      "localized": true
+    },
+    "coverImage": {
+      "type": "media"
+    },
+    "images": {
+      "type": "media",
+      "multiple": true
+    },
+    "category": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-website.article-category",
+      "inversedBy": "products"
+    },
+    "tags": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "plugin::zhao-tag.tag",
+      "inversedBy": "website_products"
+    },
+    "features": {
+      "type": "json",
+      "localized": true
+    },
+    "specifications": {
+      "type": "json",
+      "localized": true
+    },
+    "scenarios": {
+      "type": "json"
+    },
+    "priceRange": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "priceUnit": {
+      "type": "string",
+      "maxLength": 20
+    },
+    "isFeatured": {
+      "type": "boolean",
+      "default": false
+    },
+    "viewCount": {
+      "type": "biginteger",
+      "default": 0
+    },
+    "seoTitle": {
+      "type": "string",
+      "maxLength": 60,
+      "localized": true
+    },
+    "seoDescription": {
+      "type": "string",
+      "maxLength": 160,
+      "localized": true
+    },
+    "seoKeywords": {
+      "type": "string",
+      "maxLength": 200,
+      "localized": true
+    },
+    "canonicalUrl": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "ogImage": {
+      "type": "media"
+    },
+    "allowIndex": {
+      "type": "boolean",
+      "default": true
+    },
+    "sitemapPriority": {
+      "type": "decimal",
+      "default": 0.7
+    },
+    "sitemapFrequency": {
+      "type": "enumeration",
+      "enum": ["always", "hourly", "daily", "weekly", "monthly", "yearly", "never"],
+      "default": "weekly"
+    },
+    "mainEntity": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-website.knowledge-entity",
+      "inversedBy": "productMainEntities"
+    },
+    "mentionedEntities": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "plugin::zhao-website.knowledge-entity",
+      "inversedBy": "productMentions"
+    },
+    "cases": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "plugin::zhao-website.case",
+      "mappedBy": "relatedProducts"
+    },
+    "structuredData": {
+      "type": "json"
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": ["draft", "published", "archived"],
+      "default": "draft"
+    },
+    "publishedAt": {
+      "type": "datetime"
+    },
+    "deletedAt": {
+      "type": "datetime",
+      "default": null
+    }
+  }
+}
+;
+
+export default _default;

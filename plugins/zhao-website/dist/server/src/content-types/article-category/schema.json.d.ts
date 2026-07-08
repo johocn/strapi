@@ -1,0 +1,109 @@
+declare const _default: {
+  "kind": "collectionType",
+  "collectionName": "zhao_website_article_categories",
+  "info": {
+    "singularName": "article-category",
+    "pluralName": "article-categories",
+    "displayName": "文章分类"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "i18n": { "localized": true },
+    "content-manager": { "visible": true },
+    "content-type-builder": { "visible": false }
+  },
+  "attributes": {
+    "site": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-common.site-config",
+      "required": true,
+      "inversedBy": "website_article_categories"
+    },
+    "name": {
+      "type": "string",
+      "maxLength": 100,
+      "required": true,
+      "localized": true
+    },
+    "slug": {
+      "type": "uid",
+      "targetField": "name",
+      "required": true,
+      "localized": true
+    },
+    "description": {
+      "type": "text",
+      "localized": true
+    },
+    "parent": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-website.article-category",
+      "inversedBy": "children"
+    },
+    "children": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-website.article-category",
+      "mappedBy": "parent"
+    },
+    "articles": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-website.article",
+      "mappedBy": "category"
+    },
+    "tutorials": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-website.tutorial",
+      "mappedBy": "category"
+    },
+    "faqs": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-website.faq",
+      "mappedBy": "category"
+    },
+    "downloads": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-website.download",
+      "mappedBy": "category"
+    },
+    "products": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-website.product",
+      "mappedBy": "category"
+    },
+    "order": {
+      "type": "integer",
+      "default": 0
+    },
+    "seoTitle": {
+      "type": "string",
+      "maxLength": 60,
+      "localized": true
+    },
+    "seoDescription": {
+      "type": "string",
+      "maxLength": 160,
+      "localized": true
+    },
+    "status": {
+      "type": "boolean",
+      "default": true
+    },
+    "deletedAt": {
+      "type": "datetime",
+      "default": null
+    }
+  }
+}
+;
+
+export default _default;

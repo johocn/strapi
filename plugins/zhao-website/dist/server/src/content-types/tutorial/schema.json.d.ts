@@ -1,0 +1,120 @@
+declare const _default: {
+  "kind": "collectionType",
+  "collectionName": "zhao_website_tutorials",
+  "info": {
+    "singularName": "tutorial",
+    "pluralName": "tutorials",
+    "displayName": "教程/操作指南"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "i18n": { "localized": true },
+    "content-manager": { "visible": true },
+    "content-type-builder": { "visible": false }
+  },
+  "attributes": {
+    "site": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-common.site-config",
+      "required": true,
+      "inversedBy": "website_tutorials"
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 200,
+      "required": true,
+      "localized": true
+    },
+    "slug": {
+      "type": "uid",
+      "targetField": "title",
+      "required": true,
+      "localized": true
+    },
+    "description": {
+      "type": "text",
+      "localized": true
+    },
+    "coverImage": {
+      "type": "media"
+    },
+    "steps": {
+      "type": "json",
+      "required": true,
+      "localized": true
+    },
+    "materials": {
+      "type": "json"
+    },
+    "estimatedTime": {
+      "type": "string",
+      "maxLength": 50
+    },
+    "difficulty": {
+      "type": "enumeration",
+      "enum": ["beginner", "intermediate", "advanced"],
+      "default": "beginner"
+    },
+    "result": {
+      "type": "text",
+      "localized": true
+    },
+    "category": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-website.article-category",
+      "inversedBy": "tutorials"
+    },
+    "tags": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "plugin::zhao-tag.tag",
+      "inversedBy": "website_tutorials"
+    },
+    "order": {
+      "type": "integer",
+      "default": 0
+    },
+    "isFeatured": {
+      "type": "boolean",
+      "default": false
+    },
+    "viewCount": {
+      "type": "biginteger",
+      "default": 0
+    },
+    "mainEntity": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-website.knowledge-entity",
+      "inversedBy": "tutorialMainEntities"
+    },
+    "mentionedEntities": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "plugin::zhao-website.knowledge-entity",
+      "inversedBy": "tutorialMentions"
+    },
+    "structuredData": {
+      "type": "json"
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": ["draft", "published", "archived"],
+      "default": "draft"
+    },
+    "publishedAt": {
+      "type": "datetime"
+    },
+    "deletedAt": {
+      "type": "datetime",
+      "default": null
+    }
+  }
+}
+;
+
+export default _default;
