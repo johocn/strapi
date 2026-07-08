@@ -22,8 +22,6 @@ function createGenericController(serviceName: string) {
 }
 
 export default {
-  "seo-config": createGenericController("seo-config"),
-  "brand-info": createGenericController("brand-info"),
   "article-category": createGenericController("article-category"),
   product: createGenericController("product"),
   case: createGenericController("case"),
