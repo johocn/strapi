@@ -67,23 +67,44 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
   // ===== 管理端 =====
   async findAdmin(siteId: number, query: any = {}) {
-    const { page = 1, pageSize = 20, status, category } = query;
+    const { page = 1, pageSize = 20, status, category, tagGroup } = query;
     const filters: any = { site: siteId, deletedAt: null };
     if (status) filters.status = status;
     if (category) filters.category = category;
+
+    // tagGroup 筛选：knex 查 join 表拿 tutorial_id 列表
+    if (tagGroup) {
+      const knex = strapi.db.connection;
+      const groupRow = await knex('zhao_tag_groups').where('slug', tagGroup).first()
+        || await knex('zhao_tag_groups').where('document_id', tagGroup).first();
+      if (groupRow?.id) {
+        const tagRows = await knex('zhao_tags_tag_group_lnk').where('tag_group_id', groupRow.id).select('tag_id');
+        const tagIds = tagRows.map((r: any) => r.tag_id);
+        if (tagIds.length > 0) {
+          const tutorialRows = await knex('zhao_website_tutorials_tags_lnk')
+            .whereIn('tag_id', tagIds).select('tutorial_id');
+          const tutorialIds = [...new Set(tutorialRows.map((r: any) => r.tutorial_id))];
+          if (tutorialIds.length === 0) return [];
+          filters.id = { $in: tutorialIds };
+        } else {
+          return [];
+        }
+      }
+    }
+
     return strapi.db.query(UID).findMany({
       where: filters,
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
       orderBy: { updatedAt: "DESC" },
-      populate: ["coverImage", "category", "tags"],
+      populate: ["coverImage", "category", "tags", "tags.tagGroup"],
     });
   },
 
   async findOneAdmin(siteId: number, documentId: string) {
     return strapi.db.query(UID).findOne({
       where: { site: siteId, documentId, deletedAt: null },
-      populate: ["coverImage", "category", "tags", "mainEntity", "mentionedEntities"],
+      populate: ["coverImage", "category", "tags", "tags.tagGroup", "mainEntity", "mentionedEntities"],
     });
   },
 

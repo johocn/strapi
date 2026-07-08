@@ -67,22 +67,43 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
   // ===== 管理端 =====
   async findAdmin(siteId: number, query: any = {}) {
-    const { page = 1, pageSize = 20, status } = query;
+    const { page = 1, pageSize = 20, status, tagGroup } = query;
     const filters: any = { site: siteId, deletedAt: null };
     if (status) filters.status = status;
+
+    // tagGroup 筛选：knex 查 join 表拿 case_id 列表
+    if (tagGroup) {
+      const knex = strapi.db.connection;
+      const groupRow = await knex('zhao_tag_groups').where('slug', tagGroup).first()
+        || await knex('zhao_tag_groups').where('document_id', tagGroup).first();
+      if (groupRow?.id) {
+        const tagRows = await knex('zhao_tags_tag_group_lnk').where('tag_group_id', groupRow.id).select('tag_id');
+        const tagIds = tagRows.map((r: any) => r.tag_id);
+        if (tagIds.length > 0) {
+          const caseRows = await knex('zhao_website_cases_tags_lnk')
+            .whereIn('tag_id', tagIds).select('case_id');
+          const caseIds = [...new Set(caseRows.map((r: any) => r.case_id))];
+          if (caseIds.length === 0) return [];
+          filters.id = { $in: caseIds };
+        } else {
+          return [];
+        }
+      }
+    }
+
     return strapi.db.query(UID).findMany({
       where: filters,
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
       orderBy: { updatedAt: "DESC" },
-      populate: ["coverImage", "clientLogo", "tags"],
+      populate: ["coverImage", "clientLogo", "tags", "tags.tagGroup"],
     });
   },
 
   async findOneAdmin(siteId: number, documentId: string) {
     return strapi.db.query(UID).findOne({
       where: { site: siteId, documentId, deletedAt: null },
-      populate: ["coverImage", "clientLogo", "tags", "mainEntity", "images", "mentionedEntities",
+      populate: ["coverImage", "clientLogo", "tags", "tags.tagGroup", "mainEntity", "images", "mentionedEntities",
                  "relatedProducts", "structuredData"],
     });
   },
