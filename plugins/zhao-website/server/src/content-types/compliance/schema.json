@@ -10,6 +10,7 @@
     "draftAndPublish": false
   },
   "pluginOptions": {
+    "i18n": { "localized": true },
     "content-manager": { "visible": true },
     "content-type-builder": { "visible": false }
   },
@@ -24,12 +25,14 @@
     "title": {
       "type": "string",
       "maxLength": 200,
-      "required": true
+      "required": true,
+      "localized": true
     },
     "slug": {
       "type": "uid",
       "targetField": "title",
-      "required": true
+      "required": true,
+      "localized": true
     },
     "category": {
       "type": "enumeration",
@@ -38,7 +41,8 @@
     },
     "content": {
       "type": "text",
-      "required": true
+      "required": true,
+      "localized": true
     },
     "effectiveDate": {
       "type": "date"
@@ -58,11 +62,13 @@
     },
     "seoTitle": {
       "type": "string",
-      "maxLength": 60
+      "maxLength": 60,
+      "localized": true
     },
     "seoDescription": {
       "type": "string",
-      "maxLength": 160
+      "maxLength": 160,
+      "localized": true
     },
     "allowIndex": {
       "type": "boolean",

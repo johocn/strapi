@@ -10,6 +10,7 @@
     "draftAndPublish": false
   },
   "pluginOptions": {
+    "i18n": { "localized": true },
     "content-manager": { "visible": true },
     "content-type-builder": { "visible": false }
   },
@@ -24,10 +25,12 @@
     "name": {
       "type": "string",
       "maxLength": 200,
-      "required": true
+      "required": true,
+      "localized": true
     },
     "description": {
-      "type": "text"
+      "type": "text",
+      "localized": true
     },
     "file": {
       "type": "media",

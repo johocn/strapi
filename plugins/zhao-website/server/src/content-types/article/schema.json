@@ -10,6 +10,7 @@
     "draftAndPublish": false
   },
   "pluginOptions": {
+    "i18n": { "localized": true },
     "content-manager": { "visible": true },
     "content-type-builder": { "visible": false }
   },
@@ -24,19 +25,23 @@
     "title": {
       "type": "string",
       "maxLength": 200,
-      "required": true
+      "required": true,
+      "localized": true
     },
     "slug": {
       "type": "uid",
       "targetField": "title",
-      "required": true
+      "required": true,
+      "localized": true
     },
     "excerpt": {
-      "type": "text"
+      "type": "text",
+      "localized": true
     },
     "content": {
       "type": "text",
-      "required": true
+      "required": true,
+      "localized": true
     },
     "coverImage": {
       "type": "media"
@@ -93,26 +98,32 @@
     },
     "seoTitle": {
       "type": "string",
-      "maxLength": 60
+      "maxLength": 60,
+      "localized": true
     },
     "seoDescription": {
       "type": "string",
-      "maxLength": 160
+      "maxLength": 160,
+      "localized": true
     },
     "seoKeywords": {
       "type": "string",
-      "maxLength": 200
+      "maxLength": 200,
+      "localized": true
     },
     "canonicalUrl": {
       "type": "string",
-      "maxLength": 500
+      "maxLength": 500,
+      "localized": true
     },
     "ogTitle": {
       "type": "string",
-      "maxLength": 200
+      "maxLength": 200,
+      "localized": true
     },
     "ogDescription": {
-      "type": "text"
+      "type": "text",
+      "localized": true
     },
     "ogImage": {
       "type": "media"
@@ -132,7 +143,8 @@
       "maxLength": 50
     },
     "schemaJson": {
-      "type": "json"
+      "type": "json",
+      "localized": true
     },
     "allowIndex": {
       "type": "boolean",

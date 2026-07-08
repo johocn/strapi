@@ -10,6 +10,7 @@
     "draftAndPublish": false
   },
   "pluginOptions": {
+    "i18n": { "localized": true },
     "content-manager": { "visible": true },
     "content-type-builder": { "visible": false }
   },
@@ -24,17 +25,20 @@
     "title": {
       "type": "string",
       "maxLength": 200,
-      "required": true
+      "required": true,
+      "localized": true
     },
     "slug": {
       "type": "uid",
       "targetField": "title",
-      "required": true
+      "required": true,
+      "localized": true
     },
     "clientName": {
       "type": "string",
       "maxLength": 100,
-      "required": true
+      "required": true,
+      "localized": true
     },
     "clientLogo": {
       "type": "media"
@@ -44,22 +48,27 @@
       "maxLength": 50
     },
     "clientDescription": {
-      "type": "text"
+      "type": "text",
+      "localized": true
     },
     "challenge": {
       "type": "text",
-      "required": true
+      "required": true,
+      "localized": true
     },
     "solution": {
       "type": "text",
-      "required": true
+      "required": true,
+      "localized": true
     },
     "results": {
       "type": "json",
-      "required": true
+      "required": true,
+      "localized": true
     },
     "testimonial": {
-      "type": "text"
+      "type": "text",
+      "localized": true
     },
     "testimonialAuthor": {
       "type": "string",
@@ -98,11 +107,13 @@
     },
     "seoTitle": {
       "type": "string",
-      "maxLength": 60
+      "maxLength": 60,
+      "localized": true
     },
     "seoDescription": {
       "type": "string",
-      "maxLength": 160
+      "maxLength": 160,
+      "localized": true
     },
     "allowIndex": {
       "type": "boolean",

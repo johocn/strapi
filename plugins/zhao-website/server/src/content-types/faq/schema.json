@@ -10,6 +10,7 @@
     "draftAndPublish": false
   },
   "pluginOptions": {
+    "i18n": { "localized": true },
     "content-manager": { "visible": true },
     "content-type-builder": { "visible": false }
   },
@@ -23,11 +24,13 @@
     },
     "question": {
       "type": "text",
-      "required": true
+      "required": true,
+      "localized": true
     },
     "answer": {
       "type": "text",
-      "required": true
+      "required": true,
+      "localized": true
     },
     "slug": {
       "type": "uid",

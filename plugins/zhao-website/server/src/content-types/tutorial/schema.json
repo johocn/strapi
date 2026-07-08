@@ -10,6 +10,7 @@
     "draftAndPublish": false
   },
   "pluginOptions": {
+    "i18n": { "localized": true },
     "content-manager": { "visible": true },
     "content-type-builder": { "visible": false }
   },
@@ -24,22 +25,26 @@
     "title": {
       "type": "string",
       "maxLength": 200,
-      "required": true
+      "required": true,
+      "localized": true
     },
     "slug": {
       "type": "uid",
       "targetField": "title",
-      "required": true
+      "required": true,
+      "localized": true
     },
     "description": {
-      "type": "text"
+      "type": "text",
+      "localized": true
     },
     "coverImage": {
       "type": "media"
     },
     "steps": {
       "type": "json",
-      "required": true
+      "required": true,
+      "localized": true
     },
     "materials": {
       "type": "json"
@@ -54,7 +59,8 @@
       "default": "beginner"
     },
     "result": {
-      "type": "text"
+      "type": "text",
+      "localized": true
     },
     "category": {
       "type": "relation",

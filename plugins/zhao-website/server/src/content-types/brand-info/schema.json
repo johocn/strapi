@@ -10,6 +10,7 @@
     "draftAndPublish": false
   },
   "pluginOptions": {
+    "i18n": { "localized": true },
     "content-manager": { "visible": true },
     "content-type-builder": { "visible": false }
   },
@@ -24,15 +25,18 @@
     "companyName": {
       "type": "string",
       "maxLength": 200,
-      "required": true
+      "required": true,
+      "localized": true
     },
     "shortName": {
       "type": "string",
-      "maxLength": 100
+      "maxLength": 100,
+      "localized": true
     },
     "slogan": {
       "type": "string",
-      "maxLength": 200
+      "maxLength": 200,
+      "localized": true
     },
     "logo": {
       "type": "media"
@@ -44,18 +48,21 @@
       "type": "media"
     },
     "description": {
-      "type": "text"
+      "type": "text",
+      "localized": true
     },
     "foundingDate": {
       "type": "date"
     },
     "registeredAddress": {
       "type": "string",
-      "maxLength": 500
+      "maxLength": 500,
+      "localized": true
     },
     "officeAddress": {
       "type": "string",
-      "maxLength": 500
+      "maxLength": 500,
+      "localized": true
     },
     "contactPhone": {
       "type": "string",
@@ -99,7 +106,8 @@
       "maxLength": 50
     },
     "businessScope": {
-      "type": "text"
+      "type": "text",
+      "localized": true
     },
     "mainEntity": {
       "type": "relation",

@@ -10,6 +10,7 @@
     "draftAndPublish": false
   },
   "pluginOptions": {
+    "i18n": { "localized": true },
     "content-manager": { "visible": true },
     "content-type-builder": { "visible": false }
   },
@@ -24,22 +25,27 @@
     "name": {
       "type": "string",
       "maxLength": 200,
-      "required": true
+      "required": true,
+      "localized": true
     },
     "slug": {
       "type": "uid",
       "targetField": "name",
-      "required": true
+      "required": true,
+      "localized": true
     },
     "tagline": {
       "type": "string",
-      "maxLength": 200
+      "maxLength": 200,
+      "localized": true
     },
     "description": {
-      "type": "text"
+      "type": "text",
+      "localized": true
     },
     "content": {
-      "type": "text"
+      "type": "text",
+      "localized": true
     },
     "coverImage": {
       "type": "media"
@@ -61,10 +67,12 @@
       "inversedBy": "website_products"
     },
     "features": {
-      "type": "json"
+      "type": "json",
+      "localized": true
     },
     "specifications": {
-      "type": "json"
+      "type": "json",
+      "localized": true
     },
     "scenarios": {
       "type": "json"
@@ -87,15 +95,18 @@
     },
     "seoTitle": {
       "type": "string",
-      "maxLength": 60
+      "maxLength": 60,
+      "localized": true
     },
     "seoDescription": {
       "type": "string",
-      "maxLength": 160
+      "maxLength": 160,
+      "localized": true
     },
     "seoKeywords": {
       "type": "string",
-      "maxLength": 200
+      "maxLength": 200,
+      "localized": true
     },
     "canonicalUrl": {
       "type": "string",
