@@ -6,6 +6,15 @@ import type { Core } from '@strapi/strapi';
  * 插件目录：./plugins/（相对于项目根目录）
  */
 const config = ({ env }: Core.Config.Shared.ConfigParams): Core.Config.Plugin => ({
+    i18n: {
+        enabled: true,
+        config: {
+            defaultLocale: "zh-CN",
+            locales: [
+                { code: "zh-CN", name: "中文 (简体)" },
+            ],
+        },
+    },
     "zhao-auth": {
         enabled: true,
         resolve: "./plugins/zhao-auth",
