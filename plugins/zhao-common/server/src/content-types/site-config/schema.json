@@ -83,7 +83,8 @@
         "course": true,
         "channel": true,
         "thirdParty": true,
-        "oss": false
+        "oss": false,
+        "website": true
       }
     },
     "template": {
