@@ -3,6 +3,7 @@
 ## 目录
 - [Ch1 系统概述](#ch1-系统概述)
 - [Ch2 角色与权限](#ch2-角色与权限)
+- [Ch14 常见问题](#ch14-常见问题)
 
 ---
 
@@ -4589,3 +4590,186 @@ menu.study-center（学习数据）
 - `dataSource`：`crawler`（爬虫采集）/ `manual`（人工录入）
 - 仅用于 `productType=money-fund` 的产品；其他类型走 wealth-nav
 - 关闭 draftAndPublish，记录直接生效
+
+---
+
+## Ch14 常见问题
+
+本章汇总后台运营与开发集成中高频出现的问题、故障排查路径与 Strapi v5 技术约束速查，供排障与方案选型时快速参考。
+
+### 14.1 FAQ（按业务场景分类）
+
+#### 登录问题
+
+**Q：忘记密码怎么办？**
+A：请联系 `super-admin` 或具备用户管理权限的角色，在系统中心 → 用户管理中重置密码；重置后用户需使用新密码首次登录并修改。若 super-admin 自身遗忘，需通过数据库直接重置 `admin_password` 字段（需 Strapi 管理员协助，并使用 bcrypt 哈希）。
+
+**Q：账号被锁定怎么办？**
+A：连续登录失败达到阈值会触发账号锁定。处理方式：
+1. 等待锁定时间窗口过期后自动解锁
+2. 由 `super-admin` 在用户管理中手动解锁
+3. 检查是否有异常登录尝试（参考系统中心 → 角色操作日志 `role-action-log`）
+
+**Q：无法登录后台？**
+A：排查顺序：
+1. 确认账号状态为启用（`status=true`）
+2. 确认账号已绑定角色，且角色未被禁用
+3. 确认浏览器 Cookie 未被拦截（跨域/SSO 场景需检查 `sso-token`、`sso-auth-code` 流程）
+4. 查看 SSO 登录日志（`sso-login-log`）确认是否有报错记录
+5. 三方登录用户需确认 `third-party-account` 绑定关系存在
+
+#### 权限问题
+
+**Q：看不到某个中心？**
+A：原因与处理：
+1. 当前角色未授予该中心的访问权限 → 由 `super-admin` 在角色管理中补全权限
+2. 权限同步未完成 → 重启 Strapi 触发 `initDefaultRoles` 同步，或调用 `POST /api/zhao-auth/v1/admin/permissions/init` 手动触发
+3. 角色渠道绑定缺失 → 检查 `role-channel` 是否将角色与对应 channel 绑定
+
+**Q：无法创建/删除记录？**
+A：排查：
+1. 角色权限树中对应 CT 的 `create`/`delete` 动作未勾选
+2. 多租户隔离：当前用户的 channel/site 与目标记录的 channel/site 不一致
+3. 系统类 CT（如 `permission`、`sso-token`）`visible=false`，仅 `super-admin` 可操作
+4. 业务规则限制：如存在子关联记录时禁止删除（参考各 CT 的"业务规则"小节）
+
+**Q：权限不同步（重启后仍未更新）？**
+A：解决：
+1. 重启 Strapi，启动时 `initDefaultRoles` 会延时 3 秒执行权限同步
+2. 若仍不同步，调用 `POST /api/zhao-auth/v1/admin/permissions/init` 手动触发
+3. 注意：系统角色每次启动会同步权限；非系统角色只补全字段，不覆盖已配置的权限
+4. 检查 `zhao_permissions` 表中该角色的 `permissions` 字段是否完整
+
+#### 数据不显示
+
+**Q：创建的记录在前台看不到？**
+A：排查：
+1. **site 关联缺失**：记录未关联正确的 `site`，导致前台按站点查询时取不到 → 检查 `site` 字段是否正确填写
+2. **status=false**：记录被停用，前台不展示 → 启用 `status`
+3. **draftAndPublish 未关闭**：记录处于草稿态未发布 → 发布或确认该 CT 已关闭 draftAndPublish
+4. **channel 不匹配**：前台请求的 channel 与记录的 channel 不一致 → 确认 channel 关联正确
+5. **时间未到/已过期**：涉及 `publishedAt`/`expireAt` 的记录未到展示时间或已过期
+
+**解决：检查 site 关联是否正确**
+- 在后台编辑该记录，确认 `site` 字段已关联到目标站点
+- 多租户场景下，前台 API 请求需携带正确的 `channel` 与 `site` 标识
+- 公共标签（`isPublic=true` 且 `site=null`）所有站点共享，无需 site 关联
+
+#### 多租户隔离
+
+**Q：channel → site → CT 三层隔离说明？**
+A：
+- **channel（渠道）**：顶层业务隔离单元，对应一个业务主体，渠道间数据完全隔离
+- **site（站点）**：站点级隔离，拥有独立域名与品牌配置，站点间内容、配置、标签独立
+- **CT（内容类型）**：站点内的具体内容实体（文章、产品、案例等），由各中心管理
+- 数据访问默认按 channel + site 过滤，跨租户访问需显式声明
+
+**Q：channel-admin 和 {center}-manager 的数据范围差异？**
+A：
+- **channel-admin**：可见其绑定 channel 下所有 site 的全部 CT 数据，具备该 channel 的全部运营权限
+- **{center}-manager**（如 `course-manager`、`quiz-manager`）：仅可见其绑定 channel + site 范围内、且归属于其负责中心的 CT 数据，权限仅限该中心
+- 数据范围差异：channel-admin 跨 site 可见，{center}-manager 受 site 维度约束
+- 详见 Ch2 角色与权限的权限矩阵
+
+### 14.2 故障排查
+
+#### 500 错误
+
+**populate 格式问题**
+- 现象：调用 `db.query` 或 Document Service 时报 `key.split is not a function`
+- 原因：Strapi v5 的 `db.query` populate 必须使用**纯对象格式**，不能用混合数组/对象格式
+- 错误示例：`populate: ['coverImage', { tags: { populate: 'tagGroup' } }]`
+- 正确示例：`populate: { coverImage: true, tags: { populate: { tagGroup: true } } }`
+- 解决：将所有 populate 改为纯对象格式
+
+**Document Service 过滤器不稳定**
+- 现象：使用 `filters.id` 用数字主键查询时返回空或报错
+- 原因：Strapi v5 Document Service 对数字主键的过滤不稳定
+- 解决：改用 `knex` 直接查表，例如 `strapi.db.connection('table_name').where('id', id)`
+
+**manyToMany 反向关系**
+- 现象：对 manyToMany 的 mappedBy 侧使用 Document Service `{ set: [...] }` 不生效
+- 原因：Strapi v5 Document Service 对 manyToMany 反向侧的 `set` 操作存在缺陷
+- 解决：使用 `knex` 直接写中间表，例如：
+  ```js
+  await strapi.db.connection('owner_table_inverse_attr_lnk')
+    .where({ singular_owner_id: ownerId })
+    .del();
+  await strapi.db.connection('owner_table_inverse_attr_lnk')
+    .insert(rows.map(id => ({ singular_owner_id: ownerId, singular_inverse_id: id })));
+  ```
+
+#### 权限同步
+
+**initDefaultRoles 启动延时**
+- `initDefaultRoles` 在 Strapi 启动后延时 3 秒执行，避免与启动流程冲突
+- 启动后若立即测试权限可能未同步完成，建议等待 3 秒以上或查看启动日志确认
+
+**系统角色 vs 非系统角色同步策略**
+- **系统角色**（如 `super-admin`、`channel-admin`）：每次启动同步权限，覆盖 `zhao_permissions` 表中的 `permissions` 字段
+- **非系统角色**（自定义中心角色）：启动时只补全字段（如 `name`、`description`），**不覆盖**已配置的权限
+- 若自定义角色权限丢失，需手动在后台配置或调用权限初始化接口
+
+**手动触发权限同步**
+- 接口：`POST /api/zhao-auth/v1/admin/permissions/init`
+- 权限：需 `super-admin` 角色
+- 场景：角色权限树变更后不想重启服务时，调用此接口立即同步
+
+#### 编译问题
+
+**develop 模式自动编译**
+- `npm run develop` 会自动监听 TS 文件变更并编译到 `dist` 目录
+- 修改插件源码后会自动重新编译，但部分配置变更（如 `routes`、`config`）需手动重启
+
+**生产部署编译**
+- 生产环境必须执行 `npm run build` 编译 TS → dist
+- 部署流程：拉取代码 → `npm install` → `npm run build` → `npm start`
+- 未 build 直接 `npm start` 会因 dist 缺失导致插件加载失败
+
+**插件改了 routes/config 需手动 build + 重启**
+- 修改插件的 `routes/*`、`config/*`、`content-types/*/schema.json` 后，develop 模式下可能不会自动生效
+- 处理：`npm run build` → 重启 Strapi 服务
+- 原因：部分配置在启动时一次性加载，运行时不监听变更
+
+### 14.3 技术约束速查
+
+以下为 Strapi v5 在本项目集成中已确认的技术限制，开发新功能或排查问题时务必遵循：
+
+1. **Document Service `{ set: [...] }` 对 manyToMany 反向侧不生效**
+   - 场景：操作 mappedBy 侧的 manyToMany 关系
+   - 方案：用 `knex` 直接写中间表
+
+2. **db.query manyToMany 关系过滤器语法不稳定**
+   - 场景：通过 manyToMany 关系字段过滤主表记录
+   - 方案：用 `knex` 查中间表 + `$in` 过滤主键
+
+3. **Document Service filters.id（数字主键）不稳定**
+   - 场景：按数字主键 `id` 查询 Document Service
+   - 方案：用 `knex` 直接查表 `strapi.db.connection('table').where('id', id)`
+
+4. **db.query populate 必须用纯对象格式**
+   - 场景：调用 `db.query` 或 Document Service 的 populate 参数
+   - 错误：`populate: ['coverImage', { tags: { populate: 'tagGroup' } }]`（混合数组/对象）
+   - 正确：`populate: { coverImage: true, tags: { populate: { tagGroup: true } } }`（纯对象）
+   - 报错：`key.split is not a function`
+
+5. **strapi::cors 中间件不支持 enabled 选项**
+   - 场景：在 `config/middleware.js` 中禁用 CORS
+   - 错误：`enabled: false`（不生效）
+   - 方案：在 `config/middleware.js` 中**移除** `strapi::cors` 配置项，而非设 `enabled: false`
+
+6. **插件必须声明 sharp 为 peerDependency**
+   - 场景：插件依赖图片处理库 `sharp`
+   - 错误：在插件 `package.json` 的 `dependencies` 中声明 `sharp`
+   - 正确：声明在 `peerDependencies` 中，由宿主项目统一安装
+
+7. **content-type schema 必须同时在 schema.json 和 content-types/index.ts 中定义**
+   - 场景：插件 content-type 采用 `index.ts` 内联 schema 的方式
+   - 要求：`schema.json` 与 `content-types/index.ts` 中的 schema 定义必须保持一致
+   - 若仅修改一处，可能导致 content-manager 与 API 行为不一致
+
+8. **多对多中间表命名规范**
+   - 表名：`{owner_table}_{inverse_attribute}_lnk`
+   - 列名：`{singular_owner}_id` 与 `{singular_inverse}_id`
+   - 示例：owner 表 `articles`、inverse 属性 `tags` → 中间表 `articles_tags_lnk`，列 `article_id` 与 `tag_id`
+   - 遵循此规范可避免 Strapi 自动建表与手动 knex 操作时的命名冲突
