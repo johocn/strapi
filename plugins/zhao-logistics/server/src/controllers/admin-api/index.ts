@@ -2,6 +2,11 @@ import createGeneric from "./generic";
 import quoteEngine from "./quote-engine";
 import trackingAggregator from "./tracking-aggregator";
 import dynamicForm from "./dynamic-form";
+import reviewAction from "./review-action";
+import intentOrderAction from "./intent-order-action";
+import customerProfileAction from "./customer-profile-action";
+import funnelStats from "./funnel-stats";
+import referralStats from "./referral-stats";
 
 const quoteRequest = createGeneric("quote-request");
 const quoteFieldRule = createGeneric("quote-field-rule");
@@ -40,4 +45,9 @@ export default {
   "intent-order": intentOrder,
   "referral": referral,
   "customer-profile": customerProfile,
+  "review-action": reviewAction,
+  "intent-order-action": intentOrderAction,
+  "customer-profile-action": customerProfileAction,
+  "funnel-stats": funnelStats,
+  "referral-stats": referralStats,
 };

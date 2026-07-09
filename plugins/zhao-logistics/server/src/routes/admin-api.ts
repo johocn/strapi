@@ -95,6 +95,52 @@ const routes: Core.Route[] = [
     handler: "tracking-aggregator.syncFromProvider",
     config: {},
   },
+  // review-action 端点
+  {
+    method: "POST",
+    path: "/v1/admin/reviews/:documentId/approve",
+    handler: "review-action.approve",
+    config: {},
+  },
+  {
+    method: "POST",
+    path: "/v1/admin/reviews/:documentId/reject",
+    handler: "review-action.reject",
+    config: {},
+  },
+  {
+    method: "POST",
+    path: "/v1/admin/reviews/:documentId/reply",
+    handler: "review-action.reply",
+    config: {},
+  },
+  // intent-order-action 端点
+  {
+    method: "POST",
+    path: "/v1/admin/intent-orders/:documentId/convert",
+    handler: "intent-order-action.convert",
+    config: {},
+  },
+  // customer-profile-action 端点
+  {
+    method: "POST",
+    path: "/v1/admin/customer-profiles/merge",
+    handler: "customer-profile-action.merge",
+    config: {},
+  },
+  // 统计端点
+  {
+    method: "GET",
+    path: "/v1/admin/funnel/stats",
+    handler: "funnel-stats.stats",
+    config: {},
+  },
+  {
+    method: "GET",
+    path: "/v1/admin/referrals/stats",
+    handler: "referral-stats.stats",
+    config: {},
+  },
   // dynamic-form 端点
   {
     method: "GET",
