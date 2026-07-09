@@ -282,8 +282,8 @@ declare const _default: {
         };
     };
     routes: {
-        "content-api": {
-            type: string;
+        "content-api": () => {
+            type: "content-api";
             routes: {
                 method: "POST" | "GET" | "PUT" | "DELETE" | "PATCH";
                 path: string;

@@ -97,8 +97,7 @@
     "assignedTo": {
       "type": "relation",
       "relation": "manyToOne",
-      "target": "admin::user",
-      "inversedBy": "website_leads"
+      "target": "admin::user"
     },
     "status": {
       "type": "enumeration",

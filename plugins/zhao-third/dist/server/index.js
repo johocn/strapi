@@ -891,12 +891,11 @@ const contentApi = () => ({
     adminRoute("GET", "/third-party-accounts", "third-party-account.list", "third-party-account.read")
   ]
 });
-const contentApiRoutes = contentApi();
 const routes = {
-  "content-api": {
+  "content-api": () => ({
     type: "content-api",
-    routes: contentApiRoutes.routes
-  }
+    routes: contentApi().routes
+  })
 };
 const index = {
   register,

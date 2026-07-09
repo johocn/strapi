@@ -661,7 +661,7 @@ declare const _default: {
         };
     };
     routes: {
-        'content-api': {
+        'content-api': () => {
             type: string;
             routes: {
                 method: string;
@@ -672,7 +672,7 @@ declare const _default: {
                 };
             }[];
         };
-        'admin-api': {
+        'admin-api': () => {
             type: string;
             routes: {
                 method: string;

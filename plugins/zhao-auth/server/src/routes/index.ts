@@ -1,16 +1,13 @@
 import contentApi from "./content-api";
 import tenant from "./tenant";
 
-const contentApiRoutes = contentApi();
-const tenantRoutes = tenant();
-
 export default {
   "content-api": {
-    type: "content-api",
-    routes: contentApiRoutes.routes,
+    type: "content-api" as const,
+    routes: contentApi().routes,
   },
   tenant: {
-    type: "content-api",
-    routes: tenantRoutes.routes,
+    type: "content-api" as const,
+    routes: tenant().routes,
   },
 };

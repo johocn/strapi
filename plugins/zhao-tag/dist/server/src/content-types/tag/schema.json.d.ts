@@ -9,18 +9,24 @@ declare const _default: {
   "options": {
     "draftAndPublish": false
   },
+  "pluginOptions": {
+    "i18n": { "localized": true }
+  },
   "attributes": {
     "name": {
       "type": "string",
-      "required": true
+      "required": true,
+      "localized": true
     },
     "slug": {
       "type": "uid",
       "targetField": "name",
-      "required": false
+      "required": false,
+      "localized": true
     },
     "description": {
-      "type": "text"
+      "type": "text",
+      "localized": true
     },
     "color": {
       "type": "string"
@@ -59,11 +65,59 @@ declare const _default: {
       "type": "boolean",
       "default": true
     },
+    "site": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-common.site-config",
+      "inversedBy": "tags"
+    },
     "indexes": {
       "type": "relation",
       "relation": "oneToMany",
       "target": "plugin::zhao-tag.tag-index",
       "mappedBy": "tag"
+    },
+    "website_articles": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "plugin::zhao-website.article",
+      "mappedBy": "tags"
+    },
+    "website_tutorials": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "plugin::zhao-website.tutorial",
+      "mappedBy": "tags"
+    },
+    "website_cases": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "plugin::zhao-website.case",
+      "mappedBy": "tags"
+    },
+    "website_faqs": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "plugin::zhao-website.faq",
+      "mappedBy": "tags"
+    },
+    "website_compliances": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "plugin::zhao-website.compliance",
+      "mappedBy": "tags"
+    },
+    "website_downloads": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "plugin::zhao-website.download",
+      "mappedBy": "tags"
+    },
+    "website_products": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "plugin::zhao-website.product",
+      "mappedBy": "tags"
     },
     "deletedAt": {
       "type": "datetime",

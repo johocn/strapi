@@ -102,12 +102,95 @@
     "verifiedBy": {
       "type": "relation",
       "relation": "manyToOne",
-      "target": "admin::user",
-      "inversedBy": "website_knowledge_entities"
+      "target": "admin::user"
     },
     "status": {
       "type": "boolean",
       "default": true
+    },
+    "brandInfos": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-website.brand-info",
+      "mappedBy": "mainEntity"
+    },
+    "subjectRelations": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-website.knowledge-relation",
+      "mappedBy": "subject"
+    },
+    "objectRelations": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-website.knowledge-relation",
+      "mappedBy": "object"
+    },
+    "faqMainEntities": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-website.faq",
+      "mappedBy": "mainEntity"
+    },
+    "faqMentions": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "plugin::zhao-website.faq",
+      "mappedBy": "mentionedEntities"
+    },
+    "tutorialMainEntities": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-website.tutorial",
+      "mappedBy": "mainEntity"
+    },
+    "tutorialMentions": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "plugin::zhao-website.tutorial",
+      "mappedBy": "mentionedEntities"
+    },
+    "articleMainEntities": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-website.article",
+      "mappedBy": "mainEntity"
+    },
+    "articleMentions": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "plugin::zhao-website.article",
+      "mappedBy": "mentionedEntities"
+    },
+    "firstTruthPolicies": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-website.first-truth-policy",
+      "mappedBy": "mainEntity"
+    },
+    "productMainEntities": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-website.product",
+      "mappedBy": "mainEntity"
+    },
+    "productMentions": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "plugin::zhao-website.product",
+      "mappedBy": "mentionedEntities"
+    },
+    "caseMainEntities": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-website.case",
+      "mappedBy": "mainEntity"
+    },
+    "caseMentions": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "plugin::zhao-website.case",
+      "mappedBy": "mentionedEntities"
     },
     "deletedAt": {
       "type": "datetime",

@@ -43,8 +43,7 @@
     "userId": {
       "type": "relation",
       "relation": "manyToOne",
-      "target": "plugin::users-permissions.user",
-      "inversedBy": "website_interactions"
+      "target": "plugin::users-permissions.user"
     },
     "ipAddress": {
       "type": "string",

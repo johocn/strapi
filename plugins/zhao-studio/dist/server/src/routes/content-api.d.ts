@@ -1,5 +1,5 @@
 type Method = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
-declare const _default: {
+declare const _default: () => {
     type: "content-api";
     routes: {
         method: Method;

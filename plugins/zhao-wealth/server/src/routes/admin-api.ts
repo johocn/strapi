@@ -1,8 +1,8 @@
 'use strict';
 
-export default {
+export default () => ({
+  type: 'admin' as const,
   routes: [
-    // ===== 公司管理 =====
     {
       method: 'GET',
       path: '/companies',
@@ -28,8 +28,6 @@ export default {
       path: '/companies/:id',
       handler: 'admin-api.companyDelete',
     },
-
-    // ===== 产品管理 =====
     {
       method: 'GET',
       path: '/products',
@@ -55,8 +53,6 @@ export default {
       path: '/products/:id',
       handler: 'admin-api.productDelete',
     },
-
-    // ===== 采集配置 =====
     {
       method: 'GET',
       path: '/collect-configs',
@@ -77,8 +73,6 @@ export default {
       path: '/collect/status',
       handler: 'collect.status',
     },
-
-    // ===== 净值管理 =====
     {
       method: 'GET',
       path: '/products/:id/nav',
@@ -94,15 +88,11 @@ export default {
       path: '/nav/:id',
       handler: 'admin-api.navDataUpdate',
     },
-
-    // ===== 重算 =====
     {
       method: 'POST',
       path: '/recalculate',
       handler: 'collect.recalculate',
     },
-
-    // ===== 推荐配置 =====
     {
       method: 'GET',
       path: '/recommend-configs',
@@ -123,29 +113,21 @@ export default {
       path: '/recommend-configs/:id',
       handler: 'admin-api.recommendConfigDelete',
     },
-
-    // ===== 客户自选 =====
     {
       method: 'GET',
       path: '/customer-products',
       handler: 'admin-api.customerProductsList',
     },
-
-    // ===== 统计 =====
     {
       method: 'GET',
       path: '/stats',
       handler: 'admin-api.stats',
     },
-
-    // 风险指标重算
     {
       method: 'POST',
       path: '/recalculate-risk-metric',
       handler: 'risk-metric.recalculate',
     },
-
-    // 统计聚合（仪表盘）
     {
       method: 'GET',
       path: '/stats/overview',
@@ -156,8 +138,6 @@ export default {
       path: '/stats/anomalies',
       handler: 'admin-api.statsAnomalies',
     },
-
-    // 采集与校验
     {
       method: 'POST',
       path: '/products/collect',
@@ -168,8 +148,6 @@ export default {
       path: '/products/collect/confirm',
       handler: 'admin-api.collectConfirm',
     },
-
-    // 指标中心聚合
     {
       method: 'GET',
       path: '/risk-metrics/admin/aggregate',
@@ -186,4 +164,4 @@ export default {
       handler: 'risk-metric.adminPeers',
     },
   ],
-};
+});

@@ -6,6 +6,17 @@ const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
 
   if (!isTest) logger.info("[zhao-website] Initializing...");
 
+  // 注册无插件前缀的路由（兼容旧版 API 路径）
+  const websiteController = strapi.plugin("zhao-website").controller("site-info");
+  const koaApp = strapi.server.app as any;
+  koaApp.use(async (ctx: any, next: any) => {
+    if (ctx.method !== "GET" || ctx.path !== "/api/v1/site-info") {
+      return next();
+    }
+    ctx.state = ctx.state || {};
+    await websiteController.info(ctx, next);
+  });
+
   // 1. 同步权限到数据库（每次启动都同步，幂等）
   try {
     const authPlugin = strapi.plugin("zhao-auth");

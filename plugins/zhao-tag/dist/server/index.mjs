@@ -2,12 +2,14 @@ const kind$3 = "collectionType";
 const collectionName$3 = "zhao_tags";
 const info$3 = { "singularName": "tag", "pluralName": "tags", "displayName": "标签" };
 const options$3 = { "draftAndPublish": false };
-const attributes$3 = { "name": { "type": "string", "required": true }, "slug": { "type": "uid", "targetField": "name", "required": false }, "description": { "type": "text" }, "color": { "type": "string" }, "icon": { "type": "media", "multiple": false }, "tagGroup": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-tag.tag-group", "inversedBy": "tags" }, "parent": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-tag.tag", "inversedBy": "children" }, "children": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-tag.tag", "mappedBy": "parent" }, "sort": { "type": "integer", "default": 0 }, "isPreset": { "type": "boolean", "default": false }, "isPublic": { "type": "boolean", "default": true }, "indexes": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-tag.tag-index", "mappedBy": "tag" }, "deletedAt": { "type": "datetime", "default": null } };
+const pluginOptions$1 = { "i18n": { "localized": true } };
+const attributes$3 = { "name": { "type": "string", "required": true, "localized": true }, "slug": { "type": "uid", "targetField": "name", "required": false, "localized": true }, "description": { "type": "text", "localized": true }, "color": { "type": "string" }, "icon": { "type": "media", "multiple": false }, "tagGroup": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-tag.tag-group", "inversedBy": "tags" }, "parent": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-tag.tag", "inversedBy": "children" }, "children": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-tag.tag", "mappedBy": "parent" }, "sort": { "type": "integer", "default": 0 }, "isPreset": { "type": "boolean", "default": false }, "isPublic": { "type": "boolean", "default": true }, "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config", "inversedBy": "tags" }, "indexes": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-tag.tag-index", "mappedBy": "tag" }, "website_articles": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.article", "mappedBy": "tags" }, "website_tutorials": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.tutorial", "mappedBy": "tags" }, "website_cases": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.case", "mappedBy": "tags" }, "website_faqs": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.faq", "mappedBy": "tags" }, "website_compliances": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.compliance", "mappedBy": "tags" }, "website_downloads": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.download", "mappedBy": "tags" }, "website_products": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.product", "mappedBy": "tags" }, "deletedAt": { "type": "datetime", "default": null } };
 const tagSchema = {
   kind: kind$3,
   collectionName: collectionName$3,
   info: info$3,
   options: options$3,
+  pluginOptions: pluginOptions$1,
   attributes: attributes$3
 };
 const kind$2 = "collectionType";
@@ -38,12 +40,14 @@ const kind = "collectionType";
 const collectionName = "zhao_tag_groups";
 const info = { "singularName": "tag-group", "pluralName": "tag-groups", "displayName": "标签分组" };
 const options = { "draftAndPublish": false };
-const attributes = { "name": { "type": "string", "required": true }, "slug": { "type": "uid", "targetField": "name", "required": false }, "description": { "type": "text" }, "color": { "type": "string" }, "icon": { "type": "media", "multiple": false }, "sort": { "type": "integer", "default": 0 }, "parent": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-tag.tag-group", "inversedBy": "children" }, "children": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-tag.tag-group", "mappedBy": "parent" }, "tags": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-tag.tag", "mappedBy": "tagGroup" }, "deletedAt": { "type": "datetime", "default": null } };
+const pluginOptions = { "i18n": { "localized": true } };
+const attributes = { "name": { "type": "string", "required": true, "localized": true }, "slug": { "type": "uid", "targetField": "name", "required": false, "localized": true }, "description": { "type": "text", "localized": true }, "color": { "type": "string" }, "icon": { "type": "media", "multiple": false }, "sort": { "type": "integer", "default": 0 }, "isPublic": { "type": "boolean", "default": true }, "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config", "inversedBy": "tagGroups" }, "parent": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-tag.tag-group", "inversedBy": "children" }, "children": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-tag.tag-group", "mappedBy": "parent" }, "tags": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-tag.tag", "mappedBy": "tagGroup" }, "deletedAt": { "type": "datetime", "default": null } };
 const tagGroupSchema = {
   kind,
   collectionName,
   info,
   options,
+  pluginOptions,
   attributes
 };
 const contentTypes = {
@@ -225,13 +229,39 @@ const controllers = {
   "tag-group": tagGroup$1
 };
 const UID$2 = "plugin::zhao-tag.tag";
+function validatePublicSite$1(data) {
+  if (data.isPublic === true && data.site) {
+    const e = new Error("公共标签不能关联站点");
+    e.status = 400;
+    throw e;
+  }
+  if (data.isPublic === false && !data.site) {
+    const e = new Error("站点标签必须关联站点");
+    e.status = 400;
+    throw e;
+  }
+}
 const tag = ({ strapi }) => ({
   async find(query = {}) {
-    const { filters, populate, sort, pagination, fields, locale } = query;
+    const { filters, populate, sort, pagination, fields, locale, siteId, isPublic } = query;
     const page = Number(pagination?.page) || 1;
     const pageSize = Number(pagination?.pageSize) || 25;
     const tagGroupFilter = filters?.tagGroup;
     let effectiveFilters = { ...filters };
+    if (siteId) {
+      const knex = strapi.db.connection;
+      const siteRow = await knex("zhao_site_configs").where("document_id", siteId).first();
+      const siteNumericId = siteRow?.id;
+      if (siteNumericId) {
+        effectiveFilters.$or = [
+          { isPublic: true },
+          { site: siteNumericId }
+        ];
+      }
+    }
+    if (isPublic !== void 0) {
+      effectiveFilters.isPublic = isPublic === "true" || isPublic === true;
+    }
     let tagIdScope = null;
     if (tagGroupFilter) {
       delete effectiveFilters.tagGroup;
@@ -293,16 +323,18 @@ const tag = ({ strapi }) => ({
     });
   },
   async create(data) {
+    validatePublicSite$1(data);
     return strapi.documents(UID$2).create({
       data,
-      populate: { parent: true, children: true, icon: true, tagGroup: true }
+      populate: { parent: true, children: true, icon: true, tagGroup: true, site: true }
     });
   },
   async update(documentId, data) {
+    validatePublicSite$1(data);
     return strapi.documents(UID$2).update({
       documentId,
       data,
-      populate: { parent: true, children: true, icon: true, tagGroup: true }
+      populate: { parent: true, children: true, icon: true, tagGroup: true, site: true }
     });
   },
   async delete(documentId) {
@@ -376,13 +408,40 @@ const tagIndex = ({ strapi }) => ({
   }
 });
 const UID = "plugin::zhao-tag.tag-group";
+function validatePublicSite(data) {
+  if (data.isPublic === true && data.site) {
+    const e = new Error("公共标签不能关联站点");
+    e.status = 400;
+    throw e;
+  }
+  if (data.isPublic === false && !data.site) {
+    const e = new Error("站点标签必须关联站点");
+    e.status = 400;
+    throw e;
+  }
+}
 const tagGroup = ({ strapi }) => ({
   async find(query = {}) {
-    const { filters, populate, sort, pagination, fields, locale } = query;
+    const { filters, populate, sort, pagination, fields, locale, siteId, isPublic } = query;
     const page = Number(pagination?.page) || 1;
     const pageSize = Number(pagination?.pageSize) || 25;
+    let effectiveFilters = { ...filters || {} };
+    if (siteId) {
+      const knex = strapi.db.connection;
+      const siteRow = await knex("zhao_site_configs").where("document_id", siteId).first();
+      const siteNumericId = siteRow?.id;
+      if (siteNumericId) {
+        effectiveFilters.$or = [
+          { isPublic: true },
+          { site: siteNumericId }
+        ];
+      }
+    }
+    if (isPublic !== void 0) {
+      effectiveFilters.isPublic = isPublic === "true" || isPublic === true;
+    }
     const docParams = {
-      filters: filters || {},
+      filters: effectiveFilters,
       populate: {
         parent: true,
         children: true,
@@ -396,7 +455,7 @@ const tagGroup = ({ strapi }) => ({
     if (locale) docParams.locale = locale;
     const [list, total] = await Promise.all([
       strapi.documents(UID).findMany(docParams),
-      strapi.documents(UID).count({ filters: filters || {} })
+      strapi.documents(UID).count({ filters: effectiveFilters })
     ]);
     return {
       list,
@@ -410,16 +469,18 @@ const tagGroup = ({ strapi }) => ({
     });
   },
   async create(data) {
+    validatePublicSite(data);
     return strapi.documents(UID).create({
       data,
-      populate: { parent: true, children: true, icon: true }
+      populate: { parent: true, children: true, icon: true, site: true }
     });
   },
   async update(documentId, data) {
+    validatePublicSite(data);
     return strapi.documents(UID).update({
       documentId,
       data,
-      populate: { parent: true, children: true, icon: true }
+      populate: { parent: true, children: true, icon: true, site: true }
     });
   },
   async delete(documentId) {
@@ -481,7 +542,10 @@ const contentApi = () => ({
   ]
 });
 const routes = {
-  "content-api": contentApi
+  "content-api": () => ({
+    type: "content-api",
+    routes: contentApi().routes
+  })
 };
 const index = {
   register() {

@@ -117,6 +117,114 @@
       "relation": "oneToMany",
       "target": "plugin::zhao-tag.tag-group",
       "mappedBy": "site"
+    },
+    "website_seo_config": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "plugin::zhao-website.seo-config",
+      "mappedBy": "site"
+    },
+    "website_brand_info": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "plugin::zhao-website.brand-info",
+      "mappedBy": "site"
+    },
+    "website_articles": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-website.article",
+      "mappedBy": "site"
+    },
+    "website_article_categories": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-website.article-category",
+      "mappedBy": "site"
+    },
+    "website_cases": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-website.case",
+      "mappedBy": "site"
+    },
+    "website_faqs": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-website.faq",
+      "mappedBy": "site"
+    },
+    "website_tutorials": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-website.tutorial",
+      "mappedBy": "site"
+    },
+    "website_compliances": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-website.compliance",
+      "mappedBy": "site"
+    },
+    "website_downloads": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-website.download",
+      "mappedBy": "site"
+    },
+    "website_ai_summaries": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-website.ai-content-summary",
+      "mappedBy": "site"
+    },
+    "website_first_truths": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-website.first-truth-policy",
+      "mappedBy": "site"
+    },
+    "website_knowledge_entities": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-website.knowledge-entity",
+      "mappedBy": "site"
+    },
+    "website_knowledge_relations": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-website.knowledge-relation",
+      "mappedBy": "site"
+    },
+    "website_leads": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-website.lead",
+      "mappedBy": "site"
+    },
+    "website_interactions": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-website.interaction",
+      "mappedBy": "site"
+    },
+    "website_search_logs": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-website.search-log",
+      "mappedBy": "site"
+    },
+    "website_visit_logs": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-website.visit-log",
+      "mappedBy": "site"
+    },
+    "website_products": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-website.product",
+      "mappedBy": "site"
     }
   }
 }

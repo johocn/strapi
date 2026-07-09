@@ -491,7 +491,7 @@ declare const _default: {
     middlewares: {};
     routes: {
         "content-api": {
-            type: string;
+            type: "content-api";
             routes: {
                 method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
                 path: string;
@@ -502,7 +502,7 @@ declare const _default: {
             }[];
         };
         tenant: {
-            type: string;
+            type: "content-api";
             routes: {
                 method: string;
                 path: string;

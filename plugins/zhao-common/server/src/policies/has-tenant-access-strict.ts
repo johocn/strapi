@@ -25,7 +25,7 @@ const hasTenantAccessStrict = async (policyContext: any, config: any, { strapi }
     return true;
   }
 
-  const siteId = policyContext.state?.siteId;
+  const siteId = policyContext.state?.siteDocumentId; // site-config 的 documentId
   if (!siteId) {
     // 未识别租户，放行由其他策略处理
     return true;

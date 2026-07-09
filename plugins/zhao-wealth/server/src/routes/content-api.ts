@@ -1,8 +1,8 @@
 'use strict';
 
-export default {
+export default () => ({
+  type: 'content-api' as const,
   routes: [
-    // 产品列表
     {
       method: 'GET',
       path: '/v1/wealth/products',
@@ -11,7 +11,6 @@ export default {
         policies: ['plugin::zhao-auth.has-channel-access', 'plugin::zhao-auth.has-tenant-access'],
       },
     },
-    // 产品详情
     {
       method: 'GET',
       path: '/v1/wealth/products/:id',
@@ -20,7 +19,6 @@ export default {
         policies: ['plugin::zhao-auth.has-channel-access', 'plugin::zhao-auth.has-tenant-access'],
       },
     },
-    // 净值时序
     {
       method: 'GET',
       path: '/v1/wealth/products/:id/nav',
@@ -29,7 +27,6 @@ export default {
         policies: ['plugin::zhao-auth.has-channel-access', 'plugin::zhao-auth.has-tenant-access'],
       },
     },
-    // 年化快照时序
     {
       method: 'GET',
       path: '/v1/wealth/products/:id/annual-snapshot',
@@ -38,7 +35,6 @@ export default {
         policies: ['plugin::zhao-auth.has-channel-access', 'plugin::zhao-auth.has-tenant-access'],
       },
     },
-    // 年度收益列表
     {
       method: 'GET',
       path: '/v1/wealth/products/:id/yearly-return',
@@ -47,7 +43,6 @@ export default {
         policies: ['plugin::zhao-auth.has-channel-access', 'plugin::zhao-auth.has-tenant-access'],
       },
     },
-    // 推荐产品列表
     {
       method: 'GET',
       path: '/v1/wealth/recommend',
@@ -56,7 +51,6 @@ export default {
         policies: ['plugin::zhao-auth.is-authenticated'],
       },
     },
-    // 客户自选列表
     {
       method: 'GET',
       path: '/v1/wealth/customer-products',
@@ -65,7 +59,6 @@ export default {
         policies: ['plugin::zhao-auth.is-authenticated'],
       },
     },
-    // 添加自选
     {
       method: 'POST',
       path: '/v1/wealth/customer-products',
@@ -74,7 +67,6 @@ export default {
         policies: ['plugin::zhao-auth.is-authenticated'],
       },
     },
-    // 删除自选
     {
       method: 'DELETE',
       path: '/v1/wealth/customer-products/:id',
@@ -83,7 +75,6 @@ export default {
         policies: ['plugin::zhao-auth.is-authenticated'],
       },
     },
-    // 风险指标查询
     {
       method: 'GET',
       path: '/v1/wealth/products/:id/risk-metrics',
@@ -93,4 +84,4 @@ export default {
       },
     },
   ],
-};
+});

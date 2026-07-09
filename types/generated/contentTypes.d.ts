@@ -1326,6 +1326,11 @@ export interface PluginZhaoCommonSiteConfig
       'manyToMany',
       'plugin::zhao-channel.channel'
     >;
+    channelUsage: Schema.Attribute.Enumeration<
+      ['site_only', 'site_and_cross', 'site_cross_user']
+    > &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'site_cross_user'>;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -1349,6 +1354,7 @@ export interface PluginZhaoCommonSiteConfig
         quiz: true;
         sso: false;
         thirdParty: true;
+        website: true;
       }>;
     icpNumber: Schema.Attribute.String &
       Schema.Attribute.SetMinMaxLength<{
@@ -1381,6 +1387,11 @@ export interface PluginZhaoCommonSiteConfig
       Schema.Attribute.SetMinMaxLength<{
         maxLength: 100;
       }>;
+    tagGroups: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-tag.tag-group'
+    >;
+    tags: Schema.Attribute.Relation<'oneToMany', 'plugin::zhao-tag.tag'>;
     template: Schema.Attribute.Relation<
       'manyToOne',
       'plugin::zhao-common.site-template'
@@ -1393,6 +1404,78 @@ export interface PluginZhaoCommonSiteConfig
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+    website_ai_summaries: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-website.ai-content-summary'
+    >;
+    website_article_categories: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-website.article-category'
+    >;
+    website_articles: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-website.article'
+    >;
+    website_brand_info: Schema.Attribute.Relation<
+      'oneToOne',
+      'plugin::zhao-website.brand-info'
+    >;
+    website_cases: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-website.case'
+    >;
+    website_compliances: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-website.compliance'
+    >;
+    website_downloads: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-website.download'
+    >;
+    website_faqs: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-website.faq'
+    >;
+    website_first_truths: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-website.first-truth-policy'
+    >;
+    website_interactions: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-website.interaction'
+    >;
+    website_knowledge_entities: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-website.knowledge-entity'
+    >;
+    website_knowledge_relations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-website.knowledge-relation'
+    >;
+    website_leads: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-website.lead'
+    >;
+    website_products: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-website.product'
+    >;
+    website_search_logs: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-website.search-log'
+    >;
+    website_seo_config: Schema.Attribute.Relation<
+      'oneToOne',
+      'plugin::zhao-website.seo-config'
+    >;
+    website_tutorials: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-website.tutorial'
+    >;
+    website_visit_logs: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-website.visit-log'
+    >;
   };
 }
 
@@ -1790,6 +1873,91 @@ export interface PluginZhaoCourseUserCourseAuth
       'manyToOne',
       'plugin::users-permissions.user'
     >;
+  };
+}
+
+export interface PluginZhaoOssMediaMeta extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_oss_media_metas';
+  info: {
+    description: '\u5A92\u4F53\u4E1A\u52A1\u5143\u4FE1\u606F\uFF08\u79DF\u6237/\u4E0A\u4F20\u8005/\u5206\u7C7B\uFF09';
+    displayName: 'Media Meta';
+    pluralName: 'media-metas';
+    singularName: 'media-meta';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: false;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+  };
+  attributes: {
+    category: Schema.Attribute.Enumeration<
+      [
+        'brand',
+        'article',
+        'product',
+        'case',
+        'compliance',
+        'faq',
+        'tutorial',
+        'download',
+        'avatar',
+        'general',
+        'other',
+      ]
+    > &
+      Schema.Attribute.DefaultTo<'general'>;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    deletedAt: Schema.Attribute.DateTime;
+    file: Schema.Attribute.Relation<'oneToOne', 'plugin::upload.file'> &
+      Schema.Attribute.Required;
+    fileExt: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 20;
+      }>;
+    fileId: Schema.Attribute.Integer & Schema.Attribute.Required;
+    fileSize: Schema.Attribute.BigInteger;
+    folder: Schema.Attribute.Relation<'manyToOne', 'plugin::upload.folder'>;
+    isPublic: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    lastUsedAt: Schema.Attribute.DateTime;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-oss.media-meta'
+    > &
+      Schema.Attribute.Private;
+    mimeType: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    modifier: Schema.Attribute.Relation<'manyToOne', 'admin::user'>;
+    originalFilename: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 500;
+      }>;
+    publishedAt: Schema.Attribute.DateTime;
+    site: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-common.site-config'
+    > &
+      Schema.Attribute.Required;
+    tags: Schema.Attribute.JSON;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    uploader: Schema.Attribute.Relation<'manyToOne', 'admin::user'>;
+    uploaderRole: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
+    usageCount: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
   };
 }
 
@@ -3465,6 +3633,10 @@ export interface PluginZhaoStudioArticleDraft
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+    websiteArticles: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-website.article'
+    >;
   };
 }
 
@@ -3970,6 +4142,11 @@ export interface PluginZhaoTagTag extends Struct.CollectionTypeSchema {
   options: {
     draftAndPublish: false;
   };
+  pluginOptions: {
+    i18n: {
+      localized: true;
+    };
+  };
   attributes: {
     children: Schema.Attribute.Relation<'oneToMany', 'plugin::zhao-tag.tag'>;
     color: Schema.Attribute.String;
@@ -3985,15 +4162,18 @@ export interface PluginZhaoTagTag extends Struct.CollectionTypeSchema {
     >;
     isPreset: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
     isPublic: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    locale: Schema.Attribute.String;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
       'plugin::zhao-tag.tag'
-    > &
-      Schema.Attribute.Private;
+    >;
     name: Schema.Attribute.String & Schema.Attribute.Required;
     parent: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-tag.tag'>;
     publishedAt: Schema.Attribute.DateTime;
+    site: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-common.site-config'
+    >;
     slug: Schema.Attribute.UID<'name'>;
     sort: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
     tagGroup: Schema.Attribute.Relation<
@@ -4003,6 +4183,34 @@ export interface PluginZhaoTagTag extends Struct.CollectionTypeSchema {
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+    website_articles: Schema.Attribute.Relation<
+      'manyToMany',
+      'plugin::zhao-website.article'
+    >;
+    website_cases: Schema.Attribute.Relation<
+      'manyToMany',
+      'plugin::zhao-website.case'
+    >;
+    website_compliances: Schema.Attribute.Relation<
+      'manyToMany',
+      'plugin::zhao-website.compliance'
+    >;
+    website_downloads: Schema.Attribute.Relation<
+      'manyToMany',
+      'plugin::zhao-website.download'
+    >;
+    website_faqs: Schema.Attribute.Relation<
+      'manyToMany',
+      'plugin::zhao-website.faq'
+    >;
+    website_products: Schema.Attribute.Relation<
+      'manyToMany',
+      'plugin::zhao-website.product'
+    >;
+    website_tutorials: Schema.Attribute.Relation<
+      'manyToMany',
+      'plugin::zhao-website.tutorial'
+    >;
   };
 }
 
@@ -4016,6 +4224,11 @@ export interface PluginZhaoTagTagGroup extends Struct.CollectionTypeSchema {
   options: {
     draftAndPublish: false;
   };
+  pluginOptions: {
+    i18n: {
+      localized: true;
+    };
+  };
   attributes: {
     children: Schema.Attribute.Relation<
       'oneToMany',
@@ -4028,18 +4241,22 @@ export interface PluginZhaoTagTagGroup extends Struct.CollectionTypeSchema {
     deletedAt: Schema.Attribute.DateTime;
     description: Schema.Attribute.Text;
     icon: Schema.Attribute.Media;
-    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    isPublic: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    locale: Schema.Attribute.String;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
       'plugin::zhao-tag.tag-group'
-    > &
-      Schema.Attribute.Private;
+    >;
     name: Schema.Attribute.String & Schema.Attribute.Required;
     parent: Schema.Attribute.Relation<
       'manyToOne',
       'plugin::zhao-tag.tag-group'
     >;
     publishedAt: Schema.Attribute.DateTime;
+    site: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-common.site-config'
+    >;
     slug: Schema.Attribute.UID<'name'>;
     sort: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
     tags: Schema.Attribute.Relation<'oneToMany', 'plugin::zhao-tag.tag'>;
@@ -4614,6 +4831,1759 @@ export interface PluginZhaoWealthWealthYearlyReturn
   };
 }
 
+export interface PluginZhaoWebsiteAiContentSummary
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_website_ai_summaries';
+  info: {
+    displayName: '\u673A\u5668\u53EF\u8BFB\u6458\u8981';
+    pluralName: 'ai-content-summaries';
+    singularName: 'ai-content-summary';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: true;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+  };
+  attributes: {
+    aiModel: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    aiProvider: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
+    content: Schema.Attribute.JSON & Schema.Attribute.Required;
+    contentText: Schema.Attribute.Text;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    deletedAt: Schema.Attribute.DateTime;
+    generatedAt: Schema.Attribute.DateTime;
+    generatedBy: Schema.Attribute.Enumeration<
+      ['manual', 'ai_assisted', 'ai_generated', 'hybrid']
+    > &
+      Schema.Attribute.DefaultTo<'manual'>;
+    language: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 10;
+      }> &
+      Schema.Attribute.DefaultTo<'zh-CN'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-website.ai-content-summary'
+    > &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    site: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-common.site-config'
+    > &
+      Schema.Attribute.Required;
+    status: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    summaryType: Schema.Attribute.Enumeration<
+      [
+        'tldr',
+        'key_facts',
+        'faq',
+        'qa_pairs',
+        'technical_spec',
+        'executive_brief',
+        'comparison',
+        'howto',
+      ]
+    > &
+      Schema.Attribute.Required;
+    targetId: Schema.Attribute.String & Schema.Attribute.Required;
+    targetType: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 30;
+      }>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    verificationStatus: Schema.Attribute.Enumeration<
+      ['verified', 'pending', 'outdated', 'conflict']
+    > &
+      Schema.Attribute.DefaultTo<'verified'>;
+    verifiedAt: Schema.Attribute.DateTime;
+    version: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<1>;
+  };
+}
+
+export interface PluginZhaoWebsiteArticle extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_website_articles';
+  info: {
+    displayName: '\u8D44\u8BAF\u6587\u7AE0';
+    pluralName: 'articles';
+    singularName: 'article';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: true;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+    i18n: {
+      localized: true;
+    };
+  };
+  attributes: {
+    allowIndex: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    author: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
+    authorTitle: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
+    canonicalUrl: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 500;
+      }>;
+    category: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-website.article-category'
+    >;
+    collectCount: Schema.Attribute.BigInteger & Schema.Attribute.DefaultTo<0>;
+    content: Schema.Attribute.Text & Schema.Attribute.Required;
+    coverImage: Schema.Attribute.Media;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    deletedAt: Schema.Attribute.DateTime;
+    excerpt: Schema.Attribute.Text;
+    isFeatured: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    isPinned: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    likeCount: Schema.Attribute.BigInteger & Schema.Attribute.DefaultTo<0>;
+    locale: Schema.Attribute.String;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-website.article'
+    >;
+    mainEntity: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-website.knowledge-entity'
+    >;
+    mentionedEntities: Schema.Attribute.Relation<
+      'manyToMany',
+      'plugin::zhao-website.knowledge-entity'
+    >;
+    noFollow: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    ogDescription: Schema.Attribute.Text;
+    ogImage: Schema.Attribute.Media;
+    ogTitle: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 200;
+      }>;
+    ogType: Schema.Attribute.Enumeration<
+      ['article', 'product', 'website', 'video']
+    > &
+      Schema.Attribute.DefaultTo<'article'>;
+    publishedAt: Schema.Attribute.DateTime;
+    readingTime: Schema.Attribute.Integer;
+    schemaJson: Schema.Attribute.JSON;
+    schemaType: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
+    seoDescription: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 160;
+      }>;
+    seoKeywords: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 200;
+      }>;
+    seoTitle: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 60;
+      }>;
+    shareCount: Schema.Attribute.BigInteger & Schema.Attribute.DefaultTo<0>;
+    site: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-common.site-config'
+    > &
+      Schema.Attribute.Required;
+    sitemapFrequency: Schema.Attribute.Enumeration<
+      ['always', 'hourly', 'daily', 'weekly', 'monthly', 'yearly', 'never']
+    > &
+      Schema.Attribute.DefaultTo<'weekly'>;
+    sitemapPriority: Schema.Attribute.Decimal & Schema.Attribute.DefaultTo<0.7>;
+    slug: Schema.Attribute.UID<'title'> & Schema.Attribute.Required;
+    sourceArticleDraft: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-studio.article-draft'
+    >;
+    sourceType: Schema.Attribute.Enumeration<
+      ['original', 'studio', 'external']
+    > &
+      Schema.Attribute.DefaultTo<'original'>;
+    sourceUrl: Schema.Attribute.String;
+    status: Schema.Attribute.Enumeration<['draft', 'published', 'archived']> &
+      Schema.Attribute.DefaultTo<'draft'>;
+    structuredData: Schema.Attribute.JSON;
+    tags: Schema.Attribute.Relation<'manyToMany', 'plugin::zhao-tag.tag'>;
+    title: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 200;
+      }>;
+    twitterCard: Schema.Attribute.Enumeration<
+      ['summary', 'summary_large_image', 'product']
+    > &
+      Schema.Attribute.DefaultTo<'summary_large_image'>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    viewCount: Schema.Attribute.BigInteger & Schema.Attribute.DefaultTo<0>;
+    wordCount: Schema.Attribute.Integer;
+  };
+}
+
+export interface PluginZhaoWebsiteArticleCategory
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_website_article_categories';
+  info: {
+    displayName: '\u6587\u7AE0\u5206\u7C7B';
+    pluralName: 'article-categories';
+    singularName: 'article-category';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: true;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+    i18n: {
+      localized: true;
+    };
+  };
+  attributes: {
+    articles: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-website.article'
+    >;
+    children: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-website.article-category'
+    >;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    deletedAt: Schema.Attribute.DateTime;
+    description: Schema.Attribute.Text;
+    downloads: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-website.download'
+    >;
+    faqs: Schema.Attribute.Relation<'oneToMany', 'plugin::zhao-website.faq'>;
+    locale: Schema.Attribute.String;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-website.article-category'
+    >;
+    name: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    order: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    parent: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-website.article-category'
+    >;
+    products: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-website.product'
+    >;
+    publishedAt: Schema.Attribute.DateTime;
+    seoDescription: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 160;
+      }>;
+    seoTitle: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 60;
+      }>;
+    site: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-common.site-config'
+    > &
+      Schema.Attribute.Required;
+    slug: Schema.Attribute.UID<'name'> & Schema.Attribute.Required;
+    status: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    tutorials: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-website.tutorial'
+    >;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface PluginZhaoWebsiteBrandInfo
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_website_brand_infos';
+  info: {
+    displayName: '\u4F01\u4E1A\u54C1\u724C\u4FE1\u606F';
+    pluralName: 'brand-infos';
+    singularName: 'brand-info';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: true;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+    i18n: {
+      localized: true;
+    };
+  };
+  attributes: {
+    businessHours: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    businessScope: Schema.Attribute.Text;
+    companyName: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 200;
+      }>;
+    contactEmail: Schema.Attribute.Email;
+    contactPhone: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 30;
+      }>;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    deletedAt: Schema.Attribute.DateTime;
+    description: Schema.Attribute.Text;
+    favicon: Schema.Attribute.Media;
+    foundingDate: Schema.Attribute.Date;
+    legalRepresentative: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
+    locale: Schema.Attribute.String;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-website.brand-info'
+    >;
+    logo: Schema.Attribute.Media;
+    logoDark: Schema.Attribute.Media;
+    mainEntity: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-website.knowledge-entity'
+    >;
+    miniProgramName: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    officeAddress: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 500;
+      }>;
+    publishedAt: Schema.Attribute.DateTime;
+    registeredAddress: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 500;
+      }>;
+    registeredCapital: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
+    serviceHotline: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 30;
+      }>;
+    shortName: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    site: Schema.Attribute.Relation<
+      'oneToOne',
+      'plugin::zhao-common.site-config'
+    > &
+      Schema.Attribute.Required;
+    slogan: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 200;
+      }>;
+    socialLinks: Schema.Attribute.JSON;
+    unifiedSocialCreditCode: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    wechatPublicAccount: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    wechatQrCode: Schema.Attribute.Media;
+  };
+}
+
+export interface PluginZhaoWebsiteCase extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_website_cases';
+  info: {
+    displayName: '\u843D\u5730\u6848\u4F8B';
+    pluralName: 'cases';
+    singularName: 'case';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: true;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+    i18n: {
+      localized: true;
+    };
+  };
+  attributes: {
+    allowIndex: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    challenge: Schema.Attribute.Text & Schema.Attribute.Required;
+    clientDescription: Schema.Attribute.Text;
+    clientIndustry: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
+    clientLogo: Schema.Attribute.Media;
+    clientName: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    coverImage: Schema.Attribute.Media;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    deletedAt: Schema.Attribute.DateTime;
+    images: Schema.Attribute.Media<undefined, true>;
+    isFeatured: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    locale: Schema.Attribute.String;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-website.case'
+    >;
+    mainEntity: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-website.knowledge-entity'
+    >;
+    mentionedEntities: Schema.Attribute.Relation<
+      'manyToMany',
+      'plugin::zhao-website.knowledge-entity'
+    >;
+    publishedAt: Schema.Attribute.DateTime;
+    relatedProducts: Schema.Attribute.Relation<
+      'manyToMany',
+      'plugin::zhao-website.product'
+    >;
+    results: Schema.Attribute.JSON & Schema.Attribute.Required;
+    seoDescription: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 160;
+      }>;
+    seoTitle: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 60;
+      }>;
+    site: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-common.site-config'
+    > &
+      Schema.Attribute.Required;
+    slug: Schema.Attribute.UID<'title'> & Schema.Attribute.Required;
+    solution: Schema.Attribute.Text & Schema.Attribute.Required;
+    status: Schema.Attribute.Enumeration<['draft', 'published', 'archived']> &
+      Schema.Attribute.DefaultTo<'draft'>;
+    structuredData: Schema.Attribute.JSON;
+    tags: Schema.Attribute.Relation<'manyToMany', 'plugin::zhao-tag.tag'>;
+    testimonial: Schema.Attribute.Text;
+    testimonialAuthor: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
+    testimonialTitle: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    title: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 200;
+      }>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    viewCount: Schema.Attribute.BigInteger & Schema.Attribute.DefaultTo<0>;
+  };
+}
+
+export interface PluginZhaoWebsiteCompliance
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_website_compliances';
+  info: {
+    displayName: '\u5408\u89C4\u516C\u793A';
+    pluralName: 'compliances';
+    singularName: 'compliance';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: true;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+    i18n: {
+      localized: true;
+    };
+  };
+  attributes: {
+    allowIndex: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    category: Schema.Attribute.Enumeration<
+      ['notice', 'policy', 'report', 'certificate', 'agreement']
+    > &
+      Schema.Attribute.Required;
+    content: Schema.Attribute.Text & Schema.Attribute.Required;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    deletedAt: Schema.Attribute.DateTime;
+    effectiveDate: Schema.Attribute.Date;
+    expiryDate: Schema.Attribute.Date;
+    isPinned: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    locale: Schema.Attribute.String;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-website.compliance'
+    >;
+    publishedAt: Schema.Attribute.DateTime;
+    seoDescription: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 160;
+      }>;
+    seoTitle: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 60;
+      }>;
+    site: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-common.site-config'
+    > &
+      Schema.Attribute.Required;
+    slug: Schema.Attribute.UID<'title'> & Schema.Attribute.Required;
+    status: Schema.Attribute.Enumeration<['draft', 'published', 'archived']> &
+      Schema.Attribute.DefaultTo<'draft'>;
+    tags: Schema.Attribute.Relation<'manyToMany', 'plugin::zhao-tag.tag'>;
+    title: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 200;
+      }>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface PluginZhaoWebsiteDownload extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_website_downloads';
+  info: {
+    displayName: '\u4E0B\u8F7D\u6587\u4EF6\u7BA1\u7406';
+    pluralName: 'downloads';
+    singularName: 'download';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: true;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+    i18n: {
+      localized: true;
+    };
+  };
+  attributes: {
+    category: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-website.article-category'
+    >;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    deletedAt: Schema.Attribute.DateTime;
+    description: Schema.Attribute.Text;
+    downloadCount: Schema.Attribute.BigInteger & Schema.Attribute.DefaultTo<0>;
+    file: Schema.Attribute.Media & Schema.Attribute.Required;
+    fileSize: Schema.Attribute.BigInteger;
+    fileType: Schema.Attribute.Enumeration<
+      [
+        'whitepaper',
+        'brochure',
+        'datasheet',
+        'template',
+        'guide',
+        'certificate',
+        'other',
+      ]
+    > &
+      Schema.Attribute.DefaultTo<'other'>;
+    isFeatured: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    locale: Schema.Attribute.String;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-website.download'
+    >;
+    name: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 200;
+      }>;
+    order: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    publishedAt: Schema.Attribute.DateTime;
+    relatedContentId: Schema.Attribute.String;
+    relatedContentType: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 30;
+      }>;
+    requireLead: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    site: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-common.site-config'
+    > &
+      Schema.Attribute.Required;
+    status: Schema.Attribute.Enumeration<['draft', 'published', 'archived']> &
+      Schema.Attribute.DefaultTo<'draft'>;
+    tags: Schema.Attribute.Relation<'manyToMany', 'plugin::zhao-tag.tag'>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface PluginZhaoWebsiteFaq extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_website_faqs';
+  info: {
+    displayName: '\u5E38\u89C1\u95EE\u7B54';
+    pluralName: 'faqs';
+    singularName: 'faq';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: true;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+    i18n: {
+      localized: true;
+    };
+  };
+  attributes: {
+    answer: Schema.Attribute.Text & Schema.Attribute.Required;
+    category: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-website.article-category'
+    >;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    deletedAt: Schema.Attribute.DateTime;
+    isFeatured: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    locale: Schema.Attribute.String;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-website.faq'
+    >;
+    mainEntity: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-website.knowledge-entity'
+    >;
+    mentionedEntities: Schema.Attribute.Relation<
+      'manyToMany',
+      'plugin::zhao-website.knowledge-entity'
+    >;
+    order: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    publishedAt: Schema.Attribute.DateTime;
+    question: Schema.Attribute.Text & Schema.Attribute.Required;
+    site: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-common.site-config'
+    > &
+      Schema.Attribute.Required;
+    slug: Schema.Attribute.UID<'question'> & Schema.Attribute.Required;
+    status: Schema.Attribute.Enumeration<['draft', 'published', 'archived']> &
+      Schema.Attribute.DefaultTo<'draft'>;
+    tags: Schema.Attribute.Relation<'manyToMany', 'plugin::zhao-tag.tag'>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    viewCount: Schema.Attribute.BigInteger & Schema.Attribute.DefaultTo<0>;
+  };
+}
+
+export interface PluginZhaoWebsiteFirstTruthPolicy
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_website_first_truths';
+  info: {
+    displayName: '\u7B2C\u4E00\u771F\u503C\u7B56\u7565\u58F0\u660E';
+    pluralName: 'first-truth-policies';
+    singularName: 'first-truth-policy';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: true;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+  };
+  attributes: {
+    canonicalEntity: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-website.knowledge-entity'
+    >;
+    canonicalSourceType: Schema.Attribute.Enumeration<
+      ['government', 'official_site', 'third_party_verified', 'internal']
+    > &
+      Schema.Attribute.DefaultTo<'official_site'>;
+    canonicalSourceUrl: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 500;
+      }>;
+    canonicalValue: Schema.Attribute.Text & Schema.Attribute.Required;
+    canonicalValueType: Schema.Attribute.Enumeration<
+      ['text', 'number', 'date', 'url', 'json']
+    > &
+      Schema.Attribute.DefaultTo<'text'>;
+    claim: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 200;
+      }>;
+    claimCategory: Schema.Attribute.Enumeration<
+      [
+        'business_license',
+        'brand_claim',
+        'technical_spec',
+        'certification',
+        'financial',
+        'other',
+      ]
+    > &
+      Schema.Attribute.DefaultTo<'brand_claim'>;
+    claimKey: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    conflictDetails: Schema.Attribute.JSON;
+    conflictResolution: Schema.Attribute.Enumeration<
+      ['latest', 'earliest', 'highest_confidence', 'manual']
+    > &
+      Schema.Attribute.DefaultTo<'manual'>;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    deletedAt: Schema.Attribute.DateTime;
+    lastVerifiedAt: Schema.Attribute.DateTime & Schema.Attribute.Required;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-website.first-truth-policy'
+    > &
+      Schema.Attribute.Private;
+    priority: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<100>;
+    publishedAt: Schema.Attribute.DateTime;
+    site: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-common.site-config'
+    > &
+      Schema.Attribute.Required;
+    status: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    verificationStatus: Schema.Attribute.Enumeration<
+      ['verified', 'pending', 'outdated', 'conflict']
+    > &
+      Schema.Attribute.DefaultTo<'verified'>;
+  };
+}
+
+export interface PluginZhaoWebsiteInteraction
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_website_interactions';
+  info: {
+    displayName: '\u5185\u5BB9\u4E92\u52A8\u8BB0\u5F55';
+    pluralName: 'interactions';
+    singularName: 'interaction';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: false;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    deletedAt: Schema.Attribute.DateTime;
+    ipAddress: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-website.interaction'
+    > &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    site: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-common.site-config'
+    > &
+      Schema.Attribute.Required;
+    targetId: Schema.Attribute.String & Schema.Attribute.Required;
+    targetType: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 30;
+      }>;
+    type: Schema.Attribute.Enumeration<['like', 'collect', 'share']> &
+      Schema.Attribute.Required;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    userAgent: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 500;
+      }>;
+    userId: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
+    visitorId: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+  };
+}
+
+export interface PluginZhaoWebsiteKnowledgeEntity
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_website_knowledge_entities';
+  info: {
+    displayName: '\u77E5\u8BC6\u56FE\u8C31\u5B9E\u4F53';
+    pluralName: 'knowledge-entities';
+    singularName: 'knowledge-entity';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: true;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+  };
+  attributes: {
+    articleMainEntities: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-website.article'
+    >;
+    articleMentions: Schema.Attribute.Relation<
+      'manyToMany',
+      'plugin::zhao-website.article'
+    >;
+    brandInfos: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-website.brand-info'
+    >;
+    caseMainEntities: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-website.case'
+    >;
+    caseMentions: Schema.Attribute.Relation<
+      'manyToMany',
+      'plugin::zhao-website.case'
+    >;
+    confidence: Schema.Attribute.Decimal & Schema.Attribute.DefaultTo<1>;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    deletedAt: Schema.Attribute.DateTime;
+    description: Schema.Attribute.Text;
+    entityType: Schema.Attribute.Enumeration<
+      [
+        'Organization',
+        'Person',
+        'Product',
+        'Service',
+        'Place',
+        'Event',
+        'CreativeWork',
+        'Article',
+        'CaseStudy',
+        'Offer',
+        'Review',
+        'FAQ',
+        'HowTo',
+        'BreadcrumbList',
+        'Brand',
+        'ContactPoint',
+        'QuantitativeValue',
+        'DefinedTerm',
+      ]
+    > &
+      Schema.Attribute.Required;
+    faqMainEntities: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-website.faq'
+    >;
+    faqMentions: Schema.Attribute.Relation<
+      'manyToMany',
+      'plugin::zhao-website.faq'
+    >;
+    firstTruthPolicies: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-website.first-truth-policy'
+    >;
+    identifier: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    image: Schema.Attribute.Media;
+    lastVerifiedAt: Schema.Attribute.DateTime;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-website.knowledge-entity'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 200;
+      }>;
+    objectRelations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-website.knowledge-relation'
+    >;
+    productMainEntities: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-website.product'
+    >;
+    productMentions: Schema.Attribute.Relation<
+      'manyToMany',
+      'plugin::zhao-website.product'
+    >;
+    properties: Schema.Attribute.JSON;
+    publishedAt: Schema.Attribute.DateTime;
+    refTargetId: Schema.Attribute.String;
+    refTargetType: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 30;
+      }>;
+    sameAs: Schema.Attribute.JSON;
+    site: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-common.site-config'
+    > &
+      Schema.Attribute.Required;
+    slug: Schema.Attribute.UID<'name'> & Schema.Attribute.Required;
+    sourceType: Schema.Attribute.Enumeration<
+      ['official', 'derived', 'manual', 'imported']
+    > &
+      Schema.Attribute.DefaultTo<'official'>;
+    status: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    subjectRelations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-website.knowledge-relation'
+    >;
+    tutorialMainEntities: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-website.tutorial'
+    >;
+    tutorialMentions: Schema.Attribute.Relation<
+      'manyToMany',
+      'plugin::zhao-website.tutorial'
+    >;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    url: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 500;
+      }>;
+    verificationStatus: Schema.Attribute.Enumeration<
+      ['verified', 'pending', 'outdated', 'conflict']
+    > &
+      Schema.Attribute.DefaultTo<'verified'>;
+    verifiedBy: Schema.Attribute.Relation<'manyToOne', 'admin::user'>;
+  };
+}
+
+export interface PluginZhaoWebsiteKnowledgeRelation
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_website_knowledge_relations';
+  info: {
+    displayName: '\u77E5\u8BC6\u56FE\u8C31\u5173\u7CFB';
+    pluralName: 'knowledge-relations';
+    singularName: 'knowledge-relation';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: true;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+  };
+  attributes: {
+    confidence: Schema.Attribute.Decimal & Schema.Attribute.DefaultTo<1>;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    deletedAt: Schema.Attribute.DateTime;
+    lastVerifiedAt: Schema.Attribute.DateTime;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-website.knowledge-relation'
+    > &
+      Schema.Attribute.Private;
+    objectEntity: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-website.knowledge-entity'
+    >;
+    objectText: Schema.Attribute.Text;
+    objectValue: Schema.Attribute.JSON;
+    predicate: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    publishedAt: Schema.Attribute.DateTime;
+    site: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-common.site-config'
+    > &
+      Schema.Attribute.Required;
+    sourceType: Schema.Attribute.Enumeration<
+      ['official', 'derived', 'manual', 'inferred']
+    > &
+      Schema.Attribute.DefaultTo<'manual'>;
+    sourceUrl: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 500;
+      }>;
+    status: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    subjectEntity: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-website.knowledge-entity'
+    > &
+      Schema.Attribute.Required;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    verificationStatus: Schema.Attribute.Enumeration<
+      ['verified', 'pending', 'outdated', 'conflict']
+    > &
+      Schema.Attribute.DefaultTo<'verified'>;
+  };
+}
+
+export interface PluginZhaoWebsiteLead extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_website_leads';
+  info: {
+    displayName: '\u7EBF\u7D22/\u7559\u8D44';
+    pluralName: 'leads';
+    singularName: 'lead';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: false;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+  };
+  attributes: {
+    assignedTo: Schema.Attribute.Relation<'manyToOne', 'admin::user'>;
+    contactCompany: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 200;
+      }>;
+    contactEmail: Schema.Attribute.Email;
+    contactName: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
+    contactPhone: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 30;
+      }>;
+    contactTitle: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    convertedAt: Schema.Attribute.DateTime;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    deletedAt: Schema.Attribute.DateTime;
+    downloadFileId: Schema.Attribute.String;
+    followUpRecords: Schema.Attribute.JSON;
+    ipAddress: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-website.lead'
+    > &
+      Schema.Attribute.Private;
+    message: Schema.Attribute.Text;
+    publishedAt: Schema.Attribute.DateTime;
+    referrer: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 500;
+      }>;
+    remark: Schema.Attribute.Text;
+    site: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-common.site-config'
+    > &
+      Schema.Attribute.Required;
+    sourceId: Schema.Attribute.String;
+    sourceType: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 30;
+      }>;
+    sourceUrl: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 500;
+      }>;
+    status: Schema.Attribute.Enumeration<
+      ['new', 'contacted', 'qualified', 'unqualified', 'converted', 'invalid']
+    > &
+      Schema.Attribute.DefaultTo<'new'>;
+    type: Schema.Attribute.Enumeration<
+      ['contact', 'download', 'quote', 'appointment', 'demo', 'partner']
+    > &
+      Schema.Attribute.Required;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    userAgent: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 500;
+      }>;
+    utmCampaign: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 200;
+      }>;
+    utmContent: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 200;
+      }>;
+    utmMedium: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    utmSource: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    utmTerm: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 200;
+      }>;
+  };
+}
+
+export interface PluginZhaoWebsiteProduct extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_website_products';
+  info: {
+    displayName: '\u4EA7\u54C1/\u65B9\u6848';
+    pluralName: 'products';
+    singularName: 'product';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: true;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+    i18n: {
+      localized: true;
+    };
+  };
+  attributes: {
+    allowIndex: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    canonicalUrl: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 500;
+      }>;
+    cases: Schema.Attribute.Relation<'manyToMany', 'plugin::zhao-website.case'>;
+    category: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-website.article-category'
+    >;
+    content: Schema.Attribute.Text;
+    coverImage: Schema.Attribute.Media;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    deletedAt: Schema.Attribute.DateTime;
+    description: Schema.Attribute.Text;
+    features: Schema.Attribute.JSON;
+    images: Schema.Attribute.Media<undefined, true>;
+    isFeatured: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    locale: Schema.Attribute.String;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-website.product'
+    >;
+    mainEntity: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-website.knowledge-entity'
+    >;
+    mentionedEntities: Schema.Attribute.Relation<
+      'manyToMany',
+      'plugin::zhao-website.knowledge-entity'
+    >;
+    name: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 200;
+      }>;
+    ogImage: Schema.Attribute.Media;
+    priceRange: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    priceUnit: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 20;
+      }>;
+    publishedAt: Schema.Attribute.DateTime;
+    scenarios: Schema.Attribute.JSON;
+    seoDescription: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 160;
+      }>;
+    seoKeywords: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 200;
+      }>;
+    seoTitle: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 60;
+      }>;
+    site: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-common.site-config'
+    > &
+      Schema.Attribute.Required;
+    sitemapFrequency: Schema.Attribute.Enumeration<
+      ['always', 'hourly', 'daily', 'weekly', 'monthly', 'yearly', 'never']
+    > &
+      Schema.Attribute.DefaultTo<'weekly'>;
+    sitemapPriority: Schema.Attribute.Decimal & Schema.Attribute.DefaultTo<0.7>;
+    slug: Schema.Attribute.UID<'name'> & Schema.Attribute.Required;
+    specifications: Schema.Attribute.JSON;
+    status: Schema.Attribute.Enumeration<['draft', 'published', 'archived']> &
+      Schema.Attribute.DefaultTo<'draft'>;
+    structuredData: Schema.Attribute.JSON;
+    tagline: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 200;
+      }>;
+    tags: Schema.Attribute.Relation<'manyToMany', 'plugin::zhao-tag.tag'>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    viewCount: Schema.Attribute.BigInteger & Schema.Attribute.DefaultTo<0>;
+  };
+}
+
+export interface PluginZhaoWebsiteSearchLog
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_website_search_logs';
+  info: {
+    displayName: '\u641C\u7D22\u65E5\u5FD7';
+    pluralName: 'search-logs';
+    singularName: 'search-log';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: false;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    deletedAt: Schema.Attribute.DateTime;
+    ipAddress: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
+    keyword: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 200;
+      }>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-website.search-log'
+    > &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    resultCount: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    site: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-common.site-config'
+    > &
+      Schema.Attribute.Required;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    visitorId: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+  };
+}
+
+export interface PluginZhaoWebsiteSeoConfig
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_website_seo_configs';
+  info: {
+    displayName: 'SEO \u5168\u5C40\u914D\u7F6E';
+    pluralName: 'seo-configs';
+    singularName: 'seo-config';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: true;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+  };
+  attributes: {
+    aiCrawlerPolicy: Schema.Attribute.Enumeration<
+      ['allow_all', 'block_all', 'selective']
+    > &
+      Schema.Attribute.DefaultTo<'allow_all'>;
+    alternateLocales: Schema.Attribute.JSON;
+    baiduAnalyticsId: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
+    baiduSiteVerification: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    bingSiteVerification: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    customBodyCode: Schema.Attribute.Text;
+    customHeadCode: Schema.Attribute.Text;
+    defaultDescription: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 160;
+      }>;
+    defaultKeywords: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 200;
+      }>;
+    defaultLocale: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 10;
+      }> &
+      Schema.Attribute.DefaultTo<'zh-CN'>;
+    defaultTitle: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 60;
+      }>;
+    deletedAt: Schema.Attribute.DateTime;
+    enableRobotsTxt: Schema.Attribute.Boolean &
+      Schema.Attribute.DefaultTo<true>;
+    enableSitemap: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    extraConfig: Schema.Attribute.JSON;
+    favicon: Schema.Attribute.Media;
+    geoICBM: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
+    geoPlacename: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    geoPosition: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
+    geoRegion: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 20;
+      }>;
+    googleAnalyticsId: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
+    googleSiteVerification: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    hreflangStrategy: Schema.Attribute.Enumeration<
+      ['none', 'subdirectory', 'subdomain', 'tld']
+    > &
+      Schema.Attribute.DefaultTo<'subdirectory'>;
+    icpNumber: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-website.seo-config'
+    > &
+      Schema.Attribute.Private;
+    ogImage: Schema.Attribute.Media;
+    organizationLogo: Schema.Attribute.Media;
+    organizationName: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 200;
+      }>;
+    organizationType: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
+    publicSecurityRecord: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
+    publishedAt: Schema.Attribute.DateTime;
+    robotsContent: Schema.Attribute.Text;
+    schemaContactPoint: Schema.Attribute.JSON;
+    schemaSameAs: Schema.Attribute.JSON;
+    site: Schema.Attribute.Relation<
+      'oneToOne',
+      'plugin::zhao-common.site-config'
+    > &
+      Schema.Attribute.Required;
+    sitemapExcludeTypes: Schema.Attribute.JSON;
+    titleTemplate: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 60;
+      }>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface PluginZhaoWebsiteTutorial extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_website_tutorials';
+  info: {
+    displayName: '\u6559\u7A0B/\u64CD\u4F5C\u6307\u5357';
+    pluralName: 'tutorials';
+    singularName: 'tutorial';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: true;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+    i18n: {
+      localized: true;
+    };
+  };
+  attributes: {
+    category: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-website.article-category'
+    >;
+    coverImage: Schema.Attribute.Media;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    deletedAt: Schema.Attribute.DateTime;
+    description: Schema.Attribute.Text;
+    difficulty: Schema.Attribute.Enumeration<
+      ['beginner', 'intermediate', 'advanced']
+    > &
+      Schema.Attribute.DefaultTo<'beginner'>;
+    estimatedTime: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
+    isFeatured: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    locale: Schema.Attribute.String;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-website.tutorial'
+    >;
+    mainEntity: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-website.knowledge-entity'
+    >;
+    materials: Schema.Attribute.JSON;
+    mentionedEntities: Schema.Attribute.Relation<
+      'manyToMany',
+      'plugin::zhao-website.knowledge-entity'
+    >;
+    order: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    publishedAt: Schema.Attribute.DateTime;
+    result: Schema.Attribute.Text;
+    site: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-common.site-config'
+    > &
+      Schema.Attribute.Required;
+    slug: Schema.Attribute.UID<'title'> & Schema.Attribute.Required;
+    status: Schema.Attribute.Enumeration<['draft', 'published', 'archived']> &
+      Schema.Attribute.DefaultTo<'draft'>;
+    steps: Schema.Attribute.JSON & Schema.Attribute.Required;
+    structuredData: Schema.Attribute.JSON;
+    tags: Schema.Attribute.Relation<'manyToMany', 'plugin::zhao-tag.tag'>;
+    title: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 200;
+      }>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    viewCount: Schema.Attribute.BigInteger & Schema.Attribute.DefaultTo<0>;
+  };
+}
+
+export interface PluginZhaoWebsiteVisitLog extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_website_visit_logs';
+  info: {
+    displayName: '\u8BBF\u95EE\u65E5\u5FD7';
+    pluralName: 'visit-logs';
+    singularName: 'visit-log';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: false;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+  };
+  attributes: {
+    browser: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
+    city: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    country: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    deletedAt: Schema.Attribute.DateTime;
+    deviceType: Schema.Attribute.Enumeration<['desktop', 'mobile', 'tablet']> &
+      Schema.Attribute.DefaultTo<'desktop'>;
+    dwellTime: Schema.Attribute.Integer;
+    ipAddress: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-website.visit-log'
+    > &
+      Schema.Attribute.Private;
+    os: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
+    pageTitle: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 200;
+      }>;
+    pageUrl: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 500;
+      }>;
+    publishedAt: Schema.Attribute.DateTime;
+    referrer: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 500;
+      }>;
+    referrerDomain: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 200;
+      }>;
+    region: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    scrollDepth: Schema.Attribute.Integer;
+    searchKeyword: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 200;
+      }>;
+    sessionId: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    site: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-common.site-config'
+    > &
+      Schema.Attribute.Required;
+    targetId: Schema.Attribute.String;
+    targetType: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 30;
+      }>;
+    type: Schema.Attribute.Enumeration<
+      [
+        'page_view',
+        'article_view',
+        'product_view',
+        'case_view',
+        'download_click',
+        'cta_click',
+        'search',
+        'external_click',
+      ]
+    > &
+      Schema.Attribute.Required;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    userAgent: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 500;
+      }>;
+    userId: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
+    utmCampaign: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 200;
+      }>;
+    utmMedium: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    utmSource: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    visitorId: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+  };
+}
+
 declare module '@strapi/strapi' {
   export module Public {
     export interface ContentTypeSchemas {
@@ -4650,6 +6620,7 @@ declare module '@strapi/strapi' {
       'plugin::zhao-course.course-progress': PluginZhaoCourseCourseProgress;
       'plugin::zhao-course.lesson-progress': PluginZhaoCourseLessonProgress;
       'plugin::zhao-course.user-course-auth': PluginZhaoCourseUserCourseAuth;
+      'plugin::zhao-oss.media-meta': PluginZhaoOssMediaMeta;
       'plugin::zhao-oss.sync-record': PluginZhaoOssSyncRecord;
       'plugin::zhao-point.channel-verification': PluginZhaoPointChannelVerification;
       'plugin::zhao-point.pickup-location': PluginZhaoPointPickupLocation;
@@ -4706,6 +6677,24 @@ declare module '@strapi/strapi' {
       'plugin::zhao-wealth.wealth-recommend-config': PluginZhaoWealthWealthRecommendConfig;
       'plugin::zhao-wealth.wealth-risk-metric': PluginZhaoWealthWealthRiskMetric;
       'plugin::zhao-wealth.wealth-yearly-return': PluginZhaoWealthWealthYearlyReturn;
+      'plugin::zhao-website.ai-content-summary': PluginZhaoWebsiteAiContentSummary;
+      'plugin::zhao-website.article': PluginZhaoWebsiteArticle;
+      'plugin::zhao-website.article-category': PluginZhaoWebsiteArticleCategory;
+      'plugin::zhao-website.brand-info': PluginZhaoWebsiteBrandInfo;
+      'plugin::zhao-website.case': PluginZhaoWebsiteCase;
+      'plugin::zhao-website.compliance': PluginZhaoWebsiteCompliance;
+      'plugin::zhao-website.download': PluginZhaoWebsiteDownload;
+      'plugin::zhao-website.faq': PluginZhaoWebsiteFaq;
+      'plugin::zhao-website.first-truth-policy': PluginZhaoWebsiteFirstTruthPolicy;
+      'plugin::zhao-website.interaction': PluginZhaoWebsiteInteraction;
+      'plugin::zhao-website.knowledge-entity': PluginZhaoWebsiteKnowledgeEntity;
+      'plugin::zhao-website.knowledge-relation': PluginZhaoWebsiteKnowledgeRelation;
+      'plugin::zhao-website.lead': PluginZhaoWebsiteLead;
+      'plugin::zhao-website.product': PluginZhaoWebsiteProduct;
+      'plugin::zhao-website.search-log': PluginZhaoWebsiteSearchLog;
+      'plugin::zhao-website.seo-config': PluginZhaoWebsiteSeoConfig;
+      'plugin::zhao-website.tutorial': PluginZhaoWebsiteTutorial;
+      'plugin::zhao-website.visit-log': PluginZhaoWebsiteVisitLog;
     }
   }
 }

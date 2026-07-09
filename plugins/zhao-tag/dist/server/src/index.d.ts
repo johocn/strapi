@@ -15,18 +15,26 @@ declare const _default: {
                 options: {
                     draftAndPublish: boolean;
                 };
+                pluginOptions: {
+                    i18n: {
+                        localized: boolean;
+                    };
+                };
                 attributes: {
                     name: {
                         type: string;
                         required: boolean;
+                        localized: boolean;
                     };
                     slug: {
                         type: string;
                         targetField: string;
                         required: boolean;
+                        localized: boolean;
                     };
                     description: {
                         type: string;
+                        localized: boolean;
                     };
                     color: {
                         type: string;
@@ -65,7 +73,55 @@ declare const _default: {
                         type: string;
                         default: boolean;
                     };
+                    site: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        inversedBy: string;
+                    };
                     indexes: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    website_articles: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    website_tutorials: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    website_cases: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    website_faqs: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    website_compliances: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    website_downloads: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    website_products: {
                         type: string;
                         relation: string;
                         target: string;
@@ -179,18 +235,26 @@ declare const _default: {
                 options: {
                     draftAndPublish: boolean;
                 };
+                pluginOptions: {
+                    i18n: {
+                        localized: boolean;
+                    };
+                };
                 attributes: {
                     name: {
                         type: string;
                         required: boolean;
+                        localized: boolean;
                     };
                     slug: {
                         type: string;
                         targetField: string;
                         required: boolean;
+                        localized: boolean;
                     };
                     description: {
                         type: string;
+                        localized: boolean;
                     };
                     color: {
                         type: string;
@@ -202,6 +266,16 @@ declare const _default: {
                     sort: {
                         type: string;
                         default: number;
+                    };
+                    isPublic: {
+                        type: string;
+                        default: boolean;
+                    };
+                    site: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        inversedBy: string;
                     };
                     parent: {
                         type: string;

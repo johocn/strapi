@@ -77,6 +77,48 @@
       "target": "plugin::zhao-tag.tag-index",
       "mappedBy": "tag"
     },
+    "website_articles": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "plugin::zhao-website.article",
+      "mappedBy": "tags"
+    },
+    "website_tutorials": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "plugin::zhao-website.tutorial",
+      "mappedBy": "tags"
+    },
+    "website_cases": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "plugin::zhao-website.case",
+      "mappedBy": "tags"
+    },
+    "website_faqs": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "plugin::zhao-website.faq",
+      "mappedBy": "tags"
+    },
+    "website_compliances": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "plugin::zhao-website.compliance",
+      "mappedBy": "tags"
+    },
+    "website_downloads": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "plugin::zhao-website.download",
+      "mappedBy": "tags"
+    },
+    "website_products": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "plugin::zhao-website.product",
+      "mappedBy": "tags"
+    },
     "deletedAt": {
       "type": "datetime",
       "default": null

@@ -1,4 +1,5 @@
-declare const _default: {
+declare const _default: () => {
+    type: "admin";
     routes: {
         method: string;
         path: string;

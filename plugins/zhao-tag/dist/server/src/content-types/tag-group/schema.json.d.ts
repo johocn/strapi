@@ -9,18 +9,24 @@ declare const _default: {
   "options": {
     "draftAndPublish": false
   },
+  "pluginOptions": {
+    "i18n": { "localized": true }
+  },
   "attributes": {
     "name": {
       "type": "string",
-      "required": true
+      "required": true,
+      "localized": true
     },
     "slug": {
       "type": "uid",
       "targetField": "name",
-      "required": false
+      "required": false,
+      "localized": true
     },
     "description": {
-      "type": "text"
+      "type": "text",
+      "localized": true
     },
     "color": {
       "type": "string"
@@ -32,6 +38,16 @@ declare const _default: {
     "sort": {
       "type": "integer",
       "default": 0
+    },
+    "isPublic": {
+      "type": "boolean",
+      "default": true
+    },
+    "site": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-common.site-config",
+      "inversedBy": "tagGroups"
     },
     "parent": {
       "type": "relation",

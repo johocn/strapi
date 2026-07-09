@@ -23,7 +23,7 @@ const resolveChannelScope = async (policyContext: any, config: any, { strapi }: 
     ? []
     : (Array.isArray(channelScope?.channelIds) ? channelScope.channelIds : []);
 
-  const siteId = policyContext.state?.siteId;
+  const siteId = policyContext.state?.siteDocumentId; // site-config 的 documentId
 
   // 无 siteId：fallback 到默认值 site_cross_user
   if (!siteId) {

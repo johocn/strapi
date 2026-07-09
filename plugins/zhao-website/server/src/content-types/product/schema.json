@@ -140,6 +140,12 @@
       "target": "plugin::zhao-website.knowledge-entity",
       "inversedBy": "productMentions"
     },
+    "cases": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "plugin::zhao-website.case",
+      "mappedBy": "relatedProducts"
+    },
     "structuredData": {
       "type": "json"
     },

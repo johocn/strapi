@@ -76,6 +76,12 @@ declare const _default: {
       "target": "plugin::zhao-studio.stat-summary",
       "mappedBy": "article"
     },
+    "websiteArticles": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-website.article",
+      "mappedBy": "sourceArticleDraft"
+    },
     "publishedAt": {
       "type": "datetime"
     },

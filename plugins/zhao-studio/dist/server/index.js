@@ -407,10 +407,10 @@ const controllers = {
   ai,
   analytics: analytics$1
 };
-const adminRoutes = {
+const adminRoutes = () => ({
   type: "admin",
   routes: []
-};
+});
 const publicRoute = (method, path, handler) => ({
   method,
   path: `/v1${path}`,
@@ -431,10 +431,9 @@ const adminRoute = (method, path, handler, permission) => ({
     ]
   }
 });
-const contentApiRoutes = {
+const contentApiRoutes = () => ({
   type: "content-api",
   routes: [
-    // ===== 公开路由（C端访问） =====
     publicRoute("GET", "/articles", "internal-api.listArticles"),
     publicRoute("GET", "/articles/:id", "internal-api.getArticle"),
     publicRoute("GET", "/articles/search", "internal-api.searchArticles"),
@@ -444,49 +443,39 @@ const contentApiRoutes = {
     publicRoute("POST", "/analytics/ad-click", "analytics.trackAdClick"),
     publicRoute("POST", "/analytics/read-behavior", "analytics.trackReadBehavior"),
     publicRoute("POST", "/analytics/user-register", "analytics.trackUserRegister"),
-    // ===== 采集源管理 =====
     adminRoute("GET", "/sources", "collect.listSources", "zhao-studio.read"),
     adminRoute("POST", "/sources", "collect.createSource", "zhao-studio.create"),
     adminRoute("PUT", "/sources/:id", "collect.updateSource", "zhao-studio.update"),
     adminRoute("DELETE", "/sources/:id", "collect.deleteSource", "zhao-studio.delete"),
-    // ===== 采集任务管理 =====
     adminRoute("POST", "/tasks", "collect.createTask", "zhao-studio.create"),
     adminRoute("GET", "/tasks", "collect.listTasks", "zhao-studio.read"),
     adminRoute("GET", "/tasks/:id", "collect.getTask", "zhao-studio.read"),
     adminRoute("POST", "/tasks/:taskId/content", "collect.fetchSelectedContent", "zhao-studio.create"),
     adminRoute("POST", "/tasks/:taskId/confirm", "collect.confirmImport", "zhao-studio.create"),
-    // ===== 发布平台管理 =====
     adminRoute("GET", "/platforms", "publish.listPlatforms", "zhao-studio.read"),
     adminRoute("POST", "/platforms", "publish.createPlatform", "zhao-studio.create"),
     adminRoute("PUT", "/platforms/:id", "publish.updatePlatform", "zhao-studio.update"),
     adminRoute("DELETE", "/platforms/:id", "publish.deletePlatform", "zhao-studio.delete"),
-    // ===== 发布账号管理 =====
     adminRoute("GET", "/accounts", "publish.listAccounts", "zhao-studio.read"),
     adminRoute("POST", "/accounts", "publish.createAccount", "zhao-studio.create"),
     adminRoute("PUT", "/accounts/:id", "publish.updateAccount", "zhao-studio.update"),
     adminRoute("DELETE", "/accounts/:id", "publish.deleteAccount", "zhao-studio.delete"),
-    // ===== 发布操作 =====
     adminRoute("POST", "/articles/:articleId/publish", "publish.publishArticle", "zhao-studio.create"),
     adminRoute("GET", "/records", "publish.listRecords", "zhao-studio.read"),
     adminRoute("POST", "/records/:recordId/retry", "publish.retryPublish", "zhao-studio.update"),
     adminRoute("POST", "/articles/:articleId/sync", "publish.syncStatus", "zhao-studio.update"),
-    // ===== AI配置管理 =====
     adminRoute("GET", "/ai/config", "ai.getConfig", "zhao-studio.read"),
     adminRoute("POST", "/ai/config", "ai.updateConfig", "zhao-studio.update"),
     adminRoute("POST", "/ai/test", "ai.testConnection", "zhao-studio.update"),
-    // ===== AI操作 =====
     adminRoute("POST", "/ai/articles/:articleId/summary", "ai.generateSummary", "zhao-studio.update"),
     adminRoute("POST", "/ai/articles/:articleId/title", "ai.optimizeTitle", "zhao-studio.update"),
     adminRoute("POST", "/ai/articles/:articleId/rewrite", "ai.rewriteContent", "zhao-studio.update"),
     adminRoute("POST", "/ai/articles/:articleId/convert", "ai.convertLanguage", "zhao-studio.update"),
-    // ===== AI 对话 =====
     adminRoute("POST", "/ai/chat", "ai.chat", "zhao-studio.read"),
-    // ===== 广告位管理 =====
     adminRoute("GET", "/ad-slots", "analytics.listAdSlots", "zhao-studio.read"),
     adminRoute("POST", "/ad-slots", "analytics.createAdSlot", "zhao-studio.create"),
     adminRoute("PUT", "/ad-slots/:id", "analytics.updateAdSlot", "zhao-studio.update"),
     adminRoute("DELETE", "/ad-slots/:id", "analytics.deleteAdSlot", "zhao-studio.delete"),
-    // ===== 统计查询 =====
     adminRoute("GET", "/stats/overview", "analytics.getOverview", "zhao-studio.read"),
     adminRoute("GET", "/stats/articles", "analytics.getArticleStats", "zhao-studio.read"),
     adminRoute("GET", "/stats/ad-slots", "analytics.getAdSlotStats", "zhao-studio.read"),
@@ -494,10 +483,16 @@ const contentApiRoutes = {
     adminRoute("GET", "/stats/regions", "analytics.getRegionStats", "zhao-studio.read"),
     adminRoute("GET", "/stats/users", "analytics.getUserStats", "zhao-studio.read")
   ]
-};
+});
 const routes = {
-  admin: adminRoutes,
-  "content-api": contentApiRoutes
+  admin: {
+    type: "admin",
+    routes: adminRoutes().routes
+  },
+  "content-api": {
+    type: "content-api",
+    routes: contentApiRoutes().routes
+  }
 };
 const collect = ({ strapi }) => ({
   async createTask(sourceId) {
@@ -20068,7 +20063,7 @@ const collectionName$9 = "zhao_article_drafts";
 const info$9 = { "singularName": "article-draft", "pluralName": "article-drafts", "displayName": "草稿文章", "description": "采集并加工后的草稿文章" };
 const options$9 = { "draftAndPublish": true };
 const pluginOptions$9 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
-const attributes$9 = { "title": { "type": "string", "required": true, "maxLength": 200 }, "content": { "type": "richtext", "required": true }, "sourceUrl": { "type": "string" }, "sourceTitle": { "type": "string" }, "sourcePublishedAt": { "type": "datetime" }, "sourceAuthor": { "type": "string" }, "category": { "type": "string" }, "status": { "type": "enumeration", "enum": ["draft", "processing", "ready", "published"], "default": "draft" }, "aiProcessed": { "type": "boolean", "default": false }, "aiSummary": { "type": "text" }, "aiOptimizedTitle": { "type": "string" }, "publishRecords": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.publish-record", "mappedBy": "article" }, "browserLogs": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.browser-log", "mappedBy": "article" }, "statSummaries": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.stat-summary", "mappedBy": "article" }, "publishedAt": { "type": "datetime" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const attributes$9 = { "title": { "type": "string", "required": true, "maxLength": 200 }, "content": { "type": "richtext", "required": true }, "sourceUrl": { "type": "string" }, "sourceTitle": { "type": "string" }, "sourcePublishedAt": { "type": "datetime" }, "sourceAuthor": { "type": "string" }, "category": { "type": "string" }, "status": { "type": "enumeration", "enum": ["draft", "processing", "ready", "published"], "default": "draft" }, "aiProcessed": { "type": "boolean", "default": false }, "aiSummary": { "type": "text" }, "aiOptimizedTitle": { "type": "string" }, "publishRecords": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.publish-record", "mappedBy": "article" }, "browserLogs": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.browser-log", "mappedBy": "article" }, "statSummaries": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.stat-summary", "mappedBy": "article" }, "websiteArticles": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.article", "mappedBy": "sourceArticleDraft" }, "publishedAt": { "type": "datetime" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
 const schema$9 = {
   kind: kind$9,
   collectionName: collectionName$9,

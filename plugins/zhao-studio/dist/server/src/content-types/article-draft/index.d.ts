@@ -77,6 +77,12 @@ declare const _default: {
                 target: string;
                 mappedBy: string;
             };
+            websiteArticles: {
+                type: string;
+                relation: string;
+                target: string;
+                mappedBy: string;
+            };
             publishedAt: {
                 type: string;
             };

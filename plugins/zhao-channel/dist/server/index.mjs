@@ -6297,12 +6297,11 @@ const contentApi = () => ({
     ssoSyncRoute("POST", "/user-invites/sync", "user-invite.syncInvite")
   ]
 });
-const contentApiRoutes = contentApi();
 const routes = {
-  "content-api": {
+  "content-api": () => ({
     type: "content-api",
-    routes: contentApiRoutes.routes
-  }
+    routes: contentApi().routes
+  })
 };
 function buildPath(parentPath, childId) {
   const normalizedParent = parentPath.endsWith("/") ? parentPath : `${parentPath}/`;

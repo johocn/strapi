@@ -51,7 +51,9 @@ const siteResolver: Core.MiddlewareFactory = (config, { strapi }) => {
 
         if (Array.isArray(records) && records.length > 0) {
           const site = records[0];
-          ctx.state.siteId = site.documentId;
+          // siteId 为数字 id（用于 db.query manyToOne 关系过滤）；siteDocumentId 为 documentId（用于 documentService）
+          ctx.state.siteId = site.id;
+          ctx.state.siteDocumentId = site.documentId;
           // siteChannelIds 数组由 resolve-channel-scope 策略统一注入
         }
       }

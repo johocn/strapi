@@ -7842,9 +7842,9 @@ const controllers = {
   "admin-api": adminApi$1,
   "risk-metric": riskMetric
 };
-const contentApi = {
+const contentApi = () => ({
+  type: "content-api",
   routes: [
-    // 产品列表
     {
       method: "GET",
       path: "/v1/wealth/products",
@@ -7853,7 +7853,6 @@ const contentApi = {
         policies: ["plugin::zhao-auth.has-channel-access", "plugin::zhao-auth.has-tenant-access"]
       }
     },
-    // 产品详情
     {
       method: "GET",
       path: "/v1/wealth/products/:id",
@@ -7862,7 +7861,6 @@ const contentApi = {
         policies: ["plugin::zhao-auth.has-channel-access", "plugin::zhao-auth.has-tenant-access"]
       }
     },
-    // 净值时序
     {
       method: "GET",
       path: "/v1/wealth/products/:id/nav",
@@ -7871,7 +7869,6 @@ const contentApi = {
         policies: ["plugin::zhao-auth.has-channel-access", "plugin::zhao-auth.has-tenant-access"]
       }
     },
-    // 年化快照时序
     {
       method: "GET",
       path: "/v1/wealth/products/:id/annual-snapshot",
@@ -7880,7 +7877,6 @@ const contentApi = {
         policies: ["plugin::zhao-auth.has-channel-access", "plugin::zhao-auth.has-tenant-access"]
       }
     },
-    // 年度收益列表
     {
       method: "GET",
       path: "/v1/wealth/products/:id/yearly-return",
@@ -7889,7 +7885,6 @@ const contentApi = {
         policies: ["plugin::zhao-auth.has-channel-access", "plugin::zhao-auth.has-tenant-access"]
       }
     },
-    // 推荐产品列表
     {
       method: "GET",
       path: "/v1/wealth/recommend",
@@ -7898,7 +7893,6 @@ const contentApi = {
         policies: ["plugin::zhao-auth.is-authenticated"]
       }
     },
-    // 客户自选列表
     {
       method: "GET",
       path: "/v1/wealth/customer-products",
@@ -7907,7 +7901,6 @@ const contentApi = {
         policies: ["plugin::zhao-auth.is-authenticated"]
       }
     },
-    // 添加自选
     {
       method: "POST",
       path: "/v1/wealth/customer-products",
@@ -7916,7 +7909,6 @@ const contentApi = {
         policies: ["plugin::zhao-auth.is-authenticated"]
       }
     },
-    // 删除自选
     {
       method: "DELETE",
       path: "/v1/wealth/customer-products/:id",
@@ -7925,7 +7917,6 @@ const contentApi = {
         policies: ["plugin::zhao-auth.is-authenticated"]
       }
     },
-    // 风险指标查询
     {
       method: "GET",
       path: "/v1/wealth/products/:id/risk-metrics",
@@ -7935,10 +7926,10 @@ const contentApi = {
       }
     }
   ]
-};
-const adminApi = {
+});
+const adminApi = () => ({
+  type: "admin",
   routes: [
-    // ===== 公司管理 =====
     {
       method: "GET",
       path: "/companies",
@@ -7964,7 +7955,6 @@ const adminApi = {
       path: "/companies/:id",
       handler: "admin-api.companyDelete"
     },
-    // ===== 产品管理 =====
     {
       method: "GET",
       path: "/products",
@@ -7990,7 +7980,6 @@ const adminApi = {
       path: "/products/:id",
       handler: "admin-api.productDelete"
     },
-    // ===== 采集配置 =====
     {
       method: "GET",
       path: "/collect-configs",
@@ -8011,7 +8000,6 @@ const adminApi = {
       path: "/collect/status",
       handler: "collect.status"
     },
-    // ===== 净值管理 =====
     {
       method: "GET",
       path: "/products/:id/nav",
@@ -8027,13 +8015,11 @@ const adminApi = {
       path: "/nav/:id",
       handler: "admin-api.navDataUpdate"
     },
-    // ===== 重算 =====
     {
       method: "POST",
       path: "/recalculate",
       handler: "collect.recalculate"
     },
-    // ===== 推荐配置 =====
     {
       method: "GET",
       path: "/recommend-configs",
@@ -8054,25 +8040,21 @@ const adminApi = {
       path: "/recommend-configs/:id",
       handler: "admin-api.recommendConfigDelete"
     },
-    // ===== 客户自选 =====
     {
       method: "GET",
       path: "/customer-products",
       handler: "admin-api.customerProductsList"
     },
-    // ===== 统计 =====
     {
       method: "GET",
       path: "/stats",
       handler: "admin-api.stats"
     },
-    // 风险指标重算
     {
       method: "POST",
       path: "/recalculate-risk-metric",
       handler: "risk-metric.recalculate"
     },
-    // 统计聚合（仪表盘）
     {
       method: "GET",
       path: "/stats/overview",
@@ -8083,7 +8065,6 @@ const adminApi = {
       path: "/stats/anomalies",
       handler: "admin-api.statsAnomalies"
     },
-    // 采集与校验
     {
       method: "POST",
       path: "/products/collect",
@@ -8094,7 +8075,6 @@ const adminApi = {
       path: "/products/collect/confirm",
       handler: "admin-api.collectConfirm"
     },
-    // 指标中心聚合
     {
       method: "GET",
       path: "/risk-metrics/admin/aggregate",
@@ -8111,16 +8091,16 @@ const adminApi = {
       handler: "risk-metric.adminPeers"
     }
   ]
-};
+});
 const routes = {
-  "content-api": {
+  "content-api": () => ({
     type: "content-api",
-    routes: contentApi.routes
-  },
-  "admin-api": {
+    routes: contentApi().routes
+  }),
+  "admin-api": () => ({
     type: "admin",
-    routes: adminApi.routes
-  }
+    routes: adminApi().routes
+  })
 };
 const product = ({ strapi }) => ({
   /**

@@ -1281,22 +1281,22 @@ const article = ({ strapi: strapi2 }) => ({
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
       orderBy: { updatedAt: "DESC" },
-      populate: ["coverImage", "category", { tags: { populate: { tagGroup: true } } }]
+      populate: { coverImage: true, category: true, tags: { populate: { tagGroup: true } } }
     });
   },
   async findOneAdmin(siteId, documentId) {
     return strapi2.db.query(UID$d).findOne({
       where: { site: siteId, documentId, deletedAt: null },
-      populate: [
-        "coverImage",
-        "category",
-        { tags: { populate: { tagGroup: true } } },
-        "mainEntity",
-        "mentionedEntities",
-        "ogImage",
-        "sourceArticleDraft",
-        "structuredData"
-      ]
+      populate: {
+        coverImage: true,
+        category: true,
+        tags: { populate: { tagGroup: true } },
+        mainEntity: true,
+        mentionedEntities: true,
+        ogImage: true,
+        sourceArticleDraft: true,
+        structuredData: true
+      }
     });
   },
   async create(siteId, data) {
@@ -1516,22 +1516,22 @@ const product = ({ strapi: strapi2 }) => ({
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
       orderBy: { updatedAt: "DESC" },
-      populate: ["coverImage", "category", { tags: { populate: { tagGroup: true } } }]
+      populate: { coverImage: true, category: true, tags: { populate: { tagGroup: true } } }
     });
   },
   async findOneAdmin(siteId, documentId) {
     return strapi2.db.query(UID$b).findOne({
       where: { site: siteId, documentId, deletedAt: null },
-      populate: [
-        "coverImage",
-        "category",
-        { tags: { populate: { tagGroup: true } } },
-        "mainEntity",
-        "images",
-        "mentionedEntities",
-        "ogImage",
-        "structuredData"
-      ]
+      populate: {
+        coverImage: true,
+        category: true,
+        tags: { populate: { tagGroup: true } },
+        mainEntity: true,
+        images: true,
+        mentionedEntities: true,
+        ogImage: true,
+        structuredData: true
+      }
     });
   },
   async create(siteId, data) {
@@ -1685,22 +1685,22 @@ const caseService = ({ strapi: strapi2 }) => ({
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
       orderBy: { updatedAt: "DESC" },
-      populate: ["coverImage", "clientLogo", { tags: { populate: { tagGroup: true } } }]
+      populate: { coverImage: true, clientLogo: true, tags: { populate: { tagGroup: true } } }
     });
   },
   async findOneAdmin(siteId, documentId) {
     return strapi2.db.query(UID$a).findOne({
       where: { site: siteId, documentId, deletedAt: null },
-      populate: [
-        "coverImage",
-        "clientLogo",
-        { tags: { populate: { tagGroup: true } } },
-        "mainEntity",
-        "images",
-        "mentionedEntities",
-        "relatedProducts",
-        "structuredData"
-      ]
+      populate: {
+        coverImage: true,
+        clientLogo: true,
+        tags: { populate: { tagGroup: true } },
+        mainEntity: true,
+        images: true,
+        mentionedEntities: true,
+        relatedProducts: true,
+        structuredData: true
+      }
     });
   },
   async create(siteId, data) {
@@ -2172,19 +2172,19 @@ const tutorial = ({ strapi: strapi2 }) => ({
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
       orderBy: { updatedAt: "DESC" },
-      populate: ["coverImage", "category", { tags: { populate: { tagGroup: true } } }]
+      populate: { coverImage: true, category: true, tags: { populate: { tagGroup: true } } }
     });
   },
   async findOneAdmin(siteId, documentId) {
     return strapi2.db.query(UID$7).findOne({
       where: { site: siteId, documentId, deletedAt: null },
-      populate: [
-        "coverImage",
-        "category",
-        { tags: { populate: { tagGroup: true } } },
-        "mainEntity",
-        "mentionedEntities"
-      ]
+      populate: {
+        coverImage: true,
+        category: true,
+        tags: { populate: { tagGroup: true } },
+        mainEntity: true,
+        mentionedEntities: true
+      }
     });
   },
   async create(siteId, data) {

@@ -1,5 +1,8 @@
 import contentApi from "./content-api";
 
 export default {
-  "content-api": contentApi,
+  "content-api": {
+    type: "content-api" as const,
+    routes: contentApi().routes,
+  },
 };

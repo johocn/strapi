@@ -9,7 +9,7 @@ const hasTenantAccessLoose = async (policyContext, config2, { strapi: strapi2 })
   if (userRoles.includes("admin")) {
     return true;
   }
-  const siteId = policyContext.state?.siteId;
+  const siteId = policyContext.state?.siteDocumentId;
   if (!siteId) {
     return true;
   }
@@ -55,7 +55,7 @@ const hasTenantAccessStrict = async (policyContext, config2, { strapi: strapi2 }
   if (userRoles.includes("admin")) {
     return true;
   }
-  const siteId = policyContext.state?.siteId;
+  const siteId = policyContext.state?.siteDocumentId;
   if (!siteId) {
     return true;
   }
@@ -88,7 +88,7 @@ const resolveChannelScope = async (policyContext, config2, { strapi: strapi2 }) 
   const channelScope = policyContext.state?.channelScope;
   const isGuest = !channelScope || channelScope.isGuest === true || !channelScope.all && !channelScope.channelIds?.length;
   const userChannelIds = channelScope?.all ? [] : Array.isArray(channelScope?.channelIds) ? channelScope.channelIds : [];
-  const siteId = policyContext.state?.siteId;
+  const siteId = policyContext.state?.siteDocumentId;
   if (!siteId) {
     policyContext.state.channelUsage = "site_cross_user";
     policyContext.state.mergedChannelIds = userChannelIds;
@@ -141,7 +141,7 @@ const register = ({ strapi: strapi2 }) => {
   policyRegistry.add("plugin::zhao-common", policies);
   strapi2.log.info("[zhao-common] 策略已注册");
 };
-const SITE_CONFIG_UID$2 = "plugin::zhao-common.site-config";
+const SITE_CONFIG_UID$3 = "plugin::zhao-common.site-config";
 function extractHost(input) {
   let v = (input || "").trim();
   if (!v) return "";
@@ -163,14 +163,15 @@ const siteResolver = (config2, { strapi: strapi2 }) => {
     const domain = extractHost(raw);
     try {
       if (domain) {
-        const records = await strapi2.documents(SITE_CONFIG_UID$2).findMany({
+        const records = await strapi2.documents(SITE_CONFIG_UID$3).findMany({
           filters: { domain },
           populate: ["channels", "template"],
           limit: 1
         });
         if (Array.isArray(records) && records.length > 0) {
           const site = records[0];
-          ctx.state.siteId = site.documentId;
+          ctx.state.siteId = site.id;
+          ctx.state.siteDocumentId = site.documentId;
         }
       }
     } catch (error) {
@@ -179,6 +180,7 @@ const siteResolver = (config2, { strapi: strapi2 }) => {
     await next();
   };
 };
+const SITE_CONFIG_UID$2 = "plugin::zhao-common.site-config";
 const tenantContextResolver = (config2, { strapi: strapi2 }) => {
   return async (ctx, next) => {
     if (ctx.state?.siteId) {
@@ -186,10 +188,18 @@ const tenantContextResolver = (config2, { strapi: strapi2 }) => {
     }
     const siteIdFromHeader = ctx.request?.headers?.["x-site-id"];
     const siteIdFromQuery = ctx.query?.siteId;
-    if (siteIdFromHeader) {
-      ctx.state.siteId = String(siteIdFromHeader);
-    } else if (siteIdFromQuery) {
-      ctx.state.siteId = String(siteIdFromQuery);
+    const rawSiteId = siteIdFromHeader || siteIdFromQuery;
+    if (rawSiteId) {
+      try {
+        const site = await strapi2.db.query(SITE_CONFIG_UID$2).findOne({
+          where: { documentId: String(rawSiteId) }
+        });
+        if (site) {
+          ctx.state.siteId = site.id;
+          ctx.state.siteDocumentId = site.documentId;
+        }
+      } catch {
+      }
     }
     return await next();
   };
@@ -566,7 +576,28 @@ const SOFT_DELETE_WHITELIST = /* @__PURE__ */ new Set([
   "plugin::zhao-point.point-rule",
   "plugin::zhao-point.point-redemption",
   "plugin::zhao-point.point-product",
-  "plugin::zhao-point.pickup-location"
+  "plugin::zhao-point.pickup-location",
+  // zhao-website CTs (18)
+  "plugin::zhao-website.seo-config",
+  "plugin::zhao-website.brand-info",
+  "plugin::zhao-website.article",
+  "plugin::zhao-website.article-category",
+  "plugin::zhao-website.product",
+  "plugin::zhao-website.case",
+  "plugin::zhao-website.compliance",
+  "plugin::zhao-website.faq",
+  "plugin::zhao-website.tutorial",
+  "plugin::zhao-website.lead",
+  "plugin::zhao-website.visit-log",
+  "plugin::zhao-website.interaction",
+  "plugin::zhao-website.search-log",
+  "plugin::zhao-website.knowledge-entity",
+  "plugin::zhao-website.knowledge-relation",
+  "plugin::zhao-website.ai-content-summary",
+  "plugin::zhao-website.first-truth-policy",
+  "plugin::zhao-website.download",
+  // zhao-oss media-meta
+  "plugin::zhao-oss.media-meta"
 ]);
 function assertWhitelisted(uid) {
   if (!SOFT_DELETE_WHITELIST.has(uid)) {
@@ -1349,6 +1380,7 @@ const config$1 = ({ strapi: strapi2 }) => ({
             channel: true,
             thirdParty: true,
             oss: false,
+            website: true,
             pointsEnabled: true,
             coursePreviewEnabled: true,
             lessonProgressEnabled: true,
@@ -1504,6 +1536,7 @@ const config$1 = ({ strapi: strapi2 }) => ({
         channel: siteFeatureFlags.channel ?? true,
         thirdParty: siteFeatureFlags.thirdParty ?? true,
         oss: siteFeatureFlags.oss ?? false,
+        website: siteFeatureFlags.website ?? true,
         // 细粒度开关（从 extraConfig 合并后的 ec 读取）
         pointsEnabled: siteFeatureFlags.points ?? true,
         coursePreviewEnabled: ec.coursePreviewEnabled ?? true,
@@ -1581,7 +1614,8 @@ const PLUGIN_ORDER = [
   "zhao-third",
   "zhao-wealth",
   "zhao-sso",
-  "zhao-studio"
+  "zhao-studio",
+  "zhao-website"
 ];
 function getPluginRoot(plugin) {
   try {
@@ -1719,7 +1753,7 @@ const kind$1 = "collectionType";
 const collectionName$1 = "zhao_site_configs";
 const info$1 = { "singularName": "site-config", "pluralName": "site-configs", "displayName": "站点配置", "description": "站点通用配置（多租户）" };
 const options$1 = { "draftAndPublish": false };
-const attributes$1 = { "siteName": { "type": "string", "maxLength": 100 }, "siteDescription": { "type": "text" }, "logo": { "type": "media", "multiple": false, "required": false, "allowedTypes": ["images"] }, "favicon": { "type": "media", "multiple": false, "required": false, "allowedTypes": ["images"] }, "icpNumber": { "type": "string", "maxLength": 50 }, "seoKeywords": { "type": "string", "maxLength": 500 }, "seoDescription": { "type": "text" }, "tencentMapKey": { "type": "string", "maxLength": 64 }, "shareTitle": { "type": "string", "maxLength": 100 }, "shareDescription": { "type": "string", "maxLength": 200 }, "shareImage": { "type": "media", "multiple": false, "required": false, "allowedTypes": ["images"] }, "customerServiceUrl": { "type": "string", "maxLength": 500 }, "domain": { "type": "string", "maxLength": 255, "unique": true }, "channels": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-channel.channel", "mappedBy": "sites" }, "featureFlags": { "type": "json", "default": { "sso": false, "points": true, "quiz": true, "course": true, "channel": true, "thirdParty": true, "oss": false } }, "template": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-template", "inversedBy": "sites" }, "extraConfig": { "type": "json" }, "themeConfig": { "type": "json", "default": "{}" }, "channelUsage": { "type": "enumeration", "enum": ["site_only", "site_and_cross", "site_cross_user"], "default": "site_cross_user", "required": true } };
+const attributes$1 = { "siteName": { "type": "string", "maxLength": 100 }, "siteDescription": { "type": "text" }, "logo": { "type": "media", "multiple": false, "required": false, "allowedTypes": ["images"] }, "favicon": { "type": "media", "multiple": false, "required": false, "allowedTypes": ["images"] }, "icpNumber": { "type": "string", "maxLength": 50 }, "seoKeywords": { "type": "string", "maxLength": 500 }, "seoDescription": { "type": "text" }, "tencentMapKey": { "type": "string", "maxLength": 64 }, "shareTitle": { "type": "string", "maxLength": 100 }, "shareDescription": { "type": "string", "maxLength": 200 }, "shareImage": { "type": "media", "multiple": false, "required": false, "allowedTypes": ["images"] }, "customerServiceUrl": { "type": "string", "maxLength": 500 }, "domain": { "type": "string", "maxLength": 255, "unique": true }, "channels": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-channel.channel", "mappedBy": "sites" }, "featureFlags": { "type": "json", "default": { "sso": false, "points": true, "quiz": true, "course": true, "channel": true, "thirdParty": true, "oss": false, "website": true } }, "template": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-template", "inversedBy": "sites" }, "extraConfig": { "type": "json" }, "themeConfig": { "type": "json", "default": "{}" }, "channelUsage": { "type": "enumeration", "enum": ["site_only", "site_and_cross", "site_cross_user"], "default": "site_cross_user", "required": true }, "tags": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-tag.tag", "mappedBy": "site" }, "tagGroups": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-tag.tag-group", "mappedBy": "site" }, "website_seo_config": { "type": "relation", "relation": "oneToOne", "target": "plugin::zhao-website.seo-config", "mappedBy": "site" }, "website_brand_info": { "type": "relation", "relation": "oneToOne", "target": "plugin::zhao-website.brand-info", "mappedBy": "site" }, "website_articles": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.article", "mappedBy": "site" }, "website_article_categories": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.article-category", "mappedBy": "site" }, "website_cases": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.case", "mappedBy": "site" }, "website_faqs": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.faq", "mappedBy": "site" }, "website_tutorials": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.tutorial", "mappedBy": "site" }, "website_compliances": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.compliance", "mappedBy": "site" }, "website_downloads": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.download", "mappedBy": "site" }, "website_ai_summaries": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.ai-content-summary", "mappedBy": "site" }, "website_first_truths": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.first-truth-policy", "mappedBy": "site" }, "website_knowledge_entities": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.knowledge-entity", "mappedBy": "site" }, "website_knowledge_relations": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.knowledge-relation", "mappedBy": "site" }, "website_leads": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.lead", "mappedBy": "site" }, "website_interactions": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.interaction", "mappedBy": "site" }, "website_search_logs": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.search-log", "mappedBy": "site" }, "website_visit_logs": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.visit-log", "mappedBy": "site" }, "website_products": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.product", "mappedBy": "site" } };
 const siteConfig$1 = {
   kind: kind$1,
   collectionName: collectionName$1,

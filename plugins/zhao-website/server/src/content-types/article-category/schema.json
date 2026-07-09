@@ -50,6 +50,36 @@
       "target": "plugin::zhao-website.article-category",
       "mappedBy": "parent"
     },
+    "articles": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-website.article",
+      "mappedBy": "category"
+    },
+    "tutorials": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-website.tutorial",
+      "mappedBy": "category"
+    },
+    "faqs": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-website.faq",
+      "mappedBy": "category"
+    },
+    "downloads": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-website.download",
+      "mappedBy": "category"
+    },
+    "products": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-website.product",
+      "mappedBy": "category"
+    },
     "order": {
       "type": "integer",
       "default": 0

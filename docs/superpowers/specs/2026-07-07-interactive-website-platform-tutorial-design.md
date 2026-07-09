@@ -181,4 +181,5 @@
 
 ## 7. 交付文件
 
-`docs/2026-07-07-interactive-website-platform-tutorial.md`（约 1200-1500 行）
+- **实例教程文档**：`web/tutorial.md`（与 admin-manual.md 同级，格式风格一致，约 1200-1500 行）
+- **修复 admin-manual.md**：增加网站内容管理章节（7 个 CT），修复 16 点版本缺失内容
