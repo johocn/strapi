@@ -9,6 +9,7 @@ import contactMatrix from "./contact-matrix";
 import quoteEngine from "./quote-engine";
 import trackingAggregator from "./tracking-aggregator";
 import dynamicForm from "./dynamic-form";
+import funnelTracker from "./funnel-tracker";
 import review from "./review";
 import subscription from "./subscription";
 import landingPage from "./landing-page";
@@ -30,6 +31,7 @@ export default {
   "quote-engine": quoteEngine,
   "tracking-aggregator": trackingAggregator,
   "dynamic-form": dynamicForm,
+  "funnel-tracker": funnelTracker,
   "review": review,
   "subscription": subscription,
   "landing-page": landingPage,
