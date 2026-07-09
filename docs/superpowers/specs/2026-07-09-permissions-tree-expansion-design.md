@@ -261,12 +261,90 @@ export const ROLES = {
 
 ### 3.5 DEFAULT_ROLE_PERMISSIONS 扩展
 
+**重要：现有 3 个角色（CHANNEL_ADMIN/PLUGIN_MANAGER/INSTRUCTOR）也需更新权限**，不能"保留不动"：
+
+| 角色 | 现有计算方式 | 遗漏原因 | 需追加 |
+|---|---|---|---|
+| CHANNEL_ADMIN | `flattenPermissions` 排除 `menu.system-center` | SSO 扩展+media-meta 在 system-center 下被排除 | SSO 扩展 read/create/update + media-meta read/upload |
+| PLUGIN_MANAGER | `flattenPermissions` 仅 5 中心 + `.concat` | wealth-center 不在 5 中心列表中；SSO 扩展在 system-center 下 | wealth read/create/update + SSO 扩展 read + media-meta read |
+| INSTRUCTOR | 全显式数组 | 无 wealth/studio | wealth 只读 + studio 只读 + 零散只读 |
+
+**自动包含的扩展**（无需显式追加）：
+- CHANNEL_ADMIN：wealth-center/studio-center 扩展/point 扩展/quiz 扩展/tag 扩展/marketing 扩展 → flattenPermissions 自动包含
+- PLUGIN_MANAGER：studio-center 扩展/point 扩展/quiz 扩展/tag 扩展 → flattenPermissions 5 中心自动包含
+
 ```typescript
 export const DEFAULT_ROLE_PERMISSIONS = {
   [ROLES.ADMIN]: flattenPermissions(PERMISSION_TREE),
-  [ROLES.CHANNEL_ADMIN]: [...],  // 现有，保留不动
-  [ROLES.PLUGIN_MANAGER]: [...], // 现有，保留不动
-  [ROLES.INSTRUCTOR]: [...],     // 现有，保留不动
+  [ROLES.CHANNEL_ADMIN]: [
+    ...flattenPermissions(PERMISSION_TREE).filter(
+      (k) => !k.startsWith("menu.system-center")
+    ),
+    // ... 现有显式权限保留不动 ...
+    // 物流中心权限由 flattenPermissions 自动包含
+    // ↓↓↓ 新增：SSO 扩展 + media-meta（system-center 被排除，需显式追加）↓↓↓
+    "menu.sso-binding", "sso.third-party-binding.read", "sso.third-party-binding.create", "sso.third-party-binding.update",
+    "sso.oauth-config.read", "sso.oauth-config.create", "sso.oauth-config.update",
+    "menu.sso-token", "sso.token.read", "sso.token.delete",
+    "menu.sso-user-role", "sso.user-app-role.read", "sso.user-app-role.create", "sso.user-app-role.update",
+    "menu.sso-invite", "sso.invite-code.read", "sso.invite-code.create", "sso.invite-code.validate",
+    "sso.invite-usage.read", "sso.invite-stats.read", "sso.referral-relation.read",
+    "menu.sso-sms", "sso.sms-code.read",
+    "oss.media-meta.read", "oss.media-meta.upload", "oss.media-meta.delete",
+  ],
+  [ROLES.PLUGIN_MANAGER]: flattenPermissions(
+    ((t: Record<string, PermissionItem>) => {
+      const result: Record<string, PermissionItem> = {};
+      for (const key of [
+        "menu.course-center",
+        "menu.quiz-center",
+        "menu.point-center",
+        "menu.tag-center",
+        "menu.studio-center",
+      ]) {
+        if (t[key]) result[key] = t[key];
+      }
+      return result;
+    })(PERMISSION_TREE)
+  ).concat([
+    // ... 现有显式权限保留不动 ...
+    // ↓↓↓ 新增：理财中心（read/create/update）↓↓↓
+    "menu.wealth-center",
+    "menu.wealth-product", "wealth.wealth-product.read", "wealth.wealth-product.create", "wealth.wealth-product.update", "wealth.wealth-product.collect",
+    "wealth.wealth-nav.read", "wealth.wealth-nav.create", "wealth.wealth-nav.update",
+    "menu.wealth-company", "wealth.wealth-company.read", "wealth.wealth-company.create", "wealth.wealth-company.update",
+    "menu.wealth-collect", "wealth.wealth-collect-config.read", "wealth.wealth-collect-config.create", "wealth.wealth-collect-config.update", "wealth.wealth-collect-config.trigger",
+    "wealth.wealth-customer-product.read", "wealth.wealth-customer-product.create",
+    "menu.wealth-metrics", "wealth.wealth-risk-metric.read", "wealth.wealth-risk-metric.aggregate", "wealth.wealth-risk-metric.trend", "wealth.wealth-risk-metric.peers",
+    "wealth.wealth-recommend-config.read", "wealth.wealth-recommend-config.create", "wealth.wealth-recommend-config.update",
+    "wealth.wealth-annual-snapshot.read", "wealth.wealth-yearly-return.read", "wealth.wealth-money-income.read",
+    // ↓↓↓ 新增：SSO 扩展（read 为主）↓↓↓
+    "menu.sso-binding", "sso.third-party-binding.read", "sso.oauth-config.read",
+    "menu.sso-token", "sso.token.read",
+    "menu.sso-user-role", "sso.user-app-role.read",
+    "menu.sso-invite", "sso.invite-code.read", "sso.invite-stats.read",
+    "menu.sso-sms", "sso.sms-code.read",
+    // ↓↓↓ 新增：零散补全 ↓↓↓
+    "oss.media-meta.read",
+  ]),
+  [ROLES.INSTRUCTOR]: [
+    // ... 现有显式权限保留不动 ...
+    // ↓↓↓ 新增：理财中心（只读）↓↓↓
+    "menu.wealth-center",
+    "menu.wealth-product", "wealth.wealth-product.read", "wealth.wealth-nav.read",
+    "menu.wealth-company", "wealth.wealth-company.read",
+    "menu.wealth-collect", "wealth.wealth-collect-config.read", "wealth.wealth-customer-product.read",
+    "menu.wealth-metrics", "wealth.wealth-risk-metric.read", "wealth.wealth-recommend-config.read",
+    "wealth.wealth-annual-snapshot.read", "wealth.wealth-yearly-return.read", "wealth.wealth-money-income.read",
+    // ↓↓↓ 新增：直播工作室（只读）↓↓↓
+    "menu.studio-collect", "studio.article-draft.read", "studio.collect-source.read", "studio.collect-task.read",
+    "menu.studio-publish", "studio.publish-platform.read", "studio.publish-account.read", "studio.publish-record.read",
+    "menu.studio-stats", "studio.stat-summary.read",
+    "menu.studio-ad", "studio.ad-slot.read",
+    // ↓↓↓ 新增：零散补全（只读）↓↓↓
+    "point.rule-template.read", "point.sign-in-record.read",
+    "quiz.quiz-batch.read", "tag.tag-index.read",
+  ],
   [ROLES.USER]: [],
   // 新增 22 个角色
   [ROLES.WEBSITE_MANAGER]: centerPermissions("menu.website-center"),
@@ -293,6 +371,8 @@ export const DEFAULT_ROLE_PERMISSIONS = {
   [ROLES.WEALTH_EDITOR]: centerEditorPermissions("menu.wealth-center"),
 };
 ```
+
+**注意**：INSTRUCTOR 不含 SSO 扩展权限（系统工具敏感，讲师无需访问）。
 
 ### 3.6 ROLE_LABELS 扩展
 
@@ -390,6 +470,7 @@ export const ROLE_LABELS = {
 - 第 1 节 CT 归类与第 2 节权限 key 清单一致
 - 第 3 节角色权限通过工具函数自动计算，与第 2 节权限定义一致
 - 22 个角色对应 11 个中心，无遗漏
+- 现有 3 个角色（CHANNEL_ADMIN/PLUGIN_MANAGER/INSTRUCTOR）的权限更新已补充（第 3.5 节）
 
 ### 3. 范围检查
 - 聚焦 permissions.ts 单文件改动，适合单个实施计划
