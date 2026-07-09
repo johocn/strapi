@@ -159,6 +159,8 @@ export const PERMISSION_TREE: Record<string, PermissionItem> = {
           "exam.create": { label: "新增考试", type: "button" },
           "exam.update": { label: "编辑考试", type: "button" },
           "exam.delete": { label: "删除考试", type: "button" },
+          "quiz.exam-attempt.read": { label: "查看考试记录", type: "button" },
+          "quiz.exam-attempt.delete": { label: "删除考试记录", type: "button" },
         },
       },
       "menu.quiz-record": {
@@ -166,6 +168,15 @@ export const PERMISSION_TREE: Record<string, PermissionItem> = {
         type: "menu",
         children: {
           "quiz-record.read": { label: "查看答题记录", type: "button" },
+        },
+      },
+      "menu.quiz-batch": {
+        label: "批量考试",
+        type: "menu",
+        children: {
+          "quiz.quiz-batch.read": { label: "查看", type: "button" },
+          "quiz.quiz-batch.create": { label: "创建", type: "button" },
+          "quiz.quiz-batch.delete": { label: "删除", type: "button" },
         },
       },
     },
@@ -250,6 +261,24 @@ export const PERMISSION_TREE: Record<string, PermissionItem> = {
           "point-verification.read": { label: "查看核销记录", type: "button" },
         },
       },
+      "menu.point-rule-template": {
+        label: "规则模板",
+        type: "menu",
+        children: {
+          "point.rule-template.read": { label: "查看", type: "button" },
+          "point.rule-template.create": { label: "创建", type: "button" },
+          "point.rule-template.update": { label: "编辑", type: "button" },
+          "point.rule-template.delete": { label: "删除", type: "button" },
+        },
+      },
+      "menu.point-sign-in": {
+        label: "签到记录",
+        type: "menu",
+        children: {
+          "point.sign-in-record.read": { label: "查看", type: "button" },
+          "point.sign-in-record.export": { label: "导出", type: "button" },
+        },
+      },
     },
   },
   "menu.marketing-center": {
@@ -296,6 +325,9 @@ export const PERMISSION_TREE: Record<string, PermissionItem> = {
         type: "menu",
         children: {
           "channel-permission.set": { label: "授权渠道", type: "button" },
+          "channel.user-channel.read": { label: "查看用户渠道", type: "button" },
+          "channel.user-channel.assign": { label: "分配渠道", type: "button" },
+          "channel.user-channel.revoke": { label: "撤销渠道", type: "button" },
         },
       },
       "menu.redemption-code": {
@@ -319,7 +351,15 @@ export const PERMISSION_TREE: Record<string, PermissionItem> = {
     label: "系统工具",
     type: "menu",
     children: {
-      "menu.media": { label: "媒体资源", type: "menu" },
+      "menu.media": {
+        label: "媒体资源",
+        type: "menu",
+        children: {
+          "oss.media-meta.read": { label: "查看媒体", type: "button" },
+          "oss.media-meta.upload": { label: "上传媒体", type: "button" },
+          "oss.media-meta.delete": { label: "删除媒体", type: "button" },
+        },
+      },
       "menu.soft-delete": {
         label: "回收站",
         type: "menu",
@@ -523,6 +563,16 @@ export const PERMISSION_TREE: Record<string, PermissionItem> = {
       },
       "menu.tag-preset": { label: "分类预设", type: "menu" },
       "menu.tag-search": { label: "全局检索", type: "menu" },
+      "menu.tag-index": {
+        label: "标签索引",
+        type: "menu",
+        children: {
+          "tag.tag-index.read": { label: "查看", type: "button" },
+          "tag.tag-index.create": { label: "创建", type: "button" },
+          "tag.tag-index.update": { label: "编辑", type: "button" },
+          "tag.tag-index.delete": { label: "删除", type: "button" },
+        },
+      },
     },
   },
   "menu.studio-center": {
