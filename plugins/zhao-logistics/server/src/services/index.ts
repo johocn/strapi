@@ -9,6 +9,14 @@ import contactMatrix from "./contact-matrix";
 import quoteEngine from "./quote-engine";
 import trackingAggregator from "./tracking-aggregator";
 import dynamicForm from "./dynamic-form";
+import review from "./review";
+import subscription from "./subscription";
+import landingPage from "./landing-page";
+import conversionFunnel from "./conversion-funnel";
+import conversionEvent from "./conversion-event";
+import intentOrder from "./intent-order";
+import referral from "./referral";
+import customerProfile from "./customer-profile";
 
 export default {
   "quote-request": quoteRequest,
@@ -22,4 +30,12 @@ export default {
   "quote-engine": quoteEngine,
   "tracking-aggregator": trackingAggregator,
   "dynamic-form": dynamicForm,
+  "review": review,
+  "subscription": subscription,
+  "landing-page": landingPage,
+  "conversion-funnel": conversionFunnel,
+  "conversion-event": conversionEvent,
+  "intent-order": intentOrder,
+  "referral": referral,
+  "customer-profile": customerProfile,
 };
