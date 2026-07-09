@@ -10,6 +10,8 @@ import quoteEngine from "./quote-engine";
 import trackingAggregator from "./tracking-aggregator";
 import dynamicForm from "./dynamic-form";
 import funnelTracker from "./funnel-tracker";
+import referralEngine from "./referral-engine";
+import customerAggregator from "./customer-aggregator";
 import review from "./review";
 import subscription from "./subscription";
 import landingPage from "./landing-page";
@@ -32,6 +34,8 @@ export default {
   "tracking-aggregator": trackingAggregator,
   "dynamic-form": dynamicForm,
   "funnel-tracker": funnelTracker,
+  "referral-engine": referralEngine,
+  "customer-aggregator": customerAggregator,
   "review": review,
   "subscription": subscription,
   "landing-page": landingPage,
