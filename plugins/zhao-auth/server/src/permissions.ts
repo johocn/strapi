@@ -1152,6 +1152,15 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
     "menu.website-ai-summary", "ai-summary.read", "ai-summary.create", "ai-summary.update", "ai-summary.delete",
     "menu.website-first-truth", "first-truth.read", "first-truth.create", "first-truth.update", "first-truth.delete",
     // 物流中心权限由上方 flattenPermissions(PERMISSION_TREE) 自动包含（仅排除 system-center）
+    // SSO 扩展 + media-meta（system-center 被 flattenPermissions 排除，需显式追加）
+    "menu.sso-binding", "sso.third-party-binding.read", "sso.third-party-binding.create", "sso.third-party-binding.update",
+    "sso.oauth-config.read", "sso.oauth-config.create", "sso.oauth-config.update",
+    "menu.sso-token", "sso.token.read", "sso.token.delete",
+    "menu.sso-user-role", "sso.user-app-role.read", "sso.user-app-role.create", "sso.user-app-role.update",
+    "menu.sso-invite", "sso.invite-code.read", "sso.invite-code.create", "sso.invite-code.validate",
+    "sso.invite-usage.read", "sso.invite-stats.read", "sso.referral-relation.read",
+    "menu.sso-sms", "sso.sms-code.read",
+    "oss.media-meta.read", "oss.media-meta.upload", "oss.media-meta.delete",
   ],
   [ROLES.PLUGIN_MANAGER]: flattenPermissions(
     ((t: Record<string, PermissionItem>) => {
