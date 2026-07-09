@@ -1233,6 +1233,24 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
     "logistics.referral-stats.read",
     "menu.logistics-customer",
     "logistics.customer-profile.read", "logistics.customer-profile.update",
+    // 理财中心（read/create/update，不含 delete）
+    "menu.wealth-center",
+    "menu.wealth-product", "wealth.wealth-product.read", "wealth.wealth-product.create", "wealth.wealth-product.update", "wealth.wealth-product.collect",
+    "wealth.wealth-nav.read", "wealth.wealth-nav.create", "wealth.wealth-nav.update",
+    "menu.wealth-company", "wealth.wealth-company.read", "wealth.wealth-company.create", "wealth.wealth-company.update",
+    "menu.wealth-collect", "wealth.wealth-collect-config.read", "wealth.wealth-collect-config.create", "wealth.wealth-collect-config.update", "wealth.wealth-collect-config.trigger",
+    "wealth.wealth-customer-product.read", "wealth.wealth-customer-product.create",
+    "menu.wealth-metrics", "wealth.wealth-risk-metric.read", "wealth.wealth-risk-metric.aggregate", "wealth.wealth-risk-metric.trend", "wealth.wealth-risk-metric.peers",
+    "wealth.wealth-recommend-config.read", "wealth.wealth-recommend-config.create", "wealth.wealth-recommend-config.update",
+    "wealth.wealth-annual-snapshot.read", "wealth.wealth-yearly-return.read", "wealth.wealth-money-income.read",
+    // SSO 扩展（read 为主）
+    "menu.sso-binding", "sso.third-party-binding.read", "sso.oauth-config.read",
+    "menu.sso-token", "sso.token.read",
+    "menu.sso-user-role", "sso.user-app-role.read",
+    "menu.sso-invite", "sso.invite-code.read", "sso.invite-stats.read",
+    "menu.sso-sms", "sso.sms-code.read",
+    // 零散补全
+    "oss.media-meta.read",
   ]),
   [ROLES.INSTRUCTOR]: [
     // 课程中心
