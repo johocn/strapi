@@ -2335,3 +2335,1316 @@ menu.study-center（学习数据）
 - `answers` 为 JSON，按 questionId 存储用户作答，关联 quiz-record 明细
 - `totalScore` 由各题 `score`/`teacherScore` 汇总，主观题需人工评分后回填
 - 关闭 draftAndPublish，记录直接生效
+
+---
+
+## Ch8 积分中心
+
+积分中心（menu.point-center）承载积分类型、规则模板、获取/扣除规则、积分记录、商品兑换、自提点、签到与渠道核销全链路，CT 由 `plugin::zhao-point` 提供。
+
+### 8.1 积分规则（point-rule）
+
+**用途**：定义积分获取与扣除规则及频次限制。
+
+**所属插件**：plugin::zhao-point
+**集合名**：zhao_point_rules
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| action | string | 是 | 行为标识，唯一 |
+| category | enumeration | 是 | 积分类别：increase / decrease |
+| points | integer | 是 | 积分变动值 |
+| description | string | 否 | 描述，maxLength 200 |
+| enabled | boolean | 否 | 是否启用，默认 true |
+| limitPerDay | integer | 否 | 每日总限制，默认 0（不限） |
+| limitPerUser | integer | 否 | 每用户总限制，默认 0 |
+| limitPerDayPerUser | integer | 否 | 每用户每日限制，默认 0 |
+| isOneTime | boolean | 否 | 是否一次性，默认 false |
+| startTime | time | 否 | 每日生效开始时间 |
+| endTime | time | 否 | 每日生效结束时间 |
+| applicableChannels | json | 否 | 适用渠道列表 |
+| priority | integer | 否 | 优先级，默认 0 |
+| taskGroup | enumeration | 否 | 任务分组：daily / interact / learn / social / onetime / other / redeem / penalty，默认 other |
+| extraConfig | json | 否 | 扩展配置 |
+| deletedAt | datetime | 否 | 软删除时间戳 |
+
+#### 操作步骤
+
+- **查看**：进入积分中心 → 积分规则 → 按 category/taskGroup/enabled 筛选
+- **创建**：点击"创建" → 填写 action/category/points → 设置 limitPerDay/isOneTime 等限制 → 保存
+- **编辑**：选择规则 → 编辑（如调整 points、停用 enabled）→ 保存
+- **删除**：选择规则 → 删除（仅 admin / channel-admin / plugin-manager 角色）
+
+#### 业务规则
+
+- `category=increase` 为获取积分，`decrease` 为扣除积分
+- `action` 全局唯一，作为积分记录的 `action` 来源键
+- 限制优先级：`isOneTime`（一次性）> `limitPerUser`（总量）> `limitPerDayPerUser`（每日）> `limitPerDay`（全局每日）
+- `startTime`/`endTime` 为日内时间窗，控制规则仅在每日该时段生效
+- `taskGroup` 用于前台任务分组展示，`penalty`/`redeem` 为特殊分组
+- `applicableChannels` 为空则全渠道适用，否则仅命中渠道触发
+- 关闭 draftAndPublish，规则直接生效
+
+### 8.2 规则模板（rule-template）
+
+**用途**：沉淀积分规则预设与字段约束，便于批量创建规则。
+
+**所属插件**：plugin::zhao-point
+**集合名**：zhao_rule_templates
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| name | string | 是 | 模板名称，maxLength 100 |
+| description | text | 否 | 描述 |
+| category | enumeration | 是 | 类别：increase / decrease |
+| defaultPoints | integer | 否 | 默认积分值，默认 0 |
+| defaultLimitPerDay | integer | 否 | 默认每日限制，默认 0 |
+| defaultIsOneTime | boolean | 否 | 默认是否一次性，默认 false |
+| configSchema | json | 是 | 配置字段 schema |
+| builtIn | boolean | 否 | 是否内置模板，默认 false |
+| enabled | boolean | 否 | 是否启用，默认 true |
+
+#### 操作步骤
+
+- **查看**：进入积分中心 → 规则模板 → 按 category/builtIn 筛选
+- **创建**：点击"创建" → 填写 name/category → 编辑 configSchema → 设置默认值 → 保存
+- **编辑**：选择模板 → 编辑 → 保存（`builtIn=true` 的模板建议不修改）
+- **删除**：选择模板 → 删除（内置模板禁止删除）
+
+#### 业务规则
+
+- `configSchema` 定义由该模板创建规则时的可填字段与校验规则
+- `builtIn=true` 为系统内置模板，不可删除，编辑需谨慎
+- `defaultPoints`/`defaultLimitPerDay`/`defaultIsOneTime` 作为创建规则时的预填值
+- 关闭 draftAndPublish，模板直接生效
+
+### 8.3 积分记录（point-record）
+
+**用途**：记录用户积分变动明细与变动后余额。
+
+**所属插件**：plugin::zhao-point
+**集合名**：zhao_point_records
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| user | relation → users-permissions.user | 是 | 用户（manyToOne） |
+| action | string | 是 | 行为标识 |
+| type | enumeration | 是 | 类型：increase（获取）/ decrease（消耗/扣除） |
+| points | integer | 是 | 积分变动值 |
+| balance | integer | 是 | 变动后余额 |
+| source | string | 否 | 来源，maxLength 64 |
+| method | string | 否 | 获取方式，maxLength 100 |
+| orderId | string | 否 | 关联订单 ID，maxLength 64 |
+| remark | text | 否 | 备注 |
+| operator | relation → admin::user | 否 | 操作人（manyToOne，人工调整时回填） |
+| expiresAt | datetime | 否 | 预计过期时间 |
+| expiredAt | datetime | 否 | 实际过期时间 |
+| channel | relation → zhao-channel.channel | 否 | 渠道（manyToOne） |
+| userChannel | relation → zhao-channel.channel | 否 | 用户所属渠道（manyToOne） |
+
+#### 操作步骤
+
+- **查看**：进入积分中心 → 积分记录 → 按 user/type/channel/action 筛选
+- **创建**：主要由业务行为自动写入；后台可点击"创建" → 选择 user → 填写 action/type/points/balance → 保存（需人工调整权限）
+- **编辑**：禁止编辑（记录数据不可变，保证余额链准确）
+- **删除**：选择记录 → 删除（仅 admin 角色，且需同步修正余额链）
+
+#### 业务规则
+
+- `type=increase` 表示获取积分，`decrease` 表示消耗或扣除
+- `balance` 为本次变动后的用户余额，必须与前一条记录余额衔接，构成不可篡改的余额链
+- `action` 对应 point-rule 的 `action`，`source`/`method` 标记触发来源与方式
+- `operator` 仅在人工调整（adjust）时回填，关联 admin::user
+- `expiresAt`/`expiredAt` 配合 point-config 的 `expiryEnabled`，过期积分由定时任务清理
+- `channel` 为发生渠道，`userChannel` 为用户归属渠道，跨渠道场景二者可能不同
+- 关闭 draftAndPublish，记录直接生效
+
+### 8.4 积分配置（point-config）
+
+**用途**：积分模块全局开关、兑换与过期策略配置。
+
+**所属插件**：plugin::zhao-point
+**集合名**：zhao_point_configs
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| moduleEnabled | boolean | 否 | 模块总开关，默认 true |
+| earnEnabled | boolean | 否 | 获取积分开关，默认 true |
+| redeemEnabled | boolean | 否 | 兑换开关，默认 true |
+| expiryEnabled | boolean | 否 | 过期机制开关，默认 false |
+| expiryDays | integer | 否 | 积分有效期天数，默认 365 |
+| expiryReminderDays | integer | 否 | 过期提前提醒天数，默认 7 |
+| minRedeemPoints | integer | 否 | 最小兑换积分，默认 0 |
+| maxDailyEarn | integer | 否 | 每日获取上限，默认 0（不限） |
+| defaultExchangeRate | decimal(10,2) | 否 | 默认兑换率，默认 1.00 |
+| remark | text | 否 | 备注 |
+| signInEnabled | boolean | 否 | 签到开关，默认 true |
+| tasksEnabled | boolean | 否 | 任务体系开关，默认 true |
+| quizRetryEnabled | boolean | 否 | 题库重试获积分开关，默认 true |
+| quizMaxRetryCount | integer | 否 | 题库最大重试次数，默认 1 |
+| maxDailyQuiz | integer | 否 | 每日题库获积分上限，默认 3 |
+| tencentMapKey | string | 否 | 腾讯地图 key（自提点定位） |
+
+#### 操作步骤
+
+- **查看**：进入积分中心 → 积分配置 → 查看当前全局配置
+- **创建/编辑**：通常仅一条全局配置；选择记录 → 编辑各开关与阈值 → 保存
+- **删除**：不建议删除（全局唯一配置）
+
+#### 业务规则
+
+- `moduleEnabled` 为总开关，关闭后所有积分行为停止
+- `earnEnabled`/`redeemEnabled` 分别控制获取与兑换，可独立开关
+- `expiryEnabled=true` 时启用积分过期，`expiryDays` 控制有效期，`expiryReminderDays` 控制提醒
+- `minRedeemPoints` 限制单次兑换最低积分门槛
+- `maxDailyEarn` 限制单用户每日获取上限，0 表示不限
+- 题库相关配置与 quiz-center 联动：`quizRetryEnabled` 控制重试是否获积分，`maxDailyQuiz` 限制每日获积分题数
+- 关闭 draftAndPublish，配置直接生效
+
+### 8.5 积分类型（point-type）
+
+**用途**：定义积分分类与独立过期策略。
+
+**所属插件**：plugin::zhao-point
+**集合名**：zhao_point_types
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| name | string | 是 | 类型名称 |
+| code | string | 是 | 类型编码，唯一 |
+| description | string | 否 | 描述，maxLength 500 |
+| enabled | boolean | 否 | 是否启用，默认 true |
+| canExpire | boolean | 否 | 该类型积分是否可过期，默认 false |
+| expireDays | integer | 否 | 过期天数，默认 365 |
+| deletedAt | datetime | 否 | 软删除时间戳 |
+
+#### 操作步骤
+
+- **查看**：进入积分中心 → 积分类型 → 按 enabled 筛选
+- **创建**：点击"创建" → 填写 name/code → 设置 canExpire/expireDays → 保存
+- **编辑**：选择类型 → 编辑 → 保存（`code` 已被引用时不建议修改）
+- **删除**：选择类型 → 删除（已被 point-record 引用时谨慎）
+
+#### 业务规则
+
+- `code` 全局唯一，作为积分记录与规则的类型标识
+- `canExpire=true` 时该类型积分按 `expireDays` 独立过期，覆盖 point-config 全局策略
+- `expireDays` 仅在 `canExpire=true` 时生效
+- 关闭 draftAndPublish，类型直接生效
+
+### 8.6 积分商品（point-product）
+
+**用途**：管理积分商城商品、库存、配送与销售模式。
+
+**所属插件**：plugin::zhao-point
+**集合名**：zhao_point_products
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| name | string | 是 | 商品名称，maxLength 100 |
+| subtitle | string | 否 | 副标题，maxLength 200 |
+| description | text | 否 | 描述 |
+| detail | richtext | 否 | 详情 |
+| category | string | 否 | 分类，maxLength 50 |
+| coverImage | media | 否 | 封面图（single，images） |
+| images | media | 否 | 图片集（multiple，images） |
+| video | media | 否 | 视频（single，videos） |
+| pointsCost | integer | 是 | 积分价格 |
+| originalPrice | decimal(10,2) | 否 | 原价 |
+| stock | integer | 否 | 剩余库存，默认 0 |
+| totalStock | integer | 否 | 总库存，默认 0 |
+| deliveryType | enumeration | 是 | 配送方式：self_pickup / express / both |
+| salesMode | enumeration | 否 | 销售模式：points_only / purchase_only / hybrid，默认 points_only |
+| price | decimal(10,2) | 否 | 现金价格（hybrid/purchase_only 时使用） |
+| channel | relation → zhao-channel.channel | 否 | 归属渠道（manyToOne） |
+| allowCrossChannel | boolean | 否 | 允许跨渠道兑换，默认 false |
+| allowGlobalPoints | boolean | 否 | 允许全局积分兑换，默认 true |
+| status | enumeration | 否 | 上下架状态：on_shelf / off_shelf，默认 on_shelf |
+| maxPerUser | integer | 否 | 每用户限购，默认 0（不限） |
+| sortOrder | integer | 否 | 排序，默认 0 |
+| deletedAt | datetime | 否 | 软删除时间戳 |
+
+#### 操作步骤
+
+- **查看**：进入积分中心 → 积分商品 → 按 status/category/channel 筛选
+- **创建**：点击"创建" → 填写 name/pointsCost → 选择 deliveryType/salesMode → 上传封面/图片 → 设置库存 → 保存
+- **编辑**：选择商品 → 编辑（如调整 stock、上下架 status）→ 保存
+- **删除**：选择商品 → 删除（仅 admin / channel-admin / plugin-manager 角色）
+
+#### 业务规则
+
+- 状态流转：`on_shelf`（上架）↔ `off_shelf`（下架），下架后前台不可见
+- `deliveryType`：`self_pickup` 仅自提、`express` 仅快递、`both` 两者皆可
+- `salesMode`：`points_only` 纯积分、`purchase_only` 纯现金、`hybrid` 积分+现金
+- `stock` 随兑换扣减，`totalStock` 为历史总量，`stock=0` 时自动不可兑
+- `maxPerUser>0` 限制单用户兑换数量
+- `allowCrossChannel=false` 时仅本渠道用户可兑，`allowGlobalPoints` 控制是否允许跨类型积分
+- 关闭 draftAndPublish，商品直接生效
+
+### 8.7 积分兑换（point-redemption）
+
+**用途**：记录用户积分兑换订单及履约状态。
+
+**所属插件**：plugin::zhao-point
+**集合名**：zhao_point_redemptions
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| user | relation → users-permissions.user | 是 | 兑换用户（manyToOne） |
+| product | relation → point-product | 否 | 关联商品（manyToOne） |
+| itemName | string | 是 | 商品名称，maxLength 100 |
+| pointsCost | integer | 是 | 单个积分价 |
+| quantity | integer | 否 | 数量，默认 1 |
+| totalCost | integer | 是 | 总积分消耗 |
+| status | enumeration | 否 | 状态：pending / approved / rejected / shipped / completed / cancelled，默认 pending |
+| deliveryType | enumeration | 否 | 配送方式：self_pickup / express |
+| pickupCode | string | 否 | 自提码，maxLength 20 |
+| pickupLocation | relation → pickup-location | 否 | 自提点（manyToOne） |
+| salesMode | enumeration | 否 | 销售模式：points_only / purchase_only / hybrid |
+| priceAmount | decimal(10,2) | 否 | 现金金额 |
+| pointsAmount | integer | 否 | 积分金额 |
+| expressCompany | string | 否 | 快递公司，maxLength 50 |
+| trackingNumber | string | 否 | 快递单号，maxLength 100 |
+| receiverName | string | 否 | 收货人，maxLength 50 |
+| receiverPhone | string | 否 | 收货电话，maxLength 20 |
+| receiverAddress | text | 否 | 收货地址 |
+| remark | text | 否 | 备注 |
+| operator | relation → admin::user | 否 | 操作人（manyToOne） |
+| completedAt | datetime | 否 | 完成时间 |
+| channel | relation → zhao-channel.channel | 否 | 渠道（manyToOne） |
+| deductionDetail | json | 否 | 积分扣减明细 |
+| deletedAt | datetime | 否 | 软删除时间戳 |
+
+#### 操作步骤
+
+- **查看**：进入积分中心 → 积分兑换 → 按 status/deliveryType/user 筛选
+- **创建**：主要由前台兑换行为自动写入；后台可点击"创建" → 选择 user/product → 填写 totalCost → 保存
+- **编辑**：选择订单 → 编辑（更新 status、回填 trackingNumber/completedAt）→ 保存
+- **删除**：选择订单 → 删除（仅 admin / channel-admin 角色）
+
+#### 业务规则
+
+- 状态流转：`pending`（待处理）→ `approved`（已审核）→ `shipped`（已发货）→ `completed`（已完成）；分支 `rejected`（拒绝）/ `cancelled`（取消）
+- `deliveryType=self_pickup` 需关联 `pickupLocation` 并生成 `pickupCode`，核销后置 `completed`
+- `deliveryType=express` 需在 `shipped` 时回填 `expressCompany`/`trackingNumber`，签收后置 `completed` 并回填 `completedAt`
+- `totalCost = pointsCost × quantity`，`deductionDetail` 记录多积分类型扣减明细
+- `salesMode=hybrid` 时 `priceAmount`+`pointsAmount` 组合支付
+- 兑换扣减积分写入 point-record（type=decrease），取消/拒绝需逆向回补
+- 关闭 draftAndPublish，订单直接生效
+
+### 8.8 自提点（pickup-location）
+
+**用途**：维护商品自提点位置与营业信息。
+
+**所属插件**：plugin::zhao-point
+**集合名**：zhao_pickup_locations
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| name | string | 是 | 自提点名称，maxLength 100 |
+| address | text | 否 | 地址 |
+| latitude | decimal(10,7) | 否 | 纬度 |
+| longitude | decimal(10,7) | 否 | 经度 |
+| phone | string | 否 | 联系电话，maxLength 20 |
+| businessHours | string | 否 | 营业时间，maxLength 200 |
+| businessLicense | media | 否 | 营业执照（single，images） |
+| coverImage | media | 否 | 封面图（single，images） |
+| description | text | 否 | 描述 |
+| status | enumeration | 否 | 状态：active / inactive，默认 active |
+| sortOrder | integer | 否 | 排序，默认 0 |
+| channels | relation → zhao-channel.channel | 否 | 关联渠道（manyToMany） |
+| deletedAt | datetime | 否 | 软删除时间戳 |
+
+#### 操作步骤
+
+- **查看**：进入积分中心 → 自提点 → 按 status 筛选
+- **创建**：点击"创建" → 填写 name/address → 设置经纬度与营业时间 → 关联 channels → 保存
+- **编辑**：选择自提点 → 编辑（如停用 status=inactive）→ 保存
+- **删除**：选择自提点 → 删除（被 point-redemption 引用时谨慎）
+
+#### 业务规则
+
+- `status=active` 的自提点才可在兑换时选择
+- `latitude`/`longitude` 用于前台地图定位，配合 point-config 的 `tencentMapKey`
+- `channels` 为空则全渠道可见，否则仅关联渠道用户可选
+- 关闭 draftAndPublish，自提点直接生效
+
+### 8.9 签到记录（sign-in-record）
+
+**用途**：记录用户每日签到及连签奖励。
+
+**所属插件**：plugin::zhao-point
+**集合名**：zhao_point_sign_in_records
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| user | relation → users-permissions.user | 是 | 签到用户（manyToOne） |
+| signInDate | date | 是 | 签到日期 |
+| streakDays | integer | 否 | 连续签到天数，默认 1 |
+| pointsEarned | integer | 否 | 本次获得积分，默认 0 |
+| isStreakReward | boolean | 否 | 是否为连签奖励，默认 false |
+
+#### 操作步骤
+
+- **查看**：进入积分中心 → 签到记录 → 按 user/signInDate 筛选
+- **创建**：主要由前台签到行为自动写入；后台可点击"创建" → 选择 user → 填写 signInDate → 保存
+- **编辑**：禁止编辑（签到数据不可变）
+- **删除**：选择记录 → 删除（仅 admin 角色）
+
+#### 业务规则
+
+- `user`+`signInDate` 唯一，同一用户每日仅可签到一次
+- `streakDays` 由前一天记录推算，连续签到累加，中断归 1
+- `isStreakReward=true` 表示该条为连签里程碑奖励，`pointsEarned` 为奖励积分
+- 签到获积分由 point-rule 中 `taskGroup=daily` 的规则触发，写入 point-record
+- 关闭 draftAndPublish，记录直接生效
+
+### 8.10 渠道核销（channel-verification）
+
+**用途**：记录渠道上下级核销行为的审计日志。
+
+**所属插件**：plugin::zhao-point
+**集合名**：zhao_channel_verifications
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| verifier | relation → users-permissions.user | 是 | 核销人（manyToOne） |
+| verifiedUser | relation → users-permissions.user | 是 | 被核销用户（manyToOne） |
+| channel | relation → zhao-channel.channel | 是 | 核销渠道（manyToOne） |
+| direction | enumeration | 是 | 方向：superior_to_subordinate / subordinate_to_superior |
+| method | enumeration | 是 | 方式：qr_scan / manual |
+| status | enumeration | 否 | 状态：pending / approved / rejected，默认 pending |
+| qrCodeToken | string | 否 | 二维码 token，唯一，maxLength 64 |
+| qrCodeExpiresAt | datetime | 否 | 二维码过期时间 |
+| location | json | 否 | 核销位置信息 |
+| remark | text | 否 | 备注 |
+| verifiedAt | datetime | 否 | 核销完成时间 |
+
+#### 操作步骤
+
+- **查看**：进入积分中心 → 渠道核销 → 按 status/direction/method 筛选
+- **创建**：主要由扫码核销行为自动写入；后台可点击"创建" → 选择 verifier/verifiedUser/channel → 设置 direction/method → 保存
+- **编辑**：选择记录 → 编辑（更新 status、回填 verifiedAt）→ 保存
+- **删除**：选择记录 → 删除（仅 admin / channel-admin 角色）
+
+#### 业务规则
+
+- `direction` 标识核销方向：`superior_to_subordinate`（上级核销下级）/ `subordinate_to_superior`（下级核销上级）
+- `method=qr_scan` 需生成 `qrCodeToken` 并设置 `qrCodeExpiresAt`，过期后不可核销
+- 状态流转：`pending`（待核销）→ `approved`（已通过）/ `rejected`（已拒绝），通过时回填 `verifiedAt`
+- `location` 记录核销时的地理位置，用于风控审计
+- 核销通过后联动渠道成员关系与积分发放
+- 关闭 draftAndPublish，记录直接生效
+
+---
+
+## Ch9 营销中心
+
+营销中心（menu.marketing-center）承载渠道层级树、用户渠道归属、邀请码分销链与渠道成员管理，CT 由 `plugin::zhao-channel` 提供。
+
+### 9.1 渠道（channel）
+
+**用途**：管理渠道层级树及站点关联，作为多租户顶层隔离单元。
+
+**所属插件**：plugin::zhao-channel
+**集合名**：zhao_channels
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| name | string | 是 | 渠道名称，maxLength 100 |
+| code | string | 是 | 渠道编码，唯一，maxLength 32 |
+| channelTier | enumeration | 是 | 渠道层级：root / core / senior / global / authorized / official / partner / agent / national / regional / city / county / local / store，默认 store |
+| parentChannel | relation → channel | 否 | 父级渠道（manyToOne，inversedBy childChannels） |
+| childChannels | relation → channel | 否 | 子级渠道（oneToMany，mappedBy parentChannel） |
+| sites | relation → site-config | 否 | 关联站点（manyToMany，inversedBy channels） |
+| status | boolean | 否 | 启用状态，默认 true |
+| description | text | 否 | 描述 |
+| path | text | 否 | 层级路径 |
+| depth | integer | 否 | 层级深度，默认 0，min 0 max 7 |
+| deletedAt | datetime | 否 | 软删除时间戳 |
+| extraConfig | json | 否 | 扩展配置，默认 "{}" |
+
+#### 操作步骤
+
+- **查看**：进入营销中心 → 渠道 → 按 channelTier/status/parentChannel 筛选
+- **创建**：点击"创建" → 填写 name/code → 选择 channelTier 与 parentChannel → 关联 sites → 保存
+- **编辑**：选择渠道 → 编辑（如调整层级、停用 status）→ 保存（`code` 已被引用时不建议修改）
+- **删除**：选择渠道 → 删除（存在子渠道时禁止删除）
+
+#### 业务规则
+
+- `code` 全局唯一，作为渠道标识贯穿各中心
+- `channelTier` 定义渠道等级，`root` 为顶层根渠道，`store` 为最末级门店
+- `parentChannel`/`childChannels` 构成自引用层级树，`depth` 标识层级深度（最大 7 层）
+- `path` 缓存完整层级路径，用于快速查询祖先/后代
+- `sites` 关联该渠道可访问的站点（manyToMany），一个渠道可关联多站点
+- `status=false` 停用渠道，其下用户与内容不再生效
+- 关闭 draftAndPublish，渠道直接生效
+
+### 9.2 用户渠道关联（user-channel）
+
+**用途**：记录用户与渠道的归属关系及授权来源。
+
+**所属插件**：plugin::zhao-channel
+**集合名**：zhao_user_channels
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| user | relation → users-permissions.user | 否 | 用户（manyToOne） |
+| channel | relation → channel | 否 | 渠道（manyToOne） |
+| grantedBy | relation → users-permissions.user | 否 | 授权人（manyToOne） |
+
+#### 操作步骤
+
+- **查看**：进入营销中心 → 用户渠道关联 → 按 user/channel 筛选
+- **创建**：点击"创建" → 选择 user/channel → 选择 grantedBy → 保存
+- **编辑**：选择记录 → 编辑 → 保存
+- **删除**：选择记录 → 删除（仅 admin / channel-admin 角色）
+
+#### 业务规则
+
+- 一个用户可关联多个渠道（多对多），实现跨渠道归属
+- `grantedBy` 记录授权操作人，用于审计
+- 该关系为积分记录 `userChannel`、兑换 `channel` 等字段的来源
+- 关闭 draftAndPublish，记录直接生效
+
+### 9.3 用户邀请码（user-invite）
+
+**用途**：管理用户邀请码与分销链信息。
+
+**所属插件**：plugin::zhao-channel
+**集合名**：zhao_user_invites
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| user | relation → users-permissions.user | 否 | 所属用户（oneToOne） |
+| inviteCode | string | 是 | 邀请码，唯一，maxLength 16 |
+| invitedBy | relation → users-permissions.user | 否 | 邀请人（manyToOne） |
+| inviteChannel | relation → channel | 否 | 邀请归属渠道（manyToOne） |
+| inviteMethod | enumeration | 否 | 邀请方式：invite_code / organic，默认 organic |
+| distributionPath | text | 否 | 分销路径 |
+| distributionDepth | integer | 否 | 分销深度，默认 0，min 0 max 2 |
+
+#### 操作步骤
+
+- **查看**：进入营销中心 → 用户邀请码 → 按 inviteMethod/inviteChannel 筛选
+- **创建**：点击"创建" → 选择 user → 填写 inviteCode → 设置 invitedBy/inviteChannel → 保存
+- **编辑**：选择记录 → 编辑 → 保存（`inviteCode` 已被使用时不建议修改）
+- **删除**：选择记录 → 删除（仅 admin / channel-admin 角色）
+
+#### 业务规则
+
+- `user` 为 oneToOne，每个用户对应一条邀请码记录
+- `inviteCode` 全局唯一，作为用户专属邀请码
+- `inviteMethod`：`invite_code` 通过邀请码注册、`organic` 自然注册
+- `distributionDepth` 限制分销层级（最大 2 层），`distributionPath` 缓存完整上级链
+- `invitedBy` 记录直接邀请人，与 sso-referral-relation 联动构建推荐树
+- 关闭 draftAndPublish，记录直接生效
+
+### 9.4 渠道成员关联（channel-member）
+
+**用途**：管理渠道成员及成员角色。
+
+**所属插件**：plugin::zhao-channel
+**集合名**：zhao_channel_members
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| channel | relation → channel | 否 | 渠道（manyToOne，inversedBy members） |
+| user | relation → users-permissions.user | 否 | 成员用户（manyToOne） |
+| role | enumeration | 是 | 成员角色：owner / admin / member，默认 member |
+| invitedBy | relation → users-permissions.user | 否 | 邀请人（manyToOne） |
+| isCurrent | boolean | 否 | 是否为用户当前渠道，默认 false |
+
+#### 操作步骤
+
+- **查看**：进入营销中心 → 渠道成员关联 → 按 channel/role 筛选
+- **创建**：点击"创建" → 选择 channel/user → 设置 role → 保存
+- **编辑**：选择记录 → 编辑（如调整 role、设置 isCurrent）→ 保存
+- **删除**：选择记录 → 删除（`owner` 角色禁止删除）
+
+#### 业务规则
+
+- `role`：`owner`（渠道所有者）/ `admin`（渠道管理员）/ `member`（普通成员）
+- `isCurrent=true` 标识用户当前活跃渠道，同一用户仅一条 `isCurrent=true`
+- `owner` 为渠道创建者，每个渠道仅一个，不可删除
+- `invitedBy` 记录邀请加入的操作人
+- 关闭 draftAndPublish，记录直接生效
+
+---
+
+## Ch10 系统中心
+
+系统中心（menu.system-center）聚合多租户站点配置、SSO 身份体系、三方登录与权限管理，CT 跨 `plugin::zhao-common`、`plugin::zhao-sso`、`plugin::zhao-third`、`plugin::zhao-auth` 四个插件。
+
+### 10.1 站点配置（site-config）
+
+**用途**：多租户站点核心配置，定义品牌、SEO、功能开关与渠道归属。
+
+**所属插件**：plugin::zhao-common
+**集合名**：zhao_site_configs
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| siteName | string | 否 | 站点名称，maxLength 100 |
+| siteDescription | text | 否 | 站点描述 |
+| logo | media | 否 | Logo（single，images） |
+| favicon | media | 否 | favicon（single，images） |
+| icpNumber | string | 否 | ICP 备案号，maxLength 50 |
+| seoKeywords | string | 否 | SEO 关键词，maxLength 500 |
+| seoDescription | text | 否 | SEO 描述 |
+| tencentMapKey | string | 否 | 腾讯地图 key，maxLength 64 |
+| shareTitle | string | 否 | 分享标题，maxLength 100 |
+| shareDescription | string | 否 | 分享描述，maxLength 200 |
+| shareImage | media | 否 | 分享图（single，images） |
+| customerServiceUrl | string | 否 | 客服链接，maxLength 500 |
+| domain | string | 否 | 站点域名，唯一，maxLength 255 |
+| channels | relation → channel | 否 | 关联渠道（manyToMany，mappedBy sites） |
+| featureFlags | json | 否 | 功能开关：sso / points / quiz / course / channel / thirdParty / oss / website |
+| template | relation → site-template | 否 | 站点模板（manyToOne，inversedBy sites） |
+| extraConfig | json | 否 | 扩展配置 |
+| themeConfig | json | 否 | 主题配置，默认 "{}" |
+| channelUsage | enumeration | 是 | 渠道使用模式：site_only / site_and_cross / site_cross_user，默认 site_cross_user |
+| tags | relation → tag | 否 | 标签（oneToMany，mappedBy site） |
+| tagGroups | relation → tag-group | 否 | 标签分组（oneToMany，mappedBy site） |
+| website_* | relation | 否 | 官网中心内容关联（article / case / faq / tutorial / product 等共 15 项 oneToMany） |
+| logistics_* | relation | 否 | 物流中心内容关联（quote-request / tracking-shipment / landing-page 等共 15 项 oneToMany） |
+
+#### 操作步骤
+
+- **查看**：进入系统中心 → 站点配置 → 按 domain/channelUsage 筛选
+- **创建**：点击"创建" → 填写 siteName/domain → 配置品牌与 SEO → 设置 featureFlags → 关联 channels → 保存
+- **编辑**：选择站点 → 编辑（如调整 featureFlags、切换 channelUsage）→ 保存
+- **删除**：选择站点 → 删除（仅 admin 角色，存在关联内容时禁止删除）
+
+#### 业务规则
+
+- 多租户核心：`domain` 全局唯一，决定前台访问入口
+- `channels` 关联该站点所属渠道（manyToMany），一个站点可属多个渠道
+- `featureFlags` 为功能开关 JSON，控制各中心模块在站点的启用状态
+- `channelUsage` 定义渠道使用模式：`site_only`（仅站点）/ `site_and_cross`（站点+跨站）/ `site_cross_user`（站点+跨站+用户，默认）
+- `template` 关联 site-template，创建时可继承模板预设
+- `website_*`/`logistics_*` 反向聚合各中心归属本站点的内容，用于级联查询与清理
+- `tags`/`tagGroups` 关联标签体系，站点级标签仅本站可见
+- 关闭 draftAndPublish，配置直接生效
+
+### 10.2 站点模板（site-template）
+
+**用途**：定义租户配置模板的预设值与字段约束。
+
+**所属插件**：plugin::zhao-common
+**集合名**：zhao_site_templates
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| name | string | 是 | 模板名称，maxLength 100 |
+| displayName | string | 否 | 显示名称，maxLength 100 |
+| description | text | 否 | 描述 |
+| presetConfig | json | 是 | 预设配置 |
+| fieldConstraints | json | 是 | 字段约束 |
+| enabled | boolean | 否 | 是否启用，默认 true |
+| isDefault | boolean | 否 | 是否默认模板，默认 false |
+| sites | relation → site-config | 否 | 应用该模板的站点（oneToMany，mappedBy template） |
+| themeConfig | json | 否 | 主题配置，默认 "{}" |
+
+#### 操作步骤
+
+- **查看**：进入系统中心 → 站点模板 → 按 enabled/isDefault 筛选
+- **创建**：点击"创建" → 填写 name → 编辑 presetConfig/fieldConstraints → 保存
+- **编辑**：选择模板 → 编辑 → 保存（已被站点引用时谨慎修改约束）
+- **删除**：选择模板 → 删除（`isDefault=true` 或被引用时禁止删除）
+
+#### 业务规则
+
+- `presetConfig` 为创建站点时的预填配置，`fieldConstraints` 定义字段校验规则
+- `isDefault=true` 的模板为系统默认，新建站点未指定模板时使用
+- `sites` 反向关联所有应用该模板的站点
+- `themeConfig` 定义主题预设，可被 site-config 的 `themeConfig` 继承
+- 关闭 draftAndPublish，模板直接生效
+
+### 10.3 SSO 用户（sso-user）
+
+**用途**：SSO 中心化用户主表，记录身份与登录状态。
+
+**所属插件**：plugin::zhao-sso
+**集合名**：sso_users
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| uuid | string | 是 | 用户 UUID，唯一 |
+| username | string | 否 | 用户名，唯一 |
+| mobile | string | 否 | 手机号，唯一 |
+| email | email | 否 | 邮箱，唯一 |
+| password_hash | string | 否 | 密码哈希 |
+| avatar_url | string | 否 | 头像 URL |
+| nickname | string | 否 | 昵称 |
+| status | enumeration | 是 | 状态：active / blocked / inactive，默认 active |
+| register_channel | string | 否 | 注册渠道 |
+| last_login_channel | string | 否 | 最后登录渠道 |
+| invite_code_used | string | 否 | 注册时使用的邀请码 |
+| invited_by | integer | 否 | 邀请人 ID |
+| utm_source | string | 否 | UTM 来源 |
+| utm_medium | string | 否 | UTM 媒介 |
+| utm_campaign | string | 否 | UTM 活动 |
+| last_login_at | datetime | 否 | 最后登录时间 |
+| login_count | integer | 是 | 登录次数，默认 0 |
+| password_changed_at | datetime | 否 | 密码修改时间 |
+| third_party_bindings | relation → sso-third-party-binding | 否 | 三方绑定（oneToMany，mappedBy user） |
+
+#### 操作步骤
+
+- **查看**：进入系统中心 → SSO 用户 → 按 status/register_channel 筛选
+- **创建**：主要由注册流程自动写入；后台可点击"创建" → 填写 uuid/username/mobile → 设置 status → 保存
+- **编辑**：选择用户 → 编辑（如封禁 status=blocked、重置密码）→ 保存
+- **删除**：选择用户 → 删除（仅 admin 角色，需同步清理关联令牌与绑定）
+
+#### 业务规则
+
+- `uuid` 全局唯一，为 SSO 用户主标识；`username`/`mobile`/`email` 各自唯一
+- `status`：`active`（正常）/ `blocked`（封禁）/ `inactive`（未激活），`blocked` 后禁止登录
+- `login_count` 每次成功登录+1，`last_login_at`/`last_login_channel` 记录最近登录
+- `invite_code_used`/`invited_by` 记录注册来源，与 sso-referral-relation 联动
+- `register_channel` 标识注册渠道，用于渠道归因
+- `third_party_bindings` 反向关联所有三方账号绑定
+- 关闭 draftAndPublish，用户直接生效
+
+### 10.4 SSO 应用（sso-app）
+
+**用途**：注册接入 SSO 的应用及授权配置。
+
+**所属插件**：plugin::zhao-sso
+**集合名**：sso_apps
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| app_code | string | 是 | 应用编码，唯一 |
+| app_name | string | 是 | 应用名称 |
+| app_secret | string | 是 | 应用密钥 |
+| redirect_uris | json | 是 | 回调 URI 列表 |
+| allowed_grant_types | json | 是 | 允许的授权类型 |
+| is_active | boolean | 是 | 是否启用，默认 true |
+| description | string | 否 | 描述 |
+
+#### 操作步骤
+
+- **查看**：进入系统中心 → SSO 应用 → 按 is_active 筛选
+- **创建**：点击"创建" → 填写 app_code/app_name/app_secret → 配置 redirect_uris/allowed_grant_types → 保存
+- **编辑**：选择应用 → 编辑（如更新 app_secret、停用 is_active）→ 保存（`app_code` 不建议修改）
+- **删除**：选择应用 → 删除（仅 admin 角色）
+
+#### 业务规则
+
+- `app_code` 全局唯一，作为令牌、授权码、用户应用角色的关联键
+- `app_secret` 为敏感字段，仅服务端校验使用，禁止外泄
+- `redirect_uris` 为合法回调地址白名单，授权时校验
+- `allowed_grant_types` 定义该应用支持的 OAuth 授权类型（如 authorization_code / refresh_token）
+- `is_active=false` 停用应用，所有令牌与授权码失效
+- 关闭 draftAndPublish，应用直接生效
+
+### 10.5 SSO 渠道（sso-channel）
+
+**用途**：定义 SSO 渠道编码与 UTM 模板。
+
+**所属插件**：plugin::zhao-sso
+**集合名**：sso_channels
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| channel_code | string | 是 | 渠道编码，唯一 |
+| channel_name | string | 是 | 渠道名称 |
+| channel_type | string | 是 | 渠道类型 |
+| utm_template | json | 否 | UTM 模板 |
+| is_active | boolean | 是 | 是否启用，默认 true |
+| description | string | 否 | 描述 |
+
+#### 操作步骤
+
+- **查看**：进入系统中心 → SSO 渠道 → 按 channel_type/is_active 筛选
+- **创建**：点击"创建" → 填写 channel_code/channel_name/channel_type → 编辑 utm_template → 保存
+- **编辑**：选择渠道 → 编辑 → 保存（`channel_code` 不建议修改）
+- **删除**：选择渠道 → 删除（已被用户/令牌引用时谨慎）
+
+#### 业务规则
+
+- `channel_code` 全局唯一，与 sso-user 的 `register_channel`/`last_login_channel` 对齐
+- `utm_template` 定义该渠道的 UTM 参数模板，用于注册归因
+- `is_active=false` 停用渠道，该渠道不再接受注册与登录
+- 关闭 draftAndPublish，渠道直接生效
+
+### 10.6 SSO 三方绑定（sso-third-party-binding）
+
+**用途**：记录 SSO 用户与三方账号的绑定关系。
+
+**所属插件**：plugin::zhao-sso
+**集合名**：sso_third_party_bindings
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| user | relation → sso-user | 否 | 所属用户（manyToOne，inversedBy third_party_bindings） |
+| provider | string | 是 | 三方提供方 |
+| provider_user_id | string | 是 | 三方用户 ID |
+| provider_union_id | string | 否 | 三方 unionId |
+| provider_nickname | string | 否 | 三方昵称 |
+| provider_avatar | string | 否 | 三方头像 |
+| provider_data | json | 否 | 三方原始数据 |
+| bound_at | datetime | 是 | 绑定时间 |
+
+#### 操作步骤
+
+- **查看**：进入系统中心 → SSO 三方绑定 → 按 user/provider 筛选
+- **创建**：主要由三方登录流程自动写入；后台可点击"创建" → 选择 user → 填写 provider/provider_user_id → 保存
+- **编辑**：禁止编辑（绑定关系不可变）
+- **删除**：选择记录 → 删除（解绑操作，需 admin 角色）
+
+#### 业务规则
+
+- `provider`+`provider_user_id` 标识三方账号唯一性
+- `provider_union_id` 用于跨应用打通同一用户主体
+- 一个 SSO 用户可绑定多个三方账号（oneToMany），但同一 provider 通常仅一条
+- `bound_at` 记录绑定时间，解绑后可重新绑定
+- 关闭 draftAndPublish，记录直接生效
+
+### 10.7 SSO OAuth 配置（sso-oauth-config）
+
+**用途**：配置 SSO 作为 OAuth 客户端接入三方平台的应用凭证。
+
+**所属插件**：plugin::zhao-sso
+**集合名**：sso_oauth_configs
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| provider | string | 是 | 三方提供方 |
+| app_id | string | 是 | 应用 ID |
+| app_secret | string | 是 | 应用密钥 |
+| scope | string | 否 | 授权范围 |
+| extra_config | json | 否 | 扩展配置 |
+| redirect_uris | json | 否 | 回调 URI |
+| is_enabled | boolean | 是 | 是否启用，默认 true |
+| description | string | 否 | 描述 |
+
+#### 操作步骤
+
+- **查看**：进入系统中心 → SSO OAuth 配置 → 按 provider/is_enabled 筛选
+- **创建**：点击"创建" → 填写 provider/app_id/app_secret → 配置 scope/redirect_uris → 保存
+- **编辑**：选择记录 → 编辑（如更新 app_secret、停用 is_enabled）→ 保存
+- **删除**：选择记录 → 删除（仅 admin 角色）
+
+#### 业务规则
+
+- `provider` 标识三方平台（如 wechat / alipay），与 sso-third-party-binding 的 `provider` 对齐
+- `app_id`/`app_secret` 为敏感凭证，仅服务端调用三方 API 时使用
+- `redirect_uris` 为 OAuth 回调白名单
+- `is_enabled=false` 停用该 provider 的 OAuth 接入
+- 关闭 draftAndPublish，配置直接生效
+
+### 10.8 SSO 令牌（sso-token）
+
+**用途**：管理用户访问令牌与刷新令牌及撤销状态。
+
+**所属插件**：plugin::zhao-sso
+**集合名**：sso_tokens
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| user | relation → sso-user | 否 | 所属用户（manyToOne） |
+| app_code | string | 是 | 应用编码 |
+| access_token_jti | text | 是 | 访问令牌 JTI，唯一 |
+| refresh_token | text | 是 | 刷新令牌，唯一 |
+| refresh_expires_at | datetime | 是 | 刷新令牌过期时间 |
+| revoked | boolean | 是 | 是否撤销，默认 false |
+| revoked_at | datetime | 否 | 撤销时间 |
+| channel_code | string | 否 | 渠道编码 |
+
+#### 操作步骤
+
+- **查看**：进入系统中心 → SSO 令牌 → 按 user/app_code/revoked 筛选
+- **创建**：主要由登录流程自动写入；后台一般不手动创建
+- **编辑**：选择令牌 → 编辑（如撤销 revoked=true、回填 revoked_at）→ 保存
+- **删除**：选择令牌 → 删除（仅 admin 角色，过期或已撤销令牌可定期清理）
+
+#### 业务规则
+
+- `access_token_jti` 为访问令牌唯一标识，`refresh_token` 为刷新令牌
+- `revoked=true` 撤销令牌，立即失效，回填 `revoked_at`
+- `refresh_expires_at` 控制刷新令牌有效期，过期后需重新登录
+- `app_code` 标识令牌归属应用，`channel_code` 标识登录渠道
+- 用户封禁（sso-user.status=blocked）时需撤销其所有令牌
+- 关闭 draftAndPublish，记录直接生效
+
+### 10.9 SSO 授权码（sso-auth-code）
+
+**用途**：记录 OAuth 授权码及使用状态。
+
+**所属插件**：plugin::zhao-sso
+**集合名**：sso_auth_codes
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| code | string | 是 | 授权码，唯一 |
+| user | relation → sso-user | 否 | 授权用户（manyToOne） |
+| app_code | string | 是 | 应用编码 |
+| redirect_uri | text | 是 | 回调 URI |
+| channel_code | string | 否 | 渠道编码 |
+| scopes | json | 否 | 授权范围 |
+| expires_at | datetime | 是 | 过期时间 |
+| used | boolean | 是 | 是否已使用，默认 false |
+
+#### 操作步骤
+
+- **查看**：进入系统中心 → SSO 授权码 → 按 user/app_code/used 筛选
+- **创建**：主要由授权流程自动写入；后台一般不手动创建
+- **编辑**：禁止编辑（授权码一次性，数据不可变）
+- **删除**：选择记录 → 删除（仅 admin 角色，过期记录可定期清理）
+
+#### 业务规则
+
+- `code` 全局唯一，为 OAuth authorization_code 授权类型的临时凭证
+- 授权码一次性使用，`used=true` 后不可再用
+- `expires_at` 控制有效期（通常短时，如 10 分钟），过期失效
+- `redirect_uri` 必须与 sso-app 的 `redirect_uris` 白名单匹配
+- `scopes` 限定授权范围，换发令牌时校验
+- 关闭 draftAndPublish，记录直接生效
+
+### 10.10 SSO 用户应用角色（sso-user-app-role）
+
+**用途**：定义用户在具体应用下的角色。
+
+**所属插件**：plugin::zhao-sso
+**集合名**：sso_user_app_roles
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| user | relation → sso-user | 否 | 用户（manyToOne） |
+| app_code | string | 是 | 应用编码 |
+| role | string | 是 | 角色标识 |
+
+#### 操作步骤
+
+- **查看**：进入系统中心 → SSO 用户应用角色 → 按 user/app_code/role 筛选
+- **创建**：点击"创建" → 选择 user → 填写 app_code/role → 保存
+- **编辑**：选择记录 → 编辑（如调整 role）→ 保存
+- **删除**：选择记录 → 删除（仅 admin 角色）
+
+#### 业务规则
+
+- `user`+`app_code` 定位用户在某应用的角色，同一用户在不同应用可有不同角色
+- `role` 为角色标识，与 zhao-auth 的 permission 角色体系对齐
+- 该关系为令牌签发时注入角色声明的来源
+- 关闭 draftAndPublish，记录直接生效
+
+### 10.11 SSO 邀请码（sso-invite-code）
+
+**用途**：管理邀请码及使用限制。
+
+**所属插件**：plugin::zhao-sso
+**集合名**：sso_invite_codes
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| code | string | 是 | 邀请码，唯一 |
+| creator | relation → sso-user | 否 | 创建者（manyToOne） |
+| invite_type | enumeration | 是 | 类型：system（系统）/ user_campaign（用户活动） |
+| max_uses | integer | 否 | 最大使用次数 |
+| use_count | integer | 是 | 已使用次数，默认 0 |
+| per_user_limit | integer | 是 | 单用户使用限制，默认 1 |
+| valid_from | datetime | 否 | 生效时间 |
+| valid_until | datetime | 否 | 失效时间 |
+| bonus_tags | json | 否 | 奖励标签 |
+| is_active | boolean | 是 | 是否启用，默认 true |
+
+#### 操作步骤
+
+- **查看**：进入系统中心 → SSO 邀请码 → 按 invite_type/is_active 筛选
+- **创建**：点击"创建" → 填写 code → 选择 invite_type → 设置 max_uses/per_user_limit/有效期 → 保存
+- **编辑**：选择记录 → 编辑（如停用 is_active、调整 max_uses）→ 保存（`code` 不建议修改）
+- **删除**：选择记录 → 删除（`invite_type=system` 谨慎删除）
+
+#### 业务规则
+
+- `invite_type`：`system` 为系统级邀请码、`user_campaign` 为用户活动码
+- `max_uses` 控制总使用次数，`use_count` 达到上限后不可再用
+- `per_user_limit` 控制单用户使用次数，防止刷单
+- `valid_from`/`valid_until` 定义有效期，超出范围不可使用
+- `bonus_tags` 标记奖励规则，注册时触发积分/权益发放
+- `is_active=false` 停用邀请码，立即失效
+- 关闭 draftAndPublish，记录直接生效
+
+### 10.12 SSO 邀请使用记录（sso-invite-usage）
+
+**用途**：记录邀请码被使用的明细。
+
+**所属插件**：plugin::zhao-sso
+**集合名**：sso_invite_usages
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| invite_code | relation → sso-invite-code | 否 | 邀请码（manyToOne） |
+| user | relation → sso-user | 否 | 使用用户（manyToOne） |
+| channel_code | string | 否 | 渠道编码 |
+| app_code | string | 否 | 应用编码 |
+| used_at | datetime | 是 | 使用时间 |
+
+#### 操作步骤
+
+- **查看**：进入系统中心 → SSO 邀请使用记录 → 按 invite_code/user 筛选
+- **创建**：主要由注册使用邀请码时自动写入；后台可点击"创建" → 选择 invite_code/user → 填写 used_at → 保存
+- **编辑**：禁止编辑（使用记录不可变）
+- **删除**：选择记录 → 删除（仅 admin 角色）
+
+#### 业务规则
+
+- 每次使用邀请码注册写入一条，同时累加 sso-invite-code 的 `use_count`
+- `channel_code`/`app_code` 记录使用场景，用于渠道归因
+- 与 sso-invite-stats 联动，统计邀请码总使用量与活跃量
+- 关闭 draftAndPublish，记录直接生效
+
+### 10.13 SSO 邀请统计（sso-invite-stats）
+
+**用途**：聚合邀请码的邀请总量与活跃量统计。
+
+**所属插件**：plugin::zhao-sso
+**集合名**：sso_invite_stats
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| invite_code | relation → sso-invite-code | 否 | 邀请码（oneToOne） |
+| total_invites | integer | 是 | 总邀请数 |
+| active_invites | integer | 是 | 活跃邀请数 |
+| last_invited_at | datetime | 否 | 最后邀请时间 |
+
+#### 操作步骤
+
+- **查看**：进入系统中心 → SSO 邀请统计 → 按 invite_code 筛选
+- **创建/编辑**：主要由统计任务自动聚合写入；后台一般不手动维护
+- **删除**：选择记录 → 删除（仅 admin 角色）
+
+#### 业务规则
+
+- `invite_code` 为 oneToOne，每个邀请码对应一条统计
+- `total_invites` 为累计邀请数，`active_invites` 为活跃被邀请人数
+- 统计数据由定时任务从 sso-invite-usage 聚合，非实时
+- `last_invited_at` 标识最近一次邀请时间
+- 关闭 draftAndPublish，记录直接生效
+
+### 10.14 SSO 推荐关系（sso-referral-relation）
+
+**用途**：记录邀请人与被邀请人的推荐层级关系。
+
+**所属插件**：plugin::zhao-sso
+**集合名**：sso_referral_relations
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| inviter | relation → sso-user | 否 | 邀请人（manyToOne） |
+| invitee | relation → sso-user | 否 | 被邀请人（manyToOne） |
+| invite_code | relation → sso-invite-code | 否 | 使用的邀请码（manyToOne） |
+| level | integer | 是 | 推荐层级 |
+| channel_code | string | 否 | 渠道编码 |
+
+#### 操作步骤
+
+- **查看**：进入系统中心 → SSO 推荐关系 → 按 inviter/invitee/level 筛选
+- **创建**：主要由注册使用邀请码时自动写入；后台可点击"创建" → 选择 inviter/invitee → 填写 level → 保存
+- **编辑**：禁止编辑（推荐关系不可变）
+- **删除**：选择记录 → 删除（仅 admin 角色）
+
+#### 业务规则
+
+- `inviter`+`invitee` 定位一条推荐关系，构建推荐树
+- `level` 标识层级（1=直推，2=间推...），受 user-invite 的 `distributionDepth`（最大 2）约束
+- `invite_code` 记录触发该关系的邀请码
+- `channel_code` 记录注册渠道，用于渠道归因与分销结算
+- 关闭 draftAndPublish，记录直接生效
+
+### 10.15 SSO 短信验证码（sso-sms-code）
+
+**用途**：记录短信验证码及使用状态。
+
+**所属插件**：plugin::zhao-sso
+**集合名**：sso_sms_codes
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| mobile | string | 是 | 手机号 |
+| code | string | 是 | 验证码 |
+| scene | string | 是 | 场景，默认 login |
+| expires_at | datetime | 是 | 过期时间 |
+| used | boolean | 是 | 是否已使用，默认 false |
+| ip | string | 否 | 请求 IP |
+| provider | string | 否 | 短信提供方，默认 mock |
+
+#### 操作步骤
+
+- **查看**：进入系统中心 → SSO 短信验证码 → 按 mobile/scene/used 筛选
+- **创建**：主要由发送验证码流程自动写入；后台一般不手动创建
+- **编辑**：选择记录 → 编辑（如标记 used=true）→ 保存
+- **删除**：选择记录 → 删除（仅 admin 角色，过期记录可定期清理）
+
+#### 业务规则
+
+- `scene` 标识用途（login / register / reset_password 等）
+- 验证码一次性使用，`used=true` 后不可再用
+- `expires_at` 控制有效期（通常 5 分钟），过期失效
+- `provider` 标识短信服务商，`mock` 为开发环境模拟
+- `ip` 记录请求来源，用于频控与风控
+- 关闭 draftAndPublish，记录直接生效
+
+### 10.16 SSO 登录日志（sso-login-log）
+
+**用途**：记录用户登录行为及成败原因。
+
+**所属插件**：plugin::zhao-sso
+**集合名**：sso_login_logs
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| user | relation → sso-user | 否 | 登录用户（manyToOne） |
+| login_type | string | 是 | 登录类型 |
+| provider | string | 否 | 登录提供方 |
+| channel_code | string | 否 | 渠道编码 |
+| app_code | string | 否 | 应用编码 |
+| ip | string | 否 | 登录 IP |
+| user_agent | string | 否 | UA |
+| success | boolean | 是 | 是否成功 |
+| fail_reason | string | 否 | 失败原因 |
+
+#### 操作步骤
+
+- **查看**：进入系统中心 → SSO 登录日志 → 按 user/login_type/success 筛选
+- **创建**：主要由登录流程自动写入；后台一般不手动创建
+- **编辑**：禁止编辑（日志数据不可变）
+- **删除**：选择记录 → 删除（仅 admin 角色，过期日志可定期归档清理）
+
+#### 业务规则
+
+- `login_type` 标识登录方式（password / sms / oauth 等）
+- `success=false` 时 `fail_reason` 记录失败原因（如密码错误、账号封禁）
+- `channel_code`/`app_code` 记录登录场景，用于审计
+- `ip`/`user_agent` 为隐私数据，需遵循合规要求，建议定期脱敏
+- 成功登录联动 sso-user 的 `login_count`/`last_login_at`
+- 关闭 draftAndPublish，记录直接生效
+
+### 10.17 三方登录配置（third-party-config）
+
+**用途**：配置微信/支付宝/抖音等三方登录应用凭证。
+
+**所属插件**：plugin::zhao-third
+**集合名**：third_party_configs
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| name | string | 是 | 配置名称 |
+| platform | enumeration | 是 | 平台：wechat / alipay / douyin |
+| appType | enumeration | 是 | 应用类型：official_account / mini_program / open_platform / h5 / app |
+| appId | string | 是 | 应用 ID |
+| appSecret | string | 是 | 应用密钥 |
+| enabled | boolean | 否 | 是否启用，默认 true |
+| site | relation → site-config | 否 | 关联站点（manyToOne） |
+
+#### 操作步骤
+
+- **查看**：进入系统中心 → 三方登录配置 → 按 platform/appType/enabled 筛选
+- **创建**：点击"创建" → 填写 name → 选择 platform/appType → 填写 appId/appSecret → 关联 site → 保存
+- **编辑**：选择记录 → 编辑（如更新 appSecret、停用 enabled）→ 保存
+- **删除**：选择记录 → 删除（仅 admin 角色）
+
+#### 业务规则
+
+- `platform`+`appType` 定位具体三方应用形态（如微信公众号、微信小程序）
+- `appId`/`appSecret` 为敏感凭证，仅服务端调用三方 API 时使用
+- `site` 关联站点，支持不同站点配置不同三方应用
+- `enabled=false` 停用该三方登录入口
+- content-manager 中 `visible=false`，需通过定制界面或 API 管理
+- 关闭 draftAndPublish，配置直接生效
+
+### 10.18 三方账号绑定（third-party-account）
+
+**用途**：记录用户与三方账号的绑定关系。
+
+**所属插件**：plugin::zhao-third
+**集合名**：third_party_accounts
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| platform | enumeration | 是 | 平台：wechat / alipay / douyin |
+| appType | enumeration | 是 | 应用类型：official_account / mini_program / open_platform / h5 / app |
+| openId | string | 是 | openId |
+| unionId | string | 否 | unionId |
+| nickname | string | 否 | 三方昵称 |
+| avatar | string | 否 | 三方头像 |
+| user | relation → users-permissions.user | 否 | 关联用户（manyToOne） |
+
+#### 操作步骤
+
+- **查看**：进入系统中心 → 三方账号绑定 → 按 platform/user 筛选
+- **创建**：主要由三方登录流程自动写入；后台可点击"创建" → 填写 platform/appType/openId → 关联 user → 保存
+- **编辑**：禁止编辑（绑定关系不可变）
+- **删除**：选择记录 → 删除（解绑操作，需 admin 角色）
+
+#### 业务规则
+
+- `platform`+`appType`+`openId` 定位三方账号唯一性
+- `unionId` 用于同一平台下跨应用打通用户主体
+- `user` 关联 users-permissions 用户，一个用户可绑定多个三方账号
+- content-manager 中 `visible=false`，需通过定制界面或 API 管理
+- 关闭 draftAndPublish，记录直接生效
+
+### 10.19 角色权限（permission）
+
+**用途**：定义角色及权限树，作为权限体系核心。
+
+**所属插件**：plugin::zhao-auth
+**集合名**：zhao_permissions
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| role | string | 是 | 角色标识，唯一，maxLength 50 |
+| displayName | string | 是 | 显示名称，maxLength 50 |
+| description | text | 否 | 描述 |
+| permissions | json | 是 | 权限列表，默认 [] |
+| isSystem | boolean | 是 | 是否系统角色，默认 false |
+| level | integer | 否 | 角色等级，默认 20，min 1 max 100 |
+
+#### 操作步骤
+
+- **查看**：进入系统中心 → 角色权限 → 按 isSystem/level 筛选
+- **创建**：点击"创建" → 填写 role/displayName → 编辑 permissions JSON → 设置 level → 保存
+- **编辑**：选择角色 → 编辑（如调整 permissions）→ 保存（`isSystem=true` 的角色禁止删除）
+- **删除**：选择角色 → 删除（`isSystem=true` 禁止删除）
+
+#### 业务规则
+
+- `role` 全局唯一，作为角色标识贯穿权限校验
+- `permissions` 为 JSON 数组，存储该角色的权限点列表
+- `isSystem=true` 为系统内置角色（如 admin / channel-admin），不可删除
+- `level` 定义角色等级，低等级不可管理高等级角色（数值越小等级越高）
+- 与 sso-user-app-role、role-channel 联动，控制用户在应用与渠道内的权限
+- 关闭 draftAndPublish，角色直接生效
+
+### 10.20 角色渠道绑定（role-channel）
+
+**用途**：记录角色与渠道的绑定关系。
+
+**所属插件**：plugin::zhao-auth
+**集合名**：zhao_role_channels
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| role | string | 是 | 角色标识 |
+| channel | relation → channel | 否 | 渠道（manyToOne） |
+| assignedBy | integer | 否 | 分配人 ID |
+
+#### 操作步骤
+
+- **查看**：进入系统中心 → 角色渠道绑定 → 按 role/channel 筛选
+- **创建**：点击"创建" → 填写 role → 选择 channel → 填写 assignedBy → 保存
+- **编辑**：选择记录 → 编辑 → 保存
+- **删除**：选择记录 → 删除（仅 admin 角色）
+
+#### 业务规则
+
+- `role`+`channel` 定义角色在具体渠道的授权范围
+- `assignedBy` 记录分配操作人 ID，用于审计
+- 该关系为渠道级权限隔离的依据，与 role-action-log 联动审计
+- 关闭 draftAndPublish，记录直接生效
+
+### 10.21 角色操作日志（role-action-log）
+
+**用途**：记录角色分配与撤销的操作审计日志。
+
+**所属插件**：plugin::zhao-auth
+**集合名**：zhao_role_action_logs
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| operatorId | integer | 是 | 操作人 ID |
+| targetUserId | integer | 是 | 目标用户 ID |
+| action | enumeration | 是 | 操作类型：assign（分配）/ revoke（撤销） |
+| role | string | 是 | 角色名称 |
+| reason | text | 否 | 操作原因 |
+| timestamp | datetime | 是 | 操作时间 |
+
+#### 操作步骤
+
+- **查看**：进入系统中心 → 角色操作日志 → 按 operatorId/action/role 筛选
+- **创建**：主要由角色分配/撤销操作自动写入；后台一般不手动创建
+- **编辑**：禁止编辑（审计日志不可变）
+- **删除**：选择记录 → 删除（仅 admin 角色，过期日志可定期归档）
+
+#### 业务规则
+
+- `action`：`assign`（分配角色）/ `revoke`（撤销角色），记录角色变更方向
+- `operatorId`+`targetUserId` 定位操作人与被操作用户，构成审计三元组（+`role`）
+- `reason` 记录操作原因，用于合规审计
+- 关闭 `timestamps`，由 `timestamp` 字段显式记录操作时间
+- 关闭 draftAndPublish，记录直接生效
