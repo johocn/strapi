@@ -406,6 +406,63 @@ export const PERMISSION_TREE: Record<string, PermissionItem> = {
           "sso.channel-create": { label: "创建渠道", type: "button" },
           "sso.channel-update": { label: "编辑渠道", type: "button" },
           "sso.log-read": { label: "查看日志", type: "button" },
+          "menu.sso-binding": {
+            label: "三方绑定",
+            type: "menu",
+            children: {
+              "sso.third-party-binding.read": { label: "查看三方绑定", type: "button" },
+              "sso.third-party-binding.create": { label: "创建绑定", type: "button" },
+              "sso.third-party-binding.update": { label: "编辑绑定", type: "button" },
+              "sso.third-party-binding.delete": { label: "删除绑定", type: "button" },
+              "sso.oauth-config.read": { label: "查看OAuth配置", type: "button" },
+              "sso.oauth-config.create": { label: "创建OAuth配置", type: "button" },
+              "sso.oauth-config.update": { label: "编辑OAuth配置", type: "button" },
+              "sso.oauth-config.delete": { label: "删除OAuth配置", type: "button" },
+            },
+          },
+          "menu.sso-token": {
+            label: "令牌管理",
+            type: "menu",
+            children: {
+              "sso.token.read": { label: "查看令牌", type: "button" },
+              "sso.token.delete": { label: "删除令牌", type: "button" },
+              "sso.auth-code.read": { label: "查看授权码", type: "button" },
+              "sso.auth-code.delete": { label: "删除授权码", type: "button" },
+            },
+          },
+          "menu.sso-user-role": {
+            label: "用户应用角色",
+            type: "menu",
+            children: {
+              "sso.user-app-role.read": { label: "查看角色", type: "button" },
+              "sso.user-app-role.create": { label: "分配角色", type: "button" },
+              "sso.user-app-role.update": { label: "编辑角色", type: "button" },
+              "sso.user-app-role.delete": { label: "删除角色", type: "button" },
+            },
+          },
+          "menu.sso-invite": {
+            label: "邀请体系",
+            type: "menu",
+            children: {
+              "sso.invite-code.read": { label: "查看邀请码", type: "button" },
+              "sso.invite-code.create": { label: "创建邀请码", type: "button" },
+              "sso.invite-code.delete": { label: "删除邀请码", type: "button" },
+              "sso.invite-code.validate": { label: "核销邀请码", type: "button" },
+              "sso.invite-usage.read": { label: "查看使用记录", type: "button" },
+              "sso.invite-usage.delete": { label: "删除使用记录", type: "button" },
+              "sso.invite-stats.read": { label: "查看邀请统计", type: "button" },
+              "sso.referral-relation.read": { label: "查看推荐关系", type: "button" },
+              "sso.referral-relation.delete": { label: "删除推荐关系", type: "button" },
+            },
+          },
+          "menu.sso-sms": {
+            label: "短信验证",
+            type: "menu",
+            children: {
+              "sso.sms-code.read": { label: "查看短信码", type: "button" },
+              "sso.sms-code.delete": { label: "删除短信码", type: "button" },
+            },
+          },
         },
       },
       "menu.tenant": {
