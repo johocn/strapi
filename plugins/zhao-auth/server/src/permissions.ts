@@ -1316,6 +1316,21 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
     "logistics.review.read",
     "menu.logistics-landing",
     "logistics.landing-page.read",
+    // 理财中心（只读）
+    "menu.wealth-center",
+    "menu.wealth-product", "wealth.wealth-product.read", "wealth.wealth-nav.read",
+    "menu.wealth-company", "wealth.wealth-company.read",
+    "menu.wealth-collect", "wealth.wealth-collect-config.read", "wealth.wealth-customer-product.read",
+    "menu.wealth-metrics", "wealth.wealth-risk-metric.read", "wealth.wealth-recommend-config.read",
+    "wealth.wealth-annual-snapshot.read", "wealth.wealth-yearly-return.read", "wealth.wealth-money-income.read",
+    // 直播工作室（只读）
+    "menu.studio-collect", "studio.article-draft.read", "studio.collect-source.read", "studio.collect-task.read",
+    "menu.studio-publish", "studio.publish-platform.read", "studio.publish-account.read", "studio.publish-record.read",
+    "menu.studio-stats", "studio.stat-summary.read",
+    "menu.studio-ad", "studio.ad-slot.read",
+    // 零散补全（只读）
+    "point.rule-template.read", "point.sign-in-record.read",
+    "quiz.quiz-batch.read", "tag.tag-index.read",
   ],
   [ROLES.USER]: [],
 };
