@@ -93,6 +93,14 @@
     "socialLinks": {
       "type": "json"
     },
+    "offices": {
+      "type": "json",
+      "localized": true
+    },
+    "certificates": {
+      "type": "json",
+      "localized": true
+    },
     "legalRepresentative": {
       "type": "string",
       "maxLength": 50
