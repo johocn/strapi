@@ -1,0 +1,47 @@
+{
+  "kind": "collectionType",
+  "collectionName": "zhao_logistics_conversion_funnels",
+  "info": {
+    "singularName": "conversion-funnel",
+    "pluralName": "conversion-funnels",
+    "displayName": "转化漏斗"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "content-manager": { "visible": true },
+    "content-type-builder": { "visible": false }
+  },
+  "attributes": {
+    "site": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-common.site-config",
+      "required": true,
+      "inversedBy": "logistics_conversion_funnels"
+    },
+    "name": {
+      "type": "string",
+      "maxLength": 100,
+      "required": true
+    },
+    "lang": {
+      "type": "string",
+      "maxLength": 10
+    },
+    "steps": {
+      "type": "json",
+      "required": true
+    },
+    "isActive": {
+      "type": "boolean",
+      "default": true,
+      "required": true
+    },
+    "deletedAt": {
+      "type": "datetime",
+      "default": null
+    }
+  }
+}

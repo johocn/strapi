@@ -1,0 +1,139 @@
+{
+  "kind": "collectionType",
+  "collectionName": "zhao_logistics_customer_profiles",
+  "info": {
+    "singularName": "customer-profile",
+    "pluralName": "customer-profiles",
+    "displayName": "客户档案"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "content-manager": { "visible": true },
+    "content-type-builder": { "visible": false }
+  },
+  "attributes": {
+    "site": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-common.site-config",
+      "required": true,
+      "inversedBy": "logistics_customer_profiles"
+    },
+    "name": {
+      "type": "string",
+      "maxLength": 100,
+      "required": true
+    },
+    "contactPhone": {
+      "type": "string",
+      "maxLength": 50,
+      "required": true
+    },
+    "contactEmail": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "contactLine": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "contactWechat": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "contactKakao": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "contactZalo": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "company": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 50
+    },
+    "customerType": {
+      "type": "enumeration",
+      "enum": ["individual", "business", "fba_seller"],
+      "required": true
+    },
+    "country": {
+      "type": "string",
+      "maxLength": 10,
+      "required": true
+    },
+    "preferredLang": {
+      "type": "string",
+      "maxLength": 10
+    },
+    "preferredRoute": {
+      "type": "json"
+    },
+    "preferredService": {
+      "type": "json"
+    },
+    "totalQuoteCount": {
+      "type": "integer",
+      "default": 0
+    },
+    "totalOrderCount": {
+      "type": "integer",
+      "default": 0
+    },
+    "totalOrderValue": {
+      "type": "decimal",
+      "default": 0
+    },
+    "lastQuoteAt": {
+      "type": "datetime"
+    },
+    "lastOrderAt": {
+      "type": "datetime"
+    },
+    "lifecycleStage": {
+      "type": "enumeration",
+      "enum": ["lead", "active", "repeat", "vip", "churned"],
+      "default": "lead",
+      "required": true
+    },
+    "tags": {
+      "type": "json"
+    },
+    "assignedTo": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "admin::user"
+    },
+    "sourceChannel": {
+      "type": "string",
+      "maxLength": 50
+    },
+    "utmSource": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "remark": {
+      "type": "text"
+    },
+    "relatedLeadIds": {
+      "type": "json"
+    },
+    "relatedQuoteIds": {
+      "type": "json"
+    },
+    "relatedOrderIds": {
+      "type": "json"
+    },
+    "deletedAt": {
+      "type": "datetime",
+      "default": null
+    }
+  }
+}
