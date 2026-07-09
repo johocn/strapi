@@ -1075,3 +1075,714 @@ channel（渠道）
 - 与 knowledge-entity/knowledge-relation 联动：实体属性的权威值优先取自 first-truth-policy
 - `priority` 数值大的优先级高，用于多声明冲突时排序
 - AI 摘要、结构化数据、前台展示中涉及该声明时，必须以 first-truth-policy 为准
+
+---
+
+## Ch4 物流中心
+
+物流中心（logistics-center）负责跨境物流业务的询价、报价、货物追踪、客户运营、营销转化与推荐奖励能力，覆盖询价单、询价动态字段规则、报价规则、报价公式、货物追踪、追踪节点、追踪 API 配置、联系渠道矩阵、客户评价、通知订阅、营销落地页、转化漏斗、转化事件、意向订单、推荐奖励、客户档案共 16 个内容类型（CT）。所有 CT 隶属 `plugin::zhao-logistics`，按站点（site）隔离。
+
+**通用约定**：
+
+- 所有 CT 通过 `site` 关联字段绑定到 `plugin::zhao-common.site-config`，确保站点级数据隔离
+- 软删除：所有 CT 含 `deletedAt` 字段（默认 null），由插件 lifecycle 维护
+- 多语言：部分 CT（quote-field-rule / quote-price-formula / tracking-node / contact-matrix / review / landing-page）启用 i18n，关键文本字段 `localized: true`
+- 询价全链路：`dynamic-form.validate → quote-engine.calculate → 创建 quote-request → lead.createPublic → customer-aggregator.upsertFromQuote → referral-engine.applyCode → funnel-tracker.track`
+- 订单转化全链路：`更新 intent-order.status=delivered → 查 referral → referral-engine.markConverted → customer-aggregator.upsertFromOrder`
+- 所有 CT `draftAndPublish: false`，不启用 Strapi 草稿发布工作流，状态由业务枚举字段管理
+
+### 4.1 物流询价单（quote-request）
+
+**用途**：记录客户提交的跨境物流询价请求及报价结果。
+
+**所属插件**：plugin::zhao-logistics
+**集合名**：zhao_logistics_quote_requests
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| site | relation → site-config | 是 | 关联站点（manyToOne） |
+| trackingNo | string | 否 | 追踪号，maxLength 50 |
+| routeId | string | 是 | 路线 ID，maxLength 50 |
+| origin | string | 是 | 始发地，maxLength 100 |
+| destination | string | 是 | 目的地，maxLength 100 |
+| serviceProvider | string | 否 | 服务商，maxLength 50 |
+| cargoType | string | 是 | 货物类型，maxLength 50 |
+| weight | decimal | 是 | 重量 |
+| volume | decimal | 否 | 体积 |
+| formData | json | 是 | 动态表单数据 |
+| quotedPrice | json | 否 | 报价结果 |
+| status | enumeration | 是 | 状态：draft / submitted / quoted / accepted / rejected / expired，默认 submitted |
+| leadId | string | 否 | 关联线索 ID |
+| customerName | string | 是 | 客户名称，maxLength 100 |
+| customerContact | string | 是 | 客户联系方式，maxLength 200 |
+| customerType | enumeration | 否 | 客户类型：individual / business / fba_seller |
+| utmSource | string | 否 | UTM 来源，maxLength 100 |
+| utmMedium | string | 否 | UTM 媒介，maxLength 100 |
+| utmCampaign | string | 否 | UTM 活动，maxLength 100 |
+| lang | string | 是 | 语言，maxLength 10 |
+| remark | text | 否 | 备注 |
+| expiresAt | datetime | 否 | 报价过期时间 |
+| deletedAt | datetime | 否 | 软删除时间戳 |
+
+#### 操作步骤
+
+- **查看**：进入物流中心 → 物流询价单 → 按 status/routeId/customerType 筛选
+- **创建**：主要由前台询价表单自动写入（询价全链路）；后台可点击"创建" → 填写 routeId/origin/destination/cargoType/weight/formData/customerName/customerContact/lang → 保存
+- **编辑**：选择记录 → 编辑（如回填 quotedPrice、调整 status）→ 保存
+- **删除**：选择记录 → 删除（仅 logistics-manager 角色）
+
+#### 业务规则
+
+- 状态流转：`draft → submitted → quoted → accepted/rejected/expired`
+- 询价提交全链路：`dynamic-form.validate → quote-engine.calculate → 创建 quote-request → lead.createPublic → customer-aggregator.upsertFromQuote → referral-engine.applyCode → funnel-tracker.track`
+- `formData` 由 quote-field-rule 动态渲染并校验，`quotedPrice` 由 quote-price-rule/quote-price-formula 计算回填
+- `expiresAt` 到期后由定时任务将 status 置为 `expired`
+- `leadId` 与官网中心 lead CT 联动，`customerContact` 用于 customer-aggregator 聚合匹配
+
+### 4.2 询价动态字段规则（quote-field-rule）
+
+**用途**：按路线/服务商/客户类型动态配置询价表单字段。
+
+**所属插件**：plugin::zhao-logistics
+**集合名**：zhao_logistics_quote_field_rules
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| site | relation → site-config | 是 | 关联站点（manyToOne） |
+| name | string | 是 | 规则名称，maxLength 100，localized |
+| routeId | string | 否 | 路线 ID，maxLength 50 |
+| serviceProvider | string | 否 | 服务商，maxLength 50 |
+| customerType | enumeration | 否 | 客户类型：individual / business / fba_seller |
+| isActive | boolean | 是 | 是否启用，默认 true |
+| priority | integer | 否 | 优先级，默认 0 |
+| fields | json | 是 | 字段定义，localized |
+| deletedAt | datetime | 否 | 软删除时间戳 |
+
+#### 操作步骤
+
+- **查看**：进入物流中心 → 询价动态字段规则 → 按 routeId/customerType/isActive 筛选
+- **创建**：点击"创建" → 填写 name → 设置 routeId/serviceProvider/customerType 匹配条件 → 编辑 fields（字段定义 JSON）→ 设置 priority → 保存
+- **编辑**：选择记录 → 编辑 → 保存
+- **删除**：选择记录 → 删除（仅 logistics-manager 角色）
+
+#### 业务规则
+
+- 匹配优先级：`routeId + serviceProvider + customerType` 三维精确匹配优先，其次按 `priority` 数值大的优先
+- `fields` 为动态字段定义数组，由 `dynamic-form.validate` 服务在询价提交时校验
+- 启用 i18n，`name`/`fields` 按 locale 区分，支持多语言表单
+- 停用规则（`isActive=false`）不参与匹配，但不影响历史询价单已提交的 formData
+
+### 4.3 报价规则表（quote-price-rule）
+
+**用途**：按路线/服务商/重量区间配置报价规则。
+
+**所属插件**：plugin::zhao-logistics
+**集合名**：zhao_logistics_quote_price_rules
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| site | relation → site-config | 是 | 关联站点（manyToOne） |
+| routeId | string | 是 | 路线 ID，maxLength 50 |
+| serviceProvider | string | 是 | 服务商，maxLength 50 |
+| minWeight | decimal | 是 | 最小重量 |
+| maxWeight | decimal | 是 | 最大重量 |
+| pricePerKg | decimal | 是 | 单价（每公斤） |
+| currency | string | 是 | 币种，maxLength 10，默认 CNY |
+| volumetricFactor | integer | 否 | 体积重系数 |
+| minCharge | decimal | 否 | 最低收费 |
+| surcharges | json | 否 | 附加费配置 |
+| formula | relation → quote-price-formula | 否 | 关联报价公式（manyToOne） |
+| effectiveFrom | date | 是 | 生效起始日 |
+| effectiveTo | date | 否 | 生效截止日 |
+| isActive | boolean | 是 | 是否启用，默认 true |
+| deletedAt | datetime | 否 | 软删除时间戳 |
+
+#### 操作步骤
+
+- **查看**：进入物流中心 → 报价规则表 → 按 routeId/serviceProvider/isActive 筛选
+- **创建**：点击"创建" → 填写 routeId/serviceProvider → 设置 minWeight/maxWeight/pricePerKg/currency → 设置 effectiveFrom → 可选关联 formula → 保存
+- **编辑**：选择记录 → 编辑 → 保存（建议同步调整 effectiveTo）
+- **删除**：选择记录 → 删除（仅 logistics-manager 角色）
+
+#### 业务规则
+
+- 匹配规则：`routeId + serviceProvider + weight∈[minWeight,maxWeight]` 且 `isActive=true` 且在 effectiveFrom/effectiveTo 有效期内
+- `volumetricFactor` 用于体积重计算：`体积重 = volume / volumetricFactor`，与实际重量取大者计费
+- `minCharge` 保证最低收费，`surcharges` 支持燃油附加费、旺季附加费等
+- 可关联 quote-price-formula 走公式计算，未关联则按 `pricePerKg × weight` 简单计算
+- 时间重叠的规则按 `priority`（如有）或创建时间倒序匹配，命中首条即返回
+
+### 4.4 报价公式模板（quote-price-formula）
+
+**用途**：配置可复用的报价计算公式及变量定义。
+
+**所属插件**：plugin::zhao-logistics
+**集合名**：zhao_logistics_quote_price_formulas
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| site | relation → site-config | 是 | 关联站点（manyToOne） |
+| name | string | 是 | 公式名称，maxLength 100，localized |
+| description | text | 否 | 描述，localized |
+| expression | text | 是 | 公式表达式 |
+| variables | json | 是 | 变量定义 |
+| isActive | boolean | 是 | 是否启用，默认 true |
+| price_rules | relation → quote-price-rule | 否 | 关联报价规则（oneToMany，mappedBy formula） |
+| deletedAt | datetime | 否 | 软删除时间戳 |
+
+#### 操作步骤
+
+- **查看**：进入物流中心 → 报价公式模板 → 按 isActive 筛选
+- **创建**：点击"创建" → 填写 name → 编写 expression → 定义 variables → 保存
+- **编辑**：选择记录 → 编辑 → 保存（被 price_rules 引用时谨慎修改 expression）
+- **删除**：选择记录 → 删除（仅 logistics-manager 角色；被报价规则引用时禁止删除）
+
+#### 业务规则
+
+- `expression` 为安全表达式（由 `quote-engine.calculate` 沙箱求值），引用 `variables` 中定义的变量
+- 启用 i18n，`name`/`description` 按 locale 区分，但 `expression`/`variables` 不区分语言
+- 一条公式可被多条 quote-price-rule 引用（oneToMany 反向关系）
+- 停用公式（`isActive=false`）后，引用它的规则将回退到 `pricePerKg × weight` 简单计算
+
+### 4.5 货物追踪主表（tracking-shipment）
+
+**用途**：记录货物物流追踪主信息及节点列表。
+
+**所属插件**：plugin::zhao-logistics
+**集合名**：zhao_logistics_tracking_shipments
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| site | relation → site-config | 是 | 关联站点（manyToOne） |
+| trackingNo | string | 是 | 运单号，maxLength 50 |
+| orderId | string | 否 | 关联订单 ID，maxLength 50 |
+| status | enumeration | 是 | 状态：pending / in_transit / customs / hold / delivered / exception / returned，默认 pending |
+| origin | string | 是 | 始发地，maxLength 100 |
+| destination | string | 是 | 目的地，maxLength 100 |
+| serviceProvider | string | 否 | 服务商，maxLength 50 |
+| eta | datetime | 否 | 预计到达时间 |
+| actualDelivery | datetime | 否 | 实际送达时间 |
+| customerName | string | 否 | 客户名称，maxLength 100 |
+| customerContact | string | 否 | 客户联系方式，maxLength 200 |
+| lastSyncAt | datetime | 否 | 最后同步时间 |
+| syncProvider | relation → tracking-provider | 否 | 关联追踪 API 配置（manyToOne） |
+| nodes | relation → tracking-node | 否 | 追踪节点列表（oneToMany，mappedBy shipment） |
+| deletedAt | datetime | 否 | 软删除时间戳 |
+
+#### 操作步骤
+
+- **查看**：进入物流中心 → 货物追踪主表 → 按 status/serviceProvider/trackingNo 筛选
+- **创建**：点击"创建" → 填写 trackingNo/origin/destination → 可选关联 syncProvider → 保存
+- **编辑**：选择记录 → 编辑（如更新 status/eta/actualDelivery）→ 保存
+- **删除**：选择记录 → 删除（仅 logistics-manager 角色）
+
+#### 业务规则
+
+- 状态流转：`pending → in_transit → customs → delivered`；异常分支 `hold / exception / returned`
+- `status=delivered` 时回填 `actualDelivery`，并触发通知订阅（subscription）推送
+- `lastSyncAt` 由 tracking-provider 定时同步任务更新，`syncProvider` 决定数据来源
+- `nodes` 子表记录完整物流轨迹，与主表 status 联动（最新节点决定主表状态）
+- `trackingNo` 在站点内建议唯一，避免重复录入
+
+### 4.6 追踪节点（tracking-node）
+
+**用途**：记录货物物流轨迹的逐个节点事件。
+
+**所属插件**：plugin::zhao-logistics
+**集合名**：zhao_logistics_tracking_nodes
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| site | relation → site-config | 是 | 关联站点（manyToOne） |
+| shipment | relation → tracking-shipment | 是 | 关联运单（manyToOne，inversedBy nodes） |
+| nodeStatus | enumeration | 是 | 节点状态：done / active / pending / alert |
+| nodeType | enumeration | 是 | 节点类型：picked_up / export / import / customs / hold / delivery / delivered / exception |
+| location | string | 否 | 位置，maxLength 100 |
+| eventTime | datetime | 是 | 事件时间 |
+| description | text | 是 | 描述，localized |
+| dataSource | enumeration | 是 | 数据来源：internal / external，默认 internal |
+| providerRef | string | 否 | 外部服务商引用 ID，maxLength 50 |
+| deletedAt | datetime | 否 | 软删除时间戳 |
+
+#### 操作步骤
+
+- **查看**：进入物流中心 → 追踪节点 → 按 shipment/nodeStatus/nodeType 筛选
+- **创建**：点击"创建" → 选择 shipment → 设置 nodeType/nodeStatus/eventTime → 填写 description → 保存
+- **编辑**：选择记录 → 编辑 → 保存
+- **删除**：选择记录 → 删除（仅 logistics-manager 角色）
+
+#### 业务规则
+
+- 每条节点归属一个 tracking-shipment，按 `eventTime` 升序构成完整轨迹
+- `nodeStatus=active` 表示当前进行节点，每条 shipment 通常仅一个 active 节点
+- `nodeStatus=alert` 触发异常通知，联动 subscription 推送
+- `dataSource=external` 表示由 tracking-provider 同步而来，`providerRef` 记录外部唯一 ID 防止重复同步
+- 启用 i18n，`description` 按 locale 区分，支持多语言轨迹展示
+
+### 4.7 追踪 API 配置（tracking-provider）
+
+**用途**：配置外部物流追踪 API 凭证与参数。
+
+**所属插件**：plugin::zhao-logistics
+**集合名**：zhao_logistics_tracking_providers
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| site | relation → site-config | 是 | 关联站点（manyToOne） |
+| name | string | 是 | 配置名称，maxLength 100 |
+| providerType | enumeration | 是 | 服务商类型：track17 / afterShip / kuaidi100 / customApi |
+| apiKey | string | 是 | API Key，maxLength 200 |
+| apiSecret | string | 否 | API Secret，maxLength 200 |
+| endpoint | string | 否 | 自定义端点 URL，maxLength 500 |
+| isEnabled | boolean | 是 | 是否启用，默认 true |
+| rateLimit | integer | 否 | 速率限制（次/分钟） |
+| supportedCarriers | json | 否 | 支持的承运商列表 |
+| extraConfig | json | 否 | 扩展配置 |
+| shipments | relation → tracking-shipment | 否 | 关联运单（oneToMany，mappedBy syncProvider） |
+| deletedAt | datetime | 否 | 软删除时间戳 |
+
+#### 操作步骤
+
+- **查看**：进入物流中心 → 追踪 API 配置 → 按 providerType/isEnabled 筛选
+- **创建**：点击"创建" → 填写 name → 选择 providerType → 填写 apiKey → 可选 apiSecret/endpoint/rateLimit → 保存
+- **编辑**：选择记录 → 编辑（如轮换 apiKey）→ 保存
+- **删除**：选择记录 → 删除（仅 logistics-manager 角色；被运单引用时建议先停用）
+
+#### 业务规则
+
+- `apiKey`/`apiSecret` 为敏感凭证，后台展示需脱敏，禁止日志输出明文
+- `providerType=customApi` 时必须填写 `endpoint`，由自定义适配器对接
+- `rateLimit` 控制定时同步任务的调用频率，避免触发服务商限流
+- `supportedCarriers` 决定该配置可解析的承运商列表，未匹配的 trackingNo 跳过同步
+- 同一站点可配置多个 provider，按 `isEnabled=true` 且 `rateLimit` 余量选择调度
+
+### 4.8 联系渠道矩阵（contact-matrix）
+
+**用途**：按语言/国家配置多渠道联系信息。
+
+**所属插件**：plugin::zhao-logistics
+**集合名**：zhao_logistics_contact_matrices
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| site | relation → site-config | 是 | 关联站点（manyToOne） |
+| lang | enumeration | 是 | 语言：cn / jp / kr / vn |
+| flag | string | 是 | 国旗标识，maxLength 10 |
+| short | string | 是 | 简码，maxLength 10 |
+| primary | json | 是 | 主要联系方式，localized |
+| channels | json | 是 | 多渠道列表，localized |
+| hotline | json | 是 | 热线配置，localized |
+| email | email | 是 | 邮箱 |
+| callbackNote | text | 否 | 回呼说明，localized |
+| isActive | boolean | 是 | 是否启用，默认 true |
+| deletedAt | datetime | 否 | 软删除时间戳 |
+
+#### 操作步骤
+
+- **查看**：进入物流中心 → 联系渠道矩阵 → 按 lang/isActive 筛选
+- **创建**：点击"创建" → 选择 lang → 填写 flag/short → 编辑 primary/channels/hotline（JSON）→ 填写 email → 保存
+- **编辑**：选择记录 → 编辑 → 保存
+- **删除**：选择记录 → 删除（仅 logistics-manager 角色）
+
+#### 业务规则
+
+- `lang` 在站点内建议唯一，避免同一语言多套配置冲突
+- 启用 i18n，`primary`/`channels`/`hotline`/`callbackNote` 按 locale 区分
+- `channels` 支持电话、Line、KakaoTalk、Zalo、微信、邮件等多渠道，与 subscription 的 `channel` 枚举对齐
+- 停用配置（`isActive=false`）后前台不再展示，但不影响历史订阅
+
+### 4.9 客户评价（review）
+
+**用途**：管理客户评价、案例证言及回复。
+
+**所属插件**：plugin::zhao-logistics
+**集合名**：zhao_logistics_reviews
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| site | relation → site-config | 是 | 关联站点（manyToOne） |
+| authorName | string | 是 | 评价人姓名，maxLength 100，localized |
+| authorCompany | string | 否 | 评价人公司，maxLength 100 |
+| authorTitle | string | 否 | 评价人职位，maxLength 50 |
+| authorCountry | string | 是 | 评价人国家，maxLength 10 |
+| routeId | string | 否 | 路线 ID，maxLength 50 |
+| serviceProvider | string | 否 | 服务商，maxLength 50 |
+| rating | integer | 是 | 评分（1-5） |
+| content | text | 是 | 评价内容，localized |
+| videoUrl | string | 否 | 视频地址，maxLength 500 |
+| videoPoster | media | 否 | 视频封面图（single） |
+| images | media | 否 | 评价图片（multiple） |
+| testimonialType | enumeration | 是 | 证言类型：text / video / case_study，默认 text |
+| isVerified | boolean | 是 | 是否已验证，默认 false |
+| isFeatured | boolean | 否 | 是否精选，默认 false |
+| publishedAt | datetime | 否 | 发布时间 |
+| status | enumeration | 是 | 状态：pending / approved / rejected，默认 pending |
+| replyContent | text | 否 | 回复内容，localized |
+| replyAt | datetime | 否 | 回复时间 |
+| orderRef | string | 否 | 关联订单号，maxLength 50 |
+| deletedAt | datetime | 否 | 软删除时间戳 |
+
+#### 操作步骤
+
+- **查看**：进入物流中心 → 客户评价 → 按 status/testimonialType/isFeatured 筛选
+- **创建**：点击"创建" → 填写 authorName/authorCountry/rating/content → 选择 testimonialType → 可选上传 videoUrl/images → 保存
+- **编辑**：选择记录 → 编辑（审核、填写 replyContent）→ 保存
+- **删除**：选择记录 → 删除（仅 logistics-manager 角色）
+
+#### 业务规则
+
+- 状态流转：`pending → approved/rejected`
+- `status=approved` 后前台展示，`isFeatured=true` 在首页/精选位优先展示
+- `replyContent` 由运营回复，填写后回填 `replyAt`
+- `isVerified` 标记是否核实真实客户，未核实评价不建议置顶
+- `rating` 建议 1-5 整数，用于聚合评分统计
+- 启用 i18n，`authorName`/`content`/`replyContent` 按 locale 区分
+
+### 4.10 通知订阅（subscription）
+
+**用途**：记录用户对追踪/报价/促销/Newsletter 的通知订阅。
+
+**所属插件**：plugin::zhao-logistics
+**集合名**：zhao_logistics_subscriptions
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| site | relation → site-config | 是 | 关联站点（manyToOne） |
+| subscriberType | enumeration | 是 | 订阅类型：tracking_update / quote_reply / promotion / newsletter |
+| channel | enumeration | 是 | 渠道：email / line / kakao / zalo / wechat / sms |
+| channelTarget | string | 是 | 渠道目标（邮箱/账号/手机号），maxLength 200 |
+| trackingNo | string | 否 | 关联运单号，maxLength 50 |
+| quoteRequestId | string | 否 | 关联询价单 ID |
+| eventFilter | json | 否 | 事件过滤条件 |
+| frequency | enumeration | 是 | 频率：realtime / daily / weekly，默认 realtime |
+| isActive | boolean | 是 | 是否启用，默认 true |
+| subscribedAt | datetime | 是 | 订阅时间 |
+| unsubscribedAt | datetime | 否 | 取消订阅时间 |
+| language | string | 是 | 语言，maxLength 10 |
+| lastNotifiedAt | datetime | 否 | 最后通知时间 |
+| notifyCount | integer | 否 | 通知次数，默认 0 |
+| deletedAt | datetime | 否 | 软删除时间戳 |
+
+#### 操作步骤
+
+- **查看**：进入物流中心 → 通知订阅 → 按 subscriberType/channel/isActive 筛选
+- **创建**：主要由前台订阅行为自动写入；后台可点击"创建" → 选择 subscriberType/channel → 填写 channelTarget → 设置 frequency/language → 保存
+- **编辑**：选择记录 → 编辑（如停用 isActive、回填 unsubscribedAt）→ 保存
+- **删除**：选择记录 → 删除（仅 logistics-manager 角色）
+
+#### 业务规则
+
+- `subscriberType=tracking_update` 需填 `trackingNo`，`quote_reply` 需填 `quoteRequestId`
+- `channel` 与 contact-matrix 的 channels 对齐，确保渠道可用
+- `frequency=realtime` 即时推送，`daily/weekly` 由聚合任务批量发送
+- 用户取消订阅时置 `isActive=false` 并回填 `unsubscribedAt`，禁止再向其推送
+- `eventFilter` 支持按节点类型、状态变更等过滤，避免噪音通知
+
+### 4.11 营销落地页（landing-page）
+
+**用途**：配置营销活动落地页内容与转化目标。
+
+**所属插件**：plugin::zhao-logistics
+**集合名**：zhao_logistics_landing_pages
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| site | relation → site-config | 是 | 关联站点（manyToOne） |
+| slug | uid | 是 | URL slug |
+| title | string | 是 | 标题，maxLength 200，localized |
+| campaignName | string | 是 | 活动名称，maxLength 100 |
+| utmSource | string | 是 | UTM 来源，maxLength 100 |
+| utmMedium | string | 是 | UTM 媒介，maxLength 100 |
+| utmCampaign | string | 是 | UTM 活动，maxLength 100 |
+| utmContent | string | 否 | UTM 内容，maxLength 100 |
+| utmTerm | string | 否 | UTM 关键词，maxLength 100 |
+| conversionGoal | enumeration | 是 | 转化目标：quote_submit / contact_click / phone_call / download |
+| heroContent | json | 是 | 首屏内容，localized |
+| sections | json | 是 | 区块内容，localized |
+| formConfig | json | 否 | 表单配置 |
+| seoTitle | string | 否 | SEO 标题，maxLength 60，localized |
+| seoDescription | string | 否 | SEO 描述，maxLength 160，localized |
+| ogImage | media | 否 | Open Graph 图（single） |
+| variant | string | 否 | A/B 测试变体标识，maxLength 20 |
+| parentPageId | string | 否 | 父页面 ID |
+| isActive | boolean | 是 | 是否启用，默认 true |
+| startAt | datetime | 否 | 开始时间 |
+| endAt | datetime | 否 | 结束时间 |
+| publishedAt | datetime | 否 | 发布时间 |
+| status | enumeration | 是 | 状态：draft / published / archived，默认 draft |
+| deletedAt | datetime | 否 | 软删除时间戳 |
+
+#### 操作步骤
+
+- **查看**：进入物流中心 → 营销落地页 → 按 status/campaignName/conversionGoal 筛选
+- **创建**：点击"创建" → 填写 slug/title/campaignName → 设置 UTM 参数与 conversionGoal → 编辑 heroContent/sections → 保存
+- **编辑**：选择记录 → 编辑 → 保存
+- **删除**：选择记录 → 删除（仅 logistics-manager 角色）
+
+#### 业务规则
+
+- 状态流转：`draft → published → archived`
+- 业务概念状态由 `status` + `isActive` + `startAt`/`endAt`/`publishedAt` 组合判定：`draft`（草稿）→ `scheduled`（已发布但 startAt 未到）→ `active`（startAt~endAt 内且 published）→ `expired`（endAt 已过）
+- `slug` 在站点内唯一，决定前台访问路径
+- `conversionGoal` 与 conversion-event 联动，`funnel-tracker.track` 按目标记录转化事件
+- `variant` 支持 A/B 测试，`parentPageId` 关联主页面用于变体归组
+- 启用 i18n，`title`/`heroContent`/`sections`/`seoTitle`/`seoDescription` 按 locale 区分
+
+### 4.12 转化漏斗（conversion-funnel）
+
+**用途**：定义营销转化漏斗步骤及关联事件。
+
+**所属插件**：plugin::zhao-logistics
+**集合名**：zhao_logistics_conversion_funnels
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| site | relation → site-config | 是 | 关联站点（manyToOne） |
+| name | string | 是 | 漏斗名称，maxLength 100 |
+| lang | string | 否 | 语言，maxLength 10 |
+| steps | json | 是 | 漏斗步骤定义 |
+| isActive | boolean | 是 | 是否启用，默认 true |
+| events | relation → conversion-event | 否 | 关联转化事件（oneToMany，mappedBy funnel） |
+| deletedAt | datetime | 否 | 软删除时间戳 |
+
+#### 操作步骤
+
+- **查看**：进入物流中心 → 转化漏斗 → 按 isActive/lang 筛选
+- **创建**：点击"创建" → 填写 name → 编辑 steps（步骤数组）→ 保存
+- **编辑**：选择记录 → 编辑 → 保存（被 events 引用时谨慎调整 steps 顺序）
+- **删除**：选择记录 → 删除（仅 logistics-manager 角色）
+
+#### 业务规则
+
+- `steps` 为有序步骤数组，每步含 `step`/`eventName`/`description` 等，与 conversion-event 的 `step`+`eventName` 对齐
+- `events` 反向关联所有归属该漏斗的转化事件，用于漏斗分析
+- 停用漏斗（`isActive=false`）后不再接收新事件，但历史事件保留
+- `lang` 用于按语言区分漏斗配置，未设置则为站点默认语言
+
+### 4.13 转化事件（conversion-event）
+
+**用途**：记录用户在转化漏斗中的具体事件。
+
+**所属插件**：plugin::zhao-logistics
+**集合名**：zhao_logistics_conversion_events
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| site | relation → site-config | 是 | 关联站点（manyToOne） |
+| funnel | relation → conversion-funnel | 是 | 关联漏斗（manyToOne，inversedBy events） |
+| eventName | string | 是 | 事件名，maxLength 50 |
+| step | integer | 是 | 漏斗步骤序号 |
+| visitorId | string | 是 | 访客 ID，maxLength 100 |
+| user | relation → users-permissions.user | 否 | 登录用户（manyToOne） |
+| sessionId | string | 否 | 会话 ID，maxLength 100 |
+| landingPageId | string | 否 | 落地页 ID |
+| quoteRequestId | string | 否 | 询价单 ID |
+| utmSource | string | 否 | UTM 来源，maxLength 100 |
+| utmMedium | string | 否 | UTM 媒介，maxLength 100 |
+| utmCampaign | string | 否 | UTM 活动，maxLength 100 |
+| lang | string | 否 | 语言，maxLength 10 |
+| ipAddress | string | 否 | IP，maxLength 45 |
+| userAgent | string | 否 | UA，maxLength 500 |
+| occurredAt | datetime | 是 | 事件发生时间 |
+| deletedAt | datetime | 否 | 软删除时间戳 |
+
+#### 操作步骤
+
+- **查看**：进入物流中心 → 转化事件 → 按 funnel/eventName/step 筛选
+- **创建**：主要由前台 `funnel-tracker.track` 自动写入；后台可点击"创建" → 选择 funnel → 填写 eventName/step/visitorId/occurredAt → 保存
+- **编辑**：禁止编辑（事件数据不可变）
+- **删除**：选择记录 → 删除（仅 logistics-manager 角色可批量清理）
+
+#### 业务规则
+
+- 事件数据不可变，禁止后台修改（保证漏斗分析准确性）
+- `funnel`+`step`+`eventName` 三元组定位漏斗位置，由 `funnel-tracker.track` 写入
+- `landingPageId`/`quoteRequestId` 串联落地页与询价单，构成完整转化路径
+- `visitorId` 通过 cookie 持久化，`sessionId` 单次会话，与官网中心 visit-log 共享标识
+- `ipAddress`/`userAgent` 为隐私数据，需遵循合规要求，建议定期脱敏
+
+### 4.14 意向订单（intent-order）
+
+**用途**：记录由询价转化的意向订单及履约状态。
+
+**所属插件**：plugin::zhao-logistics
+**集合名**：zhao_logistics_intent_orders
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| site | relation → site-config | 是 | 关联站点（manyToOne） |
+| orderNo | string | 是 | 订单号，maxLength 50 |
+| quoteRequestId | string | 是 | 关联询价单 ID |
+| customerName | string | 是 | 客户名称，maxLength 100 |
+| customerContact | string | 是 | 客户联系方式，maxLength 200 |
+| customerType | enumeration | 否 | 客户类型：individual / business / fba_seller |
+| confirmedPrice | json | 是 | 确认价格 |
+| cargoSummary | json | 是 | 货物摘要 |
+| routeSummary | json | 是 | 路线摘要 |
+| plannedShipDate | date | 否 | 计划发货日 |
+| actualShipDate | date | 否 | 实际发货日 |
+| status | enumeration | 是 | 状态：intent / confirmed / shipping / delivered / cancelled，默认 intent |
+| assignedTo | relation → admin::user | 否 | 负责人（manyToOne） |
+| followUpRecords | json | 否 | 跟进记录 |
+| contractSigned | boolean | 否 | 是否已签合同，默认 false |
+| depositPaid | boolean | 否 | 是否已付定金，默认 false |
+| depositAmount | decimal | 否 | 定金金额 |
+| convertedToOrderId | string | 否 | 转化后的正式订单 ID |
+| remark | text | 否 | 备注 |
+| leadId | string | 否 | 关联线索 ID |
+| deletedAt | datetime | 否 | 软删除时间戳 |
+
+#### 操作步骤
+
+- **查看**：进入物流中心 → 意向订单 → 按 status/assignedTo/customerType 筛选
+- **创建**：主要由询价单转化生成；后台可点击"创建" → 填写 orderNo/quoteRequestId/customerName/customerContact/confirmedPrice/cargoSummary/routeSummary → 保存
+- **编辑**：选择记录 → 编辑（更新 status、回填 actualShipDate/convertedToOrderId）→ 保存
+- **删除**：选择记录 → 删除（仅 logistics-manager 角色）
+
+#### 业务规则
+
+- 状态流转：`intent → confirmed → shipping → delivered`；取消分支 `cancelled`
+- 订单转化全链路：`更新 status=delivered → 查 referral → referral-engine.markConverted → customer-aggregator.upsertFromOrder`
+- `status=shipping` 时回填 `actualShipDate`，并联动创建 tracking-shipment
+- `contractSigned`/`depositPaid` 为履约前置条件，建议签合同+付定金后再置 `confirmed`
+- `assignedTo` 关联 admin::user，用于销售归属与业绩统计
+- `convertedToOrderId` 标记正式订单系统 ID，完成转化后回填
+
+### 4.15 推荐奖励（referral）
+
+**用途**：记录推荐关系及奖励发放状态。
+
+**所属插件**：plugin::zhao-logistics
+**集合名**：zhao_logistics_referrals
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| site | relation → site-config | 是 | 关联站点（manyToOne） |
+| referralCode | string | 是 | 推荐码，maxLength 50 |
+| referrerName | string | 是 | 推荐人姓名，maxLength 100 |
+| referrerContact | string | 是 | 推荐人联系方式，maxLength 200 |
+| referrerCustomerId | string | 否 | 推荐人客户 ID |
+| refereeName | string | 是 | 被推荐人姓名，maxLength 100 |
+| refereeContact | string | 是 | 被推荐人联系方式，maxLength 200 |
+| refereeCustomerId | string | 否 | 被推荐人客户 ID |
+| referralChannel | enumeration | 是 | 推荐渠道：friend / community / exhibition / partner / other |
+| referralSource | string | 否 | 推荐来源，maxLength 100 |
+| status | enumeration | 是 | 状态：pending / contacted / qualified / converted / rewarded / invalid，默认 pending |
+| quoteRequestId | string | 否 | 关联询价单 ID |
+| intentOrderId | string | 否 | 关联意向订单 ID |
+| rewardType | enumeration | 是 | 奖励类型：points / cash / discount / gift |
+| rewardAmount | decimal | 否 | 奖励金额 |
+| rewardStatus | enumeration | 否 | 奖励状态：pending / issued / claimed，默认 pending |
+| rewardIssuedAt | datetime | 否 | 奖励发放时间 |
+| conversionValue | decimal | 否 | 转化价值 |
+| convertedAt | datetime | 否 | 转化时间 |
+| remark | text | 否 | 备注 |
+| deletedAt | datetime | 否 | 软删除时间戳 |
+
+#### 操作步骤
+
+- **查看**：进入物流中心 → 推荐奖励 → 按 status/rewardStatus/referralChannel 筛选
+- **创建**：主要由前台 `referral-engine.applyCode` 自动写入；后台可点击"创建" → 填写 referralCode/referrer/referee 信息 → 选择 referralChannel/rewardType → 保存
+- **编辑**：选择记录 → 编辑（更新 status、发放奖励）→ 保存
+- **删除**：选择记录 → 删除（仅 logistics-manager 角色）
+
+#### 业务规则
+
+- 状态流转：`pending → contacted → qualified → converted → rewarded`；失效分支 `invalid`
+- `rewardStatus` 流转：`pending → issued → claimed`
+- 推荐码应用：询价提交时 `referral-engine.applyCode` 校验 `referralCode` 并创建 referral 记录
+- 转化触发：intent-order `status=delivered` 时 `referral-engine.markConverted` 将 status 置 `converted`、回填 `convertedAt`/`conversionValue`
+- 奖励发放：`rewardStatus=issued` 回填 `rewardIssuedAt`，`claimed` 表示被推荐人已领取
+- `referralCode` 在站点内建议唯一，防止冲突
+
+### 4.16 客户档案（customer-profile）
+
+**用途**：聚合客户询价/订单数据，统一管理客户档案与生命周期。
+
+**所属插件**：plugin::zhao-logistics
+**集合名**：zhao_logistics_customer_profiles
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| site | relation → site-config | 是 | 关联站点（manyToOne） |
+| name | string | 是 | 客户名称，maxLength 100 |
+| contactPhone | string | 是 | 联系电话，maxLength 50 |
+| contactEmail | string | 否 | 邮箱，maxLength 100 |
+| contactLine | string | 否 | Line 账号，maxLength 100 |
+| contactWechat | string | 否 | 微信号，maxLength 100 |
+| contactKakao | string | 否 | KakaoTalk 账号，maxLength 100 |
+| contactZalo | string | 否 | Zalo 账号，maxLength 100 |
+| company | string | 否 | 公司，maxLength 100 |
+| title | string | 否 | 职位，maxLength 50 |
+| customerType | enumeration | 是 | 客户类型：individual / business / fba_seller |
+| country | string | 是 | 国家，maxLength 10 |
+| preferredLang | string | 否 | 偏好语言，maxLength 10 |
+| preferredRoute | json | 否 | 偏好路线 |
+| preferredService | json | 否 | 偏好服务 |
+| totalQuoteCount | integer | 否 | 累计询价数，默认 0 |
+| totalOrderCount | integer | 否 | 累计订单数，默认 0 |
+| totalOrderValue | decimal | 否 | 累计订单金额，默认 0 |
+| lastQuoteAt | datetime | 否 | 最后询价时间 |
+| lastOrderAt | datetime | 否 | 最后订单时间 |
+| lifecycleStage | enumeration | 是 | 生命周期阶段：lead / active / repeat / vip / churned，默认 lead |
+| tags | json | 否 | 标签 |
+| assignedTo | relation → admin::user | 否 | 负责人（manyToOne） |
+| sourceChannel | string | 否 | 来源渠道，maxLength 50 |
+| utmSource | string | 否 | UTM 来源，maxLength 100 |
+| remark | text | 否 | 备注 |
+| relatedLeadIds | json | 否 | 关联线索 ID 列表 |
+| relatedQuoteIds | json | 否 | 关联询价单 ID 列表 |
+| relatedOrderIds | json | 否 | 关联订单 ID 列表 |
+| deletedAt | datetime | 否 | 软删除时间戳 |
+
+#### 操作步骤
+
+- **查看**：进入物流中心 → 客户档案 → 按 lifecycleStage/customerType/assignedTo 筛选
+- **创建**：主要由 `customer-aggregator.upsertFromQuote/upsertFromOrder` 自动聚合；后台可点击"创建" → 填写 name/contactPhone/customerType/country → 保存
+- **编辑**：选择记录 → 编辑（补充联系方式、调整 assignedTo/tags）→ 保存
+- **删除**：选择记录 → 删除（仅 logistics-manager 角色）
+
+#### 业务规则
+
+- 生命周期计算：由 `customer-aggregator` 根据 `totalQuoteCount`/`totalOrderCount`/`totalOrderValue` 自动计算 `lifecycleStage`
+  - `lead`：仅询价无订单（`totalOrderCount=0`）
+  - `active`：首单成交（`totalOrderCount=1`）
+  - `repeat`：复购客户（`totalOrderCount≥2`）
+  - `vip`：高价值客户（`totalOrderValue` 达阈值或 `totalOrderCount≥N`）
+  - `churned`：长期未活跃（`lastOrderAt` 超过设定周期）
+- 聚合来源：`upsertFromQuote` 在询价提交时按 `customerContact` 匹配/创建档案；`upsertFromOrder` 在订单转化时累加订单数据
+- `relatedLeadIds`/`relatedQuoteIds`/`relatedOrderIds` 记录关联业务 ID，便于跨中心追溯
+- `assignedTo` 关联 admin::user，用于销售归属与客户分配
+- 多渠道联系字段与 contact-matrix/subscription 的 channel 对齐，支持多触点运营
