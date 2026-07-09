@@ -3648,3 +3648,944 @@ menu.study-center（学习数据）
 - `reason` 记录操作原因，用于合规审计
 - 关闭 `timestamps`，由 `timestamp` 字段显式记录操作时间
 - 关闭 draftAndPublish，记录直接生效
+
+---
+
+## Ch11 标签中心
+
+标签中心（menu.tag-center）承载标签体系、标签分组、标签索引与知识点管理，CT 由 `plugin::zhao-tag` 提供。
+
+### 11.1 标签（tag）
+
+**用途**：管理可复用的标签，支持分组、层级与多站点归属，并关联网站内容。
+
+**所属插件**：plugin::zhao-tag
+**集合名**：zhao_tags
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| name | string | 是 | 标签名称，支持 i18n |
+| slug | uid | 否 | 标签 slug，由 name 生成，支持 i18n |
+| description | text | 否 | 描述，支持 i18n |
+| color | string | 否 | 颜色值 |
+| icon | media | 否 | 图标（single） |
+| tagGroup | relation → tag-group | 否 | 所属分组（manyToOne，inversedBy tags） |
+| parent | relation → tag | 否 | 父级标签（manyToOne，inversedBy children） |
+| children | relation → tag | 否 | 子级标签（oneToMany，mappedBy parent） |
+| sort | integer | 否 | 排序，默认 0 |
+| isPreset | boolean | 否 | 是否预设标签，默认 false |
+| isPublic | boolean | 否 | 是否公共/站点标签，默认 true |
+| site | relation → site-config | 否 | 所属站点（manyToOne，inversedBy tags） |
+| indexes | relation → tag-index | 否 | 标签索引（oneToMany，mappedBy tag） |
+| website_articles | relation → article | 否 | 网站文章（manyToMany，mappedBy tags） |
+| website_tutorials | relation → tutorial | 否 | 网站教程（manyToMany，mappedBy tags） |
+| website_cases | relation → case | 否 | 网站案例（manyToMany，mappedBy tags） |
+| website_faqs | relation → faq | 否 | 网站常见问题（manyToMany，mappedBy tags） |
+| website_compliances | relation → compliance | 否 | 网站合规（manyToMany，mappedBy tags） |
+| website_downloads | relation → download | 否 | 网站下载（manyToMany，mappedBy tags） |
+| website_products | relation → product | 否 | 网站产品（manyToMany，mappedBy tags） |
+| deletedAt | datetime | 否 | 软删除时间戳，默认 null |
+
+#### 操作步骤
+
+- **查看**：进入标签中心 → 标签 → 按 tagGroup/isPublic/site 筛选
+- **创建**：点击"创建" → 填写 name → 选择 tagGroup/parent/site → 设置 isPublic/isPreset → 保存
+- **编辑**：选择标签 → 编辑（如调整分组、停用 isPublic）→ 保存
+- **删除**：选择标签 → 删除（被网站内容引用时不建议删除）
+
+#### 业务规则
+
+- `name` 支持 i18n 本地化，`slug` 由 name 自动生成
+- `isPublic=true` 为公共标签（全站点可用），`false` 为站点私有标签（绑定 `site`）
+- `tagGroup` 关联标签分组，`parent`/`children` 构成自引用层级树
+- `isPreset=true` 为系统预设标签，不可删除
+- 通过 `website_*` 多对多关系被网站文章/教程/案例等内容引用
+- `indexes` 反向关联 tag-index，记录标签被引用的目标对象
+- `deletedAt` 软删除字段，保留数据可追溯
+- 关闭 draftAndPublish，标签直接生效
+
+### 11.2 标签分组（tag-group）
+
+**用途**：管理标签分组的层级树与站点归属。
+
+**所属插件**：plugin::zhao-tag
+**集合名**：zhao_tag_groups
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| name | string | 是 | 分组名称，支持 i18n |
+| slug | uid | 否 | 分组 slug，由 name 生成，支持 i18n |
+| description | text | 否 | 描述，支持 i18n |
+| color | string | 否 | 颜色值 |
+| icon | media | 否 | 图标（single） |
+| sort | integer | 否 | 排序，默认 0 |
+| isPublic | boolean | 否 | 是否公共/站点分组，默认 true |
+| site | relation → site-config | 否 | 所属站点（manyToOne，inversedBy tagGroups） |
+| parent | relation → tag-group | 否 | 父级分组（manyToOne，inversedBy children） |
+| children | relation → tag-group | 否 | 子级分组（oneToMany，mappedBy parent） |
+| tags | relation → tag | 否 | 分组下的标签（oneToMany，mappedBy tagGroup） |
+| deletedAt | datetime | 否 | 软删除时间戳，默认 null |
+
+#### 操作步骤
+
+- **查看**：进入标签中心 → 标签分组 → 按 isPublic/site/parent 筛选
+- **创建**：点击"创建" → 填写 name → 选择 parent/site → 设置 isPublic → 保存
+- **编辑**：选择分组 → 编辑（如调整层级、停用 isPublic）→ 保存
+- **删除**：选择分组 → 删除（分组下存在 tags 时禁止删除）
+
+#### 业务规则
+
+- `isPublic=true` 为公共分组，`false` 为站点私有分组（绑定 `site`）
+- `parent`/`children` 构成分组自引用层级树
+- `tags` 反向关联 tag，删除分组前需先迁移其下标签
+- `name`/`slug`/`description` 支持 i18n 本地化
+- `deletedAt` 软删除字段
+- 关闭 draftAndPublish，分组直接生效
+
+### 11.3 标签索引（tag-index）
+
+**用途**：记录标签与任意目标对象的引用关系，支持反向检索。
+
+**所属插件**：plugin::zhao-tag
+**集合名**：zhao_tag_indexes
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| targetType | string | 是 | 目标对象类型 |
+| targetId | string | 是 | 目标对象 ID |
+| tag | relation → tag | 否 | 关联标签（manyToOne，inversedBy indexes） |
+| createdAt | datetime | 否 | 创建时间 |
+
+#### 操作步骤
+
+- **查看**：进入标签中心 → 标签索引 → 按 targetType/tag 筛选
+- **创建**：主要由打标行为自动写入；后台可点击"创建" → 填写 targetType/targetId → 选择 tag → 保存
+- **编辑**：禁止编辑（索引记录不可变）
+- **删除**：选择记录 → 删除（仅 admin 角色）
+
+#### 业务规则
+
+- `targetType`+`targetId` 定位被标记对象，`tag` 关联标签
+- 与 tag 的 `indexes` 反向关联，支持按标签反查对象
+- 用于跨内容类型统一打标检索，不直接绑定具体 CT
+- 关闭 draftAndPublish，记录直接生效
+
+### 11.4 知识点（knowledge-point）
+
+**用途**：管理知识点的层级树，作为文章内容标注与检索的维度。
+
+**所属插件**：plugin::zhao-tag
+**集合名**：zhao_knowledge_points
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| name | string | 是 | 知识点名称 |
+| slug | uid | 否 | 知识点 slug，由 name 生成 |
+| description | text | 否 | 描述 |
+| code | string | 否 | 知识点编码 |
+| level | enumeration | 否 | 难度等级：basic / intermediate / advanced，默认 basic |
+| parent | relation → knowledge-point | 否 | 父级知识点（manyToOne，inversedBy children） |
+| children | relation → knowledge-point | 否 | 子级知识点（oneToMany，mappedBy parent） |
+| sort | integer | 否 | 排序，默认 0 |
+| deletedAt | datetime | 否 | 软删除时间戳，默认 null |
+
+#### 操作步骤
+
+- **查看**：进入标签中心 → 知识点 → 按 level/parent 筛选
+- **创建**：点击"创建" → 填写 name → 选择 level/parent → 保存
+- **编辑**：选择知识点 → 编辑（如调整层级、修改 level）→ 保存
+- **删除**：选择知识点 → 删除（存在子知识点时禁止删除）
+
+#### 业务规则
+
+- `parent`/`children` 构成自引用层级树
+- `level`：`basic`（基础）/ `intermediate`（进阶）/ `advanced`（高级）
+- `code` 为知识点业务编码，便于外部系统对接
+- 被 knowledge-point-index（工作室中心）引用，关联文章内容
+- `deletedAt` 软删除字段
+- 关闭 draftAndPublish，知识点直接生效
+
+---
+
+## Ch12 工作室中心
+
+工作室中心（menu.studio-center）承载内容采集、草稿加工、多平台发布与流量统计，CT 由 `plugin::zhao-studio` 提供。
+
+### 12.1 草稿文章（article-draft）
+
+**用途**：采集并加工后的草稿文章，作为内容发布到网站与多平台的源头。
+
+**所属插件**：plugin::zhao-studio
+**集合名**：zhao_article_drafts
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| title | string | 是 | 标题，maxLength 200 |
+| content | richtext | 是 | 正文 |
+| sourceUrl | string | 否 | 来源链接 |
+| sourceTitle | string | 否 | 来源标题 |
+| sourcePublishedAt | datetime | 否 | 来源发布时间 |
+| sourceAuthor | string | 否 | 来源作者 |
+| category | string | 否 | 分类 |
+| status | enumeration | 否 | 状态：draft / processing / ready / published，默认 draft |
+| aiProcessed | boolean | 否 | 是否已 AI 处理，默认 false |
+| aiSummary | text | 否 | AI 摘要 |
+| aiOptimizedTitle | string | 否 | AI 优化标题 |
+| publishRecords | relation → publish-record | 否 | 发布记录（oneToMany，mappedBy article） |
+| browserLogs | relation → browser-log | 否 | 浏览器日志（oneToMany，mappedBy article） |
+| statSummaries | relation → stat-summary | 否 | 统计汇总（oneToMany，mappedBy article） |
+| websiteArticles | relation → article | 否 | 网站文章（oneToMany，mappedBy sourceArticleDraft） |
+| publishedAt | datetime | 否 | 发布时间 |
+| createdAt | datetime | 否 | 创建时间 |
+| updatedAt | datetime | 否 | 更新时间 |
+
+#### 操作步骤
+
+- **查看**：进入工作室中心 → 草稿文章 → 按 status/category/aiProcessed 筛选
+- **创建**：点击"创建" → 填写 title/content → 可选填来源信息 → 保存为草稿
+- **编辑**：选择草稿 → 编辑 → 触发 AI 处理（生成 aiSummary/aiOptimizedTitle）→ 转为 ready → 保存
+- **删除**：选择草稿 → 删除（已 published 状态不建议删除）
+
+#### 业务规则
+
+- `status` 流转：`draft`（草稿）→ `processing`（AI 处理中）→ `ready`（就绪）→ `published`（已发布）
+- `aiProcessed=true` 表示已通过 AI 加工，`aiSummary`/`aiOptimizedTitle` 为 AI 产出
+- `sourceUrl` 等来源字段由采集任务写入，标识原始出处
+- `publishRecords` 关联多平台发布记录，`websiteArticles` 关联已发布到官网的文章
+- `browserLogs`/`statSummaries` 反向关联浏览行为与统计
+- 开启 draftAndPublish，支持草稿/发布双态
+
+### 12.2 采集源（collect-source）
+
+**用途**：配置内容采集源及其抓取规则，驱动采集任务执行。
+
+**所属插件**：plugin::zhao-studio
+**集合名**：zhao_collect_sources
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| name | string | 是 | 采集源名称，maxLength 100 |
+| url | string | 是 | 采集源地址 |
+| type | enumeration | 否 | 采集类型：template / custom，默认 template |
+| template | string | 否 | 模板标识 |
+| titleSelector | string | 否 | 标题选择器 |
+| contentSelector | string | 否 | 正文选择器 |
+| authorSelector | string | 否 | 作者选择器 |
+| dateSelector | string | 否 | 日期选择器 |
+| isActive | boolean | 否 | 启用状态，默认 true |
+| tasks | relation → collect-task | 否 | 采集任务（oneToMany，mappedBy source） |
+| lastCollectedAt | datetime | 否 | 最近采集时间 |
+| createdAt | datetime | 否 | 创建时间 |
+| updatedAt | datetime | 否 | 更新时间 |
+
+#### 操作步骤
+
+- **查看**：进入工作室中心 → 采集源 → 按 type/isActive 筛选
+- **创建**：点击"创建" → 填写 name/url → 选择 type → 配置 selectors → 启用 isActive → 保存
+- **编辑**：选择采集源 → 编辑（如调整 selectors、停用 isActive）→ 保存
+- **删除**：选择采集源 → 删除（存在 tasks 时禁止删除）
+
+#### 业务规则
+
+- `type`：`template`（模板预设）/ `custom`（自定义选择器）
+- `template` 模式下使用预设抓取模板；`custom` 模式下使用各 selector 自定义抓取
+- `isActive=false` 停用采集源，不再触发采集任务
+- `tasks` 反向关联 collect-task，记录该源的采集历史
+- `lastCollectedAt` 记录最近一次采集时间，用于调度
+- 关闭 draftAndPublish，配置直接生效
+
+### 12.3 采集任务（collect-task）
+
+**用途**：记录采集任务的临时状态与抓取结果。
+
+**所属插件**：plugin::zhao-studio
+**集合名**：zhao_collect_tasks
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| source | relation → collect-source | 否 | 所属采集源（manyToOne，inversedBy tasks） |
+| titles | json | 否 | 抓取到的标题列表 |
+| selectedTitles | json | 否 | 选中的标题列表 |
+| status | enumeration | 否 | 状态：pending / fetching_titles / waiting_selection / fetching_content / completed / failed，默认 pending |
+| error | text | 否 | 错误信息 |
+| retryCount | integer | 否 | 重试次数，默认 0 |
+| createdAt | datetime | 否 | 创建时间 |
+| updatedAt | datetime | 否 | 更新时间 |
+
+#### 操作步骤
+
+- **查看**：进入工作室中心 → 采集任务 → 按 status/source 筛选
+- **创建**：主要由采集调度自动写入；后台可点击"创建" → 选择 source → 保存触发采集
+- **编辑**：选择任务 → 编辑（如手动选择 selectedTitles）→ 保存
+- **删除**：选择任务 → 删除（completed/failed 状态可定期清理）
+
+#### 业务规则
+
+- `status` 流转：`pending`（待开始）→ `fetching_titles`（抓取标题）→ `waiting_selection`（等待选择）→ `fetching_content`（抓取正文）→ `completed`（完成）/ `failed`（失败）
+- `titles` 存储抓取到的候选标题，`selectedTitles` 存储人工选中需抓取正文的标题
+- `error` 记录失败原因，`retryCount` 记录重试次数
+- 任务完成后将正文写入 article-draft，并触发 AI 加工
+- 关闭 draftAndPublish，任务直接生效
+
+### 12.4 知识点索引（knowledge-point-index）
+
+**用途**：记录文章与知识点的关联关系，支持按知识点反查内容。
+
+**所属插件**：plugin::zhao-studio
+**集合名**：zhao_knowledge_point_indices
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| targetType | string | 是 | 目标对象类型 |
+| targetId | string | 是 | 目标对象 ID |
+| knowledgePoint | relation → knowledge-point | 否 | 关联知识点（manyToOne） |
+| createdAt | datetime | 否 | 创建时间 |
+| updatedAt | datetime | 否 | 更新时间 |
+
+#### 操作步骤
+
+- **查看**：进入工作室中心 → 知识点索引 → 按 targetType/knowledgePoint 筛选
+- **创建**：主要由打标行为自动写入；后台可点击"创建" → 填写 targetType/targetId → 选择 knowledgePoint → 保存
+- **编辑**：选择记录 → 编辑 → 保存
+- **删除**：选择记录 → 删除（仅 admin 角色）
+
+#### 业务规则
+
+- `targetType`+`targetId` 定位被标记对象，`knowledgePoint` 关联知识点（来自标签中心）
+- 用于跨内容类型按知识点维度检索文章
+- 与 zhao-tag.knowledge-point 跨插件关联，构成知识体系
+- 关闭 draftAndPublish，记录直接生效
+
+### 12.5 发布平台（publish-platform）
+
+**用途**：配置发布平台类型（头条、小红书、微信等），作为发布账号的归属。
+
+**所属插件**：plugin::zhao-studio
+**集合名**：zhao_publish_platforms
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| name | string | 是 | 平台名称，maxLength 100 |
+| type | enumeration | 是 | 平台类型：toutiao / xiaohongshu / wechat / custom / internal |
+| description | text | 否 | 描述 |
+| isActive | boolean | 否 | 启用状态，默认 true |
+| accounts | relation → publish-account | 否 | 平台账号（oneToMany，mappedBy platform） |
+| createdAt | datetime | 否 | 创建时间 |
+| updatedAt | datetime | 否 | 更新时间 |
+
+#### 操作步骤
+
+- **查看**：进入工作室中心 → 发布平台 → 按 type/isActive 筛选
+- **创建**：点击"创建" → 填写 name → 选择 type → 启用 isActive → 保存
+- **编辑**：选择平台 → 编辑（如停用 isActive）→ 保存
+- **删除**：选择平台 → 删除（存在 accounts 时禁止删除）
+
+#### 业务规则
+
+- `type`：`toutiao`（头条）/ `xiaohongshu`（小红书）/ `wechat`（微信）/ `custom`（自定义）/ `internal`（内部）
+- `isActive=false` 停用平台，其下账号不再可用
+- `accounts` 反向关联 publish-account，一个平台可挂多个账号
+- 关闭 draftAndPublish，配置直接生效
+
+### 12.6 发布账号（publish-account）
+
+**用途**：配置发布平台下的账号信息，作为发布记录的执行主体。
+
+**所属插件**：plugin::zhao-studio
+**集合名**：zhao_publish_accounts
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| name | string | 是 | 账号名称，maxLength 100 |
+| platform | relation → publish-platform | 否 | 所属平台（manyToOne，inversedBy accounts） |
+| config | json | 否 | 账号配置（含凭证等） |
+| isActive | boolean | 否 | 启用状态，默认 true |
+| publishRecords | relation → publish-record | 否 | 发布记录（oneToMany，mappedBy account） |
+| lastPublishedAt | datetime | 否 | 最近发布时间 |
+| createdAt | datetime | 否 | 创建时间 |
+| updatedAt | datetime | 否 | 更新时间 |
+
+#### 操作步骤
+
+- **查看**：进入工作室中心 → 发布账号 → 按 platform/isActive 筛选
+- **创建**：点击"创建" → 填写 name → 选择 platform → 配置 config → 启用 isActive → 保存
+- **编辑**：选择账号 → 编辑（如更新 config、停用 isActive）→ 保存
+- **删除**：选择账号 → 删除（存在 publishRecords 时禁止删除）
+
+#### 业务规则
+
+- `config` 存储账号凭证与发布参数（敏感信息需加密存储）
+- `isActive=false` 停用账号，不再执行发布
+- `publishRecords` 反向关联发布记录，`lastPublishedAt` 记录最近发布时间
+- 一个平台可有多个账号（多对一）
+- 关闭 draftAndPublish，配置直接生效
+
+### 12.7 发布记录（publish-record）
+
+**用途**：记录草稿文章发布到具体账号的执行过程与结果。
+
+**所属插件**：plugin::zhao-studio
+**集合名**：zhao_publish_records
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| article | relation → article-draft | 否 | 关联草稿文章（manyToOne，inversedBy publishRecords） |
+| account | relation → publish-account | 否 | 关联发布账号（manyToOne，inversedBy publishRecords） |
+| externalId | string | 否 | 外部平台内容 ID |
+| status | enumeration | 否 | 状态：pending / success / failed，默认 pending |
+| error | text | 否 | 错误信息 |
+| retryCount | integer | 否 | 重试次数，默认 0 |
+| publishedAt | datetime | 否 | 发布时间 |
+| createdAt | datetime | 否 | 创建时间 |
+| updatedAt | datetime | 否 | 更新时间 |
+
+#### 操作步骤
+
+- **查看**：进入工作室中心 → 发布记录 → 按 status/account/article 筛选
+- **创建**：主要由发布调度自动写入；后台可点击"创建" → 选择 article/account → 保存
+- **编辑**：选择记录 → 编辑（如重试失败任务）→ 保存
+- **删除**：选择记录 → 删除（success 状态记录建议归档保留）
+
+#### 业务规则
+
+- `status` 流转：`pending`（待发布）→ `success`（已发布）/ `failed`（发布失败）
+- `article`+`account` 定义一条发布关系，一条草稿可发布到多个账号
+- `externalId` 记录外部平台返回的内容 ID，用于回溯
+- `error` 记录失败原因，`retryCount` 记录重试次数
+- 发布成功时回填 `publishedAt`，并联动 article-draft 的 status
+- 关闭 draftAndPublish，记录直接生效
+
+### 12.8 统计汇总（stat-summary）
+
+**用途**：按日期聚合文章/广告位的浏览与点击统计数据。
+
+**所属插件**：plugin::zhao-studio
+**集合名**：zhao_stat_summaries
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| date | date | 是 | 统计日期 |
+| article | relation → article-draft | 否 | 关联文章（manyToOne） |
+| adSlot | relation → ad-slot | 否 | 关联广告位（manyToOne） |
+| summaryType | enumeration | 是 | 汇总类型：article-daily / ad-slot-daily / global-daily / device-daily / region-daily |
+| pv | integer | 否 | 页面浏览量，默认 0 |
+| uv | integer | 否 | 独立访客数，默认 0 |
+| clickCount | integer | 否 | 点击次数，默认 0 |
+| clickRate | float | 否 | 点击率，默认 0 |
+| avgReadDuration | float | 否 | 平均阅读时长，默认 0 |
+| avgScrollDepth | float | 否 | 平均滚动深度，默认 0 |
+| deviceStats | json | 否 | 设备分布统计 |
+| regionStats | json | 否 | 地域分布统计 |
+| referrerStats | json | 否 | 来源分布统计 |
+| createdAt | datetime | 否 | 创建时间 |
+
+#### 操作步骤
+
+- **查看**：进入工作室中心 → 统计汇总 → 按 summaryType/date 筛选
+- **创建**：主要由统计聚合任务自动写入；后台一般不手动创建
+- **编辑**：禁止编辑（统计数据不可变）
+- **删除**：选择记录 → 删除（仅 admin 角色，过期数据可定期归档）
+
+#### 业务规则
+
+- `summaryType`：`article-daily`（文章日汇总）/ `ad-slot-daily`（广告位日汇总）/ `global-daily`（全站日汇总）/ `device-daily`（设备日汇总）/ `region-daily`（地域日汇总）
+- `article`/`adSlot` 二选一关联，由 summaryType 决定
+- `pv`/`uv`/`clickCount`/`clickRate` 为核心流量指标
+- `deviceStats`/`regionStats`/`referrerStats` 以 JSON 存储多维分布
+- 数据由 browser-log 聚合生成
+- 关闭 draftAndPublish，记录直接生效
+
+### 12.9 浏览器日志（browser-log）
+
+**用途**：记录用户浏览器信息与行为日志，作为统计聚合的数据源。
+
+**所属插件**：plugin::zhao-studio
+**集合名**：zhao_browser_logs
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| eventType | enumeration | 是 | 事件类型：page-view / ad-click / scroll / read-duration / user-register |
+| article | relation → article-draft | 否 | 关联文章（manyToOne，inversedBy browserLogs） |
+| adSlot | relation → ad-slot | 否 | 关联广告位（manyToOne，inversedBy browserLogs） |
+| user | relation → admin::user | 否 | 关联用户（manyToOne） |
+| userId | string | 否 | 用户 ID（匿名时为指纹） |
+| sessionId | string | 是 | 会话 ID |
+| isRegistered | boolean | 否 | 是否已注册，默认 false |
+| registeredAt | datetime | 否 | 注册时间 |
+| userAgent | string | 否 | UA |
+| platform | string | 否 | 平台 |
+| browser | string | 否 | 浏览器 |
+| browserVersion | string | 否 | 浏览器版本 |
+| os | string | 否 | 操作系统 |
+| osVersion | string | 否 | 操作系统版本 |
+| deviceType | enumeration | 否 | 设备类型：desktop / mobile / tablet，默认 desktop |
+| screenWidth | integer | 否 | 屏幕宽度 |
+| screenHeight | integer | 否 | 屏幕高度 |
+| language | string | 否 | 语言 |
+| ip | string | 否 | IP 地址 |
+| country | string | 否 | 国家 |
+| city | string | 否 | 城市 |
+| referrer | string | 否 | 来源 URL |
+| referrerDomain | string | 否 | 来源域名 |
+| readDuration | integer | 否 | 阅读时长，默认 0 |
+| scrollDepth | integer | 否 | 滚动深度，默认 0 |
+| timestamp | datetime | 是 | 事件时间戳 |
+| createdAt | datetime | 否 | 创建时间 |
+
+#### 操作步骤
+
+- **查看**：进入工作室中心 → 浏览器日志 → 按 eventType/deviceType/article 筛选
+- **创建**：主要由前台 SDK 上报自动写入；后台一般不手动创建
+- **编辑**：禁止编辑（日志数据不可变）
+- **删除**：选择记录 → 删除（仅 admin 角色，过期日志可定期归档）
+
+#### 业务规则
+
+- `eventType`：`page-view`（页面浏览）/ `ad-click`（广告点击）/ `scroll`（滚动）/ `read-duration`（阅读时长）/ `user-register`（注册）
+- `sessionId` 标识一次会话，串联同一会话内的多个事件
+- `article`/`adSlot` 关联被访问对象，`user`/`userId` 标识访问者
+- `deviceType`/`browser`/`os` 等字段记录客户端环境，用于多维分析
+- `readDuration`/`scrollDepth` 仅在 `read-duration`/`scroll` 事件下有意义
+- 数据为 stat-summary 的聚合源
+- 关闭 draftAndPublish，记录直接生效
+
+### 12.10 广告位（ad-slot）
+
+**用途**：配置广告位的位置、类型与目标链接，驱动广告展示与点击统计。
+
+**所属插件**：plugin::zhao-studio
+**集合名**：zhao_ad_slots
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| name | string | 是 | 广告位名称 |
+| code | string | 是 | 广告位编码，唯一 |
+| position | enumeration | 否 | 位置：article-content / sidebar / footer / header / list-page / home-page，默认 article-content |
+| type | enumeration | 否 | 类型：product-link / banner / popup / native，默认 product-link |
+| targetUrl | string | 否 | 目标链接 |
+| productId | string | 否 | 关联产品 ID |
+| imageUrl | string | 否 | 图片链接 |
+| isActive | boolean | 否 | 启用状态，默认 true |
+| browserLogs | relation → browser-log | 否 | 浏览日志（oneToMany，mappedBy adSlot） |
+| statSummaries | relation → stat-summary | 否 | 统计汇总（oneToMany，mappedBy adSlot） |
+| createdAt | datetime | 否 | 创建时间 |
+| updatedAt | datetime | 否 | 更新时间 |
+
+#### 操作步骤
+
+- **查看**：进入工作室中心 → 广告位 → 按 position/type/isActive 筛选
+- **创建**：点击"创建" → 填写 name/code → 选择 position/type → 填写 targetUrl/imageUrl → 启用 isActive → 保存
+- **编辑**：选择广告位 → 编辑（如调整 targetUrl、停用 isActive）→ 保存（`code` 已被引用时不建议修改）
+- **删除**：选择广告位 → 删除（存在 browserLogs/statSummaries 时建议归档保留）
+
+#### 业务规则
+
+- `code` 全局唯一，作为广告位标识贯穿前端展示与统计
+- `position`：`article-content`（文章正文）/ `sidebar`（侧边栏）/ `footer`（页脚）/ `header`（页头）/ `list-page`（列表页）/ `home-page`（首页）
+- `type`：`product-link`（产品链接）/ `banner`（横幅）/ `popup`（弹窗）/ `native`（原生）
+- `targetUrl`/`productId`/`imageUrl` 定义广告跳转目标与素材
+- `isActive=false` 停用广告位，前端不再展示
+- `browserLogs`/`statSummaries` 反向关联浏览与统计
+- 关闭 draftAndPublish，配置直接生效
+
+---
+
+## Ch13 理财中心
+
+理财中心（menu.wealth-center）承载理财产品、净值/收益数据、风险指标与推荐配置管理，CT 由 `plugin::zhao-wealth` 提供。
+
+### 13.1 理财产品（wealth-product）
+
+**用途**：管理理财/基金产品的基础信息、风险等级与推荐配置。
+
+**所属插件**：plugin::zhao-wealth
+**集合名**：wealth_products
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| productCode | string | 是 | 产品编码，唯一 |
+| productName | string | 是 | 产品名称 |
+| productType | enumeration | 是 | 产品类型：bank-wealth / stock-fund / bond-fund / mixed-fund / money-fund |
+| registerCode | string | 否 | 登记编码，唯一 |
+| riskLevel | enumeration | 否 | 风险等级：R1 / R2 / R3 / R4 / R5，默认 R2 |
+| termType | enumeration | 否 | 期限类型：short / medium / long |
+| issueDate | date | 否 | 发行日期 |
+| maturityDate | date | 否 | 到期日期 |
+| company | relation → wealth-company | 否 | 发行公司（manyToOne，inversedBy products） |
+| navs | relation → wealth-nav | 否 | 净值数据（oneToMany，mappedBy product） |
+| moneyIncomes | relation → wealth-money-income | 否 | 货币基金收益（oneToMany，mappedBy product） |
+| annualSnapshots | relation → wealth-annual-snapshot | 否 | 年化快照（oneToMany，mappedBy product） |
+| yearlyReturns | relation → wealth-yearly-return | 否 | 年度收益（oneToMany，mappedBy product） |
+| riskMetrics | relation → wealth-risk-metric | 否 | 风险指标（oneToMany，mappedBy product） |
+| recommendWeight | integer | 否 | 推荐权重，默认 0 |
+| recommendTags | json | 否 | 推荐标签 |
+| recommendEnabled | boolean | 否 | 是否启用推荐，默认 false |
+| recommendReason | text | 否 | 推荐理由 |
+| status | boolean | 否 | 启用状态，默认 true |
+| benchmark | string | 否 | 业绩比较基准 |
+| remark | text | 否 | 备注 |
+| createdAt | datetime | 否 | 创建时间 |
+| updatedAt | datetime | 否 | 更新时间 |
+
+#### 操作步骤
+
+- **查看**：进入理财中心 → 理财产品 → 按 productType/riskLevel/status 筛选
+- **创建**：点击"创建" → 填写 productCode/productName → 选择 productType/riskLevel → 关联 company → 保存
+- **编辑**：选择产品 → 编辑（如调整 riskLevel、启用推荐）→ 保存（`productCode` 已被引用时不建议修改）
+- **删除**：选择产品 → 删除（存在 navs/收益数据时建议停用 status 而非删除）
+
+#### 业务规则
+
+- `productCode`/`registerCode` 全局唯一，作为产品标识
+- `productType`：`bank-wealth`（银行理财）/ `stock-fund`（股票基金）/ `bond-fund`（债券基金）/ `mixed-fund`（混合基金）/ `money-fund`（货币基金）
+- `riskLevel`：R1（低风险）→ R5（高风险），默认 R2
+- `money-fund` 类型走 wealth-money-income 收益数据，其他类型走 wealth-nav 净值数据
+- `recommendEnabled`/`recommendWeight`/`recommendTags`/`recommendReason` 控制推荐展示
+- `status=false` 停用产品，前台不再展示
+- `navs`/`moneyIncomes`/`annualSnapshots`/`yearlyReturns`/`riskMetrics` 反向关联各类业绩数据
+- 关闭 draftAndPublish，产品直接生效
+
+### 13.2 净值数据（wealth-nav）
+
+**用途**：记录非货币基金产品的单位净值与累计净值（按日期）。
+
+**所属插件**：plugin::zhao-wealth
+**集合名**：wealth_navs
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| product | relation → wealth-product | 否 | 关联产品（manyToOne，inversedBy navs） |
+| navDate | date | 是 | 净值日期 |
+| unitNav | decimal | 否 | 单位净值，precision 10 scale 4 |
+| accNav | decimal | 否 | 累计净值，precision 10 scale 4 |
+| dataSource | enumeration | 否 | 数据来源：crawler / manual，默认 crawler |
+| createdAt | datetime | 否 | 创建时间 |
+| updatedAt | datetime | 否 | 更新时间 |
+
+#### 操作步骤
+
+- **查看**：进入理财中心 → 净值数据 → 按 product/navDate/dataSource 筛选
+- **创建**：主要由采集任务自动写入；后台可点击"创建" → 选择 product → 填写 navDate/unitNav/accNav → 保存
+- **编辑**：禁止编辑（净值数据不可变）
+- **删除**：选择记录 → 删除（仅 admin 角色）
+
+#### 业务规则
+
+- `product`+`navDate` 唯一，同一产品每日仅一条净值
+- `unitNav`（单位净值）/ `accNav`（累计净值）为基金核心指标
+- `dataSource`：`crawler`（爬虫采集）/ `manual`（人工录入）
+- 仅用于非货币基金；货币基金走 wealth-money-income
+- 关闭 draftAndPublish，记录直接生效
+
+### 13.3 理财公司（wealth-company）
+
+**用途**：管理银行理财公司的基本信息与产品归属。
+
+**所属插件**：plugin::zhao-wealth
+**集合名**：wealth_companies
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| name | string | 是 | 公司全称 |
+| shortName | string | 否 | 公司简称 |
+| companyType | enumeration | 否 | 公司类型：bank / bank-subsidiary / joint-venture，默认 bank-subsidiary |
+| website | string | 否 | 官网 |
+| products | relation → wealth-product | 否 | 旗下产品（oneToMany，mappedBy company） |
+| status | boolean | 否 | 启用状态，默认 true |
+| createdAt | datetime | 否 | 创建时间 |
+| updatedAt | datetime | 否 | 更新时间 |
+
+#### 操作步骤
+
+- **查看**：进入理财中心 → 理财公司 → 按 companyType/status 筛选
+- **创建**：点击"创建" → 填写 name → 选择 companyType → 填写 website → 启用 status → 保存
+- **编辑**：选择公司 → 编辑（如停用 status）→ 保存
+- **删除**：选择公司 → 删除（存在 products 时禁止删除）
+
+#### 业务规则
+
+- `companyType`：`bank`（银行）/ `bank-subsidiary`（银行理财子公司）/ `joint-venture`（合资）
+- `products` 反向关联该公司的产品列表
+- `status=false` 停用公司，其下产品不再推荐
+- 关闭 draftAndPublish，配置直接生效
+
+### 13.4 采集配置（wealth-collect-config）
+
+**用途**：配置理财产品的净值/收益数据采集方式与规则。
+
+**所属插件**：plugin::zhao-wealth
+**集合名**：wealth_collect_configs
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| product | relation → wealth-product | 否 | 关联产品（oneToOne） |
+| collectMethod | enumeration | 否 | 采集方式：web-crawler / zip-pdf / manual / api，默认 web-crawler |
+| collectUrl | string | 否 | 采集地址 |
+| collectRules | json | 否 | 采集规则 |
+| collectStatus | enumeration | 否 | 采集状态：pending / success / failed，默认 pending |
+| lastCollectTime | datetime | 否 | 最近采集时间 |
+| failCount | integer | 否 | 失败次数，默认 0 |
+| failReason | text | 否 | 失败原因 |
+| createdAt | datetime | 否 | 创建时间 |
+| updatedAt | datetime | 否 | 更新时间 |
+
+#### 操作步骤
+
+- **查看**：进入理财中心 → 采集配置 → 按 collectMethod/collectStatus 筛选
+- **创建**：点击"创建" → 选择 product → 选择 collectMethod → 填写 collectUrl/collectRules → 保存
+- **编辑**：选择配置 → 编辑（如调整 collectRules、重置 collectStatus）→ 保存
+- **删除**：选择配置 → 删除（仅 admin 角色）
+
+#### 业务规则
+
+- `product` 为 oneToOne，每个产品对应一条采集配置
+- `collectMethod`：`web-crawler`（网页爬虫）/ `zip-pdf`（压缩 PDF）/ `manual`（人工）/ `api`（接口）
+- `collectStatus` 流转：`pending`（待采集）→ `success`（成功）/ `failed`（失败）
+- `failCount`/`failReason` 记录失败次数与原因，用于重试与告警
+- `lastCollectTime` 记录最近采集时间，用于调度
+- 关闭 draftAndPublish，配置直接生效
+
+### 13.5 客户自选产品（wealth-customer-product）
+
+**用途**：记录客户关注的理财产品列表，支持个性化展示。
+
+**所属插件**：plugin::zhao-wealth
+**集合名**：wealth_customer_products
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| user | relation → users-permissions.user | 否 | 关联用户（manyToOne） |
+| product | relation → wealth-product | 否 | 关联产品（manyToOne） |
+| channel | relation → channel | 否 | 关联渠道（manyToOne） |
+| followTime | datetime | 否 | 关注时间 |
+| sortOrder | integer | 否 | 排序，默认 0 |
+| remark | string | 否 | 备注 |
+| createdAt | datetime | 否 | 创建时间 |
+| updatedAt | datetime | 否 | 更新时间 |
+
+#### 操作步骤
+
+- **查看**：进入理财中心 → 客户自选产品 → 按 user/product/channel 筛选
+- **创建**：主要由前台关注行为自动写入；后台可点击"创建" → 选择 user/product → 保存
+- **编辑**：选择记录 → 编辑（如调整 sortOrder）→ 保存
+- **删除**：选择记录 → 删除（用户取消关注时自动删除）
+
+#### 业务规则
+
+- `user`+`product` 定义一条关注关系，同一用户可关注多个产品
+- `channel` 记录关注时的渠道，用于渠道级数据隔离
+- `followTime` 记录关注时间，`sortOrder` 控制展示顺序
+- 关闭 draftAndPublish，记录直接生效
+
+### 13.6 风险指标（wealth-risk-metric）
+
+**用途**：记录产品各周期的业绩归因指标（波动率/最大回撤/夏普/同类排名）。
+
+**所属插件**：plugin::zhao-wealth
+**集合名**：wealth_risk_metrics
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| product | relation → wealth-product | 否 | 关联产品（manyToOne，inversedBy riskMetrics） |
+| snapshotDate | date | 是 | 快照日期 |
+| period | enumeration | 是 | 周期：m1 / m3 / m6 / y1 |
+| metricName | enumeration | 是 | 指标名：volatility / maxDrawdown / sharpe / rankPercentile |
+| metricValue | decimal | 否 | 指标值，precision 12 scale 6 |
+| createdAt | datetime | 否 | 创建时间 |
+| updatedAt | datetime | 否 | 更新时间 |
+
+#### 操作步骤
+
+- **查看**：进入理财中心 → 风险指标 → 按 product/period/metricName 筛选
+- **创建**：主要由采集任务自动写入；后台可点击"创建" → 选择 product → 填写 snapshotDate/period/metricName/metricValue → 保存
+- **编辑**：禁止编辑（指标数据不可变）
+- **删除**：选择记录 → 删除（仅 admin 角色）
+
+#### 业务规则
+
+- `period`：`m1`（近 1 月）/ `m3`（近 3 月）/ `m6`（近 6 月）/ `y1`（近 1 年）
+- `metricName`：`volatility`（波动率）/ `maxDrawdown`（最大回撤）/ `sharpe`（夏普比率）/ `rankPercentile`（同类排名分位）
+- `product`+`snapshotDate`+`period`+`metricName` 唯一标识一条指标
+- 用于产品风险评级与对比展示
+- 关闭 draftAndPublish，记录直接生效
+
+### 13.7 推荐配置（wealth-recommend-config）
+
+**用途**：手动配置需推荐的产品及其在渠道内的排序。
+
+**所属插件**：plugin::zhao-wealth
+**集合名**：wealth_recommend_configs
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| product | relation → wealth-product | 否 | 关联产品（oneToOne） |
+| channel | relation → channel | 否 | 关联渠道（manyToOne） |
+| recommendOrder | integer | 否 | 推荐排序，默认 0 |
+| recommendReason | text | 否 | 推荐理由 |
+| status | boolean | 否 | 启用状态，默认 true |
+| createdAt | datetime | 否 | 创建时间 |
+| updatedAt | datetime | 否 | 更新时间 |
+
+#### 操作步骤
+
+- **查看**：进入理财中心 → 推荐配置 → 按 channel/status 筛选
+- **创建**：点击"创建" → 选择 product → 选择 channel → 填写 recommendOrder/recommendReason → 启用 status → 保存
+- **编辑**：选择配置 → 编辑（如调整 recommendOrder、停用 status）→ 保存
+- **删除**：选择配置 → 删除（仅 admin 角色）
+
+#### 业务规则
+
+- `product` 为 oneToOne，每个产品仅一条推荐配置
+- `channel` 定义推荐生效的渠道，未关联则为全渠道推荐
+- `recommendOrder` 控制推荐排序，数值越小越靠前
+- `status=false` 停用推荐，前台不再展示
+- 与 wealth-product 的 `recommendEnabled` 字段互补，构成推荐体系
+- 关闭 draftAndPublish，配置直接生效
+
+### 13.8 年化快照（wealth-annual-snapshot）
+
+**用途**：记录产品各周期（1 日/3 日/7 日/2 周/1 月/3 月/6 月/1 年）的年化收益快照。
+
+**所属插件**：plugin::zhao-wealth
+**集合名**：wealth_annual_snapshots
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| product | relation → wealth-product | 否 | 关联产品（manyToOne，inversedBy annualSnapshots） |
+| snapshotDate | date | 是 | 快照日期 |
+| annual1d | decimal | 否 | 近 1 日年化，precision 10 scale 6 |
+| annual3d | decimal | 否 | 近 3 日年化，precision 10 scale 6 |
+| annual7d | decimal | 否 | 近 7 日年化，precision 10 scale 6 |
+| annual2w | decimal | 否 | 近 2 周年化，precision 10 scale 6 |
+| annual1m | decimal | 否 | 近 1 月年化，precision 10 scale 6 |
+| annual3m | decimal | 否 | 近 3 月年化，precision 10 scale 6 |
+| annual6m | decimal | 否 | 近 6 月年化，precision 10 scale 6 |
+| annual1y | decimal | 否 | 近 1 年年化，precision 10 scale 6 |
+| isEstimate | boolean | 否 | 是否估算值，默认 false |
+| createdAt | datetime | 否 | 创建时间 |
+| updatedAt | datetime | 否 | 更新时间 |
+
+#### 操作步骤
+
+- **查看**：进入理财中心 → 年化快照 → 按 product/snapshotDate 筛选
+- **创建**：主要由采集任务自动写入；后台可点击"创建" → 选择 product → 填写 snapshotDate 与各 annual 字段 → 保存
+- **编辑**：禁止编辑（快照数据不可变）
+- **删除**：选择记录 → 删除（仅 admin 角色）
+
+#### 业务规则
+
+- `product`+`snapshotDate` 唯一，同一产品每日仅一条快照
+- `annual1d`/`annual3d`/`annual7d`/`annual2w`/`annual1m`/`annual3m`/`annual6m`/`annual1y` 为各周期年化收益
+- `isEstimate=true` 表示该快照为估算值（非官方公布）
+- 用于产品收益对比与排名展示
+- 关闭 draftAndPublish，记录直接生效
+
+### 13.9 年度收益（wealth-yearly-return）
+
+**用途**：记录产品历年的年度收益率统计。
+
+**所属插件**：plugin::zhao-wealth
+**集合名**：wealth_yearly_returns
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| product | relation → wealth-product | 否 | 关联产品（manyToOne，inversedBy yearlyReturns） |
+| year | integer | 是 | 年份 |
+| annualReturn | decimal | 否 | 年度收益率，precision 10 scale 6 |
+| baseDays | integer | 否 | 计算基准天数 |
+| createdAt | datetime | 否 | 创建时间 |
+| updatedAt | datetime | 否 | 更新时间 |
+
+#### 操作步骤
+
+- **查看**：进入理财中心 → 年度收益 → 按 product/year 筛选
+- **创建**：主要由采集任务自动写入；后台可点击"创建" → 选择 product → 填写 year/annualReturn/baseDays → 保存
+- **编辑**：禁止编辑（年度收益数据不可变）
+- **删除**：选择记录 → 删除（仅 admin 角色）
+
+#### 业务规则
+
+- `product`+`year` 唯一，同一产品每年仅一条收益记录
+- `annualReturn` 为该年累计收益率，`baseDays` 为计算基准天数
+- 用于产品长期业绩展示与对比
+- 关闭 draftAndPublish，记录直接生效
+
+### 13.10 货币基金收益（wealth-money-income）
+
+**用途**：记录货币基金的万份收益与七日年化数据（按日期）。
+
+**所属插件**：plugin::zhao-wealth
+**集合名**：wealth_money_incomes
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| product | relation → wealth-product | 否 | 关联产品（manyToOne，inversedBy moneyIncomes） |
+| incomeDate | date | 是 | 收益日期 |
+| tenThousandIncome | decimal | 否 | 万份收益，precision 10 scale 6 |
+| sevenDayAnnual | decimal | 否 | 七日年化，precision 10 scale 4 |
+| dataSource | enumeration | 否 | 数据来源：crawler / manual，默认 crawler |
+| createdAt | datetime | 否 | 创建时间 |
+| updatedAt | datetime | 否 | 更新时间 |
+
+#### 操作步骤
+
+- **查看**：进入理财中心 → 货币基金收益 → 按 product/incomeDate/dataSource 筛选
+- **创建**：主要由采集任务自动写入；后台可点击"创建" → 选择 product → 填写 incomeDate/tenThousandIncome/sevenDayAnnual → 保存
+- **编辑**：禁止编辑（收益数据不可变）
+- **删除**：选择记录 → 删除（仅 admin 角色）
+
+#### 业务规则
+
+- `product`+`incomeDate` 唯一，同一产品每日仅一条收益
+- `tenThousandIncome`（万份收益）/ `sevenDayAnnual`（七日年化）为货币基金核心指标
+- `dataSource`：`crawler`（爬虫采集）/ `manual`（人工录入）
+- 仅用于 `productType=money-fund` 的产品；其他类型走 wealth-nav
+- 关闭 draftAndPublish，记录直接生效
