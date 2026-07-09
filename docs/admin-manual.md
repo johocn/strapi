@@ -1786,3 +1786,552 @@ channel（渠道）
 - `relatedLeadIds`/`relatedQuoteIds`/`relatedOrderIds` 记录关联业务 ID，便于跨中心追溯
 - `assignedTo` 关联 admin::user，用于销售归属与客户分配
 - 多渠道联系字段与 contact-matrix/subscription 的 channel 对齐，支持多触点运营
+
+---
+
+## Ch5 课程中心
+
+课程中心（menu.course-center）承载课程内容生产、课时管理、分类维护、用户授权与学习数据全链路，CT 由 `plugin::zhao-course` 提供。
+
+权限结构：
+
+```
+menu.course-center（课程中心）
+├── menu.course（课程管理）：course.read/create/update/publish/delete
+├── menu.lesson（课时管理）：lesson.read/create/update/delete
+├── menu.category（课程分类）：course-category.read/create/update/delete
+└── menu.auth（用户授权）：user-course.read/grant
+```
+
+### 5.1 课程（course）
+
+**用途**：管理课程主体信息、价格、状态与关联资源。
+
+**所属插件**：plugin::zhao-course
+**集合名**：zhao_courses
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| title | string | 是 | 课程标题 |
+| slug | uid | 否 | URL slug，targetField title |
+| description | text | 否 | 课程简介 |
+| cover | media | 否 | 课程封面图（single） |
+| thumbnail | media | 否 | 缩略图（single） |
+| author | string | 否 | 讲师/作者 |
+| difficulty | enumeration | 否 | 难度：beginner / intermediate / advanced / expert，默认 beginner |
+| duration | string | 否 | 时长描述 |
+| level | enumeration | 否 | 等级：introductory / foundation / advanced / professional，默认 introductory |
+| language | enumeration | 否 | 语言：zh-CN / zh-TW / en-US / ja-JP / ko-KR，默认 zh-CN |
+| keywords | json | 否 | 关键词列表 |
+| studentCount | integer | 否 | 学员数，默认 0 |
+| viewCount | integer | 否 | 浏览数，默认 0 |
+| likeCount | integer | 否 | 点赞数，默认 0 |
+| isFeatured | boolean | 否 | 是否精选，默认 false |
+| isFree | boolean | 否 | 是否免费，默认 false |
+| originalPrice | decimal | 否 | 原价，默认 0 |
+| discountPrice | decimal | 否 | 优惠价，默认 0 |
+| enrollStartDate | datetime | 否 | 报名开始时间 |
+| enrollEndDate | datetime | 否 | 报名结束时间 |
+| courseStartDate | datetime | 否 | 课程开始时间 |
+| courseEndDate | datetime | 否 | 课程结束时间 |
+| publishDate | datetime | 否 | 发布时间 |
+| status | enumeration | 否 | 状态：draft / pending / published / archived，默认 draft |
+| auditStatus | enumeration | 否 | 审核状态：pending / approved / rejected，默认 pending |
+| rating | decimal | 否 | 评分，默认 0 |
+| ratingCount | integer | 否 | 评分数，默认 0 |
+| category | relation → course-category | 否 | 关联分类（manyToOne，inversedBy courses） |
+| tags | relation → tag | 否 | 关联标签（manyToMany） |
+| lessons | relation → course-lesson | 否 | 关联课时（oneToMany，mappedBy course） |
+| quizzes | relation → quiz | 否 | 关联题目（oneToMany，mappedBy course） |
+| exams | relation → quiz-exam | 否 | 关联考试（oneToMany，mappedBy course） |
+| sort | integer | 否 | 排序，默认 0 |
+| enablePoints | boolean | 否 | 是否启用积分，默认 false |
+| points | integer | 否 | 积分数，默认 0 |
+| pointsType | enumeration | 否 | 积分类型：course_points / lesson_points，默认 course_points |
+| isPaid | boolean | 否 | 是否付费，默认 false |
+| price | decimal | 否 | 价格，默认 0 |
+| channelScope | enumeration | 否 | 渠道范围：all / specific，默认 all |
+| channelIds | json | 否 | 渠道 ID 列表，默认 [] |
+| allowCrossChannel | boolean | 否 | 是否允许跨渠道，默认 true |
+| pointChannel | relation → channel | 否 | 积分渠道（manyToOne） |
+| deletedAt | datetime | 否 | 软删除时间戳 |
+
+#### 操作步骤
+
+- **查看**：进入课程中心 → 课程管理 → 按 status/auditStatus/category/isFeatured 筛选
+- **创建**：点击"创建" → 填写 title → 选择 category/difficulty/level/language → 编辑 description/cover → 设置价格/时间 → 保存
+- **编辑**：选择记录 → 编辑（如调整 lessons/quizzes/exams、变更 status）→ 保存
+- **删除**：选择记录 → 删除（仅 admin / channel-admin / plugin-manager 角色）
+- **发布**：草稿状态下点击"发布"（需 admin / channel-admin 角色）
+
+#### 业务规则
+
+- 状态流转：`draft → pending → published → archived`；`draft` 也可直接 `published`
+- 审核流转：`auditStatus`：`pending → approved/rejected`，`approved` 是 `published` 的前置条件
+- `channelScope=all` 全渠道可见，`specific` 时按 `channelIds` 限定可见渠道
+- `isFree=true` 时忽略 `originalPrice`/`discountPrice`/`isPaid`/`price`
+- `enablePoints=true` 时按 `pointsType` 发放积分（`course_points` 课程完成、`lesson_points` 课时完成）
+- 启用 draftAndPublish，草稿/发布双态管理
+- 关联 `lessons`/`quizzes`/`exams` 构成完整课程内容树
+
+### 5.2 课时（course-lesson）
+
+**用途**：管理课程下的课时内容、媒体资源与学习配置。
+
+**所属插件**：plugin::zhao-course
+**集合名**：zhao_course_lessons
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| title | string | 是 | 课时标题 |
+| slug | uid | 否 | URL slug，targetField title |
+| type | enumeration | 否 | 类型：video / audio / article / quiz，默认 video |
+| thumbnail | media | 否 | 缩略图（single） |
+| summary | text | 否 | 课时简介 |
+| content | richtext | 否 | 课时正文 |
+| video_url | string | 否 | 视频 URL |
+| audio_url | string | 否 | 音频 URL |
+| images | media | 否 | 图片（multiple） |
+| attachments | media | 否 | 附件（multiple） |
+| duration | integer | 否 | 时长（秒），默认 0 |
+| isFreePreview | boolean | 否 | 是否免费预览，默认 false |
+| previewDuration | integer | 否 | 免费预览时长（秒），默认 0 |
+| sequenceNumber | integer | 否 | 序号，默认 0 |
+| learningObjectives | text | 否 | 学习目标 |
+| prerequisites | text | 否 | 前置要求 |
+| completionThreshold | integer | 否 | 完成阈值（%），默认 100 |
+| isRequired | boolean | 否 | 是否必修，默认 true |
+| course | relation → course | 否 | 关联课程（manyToOne，inversedBy lessons） |
+| tags | relation → tag | 否 | 关联标签（manyToMany） |
+| quizzes | relation → quiz | 否 | 关联题目（oneToMany，mappedBy lesson） |
+| exams | relation → quiz-exam | 否 | 关联考试（oneToMany，mappedBy lesson） |
+| sort | integer | 否 | 排序，默认 0 |
+| enablePoints | boolean | 否 | 是否启用积分，默认 false |
+| points | integer | 否 | 积分数，默认 0 |
+| pointsType | enumeration | 否 | 积分类型：lesson_points / quiz_points，默认 lesson_points |
+| deletedAt | datetime | 否 | 软删除时间戳 |
+
+#### 操作步骤
+
+- **查看**：进入课程中心 → 课时管理 → 按 course/type/isRequired 筛选
+- **创建**：点击"创建" → 填写 title → 选择 course/type → 编辑 content/video_url/audio_url → 保存
+- **编辑**：选择记录 → 编辑（调整 sequenceNumber/sort、补充 attachments）→ 保存
+- **删除**：选择记录 → 删除（仅 admin / channel-admin / plugin-manager 角色）
+
+#### 业务规则
+
+- `type=video` 需填 `video_url`，`audio` 需填 `audio_url`，`article`/`quiz` 需编辑 `content`/关联 `quizzes`
+- `isFreePreview=true` 时按 `previewDuration` 限时免费观看，超时转付费
+- `isRequired=true` 为必修课时，影响课程完成度计算
+- `completionThreshold` 控制视为完成的观看进度阈值（如 100 表示需完整观看）
+- `sequenceNumber`/`sort` 决定课时排序，建议课程内唯一递增
+- 关闭 draftAndPublish，直接发布
+- 关联 `course` 后通过 `quizzes`/`exams` 承载随堂测试
+
+### 5.3 课程分类（course-category）
+
+**用途**：管理课程分类与渠道可见性。
+
+**所属插件**：plugin::zhao-course
+**集合名**：zhao_course_categories
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| name | string | 是 | 分类名称 |
+| description | text | 否 | 分类描述 |
+| sort | integer | 否 | 排序，默认 0 |
+| courses | relation → course | 否 | 关联课程（oneToMany，mappedBy category） |
+| channelScope | enumeration | 否 | 渠道范围：all / specific，默认 all |
+| channelIds | json | 否 | 渠道 ID 列表，默认 [] |
+| allowCrossChannel | boolean | 否 | 是否允许跨渠道，默认 true |
+| deletedAt | datetime | 否 | 软删除时间戳 |
+
+#### 操作步骤
+
+- **查看**：进入课程中心 → 课程分类 → 按 channelScope/sort 筛选
+- **创建**：点击"创建" → 填写 name → 编辑 description → 设置 channelScope → 保存
+- **编辑**：选择记录 → 编辑 → 保存
+- **删除**：选择记录 → 删除（仅 admin / channel-admin 角色；被 courses 引用时建议先迁移）
+
+#### 业务规则
+
+- `channelScope=all` 全渠道可见，`specific` 时按 `channelIds` 限定
+- `allowCrossChannel=true` 允许该分类下课程跨渠道共享
+- `sort` 决定分类展示顺序
+- 删除前应确认无关联课程，或先迁移至其他分类
+
+### 5.4 用户课程授权（user-course-auth）
+
+**用途**：管理用户对课程的访问授权与有效期。
+
+**所属插件**：plugin::zhao-course
+**集合名**：zhao_user_course_auths
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| user | relation → users-permissions.user | 否 | 授权用户（manyToOne） |
+| course | relation → course | 否 | 关联课程（manyToOne） |
+| authType | enumeration | 否 | 授权类型：free / paid / admin_grant，默认 free |
+| expiresAt | datetime | 否 | 过期时间 |
+| isExpired | boolean | 否 | 是否已过期，默认 false |
+| channel | relation → channel | 否 | 授权所属渠道（manyToOne） |
+| deletedAt | datetime | 否 | 软删除时间戳 |
+
+#### 操作步骤
+
+- **查看**：进入课程中心 → 用户授权 → 按 authType/isExpired/course 筛选
+- **创建/授权**：点击"授权管理" → 选择 user + course → 设置 authType/expiresAt → 保存（需 admin / channel-admin 角色）
+- **编辑**：选择记录 → 编辑（如续期 expiresAt、撤销授权）→ 保存
+- **删除**：选择记录 → 删除（仅 admin / channel-admin 角色）
+
+#### 业务规则
+
+- `authType`：`free`（免费课自动授权）/`paid`（付费购买后授权）/`admin_grant`（后台手动授权）
+- `expiresAt` 为空表示永久授权；过期后 `isExpired=true` 自动失效，用户无法继续学习
+- 一条 user+course 建议唯一，避免重复授权
+- `channel` 记录授权来源渠道，用于跨渠道运营统计
+- 关闭 draftAndPublish，授权记录直接生效
+
+### 5.5 课程学习记录（course-progress）
+
+**用途**：记录用户在课程维度的学习进度与完成状态。
+
+**所属插件**：plugin::zhao-course
+**集合名**：zhao_course_progresses
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| user | relation → users-permissions.user | 否 | 学习用户（manyToOne） |
+| course | relation → course | 否 | 关联课程（manyToOne） |
+| completedLessons | integer | 否 | 已完成课时数，默认 0 |
+| totalLessons | integer | 否 | 总课时数，默认 0 |
+| progress | decimal | 否 | 进度百分比（0-100），默认 0 |
+| isCompleted | boolean | 否 | 是否已完成课程，默认 false |
+| pointsEarned | integer | 否 | 已获积分，默认 0 |
+| isPointsClaimed | boolean | 否 | 积分是否已领取，默认 false |
+| lessonPointsSummary | json | 否 | 课时积分汇总，默认 {} |
+| lastStudyAt | datetime | 否 | 最后学习时间 |
+
+#### 操作步骤
+
+- **查看**：进入学习数据 → 课程进度 → 按 user/course/isCompleted 筛选
+- **创建**：主要由前台学习行为自动写入；后台可点击"创建" → 选择 user+course → 保存
+- **编辑**：选择记录 → 编辑（如人工标记 isCompleted、调整积分领取状态）→ 保存
+- **删除**：选择记录 → 删除（仅 admin / channel-admin / plugin-manager 角色）
+
+#### 业务规则
+
+- `progress` = `completedLessons` / `totalLessons` × 100，由系统按 lesson-progress 自动汇总
+- `isCompleted=true` 当 `progress=100`（或满足课程完成阈值）
+- `isPointsClaimed` 标记积分是否已发放到 point-center，避免重复发放
+- `lessonPointsSummary` 缓存各课时积分明细，用于积分核算
+- `lastStudyAt` 由 lesson-progress 写入时同步更新
+
+### 5.6 课时学习记录（lesson-progress）
+
+**用途**：记录用户在课时维度的学习进度、答题情况与积分。
+
+**所属插件**：plugin::zhao-course
+**集合名**：zhao_lesson_progresses
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| user | relation → users-permissions.user | 否 | 学习用户（manyToOne） |
+| lesson | relation → course-lesson | 否 | 关联课时（manyToOne） |
+| course | relation → course | 否 | 关联课程（manyToOne） |
+| progress | decimal | 否 | 进度百分比（0-100），默认 0 |
+| playPosition | integer | 否 | 播放位置（秒），默认 0 |
+| duration | integer | 否 | 总时长（秒），默认 0 |
+| isCompleted | boolean | 否 | 是否已完成，默认 false |
+| isAnswered | boolean | 否 | 是否已答题，默认 false |
+| isCorrect | boolean | 否 | 是否答对，默认 false |
+| pointsEarned | integer | 否 | 已获积分，默认 0 |
+| isPointsClaimed | boolean | 否 | 积分是否已领取，默认 false |
+| calculatedPoints | integer | 否 | 计算积分，默认 0 |
+| quizPointsDetail | json | 否 | 答题积分明细，默认 {} |
+| lastStudyAt | datetime | 否 | 最后学习时间 |
+
+#### 操作步骤
+
+- **查看**：进入学习数据 → 课时进度 → 按 user/lesson/course/isCompleted 筛选
+- **创建**：主要由前台播放/答题行为自动写入；后台可点击"创建" → 选择 user+lesson+course → 保存
+- **编辑**：选择记录 → 编辑（如人工调整 isCompleted、积分状态）→ 保存
+- **删除**：选择记录 → 删除（仅 admin / channel-admin / plugin-manager 角色）
+
+#### 业务规则
+
+- `progress` 由播放进度或答题完成度计算，达到 `lesson.completionThreshold` 即 `isCompleted=true`
+- `playPosition` 记录断点续播位置，`duration` 同步课时总时长
+- `isAnswered`/`isCorrect` 仅对 `type=quiz` 课时有意义，记录随堂答题结果
+- `pointsEarned`/`calculatedPoints`/`quizPointsDetail` 用于课时积分核算与防重发
+- `isPointsClaimed=true` 后不再重复计入 course-progress 的 `lessonPointsSummary`
+- 写入时同步更新对应 course-progress 的 `completedLessons`/`progress`/`lastStudyAt`
+
+---
+
+## Ch6 学习中心
+
+学习中心（menu.study-center）在权限树中存在，但**无独立 Content Type**，所有学习数据由 `plugin::zhao-course` 的 `course-progress` 与 `lesson-progress` 承载。
+
+### 6.1 数据来源
+
+| 视图 | 数据来源 | 字段定义 |
+|---|---|---|
+| 课程进度 | `zhao_course_progresses` | 详见 [5.5 课程学习记录](#55-课程学习记录course-progress) |
+| 课时进度 | `zhao_lesson_progresses` | 详见 [5.6 课时学习记录](#56-课时学习记录lesson-progress) |
+
+### 6.2 权限结构
+
+```
+menu.study-center（学习数据）
+├── menu.progress（课程进度）
+│   ├── course-progress.read
+│   └── course-progress.update
+└── menu.lesson-progress（课时进度）
+    ├── lesson-progress.read
+    └── lesson-progress.update
+```
+
+### 6.3 角色与查看方式
+
+- **可见角色**：admin / channel-admin / plugin-manager / instructor / user
+- **查看路径**：后台进入"学习数据" → 课程进度 / 课时进度，按 user/course/isCompleted 筛选
+- **数据写入来源**：所有数据由前台学习行为（播放、答题）自动写入，后台仅做查看与人工修正（如标记完成、调整积分领取状态）
+
+### 6.4 业务规则
+
+- 学习中心是**只读为主**的视图层，不维护独立 CT
+- 写入路径统一由 `plugin::zhao-course` 的 progress 服务处理，避免双写不一致
+- `study-manager` / `study-editor` 角色仅控制菜单可见性，实际数据操作权限沿用 course-progress/lesson-progress 的 action 配置
+
+---
+
+## Ch7 题库中心
+
+题库中心（menu.quiz-center）承载题目生产、批量导入、考试配置、答题记录与考试记录全链路，CT 由 `plugin::zhao-quiz` 提供。
+
+### 7.1 题目（quiz）
+
+**用途**：管理题库题目、选项、答案与解析。
+
+**所属插件**：plugin::zhao-quiz
+**集合名**：zhao_quizzes
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| title | richtext | 是 | 题干 |
+| type | enumeration | 是 | 题型：single_choice / multiple_choice / true_false / fill_blank / short_answer / essay / matching / ordering |
+| options | json | 否 | 选项列表 |
+| answer | text | 否 | 标准答案 |
+| explanation | richtext | 否 | 答案解析 |
+| difficulty | enumeration | 否 | 难度：easy / medium / hard，默认 medium |
+| points | integer | 否 | 分值，默认 0 |
+| sort | integer | 否 | 排序，默认 0 |
+| isPublished | boolean | 否 | 是否发布，默认 false |
+| course | relation → course | 否 | 关联课程（manyToOne，inversedBy quizzes） |
+| lesson | relation → course-lesson | 否 | 关联课时（manyToOne，inversedBy quizzes） |
+| tags | relation → tag | 否 | 关联标签（manyToMany） |
+| exams | relation → quiz-exam | 否 | 关联考试（manyToMany，mappedBy questions） |
+| channelScope | enumeration | 否 | 渠道范围：all / specific，默认 all |
+| channelIds | json | 否 | 渠道 ID 列表，默认 [] |
+| deletedAt | datetime | 否 | 软删除时间戳 |
+
+#### 操作步骤
+
+- **查看**：进入题库中心 → 题目 → 按 type/difficulty/isPublished/course 筛选
+- **创建**：点击"创建" → 编辑 title（题干）→ 选择 type → 编辑 options/answer/explanation → 设置 difficulty/points → 保存
+- **编辑**：选择记录 → 编辑（如修正答案、补充解析）→ 保存
+- **删除**：选择记录 → 删除（仅 admin / channel-admin / plugin-manager 角色）
+- **发布**：编辑 `isPublished=true`（需 admin / channel-admin / plugin-manager / instructor 角色）
+
+#### 业务规则
+
+- `type` 决定判分方式：`single_choice`/`multiple_choice`/`true_false`/`fill_blank` 自动判分；`short_answer`/`essay` 需人工评分
+- `options` 为 JSON 数组，结构随 type 变化（如 matching 为配对、ordering 为有序列表）
+- `answer` 对客观题存标准答案，主观题为参考答案
+- `isPublished=false` 的题目不进入考试抽取池
+- `channelScope=all` 全渠道可用，`specific` 时按 `channelIds` 限定
+- 关联 `course`/`lesson` 后作为随堂题；关联 `exams` 后作为考试题
+- 关闭 draftAndPublish，通过 `isPublished` 控制发布
+
+### 7.2 批量导入（quiz-batch）
+
+**用途**：批量导入题目文件及处理结果跟踪。
+
+**所属插件**：plugin::zhao-quiz
+**集合名**：zhao_quiz_batches
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| name | string | 是 | 批次名称 |
+| file | media | 否 | 导入文件（single） |
+| templateFile | media | 否 | 模板文件（single） |
+| totalCount | integer | 否 | 总数，默认 0 |
+| successCount | integer | 否 | 成功数，默认 0 |
+| errorCount | integer | 否 | 失败数，默认 0 |
+| errors | json | 否 | 错误明细 |
+| status | enumeration | 否 | 状态：pending / processing / completed / failed，默认 pending |
+| course | relation → course | 否 | 关联课程（manyToOne） |
+| lesson | relation → course-lesson | 否 | 关联课时（manyToOne） |
+| deletedAt | datetime | 否 | 软删除时间戳 |
+
+#### 操作步骤
+
+- **查看**：进入题库中心 → 批量导入 → 按 status/course 筛选
+- **创建**：点击"创建" → 填写 name → 上传 file（按 templateFile 模板格式）→ 可选关联 course/lesson → 保存
+- **编辑**：禁止编辑（导入结果不可变）
+- **删除**：选择记录 → 删除（仅 admin / channel-admin / plugin-manager 角色）
+
+#### 业务规则
+
+- 状态流转：`pending → processing → completed/failed`
+- `file` 必须符合 `templateFile` 格式，否则 `errorCount` 上升
+- `errors` 记录每行失败原因（行号 + 错误信息），用于排查
+- `successCount + errorCount = totalCount`，处理完成后 `status=completed`
+- 导入成功的题目自动归属 `course`/`lesson`，可批量入题库
+- 关闭 draftAndPublish，记录直接生效
+
+### 7.3 考试配置（quiz-exam）
+
+**用途**：配置考试规则、题目组卷与判分参数。
+
+**所属插件**：plugin::zhao-quiz
+**集合名**：zhao_quiz_exams
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| title | string | 是 | 考试标题 |
+| description | text | 否 | 考试说明 |
+| timeLimit | integer | 否 | 时长限制（分钟），默认 0（不限时） |
+| passScore | decimal | 否 | 及格分，默认 60 |
+| totalPoints | integer | 否 | 总分，默认 0 |
+| questionCount | integer | 否 | 题目数，默认 0 |
+| randomOrder | boolean | 否 | 是否乱序，默认 false |
+| allowRetry | boolean | 否 | 是否允许重试，默认 true |
+| maxAttempts | integer | 否 | 最大次数，默认 0（不限） |
+| showResult | boolean | 否 | 是否显示结果，默认 true |
+| questionPoints | json | 否 | 题目分值配置 |
+| course | relation → course | 否 | 关联课程（manyToOne，inversedBy exams） |
+| lesson | relation → course-lesson | 否 | 关联课时（manyToOne，inversedBy exams） |
+| questions | relation → quiz | 否 | 关联题目（manyToMany，inversedBy exams） |
+| channelScope | enumeration | 否 | 渠道范围：all / specific，默认 all |
+| channelIds | json | 否 | 渠道 ID 列表，默认 [] |
+| deletedAt | datetime | 否 | 软删除时间戳 |
+
+#### 操作步骤
+
+- **查看**：进入题库中心 → 考试配置 → 按 course/channelScope 筛选
+- **创建**：点击"创建" → 填写 title → 设置 timeLimit/passScore/maxAttempts → 关联 questions → 编辑 questionPoints → 保存
+- **编辑**：选择记录 → 编辑（如调整题目、修改 passScore）→ 保存（已有 attempt 时谨慎调整）
+- **删除**：选择记录 → 删除（仅 admin / channel-admin / plugin-manager 角色）
+
+#### 业务规则
+
+- `allowRetry=true` 时 `maxAttempts` 控制最大次数（0 表示不限）；`allowRetry=false` 时仅可考 1 次
+- `passScore` 为及格线，`totalPoints` 由 `questionPoints` 汇总或手动设置
+- `randomOrder=true` 时题目与选项均乱序，防止作弊
+- `questionPoints` 为 JSON，按 questionId 配置分值，影响 `totalPoints`
+- `showResult=true` 提交后立即展示成绩与解析
+- `channelScope=all` 全渠道可用，`specific` 时按 `channelIds` 限定
+- 关联 `course`/`lesson` 作为课程/课时考试；`questions` 多对多关联题目
+- 关闭 draftAndPublish，配置直接生效
+
+### 7.4 答题记录（quiz-record）
+
+**用途**：记录用户单题作答、判分与积分明细。
+
+**所属插件**：plugin::zhao-quiz
+**集合名**：zhao_quiz_records
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| user | relation → users-permissions.user | 否 | 答题用户（manyToOne） |
+| quiz | relation → quiz | 否 | 关联题目（manyToOne） |
+| answer | json | 否 | 用户答案 |
+| isCorrect | boolean | 否 | 是否答对 |
+| score | decimal | 否 | 自动得分，默认 0 |
+| teacherScore | decimal | 否 | 教师评分，默认 0 |
+| scoringStatus | enumeration | 否 | 判分状态：pending / auto_graded / manual_graded，默认 pending |
+| grader | relation → users-permissions.user | 否 | 评分人（manyToOne） |
+| gradedAt | datetime | 否 | 评分时间 |
+| totalPoints | integer | 否 | 总积分，默认 0 |
+| submittedAt | datetime | 否 | 提交时间 |
+| duration | integer | 否 | 用时（秒），默认 0 |
+| course | relation → course | 否 | 关联课程（manyToOne） |
+| lesson | relation → course-lesson | 否 | 关联课时（manyToOne） |
+
+#### 操作步骤
+
+- **查看**：进入题库中心 → 答题记录 → 按 user/quiz/scoringStatus/isCorrect 筛选
+- **创建**：主要由前台答题行为自动写入；后台可点击"创建" → 选择 user+quiz → 编辑 answer → 保存
+- **编辑**：选择记录 → 编辑（如人工评分 `teacherScore`、更新 scoringStatus）→ 保存
+- **删除**：选择记录 → 删除（仅 admin / channel-admin / plugin-manager 角色）
+- **导出**：支持按筛选条件导出（需 quiz-record.export 权限）
+
+#### 业务规则
+
+- 判分流转：`pending → auto_graded`（客观题自动）/`manual_graded`（主观题人工）
+- 客观题（single/multiple/true_false/fill）按 `quiz.answer` 自动判分，置 `isCorrect` 与 `score`
+- 主观题（short_answer/essay）`scoringStatus=pending`，由 `grader` 人工评 `teacherScore` 后置 `manual_graded`
+- `totalPoints` = 客观 `score` + 主观 `teacherScore`，影响积分发放
+- `course`/`lesson` 记录答题来源，用于随堂题统计
+- 关闭 draftAndPublish，记录直接生效
+
+### 7.5 考试记录（quiz-exam-attempt）
+
+**用途**：记录用户参加考试的完整作答、得分与通过状态。
+
+**所属插件**：plugin::zhao-quiz
+**集合名**：zhao_quiz_exam_attempts
+
+#### 字段表
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| user | relation → users-permissions.user | 否 | 考试用户（manyToOne） |
+| exam | relation → quiz-exam | 否 | 关联考试（manyToOne） |
+| answers | json | 否 | 答卷内容 |
+| totalScore | decimal | 否 | 总得分，默认 0 |
+| isPassed | boolean | 否 | 是否通过 |
+| startedAt | datetime | 否 | 开始时间 |
+| submittedAt | datetime | 否 | 提交时间 |
+| duration | integer | 否 | 用时（秒），默认 0 |
+| attemptNumber | integer | 否 | 第几次尝试，默认 1 |
+
+#### 操作步骤
+
+- **查看**：进入题库中心 → 考试记录 → 按 user/exam/isPassed 筛选
+- **创建**：主要由前台 `quiz-exam.submit` 自动写入；后台可点击"创建" → 选择 user+exam → 保存
+- **编辑**：选择记录 → 编辑（如人工调整 `totalScore`、`isPassed`）→ 保存（需 quiz-exam-attempt.grade 权限）
+- **删除**：选择记录 → 删除（仅 admin / channel-admin / plugin-manager 角色）
+
+#### 业务规则
+
+- `isPassed` 由 `totalScore >= exam.passScore` 判定
+- `attemptNumber` 标识同一用户的考试次数，受 `exam.allowRetry`/`maxAttempts` 约束
+  - `allowRetry=false`：仅允许 `attemptNumber=1`
+  - `maxAttempts>0`：`attemptNumber` 不可超过 `maxAttempts`
+- `duration` = `submittedAt - startedAt`，受 `exam.timeLimit` 限制
+- `answers` 为 JSON，按 questionId 存储用户作答，关联 quiz-record 明细
+- `totalScore` 由各题 `score`/`teacherScore` 汇总，主观题需人工评分后回填
+- 关闭 draftAndPublish，记录直接生效
