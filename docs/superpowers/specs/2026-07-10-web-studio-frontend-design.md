@@ -1,22 +1,165 @@
-# 媒体发布中心前端补全设计
+# 媒体发布中心：后端补全 + 前端补全设计
 
 ## 目标
 
-在 e:\code\web 中从零补全"媒体发布中心"前端，实现内容采集 → AI 加工 → 多平台发布 → 效果分析 → 广告管理的完整闭环。
+补全"媒体发布中心"后端缺失的 admin API 路由 + 文章可见性支持，然后从零补全前端，实现内容采集 → AI 加工 → 多平台发布 → 效果分析 → 广告管理的完整闭环。
 
-后端 `zhao-studio` 插件已有完整的 10 个 CT + 自定义 API（采集工作流/AI 能力/多平台发布/6 维度统计/广告管理），前端完全缺失。
+后端 `zhao-studio` 插件已有 10 个 CT + 部分自定义 API，但存在 6 个 CT 缺少 admin CRUD 路由、4 个 CT 缺少详情查询、文章可见性不支持等问题。
 
 ## 范围
 
-**改动目录**：仅 `e:\code\web`
-
-**不改动**：后端代码（CT/路由/权限树已就绪）
+**改动目录**：
+- `e:\code\basic\plugins\zhao-studio`（后端补全）
+- `e:\code\web`（前端补全）
 
 **参考模板**：website 中心 / logistics 中心的 list+edit 配对模式
 
 ---
 
-## 1. 架构总览
+## 0. 后端补全（Phase A）
+
+### 0.1 草稿文章 admin CRUD 路由
+
+后端已有 `draft` controller（list + findOne），但未注册路由。需补充：
+
+**路由**（`routes/content-api.ts` 追加）：
+```ts
+adminRoute('GET', '/articles', 'draft.list', 'zhao-studio.read'),
+adminRoute('GET', '/articles/:id', 'draft.findOne', 'zhao-studio.read'),
+adminRoute('POST', '/articles', 'draft.create', 'zhao-studio.create'),
+adminRoute('PUT', '/articles/:id', 'draft.update', 'zhao-studio.update'),
+adminRoute('DELETE', '/articles/:id', 'draft.delete', 'zhao-studio.delete'),
+```
+
+**controller**（`controllers/draft.ts` 补充 create/update/delete）：
+```ts
+async create(ctx) {
+  const { body } = ctx.request;
+  // 渠道管理员以上：支持 scope/tenantId 参数
+  // 普通用户：后端自动绑定当前租户
+  const draft = await strapi.documents('plugin::zhao-studio.article-draft').create({ data: body });
+  ctx.body = { data: draft };
+}
+
+async update(ctx) {
+  const { id } = ctx.params;
+  const { body } = ctx.request;
+  const draft = await strapi.documents('plugin::zhao-studio.article-draft').update({ documentId: id, data: body });
+  ctx.body = { data: draft };
+}
+
+async delete(ctx) {
+  const { id } = ctx.params;
+  await strapi.documents('plugin::zhao-studio.article-draft').delete({ documentId: id });
+  ctx.body = { data: { success: true } };
+}
+```
+
+### 0.2 article-draft CT 增加可见性字段
+
+**schema.json 追加字段**：
+```json
+"scope": {
+  "type": "enumeration",
+  "enum": ["current", "global", "tenant"],
+  "default": "current"
+},
+"scopeTenantId": {
+  "type": "string"
+}
+```
+
+**draft controller create/update 逻辑**：
+- 渠道管理员以上（有 `menu.tenant` 权限）：接受 `scope` 和 `scopeTenantId` 参数
+- 普通用户：强制 `scope = 'current'`，忽略 `scopeTenantId`
+- 查询时：渠道管理员以上可看到 `scope=global` + 所有租户 + 当前租户的文章；普通用户只看到 `scope=current` 且属于当前租户的文章
+
+### 0.3 knowledge-point-index admin CRUD
+
+**新增 controller**（`controllers/knowledge-index.ts`）：
+- list / findOne / create / update / delete
+- 操作 `plugin::zhao-studio.knowledge-point-index` CT
+
+**路由**：
+```ts
+adminRoute('GET', '/knowledge-indices', 'knowledge-index.list', 'zhao-studio.read'),
+adminRoute('GET', '/knowledge-indices/:id', 'knowledge-index.findOne', 'zhao-studio.read'),
+adminRoute('POST', '/knowledge-indices', 'knowledge-index.create', 'zhao-studio.create'),
+adminRoute('PUT', '/knowledge-indices/:id', 'knowledge-index.update', 'zhao-studio.update'),
+adminRoute('DELETE', '/knowledge-indices/:id', 'knowledge-index.delete', 'zhao-studio.delete'),
+```
+
+**controllers/index.ts 追加导出**。
+
+### 0.4 browser-log admin 查询
+
+**新增 controller**（`controllers/browser-log.ts`）：
+- list（支持分页/筛选 eventType/deviceType/city）
+- findOne
+
+**路由**：
+```ts
+adminRoute('GET', '/browser-logs', 'browser-log.list', 'zhao-studio.read'),
+adminRoute('GET', '/browser-logs/:id', 'browser-log.findOne', 'zhao-studio.read'),
+```
+
+### 0.5 stat-summary admin 查询
+
+**新增 controller**（`controllers/stat-summary.ts`）：
+- list（支持分页/筛选 summaryType/date）
+- findOne
+
+**路由**：
+```ts
+adminRoute('GET', '/stat-summaries', 'stat-summary.list', 'zhao-studio.read'),
+adminRoute('GET', '/stat-summaries/:id', 'stat-summary.findOne', 'zhao-studio.read'),
+```
+
+注意：路径用 `/stat-summaries` 避免与 `/stats/overview` 等查询端点冲突。
+
+### 0.6 publish-record 详情查询
+
+**publish controller 追加 findOne**：
+```ts
+adminRoute('GET', '/records/:id', 'publish.findOne', 'zhao-studio.read'),
+```
+
+### 0.7 各 CT 详情查询补全
+
+追加 4 条详情路由：
+```ts
+adminRoute('GET', '/sources/:id', 'collect.findOne', 'zhao-studio.read'),
+adminRoute('GET', '/platforms/:id', 'publish.findOnePlatform', 'zhao-studio.read'),
+adminRoute('GET', '/accounts/:id', 'publish.findOneAccount', 'zhao-studio.read'),
+adminRoute('GET', '/ad-slots/:id', 'analytics.findOneAdSlot', 'zhao-studio.read'),
+```
+
+对应 controller 补充 findOne 方法。
+
+### 0.8 编译
+
+后端改动后需执行 `npm run build` 更新 dist。
+
+### 0.9 后端改动文件清单
+
+| 文件 | 改动类型 | 说明 |
+|---|---|---|
+| `plugins/zhao-studio/server/src/routes/content-api.ts` | 修改 | 追加 ~20 条 admin 路由 |
+| `plugins/zhao-studio/server/src/controllers/draft.ts` | 修改 | 补充 create/update/delete + 可见性逻辑 |
+| `plugins/zhao-studio/server/src/controllers/knowledge-index.ts` | 新建 | CRUD controller |
+| `plugins/zhao-studio/server/src/controllers/browser-log.ts` | 新建 | list/findOne controller |
+| `plugins/zhao-studio/server/src/controllers/stat-summary.ts` | 新建 | list/findOne controller |
+| `plugins/zhao-studio/server/src/controllers/collect.ts` | 修改 | 补充 findOne |
+| `plugins/zhao-studio/server/src/controllers/publish.ts` | 修改 | 补充 findOne/findOnePlatform/findOneAccount |
+| `plugins/zhao-studio/server/src/controllers/analytics.ts` | 修改 | 补充 findOneAdSlot |
+| `plugins/zhao-studio/server/src/controllers/index.ts` | 修改 | 追加 3 个新 controller 导出 |
+| `plugins/zhao-studio/server/src/content-types/article-draft/schema.json` | 修改 | 追加 scope/scopeTenantId 字段 |
+
+共新建 3 文件，修改 7 文件。
+
+---
+
+## 1. 架构总览（前端）
 
 ### 模块定位
 
@@ -66,17 +209,17 @@ e:\code\web\
 ```js
 const ADMIN_BASE = '/zhao-studio/v1/admin'
 
-// 注意：后端路由路径与 CT 名称有差异，以下已对齐 content-api.ts 实际路径
-export const articleDraftApi = createContentApi('articles')
-export const knowledgeIndexApi = createContentApi('knowledge-indices')
-export const collectSourceApi = createContentApi('sources')
-export const collectTaskApi = createContentApi('tasks')
-export const publishPlatformApi = createContentApi('platforms')
-export const publishAccountApi = createContentApi('accounts')
-export const publishRecordApi = createContentApi('records')
-export const statSummaryApi = createContentApi('stats')
-export const browserLogApi = createContentApi('browser-logs')
-export const adSlotApi = createContentApi('ad-slots')
+// 路径已对齐后端 content-api.ts 实际路由（Phase A 补全后）
+export const articleDraftApi = createContentApi('articles')           // /articles CRUD（Phase A 补全）
+export const knowledgeIndexApi = createContentApi('knowledge-indices') // /knowledge-indices CRUD（Phase A 新增）
+export const collectSourceApi = createContentApi('sources')           // /sources CRUD + detail（Phase A 补全 detail）
+export const collectTaskApi = createContentApi('tasks')               // /tasks list + detail（只读，POST 语义为创建采集任务）
+export const publishPlatformApi = createContentApi('platforms')       // /platforms CRUD + detail（Phase A 补全 detail）
+export const publishAccountApi = createContentApi('accounts')         // /accounts CRUD + detail（Phase A 补全 detail）
+export const publishRecordApi = createContentApi('records')           // /records list + detail（Phase A 补全 detail）
+export const statSummaryApi = createContentApi('stat-summaries')      // /stat-summaries list + detail（Phase A 新增，注意路径不同于 /stats/*）
+export const browserLogApi = createContentApi('browser-logs')         // /browser-logs list + detail（Phase A 新增）
+export const adSlotApi = createContentApi('ad-slots')                 // /ad-slots CRUD + detail（Phase A 补全 detail）
 ```
 
 ### 2.2 自定义端点（4 类）
@@ -296,13 +439,41 @@ export const statsApi = {
       <view class="module-icon">🔍</view>
       <view class="module-name">内容采集</view>
     </view>
+    <view class="module-item" v-if="hasPermission('menu.studio-collect')" @click="navigateTo('/pages/studio/collect-source/list')">
+      <view class="module-icon">📡</view>
+      <view class="module-name">采集源管理</view>
+    </view>
+    <view class="module-item" v-if="hasPermission('menu.studio-collect')" @click="navigateTo('/pages/studio/collect-task/list')">
+      <view class="module-icon">📋</view>
+      <view class="module-name">采集任务</view>
+    </view>
     <view class="module-item" v-if="hasPermission('menu.studio-publish')" @click="navigateTo('/pages/studio/publish-center/index')">
       <view class="module-icon">📤</view>
       <view class="module-name">多平台发布</view>
     </view>
+    <view class="module-item" v-if="hasPermission('menu.studio-publish')" @click="navigateTo('/pages/studio/publish-platform/list')">
+      <view class="module-icon">🌐</view>
+      <view class="module-name">平台管理</view>
+    </view>
+    <view class="module-item" v-if="hasPermission('menu.studio-publish')" @click="navigateTo('/pages/studio/publish-account/list')">
+      <view class="module-icon">👤</view>
+      <view class="module-name">账号管理</view>
+    </view>
+    <view class="module-item" v-if="hasPermission('menu.studio-publish')" @click="navigateTo('/pages/studio/publish-record/list')">
+      <view class="module-icon">📑</view>
+      <view class="module-name">发布记录</view>
+    </view>
     <view class="module-item" v-if="hasPermission('menu.studio-stats')" @click="navigateTo('/pages/studio/analytics/index')">
       <view class="module-icon">📊</view>
       <view class="module-name">数据分析</view>
+    </view>
+    <view class="module-item" v-if="hasPermission('menu.studio-stats')" @click="navigateTo('/pages/studio/stat-summary/list')">
+      <view class="module-icon">📈</view>
+      <view class="module-name">统计汇总</view>
+    </view>
+    <view class="module-item" v-if="hasPermission('menu.studio-stats')" @click="navigateTo('/pages/studio/browser-log/list')">
+      <view class="module-icon">👁️</view>
+      <view class="module-name">浏览日志</view>
     </view>
     <view class="module-item" v-if="hasPermission('menu.studio-ad')" @click="navigateTo('/pages/studio/ad-slot/list')">
       <view class="module-icon">📢</view>
@@ -312,15 +483,24 @@ export const statsApi = {
 </view>
 ```
 
-菜单映射（对齐后端 5 个子菜单）：
+菜单映射（13 个菜单项，复用后端 5 个子菜单权限 key）：
 
 | 菜单项 | 权限 key | navigateTo |
 |---|---|---|
 | 草稿文章 | `menu.studio` | /pages/studio/article-draft/list |
 | 内容采集 | `menu.studio-collect` | /pages/studio/collect-workflow/index |
+| 采集源管理 | `menu.studio-collect` | /pages/studio/collect-source/list |
+| 采集任务 | `menu.studio-collect` | /pages/studio/collect-task/list |
 | 多平台发布 | `menu.studio-publish` | /pages/studio/publish-center/index |
+| 平台管理 | `menu.studio-publish` | /pages/studio/publish-platform/list |
+| 账号管理 | `menu.studio-publish` | /pages/studio/publish-account/list |
+| 发布记录 | `menu.studio-publish` | /pages/studio/publish-record/list |
 | 数据分析 | `menu.studio-stats` | /pages/studio/analytics/index |
+| 统计汇总 | `menu.studio-stats` | /pages/studio/stat-summary/list |
+| 浏览日志 | `menu.studio-stats` | /pages/studio/browser-log/list |
 | 广告位 | `menu.studio-ad` | /pages/studio/ad-slot/list |
+
+注意：knowledge-index 不单独占菜单项，通过草稿文章编辑页的"关联知识点"入口进入。
 
 ### 6.2 featureFlags
 
@@ -404,16 +584,19 @@ dashboard 新增 `const studioEnabled = ref(true)`，onShow 中追加 `studioEna
 - 无 TBD/TODO，所有页面有明确字段和操作定义
 
 ### 2. 内部一致性
-- 10 CT × 2 页面 = 20 文件 + 3 特殊页 + 1 组件 + 1 API = 25 新建文件，与文件清单一致
+- Phase A（后端）：新建 3 controller + 修改 7 文件，补全 6 个 CT 的 admin API + 4 个详情查询 + 可见性字段
+- Phase B（前端）：10 CT × 2 页面 = 20 文件 + 3 特殊页 + 1 组件 + 1 API = 25 新建文件，与文件清单一致
 - 23 条路由 = 10 CT × 2 + 3 特殊页，与路由清单一致
-- 5 个菜单项对应后端 5 个子菜单权限 key
-- 文章可见性规则在 article-draft edit/list、collect-workflow、publish-center 中一致体现
+- 13 个菜单项复用后端 5 个子菜单权限 key
+- 文章可见性规则在后端（schema 字段 + controller 逻辑）和前端（article-draft edit/list、collect-workflow、publish-center）中一致体现
+- API 路径已全部对齐：Phase A 补全后，前端 createContentApi 生成的路径与后端路由完全匹配
 
 ### 3. 范围检查
-- 改动集中在 e:\code\web，适合单个实施计划
-- 25 新建 + 4 修改，工作量较大但可控
+- Phase A（后端）+ Phase B（前端）分阶段执行，先 A 后 B
+- 后端 3 新建 + 7 修改，前端 25 新建 + 4 修改，工作量较大但分阶段可控
 
 ### 4. 歧义检查
-- API 路径已对齐后端 content-api.ts 实际路由
-- 权限 key 已对齐后端 PERMISSION_TREE
+- stat-summary 路径用 `/stat-summaries` 避免与 `/stats/overview` 等查询端点冲突
+- collect-task 的 `POST /tasks` 语义是"创建采集任务"（需 sourceId），前端 collect-task 为只读 CT 不调用 create
 - 可见性规则有明确的角色判断条件（hasPermission('menu.tenant')）
+- knowledge-index 无独立菜单项，通过草稿文章编辑页入口进入
