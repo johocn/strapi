@@ -36,32 +36,86 @@ export const PERMISSIONS = {
     actions: ["read", "create", "update", "delete"],
     displayName: "联系渠道矩阵",
   },
+  // Plan 3 获客成交 CT
+  "review": {
+    actions: ["read", "create", "update", "delete"],
+    displayName: "客户评价",
+  },
+  "subscription": {
+    actions: ["read", "create", "update", "delete"],
+    displayName: "通知订阅",
+  },
+  "landing-page": {
+    actions: ["read", "create", "update", "delete"],
+    displayName: "营销落地页",
+  },
+  "conversion-funnel": {
+    actions: ["read", "create", "update", "delete"],
+    displayName: "转化漏斗",
+  },
+  "conversion-event": {
+    actions: ["read", "create", "update", "delete"],
+    displayName: "转化事件",
+  },
+  "intent-order": {
+    actions: ["read", "create", "update", "delete"],
+    displayName: "意向订单",
+  },
+  "referral": {
+    actions: ["read", "create", "update", "delete"],
+    displayName: "推荐奖励",
+  },
+  "customer-profile": {
+    actions: ["read", "create", "update", "delete"],
+    displayName: "客户档案",
+  },
 } as const;
 
 /**
  * 系统角色权限映射
  * super-admin: 全部权限（Strapi 自动）
  * admin: 除 tracking-provider.create/update/delete 外的全部（API Key 安全）
- * editor: 内容管理权限
+ * editor: 内容管理权限（评价/落地页/意向单/推荐等）
  * viewer: 全部 .read
  */
 export const ROLE_PERMISSIONS = {
   admin: {
+    // Plan 1 核心 CT
     "quote-request": ["read", "create", "update", "delete"],
     "quote-field-rule": ["read", "create", "update", "delete"],
     "quote-price-rule": ["read", "create", "update", "delete"],
     "quote-price-formula": ["read", "create", "update", "delete"],
     "tracking-shipment": ["read", "create", "update", "delete"],
     "tracking-node": ["read", "create", "update", "delete"],
-    "tracking-provider": ["read"], // admin 只读 tracking-provider
+    "tracking-provider": ["read"],
     "contact-matrix": ["read", "create", "update", "delete"],
+    // Plan 3 获客成交 CT
+    "review": ["read", "create", "update", "delete"],
+    "subscription": ["read", "create", "update", "delete"],
+    "landing-page": ["read", "create", "update", "delete"],
+    "conversion-funnel": ["read", "create", "update", "delete"],
+    "conversion-event": ["read", "create", "update", "delete"],
+    "intent-order": ["read", "create", "update", "delete"],
+    "referral": ["read", "create", "update", "delete"],
+    "customer-profile": ["read", "create", "update", "delete"],
   },
   editor: {
+    // Plan 1 核心 CT
     "quote-field-rule": ["read", "create", "update", "delete"],
     "quote-price-rule": ["read", "create", "update", "delete"],
     "contact-matrix": ["read", "create", "update", "delete"],
+    // Plan 3 获客成交 CT
+    "review": ["read", "create", "update", "delete"],
+    "landing-page": ["read", "create", "update", "delete"],
+    "intent-order": ["read", "create", "update", "delete"],
+    "referral": ["read", "create", "update", "delete"],
+    "subscription": ["read"],
+    "conversion-funnel": ["read"],
+    "conversion-event": ["read"],
+    "customer-profile": ["read"],
   },
   viewer: {
+    // Plan 1 核心 CT
     "quote-request": ["read"],
     "quote-field-rule": ["read"],
     "quote-price-rule": ["read"],
@@ -70,6 +124,15 @@ export const ROLE_PERMISSIONS = {
     "tracking-node": ["read"],
     "tracking-provider": ["read"],
     "contact-matrix": ["read"],
+    // Plan 3 获客成交 CT
+    "review": ["read"],
+    "subscription": ["read"],
+    "landing-page": ["read"],
+    "conversion-funnel": ["read"],
+    "conversion-event": ["read"],
+    "intent-order": ["read"],
+    "referral": ["read"],
+    "customer-profile": ["read"],
   },
 } as const;
 
