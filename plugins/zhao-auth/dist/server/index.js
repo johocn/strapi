@@ -285,14 +285,59 @@ const ROLES = {
   CHANNEL_ADMIN: "channel-admin",
   PLUGIN_MANAGER: "plugin-manager",
   INSTRUCTOR: "instructor",
-  USER: "user"
+  USER: "user",
+  // 11 个中心 × 2 = 22 个新角色
+  WEBSITE_MANAGER: "website-manager",
+  WEBSITE_EDITOR: "website-editor",
+  LOGISTICS_MANAGER: "logistics-manager",
+  LOGISTICS_EDITOR: "logistics-editor",
+  COURSE_MANAGER: "course-manager",
+  COURSE_EDITOR: "course-editor",
+  STUDY_MANAGER: "study-manager",
+  STUDY_EDITOR: "study-editor",
+  QUIZ_MANAGER: "quiz-manager",
+  QUIZ_EDITOR: "quiz-editor",
+  POINT_MANAGER: "point-manager",
+  POINT_EDITOR: "point-editor",
+  MARKETING_MANAGER: "marketing-manager",
+  MARKETING_EDITOR: "marketing-editor",
+  SYSTEM_MANAGER: "system-manager",
+  SYSTEM_EDITOR: "system-editor",
+  TAG_MANAGER: "tag-manager",
+  TAG_EDITOR: "tag-editor",
+  STUDIO_MANAGER: "studio-manager",
+  STUDIO_EDITOR: "studio-editor",
+  WEALTH_MANAGER: "wealth-manager",
+  WEALTH_EDITOR: "wealth-editor"
 };
 const ROLE_LABELS = {
   [ROLES.ADMIN]: "系统管理员",
   [ROLES.CHANNEL_ADMIN]: "渠道管理员",
   [ROLES.PLUGIN_MANAGER]: "插件管理员",
   [ROLES.INSTRUCTOR]: "讲师",
-  [ROLES.USER]: "普通用户"
+  [ROLES.USER]: "普通用户",
+  [ROLES.WEBSITE_MANAGER]: "官网管理员",
+  [ROLES.WEBSITE_EDITOR]: "官网编辑",
+  [ROLES.LOGISTICS_MANAGER]: "物流管理员",
+  [ROLES.LOGISTICS_EDITOR]: "物流编辑",
+  [ROLES.COURSE_MANAGER]: "课程管理员",
+  [ROLES.COURSE_EDITOR]: "课程编辑",
+  [ROLES.STUDY_MANAGER]: "学习数据管理员",
+  [ROLES.STUDY_EDITOR]: "学习数据编辑",
+  [ROLES.QUIZ_MANAGER]: "题库管理员",
+  [ROLES.QUIZ_EDITOR]: "题库编辑",
+  [ROLES.POINT_MANAGER]: "积分管理员",
+  [ROLES.POINT_EDITOR]: "积分编辑",
+  [ROLES.MARKETING_MANAGER]: "营销管理员",
+  [ROLES.MARKETING_EDITOR]: "营销编辑",
+  [ROLES.SYSTEM_MANAGER]: "系统管理员(中心)",
+  [ROLES.SYSTEM_EDITOR]: "系统编辑",
+  [ROLES.TAG_MANAGER]: "标签管理员",
+  [ROLES.TAG_EDITOR]: "标签编辑",
+  [ROLES.STUDIO_MANAGER]: "工作室管理员",
+  [ROLES.STUDIO_EDITOR]: "工作室编辑",
+  [ROLES.WEALTH_MANAGER]: "理财管理员",
+  [ROLES.WEALTH_EDITOR]: "理财编辑"
 };
 const PERMISSION_TREE = {
   "menu.course-center": {
@@ -383,7 +428,9 @@ const PERMISSION_TREE = {
           "exam.read": { label: "查看考试", type: "button" },
           "exam.create": { label: "新增考试", type: "button" },
           "exam.update": { label: "编辑考试", type: "button" },
-          "exam.delete": { label: "删除考试", type: "button" }
+          "exam.delete": { label: "删除考试", type: "button" },
+          "quiz.exam-attempt.read": { label: "查看考试记录", type: "button" },
+          "quiz.exam-attempt.delete": { label: "删除考试记录", type: "button" }
         }
       },
       "menu.quiz-record": {
@@ -391,6 +438,15 @@ const PERMISSION_TREE = {
         type: "menu",
         children: {
           "quiz-record.read": { label: "查看答题记录", type: "button" }
+        }
+      },
+      "menu.quiz-batch": {
+        label: "批量考试",
+        type: "menu",
+        children: {
+          "quiz.quiz-batch.read": { label: "查看", type: "button" },
+          "quiz.quiz-batch.create": { label: "创建", type: "button" },
+          "quiz.quiz-batch.delete": { label: "删除", type: "button" }
         }
       }
     }
@@ -474,6 +530,24 @@ const PERMISSION_TREE = {
         children: {
           "point-verification.read": { label: "查看核销记录", type: "button" }
         }
+      },
+      "menu.point-rule-template": {
+        label: "规则模板",
+        type: "menu",
+        children: {
+          "point.rule-template.read": { label: "查看", type: "button" },
+          "point.rule-template.create": { label: "创建", type: "button" },
+          "point.rule-template.update": { label: "编辑", type: "button" },
+          "point.rule-template.delete": { label: "删除", type: "button" }
+        }
+      },
+      "menu.point-sign-in": {
+        label: "签到记录",
+        type: "menu",
+        children: {
+          "point.sign-in-record.read": { label: "查看", type: "button" },
+          "point.sign-in-record.export": { label: "导出", type: "button" }
+        }
       }
     }
   },
@@ -520,7 +594,10 @@ const PERMISSION_TREE = {
         label: "渠道权限",
         type: "menu",
         children: {
-          "channel-permission.set": { label: "授权渠道", type: "button" }
+          "channel-permission.set": { label: "授权渠道", type: "button" },
+          "channel.user-channel.read": { label: "查看用户渠道", type: "button" },
+          "channel.user-channel.assign": { label: "分配渠道", type: "button" },
+          "channel.user-channel.revoke": { label: "撤销渠道", type: "button" }
         }
       },
       "menu.redemption-code": {
@@ -544,7 +621,15 @@ const PERMISSION_TREE = {
     label: "系统工具",
     type: "menu",
     children: {
-      "menu.media": { label: "媒体资源", type: "menu" },
+      "menu.media": {
+        label: "媒体资源",
+        type: "menu",
+        children: {
+          "oss.media-meta.read": { label: "查看媒体", type: "button" },
+          "oss.media-meta.upload": { label: "上传媒体", type: "button" },
+          "oss.media-meta.delete": { label: "删除媒体", type: "button" }
+        }
+      },
       "menu.soft-delete": {
         label: "回收站",
         type: "menu",
@@ -630,7 +715,64 @@ const PERMISSION_TREE = {
           "sso.channel-read": { label: "查看渠道", type: "button" },
           "sso.channel-create": { label: "创建渠道", type: "button" },
           "sso.channel-update": { label: "编辑渠道", type: "button" },
-          "sso.log-read": { label: "查看日志", type: "button" }
+          "sso.log-read": { label: "查看日志", type: "button" },
+          "menu.sso-binding": {
+            label: "三方绑定",
+            type: "menu",
+            children: {
+              "sso.third-party-binding.read": { label: "查看三方绑定", type: "button" },
+              "sso.third-party-binding.create": { label: "创建绑定", type: "button" },
+              "sso.third-party-binding.update": { label: "编辑绑定", type: "button" },
+              "sso.third-party-binding.delete": { label: "删除绑定", type: "button" },
+              "sso.oauth-config.read": { label: "查看OAuth配置", type: "button" },
+              "sso.oauth-config.create": { label: "创建OAuth配置", type: "button" },
+              "sso.oauth-config.update": { label: "编辑OAuth配置", type: "button" },
+              "sso.oauth-config.delete": { label: "删除OAuth配置", type: "button" }
+            }
+          },
+          "menu.sso-token": {
+            label: "令牌管理",
+            type: "menu",
+            children: {
+              "sso.token.read": { label: "查看令牌", type: "button" },
+              "sso.token.delete": { label: "删除令牌", type: "button" },
+              "sso.auth-code.read": { label: "查看授权码", type: "button" },
+              "sso.auth-code.delete": { label: "删除授权码", type: "button" }
+            }
+          },
+          "menu.sso-user-role": {
+            label: "用户应用角色",
+            type: "menu",
+            children: {
+              "sso.user-app-role.read": { label: "查看角色", type: "button" },
+              "sso.user-app-role.create": { label: "分配角色", type: "button" },
+              "sso.user-app-role.update": { label: "编辑角色", type: "button" },
+              "sso.user-app-role.delete": { label: "删除角色", type: "button" }
+            }
+          },
+          "menu.sso-invite": {
+            label: "邀请体系",
+            type: "menu",
+            children: {
+              "sso.invite-code.read": { label: "查看邀请码", type: "button" },
+              "sso.invite-code.create": { label: "创建邀请码", type: "button" },
+              "sso.invite-code.delete": { label: "删除邀请码", type: "button" },
+              "sso.invite-code.validate": { label: "核销邀请码", type: "button" },
+              "sso.invite-usage.read": { label: "查看使用记录", type: "button" },
+              "sso.invite-usage.delete": { label: "删除使用记录", type: "button" },
+              "sso.invite-stats.read": { label: "查看邀请统计", type: "button" },
+              "sso.referral-relation.read": { label: "查看推荐关系", type: "button" },
+              "sso.referral-relation.delete": { label: "删除推荐关系", type: "button" }
+            }
+          },
+          "menu.sso-sms": {
+            label: "短信验证",
+            type: "menu",
+            children: {
+              "sso.sms-code.read": { label: "查看短信码", type: "button" },
+              "sso.sms-code.delete": { label: "删除短信码", type: "button" }
+            }
+          }
         }
       },
       "menu.tenant": {
@@ -690,7 +832,17 @@ const PERMISSION_TREE = {
         }
       },
       "menu.tag-preset": { label: "分类预设", type: "menu" },
-      "menu.tag-search": { label: "全局检索", type: "menu" }
+      "menu.tag-search": { label: "全局检索", type: "menu" },
+      "menu.tag-index": {
+        label: "标签索引",
+        type: "menu",
+        children: {
+          "tag.tag-index.read": { label: "查看", type: "button" },
+          "tag.tag-index.create": { label: "创建", type: "button" },
+          "tag.tag-index.update": { label: "编辑", type: "button" },
+          "tag.tag-index.delete": { label: "删除", type: "button" }
+        }
+      }
     }
   },
   "menu.studio-center": {
@@ -705,6 +857,64 @@ const PERMISSION_TREE = {
           "zhao-studio.create": { label: "新增工作室", type: "button" },
           "zhao-studio.update": { label: "编辑工作室", type: "button" },
           "zhao-studio.delete": { label: "删除工作室", type: "button" }
+        }
+      },
+      "menu.studio-collect": {
+        label: "内容采集",
+        type: "menu",
+        children: {
+          "studio.article-draft.read": { label: "查看文章草稿", type: "button" },
+          "studio.article-draft.create": { label: "创建草稿", type: "button" },
+          "studio.article-draft.update": { label: "编辑草稿", type: "button" },
+          "studio.article-draft.delete": { label: "删除草稿", type: "button" },
+          "studio.collect-source.read": { label: "查看采集源", type: "button" },
+          "studio.collect-source.create": { label: "创建采集源", type: "button" },
+          "studio.collect-source.update": { label: "编辑采集源", type: "button" },
+          "studio.collect-source.delete": { label: "删除采集源", type: "button" },
+          "studio.collect-task.read": { label: "查看采集任务", type: "button" },
+          "studio.collect-task.create": { label: "创建采集任务", type: "button" },
+          "studio.collect-task.update": { label: "编辑采集任务", type: "button" },
+          "studio.collect-task.delete": { label: "删除采集任务", type: "button" },
+          "studio.knowledge-point-index.read": { label: "查看知识索引", type: "button" },
+          "studio.knowledge-point-index.create": { label: "创建知识索引", type: "button" },
+          "studio.knowledge-point-index.update": { label: "编辑知识索引", type: "button" },
+          "studio.knowledge-point-index.delete": { label: "删除知识索引", type: "button" }
+        }
+      },
+      "menu.studio-publish": {
+        label: "多平台发布",
+        type: "menu",
+        children: {
+          "studio.publish-platform.read": { label: "查看发布平台", type: "button" },
+          "studio.publish-platform.create": { label: "创建发布平台", type: "button" },
+          "studio.publish-platform.update": { label: "编辑发布平台", type: "button" },
+          "studio.publish-platform.delete": { label: "删除发布平台", type: "button" },
+          "studio.publish-account.read": { label: "查看发布账号", type: "button" },
+          "studio.publish-account.create": { label: "创建发布账号", type: "button" },
+          "studio.publish-account.update": { label: "编辑发布账号", type: "button" },
+          "studio.publish-account.delete": { label: "删除发布账号", type: "button" },
+          "studio.publish-record.read": { label: "查看发布记录", type: "button" },
+          "studio.publish-record.delete": { label: "删除发布记录", type: "button" }
+        }
+      },
+      "menu.studio-stats": {
+        label: "数据分析",
+        type: "menu",
+        children: {
+          "studio.stat-summary.read": { label: "查看统计", type: "button" },
+          "studio.stat-summary.export": { label: "导出统计", type: "button" },
+          "studio.browser-log.read": { label: "查看浏览日志", type: "button" },
+          "studio.browser-log.export": { label: "导出浏览日志", type: "button" }
+        }
+      },
+      "menu.studio-ad": {
+        label: "广告位",
+        type: "menu",
+        children: {
+          "studio.ad-slot.read": { label: "查看广告位", type: "button" },
+          "studio.ad-slot.create": { label: "创建广告位", type: "button" },
+          "studio.ad-slot.update": { label: "编辑广告位", type: "button" },
+          "studio.ad-slot.delete": { label: "删除广告位", type: "button" }
         }
       }
     }
@@ -886,6 +1096,204 @@ const PERMISSION_TREE = {
         }
       }
     }
+  },
+  "menu.logistics-center": {
+    label: "物流中心",
+    type: "menu",
+    children: {
+      "menu.logistics-quote": {
+        label: "询价管理",
+        type: "menu",
+        children: {
+          "logistics.quote-request.read": { label: "查看询价单", type: "button" },
+          "logistics.quote-request.create": { label: "新增询价单", type: "button" },
+          "logistics.quote-request.update": { label: "编辑询价单", type: "button" },
+          "logistics.quote-request.delete": { label: "删除询价单", type: "button" },
+          "logistics.quote-field-rule.read": { label: "查看字段规则", type: "button" },
+          "logistics.quote-field-rule.create": { label: "新增字段规则", type: "button" },
+          "logistics.quote-field-rule.update": { label: "编辑字段规则", type: "button" },
+          "logistics.quote-field-rule.delete": { label: "删除字段规则", type: "button" },
+          "logistics.quote-price-rule.read": { label: "查看报价规则", type: "button" },
+          "logistics.quote-price-rule.create": { label: "新增报价规则", type: "button" },
+          "logistics.quote-price-rule.update": { label: "编辑报价规则", type: "button" },
+          "logistics.quote-price-rule.delete": { label: "删除报价规则", type: "button" },
+          "logistics.quote-price-formula.read": { label: "查看报价公式", type: "button" },
+          "logistics.quote-price-formula.create": { label: "新增公式", type: "button" },
+          "logistics.quote-price-formula.update": { label: "编辑公式", type: "button" },
+          "logistics.quote-price-formula.delete": { label: "删除公式", type: "button" }
+        }
+      },
+      "menu.logistics-tracking": {
+        label: "货物追踪",
+        type: "menu",
+        children: {
+          "logistics.tracking-shipment.read": { label: "查看运单", type: "button" },
+          "logistics.tracking-shipment.create": { label: "新增运单", type: "button" },
+          "logistics.tracking-shipment.update": { label: "编辑运单", type: "button" },
+          "logistics.tracking-shipment.delete": { label: "删除运单", type: "button" },
+          "logistics.tracking-node.read": { label: "查看追踪节点", type: "button" },
+          "logistics.tracking-node.create": { label: "新增节点", type: "button" },
+          "logistics.tracking-node.update": { label: "编辑节点", type: "button" },
+          "logistics.tracking-node.delete": { label: "删除节点", type: "button" },
+          "logistics.tracking-provider.read": { label: "查看追踪配置", type: "button" },
+          "logistics.tracking-provider.create": { label: "新增追踪配置", type: "button" },
+          "logistics.tracking-provider.update": { label: "编辑追踪配置", type: "button" },
+          "logistics.tracking-provider.delete": { label: "删除追踪配置", type: "button" }
+        }
+      },
+      "menu.logistics-contact": {
+        label: "联系渠道",
+        type: "menu",
+        children: {
+          "logistics.contact-matrix.read": { label: "查看渠道矩阵", type: "button" },
+          "logistics.contact-matrix.create": { label: "新增渠道矩阵", type: "button" },
+          "logistics.contact-matrix.update": { label: "编辑渠道矩阵", type: "button" },
+          "logistics.contact-matrix.delete": { label: "删除渠道矩阵", type: "button" }
+        }
+      },
+      "menu.logistics-review": {
+        label: "客户评价",
+        type: "menu",
+        children: {
+          "logistics.review.read": { label: "查看评价", type: "button" },
+          "logistics.review.create": { label: "新增评价", type: "button" },
+          "logistics.review.update": { label: "编辑评价", type: "button" },
+          "logistics.review.delete": { label: "删除评价", type: "button" },
+          "logistics.review.approve": { label: "审核评价", type: "button" }
+        }
+      },
+      "menu.logistics-subscription": {
+        label: "通知订阅",
+        type: "menu",
+        children: {
+          "logistics.subscription.read": { label: "查看订阅", type: "button" },
+          "logistics.subscription.update": { label: "更新订阅", type: "button" },
+          "logistics.subscription.delete": { label: "删除订阅", type: "button" }
+        }
+      },
+      "menu.logistics-landing": {
+        label: "落地页",
+        type: "menu",
+        children: {
+          "logistics.landing-page.read": { label: "查看落地页", type: "button" },
+          "logistics.landing-page.create": { label: "新增落地页", type: "button" },
+          "logistics.landing-page.update": { label: "编辑落地页", type: "button" },
+          "logistics.landing-page.delete": { label: "删除落地页", type: "button" }
+        }
+      },
+      "menu.logistics-funnel": {
+        label: "转化漏斗",
+        type: "menu",
+        children: {
+          "logistics.conversion-funnel.read": { label: "查看漏斗", type: "button" },
+          "logistics.conversion-funnel.create": { label: "新增漏斗", type: "button" },
+          "logistics.conversion-funnel.update": { label: "编辑漏斗", type: "button" },
+          "logistics.conversion-funnel.delete": { label: "删除漏斗", type: "button" },
+          "logistics.conversion-event.read": { label: "查看事件", type: "button" },
+          "logistics.funnel-stats.read": { label: "查看漏斗统计", type: "button" }
+        }
+      },
+      "menu.logistics-order": {
+        label: "意向订单",
+        type: "menu",
+        children: {
+          "logistics.intent-order.read": { label: "查看订单", type: "button" },
+          "logistics.intent-order.create": { label: "新增订单", type: "button" },
+          "logistics.intent-order.update": { label: "编辑订单", type: "button" },
+          "logistics.intent-order.delete": { label: "删除订单", type: "button" },
+          "logistics.intent-order.convert": { label: "标记转化", type: "button" }
+        }
+      },
+      "menu.logistics-referral": {
+        label: "推荐奖励",
+        type: "menu",
+        children: {
+          "logistics.referral.read": { label: "查看推荐", type: "button" },
+          "logistics.referral.create": { label: "新增推荐", type: "button" },
+          "logistics.referral.update": { label: "编辑推荐", type: "button" },
+          "logistics.referral.delete": { label: "删除推荐", type: "button" },
+          "logistics.referral-stats.read": { label: "查看推荐统计", type: "button" }
+        }
+      },
+      "menu.logistics-customer": {
+        label: "客户档案",
+        type: "menu",
+        children: {
+          "logistics.customer-profile.read": { label: "查看档案", type: "button" },
+          "logistics.customer-profile.update": { label: "编辑档案", type: "button" },
+          "logistics.customer-profile.delete": { label: "删除档案", type: "button" },
+          "logistics.customer-profile.merge": { label: "合并档案", type: "button" }
+        }
+      }
+    }
+  },
+  // ===== 理财中心 =====
+  "menu.wealth-center": {
+    label: "理财中心",
+    type: "menu",
+    children: {
+      "menu.wealth-product": {
+        label: "产品管理",
+        type: "menu",
+        children: {
+          "wealth.wealth-product.read": { label: "查看", type: "button" },
+          "wealth.wealth-product.create": { label: "创建", type: "button" },
+          "wealth.wealth-product.update": { label: "编辑", type: "button" },
+          "wealth.wealth-product.delete": { label: "删除", type: "button" },
+          "wealth.wealth-product.collect": { label: "采集", type: "button" },
+          "wealth.wealth-nav.read": { label: "查看净值", type: "button" },
+          "wealth.wealth-nav.create": { label: "录入净值", type: "button" },
+          "wealth.wealth-nav.update": { label: "编辑净值", type: "button" },
+          "wealth.wealth-nav.delete": { label: "删除净值", type: "button" }
+        }
+      },
+      "menu.wealth-company": {
+        label: "公司管理",
+        type: "menu",
+        children: {
+          "wealth.wealth-company.read": { label: "查看", type: "button" },
+          "wealth.wealth-company.create": { label: "创建", type: "button" },
+          "wealth.wealth-company.update": { label: "编辑", type: "button" },
+          "wealth.wealth-company.delete": { label: "删除", type: "button" }
+        }
+      },
+      "menu.wealth-collect": {
+        label: "数据采集",
+        type: "menu",
+        children: {
+          "wealth.wealth-collect-config.read": { label: "查看配置", type: "button" },
+          "wealth.wealth-collect-config.create": { label: "创建配置", type: "button" },
+          "wealth.wealth-collect-config.update": { label: "编辑配置", type: "button" },
+          "wealth.wealth-collect-config.delete": { label: "删除配置", type: "button" },
+          "wealth.wealth-collect-config.trigger": { label: "触发采集", type: "button" },
+          "wealth.wealth-customer-product.read": { label: "查看持仓", type: "button" },
+          "wealth.wealth-customer-product.create": { label: "录入持仓", type: "button" },
+          "wealth.wealth-customer-product.delete": { label: "删除持仓", type: "button" }
+        }
+      },
+      "menu.wealth-metrics": {
+        label: "风险指标",
+        type: "menu",
+        children: {
+          "wealth.wealth-risk-metric.read": { label: "查看风险", type: "button" },
+          "wealth.wealth-risk-metric.update": { label: "编辑风险", type: "button" },
+          "wealth.wealth-risk-metric.aggregate": { label: "聚合统计", type: "button" },
+          "wealth.wealth-risk-metric.trend": { label: "趋势分析", type: "button" },
+          "wealth.wealth-risk-metric.peers": { label: "同业对比", type: "button" },
+          "wealth.wealth-risk-metric.recalculate": { label: "重算指标", type: "button" },
+          "wealth.wealth-recommend-config.read": { label: "查看推荐配置", type: "button" },
+          "wealth.wealth-recommend-config.create": { label: "创建推荐配置", type: "button" },
+          "wealth.wealth-recommend-config.update": { label: "编辑推荐配置", type: "button" },
+          "wealth.wealth-recommend-config.delete": { label: "删除推荐配置", type: "button" },
+          "wealth.wealth-annual-snapshot.read": { label: "查看年报", type: "button" },
+          "wealth.wealth-annual-snapshot.update": { label: "编辑年报", type: "button" },
+          "wealth.wealth-yearly-return.read": { label: "查看年化收益", type: "button" },
+          "wealth.wealth-yearly-return.update": { label: "编辑年化收益", type: "button" },
+          "wealth.wealth-money-income.read": { label: "查看收益分配", type: "button" },
+          "wealth.wealth-money-income.update": { label: "编辑收益分配", type: "button" }
+        }
+      }
+    }
   }
 };
 function flattenPermissions(tree) {
@@ -897,6 +1305,16 @@ function flattenPermissions(tree) {
     }
   }
   return keys;
+}
+function centerPermissions(centerKey) {
+  const center = PERMISSION_TREE[centerKey];
+  if (!center?.children) return [];
+  return [centerKey, ...flattenPermissions(center.children)];
+}
+function centerEditorPermissions(centerKey) {
+  return centerPermissions(centerKey).filter(
+    (k) => !k.endsWith(".delete") && !k.endsWith(".manage")
+  );
 }
 const DEFAULT_ROLE_PERMISSIONS = {
   [ROLES.ADMIN]: flattenPermissions(PERMISSION_TREE),
@@ -999,7 +1417,35 @@ const DEFAULT_ROLE_PERMISSIONS = {
     "first-truth.read",
     "first-truth.create",
     "first-truth.update",
-    "first-truth.delete"
+    "first-truth.delete",
+    // 物流中心权限由上方 flattenPermissions(PERMISSION_TREE) 自动包含（仅排除 system-center）
+    // SSO 扩展 + media-meta（system-center 被 flattenPermissions 排除，需显式追加）
+    "menu.sso-binding",
+    "sso.third-party-binding.read",
+    "sso.third-party-binding.create",
+    "sso.third-party-binding.update",
+    "sso.oauth-config.read",
+    "sso.oauth-config.create",
+    "sso.oauth-config.update",
+    "menu.sso-token",
+    "sso.token.read",
+    "sso.token.delete",
+    "menu.sso-user-role",
+    "sso.user-app-role.read",
+    "sso.user-app-role.create",
+    "sso.user-app-role.update",
+    "menu.sso-invite",
+    "sso.invite-code.read",
+    "sso.invite-code.create",
+    "sso.invite-code.validate",
+    "sso.invite-usage.read",
+    "sso.invite-stats.read",
+    "sso.referral-relation.read",
+    "menu.sso-sms",
+    "sso.sms-code.read",
+    "oss.media-meta.read",
+    "oss.media-meta.upload",
+    "oss.media-meta.delete"
   ],
   [ROLES.PLUGIN_MANAGER]: flattenPermissions(
     ((t) => {
@@ -1077,7 +1523,101 @@ const DEFAULT_ROLE_PERMISSIONS = {
     "ai-summary.read",
     "ai-summary.create",
     "menu.website-first-truth",
-    "first-truth.read"
+    "first-truth.read",
+    // 物流中心（read/create/update，不含 delete）
+    "menu.logistics-center",
+    "menu.logistics-quote",
+    "logistics.quote-request.read",
+    "logistics.quote-request.create",
+    "logistics.quote-request.update",
+    "logistics.quote-field-rule.read",
+    "logistics.quote-field-rule.create",
+    "logistics.quote-field-rule.update",
+    "logistics.quote-price-rule.read",
+    "logistics.quote-price-rule.create",
+    "logistics.quote-price-rule.update",
+    "logistics.quote-price-formula.read",
+    "menu.logistics-tracking",
+    "logistics.tracking-shipment.read",
+    "logistics.tracking-shipment.create",
+    "logistics.tracking-shipment.update",
+    "logistics.tracking-node.read",
+    "logistics.tracking-provider.read",
+    "menu.logistics-contact",
+    "logistics.contact-matrix.read",
+    "logistics.contact-matrix.create",
+    "logistics.contact-matrix.update",
+    "menu.logistics-review",
+    "logistics.review.read",
+    "logistics.review.create",
+    "logistics.review.update",
+    "menu.logistics-subscription",
+    "logistics.subscription.read",
+    "menu.logistics-landing",
+    "logistics.landing-page.read",
+    "logistics.landing-page.create",
+    "logistics.landing-page.update",
+    "menu.logistics-funnel",
+    "logistics.conversion-funnel.read",
+    "logistics.funnel-stats.read",
+    "logistics.conversion-event.read",
+    "menu.logistics-order",
+    "logistics.intent-order.read",
+    "logistics.intent-order.create",
+    "logistics.intent-order.update",
+    "menu.logistics-referral",
+    "logistics.referral.read",
+    "logistics.referral-stats.read",
+    "menu.logistics-customer",
+    "logistics.customer-profile.read",
+    "logistics.customer-profile.update",
+    // 理财中心（read/create/update，不含 delete）
+    "menu.wealth-center",
+    "menu.wealth-product",
+    "wealth.wealth-product.read",
+    "wealth.wealth-product.create",
+    "wealth.wealth-product.update",
+    "wealth.wealth-product.collect",
+    "wealth.wealth-nav.read",
+    "wealth.wealth-nav.create",
+    "wealth.wealth-nav.update",
+    "menu.wealth-company",
+    "wealth.wealth-company.read",
+    "wealth.wealth-company.create",
+    "wealth.wealth-company.update",
+    "menu.wealth-collect",
+    "wealth.wealth-collect-config.read",
+    "wealth.wealth-collect-config.create",
+    "wealth.wealth-collect-config.update",
+    "wealth.wealth-collect-config.trigger",
+    "wealth.wealth-customer-product.read",
+    "wealth.wealth-customer-product.create",
+    "menu.wealth-metrics",
+    "wealth.wealth-risk-metric.read",
+    "wealth.wealth-risk-metric.aggregate",
+    "wealth.wealth-risk-metric.trend",
+    "wealth.wealth-risk-metric.peers",
+    "wealth.wealth-recommend-config.read",
+    "wealth.wealth-recommend-config.create",
+    "wealth.wealth-recommend-config.update",
+    "wealth.wealth-annual-snapshot.read",
+    "wealth.wealth-yearly-return.read",
+    "wealth.wealth-money-income.read",
+    // SSO 扩展（read 为主）
+    "menu.sso-binding",
+    "sso.third-party-binding.read",
+    "sso.oauth-config.read",
+    "menu.sso-token",
+    "sso.token.read",
+    "menu.sso-user-role",
+    "sso.user-app-role.read",
+    "menu.sso-invite",
+    "sso.invite-code.read",
+    "sso.invite-stats.read",
+    "menu.sso-sms",
+    "sso.sms-code.read",
+    // 零散补全
+    "oss.media-meta.read"
   ]),
   [ROLES.INSTRUCTOR]: [
     // 课程中心
@@ -1136,9 +1676,81 @@ const DEFAULT_ROLE_PERMISSIONS = {
     "menu.website-download",
     "download.read",
     "menu.website-lead",
-    "lead.read"
+    "lead.read",
+    // 物流中心（只读）
+    "menu.logistics-center",
+    "menu.logistics-quote",
+    "logistics.quote-request.read",
+    "logistics.quote-field-rule.read",
+    "logistics.quote-price-rule.read",
+    "menu.logistics-tracking",
+    "logistics.tracking-shipment.read",
+    "logistics.tracking-node.read",
+    "menu.logistics-contact",
+    "logistics.contact-matrix.read",
+    "menu.logistics-review",
+    "logistics.review.read",
+    "menu.logistics-landing",
+    "logistics.landing-page.read",
+    // 理财中心（只读）
+    "menu.wealth-center",
+    "menu.wealth-product",
+    "wealth.wealth-product.read",
+    "wealth.wealth-nav.read",
+    "menu.wealth-company",
+    "wealth.wealth-company.read",
+    "menu.wealth-collect",
+    "wealth.wealth-collect-config.read",
+    "wealth.wealth-customer-product.read",
+    "menu.wealth-metrics",
+    "wealth.wealth-risk-metric.read",
+    "wealth.wealth-recommend-config.read",
+    "wealth.wealth-annual-snapshot.read",
+    "wealth.wealth-yearly-return.read",
+    "wealth.wealth-money-income.read",
+    // 直播工作室（只读）
+    "menu.studio-collect",
+    "studio.article-draft.read",
+    "studio.collect-source.read",
+    "studio.collect-task.read",
+    "menu.studio-publish",
+    "studio.publish-platform.read",
+    "studio.publish-account.read",
+    "studio.publish-record.read",
+    "menu.studio-stats",
+    "studio.stat-summary.read",
+    "menu.studio-ad",
+    "studio.ad-slot.read",
+    // 零散补全（只读）
+    "point.rule-template.read",
+    "point.sign-in-record.read",
+    "quiz.quiz-batch.read",
+    "tag.tag-index.read"
   ],
-  [ROLES.USER]: []
+  [ROLES.USER]: [],
+  // ===== 11 个中心 × 2 = 22 个新角色 =====
+  [ROLES.WEBSITE_MANAGER]: centerPermissions("menu.website-center"),
+  [ROLES.WEBSITE_EDITOR]: centerEditorPermissions("menu.website-center"),
+  [ROLES.LOGISTICS_MANAGER]: centerPermissions("menu.logistics-center"),
+  [ROLES.LOGISTICS_EDITOR]: centerEditorPermissions("menu.logistics-center"),
+  [ROLES.COURSE_MANAGER]: centerPermissions("menu.course-center"),
+  [ROLES.COURSE_EDITOR]: centerEditorPermissions("menu.course-center"),
+  [ROLES.STUDY_MANAGER]: centerPermissions("menu.study-center"),
+  [ROLES.STUDY_EDITOR]: centerEditorPermissions("menu.study-center"),
+  [ROLES.QUIZ_MANAGER]: centerPermissions("menu.quiz-center"),
+  [ROLES.QUIZ_EDITOR]: centerEditorPermissions("menu.quiz-center"),
+  [ROLES.POINT_MANAGER]: centerPermissions("menu.point-center"),
+  [ROLES.POINT_EDITOR]: centerEditorPermissions("menu.point-center"),
+  [ROLES.MARKETING_MANAGER]: centerPermissions("menu.marketing-center"),
+  [ROLES.MARKETING_EDITOR]: centerEditorPermissions("menu.marketing-center"),
+  [ROLES.SYSTEM_MANAGER]: centerPermissions("menu.system-center"),
+  [ROLES.SYSTEM_EDITOR]: centerEditorPermissions("menu.system-center"),
+  [ROLES.TAG_MANAGER]: centerPermissions("menu.tag-center"),
+  [ROLES.TAG_EDITOR]: centerEditorPermissions("menu.tag-center"),
+  [ROLES.STUDIO_MANAGER]: centerPermissions("menu.studio-center"),
+  [ROLES.STUDIO_EDITOR]: centerEditorPermissions("menu.studio-center"),
+  [ROLES.WEALTH_MANAGER]: centerPermissions("menu.wealth-center"),
+  [ROLES.WEALTH_EDITOR]: centerEditorPermissions("menu.wealth-center")
 };
 const USER_UID$1 = "plugin::users-permissions.user";
 function throwErr(code, status, message) {
