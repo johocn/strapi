@@ -6,6 +6,9 @@ import trackingShipment from "./tracking-shipment";
 import trackingNode from "./tracking-node";
 import trackingProvider from "./tracking-provider";
 import contactMatrix from "./contact-matrix";
+import quoteEngine from "./quote-engine";
+import trackingAggregator from "./tracking-aggregator";
+import dynamicForm from "./dynamic-form";
 
 export default {
   "quote-request": quoteRequest,
@@ -16,4 +19,7 @@ export default {
   "tracking-node": trackingNode,
   "tracking-provider": trackingProvider,
   "contact-matrix": contactMatrix,
+  "quote-engine": quoteEngine,
+  "tracking-aggregator": trackingAggregator,
+  "dynamic-form": dynamicForm,
 };
