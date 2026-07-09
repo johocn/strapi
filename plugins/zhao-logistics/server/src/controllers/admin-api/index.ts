@@ -1,4 +1,7 @@
 import createGeneric from "./generic";
+import quoteEngine from "./quote-engine";
+import trackingAggregator from "./tracking-aggregator";
+import dynamicForm from "./dynamic-form";
 
 const quoteRequest = createGeneric("quote-request");
 const quoteFieldRule = createGeneric("quote-field-rule");
@@ -18,4 +21,7 @@ export default {
   "tracking-node": trackingNode,
   "tracking-provider": trackingProvider,
   "contact-matrix": contactMatrix,
+  "quote-engine": quoteEngine,
+  "tracking-aggregator": trackingAggregator,
+  "dynamic-form": dynamicForm,
 };
