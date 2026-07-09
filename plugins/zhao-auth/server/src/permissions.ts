@@ -1043,6 +1043,20 @@ export function flattenPermissions(
   return keys;
 }
 
+/** 提取指定中心的全部权限 key（含中心 menu key 自身）*/
+export function centerPermissions(centerKey: string): string[] {
+  const center = PERMISSION_TREE[centerKey];
+  if (!center?.children) return [];
+  return [centerKey, ...flattenPermissions(center.children)];
+}
+
+/** 提取指定中心的编辑权限（排除 delete/manage）*/
+export function centerEditorPermissions(centerKey: string): string[] {
+  return centerPermissions(centerKey).filter(
+    (k) => !k.endsWith(".delete") && !k.endsWith(".manage")
+  );
+}
+
 /** 获取权限 key 的所有子权限（含自身） */
 export function expandPermissionKeys(
   keys: string[],
