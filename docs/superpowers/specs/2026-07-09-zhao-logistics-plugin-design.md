@@ -582,9 +582,11 @@ max(weight, volume * 1000000 / volumetricFactor) * pricePerKg + surcharge + minC
 
 #### 3.3.1 扩展 zhao-website.lead
 
+> 注：lead.type 枚举已有 `quote`，无需重复添加。
+
 | 字段 | 修改内容 |
 |------|----------|
-| type | 枚举增加：`quote` / `intent_order` / `referral` |
+| type | 枚举增加：`intent_order` / `referral`（现有：contact/download/quote/appointment/demo/partner） |
 | sourceId | 语义扩展：关联 quote-request / intent-order / referral 的 documentId |
 | referralCode | 新增 string(50)，推荐码 |
 
