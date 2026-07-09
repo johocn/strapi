@@ -792,6 +792,74 @@ export const PERMISSION_TREE: Record<string, PermissionItem> = {
       },
     },
   },
+  // ===== 理财中心 =====
+  "menu.wealth-center": {
+    label: "理财中心",
+    type: "menu",
+    children: {
+      "menu.wealth-product": {
+        label: "产品管理",
+        type: "menu",
+        children: {
+          "wealth.wealth-product.read": { label: "查看", type: "button" },
+          "wealth.wealth-product.create": { label: "创建", type: "button" },
+          "wealth.wealth-product.update": { label: "编辑", type: "button" },
+          "wealth.wealth-product.delete": { label: "删除", type: "button" },
+          "wealth.wealth-product.collect": { label: "采集", type: "button" },
+          "wealth.wealth-nav.read": { label: "查看净值", type: "button" },
+          "wealth.wealth-nav.create": { label: "录入净值", type: "button" },
+          "wealth.wealth-nav.update": { label: "编辑净值", type: "button" },
+          "wealth.wealth-nav.delete": { label: "删除净值", type: "button" },
+        },
+      },
+      "menu.wealth-company": {
+        label: "公司管理",
+        type: "menu",
+        children: {
+          "wealth.wealth-company.read": { label: "查看", type: "button" },
+          "wealth.wealth-company.create": { label: "创建", type: "button" },
+          "wealth.wealth-company.update": { label: "编辑", type: "button" },
+          "wealth.wealth-company.delete": { label: "删除", type: "button" },
+        },
+      },
+      "menu.wealth-collect": {
+        label: "数据采集",
+        type: "menu",
+        children: {
+          "wealth.wealth-collect-config.read": { label: "查看配置", type: "button" },
+          "wealth.wealth-collect-config.create": { label: "创建配置", type: "button" },
+          "wealth.wealth-collect-config.update": { label: "编辑配置", type: "button" },
+          "wealth.wealth-collect-config.delete": { label: "删除配置", type: "button" },
+          "wealth.wealth-collect-config.trigger": { label: "触发采集", type: "button" },
+          "wealth.wealth-customer-product.read": { label: "查看持仓", type: "button" },
+          "wealth.wealth-customer-product.create": { label: "录入持仓", type: "button" },
+          "wealth.wealth-customer-product.delete": { label: "删除持仓", type: "button" },
+        },
+      },
+      "menu.wealth-metrics": {
+        label: "风险指标",
+        type: "menu",
+        children: {
+          "wealth.wealth-risk-metric.read": { label: "查看风险", type: "button" },
+          "wealth.wealth-risk-metric.update": { label: "编辑风险", type: "button" },
+          "wealth.wealth-risk-metric.aggregate": { label: "聚合统计", type: "button" },
+          "wealth.wealth-risk-metric.trend": { label: "趋势分析", type: "button" },
+          "wealth.wealth-risk-metric.peers": { label: "同业对比", type: "button" },
+          "wealth.wealth-risk-metric.recalculate": { label: "重算指标", type: "button" },
+          "wealth.wealth-recommend-config.read": { label: "查看推荐配置", type: "button" },
+          "wealth.wealth-recommend-config.create": { label: "创建推荐配置", type: "button" },
+          "wealth.wealth-recommend-config.update": { label: "编辑推荐配置", type: "button" },
+          "wealth.wealth-recommend-config.delete": { label: "删除推荐配置", type: "button" },
+          "wealth.wealth-annual-snapshot.read": { label: "查看年报", type: "button" },
+          "wealth.wealth-annual-snapshot.update": { label: "编辑年报", type: "button" },
+          "wealth.wealth-yearly-return.read": { label: "查看年化收益", type: "button" },
+          "wealth.wealth-yearly-return.update": { label: "编辑年化收益", type: "button" },
+          "wealth.wealth-money-income.read": { label: "查看收益分配", type: "button" },
+          "wealth.wealth-money-income.update": { label: "编辑收益分配", type: "button" },
+        },
+      },
+    },
+  },
 };
 
 // ===== 工具函数 =====
