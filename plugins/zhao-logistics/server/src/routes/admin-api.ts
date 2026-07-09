@@ -48,6 +48,15 @@ const routes: Core.Route[] = [
   ...createCrudRoutes("tracking-node", "tracking-nodes"),
   ...createCrudRoutes("tracking-provider", "tracking-providers"),
   ...createCrudRoutes("contact-matrix", "contact-matrices"),
+  // Plan 3 获客成交 CT（8 CT × 5 = 40 端点）
+  ...createCrudRoutes("review", "reviews"),
+  ...createCrudRoutes("subscription", "subscriptions"),
+  ...createCrudRoutes("landing-page", "landing-pages"),
+  ...createCrudRoutes("conversion-funnel", "conversion-funnels"),
+  ...createCrudRoutes("conversion-event", "conversion-events"),
+  ...createCrudRoutes("intent-order", "intent-orders"),
+  ...createCrudRoutes("referral", "referrals"),
+  ...createCrudRoutes("customer-profile", "customer-profiles"),
   // quote-engine 端点
   {
     method: "POST",
