@@ -1,0 +1,66 @@
+{
+  "kind": "collectionType",
+  "collectionName": "zhao_logistics_tracking_providers",
+  "info": {
+    "singularName": "tracking-provider",
+    "pluralName": "tracking-providers",
+    "displayName": "追踪 API 配置"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "content-manager": { "visible": true },
+    "content-type-builder": { "visible": false }
+  },
+  "attributes": {
+    "site": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-common.site-config",
+      "required": true,
+      "inversedBy": "logistics_tracking_providers"
+    },
+    "name": {
+      "type": "string",
+      "maxLength": 100,
+      "required": true
+    },
+    "providerType": {
+      "type": "enumeration",
+      "enum": ["17track", "afterShip", "kuaidi100", "custom_api"],
+      "required": true
+    },
+    "apiKey": {
+      "type": "string",
+      "maxLength": 200,
+      "required": true
+    },
+    "apiSecret": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "endpoint": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "isEnabled": {
+      "type": "boolean",
+      "default": true,
+      "required": true
+    },
+    "rateLimit": {
+      "type": "integer"
+    },
+    "supportedCarriers": {
+      "type": "json"
+    },
+    "extraConfig": {
+      "type": "json"
+    },
+    "deletedAt": {
+      "type": "datetime",
+      "default": null
+    }
+  }
+}
