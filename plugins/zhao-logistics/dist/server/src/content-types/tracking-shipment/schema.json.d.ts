@@ -1,0 +1,90 @@
+declare const _default: {
+  "kind": "collectionType",
+  "collectionName": "zhao_logistics_tracking_shipments",
+  "info": {
+    "singularName": "tracking-shipment",
+    "pluralName": "tracking-shipments",
+    "displayName": "货物追踪主表"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "content-manager": { "visible": true },
+    "content-type-builder": { "visible": false }
+  },
+  "attributes": {
+    "site": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-common.site-config",
+      "required": true,
+      "inversedBy": "logistics_tracking_shipments"
+    },
+    "trackingNo": {
+      "type": "string",
+      "maxLength": 50,
+      "required": true
+    },
+    "orderId": {
+      "type": "string",
+      "maxLength": 50
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": ["pending", "in_transit", "customs", "hold", "delivered", "exception", "returned"],
+      "default": "pending",
+      "required": true
+    },
+    "origin": {
+      "type": "string",
+      "maxLength": 100,
+      "required": true
+    },
+    "destination": {
+      "type": "string",
+      "maxLength": 100,
+      "required": true
+    },
+    "serviceProvider": {
+      "type": "string",
+      "maxLength": 50
+    },
+    "eta": {
+      "type": "datetime"
+    },
+    "actualDelivery": {
+      "type": "datetime"
+    },
+    "customerName": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "customerContact": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "lastSyncAt": {
+      "type": "datetime"
+    },
+    "syncProvider": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-logistics.tracking-provider",
+      "inversedBy": "shipments"
+    },
+    "nodes": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-logistics.tracking-node",
+      "mappedBy": "shipment"
+    },
+    "deletedAt": {
+      "type": "datetime",
+      "default": null
+    }
+  }
+}
+;
+
+export default _default;

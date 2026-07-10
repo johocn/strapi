@@ -1,0 +1,87 @@
+declare const _default: {
+  "kind": "collectionType",
+  "collectionName": "zhao_logistics_quote_price_rules",
+  "info": {
+    "singularName": "quote-price-rule",
+    "pluralName": "quote-price-rules",
+    "displayName": "报价规则表"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "content-manager": { "visible": true },
+    "content-type-builder": { "visible": false }
+  },
+  "attributes": {
+    "site": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-common.site-config",
+      "required": true,
+      "inversedBy": "logistics_quote_price_rules"
+    },
+    "routeId": {
+      "type": "string",
+      "maxLength": 50,
+      "required": true
+    },
+    "serviceProvider": {
+      "type": "string",
+      "maxLength": 50,
+      "required": true
+    },
+    "minWeight": {
+      "type": "decimal",
+      "required": true
+    },
+    "maxWeight": {
+      "type": "decimal",
+      "required": true
+    },
+    "pricePerKg": {
+      "type": "decimal",
+      "required": true
+    },
+    "currency": {
+      "type": "string",
+      "maxLength": 10,
+      "default": "CNY",
+      "required": true
+    },
+    "volumetricFactor": {
+      "type": "integer"
+    },
+    "minCharge": {
+      "type": "decimal"
+    },
+    "surcharges": {
+      "type": "json"
+    },
+    "formula": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-logistics.quote-price-formula",
+      "inversedBy": "price_rules"
+    },
+    "effectiveFrom": {
+      "type": "date",
+      "required": true
+    },
+    "effectiveTo": {
+      "type": "date"
+    },
+    "isActive": {
+      "type": "boolean",
+      "default": true,
+      "required": true
+    },
+    "deletedAt": {
+      "type": "datetime",
+      "default": null
+    }
+  }
+}
+;
+
+export default _default;

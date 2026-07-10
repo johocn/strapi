@@ -1,0 +1,73 @@
+declare const _default: {
+  "kind": "collectionType",
+  "collectionName": "zhao_logistics_tracking_nodes",
+  "info": {
+    "singularName": "tracking-node",
+    "pluralName": "tracking-nodes",
+    "displayName": "追踪节点"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "i18n": { "localized": true },
+    "content-manager": { "visible": true },
+    "content-type-builder": { "visible": false }
+  },
+  "attributes": {
+    "site": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-common.site-config",
+      "required": true,
+      "inversedBy": "logistics_tracking_nodes"
+    },
+    "shipment": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-logistics.tracking-shipment",
+      "required": true,
+      "inversedBy": "nodes"
+    },
+    "nodeStatus": {
+      "type": "enumeration",
+      "enum": ["done", "active", "pending", "alert"],
+      "required": true
+    },
+    "nodeType": {
+      "type": "enumeration",
+      "enum": ["picked_up", "export", "import", "customs", "hold", "delivery", "delivered", "exception"],
+      "required": true
+    },
+    "location": {
+      "type": "string",
+      "maxLength": 100
+    },
+    "eventTime": {
+      "type": "datetime",
+      "required": true
+    },
+    "description": {
+      "type": "text",
+      "required": true,
+      "localized": true
+    },
+    "dataSource": {
+      "type": "enumeration",
+      "enum": ["internal", "external"],
+      "default": "internal",
+      "required": true
+    },
+    "providerRef": {
+      "type": "string",
+      "maxLength": 50
+    },
+    "deletedAt": {
+      "type": "datetime",
+      "default": null
+    }
+  }
+}
+;
+
+export default _default;

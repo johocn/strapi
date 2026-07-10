@@ -1,0 +1,62 @@
+declare const _default: {
+  "kind": "collectionType",
+  "collectionName": "zhao_logistics_quote_price_formulas",
+  "info": {
+    "singularName": "quote-price-formula",
+    "pluralName": "quote-price-formulas",
+    "displayName": "报价公式模板"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "i18n": { "localized": true },
+    "content-manager": { "visible": true },
+    "content-type-builder": { "visible": false }
+  },
+  "attributes": {
+    "site": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-common.site-config",
+      "required": true,
+      "inversedBy": "logistics_quote_price_formulas"
+    },
+    "name": {
+      "type": "string",
+      "maxLength": 100,
+      "required": true,
+      "localized": true
+    },
+    "description": {
+      "type": "text",
+      "localized": true
+    },
+    "expression": {
+      "type": "text",
+      "required": true
+    },
+    "variables": {
+      "type": "json",
+      "required": true
+    },
+    "isActive": {
+      "type": "boolean",
+      "default": true,
+      "required": true
+    },
+    "price_rules": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-logistics.quote-price-rule",
+      "mappedBy": "formula"
+    },
+    "deletedAt": {
+      "type": "datetime",
+      "default": null
+    }
+  }
+}
+;
+
+export default _default;
