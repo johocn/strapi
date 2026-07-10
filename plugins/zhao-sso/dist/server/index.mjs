@@ -951,12 +951,520 @@ const adminController = ({ strapi }) => ({
     }
   }
 });
+const UID$8 = "plugin::zhao-sso.sso-token";
+const tokenController = ({ strapi }) => ({
+  async list(ctx) {
+    try {
+      const { page = 1, pageSize = 20, ...filters } = ctx.query;
+      const pageNum = Number(page);
+      const pageSizeNum = Number(pageSize);
+      const results = await strapi.documents(UID$8).findMany({
+        filters,
+        populate: "*",
+        sort: { createdAt: "desc" },
+        limit: pageSizeNum,
+        start: (pageNum - 1) * pageSizeNum
+      });
+      const total = await strapi.db.query(UID$8).count({ where: filters });
+      ctx.body = {
+        data: results,
+        meta: { pagination: { page: pageNum, pageSize: pageSizeNum, total } }
+      };
+    } catch (e) {
+      ctx.status = e.status || 400;
+      ctx.body = { error: e.message };
+    }
+  },
+  async findOne(ctx) {
+    try {
+      const { id } = ctx.params;
+      const result = await strapi.documents(UID$8).findOne({ documentId: id, populate: "*" });
+      if (!result) {
+        ctx.status = 404;
+        ctx.body = { error: "Token 不存在" };
+        return;
+      }
+      ctx.body = { data: result };
+    } catch (e) {
+      ctx.status = e.status || 400;
+      ctx.body = { error: e.message };
+    }
+  },
+  async delete(ctx) {
+    try {
+      const { id } = ctx.params;
+      const result = await strapi.documents(UID$8).delete({ documentId: id });
+      ctx.body = { data: result };
+    } catch (e) {
+      ctx.status = e.status || 400;
+      ctx.body = { error: e.message };
+    }
+  }
+});
+const UID$7 = "plugin::zhao-sso.sso-auth-code";
+const authCodeController = ({ strapi }) => ({
+  async list(ctx) {
+    try {
+      const { page = 1, pageSize = 20, ...filters } = ctx.query;
+      const pageNum = Number(page);
+      const pageSizeNum = Number(pageSize);
+      const results = await strapi.documents(UID$7).findMany({
+        filters,
+        populate: "*",
+        sort: { createdAt: "desc" },
+        limit: pageSizeNum,
+        start: (pageNum - 1) * pageSizeNum
+      });
+      const total = await strapi.db.query(UID$7).count({ where: filters });
+      ctx.body = {
+        data: results,
+        meta: { pagination: { page: pageNum, pageSize: pageSizeNum, total } }
+      };
+    } catch (e) {
+      ctx.status = e.status || 400;
+      ctx.body = { error: e.message };
+    }
+  },
+  async findOne(ctx) {
+    try {
+      const { id } = ctx.params;
+      const result = await strapi.documents(UID$7).findOne({ documentId: id, populate: "*" });
+      if (!result) {
+        ctx.status = 404;
+        ctx.body = { error: "授权码不存在" };
+        return;
+      }
+      ctx.body = { data: result };
+    } catch (e) {
+      ctx.status = e.status || 400;
+      ctx.body = { error: e.message };
+    }
+  },
+  async delete(ctx) {
+    try {
+      const { id } = ctx.params;
+      const result = await strapi.documents(UID$7).delete({ documentId: id });
+      ctx.body = { data: result };
+    } catch (e) {
+      ctx.status = e.status || 400;
+      ctx.body = { error: e.message };
+    }
+  }
+});
+const UID$6 = "plugin::zhao-sso.sso-third-party-binding";
+const bindingController = ({ strapi }) => ({
+  async list(ctx) {
+    try {
+      const { page = 1, pageSize = 20, ...filters } = ctx.query;
+      const pageNum = Number(page);
+      const pageSizeNum = Number(pageSize);
+      const results = await strapi.documents(UID$6).findMany({
+        filters,
+        populate: "*",
+        sort: { createdAt: "desc" },
+        limit: pageSizeNum,
+        start: (pageNum - 1) * pageSizeNum
+      });
+      const total = await strapi.db.query(UID$6).count({ where: filters });
+      ctx.body = {
+        data: results,
+        meta: { pagination: { page: pageNum, pageSize: pageSizeNum, total } }
+      };
+    } catch (e) {
+      ctx.status = e.status || 400;
+      ctx.body = { error: e.message };
+    }
+  },
+  async findOne(ctx) {
+    try {
+      const { id } = ctx.params;
+      const result = await strapi.documents(UID$6).findOne({ documentId: id, populate: "*" });
+      if (!result) {
+        ctx.status = 404;
+        ctx.body = { error: "绑定记录不存在" };
+        return;
+      }
+      ctx.body = { data: result };
+    } catch (e) {
+      ctx.status = e.status || 400;
+      ctx.body = { error: e.message };
+    }
+  },
+  async create(ctx) {
+    try {
+      const data = ctx.request.body?.data || ctx.request.body;
+      const result = await strapi.documents(UID$6).create({ data, populate: "*" });
+      ctx.body = { data: result };
+    } catch (e) {
+      ctx.status = e.status || 400;
+      ctx.body = { error: e.message };
+    }
+  },
+  async update(ctx) {
+    try {
+      const { id } = ctx.params;
+      const data = ctx.request.body?.data || ctx.request.body;
+      const result = await strapi.documents(UID$6).update({ documentId: id, data, populate: "*" });
+      ctx.body = { data: result };
+    } catch (e) {
+      ctx.status = e.status || 400;
+      ctx.body = { error: e.message };
+    }
+  },
+  async delete(ctx) {
+    try {
+      const { id } = ctx.params;
+      const result = await strapi.documents(UID$6).delete({ documentId: id });
+      ctx.body = { data: result };
+    } catch (e) {
+      ctx.status = e.status || 400;
+      ctx.body = { error: e.message };
+    }
+  }
+});
+const UID$5 = "plugin::zhao-sso.sso-oauth-config";
+const sanitize$1 = (doc) => {
+  if (!doc) return doc;
+  const { app_secret, ...rest } = doc;
+  return rest;
+};
+const oauthConfigController = ({ strapi }) => ({
+  async list(ctx) {
+    try {
+      const { page = 1, pageSize = 20, ...filters } = ctx.query;
+      const pageNum = Number(page);
+      const pageSizeNum = Number(pageSize);
+      const results = await strapi.documents(UID$5).findMany({
+        filters,
+        populate: "*",
+        sort: { createdAt: "desc" },
+        limit: pageSizeNum,
+        start: (pageNum - 1) * pageSizeNum
+      });
+      const total = await strapi.db.query(UID$5).count({ where: filters });
+      ctx.body = {
+        data: (results || []).map(sanitize$1),
+        meta: { pagination: { page: pageNum, pageSize: pageSizeNum, total } }
+      };
+    } catch (e) {
+      ctx.status = e.status || 400;
+      ctx.body = { error: e.message };
+    }
+  },
+  async findOne(ctx) {
+    try {
+      const { id } = ctx.params;
+      const result = await strapi.documents(UID$5).findOne({ documentId: id, populate: "*" });
+      if (!result) {
+        ctx.status = 404;
+        ctx.body = { error: "OAuth 配置不存在" };
+        return;
+      }
+      ctx.body = { data: sanitize$1(result) };
+    } catch (e) {
+      ctx.status = e.status || 400;
+      ctx.body = { error: e.message };
+    }
+  },
+  async create(ctx) {
+    try {
+      const data = ctx.request.body?.data || ctx.request.body;
+      const result = await strapi.documents(UID$5).create({ data, populate: "*" });
+      ctx.body = { data: sanitize$1(result) };
+    } catch (e) {
+      ctx.status = e.status || 400;
+      ctx.body = { error: e.message };
+    }
+  },
+  async update(ctx) {
+    try {
+      const { id } = ctx.params;
+      const data = ctx.request.body?.data || ctx.request.body;
+      const result = await strapi.documents(UID$5).update({ documentId: id, data, populate: "*" });
+      ctx.body = { data: sanitize$1(result) };
+    } catch (e) {
+      ctx.status = e.status || 400;
+      ctx.body = { error: e.message };
+    }
+  },
+  async delete(ctx) {
+    try {
+      const { id } = ctx.params;
+      const result = await strapi.documents(UID$5).delete({ documentId: id });
+      ctx.body = { data: sanitize$1(result) };
+    } catch (e) {
+      ctx.status = e.status || 400;
+      ctx.body = { error: e.message };
+    }
+  }
+});
+const UID$4 = "plugin::zhao-sso.sso-user-app-role";
+const roleController = ({ strapi }) => ({
+  async list(ctx) {
+    try {
+      const { page = 1, pageSize = 20, ...filters } = ctx.query;
+      const pageNum = Number(page);
+      const pageSizeNum = Number(pageSize);
+      const results = await strapi.documents(UID$4).findMany({
+        filters,
+        populate: "*",
+        sort: { createdAt: "desc" },
+        limit: pageSizeNum,
+        start: (pageNum - 1) * pageSizeNum
+      });
+      const total = await strapi.db.query(UID$4).count({ where: filters });
+      ctx.body = {
+        data: results,
+        meta: { pagination: { page: pageNum, pageSize: pageSizeNum, total } }
+      };
+    } catch (e) {
+      ctx.status = e.status || 400;
+      ctx.body = { error: e.message };
+    }
+  },
+  async findOne(ctx) {
+    try {
+      const { id } = ctx.params;
+      const result = await strapi.documents(UID$4).findOne({ documentId: id, populate: "*" });
+      if (!result) {
+        ctx.status = 404;
+        ctx.body = { error: "用户应用角色不存在" };
+        return;
+      }
+      ctx.body = { data: result };
+    } catch (e) {
+      ctx.status = e.status || 400;
+      ctx.body = { error: e.message };
+    }
+  },
+  async create(ctx) {
+    try {
+      const data = ctx.request.body?.data || ctx.request.body;
+      const result = await strapi.documents(UID$4).create({ data, populate: "*" });
+      ctx.body = { data: result };
+    } catch (e) {
+      ctx.status = e.status || 400;
+      ctx.body = { error: e.message };
+    }
+  },
+  async update(ctx) {
+    try {
+      const { id } = ctx.params;
+      const data = ctx.request.body?.data || ctx.request.body;
+      const result = await strapi.documents(UID$4).update({ documentId: id, data, populate: "*" });
+      ctx.body = { data: result };
+    } catch (e) {
+      ctx.status = e.status || 400;
+      ctx.body = { error: e.message };
+    }
+  },
+  async delete(ctx) {
+    try {
+      const { id } = ctx.params;
+      const result = await strapi.documents(UID$4).delete({ documentId: id });
+      ctx.body = { data: result };
+    } catch (e) {
+      ctx.status = e.status || 400;
+      ctx.body = { error: e.message };
+    }
+  }
+});
+const UID$3 = "plugin::zhao-sso.sso-invite-code";
+const inviteCodeController = ({ strapi }) => ({
+  async list(ctx) {
+    try {
+      const { page = 1, pageSize = 20, ...filters } = ctx.query;
+      const pageNum = Number(page);
+      const pageSizeNum = Number(pageSize);
+      const results = await strapi.documents(UID$3).findMany({
+        filters,
+        populate: "*",
+        sort: { createdAt: "desc" },
+        limit: pageSizeNum,
+        start: (pageNum - 1) * pageSizeNum
+      });
+      const total = await strapi.db.query(UID$3).count({ where: filters });
+      ctx.body = {
+        data: results,
+        meta: { pagination: { page: pageNum, pageSize: pageSizeNum, total } }
+      };
+    } catch (e) {
+      ctx.status = e.status || 400;
+      ctx.body = { error: e.message };
+    }
+  },
+  async create(ctx) {
+    try {
+      const data = ctx.request.body?.data || ctx.request.body;
+      const result = await strapi.documents(UID$3).create({ data, populate: "*" });
+      ctx.body = { data: result };
+    } catch (e) {
+      ctx.status = e.status || 400;
+      ctx.body = { error: e.message };
+    }
+  },
+  async delete(ctx) {
+    try {
+      const { id } = ctx.params;
+      const result = await strapi.documents(UID$3).delete({ documentId: id });
+      ctx.body = { data: result };
+    } catch (e) {
+      ctx.status = e.status || 400;
+      ctx.body = { error: e.message };
+    }
+  },
+  async validate(ctx) {
+    try {
+      const { id } = ctx.params;
+      const code = await strapi.documents(UID$3).findOne({ documentId: id });
+      if (!code) {
+        ctx.body = { valid: false, reason: "邀请码不存在" };
+        return;
+      }
+      if (!code.is_active) {
+        ctx.body = { valid: false, reason: "邀请码未启用" };
+        return;
+      }
+      const now = /* @__PURE__ */ new Date();
+      if (code.valid_from && new Date(code.valid_from) > now) {
+        ctx.body = { valid: false, reason: "邀请码尚未生效" };
+        return;
+      }
+      if (code.valid_until && new Date(code.valid_until) < now) {
+        ctx.body = { valid: false, reason: "邀请码已过期" };
+        return;
+      }
+      if (code.max_uses != null && code.use_count >= code.max_uses) {
+        ctx.body = { valid: false, reason: "邀请码已达使用上限" };
+        return;
+      }
+      ctx.body = { valid: true };
+    } catch (e) {
+      ctx.status = e.status || 400;
+      ctx.body = { error: e.message };
+    }
+  }
+});
+const UID$2 = "plugin::zhao-sso.sso-invite-usage";
+const inviteUsageController = ({ strapi }) => ({
+  async list(ctx) {
+    try {
+      const { page = 1, pageSize = 20, ...filters } = ctx.query;
+      const pageNum = Number(page);
+      const pageSizeNum = Number(pageSize);
+      const results = await strapi.documents(UID$2).findMany({
+        filters,
+        populate: "*",
+        sort: { createdAt: "desc" },
+        limit: pageSizeNum,
+        start: (pageNum - 1) * pageSizeNum
+      });
+      const total = await strapi.db.query(UID$2).count({ where: filters });
+      ctx.body = {
+        data: results,
+        meta: { pagination: { page: pageNum, pageSize: pageSizeNum, total } }
+      };
+    } catch (e) {
+      ctx.status = e.status || 400;
+      ctx.body = { error: e.message };
+    }
+  },
+  async delete(ctx) {
+    try {
+      const { id } = ctx.params;
+      const result = await strapi.documents(UID$2).delete({ documentId: id });
+      ctx.body = { data: result };
+    } catch (e) {
+      ctx.status = e.status || 400;
+      ctx.body = { error: e.message };
+    }
+  }
+});
+const UID$1 = "plugin::zhao-sso.sso-referral-relation";
+const referralController = ({ strapi }) => ({
+  async list(ctx) {
+    try {
+      const { page = 1, pageSize = 20, ...filters } = ctx.query;
+      const pageNum = Number(page);
+      const pageSizeNum = Number(pageSize);
+      const results = await strapi.documents(UID$1).findMany({
+        filters,
+        populate: "*",
+        sort: { createdAt: "desc" },
+        limit: pageSizeNum,
+        start: (pageNum - 1) * pageSizeNum
+      });
+      const total = await strapi.db.query(UID$1).count({ where: filters });
+      ctx.body = {
+        data: results,
+        meta: { pagination: { page: pageNum, pageSize: pageSizeNum, total } }
+      };
+    } catch (e) {
+      ctx.status = e.status || 400;
+      ctx.body = { error: e.message };
+    }
+  },
+  async delete(ctx) {
+    try {
+      const { id } = ctx.params;
+      const result = await strapi.documents(UID$1).delete({ documentId: id });
+      ctx.body = { data: result };
+    } catch (e) {
+      ctx.status = e.status || 400;
+      ctx.body = { error: e.message };
+    }
+  }
+});
+const UID = "plugin::zhao-sso.sso-sms-code";
+const smsCodeController = ({ strapi }) => ({
+  async list(ctx) {
+    try {
+      const { page = 1, pageSize = 20, ...filters } = ctx.query;
+      const pageNum = Number(page);
+      const pageSizeNum = Number(pageSize);
+      const results = await strapi.documents(UID).findMany({
+        filters,
+        populate: "*",
+        sort: { createdAt: "desc" },
+        limit: pageSizeNum,
+        start: (pageNum - 1) * pageSizeNum
+      });
+      const total = await strapi.db.query(UID).count({ where: filters });
+      ctx.body = {
+        data: results,
+        meta: { pagination: { page: pageNum, pageSize: pageSizeNum, total } }
+      };
+    } catch (e) {
+      ctx.status = e.status || 400;
+      ctx.body = { error: e.message };
+    }
+  },
+  async delete(ctx) {
+    try {
+      const { id } = ctx.params;
+      const result = await strapi.documents(UID).delete({ documentId: id });
+      ctx.body = { data: result };
+    } catch (e) {
+      ctx.status = e.status || 400;
+      ctx.body = { error: e.message };
+    }
+  }
+});
 const controllers = {
   "auth-controller": authController,
   "oauth-controller": oauthController,
   "user-controller": userController,
   "channel-controller": channelController,
-  "admin-controller": adminController
+  "admin-controller": adminController,
+  token: tokenController,
+  "auth-code": authCodeController,
+  binding: bindingController,
+  "oauth-config": oauthConfigController,
+  role: roleController,
+  "invite-code": inviteCodeController,
+  "invite-usage": inviteUsageController,
+  referral: referralController,
+  "sms-code": smsCodeController
 };
 const api = () => ({
   type: "content-api",
@@ -1085,15 +1593,26 @@ const api = () => ({
     }
   ]
 });
+const hasZhaoAuth = () => {
+  try {
+    const s = globalThis.strapi;
+    return !!(s && s.plugin && s.plugin("zhao-auth"));
+  } catch {
+    return false;
+  }
+};
 const adminRoute = (method, path, handler, permission) => ({
   method,
   path: `/v1/admin${path}`,
   handler,
   config: {
     auth: false,
-    policies: [
+    policies: hasZhaoAuth() ? [
       "plugin::zhao-auth.is-authenticated",
       { name: "plugin::zhao-auth.has-permission", config: { action: permission } }
+    ] : [
+      "plugin::zhao-sso.fallback-authenticated",
+      "plugin::zhao-sso.fallback-has-permission"
     ]
   }
 });
@@ -1111,15 +1630,53 @@ const admin = () => ({
     adminRoute("POST", "/channels", "admin-controller.createChannel", "sso.channel-create"),
     adminRoute("PUT", "/channels/:id", "admin-controller.updateChannel", "sso.channel-update"),
     adminRoute("GET", "/login-logs", "admin-controller.listLoginLogs", "sso.log-read"),
-    adminRoute("GET", "/channel-report", "admin-controller.channelReport", "sso.dashboard")
+    adminRoute("GET", "/channel-report", "admin-controller.channelReport", "sso.dashboard"),
+    // Token 管理
+    adminRoute("GET", "/tokens", "token.list", "sso.token.read"),
+    adminRoute("GET", "/tokens/:id", "token.findOne", "sso.token.read"),
+    adminRoute("DELETE", "/tokens/:id", "token.delete", "sso.token.delete"),
+    // 授权码管理
+    adminRoute("GET", "/auth-codes", "auth-code.list", "sso.auth-code.read"),
+    adminRoute("GET", "/auth-codes/:id", "auth-code.findOne", "sso.auth-code.read"),
+    adminRoute("DELETE", "/auth-codes/:id", "auth-code.delete", "sso.auth-code.delete"),
+    // 三方绑定
+    adminRoute("GET", "/bindings", "binding.list", "sso.third-party-binding.read"),
+    adminRoute("GET", "/bindings/:id", "binding.findOne", "sso.third-party-binding.read"),
+    adminRoute("POST", "/bindings", "binding.create", "sso.third-party-binding.create"),
+    adminRoute("PUT", "/bindings/:id", "binding.update", "sso.third-party-binding.update"),
+    adminRoute("DELETE", "/bindings/:id", "binding.delete", "sso.third-party-binding.delete"),
+    // OAuth 配置
+    adminRoute("GET", "/oauth-configs", "oauth-config.list", "sso.oauth-config.read"),
+    adminRoute("GET", "/oauth-configs/:id", "oauth-config.findOne", "sso.oauth-config.read"),
+    adminRoute("POST", "/oauth-configs", "oauth-config.create", "sso.oauth-config.create"),
+    adminRoute("PUT", "/oauth-configs/:id", "oauth-config.update", "sso.oauth-config.update"),
+    adminRoute("DELETE", "/oauth-configs/:id", "oauth-config.delete", "sso.oauth-config.delete"),
+    // 用户应用角色
+    adminRoute("GET", "/user-app-roles", "role.list", "sso.user-app-role.read"),
+    adminRoute("GET", "/user-app-roles/:id", "role.findOne", "sso.user-app-role.read"),
+    adminRoute("POST", "/user-app-roles", "role.create", "sso.user-app-role.create"),
+    adminRoute("PUT", "/user-app-roles/:id", "role.update", "sso.user-app-role.update"),
+    adminRoute("DELETE", "/user-app-roles/:id", "role.delete", "sso.user-app-role.delete"),
+    // 邀请码
+    adminRoute("GET", "/invite-codes", "invite-code.list", "sso.invite-code.read"),
+    adminRoute("POST", "/invite-codes", "invite-code.create", "sso.invite-code.create"),
+    adminRoute("DELETE", "/invite-codes/:id", "invite-code.delete", "sso.invite-code.delete"),
+    adminRoute("POST", "/invite-codes/:id/validate", "invite-code.validate", "sso.invite-code.validate"),
+    // 邀请记录
+    adminRoute("GET", "/invite-usages", "invite-usage.list", "sso.invite-usage.read"),
+    adminRoute("DELETE", "/invite-usages/:id", "invite-usage.delete", "sso.invite-usage.delete"),
+    // 推荐关系
+    adminRoute("GET", "/referral-relations", "referral.list", "sso.referral-relation.read"),
+    adminRoute("DELETE", "/referral-relations/:id", "referral.delete", "sso.referral-relation.delete"),
+    // 短信验证码
+    adminRoute("GET", "/sms-codes", "sms-code.list", "sso.sms-code.read"),
+    adminRoute("DELETE", "/sms-codes/:id", "sms-code.delete", "sso.sms-code.delete")
   ]
 });
-const apiRoutes = api();
-const adminRoutes = admin();
 const routes = {
   "content-api": {
     type: "content-api",
-    routes: [...apiRoutes.routes, ...adminRoutes.routes]
+    routes: [...api().routes, ...admin().routes]
   }
 };
 const ssoJwt = ({ strapi }) => {
@@ -2115,7 +2672,8 @@ const ssoSms = ({ strapi }) => {
     /**
      * 发送验证码
      * - SMS_PROVIDER=mock(默认):固定 1234,仅写入 DB
-     * - SMS_PROVIDER=aliyun/tencent:预留接口,未对接真实 SDK
+     * - SMS_PROVIDER=aliyun:对接阿里云 dysmsapi
+     * - SMS_PROVIDER=tencent:对接腾讯云 sms
      */
     async sendCode(mobile, scene = "login", ip) {
       if (!/^1[3-9]\d{9}$/.test(mobile)) {
@@ -2128,12 +2686,23 @@ const ssoSms = ({ strapi }) => {
       await strapi.db.query(CODE_UID).create({
         data: { mobile, code, scene, expires_at: expiresAt, used: false, ip: ip || null, provider }
       });
-      if (provider !== "mock") {
-        strapi.log.warn(`[zhao-sso] SMS provider=${provider} 未对接真实 SDK,验证码 ${code} 仅写入 DB`);
-      } else {
+      if (provider === "mock") {
         strapi.log.info(`[zhao-sso] Mock SMS code sent to ${mobile}: ${code}`);
+        return { sent: true, provider, ttlMinutes };
       }
-      return { sent: true, provider, ttlMinutes };
+      try {
+        if (provider === "aliyun") {
+          await this.sendViaAliyun(mobile, code);
+        } else if (provider === "tencent") {
+          await this.sendViaTencent(mobile, code);
+        } else {
+          throwErr("SSO_SMS_008", 400, `不支持的 SMS provider: ${provider}`);
+        }
+        return { sent: true, provider, ttlMinutes };
+      } catch (e) {
+        strapi.log.error(`[zhao-sso] SMS provider=${provider} 发送失败: ${e.message}`);
+        return { sent: false, provider, error: e.message, ttlMinutes };
+      }
     },
     /**
      * 校验验证码(校验成功后标记 used=true)
@@ -2152,16 +2721,125 @@ const ssoSms = ({ strapi }) => {
       return true;
     },
     /**
-     * 预留:阿里云 SMS 发送接口
+     * 阿里云 SMS 发送(HMAC-SHA1 签名,GET 请求)
+     * 环境变量:SMS_ALIYUN_ACCESS_KEY_ID / SMS_ALIYUN_ACCESS_KEY_SECRET / SMS_ALIYUN_SIGN_NAME / SMS_ALIYUN_TEMPLATE_CODE
      */
-    async sendViaAliyun(_mobile, _code, _scene) {
-      throwErr("SSO_SMS_004", 501, "阿里云 SMS 未实现");
+    async sendViaAliyun(mobile, code) {
+      const accessKeyId = process.env.SMS_ALIYUN_ACCESS_KEY_ID;
+      const accessKeySecret = process.env.SMS_ALIYUN_ACCESS_KEY_SECRET;
+      const signName = process.env.SMS_ALIYUN_SIGN_NAME;
+      const templateCode = process.env.SMS_ALIYUN_TEMPLATE_CODE;
+      if (!accessKeyId || !accessKeySecret || !signName || !templateCode) {
+        throwErr("SSO_SMS_006", 500, "阿里云 SMS 配置缺失");
+      }
+      const percentEncode = (str) => encodeURIComponent(str).replace(/\+/g, "%20").replace(/\*/g, "%2A").replace(/%7E/g, "~");
+      const params = {
+        AccessKeyId: accessKeyId,
+        Action: "SendSms",
+        Format: "JSON",
+        PhoneNumbers: mobile,
+        RegionId: "cn-hangzhou",
+        SignName: signName,
+        SignatureMethod: "HMAC-SHA1",
+        SignatureNonce: crypto__default.randomUUID(),
+        SignatureVersion: "1.0",
+        TemplateCode: templateCode,
+        TemplateParam: JSON.stringify({ code }),
+        Timestamp: (/* @__PURE__ */ new Date()).toISOString().replace(/\.\d{3}Z$/, "Z"),
+        Version: "2017-05-25"
+      };
+      const canonicalized = Object.keys(params).sort().map((k) => `${percentEncode(k)}=${percentEncode(params[k])}`).join("&");
+      const stringToSign = `GET&${percentEncode("/")}&${percentEncode(canonicalized)}`;
+      const signature = crypto__default.createHmac("sha1", `${accessKeySecret}&`).update(stringToSign).digest("base64");
+      const url = `https://dysmsapi.aliyuncs.com/?${canonicalized}&Signature=${percentEncode(signature)}`;
+      const resp = await axios.get(url, { timeout: 1e4 });
+      if (resp.data?.Code !== "OK") {
+        throwErr(
+          "SSO_SMS_006",
+          500,
+          `阿里云 SMS 发送失败: ${resp.data?.Message || resp.data?.Code || "unknown"}`
+        );
+      }
+      return resp.data;
     },
     /**
-     * 预留:腾讯云 SMS 发送接口
+     * 腾讯云 SMS 发送(TC3-HMAC-SHA256 签名,POST 请求)
+     * 环境变量:SMS_TENCENT_SECRET_ID / SMS_TENCENT_SECRET_KEY / SMS_TENCENT_SDK_APP_ID / SMS_TENCENT_SIGN_NAME / SMS_TENCENT_TEMPLATE_ID
      */
-    async sendViaTencent(_mobile, _code, _scene) {
-      throwErr("SSO_SMS_005", 501, "腾讯云 SMS 未实现");
+    async sendViaTencent(mobile, code) {
+      const secretId = process.env.SMS_TENCENT_SECRET_ID;
+      const secretKey = process.env.SMS_TENCENT_SECRET_KEY;
+      const sdkAppId = process.env.SMS_TENCENT_SDK_APP_ID;
+      const signName = process.env.SMS_TENCENT_SIGN_NAME;
+      const templateId = process.env.SMS_TENCENT_TEMPLATE_ID;
+      if (!secretId || !secretKey || !sdkAppId || !signName || !templateId) {
+        throwErr("SSO_SMS_007", 500, "腾讯云 SMS 配置缺失");
+      }
+      const host = "sms.tencentcloudapi.com";
+      const service = "sms";
+      const action = "SendSms";
+      const version = "2021-01-11";
+      const region = "ap-beijing";
+      const timestamp = Math.floor(Date.now() / 1e3);
+      const date = new Date(timestamp * 1e3).toISOString().slice(0, 10);
+      const payload = JSON.stringify({
+        SmsSdkAppId: sdkAppId,
+        SignName: signName,
+        TemplateId: templateId,
+        PhoneNumberSet: [`+86${mobile}`],
+        TemplateParamSet: [code]
+      });
+      const hashedPayload = crypto__default.createHash("sha256").update(payload).digest("hex");
+      const canonicalHeaders = `content-type:application/json; charset=utf-8
+host:${host}
+x-tc-action:${action.toLowerCase()}
+`;
+      const signedHeaders = "content-type;host;x-tc-action";
+      const canonicalRequest = `POST
+/
+
+${canonicalHeaders}
+${signedHeaders}
+${hashedPayload}`;
+      const credentialScope = `${date}/${service}/tc3_request`;
+      const hashedCanonicalRequest = crypto__default.createHash("sha256").update(canonicalRequest).digest("hex");
+      const stringToSign = `TC3-HMAC-SHA256
+${timestamp}
+${credentialScope}
+${hashedCanonicalRequest}`;
+      const secretDate = crypto__default.createHmac("sha256", secretKey).update(date).digest();
+      const secretService = crypto__default.createHmac("sha256", secretDate).update(service).digest();
+      const secretSigning = crypto__default.createHmac("sha256", secretService).update("tc3_request").digest();
+      const signature = crypto__default.createHmac("sha256", secretSigning).update(stringToSign).digest("hex");
+      const authorization = `TC3-HMAC-SHA256 Credential=${secretId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
+      const resp = await axios.post(`https://${host}`, payload, {
+        timeout: 1e4,
+        headers: {
+          "Content-Type": "application/json; charset=utf-8",
+          Authorization: authorization,
+          "X-TC-Action": action,
+          "X-TC-Timestamp": String(timestamp),
+          "X-TC-Version": version,
+          "X-TC-Region": region
+        }
+      });
+      const respData = resp.data?.Response;
+      if (respData?.Error) {
+        throwErr(
+          "SSO_SMS_007",
+          500,
+          `腾讯云 SMS 发送失败: ${respData.Error.Message || respData.Error.Code}`
+        );
+      }
+      const firstStatus = respData?.SendStatusSet?.[0];
+      if (firstStatus && firstStatus.Code !== "Ok") {
+        throwErr(
+          "SSO_SMS_007",
+          500,
+          `腾讯云 SMS 发送失败: ${firstStatus.Message || firstStatus.Code}`
+        );
+      }
+      return respData;
     }
   };
 };
@@ -2179,8 +2857,26 @@ const services = {
   "sso-oauth-config": ssoOauthConfig,
   "sso-sms": ssoSms
 };
+const fallbackAuthenticated = (policyContext, _config, _ctx) => {
+  const { state } = policyContext;
+  if (state.user) {
+    return true;
+  }
+  policyContext.throw(401, "Authentication required");
+  return false;
+};
+const fallbackHasPermission = (policyContext, _config, _ctx) => {
+  const { state } = policyContext;
+  if (state.user?.roles?.some((r) => r.code === "strapi-super-admin")) {
+    return true;
+  }
+  policyContext.throw(403, "Insufficient permissions");
+  return false;
+};
 const policies = {
-  "sso-authenticated": ssoAuthenticated
+  "sso-authenticated": ssoAuthenticated,
+  "fallback-authenticated": fallbackAuthenticated,
+  "fallback-has-permission": fallbackHasPermission
 };
 const ssoAuth = async (ctx, next) => {
   const authHeader = ctx.request?.headers?.authorization;

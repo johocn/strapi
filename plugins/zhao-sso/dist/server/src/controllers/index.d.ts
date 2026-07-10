@@ -48,5 +48,72 @@ declare const _default: {
         listLoginLogs(ctx: any): Promise<void>;
         channelReport(ctx: any): Promise<void>;
     };
+    token: ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        list(ctx: any): Promise<void>;
+        findOne(ctx: any): Promise<void>;
+        delete(ctx: any): Promise<void>;
+    };
+    "auth-code": ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        list(ctx: any): Promise<void>;
+        findOne(ctx: any): Promise<void>;
+        delete(ctx: any): Promise<void>;
+    };
+    binding: ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        list(ctx: any): Promise<void>;
+        findOne(ctx: any): Promise<void>;
+        create(ctx: any): Promise<void>;
+        update(ctx: any): Promise<void>;
+        delete(ctx: any): Promise<void>;
+    };
+    "oauth-config": ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        list(ctx: any): Promise<void>;
+        findOne(ctx: any): Promise<void>;
+        create(ctx: any): Promise<void>;
+        update(ctx: any): Promise<void>;
+        delete(ctx: any): Promise<void>;
+    };
+    role: ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        list(ctx: any): Promise<void>;
+        findOne(ctx: any): Promise<void>;
+        create(ctx: any): Promise<void>;
+        update(ctx: any): Promise<void>;
+        delete(ctx: any): Promise<void>;
+    };
+    "invite-code": ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        list(ctx: any): Promise<void>;
+        create(ctx: any): Promise<void>;
+        delete(ctx: any): Promise<void>;
+        validate(ctx: any): Promise<void>;
+    };
+    "invite-usage": ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        list(ctx: any): Promise<void>;
+        delete(ctx: any): Promise<void>;
+    };
+    referral: ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        list(ctx: any): Promise<void>;
+        delete(ctx: any): Promise<void>;
+    };
+    "sms-code": ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        list(ctx: any): Promise<void>;
+        delete(ctx: any): Promise<void>;
+    };
 };
 export default _default;

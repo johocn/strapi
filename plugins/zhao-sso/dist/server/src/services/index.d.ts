@@ -238,10 +238,16 @@ declare const _default: {
             sent: boolean;
             provider: string;
             ttlMinutes: number;
+            error?: undefined;
+        } | {
+            sent: boolean;
+            provider: string;
+            error: any;
+            ttlMinutes: number;
         }>;
         verifyCode(mobile: string, code: string, scene?: string): Promise<boolean>;
-        sendViaAliyun(_mobile: string, _code: string, _scene: string): Promise<never>;
-        sendViaTencent(_mobile: string, _code: string, _scene: string): Promise<never>;
+        sendViaAliyun(mobile: string, code: string): Promise<any>;
+        sendViaTencent(mobile: string, code: string): Promise<any>;
     };
 };
 export default _default;

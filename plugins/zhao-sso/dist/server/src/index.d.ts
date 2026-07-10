@@ -727,10 +727,77 @@ declare const _default: {
             listLoginLogs(ctx: any): Promise<void>;
             channelReport(ctx: any): Promise<void>;
         };
+        token: ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            list(ctx: any): Promise<void>;
+            findOne(ctx: any): Promise<void>;
+            delete(ctx: any): Promise<void>;
+        };
+        "auth-code": ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            list(ctx: any): Promise<void>;
+            findOne(ctx: any): Promise<void>;
+            delete(ctx: any): Promise<void>;
+        };
+        binding: ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            list(ctx: any): Promise<void>;
+            findOne(ctx: any): Promise<void>;
+            create(ctx: any): Promise<void>;
+            update(ctx: any): Promise<void>;
+            delete(ctx: any): Promise<void>;
+        };
+        "oauth-config": ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            list(ctx: any): Promise<void>;
+            findOne(ctx: any): Promise<void>;
+            create(ctx: any): Promise<void>;
+            update(ctx: any): Promise<void>;
+            delete(ctx: any): Promise<void>;
+        };
+        role: ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            list(ctx: any): Promise<void>;
+            findOne(ctx: any): Promise<void>;
+            create(ctx: any): Promise<void>;
+            update(ctx: any): Promise<void>;
+            delete(ctx: any): Promise<void>;
+        };
+        "invite-code": ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            list(ctx: any): Promise<void>;
+            create(ctx: any): Promise<void>;
+            delete(ctx: any): Promise<void>;
+            validate(ctx: any): Promise<void>;
+        };
+        "invite-usage": ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            list(ctx: any): Promise<void>;
+            delete(ctx: any): Promise<void>;
+        };
+        referral: ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            list(ctx: any): Promise<void>;
+            delete(ctx: any): Promise<void>;
+        };
+        "sms-code": ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            list(ctx: any): Promise<void>;
+            delete(ctx: any): Promise<void>;
+        };
     };
     routes: {
         "content-api": {
-            type: string;
+            type: "content-api";
             routes: ({
                 method: string;
                 path: string;
@@ -1003,16 +1070,24 @@ declare const _default: {
                 sent: boolean;
                 provider: string;
                 ttlMinutes: number;
+                error?: undefined;
+            } | {
+                sent: boolean;
+                provider: string;
+                error: any;
+                ttlMinutes: number;
             }>;
             verifyCode(mobile: string, code: string, scene?: string): Promise<boolean>;
-            sendViaAliyun(_mobile: string, _code: string, _scene: string): Promise<never>;
-            sendViaTencent(_mobile: string, _code: string, _scene: string): Promise<never>;
+            sendViaAliyun(mobile: string, code: string): Promise<any>;
+            sendViaTencent(mobile: string, code: string): Promise<any>;
         };
     };
     policies: {
         "sso-authenticated": (policyContext: any, config: any, { strapi }: {
             strapi: any;
         }) => Promise<boolean>;
+        "fallback-authenticated": (policyContext: any, _config: any, _ctx: any) => boolean;
+        "fallback-has-permission": (policyContext: any, _config: any, _ctx: any) => boolean;
     };
     middlewares: {
         "sso-auth": (ctx: any, next: any) => Promise<void>;

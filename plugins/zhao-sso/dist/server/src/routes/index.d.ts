@@ -1,6 +1,6 @@
 declare const _default: {
     "content-api": {
-        type: string;
+        type: "content-api";
         routes: ({
             method: string;
             path: string;
