@@ -8,4 +8,4 @@ declare const _default: ({ strapi }: {
     delete(ctx: any): Promise<void>;
 };
 export default _default;
-//# sourceMappingURL=draft.d.ts.map
+//# sourceMappingURL=knowledge-index.d.ts.map

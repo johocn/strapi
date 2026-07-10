@@ -83,5 +83,34 @@ export default () => ({
     adminRoute('GET', '/stats/devices', 'analytics.getDeviceStats', 'zhao-studio.read'),
     adminRoute('GET', '/stats/regions', 'analytics.getRegionStats', 'zhao-studio.read'),
     adminRoute('GET', '/stats/users', 'analytics.getUserStats', 'zhao-studio.read'),
+
+    // 草稿文章 admin CRUD
+    adminRoute('GET', '/articles', 'draft.list', 'zhao-studio.read'),
+    adminRoute('GET', '/articles/:id', 'draft.findOne', 'zhao-studio.read'),
+    adminRoute('POST', '/articles', 'draft.create', 'zhao-studio.create'),
+    adminRoute('PUT', '/articles/:id', 'draft.update', 'zhao-studio.update'),
+    adminRoute('DELETE', '/articles/:id', 'draft.delete', 'zhao-studio.delete'),
+
+    // knowledge-index CRUD
+    adminRoute('GET', '/knowledge-indices', 'knowledge-index.list', 'zhao-studio.read'),
+    adminRoute('GET', '/knowledge-indices/:id', 'knowledge-index.findOne', 'zhao-studio.read'),
+    adminRoute('POST', '/knowledge-indices', 'knowledge-index.create', 'zhao-studio.create'),
+    adminRoute('PUT', '/knowledge-indices/:id', 'knowledge-index.update', 'zhao-studio.update'),
+    adminRoute('DELETE', '/knowledge-indices/:id', 'knowledge-index.delete', 'zhao-studio.delete'),
+
+    // browser-log 查询
+    adminRoute('GET', '/browser-logs', 'browser-log.list', 'zhao-studio.read'),
+    adminRoute('GET', '/browser-logs/:id', 'browser-log.findOne', 'zhao-studio.read'),
+
+    // stat-summary 查询
+    adminRoute('GET', '/stat-summaries', 'stat-summary.list', 'zhao-studio.read'),
+    adminRoute('GET', '/stat-summaries/:id', 'stat-summary.findOne', 'zhao-studio.read'),
+
+    // 详情查询补全
+    adminRoute('GET', '/sources/:id', 'collect.findOne', 'zhao-studio.read'),
+    adminRoute('GET', '/records/:id', 'publish.findOne', 'zhao-studio.read'),
+    adminRoute('GET', '/platforms/:id', 'publish.findOnePlatform', 'zhao-studio.read'),
+    adminRoute('GET', '/accounts/:id', 'publish.findOneAccount', 'zhao-studio.read'),
+    adminRoute('GET', '/ad-slots/:id', 'analytics.findOneAdSlot', 'zhao-studio.read'),
   ],
 });

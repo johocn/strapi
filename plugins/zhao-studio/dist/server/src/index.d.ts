@@ -32,12 +32,16 @@ declare const _default: {
             confirmImport(ctx: any): Promise<void>;
             listTasks(ctx: any): Promise<void>;
             getTask(ctx: any): Promise<void>;
+            findOne(ctx: any): Promise<void>;
         };
         draft: ({ strapi }: {
             strapi: any;
         }) => {
             list(ctx: any): Promise<void>;
             findOne(ctx: any): Promise<void>;
+            create(ctx: any): Promise<void>;
+            update(ctx: any): Promise<void>;
+            delete(ctx: any): Promise<void>;
         };
         publish: ({ strapi }: {
             strapi: import('@strapi/types/dist/core').Strapi;
@@ -54,6 +58,9 @@ declare const _default: {
             listRecords(ctx: any): Promise<void>;
             retryPublish(ctx: any): Promise<void>;
             syncStatus(ctx: any): Promise<void>;
+            findOne(ctx: any): Promise<void>;
+            findOnePlatform(ctx: any): Promise<void>;
+            findOneAccount(ctx: any): Promise<void>;
         };
         'internal-api': ({ strapi }: {
             strapi: import('@strapi/types/dist/core').Strapi;
@@ -93,6 +100,28 @@ declare const _default: {
             getDeviceStats(ctx: any): Promise<void>;
             getRegionStats(ctx: any): Promise<void>;
             getUserStats(ctx: any): Promise<void>;
+            findOneAdSlot(ctx: any): Promise<void>;
+        };
+        'knowledge-index': ({ strapi }: {
+            strapi: any;
+        }) => {
+            list(ctx: any): Promise<void>;
+            findOne(ctx: any): Promise<void>;
+            create(ctx: any): Promise<void>;
+            update(ctx: any): Promise<void>;
+            delete(ctx: any): Promise<void>;
+        };
+        'browser-log': ({ strapi }: {
+            strapi: any;
+        }) => {
+            list(ctx: any): Promise<void>;
+            findOne(ctx: any): Promise<void>;
+        };
+        'stat-summary': ({ strapi }: {
+            strapi: any;
+        }) => {
+            list(ctx: any): Promise<void>;
+            findOne(ctx: any): Promise<void>;
         };
     };
     routes: {
@@ -446,6 +475,14 @@ declare const _default: {
                         relation: string;
                         target: string;
                         mappedBy: string;
+                    };
+                    scope: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    scopeTenantId: {
+                        type: string;
                     };
                     publishedAt: {
                         type: string;

@@ -16,6 +16,7 @@ declare const _default: ({ strapi }: {
     getDeviceStats(ctx: any): Promise<void>;
     getRegionStats(ctx: any): Promise<void>;
     getUserStats(ctx: any): Promise<void>;
+    findOneAdSlot(ctx: any): Promise<void>;
 };
 export default _default;
 //# sourceMappingURL=analytics.d.ts.map

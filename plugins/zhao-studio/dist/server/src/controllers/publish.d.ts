@@ -14,6 +14,9 @@ declare const _default: ({ strapi }: {
     listRecords(ctx: any): Promise<void>;
     retryPublish(ctx: any): Promise<void>;
     syncStatus(ctx: any): Promise<void>;
+    findOne(ctx: any): Promise<void>;
+    findOnePlatform(ctx: any): Promise<void>;
+    findOneAccount(ctx: any): Promise<void>;
 };
 export default _default;
 //# sourceMappingURL=publish.d.ts.map

@@ -84,6 +84,14 @@ declare const _default: {
                     target: string;
                     mappedBy: string;
                 };
+                scope: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
+                scopeTenantId: {
+                    type: string;
+                };
                 publishedAt: {
                     type: string;
                 };

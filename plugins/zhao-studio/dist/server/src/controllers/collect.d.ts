@@ -10,6 +10,7 @@ declare const _default: ({ strapi }: {
     confirmImport(ctx: any): Promise<void>;
     listTasks(ctx: any): Promise<void>;
     getTask(ctx: any): Promise<void>;
+    findOne(ctx: any): Promise<void>;
 };
 export default _default;
 //# sourceMappingURL=collect.d.ts.map

@@ -97,17 +97,62 @@ const collect$1 = ({ strapi }) => ({
     const { id } = ctx.params;
     const task = await strapi.documents("plugin::zhao-studio.collect-task").findOne({ documentId: id });
     ctx.body = { data: task };
+  },
+  async findOne(ctx) {
+    const { id } = ctx.params;
+    const source = await strapi.documents("plugin::zhao-studio.collect-source").findOne({ documentId: id });
+    ctx.body = { data: source };
   }
 });
 const draft = ({ strapi }) => ({
   async list(ctx) {
-    const drafts = await strapi.documents("plugin::zhao-studio.article-draft").findMany();
+    const user = ctx.state.user;
+    const hasTenantPermission = user?.permissions?.some(
+      (p) => typeof p === "string" ? p === "menu.tenant" : p?.action === "menu.tenant"
+    ) ?? false;
+    const query = { ...ctx.query };
+    if (!hasTenantPermission) {
+      query.filters = { ...query.filters || {}, scope: "current" };
+    }
+    const drafts = await strapi.documents("plugin::zhao-studio.article-draft").findMany(query);
     ctx.body = { data: drafts };
   },
   async findOne(ctx) {
     const { id } = ctx.params;
     const draft2 = await strapi.documents("plugin::zhao-studio.article-draft").findOne({ documentId: id });
     ctx.body = { data: draft2 };
+  },
+  async create(ctx) {
+    const user = ctx.state.user;
+    const hasTenantPermission = user?.permissions?.some(
+      (p) => typeof p === "string" ? p === "menu.tenant" : p?.action === "menu.tenant"
+    ) ?? false;
+    const data2 = { ...ctx.request.body.data };
+    if (!hasTenantPermission) {
+      data2.scope = "current";
+      delete data2.scopeTenantId;
+    }
+    const draft2 = await strapi.documents("plugin::zhao-studio.article-draft").create({ data: data2 });
+    ctx.body = { data: draft2 };
+  },
+  async update(ctx) {
+    const { id } = ctx.params;
+    const user = ctx.state.user;
+    const hasTenantPermission = user?.permissions?.some(
+      (p) => typeof p === "string" ? p === "menu.tenant" : p?.action === "menu.tenant"
+    ) ?? false;
+    const data2 = { ...ctx.request.body.data };
+    if (!hasTenantPermission) {
+      data2.scope = "current";
+      delete data2.scopeTenantId;
+    }
+    const draft2 = await strapi.documents("plugin::zhao-studio.article-draft").update({ documentId: id, data: data2 });
+    ctx.body = { data: draft2 };
+  },
+  async delete(ctx) {
+    const { id } = ctx.params;
+    await strapi.documents("plugin::zhao-studio.article-draft").delete({ documentId: id });
+    ctx.body = { data: { success: true } };
   }
 });
 const publish$1 = ({ strapi }) => ({
@@ -184,6 +229,18 @@ const publish$1 = ({ strapi }) => ({
     const statusSync2 = strapi.plugin("zhao-studio").service("status-sync");
     await statusSync2.syncPublishStatus(articleId);
     ctx.body = { data: { success: true } };
+  },
+  async findOne(ctx) {
+    const record = await strapi.documents("plugin::zhao-studio.publish-record").findOne({ documentId: ctx.params.id });
+    ctx.body = { data: record };
+  },
+  async findOnePlatform(ctx) {
+    const platform2 = await strapi.documents("plugin::zhao-studio.publish-platform").findOne({ documentId: ctx.params.id });
+    ctx.body = { data: platform2 };
+  },
+  async findOneAccount(ctx) {
+    const account = await strapi.documents("plugin::zhao-studio.publish-account").findOne({ documentId: ctx.params.id });
+    ctx.body = { data: account };
   }
 });
 const internalApi$1 = ({ strapi }) => ({
@@ -397,6 +454,67 @@ const analytics$1 = ({ strapi }) => ({
       endDate: new Date(endDate)
     });
     ctx.body = { data: stats };
+  },
+  async findOneAdSlot(ctx) {
+    const slot = await strapi.documents("plugin::zhao-studio.ad-slot").findOne({ documentId: ctx.params.id });
+    ctx.body = { data: slot };
+  }
+});
+const knowledgeIndex = ({ strapi }) => ({
+  async list(ctx) {
+    const results = await strapi.documents("plugin::zhao-studio.knowledge-point-index").findMany(ctx.query);
+    ctx.body = { data: results, meta: { pagination: ctx.query?.pagination || {} } };
+  },
+  async findOne(ctx) {
+    const { id } = ctx.params;
+    const record = await strapi.documents("plugin::zhao-studio.knowledge-point-index").findOne({ documentId: id });
+    ctx.body = { data: record };
+  },
+  async create(ctx) {
+    const record = await strapi.documents("plugin::zhao-studio.knowledge-point-index").create({ data: ctx.request.body });
+    ctx.body = { data: record };
+  },
+  async update(ctx) {
+    const { id } = ctx.params;
+    const record = await strapi.documents("plugin::zhao-studio.knowledge-point-index").update({ documentId: id, data: ctx.request.body });
+    ctx.body = { data: record };
+  },
+  async delete(ctx) {
+    const { id } = ctx.params;
+    await strapi.documents("plugin::zhao-studio.knowledge-point-index").delete({ documentId: id });
+    ctx.body = { data: { success: true } };
+  }
+});
+const browserLog$1 = ({ strapi }) => ({
+  async list(ctx) {
+    const { eventType, deviceType, city, sessionId } = ctx.query;
+    const filters2 = {};
+    if (eventType) filters2.eventType = eventType;
+    if (deviceType) filters2.deviceType = deviceType;
+    if (city) filters2.city = city;
+    if (sessionId) filters2.sessionId = sessionId;
+    const results = await strapi.documents("plugin::zhao-studio.browser-log").findMany({ filters: filters2 });
+    ctx.body = { data: results };
+  },
+  async findOne(ctx) {
+    const { id } = ctx.params;
+    const record = await strapi.documents("plugin::zhao-studio.browser-log").findOne({ documentId: id });
+    ctx.body = { data: record };
+  }
+});
+const statSummary$1 = ({ strapi }) => ({
+  async list(ctx) {
+    const { summaryType, date } = ctx.query;
+    const filters2 = {};
+    if (summaryType) filters2.summaryType = summaryType;
+    if (date) filters2.date = date;
+    const results = await strapi.documents("plugin::zhao-studio.stat-summary").findMany({ filters: filters2 });
+    ctx.body = { data: results };
+  },
+  async findOne(ctx) {
+    const { id } = ctx.params;
+    const record = await strapi.documents("plugin::zhao-studio.stat-summary").findOne({ documentId: id });
+    ctx.body = { data: record };
   }
 });
 const controllers = {
@@ -405,7 +523,10 @@ const controllers = {
   publish: publish$1,
   "internal-api": internalApi$1,
   ai,
-  analytics: analytics$1
+  analytics: analytics$1,
+  "knowledge-index": knowledgeIndex,
+  "browser-log": browserLog$1,
+  "stat-summary": statSummary$1
 };
 const adminRoutes = () => ({
   type: "admin",
@@ -481,7 +602,31 @@ const contentApiRoutes = () => ({
     adminRoute("GET", "/stats/ad-slots", "analytics.getAdSlotStats", "zhao-studio.read"),
     adminRoute("GET", "/stats/devices", "analytics.getDeviceStats", "zhao-studio.read"),
     adminRoute("GET", "/stats/regions", "analytics.getRegionStats", "zhao-studio.read"),
-    adminRoute("GET", "/stats/users", "analytics.getUserStats", "zhao-studio.read")
+    adminRoute("GET", "/stats/users", "analytics.getUserStats", "zhao-studio.read"),
+    // 草稿文章 admin CRUD
+    adminRoute("GET", "/articles", "draft.list", "zhao-studio.read"),
+    adminRoute("GET", "/articles/:id", "draft.findOne", "zhao-studio.read"),
+    adminRoute("POST", "/articles", "draft.create", "zhao-studio.create"),
+    adminRoute("PUT", "/articles/:id", "draft.update", "zhao-studio.update"),
+    adminRoute("DELETE", "/articles/:id", "draft.delete", "zhao-studio.delete"),
+    // knowledge-index CRUD
+    adminRoute("GET", "/knowledge-indices", "knowledge-index.list", "zhao-studio.read"),
+    adminRoute("GET", "/knowledge-indices/:id", "knowledge-index.findOne", "zhao-studio.read"),
+    adminRoute("POST", "/knowledge-indices", "knowledge-index.create", "zhao-studio.create"),
+    adminRoute("PUT", "/knowledge-indices/:id", "knowledge-index.update", "zhao-studio.update"),
+    adminRoute("DELETE", "/knowledge-indices/:id", "knowledge-index.delete", "zhao-studio.delete"),
+    // browser-log 查询
+    adminRoute("GET", "/browser-logs", "browser-log.list", "zhao-studio.read"),
+    adminRoute("GET", "/browser-logs/:id", "browser-log.findOne", "zhao-studio.read"),
+    // stat-summary 查询
+    adminRoute("GET", "/stat-summaries", "stat-summary.list", "zhao-studio.read"),
+    adminRoute("GET", "/stat-summaries/:id", "stat-summary.findOne", "zhao-studio.read"),
+    // 详情查询补全
+    adminRoute("GET", "/sources/:id", "collect.findOne", "zhao-studio.read"),
+    adminRoute("GET", "/records/:id", "publish.findOne", "zhao-studio.read"),
+    adminRoute("GET", "/platforms/:id", "publish.findOnePlatform", "zhao-studio.read"),
+    adminRoute("GET", "/accounts/:id", "publish.findOneAccount", "zhao-studio.read"),
+    adminRoute("GET", "/ad-slots/:id", "analytics.findOneAdSlot", "zhao-studio.read")
   ]
 });
 const routes = {
@@ -20063,7 +20208,7 @@ const collectionName$9 = "zhao_article_drafts";
 const info$9 = { "singularName": "article-draft", "pluralName": "article-drafts", "displayName": "草稿文章", "description": "采集并加工后的草稿文章" };
 const options$9 = { "draftAndPublish": true };
 const pluginOptions$9 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
-const attributes$9 = { "title": { "type": "string", "required": true, "maxLength": 200 }, "content": { "type": "richtext", "required": true }, "sourceUrl": { "type": "string" }, "sourceTitle": { "type": "string" }, "sourcePublishedAt": { "type": "datetime" }, "sourceAuthor": { "type": "string" }, "category": { "type": "string" }, "status": { "type": "enumeration", "enum": ["draft", "processing", "ready", "published"], "default": "draft" }, "aiProcessed": { "type": "boolean", "default": false }, "aiSummary": { "type": "text" }, "aiOptimizedTitle": { "type": "string" }, "publishRecords": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.publish-record", "mappedBy": "article" }, "browserLogs": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.browser-log", "mappedBy": "article" }, "statSummaries": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.stat-summary", "mappedBy": "article" }, "websiteArticles": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.article", "mappedBy": "sourceArticleDraft" }, "publishedAt": { "type": "datetime" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const attributes$9 = { "title": { "type": "string", "required": true, "maxLength": 200 }, "content": { "type": "richtext", "required": true }, "sourceUrl": { "type": "string" }, "sourceTitle": { "type": "string" }, "sourcePublishedAt": { "type": "datetime" }, "sourceAuthor": { "type": "string" }, "category": { "type": "string" }, "status": { "type": "enumeration", "enum": ["draft", "processing", "ready", "published"], "default": "draft" }, "aiProcessed": { "type": "boolean", "default": false }, "aiSummary": { "type": "text" }, "aiOptimizedTitle": { "type": "string" }, "publishRecords": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.publish-record", "mappedBy": "article" }, "browserLogs": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.browser-log", "mappedBy": "article" }, "statSummaries": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.stat-summary", "mappedBy": "article" }, "websiteArticles": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.article", "mappedBy": "sourceArticleDraft" }, "scope": { "type": "enumeration", "enum": ["current", "global", "tenant"], "default": "current" }, "scopeTenantId": { "type": "string" }, "publishedAt": { "type": "datetime" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
 const schema$9 = {
   kind: kind$9,
   collectionName: collectionName$9,
