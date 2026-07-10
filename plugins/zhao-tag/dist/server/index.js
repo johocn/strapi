@@ -544,10 +544,10 @@ const contentApi = () => ({
   ]
 });
 const routes = {
-  "content-api": () => ({
+  "content-api": {
     type: "content-api",
     routes: contentApi().routes
-  })
+  }
 };
 const index = {
   register() {

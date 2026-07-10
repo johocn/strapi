@@ -50,7 +50,7 @@ declare const _default: {
     };
     routes: {
         "content-api": {
-            type: string;
+            type: "content-api";
             routes: {
                 method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
                 path: string;

@@ -1,14 +1,11 @@
 {
-  "extends": "@strapi/typescript-utils/tsconfigs/default",
+  "extends": "@strapi/typescript-utils/tsconfigs/server",
   "compilerOptions": {
-    "outDir": "dist",
-    "rootDir": ".",
-    "sourceMap": true,
-    "declaration": true,
-    "resolveJsonModule": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true
+    "outDir": "./dist",
+    "rootDir": "./server/src",
+    "baseUrl": ".",
+    "paths": { "@/*": ["./server/src/*"] }
   },
-  "include": ["server/src/**/*.ts", "admin/src/**/*.ts"],
-  "exclude": ["node_modules", "dist", "tests"]
+  "include": ["server/src/**/*.ts"],
+  "exclude": ["node_modules", "dist", "admin"]
 }

@@ -8088,14 +8088,14 @@ const adminApi = () => ({
   ]
 });
 const routes = {
-  "content-api": () => ({
+  "content-api": {
     type: "content-api",
     routes: contentApi().routes
-  }),
-  "admin-api": () => ({
+  },
+  "admin-api": {
     type: "admin",
     routes: adminApi().routes
-  })
+  }
 };
 const product = ({ strapi }) => ({
   /**
@@ -9367,6 +9367,255 @@ const jobs = async ({ strapi }) => {
   registerCalculateJobs(strapi);
   registerRiskMetricJobs(strapi);
 };
+const seedCompanies = [
+  {
+    name: "工银理财有限责任公司",
+    shortName: "工银理财",
+    companyType: "bank-subsidiary",
+    website: "https://www.icbc.com.cn",
+    status: true
+  },
+  {
+    name: "建信理财有限责任公司",
+    shortName: "建信理财",
+    companyType: "bank-subsidiary",
+    website: "https://www.ccb.com",
+    status: true
+  },
+  {
+    name: "中银理财有限责任公司",
+    shortName: "中银理财",
+    companyType: "bank-subsidiary",
+    website: "https://www.boc.cn",
+    status: true
+  },
+  {
+    name: "农银理财有限责任公司",
+    shortName: "农银理财",
+    companyType: "bank-subsidiary",
+    website: "https://www.abchina.com",
+    status: true
+  },
+  {
+    name: "交银理财有限责任公司",
+    shortName: "交银理财",
+    companyType: "bank-subsidiary",
+    website: "https://www.bankcomm.com",
+    status: true
+  },
+  {
+    name: "中邮理财有限责任公司",
+    shortName: "中邮理财",
+    companyType: "bank-subsidiary",
+    website: "https://www.psbc.com",
+    status: true
+  },
+  {
+    name: "招银理财有限责任公司",
+    shortName: "招银理财",
+    companyType: "bank-subsidiary",
+    website: "https://www.cmbchina.com",
+    status: true
+  },
+  {
+    name: "兴银理财有限责任公司",
+    shortName: "兴银理财",
+    companyType: "bank-subsidiary",
+    website: "https://www.cib.com.cn",
+    status: true
+  },
+  {
+    name: "信银理财有限责任公司",
+    shortName: "信银理财",
+    companyType: "bank-subsidiary",
+    website: "https://www.citicbank.com",
+    status: true
+  },
+  {
+    name: "光大理财有限责任公司",
+    shortName: "光大理财",
+    companyType: "bank-subsidiary",
+    website: "https://www.cebbank.com",
+    status: true
+  },
+  {
+    name: "浦银理财有限责任公司",
+    shortName: "浦银理财",
+    companyType: "bank-subsidiary",
+    website: "https://www.spdb.com.cn",
+    status: true
+  },
+  {
+    name: "民生理财有限责任公司",
+    shortName: "民生理财",
+    companyType: "bank-subsidiary",
+    website: "https://www.cmbc.com.cn",
+    status: true
+  },
+  {
+    name: "华夏理财有限责任公司",
+    shortName: "华夏理财",
+    companyType: "bank-subsidiary",
+    website: "https://www.hxb.com.cn",
+    status: true
+  },
+  {
+    name: "平安理财有限责任公司",
+    shortName: "平安理财",
+    companyType: "bank-subsidiary",
+    website: "https://www.bank.pingan.com",
+    status: true
+  },
+  {
+    name: "渤银理财有限责任公司",
+    shortName: "渤银理财",
+    companyType: "bank-subsidiary",
+    website: "https://www.cbhb.com.cn",
+    status: true
+  },
+  {
+    name: "浙银理财有限责任公司",
+    shortName: "浙银理财",
+    companyType: "bank-subsidiary",
+    website: "https://www.czbank.com",
+    status: true
+  },
+  {
+    name: "恒银理财有限责任公司",
+    shortName: "恒银理财",
+    companyType: "bank-subsidiary",
+    website: "https://www.hengbank.com.cn",
+    status: true
+  },
+  {
+    name: "广银理财有限责任公司",
+    shortName: "广银理财",
+    companyType: "bank-subsidiary",
+    website: "https://www.cgbchina.com.cn",
+    status: true
+  },
+  {
+    name: "杭银理财有限责任公司",
+    shortName: "杭银理财",
+    companyType: "bank-subsidiary",
+    website: "https://www.bankofhz.com",
+    status: true
+  },
+  {
+    name: "宁银理财有限责任公司",
+    shortName: "宁银理财",
+    companyType: "bank-subsidiary",
+    website: "https://www.nbcb.com.cn",
+    status: true
+  },
+  {
+    name: "徽银理财有限责任公司",
+    shortName: "徽银理财",
+    companyType: "bank-subsidiary",
+    website: "https://www.hsbank.com.cn",
+    status: true
+  },
+  {
+    name: "南银理财有限责任公司",
+    shortName: "南银理财",
+    companyType: "bank-subsidiary",
+    website: "https://www.njcb.com.cn",
+    status: true
+  },
+  {
+    name: "苏银理财有限责任公司",
+    shortName: "苏银理财",
+    companyType: "bank-subsidiary",
+    website: "https://www.jsbchina.cn",
+    status: true
+  },
+  {
+    name: "青银理财有限责任公司",
+    shortName: "青银理财",
+    companyType: "bank-subsidiary",
+    website: "https://www.qdccb.com",
+    status: true
+  },
+  {
+    name: "上银理财有限责任公司",
+    shortName: "上银理财",
+    companyType: "bank-subsidiary",
+    website: "https://www.bosc.cn",
+    status: true
+  },
+  {
+    name: "北银理财有限责任公司",
+    shortName: "北银理财",
+    companyType: "bank-subsidiary",
+    website: "https://www.bankofbeijing.com.cn",
+    status: true
+  },
+  {
+    name: "渝农商理财有限责任公司",
+    shortName: "渝农商理财",
+    companyType: "bank-subsidiary",
+    website: "https://www.cqrcb.com",
+    status: true
+  },
+  {
+    name: "高盛工银理财有限责任公司",
+    shortName: "高盛工银理财",
+    companyType: "joint-venture",
+    website: "",
+    status: true
+  },
+  {
+    name: "施罗德交银理财有限公司",
+    shortName: "施罗德交银理财",
+    companyType: "joint-venture",
+    website: "",
+    status: true
+  },
+  {
+    name: "贝莱德建信理财有限责任公司",
+    shortName: "贝莱德建信理财",
+    companyType: "joint-venture",
+    website: "",
+    status: true
+  },
+  {
+    name: "汇华理财有限公司",
+    shortName: "汇华理财",
+    companyType: "joint-venture",
+    website: "",
+    status: true
+  },
+  {
+    name: "法巴农银理财有限责任公司",
+    shortName: "法巴农银理财",
+    companyType: "joint-venture",
+    website: "",
+    status: true
+  },
+  {
+    name: "吉林银行股份有限公司",
+    shortName: "吉林银行",
+    companyType: "bank",
+    website: "https://www.jlbank.com.cn",
+    status: true
+  }
+];
+const COMPANY_UID = "plugin::zhao-wealth.wealth-company";
+async function initSeedCompanies(strapi) {
+  try {
+    const count = await strapi.db.query(COMPANY_UID).count({});
+    if (count > 0) {
+      strapi.log.info(`[zhao-wealth] 理财公司数据已存在（${count} 条），跳过初始化`);
+      return;
+    }
+    for (const item of seedCompanies) {
+      await strapi.documents(COMPANY_UID).create({ data: { ...item } });
+    }
+    strapi.log.info(`[zhao-wealth] 已初始化 ${seedCompanies.length} 家理财公司种子数据`);
+  } catch (e) {
+    strapi.log.warn(`[zhao-wealth] 理财公司种子数据初始化失败: ${e?.message || String(e)}`);
+  }
+}
 const bootstrap = async ({ strapi }) => {
   await jobs({ strapi });
   const pwBrowser = await initBrowser();
@@ -9375,6 +9624,7 @@ const bootstrap = async ({ strapi }) => {
   } else {
     strapi.log.warn("[zhao-wealth] Playwright Browser 不可用，采集功能将降级");
   }
+  await initSeedCompanies(strapi);
   process.on("SIGTERM", async () => {
     await destroyBrowser();
   });

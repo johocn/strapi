@@ -397,7 +397,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         alipayEnabled,
         douyinEnabled,
         thirdPartyEnabled,
-        ssoEnabled: siteFeatureFlags.sso ?? false,
+        ssoEnabled: siteFeatureFlags.sso ?? true,
         ssoLoginUrl: ec.ssoLoginUrl ?? null,
         registerEnabled: ec.registerEnabled ?? false,
         inviteCodeRequired: ec.inviteCodeRequired ?? false,
@@ -406,7 +406,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       // 功能开关（粗粒度模块总开关 + 细粒度）
       result.featureFlags = {
         // 粗粒度模块总开关（从 site-config.featureFlags 列读取）
-        sso: siteFeatureFlags.sso ?? false,
+        sso: siteFeatureFlags.sso ?? true,
         points: siteFeatureFlags.points ?? true,
         quiz: siteFeatureFlags.quiz ?? true,
         course: siteFeatureFlags.course ?? true,

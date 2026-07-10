@@ -1,64 +1,92 @@
 'use strict';
 
-module.exports = {
-  async up({ db }) {
-    // referrals: (site_id, referral_code) UNIQUE — 推荐码唯一约束
-    await db.schema.alterTable('zhao_logistics_referrals', (table) => {
-      table.unique(['site_id', 'referral_code']);
-    });
+async function getColumnName(knex, tableName, candidates) {
+  const columns = await knex.raw(`SELECT column_name FROM information_schema.columns WHERE table_name = ?`, [tableName]);
+  const columnNames = columns.rows.map(row => row.column_name);
+  for (const candidate of candidates) {
+    if (columnNames.includes(candidate)) {
+      return candidate;
+    }
+  }
+  return null;
+}
 
-    // conversion_events: (site_id, funnel_id, occurred_at) — 漏斗事件时间线查询
-    await db.raw(`CREATE INDEX IF NOT EXISTS idx_logistics_conversion_events_funnel_time
-      ON zhao_logistics_conversion_events (site_id, funnel_id, occurred_at)
-      WHERE deleted_at IS NULL`);
+async function createUniqueIndexIfExists(knex, indexName, tableName, columns, whereClause = '') {
+  const existing = await knex.raw(`SELECT indexname FROM pg_indexes WHERE tablename = ? AND indexname = ?`, [tableName, indexName]);
+  if (existing.rows.length > 0) {
+    return;
+  }
+  const columnNames = [];
+  for (const col of columns) {
+    if (col.includes('(')) {
+      columnNames.push(col);
+    } else {
+      const candidates = [col, `${col}_document_id`, `${col}_id`];
+      const actual = await getColumnName(knex, tableName, candidates);
+      if (actual) {
+        columnNames.push(actual);
+      } else {
+        return;
+      }
+    }
+  }
+  const where = whereClause ? ` WHERE ${whereClause}` : '';
+  await knex.raw(`CREATE UNIQUE INDEX ${indexName} ON ${tableName} (${columnNames.join(', ')})${where}`);
+}
 
-    // conversion_events: (site_id, visitor_id, occurred_at) — 访客行为路径查询
-    await db.raw(`CREATE INDEX IF NOT EXISTS idx_logistics_conversion_events_visitor_time
-      ON zhao_logistics_conversion_events (site_id, visitor_id, occurred_at)
-      WHERE deleted_at IS NULL`);
+async function createNonUniqueIndexIfExists(knex, indexName, tableName, columns, whereClause = '') {
+  const existing = await knex.raw(`SELECT indexname FROM pg_indexes WHERE tablename = ? AND indexname = ?`, [tableName, indexName]);
+  if (existing.rows.length > 0) {
+    return;
+  }
+  const columnNames = [];
+  for (const col of columns) {
+    if (col.includes('(')) {
+      columnNames.push(col);
+    } else {
+      const candidates = [col, `${col}_document_id`, `${col}_id`];
+      const actual = await getColumnName(knex, tableName, candidates);
+      if (actual) {
+        columnNames.push(actual);
+      } else {
+        return;
+      }
+    }
+  }
+  const where = whereClause ? ` WHERE ${whereClause}` : '';
+  await knex.raw(`CREATE INDEX ${indexName} ON ${tableName} (${columnNames.join(', ')})${where}`);
+}
 
-    // customer_profiles: (site_id, contact_phone) — 按电话查询客户档案
-    await db.raw(`CREATE INDEX IF NOT EXISTS idx_logistics_customer_profiles_phone
-      ON zhao_logistics_customer_profiles (site_id, contact_phone)
-      WHERE deleted_at IS NULL`);
+async function up({ db: knex }) {
+  await createUniqueIndexIfExists(knex, 'zhao_logistics_referrals_site_referral_code_idx', 'zhao_logistics_referrals', ['site', 'referral_code'], 'deleted_at IS NULL');
 
-    // landing_pages: (site_id, slug) — 按 slug 查询落地页
-    await db.raw(`CREATE INDEX IF NOT EXISTS idx_logistics_landing_pages_slug
-      ON zhao_logistics_landing_pages (site_id, slug)
-      WHERE deleted_at IS NULL`);
+  await createNonUniqueIndexIfExists(knex, 'idx_logistics_conversion_events_funnel_time', 'zhao_logistics_conversion_events', ['site', 'funnel', 'occurred_at'], 'deleted_at IS NULL');
 
-    // intent_orders: (site_id, status, created_at) — 按状态查询意向单
-    await db.raw(`CREATE INDEX IF NOT EXISTS idx_logistics_intent_orders_status
-      ON zhao_logistics_intent_orders (site_id, status, created_at)
-      WHERE deleted_at IS NULL`);
+  await createNonUniqueIndexIfExists(knex, 'idx_logistics_conversion_events_visitor_time', 'zhao_logistics_conversion_events', ['site', 'visitor_id', 'occurred_at'], 'deleted_at IS NULL');
 
-    // reviews: (site_id, status, is_featured) — 精选评价查询
-    await db.raw(`CREATE INDEX IF NOT EXISTS idx_logistics_reviews_featured
-      ON zhao_logistics_reviews (site_id, status, is_featured)
-      WHERE deleted_at IS NULL`);
+  await createNonUniqueIndexIfExists(knex, 'idx_logistics_customer_profiles_phone', 'zhao_logistics_customer_profiles', ['site', 'contact_phone'], 'deleted_at IS NULL');
 
-    // subscriptions: (site_id, channel_target, subscriber_type) — 订阅目标查询
-    await db.raw(`CREATE INDEX IF NOT EXISTS idx_logistics_subscriptions_target
-      ON zhao_logistics_subscriptions (site_id, channel_target, subscriber_type)
-      WHERE deleted_at IS NULL`);
+  await createNonUniqueIndexIfExists(knex, 'idx_logistics_landing_pages_slug', 'zhao_logistics_landing_pages', ['site', 'slug'], 'deleted_at IS NULL');
 
-    // conversion_funnels: (site_id, is_active) — 活跃漏斗查询
-    await db.raw(`CREATE INDEX IF NOT EXISTS idx_logistics_conversion_funnels_active
-      ON zhao_logistics_conversion_funnels (site_id, is_active)
-      WHERE deleted_at IS NULL`);
-  },
+  await createNonUniqueIndexIfExists(knex, 'idx_logistics_intent_orders_status', 'zhao_logistics_intent_orders', ['site', 'status', 'created_at'], 'deleted_at IS NULL');
 
-  async down({ db }) {
-    await db.raw(`DROP INDEX IF EXISTS idx_logistics_conversion_events_funnel_time`);
-    await db.raw(`DROP INDEX IF EXISTS idx_logistics_conversion_events_visitor_time`);
-    await db.raw(`DROP INDEX IF EXISTS idx_logistics_customer_profiles_phone`);
-    await db.raw(`DROP INDEX IF EXISTS idx_logistics_landing_pages_slug`);
-    await db.raw(`DROP INDEX IF EXISTS idx_logistics_intent_orders_status`);
-    await db.raw(`DROP INDEX IF EXISTS idx_logistics_reviews_featured`);
-    await db.raw(`DROP INDEX IF EXISTS idx_logistics_subscriptions_target`);
-    await db.raw(`DROP INDEX IF EXISTS idx_logistics_conversion_funnels_active`);
-    await db.schema.alterTable('zhao_logistics_referrals', (table) => {
-      table.dropUnique(['site_id', 'referral_code']);
-    });
-  },
-};
+  await createNonUniqueIndexIfExists(knex, 'idx_logistics_reviews_featured', 'zhao_logistics_reviews', ['site', 'status', 'is_featured'], 'deleted_at IS NULL');
+
+  await createNonUniqueIndexIfExists(knex, 'idx_logistics_subscriptions_target', 'zhao_logistics_subscriptions', ['site', 'channel_target', 'subscriber_type'], 'deleted_at IS NULL');
+
+  await createNonUniqueIndexIfExists(knex, 'idx_logistics_conversion_funnels_active', 'zhao_logistics_conversion_funnels', ['site', 'is_active'], 'deleted_at IS NULL');
+}
+
+async function down({ db: knex }) {
+  await knex.raw(`DROP INDEX IF EXISTS idx_logistics_conversion_events_funnel_time`);
+  await knex.raw(`DROP INDEX IF EXISTS idx_logistics_conversion_events_visitor_time`);
+  await knex.raw(`DROP INDEX IF EXISTS idx_logistics_customer_profiles_phone`);
+  await knex.raw(`DROP INDEX IF EXISTS idx_logistics_landing_pages_slug`);
+  await knex.raw(`DROP INDEX IF EXISTS idx_logistics_intent_orders_status`);
+  await knex.raw(`DROP INDEX IF EXISTS idx_logistics_reviews_featured`);
+  await knex.raw(`DROP INDEX IF EXISTS idx_logistics_subscriptions_target`);
+  await knex.raw(`DROP INDEX IF EXISTS idx_logistics_conversion_funnels_active`);
+  await knex.raw(`DROP INDEX IF EXISTS zhao_logistics_referrals_site_referral_code_idx`);
+}
+
+module.exports = { up, down };

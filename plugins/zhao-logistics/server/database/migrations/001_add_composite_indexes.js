@@ -1,44 +1,80 @@
 'use strict';
 
-module.exports = {
-  async up({ db }) {
-    // tracking_shipments: (site_id, tracking_no) UNIQUE
-    await db.schema.alterTable('zhao_logistics_tracking_shipments', (table) => {
-      table.unique(['site_id', 'tracking_no']);
-    });
+async function getColumnName(knex, tableName, candidates) {
+  const columns = await knex.raw(`SELECT column_name FROM information_schema.columns WHERE table_name = ?`, [tableName]);
+  const columnNames = columns.rows.map(row => row.column_name);
+  for (const candidate of candidates) {
+    if (columnNames.includes(candidate)) {
+      return candidate;
+    }
+  }
+  return null;
+}
 
-    // referrals 预留（Plan 3 创建表后生效）
-    // customer_profiles 预留（Plan 3 创建表后生效）
-    // landing_pages 预留（Plan 3 创建表后生效）
+async function createUniqueIndexIfExists(knex, indexName, tableName, columns, whereClause = '') {
+  const existing = await knex.raw(`SELECT indexname FROM pg_indexes WHERE tablename = ? AND indexname = ?`, [tableName, indexName]);
+  if (existing.rows.length > 0) {
+    return;
+  }
+  const columnNames = [];
+  for (const col of columns) {
+    if (col.includes('(')) {
+      columnNames.push(col);
+    } else {
+      const candidates = [col, `${col}_document_id`, `${col}_id`];
+      const actual = await getColumnName(knex, tableName, candidates);
+      if (actual) {
+        columnNames.push(actual);
+      } else {
+        return;
+      }
+    }
+  }
+  const where = whereClause ? ` WHERE ${whereClause}` : '';
+  await knex.raw(`CREATE UNIQUE INDEX ${indexName} ON ${tableName} (${columnNames.join(', ')})${where}`);
+}
 
-    // quote_requests: (site_id, route_id, status, created_at) 普通索引
-    await db.raw(`CREATE INDEX IF NOT EXISTS idx_logistics_quote_requests_site_route_status
-      ON zhao_logistics_quote_requests (site_id, route_id, status, created_at)
-      WHERE deleted_at IS NULL`);
+async function createNonUniqueIndexIfExists(knex, indexName, tableName, columns, whereClause = '') {
+  const existing = await knex.raw(`SELECT indexname FROM pg_indexes WHERE tablename = ? AND indexname = ?`, [tableName, indexName]);
+  if (existing.rows.length > 0) {
+    return;
+  }
+  const columnNames = [];
+  for (const col of columns) {
+    if (col.includes('(')) {
+      columnNames.push(col);
+    } else {
+      const candidates = [col, `${col}_document_id`, `${col}_id`];
+      const actual = await getColumnName(knex, tableName, candidates);
+      if (actual) {
+        columnNames.push(actual);
+      } else {
+        return;
+      }
+    }
+  }
+  const where = whereClause ? ` WHERE ${whereClause}` : '';
+  await knex.raw(`CREATE INDEX ${indexName} ON ${tableName} (${columnNames.join(', ')})${where}`);
+}
 
-    // tracking_nodes: (site_id, shipment_id, event_time) 普通索引
-    await db.raw(`CREATE INDEX IF NOT EXISTS idx_logistics_tracking_nodes_site_shipment_time
-      ON zhao_logistics_tracking_nodes (site_id, shipment_id, event_time)
-      WHERE deleted_at IS NULL`);
+async function up({ db: knex }) {
+  await createUniqueIndexIfExists(knex, 'zhao_logistics_tracking_shipments_site_tracking_no_idx', 'zhao_logistics_tracking_shipments', ['site', 'tracking_no'], 'deleted_at IS NULL');
 
-    // quote_price_rules: (site_id, route_id, service_provider, min_weight, max_weight) 普通索引
-    await db.raw(`CREATE INDEX IF NOT EXISTS idx_logistics_quote_price_rules_match
-      ON zhao_logistics_quote_price_rules (site_id, route_id, service_provider, min_weight, max_weight)
-      WHERE deleted_at IS NULL AND is_active = true`);
+  await createNonUniqueIndexIfExists(knex, 'idx_logistics_quote_requests_site_route_status', 'zhao_logistics_quote_requests', ['site', 'route_id', 'status', 'created_at'], 'deleted_at IS NULL');
 
-    // quote_field_rules: (site_id, is_active, priority) 普通索引
-    await db.raw(`CREATE INDEX IF NOT EXISTS idx_logistics_quote_field_rules_match
-      ON zhao_logistics_quote_field_rules (site_id, is_active, priority DESC)
-      WHERE deleted_at IS NULL`);
-  },
+  await createNonUniqueIndexIfExists(knex, 'idx_logistics_tracking_nodes_site_shipment_time', 'zhao_logistics_tracking_nodes', ['site', 'shipment', 'event_time'], 'deleted_at IS NULL');
 
-  async down({ db }) {
-    await db.raw(`DROP INDEX IF EXISTS idx_logistics_quote_requests_site_route_status`);
-    await db.raw(`DROP INDEX IF EXISTS idx_logistics_tracking_nodes_site_shipment_time`);
-    await db.raw(`DROP INDEX IF EXISTS idx_logistics_quote_price_rules_match`);
-    await db.raw(`DROP INDEX IF EXISTS idx_logistics_quote_field_rules_match`);
-    await db.schema.alterTable('zhao_logistics_tracking_shipments', (table) => {
-      table.dropUnique(['site_id', 'tracking_no']);
-    });
-  },
-};
+  await createNonUniqueIndexIfExists(knex, 'idx_logistics_quote_price_rules_match', 'zhao_logistics_quote_price_rules', ['site', 'route_id', 'service_provider', 'min_weight', 'max_weight'], 'deleted_at IS NULL AND is_active = true');
+
+  await createNonUniqueIndexIfExists(knex, 'idx_logistics_quote_field_rules_match', 'zhao_logistics_quote_field_rules', ['site', 'is_active', 'priority DESC'], 'deleted_at IS NULL');
+}
+
+async function down({ db: knex }) {
+  await knex.raw(`DROP INDEX IF EXISTS idx_logistics_quote_requests_site_route_status`);
+  await knex.raw(`DROP INDEX IF EXISTS idx_logistics_tracking_nodes_site_shipment_time`);
+  await knex.raw(`DROP INDEX IF EXISTS idx_logistics_quote_price_rules_match`);
+  await knex.raw(`DROP INDEX IF EXISTS idx_logistics_quote_field_rules_match`);
+  await knex.raw(`DROP INDEX IF EXISTS zhao_logistics_tracking_shipments_site_tracking_no_idx`);
+}
+
+module.exports = { up, down };

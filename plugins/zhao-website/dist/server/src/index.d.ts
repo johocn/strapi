@@ -800,6 +800,14 @@ declare const _default: {
                     socialLinks: {
                         type: string;
                     };
+                    offices: {
+                        type: string;
+                        localized: boolean;
+                    };
+                    certificates: {
+                        type: string;
+                        localized: boolean;
+                    };
                     legalRepresentative: {
                         type: string;
                         maxLength: number;
@@ -1974,6 +1982,10 @@ declare const _default: {
                     };
                     sourceId: {
                         type: string;
+                    };
+                    referralCode: {
+                        type: string;
+                        maxLength: number;
                     };
                     sourceUrl: {
                         type: string;

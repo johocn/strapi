@@ -5,10 +5,10 @@ import kuaidi100 from "./kuaidi100";
 import custom from "./custom";
 
 const providers: Record<string, TrackingProvider> = {
-  "17track": track17,
+  track17,
   afterShip,
   kuaidi100,
-  custom_api: custom,
+  customApi: custom,
 };
 
 /**

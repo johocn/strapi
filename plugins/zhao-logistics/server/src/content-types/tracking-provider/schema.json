@@ -28,7 +28,7 @@
     },
     "providerType": {
       "type": "enumeration",
-      "enum": ["17track", "afterShip", "kuaidi100", "custom_api"],
+      "enum": ["track17", "afterShip", "kuaidi100", "customApi"],
       "required": true
     },
     "apiKey": {
@@ -57,6 +57,12 @@
     },
     "extraConfig": {
       "type": "json"
+    },
+    "shipments": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-logistics.tracking-shipment",
+      "mappedBy": "syncProvider"
     },
     "deletedAt": {
       "type": "datetime",

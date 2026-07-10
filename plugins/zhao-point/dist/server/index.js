@@ -3544,11 +3544,10 @@ const contentApi = () => ({
     channelScopeRoute("GET", "/dashboard", "point-admin.getDashboard", "point-dashboard.read")
   ]
 });
-const contentApiRoutes = contentApi();
 const routes = {
   "content-api": {
     type: "content-api",
-    routes: contentApiRoutes.routes
+    routes: contentApi().routes
   }
 };
 const policies = {};

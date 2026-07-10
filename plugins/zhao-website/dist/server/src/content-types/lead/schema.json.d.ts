@@ -23,7 +23,7 @@ declare const _default: {
     },
     "type": {
       "type": "enumeration",
-      "enum": ["contact", "download", "quote", "appointment", "demo", "partner"],
+      "enum": ["contact", "download", "quote", "appointment", "demo", "partner", "intent_order", "referral"],
       "required": true
     },
     "contactName": {
@@ -54,6 +54,10 @@ declare const _default: {
     },
     "sourceId": {
       "type": "string"
+    },
+    "referralCode": {
+      "type": "string",
+      "maxLength": 50
     },
     "sourceUrl": {
       "type": "string",

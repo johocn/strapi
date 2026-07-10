@@ -4,6 +4,26 @@ import jobs from './jobs';
 import { isTradingDay } from './utils';
 import { getCollectQueue, getCalculateQueue } from './jobs/queue-setup';
 import { initBrowser, destroyBrowser } from './playwright-manager';
+import seedCompanies from './data/wealth-companies.json';
+
+const COMPANY_UID = 'plugin::zhao-wealth.wealth-company';
+
+async function initSeedCompanies(strapi: any) {
+  try {
+    const count = await strapi.db.query(COMPANY_UID).count({});
+    if (count > 0) {
+      strapi.log.info(`[zhao-wealth] 理财公司数据已存在（${count} 条），跳过初始化`);
+      return;
+    }
+
+    for (const item of seedCompanies) {
+      await strapi.documents(COMPANY_UID).create({ data: { ...item } });
+    }
+    strapi.log.info(`[zhao-wealth] 已初始化 ${seedCompanies.length} 家理财公司种子数据`);
+  } catch (e: any) {
+    strapi.log.warn(`[zhao-wealth] 理财公司种子数据初始化失败: ${e?.message || String(e)}`);
+  }
+}
 
 export default async ({ strapi }) => {
   // 初始化队列任务
@@ -16,6 +36,9 @@ export default async ({ strapi }) => {
   } else {
     strapi.log.warn('[zhao-wealth] Playwright Browser 不可用，采集功能将降级');
   }
+
+  // 初始化理财公司种子数据（表空时导入）
+  await initSeedCompanies(strapi);
 
   // 注册销毁钩子
   process.on('SIGTERM', async () => { await destroyBrowser(); });

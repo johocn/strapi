@@ -747,11 +747,10 @@ const contentApi = () => ({
     channelScopeRoute("GET", "/quiz-batches/template/download", "quiz-batch.downloadTemplate", "quiz.read")
   ]
 });
-const contentApiRoutes = contentApi();
 const routes = {
   "content-api": {
     type: "content-api",
-    routes: contentApiRoutes.routes
+    routes: contentApi().routes
   }
 };
 const UID$4 = "plugin::zhao-quiz.quiz";

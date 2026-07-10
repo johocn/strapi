@@ -866,12 +866,10 @@ const api = () => ({
     apiRoute("DELETE", "/media/:fileId", "api-controller.deleteMedia", "oss.delete")
   ]
 });
-const adminRoutes = admin();
-const apiRoutes = api();
 const routes = {
   "content-api": {
     type: "content-api",
-    routes: [...apiRoutes.routes, ...adminRoutes.routes]
+    routes: [...api().routes, ...admin().routes]
   }
 };
 const providerRegistry = ({ strapi }) => {

@@ -1349,10 +1349,12 @@ export interface PluginZhaoCommonSiteConfig
       Schema.Attribute.DefaultTo<{
         channel: true;
         course: true;
+        logistics: true;
         oss: false;
         points: true;
         quiz: true;
         sso: false;
+        studio: true;
         thirdParty: true;
         website: true;
       }>;
@@ -1366,6 +1368,70 @@ export interface PluginZhaoCommonSiteConfig
       'plugin::zhao-common.site-config'
     > &
       Schema.Attribute.Private;
+    logistics_contact_matrices: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-logistics.contact-matrix'
+    >;
+    logistics_conversion_events: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-logistics.conversion-event'
+    >;
+    logistics_conversion_funnels: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-logistics.conversion-funnel'
+    >;
+    logistics_customer_profiles: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-logistics.customer-profile'
+    >;
+    logistics_intent_orders: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-logistics.intent-order'
+    >;
+    logistics_landing_pages: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-logistics.landing-page'
+    >;
+    logistics_quote_field_rules: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-logistics.quote-field-rule'
+    >;
+    logistics_quote_price_formulas: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-logistics.quote-price-formula'
+    >;
+    logistics_quote_price_rules: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-logistics.quote-price-rule'
+    >;
+    logistics_quote_requests: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-logistics.quote-request'
+    >;
+    logistics_referrals: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-logistics.referral'
+    >;
+    logistics_reviews: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-logistics.review'
+    >;
+    logistics_subscriptions: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-logistics.subscription'
+    >;
+    logistics_tracking_nodes: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-logistics.tracking-node'
+    >;
+    logistics_tracking_providers: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-logistics.tracking-provider'
+    >;
+    logistics_tracking_shipments: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-logistics.tracking-shipment'
+    >;
     logo: Schema.Attribute.Media<'images'>;
     publishedAt: Schema.Attribute.DateTime;
     seoDescription: Schema.Attribute.Text;
@@ -1873,6 +1939,1355 @@ export interface PluginZhaoCourseUserCourseAuth
       'manyToOne',
       'plugin::users-permissions.user'
     >;
+  };
+}
+
+export interface PluginZhaoLogisticsContactMatrix
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_logistics_contact_matrices';
+  info: {
+    displayName: '\u8054\u7CFB\u6E20\u9053\u77E9\u9635';
+    pluralName: 'contact-matrices';
+    singularName: 'contact-matrix';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: true;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+    i18n: {
+      localized: true;
+    };
+  };
+  attributes: {
+    callbackNote: Schema.Attribute.Text;
+    channels: Schema.Attribute.JSON & Schema.Attribute.Required;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    deletedAt: Schema.Attribute.DateTime;
+    email: Schema.Attribute.Email & Schema.Attribute.Required;
+    flag: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 10;
+      }>;
+    hotline: Schema.Attribute.JSON & Schema.Attribute.Required;
+    isActive: Schema.Attribute.Boolean &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<true>;
+    lang: Schema.Attribute.Enumeration<['cn', 'jp', 'kr', 'vn']> &
+      Schema.Attribute.Required;
+    locale: Schema.Attribute.String;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-logistics.contact-matrix'
+    >;
+    primary: Schema.Attribute.JSON & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    short: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 10;
+      }>;
+    site: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-common.site-config'
+    > &
+      Schema.Attribute.Required;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface PluginZhaoLogisticsConversionEvent
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_logistics_conversion_events';
+  info: {
+    displayName: '\u8F6C\u5316\u4E8B\u4EF6';
+    pluralName: 'conversion-events';
+    singularName: 'conversion-event';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: true;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    deletedAt: Schema.Attribute.DateTime;
+    eventName: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
+    funnel: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-logistics.conversion-funnel'
+    > &
+      Schema.Attribute.Required;
+    ipAddress: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 45;
+      }>;
+    landingPageId: Schema.Attribute.String;
+    lang: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 10;
+      }>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-logistics.conversion-event'
+    > &
+      Schema.Attribute.Private;
+    occurredAt: Schema.Attribute.DateTime & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    quoteRequestId: Schema.Attribute.String;
+    sessionId: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    site: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-common.site-config'
+    > &
+      Schema.Attribute.Required;
+    step: Schema.Attribute.Integer & Schema.Attribute.Required;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    user: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
+    userAgent: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 500;
+      }>;
+    utmCampaign: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    utmMedium: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    utmSource: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    visitorId: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+  };
+}
+
+export interface PluginZhaoLogisticsConversionFunnel
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_logistics_conversion_funnels';
+  info: {
+    displayName: '\u8F6C\u5316\u6F0F\u6597';
+    pluralName: 'conversion-funnels';
+    singularName: 'conversion-funnel';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: true;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    deletedAt: Schema.Attribute.DateTime;
+    events: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-logistics.conversion-event'
+    >;
+    isActive: Schema.Attribute.Boolean &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<true>;
+    lang: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 10;
+      }>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-logistics.conversion-funnel'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    publishedAt: Schema.Attribute.DateTime;
+    site: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-common.site-config'
+    > &
+      Schema.Attribute.Required;
+    steps: Schema.Attribute.JSON & Schema.Attribute.Required;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface PluginZhaoLogisticsCustomerProfile
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_logistics_customer_profiles';
+  info: {
+    displayName: '\u5BA2\u6237\u6863\u6848';
+    pluralName: 'customer-profiles';
+    singularName: 'customer-profile';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: true;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+  };
+  attributes: {
+    assignedTo: Schema.Attribute.Relation<'manyToOne', 'admin::user'>;
+    company: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    contactEmail: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    contactKakao: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    contactLine: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    contactPhone: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
+    contactWechat: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    contactZalo: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    country: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 10;
+      }>;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    customerType: Schema.Attribute.Enumeration<
+      ['individual', 'business', 'fba_seller']
+    > &
+      Schema.Attribute.Required;
+    deletedAt: Schema.Attribute.DateTime;
+    lastOrderAt: Schema.Attribute.DateTime;
+    lastQuoteAt: Schema.Attribute.DateTime;
+    lifecycleStage: Schema.Attribute.Enumeration<
+      ['lead', 'active', 'repeat', 'vip', 'churned']
+    > &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'lead'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-logistics.customer-profile'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    preferredLang: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 10;
+      }>;
+    preferredRoute: Schema.Attribute.JSON;
+    preferredService: Schema.Attribute.JSON;
+    publishedAt: Schema.Attribute.DateTime;
+    relatedLeadIds: Schema.Attribute.JSON;
+    relatedOrderIds: Schema.Attribute.JSON;
+    relatedQuoteIds: Schema.Attribute.JSON;
+    remark: Schema.Attribute.Text;
+    site: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-common.site-config'
+    > &
+      Schema.Attribute.Required;
+    sourceChannel: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
+    tags: Schema.Attribute.JSON;
+    title: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
+    totalOrderCount: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    totalOrderValue: Schema.Attribute.Decimal & Schema.Attribute.DefaultTo<0>;
+    totalQuoteCount: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    utmSource: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+  };
+}
+
+export interface PluginZhaoLogisticsIntentOrder
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_logistics_intent_orders';
+  info: {
+    displayName: '\u610F\u5411\u8BA2\u5355';
+    pluralName: 'intent-orders';
+    singularName: 'intent-order';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: true;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+  };
+  attributes: {
+    actualShipDate: Schema.Attribute.Date;
+    assignedTo: Schema.Attribute.Relation<'manyToOne', 'admin::user'>;
+    cargoSummary: Schema.Attribute.JSON & Schema.Attribute.Required;
+    confirmedPrice: Schema.Attribute.JSON & Schema.Attribute.Required;
+    contractSigned: Schema.Attribute.Boolean &
+      Schema.Attribute.DefaultTo<false>;
+    convertedToOrderId: Schema.Attribute.String;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    customerContact: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 200;
+      }>;
+    customerName: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    customerType: Schema.Attribute.Enumeration<
+      ['individual', 'business', 'fba_seller']
+    >;
+    deletedAt: Schema.Attribute.DateTime;
+    depositAmount: Schema.Attribute.Decimal;
+    depositPaid: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    followUpRecords: Schema.Attribute.JSON;
+    leadId: Schema.Attribute.String;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-logistics.intent-order'
+    > &
+      Schema.Attribute.Private;
+    orderNo: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
+    plannedShipDate: Schema.Attribute.Date;
+    publishedAt: Schema.Attribute.DateTime;
+    quoteRequestId: Schema.Attribute.String & Schema.Attribute.Required;
+    remark: Schema.Attribute.Text;
+    routeSummary: Schema.Attribute.JSON & Schema.Attribute.Required;
+    site: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-common.site-config'
+    > &
+      Schema.Attribute.Required;
+    status: Schema.Attribute.Enumeration<
+      ['intent', 'confirmed', 'shipping', 'delivered', 'cancelled']
+    > &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'intent'>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface PluginZhaoLogisticsLandingPage
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_logistics_landing_pages';
+  info: {
+    displayName: '\u8425\u9500\u843D\u5730\u9875';
+    pluralName: 'landing-pages';
+    singularName: 'landing-page';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: true;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+    i18n: {
+      localized: true;
+    };
+  };
+  attributes: {
+    campaignName: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    conversionGoal: Schema.Attribute.Enumeration<
+      ['quote_submit', 'contact_click', 'phone_call', 'download']
+    > &
+      Schema.Attribute.Required;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    deletedAt: Schema.Attribute.DateTime;
+    endAt: Schema.Attribute.DateTime;
+    formConfig: Schema.Attribute.JSON;
+    heroContent: Schema.Attribute.JSON & Schema.Attribute.Required;
+    isActive: Schema.Attribute.Boolean &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<true>;
+    locale: Schema.Attribute.String;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-logistics.landing-page'
+    >;
+    ogImage: Schema.Attribute.Media;
+    parentPageId: Schema.Attribute.String;
+    publishedAt: Schema.Attribute.DateTime;
+    sections: Schema.Attribute.JSON & Schema.Attribute.Required;
+    seoDescription: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 160;
+      }>;
+    seoTitle: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 60;
+      }>;
+    site: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-common.site-config'
+    > &
+      Schema.Attribute.Required;
+    slug: Schema.Attribute.UID & Schema.Attribute.Required;
+    startAt: Schema.Attribute.DateTime;
+    status: Schema.Attribute.Enumeration<['draft', 'published', 'archived']> &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'draft'>;
+    title: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 200;
+      }>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    utmCampaign: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    utmContent: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    utmMedium: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    utmSource: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    utmTerm: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    variant: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 20;
+      }>;
+  };
+}
+
+export interface PluginZhaoLogisticsQuoteFieldRule
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_logistics_quote_field_rules';
+  info: {
+    displayName: '\u8BE2\u4EF7\u52A8\u6001\u5B57\u6BB5\u89C4\u5219';
+    pluralName: 'quote-field-rules';
+    singularName: 'quote-field-rule';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: true;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+    i18n: {
+      localized: true;
+    };
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    customerType: Schema.Attribute.Enumeration<
+      ['individual', 'business', 'fba_seller']
+    >;
+    deletedAt: Schema.Attribute.DateTime;
+    fields: Schema.Attribute.JSON & Schema.Attribute.Required;
+    isActive: Schema.Attribute.Boolean &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<true>;
+    locale: Schema.Attribute.String;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-logistics.quote-field-rule'
+    >;
+    name: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    priority: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    publishedAt: Schema.Attribute.DateTime;
+    routeId: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
+    serviceProvider: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
+    site: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-common.site-config'
+    > &
+      Schema.Attribute.Required;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface PluginZhaoLogisticsQuotePriceFormula
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_logistics_quote_price_formulas';
+  info: {
+    displayName: '\u62A5\u4EF7\u516C\u5F0F\u6A21\u677F';
+    pluralName: 'quote-price-formulas';
+    singularName: 'quote-price-formula';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: true;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+    i18n: {
+      localized: true;
+    };
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    deletedAt: Schema.Attribute.DateTime;
+    description: Schema.Attribute.Text;
+    expression: Schema.Attribute.Text & Schema.Attribute.Required;
+    isActive: Schema.Attribute.Boolean &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<true>;
+    locale: Schema.Attribute.String;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-logistics.quote-price-formula'
+    >;
+    name: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    price_rules: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-logistics.quote-price-rule'
+    >;
+    publishedAt: Schema.Attribute.DateTime;
+    site: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-common.site-config'
+    > &
+      Schema.Attribute.Required;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    variables: Schema.Attribute.JSON & Schema.Attribute.Required;
+  };
+}
+
+export interface PluginZhaoLogisticsQuotePriceRule
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_logistics_quote_price_rules';
+  info: {
+    displayName: '\u62A5\u4EF7\u89C4\u5219\u8868';
+    pluralName: 'quote-price-rules';
+    singularName: 'quote-price-rule';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: true;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    currency: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 10;
+      }> &
+      Schema.Attribute.DefaultTo<'CNY'>;
+    deletedAt: Schema.Attribute.DateTime;
+    effectiveFrom: Schema.Attribute.Date & Schema.Attribute.Required;
+    effectiveTo: Schema.Attribute.Date;
+    formula: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-logistics.quote-price-formula'
+    >;
+    isActive: Schema.Attribute.Boolean &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<true>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-logistics.quote-price-rule'
+    > &
+      Schema.Attribute.Private;
+    maxWeight: Schema.Attribute.Decimal & Schema.Attribute.Required;
+    minCharge: Schema.Attribute.Decimal;
+    minWeight: Schema.Attribute.Decimal & Schema.Attribute.Required;
+    pricePerKg: Schema.Attribute.Decimal & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    routeId: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
+    serviceProvider: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
+    site: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-common.site-config'
+    > &
+      Schema.Attribute.Required;
+    surcharges: Schema.Attribute.JSON;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    volumetricFactor: Schema.Attribute.Integer;
+  };
+}
+
+export interface PluginZhaoLogisticsQuoteRequest
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_logistics_quote_requests';
+  info: {
+    displayName: '\u7269\u6D41\u8BE2\u4EF7\u5355';
+    pluralName: 'quote-requests';
+    singularName: 'quote-request';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: true;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+  };
+  attributes: {
+    cargoType: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    customerContact: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 200;
+      }>;
+    customerName: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    customerType: Schema.Attribute.Enumeration<
+      ['individual', 'business', 'fba_seller']
+    >;
+    deletedAt: Schema.Attribute.DateTime;
+    destination: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    expiresAt: Schema.Attribute.DateTime;
+    formData: Schema.Attribute.JSON & Schema.Attribute.Required;
+    lang: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 10;
+      }>;
+    leadId: Schema.Attribute.String;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-logistics.quote-request'
+    > &
+      Schema.Attribute.Private;
+    origin: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    publishedAt: Schema.Attribute.DateTime;
+    quotedPrice: Schema.Attribute.JSON;
+    remark: Schema.Attribute.Text;
+    routeId: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
+    serviceProvider: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
+    site: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-common.site-config'
+    > &
+      Schema.Attribute.Required;
+    status: Schema.Attribute.Enumeration<
+      ['draft', 'submitted', 'quoted', 'accepted', 'rejected', 'expired']
+    > &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'submitted'>;
+    trackingNo: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    utmCampaign: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    utmMedium: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    utmSource: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    volume: Schema.Attribute.Decimal;
+    weight: Schema.Attribute.Decimal & Schema.Attribute.Required;
+  };
+}
+
+export interface PluginZhaoLogisticsReferral
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_logistics_referrals';
+  info: {
+    displayName: '\u63A8\u8350\u5956\u52B1';
+    pluralName: 'referrals';
+    singularName: 'referral';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: true;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+  };
+  attributes: {
+    conversionValue: Schema.Attribute.Decimal;
+    convertedAt: Schema.Attribute.DateTime;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    deletedAt: Schema.Attribute.DateTime;
+    intentOrderId: Schema.Attribute.String;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-logistics.referral'
+    > &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    quoteRequestId: Schema.Attribute.String;
+    refereeContact: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 200;
+      }>;
+    refereeCustomerId: Schema.Attribute.String;
+    refereeName: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    referralChannel: Schema.Attribute.Enumeration<
+      ['friend', 'community', 'exhibition', 'partner', 'other']
+    > &
+      Schema.Attribute.Required;
+    referralCode: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
+    referralSource: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    referrerContact: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 200;
+      }>;
+    referrerCustomerId: Schema.Attribute.String;
+    referrerName: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    remark: Schema.Attribute.Text;
+    rewardAmount: Schema.Attribute.Decimal;
+    rewardIssuedAt: Schema.Attribute.DateTime;
+    rewardStatus: Schema.Attribute.Enumeration<
+      ['pending', 'issued', 'claimed']
+    > &
+      Schema.Attribute.DefaultTo<'pending'>;
+    rewardType: Schema.Attribute.Enumeration<
+      ['points', 'cash', 'discount', 'gift']
+    > &
+      Schema.Attribute.Required;
+    site: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-common.site-config'
+    > &
+      Schema.Attribute.Required;
+    status: Schema.Attribute.Enumeration<
+      ['pending', 'contacted', 'qualified', 'converted', 'rewarded', 'invalid']
+    > &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'pending'>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface PluginZhaoLogisticsReview extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_logistics_reviews';
+  info: {
+    displayName: '\u5BA2\u6237\u8BC4\u4EF7';
+    pluralName: 'reviews';
+    singularName: 'review';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: true;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+    i18n: {
+      localized: true;
+    };
+  };
+  attributes: {
+    authorCompany: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    authorCountry: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 10;
+      }>;
+    authorName: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    authorTitle: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
+    content: Schema.Attribute.Text & Schema.Attribute.Required;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    deletedAt: Schema.Attribute.DateTime;
+    images: Schema.Attribute.Media<undefined, true>;
+    isFeatured: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    isVerified: Schema.Attribute.Boolean &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<false>;
+    locale: Schema.Attribute.String;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-logistics.review'
+    >;
+    orderRef: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
+    publishedAt: Schema.Attribute.DateTime;
+    rating: Schema.Attribute.Integer & Schema.Attribute.Required;
+    replyAt: Schema.Attribute.DateTime;
+    replyContent: Schema.Attribute.Text;
+    routeId: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
+    serviceProvider: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
+    site: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-common.site-config'
+    > &
+      Schema.Attribute.Required;
+    status: Schema.Attribute.Enumeration<['pending', 'approved', 'rejected']> &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'pending'>;
+    testimonialType: Schema.Attribute.Enumeration<
+      ['text', 'video', 'case_study']
+    > &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'text'>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    videoPoster: Schema.Attribute.Media;
+    videoUrl: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 500;
+      }>;
+  };
+}
+
+export interface PluginZhaoLogisticsSubscription
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_logistics_subscriptions';
+  info: {
+    displayName: '\u901A\u77E5\u8BA2\u9605';
+    pluralName: 'subscriptions';
+    singularName: 'subscription';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: true;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+  };
+  attributes: {
+    channel: Schema.Attribute.Enumeration<
+      ['email', 'line', 'kakao', 'zalo', 'wechat', 'sms']
+    > &
+      Schema.Attribute.Required;
+    channelTarget: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 200;
+      }>;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    deletedAt: Schema.Attribute.DateTime;
+    eventFilter: Schema.Attribute.JSON;
+    frequency: Schema.Attribute.Enumeration<['realtime', 'daily', 'weekly']> &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'realtime'>;
+    isActive: Schema.Attribute.Boolean &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<true>;
+    language: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 10;
+      }>;
+    lastNotifiedAt: Schema.Attribute.DateTime;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-logistics.subscription'
+    > &
+      Schema.Attribute.Private;
+    notifyCount: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    publishedAt: Schema.Attribute.DateTime;
+    quoteRequestId: Schema.Attribute.String;
+    site: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-common.site-config'
+    > &
+      Schema.Attribute.Required;
+    subscribedAt: Schema.Attribute.DateTime & Schema.Attribute.Required;
+    subscriberType: Schema.Attribute.Enumeration<
+      ['tracking_update', 'quote_reply', 'promotion', 'newsletter']
+    > &
+      Schema.Attribute.Required;
+    trackingNo: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
+    unsubscribedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface PluginZhaoLogisticsTrackingNode
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_logistics_tracking_nodes';
+  info: {
+    displayName: '\u8FFD\u8E2A\u8282\u70B9';
+    pluralName: 'tracking-nodes';
+    singularName: 'tracking-node';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: true;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+    i18n: {
+      localized: true;
+    };
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    dataSource: Schema.Attribute.Enumeration<['internal', 'external']> &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'internal'>;
+    deletedAt: Schema.Attribute.DateTime;
+    description: Schema.Attribute.Text & Schema.Attribute.Required;
+    eventTime: Schema.Attribute.DateTime & Schema.Attribute.Required;
+    locale: Schema.Attribute.String;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-logistics.tracking-node'
+    >;
+    location: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    nodeStatus: Schema.Attribute.Enumeration<
+      ['done', 'active', 'pending', 'alert']
+    > &
+      Schema.Attribute.Required;
+    nodeType: Schema.Attribute.Enumeration<
+      [
+        'picked_up',
+        'export',
+        'import',
+        'customs',
+        'hold',
+        'delivery',
+        'delivered',
+        'exception',
+      ]
+    > &
+      Schema.Attribute.Required;
+    providerRef: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
+    publishedAt: Schema.Attribute.DateTime;
+    shipment: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-logistics.tracking-shipment'
+    > &
+      Schema.Attribute.Required;
+    site: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-common.site-config'
+    > &
+      Schema.Attribute.Required;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface PluginZhaoLogisticsTrackingProvider
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_logistics_tracking_providers';
+  info: {
+    displayName: '\u8FFD\u8E2A API \u914D\u7F6E';
+    pluralName: 'tracking-providers';
+    singularName: 'tracking-provider';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: true;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+  };
+  attributes: {
+    apiKey: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 200;
+      }>;
+    apiSecret: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 200;
+      }>;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    deletedAt: Schema.Attribute.DateTime;
+    endpoint: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 500;
+      }>;
+    extraConfig: Schema.Attribute.JSON;
+    isEnabled: Schema.Attribute.Boolean &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<true>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-logistics.tracking-provider'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    providerType: Schema.Attribute.Enumeration<
+      ['track17', 'afterShip', 'kuaidi100', 'customApi']
+    > &
+      Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    rateLimit: Schema.Attribute.Integer;
+    shipments: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-logistics.tracking-shipment'
+    >;
+    site: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-common.site-config'
+    > &
+      Schema.Attribute.Required;
+    supportedCarriers: Schema.Attribute.JSON;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface PluginZhaoLogisticsTrackingShipment
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_logistics_tracking_shipments';
+  info: {
+    displayName: '\u8D27\u7269\u8FFD\u8E2A\u4E3B\u8868';
+    pluralName: 'tracking-shipments';
+    singularName: 'tracking-shipment';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: true;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+  };
+  attributes: {
+    actualDelivery: Schema.Attribute.DateTime;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    customerContact: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 200;
+      }>;
+    customerName: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    deletedAt: Schema.Attribute.DateTime;
+    destination: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    eta: Schema.Attribute.DateTime;
+    lastSyncAt: Schema.Attribute.DateTime;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-logistics.tracking-shipment'
+    > &
+      Schema.Attribute.Private;
+    nodes: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-logistics.tracking-node'
+    >;
+    orderId: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
+    origin: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    publishedAt: Schema.Attribute.DateTime;
+    serviceProvider: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
+    site: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-common.site-config'
+    > &
+      Schema.Attribute.Required;
+    status: Schema.Attribute.Enumeration<
+      [
+        'pending',
+        'in_transit',
+        'customs',
+        'hold',
+        'delivered',
+        'exception',
+        'returned',
+      ]
+    > &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'pending'>;
+    syncProvider: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-logistics.tracking-provider'
+    >;
+    trackingNo: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
   };
 }
 
@@ -3613,6 +5028,9 @@ export interface PluginZhaoStudioArticleDraft
       'oneToMany',
       'plugin::zhao-studio.publish-record'
     >;
+    scope: Schema.Attribute.Enumeration<['current', 'global', 'tenant']> &
+      Schema.Attribute.DefaultTo<'current'>;
+    scopeTenantId: Schema.Attribute.String;
     sourceAuthor: Schema.Attribute.String;
     sourcePublishedAt: Schema.Attribute.DateTime;
     sourceTitle: Schema.Attribute.String;
@@ -6620,6 +8038,22 @@ declare module '@strapi/strapi' {
       'plugin::zhao-course.course-progress': PluginZhaoCourseCourseProgress;
       'plugin::zhao-course.lesson-progress': PluginZhaoCourseLessonProgress;
       'plugin::zhao-course.user-course-auth': PluginZhaoCourseUserCourseAuth;
+      'plugin::zhao-logistics.contact-matrix': PluginZhaoLogisticsContactMatrix;
+      'plugin::zhao-logistics.conversion-event': PluginZhaoLogisticsConversionEvent;
+      'plugin::zhao-logistics.conversion-funnel': PluginZhaoLogisticsConversionFunnel;
+      'plugin::zhao-logistics.customer-profile': PluginZhaoLogisticsCustomerProfile;
+      'plugin::zhao-logistics.intent-order': PluginZhaoLogisticsIntentOrder;
+      'plugin::zhao-logistics.landing-page': PluginZhaoLogisticsLandingPage;
+      'plugin::zhao-logistics.quote-field-rule': PluginZhaoLogisticsQuoteFieldRule;
+      'plugin::zhao-logistics.quote-price-formula': PluginZhaoLogisticsQuotePriceFormula;
+      'plugin::zhao-logistics.quote-price-rule': PluginZhaoLogisticsQuotePriceRule;
+      'plugin::zhao-logistics.quote-request': PluginZhaoLogisticsQuoteRequest;
+      'plugin::zhao-logistics.referral': PluginZhaoLogisticsReferral;
+      'plugin::zhao-logistics.review': PluginZhaoLogisticsReview;
+      'plugin::zhao-logistics.subscription': PluginZhaoLogisticsSubscription;
+      'plugin::zhao-logistics.tracking-node': PluginZhaoLogisticsTrackingNode;
+      'plugin::zhao-logistics.tracking-provider': PluginZhaoLogisticsTrackingProvider;
+      'plugin::zhao-logistics.tracking-shipment': PluginZhaoLogisticsTrackingShipment;
       'plugin::zhao-oss.media-meta': PluginZhaoOssMediaMeta;
       'plugin::zhao-oss.sync-record': PluginZhaoOssSyncRecord;
       'plugin::zhao-point.channel-verification': PluginZhaoPointChannelVerification;

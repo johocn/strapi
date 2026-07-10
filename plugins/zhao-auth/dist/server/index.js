@@ -3696,6 +3696,51 @@ const policies = {
   "has-channel-scope": hasChannelScope,
   "has-tenant-access": hasTenantAccess
 };
+async function ensureAdminUser(strapi2) {
+  try {
+    const knex = strapi2.db.connection;
+    const existing = await knex("up_users").whereRaw("zhao_roles @> ?::jsonb", [JSON.stringify(["admin"])]).select("id", "username", "email").first();
+    if (existing) {
+      strapi2.log.info(
+        `zhao-auth: 已存在 admin 用户（id=${existing.id}, username=${existing.username}），跳过初始化`
+      );
+      return;
+    }
+    const username = process.env.INIT_ADMIN_USERNAME || "admin";
+    const email = process.env.INIT_ADMIN_EMAIL || "admin@example.com";
+    const password = process.env.INIT_ADMIN_PASSWORD || "Admin@12345";
+    const dup = await knex("up_users").where("username", username).orWhere("email", email).select("id", "username", "email").first();
+    if (dup) {
+      strapi2.log.warn(
+        `zhao-auth: 用户名或邮箱已被占用（id=${dup.id}, username=${dup.username}），但该用户非 admin 角色。跳过 admin 初始化，请手动处理。`
+      );
+      return;
+    }
+    const hash = await bcrypt__default.default.hash(password, 10);
+    const documentId = typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : require("crypto").randomUUID();
+    const now = /* @__PURE__ */ new Date();
+    await knex("up_users").insert({
+      document_id: documentId,
+      username,
+      email,
+      password: hash,
+      provider: "local",
+      confirmed: true,
+      blocked: false,
+      zhao_roles: JSON.stringify(["admin"]),
+      created_at: now,
+      updated_at: now,
+      published_at: now
+    });
+    strapi2.log.info(
+      `zhao-auth: ✅ 已创建第一个 admin 用户（username=${username}, email=${email}）。请尽快修改默认密码。`
+    );
+  } catch (error) {
+    strapi2.log.warn(
+      `zhao-auth: admin 用户初始化失败: ${error?.message || String(error)}`
+    );
+  }
+}
 const bootstrap = async ({ strapi: strapi2 }) => {
   strapi2.log.info("zhao-auth: 插件已启动");
   setTimeout(async () => {
@@ -3706,6 +3751,7 @@ const bootstrap = async ({ strapi: strapi2 }) => {
           `zhao-auth: 角色初始化完成 [${results.join(", ")}]`
         );
       }
+      await ensureAdminUser(strapi2);
     } catch (error) {
       strapi2.log.warn(
         `zhao-auth: 角色初始化失败（可能是 content-type 尚未就绪，可通过 POST /api/zhao-auth/v1/admin/permissions/init 手动触发）: ${error?.message || String(error)}`

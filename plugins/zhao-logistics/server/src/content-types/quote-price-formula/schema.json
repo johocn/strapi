@@ -45,6 +45,12 @@
       "default": true,
       "required": true
     },
+    "price_rules": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-logistics.quote-price-rule",
+      "mappedBy": "formula"
+    },
     "deletedAt": {
       "type": "datetime",
       "default": null

@@ -12,7 +12,7 @@ export interface TrackingProvider {
  * 追踪 API 配置（来自 tracking-provider CT）
  */
 export interface ProviderConfig {
-  providerType: "17track" | "afterShip" | "kuaidi100" | "custom_api";
+  providerType: "track17" | "afterShip" | "kuaidi100" | "customApi";
   apiKey: string;
   apiSecret?: string;
   endpoint?: string;

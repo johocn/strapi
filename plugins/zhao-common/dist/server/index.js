@@ -1529,14 +1529,14 @@ const config$1 = ({ strapi: strapi2 }) => ({
         alipayEnabled,
         douyinEnabled,
         thirdPartyEnabled,
-        ssoEnabled: siteFeatureFlags.sso ?? false,
+        ssoEnabled: siteFeatureFlags.sso ?? true,
         ssoLoginUrl: ec.ssoLoginUrl ?? null,
         registerEnabled: ec.registerEnabled ?? false,
         inviteCodeRequired: ec.inviteCodeRequired ?? false
       };
       result.featureFlags = {
         // 粗粒度模块总开关（从 site-config.featureFlags 列读取）
-        sso: siteFeatureFlags.sso ?? false,
+        sso: siteFeatureFlags.sso ?? true,
         points: siteFeatureFlags.points ?? true,
         quiz: siteFeatureFlags.quiz ?? true,
         course: siteFeatureFlags.course ?? true,

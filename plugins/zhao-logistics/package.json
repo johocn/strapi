@@ -38,10 +38,6 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   },
-  "peerDependencies": {
-    "@strapi/sdk-plugin": "^6.1.0",
-    "@strapi/strapi": "^5.45.0"
-  },
   "strapi": {
     "kind": "plugin",
     "name": "zhao-logistics",

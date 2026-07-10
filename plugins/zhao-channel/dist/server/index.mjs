@@ -6298,10 +6298,10 @@ const contentApi = () => ({
   ]
 });
 const routes = {
-  "content-api": () => ({
+  "content-api": {
     type: "content-api",
     routes: contentApi().routes
-  })
+  }
 };
 function buildPath(parentPath, childId) {
   const normalizedParent = parentPath.endsWith("/") ? parentPath : `${parentPath}/`;

@@ -380,7 +380,7 @@ declare const _default: {
         };
     };
     routes: {
-        "content-api": () => {
+        "content-api": {
             type: "content-api";
             routes: {
                 method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";

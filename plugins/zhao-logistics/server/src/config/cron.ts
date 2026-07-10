@@ -8,7 +8,7 @@ const SUBSCRIPTION_UID = "plugin::zhao-logistics.subscription";
  * - 每 10 分钟同步活跃运单轨迹
  * - 每 30 分钟处理订阅通知（检测新节点）
  */
-const cronTasks: Record<string, Core.CronTaskConfig> = {
+const cronTasks = {
   // 每 10 分钟同步活跃运单轨迹
   "*/10 * * * *": {
     task: async ({ strapi }) => {

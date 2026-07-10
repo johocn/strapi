@@ -39,6 +39,12 @@
       "default": true,
       "required": true
     },
+    "events": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-logistics.conversion-event",
+      "mappedBy": "funnel"
+    },
     "deletedAt": {
       "type": "datetime",
       "default": null
