@@ -147,4 +147,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
     ctx.body = { data: stats };
   },
+
+  async findOneAdSlot(ctx: any) {
+    const slot = await strapi
+      .documents('plugin::zhao-studio.ad-slot')
+      .findOne({ documentId: ctx.params.id });
+    ctx.body = { data: slot };
+  },
 });

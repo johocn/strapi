@@ -86,4 +86,12 @@ export default ({ strapi }: { strapi: any }) => ({
 
     ctx.body = { data: task };
   },
+
+  async findOne(ctx: any) {
+    const { id } = ctx.params;
+    const source = await strapi
+      .documents('plugin::zhao-studio.collect-source')
+      .findOne({ documentId: id });
+    ctx.body = { data: source };
+  },
 });

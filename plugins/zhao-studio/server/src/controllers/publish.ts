@@ -90,4 +90,25 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     await statusSync.syncPublishStatus(articleId);
     ctx.body = { data: { success: true } };
   },
+
+  async findOne(ctx: any) {
+    const record = await strapi
+      .documents('plugin::zhao-studio.publish-record')
+      .findOne({ documentId: ctx.params.id });
+    ctx.body = { data: record };
+  },
+
+  async findOnePlatform(ctx: any) {
+    const platform = await strapi
+      .documents('plugin::zhao-studio.publish-platform')
+      .findOne({ documentId: ctx.params.id });
+    ctx.body = { data: platform };
+  },
+
+  async findOneAccount(ctx: any) {
+    const account = await strapi
+      .documents('plugin::zhao-studio.publish-account')
+      .findOne({ documentId: ctx.params.id });
+    ctx.body = { data: account };
+  },
 });
