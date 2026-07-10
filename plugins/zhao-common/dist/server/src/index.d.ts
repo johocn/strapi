@@ -250,6 +250,8 @@ declare const _default: {
                             thirdParty: boolean;
                             oss: boolean;
                             website: boolean;
+                            logistics: boolean;
+                            studio: boolean;
                         };
                     };
                     template: {
@@ -386,6 +388,102 @@ declare const _default: {
                         mappedBy: string;
                     };
                     website_products: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    logistics_tracking_providers: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    logistics_tracking_shipments: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    logistics_tracking_nodes: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    logistics_subscriptions: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    logistics_quote_requests: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    logistics_quote_price_rules: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    logistics_quote_price_formulas: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    logistics_quote_field_rules: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    logistics_customer_profiles: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    logistics_conversion_events: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    logistics_conversion_funnels: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    logistics_contact_matrices: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    logistics_landing_pages: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    logistics_intent_orders: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    logistics_referrals: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    logistics_reviews: {
                         type: string;
                         relation: string;
                         target: string;

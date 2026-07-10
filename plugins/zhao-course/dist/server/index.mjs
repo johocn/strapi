@@ -404,7 +404,8 @@ const course$1 = ({ strapi }) => ({
       if (ch.channelScope === "all") {
         return true;
       }
-      if (ch.channelScope === "specific" && ch.allowCrossChannel === true) {
+      const crossChannelEnabled = ctx.state.crossChannelEnabled !== false;
+      if (crossChannelEnabled && ch.channelScope === "specific" && ch.allowCrossChannel === true) {
         return true;
       }
       if (ch.channelScope === "specific" && ch.allowCrossChannel === false) {
