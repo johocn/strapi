@@ -82,6 +82,14 @@
       "target": "plugin::zhao-website.article",
       "mappedBy": "sourceArticleDraft"
     },
+    "scope": {
+      "type": "enumeration",
+      "enum": ["current", "global", "tenant"],
+      "default": "current"
+    },
+    "scopeTenantId": {
+      "type": "string"
+    },
     "publishedAt": {
       "type": "datetime"
     },
