@@ -15,7 +15,7 @@
 module.exports = {
   apps: [{
     name: 'strapi',
-    cwd: '/opt/strapi/basic',
+    cwd: '/home/admin/strapi',
     script: 'npm',
     args: 'start',
     instances: 1,                // Strapi 不支持多实例（数据库迁移竞争）
@@ -28,8 +28,8 @@ module.exports = {
     env: {
       NODE_ENV: 'production'
     },
-    error_file: '/opt/strapi/logs/error.log',
-    out_file: '/opt/strapi/logs/out.log',
+    error_file: '/home/admin/logs/error.log',
+    out_file: '/home/admin/logs/out.log',
     merge_logs: true,
     log_date_format: 'YYYY-MM-DD HH:mm:ss'
   }]

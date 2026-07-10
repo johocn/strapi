@@ -9,7 +9,7 @@ set -e
 # ===== 配置区（按实际修改） =====
 SSH_USER="root"
 SSH_HOST="你的服务器IP"
-REMOTE_DIR="/opt/strapi/basic"
+REMOTE_DIR="/home/admin/strapi"
 WEB_DIST="/var/www/web"
 SHAO_DIST="/var/www/shao"
 # ================================
@@ -22,7 +22,7 @@ echo "=========================================="
 echo ""
 echo ">>> [1/3] 部署后端..."
 ssh $SSH_USER@$SSH_HOST << 'EOF'
-  cd /opt/strapi/basic
+  cd /home/admin/strapi
   echo "  拉取最新代码..."
   git pull origin main
   echo "  安装依赖..."
