@@ -84,7 +84,9 @@
         "channel": true,
         "thirdParty": true,
         "oss": false,
-        "website": true
+        "website": true,
+        "logistics": true,
+        "studio": true
       }
     },
     "template": {
@@ -224,6 +226,102 @@
       "type": "relation",
       "relation": "oneToMany",
       "target": "plugin::zhao-website.product",
+      "mappedBy": "site"
+    },
+    "logistics_tracking_providers": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-logistics.tracking-provider",
+      "mappedBy": "site"
+    },
+    "logistics_tracking_shipments": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-logistics.tracking-shipment",
+      "mappedBy": "site"
+    },
+    "logistics_tracking_nodes": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-logistics.tracking-node",
+      "mappedBy": "site"
+    },
+    "logistics_subscriptions": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-logistics.subscription",
+      "mappedBy": "site"
+    },
+    "logistics_quote_requests": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-logistics.quote-request",
+      "mappedBy": "site"
+    },
+    "logistics_quote_price_rules": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-logistics.quote-price-rule",
+      "mappedBy": "site"
+    },
+    "logistics_quote_price_formulas": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-logistics.quote-price-formula",
+      "mappedBy": "site"
+    },
+    "logistics_quote_field_rules": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-logistics.quote-field-rule",
+      "mappedBy": "site"
+    },
+    "logistics_customer_profiles": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-logistics.customer-profile",
+      "mappedBy": "site"
+    },
+    "logistics_conversion_events": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-logistics.conversion-event",
+      "mappedBy": "site"
+    },
+    "logistics_conversion_funnels": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-logistics.conversion-funnel",
+      "mappedBy": "site"
+    },
+    "logistics_contact_matrices": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-logistics.contact-matrix",
+      "mappedBy": "site"
+    },
+    "logistics_landing_pages": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-logistics.landing-page",
+      "mappedBy": "site"
+    },
+    "logistics_intent_orders": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-logistics.intent-order",
+      "mappedBy": "site"
+    },
+    "logistics_referrals": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-logistics.referral",
+      "mappedBy": "site"
+    },
+    "logistics_reviews": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-logistics.review",
       "mappedBy": "site"
     }
   }

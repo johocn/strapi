@@ -273,6 +273,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
           featureFlags: {
             sso: false, points: true, quiz: true, course: true,
             channel: true, thirdParty: true, oss: false, website: true,
+            logistics: true, studio: true,
             pointsEnabled: true, coursePreviewEnabled: true,
             lessonProgressEnabled: true, courseEnrollEnabled: true,
             channelInviteEnabled: true, allowCrossChannel: false,
@@ -413,6 +414,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         thirdParty: siteFeatureFlags.thirdParty ?? true,
         oss: siteFeatureFlags.oss ?? false,
         website: siteFeatureFlags.website ?? true,
+        logistics: siteFeatureFlags.logistics ?? true,
+        studio: siteFeatureFlags.studio ?? true,
         // 细粒度开关（从 extraConfig 合并后的 ec 读取）
         pointsEnabled: siteFeatureFlags.points ?? true,
         coursePreviewEnabled: ec.coursePreviewEnabled ?? true,
@@ -420,6 +423,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         courseEnrollEnabled: ec.courseEnrollEnabled ?? true,
         channelInviteEnabled: ec.channelInviteEnabled ?? true,
         allowCrossChannel: ec.allowCrossChannel ?? false,
+        allowCrossChannelPublish: ec.allowCrossChannelPublish ?? false,
         redemptionEnabled: ec.redemptionEnabled ?? true,
         courseCommentEnabled: ec.courseCommentEnabled ?? false,
         courseRatingEnabled: ec.courseRatingEnabled ?? false,
