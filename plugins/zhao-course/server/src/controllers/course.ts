@@ -78,8 +78,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       if (ch.channelScope === "all") {
         return true;
       }
-      // 允许跨渠道访问的课程无需权限检查
-      if (ch.channelScope === "specific" && ch.allowCrossChannel === true) {
+      // 允许跨渠道访问的课程无需权限检查（需跨渠道功能开启时才生效，与列表层逻辑对齐）
+      const crossChannelEnabled = ctx.state.crossChannelEnabled !== false;
+      if (crossChannelEnabled && ch.channelScope === "specific" && ch.allowCrossChannel === true) {
         return true;
       }
       // 指定渠道且不允许跨渠道：检查 mergedChannelIds 交集
