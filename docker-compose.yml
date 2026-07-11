@@ -1,0 +1,87 @@
+version: '3.8'
+
+services:
+  strapi:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: strapi
+    ports:
+      - "127.0.0.1:1337:1337"
+    environment:
+      DATABASE_CLIENT: postgres
+      DATABASE_HOST: host.docker.internal
+      DATABASE_PORT: 5432
+      DATABASE_NAME: strapi_prod
+      DATABASE_USERNAME: strapi_user
+      DATABASE_PASSWORD: strapi_password
+      DATABASE_SSL: "false"
+
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+
+      HOST: 0.0.0.0
+      PORT: 1337
+      APP_KEYS: "7stSMWbDSCXi9fqsL1LqXw==,wetCmLdJysssEaT3TmtUVg==,mihIftrsZIbmhqhh9RMlZA==,1o5UAH+Z37xka+lVcftXvg=="
+      API_TOKEN_SALT: "KqJVerFuDTujV0elPCBFjA=="
+      ADMIN_JWT_SECRET: "IxZ10fzeFA+p6hNowibGFQ=="
+      TRANSFER_TOKEN_SALT: "3okoYutNxW+/MnFAF75QSw=="
+      ENCRYPTION_KEY: "UbLtgUZfk3SWZ2KbjeJ6MQ=="
+
+      ALIYUN_OSS_REGION: ""
+      ALIYUN_OSS_ACCESS_KEY: ""
+      ALIYUN_OSS_ACCESS_SECRET: ""
+      ALIYUN_OSS_BUCKET: ""
+      ALIYUN_OSS_CNAME: ""
+    volumes:
+      - ./uploads:/app/uploads
+      - ./config:/app/config
+    depends_on:
+      - redis
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  vendure:
+    image: vendure/vendure:latest
+    container_name: vendure
+    ports:
+      - "127.0.0.1:3000:3000"
+      - "127.0.0.1:3001:3001"
+      - "127.0.0.1:3002:3002"
+    environment:
+      DB_HOST: host.docker.internal
+      DB_PORT: 5432
+      DB_NAME: vendure_prod
+      DB_USERNAME: vendure_user
+      DB_PASSWORD: vendure_password
+
+      API_PORT: 3000
+      ADMIN_API_PORT: 3001
+      ADMIN_UI_PORT: 3002
+      SUPERADMIN_USERNAME: superadmin
+      SUPERADMIN_PASSWORD: superadmin
+      COOKIE_SECRET: "vendure-cookie-secret-change-in-production"
+    volumes:
+      - ./vendure/assets:/app/assets
+    depends_on:
+      - redis
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    networks:
+      - app-network
+
+volumes:
+  redis-data:
+
+networks:
+  app-network:
+    driver: bridge
