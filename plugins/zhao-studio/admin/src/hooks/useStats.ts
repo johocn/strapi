@@ -51,7 +51,7 @@ export const useStats = ({ type }: UseStatsParams) => {
 
         const responses = await Promise.all(
           endpoints.map(e =>
-            fetch(`${API_BASE}${e}`).then(r => r.json()).catch(() => ({ data: {} }))
+            fetch(`${API_BASE}${e}`).then(r => r.json()).catch(() => ({}))
           )
         );
 
@@ -59,7 +59,7 @@ export const useStats = ({ type }: UseStatsParams) => {
         const allStats: StatsRow[] = [];
 
         responses.forEach((json, i) => {
-          const data = json.data || {};
+          const data = json || {};
           if (i === 0) {
             // overview → 基础指标（对象结构）
             Object.entries(data).forEach(([key, value]) => {
@@ -90,7 +90,7 @@ export const useStats = ({ type }: UseStatsParams) => {
         setStats(allStats);
 
         // 组装 chartData（从 overview 提取时间序列）
-        const overview = responses[0]?.data || {};
+        const overview = responses[0] || {};
         const chart = overview.timeSeries || overview.daily || overview.timeline || [];
         if (Array.isArray(chart)) {
           setChartData(

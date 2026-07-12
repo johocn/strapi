@@ -77,7 +77,7 @@ export const useAdSlots = () => {
     try {
       const res = await fetch(API_BASE);
       const json = await res.json();
-      const list = (json.data || []).map(normalizeSlot);
+      const list = (json || []).map(normalizeSlot);
       setSlots(list);
     } catch (err) {
       console.error('fetchSlots error:', err);

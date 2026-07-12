@@ -1,8 +1,6 @@
 // admin/src/utils/aiApi.ts
 
-import pluginId from '../pluginId';
-
-const baseUrl = `/admin/plugins/${pluginId}/ai`;
+const baseUrl = '/api/zhao-studio/v1/admin/ai';
 
 export const aiApi = {
   async getConfig() {

@@ -23,7 +23,7 @@ export const useAIConfig = () => {
     try {
       const res = await fetch(`${API_BASE}/config`);
       const json = await res.json();
-      setConfig(json.data || null);
+      setConfig(json || null);
     } catch (err) {
       console.error('fetchConfig error:', err);
       setConfig(null);

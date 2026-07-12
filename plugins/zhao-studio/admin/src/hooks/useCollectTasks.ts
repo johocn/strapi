@@ -23,7 +23,7 @@ export function useCollectTasks() {
     setError(null);
     try {
       const response = await collectApi.getTasks();
-      setTasks(response.data || []);
+      setTasks(response || []);
     } catch (err: unknown) {
       setError((err as Error).message);
     } finally {
@@ -37,7 +37,7 @@ export function useCollectTasks() {
     try {
       const response = await collectApi.createTask(sourceId);
       await fetchTasks();
-      return response.data;
+      return response;
     } catch (err: unknown) {
       setError((err as Error).message);
       throw err;
@@ -51,7 +51,7 @@ export function useCollectTasks() {
     setError(null);
     try {
       const response = await collectApi.getTask(id);
-      return response.data;
+      return response;
     } catch (err: unknown) {
       setError((err as Error).message);
       throw err;
@@ -65,7 +65,7 @@ export function useCollectTasks() {
     setError(null);
     try {
       const response = await collectApi.fetchSelectedContent(taskId, selectedTitles);
-      return response.data;
+      return response;
     } catch (err: unknown) {
       setError((err as Error).message);
       throw err;
@@ -80,7 +80,7 @@ export function useCollectTasks() {
     try {
       const response = await collectApi.confirmImport(taskId, confirmedContents);
       await fetchTasks();
-      return response.data;
+      return response;
     } catch (err: unknown) {
       setError((err as Error).message);
       throw err;

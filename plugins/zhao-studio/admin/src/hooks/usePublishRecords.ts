@@ -32,7 +32,7 @@ export const usePublishRecords = (params?: UsePublishRecordsParams) => {
       const url = `/api/zhao-studio/v1/admin/records${query.toString() ? '?' + query : ''}`;
       const res = await fetch(url);
       const json = await res.json();
-      const list: PublishRecord[] = json.data || [];
+      const list: PublishRecord[] = json || [];
       // 字段标准化：展平嵌套对象 + 补 id
       const normalized = list.map(r => {
         const normalized = normalizeRecord<PublishRecord>(r);

@@ -24,7 +24,7 @@ export const usePublishPlatforms = () => {
     try {
       const res = await fetch(`${API_BASE}/platforms`);
       const json = await res.json();
-      setPlatforms(normalizeList<PublishPlatform>(json.data || []));
+      setPlatforms(normalizeList<PublishPlatform>(json || []));
     } catch (err) {
       console.error('fetchPlatforms error:', err);
       setPlatforms([]);

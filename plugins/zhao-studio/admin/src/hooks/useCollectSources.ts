@@ -27,7 +27,7 @@ export function useCollectSources() {
     setError(null);
     try {
       const response = await collectApi.getSources();
-      setSources(response.data || []);
+      setSources(response || []);
     } catch (err: unknown) {
       setError((err as Error).message);
     } finally {
@@ -41,7 +41,7 @@ export function useCollectSources() {
     try {
       const response = await collectApi.createSource(data);
       await fetchSources();
-      return response.data;
+      return response;
     } catch (err: unknown) {
       setError((err as Error).message);
       throw err;
@@ -56,7 +56,7 @@ export function useCollectSources() {
     try {
       const response = await collectApi.updateSource(id, data);
       await fetchSources();
-      return response.data;
+      return response;
     } catch (err: unknown) {
       setError((err as Error).message);
       throw err;

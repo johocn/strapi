@@ -23,7 +23,7 @@ export const useAIActions = () => {
       });
       if (!res.ok) throw new Error('对话失败');
       const json = await res.json();
-      return json.data || { content: '（无回复）', role: 'assistant' };
+      return json || { content: '（无回复）', role: 'assistant' };
     } finally {
       setLoading(false);
     }
@@ -38,7 +38,7 @@ export const useAIActions = () => {
       });
       if (!res.ok) throw new Error('生成摘要失败');
       const json = await res.json();
-      return json.data?.summary || '';
+      return json?.summary || '';
     } finally {
       setLoading(false);
     }
@@ -53,7 +53,7 @@ export const useAIActions = () => {
       });
       if (!res.ok) throw new Error('优化标题失败');
       const json = await res.json();
-      return json.data?.optimizedTitle || '';
+      return json?.optimizedTitle || '';
     } finally {
       setLoading(false);
     }
@@ -68,7 +68,7 @@ export const useAIActions = () => {
       });
       if (!res.ok) throw new Error('改写内容失败');
       const json = await res.json();
-      return json.data?.rewrittenContent || '';
+      return json?.rewrittenContent || '';
     } finally {
       setLoading(false);
     }
@@ -83,7 +83,7 @@ export const useAIActions = () => {
       });
       if (!res.ok) throw new Error('语言转换失败');
       const json = await res.json();
-      return json.data?.convertedContent || '';
+      return json?.convertedContent || '';
     } finally {
       setLoading(false);
     }

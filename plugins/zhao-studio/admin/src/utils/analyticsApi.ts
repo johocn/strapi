@@ -1,8 +1,6 @@
 // admin/src/utils/analyticsApi.ts
 
-import pluginId from '../pluginId';
-
-const baseUrl = `/admin/plugins/${pluginId}/analytics`;
+const baseUrl = '/api/zhao-studio/v1/admin';
 
 export const analyticsApi = {
   // 广告位管理

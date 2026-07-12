@@ -1,8 +1,6 @@
 // admin/src/utils/collectApi.ts
 
-import pluginId from '../pluginId';
-
-const baseUrl = `/admin/plugins/${pluginId}`;
+const baseUrl = '/api/zhao-studio/v1/admin';
 
 export const collectApi = {
   // 采集源管理
