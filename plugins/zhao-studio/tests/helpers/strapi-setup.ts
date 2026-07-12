@@ -1,10 +1,10 @@
-import { Strapi } from '@strapi/strapi';
+import { createStrapi } from "@strapi/strapi";
 
-let instance: Strapi;
+let instance: any;
 
 export async function setupStrapi() {
   if (!instance) {
-    instance = await Strapi().load();
+    instance = await createStrapi().load();
   }
   return instance;
 }

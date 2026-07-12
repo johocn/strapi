@@ -8,6 +8,7 @@ import internalApi from './internal-api';
 import statusSync from './status-sync';
 import analytics from './analytics';
 import aggregation from './aggregation';
+import syncEvent from './sync-event';
 
 export default {
   collect,
@@ -20,4 +21,5 @@ export default {
   'status-sync': statusSync,
   analytics,
   aggregation,
+  'sync-event': syncEvent,
 };

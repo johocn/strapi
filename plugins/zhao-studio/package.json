@@ -21,7 +21,9 @@
       "default": "./dist/admin/index.js"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "strapi-plugin build",
     "watch": "strapi-plugin watch",
@@ -39,6 +41,10 @@
     "@strapi/sdk-plugin": "^6.1.0",
     "@strapi/strapi": "^5.45.0",
     "@strapi/typescript-utils": "^5.45.0",
+    "@types/jest": "^30.0.0",
+    "jest": "^30.4.2",
+    "ts-jest": "^29.4.11",
+    "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   },
   "peerDependencies": {
