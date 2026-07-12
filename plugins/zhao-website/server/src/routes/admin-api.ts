@@ -103,6 +103,18 @@ export default () => ({
     channelScopeRoute("PUT", "/first-truths/global/:documentId", "first-truth.updateGlobal", "first-truth.update-global"),
     channelScopeRoute("DELETE", "/first-truths/global/:documentId", "first-truth.deleteGlobal", "first-truth.delete-global"),
     channelScopeRoute("POST", "/first-truths/global/:documentId/verify", "first-truth.verifyGlobal", "first-truth.update-global"),
+    // 品牌话术
+    channelScopeRoute("GET", "/brand-voices", "brand-voice-admin.find", "brand-voice.read"),
+    channelScopeRoute("GET", "/brand-voices/:documentId", "brand-voice-admin.findOne", "brand-voice.read"),
+    channelScopeRoute("POST", "/brand-voices", "brand-voice-admin.create", "brand-voice.create"),
+    channelScopeRoute("PUT", "/brand-voices/:documentId", "brand-voice-admin.update", "brand-voice.update"),
+    channelScopeRoute("DELETE", "/brand-voices/:documentId", "brand-voice-admin.delete", "brand-voice.delete"),
+    channelScopeRoute("POST", "/brand-voices/:documentId/resolve", "brand-voice.resolve", "brand-voice.read"),
+    channelScopeRoute("GET", "/brand-voices/by-category/:category", "brand-voice.listByCategory", "brand-voice.read"),
+    // 全局品牌话术
+    channelScopeRoute("POST", "/brand-voices/global", "brand-voice.createGlobal", "brand-voice.create-global"),
+    channelScopeRoute("PUT", "/brand-voices/global/:documentId", "brand-voice.updateGlobal", "brand-voice.update-global"),
+    channelScopeRoute("DELETE", "/brand-voices/global/:documentId", "brand-voice.deleteGlobal", "brand-voice.delete-global"),
     channelScopeRoute("GET", "/ai-summaries", "ai-content-summary.findByTarget", "ai-summary.read"),
     channelScopeRoute("POST", "/ai-summaries", "ai-content-summary.create", "ai-summary.create"),
     channelScopeRoute("PUT", "/ai-summaries/:documentId", "ai-content-summary.update", "ai-summary.update"),

@@ -33,4 +33,5 @@ export default {
   "visit-log": createGenericController("visit-log"),
   interaction: createGenericController("interaction"),
   "search-log": createGenericController("search-log"),
+  "brand-voice": createGenericController("brand-voice"),
 };

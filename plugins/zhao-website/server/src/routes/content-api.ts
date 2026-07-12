@@ -40,5 +40,8 @@ export default () => ({
     publicRoute("GET", "/llms.txt", "seo-output.llmsTxt"),
     publicRoute("GET", "/manifest.json", "seo-output.manifest"),
     publicRoute("GET", "/site-info", "site-info.info"),
+    // 品牌话术公开路由（GEO AI 读取）
+    publicRoute("GET", "/brand-voices", "brand-voice.publicList"),
+    publicRoute("GET", "/brand-voices/by-category/:category", "brand-voice.publicByCategory"),
   ],
 });
