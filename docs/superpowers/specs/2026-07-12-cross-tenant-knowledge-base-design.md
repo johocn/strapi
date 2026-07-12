@@ -23,7 +23,7 @@
 不新建 CT，复用现有 `knowledge-entity` 和 `first-truth-policy`。通过 `site` 字段值区分层级：
 
 - `site = null` → 全局实体，渠道管理员以上角色维护
-- `site = 具体值` → 租户实体，插件管理员以下角色维护
+- `site = 具体值` → 租户实体，网站管理员/编辑维护
 
 查询时自动合并两层结果，租户编辑时只改自己的，全局实体对租户只读。
 
@@ -72,18 +72,89 @@ where: {
 }
 ```
 
-涉及的方法：
-- `knowledge-graph.ts`: `findEntities`、`findEntityBySlug`、`findEntityByRef`（`findEntityByRef` 不变，按 refTargetType/refTargetId 查询无 site 过滤）
-- `first-truth.ts`: `find`、`findOne`（`conflicts`、`exportFacts` 同步修改）
+#### 涉及的 knowledge-graph.ts 方法
+
+| 方法 | 修改方式 |
+|------|----------|
+| `findEntities` | `$or` 合并 |
+| `findEntityBySlug` | **两步查询**：先查租户 `where: { site: siteId, slug, ... }`，未命中再查全局 `where: { site: null, slug, ... }`。不能用 `$or` + `findOne`，因为无法保证租户优先 |
+| `findEntityByRef` | 不变（按 refTargetType/refTargetId 查询，无 site 过滤） |
+| `disambiguate` | `$or` 合并候选实体 |
+| `findRelations` | `$or` 合并（租户能看到全局实体的关系） |
+| `exportGraph` | `$or` 合并实体和关系（JSON-LD 输出包含全局层） |
+| `exportEntity` | 关系查询改为 `$or` 合并 |
+| `exportFacts` | `$or` 合并（真值导出包含全局层） |
+| `verifyAll` | `$or` 合并实体和真值查询 |
+
+#### 涉及的 first-truth.ts 方法
+
+| 方法 | 修改方式 |
+|------|----------|
+| `find` | `$or` 合并 |
+| `findOne` | **两步查询**：先查租户，未命中再查全局（同 `findEntityBySlug` 逻辑） |
+| `findByClaimKey` | 两步查询（先租户后全局） |
+| `detectConflicts` | `$or` 合并所有真值，检测跨层 claimKey 冲突 |
+| `exportFacts`（通过 knowledge-graph） | 已在上方覆盖 |
+
+### Service 方法签名修改
+
+所有涉及 `siteId` 的 service 方法签名从 `number` 改为 `number | null`：
+
+#### knowledge-graph.ts
+
+```ts
+async createEntity(siteId: number | null, data: any)
+async updateEntity(siteId: number | null, documentId: string, data: any)
+async deleteEntity(siteId: number | null, documentId: string)
+```
+
+`updateEntity` 和 `deleteEntity` 的内部 findOne 查询需按 siteId 值区分：
+
+```ts
+async updateEntity(siteId: number | null, documentId: string, data: any) {
+  const where: any = { documentId, deletedAt: null };
+  // siteId 为 null 时查全局实体，为数字时查租户实体
+  where.site = siteId;
+  const existing = await strapi.db.query(ENTITY_UID).findOne({ where });
+  if (!existing) {
+    const e: any = new Error("Entity not found");
+    e.status = 404;
+    throw e;
+  }
+  return strapi.db.query(ENTITY_UID).update({
+    where: { id: existing.id },
+    data,
+  });
+}
+```
+
+`deleteEntity` 同理。
+
+#### first-truth.ts
+
+```ts
+async find(siteId: number | null, query?: any)
+async findOne(siteId: number | null, documentId: string)
+async findByClaimKey(siteId: number | null, claimKey: string)
+async create(siteId: number | null, data: any)
+async update(siteId: number | null, documentId: string, data: any)
+async softDelete(siteId: number | null, documentId: string)
+async verify(siteId: number | null, documentId: string)
+async detectConflicts(siteId: number | null)
+```
+
+`_markRelatedEntitiesPending` 的签名也改为 `siteId: number | null`，内部查询 `where: { site: siteId, ... }` 保持一致（全局真值关联全局实体，siteId=null 查询 site=null）。
 
 ### 权限分层
 
 | 操作 | 全局实体 (site=null) | 租户实体 (site=具体值) |
 |------|---------------------|----------------------|
 | 读取 | 所有已登录用户 | 所有已登录用户 |
-| 创建 | CHANNEL_ADMIN / PLUGIN_MANAGER / ADMIN | WEBSITE_MANAGER / WEBSITE_EDITOR |
-| 更新 | CHANNEL_ADMIN / PLUGIN_MANAGER / ADMIN | WEBSITE_MANAGER / WEBSITE_EDITOR |
-| 删除 | CHANNEL_ADMIN / PLUGIN_MANAGER / ADMIN | WEBSITE_MANAGER / WEBSITE_EDITOR |
+| 创建 | CHANNEL_ADMIN / ADMIN | WEBSITE_MANAGER / WEBSITE_EDITOR |
+| 更新 | CHANNEL_ADMIN / ADMIN | WEBSITE_MANAGER / WEBSITE_EDITOR |
+| 删除 | CHANNEL_ADMIN / ADMIN | WEBSITE_MANAGER / WEBSITE_EDITOR |
+
+> **注意**：PLUGIN_MANAGER 当前在 permissions.ts 中只有 `knowledge-entity.read`，无 CRUD 权限（第 1202 行）。不将 PLUGIN_MANAGER 纳入全局实体操作者，保持其只读角色。
 
 ### 路由设计
 
@@ -103,7 +174,7 @@ channelScopeRoute("POST", "/knowledge-graph/disambiguate", "knowledge-graph.disa
 channelScopeRoute("GET", "/knowledge-graph/export", "knowledge-graph.exportGraph", "knowledge-entity.read"),
 ```
 
-#### 新增路由（全局层）
+#### 新增路由（全局层 — knowledge-entity）
 
 ```ts
 channelScopeRoute("POST", "/knowledge-graph/entities/global", "knowledge-graph.createGlobalEntity", "knowledge-entity.create-global"),
@@ -113,62 +184,51 @@ channelScopeRoute("DELETE", "/knowledge-graph/entities/global/:documentId", "kno
 
 读取路由不新增 — `GET /knowledge-graph/entities` 自动合并全局+租户结果。
 
-#### first-truth 新增路由（全局层）
+#### 新增路由（全局层 — first-truth）
 
 ```ts
 channelScopeRoute("POST", "/first-truths/global", "first-truth.createGlobal", "first-truth.create-global"),
 channelScopeRoute("PUT", "/first-truths/global/:documentId", "first-truth.updateGlobal", "first-truth.update-global"),
 channelScopeRoute("DELETE", "/first-truths/global/:documentId", "first-truth.deleteGlobal", "first-truth.delete-global"),
+channelScopeRoute("POST", "/first-truths/global/:documentId/verify", "first-truth.verifyGlobal", "first-truth.update-global"),
 ```
 
 ### Controller 方法
 
-`knowledge-graph.ts` controller 新增 3 个全局方法。与租户方法逻辑一致，区别是 `site` 设为 `null`：
+#### knowledge-graph controller
+
+与现有 controller 保持一致的 body 格式 — 使用 `ctx.request.body` 而非 `ctx.request.body.data`：
 
 ```ts
-async createGlobalEntity(ctx) {
-  const data = ctx.request.body.data;
-  const result = await strapi.plugin('zhao-website').service('knowledge-graph').createEntity(null, data);
-  ctx.body = { data: result };
+async createGlobalEntity(ctx: any) {
+  ctx.body = await strapi.plugin("zhao-website").service("knowledge-graph").createEntity(null, ctx.request.body);
 },
-
-async updateGlobalEntity(ctx) {
-  const { documentId } = ctx.params;
-  const data = ctx.request.body.data;
-  const result = await strapi.plugin('zhao-website').service('knowledge-graph').updateEntity(null, documentId, data);
-  ctx.body = { data: result };
+async updateGlobalEntity(ctx: any) {
+  ctx.body = await strapi.plugin("zhao-website").service("knowledge-graph").updateEntity(null, ctx.params.documentId, ctx.request.body);
 },
-
-async deleteGlobalEntity(ctx) {
-  const { documentId } = ctx.params;
-  await strapi.plugin('zhao-website').service('knowledge-graph').deleteEntity(null, documentId);
-  ctx.body = { data: { success: true } };
+async deleteGlobalEntity(ctx: any) {
+  await strapi.plugin("zhao-website").service("knowledge-graph").deleteEntity(null, ctx.params.documentId);
+  ctx.body = { success: true };
 },
 ```
 
-`first-truth.ts` controller 同理新增 3 个全局方法。
-
-### Service 方法
-
-`createEntity` / `updateEntity` / `deleteEntity` 的 service 方法已有 `site: siteId` 逻辑，传入 `null` 即可写入全局层。但 `updateEntity` 和 `deleteEntity` 的 `findOneAdmin` 查询需调整 — 全局实体的查询条件为 `site: null`：
+#### first-truth controller
 
 ```ts
-// updateEntity 修改 — 支持全局实体
-async updateEntity(siteId: number | null, documentId: string, data: any) {
-  const where: any = { documentId, deletedAt: null };
-  if (siteId !== null) where.site = siteId;
-  else where.site = null;
-  const existing = await strapi.db.query(ENTITY_UID).findOne({ where });
-  if (!existing) {
-    const e: any = new Error("Entity not found");
-    e.status = 404;
-    throw e;
-  }
-  // ... 后续更新逻辑不变
-}
+async createGlobal(ctx: any) {
+  ctx.body = await strapi.plugin("zhao-website").service("first-truth").create(null, ctx.request.body);
+},
+async updateGlobal(ctx: any) {
+  ctx.body = await strapi.plugin("zhao-website").service("first-truth").update(null, ctx.params.documentId, ctx.request.body);
+},
+async deleteGlobal(ctx: any) {
+  await strapi.plugin("zhao-website").service("first-truth").softDelete(null, ctx.params.documentId);
+  ctx.body = { success: true };
+},
+async verifyGlobal(ctx: any) {
+  ctx.body = await strapi.plugin("zhao-website").service("first-truth").verify(null, ctx.params.documentId);
+},
 ```
-
-`deleteEntity` 同理。
 
 ### 权限设计
 
@@ -193,10 +253,11 @@ async updateEntity(siteId: number | null, documentId: string, data: any) {
 #### 角色分配
 
 - `ADMIN` — `flattenPermissions(PERMISSION_TREE)` 自动包含
-- `CHANNEL_ADMIN` — 硬编码数组追加 6 个 global action
-- `PLUGIN_MANAGER` — 需在硬编码数组中追加 6 个 global action
+- `CHANNEL_ADMIN` — 硬编码数组追加 6 个 global action（已有 `knowledge-entity.*` 和 `first-truth.*` 全套租户权限）
 - `WEBSITE_MANAGER` — `centerPermissions("menu.website-center")` 自动继承，但 filter 掉 `-global` 后缀
 - `WEBSITE_EDITOR` — `centerEditorPermissions("menu.website-center")` 自动继承，但 filter 掉 `-global` 后缀
+
+> PLUGIN_MANAGER 不参与全局实体维护，保持只读角色（当前 permissions.ts 第 1202 行只有 `knowledge-entity.read`）。
 
 #### WEBSITE_MANAGER/EDITOR 排除 global 权限
 
@@ -229,32 +290,36 @@ async updateEntity(siteId: number | null, documentId: string, data: any) {
 |------|------|
 | `server/src/content-types/knowledge-entity/schema.json` | `site.required: true → false` |
 | `server/src/content-types/first-truth-policy/schema.json` | `site.required: true → false` |
-| `server/src/services/knowledge-graph.ts` | 查询方法改为 `$or` 合并；`updateEntity` / `deleteEntity` 支持 `siteId = null` |
-| `server/src/services/first-truth.ts` | 查询方法改为 `$or` 合并；新增全局 CRUD 方法 |
+| `server/src/services/knowledge-graph.ts` | `findEntities`/`findEntityBySlug`/`disambiguate`/`findRelations`/`exportGraph`/`exportEntity`/`exportFacts`/`verifyAll` 改为 `$or` 合并或两步查询；`createEntity`/`updateEntity`/`deleteEntity` 签名改为 `number | null` |
+| `server/src/services/first-truth.ts` | `find`/`findOne`/`findByClaimKey`/`detectConflicts` 改为 `$or` 合并或两步查询；`create`/`update`/`softDelete`/`verify`/`_markRelatedEntitiesPending` 签名改为 `number | null` |
 | `server/src/controllers/admin-api/knowledge-graph.ts` | 新增 `createGlobalEntity` / `updateGlobalEntity` / `deleteGlobalEntity` |
-| `server/src/controllers/admin-api/first-truth.ts` | 新增 `createGlobal` / `updateGlobal` / `deleteGlobal` |
-| `server/src/routes/admin-api.ts` | `/kg/` → `/knowledge-graph/`；新增 6 条全局路由 |
+| `server/src/controllers/admin-api/first-truth.ts` | 新增 `createGlobal` / `updateGlobal` / `deleteGlobal` / `verifyGlobal` |
+| `server/src/routes/admin-api.ts` | `/kg/` → `/knowledge-graph/`；新增 7 条全局路由（3 entity + 4 first-truth） |
 
 ### zhao-auth 修改
 | 文件 | 变更 |
 |------|------|
-| `server/src/permissions.ts` | `menu.website-knowledge-entity.children` 追加 3 个 global action；`menu.website-first-truth.children` 追加 3 个 global action；CHANNEL_ADMIN / PLUGIN_MANAGER 硬编码追加；WEBSITE_MANAGER / WEBSITE_EDITOR 加 filter 排除 global |
+| `server/src/permissions.ts` | `menu.website-knowledge-entity.children` 追加 3 个 global action；`menu.website-first-truth.children` 追加 3 个 global action；CHANNEL_ADMIN 硬编码追加 6 个；WEBSITE_MANAGER / WEBSITE_EDITOR 加 filter 排除 global |
 
 ### zhao-website 新增测试
 | 文件 | 说明 |
 |------|------|
-| `tests/services/knowledge-graph-global.test.ts` | 全局实体 service 测试：合并查询、全局 CRUD、权限校验 |
-| `tests/services/first-truth-global.test.ts` | 全局真值 service 测试：合并查询、全局 CRUD |
+| `tests/services/knowledge-graph-global.test.ts` | 全局实体 service 测试：合并查询、两步查询优先级、全局 CRUD、签名兼容 |
+| `tests/services/first-truth-global.test.ts` | 全局真值 service 测试：合并查询、全局 CRUD、跨层冲突检测 |
 
 ## 测试策略
 
 ### service 层测试
 - `findEntities` 返回全局+租户合并结果
+- `findEntityBySlug` 两步查询：租户有同 slug 时返回租户的，租户没有时返回全局的
 - `createEntity(null, data)` 正确写入 site=null
 - `createEntity(siteId, data)` 正确写入 site=siteId
-- `findEntityBySlug` 同时匹配全局和租户 slug
 - `updateEntity(null, ...)` 仅更新 site=null 的实体
-- `first-truth` service 的 `find` 返回合并结果
+- `updateEntity(siteId, ...)` 仅更新 site=siteId 的实体（不误更新全局实体）
+- `first-truth.find` 返回合并结果
+- `first-truth.findByClaimKey` 两步查询优先级
+- `first-truth.detectConflicts` 检测跨层 claimKey 冲突（全局和租户同 claimKey 不同值）
+- `_markRelatedEntitiesPending(null, ...)` 正确查询全局实体
 
 ### 权限测试
 - CHANNEL_ADMIN 调用 `/knowledge-graph/entities/global` POST → 200
@@ -263,9 +328,14 @@ async updateEntity(siteId: number | null, documentId: string, data: any) {
 - `centerPermissions("menu.website-center")` 结果不含 `-global` 后缀的 key
 
 ### controller 测试
-- `createGlobalEntity` 设置 site=null
+- `createGlobalEntity` 设置 site=null，body 格式使用 `ctx.request.body`
 - `updateGlobalEntity` 仅允许更新 site=null 的实体
 - `deleteGlobalEntity` 仅允许删除 site=null 的实体
+- `verifyGlobal` 正确调用 service 的 `verify(null, ...)`
+
+### 回归测试
+- 现有 knowledge-graph 测试全部通过（路由从 `/kg/` 改为 `/knowledge-graph/` 后，如有 API 调用需同步更新）
+- 现有 first-truth 测试全部通过
 
 ## 不做
 
@@ -273,12 +343,17 @@ async updateEntity(siteId: number | null, documentId: string, data: any) {
 - 不做租户覆盖全局实体的能力（租户只能创建自己的实体，不能修改全局实体）
 - 不做 knowledge-relation 的全局/租户分离（关系始终在同一层级内连接）
 - 不做跨层级关系（全局实体与租户实体之间不建立 relation）
+- 不做 PLUGIN_MANAGER 的全局写入权限（保持只读）
 
 ## 验收标准
 
 1. `knowledge-entity` 和 `first-truth-policy` 的 `site` 字段允许 null
 2. 租户查询知识实体时自动合并全局实体（site=null）
-3. CHANNEL_ADMIN 可创建/更新/删除全局实体
-4. WEBSITE_MANAGER 可创建/更新/删除租户实体，不可操作全局实体
-5. 路由路径从 `/kg/` 改为 `/knowledge-graph/`
-6. 现有测试全部通过，无回归
+3. `findEntityBySlug` 两步查询，租户有同 slug 时优先返回租户的
+4. CHANNEL_ADMIN 可创建/更新/删除/验证全局实体和全局真值
+5. WEBSITE_MANAGER 可创建/更新/删除租户实体，不可操作全局实体（403）
+6. PLUGIN_MANAGER 保持只读，不可操作全局实体
+7. 路由路径从 `/kg/` 改为 `/knowledge-graph/`
+8. `exportGraph`/`exportFacts`/`disambiguate`/`verifyAll` 均合并全局+租户结果
+9. `detectConflicts` 检测跨层 claimKey 冲突
+10. 现有测试全部通过，无回归
