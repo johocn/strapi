@@ -189,6 +189,12 @@ declare const _default: {
       "target": "plugin::zhao-website.knowledge-entity",
       "inversedBy": "articleMentions"
     },
+    "brandVoiceRef": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-website.brand-voice",
+      "inversedBy": "articles"
+    },
     "structuredData": {
       "type": "json"
     },

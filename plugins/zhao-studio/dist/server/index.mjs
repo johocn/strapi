@@ -25,14 +25,14 @@ const actions = [
   }
 ];
 const permissions = { actions };
-const register = ({ strapi }) => {
-  strapi.admin.services.permission.actionProvider.registerMany(
+const register = ({ strapi: strapi2 }) => {
+  strapi2.admin.services.permission.actionProvider.registerMany(
     permissions.actions
   );
 };
-const bootstrap = ({ strapi }) => {
+const bootstrap = ({ strapi: strapi2 }) => {
 };
-const destroy = ({ strapi }) => {
+const destroy = ({ strapi: strapi2 }) => {
 };
 const config = {
   default: {
@@ -46,63 +46,63 @@ const config = {
   validator() {
   }
 };
-const collect$1 = ({ strapi }) => ({
+const collect$1 = ({ strapi: strapi2 }) => ({
   async listSources(ctx) {
-    const sources = await strapi.documents("plugin::zhao-studio.collect-source").findMany();
+    const sources = await strapi2.documents("plugin::zhao-studio.collect-source").findMany();
     ctx.body = { data: sources };
   },
   async createSource(ctx) {
     const { data: data2 } = ctx.request.body;
-    const source = await strapi.documents("plugin::zhao-studio.collect-source").create({ data: data2 });
+    const source = await strapi2.documents("plugin::zhao-studio.collect-source").create({ data: data2 });
     ctx.body = { data: source };
   },
   async updateSource(ctx) {
     const { id } = ctx.params;
     const { data: data2 } = ctx.request.body;
-    const source = await strapi.documents("plugin::zhao-studio.collect-source").update({ documentId: id, data: data2 });
+    const source = await strapi2.documents("plugin::zhao-studio.collect-source").update({ documentId: id, data: data2 });
     ctx.body = { data: source };
   },
   async deleteSource(ctx) {
     const { id } = ctx.params;
-    const source = await strapi.documents("plugin::zhao-studio.collect-source").delete({ documentId: id });
+    const source = await strapi2.documents("plugin::zhao-studio.collect-source").delete({ documentId: id });
     ctx.body = { data: source };
   },
   async createTask(ctx) {
     const { sourceId } = ctx.request.body;
-    const collectService = strapi.plugin("zhao-studio").service("collect");
+    const collectService = strapi2.plugin("zhao-studio").service("collect");
     const task = await collectService.createTask(sourceId);
     ctx.body = { data: task };
   },
   async fetchSelectedContent(ctx) {
     const { taskId } = ctx.params;
     const { selectedTitles } = ctx.request.body;
-    const collectService = strapi.plugin("zhao-studio").service("collect");
+    const collectService = strapi2.plugin("zhao-studio").service("collect");
     const contents2 = await collectService.fetchSelectedContent(taskId, selectedTitles);
     ctx.body = { data: contents2 };
   },
   async confirmImport(ctx) {
     const { taskId } = ctx.params;
     const { confirmedContents } = ctx.request.body;
-    const collectService = strapi.plugin("zhao-studio").service("collect");
+    const collectService = strapi2.plugin("zhao-studio").service("collect");
     const result = await collectService.confirmImport(taskId, confirmedContents);
     ctx.body = { data: result };
   },
   async listTasks(ctx) {
-    const tasks = await strapi.documents("plugin::zhao-studio.collect-task").findMany();
+    const tasks = await strapi2.documents("plugin::zhao-studio.collect-task").findMany();
     ctx.body = { data: tasks };
   },
   async getTask(ctx) {
     const { id } = ctx.params;
-    const task = await strapi.documents("plugin::zhao-studio.collect-task").findOne({ documentId: id });
+    const task = await strapi2.documents("plugin::zhao-studio.collect-task").findOne({ documentId: id });
     ctx.body = { data: task };
   },
   async findOne(ctx) {
     const { id } = ctx.params;
-    const source = await strapi.documents("plugin::zhao-studio.collect-source").findOne({ documentId: id });
+    const source = await strapi2.documents("plugin::zhao-studio.collect-source").findOne({ documentId: id });
     ctx.body = { data: source };
   }
 });
-const draft = ({ strapi }) => ({
+const draft = ({ strapi: strapi2 }) => ({
   async list(ctx) {
     const user = ctx.state.user;
     const hasTenantPermission = user?.permissions?.some(
@@ -112,12 +112,12 @@ const draft = ({ strapi }) => ({
     if (!hasTenantPermission) {
       query.filters = { ...query.filters || {}, scope: "current" };
     }
-    const drafts = await strapi.documents("plugin::zhao-studio.article-draft").findMany(query);
+    const drafts = await strapi2.documents("plugin::zhao-studio.article-draft").findMany(query);
     ctx.body = { data: drafts };
   },
   async findOne(ctx) {
     const { id } = ctx.params;
-    const draft2 = await strapi.documents("plugin::zhao-studio.article-draft").findOne({ documentId: id });
+    const draft2 = await strapi2.documents("plugin::zhao-studio.article-draft").findOne({ documentId: id });
     ctx.body = { data: draft2 };
   },
   async create(ctx) {
@@ -130,7 +130,7 @@ const draft = ({ strapi }) => ({
       data2.scope = "current";
       delete data2.scopeTenantId;
     }
-    const draft2 = await strapi.documents("plugin::zhao-studio.article-draft").create({ data: data2 });
+    const draft2 = await strapi2.documents("plugin::zhao-studio.article-draft").create({ data: data2 });
     ctx.body = { data: draft2 };
   },
   async update(ctx) {
@@ -144,107 +144,107 @@ const draft = ({ strapi }) => ({
       data2.scope = "current";
       delete data2.scopeTenantId;
     }
-    const draft2 = await strapi.documents("plugin::zhao-studio.article-draft").update({ documentId: id, data: data2 });
+    const draft2 = await strapi2.documents("plugin::zhao-studio.article-draft").update({ documentId: id, data: data2 });
     ctx.body = { data: draft2 };
   },
   async delete(ctx) {
     const { id } = ctx.params;
-    await strapi.documents("plugin::zhao-studio.article-draft").delete({ documentId: id });
+    await strapi2.documents("plugin::zhao-studio.article-draft").delete({ documentId: id });
     ctx.body = { data: { success: true } };
   }
 });
-const publish$1 = ({ strapi }) => ({
+const publish$1 = ({ strapi: strapi2 }) => ({
   async listPlatforms(ctx) {
-    const publishService = strapi.plugin("zhao-studio").service("publish");
+    const publishService = strapi2.plugin("zhao-studio").service("publish");
     const platforms = await publishService.listPlatforms();
     ctx.body = { data: platforms };
   },
   async createPlatform(ctx) {
     const { data: data2 } = ctx.request.body;
-    const publishService = strapi.plugin("zhao-studio").service("publish");
+    const publishService = strapi2.plugin("zhao-studio").service("publish");
     const platform2 = await publishService.createPlatform(data2);
     ctx.body = { data: platform2 };
   },
   async updatePlatform(ctx) {
     const { id } = ctx.params;
     const { data: data2 } = ctx.request.body;
-    const publishService = strapi.plugin("zhao-studio").service("publish");
+    const publishService = strapi2.plugin("zhao-studio").service("publish");
     const platform2 = await publishService.updatePlatform(id, data2);
     ctx.body = { data: platform2 };
   },
   async deletePlatform(ctx) {
     const { id } = ctx.params;
-    const publishService = strapi.plugin("zhao-studio").service("publish");
+    const publishService = strapi2.plugin("zhao-studio").service("publish");
     await publishService.deletePlatform(id);
     ctx.body = { data: { success: true } };
   },
   async listAccounts(ctx) {
     const { platformId } = ctx.query;
-    const publishService = strapi.plugin("zhao-studio").service("publish");
+    const publishService = strapi2.plugin("zhao-studio").service("publish");
     const accounts = await publishService.listAccounts(platformId);
     ctx.body = { data: accounts };
   },
   async createAccount(ctx) {
     const { data: data2 } = ctx.request.body;
-    const publishService = strapi.plugin("zhao-studio").service("publish");
+    const publishService = strapi2.plugin("zhao-studio").service("publish");
     const account = await publishService.createAccount(data2);
     ctx.body = { data: account };
   },
   async updateAccount(ctx) {
     const { id } = ctx.params;
     const { data: data2 } = ctx.request.body;
-    const publishService = strapi.plugin("zhao-studio").service("publish");
+    const publishService = strapi2.plugin("zhao-studio").service("publish");
     const account = await publishService.updateAccount(id, data2);
     ctx.body = { data: account };
   },
   async deleteAccount(ctx) {
     const { id } = ctx.params;
-    const publishService = strapi.plugin("zhao-studio").service("publish");
+    const publishService = strapi2.plugin("zhao-studio").service("publish");
     await publishService.deleteAccount(id);
     ctx.body = { data: { success: true } };
   },
   async publishArticle(ctx) {
     const { articleId } = ctx.params;
     const { accountIds } = ctx.request.body;
-    const publishService = strapi.plugin("zhao-studio").service("publish");
+    const publishService = strapi2.plugin("zhao-studio").service("publish");
     const results = await publishService.publishArticle(articleId, accountIds);
     ctx.body = { data: results };
   },
   async listRecords(ctx) {
     const { articleId, platformId, accountId } = ctx.query;
-    const publishService = strapi.plugin("zhao-studio").service("publish");
+    const publishService = strapi2.plugin("zhao-studio").service("publish");
     const records = await publishService.listRecords({ articleId, platformId, accountId });
     ctx.body = { data: records };
   },
   async retryPublish(ctx) {
     const { recordId } = ctx.params;
-    const publishService = strapi.plugin("zhao-studio").service("publish");
+    const publishService = strapi2.plugin("zhao-studio").service("publish");
     const result = await publishService.retryPublish(recordId);
     ctx.body = { data: result };
   },
   async syncStatus(ctx) {
     const { articleId } = ctx.params;
-    const statusSync2 = strapi.plugin("zhao-studio").service("status-sync");
+    const statusSync2 = strapi2.plugin("zhao-studio").service("status-sync");
     await statusSync2.syncPublishStatus(articleId);
     ctx.body = { data: { success: true } };
   },
   async findOne(ctx) {
-    const record = await strapi.documents("plugin::zhao-studio.publish-record").findOne({ documentId: ctx.params.id });
+    const record = await strapi2.documents("plugin::zhao-studio.publish-record").findOne({ documentId: ctx.params.id });
     ctx.body = { data: record };
   },
   async findOnePlatform(ctx) {
-    const platform2 = await strapi.documents("plugin::zhao-studio.publish-platform").findOne({ documentId: ctx.params.id });
+    const platform2 = await strapi2.documents("plugin::zhao-studio.publish-platform").findOne({ documentId: ctx.params.id });
     ctx.body = { data: platform2 };
   },
   async findOneAccount(ctx) {
-    const account = await strapi.documents("plugin::zhao-studio.publish-account").findOne({ documentId: ctx.params.id });
+    const account = await strapi2.documents("plugin::zhao-studio.publish-account").findOne({ documentId: ctx.params.id });
     ctx.body = { data: account };
   }
 });
-const internalApi$1 = ({ strapi }) => ({
+const internalApi$1 = ({ strapi: strapi2 }) => ({
   async listArticles(ctx) {
     const { channel, category, tag, page, pageSize } = ctx.query;
-    const internalApiService = strapi.plugin("zhao-studio").service("internal-api");
+    const internalApiService = strapi2.plugin("zhao-studio").service("internal-api");
     const articles = await internalApiService.listArticles({
       channel,
       category,
@@ -256,7 +256,7 @@ const internalApi$1 = ({ strapi }) => ({
   },
   async getArticle(ctx) {
     const { id } = ctx.params;
-    const internalApiService = strapi.plugin("zhao-studio").service("internal-api");
+    const internalApiService = strapi2.plugin("zhao-studio").service("internal-api");
     const article = await internalApiService.getArticle(id);
     ctx.body = { data: article };
   },
@@ -266,7 +266,7 @@ const internalApi$1 = ({ strapi }) => ({
       ctx.body = { data: [] };
       return;
     }
-    const internalApiService = strapi.plugin("zhao-studio").service("internal-api");
+    const internalApiService = strapi2.plugin("zhao-studio").service("internal-api");
     const articles = await internalApiService.searchArticles(q, {
       page: parseInt(page) || 1,
       pageSize: parseInt(pageSize) || 20
@@ -274,19 +274,19 @@ const internalApi$1 = ({ strapi }) => ({
     ctx.body = { data: articles };
   },
   async getCategories(ctx) {
-    const internalApiService = strapi.plugin("zhao-studio").service("internal-api");
+    const internalApiService = strapi2.plugin("zhao-studio").service("internal-api");
     const categories = await internalApiService.getCategories();
     ctx.body = { data: categories };
   },
   async getChannels(ctx) {
-    const internalApiService = strapi.plugin("zhao-studio").service("internal-api");
+    const internalApiService = strapi2.plugin("zhao-studio").service("internal-api");
     const channels = await internalApiService.getChannels();
     ctx.body = { data: channels };
   }
 });
-const ai = ({ strapi }) => ({
+const ai = ({ strapi: strapi2 }) => ({
   async getConfig(ctx) {
-    const config2 = strapi.config.get("plugin.zhao-studio.ai");
+    const config2 = strapi2.config.get("plugin.zhao-studio.ai");
     ctx.body = { data: config2 };
   },
   async updateConfig(ctx) {
@@ -296,35 +296,35 @@ const ai = ({ strapi }) => ({
   async generateSummary(ctx) {
     const { articleId } = ctx.params;
     const { length } = ctx.query;
-    const aiService = strapi.plugin("zhao-studio").service("ai-assist");
+    const aiService = strapi2.plugin("zhao-studio").service("ai-assist");
     const summary = await aiService.generateSummary(articleId, { length });
     ctx.body = { data: { summary } };
   },
   async optimizeTitle(ctx) {
     const { articleId } = ctx.params;
     const { style } = ctx.query;
-    const aiService = strapi.plugin("zhao-studio").service("ai-assist");
+    const aiService = strapi2.plugin("zhao-studio").service("ai-assist");
     const optimizedTitle = await aiService.optimizeTitle(articleId, style);
     ctx.body = { data: { optimizedTitle } };
   },
   async rewriteContent(ctx) {
     const { articleId } = ctx.params;
     const { tone } = ctx.query;
-    const aiService = strapi.plugin("zhao-studio").service("ai-assist");
+    const aiService = strapi2.plugin("zhao-studio").service("ai-assist");
     const rewrittenContent = await aiService.rewriteContent(articleId, tone);
     ctx.body = { data: { rewrittenContent } };
   },
   async convertLanguage(ctx) {
     const { articleId } = ctx.params;
     const { target } = ctx.query;
-    const aiService = strapi.plugin("zhao-studio").service("ai-assist");
+    const aiService = strapi2.plugin("zhao-studio").service("ai-assist");
     const convertedContent = await aiService.convertLanguage(articleId, target);
     ctx.body = { data: { convertedContent } };
   },
   async testConnection(ctx) {
     const { provider, apiKey, endpoint } = ctx.request.body;
     try {
-      const aiService = strapi.plugin("zhao-studio").service("ai-assist");
+      const aiService = strapi2.plugin("zhao-studio").service("ai-assist");
       const result = await aiService.callAI({
         prompt: "测试连接",
         type: "test"
@@ -340,7 +340,7 @@ const ai = ({ strapi }) => ({
       return ctx.badRequest("messages is required");
     }
     try {
-      const aiService = strapi.plugin("zhao-studio").service("ai-assist");
+      const aiService = strapi2.plugin("zhao-studio").service("ai-assist");
       const result = await aiService.chat(messages);
       ctx.body = { data: result };
     } catch (error) {
@@ -348,58 +348,58 @@ const ai = ({ strapi }) => ({
     }
   }
 });
-const analytics$1 = ({ strapi }) => ({
+const analytics$1 = ({ strapi: strapi2 }) => ({
   async trackPageView(ctx) {
     const { data: data2 } = ctx.request.body;
-    const analyticsService = strapi.plugin("zhao-studio").service("analytics");
+    const analyticsService = strapi2.plugin("zhao-studio").service("analytics");
     const log = await analyticsService.trackPageView(data2);
     ctx.body = { data: log };
   },
   async trackAdClick(ctx) {
     const { data: data2 } = ctx.request.body;
-    const analyticsService = strapi.plugin("zhao-studio").service("analytics");
+    const analyticsService = strapi2.plugin("zhao-studio").service("analytics");
     const log = await analyticsService.trackAdClick(data2);
     ctx.body = { data: log };
   },
   async trackReadBehavior(ctx) {
     const { data: data2 } = ctx.request.body;
-    const analyticsService = strapi.plugin("zhao-studio").service("analytics");
+    const analyticsService = strapi2.plugin("zhao-studio").service("analytics");
     const log = await analyticsService.trackReadBehavior(data2);
     ctx.body = { data: log };
   },
   async trackUserRegister(ctx) {
     const { data: data2 } = ctx.request.body;
-    const analyticsService = strapi.plugin("zhao-studio").service("analytics");
+    const analyticsService = strapi2.plugin("zhao-studio").service("analytics");
     const log = await analyticsService.trackUserRegister(data2);
     ctx.body = { data: log };
   },
   async listAdSlots(ctx) {
-    const analyticsService = strapi.plugin("zhao-studio").service("analytics");
+    const analyticsService = strapi2.plugin("zhao-studio").service("analytics");
     const adSlots = await analyticsService.listAdSlots();
     ctx.body = { data: adSlots };
   },
   async createAdSlot(ctx) {
     const { data: data2 } = ctx.request.body;
-    const analyticsService = strapi.plugin("zhao-studio").service("analytics");
+    const analyticsService = strapi2.plugin("zhao-studio").service("analytics");
     const adSlot2 = await analyticsService.createAdSlot(data2);
     ctx.body = { data: adSlot2 };
   },
   async updateAdSlot(ctx) {
     const { id } = ctx.params;
     const { data: data2 } = ctx.request.body;
-    const analyticsService = strapi.plugin("zhao-studio").service("analytics");
+    const analyticsService = strapi2.plugin("zhao-studio").service("analytics");
     const adSlot2 = await analyticsService.updateAdSlot(id, data2);
     ctx.body = { data: adSlot2 };
   },
   async deleteAdSlot(ctx) {
     const { id } = ctx.params;
-    const analyticsService = strapi.plugin("zhao-studio").service("analytics");
+    const analyticsService = strapi2.plugin("zhao-studio").service("analytics");
     await analyticsService.deleteAdSlot(id);
     ctx.body = { data: { success: true } };
   },
   async getOverview(ctx) {
     const { startDate, endDate } = ctx.query;
-    const analyticsService = strapi.plugin("zhao-studio").service("analytics");
+    const analyticsService = strapi2.plugin("zhao-studio").service("analytics");
     const overview = await analyticsService.getOverview({
       startDate: new Date(startDate),
       endDate: new Date(endDate)
@@ -408,7 +408,7 @@ const analytics$1 = ({ strapi }) => ({
   },
   async getArticleStats(ctx) {
     const { articleId, startDate, endDate } = ctx.query;
-    const analyticsService = strapi.plugin("zhao-studio").service("analytics");
+    const analyticsService = strapi2.plugin("zhao-studio").service("analytics");
     const stats = await analyticsService.getArticleStats({
       articleId,
       startDate: new Date(startDate),
@@ -418,7 +418,7 @@ const analytics$1 = ({ strapi }) => ({
   },
   async getAdSlotStats(ctx) {
     const { adSlotId, startDate, endDate } = ctx.query;
-    const analyticsService = strapi.plugin("zhao-studio").service("analytics");
+    const analyticsService = strapi2.plugin("zhao-studio").service("analytics");
     const stats = await analyticsService.getAdSlotStats({
       adSlotId,
       startDate: new Date(startDate),
@@ -428,7 +428,7 @@ const analytics$1 = ({ strapi }) => ({
   },
   async getDeviceStats(ctx) {
     const { startDate, endDate } = ctx.query;
-    const analyticsService = strapi.plugin("zhao-studio").service("analytics");
+    const analyticsService = strapi2.plugin("zhao-studio").service("analytics");
     const stats = await analyticsService.getDeviceStats({
       startDate: new Date(startDate),
       endDate: new Date(endDate)
@@ -437,7 +437,7 @@ const analytics$1 = ({ strapi }) => ({
   },
   async getRegionStats(ctx) {
     const { startDate, endDate } = ctx.query;
-    const analyticsService = strapi.plugin("zhao-studio").service("analytics");
+    const analyticsService = strapi2.plugin("zhao-studio").service("analytics");
     const stats = await analyticsService.getRegionStats({
       startDate: new Date(startDate),
       endDate: new Date(endDate)
@@ -446,7 +446,7 @@ const analytics$1 = ({ strapi }) => ({
   },
   async getUserStats(ctx) {
     const { startDate, endDate } = ctx.query;
-    const analyticsService = strapi.plugin("zhao-studio").service("analytics");
+    const analyticsService = strapi2.plugin("zhao-studio").service("analytics");
     const stats = await analyticsService.getUserStats({
       startDate: new Date(startDate),
       endDate: new Date(endDate)
@@ -454,36 +454,36 @@ const analytics$1 = ({ strapi }) => ({
     ctx.body = { data: stats };
   },
   async findOneAdSlot(ctx) {
-    const slot = await strapi.documents("plugin::zhao-studio.ad-slot").findOne({ documentId: ctx.params.id });
+    const slot = await strapi2.documents("plugin::zhao-studio.ad-slot").findOne({ documentId: ctx.params.id });
     ctx.body = { data: slot };
   }
 });
-const knowledgeIndex = ({ strapi }) => ({
+const knowledgeIndex = ({ strapi: strapi2 }) => ({
   async list(ctx) {
-    const results = await strapi.documents("plugin::zhao-studio.knowledge-point-index").findMany(ctx.query);
+    const results = await strapi2.documents("plugin::zhao-studio.knowledge-point-index").findMany(ctx.query);
     ctx.body = { data: results, meta: { pagination: ctx.query?.pagination || {} } };
   },
   async findOne(ctx) {
     const { id } = ctx.params;
-    const record = await strapi.documents("plugin::zhao-studio.knowledge-point-index").findOne({ documentId: id });
+    const record = await strapi2.documents("plugin::zhao-studio.knowledge-point-index").findOne({ documentId: id });
     ctx.body = { data: record };
   },
   async create(ctx) {
-    const record = await strapi.documents("plugin::zhao-studio.knowledge-point-index").create({ data: ctx.request.body });
+    const record = await strapi2.documents("plugin::zhao-studio.knowledge-point-index").create({ data: ctx.request.body });
     ctx.body = { data: record };
   },
   async update(ctx) {
     const { id } = ctx.params;
-    const record = await strapi.documents("plugin::zhao-studio.knowledge-point-index").update({ documentId: id, data: ctx.request.body });
+    const record = await strapi2.documents("plugin::zhao-studio.knowledge-point-index").update({ documentId: id, data: ctx.request.body });
     ctx.body = { data: record };
   },
   async delete(ctx) {
     const { id } = ctx.params;
-    await strapi.documents("plugin::zhao-studio.knowledge-point-index").delete({ documentId: id });
+    await strapi2.documents("plugin::zhao-studio.knowledge-point-index").delete({ documentId: id });
     ctx.body = { data: { success: true } };
   }
 });
-const browserLog$1 = ({ strapi }) => ({
+const browserLog$1 = ({ strapi: strapi2 }) => ({
   async list(ctx) {
     const { eventType, deviceType, city, sessionId } = ctx.query;
     const filters2 = {};
@@ -491,30 +491,48 @@ const browserLog$1 = ({ strapi }) => ({
     if (deviceType) filters2.deviceType = deviceType;
     if (city) filters2.city = city;
     if (sessionId) filters2.sessionId = sessionId;
-    const results = await strapi.documents("plugin::zhao-studio.browser-log").findMany({ filters: filters2 });
+    const results = await strapi2.documents("plugin::zhao-studio.browser-log").findMany({ filters: filters2 });
     ctx.body = { data: results };
   },
   async findOne(ctx) {
     const { id } = ctx.params;
-    const record = await strapi.documents("plugin::zhao-studio.browser-log").findOne({ documentId: id });
+    const record = await strapi2.documents("plugin::zhao-studio.browser-log").findOne({ documentId: id });
     ctx.body = { data: record };
   }
 });
-const statSummary$1 = ({ strapi }) => ({
+const statSummary$1 = ({ strapi: strapi2 }) => ({
   async list(ctx) {
     const { summaryType, date } = ctx.query;
     const filters2 = {};
     if (summaryType) filters2.summaryType = summaryType;
     if (date) filters2.date = date;
-    const results = await strapi.documents("plugin::zhao-studio.stat-summary").findMany({ filters: filters2 });
+    const results = await strapi2.documents("plugin::zhao-studio.stat-summary").findMany({ filters: filters2 });
     ctx.body = { data: results };
   },
   async findOne(ctx) {
     const { id } = ctx.params;
-    const record = await strapi.documents("plugin::zhao-studio.stat-summary").findOne({ documentId: id });
+    const record = await strapi2.documents("plugin::zhao-studio.stat-summary").findOne({ documentId: id });
     ctx.body = { data: record };
   }
 });
+const syncEventApi = {
+  async list(ctx) {
+    ctx.body = await strapi.plugin("zhao-studio").service("sync-event").list(ctx.state.siteId, ctx.query);
+  },
+  async findOne(ctx) {
+    ctx.body = await strapi.plugin("zhao-studio").service("sync-event").findOne(ctx.state.siteId, ctx.params.documentId);
+  },
+  async resolve(ctx) {
+    ctx.body = await strapi.plugin("zhao-studio").service("sync-event").resolve(
+      ctx.state.siteId,
+      ctx.params.documentId,
+      ctx.request.body
+    );
+  },
+  async createFromWebhook(ctx) {
+    ctx.body = await strapi.plugin("zhao-studio").service("sync-event").createFromWebhook(ctx.request.body);
+  }
+};
 const controllers = {
   collect: collect$1,
   draft,
@@ -524,7 +542,8 @@ const controllers = {
   analytics: analytics$1,
   "knowledge-index": knowledgeIndex,
   "browser-log": browserLog$1,
-  "stat-summary": statSummary$1
+  "stat-summary": statSummary$1,
+  "sync-event-api": syncEventApi
 };
 const adminRoutes = () => ({
   type: "admin",
@@ -624,7 +643,13 @@ const contentApiRoutes = () => ({
     adminRoute("GET", "/records/:id", "publish.findOne", "zhao-studio.read"),
     adminRoute("GET", "/platforms/:id", "publish.findOnePlatform", "zhao-studio.read"),
     adminRoute("GET", "/accounts/:id", "publish.findOneAccount", "zhao-studio.read"),
-    adminRoute("GET", "/ad-slots/:id", "analytics.findOneAdSlot", "zhao-studio.read")
+    adminRoute("GET", "/ad-slots/:id", "analytics.findOneAdSlot", "zhao-studio.read"),
+    // 同步事件 admin 路由
+    adminRoute("GET", "/sync-events", "sync-event-api.list", "zhao-studio.read"),
+    adminRoute("GET", "/sync-events/:documentId", "sync-event-api.findOne", "zhao-studio.read"),
+    adminRoute("POST", "/sync-events/:documentId/resolve", "sync-event-api.resolve", "zhao-studio.update"),
+    // webhook 公开路由（zhao-website → zhao-studio）
+    publicRoute("POST", "/webhooks/sync-event", "sync-event-api.createFromWebhook")
   ]
 });
 const routes = {
@@ -637,18 +662,18 @@ const routes = {
     routes: contentApiRoutes().routes
   }
 };
-const collect = ({ strapi }) => ({
+const collect = ({ strapi: strapi2 }) => ({
   async createTask(sourceId) {
-    const scraper2 = strapi.plugin("zhao-studio").service("scraper");
+    const scraper2 = strapi2.plugin("zhao-studio").service("scraper");
     const titles = await scraper2.fetchTitles(sourceId);
-    const task = await strapi.documents("plugin::zhao-studio.collect-task").create({
+    const task = await strapi2.documents("plugin::zhao-studio.collect-task").create({
       data: {
         source: sourceId,
         titles,
         status: "waiting_selection"
       }
     });
-    await strapi.documents("plugin::zhao-studio.collect-source").update({
+    await strapi2.documents("plugin::zhao-studio.collect-source").update({
       documentId: sourceId,
       data: {
         lastCollectedAt: /* @__PURE__ */ new Date()
@@ -657,18 +682,18 @@ const collect = ({ strapi }) => ({
     return task;
   },
   async fetchSelectedContent(taskId, selectedTitles) {
-    const task = await strapi.documents("plugin::zhao-studio.collect-task").findOne({ documentId: taskId });
+    const task = await strapi2.documents("plugin::zhao-studio.collect-task").findOne({ documentId: taskId });
     if (!task) {
       throw new Error("采集任务不存在");
     }
-    await strapi.documents("plugin::zhao-studio.collect-task").update({
+    await strapi2.documents("plugin::zhao-studio.collect-task").update({
       documentId: taskId,
       data: {
         status: "fetching_content"
       }
     });
-    const scraper2 = strapi.plugin("zhao-studio").service("scraper");
-    const qualityService = strapi.plugin("zhao-studio").service("quality");
+    const scraper2 = strapi2.plugin("zhao-studio").service("scraper");
+    const qualityService = strapi2.plugin("zhao-studio").service("quality");
     const contents2 = [];
     for (const titleUrl of selectedTitles) {
       try {
@@ -693,7 +718,7 @@ const collect = ({ strapi }) => ({
         });
       }
     }
-    await strapi.documents("plugin::zhao-studio.collect-task").update({
+    await strapi2.documents("plugin::zhao-studio.collect-task").update({
       documentId: taskId,
       data: {
         selectedTitles: contents2,
@@ -703,11 +728,11 @@ const collect = ({ strapi }) => ({
     return contents2;
   },
   async confirmImport(taskId, confirmedContents) {
-    const task = await strapi.documents("plugin::zhao-studio.collect-task").findOne({ documentId: taskId });
+    const task = await strapi2.documents("plugin::zhao-studio.collect-task").findOne({ documentId: taskId });
     if (!task) {
       throw new Error("采集任务不存在");
     }
-    const qualityService = strapi.plugin("zhao-studio").service("quality");
+    const qualityService = strapi2.plugin("zhao-studio").service("quality");
     const importedArticles = [];
     for (const content of confirmedContents) {
       if (content.error) {
@@ -717,7 +742,7 @@ const collect = ({ strapi }) => ({
       if (!isAcceptable) {
         continue;
       }
-      const article = await strapi.documents("plugin::zhao-studio.article-draft").create({
+      const article = await strapi2.documents("plugin::zhao-studio.article-draft").create({
         data: {
           title: content.title,
           content: content.content,
@@ -731,7 +756,7 @@ const collect = ({ strapi }) => ({
       });
       importedArticles.push(article);
     }
-    await strapi.documents("plugin::zhao-studio.collect-task").update({
+    await strapi2.documents("plugin::zhao-studio.collect-task").update({
       documentId: taskId,
       data: {
         status: "completed"
@@ -6951,7 +6976,7 @@ const procedure = /* @__PURE__ */ new Map([
 function isTraversal(token) {
   return !procedure.has(token.type);
 }
-const attributes$a = /* @__PURE__ */ new Map([
+const attributes$b = /* @__PURE__ */ new Map([
   [AttributeAction.Exists, 10],
   [AttributeAction.Equals, 8],
   [AttributeAction.Not, 7],
@@ -6978,7 +7003,7 @@ function getProcedure(token) {
   var _a2, _b;
   let proc = (_a2 = procedure.get(token.type)) !== null && _a2 !== void 0 ? _a2 : -1;
   if (token.type === SelectorType.Attribute) {
-    proc = (_b = attributes$a.get(token.action)) !== null && _b !== void 0 ? _b : 4;
+    proc = (_b = attributes$b.get(token.action)) !== null && _b !== void 0 ? _b : 4;
     if (token.action === AttributeAction.Equals && token.name === "id") {
       proc = 9;
     }
@@ -18609,9 +18634,9 @@ function identifyErrorType(error) {
   }
   return CollectErrors.CONTENT_ERROR;
 }
-const scraper = ({ strapi }) => ({
+const scraper = ({ strapi: strapi2 }) => ({
   async fetchTitles(sourceId) {
-    const source = await strapi.documents("plugin::zhao-studio.collect-source").findOne({ documentId: sourceId });
+    const source = await strapi2.documents("plugin::zhao-studio.collect-source").findOne({ documentId: sourceId });
     if (!source) {
       throw new Error("采集源不存在");
     }
@@ -18632,7 +18657,7 @@ const scraper = ({ strapi }) => ({
     }
   },
   async fetchContent(url, sourceId) {
-    const source = await strapi.documents("plugin::zhao-studio.collect-source").findOne({ documentId: sourceId });
+    const source = await strapi2.documents("plugin::zhao-studio.collect-source").findOne({ documentId: sourceId });
     if (!source) {
       throw new Error("采集源不存在");
     }
@@ -18655,7 +18680,7 @@ const scraper = ({ strapi }) => ({
     }
   }
 });
-const quality = ({ strapi }) => ({
+const quality = ({ strapi: strapi2 }) => ({
   calculateQuality(content) {
     const details = {
       length: 0,
@@ -18792,9 +18817,9 @@ function identifyAIErrorType(error) {
   }
   return AIErrors.CONFIG_ERROR;
 }
-const aiAssist = ({ strapi }) => ({
+const aiAssist = ({ strapi: strapi2 }) => ({
   async callAI(params) {
-    const config2 = strapi.config.get("plugin.zhao-studio.ai");
+    const config2 = strapi2.config.get("plugin.zhao-studio.ai");
     if (!config2?.enabled) {
       throw new Error("AI功能未启用");
     }
@@ -18910,7 +18935,7 @@ const aiAssist = ({ strapi }) => ({
     return response.data.text || response.data.content || "";
   },
   async generateSummary(articleId, options2) {
-    const article = await strapi.documents("plugin::zhao-studio.article-draft").findOne({ documentId: articleId });
+    const article = await strapi2.documents("plugin::zhao-studio.article-draft").findOne({ documentId: articleId });
     if (!article) {
       throw new Error("文章不存在");
     }
@@ -18920,14 +18945,14 @@ const aiAssist = ({ strapi }) => ({
 ${article.content}`,
       type: "summary"
     });
-    await strapi.documents("plugin::zhao-studio.article-draft").update({
+    await strapi2.documents("plugin::zhao-studio.article-draft").update({
       documentId: articleId,
       data: { aiSummary: summary, aiProcessed: true }
     });
     return summary;
   },
   async optimizeTitle(articleId, style) {
-    const article = await strapi.documents("plugin::zhao-studio.article-draft").findOne({ documentId: articleId });
+    const article = await strapi2.documents("plugin::zhao-studio.article-draft").findOne({ documentId: articleId });
     if (!article) {
       throw new Error("文章不存在");
     }
@@ -18942,14 +18967,14 @@ ${article.content}`,
 原标题：${article.title}`,
       type: "title_optimize"
     });
-    await strapi.documents("plugin::zhao-studio.article-draft").update({
+    await strapi2.documents("plugin::zhao-studio.article-draft").update({
       documentId: articleId,
       data: { aiOptimizedTitle: optimizedTitle, aiProcessed: true }
     });
     return optimizedTitle;
   },
   async rewriteContent(articleId, tone) {
-    const article = await strapi.documents("plugin::zhao-studio.article-draft").findOne({ documentId: articleId });
+    const article = await strapi2.documents("plugin::zhao-studio.article-draft").findOne({ documentId: articleId });
     if (!article) {
       throw new Error("文章不存在");
     }
@@ -18967,7 +18992,7 @@ ${article.content}`,
     return rewrittenContent;
   },
   async convertLanguage(articleId, target) {
-    const article = await strapi.documents("plugin::zhao-studio.article-draft").findOne({ documentId: articleId });
+    const article = await strapi2.documents("plugin::zhao-studio.article-draft").findOne({ documentId: articleId });
     if (!article) {
       throw new Error("文章不存在");
     }
@@ -18984,7 +19009,7 @@ ${article.content}`,
     return convertedContent;
   },
   async chat(messages) {
-    const config2 = strapi.config.get("plugin.zhao-studio.ai");
+    const config2 = strapi2.config.get("plugin.zhao-studio.ai");
     if (!config2?.enabled) {
       throw new Error("AI功能未启用");
     }
@@ -19009,16 +19034,16 @@ ${conversationPrompt}
     };
   }
 });
-const publish = ({ strapi }) => ({
+const publish = ({ strapi: strapi2 }) => ({
   async publishArticle(articleId, accountIds) {
-    const article = await strapi.documents("plugin::zhao-studio.article-draft").findOne({ documentId: articleId });
+    const article = await strapi2.documents("plugin::zhao-studio.article-draft").findOne({ documentId: articleId });
     if (!article) {
       throw new Error("文章不存在");
     }
     if (article.status !== "ready") {
       throw new Error("文章未准备好发布，请先完成编辑");
     }
-    const accounts = await strapi.documents("plugin::zhao-studio.publish-account").findMany({
+    const accounts = await strapi2.documents("plugin::zhao-studio.publish-account").findMany({
       filters: {
         documentId: { $in: accountIds },
         isActive: true
@@ -19028,12 +19053,12 @@ const publish = ({ strapi }) => ({
       throw new Error("未找到有效的发布账号");
     }
     const results = [];
-    const channelAdapter2 = strapi.plugin("zhao-studio").service("channel-adapter");
+    const channelAdapter2 = strapi2.plugin("zhao-studio").service("channel-adapter");
     for (const account of accounts) {
       try {
         const adaptedContent = await channelAdapter2.adaptContent(article, account.platform?.type || "custom");
         const result = await channelAdapter2.publish(adaptedContent, account);
-        const record = await strapi.documents("plugin::zhao-studio.publish-record").create({
+        const record = await strapi2.documents("plugin::zhao-studio.publish-record").create({
           data: {
             article: articleId,
             account: account.documentId,
@@ -19053,7 +19078,7 @@ const publish = ({ strapi }) => ({
           error: result.error
         });
       } catch (error) {
-        const record = await strapi.documents("plugin::zhao-studio.publish-record").create({
+        const record = await strapi2.documents("plugin::zhao-studio.publish-record").create({
           data: {
             article: articleId,
             account: account.documentId,
@@ -19074,7 +19099,7 @@ const publish = ({ strapi }) => ({
     }
     const successCount = results.filter((r) => r.success).length;
     if (successCount > 0) {
-      await strapi.documents("plugin::zhao-studio.article-draft").update({
+      await strapi2.documents("plugin::zhao-studio.article-draft").update({
         documentId: articleId,
         data: {
           status: "published",
@@ -19085,46 +19110,46 @@ const publish = ({ strapi }) => ({
     return results;
   },
   async listPlatforms() {
-    const platforms = await strapi.documents("plugin::zhao-studio.publish-platform").findMany({
+    const platforms = await strapi2.documents("plugin::zhao-studio.publish-platform").findMany({
       filters: { isActive: true }
     });
     return platforms;
   },
   async createPlatform(data2) {
-    const platform2 = await strapi.documents("plugin::zhao-studio.publish-platform").create({ data: data2 });
+    const platform2 = await strapi2.documents("plugin::zhao-studio.publish-platform").create({ data: data2 });
     return platform2;
   },
   async updatePlatform(platformId, data2) {
-    const platform2 = await strapi.documents("plugin::zhao-studio.publish-platform").update({
+    const platform2 = await strapi2.documents("plugin::zhao-studio.publish-platform").update({
       documentId: platformId,
       data: data2
     });
     return platform2;
   },
   async deletePlatform(platformId) {
-    await strapi.documents("plugin::zhao-studio.publish-platform").delete({ documentId: platformId });
+    await strapi2.documents("plugin::zhao-studio.publish-platform").delete({ documentId: platformId });
   },
   async listAccounts(platformId) {
     const filters2 = { isActive: true };
     if (platformId) {
       filters2.platform = platformId;
     }
-    const accounts = await strapi.documents("plugin::zhao-studio.publish-account").findMany({ filters: filters2 });
+    const accounts = await strapi2.documents("plugin::zhao-studio.publish-account").findMany({ filters: filters2 });
     return accounts;
   },
   async createAccount(data2) {
-    const account = await strapi.documents("plugin::zhao-studio.publish-account").create({ data: data2 });
+    const account = await strapi2.documents("plugin::zhao-studio.publish-account").create({ data: data2 });
     return account;
   },
   async updateAccount(accountId, data2) {
-    const account = await strapi.documents("plugin::zhao-studio.publish-account").update({
+    const account = await strapi2.documents("plugin::zhao-studio.publish-account").update({
       documentId: accountId,
       data: data2
     });
     return account;
   },
   async deleteAccount(accountId) {
-    await strapi.documents("plugin::zhao-studio.publish-account").delete({ documentId: accountId });
+    await strapi2.documents("plugin::zhao-studio.publish-account").delete({ documentId: accountId });
   },
   async listRecords(filters2 = {}) {
     const { articleId, platformId, accountId } = filters2;
@@ -19138,26 +19163,26 @@ const publish = ({ strapi }) => ({
     if (accountId) {
       queryFilters.account = accountId;
     }
-    const records = await strapi.documents("plugin::zhao-studio.publish-record").findMany({
+    const records = await strapi2.documents("plugin::zhao-studio.publish-record").findMany({
       filters: queryFilters,
       sort: "publishedAt:desc"
     });
     return records;
   },
   async retryPublish(recordId) {
-    const record = await strapi.documents("plugin::zhao-studio.publish-record").findOne({ documentId: recordId });
+    const record = await strapi2.documents("plugin::zhao-studio.publish-record").findOne({ documentId: recordId });
     if (!record || record.status !== "failed") {
       throw new Error("只能重试失败的发布记录");
     }
-    const article = await strapi.documents("plugin::zhao-studio.article-draft").findOne({ documentId: record.article?.documentId || record.article });
-    const account = await strapi.documents("plugin::zhao-studio.publish-account").findOne({ documentId: record.account?.documentId || record.account });
+    const article = await strapi2.documents("plugin::zhao-studio.article-draft").findOne({ documentId: record.article?.documentId || record.article });
+    const account = await strapi2.documents("plugin::zhao-studio.publish-account").findOne({ documentId: record.account?.documentId || record.account });
     if (!article || !account) {
       throw new Error("文章或账号不存在");
     }
-    const channelAdapter2 = strapi.plugin("zhao-studio").service("channel-adapter");
+    const channelAdapter2 = strapi2.plugin("zhao-studio").service("channel-adapter");
     const adaptedContent = await channelAdapter2.adaptContent(article, account.platform?.type || "custom");
     const result = await channelAdapter2.publish(adaptedContent, account);
-    await strapi.documents("plugin::zhao-studio.publish-record").update({
+    await strapi2.documents("plugin::zhao-studio.publish-record").update({
       documentId: recordId,
       data: {
         status: result.success ? "success" : "failed",
@@ -19295,7 +19320,7 @@ function identifyPublishError(error, platform2) {
   }
   return { ...PublishErrors.API_ERROR, platform: platform2 };
 }
-const channelAdapter = ({ strapi }) => ({
+const channelAdapter = ({ strapi: strapi2 }) => ({
   async publish(article, account) {
     const platformType = account.platform?.type || "custom";
     const validation = validateContentForPlatform(article.content, article.title, platformType);
@@ -19401,7 +19426,7 @@ const channelAdapter = ({ strapi }) => ({
   },
   async publishToInternal(article, account) {
     const channelCode = account.config?.channelCode;
-    await strapi.documents("plugin::zhao-studio.article-draft").update({
+    await strapi2.documents("plugin::zhao-studio.article-draft").update({
       documentId: article.documentId,
       data: {
         status: "published",
@@ -19463,14 +19488,14 @@ const channelAdapter = ({ strapi }) => ({
     };
   },
   async checkExternalStatus(record) {
-    const account = await strapi.documents("plugin::zhao-studio.publish-account").findOne({ documentId: record.account?.documentId || record.account });
+    const account = await strapi2.documents("plugin::zhao-studio.publish-account").findOne({ documentId: record.account?.documentId || record.account });
     if (!account || account.platform?.type === "internal") {
       return { deleted: false };
     }
     return { deleted: false, status: "published" };
   }
 });
-const internalApi = ({ strapi }) => ({
+const internalApi = ({ strapi: strapi2 }) => ({
   async listArticles(filters2) {
     const { channel, category, tag, page = 1, pageSize = 20 } = filters2;
     const baseFilters = { status: "published" };
@@ -19478,14 +19503,14 @@ const internalApi = ({ strapi }) => ({
       baseFilters.category = category;
     }
     if (channel) {
-      const channelRecords = await strapi.documents("plugin::zhao-studio.publish-record").findMany({
+      const channelRecords = await strapi2.documents("plugin::zhao-studio.publish-record").findMany({
         filters: {
           status: "success"
         }
       });
       const accountIds = [];
       for (const record of channelRecords) {
-        const account = await strapi.documents("plugin::zhao-studio.publish-account").findOne({ documentId: record.account?.documentId || record.account });
+        const account = await strapi2.documents("plugin::zhao-studio.publish-account").findOne({ documentId: record.account?.documentId || record.account });
         if (account && account.config?.channelCode === channel) {
           accountIds.push(record.article?.documentId || record.article);
         }
@@ -19498,7 +19523,7 @@ const internalApi = ({ strapi }) => ({
     }
     if (tag) {
       try {
-        const tagIndices = await strapi.plugin("zhao-tag").service("tag-index").searchByTag(tag, "article-draft");
+        const tagIndices = await strapi2.plugin("zhao-tag").service("tag-index").searchByTag(tag, "article-draft");
         const taggedArticleIds = tagIndices.map((index2) => index2.targetId);
         if (taggedArticleIds.length > 0) {
           if (baseFilters.documentId) {
@@ -19514,7 +19539,7 @@ const internalApi = ({ strapi }) => ({
       } catch (error) {
       }
     }
-    const articles = await strapi.documents("plugin::zhao-studio.article-draft").findMany({
+    const articles = await strapi2.documents("plugin::zhao-studio.article-draft").findMany({
       filters: baseFilters,
       page,
       pageSize,
@@ -19523,11 +19548,11 @@ const internalApi = ({ strapi }) => ({
     return articles;
   },
   async getArticle(articleId) {
-    const article = await strapi.documents("plugin::zhao-studio.article-draft").findOne({ documentId: articleId });
+    const article = await strapi2.documents("plugin::zhao-studio.article-draft").findOne({ documentId: articleId });
     if (!article || article.status !== "published") {
       throw new Error("文章不存在或未发布");
     }
-    const records = await strapi.documents("plugin::zhao-studio.publish-record").findMany({
+    const records = await strapi2.documents("plugin::zhao-studio.publish-record").findMany({
       filters: {
         article: articleId,
         status: "success"
@@ -19535,7 +19560,7 @@ const internalApi = ({ strapi }) => ({
     });
     const publishAccounts = [];
     for (const record of records) {
-      const account = await strapi.documents("plugin::zhao-studio.publish-account").findOne({ documentId: record.account?.documentId || record.account });
+      const account = await strapi2.documents("plugin::zhao-studio.publish-account").findOne({ documentId: record.account?.documentId || record.account });
       if (account) {
         publishAccounts.push({
           platform: account.platform?.type,
@@ -19551,7 +19576,7 @@ const internalApi = ({ strapi }) => ({
   },
   async searchArticles(query, filters2) {
     const { page = 1, pageSize = 20 } = filters2;
-    const articles = await strapi.documents("plugin::zhao-studio.article-draft").findMany({
+    const articles = await strapi2.documents("plugin::zhao-studio.article-draft").findMany({
       filters: {
         status: "published",
         $or: [
@@ -19566,14 +19591,14 @@ const internalApi = ({ strapi }) => ({
     return articles;
   },
   async getCategories() {
-    const articles = await strapi.documents("plugin::zhao-studio.article-draft").findMany({
+    const articles = await strapi2.documents("plugin::zhao-studio.article-draft").findMany({
       filters: { status: "published" }
     });
     const categories = articles.map((article) => article.category).filter((category) => category && category.trim() !== "");
     return [...new Set(categories)];
   },
   async getChannels() {
-    const accounts = await strapi.documents("plugin::zhao-studio.publish-account").findMany({
+    const accounts = await strapi2.documents("plugin::zhao-studio.publish-account").findMany({
       filters: {
         isActive: true,
         platform: { type: "internal" }
@@ -19583,22 +19608,22 @@ const internalApi = ({ strapi }) => ({
     return [...new Set(channels)];
   }
 });
-const statusSync = ({ strapi }) => ({
+const statusSync = ({ strapi: strapi2 }) => ({
   async syncPublishStatus(articleId) {
-    const records = await strapi.documents("plugin::zhao-studio.publish-record").findMany({
+    const records = await strapi2.documents("plugin::zhao-studio.publish-record").findMany({
       filters: { article: articleId }
     });
     if (records.length === 0) {
       return;
     }
-    const channelAdapter2 = strapi.plugin("zhao-studio").service("channel-adapter");
+    const channelAdapter2 = strapi2.plugin("zhao-studio").service("channel-adapter");
     let successCount = 0;
     let failedCount = 0;
     for (const record of records) {
       if (record.status === "success") {
         const externalStatus = await channelAdapter2.checkExternalStatus(record);
         if (externalStatus.deleted) {
-          await strapi.documents("plugin::zhao-studio.publish-record").update({
+          await strapi2.documents("plugin::zhao-studio.publish-record").update({
             documentId: record.documentId,
             data: {
               status: "failed",
@@ -19613,7 +19638,7 @@ const statusSync = ({ strapi }) => ({
         failedCount++;
       } else ;
     }
-    const article = await strapi.documents("plugin::zhao-studio.article-draft").findOne({ documentId: articleId });
+    const article = await strapi2.documents("plugin::zhao-studio.article-draft").findOne({ documentId: articleId });
     if (article) {
       let newStatus = article.status;
       if (successCount > 0 && failedCount === 0) {
@@ -19623,21 +19648,21 @@ const statusSync = ({ strapi }) => ({
       } else if (failedCount === records.length) {
         newStatus = "ready";
       }
-      await strapi.documents("plugin::zhao-studio.article-draft").update({
+      await strapi2.documents("plugin::zhao-studio.article-draft").update({
         documentId: articleId,
         data: { status: newStatus }
       });
     }
   },
   async syncAllPendingRecords() {
-    const pendingRecords = await strapi.documents("plugin::zhao-studio.publish-record").findMany({
+    const pendingRecords = await strapi2.documents("plugin::zhao-studio.publish-record").findMany({
       filters: { status: "pending" }
     });
     let synced = 0;
     let failed = 0;
     for (const record of pendingRecords) {
       try {
-        const publishService = strapi.plugin("zhao-studio").service("publish");
+        const publishService = strapi2.plugin("zhao-studio").service("publish");
         await publishService.retryPublish(record.documentId);
         synced++;
       } catch (error) {
@@ -19649,7 +19674,7 @@ const statusSync = ({ strapi }) => ({
   async cleanupOldRecords(days) {
     const cutoffDate = /* @__PURE__ */ new Date();
     cutoffDate.setDate(cutoffDate.getDate() - days);
-    const oldRecords = await strapi.documents("plugin::zhao-studio.publish-record").findMany({
+    const oldRecords = await strapi2.documents("plugin::zhao-studio.publish-record").findMany({
       filters: {
         status: "failed",
         publishedAt: { $lt: cutoffDate }
@@ -19657,7 +19682,7 @@ const statusSync = ({ strapi }) => ({
     });
     let deleted = 0;
     for (const record of oldRecords) {
-      await strapi.documents("plugin::zhao-studio.publish-record").delete({ documentId: record.documentId });
+      await strapi2.documents("plugin::zhao-studio.publish-record").delete({ documentId: record.documentId });
       deleted++;
     }
     return { deleted };
@@ -19771,12 +19796,12 @@ function extractReferrerDomain(referrer) {
     return "";
   }
 }
-const analytics = ({ strapi }) => ({
+const analytics = ({ strapi: strapi2 }) => ({
   async trackPageView(data2) {
     const uaInfo = parseUserAgent(data2.userAgent);
     const ipInfo = await parseIpLocation(data2.ip);
     const referrerDomain = extractReferrerDomain(data2.referrer);
-    const log = await strapi.documents("plugin::zhao-studio.browser-log").create({
+    const log = await strapi2.documents("plugin::zhao-studio.browser-log").create({
       data: {
         eventType: "page-view",
         article: data2.articleId,
@@ -19804,13 +19829,13 @@ const analytics = ({ strapi }) => ({
     return log;
   },
   async trackAdClick(data2) {
-    const adSlot2 = await strapi.documents("plugin::zhao-studio.ad-slot").findOne({ documentId: data2.adSlotId });
+    const adSlot2 = await strapi2.documents("plugin::zhao-studio.ad-slot").findOne({ documentId: data2.adSlotId });
     if (!adSlot2 || !adSlot2.isActive) {
       throw new Error("广告位不存在或已禁用");
     }
     const uaInfo = parseUserAgent(data2.userAgent);
     const ipInfo = await parseIpLocation(data2.ip);
-    const log = await strapi.documents("plugin::zhao-studio.browser-log").create({
+    const log = await strapi2.documents("plugin::zhao-studio.browser-log").create({
       data: {
         eventType: "ad-click",
         article: data2.articleId,
@@ -19834,7 +19859,7 @@ const analytics = ({ strapi }) => ({
     return log;
   },
   async trackReadBehavior(data2) {
-    const log = await strapi.documents("plugin::zhao-studio.browser-log").create({
+    const log = await strapi2.documents("plugin::zhao-studio.browser-log").create({
       data: {
         eventType: "read-duration",
         article: data2.articleId,
@@ -19847,11 +19872,11 @@ const analytics = ({ strapi }) => ({
     return log;
   },
   async trackUserRegister(data2) {
-    const logs = await strapi.documents("plugin::zhao-studio.browser-log").findMany({
+    const logs = await strapi2.documents("plugin::zhao-studio.browser-log").findMany({
       filters: { sessionId: data2.sessionId }
     });
     for (const log of logs) {
-      await strapi.documents("plugin::zhao-studio.browser-log").update({
+      await strapi2.documents("plugin::zhao-studio.browser-log").update({
         documentId: log.documentId,
         data: {
           userId: data2.userId,
@@ -19860,7 +19885,7 @@ const analytics = ({ strapi }) => ({
         }
       });
     }
-    const registerLog = await strapi.documents("plugin::zhao-studio.browser-log").create({
+    const registerLog = await strapi2.documents("plugin::zhao-studio.browser-log").create({
       data: {
         eventType: "user-register",
         sessionId: data2.sessionId,
@@ -19873,22 +19898,22 @@ const analytics = ({ strapi }) => ({
     return registerLog;
   },
   async listAdSlots() {
-    const adSlots = await strapi.documents("plugin::zhao-studio.ad-slot").findMany();
+    const adSlots = await strapi2.documents("plugin::zhao-studio.ad-slot").findMany();
     return adSlots;
   },
   async createAdSlot(data2) {
-    const adSlot2 = await strapi.documents("plugin::zhao-studio.ad-slot").create({ data: data2 });
+    const adSlot2 = await strapi2.documents("plugin::zhao-studio.ad-slot").create({ data: data2 });
     return adSlot2;
   },
   async updateAdSlot(id, data2) {
-    const adSlot2 = await strapi.documents("plugin::zhao-studio.ad-slot").update({ documentId: id, data: data2 });
+    const adSlot2 = await strapi2.documents("plugin::zhao-studio.ad-slot").update({ documentId: id, data: data2 });
     return adSlot2;
   },
   async deleteAdSlot(id) {
-    await strapi.documents("plugin::zhao-studio.ad-slot").delete({ documentId: id });
+    await strapi2.documents("plugin::zhao-studio.ad-slot").delete({ documentId: id });
   },
   async getOverview(params) {
-    const summaries = await strapi.documents("plugin::zhao-studio.stat-summary").findMany({
+    const summaries = await strapi2.documents("plugin::zhao-studio.stat-summary").findMany({
       filters: {
         date: { $gte: params.startDate, $lte: params.endDate },
         summaryType: "global-daily"
@@ -19914,7 +19939,7 @@ const analytics = ({ strapi }) => ({
     if (params.articleId) {
       filters2.article = params.articleId;
     }
-    const summaries = await strapi.documents("plugin::zhao-studio.stat-summary").findMany({ filters: filters2 });
+    const summaries = await strapi2.documents("plugin::zhao-studio.stat-summary").findMany({ filters: filters2 });
     return summaries;
   },
   async getAdSlotStats(params) {
@@ -19925,11 +19950,11 @@ const analytics = ({ strapi }) => ({
     if (params.adSlotId) {
       filters2.adSlot = params.adSlotId;
     }
-    const summaries = await strapi.documents("plugin::zhao-studio.stat-summary").findMany({ filters: filters2 });
+    const summaries = await strapi2.documents("plugin::zhao-studio.stat-summary").findMany({ filters: filters2 });
     return summaries;
   },
   async getDeviceStats(params) {
-    const summaries = await strapi.documents("plugin::zhao-studio.stat-summary").findMany({
+    const summaries = await strapi2.documents("plugin::zhao-studio.stat-summary").findMany({
       filters: {
         date: { $gte: params.startDate, $lte: params.endDate },
         summaryType: "device-daily"
@@ -19938,7 +19963,7 @@ const analytics = ({ strapi }) => ({
     return summaries;
   },
   async getRegionStats(params) {
-    const summaries = await strapi.documents("plugin::zhao-studio.stat-summary").findMany({
+    const summaries = await strapi2.documents("plugin::zhao-studio.stat-summary").findMany({
       filters: {
         date: { $gte: params.startDate, $lte: params.endDate },
         summaryType: "region-daily"
@@ -19947,13 +19972,13 @@ const analytics = ({ strapi }) => ({
     return summaries;
   },
   async getUserStats(params) {
-    const registerLogs = await strapi.documents("plugin::zhao-studio.browser-log").findMany({
+    const registerLogs = await strapi2.documents("plugin::zhao-studio.browser-log").findMany({
       filters: {
         eventType: "user-register",
         timestamp: { $gte: params.startDate, $lte: params.endDate }
       }
     });
-    const allLogs = await strapi.documents("plugin::zhao-studio.browser-log").findMany({
+    const allLogs = await strapi2.documents("plugin::zhao-studio.browser-log").findMany({
       filters: {
         eventType: "page-view",
         timestamp: { $gte: params.startDate, $lte: params.endDate }
@@ -19969,14 +19994,14 @@ const analytics = ({ strapi }) => ({
   async cleanupOldLogs(days) {
     const cutoffDate = /* @__PURE__ */ new Date();
     cutoffDate.setDate(cutoffDate.getDate() - days);
-    const oldLogs = await strapi.documents("plugin::zhao-studio.browser-log").findMany({
+    const oldLogs = await strapi2.documents("plugin::zhao-studio.browser-log").findMany({
       filters: {
         timestamp: { $lt: cutoffDate }
       }
     });
     let deleted = 0;
     for (const log of oldLogs) {
-      await strapi.documents("plugin::zhao-studio.browser-log").delete({
+      await strapi2.documents("plugin::zhao-studio.browser-log").delete({
         documentId: log.documentId
       });
       deleted++;
@@ -19984,13 +20009,13 @@ const analytics = ({ strapi }) => ({
     return { deleted };
   }
 });
-const aggregation = ({ strapi }) => ({
+const aggregation = ({ strapi: strapi2 }) => ({
   async aggregateArticleDaily(date) {
     const startDate = new Date(date);
     startDate.setHours(0, 0, 0, 0);
     const endDate = new Date(date);
     endDate.setHours(23, 59, 59, 999);
-    const pageViews = await strapi.documents("plugin::zhao-studio.browser-log").findMany({
+    const pageViews = await strapi2.documents("plugin::zhao-studio.browser-log").findMany({
       filters: {
         eventType: "page-view",
         timestamp: { $gte: startDate, $lte: endDate }
@@ -20006,7 +20031,7 @@ const aggregation = ({ strapi }) => ({
         articleGroups[articleId].push(log);
       }
     }
-    const readLogs = await strapi.documents("plugin::zhao-studio.browser-log").findMany({
+    const readLogs = await strapi2.documents("plugin::zhao-studio.browser-log").findMany({
       filters: {
         eventType: "read-duration",
         timestamp: { $gte: startDate, $lte: endDate }
@@ -20020,7 +20045,7 @@ const aggregation = ({ strapi }) => ({
       );
       const avgReadDuration = articleReadLogs.length > 0 ? articleReadLogs.reduce((sum, l) => sum + (l.readDuration || 0), 0) / articleReadLogs.length : 0;
       const avgScrollDepth = articleReadLogs.length > 0 ? articleReadLogs.reduce((sum, l) => sum + (l.scrollDepth || 0), 0) / articleReadLogs.length : 0;
-      await strapi.documents("plugin::zhao-studio.stat-summary").create({
+      await strapi2.documents("plugin::zhao-studio.stat-summary").create({
         data: {
           date: startDate,
           article: articleId,
@@ -20038,7 +20063,7 @@ const aggregation = ({ strapi }) => ({
     startDate.setHours(0, 0, 0, 0);
     const endDate = new Date(date);
     endDate.setHours(23, 59, 59, 999);
-    const adClicks = await strapi.documents("plugin::zhao-studio.browser-log").findMany({
+    const adClicks = await strapi2.documents("plugin::zhao-studio.browser-log").findMany({
       filters: {
         eventType: "ad-click",
         timestamp: { $gte: startDate, $lte: endDate }
@@ -20054,7 +20079,7 @@ const aggregation = ({ strapi }) => ({
         adSlotGroups[adSlotId].push(log);
       }
     }
-    const pageViews = await strapi.documents("plugin::zhao-studio.browser-log").findMany({
+    const pageViews = await strapi2.documents("plugin::zhao-studio.browser-log").findMany({
       filters: {
         eventType: "page-view",
         timestamp: { $gte: startDate, $lte: endDate }
@@ -20064,7 +20089,7 @@ const aggregation = ({ strapi }) => ({
     for (const [adSlotId, logs] of Object.entries(adSlotGroups)) {
       const clickCount = logs.length;
       const clickRate = totalPv > 0 ? clickCount / totalPv * 100 : 0;
-      await strapi.documents("plugin::zhao-studio.stat-summary").create({
+      await strapi2.documents("plugin::zhao-studio.stat-summary").create({
         data: {
           date: startDate,
           adSlot: adSlotId,
@@ -20080,7 +20105,7 @@ const aggregation = ({ strapi }) => ({
     startDate.setHours(0, 0, 0, 0);
     const endDate = new Date(date);
     endDate.setHours(23, 59, 59, 999);
-    const pageViews = await strapi.documents("plugin::zhao-studio.browser-log").findMany({
+    const pageViews = await strapi2.documents("plugin::zhao-studio.browser-log").findMany({
       filters: {
         eventType: "page-view",
         timestamp: { $gte: startDate, $lte: endDate }
@@ -20088,7 +20113,7 @@ const aggregation = ({ strapi }) => ({
     });
     const pv = pageViews.length;
     const uv = new Set(pageViews.map((l) => l.sessionId)).size;
-    const adClicks = await strapi.documents("plugin::zhao-studio.browser-log").findMany({
+    const adClicks = await strapi2.documents("plugin::zhao-studio.browser-log").findMany({
       filters: {
         eventType: "ad-click",
         timestamp: { $gte: startDate, $lte: endDate }
@@ -20096,7 +20121,7 @@ const aggregation = ({ strapi }) => ({
     });
     const clickCount = adClicks.length;
     const clickRate = pv > 0 ? clickCount / pv * 100 : 0;
-    const readLogs = await strapi.documents("plugin::zhao-studio.browser-log").findMany({
+    const readLogs = await strapi2.documents("plugin::zhao-studio.browser-log").findMany({
       filters: {
         eventType: "read-duration",
         timestamp: { $gte: startDate, $lte: endDate }
@@ -20104,7 +20129,7 @@ const aggregation = ({ strapi }) => ({
     });
     const avgReadDuration = readLogs.length > 0 ? readLogs.reduce((sum, l) => sum + (l.readDuration || 0), 0) / readLogs.length : 0;
     const avgScrollDepth = readLogs.length > 0 ? readLogs.reduce((sum, l) => sum + (l.scrollDepth || 0), 0) / readLogs.length : 0;
-    await strapi.documents("plugin::zhao-studio.stat-summary").create({
+    await strapi2.documents("plugin::zhao-studio.stat-summary").create({
       data: {
         date: startDate,
         summaryType: "global-daily",
@@ -20122,7 +20147,7 @@ const aggregation = ({ strapi }) => ({
     startDate.setHours(0, 0, 0, 0);
     const endDate = new Date(date);
     endDate.setHours(23, 59, 59, 999);
-    const pageViews = await strapi.documents("plugin::zhao-studio.browser-log").findMany({
+    const pageViews = await strapi2.documents("plugin::zhao-studio.browser-log").findMany({
       filters: {
         eventType: "page-view",
         timestamp: { $gte: startDate, $lte: endDate }
@@ -20137,7 +20162,7 @@ const aggregation = ({ strapi }) => ({
       const deviceType = log.deviceType || "desktop";
       deviceStats[deviceType] = (deviceStats[deviceType] || 0) + 1;
     }
-    await strapi.documents("plugin::zhao-studio.stat-summary").create({
+    await strapi2.documents("plugin::zhao-studio.stat-summary").create({
       data: {
         date: startDate,
         summaryType: "device-daily",
@@ -20150,7 +20175,7 @@ const aggregation = ({ strapi }) => ({
     startDate.setHours(0, 0, 0, 0);
     const endDate = new Date(date);
     endDate.setHours(23, 59, 59, 999);
-    const pageViews = await strapi.documents("plugin::zhao-studio.browser-log").findMany({
+    const pageViews = await strapi2.documents("plugin::zhao-studio.browser-log").findMany({
       filters: {
         eventType: "page-view",
         timestamp: { $gte: startDate, $lte: endDate }
@@ -20163,7 +20188,7 @@ const aggregation = ({ strapi }) => ({
       const key = `${country}/${city}`;
       regionStats[key] = (regionStats[key] || 0) + 1;
     }
-    await strapi.documents("plugin::zhao-studio.stat-summary").create({
+    await strapi2.documents("plugin::zhao-studio.stat-summary").create({
       data: {
         date: startDate,
         summaryType: "region-daily",
@@ -20187,6 +20212,115 @@ const aggregation = ({ strapi }) => ({
     }
   }
 });
+const UID = "plugin::zhao-studio.sync-event";
+const DRAFT_UID = "plugin::zhao-studio.article-draft";
+const syncEvent$1 = ({ strapi: strapi2 }) => ({
+  // ===== 查询 =====
+  async list(siteId, query = {}) {
+    const { eventStatus, sourceContentType, page = 1, pageSize = 20 } = query;
+    const filters2 = { site: siteId };
+    if (eventStatus) filters2.eventStatus = eventStatus;
+    if (sourceContentType) filters2.sourceContentType = sourceContentType;
+    return strapi2.db.query(UID).findMany({
+      where: filters2,
+      limit: Number(pageSize),
+      offset: (Number(page) - 1) * Number(pageSize),
+      orderBy: { createdAt: "DESC" },
+      populate: ["targetDraftId"]
+    });
+  },
+  async findOne(siteId, documentId) {
+    return strapi2.db.query(UID).findOne({
+      where: { site: siteId, documentId },
+      populate: ["targetDraftId"]
+    });
+  },
+  // ===== 处理 =====
+  async resolve(siteId, documentId, body) {
+    const event = await strapi2.db.query(UID).findOne({
+      where: { site: siteId, documentId }
+    });
+    if (!event) throw new Error("Sync event not found");
+    const { action, draftId, resolvedBy } = body;
+    const now = /* @__PURE__ */ new Date();
+    let updateData;
+    if (action === "create") {
+      const payload = event.eventPayload || {};
+      const draft2 = await strapi2.db.query(DRAFT_UID).create({
+        data: {
+          site: siteId,
+          title: payload.title || event.sourceTitle || "Untitled",
+          content: payload.content || "",
+          sourceType: "website",
+          sourceContentType: event.sourceContentType,
+          sourceDocumentId: event.sourceDocumentId
+        }
+      });
+      updateData = {
+        eventStatus: "resolved",
+        resolvedAt: now,
+        resolvedBy: resolvedBy || "system",
+        targetDraftId: draft2.documentId
+      };
+    } else if (action === "update") {
+      if (!draftId) throw new Error("draftId is required for update action");
+      const payload = event.eventPayload || {};
+      const existingDraft = await strapi2.db.query(DRAFT_UID).findOne({
+        where: { site: siteId, documentId: draftId }
+      });
+      if (!existingDraft) throw new Error("Draft not found");
+      await strapi2.db.query(DRAFT_UID).update({
+        where: { id: existingDraft.id },
+        data: {
+          title: payload.title || event.sourceTitle || existingDraft.title,
+          content: payload.content || existingDraft.content
+        }
+      });
+      updateData = {
+        eventStatus: "resolved",
+        resolvedAt: now,
+        resolvedBy: resolvedBy || "system",
+        targetDraftId: draftId
+      };
+    } else if (action === "ignore") {
+      updateData = {
+        eventStatus: "ignored",
+        resolvedAt: now,
+        resolvedBy: resolvedBy || "system"
+      };
+    } else {
+      throw new Error(`Unknown action: ${action}`);
+    }
+    const updated = await strapi2.db.query(UID).update({
+      where: { id: event.id },
+      data: updateData
+    });
+    return { ...updated, ...updateData };
+  },
+  // ===== Webhook 创建 =====
+  async createFromWebhook(payload) {
+    const { siteId, sourceContentType, sourceDocumentId, sourceUrl, sourceTitle, content } = payload;
+    if (!siteId) throw new Error("siteId is required");
+    return strapi2.db.query(UID).create({
+      data: {
+        site: siteId,
+        sourceType: "website",
+        sourceContentType,
+        sourceDocumentId,
+        sourceUrl,
+        sourceTitle,
+        eventStatus: "pending",
+        eventPayload: {
+          sourceContentType,
+          sourceDocumentId,
+          sourceUrl,
+          sourceTitle,
+          content
+        }
+      }
+    });
+  }
+});
 const services = {
   collect,
   scraper,
@@ -20197,16 +20331,32 @@ const services = {
   "internal-api": internalApi,
   "status-sync": statusSync,
   analytics,
-  aggregation
+  aggregation,
+  "sync-event": syncEvent$1
 };
 const policies = {};
 const middlewares = {};
+const kind$a = "collectionType";
+const collectionName$a = "zhao_article_drafts";
+const info$a = { "singularName": "article-draft", "pluralName": "article-drafts", "displayName": "草稿文章", "description": "采集并加工后的草稿文章" };
+const options$a = { "draftAndPublish": true };
+const pluginOptions$a = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
+const attributes$a = { "title": { "type": "string", "required": true, "maxLength": 200 }, "content": { "type": "richtext", "required": true }, "sourceUrl": { "type": "string" }, "sourceTitle": { "type": "string" }, "sourcePublishedAt": { "type": "datetime" }, "sourceAuthor": { "type": "string" }, "category": { "type": "string" }, "status": { "type": "enumeration", "enum": ["draft", "processing", "ready", "published"], "default": "draft" }, "aiProcessed": { "type": "boolean", "default": false }, "aiSummary": { "type": "text" }, "aiOptimizedTitle": { "type": "string" }, "publishRecords": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.publish-record", "mappedBy": "article" }, "browserLogs": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.browser-log", "mappedBy": "article" }, "statSummaries": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.stat-summary", "mappedBy": "article" }, "websiteArticles": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.article", "mappedBy": "sourceArticleDraft" }, "scope": { "type": "enumeration", "enum": ["current", "global", "tenant"], "default": "current" }, "scopeTenantId": { "type": "string" }, "publishedAt": { "type": "datetime" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const schema$a = {
+  kind: kind$a,
+  collectionName: collectionName$a,
+  info: info$a,
+  options: options$a,
+  pluginOptions: pluginOptions$a,
+  attributes: attributes$a
+};
+const articleDraft = { schema: schema$a };
 const kind$9 = "collectionType";
-const collectionName$9 = "zhao_article_drafts";
-const info$9 = { "singularName": "article-draft", "pluralName": "article-drafts", "displayName": "草稿文章", "description": "采集并加工后的草稿文章" };
-const options$9 = { "draftAndPublish": true };
+const collectionName$9 = "zhao_collect_sources";
+const info$9 = { "singularName": "collect-source", "pluralName": "collect-sources", "displayName": "采集源", "description": "内容采集源配置" };
+const options$9 = { "draftAndPublish": false };
 const pluginOptions$9 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
-const attributes$9 = { "title": { "type": "string", "required": true, "maxLength": 200 }, "content": { "type": "richtext", "required": true }, "sourceUrl": { "type": "string" }, "sourceTitle": { "type": "string" }, "sourcePublishedAt": { "type": "datetime" }, "sourceAuthor": { "type": "string" }, "category": { "type": "string" }, "status": { "type": "enumeration", "enum": ["draft", "processing", "ready", "published"], "default": "draft" }, "aiProcessed": { "type": "boolean", "default": false }, "aiSummary": { "type": "text" }, "aiOptimizedTitle": { "type": "string" }, "publishRecords": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.publish-record", "mappedBy": "article" }, "browserLogs": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.browser-log", "mappedBy": "article" }, "statSummaries": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.stat-summary", "mappedBy": "article" }, "websiteArticles": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.article", "mappedBy": "sourceArticleDraft" }, "scope": { "type": "enumeration", "enum": ["current", "global", "tenant"], "default": "current" }, "scopeTenantId": { "type": "string" }, "publishedAt": { "type": "datetime" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const attributes$9 = { "name": { "type": "string", "required": true, "maxLength": 100 }, "url": { "type": "string", "required": true }, "type": { "type": "enumeration", "enum": ["template", "custom"], "default": "template" }, "template": { "type": "string" }, "titleSelector": { "type": "string" }, "contentSelector": { "type": "string" }, "authorSelector": { "type": "string" }, "dateSelector": { "type": "string" }, "isActive": { "type": "boolean", "default": true }, "tasks": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.collect-task", "mappedBy": "source" }, "lastCollectedAt": { "type": "datetime" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
 const schema$9 = {
   kind: kind$9,
   collectionName: collectionName$9,
@@ -20215,13 +20365,13 @@ const schema$9 = {
   pluginOptions: pluginOptions$9,
   attributes: attributes$9
 };
-const articleDraft = { schema: schema$9 };
+const collectSource = { schema: schema$9 };
 const kind$8 = "collectionType";
-const collectionName$8 = "zhao_collect_sources";
-const info$8 = { "singularName": "collect-source", "pluralName": "collect-sources", "displayName": "采集源", "description": "内容采集源配置" };
+const collectionName$8 = "zhao_collect_tasks";
+const info$8 = { "singularName": "collect-task", "pluralName": "collect-tasks", "displayName": "采集任务", "description": "内容采集任务临时状态" };
 const options$8 = { "draftAndPublish": false };
 const pluginOptions$8 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
-const attributes$8 = { "name": { "type": "string", "required": true, "maxLength": 100 }, "url": { "type": "string", "required": true }, "type": { "type": "enumeration", "enum": ["template", "custom"], "default": "template" }, "template": { "type": "string" }, "titleSelector": { "type": "string" }, "contentSelector": { "type": "string" }, "authorSelector": { "type": "string" }, "dateSelector": { "type": "string" }, "isActive": { "type": "boolean", "default": true }, "tasks": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.collect-task", "mappedBy": "source" }, "lastCollectedAt": { "type": "datetime" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const attributes$8 = { "source": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.collect-source", "inversedBy": "tasks" }, "titles": { "type": "json" }, "selectedTitles": { "type": "json" }, "status": { "type": "enumeration", "enum": ["pending", "fetching_titles", "waiting_selection", "fetching_content", "completed", "failed"], "default": "pending" }, "error": { "type": "text" }, "retryCount": { "type": "integer", "default": 0 }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
 const schema$8 = {
   kind: kind$8,
   collectionName: collectionName$8,
@@ -20230,13 +20380,13 @@ const schema$8 = {
   pluginOptions: pluginOptions$8,
   attributes: attributes$8
 };
-const collectSource = { schema: schema$8 };
+const collectTask = { schema: schema$8 };
 const kind$7 = "collectionType";
-const collectionName$7 = "zhao_collect_tasks";
-const info$7 = { "singularName": "collect-task", "pluralName": "collect-tasks", "displayName": "采集任务", "description": "内容采集任务临时状态" };
+const collectionName$7 = "zhao_publish_platforms";
+const info$7 = { "singularName": "publish-platform", "pluralName": "publish-platforms", "displayName": "发布平台", "description": "发布平台类型配置" };
 const options$7 = { "draftAndPublish": false };
 const pluginOptions$7 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
-const attributes$7 = { "source": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.collect-source", "inversedBy": "tasks" }, "titles": { "type": "json" }, "selectedTitles": { "type": "json" }, "status": { "type": "enumeration", "enum": ["pending", "fetching_titles", "waiting_selection", "fetching_content", "completed", "failed"], "default": "pending" }, "error": { "type": "text" }, "retryCount": { "type": "integer", "default": 0 }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const attributes$7 = { "name": { "type": "string", "required": true, "maxLength": 100 }, "type": { "type": "enumeration", "enum": ["toutiao", "xiaohongshu", "wechat", "custom", "internal"], "required": true }, "description": { "type": "text" }, "isActive": { "type": "boolean", "default": true }, "accounts": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.publish-account", "mappedBy": "platform" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
 const schema$7 = {
   kind: kind$7,
   collectionName: collectionName$7,
@@ -20245,13 +20395,13 @@ const schema$7 = {
   pluginOptions: pluginOptions$7,
   attributes: attributes$7
 };
-const collectTask = { schema: schema$7 };
+const publishPlatform = { schema: schema$7 };
 const kind$6 = "collectionType";
-const collectionName$6 = "zhao_publish_platforms";
-const info$6 = { "singularName": "publish-platform", "pluralName": "publish-platforms", "displayName": "发布平台", "description": "发布平台类型配置" };
+const collectionName$6 = "zhao_publish_accounts";
+const info$6 = { "singularName": "publish-account", "pluralName": "publish-accounts", "displayName": "发布账号", "description": "发布账号配置（一个平台可有多个账号）" };
 const options$6 = { "draftAndPublish": false };
 const pluginOptions$6 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
-const attributes$6 = { "name": { "type": "string", "required": true, "maxLength": 100 }, "type": { "type": "enumeration", "enum": ["toutiao", "xiaohongshu", "wechat", "custom", "internal"], "required": true }, "description": { "type": "text" }, "isActive": { "type": "boolean", "default": true }, "accounts": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.publish-account", "mappedBy": "platform" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const attributes$6 = { "name": { "type": "string", "required": true, "maxLength": 100 }, "platform": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.publish-platform", "inversedBy": "accounts" }, "config": { "type": "json" }, "isActive": { "type": "boolean", "default": true }, "publishRecords": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.publish-record", "mappedBy": "account" }, "lastPublishedAt": { "type": "datetime" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
 const schema$6 = {
   kind: kind$6,
   collectionName: collectionName$6,
@@ -20260,13 +20410,13 @@ const schema$6 = {
   pluginOptions: pluginOptions$6,
   attributes: attributes$6
 };
-const publishPlatform = { schema: schema$6 };
+const publishAccount = { schema: schema$6 };
 const kind$5 = "collectionType";
-const collectionName$5 = "zhao_publish_accounts";
-const info$5 = { "singularName": "publish-account", "pluralName": "publish-accounts", "displayName": "发布账号", "description": "发布账号配置（一个平台可有多个账号）" };
+const collectionName$5 = "zhao_publish_records";
+const info$5 = { "singularName": "publish-record", "pluralName": "publish-records", "displayName": "发布记录", "description": "文章发布到账号的记录" };
 const options$5 = { "draftAndPublish": false };
 const pluginOptions$5 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
-const attributes$5 = { "name": { "type": "string", "required": true, "maxLength": 100 }, "platform": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.publish-platform", "inversedBy": "accounts" }, "config": { "type": "json" }, "isActive": { "type": "boolean", "default": true }, "publishRecords": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.publish-record", "mappedBy": "account" }, "lastPublishedAt": { "type": "datetime" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const attributes$5 = { "article": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.article-draft", "inversedBy": "publishRecords" }, "account": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.publish-account", "inversedBy": "publishRecords" }, "externalId": { "type": "string" }, "status": { "type": "enumeration", "enum": ["pending", "success", "failed"], "default": "pending" }, "error": { "type": "text" }, "retryCount": { "type": "integer", "default": 0 }, "publishedAt": { "type": "datetime" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
 const schema$5 = {
   kind: kind$5,
   collectionName: collectionName$5,
@@ -20275,13 +20425,13 @@ const schema$5 = {
   pluginOptions: pluginOptions$5,
   attributes: attributes$5
 };
-const publishAccount = { schema: schema$5 };
+const publishRecord = { schema: schema$5 };
 const kind$4 = "collectionType";
-const collectionName$4 = "zhao_publish_records";
-const info$4 = { "singularName": "publish-record", "pluralName": "publish-records", "displayName": "发布记录", "description": "文章发布到账号的记录" };
+const collectionName$4 = "zhao_knowledge_point_indices";
+const info$4 = { "singularName": "knowledge-point-index", "pluralName": "knowledge-point-indices", "displayName": "知识点索引", "description": "文章与知识点的关联索引" };
 const options$4 = { "draftAndPublish": false };
 const pluginOptions$4 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
-const attributes$4 = { "article": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.article-draft", "inversedBy": "publishRecords" }, "account": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.publish-account", "inversedBy": "publishRecords" }, "externalId": { "type": "string" }, "status": { "type": "enumeration", "enum": ["pending", "success", "failed"], "default": "pending" }, "error": { "type": "text" }, "retryCount": { "type": "integer", "default": 0 }, "publishedAt": { "type": "datetime" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const attributes$4 = { "targetType": { "type": "string", "required": true }, "targetId": { "type": "string", "required": true }, "knowledgePoint": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-tag.knowledge-point" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
 const schema$4 = {
   kind: kind$4,
   collectionName: collectionName$4,
@@ -20290,13 +20440,13 @@ const schema$4 = {
   pluginOptions: pluginOptions$4,
   attributes: attributes$4
 };
-const publishRecord = { schema: schema$4 };
+const knowledgePointIndex = { schema: schema$4 };
 const kind$3 = "collectionType";
-const collectionName$3 = "zhao_knowledge_point_indices";
-const info$3 = { "singularName": "knowledge-point-index", "pluralName": "knowledge-point-indices", "displayName": "知识点索引", "description": "文章与知识点的关联索引" };
+const collectionName$3 = "zhao_ad_slots";
+const info$3 = { "singularName": "ad-slot", "pluralName": "ad-slots", "displayName": "广告位", "description": "广告位配置管理" };
 const options$3 = { "draftAndPublish": false };
 const pluginOptions$3 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
-const attributes$3 = { "targetType": { "type": "string", "required": true }, "targetId": { "type": "string", "required": true }, "knowledgePoint": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-tag.knowledge-point" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const attributes$3 = { "name": { "type": "string", "required": true }, "code": { "type": "string", "required": true, "unique": true }, "position": { "type": "enumeration", "enum": ["article-content", "sidebar", "footer", "header", "list-page", "home-page"], "default": "article-content" }, "type": { "type": "enumeration", "enum": ["product-link", "banner", "popup", "native"], "default": "product-link" }, "targetUrl": { "type": "string" }, "productId": { "type": "string" }, "imageUrl": { "type": "string" }, "isActive": { "type": "boolean", "default": true }, "browserLogs": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.browser-log", "mappedBy": "adSlot" }, "statSummaries": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.stat-summary", "mappedBy": "adSlot" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
 const schema$3 = {
   kind: kind$3,
   collectionName: collectionName$3,
@@ -20305,13 +20455,13 @@ const schema$3 = {
   pluginOptions: pluginOptions$3,
   attributes: attributes$3
 };
-const knowledgePointIndex = { schema: schema$3 };
+const adSlot = { schema: schema$3 };
 const kind$2 = "collectionType";
-const collectionName$2 = "zhao_ad_slots";
-const info$2 = { "singularName": "ad-slot", "pluralName": "ad-slots", "displayName": "广告位", "description": "广告位配置管理" };
+const collectionName$2 = "zhao_browser_logs";
+const info$2 = { "singularName": "browser-log", "pluralName": "browser-logs", "displayName": "浏览器日志", "description": "用户浏览器信息和行为日志" };
 const options$2 = { "draftAndPublish": false };
 const pluginOptions$2 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
-const attributes$2 = { "name": { "type": "string", "required": true }, "code": { "type": "string", "required": true, "unique": true }, "position": { "type": "enumeration", "enum": ["article-content", "sidebar", "footer", "header", "list-page", "home-page"], "default": "article-content" }, "type": { "type": "enumeration", "enum": ["product-link", "banner", "popup", "native"], "default": "product-link" }, "targetUrl": { "type": "string" }, "productId": { "type": "string" }, "imageUrl": { "type": "string" }, "isActive": { "type": "boolean", "default": true }, "browserLogs": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.browser-log", "mappedBy": "adSlot" }, "statSummaries": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.stat-summary", "mappedBy": "adSlot" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const attributes$2 = { "eventType": { "type": "enumeration", "enum": ["page-view", "ad-click", "scroll", "read-duration", "user-register"], "required": true }, "article": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.article-draft" }, "adSlot": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.ad-slot" }, "user": { "type": "relation", "relation": "manyToOne", "target": "admin::user" }, "userId": { "type": "string" }, "sessionId": { "type": "string", "required": true }, "isRegistered": { "type": "boolean", "default": false }, "registeredAt": { "type": "datetime" }, "userAgent": { "type": "string" }, "platform": { "type": "string" }, "browser": { "type": "string" }, "browserVersion": { "type": "string" }, "os": { "type": "string" }, "osVersion": { "type": "string" }, "deviceType": { "type": "enumeration", "enum": ["desktop", "mobile", "tablet"], "default": "desktop" }, "screenWidth": { "type": "integer" }, "screenHeight": { "type": "integer" }, "language": { "type": "string" }, "ip": { "type": "string" }, "country": { "type": "string" }, "city": { "type": "string" }, "referrer": { "type": "string" }, "referrerDomain": { "type": "string" }, "readDuration": { "type": "integer", "default": 0 }, "scrollDepth": { "type": "integer", "default": 0 }, "timestamp": { "type": "datetime", "required": true }, "createdAt": { "type": "datetime" } };
 const schema$2 = {
   kind: kind$2,
   collectionName: collectionName$2,
@@ -20320,13 +20470,13 @@ const schema$2 = {
   pluginOptions: pluginOptions$2,
   attributes: attributes$2
 };
-const adSlot = { schema: schema$2 };
+const browserLog = { schema: schema$2 };
 const kind$1 = "collectionType";
-const collectionName$1 = "zhao_browser_logs";
-const info$1 = { "singularName": "browser-log", "pluralName": "browser-logs", "displayName": "浏览器日志", "description": "用户浏览器信息和行为日志" };
+const collectionName$1 = "zhao_stat_summaries";
+const info$1 = { "singularName": "stat-summary", "pluralName": "stat-summaries", "displayName": "统计汇总", "description": "按日期聚合的统计数据" };
 const options$1 = { "draftAndPublish": false };
 const pluginOptions$1 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
-const attributes$1 = { "eventType": { "type": "enumeration", "enum": ["page-view", "ad-click", "scroll", "read-duration", "user-register"], "required": true }, "article": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.article-draft" }, "adSlot": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.ad-slot" }, "user": { "type": "relation", "relation": "manyToOne", "target": "admin::user" }, "userId": { "type": "string" }, "sessionId": { "type": "string", "required": true }, "isRegistered": { "type": "boolean", "default": false }, "registeredAt": { "type": "datetime" }, "userAgent": { "type": "string" }, "platform": { "type": "string" }, "browser": { "type": "string" }, "browserVersion": { "type": "string" }, "os": { "type": "string" }, "osVersion": { "type": "string" }, "deviceType": { "type": "enumeration", "enum": ["desktop", "mobile", "tablet"], "default": "desktop" }, "screenWidth": { "type": "integer" }, "screenHeight": { "type": "integer" }, "language": { "type": "string" }, "ip": { "type": "string" }, "country": { "type": "string" }, "city": { "type": "string" }, "referrer": { "type": "string" }, "referrerDomain": { "type": "string" }, "readDuration": { "type": "integer", "default": 0 }, "scrollDepth": { "type": "integer", "default": 0 }, "timestamp": { "type": "datetime", "required": true }, "createdAt": { "type": "datetime" } };
+const attributes$1 = { "date": { "type": "date", "required": true }, "article": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.article-draft" }, "adSlot": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.ad-slot" }, "summaryType": { "type": "enumeration", "enum": ["article-daily", "ad-slot-daily", "global-daily", "device-daily", "region-daily"], "required": true }, "pv": { "type": "integer", "default": 0 }, "uv": { "type": "integer", "default": 0 }, "clickCount": { "type": "integer", "default": 0 }, "clickRate": { "type": "float", "default": 0 }, "avgReadDuration": { "type": "float", "default": 0 }, "avgScrollDepth": { "type": "float", "default": 0 }, "deviceStats": { "type": "json" }, "regionStats": { "type": "json" }, "referrerStats": { "type": "json" }, "createdAt": { "type": "datetime" } };
 const schema$1 = {
   kind: kind$1,
   collectionName: collectionName$1,
@@ -20335,13 +20485,13 @@ const schema$1 = {
   pluginOptions: pluginOptions$1,
   attributes: attributes$1
 };
-const browserLog = { schema: schema$1 };
+const statSummary = { schema: schema$1 };
 const kind = "collectionType";
-const collectionName = "zhao_stat_summaries";
-const info = { "singularName": "stat-summary", "pluralName": "stat-summaries", "displayName": "统计汇总", "description": "按日期聚合的统计数据" };
+const collectionName = "zhao_studio_sync_events";
+const info = { "singularName": "sync-event", "pluralName": "sync-events", "displayName": "同步事件" };
 const options = { "draftAndPublish": false };
-const pluginOptions = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
-const attributes = { "date": { "type": "date", "required": true }, "article": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.article-draft" }, "adSlot": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.ad-slot" }, "summaryType": { "type": "enumeration", "enum": ["article-daily", "ad-slot-daily", "global-daily", "device-daily", "region-daily"], "required": true }, "pv": { "type": "integer", "default": 0 }, "uv": { "type": "integer", "default": 0 }, "clickCount": { "type": "integer", "default": 0 }, "clickRate": { "type": "float", "default": 0 }, "avgReadDuration": { "type": "float", "default": 0 }, "avgScrollDepth": { "type": "float", "default": 0 }, "deviceStats": { "type": "json" }, "regionStats": { "type": "json" }, "referrerStats": { "type": "json" }, "createdAt": { "type": "datetime" } };
+const pluginOptions = { "content-manager": { "visible": true }, "content-type-builder": { "visible": false } };
+const attributes = { "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config", "required": true, "inversedBy": "studio_sync_events" }, "sourceType": { "type": "enumeration", "enum": ["website"], "required": true }, "sourceContentType": { "type": "string", "required": true }, "sourceDocumentId": { "type": "string" }, "sourceUrl": { "type": "string" }, "sourceTitle": { "type": "string" }, "targetDraftId": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.article-draft", "inversedBy": "syncEvents" }, "eventStatus": { "type": "enumeration", "enum": ["pending", "resolved", "ignored"], "default": "pending" }, "eventPayload": { "type": "json" }, "resolvedAt": { "type": "datetime" }, "resolvedBy": { "type": "string" } };
 const schema = {
   kind,
   collectionName,
@@ -20350,7 +20500,9 @@ const schema = {
   pluginOptions,
   attributes
 };
-const statSummary = { schema };
+const syncEvent = {
+  schema
+};
 const contentTypes = {
   "article-draft": articleDraft,
   "collect-source": collectSource,
@@ -20361,7 +20513,8 @@ const contentTypes = {
   "knowledge-point-index": knowledgePointIndex,
   "ad-slot": adSlot,
   "browser-log": browserLog,
-  "stat-summary": statSummary
+  "stat-summary": statSummary,
+  "sync-event": syncEvent
 };
 const index = {
   register,

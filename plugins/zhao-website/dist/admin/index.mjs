@@ -18,7 +18,7 @@ const index = {
         }
       ],
       Component: async () => {
-        const component = await import("./App-CkEXprYG.mjs");
+        const component = await import("./App-BAeonvPe.mjs");
         return component;
       }
     });

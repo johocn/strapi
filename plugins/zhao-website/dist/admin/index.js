@@ -20,7 +20,7 @@ const index = {
         }
       ],
       Component: async () => {
-        const component = await Promise.resolve().then(() => require("./App-Df0XfoCO.js"));
+        const component = await Promise.resolve().then(() => require("./App-j8iFP-uT.js"));
         return component;
       }
     });

@@ -123,6 +123,12 @@ declare const _default: {
             list(ctx: any): Promise<void>;
             findOne(ctx: any): Promise<void>;
         };
+        'sync-event-api': {
+            list(ctx: any): Promise<void>;
+            findOne(ctx: any): Promise<void>;
+            resolve(ctx: any): Promise<void>;
+            createFromWebhook(ctx: any): Promise<void>;
+        };
     };
     routes: {
         admin: {
@@ -386,6 +392,14 @@ declare const _default: {
                 error: any;
                 date: Date;
             }>;
+        };
+        'sync-event': ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            list(siteId: number, query?: any): Promise<any[]>;
+            findOne(siteId: number, documentId: string): Promise<any>;
+            resolve(siteId: number, documentId: string, body: any): Promise<any>;
+            createFromWebhook(payload: any): Promise<any>;
         };
     };
     policies: {};
@@ -1112,6 +1126,75 @@ declare const _default: {
                         type: string;
                     };
                     createdAt: {
+                        type: string;
+                    };
+                };
+            };
+        };
+        'sync-event': {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                pluginOptions: {
+                    "content-manager": {
+                        visible: boolean;
+                    };
+                    "content-type-builder": {
+                        visible: boolean;
+                    };
+                };
+                attributes: {
+                    site: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        required: boolean;
+                        inversedBy: string;
+                    };
+                    sourceType: {
+                        type: string;
+                        enum: string[];
+                        required: boolean;
+                    };
+                    sourceContentType: {
+                        type: string;
+                        required: boolean;
+                    };
+                    sourceDocumentId: {
+                        type: string;
+                    };
+                    sourceUrl: {
+                        type: string;
+                    };
+                    sourceTitle: {
+                        type: string;
+                    };
+                    targetDraftId: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        inversedBy: string;
+                    };
+                    eventStatus: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    eventPayload: {
+                        type: string;
+                    };
+                    resolvedAt: {
+                        type: string;
+                    };
+                    resolvedBy: {
                         type: string;
                     };
                 };

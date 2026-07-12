@@ -1,0 +1,1 @@
+{"version":3,"file":"sync-event.d.ts","sourceRoot":"","sources":["../../../../server/src/services/sync-event.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,IAAI,EAAE,MAAM,gBAAgB,CAAC;yBAK3B,YAAY;IAAE,MAAM,EAAE,IAAI,CAAC,MAAM,CAAA;CAAE;iBAE9B,MAAM,UAAS,GAAG;oBAef,MAAM,cAAc,MAAM;oBAQ1B,MAAM,cAAc,MAAM,QAAQ,GAAG;+BAmE1B,GAAG;;AA5FtC,wBAmHG"}

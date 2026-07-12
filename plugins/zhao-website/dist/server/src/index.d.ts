@@ -52,6 +52,15 @@ declare const _default: {
             leadStats(ctx: any): Promise<void>;
             searchStats(ctx: any): Promise<void>;
         };
+        "brand-voice": {
+            resolve(ctx: any): Promise<void>;
+            listByCategory(ctx: any): Promise<void>;
+            createGlobal(ctx: any): Promise<void>;
+            updateGlobal(ctx: any): Promise<void>;
+            deleteGlobal(ctx: any): Promise<void>;
+            publicList(ctx: any): Promise<void>;
+            publicByCategory(ctx: any): Promise<void>;
+        };
         article: {
             list(ctx: any): Promise<void>;
             detail(ctx: any): Promise<any>;
@@ -543,6 +552,18 @@ declare const _default: {
                 articleDraftDocumentId: string;
                 overrides?: any;
             }): Promise<any>;
+        };
+        "brand-voice": ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            findAdmin(siteId: number | null, query?: any): Promise<any[]>;
+            findOneAdmin(siteId: number | null, documentId: string): Promise<any>;
+            create(siteId: number | null, data: any): Promise<any>;
+            update(siteId: number | null, documentId: string, data: any): Promise<any>;
+            softDelete(siteId: number | null, documentId: string): Promise<any>;
+            listByCategory(siteId: number | null, category: string): Promise<any[]>;
+            resolveVariables(siteId: number | null, documentId: string, variables: Record<string, string>): Promise<any>;
+            getRefContent(siteId: number | null, category: string): Promise<string>;
         };
     };
     contentTypes: {
@@ -1037,6 +1058,12 @@ declare const _default: {
                         inversedBy: string;
                     };
                     mentionedEntities: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        inversedBy: string;
+                    };
+                    brandVoiceRef: {
                         type: string;
                         relation: string;
                         target: string;
@@ -2764,6 +2791,65 @@ declare const _default: {
                     status: {
                         type: string;
                         default: boolean;
+                    };
+                    deletedAt: {
+                        type: string;
+                        default: any;
+                    };
+                };
+            };
+        };
+        "brand-voice": {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                pluginOptions: {
+                    "content-manager": {
+                        visible: boolean;
+                    };
+                    "content-type-builder": {
+                        visible: boolean;
+                    };
+                };
+                attributes: {
+                    site: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        required: boolean;
+                        inversedBy: string;
+                    };
+                    name: {
+                        type: string;
+                        maxLength: number;
+                        required: boolean;
+                    };
+                    category: {
+                        type: string;
+                        enum: string[];
+                        required: boolean;
+                    };
+                    content: {
+                        type: string;
+                        required: boolean;
+                    };
+                    variables: {
+                        type: string;
+                    };
+                    status: {
+                        type: string;
+                        default: boolean;
+                    };
+                    tags: {
+                        type: string;
                     };
                     deletedAt: {
                         type: string;

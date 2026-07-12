@@ -1,10 +1,9 @@
 import { jsxs, jsx, Fragment } from "react/jsx-runtime";
-import { Layout, Menu, Card, Typography, Tag, Space, Row, Col, Form, Input, Select, Switch, Button, List, Checkbox, Modal, Divider, message, Spin, Table, Tabs, Popconfirm, InputNumber, DatePicker, ConfigProvider } from "antd";
+import { Layout, Menu, Card, Typography, Tag, Space, Row, Col, Form, Input, Select, Switch, Button, List, Checkbox, Modal, Divider, message, Spin, Table, Tabs, Popconfirm, InputNumber, DatePicker, Radio, Descriptions, ConfigProvider } from "antd";
 import zhCN from "antd/locale/zh_CN";
 import { useNavigate, useLocation, Routes, Route } from "react-router-dom";
-import { HomeOutlined, CloudDownloadOutlined, SendOutlined, BarChartOutlined, SettingOutlined, RobotOutlined } from "@ant-design/icons";
+import { HomeOutlined, CloudDownloadOutlined, SendOutlined, BarChartOutlined, SettingOutlined, SyncOutlined, RobotOutlined, CheckOutlined, EyeOutlined } from "@ant-design/icons";
 import React, { useState, useEffect } from "react";
-import { p as pluginId } from "./index-CMyxY-yX.mjs";
 import ReactECharts from "echarts-for-react";
 const { Sider, Content } = Layout;
 const menuItems = [
@@ -17,6 +16,7 @@ const menuItems = [
   { key: "platforms", icon: /* @__PURE__ */ jsx(SettingOutlined, {}), label: "平台配置" },
   { key: "accounts", icon: /* @__PURE__ */ jsx(SettingOutlined, {}), label: "账号配置" },
   { key: "ad-slots", icon: /* @__PURE__ */ jsx(SettingOutlined, {}), label: "广告位配置" },
+  { key: "sync-events", icon: /* @__PURE__ */ jsx(SyncOutlined, {}), label: "同步事件" },
   { key: "ai-config", icon: /* @__PURE__ */ jsx(RobotOutlined, {}), label: "AI 配置" }
 ];
 const PluginLayout = ({ children }) => {
@@ -104,15 +104,15 @@ const HomePage = () => {
     ] })
   ] });
 };
-const baseUrl = `/admin/plugins/${pluginId}`;
+const baseUrl$1 = "/api/zhao-studio/v1/admin";
 const collectApi = {
   // 采集源管理
   async getSources() {
-    const response = await fetch(`${baseUrl}/sources`);
+    const response = await fetch(`${baseUrl$1}/sources`);
     return response.json();
   },
   async createSource(data) {
-    const response = await fetch(`${baseUrl}/sources`, {
+    const response = await fetch(`${baseUrl$1}/sources`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ data })
@@ -120,7 +120,7 @@ const collectApi = {
     return response.json();
   },
   async updateSource(id, data) {
-    const response = await fetch(`${baseUrl}/sources/${id}`, {
+    const response = await fetch(`${baseUrl$1}/sources/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ data })
@@ -128,14 +128,14 @@ const collectApi = {
     return response.json();
   },
   async deleteSource(id) {
-    const response = await fetch(`${baseUrl}/sources/${id}`, {
+    const response = await fetch(`${baseUrl$1}/sources/${id}`, {
       method: "DELETE"
     });
     return response.json();
   },
   // 采集任务管理
   async createTask(sourceId) {
-    const response = await fetch(`${baseUrl}/tasks`, {
+    const response = await fetch(`${baseUrl$1}/tasks`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ sourceId })
@@ -143,15 +143,15 @@ const collectApi = {
     return response.json();
   },
   async getTasks() {
-    const response = await fetch(`${baseUrl}/tasks`);
+    const response = await fetch(`${baseUrl$1}/tasks`);
     return response.json();
   },
   async getTask(id) {
-    const response = await fetch(`${baseUrl}/tasks/${id}`);
+    const response = await fetch(`${baseUrl$1}/tasks/${id}`);
     return response.json();
   },
   async fetchSelectedContent(taskId, selectedTitles) {
-    const response = await fetch(`${baseUrl}/tasks/${taskId}/content`, {
+    const response = await fetch(`${baseUrl$1}/tasks/${taskId}/content`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ selectedTitles })
@@ -159,7 +159,7 @@ const collectApi = {
     return response.json();
   },
   async confirmImport(taskId, confirmedContents) {
-    const response = await fetch(`${baseUrl}/tasks/${taskId}/confirm`, {
+    const response = await fetch(`${baseUrl$1}/tasks/${taskId}/confirm`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ confirmedContents })
@@ -176,7 +176,7 @@ function useCollectSources() {
     setError(null);
     try {
       const response = await collectApi.getSources();
-      setSources(response.data || []);
+      setSources(response || []);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -189,7 +189,7 @@ function useCollectSources() {
     try {
       const response = await collectApi.createSource(data);
       await fetchSources();
-      return response.data;
+      return response;
     } catch (err) {
       setError(err.message);
       throw err;
@@ -203,7 +203,7 @@ function useCollectSources() {
     try {
       const response = await collectApi.updateSource(id, data);
       await fetchSources();
-      return response.data;
+      return response;
     } catch (err) {
       setError(err.message);
       throw err;
@@ -246,7 +246,7 @@ function useCollectTasks() {
     setError(null);
     try {
       const response = await collectApi.getTasks();
-      setTasks(response.data || []);
+      setTasks(response || []);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -259,7 +259,7 @@ function useCollectTasks() {
     try {
       const response = await collectApi.createTask(sourceId);
       await fetchTasks();
-      return response.data;
+      return response;
     } catch (err) {
       setError(err.message);
       throw err;
@@ -272,7 +272,7 @@ function useCollectTasks() {
     setError(null);
     try {
       const response = await collectApi.getTask(id);
-      return response.data;
+      return response;
     } catch (err) {
       setError(err.message);
       throw err;
@@ -285,7 +285,7 @@ function useCollectTasks() {
     setError(null);
     try {
       const response = await collectApi.fetchSelectedContent(taskId, selectedTitles);
-      return response.data;
+      return response;
     } catch (err) {
       setError(err.message);
       throw err;
@@ -299,7 +299,7 @@ function useCollectTasks() {
     try {
       const response = await collectApi.confirmImport(taskId, confirmedContents);
       await fetchTasks();
-      return response.data;
+      return response;
     } catch (err) {
       setError(err.message);
       throw err;
@@ -616,7 +616,7 @@ const useAIConfig = () => {
     try {
       const res = await fetch(`${API_BASE$5}/config`);
       const json = await res.json();
-      setConfig(json.data || null);
+      setConfig(json || null);
     } catch (err) {
       console.error("fetchConfig error:", err);
       setConfig(null);
@@ -748,7 +748,7 @@ const usePublishRecords = (params) => {
       const url = `/api/zhao-studio/v1/admin/records${query.toString() ? "?" + query : ""}`;
       const res = await fetch(url);
       const json = await res.json();
-      const list = json.data || [];
+      const list = json || [];
       const normalized = list.map((r) => {
         const normalized2 = normalizeRecord(r);
         return {
@@ -828,7 +828,7 @@ const usePublishPlatforms = () => {
     try {
       const res = await fetch(`${API_BASE$4}/platforms`);
       const json = await res.json();
-      setPlatforms(normalizeList(json.data || []));
+      setPlatforms(normalizeList(json || []));
     } catch (err) {
       console.error("fetchPlatforms error:", err);
       setPlatforms([]);
@@ -873,7 +873,7 @@ const usePublishAccounts = () => {
     try {
       const res = await fetch(`${API_BASE$3}/accounts`);
       const json = await res.json();
-      let list = normalizeList(json.data || []);
+      let list = normalizeList(json || []);
       if (platformId) {
         list = list.filter(
           (a) => a.platformId === platformId || a.platform?.documentId === platformId
@@ -1393,7 +1393,7 @@ const useAdSlots = () => {
     try {
       const res = await fetch(API_BASE$1);
       const json = await res.json();
-      const list = (json.data || []).map(normalizeSlot);
+      const list = (json || []).map(normalizeSlot);
       setSlots(list);
     } catch (err) {
       console.error("fetchSlots error:", err);
@@ -1644,12 +1644,12 @@ const useStats = ({ type }) => {
         const endpoints = type === "basic" ? ["/overview"] : type === "advanced" ? ["/overview", "/articles"] : ["/overview", "/articles", "/ad-slots", "/devices"];
         const responses = await Promise.all(
           endpoints.map(
-            (e) => fetch(`${API_BASE}${e}`).then((r) => r.json()).catch(() => ({ data: {} }))
+            (e) => fetch(`${API_BASE}${e}`).then((r) => r.json()).catch(() => ({}))
           )
         );
         const allStats = [];
         responses.forEach((json, i) => {
-          const data = json.data || {};
+          const data = json || {};
           if (i === 0) {
             Object.entries(data).forEach(([key, value]) => {
               if (typeof value === "number" || typeof value === "string") {
@@ -1675,7 +1675,7 @@ const useStats = ({ type }) => {
           }
         });
         setStats(allStats);
-        const overview = responses[0]?.data || {};
+        const overview = responses[0] || {};
         const chart = overview.timeSeries || overview.daily || overview.timeline || [];
         if (Array.isArray(chart)) {
           setChartData(
@@ -1793,6 +1793,197 @@ const StatsProPage = () => {
     ] })
   ] });
 };
+const baseUrl = "/api/zhao-studio/v1/admin";
+const syncEventApi = {
+  async list(params = {}) {
+    const query = new URLSearchParams(params).toString();
+    const response = await fetch(`${baseUrl}/sync-events${query ? "?" + query : ""}`);
+    return response.json();
+  },
+  async findOne(documentId) {
+    const response = await fetch(`${baseUrl}/sync-events/${documentId}`);
+    return response.json();
+  },
+  async resolve(documentId, body) {
+    const response = await fetch(`${baseUrl}/sync-events/${documentId}/resolve`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+    return response.json();
+  }
+};
+const { Option } = Select;
+const STATUS_COLORS = {
+  pending: "orange",
+  resolved: "green",
+  ignored: "default"
+};
+const STATUS_LABELS = {
+  pending: "待处理",
+  resolved: "已处理",
+  ignored: "已忽略"
+};
+function SyncEventPage() {
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [resolveModalOpen, setResolveModalOpen] = useState(false);
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [currentEvent, setCurrentEvent] = useState(null);
+  const [action, setAction] = useState("create");
+  const [draftId, setDraftId] = useState();
+  const [filterStatus, setFilterStatus] = useState();
+  const [filterContentType, setFilterContentType] = useState();
+  const [drafts, setDrafts] = useState([]);
+  const fetchEvents = async () => {
+    setLoading(true);
+    try {
+      const params = {};
+      if (filterStatus) params.eventStatus = filterStatus;
+      if (filterContentType) params.sourceContentType = filterContentType;
+      const data = await syncEventApi.list(params);
+      setEvents(data || []);
+    } catch (err) {
+      message.error("加载同步事件失败");
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
+    fetchEvents();
+  }, []);
+  const handleResolve = async (record) => {
+    setCurrentEvent(record);
+    setAction("create");
+    setDraftId(void 0);
+    try {
+      const res = await fetch("/api/zhao-studio/v1/admin/article-drafts?status=draft");
+      const data = await res.json();
+      setDrafts(data || []);
+    } catch (err) {
+      setDrafts([]);
+    }
+    setResolveModalOpen(true);
+  };
+  const handleView = (record) => {
+    setCurrentEvent(record);
+    setDetailModalOpen(true);
+  };
+  const handleConfirmResolve = async () => {
+    const body = { action, resolvedBy: "admin" };
+    if (action === "update" && draftId) body.draftId = draftId;
+    await syncEventApi.resolve(currentEvent.documentId, body);
+    message.success("处理成功");
+    setResolveModalOpen(false);
+    fetchEvents();
+  };
+  const columns = [
+    { title: "来源标题", dataIndex: "sourceTitle", key: "sourceTitle", ellipsis: true },
+    { title: "内容类型", dataIndex: "sourceContentType", key: "sourceContentType" },
+    {
+      title: "状态",
+      dataIndex: "eventStatus",
+      key: "eventStatus",
+      render: (status) => /* @__PURE__ */ jsx(Tag, { color: STATUS_COLORS[status], children: STATUS_LABELS[status] || status })
+    },
+    {
+      title: "关联草稿",
+      dataIndex: "targetDraftId",
+      key: "targetDraftId",
+      render: (draft) => draft ? draft.title || draft.documentId : "-"
+    },
+    { title: "创建时间", dataIndex: "createdAt", key: "createdAt" },
+    {
+      title: "操作",
+      key: "action",
+      render: (_, record) => /* @__PURE__ */ jsxs(Space, { children: [
+        record.eventStatus === "pending" && /* @__PURE__ */ jsx(Button, { size: "small", type: "primary", icon: /* @__PURE__ */ jsx(CheckOutlined, {}), onClick: () => handleResolve(record), children: "处理" }),
+        /* @__PURE__ */ jsx(Button, { size: "small", icon: /* @__PURE__ */ jsx(EyeOutlined, {}), onClick: () => handleView(record), children: "查看" })
+      ] })
+    }
+  ];
+  return /* @__PURE__ */ jsxs(Card, { title: "同步事件管理", children: [
+    /* @__PURE__ */ jsxs(Space, { style: { marginBottom: 16 }, children: [
+      /* @__PURE__ */ jsxs(
+        Select,
+        {
+          placeholder: "筛选状态",
+          allowClear: true,
+          style: { width: 120 },
+          onChange: (v) => {
+            setFilterStatus(v);
+          },
+          children: [
+            /* @__PURE__ */ jsx(Option, { value: "pending", children: "待处理" }),
+            /* @__PURE__ */ jsx(Option, { value: "resolved", children: "已处理" }),
+            /* @__PURE__ */ jsx(Option, { value: "ignored", children: "已忽略" })
+          ]
+        }
+      ),
+      /* @__PURE__ */ jsxs(
+        Select,
+        {
+          placeholder: "筛选内容类型",
+          allowClear: true,
+          style: { width: 150 },
+          onChange: (v) => {
+            setFilterContentType(v);
+          },
+          children: [
+            /* @__PURE__ */ jsx(Option, { value: "article", children: "文章" }),
+            /* @__PURE__ */ jsx(Option, { value: "product", children: "产品" }),
+            /* @__PURE__ */ jsx(Option, { value: "case", children: "案例" }),
+            /* @__PURE__ */ jsx(Option, { value: "faq", children: "FAQ" })
+          ]
+        }
+      ),
+      /* @__PURE__ */ jsx(Button, { onClick: fetchEvents, children: "查询" })
+    ] }),
+    /* @__PURE__ */ jsx(Table, { columns, dataSource: events, rowKey: "documentId", loading }),
+    /* @__PURE__ */ jsx(
+      Modal,
+      {
+        title: "处理同步事件",
+        open: resolveModalOpen,
+        onOk: handleConfirmResolve,
+        onCancel: () => setResolveModalOpen(false),
+        children: currentEvent && /* @__PURE__ */ jsxs("div", { children: [
+          /* @__PURE__ */ jsxs("p", { children: [
+            /* @__PURE__ */ jsx("strong", { children: "来源标题：" }),
+            currentEvent.sourceTitle
+          ] }),
+          /* @__PURE__ */ jsxs("p", { children: [
+            /* @__PURE__ */ jsx("strong", { children: "内容类型：" }),
+            currentEvent.sourceContentType
+          ] }),
+          /* @__PURE__ */ jsx(Radio.Group, { value: action, onChange: (e) => setAction(e.target.value), style: { marginTop: 16 }, children: /* @__PURE__ */ jsxs(Space, { direction: "vertical", children: [
+            /* @__PURE__ */ jsx(Radio, { value: "create", children: "新建草稿" }),
+            /* @__PURE__ */ jsx(Radio, { value: "update", children: "更新已有草稿" }),
+            /* @__PURE__ */ jsx(Radio, { value: "ignore", children: "忽略" })
+          ] }) }),
+          action === "update" && /* @__PURE__ */ jsx(
+            Select,
+            {
+              placeholder: "选择草稿",
+              style: { width: "100%", marginTop: 8 },
+              onChange: (v) => setDraftId(v),
+              children: drafts.map((d) => /* @__PURE__ */ jsx(Option, { value: d.documentId, children: d.title }, d.documentId))
+            }
+          )
+        ] })
+      }
+    ),
+    /* @__PURE__ */ jsx(Modal, { title: "同步事件详情", open: detailModalOpen, onCancel: () => setDetailModalOpen(false), footer: null, children: currentEvent && /* @__PURE__ */ jsxs(Descriptions, { column: 1, bordered: true, children: [
+      /* @__PURE__ */ jsx(Descriptions.Item, { label: "来源标题", children: currentEvent.sourceTitle }),
+      /* @__PURE__ */ jsx(Descriptions.Item, { label: "内容类型", children: currentEvent.sourceContentType }),
+      /* @__PURE__ */ jsx(Descriptions.Item, { label: "来源 URL", children: currentEvent.sourceUrl || "-" }),
+      /* @__PURE__ */ jsx(Descriptions.Item, { label: "状态", children: STATUS_LABELS[currentEvent.eventStatus] || currentEvent.eventStatus }),
+      /* @__PURE__ */ jsx(Descriptions.Item, { label: "处理人", children: currentEvent.resolvedBy || "-" }),
+      /* @__PURE__ */ jsx(Descriptions.Item, { label: "处理时间", children: currentEvent.resolvedAt || "-" }),
+      /* @__PURE__ */ jsx(Descriptions.Item, { label: "关联草稿", children: currentEvent.targetDraftId?.title || "-" })
+    ] }) })
+  ] });
+}
 const App = () => /* @__PURE__ */ jsx(ConfigProvider, { prefixCls: "zs", iconPrefixCls: "zs-icon", locale: zhCN, children: /* @__PURE__ */ jsx(PluginLayout, { children: /* @__PURE__ */ jsxs(Routes, { children: [
   /* @__PURE__ */ jsx(Route, { path: "/", element: /* @__PURE__ */ jsx(HomePage, {}) }),
   /* @__PURE__ */ jsx(Route, { path: "/collect", element: /* @__PURE__ */ jsx(CollectPage, {}) }),
@@ -1804,6 +1995,7 @@ const App = () => /* @__PURE__ */ jsx(ConfigProvider, { prefixCls: "zs", iconPre
   /* @__PURE__ */ jsx(Route, { path: "/stats/basic", element: /* @__PURE__ */ jsx(StatsBasicPage, {}) }),
   /* @__PURE__ */ jsx(Route, { path: "/stats/advanced", element: /* @__PURE__ */ jsx(StatsAdvancedPage, {}) }),
   /* @__PURE__ */ jsx(Route, { path: "/stats/pro", element: /* @__PURE__ */ jsx(StatsProPage, {}) }),
+  /* @__PURE__ */ jsx(Route, { path: "/sync-events", element: /* @__PURE__ */ jsx(SyncEventPage, {}) }),
   /* @__PURE__ */ jsx(Route, { path: "*", element: /* @__PURE__ */ jsx("div", { children: "404" }) })
 ] }) }) });
 export {

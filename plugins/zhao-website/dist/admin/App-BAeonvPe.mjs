@@ -1,8 +1,8 @@
 import { jsxs, jsx, Fragment } from "react/jsx-runtime";
-import { Layout, Menu, Card, Typography, Spin, Row, Col, Tabs, Table, Form, Alert, Select, Radio, Button, message, Space, Modal, Input, Popconfirm, InputNumber, Tag, ConfigProvider } from "antd";
+import { Layout, Menu, Card, Typography, Spin, Row, Col, Tabs, Table, Form, Alert, Select, Radio, Button, message, Space, Modal, Input, Tag, Popconfirm, InputNumber, Switch, ConfigProvider } from "antd";
 import zhCN from "antd/locale/zh_CN";
 import { useNavigate, useLocation, Routes, Route } from "react-router-dom";
-import { DashboardOutlined, RocketOutlined, ShareAltOutlined, SafetyCertificateOutlined, RobotOutlined, SearchOutlined, ExportOutlined, PlusOutlined, CheckCircleOutlined, WarningOutlined, ReloadOutlined, CopyOutlined } from "@ant-design/icons";
+import { DashboardOutlined, RocketOutlined, ShareAltOutlined, SafetyCertificateOutlined, RobotOutlined, MessageOutlined, SearchOutlined, ExportOutlined, PlusOutlined, GlobalOutlined, CheckCircleOutlined, WarningOutlined, ReloadOutlined, CopyOutlined, EyeOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import { useState, useCallback, useEffect } from "react";
 const { Sider, Content } = Layout;
 const menuItems = [
@@ -11,6 +11,7 @@ const menuItems = [
   { key: "knowledge-graph", icon: /* @__PURE__ */ jsx(ShareAltOutlined, {}), label: "知识图谱" },
   { key: "first-truth", icon: /* @__PURE__ */ jsx(SafetyCertificateOutlined, {}), label: "第一真值" },
   { key: "ai-summaries", icon: /* @__PURE__ */ jsx(RobotOutlined, {}), label: "AI 摘要" },
+  { key: "brand-voice", icon: /* @__PURE__ */ jsx(MessageOutlined, {}), label: "品牌话术" },
   { key: "seo-output", icon: /* @__PURE__ */ jsx(SearchOutlined, {}), label: "SEO 输出" }
 ];
 const PluginLayout = ({ children }) => {
@@ -108,34 +109,60 @@ async function deleteJSON(url) {
   }
   return res.json();
 }
-const ADMIN_BASE = "/api/zhao-website/admin";
+const ADMIN_BASE = "/api/zhao-website/v1/admin";
 const PUBLIC_BASE = "/api/zhao-website/v1";
 const API = {
   statsOverview: `${ADMIN_BASE}/stats/overview`,
-  statsLead: (days = 30) => `${ADMIN_BASE}/stats/lead-stats?days=${days}`,
-  statsSearch: (days = 30) => `${ADMIN_BASE}/stats/search-stats?days=${days}`,
-  studioBridgePublish: `${ADMIN_BASE}/studio-bridge/publishFromStudio`,
-  kgFindEntities: (params = {}) => `${ADMIN_BASE}/knowledge-graph/find-entities?${new URLSearchParams(params).toString()}`,
-  kgCreateEntity: `${ADMIN_BASE}/knowledge-graph/create-entity`,
-  kgUpdateEntity: (id) => `${ADMIN_BASE}/knowledge-graph/update-entity/${id}`,
-  kgDeleteEntity: (id) => `${ADMIN_BASE}/knowledge-graph/delete-entity/${id}`,
-  kgFindRelations: (params = {}) => `${ADMIN_BASE}/knowledge-graph/find-relations?${new URLSearchParams(params).toString()}`,
-  kgAddRelation: `${ADMIN_BASE}/knowledge-graph/add-relation`,
-  kgDeleteRelation: (id) => `${ADMIN_BASE}/knowledge-graph/delete-relation/${id}`,
-  kgExportGraph: `${ADMIN_BASE}/knowledge-graph/export-graph`,
-  ftFind: (params = {}) => `${ADMIN_BASE}/first-truth/find?${new URLSearchParams(params).toString()}`,
-  ftFindOne: (id) => `${ADMIN_BASE}/first-truth/find-one/${id}`,
-  ftCreate: `${ADMIN_BASE}/first-truth/create`,
-  ftUpdate: (id) => `${ADMIN_BASE}/first-truth/update/${id}`,
-  ftDelete: (id) => `${ADMIN_BASE}/first-truth/delete/${id}`,
-  ftVerify: (id) => `${ADMIN_BASE}/first-truth/verify/${id}`,
-  ftConflicts: `${ADMIN_BASE}/first-truth/conflicts`,
-  ftExportFacts: `${ADMIN_BASE}/first-truth/export-facts`,
-  aiFindByTarget: (params = {}) => `${ADMIN_BASE}/ai-content-summary/find-by-target?${new URLSearchParams(params).toString()}`,
-  aiCreate: `${ADMIN_BASE}/ai-content-summary/create`,
-  aiUpdate: (id) => `${ADMIN_BASE}/ai-content-summary/update/${id}`,
-  aiDelete: (id) => `${ADMIN_BASE}/ai-content-summary/delete/${id}`,
-  aiRegenerate: (id) => `${ADMIN_BASE}/ai-content-summary/regenerate/${id}`,
+  statsLead: (days = 30) => `${ADMIN_BASE}/stats/leads?days=${days}`,
+  statsSearch: (days = 30) => `${ADMIN_BASE}/stats/search?days=${days}`,
+  studioBridgePublish: `${ADMIN_BASE}/studio-bridge/publish`,
+  // 知识图谱
+  kgFindEntities: (params = {}) => `${ADMIN_BASE}/knowledge-graph/entities?${new URLSearchParams(params).toString()}`,
+  kgCreateEntity: `${ADMIN_BASE}/knowledge-graph/entities`,
+  kgUpdateEntity: (id) => `${ADMIN_BASE}/knowledge-graph/entities/${id}`,
+  kgDeleteEntity: (id) => `${ADMIN_BASE}/knowledge-graph/entities/${id}`,
+  kgFindRelations: (params = {}) => `${ADMIN_BASE}/knowledge-graph/relations?${new URLSearchParams(params).toString()}`,
+  kgAddRelation: `${ADMIN_BASE}/knowledge-graph/relations`,
+  kgDeleteRelation: (id) => `${ADMIN_BASE}/knowledge-graph/relations/${id}`,
+  kgDisambiguate: `${ADMIN_BASE}/knowledge-graph/disambiguate`,
+  kgExportGraph: `${ADMIN_BASE}/knowledge-graph/export`,
+  // 全局实体
+  kgCreateGlobalEntity: `${ADMIN_BASE}/knowledge-graph/entities/global`,
+  kgUpdateGlobalEntity: (id) => `${ADMIN_BASE}/knowledge-graph/entities/global/${id}`,
+  kgDeleteGlobalEntity: (id) => `${ADMIN_BASE}/knowledge-graph/entities/global/${id}`,
+  // 第一真值
+  ftFind: (params = {}) => `${ADMIN_BASE}/first-truths?${new URLSearchParams(params).toString()}`,
+  ftFindOne: (id) => `${ADMIN_BASE}/first-truths/${id}`,
+  ftCreate: `${ADMIN_BASE}/first-truths`,
+  ftUpdate: (id) => `${ADMIN_BASE}/first-truths/${id}`,
+  ftDelete: (id) => `${ADMIN_BASE}/first-truths/${id}`,
+  ftVerify: (id) => `${ADMIN_BASE}/first-truths/${id}/verify`,
+  ftConflicts: `${ADMIN_BASE}/first-truths/conflicts`,
+  ftExportFacts: `${ADMIN_BASE}/first-truths/export`,
+  // 全局真值
+  ftCreateGlobal: `${ADMIN_BASE}/first-truths/global`,
+  ftUpdateGlobal: (id) => `${ADMIN_BASE}/first-truths/global/${id}`,
+  ftDeleteGlobal: (id) => `${ADMIN_BASE}/first-truths/global/${id}`,
+  ftVerifyGlobal: (id) => `${ADMIN_BASE}/first-truths/global/${id}/verify`,
+  // 品牌话术
+  bvFind: (params = {}) => `${ADMIN_BASE}/brand-voices?${new URLSearchParams(params).toString()}`,
+  bvFindOne: (id) => `${ADMIN_BASE}/brand-voices/${id}`,
+  bvCreate: `${ADMIN_BASE}/brand-voices`,
+  bvUpdate: (id) => `${ADMIN_BASE}/brand-voices/${id}`,
+  bvDelete: (id) => `${ADMIN_BASE}/brand-voices/${id}`,
+  bvResolve: (id) => `${ADMIN_BASE}/brand-voices/${id}/resolve`,
+  bvListByCategory: (category) => `${ADMIN_BASE}/brand-voices/by-category/${category}`,
+  // 全局品牌话术
+  bvCreateGlobal: `${ADMIN_BASE}/brand-voices/global`,
+  bvUpdateGlobal: (id) => `${ADMIN_BASE}/brand-voices/global/${id}`,
+  bvDeleteGlobal: (id) => `${ADMIN_BASE}/brand-voices/global/${id}`,
+  // AI 摘要
+  aiFindByTarget: (params = {}) => `${ADMIN_BASE}/ai-summaries?${new URLSearchParams(params).toString()}`,
+  aiCreate: `${ADMIN_BASE}/ai-summaries`,
+  aiUpdate: (id) => `${ADMIN_BASE}/ai-summaries/${id}`,
+  aiDelete: (id) => `${ADMIN_BASE}/ai-summaries/${id}`,
+  aiRegenerate: (id) => `${ADMIN_BASE}/ai-summaries/${id}/regenerate`,
+  // SEO 公开路由
   seoSitemap: `${PUBLIC_BASE}/sitemap.xml`,
   seoRobots: `${PUBLIC_BASE}/robots.txt`,
   seoLlmsTxt: `${PUBLIC_BASE}/llms.txt`
@@ -308,6 +335,8 @@ const KnowledgeGraphPage = () => {
   const [entityForm] = Form.useForm();
   const [relationForm] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
+  const [globalMode, setGlobalMode] = useState(false);
+  const [editingEntity, setEditingEntity] = useState(null);
   const { data: entities, loading: loadingEntities, refetch: refetchEntities } = useFetch(
     activeTab === "entities" ? API.kgFindEntities(entityParams) : null
   );
@@ -317,20 +346,41 @@ const KnowledgeGraphPage = () => {
   const handleCreateEntity = async (values) => {
     setSubmitting(true);
     try {
-      await postJSON(API.kgCreateEntity, values);
-      message.success("实体创建成功");
+      if (editingEntity) {
+        const url = globalMode ? API.kgUpdateGlobalEntity(editingEntity.documentId) : API.kgUpdateEntity(editingEntity.documentId);
+        await putJSON(url, values);
+        message.success("实体更新成功");
+      } else {
+        const url = globalMode ? API.kgCreateGlobalEntity : API.kgCreateEntity;
+        await postJSON(url, values);
+        message.success("实体创建成功");
+      }
       setEntityModalOpen(false);
       entityForm.resetFields();
+      setEditingEntity(null);
       refetchEntities();
     } catch (err) {
-      message.error(`创建失败: ${err.message}`);
+      message.error(`操作失败: ${err.message}`);
     } finally {
       setSubmitting(false);
     }
   };
-  const handleDeleteEntity = async (documentId) => {
+  const handleCreateGlobalEntity = () => {
+    setEditingEntity(null);
+    setGlobalMode(true);
+    entityForm.resetFields();
+    setEntityModalOpen(true);
+  };
+  const handleEditEntity = (record) => {
+    setEditingEntity(record);
+    setGlobalMode(record.site === null);
+    entityForm.setFieldsValue(record);
+    setEntityModalOpen(true);
+  };
+  const handleDeleteEntity = async (record) => {
     try {
-      await deleteJSON(API.kgDeleteEntity(documentId));
+      const url = record.site === null ? API.kgDeleteGlobalEntity(record.documentId) : API.kgDeleteEntity(record.documentId);
+      await deleteJSON(url);
       message.success("已删除");
       refetchEntities();
     } catch (err) {
@@ -371,12 +421,21 @@ const KnowledgeGraphPage = () => {
   };
   const entityColumns = [
     { title: "名称", dataIndex: "name" },
+    {
+      title: "层级",
+      dataIndex: "site",
+      key: "site",
+      render: (site) => site === null ? /* @__PURE__ */ jsx(Tag, { color: "blue", children: "全局" }) : /* @__PURE__ */ jsx(Tag, { children: "租户" })
+    },
     { title: "类型", dataIndex: "entityType" },
     { title: "Slug", dataIndex: "slug" },
     { title: "来源", dataIndex: "sourceType" },
     {
       title: "操作",
-      render: (_, record) => /* @__PURE__ */ jsx(Popconfirm, { title: "确认删除？", onConfirm: () => handleDeleteEntity(record.documentId), children: /* @__PURE__ */ jsx(Button, { type: "link", danger: true, size: "small", children: "删除" }) })
+      render: (_, record) => /* @__PURE__ */ jsxs(Space, { children: [
+        /* @__PURE__ */ jsx(Button, { type: "link", size: "small", onClick: () => handleEditEntity(record), children: "编辑" }),
+        /* @__PURE__ */ jsx(Popconfirm, { title: "确认删除？", onConfirm: () => handleDeleteEntity(record), children: /* @__PURE__ */ jsx(Button, { type: "link", danger: true, size: "small", children: "删除" }) })
+      ] })
     }
   ];
   const relationColumns = [
@@ -402,7 +461,15 @@ const KnowledgeGraphPage = () => {
             key: "entities",
             label: "实体",
             children: /* @__PURE__ */ jsxs(Fragment, { children: [
-              /* @__PURE__ */ jsx(Button, { icon: /* @__PURE__ */ jsx(PlusOutlined, {}), onClick: () => setEntityModalOpen(true), style: { marginBottom: 16 }, children: "新建实体" }),
+              /* @__PURE__ */ jsxs(Space, { style: { marginBottom: 16 }, children: [
+                /* @__PURE__ */ jsx(Button, { icon: /* @__PURE__ */ jsx(PlusOutlined, {}), onClick: () => {
+                  setEditingEntity(null);
+                  setGlobalMode(false);
+                  entityForm.resetFields();
+                  setEntityModalOpen(true);
+                }, children: "新建实体" }),
+                /* @__PURE__ */ jsx(Button, { icon: /* @__PURE__ */ jsx(GlobalOutlined, {}), onClick: handleCreateGlobalEntity, children: "新建全局实体" })
+              ] }),
               /* @__PURE__ */ jsx(
                 Table,
                 {
@@ -440,9 +507,13 @@ const KnowledgeGraphPage = () => {
     /* @__PURE__ */ jsx(
       Modal,
       {
-        title: "新建实体",
+        title: editingEntity ? globalMode ? "编辑全局实体" : "编辑实体" : globalMode ? "新建全局实体" : "新建实体",
         open: entityModalOpen,
-        onCancel: () => setEntityModalOpen(false),
+        onCancel: () => {
+          setEntityModalOpen(false);
+          setEditingEntity(null);
+          setGlobalMode(false);
+        },
         onOk: () => entityForm.submit(),
         confirmLoading: submitting,
         children: /* @__PURE__ */ jsxs(Form, { form: entityForm, layout: "vertical", onFinish: handleCreateEntity, children: [
@@ -502,17 +573,26 @@ const FirstTruthPage = () => {
   const [exportData, setExportData] = useState(null);
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
+  const [globalMode, setGlobalMode] = useState(false);
   const { data: truths, loading, refetch: refetchTruths } = useFetch(API.ftFind(listParams));
   const { data: conflicts, loading: loadingConflicts } = useFetch(
     activeTab === "conflicts" ? API.ftConflicts : null
   );
   const handleOpenCreate = () => {
     setEditingId(null);
+    setGlobalMode(false);
+    form.resetFields();
+    setModalOpen(true);
+  };
+  const handleCreateGlobal = () => {
+    setEditingId(null);
+    setGlobalMode(true);
     form.resetFields();
     setModalOpen(true);
   };
   const handleOpenEdit = (record) => {
     setEditingId(record.documentId);
+    setGlobalMode(record.site === null);
     form.setFieldsValue(record);
     setModalOpen(true);
   };
@@ -520,10 +600,12 @@ const FirstTruthPage = () => {
     setSubmitting(true);
     try {
       if (editingId) {
-        await putJSON(API.ftUpdate(editingId), values);
+        const url = globalMode ? API.ftUpdateGlobal(editingId) : API.ftUpdate(editingId);
+        await putJSON(url, values);
         message.success("已更新");
       } else {
-        await postJSON(API.ftCreate, values);
+        const url = globalMode ? API.ftCreateGlobal : API.ftCreate;
+        await postJSON(url, values);
         message.success("已创建");
       }
       setModalOpen(false);
@@ -534,18 +616,20 @@ const FirstTruthPage = () => {
       setSubmitting(false);
     }
   };
-  const handleVerify = async (documentId) => {
+  const handleVerify = async (record) => {
     try {
-      await postJSON(API.ftVerify(documentId), {});
+      const url = record.site === null ? API.ftVerifyGlobal(record.documentId) : API.ftVerify(record.documentId);
+      await postJSON(url, {});
       message.success("已标记为 verified");
       refetchTruths();
     } catch (err) {
       message.error(`操作失败: ${err.message}`);
     }
   };
-  const handleDelete = async (documentId) => {
+  const handleDelete = async (record) => {
     try {
-      await deleteJSON(API.ftDelete(documentId));
+      const url = record.site === null ? API.ftDeleteGlobal(record.documentId) : API.ftDelete(record.documentId);
+      await deleteJSON(url);
       message.success("已删除");
       refetchTruths();
     } catch (err) {
@@ -564,6 +648,12 @@ const FirstTruthPage = () => {
   const columns = [
     { title: "claimKey", dataIndex: "claimKey" },
     { title: "claim", dataIndex: "claim" },
+    {
+      title: "层级",
+      dataIndex: "site",
+      key: "site",
+      render: (site) => site === null ? /* @__PURE__ */ jsx(Tag, { color: "blue", children: "全局" }) : /* @__PURE__ */ jsx(Tag, { children: "租户" })
+    },
     { title: "canonicalValue", dataIndex: "canonicalValue" },
     { title: "类目", dataIndex: "claimCategory" },
     { title: "优先级", dataIndex: "priority" },
@@ -576,8 +666,8 @@ const FirstTruthPage = () => {
       title: "操作",
       render: (_, record) => /* @__PURE__ */ jsxs(Space, { children: [
         /* @__PURE__ */ jsx(Button, { type: "link", size: "small", onClick: () => handleOpenEdit(record), children: "编辑" }),
-        record.verificationStatus !== "verified" && /* @__PURE__ */ jsx(Button, { type: "link", size: "small", icon: /* @__PURE__ */ jsx(CheckCircleOutlined, {}), onClick: () => handleVerify(record.documentId), children: "verify" }),
-        /* @__PURE__ */ jsx(Popconfirm, { title: "确认删除？", onConfirm: () => handleDelete(record.documentId), children: /* @__PURE__ */ jsx(Button, { type: "link", danger: true, size: "small", children: "删除" }) })
+        record.verificationStatus !== "verified" && /* @__PURE__ */ jsx(Button, { type: "link", size: "small", icon: /* @__PURE__ */ jsx(CheckCircleOutlined, {}), onClick: () => handleVerify(record), children: "verify" }),
+        /* @__PURE__ */ jsx(Popconfirm, { title: "确认删除？", onConfirm: () => handleDelete(record), children: /* @__PURE__ */ jsx(Button, { type: "link", danger: true, size: "small", children: "删除" }) })
       ] })
     }
   ];
@@ -610,6 +700,7 @@ const FirstTruthPage = () => {
   return /* @__PURE__ */ jsxs(Card, { children: [
     /* @__PURE__ */ jsxs(Space, { style: { marginBottom: 16 }, children: [
       /* @__PURE__ */ jsx(Button, { icon: /* @__PURE__ */ jsx(PlusOutlined, {}), onClick: handleOpenCreate, children: "新建真值" }),
+      /* @__PURE__ */ jsx(Button, { icon: /* @__PURE__ */ jsx(GlobalOutlined, {}), onClick: handleCreateGlobal, children: "新建全局真值" }),
       /* @__PURE__ */ jsx(Button, { icon: /* @__PURE__ */ jsx(ExportOutlined, {}), onClick: handleExport, children: "导出 Facts" })
     ] }),
     conflicts && conflicts.length > 0 && /* @__PURE__ */ jsx(
@@ -663,9 +754,12 @@ const FirstTruthPage = () => {
     /* @__PURE__ */ jsx(
       Modal,
       {
-        title: editingId ? "编辑真值" : "新建真值",
+        title: editingId ? globalMode ? "编辑全局真值" : "编辑真值" : globalMode ? "新建全局真值" : "新建真值",
         open: modalOpen,
-        onCancel: () => setModalOpen(false),
+        onCancel: () => {
+          setModalOpen(false);
+          setGlobalMode(false);
+        },
         onOk: () => form.submit(),
         confirmLoading: submitting,
         children: /* @__PURE__ */ jsxs(Form, { form, layout: "vertical", onFinish: handleSubmit, children: [
@@ -909,6 +1003,229 @@ const SEOOutputPage = () => {
     }
   );
 };
+const { Option } = Select;
+const { TextArea } = Input;
+const CATEGORIES = ["tone", "style", "phrase", "disclaimer", "cta"];
+const CATEGORY_LABELS = {
+  tone: "语气",
+  style: "风格",
+  phrase: "话术",
+  disclaimer: "免责声明",
+  cta: "行动号召"
+};
+function BrandVoicePage() {
+  const [voices, setVoices] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [globalModalOpen, setGlobalModalOpen] = useState(false);
+  const [editing, setEditing] = useState(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewText, setPreviewText] = useState("");
+  const [filterCategory, setFilterCategory] = useState();
+  const [filterStatus, setFilterStatus] = useState();
+  const [form] = Form.useForm();
+  const fetchVoices = async () => {
+    setLoading(true);
+    try {
+      const params = {};
+      if (filterCategory) params.category = filterCategory;
+      if (filterStatus !== void 0) params.status = filterStatus;
+      const response = await fetch(API.bvFind(params));
+      const data = await response.json();
+      setVoices(data || []);
+    } catch (err) {
+      message.error("加载品牌话术失败");
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
+    fetchVoices();
+  }, []);
+  const handleCreate = () => {
+    setEditing(null);
+    form.resetFields();
+    form.setFieldsValue({ status: true });
+    setModalOpen(true);
+  };
+  const handleCreateGlobal = () => {
+    setEditing(null);
+    form.resetFields();
+    form.setFieldsValue({ status: true });
+    setGlobalModalOpen(true);
+  };
+  const handleEdit = (record) => {
+    setEditing(record);
+    form.setFieldsValue(record);
+    setModalOpen(record.site === null ? false : true);
+    setGlobalModalOpen(record.site === null ? true : false);
+  };
+  const handleDelete = async (record) => {
+    const url = record.site === null ? API.bvDeleteGlobal(record.documentId) : API.bvDelete(record.documentId);
+    await fetch(url, { method: "DELETE" });
+    message.success("删除成功");
+    fetchVoices();
+  };
+  const handleSave = async (isGlobal) => {
+    const values = await form.validateFields();
+    const isEdit = !!editing;
+    let url;
+    let method;
+    if (isGlobal) {
+      if (isEdit) {
+        url = API.bvUpdateGlobal(editing.documentId);
+        method = "PUT";
+      } else {
+        url = API.bvCreateGlobal;
+        method = "POST";
+      }
+    } else {
+      if (isEdit) {
+        url = API.bvUpdate(editing.documentId);
+        method = "PUT";
+      } else {
+        url = API.bvCreate;
+        method = "POST";
+      }
+    }
+    await fetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(values)
+    });
+    message.success("保存成功");
+    setModalOpen(false);
+    setGlobalModalOpen(false);
+    fetchVoices();
+  };
+  const handlePreview = async (record) => {
+    const response = await fetch(API.bvResolve(record.documentId), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ variables: {} })
+    });
+    const text = await response.json();
+    setPreviewText(text);
+    setPreviewOpen(true);
+  };
+  const columns = [
+    { title: "名称", dataIndex: "name", key: "name" },
+    {
+      title: "类目",
+      dataIndex: "category",
+      key: "category",
+      render: (cat) => /* @__PURE__ */ jsx(Tag, { children: CATEGORY_LABELS[cat] || cat })
+    },
+    {
+      title: "层级",
+      dataIndex: "site",
+      key: "site",
+      render: (site) => site === null ? /* @__PURE__ */ jsx(Tag, { color: "blue", children: "全局" }) : /* @__PURE__ */ jsx(Tag, { children: "租户" })
+    },
+    {
+      title: "状态",
+      dataIndex: "status",
+      key: "status",
+      render: (status) => /* @__PURE__ */ jsx(Switch, { checked: status, disabled: true })
+    },
+    { title: "标签", dataIndex: "tags", key: "tags", render: (tags) => Array.isArray(tags) ? tags.join(", ") : "" },
+    {
+      title: "操作",
+      key: "action",
+      render: (_, record) => /* @__PURE__ */ jsxs(Space, { children: [
+        /* @__PURE__ */ jsx(Button, { size: "small", icon: /* @__PURE__ */ jsx(EyeOutlined, {}), onClick: () => handlePreview(record), children: "预览" }),
+        /* @__PURE__ */ jsx(Button, { size: "small", icon: /* @__PURE__ */ jsx(EditOutlined, {}), onClick: () => handleEdit(record), children: "编辑" }),
+        /* @__PURE__ */ jsx(Button, { size: "small", danger: true, icon: /* @__PURE__ */ jsx(DeleteOutlined, {}), onClick: () => handleDelete(record), children: "删除" })
+      ] })
+    }
+  ];
+  const formContent = /* @__PURE__ */ jsxs(Fragment, { children: [
+    /* @__PURE__ */ jsx(Form.Item, { name: "name", label: "名称", rules: [{ required: true }], children: /* @__PURE__ */ jsx(Input, { maxLength: 100 }) }),
+    /* @__PURE__ */ jsx(Form.Item, { name: "category", label: "类目", rules: [{ required: true }], children: /* @__PURE__ */ jsx(Select, { children: CATEGORIES.map((c) => /* @__PURE__ */ jsx(Option, { value: c, children: CATEGORY_LABELS[c] }, c)) }) }),
+    /* @__PURE__ */ jsx(
+      Form.Item,
+      {
+        name: "content",
+        label: "内容模板",
+        rules: [{ required: true }],
+        extra: "支持 {{variable}} 占位符",
+        children: /* @__PURE__ */ jsx(TextArea, { rows: 6 })
+      }
+    ),
+    /* @__PURE__ */ jsx(
+      Form.Item,
+      {
+        name: "variables",
+        label: "变量定义",
+        extra: 'JSON 格式: [{"name":"var","description":"desc","defaultValue":"val"}]',
+        children: /* @__PURE__ */ jsx(TextArea, { rows: 3 })
+      }
+    ),
+    /* @__PURE__ */ jsx(
+      Form.Item,
+      {
+        name: "tags",
+        label: "标签",
+        extra: 'JSON 数组格式: ["tag1","tag2"]',
+        children: /* @__PURE__ */ jsx(Input, {})
+      }
+    ),
+    /* @__PURE__ */ jsx(Form.Item, { name: "status", label: "启用", valuePropName: "checked", children: /* @__PURE__ */ jsx(Switch, {}) })
+  ] });
+  return /* @__PURE__ */ jsxs(Card, { title: "品牌话术管理", children: [
+    /* @__PURE__ */ jsxs(Space, { style: { marginBottom: 16 }, children: [
+      /* @__PURE__ */ jsx(
+        Select,
+        {
+          placeholder: "筛选类目",
+          allowClear: true,
+          style: { width: 150 },
+          onChange: (v) => {
+            setFilterCategory(v);
+          },
+          children: CATEGORIES.map((c) => /* @__PURE__ */ jsx(Option, { value: c, children: CATEGORY_LABELS[c] }, c))
+        }
+      ),
+      /* @__PURE__ */ jsx(
+        Switch,
+        {
+          checkedChildren: "启用",
+          unCheckedChildren: "全部",
+          onChange: (v) => {
+            setFilterStatus(v);
+          }
+        }
+      ),
+      /* @__PURE__ */ jsx(Button, { onClick: fetchVoices, children: "查询" }),
+      /* @__PURE__ */ jsx(Button, { type: "primary", icon: /* @__PURE__ */ jsx(PlusOutlined, {}), onClick: handleCreate, children: "新建话术" }),
+      /* @__PURE__ */ jsx(Button, { icon: /* @__PURE__ */ jsx(GlobalOutlined, {}), onClick: handleCreateGlobal, children: "新建全局话术" })
+    ] }),
+    /* @__PURE__ */ jsx(Table, { columns, dataSource: voices, rowKey: "documentId", loading }),
+    /* @__PURE__ */ jsx(
+      Modal,
+      {
+        title: editing ? "编辑话术" : "新建话术",
+        open: modalOpen,
+        onOk: () => handleSave(false),
+        onCancel: () => setModalOpen(false),
+        width: 600,
+        children: /* @__PURE__ */ jsx(Form, { form, layout: "vertical", children: formContent })
+      }
+    ),
+    /* @__PURE__ */ jsx(
+      Modal,
+      {
+        title: editing ? "编辑全局话术" : "新建全局话术",
+        open: globalModalOpen,
+        onOk: () => handleSave(true),
+        onCancel: () => setGlobalModalOpen(false),
+        width: 600,
+        children: /* @__PURE__ */ jsx(Form, { form, layout: "vertical", children: formContent })
+      }
+    ),
+    /* @__PURE__ */ jsx(Modal, { title: "变量预览", open: previewOpen, onCancel: () => setPreviewOpen(false), footer: null, children: /* @__PURE__ */ jsx("pre", { style: { whiteSpace: "pre-wrap", wordBreak: "break-word" }, children: previewText }) })
+  ] });
+}
 const App = () => /* @__PURE__ */ jsx(ConfigProvider, { prefixCls: "zw", iconPrefixCls: "zw-icon", locale: zhCN, children: /* @__PURE__ */ jsx(PluginLayout, { children: /* @__PURE__ */ jsxs(Routes, { children: [
   /* @__PURE__ */ jsx(Route, { path: "/", element: /* @__PURE__ */ jsx(DashboardPage, {}) }),
   /* @__PURE__ */ jsx(Route, { path: "/studio-bridge", element: /* @__PURE__ */ jsx(StudioBridgePage, {}) }),
@@ -916,6 +1233,7 @@ const App = () => /* @__PURE__ */ jsx(ConfigProvider, { prefixCls: "zw", iconPre
   /* @__PURE__ */ jsx(Route, { path: "/first-truth", element: /* @__PURE__ */ jsx(FirstTruthPage, {}) }),
   /* @__PURE__ */ jsx(Route, { path: "/ai-summaries", element: /* @__PURE__ */ jsx(AISummariesPage, {}) }),
   /* @__PURE__ */ jsx(Route, { path: "/seo-output", element: /* @__PURE__ */ jsx(SEOOutputPage, {}) }),
+  /* @__PURE__ */ jsx(Route, { path: "/brand-voice", element: /* @__PURE__ */ jsx(BrandVoicePage, {}) }),
   /* @__PURE__ */ jsx(Route, { path: "*", element: /* @__PURE__ */ jsx("div", { children: "页面建设中" }) })
 ] }) }) });
 export {

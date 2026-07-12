@@ -244,6 +244,14 @@ declare const _default: {
             date: Date;
         }>;
     };
+    'sync-event': ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        list(siteId: number, query?: any): Promise<any[]>;
+        findOne(siteId: number, documentId: string): Promise<any>;
+        resolve(siteId: number, documentId: string, body: any): Promise<any>;
+        createFromWebhook(payload: any): Promise<any>;
+    };
 };
 export default _default;
 //# sourceMappingURL=index.d.ts.map

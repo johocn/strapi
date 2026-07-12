@@ -81,13 +81,27 @@ const bootstrap = async ({ strapi: strapi2 }) => {
 const config = {
   default: {}
 };
-const kind$h = "collectionType";
-const collectionName$h = "zhao_website_seo_configs";
-const info$h = { "singularName": "seo-config", "pluralName": "seo-configs", "displayName": "SEO 全局配置" };
-const options$h = { "draftAndPublish": false };
-const pluginOptions$h = { "content-manager": { "visible": true }, "content-type-builder": { "visible": false } };
-const attributes$h = { "site": { "type": "relation", "relation": "oneToOne", "target": "plugin::zhao-common.site-config", "required": true, "inversedBy": "website_seo_config" }, "defaultTitle": { "type": "string", "maxLength": 60 }, "titleTemplate": { "type": "string", "maxLength": 60 }, "defaultDescription": { "type": "string", "maxLength": 160 }, "defaultKeywords": { "type": "string", "maxLength": 200 }, "ogImage": { "type": "media" }, "favicon": { "type": "media" }, "googleSiteVerification": { "type": "string", "maxLength": 100 }, "baiduSiteVerification": { "type": "string", "maxLength": 100 }, "bingSiteVerification": { "type": "string", "maxLength": 100 }, "baiduAnalyticsId": { "type": "string", "maxLength": 50 }, "googleAnalyticsId": { "type": "string", "maxLength": 50 }, "customHeadCode": { "type": "text" }, "customBodyCode": { "type": "text" }, "enableSitemap": { "type": "boolean", "default": true }, "sitemapExcludeTypes": { "type": "json" }, "enableRobotsTxt": { "type": "boolean", "default": true }, "robotsContent": { "type": "text" }, "aiCrawlerPolicy": { "type": "enumeration", "enum": ["allow_all", "block_all", "selective"], "default": "allow_all" }, "geoRegion": { "type": "string", "maxLength": 20 }, "geoPlacename": { "type": "string", "maxLength": 100 }, "geoPosition": { "type": "string", "maxLength": 50 }, "geoICBM": { "type": "string", "maxLength": 50 }, "defaultLocale": { "type": "string", "maxLength": 10, "default": "zh-CN" }, "alternateLocales": { "type": "json" }, "hreflangStrategy": { "type": "enumeration", "enum": ["none", "subdirectory", "subdomain", "tld"], "default": "subdirectory" }, "organizationName": { "type": "string", "maxLength": 200 }, "organizationLogo": { "type": "media" }, "organizationType": { "type": "string", "maxLength": 50 }, "schemaSameAs": { "type": "json" }, "schemaContactPoint": { "type": "json" }, "icpNumber": { "type": "string", "maxLength": 50 }, "publicSecurityRecord": { "type": "string", "maxLength": 50 }, "extraConfig": { "type": "json" }, "deletedAt": { "type": "datetime", "default": null } };
+const kind$i = "collectionType";
+const collectionName$i = "zhao_website_seo_configs";
+const info$i = { "singularName": "seo-config", "pluralName": "seo-configs", "displayName": "SEO 全局配置" };
+const options$i = { "draftAndPublish": false };
+const pluginOptions$i = { "content-manager": { "visible": true }, "content-type-builder": { "visible": false } };
+const attributes$i = { "site": { "type": "relation", "relation": "oneToOne", "target": "plugin::zhao-common.site-config", "required": true, "inversedBy": "website_seo_config" }, "defaultTitle": { "type": "string", "maxLength": 60 }, "titleTemplate": { "type": "string", "maxLength": 60 }, "defaultDescription": { "type": "string", "maxLength": 160 }, "defaultKeywords": { "type": "string", "maxLength": 200 }, "ogImage": { "type": "media" }, "favicon": { "type": "media" }, "googleSiteVerification": { "type": "string", "maxLength": 100 }, "baiduSiteVerification": { "type": "string", "maxLength": 100 }, "bingSiteVerification": { "type": "string", "maxLength": 100 }, "baiduAnalyticsId": { "type": "string", "maxLength": 50 }, "googleAnalyticsId": { "type": "string", "maxLength": 50 }, "customHeadCode": { "type": "text" }, "customBodyCode": { "type": "text" }, "enableSitemap": { "type": "boolean", "default": true }, "sitemapExcludeTypes": { "type": "json" }, "enableRobotsTxt": { "type": "boolean", "default": true }, "robotsContent": { "type": "text" }, "aiCrawlerPolicy": { "type": "enumeration", "enum": ["allow_all", "block_all", "selective"], "default": "allow_all" }, "geoRegion": { "type": "string", "maxLength": 20 }, "geoPlacename": { "type": "string", "maxLength": 100 }, "geoPosition": { "type": "string", "maxLength": 50 }, "geoICBM": { "type": "string", "maxLength": 50 }, "defaultLocale": { "type": "string", "maxLength": 10, "default": "zh-CN" }, "alternateLocales": { "type": "json" }, "hreflangStrategy": { "type": "enumeration", "enum": ["none", "subdirectory", "subdomain", "tld"], "default": "subdirectory" }, "organizationName": { "type": "string", "maxLength": 200 }, "organizationLogo": { "type": "media" }, "organizationType": { "type": "string", "maxLength": 50 }, "schemaSameAs": { "type": "json" }, "schemaContactPoint": { "type": "json" }, "icpNumber": { "type": "string", "maxLength": 50 }, "publicSecurityRecord": { "type": "string", "maxLength": 50 }, "extraConfig": { "type": "json" }, "deletedAt": { "type": "datetime", "default": null } };
 const seoConfig$1 = {
+  kind: kind$i,
+  collectionName: collectionName$i,
+  info: info$i,
+  options: options$i,
+  pluginOptions: pluginOptions$i,
+  attributes: attributes$i
+};
+const kind$h = "collectionType";
+const collectionName$h = "zhao_website_brand_infos";
+const info$h = { "singularName": "brand-info", "pluralName": "brand-infos", "displayName": "企业品牌信息" };
+const options$h = { "draftAndPublish": false };
+const pluginOptions$h = { "i18n": { "localized": true }, "content-manager": { "visible": true }, "content-type-builder": { "visible": false } };
+const attributes$h = { "site": { "type": "relation", "relation": "oneToOne", "target": "plugin::zhao-common.site-config", "required": true, "inversedBy": "website_brand_info" }, "companyName": { "type": "string", "maxLength": 200, "required": true, "localized": true }, "shortName": { "type": "string", "maxLength": 100, "localized": true }, "slogan": { "type": "string", "maxLength": 200, "localized": true }, "logo": { "type": "media" }, "logoDark": { "type": "media" }, "favicon": { "type": "media" }, "description": { "type": "text", "localized": true }, "foundingDate": { "type": "date" }, "registeredAddress": { "type": "string", "maxLength": 500, "localized": true }, "officeAddress": { "type": "string", "maxLength": 500, "localized": true }, "contactPhone": { "type": "string", "maxLength": 30 }, "contactEmail": { "type": "email" }, "serviceHotline": { "type": "string", "maxLength": 30 }, "businessHours": { "type": "string", "maxLength": 100 }, "wechatQrCode": { "type": "media" }, "wechatPublicAccount": { "type": "string", "maxLength": 100 }, "miniProgramName": { "type": "string", "maxLength": 100 }, "socialLinks": { "type": "json" }, "offices": { "type": "json", "localized": true }, "certificates": { "type": "json", "localized": true }, "legalRepresentative": { "type": "string", "maxLength": 50 }, "registeredCapital": { "type": "string", "maxLength": 50 }, "unifiedSocialCreditCode": { "type": "string", "maxLength": 50 }, "businessScope": { "type": "text", "localized": true }, "mainEntity": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-website.knowledge-entity", "inversedBy": "brandInfos" }, "deletedAt": { "type": "datetime", "default": null } };
+const brandInfo$1 = {
   kind: kind$h,
   collectionName: collectionName$h,
   info: info$h,
@@ -96,12 +110,12 @@ const seoConfig$1 = {
   attributes: attributes$h
 };
 const kind$g = "collectionType";
-const collectionName$g = "zhao_website_brand_infos";
-const info$g = { "singularName": "brand-info", "pluralName": "brand-infos", "displayName": "企业品牌信息" };
+const collectionName$g = "zhao_website_articles";
+const info$g = { "singularName": "article", "pluralName": "articles", "displayName": "资讯文章" };
 const options$g = { "draftAndPublish": false };
 const pluginOptions$g = { "i18n": { "localized": true }, "content-manager": { "visible": true }, "content-type-builder": { "visible": false } };
-const attributes$g = { "site": { "type": "relation", "relation": "oneToOne", "target": "plugin::zhao-common.site-config", "required": true, "inversedBy": "website_brand_info" }, "companyName": { "type": "string", "maxLength": 200, "required": true, "localized": true }, "shortName": { "type": "string", "maxLength": 100, "localized": true }, "slogan": { "type": "string", "maxLength": 200, "localized": true }, "logo": { "type": "media" }, "logoDark": { "type": "media" }, "favicon": { "type": "media" }, "description": { "type": "text", "localized": true }, "foundingDate": { "type": "date" }, "registeredAddress": { "type": "string", "maxLength": 500, "localized": true }, "officeAddress": { "type": "string", "maxLength": 500, "localized": true }, "contactPhone": { "type": "string", "maxLength": 30 }, "contactEmail": { "type": "email" }, "serviceHotline": { "type": "string", "maxLength": 30 }, "businessHours": { "type": "string", "maxLength": 100 }, "wechatQrCode": { "type": "media" }, "wechatPublicAccount": { "type": "string", "maxLength": 100 }, "miniProgramName": { "type": "string", "maxLength": 100 }, "socialLinks": { "type": "json" }, "offices": { "type": "json", "localized": true }, "certificates": { "type": "json", "localized": true }, "legalRepresentative": { "type": "string", "maxLength": 50 }, "registeredCapital": { "type": "string", "maxLength": 50 }, "unifiedSocialCreditCode": { "type": "string", "maxLength": 50 }, "businessScope": { "type": "text", "localized": true }, "mainEntity": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-website.knowledge-entity", "inversedBy": "brandInfos" }, "deletedAt": { "type": "datetime", "default": null } };
-const brandInfo$1 = {
+const attributes$g = { "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config", "required": true, "inversedBy": "website_articles" }, "title": { "type": "string", "maxLength": 200, "required": true, "localized": true }, "slug": { "type": "uid", "targetField": "title", "required": true, "localized": true }, "excerpt": { "type": "text", "localized": true }, "content": { "type": "text", "required": true, "localized": true }, "coverImage": { "type": "media" }, "category": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-website.article-category", "inversedBy": "articles" }, "tags": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-tag.tag", "inversedBy": "website_articles" }, "author": { "type": "string", "maxLength": 50 }, "authorTitle": { "type": "string", "maxLength": 50 }, "isFeatured": { "type": "boolean", "default": false }, "isPinned": { "type": "boolean", "default": false }, "viewCount": { "type": "biginteger", "default": 0 }, "likeCount": { "type": "biginteger", "default": 0 }, "collectCount": { "type": "biginteger", "default": 0 }, "shareCount": { "type": "biginteger", "default": 0 }, "readingTime": { "type": "integer" }, "wordCount": { "type": "integer" }, "seoTitle": { "type": "string", "maxLength": 60, "localized": true }, "seoDescription": { "type": "string", "maxLength": 160, "localized": true }, "seoKeywords": { "type": "string", "maxLength": 200, "localized": true }, "canonicalUrl": { "type": "string", "maxLength": 500, "localized": true }, "ogTitle": { "type": "string", "maxLength": 200, "localized": true }, "ogDescription": { "type": "text", "localized": true }, "ogImage": { "type": "media" }, "ogType": { "type": "enumeration", "enum": ["article", "product", "website", "video"], "default": "article" }, "twitterCard": { "type": "enumeration", "enum": ["summary", "summary_large_image", "product"], "default": "summary_large_image" }, "schemaType": { "type": "string", "maxLength": 50 }, "schemaJson": { "type": "json", "localized": true }, "allowIndex": { "type": "boolean", "default": true }, "noFollow": { "type": "boolean", "default": false }, "sitemapPriority": { "type": "decimal", "default": 0.7 }, "sitemapFrequency": { "type": "enumeration", "enum": ["always", "hourly", "daily", "weekly", "monthly", "yearly", "never"], "default": "weekly" }, "sourceType": { "type": "enumeration", "enum": ["original", "studio", "external"], "default": "original" }, "sourceUrl": { "type": "string" }, "sourceArticleDraft": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.article-draft", "inversedBy": "websiteArticles" }, "mainEntity": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-website.knowledge-entity", "inversedBy": "articleMainEntities" }, "mentionedEntities": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.knowledge-entity", "inversedBy": "articleMentions" }, "brandVoiceRef": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-website.brand-voice", "inversedBy": "articles" }, "structuredData": { "type": "json" }, "status": { "type": "enumeration", "enum": ["draft", "published", "archived"], "default": "draft" }, "publishedAt": { "type": "datetime" }, "deletedAt": { "type": "datetime", "default": null } };
+const article$2 = {
   kind: kind$g,
   collectionName: collectionName$g,
   info: info$g,
@@ -110,12 +124,12 @@ const brandInfo$1 = {
   attributes: attributes$g
 };
 const kind$f = "collectionType";
-const collectionName$f = "zhao_website_articles";
-const info$f = { "singularName": "article", "pluralName": "articles", "displayName": "资讯文章" };
+const collectionName$f = "zhao_website_article_categories";
+const info$f = { "singularName": "article-category", "pluralName": "article-categories", "displayName": "文章分类" };
 const options$f = { "draftAndPublish": false };
 const pluginOptions$f = { "i18n": { "localized": true }, "content-manager": { "visible": true }, "content-type-builder": { "visible": false } };
-const attributes$f = { "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config", "required": true, "inversedBy": "website_articles" }, "title": { "type": "string", "maxLength": 200, "required": true, "localized": true }, "slug": { "type": "uid", "targetField": "title", "required": true, "localized": true }, "excerpt": { "type": "text", "localized": true }, "content": { "type": "text", "required": true, "localized": true }, "coverImage": { "type": "media" }, "category": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-website.article-category", "inversedBy": "articles" }, "tags": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-tag.tag", "inversedBy": "website_articles" }, "author": { "type": "string", "maxLength": 50 }, "authorTitle": { "type": "string", "maxLength": 50 }, "isFeatured": { "type": "boolean", "default": false }, "isPinned": { "type": "boolean", "default": false }, "viewCount": { "type": "biginteger", "default": 0 }, "likeCount": { "type": "biginteger", "default": 0 }, "collectCount": { "type": "biginteger", "default": 0 }, "shareCount": { "type": "biginteger", "default": 0 }, "readingTime": { "type": "integer" }, "wordCount": { "type": "integer" }, "seoTitle": { "type": "string", "maxLength": 60, "localized": true }, "seoDescription": { "type": "string", "maxLength": 160, "localized": true }, "seoKeywords": { "type": "string", "maxLength": 200, "localized": true }, "canonicalUrl": { "type": "string", "maxLength": 500, "localized": true }, "ogTitle": { "type": "string", "maxLength": 200, "localized": true }, "ogDescription": { "type": "text", "localized": true }, "ogImage": { "type": "media" }, "ogType": { "type": "enumeration", "enum": ["article", "product", "website", "video"], "default": "article" }, "twitterCard": { "type": "enumeration", "enum": ["summary", "summary_large_image", "product"], "default": "summary_large_image" }, "schemaType": { "type": "string", "maxLength": 50 }, "schemaJson": { "type": "json", "localized": true }, "allowIndex": { "type": "boolean", "default": true }, "noFollow": { "type": "boolean", "default": false }, "sitemapPriority": { "type": "decimal", "default": 0.7 }, "sitemapFrequency": { "type": "enumeration", "enum": ["always", "hourly", "daily", "weekly", "monthly", "yearly", "never"], "default": "weekly" }, "sourceType": { "type": "enumeration", "enum": ["original", "studio", "external"], "default": "original" }, "sourceUrl": { "type": "string" }, "sourceArticleDraft": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.article-draft", "inversedBy": "websiteArticles" }, "mainEntity": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-website.knowledge-entity", "inversedBy": "articleMainEntities" }, "mentionedEntities": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.knowledge-entity", "inversedBy": "articleMentions" }, "structuredData": { "type": "json" }, "status": { "type": "enumeration", "enum": ["draft", "published", "archived"], "default": "draft" }, "publishedAt": { "type": "datetime" }, "deletedAt": { "type": "datetime", "default": null } };
-const article$2 = {
+const attributes$f = { "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config", "required": true, "inversedBy": "website_article_categories" }, "name": { "type": "string", "maxLength": 100, "required": true, "localized": true }, "slug": { "type": "uid", "targetField": "name", "required": true, "localized": true }, "description": { "type": "text", "localized": true }, "parent": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-website.article-category", "inversedBy": "children" }, "children": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.article-category", "mappedBy": "parent" }, "articles": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.article", "mappedBy": "category" }, "tutorials": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.tutorial", "mappedBy": "category" }, "faqs": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.faq", "mappedBy": "category" }, "downloads": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.download", "mappedBy": "category" }, "products": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.product", "mappedBy": "category" }, "order": { "type": "integer", "default": 0 }, "seoTitle": { "type": "string", "maxLength": 60, "localized": true }, "seoDescription": { "type": "string", "maxLength": 160, "localized": true }, "status": { "type": "boolean", "default": true }, "deletedAt": { "type": "datetime", "default": null } };
+const articleCategory$1 = {
   kind: kind$f,
   collectionName: collectionName$f,
   info: info$f,
@@ -124,12 +138,12 @@ const article$2 = {
   attributes: attributes$f
 };
 const kind$e = "collectionType";
-const collectionName$e = "zhao_website_article_categories";
-const info$e = { "singularName": "article-category", "pluralName": "article-categories", "displayName": "文章分类" };
+const collectionName$e = "zhao_website_products";
+const info$e = { "singularName": "product", "pluralName": "products", "displayName": "产品/方案" };
 const options$e = { "draftAndPublish": false };
 const pluginOptions$e = { "i18n": { "localized": true }, "content-manager": { "visible": true }, "content-type-builder": { "visible": false } };
-const attributes$e = { "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config", "required": true, "inversedBy": "website_article_categories" }, "name": { "type": "string", "maxLength": 100, "required": true, "localized": true }, "slug": { "type": "uid", "targetField": "name", "required": true, "localized": true }, "description": { "type": "text", "localized": true }, "parent": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-website.article-category", "inversedBy": "children" }, "children": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.article-category", "mappedBy": "parent" }, "articles": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.article", "mappedBy": "category" }, "tutorials": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.tutorial", "mappedBy": "category" }, "faqs": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.faq", "mappedBy": "category" }, "downloads": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.download", "mappedBy": "category" }, "products": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.product", "mappedBy": "category" }, "order": { "type": "integer", "default": 0 }, "seoTitle": { "type": "string", "maxLength": 60, "localized": true }, "seoDescription": { "type": "string", "maxLength": 160, "localized": true }, "status": { "type": "boolean", "default": true }, "deletedAt": { "type": "datetime", "default": null } };
-const articleCategory$1 = {
+const attributes$e = { "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config", "required": true, "inversedBy": "website_products" }, "name": { "type": "string", "maxLength": 200, "required": true, "localized": true }, "slug": { "type": "uid", "targetField": "name", "required": true, "localized": true }, "tagline": { "type": "string", "maxLength": 200, "localized": true }, "description": { "type": "text", "localized": true }, "content": { "type": "text", "localized": true }, "coverImage": { "type": "media" }, "images": { "type": "media", "multiple": true }, "category": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-website.article-category", "inversedBy": "products" }, "tags": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-tag.tag", "inversedBy": "website_products" }, "features": { "type": "json", "localized": true }, "specifications": { "type": "json", "localized": true }, "scenarios": { "type": "json" }, "priceRange": { "type": "string", "maxLength": 100 }, "priceUnit": { "type": "string", "maxLength": 20 }, "isFeatured": { "type": "boolean", "default": false }, "viewCount": { "type": "biginteger", "default": 0 }, "seoTitle": { "type": "string", "maxLength": 60, "localized": true }, "seoDescription": { "type": "string", "maxLength": 160, "localized": true }, "seoKeywords": { "type": "string", "maxLength": 200, "localized": true }, "canonicalUrl": { "type": "string", "maxLength": 500 }, "ogImage": { "type": "media" }, "allowIndex": { "type": "boolean", "default": true }, "sitemapPriority": { "type": "decimal", "default": 0.7 }, "sitemapFrequency": { "type": "enumeration", "enum": ["always", "hourly", "daily", "weekly", "monthly", "yearly", "never"], "default": "weekly" }, "mainEntity": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-website.knowledge-entity", "inversedBy": "productMainEntities" }, "mentionedEntities": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.knowledge-entity", "inversedBy": "productMentions" }, "cases": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.case", "mappedBy": "relatedProducts" }, "structuredData": { "type": "json" }, "status": { "type": "enumeration", "enum": ["draft", "published", "archived"], "default": "draft" }, "publishedAt": { "type": "datetime" }, "deletedAt": { "type": "datetime", "default": null } };
+const product$2 = {
   kind: kind$e,
   collectionName: collectionName$e,
   info: info$e,
@@ -138,12 +152,12 @@ const articleCategory$1 = {
   attributes: attributes$e
 };
 const kind$d = "collectionType";
-const collectionName$d = "zhao_website_products";
-const info$d = { "singularName": "product", "pluralName": "products", "displayName": "产品/方案" };
+const collectionName$d = "zhao_website_cases";
+const info$d = { "singularName": "case", "pluralName": "cases", "displayName": "落地案例" };
 const options$d = { "draftAndPublish": false };
 const pluginOptions$d = { "i18n": { "localized": true }, "content-manager": { "visible": true }, "content-type-builder": { "visible": false } };
-const attributes$d = { "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config", "required": true, "inversedBy": "website_products" }, "name": { "type": "string", "maxLength": 200, "required": true, "localized": true }, "slug": { "type": "uid", "targetField": "name", "required": true, "localized": true }, "tagline": { "type": "string", "maxLength": 200, "localized": true }, "description": { "type": "text", "localized": true }, "content": { "type": "text", "localized": true }, "coverImage": { "type": "media" }, "images": { "type": "media", "multiple": true }, "category": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-website.article-category", "inversedBy": "products" }, "tags": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-tag.tag", "inversedBy": "website_products" }, "features": { "type": "json", "localized": true }, "specifications": { "type": "json", "localized": true }, "scenarios": { "type": "json" }, "priceRange": { "type": "string", "maxLength": 100 }, "priceUnit": { "type": "string", "maxLength": 20 }, "isFeatured": { "type": "boolean", "default": false }, "viewCount": { "type": "biginteger", "default": 0 }, "seoTitle": { "type": "string", "maxLength": 60, "localized": true }, "seoDescription": { "type": "string", "maxLength": 160, "localized": true }, "seoKeywords": { "type": "string", "maxLength": 200, "localized": true }, "canonicalUrl": { "type": "string", "maxLength": 500 }, "ogImage": { "type": "media" }, "allowIndex": { "type": "boolean", "default": true }, "sitemapPriority": { "type": "decimal", "default": 0.7 }, "sitemapFrequency": { "type": "enumeration", "enum": ["always", "hourly", "daily", "weekly", "monthly", "yearly", "never"], "default": "weekly" }, "mainEntity": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-website.knowledge-entity", "inversedBy": "productMainEntities" }, "mentionedEntities": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.knowledge-entity", "inversedBy": "productMentions" }, "cases": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.case", "mappedBy": "relatedProducts" }, "structuredData": { "type": "json" }, "status": { "type": "enumeration", "enum": ["draft", "published", "archived"], "default": "draft" }, "publishedAt": { "type": "datetime" }, "deletedAt": { "type": "datetime", "default": null } };
-const product$2 = {
+const attributes$d = { "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config", "required": true, "inversedBy": "website_cases" }, "title": { "type": "string", "maxLength": 200, "required": true, "localized": true }, "slug": { "type": "uid", "targetField": "title", "required": true, "localized": true }, "clientName": { "type": "string", "maxLength": 100, "required": true, "localized": true }, "clientLogo": { "type": "media" }, "clientIndustry": { "type": "string", "maxLength": 50 }, "clientDescription": { "type": "text", "localized": true }, "challenge": { "type": "text", "required": true, "localized": true }, "solution": { "type": "text", "required": true, "localized": true }, "results": { "type": "json", "required": true, "localized": true }, "testimonial": { "type": "text", "localized": true }, "testimonialAuthor": { "type": "string", "maxLength": 50 }, "testimonialTitle": { "type": "string", "maxLength": 100 }, "coverImage": { "type": "media" }, "images": { "type": "media", "multiple": true }, "tags": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-tag.tag", "inversedBy": "website_cases" }, "relatedProducts": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.product", "inversedBy": "cases" }, "isFeatured": { "type": "boolean", "default": false }, "viewCount": { "type": "biginteger", "default": 0 }, "seoTitle": { "type": "string", "maxLength": 60, "localized": true }, "seoDescription": { "type": "string", "maxLength": 160, "localized": true }, "allowIndex": { "type": "boolean", "default": true }, "mainEntity": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-website.knowledge-entity", "inversedBy": "caseMainEntities" }, "mentionedEntities": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.knowledge-entity", "inversedBy": "caseMentions" }, "structuredData": { "type": "json" }, "status": { "type": "enumeration", "enum": ["draft", "published", "archived"], "default": "draft" }, "publishedAt": { "type": "datetime" }, "deletedAt": { "type": "datetime", "default": null } };
+const caseCt = {
   kind: kind$d,
   collectionName: collectionName$d,
   info: info$d,
@@ -152,12 +166,12 @@ const product$2 = {
   attributes: attributes$d
 };
 const kind$c = "collectionType";
-const collectionName$c = "zhao_website_cases";
-const info$c = { "singularName": "case", "pluralName": "cases", "displayName": "落地案例" };
+const collectionName$c = "zhao_website_compliances";
+const info$c = { "singularName": "compliance", "pluralName": "compliances", "displayName": "合规公示" };
 const options$c = { "draftAndPublish": false };
 const pluginOptions$c = { "i18n": { "localized": true }, "content-manager": { "visible": true }, "content-type-builder": { "visible": false } };
-const attributes$c = { "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config", "required": true, "inversedBy": "website_cases" }, "title": { "type": "string", "maxLength": 200, "required": true, "localized": true }, "slug": { "type": "uid", "targetField": "title", "required": true, "localized": true }, "clientName": { "type": "string", "maxLength": 100, "required": true, "localized": true }, "clientLogo": { "type": "media" }, "clientIndustry": { "type": "string", "maxLength": 50 }, "clientDescription": { "type": "text", "localized": true }, "challenge": { "type": "text", "required": true, "localized": true }, "solution": { "type": "text", "required": true, "localized": true }, "results": { "type": "json", "required": true, "localized": true }, "testimonial": { "type": "text", "localized": true }, "testimonialAuthor": { "type": "string", "maxLength": 50 }, "testimonialTitle": { "type": "string", "maxLength": 100 }, "coverImage": { "type": "media" }, "images": { "type": "media", "multiple": true }, "tags": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-tag.tag", "inversedBy": "website_cases" }, "relatedProducts": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.product", "inversedBy": "cases" }, "isFeatured": { "type": "boolean", "default": false }, "viewCount": { "type": "biginteger", "default": 0 }, "seoTitle": { "type": "string", "maxLength": 60, "localized": true }, "seoDescription": { "type": "string", "maxLength": 160, "localized": true }, "allowIndex": { "type": "boolean", "default": true }, "mainEntity": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-website.knowledge-entity", "inversedBy": "caseMainEntities" }, "mentionedEntities": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.knowledge-entity", "inversedBy": "caseMentions" }, "structuredData": { "type": "json" }, "status": { "type": "enumeration", "enum": ["draft", "published", "archived"], "default": "draft" }, "publishedAt": { "type": "datetime" }, "deletedAt": { "type": "datetime", "default": null } };
-const caseCt = {
+const attributes$c = { "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config", "required": true, "inversedBy": "website_compliances" }, "title": { "type": "string", "maxLength": 200, "required": true, "localized": true }, "slug": { "type": "uid", "targetField": "title", "required": true, "localized": true }, "category": { "type": "enumeration", "enum": ["notice", "policy", "report", "certificate", "agreement"], "required": true }, "content": { "type": "text", "required": true, "localized": true }, "effectiveDate": { "type": "date" }, "expiryDate": { "type": "date" }, "tags": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-tag.tag", "inversedBy": "website_compliances" }, "isPinned": { "type": "boolean", "default": false }, "seoTitle": { "type": "string", "maxLength": 60, "localized": true }, "seoDescription": { "type": "string", "maxLength": 160, "localized": true }, "allowIndex": { "type": "boolean", "default": true }, "status": { "type": "enumeration", "enum": ["draft", "published", "archived"], "default": "draft" }, "publishedAt": { "type": "datetime" }, "deletedAt": { "type": "datetime", "default": null } };
+const compliance$2 = {
   kind: kind$c,
   collectionName: collectionName$c,
   info: info$c,
@@ -166,12 +180,12 @@ const caseCt = {
   attributes: attributes$c
 };
 const kind$b = "collectionType";
-const collectionName$b = "zhao_website_compliances";
-const info$b = { "singularName": "compliance", "pluralName": "compliances", "displayName": "合规公示" };
+const collectionName$b = "zhao_website_faqs";
+const info$b = { "singularName": "faq", "pluralName": "faqs", "displayName": "常见问答" };
 const options$b = { "draftAndPublish": false };
 const pluginOptions$b = { "i18n": { "localized": true }, "content-manager": { "visible": true }, "content-type-builder": { "visible": false } };
-const attributes$b = { "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config", "required": true, "inversedBy": "website_compliances" }, "title": { "type": "string", "maxLength": 200, "required": true, "localized": true }, "slug": { "type": "uid", "targetField": "title", "required": true, "localized": true }, "category": { "type": "enumeration", "enum": ["notice", "policy", "report", "certificate", "agreement"], "required": true }, "content": { "type": "text", "required": true, "localized": true }, "effectiveDate": { "type": "date" }, "expiryDate": { "type": "date" }, "tags": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-tag.tag", "inversedBy": "website_compliances" }, "isPinned": { "type": "boolean", "default": false }, "seoTitle": { "type": "string", "maxLength": 60, "localized": true }, "seoDescription": { "type": "string", "maxLength": 160, "localized": true }, "allowIndex": { "type": "boolean", "default": true }, "status": { "type": "enumeration", "enum": ["draft", "published", "archived"], "default": "draft" }, "publishedAt": { "type": "datetime" }, "deletedAt": { "type": "datetime", "default": null } };
-const compliance$2 = {
+const attributes$b = { "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config", "required": true, "inversedBy": "website_faqs" }, "question": { "type": "text", "required": true, "localized": true }, "answer": { "type": "text", "required": true, "localized": true }, "slug": { "type": "uid", "targetField": "question", "required": true }, "category": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-website.article-category", "inversedBy": "faqs" }, "tags": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-tag.tag", "inversedBy": "website_faqs" }, "order": { "type": "integer", "default": 0 }, "isFeatured": { "type": "boolean", "default": false }, "viewCount": { "type": "biginteger", "default": 0 }, "mainEntity": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-website.knowledge-entity", "inversedBy": "faqMainEntities" }, "mentionedEntities": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.knowledge-entity", "inversedBy": "faqMentions" }, "status": { "type": "enumeration", "enum": ["draft", "published", "archived"], "default": "draft" }, "publishedAt": { "type": "datetime" }, "deletedAt": { "type": "datetime", "default": null } };
+const faq$2 = {
   kind: kind$b,
   collectionName: collectionName$b,
   info: info$b,
@@ -180,12 +194,12 @@ const compliance$2 = {
   attributes: attributes$b
 };
 const kind$a = "collectionType";
-const collectionName$a = "zhao_website_faqs";
-const info$a = { "singularName": "faq", "pluralName": "faqs", "displayName": "常见问答" };
+const collectionName$a = "zhao_website_tutorials";
+const info$a = { "singularName": "tutorial", "pluralName": "tutorials", "displayName": "教程/操作指南" };
 const options$a = { "draftAndPublish": false };
 const pluginOptions$a = { "i18n": { "localized": true }, "content-manager": { "visible": true }, "content-type-builder": { "visible": false } };
-const attributes$a = { "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config", "required": true, "inversedBy": "website_faqs" }, "question": { "type": "text", "required": true, "localized": true }, "answer": { "type": "text", "required": true, "localized": true }, "slug": { "type": "uid", "targetField": "question", "required": true }, "category": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-website.article-category", "inversedBy": "faqs" }, "tags": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-tag.tag", "inversedBy": "website_faqs" }, "order": { "type": "integer", "default": 0 }, "isFeatured": { "type": "boolean", "default": false }, "viewCount": { "type": "biginteger", "default": 0 }, "mainEntity": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-website.knowledge-entity", "inversedBy": "faqMainEntities" }, "mentionedEntities": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.knowledge-entity", "inversedBy": "faqMentions" }, "status": { "type": "enumeration", "enum": ["draft", "published", "archived"], "default": "draft" }, "publishedAt": { "type": "datetime" }, "deletedAt": { "type": "datetime", "default": null } };
-const faq$2 = {
+const attributes$a = { "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config", "required": true, "inversedBy": "website_tutorials" }, "title": { "type": "string", "maxLength": 200, "required": true, "localized": true }, "slug": { "type": "uid", "targetField": "title", "required": true, "localized": true }, "description": { "type": "text", "localized": true }, "coverImage": { "type": "media" }, "steps": { "type": "json", "required": true, "localized": true }, "materials": { "type": "json" }, "estimatedTime": { "type": "string", "maxLength": 50 }, "difficulty": { "type": "enumeration", "enum": ["beginner", "intermediate", "advanced"], "default": "beginner" }, "result": { "type": "text", "localized": true }, "category": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-website.article-category", "inversedBy": "tutorials" }, "tags": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-tag.tag", "inversedBy": "website_tutorials" }, "order": { "type": "integer", "default": 0 }, "isFeatured": { "type": "boolean", "default": false }, "viewCount": { "type": "biginteger", "default": 0 }, "mainEntity": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-website.knowledge-entity", "inversedBy": "tutorialMainEntities" }, "mentionedEntities": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.knowledge-entity", "inversedBy": "tutorialMentions" }, "structuredData": { "type": "json" }, "status": { "type": "enumeration", "enum": ["draft", "published", "archived"], "default": "draft" }, "publishedAt": { "type": "datetime" }, "deletedAt": { "type": "datetime", "default": null } };
+const tutorial$2 = {
   kind: kind$a,
   collectionName: collectionName$a,
   info: info$a,
@@ -194,12 +208,12 @@ const faq$2 = {
   attributes: attributes$a
 };
 const kind$9 = "collectionType";
-const collectionName$9 = "zhao_website_tutorials";
-const info$9 = { "singularName": "tutorial", "pluralName": "tutorials", "displayName": "教程/操作指南" };
+const collectionName$9 = "zhao_website_downloads";
+const info$9 = { "singularName": "download", "pluralName": "downloads", "displayName": "下载文件管理" };
 const options$9 = { "draftAndPublish": false };
 const pluginOptions$9 = { "i18n": { "localized": true }, "content-manager": { "visible": true }, "content-type-builder": { "visible": false } };
-const attributes$9 = { "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config", "required": true, "inversedBy": "website_tutorials" }, "title": { "type": "string", "maxLength": 200, "required": true, "localized": true }, "slug": { "type": "uid", "targetField": "title", "required": true, "localized": true }, "description": { "type": "text", "localized": true }, "coverImage": { "type": "media" }, "steps": { "type": "json", "required": true, "localized": true }, "materials": { "type": "json" }, "estimatedTime": { "type": "string", "maxLength": 50 }, "difficulty": { "type": "enumeration", "enum": ["beginner", "intermediate", "advanced"], "default": "beginner" }, "result": { "type": "text", "localized": true }, "category": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-website.article-category", "inversedBy": "tutorials" }, "tags": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-tag.tag", "inversedBy": "website_tutorials" }, "order": { "type": "integer", "default": 0 }, "isFeatured": { "type": "boolean", "default": false }, "viewCount": { "type": "biginteger", "default": 0 }, "mainEntity": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-website.knowledge-entity", "inversedBy": "tutorialMainEntities" }, "mentionedEntities": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.knowledge-entity", "inversedBy": "tutorialMentions" }, "structuredData": { "type": "json" }, "status": { "type": "enumeration", "enum": ["draft", "published", "archived"], "default": "draft" }, "publishedAt": { "type": "datetime" }, "deletedAt": { "type": "datetime", "default": null } };
-const tutorial$2 = {
+const attributes$9 = { "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config", "required": true, "inversedBy": "website_downloads" }, "name": { "type": "string", "maxLength": 200, "required": true, "localized": true }, "description": { "type": "text", "localized": true }, "file": { "type": "media", "required": true }, "fileType": { "type": "enumeration", "enum": ["whitepaper", "brochure", "datasheet", "template", "guide", "certificate", "other"], "default": "other" }, "fileSize": { "type": "biginteger" }, "category": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-website.article-category", "inversedBy": "downloads" }, "tags": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-tag.tag", "inversedBy": "website_downloads" }, "relatedContentType": { "type": "string", "maxLength": 30 }, "relatedContentId": { "type": "string" }, "requireLead": { "type": "boolean", "default": true }, "downloadCount": { "type": "biginteger", "default": 0 }, "isFeatured": { "type": "boolean", "default": false }, "order": { "type": "integer", "default": 0 }, "status": { "type": "enumeration", "enum": ["draft", "published", "archived"], "default": "draft" }, "publishedAt": { "type": "datetime" }, "deletedAt": { "type": "datetime", "default": null } };
+const download$2 = {
   kind: kind$9,
   collectionName: collectionName$9,
   info: info$9,
@@ -208,12 +222,12 @@ const tutorial$2 = {
   attributes: attributes$9
 };
 const kind$8 = "collectionType";
-const collectionName$8 = "zhao_website_downloads";
-const info$8 = { "singularName": "download", "pluralName": "downloads", "displayName": "下载文件管理" };
+const collectionName$8 = "zhao_website_leads";
+const info$8 = { "singularName": "lead", "pluralName": "leads", "displayName": "线索/留资" };
 const options$8 = { "draftAndPublish": false };
-const pluginOptions$8 = { "i18n": { "localized": true }, "content-manager": { "visible": true }, "content-type-builder": { "visible": false } };
-const attributes$8 = { "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config", "required": true, "inversedBy": "website_downloads" }, "name": { "type": "string", "maxLength": 200, "required": true, "localized": true }, "description": { "type": "text", "localized": true }, "file": { "type": "media", "required": true }, "fileType": { "type": "enumeration", "enum": ["whitepaper", "brochure", "datasheet", "template", "guide", "certificate", "other"], "default": "other" }, "fileSize": { "type": "biginteger" }, "category": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-website.article-category", "inversedBy": "downloads" }, "tags": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-tag.tag", "inversedBy": "website_downloads" }, "relatedContentType": { "type": "string", "maxLength": 30 }, "relatedContentId": { "type": "string" }, "requireLead": { "type": "boolean", "default": true }, "downloadCount": { "type": "biginteger", "default": 0 }, "isFeatured": { "type": "boolean", "default": false }, "order": { "type": "integer", "default": 0 }, "status": { "type": "enumeration", "enum": ["draft", "published", "archived"], "default": "draft" }, "publishedAt": { "type": "datetime" }, "deletedAt": { "type": "datetime", "default": null } };
-const download$2 = {
+const pluginOptions$8 = { "content-manager": { "visible": false }, "content-type-builder": { "visible": false } };
+const attributes$8 = { "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config", "required": true, "inversedBy": "website_leads" }, "type": { "type": "enumeration", "enum": ["contact", "download", "quote", "appointment", "demo", "partner", "intent_order", "referral"], "required": true }, "contactName": { "type": "string", "maxLength": 50 }, "contactPhone": { "type": "string", "maxLength": 30 }, "contactEmail": { "type": "email" }, "contactCompany": { "type": "string", "maxLength": 200 }, "contactTitle": { "type": "string", "maxLength": 100 }, "message": { "type": "text" }, "sourceType": { "type": "string", "maxLength": 30 }, "sourceId": { "type": "string" }, "referralCode": { "type": "string", "maxLength": 50 }, "sourceUrl": { "type": "string", "maxLength": 500 }, "downloadFileId": { "type": "string" }, "utmSource": { "type": "string", "maxLength": 100 }, "utmMedium": { "type": "string", "maxLength": 100 }, "utmCampaign": { "type": "string", "maxLength": 200 }, "utmContent": { "type": "string", "maxLength": 200 }, "utmTerm": { "type": "string", "maxLength": 200 }, "referrer": { "type": "string", "maxLength": 500 }, "userAgent": { "type": "string", "maxLength": 500 }, "ipAddress": { "type": "string", "maxLength": 50 }, "assignedTo": { "type": "relation", "relation": "manyToOne", "target": "admin::user" }, "status": { "type": "enumeration", "enum": ["new", "contacted", "qualified", "unqualified", "converted", "invalid"], "default": "new" }, "followUpRecords": { "type": "json" }, "remark": { "type": "text" }, "convertedAt": { "type": "datetime" }, "deletedAt": { "type": "datetime", "default": null } };
+const lead$2 = {
   kind: kind$8,
   collectionName: collectionName$8,
   info: info$8,
@@ -222,12 +236,12 @@ const download$2 = {
   attributes: attributes$8
 };
 const kind$7 = "collectionType";
-const collectionName$7 = "zhao_website_leads";
-const info$7 = { "singularName": "lead", "pluralName": "leads", "displayName": "线索/留资" };
+const collectionName$7 = "zhao_website_visit_logs";
+const info$7 = { "singularName": "visit-log", "pluralName": "visit-logs", "displayName": "访问日志" };
 const options$7 = { "draftAndPublish": false };
 const pluginOptions$7 = { "content-manager": { "visible": false }, "content-type-builder": { "visible": false } };
-const attributes$7 = { "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config", "required": true, "inversedBy": "website_leads" }, "type": { "type": "enumeration", "enum": ["contact", "download", "quote", "appointment", "demo", "partner", "intent_order", "referral"], "required": true }, "contactName": { "type": "string", "maxLength": 50 }, "contactPhone": { "type": "string", "maxLength": 30 }, "contactEmail": { "type": "email" }, "contactCompany": { "type": "string", "maxLength": 200 }, "contactTitle": { "type": "string", "maxLength": 100 }, "message": { "type": "text" }, "sourceType": { "type": "string", "maxLength": 30 }, "sourceId": { "type": "string" }, "referralCode": { "type": "string", "maxLength": 50 }, "sourceUrl": { "type": "string", "maxLength": 500 }, "downloadFileId": { "type": "string" }, "utmSource": { "type": "string", "maxLength": 100 }, "utmMedium": { "type": "string", "maxLength": 100 }, "utmCampaign": { "type": "string", "maxLength": 200 }, "utmContent": { "type": "string", "maxLength": 200 }, "utmTerm": { "type": "string", "maxLength": 200 }, "referrer": { "type": "string", "maxLength": 500 }, "userAgent": { "type": "string", "maxLength": 500 }, "ipAddress": { "type": "string", "maxLength": 50 }, "assignedTo": { "type": "relation", "relation": "manyToOne", "target": "admin::user" }, "status": { "type": "enumeration", "enum": ["new", "contacted", "qualified", "unqualified", "converted", "invalid"], "default": "new" }, "followUpRecords": { "type": "json" }, "remark": { "type": "text" }, "convertedAt": { "type": "datetime" }, "deletedAt": { "type": "datetime", "default": null } };
-const lead$2 = {
+const attributes$7 = { "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config", "required": true, "inversedBy": "website_visit_logs" }, "type": { "type": "enumeration", "enum": ["page_view", "article_view", "product_view", "case_view", "download_click", "cta_click", "search", "external_click"], "required": true }, "pageUrl": { "type": "string", "maxLength": 500 }, "pageTitle": { "type": "string", "maxLength": 200 }, "targetType": { "type": "string", "maxLength": 30 }, "targetId": { "type": "string" }, "referrer": { "type": "string", "maxLength": 500 }, "referrerDomain": { "type": "string", "maxLength": 200 }, "searchKeyword": { "type": "string", "maxLength": 200 }, "utmSource": { "type": "string", "maxLength": 100 }, "utmMedium": { "type": "string", "maxLength": 100 }, "utmCampaign": { "type": "string", "maxLength": 200 }, "userAgent": { "type": "string", "maxLength": 500 }, "deviceType": { "type": "enumeration", "enum": ["desktop", "mobile", "tablet"], "default": "desktop" }, "browser": { "type": "string", "maxLength": 50 }, "os": { "type": "string", "maxLength": 50 }, "ipAddress": { "type": "string", "maxLength": 50 }, "country": { "type": "string", "maxLength": 50 }, "region": { "type": "string", "maxLength": 100 }, "city": { "type": "string", "maxLength": 100 }, "sessionId": { "type": "string", "maxLength": 100 }, "visitorId": { "type": "string", "maxLength": 100 }, "userId": { "type": "relation", "relation": "manyToOne", "target": "plugin::users-permissions.user" }, "dwellTime": { "type": "integer" }, "scrollDepth": { "type": "integer" }, "deletedAt": { "type": "datetime", "default": null } };
+const visitLog$1 = {
   kind: kind$7,
   collectionName: collectionName$7,
   info: info$7,
@@ -236,12 +250,12 @@ const lead$2 = {
   attributes: attributes$7
 };
 const kind$6 = "collectionType";
-const collectionName$6 = "zhao_website_visit_logs";
-const info$6 = { "singularName": "visit-log", "pluralName": "visit-logs", "displayName": "访问日志" };
+const collectionName$6 = "zhao_website_interactions";
+const info$6 = { "singularName": "interaction", "pluralName": "interactions", "displayName": "内容互动记录" };
 const options$6 = { "draftAndPublish": false };
 const pluginOptions$6 = { "content-manager": { "visible": false }, "content-type-builder": { "visible": false } };
-const attributes$6 = { "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config", "required": true, "inversedBy": "website_visit_logs" }, "type": { "type": "enumeration", "enum": ["page_view", "article_view", "product_view", "case_view", "download_click", "cta_click", "search", "external_click"], "required": true }, "pageUrl": { "type": "string", "maxLength": 500 }, "pageTitle": { "type": "string", "maxLength": 200 }, "targetType": { "type": "string", "maxLength": 30 }, "targetId": { "type": "string" }, "referrer": { "type": "string", "maxLength": 500 }, "referrerDomain": { "type": "string", "maxLength": 200 }, "searchKeyword": { "type": "string", "maxLength": 200 }, "utmSource": { "type": "string", "maxLength": 100 }, "utmMedium": { "type": "string", "maxLength": 100 }, "utmCampaign": { "type": "string", "maxLength": 200 }, "userAgent": { "type": "string", "maxLength": 500 }, "deviceType": { "type": "enumeration", "enum": ["desktop", "mobile", "tablet"], "default": "desktop" }, "browser": { "type": "string", "maxLength": 50 }, "os": { "type": "string", "maxLength": 50 }, "ipAddress": { "type": "string", "maxLength": 50 }, "country": { "type": "string", "maxLength": 50 }, "region": { "type": "string", "maxLength": 100 }, "city": { "type": "string", "maxLength": 100 }, "sessionId": { "type": "string", "maxLength": 100 }, "visitorId": { "type": "string", "maxLength": 100 }, "userId": { "type": "relation", "relation": "manyToOne", "target": "plugin::users-permissions.user" }, "dwellTime": { "type": "integer" }, "scrollDepth": { "type": "integer" }, "deletedAt": { "type": "datetime", "default": null } };
-const visitLog$1 = {
+const attributes$6 = { "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config", "required": true, "inversedBy": "website_interactions" }, "type": { "type": "enumeration", "enum": ["like", "collect", "share"], "required": true }, "targetType": { "type": "string", "maxLength": 30, "required": true }, "targetId": { "type": "string", "required": true }, "visitorId": { "type": "string", "maxLength": 100, "required": true }, "userId": { "type": "relation", "relation": "manyToOne", "target": "plugin::users-permissions.user" }, "ipAddress": { "type": "string", "maxLength": 50 }, "userAgent": { "type": "string", "maxLength": 500 }, "deletedAt": { "type": "datetime", "default": null } };
+const interaction$1 = {
   kind: kind$6,
   collectionName: collectionName$6,
   info: info$6,
@@ -250,12 +264,12 @@ const visitLog$1 = {
   attributes: attributes$6
 };
 const kind$5 = "collectionType";
-const collectionName$5 = "zhao_website_interactions";
-const info$5 = { "singularName": "interaction", "pluralName": "interactions", "displayName": "内容互动记录" };
+const collectionName$5 = "zhao_website_search_logs";
+const info$5 = { "singularName": "search-log", "pluralName": "search-logs", "displayName": "搜索日志" };
 const options$5 = { "draftAndPublish": false };
 const pluginOptions$5 = { "content-manager": { "visible": false }, "content-type-builder": { "visible": false } };
-const attributes$5 = { "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config", "required": true, "inversedBy": "website_interactions" }, "type": { "type": "enumeration", "enum": ["like", "collect", "share"], "required": true }, "targetType": { "type": "string", "maxLength": 30, "required": true }, "targetId": { "type": "string", "required": true }, "visitorId": { "type": "string", "maxLength": 100, "required": true }, "userId": { "type": "relation", "relation": "manyToOne", "target": "plugin::users-permissions.user" }, "ipAddress": { "type": "string", "maxLength": 50 }, "userAgent": { "type": "string", "maxLength": 500 }, "deletedAt": { "type": "datetime", "default": null } };
-const interaction$1 = {
+const attributes$5 = { "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config", "required": true, "inversedBy": "website_search_logs" }, "keyword": { "type": "string", "maxLength": 200, "required": true }, "resultCount": { "type": "integer", "default": 0 }, "visitorId": { "type": "string", "maxLength": 100 }, "ipAddress": { "type": "string", "maxLength": 50 }, "deletedAt": { "type": "datetime", "default": null } };
+const searchLog$1 = {
   kind: kind$5,
   collectionName: collectionName$5,
   info: info$5,
@@ -264,12 +278,12 @@ const interaction$1 = {
   attributes: attributes$5
 };
 const kind$4 = "collectionType";
-const collectionName$4 = "zhao_website_search_logs";
-const info$4 = { "singularName": "search-log", "pluralName": "search-logs", "displayName": "搜索日志" };
+const collectionName$4 = "zhao_website_knowledge_entities";
+const info$4 = { "singularName": "knowledge-entity", "pluralName": "knowledge-entities", "displayName": "知识图谱实体" };
 const options$4 = { "draftAndPublish": false };
-const pluginOptions$4 = { "content-manager": { "visible": false }, "content-type-builder": { "visible": false } };
-const attributes$4 = { "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config", "required": true, "inversedBy": "website_search_logs" }, "keyword": { "type": "string", "maxLength": 200, "required": true }, "resultCount": { "type": "integer", "default": 0 }, "visitorId": { "type": "string", "maxLength": 100 }, "ipAddress": { "type": "string", "maxLength": 50 }, "deletedAt": { "type": "datetime", "default": null } };
-const searchLog$1 = {
+const pluginOptions$4 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": false } };
+const attributes$4 = { "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config", "required": false, "inversedBy": "website_knowledge_entities" }, "entityType": { "type": "enumeration", "enum": ["Organization", "Person", "Product", "Service", "Place", "Event", "CreativeWork", "Article", "CaseStudy", "Offer", "Review", "FAQ", "HowTo", "BreadcrumbList", "Brand", "ContactPoint", "QuantitativeValue", "DefinedTerm"], "required": true }, "name": { "type": "string", "maxLength": 200, "required": true }, "slug": { "type": "uid", "targetField": "name", "required": true }, "identifier": { "type": "string", "maxLength": 100 }, "description": { "type": "text" }, "sameAs": { "type": "json" }, "image": { "type": "media" }, "url": { "type": "string", "maxLength": 500 }, "properties": { "type": "json" }, "refTargetType": { "type": "string", "maxLength": 30 }, "refTargetId": { "type": "string" }, "confidence": { "type": "decimal", "default": 1 }, "sourceType": { "type": "enumeration", "enum": ["official", "derived", "manual", "imported"], "default": "official" }, "lastVerifiedAt": { "type": "datetime" }, "verificationStatus": { "type": "enumeration", "enum": ["verified", "pending", "outdated", "conflict"], "default": "verified" }, "verifiedBy": { "type": "relation", "relation": "manyToOne", "target": "admin::user" }, "status": { "type": "boolean", "default": true }, "brandInfos": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.brand-info", "mappedBy": "mainEntity" }, "subjectRelations": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.knowledge-relation", "mappedBy": "subject" }, "objectRelations": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.knowledge-relation", "mappedBy": "object" }, "faqMainEntities": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.faq", "mappedBy": "mainEntity" }, "faqMentions": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.faq", "mappedBy": "mentionedEntities" }, "tutorialMainEntities": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.tutorial", "mappedBy": "mainEntity" }, "tutorialMentions": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.tutorial", "mappedBy": "mentionedEntities" }, "articleMainEntities": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.article", "mappedBy": "mainEntity" }, "articleMentions": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.article", "mappedBy": "mentionedEntities" }, "firstTruthPolicies": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.first-truth-policy", "mappedBy": "mainEntity" }, "productMainEntities": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.product", "mappedBy": "mainEntity" }, "productMentions": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.product", "mappedBy": "mentionedEntities" }, "caseMainEntities": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.case", "mappedBy": "mainEntity" }, "caseMentions": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.case", "mappedBy": "mentionedEntities" }, "deletedAt": { "type": "datetime", "default": null } };
+const knowledgeEntity = {
   kind: kind$4,
   collectionName: collectionName$4,
   info: info$4,
@@ -278,12 +292,12 @@ const searchLog$1 = {
   attributes: attributes$4
 };
 const kind$3 = "collectionType";
-const collectionName$3 = "zhao_website_knowledge_entities";
-const info$3 = { "singularName": "knowledge-entity", "pluralName": "knowledge-entities", "displayName": "知识图谱实体" };
+const collectionName$3 = "zhao_website_knowledge_relations";
+const info$3 = { "singularName": "knowledge-relation", "pluralName": "knowledge-relations", "displayName": "知识图谱关系" };
 const options$3 = { "draftAndPublish": false };
 const pluginOptions$3 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": false } };
-const attributes$3 = { "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config", "required": false, "inversedBy": "website_knowledge_entities" }, "entityType": { "type": "enumeration", "enum": ["Organization", "Person", "Product", "Service", "Place", "Event", "CreativeWork", "Article", "CaseStudy", "Offer", "Review", "FAQ", "HowTo", "BreadcrumbList", "Brand", "ContactPoint", "QuantitativeValue", "DefinedTerm"], "required": true }, "name": { "type": "string", "maxLength": 200, "required": true }, "slug": { "type": "uid", "targetField": "name", "required": true }, "identifier": { "type": "string", "maxLength": 100 }, "description": { "type": "text" }, "sameAs": { "type": "json" }, "image": { "type": "media" }, "url": { "type": "string", "maxLength": 500 }, "properties": { "type": "json" }, "refTargetType": { "type": "string", "maxLength": 30 }, "refTargetId": { "type": "string" }, "confidence": { "type": "decimal", "default": 1 }, "sourceType": { "type": "enumeration", "enum": ["official", "derived", "manual", "imported"], "default": "official" }, "lastVerifiedAt": { "type": "datetime" }, "verificationStatus": { "type": "enumeration", "enum": ["verified", "pending", "outdated", "conflict"], "default": "verified" }, "verifiedBy": { "type": "relation", "relation": "manyToOne", "target": "admin::user" }, "status": { "type": "boolean", "default": true }, "brandInfos": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.brand-info", "mappedBy": "mainEntity" }, "subjectRelations": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.knowledge-relation", "mappedBy": "subject" }, "objectRelations": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.knowledge-relation", "mappedBy": "object" }, "faqMainEntities": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.faq", "mappedBy": "mainEntity" }, "faqMentions": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.faq", "mappedBy": "mentionedEntities" }, "tutorialMainEntities": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.tutorial", "mappedBy": "mainEntity" }, "tutorialMentions": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.tutorial", "mappedBy": "mentionedEntities" }, "articleMainEntities": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.article", "mappedBy": "mainEntity" }, "articleMentions": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.article", "mappedBy": "mentionedEntities" }, "firstTruthPolicies": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.first-truth-policy", "mappedBy": "mainEntity" }, "productMainEntities": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.product", "mappedBy": "mainEntity" }, "productMentions": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.product", "mappedBy": "mentionedEntities" }, "caseMainEntities": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.case", "mappedBy": "mainEntity" }, "caseMentions": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.case", "mappedBy": "mentionedEntities" }, "deletedAt": { "type": "datetime", "default": null } };
-const knowledgeEntity = {
+const attributes$3 = { "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config", "required": true, "inversedBy": "website_knowledge_relations" }, "subjectEntity": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-website.knowledge-entity", "required": true, "inversedBy": "subjectRelations" }, "predicate": { "type": "string", "maxLength": 100, "required": true }, "objectEntity": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-website.knowledge-entity", "inversedBy": "objectRelations" }, "objectValue": { "type": "json" }, "objectText": { "type": "text" }, "sourceUrl": { "type": "string", "maxLength": 500 }, "sourceType": { "type": "enumeration", "enum": ["official", "derived", "manual", "inferred"], "default": "manual" }, "confidence": { "type": "decimal", "default": 1 }, "lastVerifiedAt": { "type": "datetime" }, "verificationStatus": { "type": "enumeration", "enum": ["verified", "pending", "outdated", "conflict"], "default": "verified" }, "status": { "type": "boolean", "default": true }, "deletedAt": { "type": "datetime", "default": null } };
+const knowledgeRelation = {
   kind: kind$3,
   collectionName: collectionName$3,
   info: info$3,
@@ -292,12 +306,12 @@ const knowledgeEntity = {
   attributes: attributes$3
 };
 const kind$2 = "collectionType";
-const collectionName$2 = "zhao_website_knowledge_relations";
-const info$2 = { "singularName": "knowledge-relation", "pluralName": "knowledge-relations", "displayName": "知识图谱关系" };
+const collectionName$2 = "zhao_website_ai_summaries";
+const info$2 = { "singularName": "ai-content-summary", "pluralName": "ai-content-summaries", "displayName": "机器可读摘要" };
 const options$2 = { "draftAndPublish": false };
 const pluginOptions$2 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": false } };
-const attributes$2 = { "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config", "required": true, "inversedBy": "website_knowledge_relations" }, "subjectEntity": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-website.knowledge-entity", "required": true, "inversedBy": "subjectRelations" }, "predicate": { "type": "string", "maxLength": 100, "required": true }, "objectEntity": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-website.knowledge-entity", "inversedBy": "objectRelations" }, "objectValue": { "type": "json" }, "objectText": { "type": "text" }, "sourceUrl": { "type": "string", "maxLength": 500 }, "sourceType": { "type": "enumeration", "enum": ["official", "derived", "manual", "inferred"], "default": "manual" }, "confidence": { "type": "decimal", "default": 1 }, "lastVerifiedAt": { "type": "datetime" }, "verificationStatus": { "type": "enumeration", "enum": ["verified", "pending", "outdated", "conflict"], "default": "verified" }, "status": { "type": "boolean", "default": true }, "deletedAt": { "type": "datetime", "default": null } };
-const knowledgeRelation = {
+const attributes$2 = { "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config", "required": true, "inversedBy": "website_ai_summaries" }, "targetType": { "type": "string", "maxLength": 30, "required": true }, "targetId": { "type": "string", "required": true }, "summaryType": { "type": "enumeration", "enum": ["tldr", "key_facts", "faq", "qa_pairs", "technical_spec", "executive_brief", "comparison", "howto"], "required": true }, "content": { "type": "json", "required": true }, "contentText": { "type": "text" }, "language": { "type": "string", "maxLength": 10, "default": "zh-CN" }, "version": { "type": "integer", "default": 1 }, "generatedBy": { "type": "enumeration", "enum": ["manual", "ai_assisted", "ai_generated", "hybrid"], "default": "manual" }, "aiProvider": { "type": "string", "maxLength": 50 }, "aiModel": { "type": "string", "maxLength": 100 }, "generatedAt": { "type": "datetime" }, "verifiedAt": { "type": "datetime" }, "verificationStatus": { "type": "enumeration", "enum": ["verified", "pending", "outdated", "conflict"], "default": "verified" }, "status": { "type": "boolean", "default": true }, "deletedAt": { "type": "datetime", "default": null } };
+const aiContentSummary$2 = {
   kind: kind$2,
   collectionName: collectionName$2,
   info: info$2,
@@ -306,12 +320,12 @@ const knowledgeRelation = {
   attributes: attributes$2
 };
 const kind$1 = "collectionType";
-const collectionName$1 = "zhao_website_ai_summaries";
-const info$1 = { "singularName": "ai-content-summary", "pluralName": "ai-content-summaries", "displayName": "机器可读摘要" };
+const collectionName$1 = "zhao_website_first_truths";
+const info$1 = { "singularName": "first-truth-policy", "pluralName": "first-truth-policies", "displayName": "第一真值策略声明" };
 const options$1 = { "draftAndPublish": false };
 const pluginOptions$1 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": false } };
-const attributes$1 = { "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config", "required": true, "inversedBy": "website_ai_summaries" }, "targetType": { "type": "string", "maxLength": 30, "required": true }, "targetId": { "type": "string", "required": true }, "summaryType": { "type": "enumeration", "enum": ["tldr", "key_facts", "faq", "qa_pairs", "technical_spec", "executive_brief", "comparison", "howto"], "required": true }, "content": { "type": "json", "required": true }, "contentText": { "type": "text" }, "language": { "type": "string", "maxLength": 10, "default": "zh-CN" }, "version": { "type": "integer", "default": 1 }, "generatedBy": { "type": "enumeration", "enum": ["manual", "ai_assisted", "ai_generated", "hybrid"], "default": "manual" }, "aiProvider": { "type": "string", "maxLength": 50 }, "aiModel": { "type": "string", "maxLength": 100 }, "generatedAt": { "type": "datetime" }, "verifiedAt": { "type": "datetime" }, "verificationStatus": { "type": "enumeration", "enum": ["verified", "pending", "outdated", "conflict"], "default": "verified" }, "status": { "type": "boolean", "default": true }, "deletedAt": { "type": "datetime", "default": null } };
-const aiContentSummary$2 = {
+const attributes$1 = { "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config", "required": false, "inversedBy": "website_first_truths" }, "claim": { "type": "string", "maxLength": 200, "required": true }, "claimKey": { "type": "string", "maxLength": 100, "required": true }, "claimCategory": { "type": "enumeration", "enum": ["business_license", "brand_claim", "technical_spec", "certification", "financial", "logistics_promise", "other"], "default": "brand_claim" }, "canonicalEntity": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-website.knowledge-entity", "inversedBy": "firstTruthPolicies" }, "canonicalValue": { "type": "text", "required": true }, "canonicalValueType": { "type": "enumeration", "enum": ["text", "number", "date", "url", "json"], "default": "text" }, "canonicalSourceUrl": { "type": "string", "maxLength": 500 }, "canonicalSourceType": { "type": "enumeration", "enum": ["government", "official_site", "third_party_verified", "internal"], "default": "official_site" }, "conflictResolution": { "type": "enumeration", "enum": ["latest", "earliest", "highest_confidence", "manual"], "default": "manual" }, "lastVerifiedAt": { "type": "datetime", "required": true }, "verificationStatus": { "type": "enumeration", "enum": ["verified", "pending", "outdated", "conflict"], "default": "verified" }, "conflictDetails": { "type": "json" }, "priority": { "type": "integer", "default": 100 }, "status": { "type": "boolean", "default": true }, "deletedAt": { "type": "datetime", "default": null } };
+const firstTruthPolicy = {
   kind: kind$1,
   collectionName: collectionName$1,
   info: info$1,
@@ -320,12 +334,12 @@ const aiContentSummary$2 = {
   attributes: attributes$1
 };
 const kind = "collectionType";
-const collectionName = "zhao_website_first_truths";
-const info = { "singularName": "first-truth-policy", "pluralName": "first-truth-policies", "displayName": "第一真值策略声明" };
+const collectionName = "zhao_website_brand_voices";
+const info = { "singularName": "brand-voice", "pluralName": "brand-voices", "displayName": "品牌话术" };
 const options = { "draftAndPublish": false };
 const pluginOptions = { "content-manager": { "visible": true }, "content-type-builder": { "visible": false } };
-const attributes = { "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config", "required": false, "inversedBy": "website_first_truths" }, "claim": { "type": "string", "maxLength": 200, "required": true }, "claimKey": { "type": "string", "maxLength": 100, "required": true }, "claimCategory": { "type": "enumeration", "enum": ["business_license", "brand_claim", "technical_spec", "certification", "financial", "logistics_promise", "other"], "default": "brand_claim" }, "canonicalEntity": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-website.knowledge-entity", "inversedBy": "firstTruthPolicies" }, "canonicalValue": { "type": "text", "required": true }, "canonicalValueType": { "type": "enumeration", "enum": ["text", "number", "date", "url", "json"], "default": "text" }, "canonicalSourceUrl": { "type": "string", "maxLength": 500 }, "canonicalSourceType": { "type": "enumeration", "enum": ["government", "official_site", "third_party_verified", "internal"], "default": "official_site" }, "conflictResolution": { "type": "enumeration", "enum": ["latest", "earliest", "highest_confidence", "manual"], "default": "manual" }, "lastVerifiedAt": { "type": "datetime", "required": true }, "verificationStatus": { "type": "enumeration", "enum": ["verified", "pending", "outdated", "conflict"], "default": "verified" }, "conflictDetails": { "type": "json" }, "priority": { "type": "integer", "default": 100 }, "status": { "type": "boolean", "default": true }, "deletedAt": { "type": "datetime", "default": null } };
-const firstTruthPolicy = {
+const attributes = { "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config", "required": false, "inversedBy": "website_brand_voices" }, "name": { "type": "string", "maxLength": 100, "required": true }, "category": { "type": "enumeration", "enum": ["tone", "style", "phrase", "disclaimer", "cta"], "required": true }, "content": { "type": "richtext", "required": true }, "variables": { "type": "json" }, "status": { "type": "boolean", "default": true }, "tags": { "type": "json" }, "deletedAt": { "type": "datetime", "default": null } };
+const brandVoice$2 = {
   kind,
   collectionName,
   info,
@@ -351,7 +365,8 @@ const contentTypes = {
   "knowledge-entity": { schema: knowledgeEntity },
   "knowledge-relation": { schema: knowledgeRelation },
   "ai-content-summary": { schema: aiContentSummary$2 },
-  "first-truth-policy": { schema: firstTruthPolicy }
+  "first-truth-policy": { schema: firstTruthPolicy },
+  "brand-voice": { schema: brandVoice$2 }
 };
 const article$1 = {
   async list(ctx) {
@@ -767,7 +782,8 @@ const generic = {
   lead: createGenericController("lead"),
   "visit-log": createGenericController("visit-log"),
   interaction: createGenericController("interaction"),
-  "search-log": createGenericController("search-log")
+  "search-log": createGenericController("search-log"),
+  "brand-voice": createGenericController("brand-voice")
 };
 const knowledgeGraph$1 = {
   // ===== 实体 =====
@@ -897,6 +913,46 @@ const stats = {
     ctx.body = await strapi.plugin("zhao-website").service("search-log").stats(ctx.state.siteId, ctx.query.days);
   }
 };
+const brandVoice$1 = {
+  // ===== 特殊操作 =====
+  async resolve(ctx) {
+    ctx.body = await strapi.plugin("zhao-website").service("brand-voice").resolveVariables(
+      ctx.state.siteId,
+      ctx.params.documentId,
+      ctx.request.body.variables || {}
+    );
+  },
+  async listByCategory(ctx) {
+    ctx.body = await strapi.plugin("zhao-website").service("brand-voice").listByCategory(
+      ctx.state.siteId,
+      ctx.params.category
+    );
+  },
+  // ===== 全局话术 =====
+  async createGlobal(ctx) {
+    ctx.body = await strapi.plugin("zhao-website").service("brand-voice").create(null, ctx.request.body);
+  },
+  async updateGlobal(ctx) {
+    ctx.body = await strapi.plugin("zhao-website").service("brand-voice").update(null, ctx.params.documentId, ctx.request.body);
+  },
+  async deleteGlobal(ctx) {
+    await strapi.plugin("zhao-website").service("brand-voice").softDelete(null, ctx.params.documentId);
+    ctx.body = { success: true };
+  },
+  // ===== 公开方法（GEO AI 读取） =====
+  async publicList(ctx) {
+    ctx.body = await strapi.plugin("zhao-website").service("brand-voice").listByCategory(
+      ctx.state.siteId,
+      ctx.query.category
+    );
+  },
+  async publicByCategory(ctx) {
+    ctx.body = await strapi.plugin("zhao-website").service("brand-voice").getRefContent(
+      ctx.state.siteId,
+      ctx.params.category
+    );
+  }
+};
 const adminGeneric = Object.fromEntries(
   Object.entries(generic).map(([key, value]) => [`${key}-admin`, value])
 );
@@ -919,7 +975,8 @@ const controllers = {
   "first-truth": firstTruth$1,
   "ai-content-summary": aiContentSummary$1,
   "studio-bridge": studioBridge$1,
-  stats
+  stats,
+  "brand-voice": brandVoice$1
 };
 const publicRoute = (method, path, handler) => ({
   method,
@@ -959,7 +1016,10 @@ const contentApi = () => ({
     publicRoute("GET", "/robots.txt", "seo-output.robots"),
     publicRoute("GET", "/llms.txt", "seo-output.llmsTxt"),
     publicRoute("GET", "/manifest.json", "seo-output.manifest"),
-    publicRoute("GET", "/site-info", "site-info.info")
+    publicRoute("GET", "/site-info", "site-info.info"),
+    // 品牌话术公开路由（GEO AI 读取）
+    publicRoute("GET", "/brand-voices", "brand-voice.publicList"),
+    publicRoute("GET", "/brand-voices/by-category/:category", "brand-voice.publicByCategory")
   ]
 });
 const channelScopeRoute = (method, path, handler, permission) => ({
@@ -1059,6 +1119,18 @@ const adminApi = () => ({
     channelScopeRoute("PUT", "/first-truths/global/:documentId", "first-truth.updateGlobal", "first-truth.update-global"),
     channelScopeRoute("DELETE", "/first-truths/global/:documentId", "first-truth.deleteGlobal", "first-truth.delete-global"),
     channelScopeRoute("POST", "/first-truths/global/:documentId/verify", "first-truth.verifyGlobal", "first-truth.update-global"),
+    // 品牌话术
+    channelScopeRoute("GET", "/brand-voices", "brand-voice-admin.find", "brand-voice.read"),
+    channelScopeRoute("GET", "/brand-voices/:documentId", "brand-voice-admin.findOne", "brand-voice.read"),
+    channelScopeRoute("POST", "/brand-voices", "brand-voice-admin.create", "brand-voice.create"),
+    channelScopeRoute("PUT", "/brand-voices/:documentId", "brand-voice-admin.update", "brand-voice.update"),
+    channelScopeRoute("DELETE", "/brand-voices/:documentId", "brand-voice-admin.delete", "brand-voice.delete"),
+    channelScopeRoute("POST", "/brand-voices/:documentId/resolve", "brand-voice.resolve", "brand-voice.read"),
+    channelScopeRoute("GET", "/brand-voices/by-category/:category", "brand-voice.listByCategory", "brand-voice.read"),
+    // 全局品牌话术
+    channelScopeRoute("POST", "/brand-voices/global", "brand-voice.createGlobal", "brand-voice.create-global"),
+    channelScopeRoute("PUT", "/brand-voices/global/:documentId", "brand-voice.updateGlobal", "brand-voice.update-global"),
+    channelScopeRoute("DELETE", "/brand-voices/global/:documentId", "brand-voice.deleteGlobal", "brand-voice.delete-global"),
     channelScopeRoute("GET", "/ai-summaries", "ai-content-summary.findByTarget", "ai-summary.read"),
     channelScopeRoute("POST", "/ai-summaries", "ai-content-summary.create", "ai-summary.create"),
     channelScopeRoute("PUT", "/ai-summaries/:documentId", "ai-content-summary.update", "ai-summary.update"),
@@ -1076,17 +1148,17 @@ const routes = {
     routes: [...contentApi().routes, ...adminApi().routes]
   }
 };
-const UID$f = "plugin::zhao-website.seo-config";
+const UID$g = "plugin::zhao-website.seo-config";
 const seoConfig = ({ strapi: strapi2 }) => ({
   /**
    * 获取或创建租户的 SEO 配置（单例）
    */
   async ensureDefault(siteId) {
-    const existing = await strapi2.db.query(UID$f).findOne({
+    const existing = await strapi2.db.query(UID$g).findOne({
       where: { site: siteId, deletedAt: null }
     });
     if (existing) return existing;
-    return strapi2.db.query(UID$f).create({
+    return strapi2.db.query(UID$g).create({
       data: {
         site: siteId,
         defaultTitle: "",
@@ -1103,7 +1175,7 @@ const seoConfig = ({ strapi: strapi2 }) => ({
   },
   async update(siteId, data) {
     const existing = await this.ensureDefault(siteId);
-    return strapi2.db.query(UID$f).update({
+    return strapi2.db.query(UID$g).update({
       where: { id: existing.id },
       data
     });
@@ -1117,14 +1189,14 @@ const seoConfig = ({ strapi: strapi2 }) => ({
     return publicFields;
   }
 });
-const UID$e = "plugin::zhao-website.brand-info";
+const UID$f = "plugin::zhao-website.brand-info";
 const brandInfo = ({ strapi: strapi2 }) => ({
   async ensureDefault(siteId) {
-    const existing = await strapi2.db.query(UID$e).findOne({
+    const existing = await strapi2.db.query(UID$f).findOne({
       where: { site: siteId, deletedAt: null }
     });
     if (existing) return existing;
-    return strapi2.db.query(UID$e).create({
+    return strapi2.db.query(UID$f).create({
       data: {
         site: siteId,
         companyName: ""
@@ -1136,7 +1208,7 @@ const brandInfo = ({ strapi: strapi2 }) => ({
   },
   async update(siteId, data) {
     const existing = await this.ensureDefault(siteId);
-    return strapi2.db.query(UID$e).update({
+    return strapi2.db.query(UID$f).update({
       where: { id: existing.id },
       data
     });
@@ -1203,7 +1275,7 @@ async function firstTruthValidate(siteId, content) {
   const hasError = conflicts.some((c) => c.priority >= 80);
   return { hasError, conflicts };
 }
-const UID$d = "plugin::zhao-website.article";
+const UID$e = "plugin::zhao-website.article";
 const article = ({ strapi: strapi2 }) => ({
   async find(siteId, query = {}) {
     const { page = 1, pageSize = 20, category, tag, exclude, status, isFeatured, q } = query;
@@ -1229,7 +1301,7 @@ const article = ({ strapi: strapi2 }) => ({
     if (exclude) {
       const excludeIds = String(exclude).split(",").map((s) => s.trim()).filter(Boolean);
       if (excludeIds.length > 0) {
-        const excludeRows = await strapi2.db.query(UID$d).findMany({
+        const excludeRows = await strapi2.db.query(UID$e).findMany({
           where: { documentId: { $in: excludeIds } },
           select: ["id"]
         });
@@ -1239,7 +1311,7 @@ const article = ({ strapi: strapi2 }) => ({
         }
       }
     }
-    return strapi2.db.query(UID$d).findMany({
+    return strapi2.db.query(UID$e).findMany({
       where: filters,
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
@@ -1248,13 +1320,13 @@ const article = ({ strapi: strapi2 }) => ({
     });
   },
   async findOne(siteId, slug) {
-    return strapi2.db.query(UID$d).findOne({
+    return strapi2.db.query(UID$e).findOne({
       where: { site: siteId, slug, deletedAt: null, status: "published" },
       populate: ["coverImage", "category", "tags", "mainEntity", "mentionedEntities", "ogImage"]
     });
   },
   async findFeatured(siteId, limit = 5) {
-    return strapi2.db.query(UID$d).findMany({
+    return strapi2.db.query(UID$e).findMany({
       where: { site: siteId, deletedAt: null, status: "published", isFeatured: true },
       limit,
       orderBy: { publishedAt: "DESC" },
@@ -1265,7 +1337,7 @@ const article = ({ strapi: strapi2 }) => ({
     if (!keyword || keyword.length < 2) {
       return { data: [], meta: { pagination: { page, pageSize, total: 0, pageCount: 0 } } };
     }
-    const items = await strapi2.db.query(UID$d).findMany({
+    const items = await strapi2.db.query(UID$e).findMany({
       where: {
         site: siteId,
         deletedAt: null,
@@ -1308,7 +1380,7 @@ const article = ({ strapi: strapi2 }) => ({
         }
       }
     }
-    return strapi2.db.query(UID$d).findMany({
+    return strapi2.db.query(UID$e).findMany({
       where: filters,
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
@@ -1317,7 +1389,7 @@ const article = ({ strapi: strapi2 }) => ({
     });
   },
   async findOneAdmin(siteId, documentId) {
-    return strapi2.db.query(UID$d).findOne({
+    return strapi2.db.query(UID$e).findOne({
       where: { site: siteId, documentId, deletedAt: null },
       populate: {
         coverImage: true,
@@ -1332,7 +1404,7 @@ const article = ({ strapi: strapi2 }) => ({
     });
   },
   async create(siteId, data) {
-    const slug = data.slug || await generateUniqueSlug(strapi2, UID$d, siteId, data.title || "untitled");
+    const slug = data.slug || await generateUniqueSlug(strapi2, UID$e, siteId, data.title || "untitled");
     const validation = await firstTruthValidate(siteId, data);
     if (validation.hasError) {
       const e = new Error("内容与第一真值冲突（error 级）");
@@ -1341,7 +1413,7 @@ const article = ({ strapi: strapi2 }) => ({
       e.details = validation.conflicts;
       throw e;
     }
-    return strapi2.db.query(UID$d).create({
+    return strapi2.db.query(UID$e).create({
       data: { ...data, site: siteId, slug, status: data.status || STATUS.DRAFT }
     });
   },
@@ -1354,7 +1426,7 @@ const article = ({ strapi: strapi2 }) => ({
     }
     let updateData = { ...data };
     if (data.slug && data.slug !== existing.slug) {
-      updateData.slug = await generateUniqueSlug(strapi2, UID$d, siteId, data.slug, documentId);
+      updateData.slug = await generateUniqueSlug(strapi2, UID$e, siteId, data.slug, documentId);
     }
     if (data.status && isValidStatus(data.status)) {
       updateData = applyStatusChange(updateData, data.status);
@@ -1369,7 +1441,7 @@ const article = ({ strapi: strapi2 }) => ({
         throw e;
       }
     }
-    return strapi2.db.query(UID$d).update({
+    return strapi2.db.query(UID$e).update({
       where: { id: existing.id },
       data: updateData
     });
@@ -1386,7 +1458,7 @@ const article = ({ strapi: strapi2 }) => ({
   async softDelete(siteId, documentId) {
     const existing = await this.findOneAdmin(siteId, documentId);
     if (!existing) return null;
-    return strapi2.db.query(UID$d).update({
+    return strapi2.db.query(UID$e).update({
       where: { id: existing.id },
       data: { deletedAt: (/* @__PURE__ */ new Date()).toISOString() }
     });
@@ -1394,16 +1466,16 @@ const article = ({ strapi: strapi2 }) => ({
   async incrementViewCount(siteId, documentId) {
     const existing = await this.findOneAdmin(siteId, documentId);
     if (!existing) return;
-    await strapi2.db.query(UID$d).update({
+    await strapi2.db.query(UID$e).update({
       where: { id: existing.id },
       data: { viewCount: (existing.viewCount || 0) + 1 }
     });
   }
 });
-const UID$c = "plugin::zhao-website.article-category";
+const UID$d = "plugin::zhao-website.article-category";
 const articleCategory = ({ strapi: strapi2 }) => ({
   async find(siteId) {
-    return strapi2.db.query(UID$c).findMany({
+    return strapi2.db.query(UID$d).findMany({
       where: { site: siteId, deletedAt: null, status: true },
       orderBy: { order: "ASC" },
       populate: ["parent", "children"]
@@ -1414,25 +1486,25 @@ const articleCategory = ({ strapi: strapi2 }) => ({
     return buildTree(all);
   },
   async findAdmin(siteId) {
-    return strapi2.db.query(UID$c).findMany({
+    return strapi2.db.query(UID$d).findMany({
       where: { site: siteId, deletedAt: null },
       orderBy: { order: "ASC" },
       populate: ["parent", "children"]
     });
   },
   async findOneAdmin(siteId, documentId) {
-    return strapi2.db.query(UID$c).findOne({
+    return strapi2.db.query(UID$d).findOne({
       where: { site: siteId, documentId, deletedAt: null },
       populate: ["parent", "children"]
     });
   },
   async create(siteId, data) {
-    return strapi2.db.query(UID$c).create({
+    return strapi2.db.query(UID$d).create({
       data: { ...data, site: siteId }
     });
   },
   async update(siteId, documentId, data) {
-    const existing = await strapi2.db.query(UID$c).findOne({
+    const existing = await strapi2.db.query(UID$d).findOne({
       where: { site: siteId, documentId, deletedAt: null }
     });
     if (!existing) {
@@ -1440,17 +1512,17 @@ const articleCategory = ({ strapi: strapi2 }) => ({
       e.status = 404;
       throw e;
     }
-    return strapi2.db.query(UID$c).update({
+    return strapi2.db.query(UID$d).update({
       where: { id: existing.id },
       data
     });
   },
   async softDelete(siteId, documentId) {
-    const existing = await strapi2.db.query(UID$c).findOne({
+    const existing = await strapi2.db.query(UID$d).findOne({
       where: { site: siteId, documentId, deletedAt: null }
     });
     if (!existing) return null;
-    return strapi2.db.query(UID$c).update({
+    return strapi2.db.query(UID$d).update({
       where: { id: existing.id },
       data: { deletedAt: (/* @__PURE__ */ new Date()).toISOString() }
     });
@@ -1465,7 +1537,7 @@ function buildTree(items, parentId = null) {
     children: buildTree(items, item.id)
   }));
 }
-const UID$b = "plugin::zhao-website.product";
+const UID$c = "plugin::zhao-website.product";
 const product = ({ strapi: strapi2 }) => ({
   async find(siteId, query = {}) {
     const { page = 1, pageSize = 20, category, tag, status, isFeatured, q } = query;
@@ -1474,7 +1546,7 @@ const product = ({ strapi: strapi2 }) => ({
     else filters.status = "published";
     if (category) filters.category = category;
     if (isFeatured !== void 0) filters.isFeatured = isFeatured === "true" || isFeatured === true;
-    return strapi2.db.query(UID$b).findMany({
+    return strapi2.db.query(UID$c).findMany({
       where: filters,
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
@@ -1483,13 +1555,13 @@ const product = ({ strapi: strapi2 }) => ({
     });
   },
   async findOne(siteId, slug) {
-    return strapi2.db.query(UID$b).findOne({
+    return strapi2.db.query(UID$c).findOne({
       where: { site: siteId, slug, deletedAt: null, status: "published" },
       populate: ["coverImage", "category", "tags", "mainEntity", "images", "mentionedEntities", "ogImage"]
     });
   },
   async findFeatured(siteId, limit = 5) {
-    return strapi2.db.query(UID$b).findMany({
+    return strapi2.db.query(UID$c).findMany({
       where: { site: siteId, deletedAt: null, status: "published", isFeatured: true },
       limit,
       orderBy: { publishedAt: "DESC" },
@@ -1500,7 +1572,7 @@ const product = ({ strapi: strapi2 }) => ({
     if (!keyword || keyword.length < 2) {
       return { data: [], meta: { pagination: { page, pageSize, total: 0, pageCount: 0 } } };
     }
-    const items = await strapi2.db.query(UID$b).findMany({
+    const items = await strapi2.db.query(UID$c).findMany({
       where: {
         site: siteId,
         deletedAt: null,
@@ -1543,7 +1615,7 @@ const product = ({ strapi: strapi2 }) => ({
         }
       }
     }
-    return strapi2.db.query(UID$b).findMany({
+    return strapi2.db.query(UID$c).findMany({
       where: filters,
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
@@ -1552,7 +1624,7 @@ const product = ({ strapi: strapi2 }) => ({
     });
   },
   async findOneAdmin(siteId, documentId) {
-    return strapi2.db.query(UID$b).findOne({
+    return strapi2.db.query(UID$c).findOne({
       where: { site: siteId, documentId, deletedAt: null },
       populate: {
         coverImage: true,
@@ -1567,7 +1639,176 @@ const product = ({ strapi: strapi2 }) => ({
     });
   },
   async create(siteId, data) {
-    const slug = data.slug || await generateUniqueSlug(strapi2, UID$b, siteId, data.name || "untitled");
+    const slug = data.slug || await generateUniqueSlug(strapi2, UID$c, siteId, data.name || "untitled");
+    const validation = await firstTruthValidate(siteId, data);
+    if (validation.hasError) {
+      const e = new Error("内容与第一真值冲突（error 级）");
+      e.status = 409;
+      e.code = "FIRST_TRUTH_CONFLICT";
+      e.details = validation.conflicts;
+      throw e;
+    }
+    return strapi2.db.query(UID$c).create({
+      data: { ...data, site: siteId, slug, status: data.status || STATUS.DRAFT }
+    });
+  },
+  async update(siteId, documentId, data) {
+    const existing = await this.findOneAdmin(siteId, documentId);
+    if (!existing) {
+      const e = new Error("Product not found");
+      e.status = 404;
+      throw e;
+    }
+    let updateData = { ...data };
+    if (data.slug && data.slug !== existing.slug) {
+      updateData.slug = await generateUniqueSlug(strapi2, UID$c, siteId, data.slug, documentId);
+    }
+    if (data.status && isValidStatus(data.status)) {
+      updateData = applyStatusChange(updateData, data.status);
+    }
+    if (updateData.status === STATUS.PUBLISHED) {
+      const validation = await firstTruthValidate(siteId, { ...existing, ...updateData });
+      if (validation.hasError) {
+        const e = new Error("内容与第一真值冲突（error 级），无法发布");
+        e.status = 409;
+        e.code = "FIRST_TRUTH_CONFLICT";
+        e.details = validation.conflicts;
+        throw e;
+      }
+    }
+    return strapi2.db.query(UID$c).update({
+      where: { id: existing.id },
+      data: updateData
+    });
+  },
+  async publish(siteId, documentId) {
+    return this.update(siteId, documentId, { status: STATUS.PUBLISHED });
+  },
+  async unpublish(siteId, documentId) {
+    return this.update(siteId, documentId, { status: STATUS.DRAFT });
+  },
+  async archive(siteId, documentId) {
+    return this.update(siteId, documentId, { status: STATUS.ARCHIVED });
+  },
+  async softDelete(siteId, documentId) {
+    const existing = await this.findOneAdmin(siteId, documentId);
+    if (!existing) return null;
+    return strapi2.db.query(UID$c).update({
+      where: { id: existing.id },
+      data: { deletedAt: (/* @__PURE__ */ new Date()).toISOString() }
+    });
+  },
+  async incrementViewCount(siteId, documentId) {
+    const existing = await this.findOneAdmin(siteId, documentId);
+    if (!existing) return;
+    await strapi2.db.query(UID$c).update({
+      where: { id: existing.id },
+      data: { viewCount: (existing.viewCount || 0) + 1 }
+    });
+  }
+});
+const UID$b = "plugin::zhao-website.case";
+const caseService = ({ strapi: strapi2 }) => ({
+  async find(siteId, query = {}) {
+    const { page = 1, pageSize = 20, tag, status, isFeatured, q } = query;
+    const filters = { site: siteId, deletedAt: null };
+    if (status) filters.status = status;
+    else filters.status = "published";
+    if (isFeatured !== void 0) filters.isFeatured = isFeatured === "true" || isFeatured === true;
+    return strapi2.db.query(UID$b).findMany({
+      where: filters,
+      limit: Number(pageSize),
+      offset: (Number(page) - 1) * Number(pageSize),
+      orderBy: { publishedAt: "DESC" },
+      populate: ["coverImage", "clientLogo", "tags", "mainEntity", "images", "mentionedEntities", "relatedProducts"]
+    });
+  },
+  async findOne(siteId, slug) {
+    return strapi2.db.query(UID$b).findOne({
+      where: { site: siteId, slug, deletedAt: null, status: "published" },
+      populate: ["coverImage", "clientLogo", "tags", "mainEntity", "images", "mentionedEntities", "relatedProducts"]
+    });
+  },
+  async findFeatured(siteId, limit = 5) {
+    return strapi2.db.query(UID$b).findMany({
+      where: { site: siteId, deletedAt: null, status: "published", isFeatured: true },
+      limit,
+      orderBy: { publishedAt: "DESC" },
+      populate: ["coverImage", "clientLogo"]
+    });
+  },
+  async search(siteId, keyword, page = 1, pageSize = 20) {
+    if (!keyword || keyword.length < 2) {
+      return { data: [], meta: { pagination: { page, pageSize, total: 0, pageCount: 0 } } };
+    }
+    const items = await strapi2.db.query(UID$b).findMany({
+      where: {
+        site: siteId,
+        deletedAt: null,
+        status: "published",
+        $or: [
+          { title: { $containsi: keyword } },
+          { challenge: { $containsi: keyword } },
+          { solution: { $containsi: keyword } },
+          { results: { $containsi: keyword } }
+        ]
+      },
+      limit: Number(pageSize),
+      offset: (Number(page) - 1) * Number(pageSize),
+      orderBy: { publishedAt: "DESC" },
+      populate: ["coverImage", "clientLogo"]
+    });
+    return {
+      data: items,
+      meta: { pagination: { page: Number(page), pageSize: Number(pageSize), total: items.length, pageCount: 1 } }
+    };
+  },
+  // ===== 管理端 =====
+  async findAdmin(siteId, query = {}) {
+    const { page = 1, pageSize = 20, status, tagGroup } = query;
+    const filters = { site: siteId, deletedAt: null };
+    if (status) filters.status = status;
+    if (tagGroup) {
+      const knex = strapi2.db.connection;
+      const groupRow = await knex("zhao_tag_groups").where("slug", tagGroup).first() || await knex("zhao_tag_groups").where("document_id", tagGroup).first();
+      if (groupRow?.id) {
+        const tagRows = await knex("zhao_tags_tag_group_lnk").where("tag_group_id", groupRow.id).select("tag_id");
+        const tagIds = tagRows.map((r) => r.tag_id);
+        if (tagIds.length > 0) {
+          const caseRows = await knex("zhao_website_cases_tags_lnk").whereIn("tag_id", tagIds).select("case_id");
+          const caseIds = [...new Set(caseRows.map((r) => r.case_id))];
+          if (caseIds.length === 0) return [];
+          filters.id = { $in: caseIds };
+        } else {
+          return [];
+        }
+      }
+    }
+    return strapi2.db.query(UID$b).findMany({
+      where: filters,
+      limit: Number(pageSize),
+      offset: (Number(page) - 1) * Number(pageSize),
+      orderBy: { updatedAt: "DESC" },
+      populate: { coverImage: true, clientLogo: true, tags: { populate: { tagGroup: true } } }
+    });
+  },
+  async findOneAdmin(siteId, documentId) {
+    return strapi2.db.query(UID$b).findOne({
+      where: { site: siteId, documentId, deletedAt: null },
+      populate: {
+        coverImage: true,
+        clientLogo: true,
+        tags: { populate: { tagGroup: true } },
+        mainEntity: true,
+        images: true,
+        mentionedEntities: true,
+        relatedProducts: true,
+        structuredData: true
+      }
+    });
+  },
+  async create(siteId, data) {
+    const slug = data.slug || await generateUniqueSlug(strapi2, UID$b, siteId, data.title || "untitled");
     const validation = await firstTruthValidate(siteId, data);
     if (validation.hasError) {
       const e = new Error("内容与第一真值冲突（error 级）");
@@ -1583,7 +1824,7 @@ const product = ({ strapi: strapi2 }) => ({
   async update(siteId, documentId, data) {
     const existing = await this.findOneAdmin(siteId, documentId);
     if (!existing) {
-      const e = new Error("Product not found");
+      const e = new Error("Case not found");
       e.status = 404;
       throw e;
     }
@@ -1635,34 +1876,27 @@ const product = ({ strapi: strapi2 }) => ({
     });
   }
 });
-const UID$a = "plugin::zhao-website.case";
-const caseService = ({ strapi: strapi2 }) => ({
+const UID$a = "plugin::zhao-website.compliance";
+const compliance = ({ strapi: strapi2 }) => ({
   async find(siteId, query = {}) {
-    const { page = 1, pageSize = 20, tag, status, isFeatured, q } = query;
+    const { page = 1, pageSize = 20, category, tag, status, isFeatured, q } = query;
     const filters = { site: siteId, deletedAt: null };
     if (status) filters.status = status;
     else filters.status = "published";
+    if (category) filters.category = category;
     if (isFeatured !== void 0) filters.isFeatured = isFeatured === "true" || isFeatured === true;
     return strapi2.db.query(UID$a).findMany({
       where: filters,
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
       orderBy: { publishedAt: "DESC" },
-      populate: ["coverImage", "clientLogo", "tags", "mainEntity", "images", "mentionedEntities", "relatedProducts"]
+      populate: ["tags"]
     });
   },
   async findOne(siteId, slug) {
     return strapi2.db.query(UID$a).findOne({
       where: { site: siteId, slug, deletedAt: null, status: "published" },
-      populate: ["coverImage", "clientLogo", "tags", "mainEntity", "images", "mentionedEntities", "relatedProducts"]
-    });
-  },
-  async findFeatured(siteId, limit = 5) {
-    return strapi2.db.query(UID$a).findMany({
-      where: { site: siteId, deletedAt: null, status: "published", isFeatured: true },
-      limit,
-      orderBy: { publishedAt: "DESC" },
-      populate: ["coverImage", "clientLogo"]
+      populate: ["tags"]
     });
   },
   async search(siteId, keyword, page = 1, pageSize = 20) {
@@ -1676,15 +1910,13 @@ const caseService = ({ strapi: strapi2 }) => ({
         status: "published",
         $or: [
           { title: { $containsi: keyword } },
-          { challenge: { $containsi: keyword } },
-          { solution: { $containsi: keyword } },
-          { results: { $containsi: keyword } }
+          { content: { $containsi: keyword } }
         ]
       },
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
       orderBy: { publishedAt: "DESC" },
-      populate: ["coverImage", "clientLogo"]
+      populate: ["tags"]
     });
     return {
       data: items,
@@ -1693,9 +1925,10 @@ const caseService = ({ strapi: strapi2 }) => ({
   },
   // ===== 管理端 =====
   async findAdmin(siteId, query = {}) {
-    const { page = 1, pageSize = 20, status, tagGroup } = query;
+    const { page = 1, pageSize = 20, status, category, tagGroup } = query;
     const filters = { site: siteId, deletedAt: null };
     if (status) filters.status = status;
+    if (category) filters.category = category;
     if (tagGroup) {
       const knex = strapi2.db.connection;
       const groupRow = await knex("zhao_tag_groups").where("slug", tagGroup).first() || await knex("zhao_tag_groups").where("document_id", tagGroup).first();
@@ -1703,10 +1936,10 @@ const caseService = ({ strapi: strapi2 }) => ({
         const tagRows = await knex("zhao_tags_tag_group_lnk").where("tag_group_id", groupRow.id).select("tag_id");
         const tagIds = tagRows.map((r) => r.tag_id);
         if (tagIds.length > 0) {
-          const caseRows = await knex("zhao_website_cases_tags_lnk").whereIn("tag_id", tagIds).select("case_id");
-          const caseIds = [...new Set(caseRows.map((r) => r.case_id))];
-          if (caseIds.length === 0) return [];
-          filters.id = { $in: caseIds };
+          const complianceRows = await knex("zhao_website_compliances_tags_lnk").whereIn("tag_id", tagIds).select("compliance_id");
+          const complianceIds = [...new Set(complianceRows.map((r) => r.compliance_id))];
+          if (complianceIds.length === 0) return [];
+          filters.id = { $in: complianceIds };
         } else {
           return [];
         }
@@ -1717,22 +1950,13 @@ const caseService = ({ strapi: strapi2 }) => ({
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
       orderBy: { updatedAt: "DESC" },
-      populate: { coverImage: true, clientLogo: true, tags: { populate: { tagGroup: true } } }
+      populate: [{ tags: { populate: { tagGroup: true } } }]
     });
   },
   async findOneAdmin(siteId, documentId) {
     return strapi2.db.query(UID$a).findOne({
       where: { site: siteId, documentId, deletedAt: null },
-      populate: {
-        coverImage: true,
-        clientLogo: true,
-        tags: { populate: { tagGroup: true } },
-        mainEntity: true,
-        images: true,
-        mentionedEntities: true,
-        relatedProducts: true,
-        structuredData: true
-      }
+      populate: [{ tags: { populate: { tagGroup: true } } }]
     });
   },
   async create(siteId, data) {
@@ -1752,7 +1976,7 @@ const caseService = ({ strapi: strapi2 }) => ({
   async update(siteId, documentId, data) {
     const existing = await this.findOneAdmin(siteId, documentId);
     if (!existing) {
-      const e = new Error("Case not found");
+      const e = new Error("Compliance not found");
       e.status = 404;
       throw e;
     }
@@ -1804,8 +2028,8 @@ const caseService = ({ strapi: strapi2 }) => ({
     });
   }
 });
-const UID$9 = "plugin::zhao-website.compliance";
-const compliance = ({ strapi: strapi2 }) => ({
+const UID$9 = "plugin::zhao-website.faq";
+const faq = ({ strapi: strapi2 }) => ({
   async find(siteId, query = {}) {
     const { page = 1, pageSize = 20, category, tag, status, isFeatured, q } = query;
     const filters = { site: siteId, deletedAt: null };
@@ -1818,13 +2042,21 @@ const compliance = ({ strapi: strapi2 }) => ({
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
       orderBy: { publishedAt: "DESC" },
-      populate: ["tags"]
+      populate: ["category", "tags", "mainEntity", "mentionedEntities"]
     });
   },
   async findOne(siteId, slug) {
     return strapi2.db.query(UID$9).findOne({
       where: { site: siteId, slug, deletedAt: null, status: "published" },
-      populate: ["tags"]
+      populate: ["category", "tags", "mainEntity", "mentionedEntities"]
+    });
+  },
+  async findFeatured(siteId, limit = 5) {
+    return strapi2.db.query(UID$9).findMany({
+      where: { site: siteId, deletedAt: null, status: "published", isFeatured: true },
+      limit,
+      orderBy: { publishedAt: "DESC" },
+      populate: ["category"]
     });
   },
   async search(siteId, keyword, page = 1, pageSize = 20) {
@@ -1837,14 +2069,14 @@ const compliance = ({ strapi: strapi2 }) => ({
         deletedAt: null,
         status: "published",
         $or: [
-          { title: { $containsi: keyword } },
-          { content: { $containsi: keyword } }
+          { question: { $containsi: keyword } },
+          { answer: { $containsi: keyword } }
         ]
       },
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
       orderBy: { publishedAt: "DESC" },
-      populate: ["tags"]
+      populate: ["category"]
     });
     return {
       data: items,
@@ -1864,10 +2096,10 @@ const compliance = ({ strapi: strapi2 }) => ({
         const tagRows = await knex("zhao_tags_tag_group_lnk").where("tag_group_id", groupRow.id).select("tag_id");
         const tagIds = tagRows.map((r) => r.tag_id);
         if (tagIds.length > 0) {
-          const complianceRows = await knex("zhao_website_compliances_tags_lnk").whereIn("tag_id", tagIds).select("compliance_id");
-          const complianceIds = [...new Set(complianceRows.map((r) => r.compliance_id))];
-          if (complianceIds.length === 0) return [];
-          filters.id = { $in: complianceIds };
+          const faqRows = await knex("zhao_website_faqs_tags_lnk").whereIn("tag_id", tagIds).select("faq_id");
+          const faqIds = [...new Set(faqRows.map((r) => r.faq_id))];
+          if (faqIds.length === 0) return [];
+          filters.id = { $in: faqIds };
         } else {
           return [];
         }
@@ -1878,17 +2110,22 @@ const compliance = ({ strapi: strapi2 }) => ({
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
       orderBy: { updatedAt: "DESC" },
-      populate: [{ tags: { populate: { tagGroup: true } } }]
+      populate: ["category", { tags: { populate: { tagGroup: true } } }]
     });
   },
   async findOneAdmin(siteId, documentId) {
     return strapi2.db.query(UID$9).findOne({
       where: { site: siteId, documentId, deletedAt: null },
-      populate: [{ tags: { populate: { tagGroup: true } } }]
+      populate: [
+        "category",
+        { tags: { populate: { tagGroup: true } } },
+        "mainEntity",
+        "mentionedEntities"
+      ]
     });
   },
   async create(siteId, data) {
-    const slug = data.slug || await generateUniqueSlug(strapi2, UID$9, siteId, data.title || "untitled");
+    const slug = data.slug || await generateUniqueSlug(strapi2, UID$9, siteId, data.question || "untitled");
     const validation = await firstTruthValidate(siteId, data);
     if (validation.hasError) {
       const e = new Error("内容与第一真值冲突（error 级）");
@@ -1904,7 +2141,7 @@ const compliance = ({ strapi: strapi2 }) => ({
   async update(siteId, documentId, data) {
     const existing = await this.findOneAdmin(siteId, documentId);
     if (!existing) {
-      const e = new Error("Compliance not found");
+      const e = new Error("FAQ not found");
       e.status = 404;
       throw e;
     }
@@ -1956,8 +2193,8 @@ const compliance = ({ strapi: strapi2 }) => ({
     });
   }
 });
-const UID$8 = "plugin::zhao-website.faq";
-const faq = ({ strapi: strapi2 }) => ({
+const UID$8 = "plugin::zhao-website.tutorial";
+const tutorial = ({ strapi: strapi2 }) => ({
   async find(siteId, query = {}) {
     const { page = 1, pageSize = 20, category, tag, status, isFeatured, q } = query;
     const filters = { site: siteId, deletedAt: null };
@@ -1970,13 +2207,13 @@ const faq = ({ strapi: strapi2 }) => ({
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
       orderBy: { publishedAt: "DESC" },
-      populate: ["category", "tags", "mainEntity", "mentionedEntities"]
+      populate: ["coverImage", "category", "tags", "mainEntity", "mentionedEntities"]
     });
   },
   async findOne(siteId, slug) {
     return strapi2.db.query(UID$8).findOne({
       where: { site: siteId, slug, deletedAt: null, status: "published" },
-      populate: ["category", "tags", "mainEntity", "mentionedEntities"]
+      populate: ["coverImage", "category", "tags", "mainEntity", "mentionedEntities"]
     });
   },
   async findFeatured(siteId, limit = 5) {
@@ -1984,7 +2221,7 @@ const faq = ({ strapi: strapi2 }) => ({
       where: { site: siteId, deletedAt: null, status: "published", isFeatured: true },
       limit,
       orderBy: { publishedAt: "DESC" },
-      populate: ["category"]
+      populate: ["coverImage", "category"]
     });
   },
   async search(siteId, keyword, page = 1, pageSize = 20) {
@@ -1997,14 +2234,15 @@ const faq = ({ strapi: strapi2 }) => ({
         deletedAt: null,
         status: "published",
         $or: [
-          { question: { $containsi: keyword } },
-          { answer: { $containsi: keyword } }
+          { title: { $containsi: keyword } },
+          { description: { $containsi: keyword } },
+          { content: { $containsi: keyword } }
         ]
       },
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
       orderBy: { publishedAt: "DESC" },
-      populate: ["category"]
+      populate: ["coverImage", "category"]
     });
     return {
       data: items,
@@ -2024,10 +2262,10 @@ const faq = ({ strapi: strapi2 }) => ({
         const tagRows = await knex("zhao_tags_tag_group_lnk").where("tag_group_id", groupRow.id).select("tag_id");
         const tagIds = tagRows.map((r) => r.tag_id);
         if (tagIds.length > 0) {
-          const faqRows = await knex("zhao_website_faqs_tags_lnk").whereIn("tag_id", tagIds).select("faq_id");
-          const faqIds = [...new Set(faqRows.map((r) => r.faq_id))];
-          if (faqIds.length === 0) return [];
-          filters.id = { $in: faqIds };
+          const tutorialRows = await knex("zhao_website_tutorials_tags_lnk").whereIn("tag_id", tagIds).select("tutorial_id");
+          const tutorialIds = [...new Set(tutorialRows.map((r) => r.tutorial_id))];
+          if (tutorialIds.length === 0) return [];
+          filters.id = { $in: tutorialIds };
         } else {
           return [];
         }
@@ -2038,22 +2276,23 @@ const faq = ({ strapi: strapi2 }) => ({
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
       orderBy: { updatedAt: "DESC" },
-      populate: ["category", { tags: { populate: { tagGroup: true } } }]
+      populate: { coverImage: true, category: true, tags: { populate: { tagGroup: true } } }
     });
   },
   async findOneAdmin(siteId, documentId) {
     return strapi2.db.query(UID$8).findOne({
       where: { site: siteId, documentId, deletedAt: null },
-      populate: [
-        "category",
-        { tags: { populate: { tagGroup: true } } },
-        "mainEntity",
-        "mentionedEntities"
-      ]
+      populate: {
+        coverImage: true,
+        category: true,
+        tags: { populate: { tagGroup: true } },
+        mainEntity: true,
+        mentionedEntities: true
+      }
     });
   },
   async create(siteId, data) {
-    const slug = data.slug || await generateUniqueSlug(strapi2, UID$8, siteId, data.question || "untitled");
+    const slug = data.slug || await generateUniqueSlug(strapi2, UID$8, siteId, data.title || "untitled");
     const validation = await firstTruthValidate(siteId, data);
     if (validation.hasError) {
       const e = new Error("内容与第一真值冲突（error 级）");
@@ -2069,7 +2308,7 @@ const faq = ({ strapi: strapi2 }) => ({
   async update(siteId, documentId, data) {
     const existing = await this.findOneAdmin(siteId, documentId);
     if (!existing) {
-      const e = new Error("FAQ not found");
+      const e = new Error("Tutorial not found");
       e.status = 404;
       throw e;
     }
@@ -2121,8 +2360,8 @@ const faq = ({ strapi: strapi2 }) => ({
     });
   }
 });
-const UID$7 = "plugin::zhao-website.tutorial";
-const tutorial = ({ strapi: strapi2 }) => ({
+const UID$7 = "plugin::zhao-website.download";
+const download = ({ strapi: strapi2 }) => ({
   async find(siteId, query = {}) {
     const { page = 1, pageSize = 20, category, tag, status, isFeatured, q } = query;
     const filters = { site: siteId, deletedAt: null };
@@ -2135,13 +2374,13 @@ const tutorial = ({ strapi: strapi2 }) => ({
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
       orderBy: { publishedAt: "DESC" },
-      populate: ["coverImage", "category", "tags", "mainEntity", "mentionedEntities"]
+      populate: ["tags", "file"]
     });
   },
   async findOne(siteId, slug) {
     return strapi2.db.query(UID$7).findOne({
       where: { site: siteId, slug, deletedAt: null, status: "published" },
-      populate: ["coverImage", "category", "tags", "mainEntity", "mentionedEntities"]
+      populate: ["tags", "file"]
     });
   },
   async findFeatured(siteId, limit = 5) {
@@ -2149,7 +2388,7 @@ const tutorial = ({ strapi: strapi2 }) => ({
       where: { site: siteId, deletedAt: null, status: "published", isFeatured: true },
       limit,
       orderBy: { publishedAt: "DESC" },
-      populate: ["coverImage", "category"]
+      populate: ["tags", "file"]
     });
   },
   async search(siteId, keyword, page = 1, pageSize = 20) {
@@ -2162,15 +2401,14 @@ const tutorial = ({ strapi: strapi2 }) => ({
         deletedAt: null,
         status: "published",
         $or: [
-          { title: { $containsi: keyword } },
-          { description: { $containsi: keyword } },
-          { content: { $containsi: keyword } }
+          { name: { $containsi: keyword } },
+          { description: { $containsi: keyword } }
         ]
       },
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
       orderBy: { publishedAt: "DESC" },
-      populate: ["coverImage", "category"]
+      populate: ["tags", "file"]
     });
     return {
       data: items,
@@ -2190,10 +2428,10 @@ const tutorial = ({ strapi: strapi2 }) => ({
         const tagRows = await knex("zhao_tags_tag_group_lnk").where("tag_group_id", groupRow.id).select("tag_id");
         const tagIds = tagRows.map((r) => r.tag_id);
         if (tagIds.length > 0) {
-          const tutorialRows = await knex("zhao_website_tutorials_tags_lnk").whereIn("tag_id", tagIds).select("tutorial_id");
-          const tutorialIds = [...new Set(tutorialRows.map((r) => r.tutorial_id))];
-          if (tutorialIds.length === 0) return [];
-          filters.id = { $in: tutorialIds };
+          const downloadRows = await knex("zhao_website_downloads_tags_lnk").whereIn("tag_id", tagIds).select("download_id");
+          const downloadIds = [...new Set(downloadRows.map((r) => r.download_id))];
+          if (downloadIds.length === 0) return [];
+          filters.id = { $in: downloadIds };
         } else {
           return [];
         }
@@ -2204,23 +2442,17 @@ const tutorial = ({ strapi: strapi2 }) => ({
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
       orderBy: { updatedAt: "DESC" },
-      populate: { coverImage: true, category: true, tags: { populate: { tagGroup: true } } }
+      populate: [{ tags: { populate: { tagGroup: true } } }, "file"]
     });
   },
   async findOneAdmin(siteId, documentId) {
     return strapi2.db.query(UID$7).findOne({
       where: { site: siteId, documentId, deletedAt: null },
-      populate: {
-        coverImage: true,
-        category: true,
-        tags: { populate: { tagGroup: true } },
-        mainEntity: true,
-        mentionedEntities: true
-      }
+      populate: [{ tags: { populate: { tagGroup: true } } }, "file"]
     });
   },
   async create(siteId, data) {
-    const slug = data.slug || await generateUniqueSlug(strapi2, UID$7, siteId, data.title || "untitled");
+    const slug = data.slug || await generateUniqueSlug(strapi2, UID$7, siteId, data.name || "untitled");
     const validation = await firstTruthValidate(siteId, data);
     if (validation.hasError) {
       const e = new Error("内容与第一真值冲突（error 级）");
@@ -2236,7 +2468,7 @@ const tutorial = ({ strapi: strapi2 }) => ({
   async update(siteId, documentId, data) {
     const existing = await this.findOneAdmin(siteId, documentId);
     if (!existing) {
-      const e = new Error("Tutorial not found");
+      const e = new Error("Download not found");
       e.status = 404;
       throw e;
     }
@@ -2286,177 +2518,17 @@ const tutorial = ({ strapi: strapi2 }) => ({
       where: { id: existing.id },
       data: { viewCount: (existing.viewCount || 0) + 1 }
     });
-  }
-});
-const UID$6 = "plugin::zhao-website.download";
-const download = ({ strapi: strapi2 }) => ({
-  async find(siteId, query = {}) {
-    const { page = 1, pageSize = 20, category, tag, status, isFeatured, q } = query;
-    const filters = { site: siteId, deletedAt: null };
-    if (status) filters.status = status;
-    else filters.status = "published";
-    if (category) filters.category = category;
-    if (isFeatured !== void 0) filters.isFeatured = isFeatured === "true" || isFeatured === true;
-    return strapi2.db.query(UID$6).findMany({
-      where: filters,
-      limit: Number(pageSize),
-      offset: (Number(page) - 1) * Number(pageSize),
-      orderBy: { publishedAt: "DESC" },
-      populate: ["tags", "file"]
-    });
-  },
-  async findOne(siteId, slug) {
-    return strapi2.db.query(UID$6).findOne({
-      where: { site: siteId, slug, deletedAt: null, status: "published" },
-      populate: ["tags", "file"]
-    });
-  },
-  async findFeatured(siteId, limit = 5) {
-    return strapi2.db.query(UID$6).findMany({
-      where: { site: siteId, deletedAt: null, status: "published", isFeatured: true },
-      limit,
-      orderBy: { publishedAt: "DESC" },
-      populate: ["tags", "file"]
-    });
-  },
-  async search(siteId, keyword, page = 1, pageSize = 20) {
-    if (!keyword || keyword.length < 2) {
-      return { data: [], meta: { pagination: { page, pageSize, total: 0, pageCount: 0 } } };
-    }
-    const items = await strapi2.db.query(UID$6).findMany({
-      where: {
-        site: siteId,
-        deletedAt: null,
-        status: "published",
-        $or: [
-          { name: { $containsi: keyword } },
-          { description: { $containsi: keyword } }
-        ]
-      },
-      limit: Number(pageSize),
-      offset: (Number(page) - 1) * Number(pageSize),
-      orderBy: { publishedAt: "DESC" },
-      populate: ["tags", "file"]
-    });
-    return {
-      data: items,
-      meta: { pagination: { page: Number(page), pageSize: Number(pageSize), total: items.length, pageCount: 1 } }
-    };
-  },
-  // ===== 管理端 =====
-  async findAdmin(siteId, query = {}) {
-    const { page = 1, pageSize = 20, status, category, tagGroup } = query;
-    const filters = { site: siteId, deletedAt: null };
-    if (status) filters.status = status;
-    if (category) filters.category = category;
-    if (tagGroup) {
-      const knex = strapi2.db.connection;
-      const groupRow = await knex("zhao_tag_groups").where("slug", tagGroup).first() || await knex("zhao_tag_groups").where("document_id", tagGroup).first();
-      if (groupRow?.id) {
-        const tagRows = await knex("zhao_tags_tag_group_lnk").where("tag_group_id", groupRow.id).select("tag_id");
-        const tagIds = tagRows.map((r) => r.tag_id);
-        if (tagIds.length > 0) {
-          const downloadRows = await knex("zhao_website_downloads_tags_lnk").whereIn("tag_id", tagIds).select("download_id");
-          const downloadIds = [...new Set(downloadRows.map((r) => r.download_id))];
-          if (downloadIds.length === 0) return [];
-          filters.id = { $in: downloadIds };
-        } else {
-          return [];
-        }
-      }
-    }
-    return strapi2.db.query(UID$6).findMany({
-      where: filters,
-      limit: Number(pageSize),
-      offset: (Number(page) - 1) * Number(pageSize),
-      orderBy: { updatedAt: "DESC" },
-      populate: [{ tags: { populate: { tagGroup: true } } }, "file"]
-    });
-  },
-  async findOneAdmin(siteId, documentId) {
-    return strapi2.db.query(UID$6).findOne({
-      where: { site: siteId, documentId, deletedAt: null },
-      populate: [{ tags: { populate: { tagGroup: true } } }, "file"]
-    });
-  },
-  async create(siteId, data) {
-    const slug = data.slug || await generateUniqueSlug(strapi2, UID$6, siteId, data.name || "untitled");
-    const validation = await firstTruthValidate(siteId, data);
-    if (validation.hasError) {
-      const e = new Error("内容与第一真值冲突（error 级）");
-      e.status = 409;
-      e.code = "FIRST_TRUTH_CONFLICT";
-      e.details = validation.conflicts;
-      throw e;
-    }
-    return strapi2.db.query(UID$6).create({
-      data: { ...data, site: siteId, slug, status: data.status || STATUS.DRAFT }
-    });
-  },
-  async update(siteId, documentId, data) {
-    const existing = await this.findOneAdmin(siteId, documentId);
-    if (!existing) {
-      const e = new Error("Download not found");
-      e.status = 404;
-      throw e;
-    }
-    let updateData = { ...data };
-    if (data.slug && data.slug !== existing.slug) {
-      updateData.slug = await generateUniqueSlug(strapi2, UID$6, siteId, data.slug, documentId);
-    }
-    if (data.status && isValidStatus(data.status)) {
-      updateData = applyStatusChange(updateData, data.status);
-    }
-    if (updateData.status === STATUS.PUBLISHED) {
-      const validation = await firstTruthValidate(siteId, { ...existing, ...updateData });
-      if (validation.hasError) {
-        const e = new Error("内容与第一真值冲突（error 级），无法发布");
-        e.status = 409;
-        e.code = "FIRST_TRUTH_CONFLICT";
-        e.details = validation.conflicts;
-        throw e;
-      }
-    }
-    return strapi2.db.query(UID$6).update({
-      where: { id: existing.id },
-      data: updateData
-    });
-  },
-  async publish(siteId, documentId) {
-    return this.update(siteId, documentId, { status: STATUS.PUBLISHED });
-  },
-  async unpublish(siteId, documentId) {
-    return this.update(siteId, documentId, { status: STATUS.DRAFT });
-  },
-  async archive(siteId, documentId) {
-    return this.update(siteId, documentId, { status: STATUS.ARCHIVED });
-  },
-  async softDelete(siteId, documentId) {
-    const existing = await this.findOneAdmin(siteId, documentId);
-    if (!existing) return null;
-    return strapi2.db.query(UID$6).update({
-      where: { id: existing.id },
-      data: { deletedAt: (/* @__PURE__ */ new Date()).toISOString() }
-    });
-  },
-  async incrementViewCount(siteId, documentId) {
-    const existing = await this.findOneAdmin(siteId, documentId);
-    if (!existing) return;
-    await strapi2.db.query(UID$6).update({
-      where: { id: existing.id },
-      data: { viewCount: (existing.viewCount || 0) + 1 }
-    });
   },
   async incrementDownloadCount(siteId, documentId) {
     const existing = await this.findOneAdmin(siteId, documentId);
     if (!existing) return;
-    await strapi2.db.query(UID$6).update({
+    await strapi2.db.query(UID$7).update({
       where: { id: existing.id },
       data: { downloadCount: (existing.downloadCount || 0) + 1 }
     });
   }
 });
-const UID$5 = "plugin::zhao-website.lead";
+const UID$6 = "plugin::zhao-website.lead";
 const lead = ({ strapi: strapi2 }) => ({
   async createPublic(siteId, data, ctx) {
     if (data.website) {
@@ -2471,10 +2543,10 @@ const lead = ({ strapi: strapi2 }) => ({
       status: "new"
     };
     delete enriched.website;
-    return strapi2.db.query(UID$5).create({ data: enriched });
+    return strapi2.db.query(UID$6).create({ data: enriched });
   },
   async findMine(siteId, userId, query = {}) {
-    return strapi2.db.query(UID$5).findMany({
+    return strapi2.db.query(UID$6).findMany({
       where: { site: siteId, deletedAt: null },
       orderBy: { createdAt: "DESC" },
       limit: 50
@@ -2486,7 +2558,7 @@ const lead = ({ strapi: strapi2 }) => ({
     if (status) filters.status = status;
     if (type) filters.type = type;
     if (assignedTo) filters.assignedTo = assignedTo;
-    return strapi2.db.query(UID$5).findMany({
+    return strapi2.db.query(UID$6).findMany({
       where: filters,
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
@@ -2494,12 +2566,12 @@ const lead = ({ strapi: strapi2 }) => ({
     });
   },
   async findOneAdmin(siteId, documentId) {
-    return strapi2.db.query(UID$5).findOne({
+    return strapi2.db.query(UID$6).findOne({
       where: { site: siteId, documentId, deletedAt: null }
     });
   },
   async update(siteId, documentId, data) {
-    const existing = await strapi2.db.query(UID$5).findOne({
+    const existing = await strapi2.db.query(UID$6).findOne({
       where: { site: siteId, documentId, deletedAt: null }
     });
     if (!existing) {
@@ -2507,13 +2579,13 @@ const lead = ({ strapi: strapi2 }) => ({
       e.status = 404;
       throw e;
     }
-    return strapi2.db.query(UID$5).update({
+    return strapi2.db.query(UID$6).update({
       where: { id: existing.id },
       data
     });
   },
   async assign(siteId, documentId, assignedToId) {
-    const existing = await strapi2.db.query(UID$5).findOne({
+    const existing = await strapi2.db.query(UID$6).findOne({
       where: { site: siteId, documentId, deletedAt: null }
     });
     if (!existing) {
@@ -2521,13 +2593,13 @@ const lead = ({ strapi: strapi2 }) => ({
       e.status = 404;
       throw e;
     }
-    return strapi2.db.query(UID$5).update({
+    return strapi2.db.query(UID$6).update({
       where: { id: existing.id },
       data: { assignedTo: assignedToId }
     });
   },
   async followUp(siteId, documentId, record) {
-    const existing = await strapi2.db.query(UID$5).findOne({
+    const existing = await strapi2.db.query(UID$6).findOne({
       where: { site: siteId, documentId, deletedAt: null }
     });
     if (!existing) {
@@ -2541,13 +2613,13 @@ const lead = ({ strapi: strapi2 }) => ({
       content: record.content,
       result: record.result
     });
-    return strapi2.db.query(UID$5).update({
+    return strapi2.db.query(UID$6).update({
       where: { id: existing.id },
       data: { followUpRecords }
     });
   },
   async stats(siteId) {
-    const all = await strapi2.db.query(UID$5).findMany({
+    const all = await strapi2.db.query(UID$6).findMany({
       where: { site: siteId, deletedAt: null }
     });
     const byStatus = all.reduce((acc, l) => {
@@ -2561,11 +2633,11 @@ const lead = ({ strapi: strapi2 }) => ({
     return { total: all.length, byStatus, byType };
   },
   async softDelete(siteId, documentId) {
-    const existing = await strapi2.db.query(UID$5).findOne({
+    const existing = await strapi2.db.query(UID$6).findOne({
       where: { site: siteId, documentId, deletedAt: null }
     });
     if (!existing) return null;
-    return strapi2.db.query(UID$5).update({
+    return strapi2.db.query(UID$6).update({
       where: { id: existing.id },
       data: { deletedAt: (/* @__PURE__ */ new Date()).toISOString() }
     });
@@ -2630,7 +2702,7 @@ class AsyncWriter {
     }
   }
 }
-const UID$4 = "plugin::zhao-website.visit-log";
+const UID$5 = "plugin::zhao-website.visit-log";
 let writerInstance$1 = null;
 const visitLog = ({ strapi: strapi2 }) => ({
   _getWriter() {
@@ -2655,7 +2727,7 @@ const visitLog = ({ strapi: strapi2 }) => ({
     if (type) filters.type = type;
     if (targetType) filters.targetType = targetType;
     if (targetId) filters.targetId = targetId;
-    return strapi2.db.query(UID$4).findMany({
+    return strapi2.db.query(UID$5).findMany({
       where: filters,
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
@@ -2663,7 +2735,7 @@ const visitLog = ({ strapi: strapi2 }) => ({
     });
   },
   async findMine(siteId, userId, query = {}) {
-    return strapi2.db.query(UID$4).findMany({
+    return strapi2.db.query(UID$5).findMany({
       where: { site: siteId, deletedAt: null, userId },
       limit: 50,
       orderBy: { createdAt: "DESC" }
@@ -2671,7 +2743,7 @@ const visitLog = ({ strapi: strapi2 }) => ({
   },
   async stats(siteId, days = 30) {
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1e3);
-    const items = await strapi2.db.query(UID$4).findMany({
+    const items = await strapi2.db.query(UID$5).findMany({
       where: { site: siteId, createdAt: { $gte: since } }
     });
     const byType = items.reduce((acc, v) => {
@@ -2682,16 +2754,16 @@ const visitLog = ({ strapi: strapi2 }) => ({
   },
   async purgeOlderThan(days) {
     const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1e3);
-    const deleted = await strapi2.db.query(UID$4).deleteMany({
+    const deleted = await strapi2.db.query(UID$5).deleteMany({
       where: { createdAt: { $lt: cutoff } }
     });
     return deleted?.count || 0;
   }
 });
-const UID$3 = "plugin::zhao-website.interaction";
+const UID$4 = "plugin::zhao-website.interaction";
 const interaction = ({ strapi: strapi2 }) => ({
   async toggle(siteId, data) {
-    const existing = await strapi2.db.query(UID$3).findOne({
+    const existing = await strapi2.db.query(UID$4).findOne({
       where: {
         site: siteId,
         type: data.type,
@@ -2702,13 +2774,13 @@ const interaction = ({ strapi: strapi2 }) => ({
       }
     });
     if (existing) {
-      await strapi2.db.query(UID$3).update({
+      await strapi2.db.query(UID$4).update({
         where: { id: existing.id },
         data: { deletedAt: (/* @__PURE__ */ new Date()).toISOString() }
       });
       return { action: "removed" };
     }
-    await strapi2.db.query(UID$3).create({
+    await strapi2.db.query(UID$4).create({
       data: {
         site: siteId,
         type: data.type,
@@ -2723,7 +2795,7 @@ const interaction = ({ strapi: strapi2 }) => ({
     return { action: "created" };
   },
   async check(siteId, params) {
-    const existing = await strapi2.db.query(UID$3).findOne({
+    const existing = await strapi2.db.query(UID$4).findOne({
       where: { site: siteId, deletedAt: null, ...params }
     });
     return { liked: !!existing };
@@ -2734,7 +2806,7 @@ const interaction = ({ strapi: strapi2 }) => ({
     if (type) filters.type = type;
     if (targetType) filters.targetType = targetType;
     if (targetId) filters.targetId = targetId;
-    return strapi2.db.query(UID$3).findMany({
+    return strapi2.db.query(UID$4).findMany({
       where: filters,
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
@@ -2744,7 +2816,7 @@ const interaction = ({ strapi: strapi2 }) => ({
   async stats(siteId, targetType, targetId) {
     const counts = {};
     for (const type of ["like", "collect", "share"]) {
-      const items = await strapi2.db.query(UID$3).findMany({
+      const items = await strapi2.db.query(UID$4).findMany({
         where: { site: siteId, type, targetType, targetId, deletedAt: null }
       });
       counts[type] = items.length;
@@ -2752,17 +2824,17 @@ const interaction = ({ strapi: strapi2 }) => ({
     return counts;
   },
   async softDelete(siteId, documentId) {
-    const existing = await strapi2.db.query(UID$3).findOne({
+    const existing = await strapi2.db.query(UID$4).findOne({
       where: { site: siteId, documentId, deletedAt: null }
     });
     if (!existing) return null;
-    return strapi2.db.query(UID$3).update({
+    return strapi2.db.query(UID$4).update({
       where: { id: existing.id },
       data: { deletedAt: (/* @__PURE__ */ new Date()).toISOString() }
     });
   }
 });
-const UID$2 = "plugin::zhao-website.search-log";
+const UID$3 = "plugin::zhao-website.search-log";
 let writerInstance = null;
 const searchLog = ({ strapi: strapi2 }) => ({
   _getWriter() {
@@ -2789,7 +2861,7 @@ const searchLog = ({ strapi: strapi2 }) => ({
     });
   },
   async findAdmin(siteId, query = {}) {
-    return strapi2.db.query(UID$2).findMany({
+    return strapi2.db.query(UID$3).findMany({
       where: { site: siteId, deletedAt: null },
       limit: 50,
       orderBy: { createdAt: "DESC" }
@@ -2797,7 +2869,7 @@ const searchLog = ({ strapi: strapi2 }) => ({
   },
   async stats(siteId, days = 30) {
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1e3);
-    const items = await strapi2.db.query(UID$2).findMany({
+    const items = await strapi2.db.query(UID$3).findMany({
       where: { site: siteId, createdAt: { $gte: since } }
     });
     const byKeyword = {};
@@ -3151,25 +3223,25 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
     }));
   }
 });
-const UID$1 = "plugin::zhao-website.ai-content-summary";
+const UID$2 = "plugin::zhao-website.ai-content-summary";
 const aiContentSummary = ({ strapi: strapi2 }) => ({
   async findByTarget(siteId, targetType, targetId, summaryType) {
     const filters = { site: siteId, targetType, targetId, deletedAt: null, status: true };
     if (summaryType) filters.summaryType = summaryType;
-    return strapi2.db.query(UID$1).findMany({ where: filters });
+    return strapi2.db.query(UID$2).findMany({ where: filters });
   },
   async findPublic(siteId, query = {}) {
     const { targetType, targetId, summaryType } = query;
     return this.findByTarget(siteId, targetType, targetId, summaryType);
   },
   async findAdmin(siteId, query = {}) {
-    return strapi2.db.query(UID$1).findMany({
+    return strapi2.db.query(UID$2).findMany({
       where: { site: siteId, deletedAt: null, ...query },
       orderBy: { updatedAt: "DESC" }
     });
   },
   async create(siteId, data) {
-    const existing = await strapi2.db.query(UID$1).findOne({
+    const existing = await strapi2.db.query(UID$2).findOne({
       where: {
         site: siteId,
         targetType: data.targetType,
@@ -3180,17 +3252,17 @@ const aiContentSummary = ({ strapi: strapi2 }) => ({
       }
     });
     if (existing) {
-      return strapi2.db.query(UID$1).update({
+      return strapi2.db.query(UID$2).update({
         where: { id: existing.id },
         data: { ...data, version: (existing.version || 0) + 1 }
       });
     }
-    return strapi2.db.query(UID$1).create({
+    return strapi2.db.query(UID$2).create({
       data: { ...data, site: siteId, language: data.language || "zh-CN", version: 1 }
     });
   },
   async update(siteId, documentId, data) {
-    const existing = await strapi2.db.query(UID$1).findOne({
+    const existing = await strapi2.db.query(UID$2).findOne({
       where: { site: siteId, documentId, deletedAt: null }
     });
     if (!existing) {
@@ -3198,13 +3270,13 @@ const aiContentSummary = ({ strapi: strapi2 }) => ({
       e.status = 404;
       throw e;
     }
-    return strapi2.db.query(UID$1).update({
+    return strapi2.db.query(UID$2).update({
       where: { id: existing.id },
       data: { ...data, version: (existing.version || 1) + 1 }
     });
   },
   async regenerate(siteId, documentId) {
-    const existing = await strapi2.db.query(UID$1).findOne({
+    const existing = await strapi2.db.query(UID$2).findOne({
       where: { site: siteId, documentId, deletedAt: null }
     });
     if (!existing) {
@@ -3212,7 +3284,7 @@ const aiContentSummary = ({ strapi: strapi2 }) => ({
       e.status = 404;
       throw e;
     }
-    return strapi2.db.query(UID$1).update({
+    return strapi2.db.query(UID$2).update({
       where: { id: existing.id },
       data: {
         verificationStatus: "pending",
@@ -3221,17 +3293,17 @@ const aiContentSummary = ({ strapi: strapi2 }) => ({
     });
   },
   async softDelete(siteId, documentId) {
-    const existing = await strapi2.db.query(UID$1).findOne({
+    const existing = await strapi2.db.query(UID$2).findOne({
       where: { site: siteId, documentId, deletedAt: null }
     });
     if (!existing) return null;
-    return strapi2.db.query(UID$1).update({
+    return strapi2.db.query(UID$2).update({
       where: { id: existing.id },
       data: { deletedAt: (/* @__PURE__ */ new Date()).toISOString() }
     });
   }
 });
-const UID = "plugin::zhao-website.first-truth-policy";
+const UID$1 = "plugin::zhao-website.first-truth-policy";
 const firstTruth = ({ strapi: strapi2 }) => ({
   async find(siteId, query = {}) {
     const { claimCategory, verificationStatus } = query;
@@ -3246,29 +3318,29 @@ const firstTruth = ({ strapi: strapi2 }) => ({
       filters.$or[0].verificationStatus = verificationStatus;
       filters.$or[1].verificationStatus = verificationStatus;
     }
-    return strapi2.db.query(UID).findMany({
+    return strapi2.db.query(UID$1).findMany({
       where: filters,
       orderBy: { priority: "DESC", updatedAt: "DESC" },
       populate: ["canonicalEntity"]
     });
   },
   async findOne(siteId, documentId) {
-    const tenant = await strapi2.db.query(UID).findOne({
+    const tenant = await strapi2.db.query(UID$1).findOne({
       where: { site: siteId, documentId, deletedAt: null },
       populate: ["canonicalEntity"]
     });
     if (tenant) return tenant;
-    return strapi2.db.query(UID).findOne({
+    return strapi2.db.query(UID$1).findOne({
       where: { site: null, documentId, deletedAt: null },
       populate: ["canonicalEntity"]
     });
   },
   async findByClaimKey(siteId, claimKey) {
-    const tenant = await strapi2.db.query(UID).findOne({
+    const tenant = await strapi2.db.query(UID$1).findOne({
       where: { site: siteId, claimKey, deletedAt: null }
     });
     if (tenant) return tenant;
-    return strapi2.db.query(UID).findOne({
+    return strapi2.db.query(UID$1).findOne({
       where: { site: null, claimKey, deletedAt: null }
     });
   },
@@ -3280,7 +3352,7 @@ const firstTruth = ({ strapi: strapi2 }) => ({
       e.code = "CLAIM_KEY_EXISTS";
       throw e;
     }
-    return strapi2.db.query(UID).create({
+    return strapi2.db.query(UID$1).create({
       data: {
         ...data,
         site: siteId,
@@ -3299,7 +3371,7 @@ const firstTruth = ({ strapi: strapi2 }) => ({
     if (data.canonicalValue && data.canonicalValue !== existing.canonicalValue) {
       await this._markRelatedEntitiesPending(siteId, existing.canonicalEntity);
     }
-    return strapi2.db.query(UID).update({
+    return strapi2.db.query(UID$1).update({
       where: { id: existing.id },
       data: {
         ...data,
@@ -3328,7 +3400,7 @@ const firstTruth = ({ strapi: strapi2 }) => ({
       e.status = 404;
       throw e;
     }
-    return strapi2.db.query(UID).update({
+    return strapi2.db.query(UID$1).update({
       where: { id: existing.id },
       data: { verificationStatus: "verified", lastVerifiedAt: (/* @__PURE__ */ new Date()).toISOString() }
     });
@@ -3336,14 +3408,14 @@ const firstTruth = ({ strapi: strapi2 }) => ({
   async softDelete(siteId, documentId) {
     const existing = await this.findOne(siteId, documentId);
     if (!existing) return null;
-    return strapi2.db.query(UID).update({
+    return strapi2.db.query(UID$1).update({
       where: { id: existing.id },
       data: { deletedAt: (/* @__PURE__ */ new Date()).toISOString() }
     });
   },
   // ===== 冲突检测 =====
   async detectConflicts(siteId) {
-    const truths = await strapi2.db.query(UID).findMany({
+    const truths = await strapi2.db.query(UID$1).findMany({
       where: { $or: [{ site: siteId, deletedAt: null, status: true }, { site: null, deletedAt: null, status: true }] }
     });
     const byKey = {};
@@ -3420,6 +3492,13 @@ const schemaBuilder = ({ strapi: strapi2 }) => ({
       "@type": "Organization",
       name: brandInfo2.companyName
     };
+    if (article2.brandVoiceRef?.content) {
+      schema.brand = {
+        "@type": "Brand",
+        name: article2.brandVoiceRef.name,
+        description: article2.brandVoiceRef.content
+      };
+    }
     return schema;
   },
   // ===== Product =====
@@ -3539,6 +3618,15 @@ const llmsTxt = ({ strapi: strapi2 }) => ({
     for (const f of facts.slice(0, 30)) {
       lines.push(`- ${f.claim}: ${f.canonicalValue}`);
     }
+    lines.push("## Brand Voice");
+    const voices = await strapi2.db.query("plugin::zhao-website.brand-voice").findMany({
+      where: { $or: [{ site: siteId, status: true, deletedAt: null }, { site: null, status: true, deletedAt: null }] },
+      orderBy: { category: "ASC" }
+    });
+    for (const v of voices) {
+      lines.push(`- [${v.category}] ${v.name}: ${v.content.substring(0, 200)}`);
+    }
+    lines.push("");
     return lines.join("\n");
   }
 });
@@ -3662,6 +3750,101 @@ const studioBridge = ({ strapi: strapi2 }) => ({
     return strapi2.db.query("plugin::zhao-website.article").create({ data: articleData });
   }
 });
+const UID = "plugin::zhao-website.brand-voice";
+const brandVoice = ({ strapi: strapi2 }) => ({
+  // ===== 查询 =====
+  async findAdmin(siteId, query = {}) {
+    const { category, status, page = 1, pageSize = 20 } = query;
+    const filters = {
+      $or: [
+        { site: siteId, deletedAt: null },
+        { site: null, deletedAt: null }
+      ]
+    };
+    if (category) {
+      filters.$or[0].category = category;
+      filters.$or[1].category = category;
+    }
+    if (status !== void 0) {
+      filters.$or[0].status = status;
+      filters.$or[1].status = status;
+    }
+    return strapi2.db.query(UID).findMany({
+      where: filters,
+      limit: Number(pageSize),
+      offset: (Number(page) - 1) * Number(pageSize),
+      orderBy: { updatedAt: "DESC" }
+    });
+  },
+  async findOneAdmin(siteId, documentId) {
+    const tenant = await strapi2.db.query(UID).findOne({
+      where: { site: siteId, documentId, deletedAt: null }
+    });
+    if (tenant) return tenant;
+    return strapi2.db.query(UID).findOne({
+      where: { site: null, documentId, deletedAt: null }
+    });
+  },
+  // ===== 写入 =====
+  async create(siteId, data) {
+    return strapi2.db.query(UID).create({
+      data: { ...data, site: siteId }
+    });
+  },
+  async update(siteId, documentId, data) {
+    const existing = await this.findOneAdmin(siteId, documentId);
+    if (!existing) throw new Error("Brand voice not found");
+    return strapi2.db.query(UID).update({
+      where: { id: existing.id },
+      data
+    });
+  },
+  async softDelete(siteId, documentId) {
+    const existing = await this.findOneAdmin(siteId, documentId);
+    if (!existing) throw new Error("Brand voice not found");
+    return strapi2.db.query(UID).update({
+      where: { id: existing.id },
+      data: { deletedAt: /* @__PURE__ */ new Date() }
+    });
+  },
+  // ===== 类目查询 =====
+  async listByCategory(siteId, category) {
+    return strapi2.db.query(UID).findMany({
+      where: {
+        $or: [
+          { site: siteId, category, status: true, deletedAt: null },
+          { site: null, category, status: true, deletedAt: null }
+        ]
+      },
+      orderBy: { name: "ASC" }
+    });
+  },
+  // ===== 变量替换 =====
+  async resolveVariables(siteId, documentId, variables) {
+    const voice = await this.findOneAdmin(siteId, documentId);
+    if (!voice) throw new Error("Brand voice not found");
+    let content = voice.content || "";
+    const varDefs = voice.variables || [];
+    for (const v of varDefs) {
+      const value = variables[v.name] ?? v.defaultValue ?? `{{${v.name}}}`;
+      content = content.replace(new RegExp(`\\{\\{${v.name}\\}\\}`, "g"), value);
+    }
+    return content;
+  },
+  // ===== 参考内容 =====
+  async getRefContent(siteId, category) {
+    const voices = await strapi2.db.query(UID).findMany({
+      where: {
+        $or: [
+          { site: siteId, category, status: true, deletedAt: null },
+          { site: null, category, status: true, deletedAt: null }
+        ]
+      },
+      orderBy: { name: "ASC" }
+    });
+    return voices.map((v) => `- ${v.name}: ${v.content}`).join("\n");
+  }
+});
 const services = {
   "seo-config": seoConfig,
   "brand-info": brandInfo,
@@ -3685,7 +3868,8 @@ const services = {
   "sitemap": sitemap,
   "robots": robots,
   "search-engine-push": searchEnginePush,
-  "studio-bridge": studioBridge
+  "studio-bridge": studioBridge,
+  "brand-voice": brandVoice
 };
 const hasWebsitePermission = (config2) => {
   return async (ctx, next) => {

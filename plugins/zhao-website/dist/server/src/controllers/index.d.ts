@@ -42,6 +42,15 @@ declare const _default: {
         leadStats(ctx: any): Promise<void>;
         searchStats(ctx: any): Promise<void>;
     };
+    "brand-voice": {
+        resolve(ctx: any): Promise<void>;
+        listByCategory(ctx: any): Promise<void>;
+        createGlobal(ctx: any): Promise<void>;
+        updateGlobal(ctx: any): Promise<void>;
+        deleteGlobal(ctx: any): Promise<void>;
+        publicList(ctx: any): Promise<void>;
+        publicByCategory(ctx: any): Promise<void>;
+    };
     article: {
         list(ctx: any): Promise<void>;
         detail(ctx: any): Promise<any>;

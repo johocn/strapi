@@ -76,5 +76,12 @@ declare const _default: {
         update(ctx: any): Promise<void>;
         delete(ctx: any): Promise<void>;
     };
+    "brand-voice": {
+        find(ctx: any): Promise<void>;
+        findOne(ctx: any): Promise<any>;
+        create(ctx: any): Promise<void>;
+        update(ctx: any): Promise<void>;
+        delete(ctx: any): Promise<void>;
+    };
 };
 export default _default;

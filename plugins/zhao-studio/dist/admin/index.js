@@ -1,4 +1,35 @@
 "use strict";
 Object.defineProperties(exports, { __esModule: { value: true }, [Symbol.toStringTag]: { value: "Module" } });
-const index = require("./index-BlJ_bFQP.js");
-exports.default = index.index;
+const jsxRuntime = require("react/jsx-runtime");
+const icons = require("@ant-design/icons");
+const pluginId = "zhao-studio";
+const PluginIcon = () => /* @__PURE__ */ jsxRuntime.jsx(icons.RobotOutlined, {});
+const index = {
+  register(app) {
+    app.addMenuLink({
+      to: `/plugins/${pluginId}`,
+      icon: PluginIcon,
+      intlLabel: {
+        id: `${pluginId}.plugin.name`,
+        defaultMessage: "内容工作室"
+      },
+      permissions: [
+        {
+          action: "plugin::zhao-studio.read",
+          subject: null
+        }
+      ],
+      Component: async () => {
+        const component = await Promise.resolve().then(() => require("./App-DWMDA5BM.js"));
+        return component;
+      }
+    });
+    app.registerPlugin({
+      id: pluginId,
+      name: "内容工作室"
+    });
+  },
+  bootstrap(app) {
+  }
+};
+exports.default = index;
