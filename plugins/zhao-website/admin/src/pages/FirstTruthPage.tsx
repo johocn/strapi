@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { Card, Tabs, Table, Button, Modal, Form, Input, Select, InputNumber, Space, message, Popconfirm, Alert } from 'antd';
-import { PlusOutlined, ExportOutlined, CheckCircleOutlined, WarningOutlined } from '@ant-design/icons';
+﻿import React, { useState } from 'react';
+import { Card, Tabs, Table, Button, Modal, Form, Input, Select, InputNumber, Space, message, Popconfirm, Alert, Tag } from 'antd';
+import { PlusOutlined, ExportOutlined, CheckCircleOutlined, WarningOutlined, GlobalOutlined } from '@ant-design/icons';
 import { useFetch, postJSON, putJSON, deleteJSON } from '../hooks/useFetch';
 import { API } from '../utils/api';
 
@@ -13,6 +13,7 @@ const FirstTruthPage = () => {
   const [exportData, setExportData] = useState<any>(null);
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
+  const [globalMode, setGlobalMode] = useState(false);
 
   const { data: truths, loading, refetch: refetchTruths } = useFetch<any[]>(API.ftFind(listParams));
   const { data: conflicts, loading: loadingConflicts } = useFetch<any[]>(
@@ -21,12 +22,21 @@ const FirstTruthPage = () => {
 
   const handleOpenCreate = () => {
     setEditingId(null);
+    setGlobalMode(false);
+    form.resetFields();
+    setModalOpen(true);
+  };
+
+  const handleCreateGlobal = () => {
+    setEditingId(null);
+    setGlobalMode(true);
     form.resetFields();
     setModalOpen(true);
   };
 
   const handleOpenEdit = (record: any) => {
     setEditingId(record.documentId);
+    setGlobalMode(record.site === null);
     form.setFieldsValue(record);
     setModalOpen(true);
   };
@@ -35,10 +45,14 @@ const FirstTruthPage = () => {
     setSubmitting(true);
     try {
       if (editingId) {
-        await putJSON(API.ftUpdate(editingId), values);
+        const url = globalMode
+          ? API.ftUpdateGlobal(editingId)
+          : API.ftUpdate(editingId);
+        await putJSON(url, values);
         message.success('已更新');
       } else {
-        await postJSON(API.ftCreate, values);
+        const url = globalMode ? API.ftCreateGlobal : API.ftCreate;
+        await postJSON(url, values);
         message.success('已创建');
       }
       setModalOpen(false);
@@ -50,9 +64,12 @@ const FirstTruthPage = () => {
     }
   };
 
-  const handleVerify = async (documentId: string) => {
+  const handleVerify = async (record: any) => {
     try {
-      await postJSON(API.ftVerify(documentId), {});
+      const url = record.site === null
+        ? API.ftVerifyGlobal(record.documentId)
+        : API.ftVerify(record.documentId);
+      await postJSON(url, {});
       message.success('已标记为 verified');
       refetchTruths();
     } catch (err) {
@@ -60,9 +77,12 @@ const FirstTruthPage = () => {
     }
   };
 
-  const handleDelete = async (documentId: string) => {
+  const handleDelete = async (record: any) => {
     try {
-      await deleteJSON(API.ftDelete(documentId));
+      const url = record.site === null
+        ? API.ftDeleteGlobal(record.documentId)
+        : API.ftDelete(record.documentId);
+      await deleteJSON(url);
       message.success('已删除');
       refetchTruths();
     } catch (err) {
@@ -83,6 +103,10 @@ const FirstTruthPage = () => {
   const columns = [
     { title: 'claimKey', dataIndex: 'claimKey' },
     { title: 'claim', dataIndex: 'claim' },
+    {
+      title: '层级', dataIndex: 'site', key: 'site',
+      render: (site: any) => site === null ? <Tag color="blue">全局</Tag> : <Tag>租户</Tag>,
+    },
     { title: 'canonicalValue', dataIndex: 'canonicalValue' },
     { title: '类目', dataIndex: 'claimCategory' },
     { title: '优先级', dataIndex: 'priority' },
@@ -99,11 +123,11 @@ const FirstTruthPage = () => {
         <Space>
           <Button type="link" size="small" onClick={() => handleOpenEdit(record)}>编辑</Button>
           {record.verificationStatus !== 'verified' && (
-            <Button type="link" size="small" icon={<CheckCircleOutlined />} onClick={() => handleVerify(record.documentId)}>
+            <Button type="link" size="small" icon={<CheckCircleOutlined />} onClick={() => handleVerify(record)}>
               verify
             </Button>
           )}
-          <Popconfirm title="确认删除？" onConfirm={() => handleDelete(record.documentId)}>
+          <Popconfirm title="确认删除？" onConfirm={() => handleDelete(record)}>
             <Button type="link" danger size="small">删除</Button>
           </Popconfirm>
         </Space>
@@ -142,6 +166,7 @@ const FirstTruthPage = () => {
     <Card>
       <Space style={{ marginBottom: 16 }}>
         <Button icon={<PlusOutlined />} onClick={handleOpenCreate}>新建真值</Button>
+        <Button icon={<GlobalOutlined />} onClick={handleCreateGlobal}>新建全局真值</Button>
         <Button icon={<ExportOutlined />} onClick={handleExport}>导出 Facts</Button>
       </Space>
 
@@ -190,9 +215,9 @@ const FirstTruthPage = () => {
       />
 
       <Modal
-        title={editingId ? '编辑真值' : '新建真值'}
+        title={editingId ? (globalMode ? '编辑全局真值' : '编辑真值') : (globalMode ? '新建全局真值' : '新建真值')}
         open={modalOpen}
-        onCancel={() => setModalOpen(false)}
+        onCancel={() => { setModalOpen(false); setGlobalMode(false); }}
         onOk={() => form.submit()}
         confirmLoading={submitting}
       >
