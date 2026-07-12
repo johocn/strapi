@@ -8,8 +8,13 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   // ===== 实体 =====
   async findEntities(siteId: number, query: any = {}) {
     const { entityType, page = 1, pageSize = 20 } = query;
-    const filters: any = { site: siteId, deletedAt: null };
-    if (entityType) filters.entityType = entityType;
+    const filters: any = {
+      $or: [{ site: siteId, deletedAt: null }, { site: null, deletedAt: null }],
+    };
+    if (entityType) {
+      filters.$or[0].entityType = entityType;
+      filters.$or[1].entityType = entityType;
+    }
     return strapi.db.query(ENTITY_UID).findMany({
       where: filters,
       limit: Number(pageSize),
@@ -20,8 +25,13 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   },
 
   async findEntityBySlug(siteId: number, slug: string) {
-    return strapi.db.query(ENTITY_UID).findOne({
+    const tenant = await strapi.db.query(ENTITY_UID).findOne({
       where: { site: siteId, slug, deletedAt: null, status: true },
+      populate: ["image"],
+    });
+    if (tenant) return tenant;
+    return strapi.db.query(ENTITY_UID).findOne({
+      where: { site: null, slug, deletedAt: null, status: true },
       populate: ["image"],
     });
   },
@@ -61,13 +71,13 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     });
   },
 
-  async createEntity(siteId: number, data: any) {
+  async createEntity(siteId: number | null, data: any) {
     return strapi.db.query(ENTITY_UID).create({
       data: { ...data, site: siteId },
     });
   },
 
-  async updateEntity(siteId: number, documentId: string, data: any) {
+  async updateEntity(siteId: number | null, documentId: string, data: any) {
     const existing = await strapi.db.query(ENTITY_UID).findOne({
       where: { site: siteId, documentId, deletedAt: null },
     });
@@ -82,7 +92,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     });
   },
 
-  async deleteEntity(siteId: number, documentId: string) {
+  async deleteEntity(siteId: number | null, documentId: string) {
     const existing = await strapi.db.query(ENTITY_UID).findOne({
       where: { site: siteId, documentId, deletedAt: null },
     });
@@ -96,10 +106,12 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   // ===== 关系 =====
   async findRelations(siteId: number, query: any = {}) {
     const { subjectEntityId, predicate, objectEntityId, page = 1, pageSize = 20 } = query;
-    const filters: any = { site: siteId, deletedAt: null };
-    if (subjectEntityId) filters.subjectEntity = subjectEntityId;
-    if (predicate) filters.predicate = predicate;
-    if (objectEntityId) filters.objectEntity = objectEntityId;
+    const filters: any = {
+      $or: [{ site: siteId, deletedAt: null }, { site: null, deletedAt: null }],
+    };
+    if (subjectEntityId) { filters.$or[0].subjectEntity = subjectEntityId; filters.$or[1].subjectEntity = subjectEntityId; }
+    if (predicate) { filters.$or[0].predicate = predicate; filters.$or[1].predicate = predicate; }
+    if (objectEntityId) { filters.$or[0].objectEntity = objectEntityId; filters.$or[1].objectEntity = objectEntityId; }
     return strapi.db.query(RELATION_UID).findMany({
       where: filters,
       limit: Number(pageSize),
@@ -217,12 +229,17 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
   // ===== 消歧 =====
   async disambiguate(siteId: number, params: { name: string; entityType?: string }): Promise<any | null> {
+    const baseFilter = {
+      name: { $containsi: params.name },
+      deletedAt: null,
+      ...(params.entityType ? { entityType: params.entityType } : {}),
+    };
     const candidates = await strapi.db.query(ENTITY_UID).findMany({
       where: {
-        site: siteId,
-        name: { $containsi: params.name },
-        deletedAt: null,
-        ...(params.entityType ? { entityType: params.entityType } : {}),
+        $or: [
+          { ...baseFilter, site: siteId },
+          { ...baseFilter, site: null },
+        ],
       },
     });
     if (candidates.length === 0) return null;
@@ -245,14 +262,14 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
   async verifyAll(siteId: number): Promise<{ total: number; conflicts: number; report: any[] }> {
     const entities = await strapi.db.query(ENTITY_UID).findMany({
-      where: { site: siteId, deletedAt: null },
+      where: { $or: [{ site: siteId, deletedAt: null }, { site: null, deletedAt: null }] },
     });
     let conflicts = 0;
     const report: any[] = [];
     for (const entity of entities) {
       // 简化：检查是否有冲突的 first-truth
       const truths = await strapi.db.query("plugin::zhao-website.first-truth-policy").findMany({
-        where: { site: siteId, canonicalEntity: entity.documentId, verificationStatus: "conflict" },
+        where: { $or: [{ site: siteId, canonicalEntity: entity.documentId, verificationStatus: "conflict" }, { site: null, canonicalEntity: entity.documentId, verificationStatus: "conflict" }] },
       });
       if (truths.length > 0) {
         conflicts += 1;
@@ -269,11 +286,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   // ===== JSON-LD 导出 =====
   async exportGraph(siteId: number): Promise<any> {
     const entities = await strapi.db.query(ENTITY_UID).findMany({
-      where: { site: siteId, deletedAt: null, status: true },
+      where: { $or: [{ site: siteId, deletedAt: null, status: true }, { site: null, deletedAt: null, status: true }] },
       populate: ["image"],
     });
     const relations = await strapi.db.query(RELATION_UID).findMany({
-      where: { site: siteId, deletedAt: null, status: true },
+      where: { $or: [{ site: siteId, deletedAt: null, status: true }, { site: null, deletedAt: null, status: true }] },
       populate: ["subjectEntity", "objectEntity"],
     });
     const graph = entities.map((e: any) => this._entityToJsonLd(e, relations.filter((r: any) => r.subjectEntity?.id === e.id)));
@@ -284,11 +301,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     const entity = await this.findEntityBySlug(siteId, slug);
     if (!entity) return null;
     const outgoing = await strapi.db.query(RELATION_UID).findMany({
-      where: { site: siteId, subjectEntity: entity.documentId, deletedAt: null },
+      where: { $or: [{ site: siteId, subjectEntity: entity.documentId, deletedAt: null }, { site: null, subjectEntity: entity.documentId, deletedAt: null }] },
       populate: ["objectEntity"],
     });
     const incoming = await strapi.db.query(RELATION_UID).findMany({
-      where: { site: siteId, objectEntity: entity.documentId, deletedAt: null },
+      where: { $or: [{ site: siteId, objectEntity: entity.documentId, deletedAt: null }, { site: null, objectEntity: entity.documentId, deletedAt: null }] },
       populate: ["subjectEntity"],
     });
     return this._entityToJsonLd(entity, outgoing, incoming);
@@ -318,7 +335,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
   async exportFacts(siteId: number): Promise<any[]> {
     const truths = await strapi.db.query("plugin::zhao-website.first-truth-policy").findMany({
-      where: { site: siteId, deletedAt: null, status: true, verificationStatus: { $in: ["verified", "pending", "outdated"] } },
+      where: { $or: [{ site: siteId, deletedAt: null, status: true, verificationStatus: { $in: ["verified", "pending", "outdated"] } }, { site: null, deletedAt: null, status: true, verificationStatus: { $in: ["verified", "pending", "outdated"] } }] },
     });
     return truths.map((t: any) => ({
       claimKey: t.claimKey,

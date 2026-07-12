@@ -73,9 +73,10 @@ describe("Knowledge Graph Service", () => {
     expect(queryMock.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
-          site: 1,
-          name: { $containsi: "Entity A" },
-          entityType: "Organization",
+          $or: expect.arrayContaining([
+            expect.objectContaining({ site: 1, name: { $containsi: "Entity A" }, entityType: "Organization" }),
+            expect.objectContaining({ site: null, name: { $containsi: "Entity A" }, entityType: "Organization" }),
+          ]),
         }),
       })
     );
