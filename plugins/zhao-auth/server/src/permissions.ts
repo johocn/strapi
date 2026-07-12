@@ -792,6 +792,9 @@ export const PERMISSION_TREE: Record<string, PermissionItem> = {
           "knowledge-entity.update": { label: "编辑实体", type: "button" },
           "knowledge-entity.delete": { label: "删除实体", type: "button" },
           "knowledge-entity.manage": { label: "实体管理", type: "button" },
+          "knowledge-entity.create-global": { label: "新增全局实体", type: "button" },
+          "knowledge-entity.update-global": { label: "编辑全局实体", type: "button" },
+          "knowledge-entity.delete-global": { label: "删除全局实体", type: "button" },
         },
       },
       "menu.website-knowledge-relation": {
@@ -823,6 +826,9 @@ export const PERMISSION_TREE: Record<string, PermissionItem> = {
           "first-truth.update": { label: "编辑真值", type: "button" },
           "first-truth.delete": { label: "删除真值", type: "button" },
           "first-truth.manage": { label: "真值管理", type: "button" },
+          "first-truth.create-global": { label: "新增全局真值", type: "button" },
+          "first-truth.update-global": { label: "编辑全局真值", type: "button" },
+          "first-truth.delete-global": { label: "删除全局真值", type: "button" },
         },
       },
     },
@@ -1148,9 +1154,11 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
     "menu.website-interaction", "interaction.read",
     "menu.website-search-log", "search-log.read",
     "menu.website-knowledge-entity", "knowledge-entity.read", "knowledge-entity.create", "knowledge-entity.update", "knowledge-entity.delete",
+    "knowledge-entity.create-global", "knowledge-entity.update-global", "knowledge-entity.delete-global",
     "menu.website-knowledge-relation", "knowledge-relation.read", "knowledge-relation.create", "knowledge-relation.update", "knowledge-relation.delete",
     "menu.website-ai-summary", "ai-summary.read", "ai-summary.create", "ai-summary.update", "ai-summary.delete",
     "menu.website-first-truth", "first-truth.read", "first-truth.create", "first-truth.update", "first-truth.delete",
+    "first-truth.create-global", "first-truth.update-global", "first-truth.delete-global",
     // 物流中心权限由上方 flattenPermissions(PERMISSION_TREE) 自动包含（仅排除 system-center）
     // SSO 扩展 + media-meta（system-center 被 flattenPermissions 排除，需显式追加）
     "menu.sso-binding", "sso.third-party-binding.read", "sso.third-party-binding.create", "sso.third-party-binding.update",
@@ -1334,8 +1342,8 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
   ],
   [ROLES.USER]: [],
   // ===== 11 个中心 × 2 = 22 个新角色 =====
-  [ROLES.WEBSITE_MANAGER]: centerPermissions("menu.website-center"),
-  [ROLES.WEBSITE_EDITOR]: centerEditorPermissions("menu.website-center"),
+  [ROLES.WEBSITE_MANAGER]: centerPermissions("menu.website-center").filter((k: string) => !k.endsWith("-global")),
+  [ROLES.WEBSITE_EDITOR]: centerEditorPermissions("menu.website-center").filter((k: string) => !k.endsWith("-global")),
   [ROLES.LOGISTICS_MANAGER]: centerPermissions("menu.logistics-center"),
   [ROLES.LOGISTICS_EDITOR]: centerEditorPermissions("menu.logistics-center"),
   [ROLES.COURSE_MANAGER]: centerPermissions("menu.course-center"),

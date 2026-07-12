@@ -32,4 +32,15 @@ export default {
   async exportGraph(ctx: any) {
     ctx.body = await strapi.plugin("zhao-website").service("knowledge-graph").exportGraph(ctx.state.siteId);
   },
+  // ===== 全局实体 =====
+  async createGlobalEntity(ctx: any) {
+    ctx.body = await strapi.plugin("zhao-website").service("knowledge-graph").createEntity(null, ctx.request.body);
+  },
+  async updateGlobalEntity(ctx: any) {
+    ctx.body = await strapi.plugin("zhao-website").service("knowledge-graph").updateEntity(null, ctx.params.documentId, ctx.request.body);
+  },
+  async deleteGlobalEntity(ctx: any) {
+    await strapi.plugin("zhao-website").service("knowledge-graph").deleteEntity(null, ctx.params.documentId);
+    ctx.body = { success: true };
+  },
 };
