@@ -11,9 +11,9 @@ describe('Content Types', () => {
     await teardownStrapi();
   });
 
-  test('zhao-website has 18 content types', () => {
+  test('zhao-website has 19 content types', () => {
     const uids = Object.keys(strapi.contentTypes).filter((u) => u.startsWith('plugin::zhao-website.'));
-    expect(uids.length).toBe(18);
+    expect(uids.length).toBe(19);
   });
 
   test('all CTs have site relation to zhao-common.site-config', () => {

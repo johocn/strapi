@@ -16,6 +16,7 @@ import knowledgeEntity from "./knowledge-entity/schema.json";
 import knowledgeRelation from "./knowledge-relation/schema.json";
 import aiContentSummary from "./ai-content-summary/schema.json";
 import firstTruthPolicy from "./first-truth-policy/schema.json";
+import brandVoice from "./brand-voice/schema.json";
 
 export default {
   "seo-config": { schema: seoConfig },
@@ -36,4 +37,5 @@ export default {
   "knowledge-relation": { schema: knowledgeRelation },
   "ai-content-summary": { schema: aiContentSummary },
   "first-truth-policy": { schema: firstTruthPolicy },
+  "brand-voice": { schema: brandVoice },
 };
