@@ -21,7 +21,7 @@ const config = ({ env }: Core.Config.Shared.ConfigParams): Core.Config.Database 
           rejectUnauthorized: env.bool('DATABASE_SSL_REJECT_UNAUTHORIZED', true),
         },
       },
-      pool: { min: env.int('DATABASE_POOL_MIN', 2), max: env.int('DATABASE_POOL_MAX', 10) },
+      pool: { min: env.int('DATABASE_POOL_MIN', 1), max: env.int('DATABASE_POOL_MAX', 5) },
       settings: {
         force: env.bool('DATABASE_FORCE_MIGRATION', true), // 启用自动迁移（开发环境）
       },
@@ -44,7 +44,7 @@ const config = ({ env }: Core.Config.Shared.ConfigParams): Core.Config.Database 
         },
         schema: env('DATABASE_SCHEMA', 'public'),
       },
-      pool: { min: env.int('DATABASE_POOL_MIN', 2), max: env.int('DATABASE_POOL_MAX', 10) },
+      pool: { min: env.int('DATABASE_POOL_MIN', 1), max: env.int('DATABASE_POOL_MAX', 5) },
       settings: {
         force: env.bool('DATABASE_FORCE_MIGRATION', true), // 启用自动迁移（开发环境）
       },
