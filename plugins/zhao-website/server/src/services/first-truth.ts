@@ -3,11 +3,13 @@ import type { Core } from "@strapi/strapi";
 const UID = "plugin::zhao-website.first-truth-policy";
 
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
-  async find(siteId: number, query: any = {}) {
+  async find(siteId: number | null, query: any = {}) {
     const { claimCategory, verificationStatus } = query;
-    const filters: any = { site: siteId, deletedAt: null };
-    if (claimCategory) filters.claimCategory = claimCategory;
-    if (verificationStatus) filters.verificationStatus = verificationStatus;
+    const filters: any = {
+      $or: [{ site: siteId, deletedAt: null }, { site: null, deletedAt: null }],
+    };
+    if (claimCategory) { filters.$or[0].claimCategory = claimCategory; filters.$or[1].claimCategory = claimCategory; }
+    if (verificationStatus) { filters.$or[0].verificationStatus = verificationStatus; filters.$or[1].verificationStatus = verificationStatus; }
     return strapi.db.query(UID).findMany({
       where: filters,
       orderBy: { priority: "DESC", updatedAt: "DESC" },
@@ -15,20 +17,29 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     });
   },
 
-  async findOne(siteId: number, documentId: string) {
-    return strapi.db.query(UID).findOne({
+  async findOne(siteId: number | null, documentId: string) {
+    const tenant = await strapi.db.query(UID).findOne({
       where: { site: siteId, documentId, deletedAt: null },
+      populate: ["canonicalEntity"],
+    });
+    if (tenant) return tenant;
+    return strapi.db.query(UID).findOne({
+      where: { site: null, documentId, deletedAt: null },
       populate: ["canonicalEntity"],
     });
   },
 
-  async findByClaimKey(siteId: number, claimKey: string) {
-    return strapi.db.query(UID).findOne({
+  async findByClaimKey(siteId: number | null, claimKey: string) {
+    const tenant = await strapi.db.query(UID).findOne({
       where: { site: siteId, claimKey, deletedAt: null },
+    });
+    if (tenant) return tenant;
+    return strapi.db.query(UID).findOne({
+      where: { site: null, claimKey, deletedAt: null },
     });
   },
 
-  async create(siteId: number, data: any) {
+  async create(siteId: number | null, data: any) {
     const existing = await this.findByClaimKey(siteId, data.claimKey);
     if (existing) {
       const e: any = new Error(`claimKey "${data.claimKey}" 已存在`);
@@ -46,7 +57,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     });
   },
 
-  async update(siteId: number, documentId: string, data: any) {
+  async update(siteId: number | null, documentId: string, data: any) {
     const existing = await this.findOne(siteId, documentId);
     if (!existing) {
       const e: any = new Error("Truth not found");
@@ -67,7 +78,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     });
   },
 
-  async _markRelatedEntitiesPending(siteId: number, canonicalEntity: any) {
+  async _markRelatedEntitiesPending(siteId: number | null, canonicalEntity: any) {
     if (!canonicalEntity) return;
     const entityId = canonicalEntity.documentId || canonicalEntity;
     const entity = await strapi.db.query("plugin::zhao-website.knowledge-entity").findOne({
@@ -81,7 +92,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     }
   },
 
-  async verify(siteId: number, documentId: string) {
+  async verify(siteId: number | null, documentId: string) {
     const existing = await this.findOne(siteId, documentId);
     if (!existing) {
       const e: any = new Error("Truth not found");
@@ -94,7 +105,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     });
   },
 
-  async softDelete(siteId: number, documentId: string) {
+  async softDelete(siteId: number | null, documentId: string) {
     const existing = await this.findOne(siteId, documentId);
     if (!existing) return null;
     return strapi.db.query(UID).update({
@@ -104,9 +115,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   },
 
   // ===== 冲突检测 =====
-  async detectConflicts(siteId: number) {
+  async detectConflicts(siteId: number | null) {
     const truths = await strapi.db.query(UID).findMany({
-      where: { site: siteId, deletedAt: null, status: true },
+      where: { $or: [{ site: siteId, deletedAt: null, status: true }, { site: null, deletedAt: null, status: true }] },
     });
     const byKey: Record<string, any[]> = {};
     for (const t of truths) {
