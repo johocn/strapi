@@ -49,6 +49,13 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       "@type": "Organization",
       name: brandInfo.companyName,
     };
+    if (article.brandVoiceRef?.content) {
+      schema.brand = {
+        "@type": "Brand",
+        name: article.brandVoiceRef.name,
+        description: article.brandVoiceRef.content,
+      };
+    }
     return schema;
   },
 

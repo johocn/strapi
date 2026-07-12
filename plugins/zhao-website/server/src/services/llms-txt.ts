@@ -39,6 +39,16 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     for (const f of facts.slice(0, 30)) {
       lines.push(`- ${f.claim}: ${f.canonicalValue}`);
     }
+    // 品牌话术
+    lines.push("## Brand Voice");
+    const voices = await strapi.db.query("plugin::zhao-website.brand-voice").findMany({
+      where: { $or: [{ site: siteId, status: true, deletedAt: null }, { site: null, status: true, deletedAt: null }] },
+      orderBy: { category: "ASC" },
+    });
+    for (const v of voices) {
+      lines.push(`- [${v.category}] ${v.name}: ${v.content.substring(0, 200)}`);
+    }
+    lines.push("");
     return lines.join("\n");
   },
 });
