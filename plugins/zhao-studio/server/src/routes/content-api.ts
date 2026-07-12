@@ -112,5 +112,13 @@ export default () => ({
     adminRoute('GET', '/platforms/:id', 'publish.findOnePlatform', 'zhao-studio.read'),
     adminRoute('GET', '/accounts/:id', 'publish.findOneAccount', 'zhao-studio.read'),
     adminRoute('GET', '/ad-slots/:id', 'analytics.findOneAdSlot', 'zhao-studio.read'),
+
+    // 同步事件 admin 路由
+    adminRoute('GET', '/sync-events', 'sync-event-api.list', 'zhao-studio.read'),
+    adminRoute('GET', '/sync-events/:documentId', 'sync-event-api.findOne', 'zhao-studio.read'),
+    adminRoute('POST', '/sync-events/:documentId/resolve', 'sync-event-api.resolve', 'zhao-studio.update'),
+
+    // webhook 公开路由（zhao-website → zhao-studio）
+    publicRoute('POST', '/webhooks/sync-event', 'sync-event-api.createFromWebhook'),
   ],
 });

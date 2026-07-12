@@ -7,6 +7,7 @@ import analytics from './analytics';
 import knowledgeIndex from './knowledge-index';
 import browserLog from './browser-log';
 import statSummary from './stat-summary';
+import syncEventApi from './sync-event-api';
 
 export default {
   collect,
@@ -18,4 +19,5 @@ export default {
   'knowledge-index': knowledgeIndex,
   'browser-log': browserLog,
   'stat-summary': statSummary,
+  'sync-event-api': syncEventApi,
 };
