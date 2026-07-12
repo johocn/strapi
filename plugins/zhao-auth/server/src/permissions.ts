@@ -647,6 +647,15 @@ export const PERMISSION_TREE: Record<string, PermissionItem> = {
           "studio.ad-slot.delete": { label: "删除广告位", type: "button" },
         },
       },
+      "menu.studio-sync-event": {
+        label: "同步事件",
+        type: "menu",
+        children: {
+          "sync-event.read": { label: "查看同步事件", type: "button" },
+          "sync-event.update": { label: "处理同步事件", type: "button" },
+          "sync-event.manage": { label: "同步事件管理", type: "button" },
+        },
+      },
     },
   },
   "menu.website-center": {
@@ -829,6 +838,19 @@ export const PERMISSION_TREE: Record<string, PermissionItem> = {
           "first-truth.create-global": { label: "新增全局真值", type: "button" },
           "first-truth.update-global": { label: "编辑全局真值", type: "button" },
           "first-truth.delete-global": { label: "删除全局真值", type: "button" },
+        },
+      },
+      "menu.website-brand-voice": {
+        label: "品牌话术",
+        type: "menu",
+        children: {
+          "brand-voice.read": { label: "查看话术", type: "button" },
+          "brand-voice.create": { label: "新增话术", type: "button" },
+          "brand-voice.update": { label: "编辑话术", type: "button" },
+          "brand-voice.delete": { label: "删除话术", type: "button" },
+          "brand-voice.create-global": { label: "新增全局话术", type: "button" },
+          "brand-voice.update-global": { label: "编辑全局话术", type: "button" },
+          "brand-voice.delete-global": { label: "删除全局话术", type: "button" },
         },
       },
     },
@@ -1159,6 +1181,8 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
     "menu.website-ai-summary", "ai-summary.read", "ai-summary.create", "ai-summary.update", "ai-summary.delete",
     "menu.website-first-truth", "first-truth.read", "first-truth.create", "first-truth.update", "first-truth.delete",
     "first-truth.create-global", "first-truth.update-global", "first-truth.delete-global",
+    "menu.website-brand-voice", "brand-voice.read", "brand-voice.create", "brand-voice.update", "brand-voice.delete",
+    "brand-voice.create-global", "brand-voice.update-global", "brand-voice.delete-global",
     // 物流中心权限由上方 flattenPermissions(PERMISSION_TREE) 自动包含（仅排除 system-center）
     // SSO 扩展 + media-meta（system-center 被 flattenPermissions 排除，需显式追加）
     "menu.sso-binding", "sso.third-party-binding.read", "sso.third-party-binding.create", "sso.third-party-binding.update",
@@ -1211,6 +1235,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
     "menu.website-knowledge-relation", "knowledge-relation.read",
     "menu.website-ai-summary", "ai-summary.read", "ai-summary.create",
     "menu.website-first-truth", "first-truth.read",
+    "menu.website-brand-voice", "brand-voice.read", "brand-voice.create", "brand-voice.update", "brand-voice.delete",
     // 物流中心（read/create/update，不含 delete）
     "menu.logistics-center",
     "menu.logistics-quote",
