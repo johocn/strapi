@@ -9,6 +9,9 @@ declare const _default: {
         deleteRelation(ctx: any): Promise<void>;
         disambiguate(ctx: any): Promise<void>;
         exportGraph(ctx: any): Promise<void>;
+        createGlobalEntity(ctx: any): Promise<void>;
+        updateGlobalEntity(ctx: any): Promise<void>;
+        deleteGlobalEntity(ctx: any): Promise<void>;
     };
     "first-truth": {
         find(ctx: any): Promise<void>;
@@ -19,6 +22,10 @@ declare const _default: {
         verify(ctx: any): Promise<void>;
         conflicts(ctx: any): Promise<void>;
         exportFacts(ctx: any): Promise<void>;
+        createGlobal(ctx: any): Promise<void>;
+        updateGlobal(ctx: any): Promise<void>;
+        deleteGlobal(ctx: any): Promise<void>;
+        verifyGlobal(ctx: any): Promise<void>;
     };
     "ai-content-summary": {
         findByTarget(ctx: any): Promise<void>;

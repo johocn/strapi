@@ -15,9 +15,9 @@ declare const _default: ({ strapi }: {
         refTargetType: string;
         refTargetId: string;
     }): Promise<any>;
-    createEntity(siteId: number, data: any): Promise<any>;
-    updateEntity(siteId: number, documentId: string, data: any): Promise<any>;
-    deleteEntity(siteId: number, documentId: string): Promise<any>;
+    createEntity(siteId: number | null, data: any): Promise<any>;
+    updateEntity(siteId: number | null, documentId: string, data: any): Promise<any>;
+    deleteEntity(siteId: number | null, documentId: string): Promise<any>;
     findRelations(siteId: number, query?: any): Promise<any[]>;
     addRelation(params: {
         siteId: number;

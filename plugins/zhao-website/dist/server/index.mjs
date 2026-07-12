@@ -282,7 +282,7 @@ const collectionName$3 = "zhao_website_knowledge_entities";
 const info$3 = { "singularName": "knowledge-entity", "pluralName": "knowledge-entities", "displayName": "知识图谱实体" };
 const options$3 = { "draftAndPublish": false };
 const pluginOptions$3 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": false } };
-const attributes$3 = { "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config", "required": true, "inversedBy": "website_knowledge_entities" }, "entityType": { "type": "enumeration", "enum": ["Organization", "Person", "Product", "Service", "Place", "Event", "CreativeWork", "Article", "CaseStudy", "Offer", "Review", "FAQ", "HowTo", "BreadcrumbList", "Brand", "ContactPoint", "QuantitativeValue", "DefinedTerm"], "required": true }, "name": { "type": "string", "maxLength": 200, "required": true }, "slug": { "type": "uid", "targetField": "name", "required": true }, "identifier": { "type": "string", "maxLength": 100 }, "description": { "type": "text" }, "sameAs": { "type": "json" }, "image": { "type": "media" }, "url": { "type": "string", "maxLength": 500 }, "properties": { "type": "json" }, "refTargetType": { "type": "string", "maxLength": 30 }, "refTargetId": { "type": "string" }, "confidence": { "type": "decimal", "default": 1 }, "sourceType": { "type": "enumeration", "enum": ["official", "derived", "manual", "imported"], "default": "official" }, "lastVerifiedAt": { "type": "datetime" }, "verificationStatus": { "type": "enumeration", "enum": ["verified", "pending", "outdated", "conflict"], "default": "verified" }, "verifiedBy": { "type": "relation", "relation": "manyToOne", "target": "admin::user" }, "status": { "type": "boolean", "default": true }, "brandInfos": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.brand-info", "mappedBy": "mainEntity" }, "subjectRelations": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.knowledge-relation", "mappedBy": "subject" }, "objectRelations": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.knowledge-relation", "mappedBy": "object" }, "faqMainEntities": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.faq", "mappedBy": "mainEntity" }, "faqMentions": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.faq", "mappedBy": "mentionedEntities" }, "tutorialMainEntities": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.tutorial", "mappedBy": "mainEntity" }, "tutorialMentions": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.tutorial", "mappedBy": "mentionedEntities" }, "articleMainEntities": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.article", "mappedBy": "mainEntity" }, "articleMentions": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.article", "mappedBy": "mentionedEntities" }, "firstTruthPolicies": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.first-truth-policy", "mappedBy": "mainEntity" }, "productMainEntities": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.product", "mappedBy": "mainEntity" }, "productMentions": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.product", "mappedBy": "mentionedEntities" }, "caseMainEntities": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.case", "mappedBy": "mainEntity" }, "caseMentions": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.case", "mappedBy": "mentionedEntities" }, "deletedAt": { "type": "datetime", "default": null } };
+const attributes$3 = { "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config", "required": false, "inversedBy": "website_knowledge_entities" }, "entityType": { "type": "enumeration", "enum": ["Organization", "Person", "Product", "Service", "Place", "Event", "CreativeWork", "Article", "CaseStudy", "Offer", "Review", "FAQ", "HowTo", "BreadcrumbList", "Brand", "ContactPoint", "QuantitativeValue", "DefinedTerm"], "required": true }, "name": { "type": "string", "maxLength": 200, "required": true }, "slug": { "type": "uid", "targetField": "name", "required": true }, "identifier": { "type": "string", "maxLength": 100 }, "description": { "type": "text" }, "sameAs": { "type": "json" }, "image": { "type": "media" }, "url": { "type": "string", "maxLength": 500 }, "properties": { "type": "json" }, "refTargetType": { "type": "string", "maxLength": 30 }, "refTargetId": { "type": "string" }, "confidence": { "type": "decimal", "default": 1 }, "sourceType": { "type": "enumeration", "enum": ["official", "derived", "manual", "imported"], "default": "official" }, "lastVerifiedAt": { "type": "datetime" }, "verificationStatus": { "type": "enumeration", "enum": ["verified", "pending", "outdated", "conflict"], "default": "verified" }, "verifiedBy": { "type": "relation", "relation": "manyToOne", "target": "admin::user" }, "status": { "type": "boolean", "default": true }, "brandInfos": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.brand-info", "mappedBy": "mainEntity" }, "subjectRelations": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.knowledge-relation", "mappedBy": "subject" }, "objectRelations": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.knowledge-relation", "mappedBy": "object" }, "faqMainEntities": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.faq", "mappedBy": "mainEntity" }, "faqMentions": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.faq", "mappedBy": "mentionedEntities" }, "tutorialMainEntities": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.tutorial", "mappedBy": "mainEntity" }, "tutorialMentions": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.tutorial", "mappedBy": "mentionedEntities" }, "articleMainEntities": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.article", "mappedBy": "mainEntity" }, "articleMentions": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.article", "mappedBy": "mentionedEntities" }, "firstTruthPolicies": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.first-truth-policy", "mappedBy": "mainEntity" }, "productMainEntities": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.product", "mappedBy": "mainEntity" }, "productMentions": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.product", "mappedBy": "mentionedEntities" }, "caseMainEntities": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.case", "mappedBy": "mainEntity" }, "caseMentions": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.case", "mappedBy": "mentionedEntities" }, "deletedAt": { "type": "datetime", "default": null } };
 const knowledgeEntity = {
   kind: kind$3,
   collectionName: collectionName$3,
@@ -324,7 +324,7 @@ const collectionName = "zhao_website_first_truths";
 const info = { "singularName": "first-truth-policy", "pluralName": "first-truth-policies", "displayName": "第一真值策略声明" };
 const options = { "draftAndPublish": false };
 const pluginOptions = { "content-manager": { "visible": true }, "content-type-builder": { "visible": false } };
-const attributes = { "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config", "required": true, "inversedBy": "website_first_truths" }, "claim": { "type": "string", "maxLength": 200, "required": true }, "claimKey": { "type": "string", "maxLength": 100, "required": true }, "claimCategory": { "type": "enumeration", "enum": ["business_license", "brand_claim", "technical_spec", "certification", "financial", "logistics_promise", "other"], "default": "brand_claim" }, "canonicalEntity": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-website.knowledge-entity", "inversedBy": "firstTruthPolicies" }, "canonicalValue": { "type": "text", "required": true }, "canonicalValueType": { "type": "enumeration", "enum": ["text", "number", "date", "url", "json"], "default": "text" }, "canonicalSourceUrl": { "type": "string", "maxLength": 500 }, "canonicalSourceType": { "type": "enumeration", "enum": ["government", "official_site", "third_party_verified", "internal"], "default": "official_site" }, "conflictResolution": { "type": "enumeration", "enum": ["latest", "earliest", "highest_confidence", "manual"], "default": "manual" }, "lastVerifiedAt": { "type": "datetime", "required": true }, "verificationStatus": { "type": "enumeration", "enum": ["verified", "pending", "outdated", "conflict"], "default": "verified" }, "conflictDetails": { "type": "json" }, "priority": { "type": "integer", "default": 100 }, "status": { "type": "boolean", "default": true }, "deletedAt": { "type": "datetime", "default": null } };
+const attributes = { "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config", "required": false, "inversedBy": "website_first_truths" }, "claim": { "type": "string", "maxLength": 200, "required": true }, "claimKey": { "type": "string", "maxLength": 100, "required": true }, "claimCategory": { "type": "enumeration", "enum": ["business_license", "brand_claim", "technical_spec", "certification", "financial", "logistics_promise", "other"], "default": "brand_claim" }, "canonicalEntity": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-website.knowledge-entity", "inversedBy": "firstTruthPolicies" }, "canonicalValue": { "type": "text", "required": true }, "canonicalValueType": { "type": "enumeration", "enum": ["text", "number", "date", "url", "json"], "default": "text" }, "canonicalSourceUrl": { "type": "string", "maxLength": 500 }, "canonicalSourceType": { "type": "enumeration", "enum": ["government", "official_site", "third_party_verified", "internal"], "default": "official_site" }, "conflictResolution": { "type": "enumeration", "enum": ["latest", "earliest", "highest_confidence", "manual"], "default": "manual" }, "lastVerifiedAt": { "type": "datetime", "required": true }, "verificationStatus": { "type": "enumeration", "enum": ["verified", "pending", "outdated", "conflict"], "default": "verified" }, "conflictDetails": { "type": "json" }, "priority": { "type": "integer", "default": 100 }, "status": { "type": "boolean", "default": true }, "deletedAt": { "type": "datetime", "default": null } };
 const firstTruthPolicy = {
   kind,
   collectionName,
@@ -802,6 +802,17 @@ const knowledgeGraph$1 = {
   // ===== 导出 =====
   async exportGraph(ctx) {
     ctx.body = await strapi.plugin("zhao-website").service("knowledge-graph").exportGraph(ctx.state.siteId);
+  },
+  // ===== 全局实体 =====
+  async createGlobalEntity(ctx) {
+    ctx.body = await strapi.plugin("zhao-website").service("knowledge-graph").createEntity(null, ctx.request.body);
+  },
+  async updateGlobalEntity(ctx) {
+    ctx.body = await strapi.plugin("zhao-website").service("knowledge-graph").updateEntity(null, ctx.params.documentId, ctx.request.body);
+  },
+  async deleteGlobalEntity(ctx) {
+    await strapi.plugin("zhao-website").service("knowledge-graph").deleteEntity(null, ctx.params.documentId);
+    ctx.body = { success: true };
   }
 };
 const firstTruth$1 = {
@@ -829,6 +840,20 @@ const firstTruth$1 = {
   },
   async exportFacts(ctx) {
     ctx.body = await strapi.plugin("zhao-website").service("knowledge-graph").exportFacts(ctx.state.siteId);
+  },
+  // ===== 全局真值 =====
+  async createGlobal(ctx) {
+    ctx.body = await strapi.plugin("zhao-website").service("first-truth").create(null, ctx.request.body);
+  },
+  async updateGlobal(ctx) {
+    ctx.body = await strapi.plugin("zhao-website").service("first-truth").update(null, ctx.params.documentId, ctx.request.body);
+  },
+  async deleteGlobal(ctx) {
+    await strapi.plugin("zhao-website").service("first-truth").softDelete(null, ctx.params.documentId);
+    ctx.body = { success: true };
+  },
+  async verifyGlobal(ctx) {
+    ctx.body = await strapi.plugin("zhao-website").service("first-truth").verify(null, ctx.params.documentId);
   }
 };
 const aiContentSummary$1 = {
@@ -1008,15 +1033,19 @@ const adminApi = () => ({
     channelScopeRoute("GET", "/visit-logs", "visit-log-admin.find", "visit-log.read"),
     channelScopeRoute("GET", "/interactions", "interaction-admin.find", "interaction.read"),
     channelScopeRoute("GET", "/search-logs", "search-log-admin.find", "search-log.read"),
-    channelScopeRoute("GET", "/kg/entities", "knowledge-graph.findEntities", "knowledge-entity.read"),
-    channelScopeRoute("POST", "/kg/entities", "knowledge-graph.createEntity", "knowledge-entity.create"),
-    channelScopeRoute("PUT", "/kg/entities/:documentId", "knowledge-graph.updateEntity", "knowledge-entity.update"),
-    channelScopeRoute("DELETE", "/kg/entities/:documentId", "knowledge-graph.deleteEntity", "knowledge-entity.delete"),
-    channelScopeRoute("GET", "/kg/relations", "knowledge-graph.findRelations", "knowledge-relation.read"),
-    channelScopeRoute("POST", "/kg/relations", "knowledge-graph.addRelation", "knowledge-relation.create"),
-    channelScopeRoute("DELETE", "/kg/relations/:documentId", "knowledge-graph.deleteRelation", "knowledge-relation.delete"),
-    channelScopeRoute("POST", "/kg/disambiguate", "knowledge-graph.disambiguate", "knowledge-entity.read"),
-    channelScopeRoute("GET", "/kg/export", "knowledge-graph.exportGraph", "knowledge-entity.read"),
+    channelScopeRoute("GET", "/knowledge-graph/entities", "knowledge-graph.findEntities", "knowledge-entity.read"),
+    channelScopeRoute("POST", "/knowledge-graph/entities", "knowledge-graph.createEntity", "knowledge-entity.create"),
+    channelScopeRoute("PUT", "/knowledge-graph/entities/:documentId", "knowledge-graph.updateEntity", "knowledge-entity.update"),
+    channelScopeRoute("DELETE", "/knowledge-graph/entities/:documentId", "knowledge-graph.deleteEntity", "knowledge-entity.delete"),
+    channelScopeRoute("GET", "/knowledge-graph/relations", "knowledge-graph.findRelations", "knowledge-relation.read"),
+    channelScopeRoute("POST", "/knowledge-graph/relations", "knowledge-graph.addRelation", "knowledge-relation.create"),
+    channelScopeRoute("DELETE", "/knowledge-graph/relations/:documentId", "knowledge-graph.deleteRelation", "knowledge-relation.delete"),
+    channelScopeRoute("POST", "/knowledge-graph/disambiguate", "knowledge-graph.disambiguate", "knowledge-entity.read"),
+    channelScopeRoute("GET", "/knowledge-graph/export", "knowledge-graph.exportGraph", "knowledge-entity.read"),
+    // 全局实体路由
+    channelScopeRoute("POST", "/knowledge-graph/entities/global", "knowledge-graph.createGlobalEntity", "knowledge-entity.create-global"),
+    channelScopeRoute("PUT", "/knowledge-graph/entities/global/:documentId", "knowledge-graph.updateGlobalEntity", "knowledge-entity.update-global"),
+    channelScopeRoute("DELETE", "/knowledge-graph/entities/global/:documentId", "knowledge-graph.deleteGlobalEntity", "knowledge-entity.delete-global"),
     channelScopeRoute("GET", "/first-truths", "first-truth.find", "first-truth.read"),
     channelScopeRoute("GET", "/first-truths/:documentId", "first-truth.findOne", "first-truth.read"),
     channelScopeRoute("POST", "/first-truths", "first-truth.create", "first-truth.create"),
@@ -1025,6 +1054,11 @@ const adminApi = () => ({
     channelScopeRoute("POST", "/first-truths/:documentId/verify", "first-truth.verify", "first-truth.update"),
     channelScopeRoute("GET", "/first-truths/conflicts", "first-truth.conflicts", "first-truth.read"),
     channelScopeRoute("GET", "/first-truths/export", "first-truth.exportFacts", "first-truth.read"),
+    // 全局真值路由
+    channelScopeRoute("POST", "/first-truths/global", "first-truth.createGlobal", "first-truth.create-global"),
+    channelScopeRoute("PUT", "/first-truths/global/:documentId", "first-truth.updateGlobal", "first-truth.update-global"),
+    channelScopeRoute("DELETE", "/first-truths/global/:documentId", "first-truth.deleteGlobal", "first-truth.delete-global"),
+    channelScopeRoute("POST", "/first-truths/global/:documentId/verify", "first-truth.verifyGlobal", "first-truth.update-global"),
     channelScopeRoute("GET", "/ai-summaries", "ai-content-summary.findByTarget", "ai-summary.read"),
     channelScopeRoute("POST", "/ai-summaries", "ai-content-summary.create", "ai-summary.create"),
     channelScopeRoute("PUT", "/ai-summaries/:documentId", "ai-content-summary.update", "ai-summary.update"),
@@ -2809,8 +2843,13 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
   // ===== 实体 =====
   async findEntities(siteId, query = {}) {
     const { entityType, page = 1, pageSize = 20 } = query;
-    const filters = { site: siteId, deletedAt: null };
-    if (entityType) filters.entityType = entityType;
+    const filters = {
+      $or: [{ site: siteId, deletedAt: null }, { site: null, deletedAt: null }]
+    };
+    if (entityType) {
+      filters.$or[0].entityType = entityType;
+      filters.$or[1].entityType = entityType;
+    }
     return strapi2.db.query(ENTITY_UID).findMany({
       where: filters,
       limit: Number(pageSize),
@@ -2820,8 +2859,13 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
     });
   },
   async findEntityBySlug(siteId, slug) {
-    return strapi2.db.query(ENTITY_UID).findOne({
+    const tenant = await strapi2.db.query(ENTITY_UID).findOne({
       where: { site: siteId, slug, deletedAt: null, status: true },
+      populate: ["image"]
+    });
+    if (tenant) return tenant;
+    return strapi2.db.query(ENTITY_UID).findOne({
+      where: { site: null, slug, deletedAt: null, status: true },
       populate: ["image"]
     });
   },
@@ -2884,10 +2928,21 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
   // ===== 关系 =====
   async findRelations(siteId, query = {}) {
     const { subjectEntityId, predicate, objectEntityId, page = 1, pageSize = 20 } = query;
-    const filters = { site: siteId, deletedAt: null };
-    if (subjectEntityId) filters.subjectEntity = subjectEntityId;
-    if (predicate) filters.predicate = predicate;
-    if (objectEntityId) filters.objectEntity = objectEntityId;
+    const filters = {
+      $or: [{ site: siteId, deletedAt: null }, { site: null, deletedAt: null }]
+    };
+    if (subjectEntityId) {
+      filters.$or[0].subjectEntity = subjectEntityId;
+      filters.$or[1].subjectEntity = subjectEntityId;
+    }
+    if (predicate) {
+      filters.$or[0].predicate = predicate;
+      filters.$or[1].predicate = predicate;
+    }
+    if (objectEntityId) {
+      filters.$or[0].objectEntity = objectEntityId;
+      filters.$or[1].objectEntity = objectEntityId;
+    }
     return strapi2.db.query(RELATION_UID).findMany({
       where: filters,
       limit: Number(pageSize),
@@ -2984,12 +3039,17 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
   },
   // ===== 消歧 =====
   async disambiguate(siteId, params) {
+    const baseFilter = {
+      name: { $containsi: params.name },
+      deletedAt: null,
+      ...params.entityType ? { entityType: params.entityType } : {}
+    };
     const candidates = await strapi2.db.query(ENTITY_UID).findMany({
       where: {
-        site: siteId,
-        name: { $containsi: params.name },
-        deletedAt: null,
-        ...params.entityType ? { entityType: params.entityType } : {}
+        $or: [
+          { ...baseFilter, site: siteId },
+          { ...baseFilter, site: null }
+        ]
       }
     });
     if (candidates.length === 0) return null;
@@ -3007,13 +3067,13 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
   },
   async verifyAll(siteId) {
     const entities = await strapi2.db.query(ENTITY_UID).findMany({
-      where: { site: siteId, deletedAt: null }
+      where: { $or: [{ site: siteId, deletedAt: null }, { site: null, deletedAt: null }] }
     });
     let conflicts = 0;
     const report = [];
     for (const entity of entities) {
       const truths = await strapi2.db.query("plugin::zhao-website.first-truth-policy").findMany({
-        where: { site: siteId, canonicalEntity: entity.documentId, verificationStatus: "conflict" }
+        where: { $or: [{ site: siteId, canonicalEntity: entity.documentId, verificationStatus: "conflict" }, { site: null, canonicalEntity: entity.documentId, verificationStatus: "conflict" }] }
       });
       if (truths.length > 0) {
         conflicts += 1;
@@ -3029,11 +3089,11 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
   // ===== JSON-LD 导出 =====
   async exportGraph(siteId) {
     const entities = await strapi2.db.query(ENTITY_UID).findMany({
-      where: { site: siteId, deletedAt: null, status: true },
+      where: { $or: [{ site: siteId, deletedAt: null, status: true }, { site: null, deletedAt: null, status: true }] },
       populate: ["image"]
     });
     const relations = await strapi2.db.query(RELATION_UID).findMany({
-      where: { site: siteId, deletedAt: null, status: true },
+      where: { $or: [{ site: siteId, deletedAt: null, status: true }, { site: null, deletedAt: null, status: true }] },
       populate: ["subjectEntity", "objectEntity"]
     });
     const graph = entities.map((e) => this._entityToJsonLd(e, relations.filter((r) => r.subjectEntity?.id === e.id)));
@@ -3043,11 +3103,11 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
     const entity = await this.findEntityBySlug(siteId, slug);
     if (!entity) return null;
     const outgoing = await strapi2.db.query(RELATION_UID).findMany({
-      where: { site: siteId, subjectEntity: entity.documentId, deletedAt: null },
+      where: { $or: [{ site: siteId, subjectEntity: entity.documentId, deletedAt: null }, { site: null, subjectEntity: entity.documentId, deletedAt: null }] },
       populate: ["objectEntity"]
     });
     const incoming = await strapi2.db.query(RELATION_UID).findMany({
-      where: { site: siteId, objectEntity: entity.documentId, deletedAt: null },
+      where: { $or: [{ site: siteId, objectEntity: entity.documentId, deletedAt: null }, { site: null, objectEntity: entity.documentId, deletedAt: null }] },
       populate: ["subjectEntity"]
     });
     return this._entityToJsonLd(entity, outgoing, incoming);
@@ -3075,7 +3135,7 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
   },
   async exportFacts(siteId) {
     const truths = await strapi2.db.query("plugin::zhao-website.first-truth-policy").findMany({
-      where: { site: siteId, deletedAt: null, status: true, verificationStatus: { $in: ["verified", "pending", "outdated"] } }
+      where: { $or: [{ site: siteId, deletedAt: null, status: true, verificationStatus: { $in: ["verified", "pending", "outdated"] } }, { site: null, deletedAt: null, status: true, verificationStatus: { $in: ["verified", "pending", "outdated"] } }] }
     });
     return truths.map((t) => ({
       claimKey: t.claimKey,
@@ -3175,9 +3235,17 @@ const UID = "plugin::zhao-website.first-truth-policy";
 const firstTruth = ({ strapi: strapi2 }) => ({
   async find(siteId, query = {}) {
     const { claimCategory, verificationStatus } = query;
-    const filters = { site: siteId, deletedAt: null };
-    if (claimCategory) filters.claimCategory = claimCategory;
-    if (verificationStatus) filters.verificationStatus = verificationStatus;
+    const filters = {
+      $or: [{ site: siteId, deletedAt: null }, { site: null, deletedAt: null }]
+    };
+    if (claimCategory) {
+      filters.$or[0].claimCategory = claimCategory;
+      filters.$or[1].claimCategory = claimCategory;
+    }
+    if (verificationStatus) {
+      filters.$or[0].verificationStatus = verificationStatus;
+      filters.$or[1].verificationStatus = verificationStatus;
+    }
     return strapi2.db.query(UID).findMany({
       where: filters,
       orderBy: { priority: "DESC", updatedAt: "DESC" },
@@ -3185,14 +3253,23 @@ const firstTruth = ({ strapi: strapi2 }) => ({
     });
   },
   async findOne(siteId, documentId) {
-    return strapi2.db.query(UID).findOne({
+    const tenant = await strapi2.db.query(UID).findOne({
       where: { site: siteId, documentId, deletedAt: null },
+      populate: ["canonicalEntity"]
+    });
+    if (tenant) return tenant;
+    return strapi2.db.query(UID).findOne({
+      where: { site: null, documentId, deletedAt: null },
       populate: ["canonicalEntity"]
     });
   },
   async findByClaimKey(siteId, claimKey) {
-    return strapi2.db.query(UID).findOne({
+    const tenant = await strapi2.db.query(UID).findOne({
       where: { site: siteId, claimKey, deletedAt: null }
+    });
+    if (tenant) return tenant;
+    return strapi2.db.query(UID).findOne({
+      where: { site: null, claimKey, deletedAt: null }
     });
   },
   async create(siteId, data) {
@@ -3267,7 +3344,7 @@ const firstTruth = ({ strapi: strapi2 }) => ({
   // ===== 冲突检测 =====
   async detectConflicts(siteId) {
     const truths = await strapi2.db.query(UID).findMany({
-      where: { site: siteId, deletedAt: null, status: true }
+      where: { $or: [{ site: siteId, deletedAt: null, status: true }, { site: null, deletedAt: null, status: true }] }
     });
     const byKey = {};
     for (const t of truths) {

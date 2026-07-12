@@ -18,7 +18,7 @@ declare const _default: {
       "type": "relation",
       "relation": "manyToOne",
       "target": "plugin::zhao-common.site-config",
-      "required": true,
+      "required": false,
       "inversedBy": "website_first_truths"
     },
     "claim": {

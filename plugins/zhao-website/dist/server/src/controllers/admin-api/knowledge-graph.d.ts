@@ -8,5 +8,8 @@ declare const _default: {
     deleteRelation(ctx: any): Promise<void>;
     disambiguate(ctx: any): Promise<void>;
     exportGraph(ctx: any): Promise<void>;
+    createGlobalEntity(ctx: any): Promise<void>;
+    updateGlobalEntity(ctx: any): Promise<void>;
+    deleteGlobalEntity(ctx: any): Promise<void>;
 };
 export default _default;

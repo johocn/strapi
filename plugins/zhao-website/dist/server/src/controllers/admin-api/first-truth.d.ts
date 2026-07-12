@@ -7,5 +7,9 @@ declare const _default: {
     verify(ctx: any): Promise<void>;
     conflicts(ctx: any): Promise<void>;
     exportFacts(ctx: any): Promise<void>;
+    createGlobal(ctx: any): Promise<void>;
+    updateGlobal(ctx: any): Promise<void>;
+    deleteGlobal(ctx: any): Promise<void>;
+    verifyGlobal(ctx: any): Promise<void>;
 };
 export default _default;
