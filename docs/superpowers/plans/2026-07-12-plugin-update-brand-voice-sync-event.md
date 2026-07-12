@@ -1459,9 +1459,9 @@ cd E:\code\basic && git add plugins/zhao-auth/server/src/permissions.ts && git c
 创建 `plugins/zhao-website/server/src/services/utils/sync-event-trigger.ts`:
 
 ```ts
-declare const strapi: any;
-
 export async function triggerSyncEvent(contentType: string, content: any): Promise<void> {
+  const strapi = (global as any).strapi;
+  if (!strapi) return;
   if (!content || !content.documentId) return;
   const studioUrl = strapi.plugin("zhao-website")?.config("studioUrl") || "http://localhost:1337/api/zhao-studio";
   const internalKey = strapi.plugin("zhao-website")?.config("internalKey") || "";
@@ -2137,6 +2137,49 @@ cd E:\code\basic && git add plugins/zhao-website/admin/src/pages/BrandVoicePage.
 **Files:**
 - Modify: `plugins/zhao-website/admin/src/pages/KnowledgeGraphPage.tsx`
 
+- [ ] **Step 0: 适配现有 fetch 调用为函数式 API**
+
+由于 Task 10 将 `api.ts` 中多个常量从字符串改为函数形式（如 `kgFindEntities` 从字符串变为 `(params) => string`），需要更新 KnowledgeGraphPage 中所有现有 fetch 调用。
+
+对以下调用逐一修改（将字符串常量改为函数调用）：
+
+```ts
+// fetchEntities 中：
+// 旧：const res = await fetch(API.kgFindEntities);
+// 新：const res = await fetch(API.kgFindEntities({ page: currentPage, pageSize: 20 }));
+
+// fetchRelations 中：
+// 旧：const res = await fetch(API.kgFindRelations);
+// 新：const res = await fetch(API.kgFindRelations({ page: 1, pageSize: 50 }));
+
+// handleCreateEntity 中：
+// 旧：await fetch(API.kgCreateEntity, { method: 'POST', ... });
+// 新：await fetch(API.kgCreateEntity, { method: 'POST', ... });
+// （kgCreateEntity 仍是字符串，不需要改）
+
+// handleDeleteEntity 中：
+// 旧：await fetch(API.kgDeleteEntity(id), { method: 'DELETE' });
+// 新：await fetch(API.kgDeleteEntity(id), { method: 'DELETE' });
+// （kgDeleteEntity 仍是函数，不需要改）
+
+// handleAddRelation 中：
+// 旧：await fetch(API.kgAddRelation, { method: 'POST', ... });
+// 新：await fetch(API.kgAddRelation, { method: 'POST', ... });
+// （kgAddRelation 仍是字符串，不需要改）
+
+// handleExport 中：
+// 旧：await fetch(API.kgExportGraph);
+// 新：await fetch(API.kgExportGraph);
+// （kgExportGraph 仍是字符串，不需要改）
+
+// handleDisambiguate 中：
+// 旧：await fetch(API.kgDisambiguate, { method: 'POST', ... });
+// 新：await fetch(API.kgDisambiguate, { method: 'POST', ... });
+// （kgDisambiguate 仍是字符串，不需要改）
+```
+
+> 注意：Task 10 中 `kgFindEntities` 和 `kgFindRelations` 从字符串改为函数，其他常量保持字符串形式。只需修改这两个函数化常量的调用方式。确保 `fetchEntities` 和 `fetchRelations` 中的调用从 `fetch(API.kgFindEntities)` 改为 `fetch(API.kgFindEntities({ page: 1, pageSize: 20 }))` 和 `fetch(API.kgFindRelations({ page: 1, pageSize: 50 }))`。
+
 - [ ] **Step 1: 新增「层级」列**
 
 在 KnowledgeGraphPage.tsx 的实体 Table columns 中，在 `name` 列之后添加:
@@ -2234,7 +2277,19 @@ cd E:\code\basic && git add plugins/zhao-website/admin/src/pages/KnowledgeGraphP
 **Files:**
 - Modify: `plugins/zhao-website/admin/src/pages/FirstTruthPage.tsx`
 
-- [ ] **Step 1: 新增「层级」列**
+- [ ] **Step 0: 适配现有 fetch 调用为函数式 API**
+
+由于 Task 10 将 `api.ts` 中 `ftFind` 从字符串改为函数形式，需要更新 FirstTruthPage 中的 fetch 调用：
+
+```ts
+// fetchTruths 中：
+// 旧：const res = await fetch(API.ftFind);
+// 新：const res = await fetch(API.ftFind({ page: 1, pageSize: 20 }));
+```
+
+> 注意：Task 10 中只有 `ftFind` 改为函数，其他 ft 常量（ftCreate、ftUpdate 等）保持字符串形式。只需修改 `fetchTruths` 中的 `ftFind` 调用。
+
+- [ ] **Step 1: 真值列表新增「层级」列**
 
 在 FirstTruthPage.tsx 的真值 Table columns 中，在 `claim` 列之后添加:
 
@@ -2374,6 +2429,7 @@ export default function SyncEventPage() {
   const [draftId, setDraftId] = useState<string>();
   const [filterStatus, setFilterStatus] = useState<string>();
   const [filterContentType, setFilterContentType] = useState<string>();
+  const [drafts, setDrafts] = useState<any[]>([]);
 
   const fetchEvents = async () => {
     setLoading(true);
@@ -2392,10 +2448,18 @@ export default function SyncEventPage() {
 
   useEffect(() => { fetchEvents(); }, []);
 
-  const handleResolve = (record: any) => {
+  const handleResolve = async (record: any) => {
     setCurrentEvent(record);
     setAction('create');
     setDraftId(undefined);
+    // 获取草稿列表
+    try {
+      const res = await fetch('/api/zhao-studio/v1/admin/article-drafts?status=draft');
+      const data = await res.json();
+      setDrafts(data || []);
+    } catch (err) {
+      setDrafts([]);
+    }
     setResolveModalOpen(true);
   };
 
@@ -2484,7 +2548,9 @@ export default function SyncEventPage() {
                 style={{ width: '100%', marginTop: 8 }}
                 onChange={(v) => setDraftId(v)}
               >
-                {/* 草稿列表需要通过 API 获取 */}
+                {drafts.map((d: any) => (
+                  <Option key={d.documentId} value={d.documentId}>{d.title}</Option>
+                ))}
               </Select>
             )}
           </div>
