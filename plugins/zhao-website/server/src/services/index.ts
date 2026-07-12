@@ -21,6 +21,7 @@ import sitemap from "./sitemap";
 import robots from "./robots";
 import searchEnginePush from "./search-engine-push";
 import studioBridge from "./studio-bridge";
+import brandVoice from "./brand-voice";
 
 export default {
   "seo-config": seoConfig,
@@ -46,4 +47,5 @@ export default {
   "robots": robots,
   "search-engine-push": searchEnginePush,
   "studio-bridge": studioBridge,
+  "brand-voice": brandVoice,
 };
