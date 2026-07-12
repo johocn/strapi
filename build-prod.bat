@@ -1,44 +1,46 @@
 @echo off
-chcp 65001 > nul
-echo ========================================
-echo  快速部署构建脚本
-echo  1. 构建所有插件 dist
-echo  2. 构建 Strapi（TS + admin panel）
-echo ========================================
-cd /d "%~dp0"
-
+chcp 65001 >nul
+echo ================================================
+echo         Strapi Production Build Script
+echo ================================================
 echo.
-echo [1/2] 构建所有插件...
-for /d %%p in (plugins\zhao-*) do (
-    if exist "%%p\package.json" (
-        echo   → 构建插件: %%p
-        cd "%%p"
-        call npx -y @strapi/sdk-plugin build >nul 2>&1
-        if errorlevel 1 (
-            echo   [警告] %%p 构建失败，检查是否已有 dist
-        ) else (
-            echo   [完成] %%p
-        )
-        cd "%~dp0"
-    )
-)
 
-echo.
-echo [2/2] 构建 Strapi 应用...
-call npm run build
+setlocal enabledelayedexpansion
+
+set NODE_OPTIONS=--max-old-space-size=8192
+
+echo [1/2] Building plugins...
+powershell -ExecutionPolicy Bypass -File scripts\build-plugins.ps1
 if errorlevel 1 (
-    echo [错误] Strapi 构建失败，请检查错误信息
-    pause
+    echo.
+    echo ERROR: Plugin build failed!
     exit /b 1
 )
+echo Plugin build completed successfully.
+echo.
 
+echo [2/2] Building Strapi main project...
+call npm run build
+if errorlevel 1 (
+    echo.
+    echo ERROR: Strapi build failed!
+    echo Try increasing NODE_OPTIONS memory limit.
+    exit /b 1
+)
+echo Strapi build completed successfully.
 echo.
-echo ========================================
-echo 构建完成！
+
+echo ================================================
+echo              Build Completed!
+echo ================================================
 echo.
-echo 下一步：
-echo   git add -A .
-echo   git commit -m "build: rebuild for deploy"
-echo   git push strapi main
-echo ========================================
-pause
+echo Build artifacts:
+echo   - dist/      (TypeScript compiled)
+echo   - build/     (Admin panel)
+echo   - plugins/*/dist/  (Plugin builds)
+echo.
+echo Next steps:
+echo   1. git add dist build plugins/*/dist
+echo   2. git commit -m "build: production build"
+echo   3. git push origin main
+echo   4. On server: git pull && docker-compose up -d --build

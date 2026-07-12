@@ -127,9 +127,11 @@ coverage
 license.txt
 exports
 .strapi
-!build/
+build/
 .strapi-updater.json
 .strapi-cloud.json
 
-# 服务器内存不足，允许 dist 构建产物提交
+# 服务器内存不足，允许构建产物提交
 !dist/
+!build/
+!plugins/*/dist/
