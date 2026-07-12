@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { ConfigProvider } from 'antd';
 import zhCN from 'antd/locale/zh_CN';
 import { Routes, Route } from 'react-router-dom';
@@ -9,6 +9,7 @@ import KnowledgeGraphPage from './KnowledgeGraphPage';
 import FirstTruthPage from './FirstTruthPage';
 import AISummariesPage from './AISummariesPage';
 import SEOOutputPage from './SEOOutputPage';
+import BrandVoicePage from './BrandVoicePage';
 
 const App = () => (
   <ConfigProvider prefixCls="zw" iconPrefixCls="zw-icon" locale={zhCN}>
@@ -20,6 +21,7 @@ const App = () => (
         <Route path="/first-truth" element={<FirstTruthPage />} />
         <Route path="/ai-summaries" element={<AISummariesPage />} />
         <Route path="/seo-output" element={<SEOOutputPage />} />
+        <Route path="/brand-voice" element={<BrandVoicePage />} />
         <Route path="*" element={<div>页面建设中</div>} />
       </Routes>
     </PluginLayout>

@@ -1,4 +1,4 @@
-import { ConfigProvider } from 'antd';
+﻿import { ConfigProvider } from 'antd';
 import zhCN from 'antd/locale/zh_CN';
 import { Routes, Route } from 'react-router-dom';
 import { PluginLayout } from '../components/Layout/PluginLayout';
@@ -12,6 +12,7 @@ import AdSlotConfigPage from './AdSlotConfigPage';
 import StatsBasicPage from './StatsBasicPage';
 import StatsAdvancedPage from './StatsAdvancedPage';
 import StatsProPage from './StatsProPage';
+import SyncEventPage from './SyncEventPage';
 
 const App = () => (
   <ConfigProvider prefixCls="zs" iconPrefixCls="zs-icon" locale={zhCN}>
@@ -27,6 +28,7 @@ const App = () => (
         <Route path="/stats/basic" element={<StatsBasicPage />} />
         <Route path="/stats/advanced" element={<StatsAdvancedPage />} />
         <Route path="/stats/pro" element={<StatsProPage />} />
+        <Route path="/sync-events" element={<SyncEventPage />} />
         <Route path="*" element={<div>404</div>} />
       </Routes>
     </PluginLayout>

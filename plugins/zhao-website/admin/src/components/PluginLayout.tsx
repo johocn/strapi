@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Layout, Menu } from 'antd';
 import {
   DashboardOutlined,
@@ -7,6 +7,7 @@ import {
   SafetyCertificateOutlined,
   RobotOutlined,
   SearchOutlined,
+  MessageOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -18,6 +19,7 @@ const menuItems = [
   { key: 'knowledge-graph', icon: <ShareAltOutlined />, label: '知识图谱' },
   { key: 'first-truth', icon: <SafetyCertificateOutlined />, label: '第一真值' },
   { key: 'ai-summaries', icon: <RobotOutlined />, label: 'AI 摘要' },
+  { key: 'brand-voice', icon: <MessageOutlined />, label: '品牌话术' },
   { key: 'seo-output', icon: <SearchOutlined />, label: 'SEO 输出' },
 ];
 

@@ -1,4 +1,4 @@
-import { Layout, Menu } from 'antd';
+﻿import { Layout, Menu } from 'antd';
 import {
   HomeOutlined,
   CloudDownloadOutlined,
@@ -6,6 +6,7 @@ import {
   SettingOutlined,
   BarChartOutlined,
   RobotOutlined,
+  SyncOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -21,6 +22,7 @@ const menuItems = [
   { key: 'platforms', icon: <SettingOutlined />, label: '平台配置' },
   { key: 'accounts', icon: <SettingOutlined />, label: '账号配置' },
   { key: 'ad-slots', icon: <SettingOutlined />, label: '广告位配置' },
+  { key: 'sync-events', icon: <SyncOutlined />, label: '同步事件' },
   { key: 'ai-config', icon: <RobotOutlined />, label: 'AI 配置' },
 ];
 
