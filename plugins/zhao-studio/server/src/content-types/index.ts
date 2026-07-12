@@ -8,6 +8,7 @@ import knowledgePointIndex from './knowledge-point-index';
 import adSlot from './ad-slot';
 import browserLog from './browser-log';
 import statSummary from './stat-summary';
+import syncEvent from './sync-event';
 
 export default {
   'article-draft': articleDraft,
@@ -20,4 +21,5 @@ export default {
   'ad-slot': adSlot,
   'browser-log': browserLog,
   'stat-summary': statSummary,
+  'sync-event': syncEvent,
 };
