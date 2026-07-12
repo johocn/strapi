@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { Card, Tabs, Table, Button, Modal, Form, Input, Select, Space, message, Popconfirm } from 'antd';
-import { PlusOutlined, ExportOutlined } from '@ant-design/icons';
-import { useFetch, postJSON, deleteJSON } from '../hooks/useFetch';
+﻿import React, { useState } from 'react';
+import { Card, Tabs, Table, Button, Modal, Form, Input, Select, Space, message, Popconfirm, Tag } from 'antd';
+import { PlusOutlined, ExportOutlined, GlobalOutlined } from '@ant-design/icons';
+import { useFetch, postJSON, putJSON, deleteJSON } from '../hooks/useFetch';
 import { API } from '../utils/api';
 
 const KnowledgeGraphPage = () => {
@@ -15,6 +15,8 @@ const KnowledgeGraphPage = () => {
   const [entityForm] = Form.useForm();
   const [relationForm] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
+  const [globalMode, setGlobalMode] = useState(false);
+  const [editingEntity, setEditingEntity] = useState<any>(null);
 
   const { data: entities, loading: loadingEntities, refetch: refetchEntities } = useFetch<any[]>(
     activeTab === 'entities' ? API.kgFindEntities(entityParams) : null
@@ -26,21 +28,48 @@ const KnowledgeGraphPage = () => {
   const handleCreateEntity = async (values: any) => {
     setSubmitting(true);
     try {
-      await postJSON(API.kgCreateEntity, values);
-      message.success('实体创建成功');
+      if (editingEntity) {
+        const url = globalMode
+          ? API.kgUpdateGlobalEntity(editingEntity.documentId)
+          : API.kgUpdateEntity(editingEntity.documentId);
+        await putJSON(url, values);
+        message.success('实体更新成功');
+      } else {
+        const url = globalMode ? API.kgCreateGlobalEntity : API.kgCreateEntity;
+        await postJSON(url, values);
+        message.success('实体创建成功');
+      }
       setEntityModalOpen(false);
       entityForm.resetFields();
+      setEditingEntity(null);
       refetchEntities();
     } catch (err) {
-      message.error(`创建失败: ${(err as Error).message}`);
+      message.error(`操作失败: ${(err as Error).message}`);
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleDeleteEntity = async (documentId: string) => {
+  const handleCreateGlobalEntity = () => {
+    setEditingEntity(null);
+    setGlobalMode(true);
+    entityForm.resetFields();
+    setEntityModalOpen(true);
+  };
+
+  const handleEditEntity = (record: any) => {
+    setEditingEntity(record);
+    setGlobalMode(record.site === null);
+    entityForm.setFieldsValue(record);
+    setEntityModalOpen(true);
+  };
+
+  const handleDeleteEntity = async (record: any) => {
     try {
-      await deleteJSON(API.kgDeleteEntity(documentId));
+      const url = record.site === null
+        ? API.kgDeleteGlobalEntity(record.documentId)
+        : API.kgDeleteEntity(record.documentId);
+      await deleteJSON(url);
       message.success('已删除');
       refetchEntities();
     } catch (err) {
@@ -85,15 +114,22 @@ const KnowledgeGraphPage = () => {
 
   const entityColumns = [
     { title: '名称', dataIndex: 'name' },
+    {
+      title: '层级', dataIndex: 'site', key: 'site',
+      render: (site: any) => site === null ? <Tag color="blue">全局</Tag> : <Tag>租户</Tag>,
+    },
     { title: '类型', dataIndex: 'entityType' },
     { title: 'Slug', dataIndex: 'slug' },
     { title: '来源', dataIndex: 'sourceType' },
     {
       title: '操作',
       render: (_: any, record: any) => (
-        <Popconfirm title="确认删除？" onConfirm={() => handleDeleteEntity(record.documentId)}>
-          <Button type="link" danger size="small">删除</Button>
-        </Popconfirm>
+        <Space>
+          <Button type="link" size="small" onClick={() => handleEditEntity(record)}>编辑</Button>
+          <Popconfirm title="确认删除？" onConfirm={() => handleDeleteEntity(record)}>
+            <Button type="link" danger size="small">删除</Button>
+          </Popconfirm>
+        </Space>
       ),
     },
   ];
@@ -129,9 +165,14 @@ const KnowledgeGraphPage = () => {
             label: '实体',
             children: (
               <>
-                <Button icon={<PlusOutlined />} onClick={() => setEntityModalOpen(true)} style={{ marginBottom: 16 }}>
-                  新建实体
-                </Button>
+                <Space style={{ marginBottom: 16 }}>
+                  <Button icon={<PlusOutlined />} onClick={() => { setEditingEntity(null); setGlobalMode(false); entityForm.resetFields(); setEntityModalOpen(true); }}>
+                    新建实体
+                  </Button>
+                  <Button icon={<GlobalOutlined />} onClick={handleCreateGlobalEntity}>
+                    新建全局实体
+                  </Button>
+                </Space>
                 <Table
                   columns={entityColumns}
                   dataSource={entities || []}
@@ -166,9 +207,9 @@ const KnowledgeGraphPage = () => {
       />
 
       <Modal
-        title="新建实体"
+        title={editingEntity ? (globalMode ? '编辑全局实体' : '编辑实体') : (globalMode ? '新建全局实体' : '新建实体')}
         open={entityModalOpen}
-        onCancel={() => setEntityModalOpen(false)}
+        onCancel={() => { setEntityModalOpen(false); setEditingEntity(null); setGlobalMode(false); }}
         onOk={() => entityForm.submit()}
         confirmLoading={submitting}
       >
