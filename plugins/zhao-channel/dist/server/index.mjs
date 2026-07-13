@@ -374,6 +374,9 @@ function getRedisClient() {
         retryStrategy: () => null
         // 不自动重试
       });
+      client.on("error", () => {
+        redisAvailable = false;
+      });
     } catch {
       redisAvailable = false;
       return null;

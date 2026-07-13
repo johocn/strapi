@@ -19,6 +19,11 @@ export function getRedisClient(): Redis | null {
         maxRetriesPerRequest: 1,
         retryStrategy: () => null, // 不自动重试
       });
+      // 必须监听 error 事件，否则连接失败时 ioredis 抛出
+      // "Unhandled error event" 导致 Node 进程崩溃
+      client.on('error', () => {
+        redisAvailable = false;
+      });
     } catch {
       redisAvailable = false;
       return null;
