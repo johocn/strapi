@@ -3,5 +3,5 @@ declare const ProductForm: ({ open, onClose, onSuccess, initialValues }: {
     onClose: () => void;
     onSuccess: () => void;
     initialValues?: any;
-}) => import("react").JSX.Element;
+}) => import("react/jsx-runtime").JSX.Element;
 export default ProductForm;

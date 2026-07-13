@@ -1,3 +1,2 @@
-import { default as React } from 'react';
-declare const SEOOutputPage: () => React.JSX.Element;
+declare const SEOOutputPage: () => import("react/jsx-runtime").JSX.Element;
 export default SEOOutputPage;

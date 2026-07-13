@@ -911,6 +911,15 @@ const PERMISSION_TREE = {
           "studio.ad-slot.update": { label: "编辑广告位", type: "button" },
           "studio.ad-slot.delete": { label: "删除广告位", type: "button" }
         }
+      },
+      "menu.studio-sync-event": {
+        label: "同步事件",
+        type: "menu",
+        children: {
+          "sync-event.read": { label: "查看同步事件", type: "button" },
+          "sync-event.update": { label: "处理同步事件", type: "button" },
+          "sync-event.manage": { label: "同步事件管理", type: "button" }
+        }
       }
     }
   },
@@ -1056,7 +1065,10 @@ const PERMISSION_TREE = {
           "knowledge-entity.create": { label: "新增实体", type: "button" },
           "knowledge-entity.update": { label: "编辑实体", type: "button" },
           "knowledge-entity.delete": { label: "删除实体", type: "button" },
-          "knowledge-entity.manage": { label: "实体管理", type: "button" }
+          "knowledge-entity.manage": { label: "实体管理", type: "button" },
+          "knowledge-entity.create-global": { label: "新增全局实体", type: "button" },
+          "knowledge-entity.update-global": { label: "编辑全局实体", type: "button" },
+          "knowledge-entity.delete-global": { label: "删除全局实体", type: "button" }
         }
       },
       "menu.website-knowledge-relation": {
@@ -1087,7 +1099,23 @@ const PERMISSION_TREE = {
           "first-truth.create": { label: "新增真值", type: "button" },
           "first-truth.update": { label: "编辑真值", type: "button" },
           "first-truth.delete": { label: "删除真值", type: "button" },
-          "first-truth.manage": { label: "真值管理", type: "button" }
+          "first-truth.manage": { label: "真值管理", type: "button" },
+          "first-truth.create-global": { label: "新增全局真值", type: "button" },
+          "first-truth.update-global": { label: "编辑全局真值", type: "button" },
+          "first-truth.delete-global": { label: "删除全局真值", type: "button" }
+        }
+      },
+      "menu.website-brand-voice": {
+        label: "品牌话术",
+        type: "menu",
+        children: {
+          "brand-voice.read": { label: "查看话术", type: "button" },
+          "brand-voice.create": { label: "新增话术", type: "button" },
+          "brand-voice.update": { label: "编辑话术", type: "button" },
+          "brand-voice.delete": { label: "删除话术", type: "button" },
+          "brand-voice.create-global": { label: "新增全局话术", type: "button" },
+          "brand-voice.update-global": { label: "编辑全局话术", type: "button" },
+          "brand-voice.delete-global": { label: "删除全局话术", type: "button" }
         }
       }
     }
@@ -1398,6 +1426,9 @@ const DEFAULT_ROLE_PERMISSIONS = {
     "knowledge-entity.create",
     "knowledge-entity.update",
     "knowledge-entity.delete",
+    "knowledge-entity.create-global",
+    "knowledge-entity.update-global",
+    "knowledge-entity.delete-global",
     "menu.website-knowledge-relation",
     "knowledge-relation.read",
     "knowledge-relation.create",
@@ -1413,6 +1444,17 @@ const DEFAULT_ROLE_PERMISSIONS = {
     "first-truth.create",
     "first-truth.update",
     "first-truth.delete",
+    "first-truth.create-global",
+    "first-truth.update-global",
+    "first-truth.delete-global",
+    "menu.website-brand-voice",
+    "brand-voice.read",
+    "brand-voice.create",
+    "brand-voice.update",
+    "brand-voice.delete",
+    "brand-voice.create-global",
+    "brand-voice.update-global",
+    "brand-voice.delete-global",
     // 物流中心权限由上方 flattenPermissions(PERMISSION_TREE) 自动包含（仅排除 system-center）
     // SSO 扩展 + media-meta（system-center 被 flattenPermissions 排除，需显式追加）
     "menu.sso-binding",
@@ -1519,6 +1561,11 @@ const DEFAULT_ROLE_PERMISSIONS = {
     "ai-summary.create",
     "menu.website-first-truth",
     "first-truth.read",
+    "menu.website-brand-voice",
+    "brand-voice.read",
+    "brand-voice.create",
+    "brand-voice.update",
+    "brand-voice.delete",
     // 物流中心（read/create/update，不含 delete）
     "menu.logistics-center",
     "menu.logistics-quote",
@@ -1724,8 +1771,8 @@ const DEFAULT_ROLE_PERMISSIONS = {
   ],
   [ROLES.USER]: [],
   // ===== 11 个中心 × 2 = 22 个新角色 =====
-  [ROLES.WEBSITE_MANAGER]: centerPermissions("menu.website-center"),
-  [ROLES.WEBSITE_EDITOR]: centerEditorPermissions("menu.website-center"),
+  [ROLES.WEBSITE_MANAGER]: centerPermissions("menu.website-center").filter((k) => !k.endsWith("-global")),
+  [ROLES.WEBSITE_EDITOR]: centerEditorPermissions("menu.website-center").filter((k) => !k.endsWith("-global")),
   [ROLES.LOGISTICS_MANAGER]: centerPermissions("menu.logistics-center"),
   [ROLES.LOGISTICS_EDITOR]: centerEditorPermissions("menu.logistics-center"),
   [ROLES.COURSE_MANAGER]: centerPermissions("menu.course-center"),

@@ -288,6 +288,10 @@ node scripts/init-channel-admin.js
 
 ## 服务器部署完整流程
 
+> **重要**：构建产物（`dist/`、`build/`、`plugins/*/dist/`）已包含在 Git 仓库中。
+> 服务器无需执行任何构建命令，只需拉取代码、安装依赖、启动即可。
+> 本地构建请使用 `build-prod.bat`（Windows）或 `scripts/build-plugins.sh && npm run build`（Linux/Mac）。
+
 ```bash
 # 1. 克隆项目
 cd /home/admin
@@ -304,19 +308,23 @@ npm install --legacy-peer-deps
 cp .env.example .env
 # 编辑 .env：修改数据库密码、生成 secrets、设置 INIT_ADMIN_* 凭证
 
-# 5. 构建所有插件
-chmod +x scripts/build-plugins.sh
-./scripts/build-plugins.sh
-
-# 6. 构建 Strapi
-npm run build
-
-# 7. 启动服务
-npm start
-# 或使用 PM2
+# 5. 启动服务（构建产物已包含在仓库中，无需构建）
 pm2 start npm --name "strapi" -- start
 pm2 save
 pm2 startup
+```
+
+### 日常更新部署
+
+本地构建并推送后，服务器执行：
+
+```bash
+cd /home/admin/strapi/basic
+./docs/deployment/deploy.sh
+# 或手动执行：
+# git pull origin main
+# npm install --legacy-peer-deps
+# pm2 restart strapi
 ```
 
 > 生产环境的完整部署（1Panel + Nginx + PM2 + 前端发布）请参考 [1panel-install.md](1panel-install.md)。
@@ -379,13 +387,9 @@ Could not resolve "../../plugins/zhao-channel/./dist/admin/index.mjs"
 Building admin panel [ERROR] Could not resolve "...dist/admin/index.mjs"
 ```
 
-**原因**：`.gitignore` 忽略了 `dist` 目录，构建产物不会提交到仓库。服务器拉取代码后，所有插件的 `dist` 目录均为空。
+**原因**：`.gitignore` 已配置允许构建产物提交，但如果本地未构建就推送，服务器拉取后 `dist` 目录为空。
 
-**解决方案**：在服务器上运行构建脚本：
-```bash
-./scripts/build-plugins.sh
-npm run build
-```
+**解决方案**：在本地运行 `build-prod.bat`（Windows）或 `scripts/build-plugins.sh && npm run build`（Linux/Mac）完成构建，确保 `dist/`、`build/`、`plugins/*/dist/` 有内容后再 `git add` + `git push`。服务器 `git pull` 后即可直接使用。
 
 ### Q3: zhao-sso 插件 admin 导出错误
 
@@ -439,7 +443,7 @@ Killed                  npm install --legacy-peer-deps
 **解决方案**：
 1. 确保使用国内 npm 镜像
 2. 依赖已合并到根目录，只需一次安装
-3. 构建脚本已优化，不再每个插件单独安装依赖
+3. 构建已在本地完成，服务器只需安装依赖，无需构建
 4. 临时增加 swap（见 1panel-install.md 第九章 9.5 节）
 
 ### Q8: admin 用户未自动创建

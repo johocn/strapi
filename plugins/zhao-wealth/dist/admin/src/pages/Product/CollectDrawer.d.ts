@@ -2,5 +2,5 @@ declare const CollectDrawer: ({ open, onClose, onSuccess }: {
     open: boolean;
     onClose: () => void;
     onSuccess: () => void;
-}) => import("react").JSX.Element;
+}) => import("react/jsx-runtime").JSX.Element;
 export default CollectDrawer;

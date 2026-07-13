@@ -1,2 +1,2 @@
-declare const Metrics: () => import("react").JSX.Element;
+declare const Metrics: () => import("react/jsx-runtime").JSX.Element;
 export default Metrics;

@@ -1,4 +1,3 @@
-import { default as React } from 'react';
-declare const PlatformConfigPage: () => React.JSX.Element;
+declare const PlatformConfigPage: () => import("react/jsx-runtime").JSX.Element;
 export default PlatformConfigPage;
 //# sourceMappingURL=PlatformConfigPage.d.ts.map

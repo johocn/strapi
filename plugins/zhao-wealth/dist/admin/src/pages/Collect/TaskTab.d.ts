@@ -1,2 +1,2 @@
-declare const TaskTab: () => import("react").JSX.Element;
+declare const TaskTab: () => import("react/jsx-runtime").JSX.Element;
 export default TaskTab;

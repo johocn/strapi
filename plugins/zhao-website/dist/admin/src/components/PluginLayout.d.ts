@@ -1,5 +1,5 @@
 import { default as React } from 'react';
 declare const PluginLayout: ({ children }: {
     children?: React.ReactNode;
-}) => React.JSX.Element;
+}) => import("react/jsx-runtime").JSX.Element;
 export { PluginLayout };

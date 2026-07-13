@@ -1,4 +1,4 @@
 declare const NavChart: ({ productId }: {
     productId: number;
-}) => import("react").JSX.Element;
+}) => import("react/jsx-runtime").JSX.Element;
 export default NavChart;

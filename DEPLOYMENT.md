@@ -80,12 +80,13 @@ cd /www/apps
 git clone https://github.com/johocn/vendure.git vendure
 ```
 
-### 4.2 构建 Strapi
+### 4.2 安装依赖
+
+> **重要**：构建产物（`dist/`、`build/`、`plugins/*/dist/`）已包含在 Git 仓库中，服务器无需执行构建命令。
 
 ```bash
 cd /www/apps/strapi
-npm install
-npm run build
+npm install --legacy-peer-deps
 ```
 
 ### 4.3 修改配置
@@ -104,7 +105,13 @@ DB_PASSWORD: "your_vendure_password"
 
 ```bash
 cd /www/apps/strapi
-docker-compose up -d --build
+# 使用 PM2 启动（推荐）
+pm2 start npm --name "strapi" -- start
+pm2 save
+pm2 startup
+
+# 或使用 Docker Compose
+docker-compose up -d
 ```
 
 ### 4.5 验证服务

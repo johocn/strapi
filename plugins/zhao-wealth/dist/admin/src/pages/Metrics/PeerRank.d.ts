@@ -1,5 +1,5 @@
 declare const PeerRank: ({ period, currentProductId }: {
     period: string;
     currentProductId: number;
-}) => import("react").JSX.Element;
+}) => import("react/jsx-runtime").JSX.Element;
 export default PeerRank;

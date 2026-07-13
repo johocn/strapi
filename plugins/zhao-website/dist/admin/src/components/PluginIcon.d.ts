@@ -1,4 +1,3 @@
-import { default as React } from 'react';
-declare const PluginIcon: () => React.JSX.Element;
+declare const PluginIcon: () => import("react/jsx-runtime").JSX.Element;
 export { PluginIcon };
 export default PluginIcon;

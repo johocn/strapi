@@ -1,1 +1,1 @@
-{"version":3,"file":"StatsBasicPage.d.ts","sourceRoot":"","sources":["../../../../admin/src/pages/StatsBasicPage.tsx"],"names":[],"mappings":"AAAA,OAAO,KAAK,MAAM,OAAO,CAAC;AAS1B,QAAA,MAAM,cAAc,yBA+BnB,CAAC;AAEF,eAAe,cAAc,CAAC"}
+{"version":3,"file":"StatsBasicPage.d.ts","sourceRoot":"","sources":["../../../../admin/src/pages/StatsBasicPage.tsx"],"names":[],"mappings":"AASA,QAAA,MAAM,cAAc,+CA+BnB,CAAC;AAEF,eAAe,cAAc,CAAC"}

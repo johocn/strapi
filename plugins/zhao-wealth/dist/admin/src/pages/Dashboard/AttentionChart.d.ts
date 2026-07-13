@@ -1,2 +1,2 @@
-declare const AttentionChart: () => import("react").JSX.Element;
+declare const AttentionChart: () => import("react/jsx-runtime").JSX.Element;
 export default AttentionChart;

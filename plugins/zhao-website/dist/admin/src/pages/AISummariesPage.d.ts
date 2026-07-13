@@ -1,3 +1,2 @@
-import { default as React } from 'react';
-declare const AISummariesPage: () => React.JSX.Element;
+declare const AISummariesPage: () => import("react/jsx-runtime").JSX.Element;
 export default AISummariesPage;

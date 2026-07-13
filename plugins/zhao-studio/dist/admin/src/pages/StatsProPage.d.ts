@@ -1,4 +1,3 @@
-import { default as React } from 'react';
-declare const StatsProPage: () => React.JSX.Element;
+declare const StatsProPage: () => import("react/jsx-runtime").JSX.Element;
 export default StatsProPage;
 //# sourceMappingURL=StatsProPage.d.ts.map

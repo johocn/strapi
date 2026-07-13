@@ -1,4 +1,4 @@
 declare const PluginLayout: ({ children }: {
     children?: React.ReactNode;
-}) => import("react").JSX.Element;
+}) => import("react/jsx-runtime").JSX.Element;
 export { PluginLayout };

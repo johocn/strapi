@@ -1,1 +1,1 @@
-{"version":3,"file":"PlatformConfigPage.d.ts","sourceRoot":"","sources":["../../../../admin/src/pages/PlatformConfigPage.tsx"],"names":[],"mappings":"AAAA,OAAO,KAAK,MAAM,OAAO,CAAC;AAO1B,QAAA,MAAM,kBAAkB,yBA6EvB,CAAC;AAEF,eAAe,kBAAkB,CAAC"}
+{"version":3,"file":"PlatformConfigPage.d.ts","sourceRoot":"","sources":["../../../../admin/src/pages/PlatformConfigPage.tsx"],"names":[],"mappings":"AAOA,QAAA,MAAM,kBAAkB,+CA6EvB,CAAC;AAEF,eAAe,kBAAkB,CAAC"}
