@@ -1,6 +1,16 @@
 import Queue from "bull";
 
-const REDIS_URL = process.env.REDIS_URL || "redis://localhost:6379";
+// 读取分段环境变量（避免密码含 @ 等 URL 特殊字符的编码问题）
+function getRedisConfig() {
+  return {
+    host: process.env.REDIS_HOST || "localhost",
+    port: parseInt(process.env.REDIS_PORT || "6379", 10),
+    username: process.env.REDIS_USER || undefined,
+    password: process.env.REDIS_PASSWORD || undefined,
+    db: parseInt(process.env.REDIS_DB || "0", 10),
+    maxRetriesPerRequest: 1,
+  };
+}
 
 let queueInstance: Queue.Queue | null = null;
 let queueAvailable: boolean | null = null;
@@ -9,7 +19,8 @@ function getQueue(): Queue.Queue | null {
   if (queueAvailable === false) return null;
   if (!queueInstance) {
     try {
-      queueInstance = new Queue("channel-batch-grant", REDIS_URL, {
+      queueInstance = new Queue("channel-batch-grant", {
+        redis: getRedisConfig(),
         defaultJobOptions: {
           attempts: 3,
           backoff: {

@@ -6722,19 +6722,31 @@ function calculateMoneyFundAnnual(totalIncome, naturalDays) {
 function isEstimateValue(naturalDays) {
   return naturalDays < 7;
 }
-const REDIS_URL = process.env.REDIS_URL || "redis://localhost:6379";
+function getRedisOptions() {
+  const host = process.env.REDIS_HOST || "localhost";
+  const port = parseInt(process.env.REDIS_PORT || "6379", 10);
+  const password = process.env.REDIS_PASSWORD || void 0;
+  const username = process.env.REDIS_USER || void 0;
+  const db = parseInt(process.env.REDIS_DB || "0", 10);
+  return {
+    host,
+    port,
+    username,
+    password,
+    db,
+    lazyConnect: true,
+    maxRetriesPerRequest: 1,
+    retryStrategy: () => null
+    // 不自动重试
+  };
+}
 let client = null;
 let redisAvailable = null;
 function getRedisClient() {
   if (redisAvailable === false) return null;
   if (!client) {
     try {
-      client = new Redis__default.default(REDIS_URL, {
-        lazyConnect: true,
-        maxRetriesPerRequest: 1,
-        retryStrategy: () => null
-        // 不自动重试
-      });
+      client = new Redis__default.default(getRedisOptions());
       client.on("error", () => {
         redisAvailable = false;
       });
@@ -7020,12 +7032,12 @@ let collectQueue = null;
 let calculateQueue = null;
 let recalculateQueue = null;
 async function setupQueues(strapi) {
-  const redisUrl = process.env.REDIS_URL || "redis://localhost:6379";
-  const url = new URL(redisUrl);
   const redisConfig = {
-    host: url.hostname,
-    port: parseInt(url.port) || 6379,
-    password: url.password || void 0,
+    host: process.env.REDIS_HOST || "localhost",
+    port: parseInt(process.env.REDIS_PORT || "6379", 10),
+    username: process.env.REDIS_USER || void 0,
+    password: process.env.REDIS_PASSWORD || void 0,
+    db: parseInt(process.env.REDIS_DB || "0", 10),
     maxRetriesPerRequest: 1
   };
   const available = await ensureRedisAvailable();

@@ -25,14 +25,24 @@ function _interopNamespace(e) {
 const Queue__default = /* @__PURE__ */ _interopDefault(Queue);
 const Redis__default = /* @__PURE__ */ _interopDefault(Redis);
 const crypto__namespace = /* @__PURE__ */ _interopNamespace(crypto);
-const REDIS_URL$1 = process.env.REDIS_URL || "redis://localhost:6379";
+function getRedisConfig() {
+  return {
+    host: process.env.REDIS_HOST || "localhost",
+    port: parseInt(process.env.REDIS_PORT || "6379", 10),
+    username: process.env.REDIS_USER || void 0,
+    password: process.env.REDIS_PASSWORD || void 0,
+    db: parseInt(process.env.REDIS_DB || "0", 10),
+    maxRetriesPerRequest: 1
+  };
+}
 let queueInstance = null;
 let queueAvailable = null;
 function getQueue() {
   if (queueAvailable === false) return null;
   if (!queueInstance) {
     try {
-      queueInstance = new Queue__default.default("channel-batch-grant", REDIS_URL$1, {
+      queueInstance = new Queue__default.default("channel-batch-grant", {
+        redis: getRedisConfig(),
         defaultJobOptions: {
           attempts: 3,
           backoff: {
@@ -384,19 +394,31 @@ async function initDefaultRootChannel(strapi) {
     strapi.log.info(`[zhao-channel] admin 用户渠道权限已授予 (User ID: ${adminUser.id})`);
   }
 }
-const REDIS_URL = process.env.REDIS_URL || "redis://localhost:6379";
+function getRedisOptions() {
+  const host = process.env.REDIS_HOST || "localhost";
+  const port = parseInt(process.env.REDIS_PORT || "6379", 10);
+  const password = process.env.REDIS_PASSWORD || void 0;
+  const username = process.env.REDIS_USER || void 0;
+  const db = parseInt(process.env.REDIS_DB || "0", 10);
+  return {
+    host,
+    port,
+    username,
+    password,
+    db,
+    lazyConnect: true,
+    maxRetriesPerRequest: 1,
+    retryStrategy: () => null
+    // 不自动重试
+  };
+}
 let client = null;
 let redisAvailable = null;
 function getRedisClient() {
   if (redisAvailable === false) return null;
   if (!client) {
     try {
-      client = new Redis__default.default(REDIS_URL, {
-        lazyConnect: true,
-        maxRetriesPerRequest: 1,
-        retryStrategy: () => null
-        // 不自动重试
-      });
+      client = new Redis__default.default(getRedisOptions());
       client.on("error", () => {
         redisAvailable = false;
       });

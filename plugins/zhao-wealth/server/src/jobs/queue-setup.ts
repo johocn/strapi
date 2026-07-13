@@ -9,12 +9,13 @@ let recalculateQueue: Queue.Queue | null = null;
 let queueSetupFailed = false;
 
 export async function setupQueues(strapi: any) {
-  const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
-  const url = new URL(redisUrl);
+  // 读取分段环境变量（避免密码含 @ 等 URL 特殊字符的编码问题）
   const redisConfig = {
-    host: url.hostname,
-    port: parseInt(url.port) || 6379,
-    password: url.password || undefined,
+    host: process.env.REDIS_HOST || 'localhost',
+    port: parseInt(process.env.REDIS_PORT || '6379', 10),
+    username: process.env.REDIS_USER || undefined,
+    password: process.env.REDIS_PASSWORD || undefined,
+    db: parseInt(process.env.REDIS_DB || '0', 10),
     maxRetriesPerRequest: 1,
   };
 

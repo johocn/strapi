@@ -1,8 +1,25 @@
 'use strict';
 
-import Redis from 'ioredis';
+import Redis, { type RedisOptions } from 'ioredis';
 
-const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
+// 读取分段环境变量（兼容 REDIS_URL，但优先用分段变量避免密码含 @ 的 URL 编码问题）
+function getRedisOptions(): RedisOptions {
+  const host = process.env.REDIS_HOST || 'localhost';
+  const port = parseInt(process.env.REDIS_PORT || '6379', 10);
+  const password = process.env.REDIS_PASSWORD || undefined;
+  const username = process.env.REDIS_USER || undefined;
+  const db = parseInt(process.env.REDIS_DB || '0', 10);
+  return {
+    host,
+    port,
+    username,
+    password,
+    db,
+    lazyConnect: true,
+    maxRetriesPerRequest: 1,
+    retryStrategy: () => null, // 不自动重试
+  };
+}
 
 let client: Redis | null = null;
 let redisAvailable: boolean | null = null; // null = 未检测, true = 可用, false = 不可用
@@ -14,11 +31,7 @@ export function getRedisClient(): Redis | null {
   if (redisAvailable === false) return null;
   if (!client) {
     try {
-      client = new Redis(REDIS_URL, {
-        lazyConnect: true,
-        maxRetriesPerRequest: 1,
-        retryStrategy: () => null, // 不自动重试
-      });
+      client = new Redis(getRedisOptions());
       // 必须监听 error 事件，否则连接失败时 ioredis 抛出
       // "Unhandled error event" 导致 Node 进程崩溃
       client.on('error', () => {
