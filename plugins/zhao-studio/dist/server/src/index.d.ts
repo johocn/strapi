@@ -490,6 +490,12 @@ declare const _default: {
                         target: string;
                         mappedBy: string;
                     };
+                    syncEvents: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
                     scope: {
                         type: string;
                         enum: string[];

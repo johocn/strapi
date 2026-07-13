@@ -82,6 +82,12 @@
       "target": "plugin::zhao-website.article",
       "mappedBy": "sourceArticleDraft"
     },
+    "syncEvents": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-studio.sync-event",
+      "mappedBy": "targetDraftId"
+    },
     "scope": {
       "type": "enumeration",
       "enum": ["current", "global", "tenant"],
