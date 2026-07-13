@@ -90,6 +90,9 @@ DATABASE_PASSWORD=your-password
 DATABASE_SSL=false
 
 # Redis 配置 (zhao-channel 插件需要)
+# 代码使用 REDIS_URL 连接，格式：redis://[:密码@]主机:端口
+# 有密码示例：redis://:yourpass@localhost:6379
+REDIS_URL=redis://localhost:6379
 REDIS_HOST=127.0.0.1
 REDIS_PORT=6379
 REDIS_PASSWORD=
