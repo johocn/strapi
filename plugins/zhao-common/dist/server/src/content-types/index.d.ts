@@ -326,6 +326,12 @@ declare const _default: {
                     target: string;
                     mappedBy: string;
                 };
+                studio_sync_events: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    mappedBy: string;
+                };
             };
         };
     };

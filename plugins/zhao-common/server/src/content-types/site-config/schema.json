@@ -323,6 +323,12 @@
       "relation": "oneToMany",
       "target": "plugin::zhao-logistics.review",
       "mappedBy": "site"
+    },
+    "studio_sync_events": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-studio.sync-event",
+      "mappedBy": "site"
     }
   }
 }

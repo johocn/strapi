@@ -2,7 +2,7 @@
 
 ## 项目概述
 
-本项目是基于 Strapi v5 的二次开发项目，包含多个自定义插件用于在线教育平台。后端为 `basic` 目录（Strapi），前端管理后台为 `web` 目录（uni-app H5），C 端为 `shao` 目录（uni-app H5）。
+本项目是基于 Strapi v5 的二次开发项目，包含多个自定义插件用于在线教育平台。本仓库为 Strapi 后端服务（含全部插件源码与构建产物），前端管理后台（`web` 目录，uni-app H5）与 C 端（`shao` 目录，uni-app H5）在独立仓库维护。
 
 ## 系统要求
 
@@ -39,10 +39,10 @@
 
 ```bash
 git clone -b main git@github.com:johocn/strapi.git
-cd strapi/basic
+cd strapi
 ```
 
-> 仓库根目录下含 `basic`（Strapi 后端）、`web`（管理后台）、`shao`（C 端）三个子项目。本指南只涉及 `basic`。
+> 本仓库根目录即为 Strapi 后端服务（含 `package.json`、`plugins/`、`config/`、`dist/` 等）。前端管理后台与 C 端在独立仓库维护。
 
 ### 2. 配置 npm 镜像（推荐）
 
@@ -292,11 +292,23 @@ node scripts/init-channel-admin.js
 > 服务器无需执行任何构建命令，只需拉取代码、安装依赖、启动即可。
 > 本地构建请使用 `build-prod.bat`（Windows）或 `scripts/build-plugins.sh && npm run build`（Linux/Mac）。
 
+### 服务器环境约定
+
+| 项 | 路径 / 值 |
+|----|-----------|
+| Strapi 安装目录 | `/www/apps/strapi` |
+| PM2 二进制 | `~/.nvm/versions/node/v22.23.1/bin/pm2`（来自 nvm 管理的 Node.js） |
+| Node.js 版本 | v22.23.1 |
+
+> 若执行 `pm2` 命令提示找不到，请先 `source ~/.nvm/nvm.sh` 加载 nvm 环境，或使用全路径调用。
+
+### 首次部署
+
 ```bash
-# 1. 克隆项目
-cd /home/admin
+# 1. 克隆项目到 /www/apps/strapi
+cd /www/apps
 git clone -b main git@github.com:johocn/strapi.git strapi
-cd strapi/basic
+cd /www/apps/strapi
 
 # 2. 配置 npm 镜像
 npm config set registry https://registry.npmmirror.com
@@ -309,7 +321,8 @@ cp .env.example .env
 # 编辑 .env：修改数据库密码、生成 secrets、设置 INIT_ADMIN_* 凭证
 
 # 5. 启动服务（构建产物已包含在仓库中，无需构建）
-pm2 start npm --name "strapi" -- start
+# 使用 ecosystem.config.cjs 锁定 cwd 为项目根目录，避免 PM2 在错误目录运行
+pm2 start ecosystem.config.cjs
 pm2 save
 pm2 startup
 ```
@@ -319,7 +332,7 @@ pm2 startup
 本地构建并推送后，服务器执行：
 
 ```bash
-cd /home/admin/strapi/basic
+cd /www/apps/strapi
 ./docs/deployment/deploy.sh
 # 或手动执行：
 # git pull origin main
@@ -327,17 +340,19 @@ cd /home/admin/strapi/basic
 # pm2 restart strapi
 ```
 
+`deploy.sh` 会自动 `cd` 到项目根目录，并根据 PM2 是否已有 `strapi` 进程决定 `start` 还是 `restart`。
+
 > 生产环境的完整部署（1Panel + Nginx + PM2 + 前端发布）请参考 [1panel-install.md](1panel-install.md)。
 
 ## 目录结构
 
 ```
-basic/
-├── config/                # Strapi 配置
-│   ├── plugins.ts         # 插件配置（相对路径方案）
-│   ├── plugins-windows.ts # 插件配置（Windows 绝对路径方案）
-│   ├── database.ts        # 数据库配置
-│   └── server.ts          # 服务器配置
+strapi/                       # 项目根 = Strapi 后端
+├── config/                   # Strapi 配置
+│   ├── plugins.ts            # 插件配置（相对路径方案）
+│   ├── plugins-windows.ts   # 插件配置（Windows 绝对路径方案）
+│   ├── database.ts           # 数据库配置
+│   └── server.ts             # 服务器配置
 ├── src/
 │   ├── api/               # API 接口
 │   └── extensions/        # 扩展内置插件
@@ -471,10 +486,16 @@ Killed                  npm install --legacy-peer-deps
 ### 1. 使用 PM2 管理进程
 
 ```bash
-pm2 start npm --name "strapi" -- start
+# 项目根目录提供 ecosystem.config.cjs，已锁定 cwd 避免在错误目录运行
+pm2 start ecosystem.config.cjs
 pm2 save
 pm2 startup
 ```
+
+`ecosystem.config.cjs` 关键配置：
+- `cwd: __dirname` — 强制 PM2 在项目根目录运行，避免 `npm error enoent Could not read package.json`
+- `max_memory_restart: '1G'` — 内存超 1G 自动重启，防止内存泄漏
+- `exp_backoff_restart_delay: 200` — 异常重启指数退避，防止崩溃循环
 
 ### 2. 配置 Nginx 反向代理
 
@@ -502,29 +523,31 @@ certbot --nginx -d your-domain.com
 
 ### 4. 自动化部署脚本
 
-创建 `deploy.sh`：
+仓库已自带 `docs/deployment/deploy.sh`，已配置 auto-cd 到项目根 + ecosystem 启动：
 
 ```bash
 #!/bin/bash
 set -e
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="$(dirname "$SCRIPT_DIR")/../.."
+cd "$PROJECT_DIR"
 
-echo "拉取最新代码..."
-git pull
+echo ">>> [1/3] 拉取最新代码..."
+git pull origin main
 
-echo "安装依赖..."
+echo ">>> [2/3] 安装依赖..."
 npm install --legacy-peer-deps
 
-echo "构建插件..."
-./scripts/build-plugins.sh
-
-echo "构建 Strapi..."
-npm run build
-
-echo "重启服务..."
-pm2 restart strapi
-
-echo "部署完成！"
+echo ">>> [3/3] 重启 Strapi..."
+if pm2 describe strapi > /dev/null 2>&1; then
+    pm2 restart strapi
+else
+    pm2 start ecosystem.config.cjs
+    pm2 save
+fi
 ```
+
+> **构建在本地完成**：服务器无需执行 `npm run build` 与 `strapi-plugin build`，避免服务器内存不足被 OOM Killer 杀死。
 
 ## 技术支持
 
