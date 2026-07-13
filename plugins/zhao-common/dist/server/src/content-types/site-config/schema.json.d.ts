@@ -329,6 +329,12 @@ declare const _default: {
       "relation": "oneToMany",
       "target": "plugin::zhao-studio.sync-event",
       "mappedBy": "site"
+    },
+    "website_brand_voices": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-website.brand-voice",
+      "mappedBy": "site"
     }
   }
 }

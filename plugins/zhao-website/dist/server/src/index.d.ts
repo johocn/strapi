@@ -2851,6 +2851,12 @@ declare const _default: {
                     tags: {
                         type: string;
                     };
+                    articles: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
                     deletedAt: {
                         type: string;
                         default: any;

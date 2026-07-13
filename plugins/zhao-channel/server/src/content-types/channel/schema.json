@@ -46,6 +46,12 @@
       "target": "plugin::zhao-common.site-config",
       "inversedBy": "channels"
     },
+    "members": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-channel.channel-member",
+      "mappedBy": "channel"
+    },
     "status": {
       "type": "boolean",
       "default": true

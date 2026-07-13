@@ -45,6 +45,12 @@ declare const _default: {
     "tags": {
       "type": "json"
     },
+    "articles": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-website.article",
+      "mappedBy": "brandVoiceRef"
+    },
     "deletedAt": {
       "type": "datetime",
       "default": null

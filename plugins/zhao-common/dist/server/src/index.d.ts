@@ -495,6 +495,12 @@ declare const _default: {
                         target: string;
                         mappedBy: string;
                     };
+                    website_brand_voices: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
                 };
             };
         };

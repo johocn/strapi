@@ -118,13 +118,13 @@ declare const _default: {
       "type": "relation",
       "relation": "oneToMany",
       "target": "plugin::zhao-website.knowledge-relation",
-      "mappedBy": "subject"
+      "mappedBy": "subjectEntity"
     },
     "objectRelations": {
       "type": "relation",
       "relation": "oneToMany",
       "target": "plugin::zhao-website.knowledge-relation",
-      "mappedBy": "object"
+      "mappedBy": "objectEntity"
     },
     "faqMainEntities": {
       "type": "relation",
@@ -166,7 +166,7 @@ declare const _default: {
       "type": "relation",
       "relation": "oneToMany",
       "target": "plugin::zhao-website.first-truth-policy",
-      "mappedBy": "mainEntity"
+      "mappedBy": "canonicalEntity"
     },
     "productMainEntities": {
       "type": "relation",
