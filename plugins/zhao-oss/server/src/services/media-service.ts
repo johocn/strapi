@@ -132,7 +132,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     const localFileName = `${fileHash}${ext}`;
     const localFilePath = path.join(targetDir, localFileName);
     await fs.writeFile(localFilePath, fileBuffer);
-    const localUrl = `${storagePath}/${localFileName}`;
+    const localUrl = `/static${storagePath}/${localFileName}`;
 
     let width: number | null = null;
     let height: number | null = null;
@@ -268,6 +268,61 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   },
 
   /**
+   * 检查文件被哪些业务表引用
+   * 读取 config/plugins.ts 中 zhao-oss.config.referenceMap 配置
+   */
+  async checkReferences(fileId: number): Promise<Array<{
+    uid: string;
+    field: string;
+    label: string;
+    collection: boolean;
+    required: boolean;
+    items: Array<{ id: number; documentId: string; title: string }>;
+  }>> {
+    const pluginConfig = strapi.config.get("plugin::zhao-oss");
+    const referenceMap: Array<{
+      uid: string;
+      field: string;
+      label: string;
+      collection?: boolean;
+      required?: boolean;
+    }> = pluginConfig?.referenceMap || [];
+
+    const references = [];
+
+    for (const ref of referenceMap) {
+      const where = ref.collection
+        ? { [ref.field]: { $contains: fileId } }
+        : { [ref.field]: fileId };
+
+      try {
+        const hits = await strapi.db.query(ref.uid).findMany({ where });
+
+        if (hits.length > 0) {
+          references.push({
+            uid: ref.uid,
+            field: ref.field,
+            label: ref.label,
+            collection: ref.collection || false,
+            required: ref.required || false,
+            items: hits.map((h: any) => ({
+              id: h.id,
+              documentId: h.documentId,
+              title: h.title || h.name || h.subject || `#${h.id}`,
+            })),
+          });
+        }
+      } catch (err) {
+        strapi.log.warn(`[zhao-oss] Failed to check reference: ${ref.uid}.${ref.field}`, {
+          error: (err as Error).message,
+        });
+      }
+    }
+
+    return references;
+  },
+
+  /**
    * 文件列表查询（分页 + 过滤）
    * 管理员以上角色不过滤 createdBy，其他用户自动添加 createdBy 过滤
    */
@@ -332,6 +387,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         provider_metadata: f.provider_metadata,
         createdAt: f.createdAt,
         updatedAt: f.updatedAt,
+        createdBy: f.createdBy,
       })),
       pagination: {
         page,
