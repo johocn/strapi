@@ -105,6 +105,53 @@ const config = ({ env }: Core.Config.Shared.ConfigParams): Core.Config.Plugin =>
             ],
             maxRetries: 3,
             uploadTimeoutMs: 30000,
+            referenceMap: [
+                // ============ 官网中心 (zhao-website) — 18 字段 ============
+                { uid: "plugin::zhao-website.article",           field: "coverImage",       label: "资讯文章-封面图" },
+                { uid: "plugin::zhao-website.article",           field: "ogImage",          label: "资讯文章-OG分享图" },
+                { uid: "plugin::zhao-website.brand-info",        field: "logo",             label: "企业品牌-Logo" },
+                { uid: "plugin::zhao-website.brand-info",        field: "logoDark",         label: "企业品牌-深色Logo" },
+                { uid: "plugin::zhao-website.brand-info",        field: "favicon",          label: "企业品牌-Favicon" },
+                { uid: "plugin::zhao-website.brand-info",        field: "wechatQrCode",     label: "企业品牌-微信二维码" },
+                { uid: "plugin::zhao-website.case",              field: "clientLogo",       label: "落地案例-客户Logo" },
+                { uid: "plugin::zhao-website.case",              field: "coverImage",       label: "落地案例-封面图" },
+                { uid: "plugin::zhao-website.case",              field: "images",           label: "落地案例-案例图集", collection: true },
+                { uid: "plugin::zhao-website.download",          field: "file",             label: "下载文件-下载文件", required: true },
+                { uid: "plugin::zhao-website.knowledge-entity",  field: "image",            label: "知识图谱实体-实体图片" },
+                { uid: "plugin::zhao-website.product",           field: "coverImage",       label: "产品/方案-封面图" },
+                { uid: "plugin::zhao-website.product",           field: "images",           label: "产品/方案-产品图集", collection: true },
+                { uid: "plugin::zhao-website.product",           field: "ogImage",          label: "产品/方案-OG分享图" },
+                { uid: "plugin::zhao-website.seo-config",        field: "ogImage",          label: "SEO配置-默认OG图" },
+                { uid: "plugin::zhao-website.seo-config",        field: "favicon",          label: "SEO配置-Favicon" },
+                { uid: "plugin::zhao-website.seo-config",        field: "organizationLogo", label: "SEO配置-组织Logo" },
+                { uid: "plugin::zhao-website.tutorial",          field: "coverImage",       label: "教程-封面图" },
+                // ============ 物流中心 (zhao-logistics) — 3 字段 ============
+                { uid: "plugin::zhao-logistics.landing-page",    field: "ogImage",          label: "营销落地页-OG分享图" },
+                { uid: "plugin::zhao-logistics.review",           field: "videoPoster",      label: "客户评价-视频封面" },
+                { uid: "plugin::zhao-logistics.review",           field: "images",           label: "客户评价-评价图集", collection: true },
+                // ============ 课程中心 (zhao-course) — 5 字段 ============
+                { uid: "plugin::zhao-course.course",              field: "cover",            label: "课程-封面图" },
+                { uid: "plugin::zhao-course.course",              field: "thumbnail",        label: "课程-缩略图" },
+                { uid: "plugin::zhao-course.course-lesson",       field: "thumbnail",        label: "课时-缩略图" },
+                { uid: "plugin::zhao-course.course-lesson",       field: "images",           label: "课时-图片集", collection: true },
+                { uid: "plugin::zhao-course.course-lesson",       field: "attachments",      label: "课时-附件", collection: true },
+                // ============ 站点配置 (zhao-common) — 3 字段 ============
+                { uid: "plugin::zhao-common.site-config",        field: "logo",             label: "站点配置-Logo" },
+                { uid: "plugin::zhao-common.site-config",        field: "favicon",          label: "站点配置-Favicon" },
+                { uid: "plugin::zhao-common.site-config",        field: "shareImage",       label: "站点配置-分享图" },
+                // ============ 标签管理 (zhao-tag) — 2 字段 ============
+                { uid: "plugin::zhao-tag.tag-group",              field: "icon",             label: "标签分组-图标" },
+                { uid: "plugin::zhao-tag.tag",                    field: "icon",             label: "标签-图标" },
+                // ============ 测验 (zhao-quiz) — 2 字段 ============
+                { uid: "plugin::zhao-quiz.quiz-batch",            field: "file",             label: "测验批次-文件" },
+                { uid: "plugin::zhao-quiz.quiz-batch",            field: "templateFile",     label: "测验批次-模板文件" },
+                // ============ 积分商城 (zhao-point) — 5 字段 ============
+                { uid: "plugin::zhao-point.point-product",       field: "coverImage",       label: "积分商品-封面图" },
+                { uid: "plugin::zhao-point.point-product",       field: "images",           label: "积分商品-图集", collection: true },
+                { uid: "plugin::zhao-point.point-product",       field: "video",            label: "积分商品-视频" },
+                { uid: "plugin::zhao-point.pickup-location",      field: "businessLicense",  label: "自提点-营业执照" },
+                { uid: "plugin::zhao-point.pickup-location",      field: "coverImage",       label: "自提点-封面图" },
+            ],
         },
     },
     "zhao-sso": {
