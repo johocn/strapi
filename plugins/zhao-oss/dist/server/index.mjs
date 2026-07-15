@@ -77,6 +77,35 @@ const bootstrap = async ({ strapi }) => {
       logger.warn("[zhao-oss] Fallback to local is disabled. Uploads may fail.");
     }
   }
+  try {
+    const FILE_UID_MIGRATE = "plugin::upload.file";
+    const staleFiles = await strapi.db.query(FILE_UID_MIGRATE).findMany({
+      where: { provider: "zhao-oss-local" }
+    });
+    let migrated = 0;
+    for (const f of staleFiles) {
+      const updateData = {};
+      if (f.url && !f.url.startsWith("http") && !f.url.startsWith("/static")) {
+        updateData.url = `/static${f.url}`;
+      }
+      const meta = f.provider_metadata;
+      if (meta?.localUrl && !meta.localUrl.startsWith("http") && !meta.localUrl.startsWith("/static")) {
+        updateData.provider_metadata = { ...meta, localUrl: `/static${meta.localUrl}` };
+      }
+      if (Object.keys(updateData).length === 0) continue;
+      await strapi.documents(FILE_UID_MIGRATE).update({
+        documentId: f.documentId,
+        data: updateData
+      });
+      migrated++;
+      logger.info(`[zhao-oss] Migrated file ${f.id}: url=${updateData.url || f.url}`);
+    }
+    if (migrated > 0) {
+      logger.info(`[zhao-oss] URL migration completed: ${migrated} files migrated`);
+    }
+  } catch (e) {
+    logger.warn(`[zhao-oss] URL migration failed: ${e.message}`);
+  }
   const FOLDER_UID2 = "plugin::upload.folder";
   const DEFAULT_FOLDERS = [
     { name: "general", parent: null },
@@ -212,6 +241,26 @@ const bootstrap = async ({ strapi }) => {
     }
   });
   if (!isTest) logger.info("[zhao-oss] Upload lifecycle hooks registered successfully");
+  strapi.server.use(async (ctx, next) => {
+    if ((ctx.method === "GET" || ctx.method === "HEAD") && ctx.path.startsWith("/static/")) {
+      const publicDir = strapi.dirs.static.public;
+      const relativePath = decodeURIComponent(ctx.path.slice("/static".length));
+      const filePath = path.resolve(publicDir, "." + relativePath);
+      if (filePath.startsWith(publicDir)) {
+        try {
+          const stats = await fs.stat(filePath);
+          if (stats.isFile()) {
+            ctx.body = await fs.readFile(filePath);
+            ctx.type = path.extname(filePath);
+            return;
+          }
+        } catch (err) {
+        }
+      }
+    }
+    await next();
+  });
+  if (!isTest) logger.info("[zhao-oss] Static file middleware registered (/static/* \u2192 public/*)");
   strapi.server.use(async (ctx, next) => {
     await next();
     const enableUrlRewrite = strapi.config.get("plugin::zhao-oss.enableUrlRewrite") !== false;
@@ -776,6 +825,35 @@ const apiController = ({ strapi }) => ({
       ctx.body = { error: e.message };
     }
   },
+  async getReferences(ctx) {
+    try {
+      const { fileId } = ctx.params;
+      if (!fileId) { ctx.status = 400; ctx.body = { error: "fileId is required" }; return; }
+      const parsedId = parseInt(fileId, 10);
+      if (isNaN(parsedId)) { ctx.status = 400; ctx.body = { error: "Invalid fileId" }; return; }
+      const mediaService2 = strapi.plugin("zhao-oss").service("media-service");
+      const file = await mediaService2.findFileById(parsedId);
+      if (!file) { ctx.status = 404; ctx.body = { error: "File not found" }; return; }
+      const user = ctx.state?.user || ctx.user;
+      const canAccess = await mediaService2.canDeleteFile(parsedId, user);
+      if (!canAccess) { ctx.status = 403; ctx.body = { error: "无权查看此文件的引用信息" }; return; }
+      const references = await mediaService2.checkReferences(parsedId);
+      ctx.body = {
+        data: {
+          fileId: parsedId,
+          fileName: file.name || `#${parsedId}`,
+          fileSize: file.size,
+          fileMime: file.mime,
+          totalCount: references.reduce((sum, r) => sum + r.items.length, 0),
+          hasRequiredReference: references.some((r) => r.required),
+          references
+        }
+      };
+    } catch (e) {
+      ctx.status = e.status || 400;
+      ctx.body = { error: e.message };
+    }
+  },
   async repairFolders(ctx) {
     try {
       const mediaService2 = strapi.plugin("zhao-oss").service("media-service");
@@ -839,6 +917,7 @@ const api = () => ({
     apiRoute("GET", "/media/folders", "api-controller.getFolders", "oss.read"),
     apiRoute("POST", "/media/folders", "api-controller.createFolder", "oss.upload"),
     apiRoute("GET", "/sync/status/:fileId", "api-controller.getSyncStatus", "oss.read"),
+    apiRoute("GET", "/media/:fileId/references", "api-controller.getReferences", "oss.read"),
     apiRoute("DELETE", "/media/:fileId", "api-controller.deleteMedia", "oss.delete")
   ]
 });
@@ -945,7 +1024,9 @@ const syncService = ({ strapi }) => {
       let fileBuffer;
       try {
         const uploadDir = strapi.dirs.static.public;
-        const filePath = file.url ? path2.join(uploadDir, file.url) : null;
+        const LOCAL_URL_PREFIX = "/static";
+        const localPath = file.url?.startsWith(LOCAL_URL_PREFIX) ? file.url.slice(LOCAL_URL_PREFIX.length) : file.url;
+        const filePath = localPath ? path2.join(uploadDir, localPath) : null;
         if (filePath && fs2.access(filePath).then(() => true).catch(() => false)) {
           fileBuffer = await fs2.readFile(filePath);
         } else if (file.buffer) {
@@ -1122,7 +1203,9 @@ const syncService = ({ strapi }) => {
         const path2 = require("path");
         const uploadDir = strapi.dirs.static.public;
         if (file.url) {
-          const filePath = path2.join(uploadDir, file.url);
+          const LOCAL_URL_PREFIX = "/static";
+          const localPath = file.url.startsWith(LOCAL_URL_PREFIX) ? file.url.slice(LOCAL_URL_PREFIX.length) : file.url;
+          const filePath = path2.join(uploadDir, localPath);
           await fs2.access(filePath);
           await fs2.unlink(filePath);
           result.deletedLocal = true;
@@ -1335,7 +1418,7 @@ const mediaService = ({ strapi }) => ({
     const localFileName = `${fileHash}${ext}`;
     const localFilePath = path.join(targetDir, localFileName);
     await fs.writeFile(localFilePath, fileBuffer);
-    const localUrl = `${storagePath}/${localFileName}`;
+    const localUrl = `/static${storagePath}/${localFileName}`;
     let width = null;
     let height = null;
     let formats = {};
@@ -1455,6 +1538,38 @@ const mediaService = ({ strapi }) => ({
     const isOwner = file.createdBy === user?.id || file.created_by === user?.id;
     return isAdmin || isChannelAdmin || isOwner;
   },
+  async checkReferences(fileId) {
+    const pluginConfig = strapi.config.get("plugin::zhao-oss");
+    const referenceMap = pluginConfig?.referenceMap || [];
+    const references = [];
+    for (const ref of referenceMap) {
+      const where = ref.collection
+        ? { [ref.field]: { $contains: fileId } }
+        : { [ref.field]: fileId };
+      try {
+        const hits = await strapi.db.query(ref.uid).findMany({ where });
+        if (hits.length > 0) {
+          references.push({
+            uid: ref.uid,
+            field: ref.field,
+            label: ref.label,
+            collection: ref.collection || false,
+            required: ref.required || false,
+            items: hits.map((h) => ({
+              id: h.id,
+              documentId: h.documentId,
+              title: h.title || h.name || h.subject || `#${h.id}`
+            }))
+          });
+        }
+      } catch (err) {
+        strapi.log.warn(`[zhao-oss] Failed to check reference: ${ref.uid}.${ref.field}`, {
+          error: err.message
+        });
+      }
+    }
+    return references;
+  },
   /**
    * 文件列表查询（分页 + 过滤）
    * 管理员以上角色不过滤 createdBy，其他用户自动添加 createdBy 过滤
@@ -1504,7 +1619,8 @@ const mediaService = ({ strapi }) => ({
         folderPath: f.folderPath,
         provider_metadata: f.provider_metadata,
         createdAt: f.createdAt,
-        updatedAt: f.updatedAt
+        updatedAt: f.updatedAt,
+        createdBy: f.createdBy
       })),
       pagination: {
         page,
