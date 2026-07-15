@@ -21,6 +21,7 @@ export default () => ({
     apiRoute("GET", "/media/folders", "api-controller.getFolders", "oss.read"),
     apiRoute("POST", "/media/folders", "api-controller.createFolder", "oss.upload"),
     apiRoute("GET", "/sync/status/:fileId", "api-controller.getSyncStatus", "oss.read"),
+    apiRoute("GET", "/media/:fileId/references", "api-controller.getReferences", "oss.read"),
     apiRoute("DELETE", "/media/:fileId", "api-controller.deleteMedia", "oss.delete"),
   ],
 });
