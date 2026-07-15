@@ -126,6 +126,41 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     }
   },
 
+  async getReferences(ctx: any) {
+    try {
+      const { fileId } = ctx.params;
+      if (!fileId) { ctx.status = 400; ctx.body = { error: "fileId is required" }; return; }
+
+      const parsedId = parseInt(fileId, 10);
+      if (isNaN(parsedId)) { ctx.status = 400; ctx.body = { error: "Invalid fileId" }; return; }
+
+      const mediaService = strapi.plugin("zhao-oss").service("media-service");
+      const file = await mediaService.findFileById(parsedId);
+      if (!file) { ctx.status = 404; ctx.body = { error: "File not found" }; return; }
+
+      const user = ctx.state?.user || ctx.user;
+      const canAccess = await mediaService.canDeleteFile(parsedId, user);
+      if (!canAccess) { ctx.status = 403; ctx.body = { error: "无权查看此文件的引用信息" }; return; }
+
+      const references = await mediaService.checkReferences(parsedId);
+
+      ctx.body = {
+        data: {
+          fileId: parsedId,
+          fileName: file.name || `#${parsedId}`,
+          fileSize: file.size,
+          fileMime: file.mime,
+          totalCount: references.reduce((sum: number, r: any) => sum + r.items.length, 0),
+          hasRequiredReference: references.some((r: any) => r.required),
+          references,
+        },
+      };
+    } catch (e: any) {
+      ctx.status = (e as any).status || 400;
+      ctx.body = { error: e.message };
+    }
+  },
+
   async repairFolders(ctx: any) {
     try {
       const mediaService = strapi.plugin("zhao-oss").service("media-service");
