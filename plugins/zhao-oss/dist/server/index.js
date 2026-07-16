@@ -1360,6 +1360,11 @@ const urlResolver = ({ strapi }) => {
 const FOLDER_UID = "plugin::upload.folder";
 const FILE_UID = "plugin::upload.file";
 const SYNC_RECORD_UID = "plugin::zhao-oss.sync-record";
+function isNumericPath(p) {
+  if (!p || p === "/") return true;
+  const segs = p.split("/").filter(Boolean);
+  return segs.every((s) => /^\d+$/.test(s));
+}
 const mediaService = ({ strapi }) => ({
   /**
    * 获取下一个可用的 pathId
@@ -1411,6 +1416,32 @@ const mediaService = ({ strapi }) => ({
       }
     }
     return "/" + parts.join("/");
+  },
+  /**
+   * 将人类可读路径（如 /course/covers）解析为数字路径（如 /3/4）
+   * 逐层按文件夹名查找，任一段找不到返回 null
+   */
+  async resolveHumanPathToNumericPath(humanPath) {
+    if (!humanPath || humanPath === "/") return "/";
+    const segs = humanPath.split("/").filter(Boolean);
+    let parentId = null;
+    let lastFolderPath = "/";
+    try {
+      for (const seg of segs) {
+        const folder = await strapi.db.query(FOLDER_UID).findOne({
+          where: { name: seg, parent: parentId }
+        });
+        if (!folder) return null;
+        parentId = folder.id;
+        lastFolderPath = folder.path;
+      }
+      return lastFolderPath;
+    } catch (err) {
+      strapi.log.warn(`[zhao-oss] resolveHumanPathToNumericPath failed: ${humanPath}`, {
+        error: err.message
+      });
+      return null;
+    }
   },
   /**
    * 上传文件：本地存储 + OSS 同步 + 数据库记录
@@ -1601,10 +1632,20 @@ const mediaService = ({ strapi }) => ({
   async listFiles(params) {
     const { page, pageSize, folderPath, mime, search, sort = "createdAt:desc", user } = params;
     const where = {};
-    if (folderPath) {
+    let effectiveFolderPath = folderPath;
+    if (folderPath && !isNumericPath(folderPath)) {
+      effectiveFolderPath = await this.resolveHumanPathToNumericPath(folderPath);
+      if (!effectiveFolderPath) {
+        return {
+          list: [],
+          pagination: { page, pageSize, total: 0, pageCount: 0 }
+        };
+      }
+    }
+    if (effectiveFolderPath) {
       where.$or = [
-        { folderPath },
-        { folderPath: { $startsWith: folderPath + "/" } }
+        { folderPath: effectiveFolderPath },
+        { folderPath: { $startsWith: effectiveFolderPath + "/" } }
       ];
     }
     if (mime) where.mime = { $contains: mime };
