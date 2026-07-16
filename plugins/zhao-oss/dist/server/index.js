@@ -1642,7 +1642,7 @@ const mediaService = ({ strapi }) => ({
         };
       }
     }
-    if (effectiveFolderPath) {
+    if (effectiveFolderPath && effectiveFolderPath !== "/") {
       where.$or = [
         { folderPath: effectiveFolderPath },
         { folderPath: { $startsWith: effectiveFolderPath + "/" } }

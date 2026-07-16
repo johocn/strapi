@@ -386,7 +386,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         };
       }
     }
-    if (effectiveFolderPath) {
+    if (effectiveFolderPath && effectiveFolderPath !== "/") {
       where.$or = [
         { folderPath: effectiveFolderPath },
         { folderPath: { $startsWith: effectiveFolderPath + "/" } },
