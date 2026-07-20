@@ -110,8 +110,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
     const isNewUser = !user;
 
-    // 定义高级渠道层级（注册时自动获得 channel-admin 角色）
-      const ADMIN_CHANNEL_TIERS = ['core', 'senior', 'global', 'authorized', 'official', 'partner'];
+    // 定义高级渠道层级（邀请 admin 成员时自动获得 channel-admin 角色）
+    // 与 channel.ts register() 保持一致（同步加 agent）
+      const ADMIN_CHANNEL_TIERS = ['core', 'senior', 'global', 'authorized', 'official', 'partner', 'agent'];
 
       if (!user) {
       // 创建未注册用户
