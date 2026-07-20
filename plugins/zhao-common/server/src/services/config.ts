@@ -1,4 +1,5 @@
 import type { Core } from "@strapi/strapi";
+import { VISIBILITY_MODULES } from "../../../../zhao-auth/server/src/constants/module-visibility";
 
 /**
  * 统一配置服务
@@ -399,7 +400,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         thirdPartyEnabled,
         ssoEnabled: siteFeatureFlags.sso ?? true,
         ssoLoginUrl: ec.ssoLoginUrl ?? null,
-        registerEnabled: ec.registerEnabled ?? false,
+        registerEnabled: ec.registerEnabled ?? true,
         inviteCodeRequired: ec.inviteCodeRequired ?? false,
       };
 
@@ -482,6 +483,31 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         tabBarColor: themeConfig.tabBarColor ?? "#667eea",
         tabBarActiveColor: themeConfig.tabBarActiveColor ?? "#ffffff",
       };
+
+      // ===== 模块可见性配置（admin 全局开关 + 当前租户授权 + 租户级角色可见性） =====
+      const globalConfigService = strapi.plugin("zhao-common")?.service("global-config");
+      let moduleEnabled: Record<string, boolean> = {};
+      let moduleTenantGrants: Record<string, string[]> = {};
+      try {
+        const globalConfig: any = await globalConfigService?.getGlobalConfig();
+        moduleEnabled = globalConfig?.moduleEnabled ?? {};
+        moduleTenantGrants = globalConfig?.moduleTenantGrants ?? {};
+      } catch (e) {
+        strapi.log.warn("[config] global-config load failed:", (e as Error).message);
+      }
+
+      // 计算当前租户的授权状态（不暴露其他租户 documentId）
+      const currentTenantDocId = siteId ?? "";
+      const moduleGrantedForCurrentTenant: Record<string, boolean> = {};
+      for (const key of VISIBILITY_MODULES) {
+        const globalEnabled = moduleEnabled[key] ?? false;
+        const granted = moduleTenantGrants[key]?.includes(currentTenantDocId) ?? false;
+        moduleGrantedForCurrentTenant[key] = globalEnabled || granted;
+      }
+
+      result.moduleEnabled = moduleEnabled;
+      result.moduleGrantedForCurrentTenant = moduleGrantedForCurrentTenant;
+      result.moduleVisibility = fullConfig?.moduleVisibility ?? {};
     } catch (error) {
       strapi.log.warn("[config] getPublicConfig failed:", (error as Error).message);
     }
