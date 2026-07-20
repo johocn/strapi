@@ -70,6 +70,13 @@ export interface PermissionItem {
 }
 
 export const PERMISSION_TREE: Record<string, PermissionItem> = {
+  "auth": {
+    label: "认证权限",
+    type: "menu",
+    children: {
+      "auth.admin-login": { label: "后台登录", type: "button" },
+    },
+  },
   "menu.course-center": {
     label: "课程中心",
     type: "menu",
@@ -398,6 +405,19 @@ export const PERMISSION_TREE: Record<string, PermissionItem> = {
           "role.read": { label: "查看角色", type: "button" },
           "role.read-logs": { label: "查看角色日志", type: "button" },
         },
+      },
+      "menu.global-config": {
+        label: "全局配置",
+        type: "menu",
+        children: {
+          "global-config.read": { label: "查看全局配置", type: "button" },
+          "global-config.update": { label: "修改全局配置", type: "button" },
+        },
+      },
+      "menu.module-visibility": {
+        label: "模块可见性配置",
+        type: "menu",
+        children: {},
       },
       "menu.permissions": {
         label: "权限管理",
@@ -1139,6 +1159,8 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
   [ROLES.CHANNEL_ADMIN]: [
     ...flattenPermissions(PERMISSION_TREE).filter(
       (k) => !k.startsWith("menu.system-center")
+        && !k.startsWith("menu.global-config")
+        && !k.startsWith("global-config.")
     ),
     "menu.tenant",
     "tenant.read",
@@ -1193,6 +1215,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
     "sso.invite-usage.read", "sso.invite-stats.read", "sso.referral-relation.read",
     "menu.sso-sms", "sso.sms-code.read",
     "oss.media-meta.read", "oss.media-meta.upload", "oss.media-meta.delete",
+    "auth.admin-login",
   ],
   [ROLES.PLUGIN_MANAGER]: flattenPermissions(
     ((t: Record<string, PermissionItem>) => {
@@ -1284,6 +1307,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
     "menu.sso-sms", "sso.sms-code.read",
     // 零散补全
     "oss.media-meta.read",
+    "auth.admin-login",
   ]),
   [ROLES.INSTRUCTOR]: [
     // 课程中心
@@ -1364,29 +1388,31 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
     // 零散补全（只读）
     "point.rule-template.read", "point.sign-in-record.read",
     "quiz.quiz-batch.read", "tag.tag-index.read",
+    "auth.admin-login",  // 允许讲师登录后台
   ],
   [ROLES.USER]: [],
   // ===== 11 个中心 × 2 = 22 个新角色 =====
-  [ROLES.WEBSITE_MANAGER]: centerPermissions("menu.website-center").filter((k: string) => !k.endsWith("-global")),
-  [ROLES.WEBSITE_EDITOR]: centerEditorPermissions("menu.website-center").filter((k: string) => !k.endsWith("-global")),
-  [ROLES.LOGISTICS_MANAGER]: centerPermissions("menu.logistics-center"),
-  [ROLES.LOGISTICS_EDITOR]: centerEditorPermissions("menu.logistics-center"),
-  [ROLES.COURSE_MANAGER]: centerPermissions("menu.course-center"),
-  [ROLES.COURSE_EDITOR]: centerEditorPermissions("menu.course-center"),
-  [ROLES.STUDY_MANAGER]: centerPermissions("menu.study-center"),
-  [ROLES.STUDY_EDITOR]: centerEditorPermissions("menu.study-center"),
-  [ROLES.QUIZ_MANAGER]: centerPermissions("menu.quiz-center"),
-  [ROLES.QUIZ_EDITOR]: centerEditorPermissions("menu.quiz-center"),
-  [ROLES.POINT_MANAGER]: centerPermissions("menu.point-center"),
-  [ROLES.POINT_EDITOR]: centerEditorPermissions("menu.point-center"),
-  [ROLES.MARKETING_MANAGER]: centerPermissions("menu.marketing-center"),
-  [ROLES.MARKETING_EDITOR]: centerEditorPermissions("menu.marketing-center"),
-  [ROLES.SYSTEM_MANAGER]: centerPermissions("menu.system-center"),
-  [ROLES.SYSTEM_EDITOR]: centerEditorPermissions("menu.system-center"),
-  [ROLES.TAG_MANAGER]: centerPermissions("menu.tag-center"),
-  [ROLES.TAG_EDITOR]: centerEditorPermissions("menu.tag-center"),
-  [ROLES.STUDIO_MANAGER]: centerPermissions("menu.studio-center"),
-  [ROLES.STUDIO_EDITOR]: centerEditorPermissions("menu.studio-center"),
-  [ROLES.WEALTH_MANAGER]: centerPermissions("menu.wealth-center"),
-  [ROLES.WEALTH_EDITOR]: centerEditorPermissions("menu.wealth-center"),
+  // 所有中心角色追加 auth.admin-login，被分配即可登录后台（菜单权限仍由 centerPermissions 限定）
+  [ROLES.WEBSITE_MANAGER]: centerPermissions("menu.website-center").filter((k: string) => !k.endsWith("-global")).concat(["auth.admin-login"]),
+  [ROLES.WEBSITE_EDITOR]: centerEditorPermissions("menu.website-center").filter((k: string) => !k.endsWith("-global")).concat(["auth.admin-login"]),
+  [ROLES.LOGISTICS_MANAGER]: centerPermissions("menu.logistics-center").concat(["auth.admin-login"]),
+  [ROLES.LOGISTICS_EDITOR]: centerEditorPermissions("menu.logistics-center").concat(["auth.admin-login"]),
+  [ROLES.COURSE_MANAGER]: centerPermissions("menu.course-center").concat(["auth.admin-login"]),
+  [ROLES.COURSE_EDITOR]: centerEditorPermissions("menu.course-center").concat(["auth.admin-login"]),
+  [ROLES.STUDY_MANAGER]: centerPermissions("menu.study-center").concat(["auth.admin-login"]),
+  [ROLES.STUDY_EDITOR]: centerEditorPermissions("menu.study-center").concat(["auth.admin-login"]),
+  [ROLES.QUIZ_MANAGER]: centerPermissions("menu.quiz-center").concat(["auth.admin-login"]),
+  [ROLES.QUIZ_EDITOR]: centerEditorPermissions("menu.quiz-center").concat(["auth.admin-login"]),
+  [ROLES.POINT_MANAGER]: centerPermissions("menu.point-center").concat(["auth.admin-login"]),
+  [ROLES.POINT_EDITOR]: centerEditorPermissions("menu.point-center").concat(["auth.admin-login"]),
+  [ROLES.MARKETING_MANAGER]: centerPermissions("menu.marketing-center").concat(["auth.admin-login"]),
+  [ROLES.MARKETING_EDITOR]: centerEditorPermissions("menu.marketing-center").concat(["auth.admin-login"]),
+  [ROLES.SYSTEM_MANAGER]: centerPermissions("menu.system-center").concat(["auth.admin-login"]),
+  [ROLES.SYSTEM_EDITOR]: centerEditorPermissions("menu.system-center").concat(["auth.admin-login"]),
+  [ROLES.TAG_MANAGER]: centerPermissions("menu.tag-center").concat(["auth.admin-login"]),
+  [ROLES.TAG_EDITOR]: centerEditorPermissions("menu.tag-center").concat(["auth.admin-login"]),
+  [ROLES.STUDIO_MANAGER]: centerPermissions("menu.studio-center").concat(["auth.admin-login"]),
+  [ROLES.STUDIO_EDITOR]: centerEditorPermissions("menu.studio-center").concat(["auth.admin-login"]),
+  [ROLES.WEALTH_MANAGER]: centerPermissions("menu.wealth-center").concat(["auth.admin-login"]),
+  [ROLES.WEALTH_EDITOR]: centerEditorPermissions("menu.wealth-center").concat(["auth.admin-login"]),
 };
