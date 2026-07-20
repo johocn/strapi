@@ -557,15 +557,30 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         },
       });
 
-      // 创建 channel-member（role: member，标记为当前渠道）
+      // 创建 channel-member（注册者永远是渠道所有者，role 恒为 admin）
       await strapi.db.query(CHANNEL_MEMBER_UID).create({
         data: {
           channel: updated.id,
           user: user.id,
-          role: ADMIN_CHANNEL_TIERS.includes(childTier) ? "admin" : "member",
+          role: "admin",
           isCurrent: true,
         },
       });
+
+      // 显式授权用户访问自己的渠道（与 channel-member 双表冗余，语义分离）
+      // user-channel：访问授权；channel-member：成员关系
+      try {
+        await strapi.db.query(USER_CHANNEL_UID).create({
+          data: {
+            user: user.id,
+            channel: updated.id,
+            grantedBy: "self-register",
+          },
+        });
+      } catch (e: any) {
+        // user-channel 写入失败不阻断注册（channel-member 已建，shao 仍可通过 channel-member 拿到渠道）
+        strapi.log.warn(`[zhao-channel] register() failed to write user-channel: ${e.message}`);
+      }
 
       // 更新 user-invite 记录（bootstrap 的 afterCreate hook 已自动创建）
       const parentOwner = await strapi.db
