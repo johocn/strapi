@@ -30,7 +30,10 @@ function expandPermissionKeys(keys: string[]): string[] {
   for (const key of keys) {
     result.add(key);
     const found = findNode(key, PERMISSION_TREE);
-    if (found?.children) {
+    // 仅展开非 menu 类型节点的子节点
+    // menu 节点的子按钮权限应在 DEFAULT_ROLE_PERMISSIONS 中显式列出
+    // 否则显式排除的权限（如 role.create/tenant.delete）会通过 menu 展开间接泄漏
+    if (found?.children && found.type !== "menu") {
       flattenPermissions(found.children).forEach((k) => result.add(k));
     }
   }

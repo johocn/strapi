@@ -2211,7 +2211,7 @@ function expandPermissionKeys(keys) {
   for (const key of keys) {
     result.add(key);
     const found = findNode(key, PERMISSION_TREE);
-    if (found?.children) {
+    if (found?.children && found.type !== "menu") {
       flattenPermissions(found.children).forEach((k) => result.add(k));
     }
   }

@@ -1119,7 +1119,10 @@ export function expandPermissionKeys(
     for (const [k, item] of Object.entries(nodes)) {
       if (k === key) {
         expanded.add(k);
-        if (item.children) {
+        // 仅展开非 menu 类型节点的子节点
+        // menu 节点的子按钮权限应在 DEFAULT_ROLE_PERMISSIONS 中显式列出
+        // 否则显式排除的权限（如 role.create/tenant.delete）会通过 menu 展开间接泄漏
+        if (item.children && item.type !== "menu") {
           flattenPermissions(item.children).forEach((ck) =>
             expanded.add(ck)
           );
