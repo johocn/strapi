@@ -1157,65 +1157,70 @@ export function getPermissionLabel(
 export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
   [ROLES.ADMIN]: flattenPermissions(PERMISSION_TREE),
   [ROLES.CHANNEL_ADMIN]: [
-    ...flattenPermissions(PERMISSION_TREE).filter(
-      (k) => !k.startsWith("menu.system-center")
-        && !k.startsWith("menu.global-config")
-        && !k.startsWith("global-config.")
-    ),
+    // ===== 渠道管理员职责：仅渠道管理 + 成员管理 + 邀请 + 租户读取 + 站点配置创建/更新 =====
+    // 不再通过 flattenPermissions(PERMISSION_TREE) 自动获得全部中心权限
+
+    // (1) 后台登录
+    "auth.admin-login",
+
+    // (2) 渠道管理（本渠道范围内）
+    "menu.marketing-center",
+    "menu.channel", "channel.read", "channel.create", "channel.update", "channel.config.update",
+    "menu.network", "network.view",
+
+    // (3) 成员管理（本渠道范围内）
+    "menu.members",
+    "channel-member.read", "channel-member.add", "channel-member.remove",
+
+    // (4) 分销邀请
+    "menu.invite",
+    "user-invite.send", "user-invite.validate",
+
+    // (5) 渠道权限
+    "menu.channel-permission",
+    "channel-permission.set",
+    "channel.user-channel.read", "channel.user-channel.assign", "channel.user-channel.revoke",
+
+    // (6) 兑换码 + 兑换记录（渠道运营）
+    "menu.redemption-code",
+    "redemption-code.create", "redemption-code.delete",
+    "menu.redemption-record",
+    "redemption-record.review",
+
+    // (7) 租户管理（仅读取 + 创建自己租户 + 更新自己租户；不含 delete）
     "menu.tenant",
-    "tenant.read",
-    "tenant.create",
-    "tenant.update",
-    "tenant.delete",
+    "tenant.read", "tenant.create", "tenant.update",
+
+    // (8) 站点配置（仅创建 + 更新自己租户的 site-config）
     "menu.site-config",
     "site-config.update",
-    "config.read",
-    "config.update",
+    "config.read", "config.create", "config.update",
+
+    // (9) 功能开关（本租户内的粗粒度开关 + 细粒度配置）
     "menu.feature-flag",
     "feature-flag.update",
     "config.feature.update",
-    "channel.config.update",
+
+    // (10) 模块可见性（本租户内的角色可见性配置）
+    "menu.module-visibility",
+
+    // (11) 用户角色管理（分配/撤销；不含 role.create 防止绕过白名单）
     "menu.user-roles",
-    "role.read",
-    "role.assign",
-    "role.revoke",
-    "role.create",
-    "role.read-logs",
-    // 官网中心
-    "menu.website-center",
-    "menu.website-seo", "seo-config.read", "seo-config.update",
-    "menu.website-brand", "brand-info.read", "brand-info.update",
-    "menu.website-article", "article.read", "article.create", "article.update", "article.publish",
-    "menu.website-article-category", "article-category.read", "article-category.create", "article-category.update", "article-category.delete",
-    "menu.website-product", "product.read", "product.create", "product.update", "product.delete",
-    "menu.website-case", "case.read", "case.create", "case.update", "case.delete",
-    "menu.website-compliance", "compliance.read", "compliance.create", "compliance.update",
-    "menu.website-faq", "faq.read", "faq.create", "faq.update", "faq.delete",
-    "menu.website-tutorial", "tutorial.read", "tutorial.create", "tutorial.update", "tutorial.delete",
-    "menu.website-download", "download.read", "download.create", "download.update", "download.delete",
-    "menu.website-lead", "lead.read", "lead.update", "lead.delete",
-    "menu.website-visit-log", "visit-log.read",
-    "menu.website-interaction", "interaction.read",
-    "menu.website-search-log", "search-log.read",
-    "menu.website-knowledge-entity", "knowledge-entity.read", "knowledge-entity.create", "knowledge-entity.update", "knowledge-entity.delete",
-    "knowledge-entity.create-global", "knowledge-entity.update-global", "knowledge-entity.delete-global",
-    "menu.website-knowledge-relation", "knowledge-relation.read", "knowledge-relation.create", "knowledge-relation.update", "knowledge-relation.delete",
-    "menu.website-ai-summary", "ai-summary.read", "ai-summary.create", "ai-summary.update", "ai-summary.delete",
-    "menu.website-first-truth", "first-truth.read", "first-truth.create", "first-truth.update", "first-truth.delete",
-    "first-truth.create-global", "first-truth.update-global", "first-truth.delete-global",
-    "menu.website-brand-voice", "brand-voice.read", "brand-voice.create", "brand-voice.update", "brand-voice.delete",
-    "brand-voice.create-global", "brand-voice.update-global", "brand-voice.delete-global",
-    // 物流中心权限由上方 flattenPermissions(PERMISSION_TREE) 自动包含（仅排除 system-center）
-    // SSO 扩展 + media-meta（system-center 被 flattenPermissions 排除，需显式追加）
-    "menu.sso-binding", "sso.third-party-binding.read", "sso.third-party-binding.create", "sso.third-party-binding.update",
-    "sso.oauth-config.read", "sso.oauth-config.create", "sso.oauth-config.update",
-    "menu.sso-token", "sso.token.read", "sso.token.delete",
-    "menu.sso-user-role", "sso.user-app-role.read", "sso.user-app-role.create", "sso.user-app-role.update",
-    "menu.sso-invite", "sso.invite-code.read", "sso.invite-code.create", "sso.invite-code.validate",
-    "sso.invite-usage.read", "sso.invite-stats.read", "sso.referral-relation.read",
-    "menu.sso-sms", "sso.sms-code.read",
-    "oss.media-meta.read", "oss.media-meta.upload", "oss.media-meta.delete",
-    "auth.admin-login",
+    "role.read", "role.assign", "role.revoke", "role.read-logs",
+
+    // (12) 媒体资源（本租户内的 OSS 资源管理）
+    "oss.media-meta.read", "oss.media-meta.upload",
+    // 注：不含 oss.media-meta.delete（删除需 admin 或 system-manager）
+
+    // ===== 显式排除（不再包含）=====
+    // - flattenPermissions(PERMISSION_TREE)：不再自动获得全部中心权限
+    // - tenant.delete：跨租户删除，不应下放
+    // - role.create：防止 channel-admin 创建"全权限自定义角色"绕过白名单（见 Task 6.7 createRole 白名单）
+    // - *-global 后缀权限：跨租户全局操作，不应下放
+    // - sso.* 权限：与 DEFAULT_MODULE_VISIBILITY 不一致（sso 模块对 channel-admin 不可见）
+    // - oss.media-meta.delete：删除敏感，仅 admin 或 system-manager
+    // - 22 个中心的业务权限（course/quiz/point/...）：channel-admin 职责是渠道管理，不管理各中心业务内容
+    //   如需让 channel-admin 管理某中心内容，admin 应通过角色分配给 channel-admin 额外叠加中心角色（如 website-manager）
   ],
   [ROLES.PLUGIN_MANAGER]: flattenPermissions(
     ((t: Record<string, PermissionItem>) => {
