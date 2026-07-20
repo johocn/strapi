@@ -1215,6 +1215,10 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
     "oss.media-meta.read", "oss.media-meta.upload",
     // 注：不含 oss.media-meta.delete（删除需 admin 或 system-manager）
 
+    // (13) 模板 + 第三方配置（只读，创建租户时需加载模板列表和第三方配置）
+    "template.read",
+    "third-party-config.read",
+
     // ===== 显式排除（不再包含）=====
     // - flattenPermissions(PERMISSION_TREE)：不再自动获得全部中心权限
     // - tenant.delete：跨租户删除，不应下放
