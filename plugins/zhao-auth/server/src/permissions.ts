@@ -29,6 +29,24 @@ export const ROLES = {
   WEALTH_EDITOR: "wealth-editor",
 } as const;
 
+/**
+ * 模块 → manager 角色映射表
+ * 用于 channel-admin 动态权限：moduleVisibility 开启的模块自动叠加该 manager 角色权限
+ * 注意：payment/community/forum 暂不映射（PERMISSION_TREE 无对应权限树）
+ * channel 模块不映射（核心权限已含）
+ */
+export const MODULE_MANAGER_MAP: Record<string, string> = {
+  website: ROLES.WEBSITE_MANAGER,
+  logistics: ROLES.LOGISTICS_MANAGER,
+  studio: ROLES.STUDIO_MANAGER,
+  points: ROLES.POINT_MANAGER,
+  course: ROLES.COURSE_MANAGER,
+  quiz: ROLES.QUIZ_MANAGER,
+  sso: ROLES.SYSTEM_MANAGER,
+  thirdParty: ROLES.SYSTEM_MANAGER,
+  oss: ROLES.SYSTEM_MANAGER,
+};
+
 export const ROLE_LABELS: Record<string, string> = {
   [ROLES.ADMIN]: "系统管理员",
   [ROLES.CHANNEL_ADMIN]: "渠道管理员",
