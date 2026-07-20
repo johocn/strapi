@@ -166,6 +166,25 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     }));
   },
 
+  /**
+   * 返回当前用户授权的渠道（含子树扩展，完整字段）
+   * 与 getUserChannels 的差异：
+   * - getUserChannels 仅查 user-channel 表，返回 {id, name}（用于权限校验场景）
+   * - getMyChannelTree 三表合并 + 子树扩展，返回完整字段（用于 UI 展示）
+   */
+  async getMyChannelTree(userId: number) {
+    // 复用现有 getUserAllChannels（三表查询 + 子树扩展 + Redis 缓存）
+    const channelIds = await this.getUserAllChannels(userId);
+    if (!channelIds || channelIds.length === 0) return [];
+
+    const channels = await strapi.db.query("plugin::zhao-channel.channel").findMany({
+      where: { id: { $in: channelIds } },
+      select: ["id", "documentId", "name", "code", "channelTier", "path", "depth", "status"],
+      orderBy: { id: "asc" },
+    });
+    return channels;
+  },
+
   async getRoleChannels(roleName: string) {
     const roleChannels = await strapi.db.query(ROLE_CHANNEL_UID).findMany({
       where: { role: roleName },
