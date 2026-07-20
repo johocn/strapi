@@ -2579,10 +2579,11 @@ const channelScopeService = ({ strapi: strapi2 }) => ({
     if (!scope) return null;
     if (scope.all) return null;
     const ids = Array.isArray(scope.channelIds) ? scope.channelIds : [];
-    if (ids.length === 0) {
-      return { [field]: { id: { $in: [-1] } } };
+    const idList = ids.length === 0 ? [-1] : ids;
+    if (field === "id") {
+      return { id: { $in: idList } };
     }
-    return { [field]: { id: { $in: ids } } };
+    return { [field]: { id: { $in: idList } } };
   },
   /**
    * 校验单条记录的 channel 关系是否在 scope 内（纯函数）

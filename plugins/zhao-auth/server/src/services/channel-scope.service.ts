@@ -48,11 +48,13 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     if (!scope) return null;
     if (scope.all) return null;
     const ids = Array.isArray(scope.channelIds) ? scope.channelIds : [];
-    if (ids.length === 0) {
-      // 非 admin 且无渠道授权：返回永假条件，查不到任何记录
-      return { [field]: { id: { $in: [-1] } } };
+    const idList = ids.length === 0 ? [-1] : ids;
+    // field === "id" 表示过滤 channel 表自身的 id 字段，直接用 $in（不嵌套 id）
+    // 其他字段是关系字段（channel/channels），需嵌套 id: { id: { $in: [...] } }
+    if (field === "id") {
+      return { id: { $in: idList } };
     }
-    return { [field]: { id: { $in: ids } } };
+    return { [field]: { id: { $in: idList } } };
   },
 
   /**
