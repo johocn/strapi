@@ -340,6 +340,13 @@ const ROLE_LABELS = {
   [ROLES.WEALTH_EDITOR]: "理财编辑"
 };
 const PERMISSION_TREE = {
+  "auth": {
+    label: "认证权限",
+    type: "menu",
+    children: {
+      "auth.admin-login": { label: "后台登录", type: "button" }
+    }
+  },
   "menu.course-center": {
     label: "课程中心",
     type: "menu",
@@ -668,6 +675,19 @@ const PERMISSION_TREE = {
           "role.read": { label: "查看角色", type: "button" },
           "role.read-logs": { label: "查看角色日志", type: "button" }
         }
+      },
+      "menu.global-config": {
+        label: "全局配置",
+        type: "menu",
+        children: {
+          "global-config.read": { label: "查看全局配置", type: "button" },
+          "global-config.update": { label: "修改全局配置", type: "button" }
+        }
+      },
+      "menu.module-visibility": {
+        label: "模块可见性配置",
+        type: "menu",
+        children: {}
       },
       "menu.permissions": {
         label: "权限管理",
@@ -1347,147 +1367,76 @@ function centerEditorPermissions(centerKey) {
 const DEFAULT_ROLE_PERMISSIONS = {
   [ROLES.ADMIN]: flattenPermissions(PERMISSION_TREE),
   [ROLES.CHANNEL_ADMIN]: [
-    ...flattenPermissions(PERMISSION_TREE).filter(
-      (k) => !k.startsWith("menu.system-center")
-    ),
+    // ===== 渠道管理员职责：仅渠道管理 + 成员管理 + 邀请 + 租户读取 + 站点配置创建/更新 =====
+    // 不再通过 flattenPermissions(PERMISSION_TREE) 自动获得全部中心权限
+    // (1) 后台登录
+    "auth.admin-login",
+    // (2) 渠道管理（本渠道范围内）
+    "menu.marketing-center",
+    "menu.channel",
+    "channel.read",
+    "channel.create",
+    "channel.update",
+    "channel.config.update",
+    "menu.network",
+    "network.view",
+    // (3) 成员管理（本渠道范围内）
+    "menu.members",
+    "channel-member.read",
+    "channel-member.add",
+    "channel-member.remove",
+    // (4) 分销邀请
+    "menu.invite",
+    "user-invite.send",
+    "user-invite.validate",
+    // (5) 渠道权限
+    "menu.channel-permission",
+    "channel-permission.set",
+    "channel.user-channel.read",
+    "channel.user-channel.assign",
+    "channel.user-channel.revoke",
+    // (6) 兑换码 + 兑换记录（渠道运营）
+    "menu.redemption-code",
+    "redemption-code.create",
+    "redemption-code.delete",
+    "menu.redemption-record",
+    "redemption-record.review",
+    // (7) 租户管理（仅读取 + 创建自己租户 + 更新自己租户；不含 delete）
     "menu.tenant",
     "tenant.read",
     "tenant.create",
     "tenant.update",
-    "tenant.delete",
+    // (8) 站点配置（仅创建 + 更新自己租户的 site-config）
     "menu.site-config",
     "site-config.update",
     "config.read",
+    "config.create",
     "config.update",
+    // (9) 功能开关（本租户内的粗粒度开关 + 细粒度配置）
     "menu.feature-flag",
     "feature-flag.update",
     "config.feature.update",
-    "channel.config.update",
+    // (10) 模块可见性（本租户内的角色可见性配置）
+    "menu.module-visibility",
+    // (11) 用户角色管理（分配/撤销；不含 role.create 防止绕过白名单）
     "menu.user-roles",
     "role.read",
     "role.assign",
     "role.revoke",
-    "role.create",
     "role.read-logs",
-    // 官网中心
-    "menu.website-center",
-    "menu.website-seo",
-    "seo-config.read",
-    "seo-config.update",
-    "menu.website-brand",
-    "brand-info.read",
-    "brand-info.update",
-    "menu.website-article",
-    "article.read",
-    "article.create",
-    "article.update",
-    "article.publish",
-    "menu.website-article-category",
-    "article-category.read",
-    "article-category.create",
-    "article-category.update",
-    "article-category.delete",
-    "menu.website-product",
-    "product.read",
-    "product.create",
-    "product.update",
-    "product.delete",
-    "menu.website-case",
-    "case.read",
-    "case.create",
-    "case.update",
-    "case.delete",
-    "menu.website-compliance",
-    "compliance.read",
-    "compliance.create",
-    "compliance.update",
-    "menu.website-faq",
-    "faq.read",
-    "faq.create",
-    "faq.update",
-    "faq.delete",
-    "menu.website-tutorial",
-    "tutorial.read",
-    "tutorial.create",
-    "tutorial.update",
-    "tutorial.delete",
-    "menu.website-download",
-    "download.read",
-    "download.create",
-    "download.update",
-    "download.delete",
-    "menu.website-lead",
-    "lead.read",
-    "lead.update",
-    "lead.delete",
-    "menu.website-visit-log",
-    "visit-log.read",
-    "menu.website-interaction",
-    "interaction.read",
-    "menu.website-search-log",
-    "search-log.read",
-    "menu.website-knowledge-entity",
-    "knowledge-entity.read",
-    "knowledge-entity.create",
-    "knowledge-entity.update",
-    "knowledge-entity.delete",
-    "knowledge-entity.create-global",
-    "knowledge-entity.update-global",
-    "knowledge-entity.delete-global",
-    "menu.website-knowledge-relation",
-    "knowledge-relation.read",
-    "knowledge-relation.create",
-    "knowledge-relation.update",
-    "knowledge-relation.delete",
-    "menu.website-ai-summary",
-    "ai-summary.read",
-    "ai-summary.create",
-    "ai-summary.update",
-    "ai-summary.delete",
-    "menu.website-first-truth",
-    "first-truth.read",
-    "first-truth.create",
-    "first-truth.update",
-    "first-truth.delete",
-    "first-truth.create-global",
-    "first-truth.update-global",
-    "first-truth.delete-global",
-    "menu.website-brand-voice",
-    "brand-voice.read",
-    "brand-voice.create",
-    "brand-voice.update",
-    "brand-voice.delete",
-    "brand-voice.create-global",
-    "brand-voice.update-global",
-    "brand-voice.delete-global",
-    // 物流中心权限由上方 flattenPermissions(PERMISSION_TREE) 自动包含（仅排除 system-center）
-    // SSO 扩展 + media-meta（system-center 被 flattenPermissions 排除，需显式追加）
-    "menu.sso-binding",
-    "sso.third-party-binding.read",
-    "sso.third-party-binding.create",
-    "sso.third-party-binding.update",
-    "sso.oauth-config.read",
-    "sso.oauth-config.create",
-    "sso.oauth-config.update",
-    "menu.sso-token",
-    "sso.token.read",
-    "sso.token.delete",
-    "menu.sso-user-role",
-    "sso.user-app-role.read",
-    "sso.user-app-role.create",
-    "sso.user-app-role.update",
-    "menu.sso-invite",
-    "sso.invite-code.read",
-    "sso.invite-code.create",
-    "sso.invite-code.validate",
-    "sso.invite-usage.read",
-    "sso.invite-stats.read",
-    "sso.referral-relation.read",
-    "menu.sso-sms",
-    "sso.sms-code.read",
+    // (12) 媒体资源（本租户内的 OSS 资源管理）
     "oss.media-meta.read",
-    "oss.media-meta.upload",
-    "oss.media-meta.delete"
+    "oss.media-meta.upload"
+    // 注：不含 oss.media-meta.delete（删除需 admin 或 system-manager）
+    // ===== 显式排除（不再包含）=====
+    // - flattenPermissions(PERMISSION_TREE)：不再自动获得全部中心权限
+    // - tenant.delete：跨租户删除，不应下放
+    // - role.create：防止 channel-admin 创建"全权限自定义角色"绕过白名单（见 Task 6.7 createRole 白名单）
+    // - *-global 后缀权限：跨租户全局操作，不应下放
+    // - sso.* 权限：与 DEFAULT_MODULE_VISIBILITY 不一致（sso 模块对 channel-admin 不可见）
+    // - oss.media-meta.delete：删除敏感，仅 admin 或 system-manager
+    // - 22 个中心的业务权限（course/quiz/point/...）：channel-admin 职责是渠道管理，不管理各中心业务内容
+    //   如需让 channel-admin 管理某中心内容，admin 应通过角色分配给 channel-admin 额外叠加中心角色（如 website-manager）
   ],
   [ROLES.PLUGIN_MANAGER]: flattenPermissions(
     ((t) => {
@@ -1664,7 +1613,8 @@ const DEFAULT_ROLE_PERMISSIONS = {
     "menu.sso-sms",
     "sso.sms-code.read",
     // 零散补全
-    "oss.media-meta.read"
+    "oss.media-meta.read",
+    "auth.admin-login"
   ]),
   [ROLES.INSTRUCTOR]: [
     // 课程中心
@@ -1772,32 +1722,35 @@ const DEFAULT_ROLE_PERMISSIONS = {
     "point.rule-template.read",
     "point.sign-in-record.read",
     "quiz.quiz-batch.read",
-    "tag.tag-index.read"
+    "tag.tag-index.read",
+    "auth.admin-login"
+    // 允许讲师登录后台
   ],
   [ROLES.USER]: [],
   // ===== 11 个中心 × 2 = 22 个新角色 =====
-  [ROLES.WEBSITE_MANAGER]: centerPermissions("menu.website-center").filter((k) => !k.endsWith("-global")),
-  [ROLES.WEBSITE_EDITOR]: centerEditorPermissions("menu.website-center").filter((k) => !k.endsWith("-global")),
-  [ROLES.LOGISTICS_MANAGER]: centerPermissions("menu.logistics-center"),
-  [ROLES.LOGISTICS_EDITOR]: centerEditorPermissions("menu.logistics-center"),
-  [ROLES.COURSE_MANAGER]: centerPermissions("menu.course-center"),
-  [ROLES.COURSE_EDITOR]: centerEditorPermissions("menu.course-center"),
-  [ROLES.STUDY_MANAGER]: centerPermissions("menu.study-center"),
-  [ROLES.STUDY_EDITOR]: centerEditorPermissions("menu.study-center"),
-  [ROLES.QUIZ_MANAGER]: centerPermissions("menu.quiz-center"),
-  [ROLES.QUIZ_EDITOR]: centerEditorPermissions("menu.quiz-center"),
-  [ROLES.POINT_MANAGER]: centerPermissions("menu.point-center"),
-  [ROLES.POINT_EDITOR]: centerEditorPermissions("menu.point-center"),
-  [ROLES.MARKETING_MANAGER]: centerPermissions("menu.marketing-center"),
-  [ROLES.MARKETING_EDITOR]: centerEditorPermissions("menu.marketing-center"),
-  [ROLES.SYSTEM_MANAGER]: centerPermissions("menu.system-center"),
-  [ROLES.SYSTEM_EDITOR]: centerEditorPermissions("menu.system-center"),
-  [ROLES.TAG_MANAGER]: centerPermissions("menu.tag-center"),
-  [ROLES.TAG_EDITOR]: centerEditorPermissions("menu.tag-center"),
-  [ROLES.STUDIO_MANAGER]: centerPermissions("menu.studio-center"),
-  [ROLES.STUDIO_EDITOR]: centerEditorPermissions("menu.studio-center"),
-  [ROLES.WEALTH_MANAGER]: centerPermissions("menu.wealth-center"),
-  [ROLES.WEALTH_EDITOR]: centerEditorPermissions("menu.wealth-center")
+  // 所有中心角色追加 auth.admin-login，被分配即可登录后台（菜单权限仍由 centerPermissions 限定）
+  [ROLES.WEBSITE_MANAGER]: centerPermissions("menu.website-center").filter((k) => !k.endsWith("-global")).concat(["auth.admin-login"]),
+  [ROLES.WEBSITE_EDITOR]: centerEditorPermissions("menu.website-center").filter((k) => !k.endsWith("-global")).concat(["auth.admin-login"]),
+  [ROLES.LOGISTICS_MANAGER]: centerPermissions("menu.logistics-center").concat(["auth.admin-login"]),
+  [ROLES.LOGISTICS_EDITOR]: centerEditorPermissions("menu.logistics-center").concat(["auth.admin-login"]),
+  [ROLES.COURSE_MANAGER]: centerPermissions("menu.course-center").concat(["auth.admin-login"]),
+  [ROLES.COURSE_EDITOR]: centerEditorPermissions("menu.course-center").concat(["auth.admin-login"]),
+  [ROLES.STUDY_MANAGER]: centerPermissions("menu.study-center").concat(["auth.admin-login"]),
+  [ROLES.STUDY_EDITOR]: centerEditorPermissions("menu.study-center").concat(["auth.admin-login"]),
+  [ROLES.QUIZ_MANAGER]: centerPermissions("menu.quiz-center").concat(["auth.admin-login"]),
+  [ROLES.QUIZ_EDITOR]: centerEditorPermissions("menu.quiz-center").concat(["auth.admin-login"]),
+  [ROLES.POINT_MANAGER]: centerPermissions("menu.point-center").concat(["auth.admin-login"]),
+  [ROLES.POINT_EDITOR]: centerEditorPermissions("menu.point-center").concat(["auth.admin-login"]),
+  [ROLES.MARKETING_MANAGER]: centerPermissions("menu.marketing-center").concat(["auth.admin-login"]),
+  [ROLES.MARKETING_EDITOR]: centerEditorPermissions("menu.marketing-center").concat(["auth.admin-login"]),
+  [ROLES.SYSTEM_MANAGER]: centerPermissions("menu.system-center").concat(["auth.admin-login"]),
+  [ROLES.SYSTEM_EDITOR]: centerEditorPermissions("menu.system-center").concat(["auth.admin-login"]),
+  [ROLES.TAG_MANAGER]: centerPermissions("menu.tag-center").concat(["auth.admin-login"]),
+  [ROLES.TAG_EDITOR]: centerEditorPermissions("menu.tag-center").concat(["auth.admin-login"]),
+  [ROLES.STUDIO_MANAGER]: centerPermissions("menu.studio-center").concat(["auth.admin-login"]),
+  [ROLES.STUDIO_EDITOR]: centerEditorPermissions("menu.studio-center").concat(["auth.admin-login"]),
+  [ROLES.WEALTH_MANAGER]: centerPermissions("menu.wealth-center").concat(["auth.admin-login"]),
+  [ROLES.WEALTH_EDITOR]: centerEditorPermissions("menu.wealth-center").concat(["auth.admin-login"])
 };
 const USER_UID$1 = "plugin::users-permissions.user";
 function throwErr(code, status, message) {
@@ -1952,6 +1905,16 @@ const roleManagementService = ({ strapi: strapi2 }) => {
     },
     /**
      * 分配角色给用户
+     *
+     * 业务约束（admin 必须遵守，代码不强制校验）：
+     * - channel-admin 角色仅可分配给 ADMIN_CHANNEL_TIERS 渠道（core/senior/global/authorized/official/partner/agent）的所有者
+     * - 不应给 national 以下 tier 渠道所有者分配 channel-admin 角色（national 是分销节点，由父渠道代管）
+     * - 如需让 national owner 登录后台管理自己渠道，应先升级其渠道 tier（如 national → core），再分配 channel-admin
+     * - 误分配 channel-admin 给 national owner 会导致：national owner 能创建自己的租户，绕过分销体系
+     *
+     * 后续迭代（方案 B）：增加硬编码业务校验，当 role='channel-admin' 时查询被分配用户的
+     * channel-member（isCurrent=true）的 channel.channelTier，仅允许 ADMIN_CHANNEL_TIERS 包含的 tier
+     *
      * @param userId 用户ID
      * @param role 角色名称
      * @param operatorId 操作人ID
@@ -2356,6 +2319,24 @@ const permissionService = ({ strapi: strapi2 }) => ({
       const e = new Error(`角色 ${role} 已存在`);
       e.status = 409;
       throw e;
+    }
+    if (operatorLevel < 100) {
+      const operator = await strapi2.db.query(USER_UID).findOne({ where: { id: operatorId } });
+      const operatorRoles = Array.isArray(operator?.zhaoRoles) ? operator.zhaoRoles : [];
+      if (!operatorRoles.includes("admin")) {
+        const operatorPermsResult = await this.getMyPermissions(operatorId);
+        const operatorPerms = new Set(operatorPermsResult.permissions);
+        const requestedPerms = Array.isArray(data.permissions) ? data.permissions : [];
+        const unauthorizedPerms = requestedPerms.filter((p) => !operatorPerms.has(p));
+        if (unauthorizedPerms.length > 0) {
+          const e = new Error(
+            `不能创建包含超出自身权限的角色，未授权权限：${unauthorizedPerms.join(", ")}`
+          );
+          e.code = "PERM_010";
+          e.status = 403;
+          throw e;
+        }
+      }
     }
     const created = await strapi2.documents(PERMISSION_UID).create({
       data: {
@@ -3120,12 +3101,17 @@ const authController = ({ strapi: strapi2 }) => ({
         return;
       }
       const { user, roles, formattedRole } = result;
-      const adminRoles = ["admin", "super-admin", "manager"];
-      const hasAdminRole = roles.some((r) => adminRoles.includes(r));
-      if (!hasAdminRole) {
-        ctx.status = 403;
-        ctx.body = { error: "无管理后台访问权限" };
-        return;
+      const isSuperAdmin = roles.some(
+        (r) => r === "super-admin" || r === "super_admin" || r === "SUPER_ADMIN"
+      );
+      if (!isSuperAdmin) {
+        const permService = strapi2.plugin("zhao-auth").service("permission");
+        const { permissions } = await permService.getMyPermissions(user.id);
+        if (!permissions.includes("auth.admin-login")) {
+          ctx.status = 403;
+          ctx.body = { error: "无管理后台访问权限" };
+          return;
+        }
       }
       const jwtService2 = strapi2.plugin("zhao-auth").service("jwt");
       const jwt2 = await jwtService2.sign({ id: user.id, email: user.email, username: user.username, zhaoRoles: roles });
@@ -3542,12 +3528,80 @@ const tenantController = ({ strapi: strapi2 }) => ({
     }
   }
 });
+const VISIBILITY_MODULES = [
+  "website",
+  "logistics",
+  "studio",
+  "points",
+  "course",
+  "quiz",
+  "channel",
+  "sso",
+  "thirdParty",
+  "oss",
+  "payment",
+  "community",
+  "forum"
+];
+const VALID_ROLES = new Set(Object.values(ROLES));
+const moduleVisibilityController = {
+  async get(ctx) {
+    const siteId = ctx.state?.siteDocumentId;
+    if (!siteId) {
+      ctx.status = 400;
+      ctx.body = { error: "缺少租户上下文" };
+      return;
+    }
+    const siteConfigService = strapi.plugin("zhao-common").service("site-config");
+    const config2 = await siteConfigService.getConfig(siteId);
+    ctx.body = { data: config2?.moduleVisibility ?? {} };
+  },
+  async update(ctx) {
+    const siteId = ctx.state?.siteDocumentId;
+    if (!siteId) {
+      ctx.status = 400;
+      ctx.body = { error: "缺少租户上下文" };
+      return;
+    }
+    const body = ctx.request.body?.data || ctx.request.body;
+    const { moduleVisibility: moduleVisibility2 } = body;
+    if (typeof moduleVisibility2 !== "object" || Array.isArray(moduleVisibility2)) {
+      ctx.status = 400;
+      ctx.body = { error: "moduleVisibility must be an object" };
+      return;
+    }
+    const filtered = {};
+    for (const [key, roles] of Object.entries(moduleVisibility2)) {
+      if (!VISIBILITY_MODULES.includes(key)) {
+        strapi.log.warn(`[module-visibility] Unknown moduleKey ignored: ${key}`);
+        continue;
+      }
+      if (!Array.isArray(roles)) {
+        ctx.status = 400;
+        ctx.body = { error: `moduleVisibility.${key} must be an array` };
+        return;
+      }
+      filtered[key] = roles.filter(
+        (r) => typeof r === "string" && VALID_ROLES.has(r)
+      );
+    }
+    try {
+      const siteConfigService = strapi.plugin("zhao-common").service("site-config");
+      await siteConfigService.updateConfig(siteId, { moduleVisibility: filtered });
+      ctx.body = { data: filtered };
+    } catch (e) {
+      ctx.status = 500;
+      ctx.body = { error: e.message };
+    }
+  }
+};
 const controllers = {
   "role-management": roleManagementController,
   auth: authController,
   permission: permissionController,
   "role-channel": roleChannelController,
-  tenant: tenantController
+  tenant: tenantController,
+  "module-visibility": moduleVisibilityController
 };
 const kind$2 = "collectionType";
 const collectionName$2 = "zhao_permissions";
@@ -3849,7 +3903,7 @@ const userRoute = (method, path, handler) => ({
     policies: ["plugin::zhao-auth.is-authenticated"]
   }
 });
-const adminRoute = (method, path, handler, permission) => ({
+const adminRoute$1 = (method, path, handler, permission) => ({
   method,
   path: `/v1/admin${path}`,
   handler,
@@ -3873,31 +3927,31 @@ const contentApi = () => ({
     userRoute("GET", "/my/permissions", "role-management.getMyPermissions"),
     userRoute("GET", "/my/permission-keys", "permission.getMyPermissions"),
     // 角色管理
-    adminRoute("GET", "/roles", "permission.listRoles", "role.read"),
-    adminRoute("GET", "/roles/all", "permission.getAllRoles", "role.read"),
-    adminRoute("GET", "/roles/:role", "permission.getRole", "role.read"),
-    adminRoute("POST", "/roles", "permission.createRole", "role.create"),
-    adminRoute("PUT", "/roles/:role", "permission.updateRole", "role.assign"),
-    adminRoute("DELETE", "/roles/:role", "permission.deleteRole", "role.assign"),
-    adminRoute("GET", "/users", "role-management.findUsers", "role.read"),
-    adminRoute("GET", "/users/:id/roles", "role-management.getUserRoles", "role.read"),
-    adminRoute("POST", "/roles/assign", "role-management.assignRole", "role.assign"),
-    adminRoute("POST", "/roles/revoke", "role-management.revokeRole", "role.revoke"),
-    adminRoute("POST", "/roles/batch-assign", "role-management.batchAssignRoles", "role.assign"),
-    adminRoute("GET", "/roles/logs", "role-management.getActionLogs", "role.read-logs"),
+    adminRoute$1("GET", "/roles", "permission.listRoles", "role.read"),
+    adminRoute$1("GET", "/roles/all", "permission.getAllRoles", "role.read"),
+    adminRoute$1("GET", "/roles/:role", "permission.getRole", "role.read"),
+    adminRoute$1("POST", "/roles", "permission.createRole", "role.create"),
+    adminRoute$1("PUT", "/roles/:role", "permission.updateRole", "role.assign"),
+    adminRoute$1("DELETE", "/roles/:role", "permission.deleteRole", "role.assign"),
+    adminRoute$1("GET", "/users", "role-management.findUsers", "role.read"),
+    adminRoute$1("GET", "/users/:id/roles", "role-management.getUserRoles", "role.read"),
+    adminRoute$1("POST", "/roles/assign", "role-management.assignRole", "role.assign"),
+    adminRoute$1("POST", "/roles/revoke", "role-management.revokeRole", "role.revoke"),
+    adminRoute$1("POST", "/roles/batch-assign", "role-management.batchAssignRoles", "role.assign"),
+    adminRoute$1("GET", "/roles/logs", "role-management.getActionLogs", "role.read-logs"),
     // 权限管理
-    adminRoute("GET", "/permissions/tree", "permission.getTree", "role.read"),
-    adminRoute("GET", "/permissions/role/:role", "permission.getRolePermissions", "role.read"),
-    adminRoute("PUT", "/permissions/role/:role", "permission.updateRolePermissions", "role.assign"),
-    adminRoute("POST", "/permissions/init", "permission.initRoles", "role.assign"),
+    adminRoute$1("GET", "/permissions/tree", "permission.getTree", "role.read"),
+    adminRoute$1("GET", "/permissions/role/:role", "permission.getRolePermissions", "role.read"),
+    adminRoute$1("PUT", "/permissions/role/:role", "permission.updateRolePermissions", "role.assign"),
+    adminRoute$1("POST", "/permissions/init", "permission.initRoles", "role.assign"),
     // 渠道范围查询
     userRoute("GET", "/my/channel-scope", "permission.getMyChannelScope"),
     // 角色-渠道授权
-    adminRoute("GET", "/role-channels", "role-channel.list", "role.assign"),
-    adminRoute("POST", "/role-channels", "role-channel.grant", "role.assign"),
-    adminRoute("POST", "/role-channels/batch", "role-channel.batchGrant", "role.assign"),
-    adminRoute("DELETE", "/role-channels/:id", "role-channel.revoke", "role.assign"),
-    adminRoute("DELETE", "/role-channels/role/:role", "role-channel.revokeByRole", "role.assign")
+    adminRoute$1("GET", "/role-channels", "role-channel.list", "role.assign"),
+    adminRoute$1("POST", "/role-channels", "role-channel.grant", "role.assign"),
+    adminRoute$1("POST", "/role-channels/batch", "role-channel.batchGrant", "role.assign"),
+    adminRoute$1("DELETE", "/role-channels/:id", "role-channel.revoke", "role.assign"),
+    adminRoute$1("DELETE", "/role-channels/role/:role", "role-channel.revokeByRole", "role.assign")
   ]
 });
 const tenant = () => ({
@@ -3914,6 +3968,25 @@ const tenant = () => ({
     }
   ]
 });
+const adminRoute = (method, path, handler, permission) => ({
+  method,
+  path: `/v1/admin${path}`,
+  handler,
+  config: {
+    auth: false,
+    policies: [
+      "plugin::zhao-auth.is-authenticated",
+      { name: "plugin::zhao-auth.has-permission", config: { action: permission } }
+    ]
+  }
+});
+const moduleVisibility = () => ({
+  type: "content-api",
+  routes: [
+    adminRoute("GET", "/module-visibility", "module-visibility.get", "menu.module-visibility"),
+    adminRoute("PUT", "/module-visibility", "module-visibility.update", "menu.module-visibility")
+  ]
+});
 const routes = {
   "content-api": {
     type: "content-api",
@@ -3922,6 +3995,10 @@ const routes = {
   tenant: {
     type: "content-api",
     routes: tenant().routes
+  },
+  "module-visibility": {
+    type: "content-api",
+    routes: moduleVisibility().routes
   }
 };
 function hasPermission(userRoles, requiredPermission, permissionConfig) {

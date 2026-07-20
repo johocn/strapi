@@ -5400,7 +5400,18 @@ const channel$1 = ({ strapi }) => ({
   async find(ctx) {
     try {
       const service = strapi.plugin("zhao-channel").service("channel");
-      ctx.body = wrapList$3(await service.find(ctx.query));
+      const query = { ...ctx.query };
+      if (!ctx.state?.channelScope && ctx.state?.user) {
+        const scope = await this._scopeSvc()?.resolve?.(ctx.state.user);
+        if (scope) {
+          const cf = this._scopeSvc()?.buildChannelFilter?.(scope, "id");
+          if (cf) Object.assign(query, cf);
+        }
+      } else if (ctx.state?.channelScope) {
+        const cf = this._channelFilter(ctx, "id");
+        if (cf) Object.assign(query, cf);
+      }
+      ctx.body = wrapList$3(await service.find(query));
     } catch (e) {
       ctx.status = e.status || 400;
       ctx.body = { error: e.message, code: e.code };
@@ -5928,6 +5939,22 @@ const channelPermission$1 = ({ strapi }) => ({
       ctx.body = { error: e.message, code: e.code };
     }
   },
+  async getMyChannelTree(ctx) {
+    try {
+      const userId = ctx.state.user?.id;
+      if (!userId) {
+        ctx.status = 401;
+        ctx.body = { error: "未登录" };
+        return;
+      }
+      const service = strapi.plugin("zhao-channel").service("channel-permission");
+      const channels = await service.getMyChannelTree(userId);
+      ctx.body = wrapList$1(channels);
+    } catch (e) {
+      ctx.status = e.status || 400;
+      ctx.body = { error: e.message, code: e.code };
+    }
+  },
   async batchGrant(ctx) {
     try {
       const body = ctx.request.body?.data || ctx.request.body;
@@ -6299,6 +6326,8 @@ const contentApi = () => ({
     userRoute("POST", "/my/channel/register", "channel.register"),
     userRoute("POST", "/my/channel/validate", "channel.validate"),
     userRoute("GET", "/my/channels/accessible", "channel-permission.getUserChannels"),
+    // 返回当前用户授权的渠道（含子树扩展，三表查询，完整字段）
+    userRoute("GET", "/my/channels/tree", "channel-permission.getMyChannelTree"),
     userRoute("GET", "/my/invite/chain", "user-invite.getMyChain"),
     userRoute("GET", "/my/invite/downstream", "user-invite.getMyDownstream"),
     userRoute("GET", "/my/invite/stats", "user-invite.getMyStats"),
@@ -6797,7 +6826,7 @@ const channel = ({ strapi }) => ({
       if (existingUserByUsername) {
         throwErr$1("030108", 409, "该用户名已被注册");
       }
-      const ADMIN_CHANNEL_TIERS = ["core", "senior", "global", "authorized", "official", "partner"];
+      const ADMIN_CHANNEL_TIERS = ["core", "senior", "global", "authorized", "official", "partner", "agent"];
       const userRoles = ADMIN_CHANNEL_TIERS.includes(childTier) ? ["channel-admin", "user"] : ["user"];
       user = await strapi.entityService.create("plugin::users-permissions.user", {
         data: {
@@ -6813,10 +6842,21 @@ const channel = ({ strapi }) => ({
         data: {
           channel: updated.id,
           user: user.id,
-          role: ADMIN_CHANNEL_TIERS.includes(childTier) ? "admin" : "member",
+          role: "admin",
           isCurrent: true
         }
       });
+      try {
+        await strapi.db.query(USER_CHANNEL_UID$1).create({
+          data: {
+            user: user.id,
+            channel: updated.id,
+            grantedBy: "self-register"
+          }
+        });
+      } catch (e) {
+        strapi.log.warn(`[zhao-channel] register() failed to write user-channel: ${e.message}`);
+      }
       const parentOwner = await strapi.db.query(CHANNEL_MEMBER_UID$3).findOne({
         where: { channel: parentChannel.id, role: "admin" },
         populate: ["user"]
@@ -7129,7 +7169,7 @@ const channelMember = ({ strapi }) => ({
       where: { email: data.email }
     });
     const isNewUser = !user;
-    const ADMIN_CHANNEL_TIERS = ["core", "senior", "global", "authorized", "official", "partner"];
+    const ADMIN_CHANNEL_TIERS = ["core", "senior", "global", "authorized", "official", "partner", "agent"];
     if (!user) {
       const userRole = ADMIN_CHANNEL_TIERS.includes(channel2.channelTier) && data.role === "admin" ? ["channel-admin", "user"] : ["user"];
       user = await strapi.entityService.create(USER_UID$2, {
@@ -7482,6 +7522,22 @@ const channelPermission = ({ strapi }) => ({
       id: uc.channel?.id || uc.channel,
       name: uc.channel?.name
     }));
+  },
+  /**
+   * 返回当前用户授权的渠道（含子树扩展，完整字段）
+   * 与 getUserChannels 的差异：
+   * - getUserChannels 仅查 user-channel 表，返回 {id, name}（用于权限校验场景）
+   * - getMyChannelTree 三表合并 + 子树扩展，返回完整字段（用于 UI 展示）
+   */
+  async getMyChannelTree(userId) {
+    const channelIds = await this.getUserAllChannels(userId);
+    if (!channelIds || channelIds.length === 0) return [];
+    const channels = await strapi.db.query("plugin::zhao-channel.channel").findMany({
+      where: { id: { $in: channelIds } },
+      select: ["id", "documentId", "name", "code", "channelTier", "path", "depth", "status"],
+      orderBy: { id: "asc" }
+    });
+    return channels;
   },
   async getRoleChannels(roleName) {
     const roleChannels = await strapi.db.query(ROLE_CHANNEL_UID).findMany({

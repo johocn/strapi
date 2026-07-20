@@ -51,5 +51,9 @@ declare const _default: {
     }) => {
         getMyTenants(ctx: any): Promise<void>;
     };
+    "module-visibility": {
+        get(ctx: any): Promise<void>;
+        update(ctx: any): Promise<void>;
+    };
 };
 export default _default;

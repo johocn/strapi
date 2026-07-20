@@ -344,6 +344,10 @@ declare const _default: {
         }) => {
             getMyTenants(ctx: any): Promise<void>;
         };
+        "module-visibility": {
+            get(ctx: any): Promise<void>;
+            update(ctx: any): Promise<void>;
+        };
     };
     contentTypes: {
         permission: {
@@ -510,6 +514,23 @@ declare const _default: {
                 config: {
                     auth: boolean;
                     policies: string[];
+                };
+            }[];
+        };
+        "module-visibility": {
+            type: "content-api";
+            routes: {
+                method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
+                path: string;
+                handler: string;
+                config: {
+                    auth: boolean;
+                    policies: (string | {
+                        name: string;
+                        config: {
+                            action: string;
+                        };
+                    })[];
                 };
             }[];
         };

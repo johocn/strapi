@@ -35,6 +35,16 @@ declare const _default: ({ strapi }: {
     }>;
     /**
      * 分配角色给用户
+     *
+     * 业务约束（admin 必须遵守，代码不强制校验）：
+     * - channel-admin 角色仅可分配给 ADMIN_CHANNEL_TIERS 渠道（core/senior/global/authorized/official/partner/agent）的所有者
+     * - 不应给 national 以下 tier 渠道所有者分配 channel-admin 角色（national 是分销节点，由父渠道代管）
+     * - 如需让 national owner 登录后台管理自己渠道，应先升级其渠道 tier（如 national → core），再分配 channel-admin
+     * - 误分配 channel-admin 给 national owner 会导致：national owner 能创建自己的租户，绕过分销体系
+     *
+     * 后续迭代（方案 B）：增加硬编码业务校验，当 role='channel-admin' 时查询被分配用户的
+     * channel-member（isCurrent=true）的 channel.channelTier，仅允许 ADMIN_CHANNEL_TIERS 包含的 tier
+     *
      * @param userId 用户ID
      * @param role 角色名称
      * @param operatorId 操作人ID

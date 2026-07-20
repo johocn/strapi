@@ -29,6 +29,13 @@ declare const _default: ({ strapi }: {
         id: any;
         name: any;
     }[]>;
+    /**
+     * 返回当前用户授权的渠道（含子树扩展，完整字段）
+     * 与 getUserChannels 的差异：
+     * - getUserChannels 仅查 user-channel 表，返回 {id, name}（用于权限校验场景）
+     * - getMyChannelTree 三表合并 + 子树扩展，返回完整字段（用于 UI 展示）
+     */
+    getMyChannelTree(userId: number): Promise<any[]>;
     getRoleChannels(roleName: string): Promise<{
         id: any;
         name: any;

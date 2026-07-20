@@ -59,6 +59,7 @@ declare const _default: {
         }) => {
             checkPermission(ctx: any): Promise<void>;
             getUserChannels(ctx: any): Promise<void>;
+            getMyChannelTree(ctx: any): Promise<void>;
             batchGrant(ctx: any): Promise<void>;
         };
         "user-invite": ({ strapi }: {
@@ -455,6 +456,7 @@ declare const _default: {
                 id: any;
                 name: any;
             }[]>;
+            getMyChannelTree(userId: number): Promise<any[]>;
             getRoleChannels(roleName: string): Promise<{
                 id: any;
                 name: any;

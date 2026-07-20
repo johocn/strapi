@@ -4,6 +4,7 @@ declare const _default: ({ strapi }: {
 }) => {
     checkPermission(ctx: any): Promise<void>;
     getUserChannels(ctx: any): Promise<void>;
+    getMyChannelTree(ctx: any): Promise<void>;
     batchGrant(ctx: any): Promise<void>;
 };
 export default _default;

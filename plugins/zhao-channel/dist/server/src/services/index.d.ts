@@ -351,6 +351,7 @@ declare const _default: {
             id: any;
             name: any;
         }[]>;
+        getMyChannelTree(userId: number): Promise<any[]>;
         getRoleChannels(roleName: string): Promise<{
             id: any;
             name: any;
