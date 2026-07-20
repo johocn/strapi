@@ -537,8 +537,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       }
 
       // 定义高级渠道层级（注册时自动获得 channel-admin 角色）
-      const ADMIN_CHANNEL_TIERS = ['core', 'senior', 'global', 'authorized', 'official', 'partner'];
-      
+      // agent 是 root 的直接子级（与 core/senior/.../partner 平级），应自动成为 channel-admin
+      const ADMIN_CHANNEL_TIERS = ['core', 'senior', 'global', 'authorized', 'official', 'partner', 'agent'];
+
       // 确定用户角色：高级渠道注册自动分配 channel-admin
       const userRoles = ADMIN_CHANNEL_TIERS.includes(childTier) 
         ? ['channel-admin', 'user'] 
