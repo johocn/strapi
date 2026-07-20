@@ -43,7 +43,22 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async find(ctx) {
     try {
       const service = strapi.plugin("zhao-channel").service("channel");
-      ctx.body = wrapList(await service.find(ctx.query));
+      // /my/channels 走 userRoute，policy 链不含 has-channel-scope，
+      // 需手动调用 channel-scope service.resolve(user) 获取 channelScope
+      // 安全修复（卡点 E）：非 admin 用户仅返回授权渠道，防止越权查看
+      const query = { ...ctx.query };
+      if (!ctx.state?.channelScope && ctx.state?.user) {
+        const scope = await this._scopeSvc()?.resolve?.(ctx.state.user);
+        if (scope) {
+          const cf = this._scopeSvc()?.buildChannelFilter?.(scope, "id");
+          if (cf) Object.assign(query, cf);
+        }
+      } else if (ctx.state?.channelScope) {
+        // 如已被 policy 注入（如未来路由变更），复用之
+        const cf = this._channelFilter(ctx, "id");
+        if (cf) Object.assign(query, cf);
+      }
+      ctx.body = wrapList(await service.find(query));
     } catch (e: any) {
       ctx.status = (e as any).status || 400; ctx.body = { error: e.message, code: e.code };
     }
