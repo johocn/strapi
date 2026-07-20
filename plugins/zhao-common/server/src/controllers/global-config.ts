@@ -9,7 +9,7 @@ export default {
 
   async update(ctx: any) {
     const body = ctx.request.body?.data || ctx.request.body;
-    const { moduleEnabled, moduleTenantGrants } = body;
+    const { moduleEnabled, moduleTenantGrants, moduleVisibility } = body;
 
     if (moduleEnabled !== undefined) {
       if (typeof moduleEnabled !== "object" || Array.isArray(moduleEnabled)) {
@@ -41,9 +41,29 @@ export default {
       }
     }
 
+    if (moduleVisibility !== undefined) {
+      if (typeof moduleVisibility !== "object" || Array.isArray(moduleVisibility)) {
+        ctx.status = 400;
+        ctx.body = { error: "moduleVisibility must be an object" };
+        return;
+      }
+      for (const [key, roles] of Object.entries(moduleVisibility)) {
+        if (!VISIBILITY_MODULES.includes(key)) {
+          strapi.log.warn(`[global-config] Unknown moduleKey ignored: ${key}`);
+          delete moduleVisibility[key];
+          continue;
+        }
+        if (!Array.isArray(roles)) {
+          ctx.status = 400;
+          ctx.body = { error: `moduleVisibility.${key} must be an array` };
+          return;
+        }
+      }
+    }
+
     try {
       const service = strapi.plugin("zhao-common").service("global-config");
-      const saved = await service.updateGlobalConfig({ moduleEnabled, moduleTenantGrants });
+      const saved = await service.updateGlobalConfig({ moduleEnabled, moduleTenantGrants, moduleVisibility });
       ctx.body = { data: saved };
     } catch (e: any) {
       ctx.status = 500;
