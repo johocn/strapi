@@ -154,6 +154,33 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       throw e;
     }
 
+    // ===== 新增：permissions 白名单校验（卡点 H）=====
+    // admin 跳过校验（admin 拥有全部权限）；operatorLevel < 100 即非 admin
+    if (operatorLevel < 100) {
+      const operator = await strapi.db.query(USER_UID).findOne({ where: { id: operatorId } });
+      const operatorRoles: string[] = Array.isArray(operator?.zhaoRoles) ? operator.zhaoRoles : [];
+      // 双重保险：operatorLevel < 100 且 roles 含 admin 也跳过（理论上不会发生）
+      if (!operatorRoles.includes("admin")) {
+        // 获取操作者的有效权限集合
+        const operatorPermsResult = await this.getMyPermissions(operatorId);
+        const operatorPerms = new Set(operatorPermsResult.permissions);
+
+        // 校验待创建角色的 permissions 是否是操作者权限的子集
+        const requestedPerms = Array.isArray(data.permissions) ? data.permissions : [];
+        const unauthorizedPerms = requestedPerms.filter((p) => !operatorPerms.has(p));
+
+        if (unauthorizedPerms.length > 0) {
+          const e: any = new Error(
+            `不能创建包含超出自身权限的角色，未授权权限：${unauthorizedPerms.join(", ")}`
+          );
+          e.code = "PERM_010";
+          e.status = 403;
+          throw e;
+        }
+      }
+    }
+    // ===== 白名单校验结束 =====
+
     const created: any = await strapi.documents(PERMISSION_UID).create({
       data: {
         role,
