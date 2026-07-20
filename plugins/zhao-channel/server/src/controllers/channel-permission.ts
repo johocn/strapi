@@ -47,6 +47,22 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     }
   },
 
+  async getMyChannelTree(ctx) {
+    try {
+      const userId = ctx.state.user?.id;
+      if (!userId) {
+        ctx.status = 401;
+        ctx.body = { error: "未登录" };
+        return;
+      }
+      const service = strapi.plugin("zhao-channel").service("channel-permission");
+      const channels = await service.getMyChannelTree(userId);
+      ctx.body = wrapList(channels);
+    } catch (e: any) {
+      ctx.status = (e as any).status || 400; ctx.body = { error: e.message, code: e.code };
+    }
+  },
+
   async batchGrant(ctx) {
     try {
       const body = ctx.request.body?.data || ctx.request.body;
