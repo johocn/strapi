@@ -69,6 +69,8 @@ export default () => ({
     userRoute("POST", "/my/channel/register", "channel.register"),
     userRoute("POST", "/my/channel/validate", "channel.validate"),
     userRoute("GET", "/my/channels/accessible", "channel-permission.getUserChannels"),
+    // 返回当前用户授权的渠道（含子树扩展，三表查询，完整字段）
+    userRoute("GET", "/my/channels/tree", "channel-permission.getMyChannelTree"),
     userRoute("GET", "/my/invite/chain", "user-invite.getMyChain"),
     userRoute("GET", "/my/invite/downstream", "user-invite.getMyDownstream"),
     userRoute("GET", "/my/invite/stats", "user-invite.getMyStats"),
