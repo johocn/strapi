@@ -7,7 +7,10 @@ export default () => ({
       handler: "tenant.getMyTenants",
       config: {
         auth: false,
-        policies: ["plugin::zhao-auth.is-authenticated"],
+        policies: [
+          "plugin::zhao-auth.is-authenticated",
+          "plugin::zhao-auth.tenant-context-injector",
+        ],
       },
     },
   ],

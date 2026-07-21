@@ -13,7 +13,10 @@ const userRoute = (method: Method, path: string, handler: string) => ({
   handler,
   config: {
     auth: false,
-    policies: ["plugin::zhao-auth.is-authenticated"],
+    policies: [
+      "plugin::zhao-auth.is-authenticated",
+      "plugin::zhao-auth.tenant-context-injector",
+    ],
   },
 });
 
@@ -30,6 +33,7 @@ const adminRoute = (
     auth: false,
     policies: [
       "plugin::zhao-auth.is-authenticated",
+      "plugin::zhao-auth.tenant-context-injector",
       { name: "plugin::zhao-auth.has-permission", config: { action: permission } },
     ],
   },

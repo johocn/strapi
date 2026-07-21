@@ -1,4 +1,5 @@
 import isAuthenticated from "./is-authenticated";
+import tenantContextInjector from "./tenant-context-injector";
 import hasPermission from "./has-permission";
 import hasChannelAccess from "./has-channel-access";
 import hasChannelScope from "./has-channel-scope";
@@ -24,6 +25,7 @@ import hasTenantAccess from "./has-tenant-access";
  */
 export default {
   "is-authenticated": isAuthenticated,
+  "tenant-context-injector": tenantContextInjector,
   "has-permission": hasPermission,
   "has-channel-access": hasChannelAccess,
   "has-channel-scope": hasChannelScope,
