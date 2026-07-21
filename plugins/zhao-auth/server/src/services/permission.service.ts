@@ -478,6 +478,13 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   },
 
   /**
+   * 失效权限缓存（代理方法，供外部通过 strapi.plugin().service() 调用）
+   */
+  invalidateCache(userId?: number, tenantDocumentId?: string) {
+    invalidatePermissionCache(userId, tenantDocumentId);
+  },
+
+  /**
    * 初始化并同步默认角色权限（每次启动时调用）
    * 系统角色的权限会与代码配置保持同步
    */

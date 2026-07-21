@@ -64,6 +64,12 @@ export default {
     try {
       const service = strapi.plugin("zhao-common").service("global-config");
       const saved = await service.updateGlobalConfig({ moduleEnabled, moduleTenantGrants, moduleVisibility });
+      // 失效全量权限缓存（global-config 变更影响所有用户）
+      try {
+        strapi.plugin("zhao-auth")?.service("permission")?.invalidateCache?.();
+      } catch {
+        // permission service 不可用时忽略
+      }
       ctx.body = { data: saved };
     } catch (e: any) {
       ctx.status = 500;

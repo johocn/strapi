@@ -73,6 +73,12 @@ export default {
     try {
       const siteConfigService = strapi.plugin("zhao-common").service("site-config");
       await siteConfigService.updateConfig(siteId, { moduleVisibility: filtered });
+      // 失效该租户所有用户的权限缓存
+      try {
+        strapi.plugin("zhao-auth")?.service("permission")?.invalidateCache?.(undefined, siteId);
+      } catch {
+        // 忽略
+      }
       ctx.body = { data: filtered };
     } catch (e: any) {
       ctx.status = 500;

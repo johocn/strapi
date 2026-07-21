@@ -304,6 +304,12 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     }
 
     invalidateUserCache(userId);
+    // 失效权限缓存（channel-admin 动态权限可能受角色变更影响）
+    try {
+      strapi.plugin("zhao-auth")?.service("permission")?.invalidateCache?.(userId);
+    } catch {
+      // 忽略
+    }
     await this.logAction(operatorId, userId, "assign", role, reason);
 
     return {
@@ -350,6 +356,12 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     });
 
     invalidateUserCache(userId);
+    // 失效权限缓存
+    try {
+      strapi.plugin("zhao-auth")?.service("permission")?.invalidateCache?.(userId);
+    } catch {
+      // 忽略
+    }
     await this.logAction(operatorId, userId, "revoke", role, reason);
 
     return {
