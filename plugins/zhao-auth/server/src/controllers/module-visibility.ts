@@ -1,5 +1,5 @@
 import { ROLES } from "../permissions";
-import { VISIBILITY_MODULES } from "../constants/module-visibility";
+import { VISIBILITY_MODULES, DEFAULT_MODULE_VISIBILITY } from "../constants/module-visibility";
 
 const VALID_ROLES = new Set(Object.values(ROLES));
 
@@ -47,6 +47,27 @@ export default {
       filtered[key] = (roles as any[]).filter(
         (r) => typeof r === "string" && VALID_ROLES.has(r)
       );
+    }
+
+    // 新增：校验 tenant roles ⊆ global roles（交集收窄写入校验）
+    let globalVisibility: Record<string, string[]> = {};
+    try {
+      const globalConfig = await strapi.plugin("zhao-common").service("global-config").getGlobalConfig();
+      globalVisibility = (globalConfig as any)?.moduleVisibility ?? {};
+    } catch {
+      // 读取失败时允许写入（fallback 到 DEFAULT_MODULE_VISIBILITY）
+    }
+
+    for (const [key, roles] of Object.entries(filtered)) {
+      const globalRoles = globalVisibility[key] ?? DEFAULT_MODULE_VISIBILITY[key] ?? [];
+      const invalidRoles = (roles as string[]).filter((r) => !globalRoles.includes(r));
+      if (invalidRoles.length > 0) {
+        ctx.status = 400;
+        ctx.body = {
+          error: `moduleVisibility.${key} 包含全局未授权的角色: ${invalidRoles.join(", ")}`,
+        };
+        return;
+      }
     }
 
     try {
