@@ -492,162 +492,174 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       }
     }
 
-    const code = generateCode();
     const parentPath = parentChannel.path || "/";
     const childDepth = (parentChannel.depth || 0) + 1;
 
-    // 先创建渠道，得到 id 后再构建 path
-    const channel = await strapi.db.query(CHANNEL_UID).create({
-      data: {
-        name: data.name,
-        code,
-        description: data.description,
-        channelTier: childTier,
-        parentChannel: parentChannel.id,
-        status: true,
-        path: "/", // 占位，下一步更新
-        depth: childDepth,
-      },
-    });
+    // ─── 事务包裹所有 DB 写入操作（参照 delete() 方法的事务模式） ───
+    // 修复 Bug：原顺序是「创建渠道 → 检查邮箱/用户名 → 创建用户」，
+    // 邮箱/用户名冲突时渠道已落库成为孤儿。新顺序前置唯一性检查，
+    // 配合事务回滚，杜绝孤儿渠道。
+    const result = await strapi.db.transaction(async () => {
+      // ─── 用户唯一性预检（前置到创建渠道之前） ───
+      // 若不创建用户（data.email/username/password 缺失），跳过检查直接创建渠道
+      let user: any = null;
+      if (data.email && data.username && data.password) {
+        // 检查邮箱是否已被注册
+        const existingUserByEmail = await strapi.db.query("plugin::users-permissions.user").findOne({
+          where: { email: data.email },
+        });
+        if (existingUserByEmail) {
+          throwErr("030107", 409, "该邮箱已被注册");
+        }
 
-    // 用真实 id 更新 path
-    const updatedPath = buildPath(parentPath, channel.id);
-    const updated = await strapi.db.query(CHANNEL_UID).update({
-      where: { id: channel.id },
-      data: { path: updatedPath },
-    });
-
-    // ─── 创建登录用户 ───
-    let user: any = null;
-    if (data.email && data.username && data.password) {
-      // 检查邮箱是否已被注册
-      const existingUserByEmail = await strapi.db.query("plugin::users-permissions.user").findOne({
-        where: { email: data.email },
-      });
-      if (existingUserByEmail) {
-        throwErr("030107", 409, "该邮箱已被注册");
+        // 检查用户名是否已被注册
+        const existingUserByUsername = await strapi.db.query("plugin::users-permissions.user").findOne({
+          where: { username: data.username },
+        });
+        if (existingUserByUsername) {
+          throwErr("030108", 409, "该用户名已被注册");
+        }
       }
 
-      // 检查用户名是否已被注册
-      const existingUserByUsername = await strapi.db.query("plugin::users-permissions.user").findOne({
-        where: { username: data.username },
-      });
-      if (existingUserByUsername) {
-        throwErr("030108", 409, "该用户名已被注册");
-      }
-
-      // 定义高级渠道层级（注册时自动获得 channel-admin 角色）
-      // agent 是 root 的直接子级（与 core/senior/.../partner 平级），应自动成为 channel-admin
-      const ADMIN_CHANNEL_TIERS = ['core', 'senior', 'global', 'authorized', 'official', 'partner', 'agent'];
-
-      // 确定用户角色：高级渠道注册自动分配 channel-admin
-      const userRoles = ADMIN_CHANNEL_TIERS.includes(childTier) 
-        ? ['channel-admin', 'user'] 
-        : ['user'];
-
-      // 创建用户（用 entityService 确保密码被哈希）
-      user = await strapi.entityService.create("plugin::users-permissions.user", {
+      // ─── 创建渠道（得到 id 后再构建 path） ───
+      const code = generateCode();
+      const channel = await strapi.db.query(CHANNEL_UID).create({
         data: {
-          email: data.email,
-          username: data.username,
-          password: data.password,
-          provider: "local",
-          confirmed: true,
-          zhaoRoles: userRoles,
+          name: data.name,
+          code,
+          description: data.description,
+          channelTier: childTier,
+          parentChannel: parentChannel.id,
+          status: true,
+          path: "/", // 占位，下一步更新
+          depth: childDepth,
         },
       });
 
-      // 创建 channel-member（注册者永远是渠道所有者，role 恒为 admin）
-      await strapi.db.query(CHANNEL_MEMBER_UID).create({
-        data: {
-          channel: updated.id,
-          user: user.id,
-          role: "admin",
-          isCurrent: true,
-        },
+      // 用真实 id 更新 path
+      const updatedPath = buildPath(parentPath, channel.id);
+      const updated = await strapi.db.query(CHANNEL_UID).update({
+        where: { id: channel.id },
+        data: { path: updatedPath },
       });
 
-      // 显式授权用户访问自己的渠道（与 channel-member 双表冗余，语义分离）
-      // user-channel：访问授权；channel-member：成员关系
-      try {
-        await strapi.db.query(USER_CHANNEL_UID).create({
+      // ─── 创建登录用户（若提供了完整凭证） ───
+      if (data.email && data.username && data.password) {
+        // 定义高级渠道层级（注册时自动获得 channel-admin 角色）
+        // agent 是 root 的直接子级（与 core/senior/.../partner 平级），应自动成为 channel-admin
+        const ADMIN_CHANNEL_TIERS = ['core', 'senior', 'global', 'authorized', 'official', 'partner', 'agent'];
+
+        // 确定用户角色：高级渠道注册自动分配 channel-admin
+        const userRoles = ADMIN_CHANNEL_TIERS.includes(childTier)
+          ? ['channel-admin', 'user']
+          : ['user'];
+
+        // 创建用户（用 entityService 确保密码被哈希）
+        user = await strapi.entityService.create("plugin::users-permissions.user", {
           data: {
-            user: user.id,
-            channel: updated.id,
-            grantedBy: "self-register",
+            email: data.email,
+            username: data.username,
+            password: data.password,
+            provider: "local",
+            confirmed: true,
+            zhaoRoles: userRoles,
           },
         });
-      } catch (e: any) {
-        // user-channel 写入失败不阻断注册（channel-member 已建，shao 仍可通过 channel-member 拿到渠道）
-        strapi.log.warn(`[zhao-channel] register() failed to write user-channel: ${e.message}`);
-      }
 
-      // 更新 user-invite 记录（bootstrap 的 afterCreate hook 已自动创建）
-      const parentOwner = await strapi.db
-        .query(CHANNEL_MEMBER_UID)
-        .findOne({
-          where: { channel: parentChannel.id, role: "admin" },
-          populate: ["user"],
+        // 创建 channel-member（注册者永远是渠道所有者，role 恒为 admin）
+        await strapi.db.query(CHANNEL_MEMBER_UID).create({
+          data: {
+            channel: updated.id,
+            user: user.id,
+            role: "admin",
+            isCurrent: true,
+          },
         });
 
-      if (parentOwner?.user) {
-        const parentUserId = typeof parentOwner.user === "object" ? parentOwner.user.id : parentOwner.user;
-        const inviterInvite = await strapi.db
-          .query("plugin::zhao-channel.user-invite")
+        // 显式授权用户访问自己的渠道（与 channel-member 双表冗余，语义分离）
+        // user-channel：访问授权；channel-member：成员关系
+        try {
+          await strapi.db.query(USER_CHANNEL_UID).create({
+            data: {
+              user: user.id,
+              channel: updated.id,
+              grantedBy: "self-register",
+            },
+          });
+        } catch (e: any) {
+          // user-channel 写入失败不阻断注册（channel-member 已建，用户仍可通过 channel-member 拿到渠道）
+          strapi.log.warn(`[zhao-channel] register() failed to write user-channel: ${e.message}`);
+        }
+
+        // 更新 user-invite 记录（bootstrap 的 afterCreate hook 已自动创建）
+        const parentOwner = await strapi.db
+          .query(CHANNEL_MEMBER_UID)
           .findOne({
-            where: { user: parentUserId },
+            where: { channel: parentChannel.id, role: "admin" },
+            populate: ["user"],
           });
 
-        if (inviterInvite) {
-          // 构建分销路径
-          let distributionPath = `/${user.id}/`;
-          let distributionDepth = 0;
-
-          if ((inviterInvite.distributionDepth || 0) < 2) {
-            const parentDistPath = inviterInvite.distributionPath || "/";
-            distributionPath = buildPath(parentDistPath, user.id);
-            distributionDepth = (inviterInvite.distributionDepth || 0) + 1;
-          }
-
-          const autoInvite = await strapi.db
+        if (parentOwner?.user) {
+          const parentUserId = typeof parentOwner.user === "object" ? parentOwner.user.id : parentOwner.user;
+          const inviterInvite = await strapi.db
             .query("plugin::zhao-channel.user-invite")
             .findOne({
-              where: { user: user.id },
+              where: { user: parentUserId },
             });
 
-          if (autoInvite) {
-            await strapi.db.query("plugin::zhao-channel.user-invite").update({
-              where: { id: autoInvite.id },
-              data: {
-                invitedBy: parentUserId,
-                inviteChannel: updated.id,
-                inviteMethod: "invite_code",
-                distributionPath,
-                distributionDepth,
-              },
-            });
+          if (inviterInvite) {
+            // 构建分销路径
+            let distributionPath = `/${user.id}/`;
+            let distributionDepth = 0;
+
+            if ((inviterInvite.distributionDepth || 0) < 2) {
+              const parentDistPath = inviterInvite.distributionPath || "/";
+              distributionPath = buildPath(parentDistPath, user.id);
+              distributionDepth = (inviterInvite.distributionDepth || 0) + 1;
+            }
+
+            const autoInvite = await strapi.db
+              .query("plugin::zhao-channel.user-invite")
+              .findOne({
+                where: { user: user.id },
+              });
+
+            if (autoInvite) {
+              await strapi.db.query("plugin::zhao-channel.user-invite").update({
+                where: { id: autoInvite.id },
+                data: {
+                  invitedBy: parentUserId,
+                  inviteChannel: updated.id,
+                  inviteMethod: "invite_code",
+                  distributionPath,
+                  distributionDepth,
+                },
+              });
+            }
           }
         }
       }
-    }
 
-    return {
-      id: updated.id,
-      name: updated.name,
-      code: updated.code,
-      description: updated.description,
-      channelTier: updated.channelTier,
-      path: updated.path,
-      depth: updated.depth,
-      parentChannelId: parentChannel.id,
-      ...(user ? {
-        user: {
-          id: user.id,
-          email: user.email,
-          username: user.username,
-        },
-      } : {}),
-    };
+      return {
+        id: updated.id,
+        name: updated.name,
+        code: updated.code,
+        description: updated.description,
+        channelTier: updated.channelTier,
+        path: updated.path,
+        depth: updated.depth,
+        parentChannelId: parentChannel.id,
+        ...(user ? {
+          user: {
+            id: user.id,
+            email: user.email,
+            username: user.username,
+          },
+        } : {}),
+      };
+    });
+
+    return result;
   },
 
   /**
