@@ -431,7 +431,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     const result = Array.from(allExpanded);
     permissionCache.set(cacheKey, { data: result, timestamp: Date.now() });
     return { permissions: result };
-  }
+  },
 
   /**
    * 解析合并后的 moduleVisibility（全局默认 ∩ 租户覆盖，交集收窄）

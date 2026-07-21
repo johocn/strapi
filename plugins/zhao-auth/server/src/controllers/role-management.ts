@@ -4,13 +4,17 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async findUsers(ctx: any) {
     try {
       const { page = 1, pageSize = 20, ...filters } = ctx.query;
+      const operatorId = ctx.state.user?.id;
+      const tenantDocumentId = ctx.state.siteDocumentId;
       const result = await strapi
         .plugin("zhao-auth")
         .service("role-management")
         .findUsers(
           filters,
           parseInt(page, 10),
-          parseInt(pageSize, 10)
+          parseInt(pageSize, 10),
+          operatorId,
+          tenantDocumentId
         );
       ctx.body = result;
     } catch (error: any) {
@@ -24,6 +28,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     try {
       const { userId, role, reason } = ctx.request.body;
       const operatorId = ctx.state.user?.id;
+      const operatorTenantDocumentId = ctx.state.siteDocumentId;
 
       if (!userId || !role) {
         ctx.status = 400; ctx.body = { error: "缺少必要参数: userId 和 role" }; return;
@@ -38,7 +43,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       const result = await strapi
         .plugin("zhao-auth")
         .service("role-management")
-        .assignRole(userId, role, operatorId, reason);
+        .assignRole(userId, role, operatorId, reason, operatorTenantDocumentId);
 
       ctx.body = result;
     } catch (error: any) {
@@ -52,6 +57,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     try {
       const { userId, role, reason } = ctx.request.body;
       const operatorId = ctx.state.user?.id;
+      const operatorTenantDocumentId = ctx.state.siteDocumentId;
 
       if (!userId || !role) {
         ctx.status = 400; ctx.body = { error: "缺少必要参数: userId 和 role" }; return;
@@ -66,7 +72,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       const result = await strapi
         .plugin("zhao-auth")
         .service("role-management")
-        .revokeRole(userId, role, operatorId, reason);
+        .revokeRole(userId, role, operatorId, reason, operatorTenantDocumentId);
 
       ctx.body = result;
     } catch (error: any) {
@@ -102,6 +108,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       const body = ctx.request.body?.data || ctx.request.body;
       const { userIds, role, reason } = body;
       const operatorId = ctx.state.user?.id;
+      const operatorTenantDocumentId = ctx.state.siteDocumentId;
 
       if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
         ctx.status = 400; ctx.body = { error: "缺少必要参数: userIds 必须是非空数组" }; return;
@@ -120,7 +127,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       const result = await strapi
         .plugin("zhao-auth")
         .service("role-management")
-        .batchAssignRoles(userIds, role, operatorId, reason);
+        .batchAssignRoles(userIds, role, operatorId, reason, operatorTenantDocumentId);
 
       ctx.body = result;
     } catch (error: any) {
@@ -187,6 +194,52 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       ctx.body = strapi.plugin("zhao-auth").service("role-management").computePermissions(roles);
     } catch (error: any) {
       strapi.log.error(`[zhao-auth] Get my permissions failed: ${error.message}`);
+      ctx.status = (error as any).status || 400;
+      ctx.body = { error: error.message, code: error.code };
+    }
+  },
+
+  async getUserDetail(ctx: any) {
+    try {
+      const userId = parseInt(ctx.params.id, 10);
+      if (isNaN(userId)) {
+        ctx.status = 400; ctx.body = { error: "无效的用户ID" }; return;
+      }
+      const operatorId = ctx.state.user?.id;
+      const tenantDocumentId = ctx.state.siteDocumentId;
+
+      const result = await strapi
+        .plugin("zhao-auth")
+        .service("role-management")
+        .getUserDetail(userId, operatorId, tenantDocumentId);
+
+      ctx.body = result;
+    } catch (error: any) {
+      strapi.log.error(`[zhao-auth] Get user detail failed: ${error.message}`);
+      ctx.status = (error as any).status || 400;
+      ctx.body = { error: error.message, code: error.code };
+    }
+  },
+
+  async getAssignableRoles(ctx: any) {
+    try {
+      const operatorId = ctx.state.user?.id;
+      const tenantDocumentId = ctx.state.siteDocumentId;
+
+      if (!operatorId) {
+        ctx.status = 401;
+        ctx.body = { error: "未认证" };
+        return;
+      }
+
+      const result = await strapi
+        .plugin("zhao-auth")
+        .service("role-management")
+        .getAssignableRoles(operatorId, tenantDocumentId);
+
+      ctx.body = result;
+    } catch (error: any) {
+      strapi.log.error(`[zhao-auth] Get assignable roles failed: ${error.message}`);
       ctx.status = (error as any).status || 400;
       ctx.body = { error: error.message, code: error.code };
     }

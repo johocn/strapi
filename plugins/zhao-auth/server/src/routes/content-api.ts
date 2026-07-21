@@ -68,6 +68,8 @@ export default () => ({
     adminRoute("POST", "/roles/revoke", "role-management.revokeRole", "role.revoke"),
     adminRoute("POST", "/roles/batch-assign", "role-management.batchAssignRoles", "role.assign"),
     adminRoute("GET", "/roles/logs", "role-management.getActionLogs", "role.read-logs"),
+    adminRoute("GET", "/users/:id/detail", "role-management.getUserDetail", "role.read"),
+    adminRoute("GET", "/roles/assignable", "role-management.getAssignableRoles", "role.read"),
 
     // 权限管理
     adminRoute("GET", "/permissions/tree", "permission.getTree", "role.read"),
