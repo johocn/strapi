@@ -95,11 +95,16 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
       const { user, roles, formattedRole } = result;
 
-      // 管理端登录：验证用户有管理角色
-      const adminRoles = ["admin", "super-admin", "manager"];
-      const hasAdminRole = roles.some((r: string) => adminRoles.includes(r));
-      if (!hasAdminRole) {
-        ctx.status = 403; ctx.body = { error: "无管理后台访问权限" }; return;
+      // 管理端登录：super-admin 直接放行（绕过权限系统），其他角色查 auth.admin-login 权限
+      const isSuperAdmin = roles.some((r: string) =>
+        r === "super-admin" || r === "super_admin" || r === "SUPER_ADMIN"
+      );
+      if (!isSuperAdmin) {
+        const permService = strapi.plugin("zhao-auth").service("permission");
+        const { permissions } = await permService.getMyPermissions(user.id);
+        if (!permissions.includes("auth.admin-login")) {
+          ctx.status = 403; ctx.body = { error: "无管理后台访问权限" }; return;
+        }
       }
 
       const jwtService = strapi.plugin("zhao-auth").service("jwt");
@@ -219,6 +224,76 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       return flag && flag.flagValue === true && flag.enabled !== false;
     } catch {
       return false;
+    }
+  },
+
+  async switchTenant(ctx: any) {
+    try {
+      const user = ctx.state?.user;
+      if (!user?.id) {
+        ctx.status = 401;
+        ctx.body = { error: "未登录" };
+        return;
+      }
+
+      const body = ctx.request.body?.data || ctx.request.body;
+      const { tenantId } = body;
+      if (!tenantId) {
+        ctx.status = 400;
+        ctx.body = { error: "请提供 tenantId" };
+        return;
+      }
+
+      // 使用 JWT 中的 roles（已由 is-authenticated policy 注入）
+      const roles: string[] = Array.isArray((user as any).roles)
+        ? (user as any).roles
+        : Array.isArray((user as any).zhaoRoles)
+          ? (user as any).zhaoRoles
+          : [];
+
+      // 验证用户有权访问该租户
+      const tenantService = strapi.plugin("zhao-auth").service("tenant");
+      const tenants = await tenantService.getMyTenants(user.id, roles);
+      const hasAccess = tenants.some(
+        (t: any) => t.documentId === tenantId || String(t.id) === String(tenantId)
+      );
+      if (!hasAccess) {
+        ctx.status = 403;
+        ctx.body = { error: "无权访问该租户" };
+        return;
+      }
+
+      // 签发新 JWT，携带 currentTenantId
+      const jwtService = strapi.plugin("zhao-auth").service("jwt");
+      const jwt = await jwtService.sign({
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        zhaoRoles: roles,
+        currentTenantId: tenantId,
+      });
+
+      // 失效该用户的权限缓存（切换租户后权限需重新计算）
+      try {
+        const { invalidatePermissionCache } = require("../services/permission.service");
+        invalidatePermissionCache(user.id);
+      } catch {
+        // permission.service 不可用时忽略
+      }
+
+      ctx.body = {
+        jwt,
+        user: {
+          id: user.id,
+          email: user.email,
+          username: user.username,
+          currentTenantId: tenantId,
+        },
+      };
+    } catch (error: any) {
+      strapi.log.error(`[zhao-auth] switchTenant failed: ${error.message}`);
+      ctx.status = 500;
+      ctx.body = { error: error.message };
     }
   },
 });

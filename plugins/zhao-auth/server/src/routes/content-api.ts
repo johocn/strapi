@@ -48,6 +48,8 @@ export default () => ({
     publicRoute("POST", "/register", "auth.register"),
     publicRoute("POST", "/reset-password", "auth.resetPassword"),
 
+    userRoute("POST", "/auth/switch-tenant", "auth.switchTenant"),
+
     userRoute("GET", "/my/roles", "role-management.getMyRoles"),
     userRoute("GET", "/my/permissions", "role-management.getMyPermissions"),
     userRoute("GET", "/my/permission-keys", "permission.getMyPermissions"),
