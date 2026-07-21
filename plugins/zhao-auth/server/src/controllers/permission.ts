@@ -230,7 +230,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       const result = await strapi
         .plugin("zhao-auth")
         .service("permission")
-        .getMyPermissions(userId);
+        .getMyPermissions(userId, ctx.state?.siteDocumentId);
       ctx.body = result;
     } catch (error: any) {
       ctx.status = error.status || 400;

@@ -15,7 +15,12 @@ const hasPermission = async (policyContext: any, config: any, { strapi }: { stra
     return false;
   }
 
-  const userRoles: string[] = Array.isArray(user.roles) ? user.roles : [];
+  // 统一使用 zhaoRoles 判定 admin（修复 roles vs zhaoRoles 不一致）
+  const userRoles: string[] = Array.isArray((user as any).zhaoRoles)
+    ? (user as any).zhaoRoles
+    : Array.isArray(user.roles)
+      ? user.roles
+      : [];
 
   if (userRoles.includes("admin")) {
     return true;
@@ -23,7 +28,9 @@ const hasPermission = async (policyContext: any, config: any, { strapi }: { stra
 
   try {
     const permissionService = strapi.plugin("zhao-auth").service("permission");
-    const result = await permissionService.getMyPermissions(user.id);
+    // 传入 tenantDocumentId（由 tenant-context-injector policy 或 site-resolver 设置）
+    const tenantDocumentId = policyContext.state?.siteDocumentId;
+    const result = await permissionService.getMyPermissions(user.id, tenantDocumentId);
 
     if (result.permissions.includes(action)) {
       return true;
