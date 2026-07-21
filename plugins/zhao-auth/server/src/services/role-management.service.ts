@@ -199,62 +199,26 @@ async function resolveTenantUserIds(
  * @param tenantDocumentId 当前租户 documentId
  * @returns 角色数组，每项含 { role, label, source, sourceDescription }
  */
-async function annotateUserRoles(user: any, tenantDocumentId?: string) {
+async function annotateUserRoles(user: any, _tenantDocumentId?: string) {
   const { ROLE_LABELS } = await import("../permissions");
   const directRoles = extractRoleNames(user);
   const isAdmin = directRoles.includes("admin");
 
-  // 计算自动授权的 manager 角色（非 admin 才有）
-  let autoRoles = new Set<string>();
-  if (!isAdmin) {
-    try {
-      const moduleVisibility = await strapi
-        .plugin("zhao-auth")
-        .service("permission")
-        .resolveModuleVisibility(tenantDocumentId);
-      const { MODULE_MANAGER_MAP } = await import("../permissions");
-      for (const [moduleKey, roles] of Object.entries(moduleVisibility)) {
-        if (roles.includes("channel-admin")) {
-          const managerRole = (MODULE_MANAGER_MAP as any)[moduleKey];
-          if (managerRole) autoRoles.add(managerRole);
-        }
-      }
-    } catch {
-      // 忽略
-    }
-  }
+  // 核心角色判定
+  const CORE_ROLES = ["channel-admin", "instructor", "user", "plugin-manager", "admin"];
 
-  // 合并：zhaoRoles ∪ autoRoles（补充 auto 角色，即使 zhaoRoles 没有）
-  const mergedRoles = new Set<string>(directRoles);
-  for (const r of autoRoles) mergedRoles.add(r);
-
-  // 标注来源：explicit 优先于 auto
-  return Array.from(mergedRoles).map((role: string) => {
-    let source: "core" | "auto" | "explicit" = "explicit";
+  // 只返回用户实际拥有的角色（zhaoRoles 中的角色）
+  // 不再合并 moduleVisibility 自动授权角色（那些角色不在 zhaoRoles 中，撤销会失败）
+  return directRoles.map((role: string) => {
+    let source: "core" | "explicit" = "explicit";
     let sourceDescription = "显式分配";
 
     if (isAdmin) {
-      // 卡点 4：admin 所有角色标注 explicit
       source = "explicit";
       sourceDescription = "admin 显式分配";
-    } else if (directRoles.includes(role) && autoRoles.has(role)) {
-      // 重叠：explicit 优先
-      source = "explicit";
-      sourceDescription = "显式分配（同时为 moduleVisibility 自动授权角色）";
-    } else if (autoRoles.has(role)) {
-      source = "auto";
-      sourceDescription = "moduleVisibility 自动授权";
-    } else {
-      // 在 zhaoRoles 中但非 auto：核心角色或显式分配
-      // 核心角色判定：channel-admin / instructor / user / plugin-manager
-      const CORE_ROLES = ["channel-admin", "instructor", "user", "plugin-manager", "admin"];
-      if (CORE_ROLES.includes(role)) {
-        source = "core";
-        sourceDescription = "核心角色";
-      } else {
-        source = "explicit";
-        sourceDescription = "admin 显式分配";
-      }
+    } else if (CORE_ROLES.includes(role)) {
+      source = "core";
+      sourceDescription = "核心角色";
     }
 
     return {
