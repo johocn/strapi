@@ -5,10 +5,32 @@ import {
   DEFAULT_ROLE_PERMISSIONS,
   ROLES,
   ROLE_LABELS,
+  MODULE_MANAGER_MAP,
 } from "../permissions";
+import { VISIBILITY_MODULES, DEFAULT_MODULE_VISIBILITY } from "../constants/module-visibility";
 
 const PERMISSION_UID = "plugin::zhao-auth.permission";
 const USER_UID = "plugin::users-permissions.user";
+
+// getMyPermissions 缓存（卡点 E 修复）
+const PERMISSION_CACHE_TTL = 60000; // 60 秒
+const permissionCache = new Map<string, { data: string[]; timestamp: number }>();
+
+export function invalidatePermissionCache(userId?: number, tenantDocumentId?: string) {
+  if (userId && tenantDocumentId) {
+    permissionCache.delete(`${userId}|${tenantDocumentId}`);
+  } else if (userId) {
+    for (const key of [...permissionCache.keys()]) {
+      if (key.startsWith(`${userId}|`)) permissionCache.delete(key);
+    }
+  } else if (tenantDocumentId) {
+    for (const key of [...permissionCache.keys()]) {
+      if (key.endsWith(`|${tenantDocumentId}`)) permissionCache.delete(key);
+    }
+  } else {
+    permissionCache.clear();
+  }
+}
 
 function normalizeRoleName(name: string): string {
   return String(name || "").trim().toLowerCase().replace(/\s+/g, "-");
@@ -315,7 +337,14 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   /**
    * 获取当前用户的所有权限
    */
-  async getMyPermissions(userId: number) {
+  async getMyPermissions(userId: number, tenantDocumentId?: string) {
+    // 缓存检查
+    const cacheKey = `${userId}|${tenantDocumentId || "global"}`;
+    const cached = permissionCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < PERMISSION_CACHE_TTL) {
+      return { permissions: cached.data };
+    }
+
     const user = await strapi.db.query(USER_UID).findOne({
       where: { id: userId },
       select: ["id", "zhaoRoles"],
@@ -346,7 +375,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
     // admin 角色全权限
     if (userRoles.includes("admin")) {
-      return { permissions: flattenPermissions(PERMISSION_TREE) };
+      const allPerms = flattenPermissions(PERMISSION_TREE);
+      permissionCache.set(cacheKey, { data: allPerms, timestamp: Date.now() });
+      return { permissions: allPerms };
     }
 
     // 根据每个角色在 zhao-auth.permission 表中查找权限 key
@@ -371,7 +402,79 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       }
     }
 
-    return { permissions: Array.from(allExpanded) };
+    // channel-admin 专属：动态叠加 moduleVisibility 开启模块的 manager 权限
+    // 在现有 for 循环之后执行（admin 显式授予的角色权限已在 allExpanded 中，不受 moduleVisibility 约束）
+    if (userRoles.includes(ROLES.CHANNEL_ADMIN)) {
+      const moduleVisibility = await this.resolveModuleVisibility(tenantDocumentId);
+      for (const [moduleKey, roles] of Object.entries(moduleVisibility)) {
+        if (roles.includes(ROLES.CHANNEL_ADMIN)) {
+          const managerRole = MODULE_MANAGER_MAP[moduleKey];
+          if (managerRole) {
+            try {
+              const record = await strapi.db.query(PERMISSION_UID).findOne({
+                where: { role: managerRole },
+              });
+              const managerPerms =
+                (record?.permissions as string[]) ||
+                DEFAULT_ROLE_PERMISSIONS[managerRole] ||
+                [];
+              expandPermissionKeys(managerPerms).forEach((k: string) => allExpanded.add(k));
+            } catch {
+              const defaults = DEFAULT_ROLE_PERMISSIONS[managerRole] || [];
+              expandPermissionKeys(defaults).forEach((k: string) => allExpanded.add(k));
+            }
+          }
+        }
+      }
+    }
+
+    const result = Array.from(allExpanded);
+    permissionCache.set(cacheKey, { data: result, timestamp: Date.now() });
+    return { permissions: result };
+  }
+
+  /**
+   * 解析合并后的 moduleVisibility（全局默认 ∩ 租户覆盖，交集收窄）
+   */
+  async resolveModuleVisibility(tenantDocumentId?: string): Promise<Record<string, string[]>> {
+    // 1. 全局默认（admin 配置）
+    let globalVisibility: Record<string, string[]> = {};
+    try {
+      const globalConfig = await strapi
+        .plugin("zhao-common")
+        .service("global-config")
+        .getGlobalConfig();
+      globalVisibility = (globalConfig as any)?.moduleVisibility ?? {};
+    } catch {
+      // global-config 服务不可用时 fallback 到 DEFAULT_MODULE_VISIBILITY
+    }
+
+    // 2. 租户覆盖（channel-admin 配置，如有）
+    let tenantVisibility: Record<string, string[]> = {};
+    if (tenantDocumentId) {
+      try {
+        const siteConfig = await strapi
+          .plugin("zhao-common")
+          .service("site-config")
+          .getConfig(tenantDocumentId);
+        tenantVisibility = (siteConfig as any)?.moduleVisibility ?? {};
+      } catch {
+        // site-config 服务不可用时用空对象
+      }
+    }
+
+    // 3. 交集收窄合并：channel-admin 只能从全局已授权角色中移除，不能新增
+    const merged: Record<string, string[]> = {};
+    for (const moduleKey of VISIBILITY_MODULES) {
+      const globalRoles = globalVisibility[moduleKey] ?? DEFAULT_MODULE_VISIBILITY[moduleKey] ?? [];
+      const tenantRoles = tenantVisibility[moduleKey];
+      // 租户未配置此模块 → 用全局
+      // 租户配置了此模块 → 取交集（收窄）
+      merged[moduleKey] = tenantRoles
+        ? globalRoles.filter((r: string) => tenantRoles.includes(r))
+        : globalRoles;
+    }
+    return merged;
   },
 
   /**
