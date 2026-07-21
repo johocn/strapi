@@ -507,7 +507,17 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
       result.moduleEnabled = moduleEnabled;
       result.moduleGrantedForCurrentTenant = moduleGrantedForCurrentTenant;
-      result.moduleVisibility = fullConfig?.moduleVisibility ?? {};
+      // 返回合并后的 moduleVisibility（全局 ∩ 租户，交集收窄）
+      try {
+        const permissionService = strapi.plugin("zhao-auth")?.service("permission");
+        if (permissionService && typeof (permissionService as any).resolveModuleVisibility === "function") {
+          result.moduleVisibility = await (permissionService as any).resolveModuleVisibility(siteId);
+        } else {
+          result.moduleVisibility = fullConfig?.moduleVisibility ?? {};
+        }
+      } catch {
+        result.moduleVisibility = fullConfig?.moduleVisibility ?? {};
+      }
     } catch (error) {
       strapi.log.warn("[config] getPublicConfig failed:", (error as Error).message);
     }
