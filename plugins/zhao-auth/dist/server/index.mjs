@@ -14047,13 +14047,21 @@ var middlewares_default = {};
 var role_management_default = ({ strapi: strapi2 }) => ({
   async findUsers(ctx) {
     try {
-      const { page = 1, pageSize = 20, ...filters } = ctx.query;
+      const {
+        page = 1,
+        pageSize = 20,
+        "pagination[page]": paginationPage,
+        "pagination[pageSize]": paginationPageSize,
+        ...filters
+      } = ctx.query;
+      const actualPage = parseInt(paginationPage || page, 10);
+      const actualPageSize = parseInt(paginationPageSize || pageSize, 10);
       const operatorId = ctx.state.user?.id;
       const tenantDocumentId = ctx.state.siteDocumentId;
       const result = await strapi2.plugin("zhao-auth").service("role-management").findUsers(
         filters,
-        parseInt(page, 10),
-        parseInt(pageSize, 10),
+        actualPage,
+        actualPageSize,
         operatorId,
         tenantDocumentId
       );
@@ -14157,12 +14165,21 @@ var role_management_default = ({ strapi: strapi2 }) => ({
   },
   async getActionLogs(ctx) {
     try {
-      const { userId, operatorId, page = 1, pageSize = 20 } = ctx.query;
+      const {
+        userId,
+        operatorId,
+        page = 1,
+        pageSize = 20,
+        "pagination[page]": paginationPage,
+        "pagination[pageSize]": paginationPageSize
+      } = ctx.query;
+      const actualPage = parseInt(paginationPage || page, 10);
+      const actualPageSize = parseInt(paginationPageSize || pageSize, 10);
       const result = await strapi2.plugin("zhao-auth").service("role-management").getActionLogs(
         userId ? parseInt(userId, 10) : void 0,
         operatorId ? parseInt(operatorId, 10) : void 0,
-        parseInt(page, 10),
-        parseInt(pageSize, 10)
+        actualPage,
+        actualPageSize
       );
       ctx.body = result;
     } catch (error) {
@@ -15390,7 +15407,7 @@ var content_api_default = () => ({
     adminRoute("POST", "/roles/batch-assign", "role-management.batchAssignRoles", "role.assign"),
     adminRoute("GET", "/roles/logs", "role-management.getActionLogs", "role.read-logs"),
     adminRoute("GET", "/users/:id/detail", "role-management.getUserDetail", "role.read"),
-    adminRoute("GET", "/roles/assignable", "role-management.getAssignableRoles", "role.read"),
+    adminRoute("GET", "/assignable-roles", "role-management.getAssignableRoles", "role.read"),
     // 权限管理
     adminRoute("GET", "/permissions/tree", "permission.getTree", "role.read"),
     adminRoute("GET", "/permissions/role/:role", "permission.getRolePermissions", "role.read"),

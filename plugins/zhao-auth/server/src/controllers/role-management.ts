@@ -3,7 +3,15 @@ import type { Core } from "@strapi/strapi";
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async findUsers(ctx: any) {
     try {
-      const { page = 1, pageSize = 20, ...filters } = ctx.query;
+      const {
+        page = 1,
+        pageSize = 20,
+        'pagination[page]': paginationPage,
+        'pagination[pageSize]': paginationPageSize,
+        ...filters
+      } = ctx.query;
+      const actualPage = parseInt(paginationPage || page, 10);
+      const actualPageSize = parseInt(paginationPageSize || pageSize, 10);
       const operatorId = ctx.state.user?.id;
       const tenantDocumentId = ctx.state.siteDocumentId;
       const result = await strapi
@@ -11,8 +19,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         .service("role-management")
         .findUsers(
           filters,
-          parseInt(page, 10),
-          parseInt(pageSize, 10),
+          actualPage,
+          actualPageSize,
           operatorId,
           tenantDocumentId
         );
@@ -139,7 +147,16 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
   async getActionLogs(ctx: any) {
     try {
-      const { userId, operatorId, page = 1, pageSize = 20 } = ctx.query;
+      const {
+        userId,
+        operatorId,
+        page = 1,
+        pageSize = 20,
+        'pagination[page]': paginationPage,
+        'pagination[pageSize]': paginationPageSize,
+      } = ctx.query;
+      const actualPage = parseInt(paginationPage || page, 10);
+      const actualPageSize = parseInt(paginationPageSize || pageSize, 10);
 
       const result = await strapi
         .plugin("zhao-auth")
@@ -147,8 +164,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         .getActionLogs(
           userId ? parseInt(userId, 10) : undefined,
           operatorId ? parseInt(operatorId, 10) : undefined,
-          parseInt(page, 10),
-          parseInt(pageSize, 10)
+          actualPage,
+          actualPageSize
         );
 
       ctx.body = result;
