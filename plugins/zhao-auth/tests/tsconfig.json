@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "ES2020",
     "module": "commonjs",
-    "lib": ["ES2020"],
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -10,8 +10,15 @@
     "sourceMap": true,
     "declaration": false,
     "moduleResolution": "node",
-    "types": ["jest", "node"]
+    "jsx": "react-jsx",
+    "types": ["jest", "node", "@testing-library/jest-dom"]
   },
-  "include": ["./**/*.ts", "../server/src/**/*.ts"],
+  "include": [
+    "./**/*.ts",
+    "./**/*.tsx",
+    "../server/src/**/*.ts",
+    "../admin/src/**/*.ts",
+    "../admin/src/**/*.tsx"
+  ],
   "exclude": ["node_modules", "dist"]
 }

@@ -4,16 +4,16 @@ const config: Config = {
   preset: "ts-jest",
   testEnvironment: "node",
   rootDir: "..",
-  testMatch: ["<rootDir>/tests/**/*.test.ts"],
+  testMatch: ["<rootDir>/tests/**/*.test.ts", "<rootDir>/tests/**/*.test.tsx"],
   transform: {
-    "^.+\\.ts$": [
+    "^.+\\.tsx?$": [
       "ts-jest",
       {
         tsconfig: "<rootDir>/tests/tsconfig.json",
       },
     ],
   },
-  moduleFileExtensions: ["ts", "js", "json"],
+  moduleFileExtensions: ["ts", "tsx", "js", "json", "node"],
   testTimeout: 10000,
   verbose: true,
   forceExit: true,
