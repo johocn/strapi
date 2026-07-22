@@ -8,6 +8,9 @@ const config = {
   },
   clearMocks: true,
   collectCoverageFrom: ["server/src/**/*.ts", "!server/src/index.ts"],
+  transform: {
+    "^.+\\.tsx?$": ["ts-jest", { isolatedModules: true }],
+  },
 };
 
 module.exports = config;

@@ -42,7 +42,12 @@
     "isHot": { "type": "boolean", "default": false },
     "isNew": { "type": "boolean", "default": false },
     "sortOrder": { "type": "integer", "default": 0 },
-    "promoChannelIds": { "type": "string" },
+    "promoChannels": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "plugin::zhao-studio.promo-channel",
+      "inversedBy": "coupons"
+    },
     "collection": {
       "type": "relation",
       "relation": "manyToOne",
