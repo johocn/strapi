@@ -8,17 +8,19 @@ const buildMockStrapi = (overrides: any = {}) => {
     platform: { code: "taobao" },
   }]);
   const clickCreate = jest.fn().mockResolvedValue({ documentId: "click1" });
+  const channelConfigFindMany = jest.fn().mockResolvedValue([{ documentId: "cfg1", promoPid: "promo_001" }]);
   const mockStrapi = createMockStrapi();
   mockStrapi.documents.mockImplementation((uid: string) => {
     if (uid === "plugin::zhao-deal.coupon") return { findMany: couponFindMany };
     if (uid === "plugin::zhao-track.click-event") return { create: clickCreate };
+    if (uid === "plugin::zhao-studio.channel-platform-config") return { findMany: channelConfigFindMany };
     return { findMany: jest.fn().mockResolvedValue([]), create: jest.fn(), update: jest.fn(), findOne: jest.fn() };
   });
   mockStrapi.plugin.mockImplementation((name: string) => {
     if (name === "zhao-track") return {
       service: (svc: string) => {
         if (svc === "rate-limiter") return { checkAndRecord: jest.fn().mockResolvedValue({ allowed: true }) };
-        if (svc === "source-resolver") return { identify: jest.fn().mockResolvedValue({ tag: { documentId: "t1", tagId: "t1", promoChannelId: "promo_001" } }) };
+        if (svc === "source-resolver") return { identify: jest.fn().mockResolvedValue({ tag: { documentId: "t1", tagId: "t1", promoCampaign: { documentId: "camp1", channel: { documentId: "ch1" } } } }) };
         return null;
       },
     };
@@ -90,7 +92,7 @@ describe("ClickOrchestrator", () => {
       if (name === "zhao-track") return {
         service: (svc: string) => {
           if (svc === "rate-limiter") return { checkAndRecord: jest.fn().mockResolvedValue({ allowed: true }) };
-          if (svc === "source-resolver") return { identify: jest.fn().mockResolvedValue({ tag: { documentId: "t1", tagId: "t1", promoChannelId: "" } }) };
+          if (svc === "source-resolver") return { identify: jest.fn().mockResolvedValue({ tag: { documentId: "t1", tagId: "t1", promoCampaign: null } }) };
           return null;
         },
       };

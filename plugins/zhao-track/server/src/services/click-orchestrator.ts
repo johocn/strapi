@@ -3,6 +3,7 @@ import UAParser from "ua-parser-js";
 
 const COUPON_UID = "plugin::zhao-deal.coupon";
 const CLICK_EVENT_UID = "plugin::zhao-track.click-event";
+const CHANNEL_CONFIG_UID = "plugin::zhao-studio.channel-platform-config";
 
 export interface ClickRequest {
   couponId: string;
@@ -59,9 +60,39 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         referer: req.referer,
       });
 
+      // 步骤 4.5: A/B 变体选择
+      let abVariant: any = null;
+      try {
+        const abTest = strapi.plugin("zhao-studio")?.service("ab-test");
+        if (abTest) {
+          abVariant = await abTest.pickVariant({
+            campaignId: tag.promoCampaign?.documentId,
+            channelId: tag.promoCampaign?.channel?.documentId,
+          });
+        }
+      } catch (err: any) {
+        strapi.log.warn(`[click] ab-test pickVariant failed: ${err.message}`);
+      }
+
+      // 步骤 5a: 从 ChannelPlatformConfig 获取 promoPid（替代原 tag.promoChannelId）
+      let promoPid = "";
+      const channelId = tag.promoCampaign?.channel?.documentId;
+      if (channelId && coupon.platform?.code) {
+        try {
+          const configs = await strapi.documents(CHANNEL_CONFIG_UID).findMany({
+            filters: { channel: channelId, platform: { type: coupon.platform.code } },
+            limit: 1,
+          });
+          if (configs && configs.length > 0) {
+            promoPid = configs[0].promoPid || "";
+          }
+        } catch (err: any) {
+          strapi.log.warn(`[click] ChannelPlatformConfig lookup failed: ${err.message}`);
+        }
+      }
+
       // 5. 调 zhao-deal adapter 置换链接（三层 try-catch 容错）
       let resolvedLink = coupon.promoLink;
-      let promoPid = "";
       try {
         const dealPlugin = strapi.plugin("zhao-deal");
         if (!dealPlugin) {
@@ -74,11 +105,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
             const adapter = registry.get(coupon.platform?.code);
             const result = await adapter.transformLink({
               promoLink: coupon.promoLink,
-              promoChannelId: tag.promoChannelId || "",
+              promoChannelId: promoPid,
               sourceTagId: tag.tagId,
             });
             resolvedLink = result.resolvedLink;
-            promoPid = result.promoPid;
           }
         }
       } catch (err: any) {
@@ -101,8 +131,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         data: {
           coupon: coupon.documentId,
           sourceTag: tag.documentId,
-          promoChannelId: tag.promoChannelId,
+          promoCampaign: tag.promoCampaign?.documentId || null,
           promoPid,
+          abVariant: abVariant?.documentId || null,
           deviceFingerprint: req.deviceFingerprint,
           clickedAt: new Date(),
           ip: req.ip,
@@ -110,7 +141,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
           browser, os, device,
           referer: req.referer,
           resolvedLink,
-        },
+        } as any,
       });
 
       return {
