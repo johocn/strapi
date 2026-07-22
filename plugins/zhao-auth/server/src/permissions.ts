@@ -673,6 +673,7 @@ export const PERMISSION_TREE: Record<string, PermissionItem> = {
           "studio.stat-summary.export": { label: "导出统计", type: "button" },
           "studio.browser-log.read": { label: "查看浏览日志", type: "button" },
           "studio.browser-log.export": { label: "导出浏览日志", type: "button" },
+          "zhao-studio.stat-summary.view": { label: "查看统计摘要", type: "button" },
         },
       },
       "menu.studio-ad": {
@@ -692,6 +693,37 @@ export const PERMISSION_TREE: Record<string, PermissionItem> = {
           "sync-event.read": { label: "查看同步事件", type: "button" },
           "sync-event.update": { label: "处理同步事件", type: "button" },
           "sync-event.manage": { label: "同步事件管理", type: "button" },
+        },
+      },
+      "promo-channel": {
+        label: "推广渠道",
+        type: "menu",
+        children: {
+          "zhao-studio.promo-channel.manage": { label: "管理", type: "button" },
+          "zhao-studio.promo-channel.archive": { label: "归档", type: "button" },
+        },
+      },
+      "promo-campaign": {
+        label: "营销活动",
+        type: "menu",
+        children: {
+          "zhao-studio.promo-campaign.manage": { label: "管理", type: "button" },
+        },
+      },
+      "ab-experiment": {
+        label: "AB实验",
+        type: "menu",
+        children: {
+          "zhao-studio.ab-experiment.manage": { label: "管理", type: "button" },
+          "zhao-studio.ab-experiment.start": { label: "启动", type: "button" },
+          "zhao-studio.ab-experiment.stop": { label: "停止", type: "button" },
+        },
+      },
+      "channel-report": {
+        label: "渠道报表",
+        type: "menu",
+        children: {
+          "zhao-studio.channel-report.view": { label: "查看", type: "button" },
         },
       },
     },
@@ -1091,6 +1123,155 @@ export const PERMISSION_TREE: Record<string, PermissionItem> = {
       },
     },
   },
+  // ===== 新增：三插件权限子树 =====
+  "zhao-deal": {
+    label: "优惠券分销",
+    type: "menu",
+    children: {
+      "platform": {
+        label: "平台管理",
+        type: "menu",
+        children: {
+          "zhao-deal.platform.manage": { label: "管理", type: "button" },
+        },
+      },
+      "category": {
+        label: "分类管理",
+        type: "menu",
+        children: {
+          "zhao-deal.category.manage": { label: "管理", type: "button" },
+        },
+      },
+      "coupon": {
+        label: "优惠券",
+        type: "menu",
+        children: {
+          "zhao-deal.coupon.manage": { label: "管理", type: "button" },
+          "zhao-deal.coupon.view": { label: "查看", type: "button" },
+          "zhao-deal.coupon.approve": { label: "审批", type: "button" },
+        },
+      },
+      "coupon-collection": {
+        label: "券集合",
+        type: "menu",
+        children: {
+          "zhao-deal.coupon-collection.manage": { label: "管理", type: "button" },
+          "zhao-deal.coupon-collection.publish": { label: "发布", type: "button" },
+        },
+      },
+      "coupon-candidate": {
+        label: "候选券",
+        type: "menu",
+        children: {
+          "zhao-deal.coupon-candidate.manage": { label: "管理", type: "button" },
+          "zhao-deal.coupon-candidate.view": { label: "查看", type: "button" },
+          "zhao-deal.coupon-candidate.approve": { label: "审批", type: "button" },
+        },
+      },
+      "product": {
+        label: "商品",
+        type: "menu",
+        children: {
+          "zhao-deal.product.manage": { label: "管理", type: "button" },
+          "zhao-deal.product.view": { label: "查看", type: "button" },
+        },
+      },
+      "product-candidate": {
+        label: "候选商品",
+        type: "menu",
+        children: {
+          "zhao-deal.product-candidate.manage": { label: "管理", type: "button" },
+          "zhao-deal.product-candidate.view": { label: "查看", type: "button" },
+          "zhao-deal.product-candidate.approve": { label: "审批", type: "button" },
+        },
+      },
+      "sync": {
+        label: "同步",
+        type: "menu",
+        children: {
+          "zhao-deal.sync.trigger": { label: "触发", type: "button" },
+        },
+      },
+    },
+  },
+  "zhao-track": {
+    label: "追踪",
+    type: "menu",
+    children: {
+      "source-tag": {
+        label: "来源标签",
+        type: "menu",
+        children: {
+          "zhao-track.source-tag.manage": { label: "管理", type: "button" },
+        },
+      },
+      "click-event": {
+        label: "点击事件",
+        type: "menu",
+        children: {
+          "zhao-track.click-event.manage": { label: "管理", type: "button" },
+          "zhao-track.click-event.view": { label: "查看", type: "button" },
+        },
+      },
+      "order": {
+        label: "订单",
+        type: "menu",
+        children: {
+          "zhao-track.order.manage": { label: "管理", type: "button" },
+          "zhao-track.order.view": { label: "查看", type: "button" },
+        },
+      },
+      "sync": {
+        label: "同步",
+        type: "menu",
+        children: {
+          "zhao-track.sync.schedule": { label: "调度", type: "button" },
+        },
+      },
+    },
+  },
+  "zhao-auth": {
+    label: "认证授权",
+    type: "menu",
+    children: {
+      "user": {
+        label: "用户",
+        type: "menu",
+        children: {
+          "zhao-auth.user.manage": { label: "管理", type: "button" },
+        },
+      },
+      "role": {
+        label: "角色",
+        type: "menu",
+        children: {
+          "zhao-auth.role.assign": { label: "分配", type: "button" },
+          "zhao-auth.role.batch-assign": { label: "批量分配", type: "button" },
+        },
+      },
+      "permission": {
+        label: "权限",
+        type: "menu",
+        children: {
+          "matrix": {
+            label: "矩阵",
+            type: "menu",
+            children: {
+              "zhao-auth.permission.matrix.edit": { label: "编辑", type: "button" },
+            },
+          },
+          "zhao-auth.permission.check": { label: "检查", type: "button" },
+        },
+      },
+      "audit-log": {
+        label: "审计日志",
+        type: "menu",
+        children: {
+          "zhao-auth.audit-log.view": { label: "查看", type: "button" },
+        },
+      },
+    },
+  },
 };
 
 // ===== 工具函数 =====
@@ -1237,6 +1418,13 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
     "template.read",
     "third-party-config.read",
 
+    // (14) 新增：工作室推广 + 审计日志（channel-admin 可管理推广渠道/活动/AB实验/渠道报表 + 查看审计日志）
+    "zhao-studio.promo-channel.manage",
+    "zhao-studio.promo-campaign.manage",
+    "zhao-studio.ab-experiment.manage",
+    "zhao-studio.channel-report.view",
+    "zhao-auth.audit-log.view",
+
     // ===== 显式排除（不再包含）=====
     // - flattenPermissions(PERMISSION_TREE)：不再自动获得全部中心权限
     // - tenant.delete：跨租户删除，不应下放
@@ -1338,6 +1526,11 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
     // 零散补全
     "oss.media-meta.read",
     "auth.admin-login",
+    // 新增：deal/track 只读权限
+    "zhao-deal.coupon.view",
+    "zhao-deal.product.view",
+    "zhao-track.click-event.view",
+    "zhao-track.order.view",
   ]),
   [ROLES.INSTRUCTOR]: [
     // 课程中心
@@ -1419,6 +1612,15 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
     "point.rule-template.read", "point.sign-in-record.read",
     "quiz.quiz-batch.read", "tag.tag-index.read",
     "auth.admin-login",  // 允许讲师登录后台
+    // 新增：deal/track 只读权限 + studio 推广只读
+    "zhao-deal.coupon.view",
+    "zhao-deal.product.view",
+    "zhao-deal.coupon-candidate.view",
+    "zhao-deal.product-candidate.view",
+    "zhao-track.click-event.view",
+    "zhao-track.order.view",
+    "zhao-studio.channel-report.view",
+    "zhao-studio.stat-summary.view",
   ],
   [ROLES.USER]: [],
   // ===== 11 个中心 × 2 = 22 个新角色 =====
@@ -1446,3 +1648,12 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
   [ROLES.WEALTH_MANAGER]: centerPermissions("menu.wealth-center").concat(["auth.admin-login"]),
   [ROLES.WEALTH_EDITOR]: centerEditorPermissions("menu.wealth-center").concat(["auth.admin-login"]),
 };
+
+// 标记默认角色权限的版本（非可枚举，避免污染 Object.entries 迭代）
+// 用于 initDefaultRoles 判断是否需要重新同步权限（Task 3 seedVersion 逻辑）
+Object.defineProperty(DEFAULT_ROLE_PERMISSIONS, "__version", {
+  value: "2026-07-22",
+  enumerable: false,
+  writable: false,
+  configurable: false,
+});
