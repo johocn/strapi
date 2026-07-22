@@ -2,6 +2,8 @@
 // 内部轻量版 PermissionsProvider：直接调用 zhao-auth 后端 /api/zhao-auth/v1/admin/me
 // 跨插件 admin 代码无法直接 import（zhao-auth package.json 未导出 ./admin 路径），
 // 因此在 zhao-studio 内部复制一份 Provider/Hook，复用同一后端 API。
+// 同步测试：tests/admin/permissions-parity.test.tsx
+// 修改 zhao-auth 权限组件时，请同步更新本文件和同步测试
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
 const API_BASE = '/api/zhao-auth/v1/admin';
