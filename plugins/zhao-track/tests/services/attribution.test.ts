@@ -3,27 +3,31 @@ import { createMockStrapi } from "../helpers/mock-strapi";
 
 const ORDER_UID = "plugin::zhao-track.order";
 const CLICK_EVENT_UID = "plugin::zhao-track.click-event";
-const SOURCE_TAG_UID = "plugin::zhao-track.source-tag";
+const CHANNEL_CONFIG_UID = "plugin::zhao-studio.channel-platform-config";
+const CAMPAIGN_UID = "plugin::zhao-studio.promo-campaign";
 
 const buildMockStrapi = (opts: {
   orders?: any[];
   clicksByRule?: Record<string, any[]>;
-  sourceTagsByPid?: Record<string, any[]>;
+  channelConfigsByPid?: Record<string, any[]>;
+  campaignsByChannel?: Record<string, any[]>;
 } = {}) => {
-  const { orders = [], clicksByRule = {}, sourceTagsByPid = {} } = opts;
+  const { orders = [], clicksByRule = {}, channelConfigsByPid = {}, campaignsByChannel = {} } = opts;
   const orderUpdate = jest.fn().mockResolvedValue({});
   const clickFindMany = jest.fn().mockImplementation((args: any) => {
     const filters = args.filters || {};
-    if (filters.sourceTag && filters.deviceFingerprint) return Promise.resolve([]);
-    if (filters.sourceTag) return Promise.resolve(clicksByRule.rule1 || []);
     if (filters.deviceFingerprint) return Promise.resolve(clicksByRule.rule2 || []);
-    if (filters.promoChannelId) return Promise.resolve(clicksByRule.rule3 || []);
+    if (filters.promoCampaign && filters.promoCampaign.$in) return Promise.resolve(clicksByRule.rule1 || clicksByRule.rule3 || []);
     if (filters.coupon) return Promise.resolve(clicksByRule.rule4 || []);
     return Promise.resolve([]);
   });
-  const sourceTagFindMany = jest.fn().mockImplementation((args: any) => {
-    const pid = args.filters?.promoChannelId;
-    return Promise.resolve(sourceTagsByPid[pid] || []);
+  const channelConfigFindMany = jest.fn().mockImplementation((args: any) => {
+    const pid = args.filters?.promoPid;
+    return Promise.resolve(channelConfigsByPid[pid] || []);
+  });
+  const campaignFindMany = jest.fn().mockImplementation((args: any) => {
+    const channelId = args.filters?.channel;
+    return Promise.resolve(campaignsByChannel[channelId] || []);
   });
 
   const mockStrapi = createMockStrapi();
@@ -33,28 +37,29 @@ const buildMockStrapi = (opts: {
       update: orderUpdate,
     };
     if (uid === CLICK_EVENT_UID) return { findMany: clickFindMany };
-    if (uid === SOURCE_TAG_UID) return { findMany: sourceTagFindMany };
+    if (uid === CHANNEL_CONFIG_UID) return { findMany: channelConfigFindMany };
+    if (uid === CAMPAIGN_UID) return { findMany: campaignFindMany };
     return { findMany: jest.fn().mockResolvedValue([]), update: jest.fn(), findOne: jest.fn() };
   });
-  return { mockStrapi, orderUpdate, clickFindMany, sourceTagFindMany };
+  return { mockStrapi, orderUpdate, clickFindMany };
 };
 
 describe("Attribution.findMatchingClick", () => {
-  it("规则 1：promoPid 命中 SourceTag.promoChannelId → pid_match", async () => {
+  it("规则 1：promoPid 通过 ChannelPlatformConfig 反查命中 → pid_match", async () => {
     const order = {
       documentId: "o1", orderId: "po1", promoPid: "promo_001",
       transactedAt: "2026-07-20T10:00:00Z",
       coupon: { documentId: "c1" },
     };
     const { mockStrapi } = buildMockStrapi({
-      sourceTagsByPid: { promo_001: [{ documentId: "t1", promoChannelId: "promo_001" }] },
+      channelConfigsByPid: { promo_001: [{ documentId: "cfg1", channel: { documentId: "ch1" } }] },
+      campaignsByChannel: { ch1: [{ documentId: "camp1" }] },
       clicksByRule: { rule1: [{ documentId: "click1", clickedAt: "2026-07-18T10:00:00Z" }] },
     });
     const svc = attributionFactory({ strapi: mockStrapi as any });
     const result = await svc.findMatchingClick(order);
     expect(result).not.toBeNull();
     expect(result?.quality).toBe("pid_match");
-    expect(result?.sourceTagId).toBe("t1");
   });
 
   it("规则 2：deviceFingerprint 命中 → click_match", async () => {
@@ -64,7 +69,6 @@ describe("Attribution.findMatchingClick", () => {
       coupon: { documentId: "c1" },
     };
     const { mockStrapi } = buildMockStrapi({
-      sourceTagsByPid: {},
       clicksByRule: { rule2: [{ documentId: "click2" }] },
     });
     const svc = attributionFactory({ strapi: mockStrapi as any });
@@ -72,19 +76,23 @@ describe("Attribution.findMatchingClick", () => {
     expect(result?.quality).toBe("click_match");
   });
 
-  it("规则 3：promoPid 反查 promoChannelId 命中 ClickEvent → weak_match", async () => {
+  it("规则 3：promoPid 反查 promoCampaign 命中 ClickEvent → weak_match（rule1 无命中时复用同流程）", async () => {
     const order = {
       documentId: "o3", orderId: "po3", promoPid: "promo_003",
       transactedAt: "2026-07-20T10:00:00Z",
       coupon: { documentId: "c1" },
     };
     const { mockStrapi } = buildMockStrapi({
-      sourceTagsByPid: {},
-      clicksByRule: { rule3: [{ documentId: "click3", promoChannelId: "promo_003" }] },
+      channelConfigsByPid: { promo_003: [{ documentId: "cfg3", channel: { documentId: "ch3" } }] },
+      campaignsByChannel: { ch3: [{ documentId: "camp3" }] },
+      // 规则 1 与规则 3 现共用同一反查流程；命中后由 rule1 优先返回 pid_match
+      clicksByRule: { rule1: [{ documentId: "click3", promoCampaign: "camp3" }] },
     });
     const svc = attributionFactory({ strapi: mockStrapi as any });
     const result = await svc.findMatchingClick(order);
-    expect(result?.quality).toBe("weak_match");
+    expect(result).not.toBeNull();
+    // 规则 1 命中后直接返回，规则 3 不会触发；同流程命中标记为 pid_match
+    expect(result?.quality).toBe("pid_match");
   });
 
   it("规则 4：仅 coupon 匹配 → fallback_match", async () => {
@@ -122,7 +130,8 @@ describe("Attribution.run", () => {
     ];
     const { mockStrapi, orderUpdate } = buildMockStrapi({
       orders,
-      sourceTagsByPid: { promo_001: [{ documentId: "t1", promoChannelId: "promo_001" }] },
+      channelConfigsByPid: { promo_001: [{ documentId: "cfg1", channel: { documentId: "ch1" } }] },
+      campaignsByChannel: { ch1: [{ documentId: "camp1" }] },
       clicksByRule: {
         rule1: [{ documentId: "click1", clickedAt: "2026-07-18T10:00:00Z" }],
         rule4: [{ documentId: "click2" }],

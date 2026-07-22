@@ -3,6 +3,8 @@ import type { Core } from "@strapi/strapi";
 const ORDER_UID = "plugin::zhao-track.order";
 const SOURCE_TAG_UID = "plugin::zhao-track.source-tag";
 const CLICK_EVENT_UID = "plugin::zhao-track.click-event";
+const CHANNEL_CONFIG_UID = "plugin::zhao-studio.channel-platform-config";
+const CAMPAIGN_UID = "plugin::zhao-studio.promo-campaign";
 
 export default ({ strapi }: { strapi: Core.Strapi }) => {
   const getWindowDays = (): number => {
@@ -27,25 +29,35 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
 
     const couponDocId = order.coupon?.documentId || order.coupon;
 
-    // 规则 1: promoPid 匹配（核心归因路径）
+    // 规则 1: promoPid 匹配（通过 ChannelPlatformConfig 反查 channel → campaign → ClickEvent）
     if (order.promoPid) {
       try {
-        const tags = await strapi.documents(SOURCE_TAG_UID).findMany({
-          filters: { promoChannelId: order.promoPid },
+        const configs = await strapi.documents(CHANNEL_CONFIG_UID).findMany({
+          filters: { promoPid: order.promoPid },
+          populate: { channel: true },
+          limit: 1,
         });
-        if (tags && tags.length > 0) {
-          const sourceTag = tags[0];
-          const clicks = await strapi.documents(CLICK_EVENT_UID).findMany({
-            filters: {
-              coupon: couponDocId,
-              sourceTag: sourceTag.documentId,
-              clickedAt: { $gte: windowStart.toISOString(), $lte: transactedAt.toISOString() },
-            },
-            sort: { clickedAt: "desc" },
-            limit: 1,
-          });
-          if (clicks && clicks.length > 0) {
-            return { click: clicks[0], quality: "pid_match", sourceTagId: sourceTag.documentId };
+        if (configs && configs.length > 0) {
+          const channelId = configs[0].channel?.documentId;
+          if (channelId) {
+            const campaigns = await strapi.documents(CAMPAIGN_UID).findMany({
+              filters: { channel: channelId },
+            });
+            const campaignIds = (campaigns || []).map((c: any) => c.documentId);
+            if (campaignIds.length > 0) {
+              const clicks = await strapi.documents(CLICK_EVENT_UID).findMany({
+                filters: {
+                  coupon: couponDocId,
+                  promoCampaign: { $in: campaignIds },
+                  clickedAt: { $gte: windowStart.toISOString(), $lte: transactedAt.toISOString() },
+                },
+                sort: { clickedAt: "desc" },
+                limit: 1,
+              });
+              if (clicks && clicks.length > 0) {
+                return { click: clicks[0], quality: "pid_match" };
+              }
+            }
           }
         }
       } catch (err: any) {
@@ -73,20 +85,36 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       }
     }
 
-    // 规则 3: coupon + promoChannelId 弱匹配
+    // 规则 3: coupon + channel 弱匹配（复用规则 1 的 channel 反查逻辑）
     if (order.promoPid) {
       try {
-        const clicks = await strapi.documents(CLICK_EVENT_UID).findMany({
-          filters: {
-            coupon: couponDocId,
-            promoChannelId: order.promoPid,
-            clickedAt: { $gte: windowStart.toISOString(), $lte: transactedAt.toISOString() },
-          },
-          sort: { clickedAt: "desc" },
+        const configs = await strapi.documents(CHANNEL_CONFIG_UID).findMany({
+          filters: { promoPid: order.promoPid },
+          populate: { channel: true },
           limit: 1,
         });
-        if (clicks && clicks.length > 0) {
-          return { click: clicks[0], quality: "weak_match" };
+        if (configs && configs.length > 0) {
+          const channelId = configs[0].channel?.documentId;
+          if (channelId) {
+            const campaigns = await strapi.documents(CAMPAIGN_UID).findMany({
+              filters: { channel: channelId },
+            });
+            const campaignIds = (campaigns || []).map((c: any) => c.documentId);
+            if (campaignIds.length > 0) {
+              const clicks = await strapi.documents(CLICK_EVENT_UID).findMany({
+                filters: {
+                  coupon: couponDocId,
+                  promoCampaign: { $in: campaignIds },
+                  clickedAt: { $gte: windowStart.toISOString(), $lte: transactedAt.toISOString() },
+                },
+                sort: { clickedAt: "desc" },
+                limit: 1,
+              });
+              if (clicks && clicks.length > 0) {
+                return { click: clicks[0], quality: "weak_match" };
+              }
+            }
+          }
         }
       } catch (err: any) {
         strapi.log.warn(`[attribution] rule3 (weak_match) failed: ${err.message}`);
@@ -142,8 +170,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
             if (result.sourceTagId) {
               updateData.sourceTag = result.sourceTagId;
             }
-            if (result.click.promoChannelId && !order.promoChannelId) {
-              updateData.promoChannelId = result.click.promoChannelId;
+            if (result.click.promoCampaign && !order.promoCampaign) {
+              updateData.promoCampaign = result.click.promoCampaign;
             }
             await strapi.documents(ORDER_UID).update({
               documentId: order.documentId,
