@@ -259,5 +259,21 @@ export default ({ strapi }: { strapi: Core.Strapi }): AuthService & Record<strin
   registerPolicy(_name: string, _handler: any): void {
     // no-op: 策略通过 Strapi 原生机制注册
   },
+
+  /**
+   * 检查用户是否具有特定权限（委托给 permission.service.getMyPermissions）
+   * 兼容 user 对象或 userId 数值
+   * @param user 用户对象（含 id）或 userId 数值
+   * @param action 权限 key
+   * @returns 是否具有权限
+   */
+  async checkPermission(user: any, action: string): Promise<boolean> {
+    const userId = typeof user === "object" && user !== null ? user.id : user;
+    const permissions = await strapi
+      .plugin("zhao-auth")
+      .service("permission")
+      .getMyPermissions(userId);
+    return permissions.includes(action);
+  },
   };
 };

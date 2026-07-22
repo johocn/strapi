@@ -97,28 +97,29 @@ describe("role-management.service - getUserEffectivePermissions & checkPermissio
 
   describe("checkPermission", () => {
     it("用户有权限时返回 true", async () => {
-      const mockFindOne = jest.fn().mockResolvedValue({
-        id: 2,
-        role: { name: "admin" },
-      });
-      (strapi as any).db.query = jest.fn().mockReturnValue({ findOne: mockFindOne });
+      const mockGetMyPermissions = jest.fn().mockResolvedValue(["admin"]);
+      (strapi as any).plugin = jest.fn(() => ({
+        service: jest.fn(() => ({ getMyPermissions: mockGetMyPermissions })),
+      }));
       const result = await service.checkPermission(2, "admin");
+      expect(mockGetMyPermissions).toHaveBeenCalledWith(2, undefined);
       expect(result).toBe(true);
     });
 
     it("用户无权限时返回 false", async () => {
-      const mockFindOne = jest.fn().mockResolvedValue({
-        id: 2,
-        role: { name: "user" },
-      });
-      (strapi as any).db.query = jest.fn().mockReturnValue({ findOne: mockFindOne });
+      const mockGetMyPermissions = jest.fn().mockResolvedValue(["user.perm"]);
+      (strapi as any).plugin = jest.fn(() => ({
+        service: jest.fn(() => ({ getMyPermissions: mockGetMyPermissions })),
+      }));
       const result = await service.checkPermission(2, "admin");
       expect(result).toBe(false);
     });
 
     it("用户不存在时返回 false", async () => {
-      const mockFindOne = jest.fn().mockResolvedValue(null);
-      (strapi as any).db.query = jest.fn().mockReturnValue({ findOne: mockFindOne });
+      const mockGetMyPermissions = jest.fn().mockResolvedValue([]);
+      (strapi as any).plugin = jest.fn(() => ({
+        service: jest.fn(() => ({ getMyPermissions: mockGetMyPermissions })),
+      }));
       const result = await service.checkPermission(999, "admin");
       expect(result).toBe(false);
     });

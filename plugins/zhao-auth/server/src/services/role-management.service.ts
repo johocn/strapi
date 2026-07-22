@@ -33,6 +33,19 @@ export const ROLE_INHERITANCE: Record<string, string[]> = {
   user: [],
 };
 
+const ABSOLUTE_CORE_ROLES = ["admin", "user"];
+
+const CONDITIONAL_CORE_ROLES = ["channel-admin", "plugin-manager", "instructor"];
+
+function isProtected(
+  assignment: { role: string; assignedByRole: string },
+  operatorRoles: string[]
+): boolean {
+  if (ABSOLUTE_CORE_ROLES.includes(assignment.role)) return true;
+  if (operatorRoles.includes("admin")) return false;
+  return assignment.assignedByRole === "admin";
+}
+
 const CACHE_TTL = 300000;
 
 const permissionCache = new Map<number, { data: UserPermissions; timestamp: number }>();
@@ -42,27 +55,10 @@ function invalidateUserCache(userId: number): void {
 }
 
 function extractRoleNames(user: any): string[] {
-  // 优先级：zhaoRoles(JSON 字符串数组) > roles > role
-  if (Array.isArray(user.zhaoRoles) && user.zhaoRoles.length > 0) {
-    return user.zhaoRoles
-      .map((r: any) => (typeof r === "string" ? r : String(r)))
-      .filter((name: string) => name && name.trim());
-  }
-  if (Array.isArray(user.roles) && user.roles.length > 0) {
-    return user.roles
-      .map((r: any) => typeof r === "string" ? r : (r?.name || r?.type))
-      .filter((name: string) => name && name.trim());
-  }
-  if (user.role) {
-    if (Array.isArray(user.role)) {
-      return user.role
-        .map((r: any) => r?.name || r?.type)
-        .filter((name: string) => name && name.trim());
-    }
-    const name = user.role.name || user.role.type;
-    return name ? [name] : [];
-  }
-  return [];
+  const arr = Array.isArray(user?.zhaoRoles) ? user.zhaoRoles : [];
+  return arr
+    .map((r: any) => (typeof r === "string" ? r : r?.role))
+    .filter((name: any) => typeof name === "string" && name.trim());
 }
 
 const PERMISSION_UID = "plugin::zhao-auth.permission";
@@ -136,7 +132,7 @@ async function computeOperatorOwnedRoles(
     const { MODULE_MANAGER_MAP } = await import("../permissions");
     for (const [moduleKey, roles] of Object.entries(moduleVisibility)) {
       // 仅当 channel-admin 在该模块的授权角色列表中，才自动叠加对应 manager 角色
-      if (roles.includes("channel-admin")) {
+      if ((roles as string[]).includes("channel-admin")) {
         const managerRole = (MODULE_MANAGER_MAP as any)[moduleKey];
         if (managerRole) {
           ownedSet.add(managerRole);
@@ -204,21 +200,29 @@ async function annotateUserRoles(user: any, _tenantDocumentId?: string) {
   const directRoles = extractRoleNames(user);
   const isAdmin = directRoles.includes("admin");
 
-  // 核心角色判定
-  const CORE_ROLES = ["channel-admin", "instructor", "user", "plugin-manager", "admin"];
+  const rawAssignments = Array.isArray(user?.zhaoRoles) ? user.zhaoRoles : [];
 
-  // 只返回用户实际拥有的角色（zhaoRoles 中的角色）
-  // 不再合并 moduleVisibility 自动授权角色（那些角色不在 zhaoRoles 中，撤销会失败）
   return directRoles.map((role: string) => {
-    let source: "core" | "explicit" = "explicit";
+    const rawAssignment = rawAssignments.find((r: any) =>
+      typeof r === "string" ? r === role : r?.role === role
+    );
+
+    const assignedByRole = rawAssignment && typeof rawAssignment !== "string"
+      ? rawAssignment.assignedByRole ?? "system"
+      : "system";
+    const assignedAt = rawAssignment && typeof rawAssignment !== "string"
+      ? rawAssignment.assignedAt ?? null
+      : null;
+
+    let source: "explicit" | "auto" = "explicit";
     let sourceDescription = "显式分配";
 
     if (isAdmin) {
       source = "explicit";
       sourceDescription = "admin 显式分配";
-    } else if (CORE_ROLES.includes(role)) {
-      source = "core";
-      sourceDescription = "核心角色";
+    } else if (assignedByRole === "admin" || assignedByRole === "system") {
+      source = "explicit";
+      sourceDescription = assignedByRole === "admin" ? "admin 分配" : "系统分配";
     }
 
     return {
@@ -226,8 +230,32 @@ async function annotateUserRoles(user: any, _tenantDocumentId?: string) {
       label: (ROLE_LABELS as any)[role] || role,
       source,
       sourceDescription,
+      assignedByRole,
+      assignedAt,
     };
   });
+}
+
+/**
+ * 检查用户是否具有特定权限（委托给 permission.service.getMyPermissions）
+ * 通过 this.strapi 获取 strapi 实例，便于在测试中用 checkPermission.call({ strapi }, ...) 调用
+ * @param this 上下文，需包含 strapi
+ * @param userId 用户ID
+ * @param action 权限 key
+ * @param tenantDocumentId 租户 documentId（可选）
+ * @returns 是否具有权限
+ */
+export async function checkPermission(
+  this: { strapi: Core.Strapi },
+  userId: number,
+  action: string,
+  tenantDocumentId?: string
+): Promise<boolean> {
+  const permissions = await this.strapi
+    .plugin("zhao-auth")
+    .service("permission")
+    .getMyPermissions(userId, tenantDocumentId);
+  return permissions.includes(action);
 }
 
 export default ({ strapi }: { strapi: Core.Strapi }) => {
@@ -433,6 +461,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       throwErr("ROLE_ALREADY_ASSIGNED", 409, `用户已拥有角色: ${normalizedRole}`);
     }
 
+    if (ABSOLUTE_CORE_ROLES.includes(normalizedRole)) {
+      throwErr("ABSOLUTE_CORE_ROLE", 400, `绝对基础角色 ${normalizedRole} 不可手动分配`);
+    }
+
     // 层级校验（非 admin）
     const operatorLevel = await getUserLevel(operatorId);
     const isOperatorAdmin = operatorLevel >= 100;
@@ -475,7 +507,22 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       }
     }
 
-    const newRoles = [...currentRoles, normalizedRole];
+    const operator = await strapi.db.query(USER_UID).findOne({
+      where: { id: operatorId },
+      select: ["zhaoRoles"],
+    });
+    const operatorRoles = extractRoleNames(operator);
+    const assignedByRole = operatorRoles.includes("admin")
+      ? "admin"
+      : operatorRoles[0] || "system";
+
+    const currentAssignments = Array.isArray(user.zhaoRoles) ? user.zhaoRoles : [];
+    const newAssignment = {
+      role: normalizedRole,
+      assignedByRole,
+      assignedAt: new Date().toISOString(),
+    };
+    const newRoles = [...currentAssignments, newAssignment];
 
     await strapi.db.query(USER_UID).update({
       where: { id: userId },
@@ -514,7 +561,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       message: `角色 ${role} 分配成功`,
       user: {
         id: userId,
-        roles: newRoles,
+        roles: extractRoleNames({ zhaoRoles: newRoles }),
       },
     };
   },
@@ -557,6 +604,32 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       throwErr("MIN_ROLE_REQUIRED", 400, "用户至少需要拥有一个角色");
     }
 
+    if (ABSOLUTE_CORE_ROLES.includes(role)) {
+      throwErr("ABSOLUTE_CORE_ROLE", 400, `绝对基础角色 ${role} 不可撤销`);
+    }
+
+    const assignments = Array.isArray(user.zhaoRoles) ? user.zhaoRoles : [];
+    const assignment = assignments.find((r: any) =>
+      typeof r === "string" ? r === role : r?.role === role
+    );
+
+    if (!assignment) {
+      throwErr("ROLE_NOT_ASSIGNED", 404, `用户未拥有角色: ${role}`);
+    }
+
+    const operator = await strapi.db.query(USER_UID).findOne({
+      where: { id: operatorId },
+      select: ["zhaoRoles"],
+    });
+    const operatorRoles = extractRoleNames(operator);
+
+    const assignmentObj = typeof assignment === "string"
+      ? { role: assignment, assignedByRole: "system" }
+      : assignment;
+    if (isProtected(assignmentObj, operatorRoles)) {
+      throwErr("PROTECTED_ROLE", 400, `角色 ${role} 受保护，当前操作者无权撤销`);
+    }
+
     // 层级 + 渠道 + 子集校验（非 admin）
     const operatorLevel = await getUserLevel(operatorId);
     const isOperatorAdmin = operatorLevel >= 100;
@@ -590,7 +663,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       }
     }
 
-    const newRoles = currentRoles.filter((r: string) => r !== role);
+    const newRoles = assignments.filter((r: any) =>
+      typeof r === "string" ? r !== role : r?.role !== role
+    );
 
     await strapi.db.query(USER_UID).update({
       where: { id: userId },
@@ -610,7 +685,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       message: `角色 ${role} 撤销成功`,
       user: {
         id: userId,
-        roles: newRoles,
+        roles: extractRoleNames({ zhaoRoles: newRoles }),
       },
     };
   },
@@ -741,6 +816,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
 
     const result: Array<{ role: string; label: string; source: "core" | "auto" | "explicit" }> = [];
     for (const role of allRoleNames) {
+      if (ABSOLUTE_CORE_ROLES.includes(role)) continue;
       if (!isAdmin && !ownedSet.has(role)) continue;
 
       // 来源标注（复用 annotateUserRoles 逻辑：把 operator 当作用户来标注）
@@ -758,7 +834,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
             .resolveModuleVisibility(tenantDocumentId);
           const { MODULE_MANAGER_MAP } = await import("../permissions");
           for (const [moduleKey, roles] of Object.entries(moduleVisibility)) {
-            if (roles.includes("channel-admin")) {
+            if ((roles as string[]).includes("channel-admin")) {
               const managerRole = (MODULE_MANAGER_MAP as any)[moduleKey];
               if (managerRole) autoRoles.add(managerRole);
             }
@@ -902,14 +978,14 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   },
 
   /**
-   * 检查用户是否具有特定权限（包含继承权限）
+   * 检查用户是否具有特定权限（委托给 permission.service.getMyPermissions）
    * @param userId 用户ID
-   * @param requiredRole 所需角色
+   * @param action 权限 key
+   * @param tenantDocumentId 租户 documentId（可选）
    * @returns 是否具有权限
    */
-  async checkPermission(userId: number, requiredRole: string): Promise<boolean> {
-    const effectiveRoles = await getUserEffectivePermissions(userId);
-    return effectiveRoles.effective.includes(requiredRole);
+  async checkPermission(userId: number, action: string, tenantDocumentId?: string): Promise<boolean> {
+    return checkPermission.call({ strapi }, userId, action, tenantDocumentId);
   },
 
   /**
