@@ -840,53 +840,60 @@ git commit -m "refactor(zhao-studio): split route actions to per-content-type gr
 
 - [ ] **Step 1: Update package.json with admin dependencies**
 
-读取 `d:\zhao\strapi\plugins\zhao-auth\package.json`，添加 admin 相关依赖和 exports（参考 zhao-studio/package.json）：
+读取 `d:\zhao\strapi\plugins\zhao-auth\package.json`，**在现有文件基础上扩展**（保留 bcryptjs/jsonwebtoken 等运行时依赖，保留 version/engines/license 等元数据，保留 ./package.json exports 和 test 脚本）。最终内容：
 
 ```json
 {
   "name": "zhao-auth",
-  "type": "commonjs",
+  "version": "1.0.0",
+  "description": "统一认证策略中间件插件 - JWT 验证、角色授权、渠道权限",
   "private": true,
+  "keywords": [],
+  "type": "commonjs",
   "exports": {
+    "./package.json": "./package.json",
     "./strapi-server": {
-      "types": "./dist/server/index.d.ts",
+      "types": "./dist/server/src/index.d.ts",
       "source": "./server/src/index.ts",
       "import": "./dist/server/index.mjs",
       "require": "./dist/server/index.js",
       "default": "./dist/server/index.js"
     },
     "./strapi-admin": {
-      "types": "./dist/admin/index.d.ts",
-      "source": "./admin/src/index.ts",
-      "import": "./dist/admin/index.mjs",
-      "require": "./dist/admin/index.js",
-      "default": "./dist/admin/index.js"
-    },
-    "./admin": {
-      "types": "./dist/admin/index.d.ts",
+      "types": "./dist/admin/src/index.d.ts",
       "source": "./admin/src/index.ts",
       "import": "./dist/admin/index.mjs",
       "require": "./dist/admin/index.js",
       "default": "./dist/admin/index.js"
     }
   },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "strapi-plugin build",
     "watch": "strapi-plugin watch",
     "watch:link": "strapi-plugin watch:link",
-    "verify": "strapi-plugin verify"
+    "verify": "strapi-plugin verify",
+    "test:ts:back": "tsc -p server/tsconfig.json",
+    "test": "jest --config tests/jest.config.ts"
   },
   "dependencies": {
     "@ant-design/icons": "^5.6.1",
-    "antd": "^5.29.3"
+    "antd": "^5.29.3",
+    "bcryptjs": "^3.0.3",
+    "jsonwebtoken": "^9.0.0"
   },
   "devDependencies": {
     "@strapi/sdk-plugin": "^6.1.0",
     "@strapi/strapi": "^5.45.0",
     "@strapi/typescript-utils": "^5.45.0",
-    "@types/jest": "^30.0.0",
     "@testing-library/react": "^16.0.0",
     "@testing-library/jest-dom": "^6.0.0",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jest": "^30.0.0",
+    "@types/jsonwebtoken": "^9.0.0",
+    "@types/node": "^25.9.1",
     "jest": "^30.4.2",
     "jest-environment-jsdom": "^30.0.0",
     "ts-jest": "^29.4.11",
@@ -894,21 +901,32 @@ git commit -m "refactor(zhao-studio): split route actions to per-content-type gr
     "typescript": "^5.9.3"
   },
   "peerDependencies": {
-    "@strapi/sdk-plugin": "^6.1.0",
     "@strapi/strapi": "^5.45.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.30.3",
     "styled-components": "^6.4.1"
   },
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "strapi": {
     "kind": "plugin",
     "name": "zhao-auth",
     "displayName": "Zhao Auth",
-    "description": "认证授权插件"
-  }
+    "description": "统一认证策略中间件插件 - JWT 验证、角色授权、渠道权限"
+  },
+  "license": "MIT"
 }
 ```
+
+**关键修正点（相比原 plan）：**
+- 保留 `bcryptjs` 和 `jsonwebtoken`（auth.service.ts / jwt.service.ts 运行时依赖，丢失会导致登录崩溃）
+- 保留 `version`、`engines`、`license`、`keywords`、`files` 元数据字段
+- 保留 `./package.json` exports 条目
+- 保留 `test` 和 `test:ts:back` 脚本
+- types 路径用 `./dist/server/src/index.d.ts` 和 `./dist/admin/src/index.d.ts`（与现有 zhao-studio 一致，含 src）
+- 删除冗余的 `./admin` exports（与 `./strapi-admin` 重复）
 
 - [ ] **Step 2: Create strapi-admin.js and strapi-server.js**
 
@@ -948,13 +966,15 @@ export default {
 
     app.registerPlugin({
       id: pluginId,
-      name: '认证授权',
+      name: 'zhao-auth',
     });
   },
 
   bootstrap(app: any) {},
 };
 ```
+
+> 注：`name` 字段应为英文 plugin name（Strapi v5 规范），中文展示名通过 `intlLabel.defaultMessage` 提供。
 
 - [ ] **Step 4: Create admin/src/pluginId.ts**
 
@@ -990,20 +1010,33 @@ export default App;
 
 - [ ] **Step 6: Create tsconfig.json for admin**
 
+参考 `d:\zhao\strapi\plugins\zhao-studio\admin\tsconfig.json`（不 extends，直接配置，含 @strapi paths）：
+
 ```json
-// admin/tsconfig.json
 {
-  "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "jsx": "react-jsx",
+    "target": "ESNext",
     "module": "ESNext",
-    "moduleResolution": "Bundler",
-    "target": "ES2022",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"]
+    "moduleResolution": "bundler",
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "jsx": "react-jsx",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "moduleDetection": "force",
+    "baseUrl": ".",
+    "paths": {
+      "@strapi/strapi": ["../../../node_modules/@strapi/strapi"],
+      "@strapi/design-system": ["../../../node_modules/@strapi/design-system"],
+      "@strapi/icons": ["../../../node_modules/@strapi/icons"]
+    }
   },
-  "include": ["src/**/*"]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
 }
 ```
+
+> 注：不使用 `extends`，因为 `d:\zhao\strapi\` 根目录可能没有合适的 tsconfig.json，且 zhao-studio/admin/tsconfig.json 也是直接配置。
 
 - [ ] **Step 7: Install dependencies and build**
 
@@ -1664,25 +1697,35 @@ git commit -m "feat(zhao-auth): add PermissionGate/PermissionButton/RoleBadge/Ch
 
 ```typescript
 // tests/controllers/permission-matrix.test.ts
+// 注意：Strapi v5 controller 标准模式是 export default ({ strapi }) => ({ async method(ctx) {} })
+// 路由 'permission-matrix.getMatrix' 会调用 controller 对象的 getMatrix 方法（已注入 strapi）
 describe('permission matrix controller', () => {
+  const createMockStrapi = (overrides: any = {}) => ({
+    db: { query: jest.fn(() => ({ findMany: jest.fn().mockResolvedValue([]), findOne: jest.fn().mockResolvedValue(null), update: jest.fn().mockResolvedValue({}) })) },
+    documents: jest.fn(() => ({ findMany: jest.fn().mockResolvedValue([]) })),
+    plugin: jest.fn(() => ({
+      service: jest.fn(() => ({
+        getMyPermissions: jest.fn().mockResolvedValue([]),
+        invalidatePermissionCache: jest.fn(),
+      })),
+    })),
+    log: { error: jest.fn(), warn: jest.fn() },
+    ...overrides,
+  });
+
   it('GET /permissions/matrix returns role x action matrix', async () => {
     const mockFindMany = jest.fn().mockResolvedValue([
       { role: 'ADMIN', permissions: ['zhao-deal.coupon.manage'], isSystem: true, seedVersion: '2026-07-22' },
       { role: 'CHANNEL_ADMIN', permissions: [], isSystem: true, seedVersion: '2026-07-22' },
     ]);
-    const mockStrapi = {
+    const mockStrapi = createMockStrapi({
       db: { query: jest.fn(() => ({ findMany: mockFindMany, findOne: jest.fn() })) },
-      documents: jest.fn(() => ({ findMany: jest.fn().mockResolvedValue([]) })),
-      plugin: jest.fn(() => ({
-        service: jest.fn(() => ({
-          getMyPermissions: jest.fn().mockResolvedValue([]),
-        })),
-      })),
-    };
+    });
 
-    const { getMatrix } = require('../../server/src/controllers/permission-matrix');
+    const controllerFactory = require('../../server/src/controllers/permission-matrix').default;
+    const controller = controllerFactory({ strapi: mockStrapi });
     const ctx = { send: jest.fn(), throw: jest.fn() };
-    await getMatrix({ strapi: mockStrapi })(ctx);
+    await controller.getMatrix(ctx);
 
     expect(ctx.send).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -1696,23 +1739,19 @@ describe('permission matrix controller', () => {
   it('PUT /permissions/roles/:role updates permissions', async () => {
     const mockUpdate = jest.fn().mockResolvedValue({});
     const mockFindOne = jest.fn().mockResolvedValue({ id: 1, role: 'CHANNEL_ADMIN', isSystem: true });
-    const mockStrapi = {
+    const mockStrapi = createMockStrapi({
       db: { query: jest.fn(() => ({ findOne: mockFindOne, update: mockUpdate })) },
-      plugin: jest.fn(() => ({
-        service: jest.fn(() => ({
-          invalidatePermissionCache: jest.fn(),
-        })),
-      })),
-    };
+    });
 
-    const { updateRolePermissions } = require('../../server/src/controllers/permission-matrix');
+    const controllerFactory = require('../../server/src/controllers/permission-matrix').default;
+    const controller = controllerFactory({ strapi: mockStrapi });
     const ctx = {
       params: { role: 'CHANNEL_ADMIN' },
       request: { body: { permissions: ['zhao-deal.coupon.manage'] } },
       send: jest.fn(),
       throw: jest.fn(),
     };
-    await updateRolePermissions({ strapi: mockStrapi })(ctx);
+    await controller.updateRolePermissions(ctx);
 
     expect(mockUpdate).toHaveBeenCalled();
     expect(ctx.send).toHaveBeenCalled();
@@ -1721,22 +1760,18 @@ describe('permission matrix controller', () => {
   it('POST /permissions/roles/:role/reset resets to default', async () => {
     const mockFindOne = jest.fn().mockResolvedValue({ id: 1, role: 'CHANNEL_ADMIN', isSystem: true });
     const mockUpdate = jest.fn().mockResolvedValue({});
-    const mockStrapi = {
+    const mockStrapi = createMockStrapi({
       db: { query: jest.fn(() => ({ findOne: mockFindOne, update: mockUpdate })) },
-      plugin: jest.fn(() => ({
-        service: jest.fn(() => ({
-          invalidatePermissionCache: jest.fn(),
-        })),
-      })),
-    };
+    });
 
-    const { resetRolePermissions } = require('../../server/src/controllers/permission-matrix');
+    const controllerFactory = require('../../server/src/controllers/permission-matrix').default;
+    const controller = controllerFactory({ strapi: mockStrapi });
     const ctx = {
       params: { role: 'CHANNEL_ADMIN' },
       send: jest.fn(),
       throw: jest.fn(),
     };
-    await resetRolePermissions({ strapi: mockStrapi })(ctx);
+    await controller.resetRolePermissions(ctx);
 
     expect(mockUpdate).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -1748,18 +1783,16 @@ describe('permission matrix controller', () => {
   });
 
   it('cannot reset admin role', async () => {
-    const mockStrapi = {
-      db: { query: jest.fn(() => ({ findOne: jest.fn(), update: jest.fn() })) },
-      plugin: jest.fn(() => ({ service: jest.fn() })),
-    };
+    const mockStrapi = createMockStrapi();
 
-    const { resetRolePermissions } = require('../../server/src/controllers/permission-matrix');
+    const controllerFactory = require('../../server/src/controllers/permission-matrix').default;
+    const controller = controllerFactory({ strapi: mockStrapi });
     const ctx = {
       params: { role: 'ADMIN' },
       throw: jest.fn(),
       send: jest.fn(),
     };
-    await resetRolePermissions({ strapi: mockStrapi })(ctx);
+    await controller.resetRolePermissions(ctx);
 
     expect(ctx.throw).toHaveBeenCalledWith(403, expect.any(String));
   });
@@ -1775,88 +1808,109 @@ Expected: FAIL
 
 ```typescript
 // server/src/controllers/permission-matrix.ts
+// Strapi v5 标准模式：export default ({ strapi }) => ({ async method(ctx) {} })
 import { DEFAULT_ROLE_PERMISSIONS, flattenPermissions, PERMISSION_TREE } from '../permissions';
 
 const PERMISSION_UID = 'plugin::zhao-auth.permission';
 
-export const getMatrix = ({ strapi }: { strapi: any }) => async (ctx: any) => {
-  const roles = await strapi.db.query(PERMISSION_UID).findMany({ limit: 100 });
-  const allActions = flattenPermissions(PERMISSION_TREE);
+export default ({ strapi }: { strapi: any }) => ({
+  async getMatrix(ctx: any) {
+    try {
+      const roles = await strapi.db.query(PERMISSION_UID).findMany({ limit: 100 });
+      const allActions = flattenPermissions(PERMISSION_TREE);
 
-  ctx.send({
-    data: roles.map((r: any) => ({
-      role: r.role,
-      displayName: r.displayName,
-      permissions: r.permissions || [],
-      isSystem: r.isSystem,
-      seedVersion: r.seedVersion,
-    })),
-    actions: allActions,
-  });
-};
+      ctx.send({
+        data: roles.map((r: any) => ({
+          role: r.role,
+          displayName: r.displayName,
+          permissions: r.permissions || [],
+          isSystem: r.isSystem,
+          seedVersion: r.seedVersion,
+        })),
+        actions: allActions,
+      });
+    } catch (error: any) {
+      strapi.log.error(`[zhao-auth] getMatrix failed: ${error.message}`);
+      ctx.status = 500;
+      ctx.body = { error: error.message };
+    }
+  },
 
-export const updateRolePermissions = ({ strapi }: { strapi: any }) => async (ctx: any) => {
-  const { role } = ctx.params;
-  const { permissions } = ctx.request.body;
+  async updateRolePermissions(ctx: any) {
+    try {
+      const { role } = ctx.params;
+      const { permissions } = ctx.request.body;
 
-  if (!Array.isArray(permissions)) {
-    return ctx.throw(400, 'permissions must be an array');
-  }
+      if (!Array.isArray(permissions)) {
+        return ctx.throw(400, 'permissions must be an array');
+      }
 
-  if (role === 'ADMIN') {
-    return ctx.throw(403, 'Cannot modify ADMIN role permissions');
-  }
+      if (role === 'ADMIN') {
+        return ctx.throw(403, 'Cannot modify ADMIN role permissions');
+      }
 
-  const existing = await strapi.db.query(PERMISSION_UID).findOne({ where: { role } });
-  if (!existing) {
-    return ctx.throw(404, 'Role not found');
-  }
+      const existing = await strapi.db.query(PERMISSION_UID).findOne({ where: { role } });
+      if (!existing) {
+        return ctx.throw(404, 'Role not found');
+      }
 
-  await strapi.db.query(PERMISSION_UID).update({
-    where: { id: existing.id },
-    data: { permissions },
-  });
+      await strapi.db.query(PERMISSION_UID).update({
+        where: { id: existing.id },
+        data: { permissions },
+      });
 
-  // Invalidate cache
-  strapi.plugin('zhao-auth').service('permission').invalidatePermissionCache();
+      // Invalidate cache
+      strapi.plugin('zhao-auth').service('permission').invalidatePermissionCache();
 
-  ctx.send({ success: true });
-};
+      ctx.send({ success: true });
+    } catch (error: any) {
+      strapi.log.error(`[zhao-auth] updateRolePermissions failed: ${error.message}`);
+      ctx.status = error.status || 500;
+      ctx.body = { error: error.message };
+    }
+  },
 
-export const resetRolePermissions = ({ strapi }: { strapi: any }) => async (ctx: any) => {
-  const { role } = ctx.params;
+  async resetRolePermissions(ctx: any) {
+    try {
+      const { role } = ctx.params;
 
-  if (role === 'ADMIN') {
-    return ctx.throw(403, 'Cannot reset ADMIN role');
-  }
+      if (role === 'ADMIN') {
+        return ctx.throw(403, 'Cannot reset ADMIN role');
+      }
 
-  const defaultPerms = (DEFAULT_ROLE_PERMISSIONS as any)[role];
-  if (!defaultPerms) {
-    return ctx.throw(404, 'No default permissions for this role');
-  }
+      const defaultPerms = (DEFAULT_ROLE_PERMISSIONS as any)[role];
+      if (!defaultPerms) {
+        return ctx.throw(404, 'No default permissions for this role');
+      }
 
-  const existing = await strapi.db.query(PERMISSION_UID).findOne({ where: { role } });
-  if (!existing) {
-    return ctx.throw(404, 'Role not found');
-  }
+      const existing = await strapi.db.query(PERMISSION_UID).findOne({ where: { role } });
+      if (!existing) {
+        return ctx.throw(404, 'Role not found');
+      }
 
-  await strapi.db.query(PERMISSION_UID).update({
-    where: { id: existing.id },
-    data: { permissions: defaultPerms },
-  });
+      await strapi.db.query(PERMISSION_UID).update({
+        where: { id: existing.id },
+        data: { permissions: defaultPerms },
+      });
 
-  strapi.plugin('zhao-auth').service('permission').invalidatePermissionCache();
+      strapi.plugin('zhao-auth').service('permission').invalidatePermissionCache();
 
-  ctx.send({ success: true, permissions: defaultPerms });
-};
+      ctx.send({ success: true, permissions: defaultPerms });
+    } catch (error: any) {
+      strapi.log.error(`[zhao-auth] resetRolePermissions failed: ${error.message}`);
+      ctx.status = error.status || 500;
+      ctx.body = { error: error.message };
+    }
+  },
 
-export const getActions = ({ strapi }: { strapi: any }) => async (ctx: any) => {
-  const allActions = flattenPermissions(PERMISSION_TREE);
-  ctx.send({ data: allActions });
-};
-
-export default { getMatrix, updateRolePermissions, resetRolePermissions, getActions };
+  async getActions(ctx: any) {
+    const allActions = flattenPermissions(PERMISSION_TREE);
+    ctx.send({ data: allActions });
+  },
+});
 ```
+
+> 注：此为 Strapi v5 标准 controller 模式，与现有 `role-management.ts` controller 一致。路由 `'permission-matrix.getMatrix'` 会自动调用 `controller.getMatrix(ctx)`，strapi 已在工厂函数中注入。
 
 - [ ] **Step 4: Create permission-check service**
 
@@ -1883,37 +1937,35 @@ export default ({ strapi }: { strapi: any }) => ({
 
 - [ ] **Step 5: Add routes to content-api.ts**
 
-在 `content-api.ts` 中添加 14 个新 admin 路由（使用现有 `adminRoute` 帮助函数，但注意 zhao-auth 的 adminRoute 是 3 件套，不是 4 件套）：
+**重要：先读取现有 `d:\zhao\strapi\plugins\zhao-auth\server\src\routes\content-api.ts`，避免与现有路由重复。** 现有路由已有：`GET /users`、`GET /users/:id/roles`、`POST /roles/assign`、`POST /roles/revoke`、`POST /roles/batch-assign`、`GET /roles/logs`、`GET /users/:id/detail`、`GET /assignable-roles`、`GET /permissions/tree`、`GET /permissions/role/:role`、`PUT /permissions/role/:role`、`POST /permissions/init` 等。
+
+**实际新增路由（仅新增不重复的，使用现有 3 件套 `adminRoute` 帮助函数）：**
 
 ```typescript
-  // === 新增 admin 路由 ===
-  // me
-  { method: 'POST', path: '/v1/admin/me', handler: 'role-management.me',
+  // === 新增 admin 路由（避免与现有路由重复）===
+
+  // me - 仅 1 件套（任何已认证用户都能查自己的权限，无需权限校验）
+  { method: 'GET', path: '/v1/admin/me', handler: 'role-management.me',
     config: { auth: false, policies: ['plugin::zhao-auth.is-authenticated'] } },
 
-  // users
-  adminRoute('GET', '/users', 'role-management.listUsers', 'zhao-auth.user.manage'),
-  adminRoute('GET', '/users/:documentId', 'role-management.getUserDetail', 'zhao-auth.user.manage'),
-  adminRoute('POST', '/users/:id/roles', 'role-management.assignRole', 'zhao-auth.role.assign'),
-  adminRoute('DELETE', '/users/:id/roles/:role', 'role-management.revokeRole', 'zhao-auth.role.assign'),
-  adminRoute('POST', '/users/batch-roles', 'role-management.batchAssignRoles', 'zhao-auth.role.batch-assign'),
-  adminRoute('PUT', '/users/:id/channel-scope', 'role-management.updateChannelScope', 'zhao-auth.user.manage'),
-
-  // roles
-  adminRoute('GET', '/roles', 'role-management.getAssignableRoles', 'zhao-auth.user.manage'),
-
-  // permissions
+  // permission matrix（新功能）
   adminRoute('GET', '/permissions/matrix', 'permission-matrix.getMatrix', 'zhao-auth.permission.matrix.edit'),
   adminRoute('PUT', '/permissions/roles/:role', 'permission-matrix.updateRolePermissions', 'zhao-auth.permission.matrix.edit'),
   adminRoute('POST', '/permissions/roles/:role/reset', 'permission-matrix.resetRolePermissions', 'zhao-auth.permission.matrix.edit'),
   adminRoute('GET', '/permissions/actions', 'permission-matrix.getActions', 'zhao-auth.permission.matrix.edit'),
 
-  // logs
-  adminRoute('GET', '/logs', 'role-management.getLogs', 'zhao-auth.audit-log.view'),
+  // logs（现有 GET /roles/logs 改为更通用的 GET /logs）
+  adminRoute('GET', '/logs', 'role-management.getActionLogs', 'zhao-auth.audit-log.view'),
 
-  // check
+  // check（新功能 - 权限检查工具）
   adminRoute('POST', '/check', 'permission-check.check', 'zhao-auth.permission.check'),
 ```
+
+**说明：**
+- 共新增 7 条路由（而非原计划的 14 条），其余 7 条功能（users CRUD、roles assign/revoke、permissions tree 等）现有路由已覆盖
+- `/me` 路由只用 1 件套（`is-authenticated`），因为任何已认证用户都能查自己的权限，无需权限校验。这是 spec §6.1 的合理偏离
+- 其他新路由用 3 件套 `adminRoute`（`is-authenticated → tenant-context-injector → has-permission`），这是 zhao-auth 自己资源的合理配置（不需要 channel-scope/tenant-access，因为权限管理本身是跨租户的）
+- path 前缀 `/api/zhao-auth` 由 Strapi content-api 路由类型自动添加
 
 - [ ] **Step 6: Add me handler to role-management controller**
 
@@ -2780,7 +2832,7 @@ git commit -m "chore: integration build verification for zhao-auth admin + permi
 - ✅ §5.1 bootstrap 改造：Task 3
 - ✅ §5.3 checkPermission 委托：Task 4
 - ✅ §5.4-5.6 路由 action 拆细：Task 5
-- ✅ §6 admin API 14 端点：Task 9
+- ✅ §6 admin API 7 新增端点（其余 7 端点现有路由已覆盖）：Task 9
 - ✅ §7 前端组件：Task 6-8
 - ✅ §8 zhao-studio 11 页面接入：Task 13-14
 - ✅ §9 测试：每个 task 都有测试
@@ -2796,6 +2848,23 @@ git commit -m "chore: integration build verification for zhao-auth admin + permi
 - `PermissionGateProps` 在 Task 8 定义，Task 14 使用一致
 - `getMyPermissions(userId, tenantDocumentId?)` 签名在 Task 4 定义，Task 7/9 使用一致
 - `checkPermission(userId, action)` 在 Task 4 定义，Task 9 使用一致
+
+### Strapi v5 规范合规性审查修正（2026-07-22 第二轮）
+
+**致命卡点修正：**
+1. **Task 6 Step 1 package.json 丢失依赖** — 原计划完全替换 dependencies 会丢失 `bcryptjs` 和 `jsonwebtoken`（auth.service.ts / jwt.service.ts 运行时依赖）。已改为"在现有文件基础上扩展"，保留所有运行时依赖和元数据字段。
+2. **Task 9 Step 3 controller 写法不符合 Strapi v5** — 原计划用 `export const getMatrix = ({strapi}) => async (ctx) => {}` + `export default { getMatrix, ... }` 高阶函数模式，与 Strapi v5 标准 `export default ({strapi}) => ({ async getMatrix(ctx) {} })` 不符。已改为标准模式，与现有 `role-management.ts` controller 一致。Task 9 Step 1 测试相应调整为 `controllerFactory({ strapi }).getMatrix(ctx)` 调用模式。
+3. **Task 9 Step 5 路由与现有重复** — 原计划新增 14 路由，实际 7 条与现有 content-api.ts 重复（`GET /users`、`POST /roles/assign` 等）。已改为仅新增 7 条不重复路由。
+
+**重要卡点修正：**
+4. **Task 6 Step 6 admin/tsconfig.json extends 路径错误** — 原计划 `"extends": "../../tsconfig.json"` 指向不确定的根 tsconfig。已改为参考 `zhao-studio/admin/tsconfig.json` 直接配置（不 extends），含 @strapi paths。
+5. **Task 6 Step 3 registerPlugin name 用中文** — 已改为 `name: 'zhao-auth'`（英文），中文展示名通过 `intlLabel.defaultMessage` 提供。
+6. **Task 6 Step 1 package.json 丢失元数据** — 已补回 `version`、`engines`、`license`、`keywords`、`files`、`./package.json` exports、`test`/`test:ts:back` 脚本、`dist/server/src/index.d.ts` 路径。
+
+**已知技术债（不阻塞执行）：**
+- spec §6.1 要求 4 件套，实际 zhao-auth adminRoute 是 3 件套（合理：权限管理本身是跨租户的，不需要 channel-scope/tenant-access）
+- spec §12 `plugin::zhao-studio.read` 与路由 `zhao-studio.read` 前缀不一致（超出本次范围）
+- 跨插件 admin 组件引用（spec §7 方案 B）未做 spike 验证（Task 6 标注为 spike，失败降级方案 A）
 
 ---
 
