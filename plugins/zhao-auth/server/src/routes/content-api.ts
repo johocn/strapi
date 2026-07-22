@@ -86,5 +86,30 @@ export default () => ({
     adminRoute("POST", "/role-channels/batch", "role-channel.batchGrant", "role.assign"),
     adminRoute("DELETE", "/role-channels/:id", "role-channel.revoke", "role.assign"),
     adminRoute("DELETE", "/role-channels/role/:role", "role-channel.revokeByRole", "role.assign"),
+
+    // === 新增 admin 路由（避免与现有路由重复）===
+
+    // me - 仅 1 件套（任何已认证用户都能查自己的权限，无需权限校验）
+    {
+      method: "GET",
+      path: "/v1/admin/me",
+      handler: "role-management.me",
+      config: {
+        auth: false,
+        policies: ["plugin::zhao-auth.is-authenticated"],
+      },
+    },
+
+    // permission matrix（新功能）
+    adminRoute("GET", "/permissions/matrix", "permission-matrix.getMatrix", "zhao-auth.permission.matrix.edit"),
+    adminRoute("PUT", "/permissions/roles/:role", "permission-matrix.updateRolePermissions", "zhao-auth.permission.matrix.edit"),
+    adminRoute("POST", "/permissions/roles/:role/reset", "permission-matrix.resetRolePermissions", "zhao-auth.permission.matrix.edit"),
+    adminRoute("GET", "/permissions/actions", "permission-matrix.getActions", "zhao-auth.permission.matrix.edit"),
+
+    // logs（更通用的 GET /logs，与现有 GET /roles/logs 并存）
+    adminRoute("GET", "/logs", "role-management.getActionLogs", "zhao-auth.audit-log.view"),
+
+    // check（新功能 - 权限检查工具）
+    adminRoute("POST", "/check", "permission-check.check", "zhao-auth.permission.check"),
   ],
 });

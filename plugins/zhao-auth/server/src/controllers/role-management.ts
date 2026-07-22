@@ -261,4 +261,52 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       ctx.body = { error: error.message, code: error.code };
     }
   },
+
+  async me(ctx: any) {
+    try {
+      const user = ctx.state?.user || ctx.state?.auth?.credentials;
+      if (!user) {
+        ctx.status = 401;
+        ctx.body = { error: "未认证" };
+        return;
+      }
+
+      const userId = user.id;
+      const permissionsResult = await strapi
+        .plugin("zhao-auth")
+        .service("permission")
+        .getMyPermissions(userId);
+      // 兼容 permission.service.getMyPermissions 返回 { permissions: string[] } 或 string[]
+      const permissions: string[] = Array.isArray(permissionsResult)
+        ? permissionsResult
+        : (permissionsResult?.permissions ?? []);
+
+      const userRoles = await strapi
+        .plugin("zhao-auth")
+        .service("role-management")
+        .getUserRoles(userId);
+
+      // Get channel scope
+      let channelScope: any = { all: true, channelIds: [] };
+      try {
+        channelScope = await strapi
+          .plugin("zhao-channel")
+          .service("channel-scope")
+          .resolve(user);
+      } catch {
+        // zhao-channel 不可用时使用默认全渠道范围
+      }
+
+      ctx.body = {
+        user: { id: user.id, username: user.username, zhaoRoles: userRoles },
+        permissions,
+        channelScope,
+        tenant: ctx.state?.siteDocumentId ? { documentId: ctx.state.siteDocumentId } : null,
+      };
+    } catch (error: any) {
+      strapi.log.error(`[zhao-auth] me failed: ${error.message}`);
+      ctx.status = (error as any).status || 400;
+      ctx.body = { error: error.message, code: error.code };
+    }
+  },
 });
