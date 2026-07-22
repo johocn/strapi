@@ -9,6 +9,11 @@ import adSlot from './ad-slot';
 import browserLog from './browser-log';
 import statSummary from './stat-summary';
 import syncEvent from './sync-event';
+import promoChannel from './promo-channel';
+import channelPlatformConfig from './channel-platform-config';
+import promoCampaign from './promo-campaign';
+import abExperiment from './ab-experiment';
+import abVariant from './ab-variant';
 
 export default {
   'article-draft': articleDraft,
@@ -22,4 +27,9 @@ export default {
   'browser-log': browserLog,
   'stat-summary': statSummary,
   'sync-event': syncEvent,
+  'promo-channel': promoChannel,
+  'channel-platform-config': channelPlatformConfig,
+  'promo-campaign': promoCampaign,
+  'ab-experiment': abExperiment,
+  'ab-variant': abVariant,
 };

@@ -1,0 +1,44 @@
+{
+  "kind": "collectionType",
+  "collectionName": "zhao_ab_experiments",
+  "info": {
+    "singularName": "ab-experiment",
+    "pluralName": "ab-experiments",
+    "displayName": "AB实验",
+    "description": "A/B 测试实验管理"
+  },
+  "options": { "draftAndPublish": false },
+  "pluginOptions": {
+    "content-manager": { "visible": true },
+    "content-type-builder": { "visible": false }
+  },
+  "attributes": {
+    "name": { "type": "string", "required": true, "maxLength": 200 },
+    "channel": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-studio.promo-channel",
+      "inversedBy": "experiments"
+    },
+    "campaign": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-studio.promo-campaign",
+      "inversedBy": "experiments"
+    },
+    "description": { "type": "text" },
+    "status": {
+      "type": "enumeration",
+      "enum": ["draft", "running", "paused", "completed"],
+      "default": "draft"
+    },
+    "startAt": { "type": "datetime" },
+    "endAt": { "type": "datetime" },
+    "variants": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-studio.ab-variant",
+      "mappedBy": "experiment"
+    }
+  }
+}
