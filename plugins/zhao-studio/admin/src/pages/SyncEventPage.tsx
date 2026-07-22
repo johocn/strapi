@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, Table, Button, Modal, Tag, Space, Select, Radio, message, Descriptions } from 'antd';
 import { CheckOutlined, EyeOutlined } from '@ant-design/icons';
 import { syncEventApi } from '../utils/syncEventApi';
+import { PermissionGate, PermissionButton } from '../components/PermissionGate';
 
 const { Option } = Select;
 
@@ -91,7 +92,7 @@ export default function SyncEventPage() {
       render: (_: any, record: any) => (
         <Space>
           {record.eventStatus === 'pending' && (
-            <Button size="small" type="primary" icon={<CheckOutlined />} onClick={() => handleResolve(record)}>处理</Button>
+            <PermissionButton size="small" type="primary" icon={<CheckOutlined />} action="zhao-studio.sync-event.resolve" onClick={() => handleResolve(record)}>处理</PermissionButton>
           )}
           <Button size="small" icon={<EyeOutlined />} onClick={() => handleView(record)}>查看</Button>
         </Space>
@@ -100,72 +101,74 @@ export default function SyncEventPage() {
   ];
 
   return (
-    <Card title="同步事件管理">
-      <Space style={{ marginBottom: 16 }}>
-        <Select
-          placeholder="筛选状态"
-          allowClear
-          style={{ width: 120 }}
-          onChange={(v) => { setFilterStatus(v); }}
-        >
-          <Option value="pending">待处理</Option>
-          <Option value="resolved">已处理</Option>
-          <Option value="ignored">已忽略</Option>
-        </Select>
-        <Select
-          placeholder="筛选内容类型"
-          allowClear
-          style={{ width: 150 }}
-          onChange={(v) => { setFilterContentType(v); }}
-        >
-          <Option value="article">文章</Option>
-          <Option value="product">产品</Option>
-          <Option value="case">案例</Option>
-          <Option value="faq">FAQ</Option>
-        </Select>
-        <Button onClick={fetchEvents}>查询</Button>
-      </Space>
-      <Table columns={columns} dataSource={events} rowKey="documentId" loading={loading} />
-      <Modal title="处理同步事件" open={resolveModalOpen}
-        onOk={handleConfirmResolve} onCancel={() => setResolveModalOpen(false)}>
-        {currentEvent && (
-          <div>
-            <p><strong>来源标题：</strong>{currentEvent.sourceTitle}</p>
-            <p><strong>内容类型：</strong>{currentEvent.sourceContentType}</p>
-            <Radio.Group value={action} onChange={(e) => setAction(e.target.value)} style={{ marginTop: 16 }}>
-              <Space direction="vertical">
-                <Radio value="create">新建草稿</Radio>
-                <Radio value="update">更新已有草稿</Radio>
-                <Radio value="ignore">忽略</Radio>
-              </Space>
-            </Radio.Group>
-            {action === 'update' && (
-              <Select
-                placeholder="选择草稿"
-                style={{ width: '100%', marginTop: 8 }}
-                onChange={(v) => setDraftId(v)}
-              >
-                {drafts.map((d: any) => (
-                  <Option key={d.documentId} value={d.documentId}>{d.title}</Option>
-                ))}
-              </Select>
-            )}
-          </div>
-        )}
-      </Modal>
-      <Modal title="同步事件详情" open={detailModalOpen} onCancel={() => setDetailModalOpen(false)} footer={null}>
-        {currentEvent && (
-          <Descriptions column={1} bordered>
-            <Descriptions.Item label="来源标题">{currentEvent.sourceTitle}</Descriptions.Item>
-            <Descriptions.Item label="内容类型">{currentEvent.sourceContentType}</Descriptions.Item>
-            <Descriptions.Item label="来源 URL">{currentEvent.sourceUrl || '-'}</Descriptions.Item>
-            <Descriptions.Item label="状态">{STATUS_LABELS[currentEvent.eventStatus] || currentEvent.eventStatus}</Descriptions.Item>
-            <Descriptions.Item label="处理人">{currentEvent.resolvedBy || '-'}</Descriptions.Item>
-            <Descriptions.Item label="处理时间">{currentEvent.resolvedAt || '-'}</Descriptions.Item>
-            <Descriptions.Item label="关联草稿">{currentEvent.targetDraftId?.title || '-'}</Descriptions.Item>
-          </Descriptions>
-        )}
-      </Modal>
-    </Card>
+    <PermissionGate action="zhao-studio.sync-event.manage">
+      <Card title="同步事件管理">
+        <Space style={{ marginBottom: 16 }}>
+          <Select
+            placeholder="筛选状态"
+            allowClear
+            style={{ width: 120 }}
+            onChange={(v) => { setFilterStatus(v); }}
+          >
+            <Option value="pending">待处理</Option>
+            <Option value="resolved">已处理</Option>
+            <Option value="ignored">已忽略</Option>
+          </Select>
+          <Select
+            placeholder="筛选内容类型"
+            allowClear
+            style={{ width: 150 }}
+            onChange={(v) => { setFilterContentType(v); }}
+          >
+            <Option value="article">文章</Option>
+            <Option value="product">产品</Option>
+            <Option value="case">案例</Option>
+            <Option value="faq">FAQ</Option>
+          </Select>
+          <Button onClick={fetchEvents}>查询</Button>
+        </Space>
+        <Table columns={columns} dataSource={events} rowKey="documentId" loading={loading} />
+        <Modal title="处理同步事件" open={resolveModalOpen}
+          onOk={handleConfirmResolve} onCancel={() => setResolveModalOpen(false)}>
+          {currentEvent && (
+            <div>
+              <p><strong>来源标题：</strong>{currentEvent.sourceTitle}</p>
+              <p><strong>内容类型：</strong>{currentEvent.sourceContentType}</p>
+              <Radio.Group value={action} onChange={(e) => setAction(e.target.value)} style={{ marginTop: 16 }}>
+                <Space direction="vertical">
+                  <Radio value="create">新建草稿</Radio>
+                  <Radio value="update">更新已有草稿</Radio>
+                  <Radio value="ignore">忽略</Radio>
+                </Space>
+              </Radio.Group>
+              {action === 'update' && (
+                <Select
+                  placeholder="选择草稿"
+                  style={{ width: '100%', marginTop: 8 }}
+                  onChange={(v) => setDraftId(v)}
+                >
+                  {drafts.map((d: any) => (
+                    <Option key={d.documentId} value={d.documentId}>{d.title}</Option>
+                  ))}
+                </Select>
+              )}
+            </div>
+          )}
+        </Modal>
+        <Modal title="同步事件详情" open={detailModalOpen} onCancel={() => setDetailModalOpen(false)} footer={null}>
+          {currentEvent && (
+            <Descriptions column={1} bordered>
+              <Descriptions.Item label="来源标题">{currentEvent.sourceTitle}</Descriptions.Item>
+              <Descriptions.Item label="内容类型">{currentEvent.sourceContentType}</Descriptions.Item>
+              <Descriptions.Item label="来源 URL">{currentEvent.sourceUrl || '-'}</Descriptions.Item>
+              <Descriptions.Item label="状态">{STATUS_LABELS[currentEvent.eventStatus] || currentEvent.eventStatus}</Descriptions.Item>
+              <Descriptions.Item label="处理人">{currentEvent.resolvedBy || '-'}</Descriptions.Item>
+              <Descriptions.Item label="处理时间">{currentEvent.resolvedAt || '-'}</Descriptions.Item>
+              <Descriptions.Item label="关联草稿">{currentEvent.targetDraftId?.title || '-'}</Descriptions.Item>
+            </Descriptions>
+          )}
+        </Modal>
+      </Card>
+    </PermissionGate>
   );
 }

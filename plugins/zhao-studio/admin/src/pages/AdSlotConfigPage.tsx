@@ -2,6 +2,7 @@ import React from 'react';
 import { Card, Typography, Button, Table, Tag, Space, Modal, Popconfirm, message } from 'antd';
 import { useAdSlots } from '../hooks/useAdSlots';
 import AdSlotForm from '../components/AdSlotForm';
+import { PermissionGate } from '../components/PermissionGate';
 
 const { Title, Text } = Typography;
 
@@ -45,43 +46,45 @@ const AdSlotConfigPage = () => {
   ];
 
   return (
-    <Space direction="vertical" size="large" style={{ width: '100%' }}>
-      <div>
-        <Title level={3}>广告位配置</Title>
-        <Text type="secondary">管理广告位</Text>
-      </div>
-      <Card
-        title="广告位列表"
-        extra={<Button type="primary" onClick={() => { setEditing(null); setShowModal(true); }}>新增广告位</Button>}
-      >
-        <Table columns={columns} dataSource={slots} rowKey={(r) => r.documentId || r.id} loading={loading} />
-      </Card>
-      <Modal
-        open={showModal}
-        title={editing ? '编辑广告位' : '新增广告位'}
-        onCancel={() => setShowModal(false)}
-        footer={null}
-        destroyOnClose
-      >
-        <AdSlotForm
-          slot={editing}
-          onSave={async (data) => {
-            try {
-              if (editing) {
-                await updateSlot(editing.documentId || editing.id, data);
-              } else {
-                await createSlot(data);
-              }
-              message.success('保存成功');
-              setShowModal(false);
-            } catch {
-              message.error('保存失败');
-            }
-          }}
+    <PermissionGate action="zhao-studio.ad-slot.manage">
+      <Space direction="vertical" size="large" style={{ width: '100%' }}>
+        <div>
+          <Title level={3}>广告位配置</Title>
+          <Text type="secondary">管理广告位</Text>
+        </div>
+        <Card
+          title="广告位列表"
+          extra={<Button type="primary" onClick={() => { setEditing(null); setShowModal(true); }}>新增广告位</Button>}
+        >
+          <Table columns={columns} dataSource={slots} rowKey={(r) => r.documentId || r.id} loading={loading} />
+        </Card>
+        <Modal
+          open={showModal}
+          title={editing ? '编辑广告位' : '新增广告位'}
           onCancel={() => setShowModal(false)}
-        />
-      </Modal>
-    </Space>
+          footer={null}
+          destroyOnClose
+        >
+          <AdSlotForm
+            slot={editing}
+            onSave={async (data) => {
+              try {
+                if (editing) {
+                  await updateSlot(editing.documentId || editing.id, data);
+                } else {
+                  await createSlot(data);
+                }
+                message.success('保存成功');
+                setShowModal(false);
+              } catch {
+                message.error('保存失败');
+              }
+            }}
+            onCancel={() => setShowModal(false)}
+          />
+        </Modal>
+      </Space>
+    </PermissionGate>
   );
 };
 

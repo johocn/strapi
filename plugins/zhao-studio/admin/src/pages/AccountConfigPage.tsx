@@ -3,6 +3,7 @@ import { Card, Typography, Button, Table, Tag, Space, Modal, Popconfirm, message
 import { usePublishAccounts } from '../hooks/usePublishAccounts';
 import { usePublishPlatforms } from '../hooks/usePublishPlatforms';
 import AccountForm from '../components/AccountForm';
+import { PermissionGate } from '../components/PermissionGate';
 
 const { Title, Text } = Typography;
 
@@ -51,44 +52,46 @@ const AccountConfigPage = () => {
   ];
 
   return (
-    <Space direction="vertical" size="large" style={{ width: '100%' }}>
-      <div>
-        <Title level={3}>账号配置</Title>
-        <Text type="secondary">管理各平台的发布账号</Text>
-      </div>
-      <Card
-        title="账号列表"
-        extra={<Button type="primary" onClick={() => { setEditing(null); setShowModal(true); }}>新增账号</Button>}
-      >
-        <Table columns={columns} dataSource={accounts} rowKey={(r) => r.documentId || r.id} loading={loading} />
-      </Card>
-      <Modal
-        open={showModal}
-        title={editing ? '编辑账号' : '新增账号'}
-        onCancel={() => setShowModal(false)}
-        footer={null}
-        destroyOnClose
-      >
-        <AccountForm
-          account={editing}
-          platforms={platforms}
-          onSave={async (data) => {
-            try {
-              if (editing) {
-                await updateAccount(editing.documentId || editing.id, data);
-              } else {
-                await createAccount(data);
-              }
-              message.success('保存成功');
-              setShowModal(false);
-            } catch {
-              message.error('保存失败');
-            }
-          }}
+    <PermissionGate action="zhao-studio.publish-account.manage">
+      <Space direction="vertical" size="large" style={{ width: '100%' }}>
+        <div>
+          <Title level={3}>账号配置</Title>
+          <Text type="secondary">管理各平台的发布账号</Text>
+        </div>
+        <Card
+          title="账号列表"
+          extra={<Button type="primary" onClick={() => { setEditing(null); setShowModal(true); }}>新增账号</Button>}
+        >
+          <Table columns={columns} dataSource={accounts} rowKey={(r) => r.documentId || r.id} loading={loading} />
+        </Card>
+        <Modal
+          open={showModal}
+          title={editing ? '编辑账号' : '新增账号'}
           onCancel={() => setShowModal(false)}
-        />
-      </Modal>
-    </Space>
+          footer={null}
+          destroyOnClose
+        >
+          <AccountForm
+            account={editing}
+            platforms={platforms}
+            onSave={async (data) => {
+              try {
+                if (editing) {
+                  await updateAccount(editing.documentId || editing.id, data);
+                } else {
+                  await createAccount(data);
+                }
+                message.success('保存成功');
+                setShowModal(false);
+              } catch {
+                message.error('保存失败');
+              }
+            }}
+            onCancel={() => setShowModal(false)}
+          />
+        </Modal>
+      </Space>
+    </PermissionGate>
   );
 };
 

@@ -2,6 +2,7 @@ import React from 'react';
 import { Card, Typography, Button, Table, Tag, Space, Modal, Popconfirm, message } from 'antd';
 import { usePublishPlatforms } from '../hooks/usePublishPlatforms';
 import PlatformForm from '../components/PlatformForm';
+import { PermissionGate } from '../components/PermissionGate';
 
 const { Title, Text } = Typography;
 
@@ -44,43 +45,45 @@ const PlatformConfigPage = () => {
   ];
 
   return (
-    <Space direction="vertical" size="large" style={{ width: '100%' }}>
-      <div>
-        <Title level={3}>平台配置</Title>
-        <Text type="secondary">管理发布平台</Text>
-      </div>
-      <Card
-        title="平台列表"
-        extra={<Button type="primary" onClick={() => { setEditing(null); setShowModal(true); }}>新增平台</Button>}
-      >
-        <Table columns={columns} dataSource={platforms} rowKey={(r) => r.documentId || r.id} loading={loading} />
-      </Card>
-      <Modal
-        open={showModal}
-        title={editing ? '编辑平台' : '新增平台'}
-        onCancel={() => setShowModal(false)}
-        footer={null}
-        destroyOnClose
-      >
-        <PlatformForm
-          platform={editing}
-          onSave={async (data) => {
-            try {
-              if (editing) {
-                await updatePlatform(editing.documentId || editing.id, data);
-              } else {
-                await createPlatform(data);
-              }
-              message.success('保存成功');
-              setShowModal(false);
-            } catch {
-              message.error('保存失败');
-            }
-          }}
+    <PermissionGate action="zhao-studio.publish-platform.manage">
+      <Space direction="vertical" size="large" style={{ width: '100%' }}>
+        <div>
+          <Title level={3}>平台配置</Title>
+          <Text type="secondary">管理发布平台</Text>
+        </div>
+        <Card
+          title="平台列表"
+          extra={<Button type="primary" onClick={() => { setEditing(null); setShowModal(true); }}>新增平台</Button>}
+        >
+          <Table columns={columns} dataSource={platforms} rowKey={(r) => r.documentId || r.id} loading={loading} />
+        </Card>
+        <Modal
+          open={showModal}
+          title={editing ? '编辑平台' : '新增平台'}
           onCancel={() => setShowModal(false)}
-        />
-      </Modal>
-    </Space>
+          footer={null}
+          destroyOnClose
+        >
+          <PlatformForm
+            platform={editing}
+            onSave={async (data) => {
+              try {
+                if (editing) {
+                  await updatePlatform(editing.documentId || editing.id, data);
+                } else {
+                  await createPlatform(data);
+                }
+                message.success('保存成功');
+                setShowModal(false);
+              } catch {
+                message.error('保存失败');
+              }
+            }}
+            onCancel={() => setShowModal(false)}
+          />
+        </Modal>
+      </Space>
+    </PermissionGate>
   );
 };
 

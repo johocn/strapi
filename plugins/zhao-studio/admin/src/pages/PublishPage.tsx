@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card, Typography, Space, Table, Button } from 'antd';
 import PublishPanel from '../components/PublishPanel';
+import { PermissionGate } from '../components/PermissionGate';
 
 const { Title, Text } = Typography;
 
@@ -38,28 +39,32 @@ const PublishPage = () => {
   ];
 
   return (
-    <Space direction="vertical" size="large" style={{ width: '100%' }}>
-      <div>
-        <Title level={3}>内容发布</Title>
-        <Text type="secondary">多渠道内容分发</Text>
-      </div>
+    <PermissionGate action="zhao-studio.publish-record.manage">
+      <Space direction="vertical" size="large" style={{ width: '100%' }}>
+        <div>
+          <Title level={3}>内容发布</Title>
+          <Text type="secondary">多渠道内容分发</Text>
+        </div>
 
-      <Card title="待发布文章">
-        <Table
-          columns={columns}
-          dataSource={articles}
-          rowKey="id"
-          pagination={{ pageSize: 10 }}
-          locale={{ emptyText: '暂无待发布文章' }}
-        />
-      </Card>
-
-      {selectedArticleIds.length > 0 && (
-        <Card title="发布操作">
-          <PublishPanel articleIds={selectedArticleIds} />
+        <Card title="待发布文章">
+          <Table
+            columns={columns}
+            dataSource={articles}
+            rowKey="id"
+            pagination={{ pageSize: 10 }}
+            locale={{ emptyText: '暂无待发布文章' }}
+          />
         </Card>
-      )}
-    </Space>
+
+        {selectedArticleIds.length > 0 && (
+          <PermissionGate action="zhao-studio.publish.publish" mode="disable">
+            <Card title="发布操作">
+              <PublishPanel articleIds={selectedArticleIds} />
+            </Card>
+          </PermissionGate>
+        )}
+      </Space>
+    </PermissionGate>
   );
 };
 

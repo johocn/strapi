@@ -5,6 +5,7 @@ import { useCollectTasks } from '../hooks/useCollectTasks';
 import SourceConfig from '../components/SourceConfig';
 import TitleSelector from '../components/TitleSelector';
 import ContentPreview from '../components/ContentPreview';
+import { PermissionGate, PermissionButton } from '../components/PermissionGate';
 
 const { Title, Text } = Typography;
 
@@ -73,82 +74,84 @@ const CollectPage = () => {
   };
 
   return (
-    <Space direction="vertical" size="large" style={{ width: '100%' }}>
-      <div>
-        <Title level={3}>采集管理</Title>
-        <Text type="secondary">定向采集内容</Text>
-      </div>
+    <PermissionGate action="zhao-studio.collect-source.manage">
+      <Space direction="vertical" size="large" style={{ width: '100%' }}>
+        <div>
+          <Title level={3}>采集管理</Title>
+          <Text type="secondary">定向采集内容</Text>
+        </div>
 
-      {step === 'list' && (
-        <Card
-          title="采集源列表"
-          extra={<Button type="primary" onClick={handleCreateSource}>创建采集源</Button>}
-        >
-          <List
-            loading={sourcesLoading}
-            dataSource={sources}
-            renderItem={(source: any) => (
-              <List.Item
-                actions={[
-                  <Button key="edit" onClick={() => handleEditSource(source)}>编辑</Button>,
-                  <Button key="collect" type="primary" onClick={() => handleStartCollect(source.id)}>
-                    开始采集
-                  </Button>,
-                  <Button key="delete" danger onClick={() => deleteSource(source.id)}>
-                    删除
-                  </Button>,
-                ]}
-              >
-                <List.Item.Meta
-                  title={
-                    <Space>
-                      <Text strong>{source.name}</Text>
-                      <Tag color={source.type === 'template' ? 'success' : 'warning'}>
-                        {source.type === 'template' ? '模板' : '自定义'}
-                      </Tag>
-                      <Tag color={source.isActive ? 'success' : 'error'}>
-                        {source.isActive ? '启用' : '禁用'}
-                      </Tag>
-                    </Space>
-                  }
-                  description={<Text type="secondary">{source.url}</Text>}
-                />
-              </List.Item>
-            )}
+        {step === 'list' && (
+          <Card
+            title="采集源列表"
+            extra={<Button type="primary" onClick={handleCreateSource}>创建采集源</Button>}
+          >
+            <List
+              loading={sourcesLoading}
+              dataSource={sources}
+              renderItem={(source: any) => (
+                <List.Item
+                  actions={[
+                    <Button key="edit" onClick={() => handleEditSource(source)}>编辑</Button>,
+                    <PermissionButton key="collect" type="primary" action="zhao-studio.collect-task.manage" onClick={() => handleStartCollect(source.id)}>
+                      开始采集
+                    </PermissionButton>,
+                    <Button key="delete" danger onClick={() => deleteSource(source.id)}>
+                      删除
+                    </Button>,
+                  ]}
+                >
+                  <List.Item.Meta
+                    title={
+                      <Space>
+                        <Text strong>{source.name}</Text>
+                        <Tag color={source.type === 'template' ? 'success' : 'warning'}>
+                          {source.type === 'template' ? '模板' : '自定义'}
+                        </Tag>
+                        <Tag color={source.isActive ? 'success' : 'error'}>
+                          {source.isActive ? '启用' : '禁用'}
+                        </Tag>
+                      </Space>
+                    }
+                    description={<Text type="secondary">{source.url}</Text>}
+                  />
+                </List.Item>
+              )}
+            />
+          </Card>
+        )}
+
+        {step === 'select' && currentTask && (
+          <TitleSelector
+            titles={currentTask.titles || []}
+            onSelectionChange={setSelectedTitles}
+            onFetchContent={handleFetchContent}
           />
-        </Card>
-      )}
+        )}
 
-      {step === 'select' && currentTask && (
-        <TitleSelector
-          titles={currentTask.titles || []}
-          onSelectionChange={setSelectedTitles}
-          onFetchContent={handleFetchContent}
-        />
-      )}
+        {step === 'preview' && (
+          <ContentPreview
+            contents={fetchedContents}
+            onConfirm={handleConfirmImport}
+            onCancel={() => setStep('select')}
+          />
+        )}
 
-      {step === 'preview' && (
-        <ContentPreview
-          contents={fetchedContents}
-          onConfirm={handleConfirmImport}
-          onCancel={() => setStep('select')}
-        />
-      )}
-
-      <Modal
-        open={showSourceModal}
-        title={editingSource ? '编辑采集源' : '创建采集源'}
-        onCancel={() => setShowSourceModal(false)}
-        footer={null}
-        destroyOnClose
-      >
-        <SourceConfig
-          source={editingSource}
-          onSave={handleSaveSource}
+        <Modal
+          open={showSourceModal}
+          title={editingSource ? '编辑采集源' : '创建采集源'}
           onCancel={() => setShowSourceModal(false)}
-        />
-      </Modal>
-    </Space>
+          footer={null}
+          destroyOnClose
+        >
+          <SourceConfig
+            source={editingSource}
+            onSave={handleSaveSource}
+            onCancel={() => setShowSourceModal(false)}
+          />
+        </Modal>
+      </Space>
+    </PermissionGate>
   );
 };
 
