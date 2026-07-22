@@ -4,6 +4,9 @@ const config = {
   roots: ["<rootDir>/tests"],
   testMatch: ["**/*.test.ts"],
   clearMocks: true,
+  transform: {
+    "^.+\\.tsx?$": ["ts-jest", { isolatedModules: true }],
+  },
 };
 
 module.exports = config;

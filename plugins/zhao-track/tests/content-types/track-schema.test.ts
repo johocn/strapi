@@ -7,8 +7,10 @@ describe("SourceTag", () => {
     expect((sourceTag.attributes.tagId as any).unique).toBe(true);
     expect((sourceTag.attributes.tagId as any).required).toBe(true);
   });
-  it("包含 promoChannelId 占位字段", () => {
-    expect((sourceTag.attributes.promoChannelId as any).type).toBe("string");
+  it("包含 promoCampaign 关系指向 plugin::zhao-studio.promo-campaign", () => {
+    const attr = sourceTag.attributes.promoCampaign as any;
+    expect(attr.relation).toBe("manyToOne");
+    expect(attr.target).toBe("plugin::zhao-studio.promo-campaign");
   });
 });
 

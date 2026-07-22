@@ -24,8 +24,12 @@
       "relation": "manyToOne",
       "target": "plugin::zhao-track.source-tag"
     },
-    "promoChannelId": { "type": "string" },
     "promoPid": { "type": "string" },
+    "promoCampaign": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-studio.promo-campaign"
+    },
     "deviceFingerprint": { "type": "string" },
     "transactedAt": { "type": "datetime", "required": true },
     "amount": { "type": "decimal", "required": true },

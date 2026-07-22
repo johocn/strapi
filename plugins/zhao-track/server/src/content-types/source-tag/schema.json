@@ -14,7 +14,11 @@
   },
   "attributes": {
     "tagId": { "type": "uid", "required": true, "unique": true },
-    "promoChannelId": { "type": "string" },
+    "promoCampaign": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-studio.promo-campaign"
+    },
     "scene": { "type": "string" },
     "sourceUrl": { "type": "text" },
     "utmSource": { "type": "string" },

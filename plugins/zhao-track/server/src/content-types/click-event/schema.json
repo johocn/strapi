@@ -25,8 +25,17 @@
       "target": "plugin::zhao-track.source-tag",
       "inversedBy": "clickEvents"
     },
-    "promoChannelId": { "type": "string" },
     "promoPid": { "type": "string" },
+    "promoCampaign": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-studio.promo-campaign"
+    },
+    "abVariant": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-studio.ab-variant"
+    },
     "deviceFingerprint": { "type": "string", "required": true },
     "clickedAt": { "type": "datetime", "required": true },
     "ip": { "type": "string" },
