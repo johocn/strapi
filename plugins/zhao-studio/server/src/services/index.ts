@@ -11,6 +11,7 @@ import aggregation from './aggregation';
 import syncEvent from './sync-event';
 import promoChannel from './promo-channel';
 import promoCampaign from './promo-campaign';
+import abTest from './ab-test';
 
 export default {
   collect,
@@ -26,4 +27,5 @@ export default {
   'sync-event': syncEvent,
   'promo-channel': promoChannel,
   'promo-campaign': promoCampaign,
+  'ab-test': abTest,
 };
