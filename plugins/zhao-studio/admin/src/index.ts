@@ -12,7 +12,7 @@ export default {
       },
       permissions: [
         {
-          action: 'plugin::zhao-studio.read',
+          action: 'zhao-studio.read',
           subject: null,
         },
       ],
