@@ -14,8 +14,8 @@ describe("SourceResolver", () => {
     expect(update).toHaveBeenCalled();
   });
 
-  it("仅提供 utm 且未命中则创建新 SourceTag（promoChannelId 为空）", async () => {
-    const create = jest.fn().mockResolvedValue({ documentId: "d2", tagId: "new1", promoChannelId: null });
+  it("仅提供 utm 且未命中则创建新 SourceTag（promoCampaign 为空）", async () => {
+    const create = jest.fn().mockResolvedValue({ documentId: "d2", tagId: "new1", promoCampaign: null });
     const findMany = jest.fn().mockResolvedValue([]);
     const mockStrapi = createMockStrapi();
     mockStrapi.documents.mockReturnValue({ findMany, create, update: jest.fn(), findOne: jest.fn() });
@@ -23,7 +23,7 @@ describe("SourceResolver", () => {
     const result = await svc.identify({ utm: { utmSource: "wechat" } });
     expect(result.isNew).toBe(true);
     expect(create).toHaveBeenCalledWith(expect.objectContaining({
-      data: expect.objectContaining({ promoChannelId: null, utmSource: "wechat" }),
+      data: expect.objectContaining({ promoCampaign: null, utmSource: "wechat" }),
     }));
   });
 

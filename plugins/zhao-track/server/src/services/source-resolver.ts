@@ -13,6 +13,33 @@ export interface IdentifyOpts {
 export default ({ strapi }: { strapi: Core.Strapi }) => {
   return {
     async identify(opts: IdentifyOpts) {
+      // 步骤 0: utm_source 匹配 PromoCampaign/Channel
+      let matchedCampaignId: string | undefined;
+      let matchedChannelId: string | undefined;
+      if (opts.utm?.utmSource) {
+        try {
+          const campaigns = await strapi.documents("plugin::zhao-studio.promo-campaign").findMany({
+            filters: { code: opts.utm.utmSource },
+            populate: { channel: true },
+            limit: 1,
+          });
+          if (campaigns && campaigns.length > 0) {
+            matchedCampaignId = campaigns[0].documentId;
+            matchedChannelId = campaigns[0].channel?.documentId;
+          } else {
+            const channels = await strapi.documents("plugin::zhao-studio.promo-channel").findMany({
+              filters: { code: opts.utm.utmSource },
+              limit: 1,
+            });
+            if (channels && channels.length > 0) {
+              matchedChannelId = channels[0].documentId;
+            }
+          }
+        } catch (err: any) {
+          strapi.log.warn(`[source-resolver] utm_source match failed: ${err.message}`);
+        }
+      }
+
       // 1. 直接提供 sourceTagId
       if (opts.sourceTagId) {
         const tags = await strapi.documents(SOURCE_TAG_UID).findMany({
@@ -76,7 +103,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       const newTag = await strapi.documents(SOURCE_TAG_UID).create({
         data: {
           tagId,
-          promoChannelId: null,
+          promoCampaign: matchedCampaignId || null,
           sourceUrl: opts.fullUrl,
           utmSource: opts.utm?.utmSource,
           utmMedium: opts.utm?.utmMedium,
