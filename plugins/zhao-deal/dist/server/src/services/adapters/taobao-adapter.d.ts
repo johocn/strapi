@@ -1,0 +1,36 @@
+import { PlatformAdapter, FetchCouponsOpts, FetchProductsOpts, FetchOrdersOpts } from './platform-adapter';
+export interface AdapterConfig {
+    appKey: string;
+    appSecret: string;
+    apiEndpoint: string;
+}
+export declare class TaobaoAdapter implements PlatformAdapter {
+    readonly platformCode = "taobao";
+    private appKey;
+    private appSecret;
+    private apiEndpoint;
+    constructor(config: AdapterConfig);
+    fetchCoupons(_opts: FetchCouponsOpts): Promise<{
+        list: any[];
+        total: number;
+        hasNext: boolean;
+    }>;
+    fetchProducts(_opts: FetchProductsOpts): Promise<{
+        list: any[];
+        total: number;
+        hasNext: boolean;
+    }>;
+    transformLink(opts: {
+        promoLink: string;
+        promoChannelId: string;
+        sourceTagId?: string;
+    }): Promise<{
+        resolvedLink: string;
+        promoPid: string;
+    }>;
+    fetchOrders(_opts: FetchOrdersOpts): Promise<{
+        list: any[];
+        total: number;
+        hasNext: boolean;
+    }>;
+}

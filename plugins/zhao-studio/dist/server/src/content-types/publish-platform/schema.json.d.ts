@@ -26,8 +26,14 @@ declare const _default: {
     },
     "type": {
       "type": "enumeration",
-      "enum": ["toutiao", "xiaohongshu", "wechat", "custom", "internal"],
+      "enum": ["toutiao", "xiaohongshu", "wechat", "douyin", "bilibili", "taobao", "pdd", "douyin-ecom", "jd", "custom", "internal"],
       "required": true
+    },
+    "category": {
+      "type": "enumeration",
+      "enum": ["content", "social", "ecommerce", "custom"],
+      "required": true,
+      "default": "content"
     },
     "description": {
       "type": "text"

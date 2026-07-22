@@ -1,0 +1,62 @@
+declare const _default: {
+  "kind": "collectionType",
+  "collectionName": "zhao_track_orders",
+  "info": {
+    "singularName": "order",
+    "pluralName": "orders",
+    "displayName": "订单记录",
+    "description": "佣金订单与归因"
+  },
+  "options": { "draftAndPublish": false },
+  "pluginOptions": {
+    "content-manager": { "visible": true },
+    "content-type-builder": { "visible": false }
+  },
+  "attributes": {
+    "orderId": { "type": "uid", "required": true, "unique": true },
+    "coupon": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-deal.coupon"
+    },
+    "sourceTag": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-track.source-tag"
+    },
+    "promoPid": { "type": "string" },
+    "promoCampaign": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-studio.promo-campaign"
+    },
+    "deviceFingerprint": { "type": "string" },
+    "transactedAt": { "type": "datetime", "required": true },
+    "amount": { "type": "decimal", "required": true },
+    "commission": { "type": "decimal" },
+    "commissionStatus": {
+      "type": "enumeration",
+      "enum": ["pending", "confirmed", "paid", "canceled"],
+      "default": "pending"
+    },
+    "platform": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-deal.platform"
+    },
+    "matchedClick": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "plugin::zhao-track.click-event"
+    },
+    "attributionQuality": {
+      "type": "enumeration",
+      "enum": ["pid_match", "click_match", "weak_match", "fallback_match", "unmatched"],
+      "default": "unmatched"
+    },
+    "syncedAt": { "type": "datetime" }
+  }
+}
+;
+
+export default _default;

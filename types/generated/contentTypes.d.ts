@@ -1309,6 +1309,53 @@ export interface PluginZhaoChannelUserInvite
   };
 }
 
+export interface PluginZhaoCommonGlobalConfig
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_global_configs';
+  info: {
+    description: '\u8DE8\u79DF\u6237\u7684\u5168\u5C40\u6A21\u5757\u5F00\u5173\uFF0C\u4F18\u5148\u7EA7\u6700\u9AD8\uFF0C\u4EC5 admin \u53EF\u6539';
+    displayName: '\u5168\u5C40\u914D\u7F6E';
+    pluralName: 'global-configs';
+    singularName: 'global-config';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-common.global-config'
+    > &
+      Schema.Attribute.Private;
+    moduleEnabled: Schema.Attribute.JSON &
+      Schema.Attribute.DefaultTo<{
+        channel: true;
+        community: false;
+        course: true;
+        forum: false;
+        logistics: false;
+        oss: false;
+        payment: false;
+        points: true;
+        quiz: true;
+        sso: false;
+        studio: false;
+        thirdParty: false;
+        website: false;
+      }>;
+    moduleTenantGrants: Schema.Attribute.JSON & Schema.Attribute.DefaultTo<{}>;
+    moduleVisibility: Schema.Attribute.JSON & Schema.Attribute.DefaultTo<{}>;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
 export interface PluginZhaoCommonSiteConfig
   extends Struct.CollectionTypeSchema {
   collectionName: 'zhao_site_configs';
@@ -1433,6 +1480,7 @@ export interface PluginZhaoCommonSiteConfig
       'plugin::zhao-logistics.tracking-shipment'
     >;
     logo: Schema.Attribute.Media<'images'>;
+    moduleVisibility: Schema.Attribute.JSON & Schema.Attribute.DefaultTo<{}>;
     publishedAt: Schema.Attribute.DateTime;
     seoDescription: Schema.Attribute.Text;
     seoKeywords: Schema.Attribute.String &
@@ -8175,6 +8223,7 @@ declare module '@strapi/strapi' {
       'plugin::zhao-channel.channel-member': PluginZhaoChannelChannelMember;
       'plugin::zhao-channel.user-channel': PluginZhaoChannelUserChannel;
       'plugin::zhao-channel.user-invite': PluginZhaoChannelUserInvite;
+      'plugin::zhao-common.global-config': PluginZhaoCommonGlobalConfig;
       'plugin::zhao-common.site-config': PluginZhaoCommonSiteConfig;
       'plugin::zhao-common.site-template': PluginZhaoCommonSiteTemplate;
       'plugin::zhao-course.course': PluginZhaoCourseCourse;

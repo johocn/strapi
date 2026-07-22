@@ -30,6 +30,12 @@ declare const _default: {
                 enum: string[];
                 required: boolean;
             };
+            category: {
+                type: string;
+                enum: string[];
+                required: boolean;
+                default: string;
+            };
             description: {
                 type: string;
             };

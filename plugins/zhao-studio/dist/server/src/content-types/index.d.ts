@@ -270,6 +270,12 @@ declare const _default: {
                     enum: string[];
                     required: boolean;
                 };
+                category: {
+                    type: string;
+                    enum: string[];
+                    required: boolean;
+                    default: string;
+                };
                 description: {
                     type: string;
                 };
@@ -407,6 +413,11 @@ declare const _default: {
                 };
                 updatedAt: {
                     type: string;
+                };
+                abVariant: {
+                    type: string;
+                    relation: string;
+                    target: string;
                 };
             };
         };
@@ -648,6 +659,9 @@ declare const _default: {
                 createdAt: {
                     type: string;
                 };
+                promoChannelCode: {
+                    type: string;
+                };
             };
         };
     };
@@ -795,6 +809,317 @@ declare const _default: {
                     type: string;
                 };
                 resolvedBy: {
+                    type: string;
+                };
+            };
+        };
+    };
+    'promo-channel': {
+        schema: {
+            kind: string;
+            collectionName: string;
+            info: {
+                singularName: string;
+                pluralName: string;
+                displayName: string;
+                description: string;
+            };
+            options: {
+                draftAndPublish: boolean;
+            };
+            pluginOptions: {
+                "content-manager": {
+                    visible: boolean;
+                };
+                "content-type-builder": {
+                    visible: boolean;
+                };
+            };
+            attributes: {
+                name: {
+                    type: string;
+                    required: boolean;
+                    maxLength: number;
+                };
+                code: {
+                    type: string;
+                    required: boolean;
+                    unique: boolean;
+                };
+                description: {
+                    type: string;
+                };
+                scene: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
+                status: {
+                    type: string;
+                    default: boolean;
+                };
+                budget: {
+                    type: string;
+                };
+                actualCost: {
+                    type: string;
+                };
+                sortOrder: {
+                    type: string;
+                    default: number;
+                };
+                platformConfigs: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    mappedBy: string;
+                };
+                campaigns: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    mappedBy: string;
+                };
+                experiments: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    mappedBy: string;
+                };
+                coupons: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    mappedBy: string;
+                };
+            };
+        };
+    };
+    'channel-platform-config': {
+        schema: {
+            kind: string;
+            collectionName: string;
+            info: {
+                singularName: string;
+                pluralName: string;
+                displayName: string;
+                description: string;
+            };
+            options: {
+                draftAndPublish: boolean;
+            };
+            pluginOptions: {
+                "content-manager": {
+                    visible: boolean;
+                };
+                "content-type-builder": {
+                    visible: boolean;
+                };
+            };
+            attributes: {
+                channel: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    inversedBy: string;
+                };
+                platform: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                };
+                promoPid: {
+                    type: string;
+                };
+                promoLink: {
+                    type: string;
+                };
+                isActive: {
+                    type: string;
+                    default: boolean;
+                };
+            };
+        };
+    };
+    'promo-campaign': {
+        schema: {
+            kind: string;
+            collectionName: string;
+            info: {
+                singularName: string;
+                pluralName: string;
+                displayName: string;
+                description: string;
+            };
+            options: {
+                draftAndPublish: boolean;
+            };
+            pluginOptions: {
+                "content-manager": {
+                    visible: boolean;
+                };
+                "content-type-builder": {
+                    visible: boolean;
+                };
+            };
+            attributes: {
+                name: {
+                    type: string;
+                    required: boolean;
+                    maxLength: number;
+                };
+                code: {
+                    type: string;
+                    required: boolean;
+                    unique: boolean;
+                };
+                channel: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    inversedBy: string;
+                };
+                description: {
+                    type: string;
+                };
+                startAt: {
+                    type: string;
+                    required: boolean;
+                };
+                endAt: {
+                    type: string;
+                    required: boolean;
+                };
+                status: {
+                    type: string;
+                    default: boolean;
+                };
+                budget: {
+                    type: string;
+                };
+                actualCost: {
+                    type: string;
+                };
+                experiments: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    mappedBy: string;
+                };
+            };
+        };
+    };
+    'ab-experiment': {
+        schema: {
+            kind: string;
+            collectionName: string;
+            info: {
+                singularName: string;
+                pluralName: string;
+                displayName: string;
+                description: string;
+            };
+            options: {
+                draftAndPublish: boolean;
+            };
+            pluginOptions: {
+                "content-manager": {
+                    visible: boolean;
+                };
+                "content-type-builder": {
+                    visible: boolean;
+                };
+            };
+            attributes: {
+                name: {
+                    type: string;
+                    required: boolean;
+                    maxLength: number;
+                };
+                channel: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    inversedBy: string;
+                };
+                campaign: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    inversedBy: string;
+                };
+                description: {
+                    type: string;
+                };
+                status: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
+                startAt: {
+                    type: string;
+                };
+                endAt: {
+                    type: string;
+                };
+                variants: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    mappedBy: string;
+                };
+            };
+        };
+    };
+    'ab-variant': {
+        schema: {
+            kind: string;
+            collectionName: string;
+            info: {
+                singularName: string;
+                pluralName: string;
+                displayName: string;
+                description: string;
+            };
+            options: {
+                draftAndPublish: boolean;
+            };
+            pluginOptions: {
+                "content-manager": {
+                    visible: boolean;
+                };
+                "content-type-builder": {
+                    visible: boolean;
+                };
+            };
+            attributes: {
+                experiment: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    inversedBy: string;
+                };
+                name: {
+                    type: string;
+                    required: boolean;
+                    maxLength: number;
+                };
+                weight: {
+                    type: string;
+                    required: boolean;
+                    default: number;
+                };
+                article: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                };
+                coupon: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                };
+                description: {
                     type: string;
                 };
             };

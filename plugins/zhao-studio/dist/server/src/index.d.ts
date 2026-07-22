@@ -129,6 +129,40 @@ declare const _default: {
             resolve(ctx: any): Promise<void>;
             createFromWebhook(ctx: any): Promise<void>;
         };
+        'promo-channel': ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            list(ctx: any): Promise<void>;
+            findOne(ctx: any): Promise<void>;
+            create(ctx: any): Promise<void>;
+            update(ctx: any): Promise<void>;
+            delete(ctx: any): Promise<void>;
+        };
+        'promo-campaign': ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            list(ctx: any): Promise<void>;
+            findOne(ctx: any): Promise<void>;
+            create(ctx: any): Promise<void>;
+            update(ctx: any): Promise<void>;
+            delete(ctx: any): Promise<void>;
+        };
+        'ab-test': ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            list(ctx: any): Promise<void>;
+            findOne(ctx: any): Promise<void>;
+            create(ctx: any): Promise<void>;
+            start(ctx: any): Promise<void>;
+            stop(ctx: any): Promise<void>;
+            report(ctx: any): Promise<void>;
+            pickVariant(ctx: any): Promise<void>;
+        };
+        'channel-report': ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            getChannelReport(ctx: any): Promise<void>;
+        };
     };
     routes: {
         admin: {
@@ -400,6 +434,108 @@ declare const _default: {
             findOne(siteId: number, documentId: string): Promise<any>;
             resolve(siteId: number, documentId: string, body: any): Promise<any>;
             createFromWebhook(payload: any): Promise<any>;
+        };
+        'promo-channel': ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            listChannels(opts: {
+                page: number;
+                pageSize: number;
+                scene?: string;
+            }): Promise<import('@strapi/types/dist/modules/documents').AnyDocument[]>;
+            getChannel(id: string): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
+            createChannel(data: {
+                name: string;
+                code: string;
+                description?: string;
+                scene?: string;
+                budget?: number;
+                actualCost?: number;
+            }): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
+            updateChannel(id: string, data: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument | null>;
+            deleteChannel(id: string): Promise<{
+                documentId: import('@strapi/types/dist/modules/documents').ID;
+                entries: import('@strapi/types/dist/modules/documents').Result<TContentTypeUID, TParams>[];
+            }>;
+            addPlatformConfig(channelId: string, data: {
+                platform: string;
+                promoPid?: string;
+                promoLink?: string;
+                isActive?: boolean;
+            }): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
+            updatePlatformConfig(configId: string, data: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument | null>;
+            removePlatformConfig(configId: string): Promise<{
+                documentId: import('@strapi/types/dist/modules/documents').ID;
+                entries: import('@strapi/types/dist/modules/documents').Result<TContentTypeUID, TParams>[];
+            }>;
+        };
+        'promo-campaign': ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            listCampaigns(opts: {
+                page: number;
+                pageSize: number;
+                channelId?: string;
+                status?: boolean;
+            }): Promise<import('@strapi/types/dist/modules/documents').AnyDocument[]>;
+            getCampaign(id: string): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
+            createCampaign(data: {
+                name: string;
+                code: string;
+                channel: string;
+                description?: string;
+                startAt: string;
+                endAt: string;
+                status?: boolean;
+                budget?: number;
+                actualCost?: number;
+            }): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
+            updateCampaign(id: string, data: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument | null>;
+            deleteCampaign(id: string): Promise<{
+                documentId: import('@strapi/types/dist/modules/documents').ID;
+                entries: import('@strapi/types/dist/modules/documents').Result<TContentTypeUID, TParams>[];
+            }>;
+        };
+        'ab-test': ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            listExperiments: (opts: {
+                page: number;
+                pageSize: number;
+                channelId?: string;
+                campaignId?: string;
+                status?: string;
+            }) => Promise<import('@strapi/types/dist/modules/documents').AnyDocument[]>;
+            getExperiment: (id: string) => Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
+            createExperiment: (data: any) => Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
+            startExperiment: (id: string) => Promise<import('@strapi/types/dist/modules/documents').AnyDocument | null>;
+            stopExperiment: (id: string) => Promise<import('@strapi/types/dist/modules/documents').AnyDocument | null>;
+            pickVariant: (opts: {
+                channelId?: string;
+                campaignId?: string;
+            }) => Promise<any | null>;
+            getExperimentReport: (experimentId: string, opts: {
+                startDate: string;
+                endDate: string;
+            }) => Promise<{
+                experiment: {
+                    documentId: string;
+                    name: any;
+                    status: any;
+                };
+                variants: any;
+            }>;
+        };
+        'channel-report': ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            getChannelReport(opts: {
+                channelCode: string;
+                startDate: string;
+                endDate: string;
+                groupBy?: "day" | "campaign" | "variant";
+            }): Promise<any>;
+            _resetCache(): void;
         };
     };
     policies: {};
@@ -676,6 +812,12 @@ declare const _default: {
                         enum: string[];
                         required: boolean;
                     };
+                    category: {
+                        type: string;
+                        enum: string[];
+                        required: boolean;
+                        default: string;
+                    };
                     description: {
                         type: string;
                     };
@@ -813,6 +955,11 @@ declare const _default: {
                     };
                     updatedAt: {
                         type: string;
+                    };
+                    abVariant: {
+                        type: string;
+                        relation: string;
+                        target: string;
                     };
                 };
             };
@@ -1054,6 +1201,9 @@ declare const _default: {
                     createdAt: {
                         type: string;
                     };
+                    promoChannelCode: {
+                        type: string;
+                    };
                 };
             };
         };
@@ -1201,6 +1351,317 @@ declare const _default: {
                         type: string;
                     };
                     resolvedBy: {
+                        type: string;
+                    };
+                };
+            };
+        };
+        'promo-channel': {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                    description: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                pluginOptions: {
+                    "content-manager": {
+                        visible: boolean;
+                    };
+                    "content-type-builder": {
+                        visible: boolean;
+                    };
+                };
+                attributes: {
+                    name: {
+                        type: string;
+                        required: boolean;
+                        maxLength: number;
+                    };
+                    code: {
+                        type: string;
+                        required: boolean;
+                        unique: boolean;
+                    };
+                    description: {
+                        type: string;
+                    };
+                    scene: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    status: {
+                        type: string;
+                        default: boolean;
+                    };
+                    budget: {
+                        type: string;
+                    };
+                    actualCost: {
+                        type: string;
+                    };
+                    sortOrder: {
+                        type: string;
+                        default: number;
+                    };
+                    platformConfigs: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    campaigns: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    experiments: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    coupons: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                };
+            };
+        };
+        'channel-platform-config': {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                    description: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                pluginOptions: {
+                    "content-manager": {
+                        visible: boolean;
+                    };
+                    "content-type-builder": {
+                        visible: boolean;
+                    };
+                };
+                attributes: {
+                    channel: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        inversedBy: string;
+                    };
+                    platform: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                    };
+                    promoPid: {
+                        type: string;
+                    };
+                    promoLink: {
+                        type: string;
+                    };
+                    isActive: {
+                        type: string;
+                        default: boolean;
+                    };
+                };
+            };
+        };
+        'promo-campaign': {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                    description: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                pluginOptions: {
+                    "content-manager": {
+                        visible: boolean;
+                    };
+                    "content-type-builder": {
+                        visible: boolean;
+                    };
+                };
+                attributes: {
+                    name: {
+                        type: string;
+                        required: boolean;
+                        maxLength: number;
+                    };
+                    code: {
+                        type: string;
+                        required: boolean;
+                        unique: boolean;
+                    };
+                    channel: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        inversedBy: string;
+                    };
+                    description: {
+                        type: string;
+                    };
+                    startAt: {
+                        type: string;
+                        required: boolean;
+                    };
+                    endAt: {
+                        type: string;
+                        required: boolean;
+                    };
+                    status: {
+                        type: string;
+                        default: boolean;
+                    };
+                    budget: {
+                        type: string;
+                    };
+                    actualCost: {
+                        type: string;
+                    };
+                    experiments: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                };
+            };
+        };
+        'ab-experiment': {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                    description: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                pluginOptions: {
+                    "content-manager": {
+                        visible: boolean;
+                    };
+                    "content-type-builder": {
+                        visible: boolean;
+                    };
+                };
+                attributes: {
+                    name: {
+                        type: string;
+                        required: boolean;
+                        maxLength: number;
+                    };
+                    channel: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        inversedBy: string;
+                    };
+                    campaign: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        inversedBy: string;
+                    };
+                    description: {
+                        type: string;
+                    };
+                    status: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    startAt: {
+                        type: string;
+                    };
+                    endAt: {
+                        type: string;
+                    };
+                    variants: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                };
+            };
+        };
+        'ab-variant': {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                    description: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                pluginOptions: {
+                    "content-manager": {
+                        visible: boolean;
+                    };
+                    "content-type-builder": {
+                        visible: boolean;
+                    };
+                };
+                attributes: {
+                    experiment: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        inversedBy: string;
+                    };
+                    name: {
+                        type: string;
+                        required: boolean;
+                        maxLength: number;
+                    };
+                    weight: {
+                        type: string;
+                        required: boolean;
+                        default: number;
+                    };
+                    article: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                    };
+                    coupon: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                    };
+                    description: {
                         type: string;
                     };
                 };

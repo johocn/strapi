@@ -1,1 +1,1 @@
-{"version":3,"file":"PluginLayout.d.ts","sourceRoot":"","sources":["../../../../../admin/src/components/Layout/PluginLayout.tsx"],"names":[],"mappings":"AA4BA,QAAA,MAAM,YAAY,GAAI,cAAc;IAAE,QAAQ,CAAC,EAAE,KAAK,CAAC,SAAS,CAAA;CAAE,4CAsBjE,CAAC;AAEF,OAAO,EAAE,YAAY,EAAE,CAAC"}
+{"version":3,"file":"PluginLayout.d.ts","sourceRoot":"","sources":["../../../../../admin/src/components/Layout/PluginLayout.tsx"],"names":[],"mappings":"AA4BA,QAAA,MAAM,YAAY,GAAI,cAAc;IAAE,QAAQ,CAAC,EAAE,KAAK,CAAC,SAAS,CAAA;CAAE,gCAsBjE,CAAC;AAEF,OAAO,EAAE,YAAY,EAAE,CAAC"}

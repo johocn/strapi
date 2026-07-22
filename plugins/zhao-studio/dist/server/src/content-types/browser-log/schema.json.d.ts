@@ -65,7 +65,8 @@ declare const _default: {
     "readDuration": { "type": "integer", "default": 0 },
     "scrollDepth": { "type": "integer", "default": 0 },
     "timestamp": { "type": "datetime", "required": true },
-    "createdAt": { "type": "datetime" }
+    "createdAt": { "type": "datetime" },
+    "promoChannelCode": { "type": "string" }
   }
 };
 

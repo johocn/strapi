@@ -1,0 +1,36 @@
+declare const _default: {
+  "kind": "collectionType",
+  "collectionName": "zhao_track_source_tags",
+  "info": {
+    "singularName": "source-tag",
+    "pluralName": "source-tags",
+    "displayName": "来源标签",
+    "description": "用户来源识别"
+  },
+  "options": { "draftAndPublish": false },
+  "pluginOptions": {
+    "content-manager": { "visible": true },
+    "content-type-builder": { "visible": false }
+  },
+  "attributes": {
+    "tagId": { "type": "uid", "required": true, "unique": true },
+    "promoCampaign": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-studio.promo-campaign"
+    },
+    "scene": { "type": "string" },
+    "sourceUrl": { "type": "text" },
+    "utmSource": { "type": "string" },
+    "utmMedium": { "type": "string" },
+    "utmCampaign": { "type": "string" },
+    "utmContent": { "type": "string" },
+    "utmTerm": { "type": "string" },
+    "deviceFingerprint": { "type": "string" },
+    "firstSeenAt": { "type": "datetime", "default": null },
+    "lastSeenAt": { "type": "datetime" }
+  }
+}
+;
+
+export default _default;

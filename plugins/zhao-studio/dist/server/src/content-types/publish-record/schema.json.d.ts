@@ -54,6 +54,11 @@ declare const _default: {
     },
     "updatedAt": {
       "type": "datetime"
+    },
+    "abVariant": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-studio.ab-variant"
     }
   }
 };

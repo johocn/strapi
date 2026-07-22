@@ -29,8 +29,36 @@ const register = ({ strapi: strapi2 }) => {
   strapi2.admin.services.permission.actionProvider.registerMany(
     permissions.actions
   );
+  try {
+    strapi2.plugin("zhao-common").service("i18n").setMessages({
+      STUDIO_PROMO_CHANNEL_NOT_FOUND: "推广渠道不存在",
+      STUDIO_PROMO_CHANNEL_CODE_DUPLICATE: "渠道 code 重复",
+      STUDIO_PROMO_CAMPAIGN_NOT_FOUND: "营销活动不存在",
+      STUDIO_PROMO_CAMPAIGN_CODE_DUPLICATE: "活动 code 重复",
+      STUDIO_PROMO_CAMPAIGN_CHANNEL_REQUIRED: "活动必须关联渠道",
+      STUDIO_PROMO_EXPERIMENT_NOT_FOUND: "A/B 实验不存在",
+      STUDIO_PROMO_EXPERIMENT_NO_VARIANTS: "实验无变体",
+      STUDIO_PROMO_EXPERIMENT_NOT_RUNNING: "实验未运行",
+      STUDIO_PROMO_VARIANT_NOT_FOUND: "变体不存在",
+      STUDIO_PROMO_VARIANT_NO_CONTENT: "变体未关联文章或优惠券",
+      STUDIO_PROMO_PLATFORM_CONFIG_DUPLICATE: "渠道+平台配置重复"
+    });
+  } catch {
+  }
 };
 const bootstrap = ({ strapi: strapi2 }) => {
+  const checkPlugin = (name) => {
+    try {
+      const p = strapi2.plugin(name);
+      if (!p) {
+        strapi2.log.warn(`[zhao-studio] 依赖插件 ${name} 未启用，推广渠道跨插件功能将不可用`);
+      }
+    } catch {
+      strapi2.log.warn(`[zhao-studio] 依赖插件 ${name} 未启用，推广渠道跨插件功能将不可用`);
+    }
+  };
+  checkPlugin("zhao-track");
+  checkPlugin("zhao-deal");
 };
 const destroy = ({ strapi: strapi2 }) => {
 };
@@ -533,6 +561,136 @@ const syncEventApi = {
     ctx.body = await strapi.plugin("zhao-studio").service("sync-event").createFromWebhook(ctx.request.body);
   }
 };
+const promoChannel$2 = ({ strapi: strapi2 }) => ({
+  async list(ctx) {
+    const service = strapi2.plugin("zhao-studio").service("promo-channel");
+    const { page = 1, pageSize = 10, scene } = ctx.query;
+    const result = await service.listChannels({ page: Number(page), pageSize: Number(pageSize), scene });
+    ctx.body = { data: result };
+  },
+  async findOne(ctx) {
+    const service = strapi2.plugin("zhao-studio").service("promo-channel");
+    const result = await service.getChannel(ctx.params.id);
+    ctx.body = { data: result };
+  },
+  async create(ctx) {
+    const service = strapi2.plugin("zhao-studio").service("promo-channel");
+    const result = await service.createChannel(ctx.request.body.data);
+    ctx.body = { data: result };
+  },
+  async update(ctx) {
+    const service = strapi2.plugin("zhao-studio").service("promo-channel");
+    const result = await service.updateChannel(ctx.params.id, ctx.request.body.data);
+    ctx.body = { data: result };
+  },
+  async delete(ctx) {
+    const service = strapi2.plugin("zhao-studio").service("promo-channel");
+    await service.deleteChannel(ctx.params.id);
+    ctx.body = { data: { success: true } };
+  }
+});
+const promoCampaign$2 = ({ strapi: strapi2 }) => ({
+  async list(ctx) {
+    const service = strapi2.plugin("zhao-studio").service("promo-campaign");
+    const { page = 1, pageSize = 10, channelId, status } = ctx.query;
+    const result = await service.listCampaigns({
+      page: Number(page),
+      pageSize: Number(pageSize),
+      channelId,
+      status: status !== void 0 ? status === "true" : void 0
+    });
+    ctx.body = { data: result };
+  },
+  async findOne(ctx) {
+    const service = strapi2.plugin("zhao-studio").service("promo-campaign");
+    const result = await service.getCampaign(ctx.params.id);
+    ctx.body = { data: result };
+  },
+  async create(ctx) {
+    const service = strapi2.plugin("zhao-studio").service("promo-campaign");
+    const result = await service.createCampaign(ctx.request.body.data);
+    ctx.body = { data: result };
+  },
+  async update(ctx) {
+    const service = strapi2.plugin("zhao-studio").service("promo-campaign");
+    const result = await service.updateCampaign(ctx.params.id, ctx.request.body.data);
+    ctx.body = { data: result };
+  },
+  async delete(ctx) {
+    const service = strapi2.plugin("zhao-studio").service("promo-campaign");
+    await service.deleteCampaign(ctx.params.id);
+    ctx.body = { data: { success: true } };
+  }
+});
+const abTest$1 = ({ strapi: strapi2 }) => ({
+  async list(ctx) {
+    const service = strapi2.plugin("zhao-studio").service("ab-test");
+    const { page = 1, pageSize = 10, channelId, campaignId, status } = ctx.query;
+    const result = await service.listExperiments({
+      page: Number(page),
+      pageSize: Number(pageSize),
+      channelId,
+      campaignId,
+      status
+    });
+    ctx.body = { data: result };
+  },
+  async findOne(ctx) {
+    const service = strapi2.plugin("zhao-studio").service("ab-test");
+    const result = await service.getExperiment(ctx.params.id);
+    ctx.body = { data: result };
+  },
+  async create(ctx) {
+    const service = strapi2.plugin("zhao-studio").service("ab-test");
+    const result = await service.createExperiment(ctx.request.body.data);
+    ctx.body = { data: result };
+  },
+  async start(ctx) {
+    const service = strapi2.plugin("zhao-studio").service("ab-test");
+    const result = await service.startExperiment(ctx.params.id);
+    ctx.body = { data: result };
+  },
+  async stop(ctx) {
+    const service = strapi2.plugin("zhao-studio").service("ab-test");
+    const result = await service.stopExperiment(ctx.params.id);
+    ctx.body = { data: result };
+  },
+  async report(ctx) {
+    const service = strapi2.plugin("zhao-studio").service("ab-test");
+    const { startDate, endDate } = ctx.query;
+    const result = await service.getExperimentReport(ctx.params.id, { startDate, endDate });
+    ctx.body = { data: result };
+  },
+  async pickVariant(ctx) {
+    const service = strapi2.plugin("zhao-studio").service("ab-test");
+    const { sourceTagId, campaignId } = ctx.query;
+    let channelId;
+    if (sourceTagId) {
+      try {
+        const tags = await strapi2.documents("plugin::zhao-track.source-tag").findMany({
+          filters: { tagId: sourceTagId },
+          populate: { promoCampaign: { populate: { channel: true } } },
+          limit: 1
+        });
+        if (tags && tags.length > 0) {
+          channelId = tags[0].promoCampaign?.channel?.documentId;
+        }
+      } catch (err) {
+        strapi2.log.warn(`[ab-test] pickVariant sourceTag lookup failed: ${err.message}`);
+      }
+    }
+    const result = await service.pickVariant({ channelId, campaignId });
+    ctx.body = { data: result };
+  }
+});
+const channelReport$1 = ({ strapi: strapi2 }) => ({
+  async getChannelReport(ctx) {
+    const service = strapi2.plugin("zhao-studio").service("channel-report");
+    const { channelCode, startDate, endDate, groupBy } = ctx.query;
+    const result = await service.getChannelReport({ channelCode, startDate, endDate, groupBy });
+    ctx.body = { data: result };
+  }
+});
 const controllers = {
   collect: collect$1,
   draft,
@@ -543,7 +701,11 @@ const controllers = {
   "knowledge-index": knowledgeIndex,
   "browser-log": browserLog$1,
   "stat-summary": statSummary$1,
-  "sync-event-api": syncEventApi
+  "sync-event-api": syncEventApi,
+  "promo-channel": promoChannel$2,
+  "promo-campaign": promoCampaign$2,
+  "ab-test": abTest$1,
+  "channel-report": channelReport$1
 };
 const adminRoutes = () => ({
   type: "admin",
@@ -649,7 +811,27 @@ const contentApiRoutes = () => ({
     adminRoute("GET", "/sync-events/:documentId", "sync-event-api.findOne", "zhao-studio.read"),
     adminRoute("POST", "/sync-events/:documentId/resolve", "sync-event-api.resolve", "zhao-studio.update"),
     // webhook 公开路由（zhao-website → zhao-studio）
-    publicRoute("POST", "/webhooks/sync-event", "sync-event-api.createFromWebhook")
+    publicRoute("POST", "/webhooks/sync-event", "sync-event-api.createFromWebhook"),
+    // ============ 推广渠道模块 ============
+    adminRoute("GET", "/channels", "promo-channel.list", "zhao-studio.read"),
+    adminRoute("POST", "/channels", "promo-channel.create", "zhao-studio.create"),
+    adminRoute("GET", "/channels/:id", "promo-channel.findOne", "zhao-studio.read"),
+    adminRoute("PUT", "/channels/:id", "promo-channel.update", "zhao-studio.update"),
+    adminRoute("DELETE", "/channels/:id", "promo-channel.delete", "zhao-studio.delete"),
+    adminRoute("GET", "/campaigns", "promo-campaign.list", "zhao-studio.read"),
+    adminRoute("POST", "/campaigns", "promo-campaign.create", "zhao-studio.create"),
+    adminRoute("GET", "/campaigns/:id", "promo-campaign.findOne", "zhao-studio.read"),
+    adminRoute("PUT", "/campaigns/:id", "promo-campaign.update", "zhao-studio.update"),
+    adminRoute("DELETE", "/campaigns/:id", "promo-campaign.delete", "zhao-studio.delete"),
+    adminRoute("GET", "/experiments", "ab-test.list", "zhao-studio.read"),
+    adminRoute("POST", "/experiments", "ab-test.create", "zhao-studio.create"),
+    adminRoute("GET", "/experiments/:id", "ab-test.findOne", "zhao-studio.read"),
+    adminRoute("PUT", "/experiments/:id/start", "ab-test.start", "zhao-studio.update"),
+    adminRoute("PUT", "/experiments/:id/stop", "ab-test.stop", "zhao-studio.update"),
+    adminRoute("GET", "/experiments/:id/report", "ab-test.report", "zhao-studio.read"),
+    adminRoute("GET", "/channel-report", "channel-report.getChannelReport", "zhao-studio.read"),
+    // 公开路由：A/B 变体选择
+    publicRoute("GET", "/variants/pick", "ab-test.pickVariant")
   ]
 });
 const routes = {
@@ -772,6 +954,24 @@ function bind(fn, thisArg) {
 }
 const { toString: toString$1 } = Object.prototype;
 const { getPrototypeOf } = Object;
+const { iterator, toStringTag } = Symbol;
+const hasOwnProperty = (({ hasOwnProperty: hasOwnProperty2 }) => (obj, prop2) => hasOwnProperty2.call(obj, prop2))(Object.prototype);
+const hasOwnInPrototypeChain = (thing, prop2) => {
+  let obj = thing;
+  const seen = [];
+  while (obj != null && obj !== Object.prototype) {
+    if (seen.indexOf(obj) !== -1) {
+      return false;
+    }
+    seen.push(obj);
+    if (hasOwnProperty(obj, prop2)) {
+      return true;
+    }
+    obj = getPrototypeOf(obj);
+  }
+  return false;
+};
+const getSafeProp = (obj, prop2) => obj != null && hasOwnInPrototypeChain(obj, prop2) ? obj[prop2] : void 0;
 const kindOf = /* @__PURE__ */ ((cache) => (thing) => {
   const str = toString$1.call(thing);
   return cache[str] || (cache[str] = str.slice(8, -1).toLowerCase());
@@ -784,7 +984,7 @@ const typeOfTest = (type) => (thing) => typeof thing === type;
 const { isArray } = Array;
 const isUndefined = typeOfTest("undefined");
 function isBuffer(val2) {
-  return val2 !== null && !isUndefined(val2) && val2.constructor !== null && !isUndefined(val2.constructor) && isFunction(val2.constructor.isBuffer) && val2.constructor.isBuffer(val2);
+  return val2 !== null && !isUndefined(val2) && val2.constructor !== null && !isUndefined(val2.constructor) && isFunction$1(val2.constructor.isBuffer) && val2.constructor.isBuffer(val2);
 }
 const isArrayBuffer = kindOfTest("ArrayBuffer");
 function isArrayBufferView(val2) {
@@ -797,30 +997,68 @@ function isArrayBufferView(val2) {
   return result;
 }
 const isString = typeOfTest("string");
-const isFunction = typeOfTest("function");
+const isFunction$1 = typeOfTest("function");
 const isNumber$2 = typeOfTest("number");
 const isObject = (thing) => thing !== null && typeof thing === "object";
 const isBoolean = (thing) => thing === true || thing === false;
 const isPlainObject = (val2) => {
-  if (kindOf(val2) !== "object") {
+  if (!isObject(val2)) {
     return false;
   }
   const prototype2 = getPrototypeOf(val2);
-  return (prototype2 === null || prototype2 === Object.prototype || Object.getPrototypeOf(prototype2) === null) && !(Symbol.toStringTag in val2) && !(Symbol.iterator in val2);
+  return (prototype2 === null || prototype2 === Object.prototype || getPrototypeOf(prototype2) === null) && // Treat any genuine (non-Object.prototype-polluted) Symbol.toStringTag or
+  // Symbol.iterator as evidence the value is a tagged/iterable type rather
+  // than a plain object, while ignoring keys injected onto Object.prototype.
+  !hasOwnInPrototypeChain(val2, toStringTag) && !hasOwnInPrototypeChain(val2, iterator);
+};
+const isEmptyObject = (val2) => {
+  if (!isObject(val2) || isBuffer(val2)) {
+    return false;
+  }
+  try {
+    return Object.keys(val2).length === 0 && Object.getPrototypeOf(val2) === Object.prototype;
+  } catch (e) {
+    return false;
+  }
 };
 const isDate = kindOfTest("Date");
 const isFile = kindOfTest("File");
+const isReactNativeBlob = (value) => {
+  return !!(value && typeof value.uri !== "undefined");
+};
+const isReactNative = (formData) => formData && typeof formData.getParts !== "undefined";
 const isBlob = kindOfTest("Blob");
 const isFileList = kindOfTest("FileList");
-const isStream = (val2) => isObject(val2) && isFunction(val2.pipe);
+const isStream = (val2) => isObject(val2) && isFunction$1(val2.pipe);
+function getGlobal() {
+  if (typeof globalThis !== "undefined") return globalThis;
+  if (typeof self !== "undefined") return self;
+  if (typeof window !== "undefined") return window;
+  if (typeof global !== "undefined") return global;
+  return {};
+}
+const G = getGlobal();
+const FormDataCtor = typeof G.FormData !== "undefined" ? G.FormData : void 0;
 const isFormData = (thing) => {
-  let kind2;
-  return thing && (typeof FormData === "function" && thing instanceof FormData || isFunction(thing.append) && ((kind2 = kindOf(thing)) === "formdata" || // detect form-data instance
-  kind2 === "object" && isFunction(thing.toString) && thing.toString() === "[object FormData]"));
+  if (!thing) return false;
+  if (FormDataCtor && thing instanceof FormDataCtor) return true;
+  const proto = getPrototypeOf(thing);
+  if (!proto || proto === Object.prototype) return false;
+  if (!isFunction$1(thing.append)) return false;
+  const kind2 = kindOf(thing);
+  return kind2 === "formdata" || // detect form-data instance
+  kind2 === "object" && isFunction$1(thing.toString) && thing.toString() === "[object FormData]";
 };
 const isURLSearchParams = kindOfTest("URLSearchParams");
-const [isReadableStream, isRequest, isResponse, isHeaders] = ["ReadableStream", "Request", "Response", "Headers"].map(kindOfTest);
-const trim = (str) => str.trim ? str.trim() : str.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, "");
+const [isReadableStream, isRequest, isResponse, isHeaders] = [
+  "ReadableStream",
+  "Request",
+  "Response",
+  "Headers"
+].map(kindOfTest);
+const trim = (str) => {
+  return str.trim ? str.trim() : str.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, "");
+};
 function forEach(obj, fn, { allOwnKeys = false } = {}) {
   if (obj === null || typeof obj === "undefined") {
     return;
@@ -835,6 +1073,9 @@ function forEach(obj, fn, { allOwnKeys = false } = {}) {
       fn.call(null, obj[i], i, obj);
     }
   } else {
+    if (isBuffer(obj)) {
+      return;
+    }
     const keys = allOwnKeys ? Object.getOwnPropertyNames(obj) : Object.keys(obj);
     const len = keys.length;
     let key;
@@ -845,6 +1086,9 @@ function forEach(obj, fn, { allOwnKeys = false } = {}) {
   }
 }
 function findKey(obj, key) {
+  if (isBuffer(obj)) {
+    return null;
+  }
   key = key.toLowerCase();
   const keys = Object.keys(obj);
   let i = keys.length;
@@ -862,34 +1106,70 @@ const _global = (() => {
   return typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : global;
 })();
 const isContextDefined = (context) => !isUndefined(context) && context !== _global;
-function merge$1() {
-  const { caseless } = isContextDefined(this) && this || {};
+function merge$1(...objs) {
+  const { caseless, skipUndefined } = isContextDefined(this) && this || {};
   const result = {};
   const assignValue = (val2, key) => {
-    const targetKey = caseless && findKey(result, key) || key;
-    if (isPlainObject(result[targetKey]) && isPlainObject(val2)) {
-      result[targetKey] = merge$1(result[targetKey], val2);
+    if (key === "__proto__" || key === "constructor" || key === "prototype") {
+      return;
+    }
+    const targetKey = caseless && typeof key === "string" && findKey(result, key) || key;
+    const existing = hasOwnProperty(result, targetKey) ? result[targetKey] : void 0;
+    if (isPlainObject(existing) && isPlainObject(val2)) {
+      result[targetKey] = merge$1(existing, val2);
     } else if (isPlainObject(val2)) {
       result[targetKey] = merge$1({}, val2);
     } else if (isArray(val2)) {
       result[targetKey] = val2.slice();
-    } else {
+    } else if (!skipUndefined || !isUndefined(val2)) {
       result[targetKey] = val2;
     }
   };
-  for (let i = 0, l = arguments.length; i < l; i++) {
-    arguments[i] && forEach(arguments[i], assignValue);
+  for (let i = 0, l = objs.length; i < l; i++) {
+    const source = objs[i];
+    if (!source || isBuffer(source)) {
+      continue;
+    }
+    forEach(source, assignValue);
+    if (typeof source !== "object" || isArray(source)) {
+      continue;
+    }
+    const symbols = Object.getOwnPropertySymbols(source);
+    for (let j = 0; j < symbols.length; j++) {
+      const symbol = symbols[j];
+      if (propertyIsEnumerable.call(source, symbol)) {
+        assignValue(source[symbol], symbol);
+      }
+    }
   }
   return result;
 }
 const extend = (a, b, thisArg, { allOwnKeys } = {}) => {
-  forEach(b, (val2, key) => {
-    if (thisArg && isFunction(val2)) {
-      a[key] = bind(val2, thisArg);
-    } else {
-      a[key] = val2;
-    }
-  }, { allOwnKeys });
+  forEach(
+    b,
+    (val2, key) => {
+      if (thisArg && isFunction$1(val2)) {
+        Object.defineProperty(a, key, {
+          // Null-proto descriptor so a polluted Object.prototype.get cannot
+          // hijack defineProperty's accessor-vs-data resolution.
+          __proto__: null,
+          value: bind(val2, thisArg),
+          writable: true,
+          enumerable: true,
+          configurable: true
+        });
+      } else {
+        Object.defineProperty(a, key, {
+          __proto__: null,
+          value: val2,
+          writable: true,
+          enumerable: true,
+          configurable: true
+        });
+      }
+    },
+    { allOwnKeys }
+  );
   return a;
 };
 const stripBOM = (content) => {
@@ -898,10 +1178,17 @@ const stripBOM = (content) => {
   }
   return content;
 };
-const inherits = (constructor, superConstructor, props, descriptors2) => {
-  constructor.prototype = Object.create(superConstructor.prototype, descriptors2);
-  constructor.prototype.constructor = constructor;
+const inherits = (constructor, superConstructor, props, descriptors) => {
+  constructor.prototype = Object.create(superConstructor.prototype, descriptors);
+  Object.defineProperty(constructor.prototype, "constructor", {
+    __proto__: null,
+    value: constructor,
+    writable: true,
+    enumerable: false,
+    configurable: true
+  });
   Object.defineProperty(constructor, "super", {
+    __proto__: null,
     value: superConstructor.prototype
   });
   props && Object.assign(constructor.prototype, props);
@@ -953,10 +1240,10 @@ const isTypedArray = /* @__PURE__ */ ((TypedArray) => {
   };
 })(typeof Uint8Array !== "undefined" && getPrototypeOf(Uint8Array));
 const forEachEntry = (obj, fn) => {
-  const generator = obj && obj[Symbol.iterator];
-  const iterator = generator.call(obj);
+  const generator = obj && obj[iterator];
+  const _iterator = generator.call(obj);
   let result;
-  while ((result = iterator.next()) && !result.done) {
+  while ((result = _iterator.next()) && !result.done) {
     const pair = result.value;
     fn.call(obj, pair[0], pair[1]);
   }
@@ -971,19 +1258,16 @@ const matchAll = (regExp, str) => {
 };
 const isHTMLForm = kindOfTest("HTMLFormElement");
 const toCamelCase = (str) => {
-  return str.toLowerCase().replace(
-    /[-_\s]([a-z\d])(\w*)/g,
-    function replacer(m, p1, p2) {
-      return p1.toUpperCase() + p2;
-    }
-  );
+  return str.toLowerCase().replace(/[-_\s]([a-z\d])(\w*)/g, function replacer(m, p1, p2) {
+    return p1.toUpperCase() + p2;
+  });
 };
-const hasOwnProperty = (({ hasOwnProperty: hasOwnProperty2 }) => (obj, prop2) => hasOwnProperty2.call(obj, prop2))(Object.prototype);
+const { propertyIsEnumerable } = Object.prototype;
 const isRegExp = kindOfTest("RegExp");
 const reduceDescriptors = (obj, reducer) => {
-  const descriptors2 = Object.getOwnPropertyDescriptors(obj);
+  const descriptors = Object.getOwnPropertyDescriptors(obj);
   const reducedDescriptors = {};
-  forEach(descriptors2, (descriptor, name) => {
+  forEach(descriptors, (descriptor, name) => {
     let ret;
     if ((ret = reducer(descriptor, name, obj)) !== false) {
       reducedDescriptors[name] = ret || descriptor;
@@ -993,11 +1277,11 @@ const reduceDescriptors = (obj, reducer) => {
 };
 const freezeMethods = (obj) => {
   reduceDescriptors(obj, (descriptor, name) => {
-    if (isFunction(obj) && ["arguments", "caller", "callee"].indexOf(name) !== -1) {
+    if (isFunction$1(obj) && ["arguments", "caller", "callee"].includes(name)) {
       return false;
     }
     const value = obj[name];
-    if (!isFunction(value)) return;
+    if (!isFunction$1(value)) return;
     descriptor.enumerable = false;
     if ("writable" in descriptor) {
       descriptor.writable = false;
@@ -1025,48 +1309,59 @@ const noop = () => {
 const toFiniteNumber = (value, defaultValue) => {
   return value != null && Number.isFinite(value = +value) ? value : defaultValue;
 };
-const ALPHA = "abcdefghijklmnopqrstuvwxyz";
-const DIGIT = "0123456789";
-const ALPHABET = {
-  DIGIT,
-  ALPHA,
-  ALPHA_DIGIT: ALPHA + ALPHA.toUpperCase() + DIGIT
-};
-const generateString = (size = 16, alphabet = ALPHABET.ALPHA_DIGIT) => {
-  let str = "";
-  const { length } = alphabet;
-  while (size--) {
-    str += alphabet[Math.random() * length | 0];
-  }
-  return str;
-};
 function isSpecCompliantForm(thing) {
-  return !!(thing && isFunction(thing.append) && thing[Symbol.toStringTag] === "FormData" && thing[Symbol.iterator]);
+  return !!(thing && isFunction$1(thing.append) && thing[toStringTag] === "FormData" && thing[iterator]);
 }
 const toJSONObject = (obj) => {
-  const stack = new Array(10);
-  const visit = (source, i) => {
+  const visited = /* @__PURE__ */ new WeakSet();
+  const visit = (source) => {
     if (isObject(source)) {
-      if (stack.indexOf(source) >= 0) {
+      if (visited.has(source)) {
         return;
       }
+      if (isBuffer(source)) {
+        return source;
+      }
       if (!("toJSON" in source)) {
-        stack[i] = source;
+        visited.add(source);
         const target = isArray(source) ? [] : {};
         forEach(source, (value, key) => {
-          const reducedValue = visit(value, i + 1);
+          const reducedValue = visit(value);
           !isUndefined(reducedValue) && (target[key] = reducedValue);
         });
-        stack[i] = void 0;
+        visited.delete(source);
         return target;
       }
     }
     return source;
   };
-  return visit(obj, 0);
+  return visit(obj);
 };
 const isAsyncFn = kindOfTest("AsyncFunction");
-const isThenable = (thing) => thing && (isObject(thing) || isFunction(thing)) && isFunction(thing.then) && isFunction(thing.catch);
+const isThenable = (thing) => thing && (isObject(thing) || isFunction$1(thing)) && isFunction$1(thing.then) && isFunction$1(thing.catch);
+const _setImmediate = ((setImmediateSupported, postMessageSupported) => {
+  if (setImmediateSupported) {
+    return setImmediate;
+  }
+  return postMessageSupported ? ((token, callbacks) => {
+    _global.addEventListener(
+      "message",
+      ({ source, data: data2 }) => {
+        if (source === _global && data2 === token) {
+          callbacks.length && callbacks.shift()();
+        }
+      },
+      false
+    );
+    return (cb) => {
+      callbacks.push(cb);
+      _global.postMessage(token, "*");
+    };
+  })(`axios@${Math.random()}`, []) : (cb) => setTimeout(cb);
+})(typeof setImmediate === "function", isFunction$1(_global.postMessage));
+const asap = typeof queueMicrotask !== "undefined" ? queueMicrotask.bind(_global) : typeof process !== "undefined" && process.nextTick || _setImmediate;
+const isIterable = (thing) => thing != null && isFunction$1(thing[iterator]);
+const isSafeIterable = (thing) => thing != null && hasOwnInPrototypeChain(thing, iterator) && isIterable(thing);
 const utils$1 = {
   isArray,
   isArrayBuffer,
@@ -1078,6 +1373,7 @@ const utils$1 = {
   isBoolean,
   isObject,
   isPlainObject,
+  isEmptyObject,
   isReadableStream,
   isRequest,
   isResponse,
@@ -1085,9 +1381,11 @@ const utils$1 = {
   isUndefined,
   isDate,
   isFile,
+  isReactNativeBlob,
+  isReactNative,
   isBlob,
   isRegExp,
-  isFunction,
+  isFunction: isFunction$1,
   isStream,
   isURLSearchParams,
   isTypedArray,
@@ -1109,6 +1407,8 @@ const utils$1 = {
   hasOwnProperty,
   hasOwnProp: hasOwnProperty,
   // an alias to avoid ESLint no-prototype-builtins detection
+  hasOwnInPrototypeChain,
+  getSafeProp,
   reduceDescriptors,
   freezeMethods,
   toObjectSet,
@@ -1118,511 +1418,15 @@ const utils$1 = {
   findKey,
   global: _global,
   isContextDefined,
-  ALPHABET,
-  generateString,
   isSpecCompliantForm,
   toJSONObject,
   isAsyncFn,
-  isThenable
+  isThenable,
+  setImmediate: _setImmediate,
+  asap,
+  isIterable,
+  isSafeIterable
 };
-function AxiosError$1(message, code, config2, request, response) {
-  Error.call(this);
-  if (Error.captureStackTrace) {
-    Error.captureStackTrace(this, this.constructor);
-  } else {
-    this.stack = new Error().stack;
-  }
-  this.message = message;
-  this.name = "AxiosError";
-  code && (this.code = code);
-  config2 && (this.config = config2);
-  request && (this.request = request);
-  response && (this.response = response);
-}
-utils$1.inherits(AxiosError$1, Error, {
-  toJSON: function toJSON() {
-    return {
-      // Standard
-      message: this.message,
-      name: this.name,
-      // Microsoft
-      description: this.description,
-      number: this.number,
-      // Mozilla
-      fileName: this.fileName,
-      lineNumber: this.lineNumber,
-      columnNumber: this.columnNumber,
-      stack: this.stack,
-      // Axios
-      config: utils$1.toJSONObject(this.config),
-      code: this.code,
-      status: this.response && this.response.status ? this.response.status : null
-    };
-  }
-});
-const prototype$1 = AxiosError$1.prototype;
-const descriptors = {};
-[
-  "ERR_BAD_OPTION_VALUE",
-  "ERR_BAD_OPTION",
-  "ECONNABORTED",
-  "ETIMEDOUT",
-  "ERR_NETWORK",
-  "ERR_FR_TOO_MANY_REDIRECTS",
-  "ERR_DEPRECATED",
-  "ERR_BAD_RESPONSE",
-  "ERR_BAD_REQUEST",
-  "ERR_CANCELED",
-  "ERR_NOT_SUPPORT",
-  "ERR_INVALID_URL"
-  // eslint-disable-next-line func-names
-].forEach((code) => {
-  descriptors[code] = { value: code };
-});
-Object.defineProperties(AxiosError$1, descriptors);
-Object.defineProperty(prototype$1, "isAxiosError", { value: true });
-AxiosError$1.from = (error, code, config2, request, response, customProps) => {
-  const axiosError = Object.create(prototype$1);
-  utils$1.toFlatObject(error, axiosError, function filter3(obj) {
-    return obj !== Error.prototype;
-  }, (prop2) => {
-    return prop2 !== "isAxiosError";
-  });
-  AxiosError$1.call(axiosError, error.message, code, config2, request, response);
-  axiosError.cause = error;
-  axiosError.name = error.name;
-  customProps && Object.assign(axiosError, customProps);
-  return axiosError;
-};
-const httpAdapter = null;
-function isVisitable(thing) {
-  return utils$1.isPlainObject(thing) || utils$1.isArray(thing);
-}
-function removeBrackets(key) {
-  return utils$1.endsWith(key, "[]") ? key.slice(0, -2) : key;
-}
-function renderKey(path, key, dots) {
-  if (!path) return key;
-  return path.concat(key).map(function each2(token, i) {
-    token = removeBrackets(token);
-    return !dots && i ? "[" + token + "]" : token;
-  }).join(dots ? "." : "");
-}
-function isFlatArray(arr) {
-  return utils$1.isArray(arr) && !arr.some(isVisitable);
-}
-const predicates = utils$1.toFlatObject(utils$1, {}, null, function filter(prop2) {
-  return /^is[A-Z]/.test(prop2);
-});
-function toFormData$1(obj, formData, options2) {
-  if (!utils$1.isObject(obj)) {
-    throw new TypeError("target must be an object");
-  }
-  formData = formData || new FormData();
-  options2 = utils$1.toFlatObject(options2, {
-    metaTokens: true,
-    dots: false,
-    indexes: false
-  }, false, function defined(option, source) {
-    return !utils$1.isUndefined(source[option]);
-  });
-  const metaTokens = options2.metaTokens;
-  const visitor = options2.visitor || defaultVisitor;
-  const dots = options2.dots;
-  const indexes = options2.indexes;
-  const _Blob = options2.Blob || typeof Blob !== "undefined" && Blob;
-  const useBlob = _Blob && utils$1.isSpecCompliantForm(formData);
-  if (!utils$1.isFunction(visitor)) {
-    throw new TypeError("visitor must be a function");
-  }
-  function convertValue(value) {
-    if (value === null) return "";
-    if (utils$1.isDate(value)) {
-      return value.toISOString();
-    }
-    if (!useBlob && utils$1.isBlob(value)) {
-      throw new AxiosError$1("Blob is not supported. Use a Buffer instead.");
-    }
-    if (utils$1.isArrayBuffer(value) || utils$1.isTypedArray(value)) {
-      return useBlob && typeof Blob === "function" ? new Blob([value]) : Buffer.from(value);
-    }
-    return value;
-  }
-  function defaultVisitor(value, key, path) {
-    let arr = value;
-    if (value && !path && typeof value === "object") {
-      if (utils$1.endsWith(key, "{}")) {
-        key = metaTokens ? key : key.slice(0, -2);
-        value = JSON.stringify(value);
-      } else if (utils$1.isArray(value) && isFlatArray(value) || (utils$1.isFileList(value) || utils$1.endsWith(key, "[]")) && (arr = utils$1.toArray(value))) {
-        key = removeBrackets(key);
-        arr.forEach(function each2(el, index2) {
-          !(utils$1.isUndefined(el) || el === null) && formData.append(
-            // eslint-disable-next-line no-nested-ternary
-            indexes === true ? renderKey([key], index2, dots) : indexes === null ? key : key + "[]",
-            convertValue(el)
-          );
-        });
-        return false;
-      }
-    }
-    if (isVisitable(value)) {
-      return true;
-    }
-    formData.append(renderKey(path, key, dots), convertValue(value));
-    return false;
-  }
-  const stack = [];
-  const exposedHelpers = Object.assign(predicates, {
-    defaultVisitor,
-    convertValue,
-    isVisitable
-  });
-  function build(value, path) {
-    if (utils$1.isUndefined(value)) return;
-    if (stack.indexOf(value) !== -1) {
-      throw Error("Circular reference detected in " + path.join("."));
-    }
-    stack.push(value);
-    utils$1.forEach(value, function each2(el, key) {
-      const result = !(utils$1.isUndefined(el) || el === null) && visitor.call(
-        formData,
-        el,
-        utils$1.isString(key) ? key.trim() : key,
-        path,
-        exposedHelpers
-      );
-      if (result === true) {
-        build(el, path ? path.concat(key) : [key]);
-      }
-    });
-    stack.pop();
-  }
-  if (!utils$1.isObject(obj)) {
-    throw new TypeError("data must be an object");
-  }
-  build(obj);
-  return formData;
-}
-function encode$1(str) {
-  const charMap = {
-    "!": "%21",
-    "'": "%27",
-    "(": "%28",
-    ")": "%29",
-    "~": "%7E",
-    "%20": "+",
-    "%00": "\0"
-  };
-  return encodeURIComponent(str).replace(/[!'()~]|%20|%00/g, function replacer(match) {
-    return charMap[match];
-  });
-}
-function AxiosURLSearchParams(params, options2) {
-  this._pairs = [];
-  params && toFormData$1(params, this, options2);
-}
-const prototype = AxiosURLSearchParams.prototype;
-prototype.append = function append(name, value) {
-  this._pairs.push([name, value]);
-};
-prototype.toString = function toString(encoder2) {
-  const _encode = encoder2 ? function(value) {
-    return encoder2.call(this, value, encode$1);
-  } : encode$1;
-  return this._pairs.map(function each2(pair) {
-    return _encode(pair[0]) + "=" + _encode(pair[1]);
-  }, "").join("&");
-};
-function encode(val2) {
-  return encodeURIComponent(val2).replace(/%3A/gi, ":").replace(/%24/g, "$").replace(/%2C/gi, ",").replace(/%20/g, "+").replace(/%5B/gi, "[").replace(/%5D/gi, "]");
-}
-function buildURL(url, params, options2) {
-  if (!params) {
-    return url;
-  }
-  const _encode = options2 && options2.encode || encode;
-  const serializeFn = options2 && options2.serialize;
-  let serializedParams;
-  if (serializeFn) {
-    serializedParams = serializeFn(params, options2);
-  } else {
-    serializedParams = utils$1.isURLSearchParams(params) ? params.toString() : new AxiosURLSearchParams(params, options2).toString(_encode);
-  }
-  if (serializedParams) {
-    const hashmarkIndex = url.indexOf("#");
-    if (hashmarkIndex !== -1) {
-      url = url.slice(0, hashmarkIndex);
-    }
-    url += (url.indexOf("?") === -1 ? "?" : "&") + serializedParams;
-  }
-  return url;
-}
-class InterceptorManager {
-  constructor() {
-    this.handlers = [];
-  }
-  /**
-   * Add a new interceptor to the stack
-   *
-   * @param {Function} fulfilled The function to handle `then` for a `Promise`
-   * @param {Function} rejected The function to handle `reject` for a `Promise`
-   *
-   * @return {Number} An ID used to remove interceptor later
-   */
-  use(fulfilled, rejected, options2) {
-    this.handlers.push({
-      fulfilled,
-      rejected,
-      synchronous: options2 ? options2.synchronous : false,
-      runWhen: options2 ? options2.runWhen : null
-    });
-    return this.handlers.length - 1;
-  }
-  /**
-   * Remove an interceptor from the stack
-   *
-   * @param {Number} id The ID that was returned by `use`
-   *
-   * @returns {Boolean} `true` if the interceptor was removed, `false` otherwise
-   */
-  eject(id) {
-    if (this.handlers[id]) {
-      this.handlers[id] = null;
-    }
-  }
-  /**
-   * Clear all interceptors from the stack
-   *
-   * @returns {void}
-   */
-  clear() {
-    if (this.handlers) {
-      this.handlers = [];
-    }
-  }
-  /**
-   * Iterate over all the registered interceptors
-   *
-   * This method is particularly useful for skipping over any
-   * interceptors that may have become `null` calling `eject`.
-   *
-   * @param {Function} fn The function to call for each interceptor
-   *
-   * @returns {void}
-   */
-  forEach(fn) {
-    utils$1.forEach(this.handlers, function forEachHandler(h) {
-      if (h !== null) {
-        fn(h);
-      }
-    });
-  }
-}
-const transitionalDefaults = {
-  silentJSONParsing: true,
-  forcedJSONParsing: true,
-  clarifyTimeoutError: false
-};
-const URLSearchParams$1 = typeof URLSearchParams !== "undefined" ? URLSearchParams : AxiosURLSearchParams;
-const FormData$1 = typeof FormData !== "undefined" ? FormData : null;
-const Blob$1 = typeof Blob !== "undefined" ? Blob : null;
-const platform$1 = {
-  isBrowser: true,
-  classes: {
-    URLSearchParams: URLSearchParams$1,
-    FormData: FormData$1,
-    Blob: Blob$1
-  },
-  protocols: ["http", "https", "file", "blob", "url", "data"]
-};
-const hasBrowserEnv = typeof window !== "undefined" && typeof document !== "undefined";
-const hasStandardBrowserEnv = ((product) => {
-  return hasBrowserEnv && ["ReactNative", "NativeScript", "NS"].indexOf(product) < 0;
-})(typeof navigator !== "undefined" && navigator.product);
-const hasStandardBrowserWebWorkerEnv = (() => {
-  return typeof WorkerGlobalScope !== "undefined" && // eslint-disable-next-line no-undef
-  self instanceof WorkerGlobalScope && typeof self.importScripts === "function";
-})();
-const origin = hasBrowserEnv && window.location.href || "http://localhost";
-const utils = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
-  __proto__: null,
-  hasBrowserEnv,
-  hasStandardBrowserEnv,
-  hasStandardBrowserWebWorkerEnv,
-  origin
-}, Symbol.toStringTag, { value: "Module" }));
-const platform = {
-  ...utils,
-  ...platform$1
-};
-function toURLEncodedForm(data2, options2) {
-  return toFormData$1(data2, new platform.classes.URLSearchParams(), Object.assign({
-    visitor: function(value, key, path, helpers) {
-      if (platform.isNode && utils$1.isBuffer(value)) {
-        this.append(key, value.toString("base64"));
-        return false;
-      }
-      return helpers.defaultVisitor.apply(this, arguments);
-    }
-  }, options2));
-}
-function parsePropPath(name) {
-  return utils$1.matchAll(/\w+|\[(\w*)]/g, name).map((match) => {
-    return match[0] === "[]" ? "" : match[1] || match[0];
-  });
-}
-function arrayToObject(arr) {
-  const obj = {};
-  const keys = Object.keys(arr);
-  let i;
-  const len = keys.length;
-  let key;
-  for (i = 0; i < len; i++) {
-    key = keys[i];
-    obj[key] = arr[key];
-  }
-  return obj;
-}
-function formDataToJSON(formData) {
-  function buildPath(path, value, target, index2) {
-    let name = path[index2++];
-    if (name === "__proto__") return true;
-    const isNumericKey = Number.isFinite(+name);
-    const isLast = index2 >= path.length;
-    name = !name && utils$1.isArray(target) ? target.length : name;
-    if (isLast) {
-      if (utils$1.hasOwnProp(target, name)) {
-        target[name] = [target[name], value];
-      } else {
-        target[name] = value;
-      }
-      return !isNumericKey;
-    }
-    if (!target[name] || !utils$1.isObject(target[name])) {
-      target[name] = [];
-    }
-    const result = buildPath(path, value, target[name], index2);
-    if (result && utils$1.isArray(target[name])) {
-      target[name] = arrayToObject(target[name]);
-    }
-    return !isNumericKey;
-  }
-  if (utils$1.isFormData(formData) && utils$1.isFunction(formData.entries)) {
-    const obj = {};
-    utils$1.forEachEntry(formData, (name, value) => {
-      buildPath(parsePropPath(name), value, obj, 0);
-    });
-    return obj;
-  }
-  return null;
-}
-function stringifySafely(rawValue, parser, encoder2) {
-  if (utils$1.isString(rawValue)) {
-    try {
-      (parser || JSON.parse)(rawValue);
-      return utils$1.trim(rawValue);
-    } catch (e) {
-      if (e.name !== "SyntaxError") {
-        throw e;
-      }
-    }
-  }
-  return (encoder2 || JSON.stringify)(rawValue);
-}
-const defaults = {
-  transitional: transitionalDefaults,
-  adapter: ["xhr", "http", "fetch"],
-  transformRequest: [function transformRequest(data2, headers) {
-    const contentType = headers.getContentType() || "";
-    const hasJSONContentType = contentType.indexOf("application/json") > -1;
-    const isObjectPayload = utils$1.isObject(data2);
-    if (isObjectPayload && utils$1.isHTMLForm(data2)) {
-      data2 = new FormData(data2);
-    }
-    const isFormData2 = utils$1.isFormData(data2);
-    if (isFormData2) {
-      return hasJSONContentType ? JSON.stringify(formDataToJSON(data2)) : data2;
-    }
-    if (utils$1.isArrayBuffer(data2) || utils$1.isBuffer(data2) || utils$1.isStream(data2) || utils$1.isFile(data2) || utils$1.isBlob(data2) || utils$1.isReadableStream(data2)) {
-      return data2;
-    }
-    if (utils$1.isArrayBufferView(data2)) {
-      return data2.buffer;
-    }
-    if (utils$1.isURLSearchParams(data2)) {
-      headers.setContentType("application/x-www-form-urlencoded;charset=utf-8", false);
-      return data2.toString();
-    }
-    let isFileList2;
-    if (isObjectPayload) {
-      if (contentType.indexOf("application/x-www-form-urlencoded") > -1) {
-        return toURLEncodedForm(data2, this.formSerializer).toString();
-      }
-      if ((isFileList2 = utils$1.isFileList(data2)) || contentType.indexOf("multipart/form-data") > -1) {
-        const _FormData = this.env && this.env.FormData;
-        return toFormData$1(
-          isFileList2 ? { "files[]": data2 } : data2,
-          _FormData && new _FormData(),
-          this.formSerializer
-        );
-      }
-    }
-    if (isObjectPayload || hasJSONContentType) {
-      headers.setContentType("application/json", false);
-      return stringifySafely(data2);
-    }
-    return data2;
-  }],
-  transformResponse: [function transformResponse(data2) {
-    const transitional2 = this.transitional || defaults.transitional;
-    const forcedJSONParsing = transitional2 && transitional2.forcedJSONParsing;
-    const JSONRequested = this.responseType === "json";
-    if (utils$1.isResponse(data2) || utils$1.isReadableStream(data2)) {
-      return data2;
-    }
-    if (data2 && utils$1.isString(data2) && (forcedJSONParsing && !this.responseType || JSONRequested)) {
-      const silentJSONParsing = transitional2 && transitional2.silentJSONParsing;
-      const strictJSONParsing = !silentJSONParsing && JSONRequested;
-      try {
-        return JSON.parse(data2);
-      } catch (e) {
-        if (strictJSONParsing) {
-          if (e.name === "SyntaxError") {
-            throw AxiosError$1.from(e, AxiosError$1.ERR_BAD_RESPONSE, this, null, this.response);
-          }
-          throw e;
-        }
-      }
-    }
-    return data2;
-  }],
-  /**
-   * A timeout in milliseconds to abort a request. If set to 0 (default) a
-   * timeout is not created.
-   */
-  timeout: 0,
-  xsrfCookieName: "XSRF-TOKEN",
-  xsrfHeaderName: "X-XSRF-TOKEN",
-  maxContentLength: -1,
-  maxBodyLength: -1,
-  env: {
-    FormData: platform.classes.FormData,
-    Blob: platform.classes.Blob
-  },
-  validateStatus: function validateStatus(status) {
-    return status >= 200 && status < 300;
-  },
-  headers: {
-    common: {
-      "Accept": "application/json, text/plain, */*",
-      "Content-Type": void 0
-    }
-  }
-};
-utils$1.forEach(["delete", "get", "head", "post", "put", "patch"], (method) => {
-  defaults.headers[method] = {};
-});
 const ignoreDuplicateOf = utils$1.toObjectSet([
   "age",
   "authorization",
@@ -1666,6 +1470,42 @@ const parseHeaders = (rawHeaders) => {
   });
   return parsed;
 };
+function trimSPorHTAB(str) {
+  let start = 0;
+  let end2 = str.length;
+  while (start < end2) {
+    const code = str.charCodeAt(start);
+    if (code !== 9 && code !== 32) {
+      break;
+    }
+    start += 1;
+  }
+  while (end2 > start) {
+    const code = str.charCodeAt(end2 - 1);
+    if (code !== 9 && code !== 32) {
+      break;
+    }
+    end2 -= 1;
+  }
+  return start === 0 && end2 === str.length ? str : str.slice(start, end2);
+}
+const INVALID_UNICODE_HEADER_VALUE_CHARS = new RegExp("[\\u0000-\\u0008\\u000a-\\u001f\\u007f]+", "g");
+const INVALID_BYTE_STRING_HEADER_VALUE_CHARS = new RegExp("[^\\u0009\\u0020-\\u007e\\u0080-\\u00ff]+", "g");
+function sanitizeValue(value, invalidChars) {
+  if (utils$1.isArray(value)) {
+    return value.map((item) => sanitizeValue(item, invalidChars));
+  }
+  return trimSPorHTAB(String(value).replace(invalidChars, ""));
+}
+const sanitizeHeaderValue = (value) => sanitizeValue(value, INVALID_UNICODE_HEADER_VALUE_CHARS);
+const sanitizeByteStringHeaderValue = (value) => sanitizeValue(value, INVALID_BYTE_STRING_HEADER_VALUE_CHARS);
+function toByteStringHeaderObject(headers) {
+  const byteStringHeaders = /* @__PURE__ */ Object.create(null);
+  utils$1.forEach(headers.toJSON(), (value, header) => {
+    byteStringHeaders[header] = sanitizeByteStringHeaderValue(value);
+  });
+  return byteStringHeaders;
+}
 const $internals = Symbol("internals");
 function normalizeHeader(header) {
   return header && String(header).trim().toLowerCase();
@@ -1674,7 +1514,7 @@ function normalizeValue(value) {
   if (value === false || value == null) {
     return value;
   }
-  return utils$1.isArray(value) ? value.map(normalizeValue) : String(value);
+  return utils$1.isArray(value) ? value.map(normalizeValue) : sanitizeHeaderValue(String(value));
 }
 function parseTokens(str) {
   const tokens = /* @__PURE__ */ Object.create(null);
@@ -1710,6 +1550,9 @@ function buildAccessors(obj, header) {
   const accessorName = utils$1.toCamelCase(" " + header);
   ["get", "set", "has"].forEach((methodName) => {
     Object.defineProperty(obj, methodName + accessorName, {
+      // Null-proto descriptor so a polluted Object.prototype.get cannot turn
+      // this data descriptor into an accessor descriptor on the way in.
+      __proto__: null,
       value: function(arg1, arg2, arg3) {
         return this[methodName].call(this, header, arg1, arg2, arg3);
       },
@@ -1726,7 +1569,7 @@ let AxiosHeaders$1 = class AxiosHeaders {
     function setHeader(_value, _header, _rewrite) {
       const lHeader = normalizeHeader(_header);
       if (!lHeader) {
-        throw new Error("header name must be a non-empty string");
+        return;
       }
       const key = utils$1.findKey(self2, lHeader);
       if (!key || self2[key] === void 0 || _rewrite === true || _rewrite === void 0 && self2[key] !== false) {
@@ -1738,10 +1581,21 @@ let AxiosHeaders$1 = class AxiosHeaders {
       setHeaders(header, valueOrRewrite);
     } else if (utils$1.isString(header) && (header = header.trim()) && !isValidHeaderName(header)) {
       setHeaders(parseHeaders(header), valueOrRewrite);
-    } else if (utils$1.isHeaders(header)) {
-      for (const [key, value] of header.entries()) {
-        setHeader(value, key, rewrite);
+    } else if (utils$1.isObject(header) && utils$1.isSafeIterable(header)) {
+      let obj = /* @__PURE__ */ Object.create(null), dest, key;
+      for (const entry of header) {
+        if (!utils$1.isArray(entry)) {
+          throw new TypeError("Object iterator must return a key-value pair");
+        }
+        key = entry[0];
+        if (utils$1.hasOwnProp(obj, key)) {
+          dest = obj[key];
+          obj[key] = utils$1.isArray(dest) ? [...dest, entry[1]] : [dest, entry[1]];
+        } else {
+          obj[key] = entry[1];
+        }
       }
+      setHeaders(obj, valueOrRewrite);
     } else {
       header != null && setHeader(valueOrRewrite, header, rewrite);
     }
@@ -1845,6 +1699,9 @@ let AxiosHeaders$1 = class AxiosHeaders {
   toString() {
     return Object.entries(this.toJSON()).map(([header, value]) => header + ": " + value).join("\n");
   }
+  getSetCookie() {
+    return this.get("set-cookie") || [];
+  }
   get [Symbol.toStringTag]() {
     return "AxiosHeaders";
   }
@@ -1873,7 +1730,14 @@ let AxiosHeaders$1 = class AxiosHeaders {
     return this;
   }
 };
-AxiosHeaders$1.accessor(["Content-Type", "Content-Length", "Accept", "Accept-Encoding", "User-Agent", "Authorization"]);
+AxiosHeaders$1.accessor([
+  "Content-Type",
+  "Content-Length",
+  "Accept",
+  "Accept-Encoding",
+  "User-Agent",
+  "Authorization"
+]);
 utils$1.reduceDescriptors(AxiosHeaders$1.prototype, ({ value }, key) => {
   let mapped = key[0].toUpperCase() + key.slice(1);
   return {
@@ -1884,6 +1748,631 @@ utils$1.reduceDescriptors(AxiosHeaders$1.prototype, ({ value }, key) => {
   };
 });
 utils$1.freezeMethods(AxiosHeaders$1);
+const REDACTED = "[REDACTED ****]";
+function hasOwnOrPrototypeToJSON(source) {
+  if (utils$1.hasOwnProp(source, "toJSON")) {
+    return true;
+  }
+  let prototype2 = Object.getPrototypeOf(source);
+  while (prototype2 && prototype2 !== Object.prototype) {
+    if (utils$1.hasOwnProp(prototype2, "toJSON")) {
+      return true;
+    }
+    prototype2 = Object.getPrototypeOf(prototype2);
+  }
+  return false;
+}
+function redactConfig(config2, redactKeys) {
+  const lowerKeys = new Set(redactKeys.map((k) => String(k).toLowerCase()));
+  const seen = [];
+  const visit = (source) => {
+    if (source === null || typeof source !== "object") return source;
+    if (utils$1.isBuffer(source)) return source;
+    if (seen.indexOf(source) !== -1) return void 0;
+    if (source instanceof AxiosHeaders$1) {
+      source = source.toJSON();
+    }
+    seen.push(source);
+    let result;
+    if (utils$1.isArray(source)) {
+      result = [];
+      source.forEach((v, i) => {
+        const reducedValue = visit(v);
+        if (!utils$1.isUndefined(reducedValue)) {
+          result[i] = reducedValue;
+        }
+      });
+    } else {
+      if (!utils$1.isPlainObject(source) && hasOwnOrPrototypeToJSON(source)) {
+        seen.pop();
+        return source;
+      }
+      result = /* @__PURE__ */ Object.create(null);
+      for (const [key, value] of Object.entries(source)) {
+        const reducedValue = lowerKeys.has(key.toLowerCase()) ? REDACTED : visit(value);
+        if (!utils$1.isUndefined(reducedValue)) {
+          result[key] = reducedValue;
+        }
+      }
+    }
+    seen.pop();
+    return result;
+  };
+  return visit(config2);
+}
+let AxiosError$1 = class AxiosError extends Error {
+  static from(error, code, config2, request, response, customProps) {
+    const axiosError = new AxiosError(error.message, code || error.code, config2, request, response);
+    axiosError.cause = error;
+    axiosError.name = error.name;
+    if (error.status != null && axiosError.status == null) {
+      axiosError.status = error.status;
+    }
+    customProps && Object.assign(axiosError, customProps);
+    return axiosError;
+  }
+  /**
+   * Create an Error with the specified message, config, error code, request and response.
+   *
+   * @param {string} message The error message.
+   * @param {string} [code] The error code (for example, 'ECONNABORTED').
+   * @param {Object} [config] The config.
+   * @param {Object} [request] The request.
+   * @param {Object} [response] The response.
+   *
+   * @returns {Error} The created error.
+   */
+  constructor(message, code, config2, request, response) {
+    super(message);
+    Object.defineProperty(this, "message", {
+      // Null-proto descriptor so a polluted Object.prototype.get cannot turn
+      // this data descriptor into an accessor descriptor on the way in.
+      __proto__: null,
+      value: message,
+      enumerable: true,
+      writable: true,
+      configurable: true
+    });
+    this.name = "AxiosError";
+    this.isAxiosError = true;
+    code && (this.code = code);
+    config2 && (this.config = config2);
+    request && (this.request = request);
+    if (response) {
+      this.response = response;
+      this.status = response.status;
+    }
+  }
+  toJSON() {
+    const config2 = this.config;
+    const redactKeys = config2 && utils$1.hasOwnProp(config2, "redact") ? config2.redact : void 0;
+    const serializedConfig = utils$1.isArray(redactKeys) && redactKeys.length > 0 ? redactConfig(config2, redactKeys) : utils$1.toJSONObject(config2);
+    return {
+      // Standard
+      message: this.message,
+      name: this.name,
+      // Microsoft
+      description: this.description,
+      number: this.number,
+      // Mozilla
+      fileName: this.fileName,
+      lineNumber: this.lineNumber,
+      columnNumber: this.columnNumber,
+      stack: this.stack,
+      // Axios
+      config: serializedConfig,
+      code: this.code,
+      status: this.status
+    };
+  }
+};
+AxiosError$1.ERR_BAD_OPTION_VALUE = "ERR_BAD_OPTION_VALUE";
+AxiosError$1.ERR_BAD_OPTION = "ERR_BAD_OPTION";
+AxiosError$1.ECONNABORTED = "ECONNABORTED";
+AxiosError$1.ETIMEDOUT = "ETIMEDOUT";
+AxiosError$1.ECONNREFUSED = "ECONNREFUSED";
+AxiosError$1.ERR_NETWORK = "ERR_NETWORK";
+AxiosError$1.ERR_FR_TOO_MANY_REDIRECTS = "ERR_FR_TOO_MANY_REDIRECTS";
+AxiosError$1.ERR_DEPRECATED = "ERR_DEPRECATED";
+AxiosError$1.ERR_BAD_RESPONSE = "ERR_BAD_RESPONSE";
+AxiosError$1.ERR_BAD_REQUEST = "ERR_BAD_REQUEST";
+AxiosError$1.ERR_CANCELED = "ERR_CANCELED";
+AxiosError$1.ERR_NOT_SUPPORT = "ERR_NOT_SUPPORT";
+AxiosError$1.ERR_INVALID_URL = "ERR_INVALID_URL";
+AxiosError$1.ERR_FORM_DATA_DEPTH_EXCEEDED = "ERR_FORM_DATA_DEPTH_EXCEEDED";
+const httpAdapter = null;
+const DEFAULT_FORM_DATA_MAX_DEPTH = 100;
+function isVisitable(thing) {
+  return utils$1.isPlainObject(thing) || utils$1.isArray(thing);
+}
+function removeBrackets(key) {
+  return utils$1.endsWith(key, "[]") ? key.slice(0, -2) : key;
+}
+function renderKey(path, key, dots) {
+  if (!path) return key;
+  return path.concat(key).map(function each2(token, i) {
+    token = removeBrackets(token);
+    return !dots && i ? "[" + token + "]" : token;
+  }).join(dots ? "." : "");
+}
+function isFlatArray(arr) {
+  return utils$1.isArray(arr) && !arr.some(isVisitable);
+}
+const predicates = utils$1.toFlatObject(utils$1, {}, null, function filter(prop2) {
+  return /^is[A-Z]/.test(prop2);
+});
+function toFormData$1(obj, formData, options2) {
+  if (!utils$1.isObject(obj)) {
+    throw new TypeError("target must be an object");
+  }
+  formData = formData || new FormData();
+  options2 = utils$1.toFlatObject(
+    options2,
+    {
+      metaTokens: true,
+      dots: false,
+      indexes: false
+    },
+    false,
+    function defined(option, source) {
+      return !utils$1.isUndefined(source[option]);
+    }
+  );
+  const metaTokens = options2.metaTokens;
+  const visitor = options2.visitor || defaultVisitor;
+  const dots = options2.dots;
+  const indexes = options2.indexes;
+  const _Blob = options2.Blob || typeof Blob !== "undefined" && Blob;
+  const maxDepth = options2.maxDepth === void 0 ? DEFAULT_FORM_DATA_MAX_DEPTH : options2.maxDepth;
+  const useBlob = _Blob && utils$1.isSpecCompliantForm(formData);
+  const stack = [];
+  if (!utils$1.isFunction(visitor)) {
+    throw new TypeError("visitor must be a function");
+  }
+  function convertValue(value) {
+    if (value === null) return "";
+    if (utils$1.isDate(value)) {
+      return value.toISOString();
+    }
+    if (utils$1.isBoolean(value)) {
+      return value.toString();
+    }
+    if (!useBlob && utils$1.isBlob(value)) {
+      throw new AxiosError$1("Blob is not supported. Use a Buffer instead.");
+    }
+    if (utils$1.isArrayBuffer(value) || utils$1.isTypedArray(value)) {
+      return useBlob && typeof Blob === "function" ? new Blob([value]) : Buffer.from(value);
+    }
+    return value;
+  }
+  function throwIfMaxDepthExceeded(depth) {
+    if (depth > maxDepth) {
+      throw new AxiosError$1(
+        "Object is too deeply nested (" + depth + " levels). Max depth: " + maxDepth,
+        AxiosError$1.ERR_FORM_DATA_DEPTH_EXCEEDED
+      );
+    }
+  }
+  function stringifyWithDepthLimit(value, depth) {
+    if (maxDepth === Infinity) {
+      return JSON.stringify(value);
+    }
+    const ancestors = [];
+    return JSON.stringify(value, function limitDepth(_key, currentValue) {
+      if (!utils$1.isObject(currentValue)) {
+        return currentValue;
+      }
+      while (ancestors.length && ancestors[ancestors.length - 1] !== this) {
+        ancestors.pop();
+      }
+      ancestors.push(currentValue);
+      throwIfMaxDepthExceeded(depth + ancestors.length - 1);
+      return currentValue;
+    });
+  }
+  function defaultVisitor(value, key, path) {
+    let arr = value;
+    if (utils$1.isReactNative(formData) && utils$1.isReactNativeBlob(value)) {
+      formData.append(renderKey(path, key, dots), convertValue(value));
+      return false;
+    }
+    if (value && !path && typeof value === "object") {
+      if (utils$1.endsWith(key, "{}")) {
+        key = metaTokens ? key : key.slice(0, -2);
+        value = stringifyWithDepthLimit(value, 1);
+      } else if (utils$1.isArray(value) && isFlatArray(value) || (utils$1.isFileList(value) || utils$1.endsWith(key, "[]")) && (arr = utils$1.toArray(value))) {
+        key = removeBrackets(key);
+        arr.forEach(function each2(el, index2) {
+          !(utils$1.isUndefined(el) || el === null) && formData.append(
+            // eslint-disable-next-line no-nested-ternary
+            indexes === true ? renderKey([key], index2, dots) : indexes === null ? key : key + "[]",
+            convertValue(el)
+          );
+        });
+        return false;
+      }
+    }
+    if (isVisitable(value)) {
+      return true;
+    }
+    formData.append(renderKey(path, key, dots), convertValue(value));
+    return false;
+  }
+  const exposedHelpers = Object.assign(predicates, {
+    defaultVisitor,
+    convertValue,
+    isVisitable
+  });
+  function build(value, path, depth = 0) {
+    if (utils$1.isUndefined(value)) return;
+    throwIfMaxDepthExceeded(depth);
+    if (stack.indexOf(value) !== -1) {
+      throw new Error("Circular reference detected in " + path.join("."));
+    }
+    stack.push(value);
+    utils$1.forEach(value, function each2(el, key) {
+      const result = !(utils$1.isUndefined(el) || el === null) && visitor.call(formData, el, utils$1.isString(key) ? key.trim() : key, path, exposedHelpers);
+      if (result === true) {
+        build(el, path ? path.concat(key) : [key], depth + 1);
+      }
+    });
+    stack.pop();
+  }
+  if (!utils$1.isObject(obj)) {
+    throw new TypeError("data must be an object");
+  }
+  build(obj);
+  return formData;
+}
+function encode$1(str) {
+  const charMap = {
+    "!": "%21",
+    "'": "%27",
+    "(": "%28",
+    ")": "%29",
+    "~": "%7E",
+    "%20": "+"
+  };
+  return encodeURIComponent(str).replace(/[!'()~]|%20/g, function replacer(match) {
+    return charMap[match];
+  });
+}
+function AxiosURLSearchParams(params, options2) {
+  this._pairs = [];
+  params && toFormData$1(params, this, options2);
+}
+const prototype = AxiosURLSearchParams.prototype;
+prototype.append = function append(name, value) {
+  this._pairs.push([name, value]);
+};
+prototype.toString = function toString(encoder) {
+  const _encode = encoder ? function(value) {
+    return encoder.call(this, value, encode$1);
+  } : encode$1;
+  return this._pairs.map(function each2(pair) {
+    return _encode(pair[0]) + "=" + _encode(pair[1]);
+  }, "").join("&");
+};
+function encode(val2) {
+  return encodeURIComponent(val2).replace(/%3A/gi, ":").replace(/%24/g, "$").replace(/%2C/gi, ",").replace(/%20/g, "+");
+}
+function buildURL(url, params, options2) {
+  if (!params) {
+    return url;
+  }
+  const _options = utils$1.isFunction(options2) ? {
+    serialize: options2
+  } : options2;
+  const _encode = utils$1.getSafeProp(_options, "encode") || encode;
+  const serializeFn = utils$1.getSafeProp(_options, "serialize");
+  let serializedParams;
+  if (serializeFn) {
+    serializedParams = serializeFn(params, _options);
+  } else {
+    serializedParams = utils$1.isURLSearchParams(params) ? params.toString() : new AxiosURLSearchParams(params, _options).toString(_encode);
+  }
+  if (serializedParams) {
+    const hashmarkIndex = url.indexOf("#");
+    if (hashmarkIndex !== -1) {
+      url = url.slice(0, hashmarkIndex);
+    }
+    url += (url.indexOf("?") === -1 ? "?" : "&") + serializedParams;
+  }
+  return url;
+}
+class InterceptorManager {
+  constructor() {
+    this.handlers = [];
+  }
+  /**
+   * Add a new interceptor to the stack
+   *
+   * @param {Function} fulfilled The function to handle `then` for a `Promise`
+   * @param {Function} rejected The function to handle `reject` for a `Promise`
+   * @param {Object} options The options for the interceptor, synchronous and runWhen
+   *
+   * @return {Number} An ID used to remove interceptor later
+   */
+  use(fulfilled, rejected, options2) {
+    this.handlers.push({
+      fulfilled,
+      rejected,
+      synchronous: options2 ? options2.synchronous : false,
+      runWhen: options2 ? options2.runWhen : null
+    });
+    return this.handlers.length - 1;
+  }
+  /**
+   * Remove an interceptor from the stack
+   *
+   * @param {Number} id The ID that was returned by `use`
+   *
+   * @returns {void}
+   */
+  eject(id) {
+    if (this.handlers[id]) {
+      this.handlers[id] = null;
+    }
+  }
+  /**
+   * Clear all interceptors from the stack
+   *
+   * @returns {void}
+   */
+  clear() {
+    if (this.handlers) {
+      this.handlers = [];
+    }
+  }
+  /**
+   * Iterate over all the registered interceptors
+   *
+   * This method is particularly useful for skipping over any
+   * interceptors that may have become `null` calling `eject`.
+   *
+   * @param {Function} fn The function to call for each interceptor
+   *
+   * @returns {void}
+   */
+  forEach(fn) {
+    utils$1.forEach(this.handlers, function forEachHandler(h) {
+      if (h !== null) {
+        fn(h);
+      }
+    });
+  }
+}
+const transitionalDefaults = {
+  silentJSONParsing: true,
+  forcedJSONParsing: true,
+  clarifyTimeoutError: false,
+  legacyInterceptorReqResOrdering: true,
+  advertiseZstdAcceptEncoding: false,
+  validateStatusUndefinedResolves: true
+};
+const URLSearchParams$1 = typeof URLSearchParams !== "undefined" ? URLSearchParams : AxiosURLSearchParams;
+const FormData$1 = typeof FormData !== "undefined" ? FormData : null;
+const Blob$1 = typeof Blob !== "undefined" ? Blob : null;
+const platform$1 = {
+  isBrowser: true,
+  classes: {
+    URLSearchParams: URLSearchParams$1,
+    FormData: FormData$1,
+    Blob: Blob$1
+  },
+  protocols: ["http", "https", "file", "blob", "url", "data"]
+};
+const hasBrowserEnv = typeof window !== "undefined" && typeof document !== "undefined";
+const _navigator = typeof navigator === "object" && navigator || void 0;
+const hasStandardBrowserEnv = hasBrowserEnv && (!_navigator || ["ReactNative", "NativeScript", "NS"].indexOf(_navigator.product) < 0);
+const hasStandardBrowserWebWorkerEnv = (() => {
+  return typeof WorkerGlobalScope !== "undefined" && // eslint-disable-next-line no-undef
+  self instanceof WorkerGlobalScope && typeof self.importScripts === "function";
+})();
+const origin = hasBrowserEnv && window.location.href || "http://localhost";
+const utils = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+  __proto__: null,
+  hasBrowserEnv,
+  hasStandardBrowserEnv,
+  hasStandardBrowserWebWorkerEnv,
+  navigator: _navigator,
+  origin
+}, Symbol.toStringTag, { value: "Module" }));
+const platform = {
+  ...utils,
+  ...platform$1
+};
+function toURLEncodedForm(data2, options2) {
+  return toFormData$1(data2, new platform.classes.URLSearchParams(), {
+    visitor: function(value, key, path, helpers) {
+      if (platform.isNode && utils$1.isBuffer(value)) {
+        this.append(key, value.toString("base64"));
+        return false;
+      }
+      return helpers.defaultVisitor.apply(this, arguments);
+    },
+    ...options2
+  });
+}
+const MAX_DEPTH = DEFAULT_FORM_DATA_MAX_DEPTH;
+function throwIfDepthExceeded(index2) {
+  if (index2 > MAX_DEPTH) {
+    throw new AxiosError$1(
+      "FormData field is too deeply nested (" + index2 + " levels). Max depth: " + MAX_DEPTH,
+      AxiosError$1.ERR_FORM_DATA_DEPTH_EXCEEDED
+    );
+  }
+}
+function parsePropPath(name) {
+  const path = [];
+  const pattern = /\w+|\[(\w*)]/g;
+  let match;
+  while ((match = pattern.exec(name)) !== null) {
+    throwIfDepthExceeded(path.length);
+    path.push(match[0] === "[]" ? "" : match[1] || match[0]);
+  }
+  return path;
+}
+function arrayToObject(arr) {
+  const obj = {};
+  const keys = Object.keys(arr);
+  let i;
+  const len = keys.length;
+  let key;
+  for (i = 0; i < len; i++) {
+    key = keys[i];
+    obj[key] = arr[key];
+  }
+  return obj;
+}
+function formDataToJSON(formData) {
+  function buildPath(path, value, target, index2) {
+    throwIfDepthExceeded(index2);
+    let name = path[index2++];
+    if (name === "__proto__") return true;
+    const isNumericKey = Number.isFinite(+name);
+    const isLast = index2 >= path.length;
+    name = !name && utils$1.isArray(target) ? target.length : name;
+    if (isLast) {
+      if (utils$1.hasOwnProp(target, name)) {
+        target[name] = utils$1.isArray(target[name]) ? target[name].concat(value) : [target[name], value];
+      } else {
+        target[name] = value;
+      }
+      return !isNumericKey;
+    }
+    if (!utils$1.hasOwnProp(target, name) || !utils$1.isObject(target[name])) {
+      target[name] = [];
+    }
+    const result = buildPath(path, value, target[name], index2);
+    if (result && utils$1.isArray(target[name])) {
+      target[name] = arrayToObject(target[name]);
+    }
+    return !isNumericKey;
+  }
+  if (utils$1.isFormData(formData) && utils$1.isFunction(formData.entries)) {
+    const obj = {};
+    utils$1.forEachEntry(formData, (name, value) => {
+      buildPath(parsePropPath(name), value, obj, 0);
+    });
+    return obj;
+  }
+  return null;
+}
+const own = (obj, key) => obj != null && utils$1.hasOwnProp(obj, key) ? obj[key] : void 0;
+function stringifySafely(rawValue, parser, encoder) {
+  if (utils$1.isString(rawValue)) {
+    try {
+      (parser || JSON.parse)(rawValue);
+      return utils$1.trim(rawValue);
+    } catch (e) {
+      if (e.name !== "SyntaxError") {
+        throw e;
+      }
+    }
+  }
+  return (encoder || JSON.stringify)(rawValue);
+}
+const defaults = {
+  transitional: transitionalDefaults,
+  adapter: ["xhr", "http", "fetch"],
+  transformRequest: [
+    function transformRequest(data2, headers) {
+      const contentType = headers.getContentType() || "";
+      const hasJSONContentType = contentType.indexOf("application/json") > -1;
+      const isObjectPayload = utils$1.isObject(data2);
+      if (isObjectPayload && utils$1.isHTMLForm(data2)) {
+        data2 = new FormData(data2);
+      }
+      const isFormData2 = utils$1.isFormData(data2);
+      if (isFormData2) {
+        return hasJSONContentType ? JSON.stringify(formDataToJSON(data2)) : data2;
+      }
+      if (utils$1.isArrayBuffer(data2) || utils$1.isBuffer(data2) || utils$1.isStream(data2) || utils$1.isFile(data2) || utils$1.isBlob(data2) || utils$1.isReadableStream(data2)) {
+        return data2;
+      }
+      if (utils$1.isArrayBufferView(data2)) {
+        return data2.buffer;
+      }
+      if (utils$1.isURLSearchParams(data2)) {
+        headers.setContentType("application/x-www-form-urlencoded;charset=utf-8", false);
+        return data2.toString();
+      }
+      let isFileList2;
+      if (isObjectPayload) {
+        const formSerializer = own(this, "formSerializer");
+        if (contentType.indexOf("application/x-www-form-urlencoded") > -1) {
+          return toURLEncodedForm(data2, formSerializer).toString();
+        }
+        if ((isFileList2 = utils$1.isFileList(data2)) || contentType.indexOf("multipart/form-data") > -1) {
+          const env = own(this, "env");
+          const _FormData = env && env.FormData;
+          return toFormData$1(
+            isFileList2 ? { "files[]": data2 } : data2,
+            _FormData && new _FormData(),
+            formSerializer
+          );
+        }
+      }
+      if (isObjectPayload || hasJSONContentType) {
+        headers.setContentType("application/json", false);
+        return stringifySafely(data2);
+      }
+      return data2;
+    }
+  ],
+  transformResponse: [
+    function transformResponse(data2) {
+      const transitional2 = own(this, "transitional") || defaults.transitional;
+      const forcedJSONParsing = transitional2 && transitional2.forcedJSONParsing;
+      const responseType = own(this, "responseType");
+      const JSONRequested = responseType === "json";
+      if (utils$1.isResponse(data2) || utils$1.isReadableStream(data2)) {
+        return data2;
+      }
+      if (data2 && utils$1.isString(data2) && (forcedJSONParsing && !responseType || JSONRequested)) {
+        const silentJSONParsing = transitional2 && transitional2.silentJSONParsing;
+        const strictJSONParsing = !silentJSONParsing && JSONRequested;
+        try {
+          return JSON.parse(data2, own(this, "parseReviver"));
+        } catch (e) {
+          if (strictJSONParsing) {
+            if (e.name === "SyntaxError") {
+              throw AxiosError$1.from(e, AxiosError$1.ERR_BAD_RESPONSE, this, null, own(this, "response"));
+            }
+            throw e;
+          }
+        }
+      }
+      return data2;
+    }
+  ],
+  /**
+   * A timeout in milliseconds to abort a request. If set to 0 (default) a
+   * timeout is not created.
+   */
+  timeout: 0,
+  xsrfCookieName: "XSRF-TOKEN",
+  xsrfHeaderName: "X-XSRF-TOKEN",
+  maxContentLength: -1,
+  maxBodyLength: -1,
+  env: {
+    FormData: platform.classes.FormData,
+    Blob: platform.classes.Blob
+  },
+  validateStatus: function validateStatus(status) {
+    return status >= 200 && status < 300;
+  },
+  headers: {
+    common: {
+      Accept: "application/json, text/plain, */*",
+      "Content-Type": void 0
+    }
+  }
+};
+utils$1.forEach(["delete", "get", "head", "post", "put", "patch", "query"], (method) => {
+  defaults.headers[method] = {};
+});
 function transformData(fns, response) {
   const config2 = this || defaults;
   const context = response || config2;
@@ -1898,13 +2387,22 @@ function transformData(fns, response) {
 function isCancel$1(value) {
   return !!(value && value.__CANCEL__);
 }
-function CanceledError$1(message, config2, request) {
-  AxiosError$1.call(this, message == null ? "canceled" : message, AxiosError$1.ERR_CANCELED, config2, request);
-  this.name = "CanceledError";
-}
-utils$1.inherits(CanceledError$1, AxiosError$1, {
-  __CANCEL__: true
-});
+let CanceledError$1 = class CanceledError extends AxiosError$1 {
+  /**
+   * A `CanceledError` is an object that is thrown when an operation is canceled.
+   *
+   * @param {string=} message The message.
+   * @param {Object=} config The config.
+   * @param {Object=} request The request.
+   *
+   * @returns {CanceledError} The created error.
+   */
+  constructor(message, config2, request) {
+    super(message == null ? "canceled" : message, AxiosError$1.ERR_CANCELED, config2, request);
+    this.name = "CanceledError";
+    this.__CANCEL__ = true;
+  }
+};
 function settle(resolve, reject, response) {
   const validateStatus2 = response.config.validateStatus;
   if (!response.status || !validateStatus2 || validateStatus2(response.status)) {
@@ -1912,7 +2410,7 @@ function settle(resolve, reject, response) {
   } else {
     reject(new AxiosError$1(
       "Request failed with status code " + response.status,
-      [AxiosError$1.ERR_BAD_REQUEST, AxiosError$1.ERR_BAD_RESPONSE][Math.floor(response.status / 100) - 4],
+      response.status >= 400 && response.status < 500 ? AxiosError$1.ERR_BAD_REQUEST : AxiosError$1.ERR_BAD_RESPONSE,
       response.config,
       response.request,
       response
@@ -1920,7 +2418,7 @@ function settle(resolve, reject, response) {
   }
 }
 function parseProtocol(url) {
-  const match = /^([-+\w]{1,25})(:?\/\/|:)/.exec(url);
+  const match = /^([-+\w]{1,25}):(?:\/\/)?/.exec(url);
   return match && match[1] || "";
 }
 function speedometer(samplesCount, min) {
@@ -1958,108 +2456,119 @@ function speedometer(samplesCount, min) {
 }
 function throttle(fn, freq) {
   let timestamp = 0;
-  const threshold = 1e3 / freq;
-  let timer = null;
-  return function throttled() {
-    const force = this === true;
-    const now = Date.now();
-    if (force || now - timestamp > threshold) {
-      if (timer) {
-        clearTimeout(timer);
-        timer = null;
-      }
-      timestamp = now;
-      return fn.apply(null, arguments);
+  let threshold = 1e3 / freq;
+  let lastArgs;
+  let timer;
+  const invoke = (args, now = Date.now()) => {
+    timestamp = now;
+    lastArgs = null;
+    if (timer) {
+      clearTimeout(timer);
+      timer = null;
     }
-    if (!timer) {
-      timer = setTimeout(() => {
-        timer = null;
-        timestamp = Date.now();
-        return fn.apply(null, arguments);
-      }, threshold - (now - timestamp));
+    fn(...args);
+  };
+  const throttled = (...args) => {
+    const now = Date.now();
+    const passed = now - timestamp;
+    if (passed >= threshold) {
+      invoke(args, now);
+    } else {
+      lastArgs = args;
+      if (!timer) {
+        timer = setTimeout(() => {
+          timer = null;
+          invoke(lastArgs);
+        }, threshold - passed);
+      }
     }
   };
+  const flush = () => lastArgs && invoke(lastArgs);
+  return [throttled, flush];
 }
 const progressEventReducer = (listener, isDownloadStream, freq = 3) => {
   let bytesNotified = 0;
   const _speedometer = speedometer(50, 250);
   return throttle((e) => {
-    const loaded = e.loaded;
+    if (!e || typeof e.loaded !== "number") {
+      return;
+    }
+    const rawLoaded = e.loaded;
     const total = e.lengthComputable ? e.total : void 0;
-    const progressBytes = loaded - bytesNotified;
+    const loaded = total != null ? Math.min(rawLoaded, total) : rawLoaded;
+    const progressBytes = Math.max(0, loaded - bytesNotified);
     const rate = _speedometer(progressBytes);
-    const inRange = loaded <= total;
-    bytesNotified = loaded;
+    bytesNotified = Math.max(bytesNotified, loaded);
     const data2 = {
       loaded,
       total,
       progress: total ? loaded / total : void 0,
       bytes: progressBytes,
       rate: rate ? rate : void 0,
-      estimated: rate && total && inRange ? (total - loaded) / rate : void 0,
+      estimated: rate && total ? (total - loaded) / rate : void 0,
       event: e,
-      lengthComputable: total != null
+      lengthComputable: total != null,
+      [isDownloadStream ? "download" : "upload"]: true
     };
-    data2[isDownloadStream ? "download" : "upload"] = true;
     listener(data2);
   }, freq);
 };
-const isURLSameOrigin = platform.hasStandardBrowserEnv ? (
-  // Standard browser envs have full support of the APIs needed to test
-  // whether the request URL is of the same origin as current location.
-  (function standardBrowserEnv() {
-    const msie = /(msie|trident)/i.test(navigator.userAgent);
-    const urlParsingNode = document.createElement("a");
-    let originURL;
-    function resolveURL(url) {
-      let href = url;
-      if (msie) {
-        urlParsingNode.setAttribute("href", href);
-        href = urlParsingNode.href;
-      }
-      urlParsingNode.setAttribute("href", href);
-      return {
-        href: urlParsingNode.href,
-        protocol: urlParsingNode.protocol ? urlParsingNode.protocol.replace(/:$/, "") : "",
-        host: urlParsingNode.host,
-        search: urlParsingNode.search ? urlParsingNode.search.replace(/^\?/, "") : "",
-        hash: urlParsingNode.hash ? urlParsingNode.hash.replace(/^#/, "") : "",
-        hostname: urlParsingNode.hostname,
-        port: urlParsingNode.port,
-        pathname: urlParsingNode.pathname.charAt(0) === "/" ? urlParsingNode.pathname : "/" + urlParsingNode.pathname
-      };
-    }
-    originURL = resolveURL(window.location.href);
-    return function isURLSameOrigin2(requestURL) {
-      const parsed = utils$1.isString(requestURL) ? resolveURL(requestURL) : requestURL;
-      return parsed.protocol === originURL.protocol && parsed.host === originURL.host;
-    };
-  })()
-) : (
-  // Non standard browser envs (web workers, react-native) lack needed support.
-  /* @__PURE__ */ (function nonStandardBrowserEnv() {
-    return function isURLSameOrigin2() {
-      return true;
-    };
-  })()
-);
+const progressEventDecorator = (total, throttled) => {
+  const lengthComputable = total != null;
+  return [
+    (loaded) => throttled[0]({
+      lengthComputable,
+      total,
+      loaded
+    }),
+    throttled[1]
+  ];
+};
+const asyncDecorator = (fn) => (...args) => utils$1.asap(() => fn(...args));
+const isURLSameOrigin = platform.hasStandardBrowserEnv ? /* @__PURE__ */ ((origin2, isMSIE) => (url) => {
+  url = new URL(url, platform.origin);
+  return origin2.protocol === url.protocol && origin2.host === url.host && (isMSIE || origin2.port === url.port);
+})(
+  new URL(platform.origin),
+  platform.navigator && /(msie|trident)/i.test(platform.navigator.userAgent)
+) : () => true;
 const cookies = platform.hasStandardBrowserEnv ? (
   // Standard browser envs support document.cookie
   {
-    write(name, value, expires, path, domain, secure) {
-      const cookie = [name + "=" + encodeURIComponent(value)];
-      utils$1.isNumber(expires) && cookie.push("expires=" + new Date(expires).toGMTString());
-      utils$1.isString(path) && cookie.push("path=" + path);
-      utils$1.isString(domain) && cookie.push("domain=" + domain);
-      secure === true && cookie.push("secure");
+    write(name, value, expires, path, domain, secure, sameSite) {
+      if (typeof document === "undefined") return;
+      const cookie = [`${name}=${encodeURIComponent(value)}`];
+      if (utils$1.isNumber(expires)) {
+        cookie.push(`expires=${new Date(expires).toUTCString()}`);
+      }
+      if (utils$1.isString(path)) {
+        cookie.push(`path=${path}`);
+      }
+      if (utils$1.isString(domain)) {
+        cookie.push(`domain=${domain}`);
+      }
+      if (secure === true) {
+        cookie.push("secure");
+      }
+      if (utils$1.isString(sameSite)) {
+        cookie.push(`SameSite=${sameSite}`);
+      }
       document.cookie = cookie.join("; ");
     },
     read(name) {
-      const match = document.cookie.match(new RegExp("(^|;\\s*)(" + name + ")=([^;]*)"));
-      return match ? decodeURIComponent(match[3]) : null;
+      if (typeof document === "undefined") return null;
+      const cookies2 = document.cookie.split(";");
+      for (let i = 0; i < cookies2.length; i++) {
+        const cookie = cookies2[i].replace(/^\s+/, "");
+        const eq2 = cookie.indexOf("=");
+        if (eq2 !== -1 && cookie.slice(0, eq2) === name) {
+          return decodeURIComponent(cookie.slice(eq2 + 1));
+        }
+      }
+      return null;
     },
     remove(name) {
-      this.write(name, "", Date.now() - 864e5);
+      this.write(name, "", Date.now() - 864e5, "/");
     }
   }
 ) : (
@@ -2075,13 +2584,40 @@ const cookies = platform.hasStandardBrowserEnv ? (
   }
 );
 function isAbsoluteURL(url) {
+  if (typeof url !== "string") {
+    return false;
+  }
   return /^([a-z][a-z\d+\-.]*:)?\/\//i.test(url);
 }
 function combineURLs(baseURL, relativeURL) {
   return relativeURL ? baseURL.replace(/\/?\/$/, "") + "/" + relativeURL.replace(/^\/+/, "") : baseURL;
 }
-function buildFullPath(baseURL, requestedURL) {
-  if (baseURL && !isAbsoluteURL(requestedURL)) {
+const malformedHttpProtocol = /^https?:(?!\/\/)/i;
+const httpProtocolControlCharacters = /[\t\n\r]/g;
+function stripLeadingC0ControlOrSpace(url) {
+  let i = 0;
+  while (i < url.length && url.charCodeAt(i) <= 32) {
+    i++;
+  }
+  return url.slice(i);
+}
+function normalizeURLForProtocolCheck(url) {
+  return stripLeadingC0ControlOrSpace(url).replace(httpProtocolControlCharacters, "");
+}
+function assertValidHttpProtocolURL(url, config2) {
+  if (typeof url === "string" && malformedHttpProtocol.test(normalizeURLForProtocolCheck(url))) {
+    throw new AxiosError$1(
+      'Invalid URL: missing "//" after protocol',
+      AxiosError$1.ERR_INVALID_URL,
+      config2
+    );
+  }
+}
+function buildFullPath(baseURL, requestedURL, allowAbsoluteUrls, config2) {
+  assertValidHttpProtocolURL(requestedURL, config2);
+  let isRelativeUrl = !isAbsoluteURL(requestedURL);
+  if (baseURL && (isRelativeUrl || allowAbsoluteUrls === false)) {
+    assertValidHttpProtocolURL(baseURL, config2);
     return combineURLs(baseURL, requestedURL);
   }
   return requestedURL;
@@ -2089,8 +2625,17 @@ function buildFullPath(baseURL, requestedURL) {
 const headersToObject = (thing) => thing instanceof AxiosHeaders$1 ? { ...thing } : thing;
 function mergeConfig$1(config1, config2) {
   config2 = config2 || {};
-  const config3 = {};
-  function getMergedValue(target, source, caseless) {
+  const config3 = /* @__PURE__ */ Object.create(null);
+  Object.defineProperty(config3, "hasOwnProperty", {
+    // Null-proto descriptor so a polluted Object.prototype.get cannot turn
+    // this data descriptor into an accessor descriptor on the way in.
+    __proto__: null,
+    value: Object.prototype.hasOwnProperty,
+    enumerable: false,
+    writable: true,
+    configurable: true
+  });
+  function getMergedValue(target, source, prop2, caseless) {
     if (utils$1.isPlainObject(target) && utils$1.isPlainObject(source)) {
       return utils$1.merge.call({ caseless }, target, source);
     } else if (utils$1.isPlainObject(source)) {
@@ -2100,11 +2645,11 @@ function mergeConfig$1(config1, config2) {
     }
     return source;
   }
-  function mergeDeepProperties(a, b, caseless) {
+  function mergeDeepProperties(a, b, prop2, caseless) {
     if (!utils$1.isUndefined(b)) {
-      return getMergedValue(a, b, caseless);
+      return getMergedValue(a, b, prop2, caseless);
     } else if (!utils$1.isUndefined(a)) {
-      return getMergedValue(void 0, a, caseless);
+      return getMergedValue(void 0, a, prop2, caseless);
     }
   }
   function valueFromConfig2(a, b) {
@@ -2119,10 +2664,27 @@ function mergeConfig$1(config1, config2) {
       return getMergedValue(void 0, a);
     }
   }
+  function getMergedTransitionalOption(prop2) {
+    const transitional2 = utils$1.hasOwnProp(config2, "transitional") ? config2.transitional : void 0;
+    if (!utils$1.isUndefined(transitional2)) {
+      if (utils$1.isPlainObject(transitional2)) {
+        if (utils$1.hasOwnProp(transitional2, prop2)) {
+          return transitional2[prop2];
+        }
+      } else {
+        return void 0;
+      }
+    }
+    const transitional1 = utils$1.hasOwnProp(config1, "transitional") ? config1.transitional : void 0;
+    if (utils$1.isPlainObject(transitional1) && utils$1.hasOwnProp(transitional1, prop2)) {
+      return transitional1[prop2];
+    }
+    return void 0;
+  }
   function mergeDirectKeys(a, b, prop2) {
-    if (prop2 in config2) {
+    if (utils$1.hasOwnProp(config2, prop2)) {
       return getMergedValue(a, b);
-    } else if (prop2 in config1) {
+    } else if (utils$1.hasOwnProp(config1, prop2)) {
       return getMergedValue(void 0, a);
     }
   }
@@ -2153,40 +2715,83 @@ function mergeConfig$1(config1, config2) {
     httpsAgent: defaultToConfig2,
     cancelToken: defaultToConfig2,
     socketPath: defaultToConfig2,
+    allowedSocketPaths: defaultToConfig2,
     responseEncoding: defaultToConfig2,
     validateStatus: mergeDirectKeys,
-    headers: (a, b) => mergeDeepProperties(headersToObject(a), headersToObject(b), true)
+    headers: (a, b, prop2) => mergeDeepProperties(headersToObject(a), headersToObject(b), prop2, true)
   };
-  utils$1.forEach(Object.keys(Object.assign({}, config1, config2)), function computeConfigValue(prop2) {
-    const merge2 = mergeMap[prop2] || mergeDeepProperties;
-    const configValue = merge2(config1[prop2], config2[prop2], prop2);
+  utils$1.forEach(Object.keys({ ...config1, ...config2 }), function computeConfigValue(prop2) {
+    if (prop2 === "__proto__" || prop2 === "constructor" || prop2 === "prototype") return;
+    const merge2 = utils$1.hasOwnProp(mergeMap, prop2) ? mergeMap[prop2] : mergeDeepProperties;
+    const a = utils$1.hasOwnProp(config1, prop2) ? config1[prop2] : void 0;
+    const b = utils$1.hasOwnProp(config2, prop2) ? config2[prop2] : void 0;
+    const configValue = merge2(a, b, prop2);
     utils$1.isUndefined(configValue) && merge2 !== mergeDirectKeys || (config3[prop2] = configValue);
   });
+  if (utils$1.hasOwnProp(config2, "validateStatus") && utils$1.isUndefined(config2.validateStatus) && getMergedTransitionalOption("validateStatusUndefinedResolves") === false) {
+    if (utils$1.hasOwnProp(config1, "validateStatus")) {
+      config3.validateStatus = getMergedValue(void 0, config1.validateStatus);
+    } else {
+      delete config3.validateStatus;
+    }
+  }
   return config3;
 }
-const resolveConfig = (config2) => {
+const FORM_DATA_CONTENT_HEADERS = ["content-type", "content-length"];
+function setFormDataHeaders(headers, formHeaders, policy) {
+  if (policy !== "content-only") {
+    headers.set(formHeaders);
+    return;
+  }
+  Object.entries(formHeaders).forEach(([key, val2]) => {
+    if (FORM_DATA_CONTENT_HEADERS.includes(key.toLowerCase())) {
+      headers.set(key, val2);
+    }
+  });
+}
+const encodeUTF8$1 = (str) => encodeURIComponent(str).replace(
+  /%([0-9A-F]{2})/gi,
+  (_, hex) => String.fromCharCode(parseInt(hex, 16))
+);
+function resolveConfig(config2) {
   const newConfig = mergeConfig$1({}, config2);
-  let { data: data2, withXSRFToken, xsrfHeaderName, xsrfCookieName, headers, auth } = newConfig;
+  const own2 = (key) => utils$1.hasOwnProp(newConfig, key) ? newConfig[key] : void 0;
+  const data2 = own2("data");
+  let withXSRFToken = own2("withXSRFToken");
+  const xsrfHeaderName = own2("xsrfHeaderName");
+  const xsrfCookieName = own2("xsrfCookieName");
+  let headers = own2("headers");
+  const auth = own2("auth");
+  const baseURL = own2("baseURL");
+  const allowAbsoluteUrls = own2("allowAbsoluteUrls");
+  const url = own2("url");
   newConfig.headers = headers = AxiosHeaders$1.from(headers);
-  newConfig.url = buildURL(buildFullPath(newConfig.baseURL, newConfig.url), config2.params, config2.paramsSerializer);
+  newConfig.url = buildURL(
+    buildFullPath(baseURL, url, allowAbsoluteUrls, newConfig),
+    own2("params"),
+    own2("paramsSerializer")
+  );
   if (auth) {
+    const username = utils$1.getSafeProp(auth, "username") || "";
+    const password = utils$1.getSafeProp(auth, "password") || "";
     headers.set(
       "Authorization",
-      "Basic " + btoa((auth.username || "") + ":" + (auth.password ? unescape(encodeURIComponent(auth.password)) : ""))
+      "Basic " + btoa(username + ":" + (password ? encodeUTF8$1(password) : ""))
     );
   }
-  let contentType;
   if (utils$1.isFormData(data2)) {
-    if (platform.hasStandardBrowserEnv || platform.hasStandardBrowserWebWorkerEnv) {
+    if (platform.hasStandardBrowserEnv || platform.hasStandardBrowserWebWorkerEnv || utils$1.isReactNative(data2)) {
       headers.setContentType(void 0);
-    } else if ((contentType = headers.getContentType()) !== false) {
-      const [type, ...tokens] = contentType ? contentType.split(";").map((token) => token.trim()).filter(Boolean) : [];
-      headers.setContentType([type || "multipart/form-data", ...tokens].join("; "));
+    } else if (utils$1.isFunction(data2.getHeaders)) {
+      setFormDataHeaders(headers, data2.getHeaders(), own2("formDataHeaderPolicy"));
     }
   }
   if (platform.hasStandardBrowserEnv) {
-    withXSRFToken && utils$1.isFunction(withXSRFToken) && (withXSRFToken = withXSRFToken(newConfig));
-    if (withXSRFToken || withXSRFToken !== false && isURLSameOrigin(newConfig.url)) {
+    if (utils$1.isFunction(withXSRFToken)) {
+      withXSRFToken = withXSRFToken(newConfig);
+    }
+    const shouldSendXSRF = withXSRFToken === true || withXSRFToken == null && isURLSameOrigin(newConfig.url);
+    if (shouldSendXSRF) {
       const xsrfValue = xsrfHeaderName && xsrfCookieName && cookies.read(xsrfCookieName);
       if (xsrfValue) {
         headers.set(xsrfHeaderName, xsrfValue);
@@ -2194,22 +2799,22 @@ const resolveConfig = (config2) => {
     }
   }
   return newConfig;
-};
+}
 const isXHRAdapterSupported = typeof XMLHttpRequest !== "undefined";
 const xhrAdapter = isXHRAdapterSupported && function(config2) {
   return new Promise(function dispatchXhrRequest(resolve, reject) {
     const _config = resolveConfig(config2);
     let requestData = _config.data;
     const requestHeaders = AxiosHeaders$1.from(_config.headers).normalize();
-    let { responseType } = _config;
+    let { responseType, onUploadProgress, onDownloadProgress } = _config;
     let onCanceled;
+    let uploadThrottled, downloadThrottled;
+    let flushUpload, flushDownload;
     function done() {
-      if (_config.cancelToken) {
-        _config.cancelToken.unsubscribe(onCanceled);
-      }
-      if (_config.signal) {
-        _config.signal.removeEventListener("abort", onCanceled);
-      }
+      flushUpload && flushUpload();
+      flushDownload && flushDownload();
+      _config.cancelToken && _config.cancelToken.unsubscribe(onCanceled);
+      _config.signal && _config.signal.removeEventListener("abort", onCanceled);
     }
     let request = new XMLHttpRequest();
     request.open(_config.method.toUpperCase(), _config.url, true);
@@ -2230,13 +2835,17 @@ const xhrAdapter = isXHRAdapterSupported && function(config2) {
         config: config2,
         request
       };
-      settle(function _resolve(value) {
-        resolve(value);
-        done();
-      }, function _reject(err) {
-        reject(err);
-        done();
-      }, response);
+      settle(
+        function _resolve(value) {
+          resolve(value);
+          done();
+        },
+        function _reject(err) {
+          reject(err);
+          done();
+        },
+        response
+      );
       request = null;
     }
     if ("onloadend" in request) {
@@ -2246,7 +2855,7 @@ const xhrAdapter = isXHRAdapterSupported && function(config2) {
         if (!request || request.readyState !== 4) {
           return;
         }
-        if (request.status === 0 && !(request.responseURL && request.responseURL.indexOf("file:") === 0)) {
+        if (request.status === 0 && !(request.responseURL && request.responseURL.startsWith("file:"))) {
           return;
         }
         setTimeout(onloadend);
@@ -2256,11 +2865,16 @@ const xhrAdapter = isXHRAdapterSupported && function(config2) {
       if (!request) {
         return;
       }
-      reject(new AxiosError$1("Request aborted", AxiosError$1.ECONNABORTED, _config, request));
+      reject(new AxiosError$1("Request aborted", AxiosError$1.ECONNABORTED, config2, request));
+      done();
       request = null;
     };
-    request.onerror = function handleError() {
-      reject(new AxiosError$1("Network Error", AxiosError$1.ERR_NETWORK, _config, request));
+    request.onerror = function handleError(event) {
+      const msg = event && event.message ? event.message : "Network Error";
+      const err = new AxiosError$1(msg, AxiosError$1.ERR_NETWORK, config2, request);
+      err.event = event || null;
+      reject(err);
+      done();
       request = null;
     };
     request.ontimeout = function handleTimeout() {
@@ -2269,17 +2883,20 @@ const xhrAdapter = isXHRAdapterSupported && function(config2) {
       if (_config.timeoutErrorMessage) {
         timeoutErrorMessage = _config.timeoutErrorMessage;
       }
-      reject(new AxiosError$1(
-        timeoutErrorMessage,
-        transitional2.clarifyTimeoutError ? AxiosError$1.ETIMEDOUT : AxiosError$1.ECONNABORTED,
-        _config,
-        request
-      ));
+      reject(
+        new AxiosError$1(
+          timeoutErrorMessage,
+          transitional2.clarifyTimeoutError ? AxiosError$1.ETIMEDOUT : AxiosError$1.ECONNABORTED,
+          config2,
+          request
+        )
+      );
+      done();
       request = null;
     };
     requestData === void 0 && requestHeaders.setContentType(null);
     if ("setRequestHeader" in request) {
-      utils$1.forEach(requestHeaders.toJSON(), function setRequestHeader(val2, key) {
+      utils$1.forEach(toByteStringHeaderObject(requestHeaders), function setRequestHeader(val2, key) {
         request.setRequestHeader(key, val2);
       });
     }
@@ -2289,11 +2906,14 @@ const xhrAdapter = isXHRAdapterSupported && function(config2) {
     if (responseType && responseType !== "json") {
       request.responseType = _config.responseType;
     }
-    if (typeof _config.onDownloadProgress === "function") {
-      request.addEventListener("progress", progressEventReducer(_config.onDownloadProgress, true));
+    if (onDownloadProgress) {
+      [downloadThrottled, flushDownload] = progressEventReducer(onDownloadProgress, true);
+      request.addEventListener("progress", downloadThrottled);
     }
-    if (typeof _config.onUploadProgress === "function" && request.upload) {
-      request.upload.addEventListener("progress", progressEventReducer(_config.onUploadProgress));
+    if (onUploadProgress && request.upload) {
+      [uploadThrottled, flushUpload] = progressEventReducer(onUploadProgress);
+      request.upload.addEventListener("progress", uploadThrottled);
+      request.upload.addEventListener("loadend", flushUpload);
     }
     if (_config.cancelToken || _config.signal) {
       onCanceled = (cancel) => {
@@ -2302,6 +2922,7 @@ const xhrAdapter = isXHRAdapterSupported && function(config2) {
         }
         reject(!cancel || cancel.type ? new CanceledError$1(null, config2, request) : cancel);
         request.abort();
+        done();
         request = null;
       };
       _config.cancelToken && _config.cancelToken.subscribe(onCanceled);
@@ -2310,44 +2931,55 @@ const xhrAdapter = isXHRAdapterSupported && function(config2) {
       }
     }
     const protocol = parseProtocol(_config.url);
-    if (protocol && platform.protocols.indexOf(protocol) === -1) {
-      reject(new AxiosError$1("Unsupported protocol " + protocol + ":", AxiosError$1.ERR_BAD_REQUEST, config2));
+    if (protocol && !platform.protocols.includes(protocol)) {
+      reject(
+        new AxiosError$1(
+          "Unsupported protocol " + protocol + ":",
+          AxiosError$1.ERR_BAD_REQUEST,
+          config2
+        )
+      );
       return;
     }
     request.send(requestData || null);
   });
 };
 const composeSignals = (signals, timeout) => {
-  let controller = new AbortController();
-  let aborted;
-  const onabort = function(cancel) {
+  signals = signals ? signals.filter(Boolean) : [];
+  if (!timeout && !signals.length) {
+    return;
+  }
+  const controller = new AbortController();
+  let aborted = false;
+  const onabort = function(reason) {
     if (!aborted) {
       aborted = true;
       unsubscribe();
-      const err = cancel instanceof Error ? cancel : this.reason;
-      controller.abort(err instanceof AxiosError$1 ? err : new CanceledError$1(err instanceof Error ? err.message : err));
+      const err = reason instanceof Error ? reason : this.reason;
+      controller.abort(
+        err instanceof AxiosError$1 ? err : new CanceledError$1(err instanceof Error ? err.message : err)
+      );
     }
   };
   let timer = timeout && setTimeout(() => {
-    onabort(new AxiosError$1(`timeout ${timeout} of ms exceeded`, AxiosError$1.ETIMEDOUT));
+    timer = null;
+    onabort(new AxiosError$1(`timeout of ${timeout}ms exceeded`, AxiosError$1.ETIMEDOUT));
   }, timeout);
   const unsubscribe = () => {
-    if (signals) {
-      timer && clearTimeout(timer);
-      timer = null;
-      signals.forEach((signal2) => {
-        signal2 && (signal2.removeEventListener ? signal2.removeEventListener("abort", onabort) : signal2.unsubscribe(onabort));
-      });
-      signals = null;
+    if (!signals) {
+      return;
     }
-  };
-  signals.forEach((signal2) => signal2 && signal2.addEventListener && signal2.addEventListener("abort", onabort));
-  const { signal } = controller;
-  signal.unsubscribe = unsubscribe;
-  return [signal, () => {
     timer && clearTimeout(timer);
     timer = null;
-  }];
+    signals.forEach((signal2) => {
+      signal2.unsubscribe ? signal2.unsubscribe(onabort) : signal2.removeEventListener("abort", onabort);
+    });
+    signals = null;
+  };
+  signals.forEach((signal2) => signal2.addEventListener("abort", onabort));
+  const { signal } = controller;
+  signal.unsubscribe = () => utils$1.asap(unsubscribe);
+  return signal;
 };
 const streamChunk = function* (chunk, chunkSize) {
   let len = chunk.byteLength;
@@ -2363,247 +2995,609 @@ const streamChunk = function* (chunk, chunkSize) {
     pos = end2;
   }
 };
-const encoder = new TextEncoder();
 const readBytes = async function* (iterable, chunkSize) {
-  for await (const chunk of iterable) {
-    yield* streamChunk(ArrayBuffer.isView(chunk) ? chunk : await encoder.encode(String(chunk)), chunkSize);
+  for await (const chunk of readStream(iterable)) {
+    yield* streamChunk(chunk, chunkSize);
+  }
+};
+const readStream = async function* (stream) {
+  if (stream[Symbol.asyncIterator]) {
+    yield* stream;
+    return;
+  }
+  const reader = stream.getReader();
+  try {
+    for (; ; ) {
+      const { done, value } = await reader.read();
+      if (done) {
+        break;
+      }
+      yield value;
+    }
+  } finally {
+    await reader.cancel();
   }
 };
 const trackStream = (stream, chunkSize, onProgress, onFinish) => {
-  const iterator = readBytes(stream, chunkSize);
+  const iterator2 = readBytes(stream, chunkSize);
   let bytes = 0;
-  return new ReadableStream({
-    type: "bytes",
-    async pull(controller) {
-      const { done, value } = await iterator.next();
-      if (done) {
-        controller.close();
-        onFinish();
-        return;
-      }
-      let len = value.byteLength;
-      onProgress && onProgress(bytes += len);
-      controller.enqueue(new Uint8Array(value));
-    },
-    cancel(reason) {
-      onFinish(reason);
-      return iterator.return();
+  let done;
+  let _onFinish = (e) => {
+    if (!done) {
+      done = true;
+      onFinish && onFinish(e);
     }
-  }, {
-    highWaterMark: 2
-  });
-};
-const fetchProgressDecorator = (total, fn) => {
-  const lengthComputable = total != null;
-  return (loaded) => setTimeout(() => fn({
-    lengthComputable,
-    total,
-    loaded
-  }));
-};
-const isFetchSupported = typeof fetch !== "undefined";
-const isReadableStreamSupported = isFetchSupported && typeof ReadableStream !== "undefined";
-const supportsRequestStream = isReadableStreamSupported && (() => {
-  let duplexAccessed = false;
-  const hasContentType = new Request(platform.origin, {
-    body: new ReadableStream(),
-    method: "POST",
-    get duplex() {
-      duplexAccessed = true;
-      return "half";
-    }
-  }).headers.has("Content-Type");
-  return duplexAccessed && !hasContentType;
-})();
-const DEFAULT_CHUNK_SIZE = 64 * 1024;
-const supportsResponseStream = isReadableStreamSupported && !!(() => {
-  try {
-    return utils$1.isReadableStream(new Response("").body);
-  } catch (err) {
-  }
-})();
-const resolvers = {
-  stream: supportsResponseStream && ((res) => res.body)
-};
-isFetchSupported && ((res) => {
-  ["text", "arrayBuffer", "blob", "formData", "stream"].forEach((type) => {
-    !resolvers[type] && (resolvers[type] = utils$1.isFunction(res[type]) ? (res2) => res2[type]() : (_, config2) => {
-      throw new AxiosError$1(`Response type '${type}' is not supported`, AxiosError$1.ERR_NOT_SUPPORT, config2);
-    });
-  });
-})(new Response());
-const getBodyLength = async (body) => {
-  if (body == null) {
-    return 0;
-  }
-  if (utils$1.isBlob(body)) {
-    return body.size;
-  }
-  if (utils$1.isSpecCompliantForm(body)) {
-    return (await new Request(body).arrayBuffer()).byteLength;
-  }
-  if (utils$1.isArrayBufferView(body)) {
-    return body.byteLength;
-  }
-  if (utils$1.isURLSearchParams(body)) {
-    body = body + "";
-  }
-  if (utils$1.isString(body)) {
-    return (await new TextEncoder().encode(body)).byteLength;
-  }
-};
-const resolveBodyLength = async (headers, body) => {
-  const length = utils$1.toFiniteNumber(headers.getContentLength());
-  return length == null ? getBodyLength(body) : length;
-};
-const fetchAdapter = isFetchSupported && (async (config2) => {
-  let {
-    url,
-    method,
-    data: data2,
-    signal,
-    cancelToken,
-    timeout,
-    onDownloadProgress,
-    onUploadProgress,
-    responseType,
-    headers,
-    withCredentials = "same-origin",
-    fetchOptions
-  } = resolveConfig(config2);
-  responseType = responseType ? (responseType + "").toLowerCase() : "text";
-  let [composedSignal, stopTimeout] = signal || cancelToken || timeout ? composeSignals([signal, cancelToken], timeout) : [];
-  let finished, request;
-  const onFinish = () => {
-    !finished && setTimeout(() => {
-      composedSignal && composedSignal.unsubscribe();
-    });
-    finished = true;
   };
-  let requestContentLength;
-  try {
-    if (onUploadProgress && supportsRequestStream && method !== "get" && method !== "head" && (requestContentLength = await resolveBodyLength(headers, data2)) !== 0) {
-      let _request = new Request(url, {
-        method: "POST",
-        body: data2,
-        duplex: "half"
-      });
-      let contentTypeHeader;
-      if (utils$1.isFormData(data2) && (contentTypeHeader = _request.headers.get("content-type"))) {
-        headers.setContentType(contentTypeHeader);
-      }
-      if (_request.body) {
-        data2 = trackStream(_request.body, DEFAULT_CHUNK_SIZE, fetchProgressDecorator(
-          requestContentLength,
-          progressEventReducer(onUploadProgress)
-        ));
-      }
-    }
-    if (!utils$1.isString(withCredentials)) {
-      withCredentials = withCredentials ? "cors" : "omit";
-    }
-    request = new Request(url, {
-      ...fetchOptions,
-      signal: composedSignal,
-      method: method.toUpperCase(),
-      headers: headers.normalize().toJSON(),
-      body: data2,
-      duplex: "half",
-      withCredentials
-    });
-    let response = await fetch(request);
-    const isStreamResponse = supportsResponseStream && (responseType === "stream" || responseType === "response");
-    if (supportsResponseStream && (onDownloadProgress || isStreamResponse)) {
-      const options2 = {};
-      ["status", "statusText", "headers"].forEach((prop2) => {
-        options2[prop2] = response[prop2];
-      });
-      const responseContentLength = utils$1.toFiniteNumber(response.headers.get("content-length"));
-      response = new Response(
-        trackStream(response.body, DEFAULT_CHUNK_SIZE, onDownloadProgress && fetchProgressDecorator(
-          responseContentLength,
-          progressEventReducer(onDownloadProgress, true)
-        ), isStreamResponse && onFinish),
-        options2
-      );
-    }
-    responseType = responseType || "text";
-    let responseData = await resolvers[utils$1.findKey(resolvers, responseType) || "text"](response, config2);
-    !isStreamResponse && onFinish();
-    stopTimeout && stopTimeout();
-    return await new Promise((resolve, reject) => {
-      settle(resolve, reject, {
-        data: responseData,
-        headers: AxiosHeaders$1.from(response.headers),
-        status: response.status,
-        statusText: response.statusText,
-        config: config2,
-        request
-      });
-    });
-  } catch (err) {
-    onFinish();
-    if (err && err.name === "TypeError" && /fetch/i.test(err.message)) {
-      throw Object.assign(
-        new AxiosError$1("Network Error", AxiosError$1.ERR_NETWORK, config2, request),
-        {
-          cause: err.cause || err
+  return new ReadableStream(
+    {
+      async pull(controller) {
+        try {
+          const { done: done2, value } = await iterator2.next();
+          if (done2) {
+            _onFinish();
+            controller.close();
+            return;
+          }
+          let len = value.byteLength;
+          if (onProgress) {
+            let loadedBytes = bytes += len;
+            onProgress(loadedBytes);
+          }
+          controller.enqueue(new Uint8Array(value));
+        } catch (err) {
+          _onFinish(err);
+          throw err;
         }
-      );
+      },
+      cancel(reason) {
+        _onFinish(reason);
+        return iterator2.return();
+      }
+    },
+    {
+      highWaterMark: 2
     }
-    throw AxiosError$1.from(err, err && err.code, config2, request);
+  );
+};
+const isHexDigit = (charCode) => charCode >= 48 && charCode <= 57 || charCode >= 65 && charCode <= 70 || charCode >= 97 && charCode <= 102;
+const isPercentEncodedByte = (str, i, len) => i + 2 < len && isHexDigit(str.charCodeAt(i + 1)) && isHexDigit(str.charCodeAt(i + 2));
+function estimateDataURLDecodedBytes(url) {
+  if (!url || typeof url !== "string") return 0;
+  if (!url.startsWith("data:")) return 0;
+  const comma = url.indexOf(",");
+  if (comma < 0) return 0;
+  const meta = url.slice(5, comma);
+  const body = url.slice(comma + 1);
+  const isBase64 = /;base64/i.test(meta);
+  if (isBase64) {
+    let effectiveLen = body.length;
+    const len = body.length;
+    for (let i = 0; i < len; i++) {
+      if (body.charCodeAt(i) === 37 && i + 2 < len) {
+        const a = body.charCodeAt(i + 1);
+        const b = body.charCodeAt(i + 2);
+        const isHex = isHexDigit(a) && isHexDigit(b);
+        if (isHex) {
+          effectiveLen -= 2;
+          i += 2;
+        }
+      }
+    }
+    let pad = 0;
+    let idx = len - 1;
+    const tailIsPct3D = (j) => j >= 2 && body.charCodeAt(j - 2) === 37 && // '%'
+    body.charCodeAt(j - 1) === 51 && // '3'
+    (body.charCodeAt(j) === 68 || body.charCodeAt(j) === 100);
+    if (idx >= 0) {
+      if (body.charCodeAt(idx) === 61) {
+        pad++;
+        idx--;
+      } else if (tailIsPct3D(idx)) {
+        pad++;
+        idx -= 3;
+      }
+    }
+    if (pad === 1 && idx >= 0) {
+      if (body.charCodeAt(idx) === 61) {
+        pad++;
+      } else if (tailIsPct3D(idx)) {
+        pad++;
+      }
+    }
+    const groups = Math.floor(effectiveLen / 4);
+    const bytes2 = groups * 3 - (pad || 0);
+    return bytes2 > 0 ? bytes2 : 0;
   }
-});
+  let bytes = 0;
+  for (let i = 0, len = body.length; i < len; i++) {
+    const c = body.charCodeAt(i);
+    if (c === 37 && isPercentEncodedByte(body, i, len)) {
+      bytes += 1;
+      i += 2;
+    } else if (c < 128) {
+      bytes += 1;
+    } else if (c < 2048) {
+      bytes += 2;
+    } else if (c >= 55296 && c <= 56319 && i + 1 < len) {
+      const next2 = body.charCodeAt(i + 1);
+      if (next2 >= 56320 && next2 <= 57343) {
+        bytes += 4;
+        i++;
+      } else {
+        bytes += 3;
+      }
+    } else {
+      bytes += 3;
+    }
+  }
+  return bytes;
+}
+const VERSION$1 = "1.18.0";
+const DEFAULT_CHUNK_SIZE = 64 * 1024;
+const { isFunction } = utils$1;
+const encodeUTF8 = (str) => encodeURIComponent(str).replace(
+  /%([0-9A-F]{2})/gi,
+  (_, hex) => String.fromCharCode(parseInt(hex, 16))
+);
+const decodeURIComponentSafe = (value) => {
+  if (!utils$1.isString(value)) {
+    return value;
+  }
+  try {
+    return decodeURIComponent(value);
+  } catch (error) {
+    return value;
+  }
+};
+const test = (fn, ...args) => {
+  try {
+    return !!fn(...args);
+  } catch (e) {
+    return false;
+  }
+};
+const maybeWithAuthCredentials = (url) => {
+  const protocolIndex = url.indexOf("://");
+  let urlToCheck = url;
+  if (protocolIndex !== -1) {
+    urlToCheck = urlToCheck.slice(protocolIndex + 3);
+  }
+  return urlToCheck.includes("@") || urlToCheck.includes(":");
+};
+const factory = (env) => {
+  const globalObject = utils$1.global !== void 0 && utils$1.global !== null ? utils$1.global : globalThis;
+  const { ReadableStream: ReadableStream2, TextEncoder } = globalObject;
+  env = utils$1.merge.call(
+    {
+      skipUndefined: true
+    },
+    {
+      Request: globalObject.Request,
+      Response: globalObject.Response
+    },
+    env
+  );
+  const { fetch: envFetch, Request, Response } = env;
+  const isFetchSupported = envFetch ? isFunction(envFetch) : typeof fetch === "function";
+  const isRequestSupported = isFunction(Request);
+  const isResponseSupported = isFunction(Response);
+  if (!isFetchSupported) {
+    return false;
+  }
+  const isReadableStreamSupported = isFetchSupported && isFunction(ReadableStream2);
+  const encodeText = isFetchSupported && (typeof TextEncoder === "function" ? /* @__PURE__ */ ((encoder) => (str) => encoder.encode(str))(new TextEncoder()) : async (str) => new Uint8Array(await new Request(str).arrayBuffer()));
+  const supportsRequestStream = isRequestSupported && isReadableStreamSupported && test(() => {
+    let duplexAccessed = false;
+    const request = new Request(platform.origin, {
+      body: new ReadableStream2(),
+      method: "POST",
+      get duplex() {
+        duplexAccessed = true;
+        return "half";
+      }
+    });
+    const hasContentType = request.headers.has("Content-Type");
+    if (request.body != null) {
+      request.body.cancel();
+    }
+    return duplexAccessed && !hasContentType;
+  });
+  const supportsResponseStream = isResponseSupported && isReadableStreamSupported && test(() => utils$1.isReadableStream(new Response("").body));
+  const resolvers = {
+    stream: supportsResponseStream && ((res) => res.body)
+  };
+  isFetchSupported && (() => {
+    ["text", "arrayBuffer", "blob", "formData", "stream"].forEach((type) => {
+      !resolvers[type] && (resolvers[type] = (res, config2) => {
+        let method = res && res[type];
+        if (method) {
+          return method.call(res);
+        }
+        throw new AxiosError$1(
+          `Response type '${type}' is not supported`,
+          AxiosError$1.ERR_NOT_SUPPORT,
+          config2
+        );
+      });
+    });
+  })();
+  const getBodyLength = async (body) => {
+    if (body == null) {
+      return 0;
+    }
+    if (utils$1.isBlob(body)) {
+      return body.size;
+    }
+    if (utils$1.isSpecCompliantForm(body)) {
+      const _request = new Request(platform.origin, {
+        method: "POST",
+        body
+      });
+      return (await _request.arrayBuffer()).byteLength;
+    }
+    if (utils$1.isArrayBufferView(body) || utils$1.isArrayBuffer(body)) {
+      return body.byteLength;
+    }
+    if (utils$1.isURLSearchParams(body)) {
+      body = body + "";
+    }
+    if (utils$1.isString(body)) {
+      return (await encodeText(body)).byteLength;
+    }
+  };
+  const resolveBodyLength = async (headers, body) => {
+    const length = utils$1.toFiniteNumber(headers.getContentLength());
+    return length == null ? getBodyLength(body) : length;
+  };
+  return async (config2) => {
+    let {
+      url,
+      method,
+      data: data2,
+      signal,
+      cancelToken,
+      timeout,
+      onDownloadProgress,
+      onUploadProgress,
+      responseType,
+      headers,
+      withCredentials = "same-origin",
+      fetchOptions,
+      maxContentLength,
+      maxBodyLength
+    } = resolveConfig(config2);
+    const hasMaxContentLength = utils$1.isNumber(maxContentLength) && maxContentLength > -1;
+    const hasMaxBodyLength = utils$1.isNumber(maxBodyLength) && maxBodyLength > -1;
+    const own2 = (key) => utils$1.hasOwnProp(config2, key) ? config2[key] : void 0;
+    let _fetch = envFetch || fetch;
+    responseType = responseType ? (responseType + "").toLowerCase() : "text";
+    let composedSignal = composeSignals(
+      [signal, cancelToken && cancelToken.toAbortSignal()],
+      timeout
+    );
+    let request = null;
+    const unsubscribe = composedSignal && composedSignal.unsubscribe && (() => {
+      composedSignal.unsubscribe();
+    });
+    let requestContentLength;
+    let pendingBodyError = null;
+    const maxBodyLengthError = () => new AxiosError$1(
+      "Request body larger than maxBodyLength limit",
+      AxiosError$1.ERR_BAD_REQUEST,
+      config2,
+      request
+    );
+    try {
+      let auth = void 0;
+      const configAuth = own2("auth");
+      if (configAuth) {
+        const username = utils$1.getSafeProp(configAuth, "username") || "";
+        const password = utils$1.getSafeProp(configAuth, "password") || "";
+        auth = {
+          username,
+          password
+        };
+      }
+      if (maybeWithAuthCredentials(url)) {
+        const parsedURL = new URL(url, platform.origin);
+        if (!auth && (parsedURL.username || parsedURL.password)) {
+          const urlUsername = decodeURIComponentSafe(parsedURL.username);
+          const urlPassword = decodeURIComponentSafe(parsedURL.password);
+          auth = {
+            username: urlUsername,
+            password: urlPassword
+          };
+        }
+        if (parsedURL.username || parsedURL.password) {
+          parsedURL.username = "";
+          parsedURL.password = "";
+          url = parsedURL.href;
+        }
+      }
+      if (auth) {
+        headers.delete("authorization");
+        headers.set(
+          "Authorization",
+          "Basic " + btoa(encodeUTF8((auth.username || "") + ":" + (auth.password || "")))
+        );
+      }
+      if (hasMaxContentLength && typeof url === "string" && url.startsWith("data:")) {
+        const estimated = estimateDataURLDecodedBytes(url);
+        if (estimated > maxContentLength) {
+          throw new AxiosError$1(
+            "maxContentLength size of " + maxContentLength + " exceeded",
+            AxiosError$1.ERR_BAD_RESPONSE,
+            config2,
+            request
+          );
+        }
+      }
+      if (hasMaxBodyLength && method !== "get" && method !== "head") {
+        const outboundLength = await getBodyLength(data2);
+        if (typeof outboundLength === "number" && isFinite(outboundLength)) {
+          requestContentLength = outboundLength;
+          if (outboundLength > maxBodyLength) {
+            throw maxBodyLengthError();
+          }
+        }
+      }
+      const mustEnforceStreamBody = hasMaxBodyLength && (utils$1.isReadableStream(data2) || utils$1.isStream(data2));
+      const trackRequestStream = (stream, onProgress, flush) => trackStream(
+        stream,
+        DEFAULT_CHUNK_SIZE,
+        (loadedBytes) => {
+          if (hasMaxBodyLength && loadedBytes > maxBodyLength) {
+            throw pendingBodyError = maxBodyLengthError();
+          }
+          onProgress && onProgress(loadedBytes);
+        },
+        flush
+      );
+      if (supportsRequestStream && method !== "get" && method !== "head" && (onUploadProgress || mustEnforceStreamBody)) {
+        requestContentLength = requestContentLength == null ? await resolveBodyLength(headers, data2) : requestContentLength;
+        if (requestContentLength !== 0 || mustEnforceStreamBody) {
+          let _request = new Request(url, {
+            method: "POST",
+            body: data2,
+            duplex: "half"
+          });
+          let contentTypeHeader;
+          if (utils$1.isFormData(data2) && (contentTypeHeader = _request.headers.get("content-type"))) {
+            headers.setContentType(contentTypeHeader);
+          }
+          if (_request.body) {
+            const [onProgress, flush] = onUploadProgress && progressEventDecorator(
+              requestContentLength,
+              progressEventReducer(asyncDecorator(onUploadProgress))
+            ) || [];
+            data2 = trackRequestStream(_request.body, onProgress, flush);
+          }
+        }
+      } else if (mustEnforceStreamBody && !isRequestSupported && isReadableStreamSupported && method !== "get" && method !== "head") {
+        data2 = trackRequestStream(data2);
+      } else if (mustEnforceStreamBody && isRequestSupported && !supportsRequestStream && method !== "get" && method !== "head") {
+        throw new AxiosError$1(
+          "Stream request bodies are not supported by the current fetch implementation",
+          AxiosError$1.ERR_NOT_SUPPORT,
+          config2,
+          request
+        );
+      }
+      if (!utils$1.isString(withCredentials)) {
+        withCredentials = withCredentials ? "include" : "omit";
+      }
+      const isCredentialsSupported = isRequestSupported && "credentials" in Request.prototype;
+      if (utils$1.isFormData(data2)) {
+        const contentType = headers.getContentType();
+        if (contentType && /^multipart\/form-data/i.test(contentType) && !/boundary=/i.test(contentType)) {
+          headers.delete("content-type");
+        }
+      }
+      headers.set("User-Agent", "axios/" + VERSION$1, false);
+      const resolvedOptions = {
+        ...fetchOptions,
+        signal: composedSignal,
+        method: method.toUpperCase(),
+        headers: toByteStringHeaderObject(headers.normalize()),
+        body: data2,
+        duplex: "half",
+        credentials: isCredentialsSupported ? withCredentials : void 0
+      };
+      request = isRequestSupported && new Request(url, resolvedOptions);
+      let response = await (isRequestSupported ? _fetch(request, fetchOptions) : _fetch(url, resolvedOptions));
+      const responseHeaders = AxiosHeaders$1.from(response.headers);
+      if (hasMaxContentLength) {
+        const declaredLength = utils$1.toFiniteNumber(responseHeaders.getContentLength());
+        if (declaredLength != null && declaredLength > maxContentLength) {
+          throw new AxiosError$1(
+            "maxContentLength size of " + maxContentLength + " exceeded",
+            AxiosError$1.ERR_BAD_RESPONSE,
+            config2,
+            request
+          );
+        }
+      }
+      const isStreamResponse = supportsResponseStream && (responseType === "stream" || responseType === "response");
+      if (supportsResponseStream && response.body && (onDownloadProgress || hasMaxContentLength || isStreamResponse && unsubscribe)) {
+        const options2 = {};
+        ["status", "statusText", "headers"].forEach((prop2) => {
+          options2[prop2] = response[prop2];
+        });
+        const responseContentLength = utils$1.toFiniteNumber(responseHeaders.getContentLength());
+        const [onProgress, flush] = onDownloadProgress && progressEventDecorator(
+          responseContentLength,
+          progressEventReducer(asyncDecorator(onDownloadProgress), true)
+        ) || [];
+        let bytesRead = 0;
+        const onChunkProgress = (loadedBytes) => {
+          if (hasMaxContentLength) {
+            bytesRead = loadedBytes;
+            if (bytesRead > maxContentLength) {
+              throw new AxiosError$1(
+                "maxContentLength size of " + maxContentLength + " exceeded",
+                AxiosError$1.ERR_BAD_RESPONSE,
+                config2,
+                request
+              );
+            }
+          }
+          onProgress && onProgress(loadedBytes);
+        };
+        response = new Response(
+          trackStream(response.body, DEFAULT_CHUNK_SIZE, onChunkProgress, () => {
+            flush && flush();
+            unsubscribe && unsubscribe();
+          }),
+          options2
+        );
+      }
+      responseType = responseType || "text";
+      let responseData = await resolvers[utils$1.findKey(resolvers, responseType) || "text"](
+        response,
+        config2
+      );
+      if (hasMaxContentLength && !supportsResponseStream && !isStreamResponse) {
+        let materializedSize;
+        if (responseData != null) {
+          if (typeof responseData.byteLength === "number") {
+            materializedSize = responseData.byteLength;
+          } else if (typeof responseData.size === "number") {
+            materializedSize = responseData.size;
+          } else if (typeof responseData === "string") {
+            materializedSize = typeof TextEncoder === "function" ? new TextEncoder().encode(responseData).byteLength : responseData.length;
+          }
+        }
+        if (typeof materializedSize === "number" && materializedSize > maxContentLength) {
+          throw new AxiosError$1(
+            "maxContentLength size of " + maxContentLength + " exceeded",
+            AxiosError$1.ERR_BAD_RESPONSE,
+            config2,
+            request
+          );
+        }
+      }
+      !isStreamResponse && unsubscribe && unsubscribe();
+      return await new Promise((resolve, reject) => {
+        settle(resolve, reject, {
+          data: responseData,
+          headers: AxiosHeaders$1.from(response.headers),
+          status: response.status,
+          statusText: response.statusText,
+          config: config2,
+          request
+        });
+      });
+    } catch (err) {
+      unsubscribe && unsubscribe();
+      if (composedSignal && composedSignal.aborted && composedSignal.reason instanceof AxiosError$1) {
+        const canceledError = composedSignal.reason;
+        canceledError.config = config2;
+        request && (canceledError.request = request);
+        err !== canceledError && (canceledError.cause = err);
+        throw canceledError;
+      }
+      if (pendingBodyError) {
+        request && !pendingBodyError.request && (pendingBodyError.request = request);
+        throw pendingBodyError;
+      }
+      if (err instanceof AxiosError$1) {
+        request && !err.request && (err.request = request);
+        throw err;
+      }
+      if (err && err.name === "TypeError" && /Load failed|fetch/i.test(err.message)) {
+        throw Object.assign(
+          new AxiosError$1(
+            "Network Error",
+            AxiosError$1.ERR_NETWORK,
+            config2,
+            request,
+            err && err.response
+          ),
+          {
+            cause: err.cause || err
+          }
+        );
+      }
+      throw AxiosError$1.from(err, err && err.code, config2, request, err && err.response);
+    }
+  };
+};
+const seedCache = /* @__PURE__ */ new Map();
+const getFetch = (config2) => {
+  let env = config2 && config2.env || {};
+  const { fetch: fetch2, Request, Response } = env;
+  const seeds = [Request, Response, fetch2];
+  let len = seeds.length, i = len, seed, target, map2 = seedCache;
+  while (i--) {
+    seed = seeds[i];
+    target = map2.get(seed);
+    target === void 0 && map2.set(seed, target = i ? /* @__PURE__ */ new Map() : factory(env));
+    map2 = target;
+  }
+  return target;
+};
+getFetch();
 const knownAdapters = {
   http: httpAdapter,
   xhr: xhrAdapter,
-  fetch: fetchAdapter
+  fetch: {
+    get: getFetch
+  }
 };
 utils$1.forEach(knownAdapters, (fn, value) => {
   if (fn) {
     try {
-      Object.defineProperty(fn, "name", { value });
+      Object.defineProperty(fn, "name", { __proto__: null, value });
     } catch (e) {
     }
-    Object.defineProperty(fn, "adapterName", { value });
+    Object.defineProperty(fn, "adapterName", { __proto__: null, value });
   }
 });
 const renderReason = (reason) => `- ${reason}`;
 const isResolvedHandle = (adapter2) => utils$1.isFunction(adapter2) || adapter2 === null || adapter2 === false;
+function getAdapter$1(adapters2, config2) {
+  adapters2 = utils$1.isArray(adapters2) ? adapters2 : [adapters2];
+  const { length } = adapters2;
+  let nameOrAdapter;
+  let adapter2;
+  const rejectedReasons = {};
+  for (let i = 0; i < length; i++) {
+    nameOrAdapter = adapters2[i];
+    let id;
+    adapter2 = nameOrAdapter;
+    if (!isResolvedHandle(nameOrAdapter)) {
+      adapter2 = knownAdapters[(id = String(nameOrAdapter)).toLowerCase()];
+      if (adapter2 === void 0) {
+        throw new AxiosError$1(`Unknown adapter '${id}'`);
+      }
+    }
+    if (adapter2 && (utils$1.isFunction(adapter2) || (adapter2 = adapter2.get(config2)))) {
+      break;
+    }
+    rejectedReasons[id || "#" + i] = adapter2;
+  }
+  if (!adapter2) {
+    const reasons = Object.entries(rejectedReasons).map(
+      ([id, state]) => `adapter ${id} ` + (state === false ? "is not supported by the environment" : "is not available in the build")
+    );
+    let s = length ? reasons.length > 1 ? "since :\n" + reasons.map(renderReason).join("\n") : " " + renderReason(reasons[0]) : "as no adapter specified";
+    throw new AxiosError$1(
+      `There is no suitable adapter to dispatch the request ` + s,
+      "ERR_NOT_SUPPORT"
+    );
+  }
+  return adapter2;
+}
 const adapters = {
-  getAdapter: (adapters2) => {
-    adapters2 = utils$1.isArray(adapters2) ? adapters2 : [adapters2];
-    const { length } = adapters2;
-    let nameOrAdapter;
-    let adapter2;
-    const rejectedReasons = {};
-    for (let i = 0; i < length; i++) {
-      nameOrAdapter = adapters2[i];
-      let id;
-      adapter2 = nameOrAdapter;
-      if (!isResolvedHandle(nameOrAdapter)) {
-        adapter2 = knownAdapters[(id = String(nameOrAdapter)).toLowerCase()];
-        if (adapter2 === void 0) {
-          throw new AxiosError$1(`Unknown adapter '${id}'`);
-        }
-      }
-      if (adapter2) {
-        break;
-      }
-      rejectedReasons[id || "#" + i] = adapter2;
-    }
-    if (!adapter2) {
-      const reasons = Object.entries(rejectedReasons).map(
-        ([id, state]) => `adapter ${id} ` + (state === false ? "is not supported by the environment" : "is not available in the build")
-      );
-      let s = length ? reasons.length > 1 ? "since :\n" + reasons.map(renderReason).join("\n") : " " + renderReason(reasons[0]) : "as no adapter specified";
-      throw new AxiosError$1(
-        `There is no suitable adapter to dispatch the request ` + s,
-        "ERR_NOT_SUPPORT"
-      );
-    }
-    return adapter2;
-  },
+  /**
+   * Resolve an adapter from a list of adapter names or functions.
+   * @type {Function}
+   */
+  getAdapter: getAdapter$1,
+  /**
+   * Exposes all known adapters
+   * @type {Object<string, Function|Object>}
+   */
   adapters: knownAdapters
 };
 function throwIfCancellationRequested(config2) {
@@ -2617,39 +3611,44 @@ function throwIfCancellationRequested(config2) {
 function dispatchRequest(config2) {
   throwIfCancellationRequested(config2);
   config2.headers = AxiosHeaders$1.from(config2.headers);
-  config2.data = transformData.call(
-    config2,
-    config2.transformRequest
-  );
+  config2.data = transformData.call(config2, config2.transformRequest);
   if (["post", "put", "patch"].indexOf(config2.method) !== -1) {
     config2.headers.setContentType("application/x-www-form-urlencoded", false);
   }
-  const adapter2 = adapters.getAdapter(config2.adapter || defaults.adapter);
-  return adapter2(config2).then(function onAdapterResolution(response) {
-    throwIfCancellationRequested(config2);
-    response.data = transformData.call(
-      config2,
-      config2.transformResponse,
-      response
-    );
-    response.headers = AxiosHeaders$1.from(response.headers);
-    return response;
-  }, function onAdapterRejection(reason) {
-    if (!isCancel$1(reason)) {
+  const adapter2 = adapters.getAdapter(config2.adapter || defaults.adapter, config2);
+  return adapter2(config2).then(
+    function onAdapterResolution(response) {
       throwIfCancellationRequested(config2);
-      if (reason && reason.response) {
-        reason.response.data = transformData.call(
-          config2,
-          config2.transformResponse,
-          reason.response
-        );
-        reason.response.headers = AxiosHeaders$1.from(reason.response.headers);
+      config2.response = response;
+      try {
+        response.data = transformData.call(config2, config2.transformResponse, response);
+      } finally {
+        delete config2.response;
       }
+      response.headers = AxiosHeaders$1.from(response.headers);
+      return response;
+    },
+    function onAdapterRejection(reason) {
+      if (!isCancel$1(reason)) {
+        throwIfCancellationRequested(config2);
+        if (reason && reason.response) {
+          config2.response = reason.response;
+          try {
+            reason.response.data = transformData.call(
+              config2,
+              config2.transformResponse,
+              reason.response
+            );
+          } finally {
+            delete config2.response;
+          }
+          reason.response.headers = AxiosHeaders$1.from(reason.response.headers);
+        }
+      }
+      return Promise.reject(reason);
     }
-    return Promise.reject(reason);
-  });
+  );
 }
-const VERSION$1 = "1.7.0";
 const validators$1 = {};
 ["object", "boolean", "number", "function", "string", "symbol"].forEach((type, i) => {
   validators$1[type] = function validator2(thing) {
@@ -2680,6 +3679,12 @@ validators$1.transitional = function transitional(validator2, version, message) 
     return validator2 ? validator2(value, opt, opts) : true;
   };
 };
+validators$1.spelling = function spelling(correctSpelling) {
+  return (value, opt) => {
+    console.warn(`${opt} is likely a misspelling of ${correctSpelling}`);
+    return true;
+  };
+};
 function assertOptions(options2, schema2, allowUnknown) {
   if (typeof options2 !== "object") {
     throw new AxiosError$1("options must be an object", AxiosError$1.ERR_BAD_OPTION_VALUE);
@@ -2688,12 +3693,15 @@ function assertOptions(options2, schema2, allowUnknown) {
   let i = keys.length;
   while (i-- > 0) {
     const opt = keys[i];
-    const validator2 = schema2[opt];
+    const validator2 = Object.prototype.hasOwnProperty.call(schema2, opt) ? schema2[opt] : void 0;
     if (validator2) {
       const value = options2[opt];
       const result = value === void 0 || validator2(value, opt, options2);
       if (result !== true) {
-        throw new AxiosError$1("option " + opt + " must be " + result, AxiosError$1.ERR_BAD_OPTION_VALUE);
+        throw new AxiosError$1(
+          "option " + opt + " must be " + result,
+          AxiosError$1.ERR_BAD_OPTION_VALUE
+        );
       }
       continue;
     }
@@ -2709,7 +3717,7 @@ const validator = {
 const validators = validator.validators;
 let Axios$1 = class Axios {
   constructor(instanceConfig) {
-    this.defaults = instanceConfig;
+    this.defaults = instanceConfig || {};
     this.interceptors = {
       request: new InterceptorManager(),
       response: new InterceptorManager()
@@ -2728,14 +3736,25 @@ let Axios$1 = class Axios {
       return await this._request(configOrUrl, config2);
     } catch (err) {
       if (err instanceof Error) {
-        let dummy;
-        Error.captureStackTrace ? Error.captureStackTrace(dummy = {}) : dummy = new Error();
-        const stack = dummy.stack ? dummy.stack.replace(/^.+\n/, "") : "";
+        let dummy = {};
+        Error.captureStackTrace ? Error.captureStackTrace(dummy) : dummy = new Error();
+        const stack = (() => {
+          if (!dummy.stack) {
+            return "";
+          }
+          const firstNewlineIndex = dummy.stack.indexOf("\n");
+          return firstNewlineIndex === -1 ? "" : dummy.stack.slice(firstNewlineIndex + 1);
+        })();
         try {
           if (!err.stack) {
             err.stack = stack;
-          } else if (stack && !String(err.stack).endsWith(stack.replace(/^.+\n.+\n/, ""))) {
-            err.stack += "\n" + stack;
+          } else if (stack) {
+            const firstNewlineIndex = stack.indexOf("\n");
+            const secondNewlineIndex = firstNewlineIndex === -1 ? -1 : stack.indexOf("\n", firstNewlineIndex + 1);
+            const stackWithoutTwoTopLines = secondNewlineIndex === -1 ? "" : stack.slice(secondNewlineIndex + 1);
+            if (!String(err.stack).endsWith(stackWithoutTwoTopLines)) {
+              err.stack += "\n" + stack;
+            }
           }
         } catch (e) {
         }
@@ -2753,11 +3772,18 @@ let Axios$1 = class Axios {
     config2 = mergeConfig$1(this.defaults, config2);
     const { transitional: transitional2, paramsSerializer, headers } = config2;
     if (transitional2 !== void 0) {
-      validator.assertOptions(transitional2, {
-        silentJSONParsing: validators.transitional(validators.boolean),
-        forcedJSONParsing: validators.transitional(validators.boolean),
-        clarifyTimeoutError: validators.transitional(validators.boolean)
-      }, false);
+      validator.assertOptions(
+        transitional2,
+        {
+          silentJSONParsing: validators.transitional(validators.boolean),
+          forcedJSONParsing: validators.transitional(validators.boolean),
+          clarifyTimeoutError: validators.transitional(validators.boolean),
+          legacyInterceptorReqResOrdering: validators.transitional(validators.boolean),
+          advertiseZstdAcceptEncoding: validators.transitional(validators.boolean),
+          validateStatusUndefinedResolves: validators.transitional(validators.boolean)
+        },
+        false
+      );
     }
     if (paramsSerializer != null) {
       if (utils$1.isFunction(paramsSerializer)) {
@@ -2765,23 +3791,35 @@ let Axios$1 = class Axios {
           serialize: paramsSerializer
         };
       } else {
-        validator.assertOptions(paramsSerializer, {
-          encode: validators.function,
-          serialize: validators.function
-        }, true);
+        validator.assertOptions(
+          paramsSerializer,
+          {
+            encode: validators.function,
+            serialize: validators.function
+          },
+          true
+        );
       }
     }
+    if (config2.allowAbsoluteUrls !== void 0) ;
+    else if (this.defaults.allowAbsoluteUrls !== void 0) {
+      config2.allowAbsoluteUrls = this.defaults.allowAbsoluteUrls;
+    } else {
+      config2.allowAbsoluteUrls = true;
+    }
+    validator.assertOptions(
+      config2,
+      {
+        baseUrl: validators.spelling("baseURL"),
+        withXsrfToken: validators.spelling("withXSRFToken")
+      },
+      true
+    );
     config2.method = (config2.method || this.defaults.method || "get").toLowerCase();
-    let contextHeaders = headers && utils$1.merge(
-      headers.common,
-      headers[config2.method]
-    );
-    headers && utils$1.forEach(
-      ["delete", "get", "head", "post", "put", "patch", "common"],
-      (method) => {
-        delete headers[method];
-      }
-    );
+    let contextHeaders = headers && utils$1.merge(headers.common, headers[config2.method]);
+    headers && utils$1.forEach(["delete", "get", "head", "post", "put", "patch", "query", "common"], (method) => {
+      delete headers[method];
+    });
     config2.headers = AxiosHeaders$1.concat(contextHeaders, headers);
     const requestInterceptorChain = [];
     let synchronousRequestInterceptors = true;
@@ -2790,7 +3828,13 @@ let Axios$1 = class Axios {
         return;
       }
       synchronousRequestInterceptors = synchronousRequestInterceptors && interceptor.synchronous;
-      requestInterceptorChain.unshift(interceptor.fulfilled, interceptor.rejected);
+      const transitional3 = config2.transitional || transitionalDefaults;
+      const legacyInterceptorReqResOrdering = transitional3 && transitional3.legacyInterceptorReqResOrdering;
+      if (legacyInterceptorReqResOrdering) {
+        requestInterceptorChain.unshift(interceptor.fulfilled, interceptor.rejected);
+      } else {
+        requestInterceptorChain.push(interceptor.fulfilled, interceptor.rejected);
+      }
     });
     const responseInterceptorChain = [];
     this.interceptors.response.forEach(function pushResponseInterceptors(interceptor) {
@@ -2801,8 +3845,8 @@ let Axios$1 = class Axios {
     let len;
     if (!synchronousRequestInterceptors) {
       const chain = [dispatchRequest.bind(this), void 0];
-      chain.unshift.apply(chain, requestInterceptorChain);
-      chain.push.apply(chain, responseInterceptorChain);
+      chain.unshift(...requestInterceptorChain);
+      chain.push(...responseInterceptorChain);
       len = chain.length;
       promise = Promise.resolve(config2);
       while (i < len) {
@@ -2812,7 +3856,6 @@ let Axios$1 = class Axios {
     }
     len = requestInterceptorChain.length;
     let newConfig = config2;
-    i = 0;
     while (i < len) {
       const onFulfilled = requestInterceptorChain[i++];
       const onRejected = requestInterceptorChain[i++];
@@ -2837,34 +3880,40 @@ let Axios$1 = class Axios {
   }
   getUri(config2) {
     config2 = mergeConfig$1(this.defaults, config2);
-    const fullPath = buildFullPath(config2.baseURL, config2.url);
+    const fullPath = buildFullPath(config2.baseURL, config2.url, config2.allowAbsoluteUrls, config2);
     return buildURL(fullPath, config2.params, config2.paramsSerializer);
   }
 };
 utils$1.forEach(["delete", "get", "head", "options"], function forEachMethodNoData(method) {
   Axios$1.prototype[method] = function(url, config2) {
-    return this.request(mergeConfig$1(config2 || {}, {
-      method,
-      url,
-      data: (config2 || {}).data
-    }));
+    return this.request(
+      mergeConfig$1(config2 || {}, {
+        method,
+        url,
+        data: config2 && utils$1.hasOwnProp(config2, "data") ? config2.data : void 0
+      })
+    );
   };
 });
-utils$1.forEach(["post", "put", "patch"], function forEachMethodWithData(method) {
+utils$1.forEach(["post", "put", "patch", "query"], function forEachMethodWithData(method) {
   function generateHTTPMethod(isForm) {
     return function httpMethod(url, data2, config2) {
-      return this.request(mergeConfig$1(config2 || {}, {
-        method,
-        headers: isForm ? {
-          "Content-Type": "multipart/form-data"
-        } : {},
-        url,
-        data: data2
-      }));
+      return this.request(
+        mergeConfig$1(config2 || {}, {
+          method,
+          headers: isForm ? {
+            "Content-Type": "multipart/form-data"
+          } : {},
+          url,
+          data: data2
+        })
+      );
     };
   }
   Axios$1.prototype[method] = generateHTTPMethod();
-  Axios$1.prototype[method + "Form"] = generateHTTPMethod(true);
+  if (method !== "query") {
+    Axios$1.prototype[method + "Form"] = generateHTTPMethod(true);
+  }
 });
 let CancelToken$1 = class CancelToken {
   constructor(executor) {
@@ -2936,6 +3985,15 @@ let CancelToken$1 = class CancelToken {
     if (index2 !== -1) {
       this._listeners.splice(index2, 1);
     }
+  }
+  toAbortSignal() {
+    const controller = new AbortController();
+    const abort = (err) => {
+      controller.abort(err);
+    };
+    this.subscribe(abort);
+    controller.signal.unsubscribe = () => this.unsubscribe(abort);
+    return controller.signal;
   }
   /**
    * Returns an object that contains a new `CancelToken` and a function that, when called,
@@ -3023,7 +4081,13 @@ const HttpStatusCode$1 = {
   InsufficientStorage: 507,
   LoopDetected: 508,
   NotExtended: 510,
-  NetworkAuthenticationRequired: 511
+  NetworkAuthenticationRequired: 511,
+  WebServerIsDown: 521,
+  ConnectionTimedOut: 522,
+  OriginIsUnreachable: 523,
+  TimeoutOccurred: 524,
+  SslHandshakeFailed: 525,
+  InvalidSslCertificate: 526
 };
 Object.entries(HttpStatusCode$1).forEach(([key, value]) => {
   HttpStatusCode$1[value] = key;
@@ -3033,7 +4097,7 @@ function createInstance(defaultConfig) {
   const instance = bind(Axios$1.prototype.request, context);
   utils$1.extend(instance, Axios$1.prototype, context, { allOwnKeys: true });
   utils$1.extend(instance, context, null, { allOwnKeys: true });
-  instance.create = function create(instanceConfig) {
+  instance.create = function create2(instanceConfig) {
     return createInstance(mergeConfig$1(defaultConfig, instanceConfig));
   };
   return instance;
@@ -3060,8 +4124,8 @@ axios.HttpStatusCode = HttpStatusCode$1;
 axios.default = axios;
 const {
   Axios: Axios2,
-  AxiosError,
-  CanceledError,
+  AxiosError: AxiosError2,
+  CanceledError: CanceledError2,
   isCancel,
   CancelToken: CancelToken2,
   VERSION,
@@ -3074,7 +4138,8 @@ const {
   HttpStatusCode,
   formToJSON,
   getAdapter,
-  mergeConfig
+  mergeConfig,
+  create
 } = axios;
 var ElementType;
 (function(ElementType2) {
@@ -5688,10 +6753,10 @@ function prepend$1(elem, prev2) {
   prev2.next = elem;
   elem.prev = prev2;
 }
-function filter$2(test, node, recurse = true, limit = Infinity) {
-  return find$2(test, Array.isArray(node) ? node : [node], recurse, limit);
+function filter$2(test2, node, recurse = true, limit = Infinity) {
+  return find$2(test2, Array.isArray(node) ? node : [node], recurse, limit);
 }
-function find$2(test, nodes, recurse, limit) {
+function find$2(test2, nodes, recurse, limit) {
   const result = [];
   const nodeStack = [Array.isArray(nodes) ? nodes : [nodes]];
   const indexStack = [0];
@@ -5705,7 +6770,7 @@ function find$2(test, nodes, recurse, limit) {
       continue;
     }
     const elem = nodeStack[0][indexStack[0]++];
-    if (test(elem)) {
+    if (test2(elem)) {
       result.push(elem);
       if (--limit <= 0)
         return result;
@@ -5716,28 +6781,28 @@ function find$2(test, nodes, recurse, limit) {
     }
   }
 }
-function findOneChild(test, nodes) {
-  return nodes.find(test);
+function findOneChild(test2, nodes) {
+  return nodes.find(test2);
 }
-function findOne(test, nodes, recurse = true) {
+function findOne(test2, nodes, recurse = true) {
   const searchedNodes = Array.isArray(nodes) ? nodes : [nodes];
   for (let i = 0; i < searchedNodes.length; i++) {
     const node = searchedNodes[i];
-    if (isTag$1(node) && test(node)) {
+    if (isTag$1(node) && test2(node)) {
       return node;
     }
     if (recurse && hasChildren(node) && node.children.length > 0) {
-      const found = findOne(test, node.children, true);
+      const found = findOne(test2, node.children, true);
       if (found)
         return found;
     }
   }
   return null;
 }
-function existsOne(test, nodes) {
-  return (Array.isArray(nodes) ? nodes : [nodes]).some((node) => isTag$1(node) && test(node) || hasChildren(node) && existsOne(test, node.children));
+function existsOne(test2, nodes) {
+  return (Array.isArray(nodes) ? nodes : [nodes]).some((node) => isTag$1(node) && test2(node) || hasChildren(node) && existsOne(test2, node.children));
 }
-function findAll(test, nodes) {
+function findAll(test2, nodes) {
   const result = [];
   const nodeStack = [Array.isArray(nodes) ? nodes : [nodes]];
   const indexStack = [0];
@@ -5751,7 +6816,7 @@ function findAll(test, nodes) {
       continue;
     }
     const elem = nodeStack[0][indexStack[0]++];
-    if (isTag$1(elem) && test(elem))
+    if (isTag$1(elem) && test2(elem))
       result.push(elem);
     if (hasChildren(elem) && elem.children.length > 0) {
       indexStack.unshift(0);
@@ -5798,12 +6863,12 @@ function compileTest(options2) {
   return funcs.length === 0 ? null : funcs.reduce(combineFuncs);
 }
 function testElement(options2, node) {
-  const test = compileTest(options2);
-  return test ? test(node) : true;
+  const test2 = compileTest(options2);
+  return test2 ? test2(node) : true;
 }
 function getElements(options2, nodes, recurse, limit = Infinity) {
-  const test = compileTest(options2);
-  return test ? filter$2(test, nodes, recurse, limit) : [];
+  const test2 = compileTest(options2);
+  return test2 ? filter$2(test2, nodes, recurse, limit) : [];
 }
 function getElementById(id, nodes, recurse = true) {
   if (!Array.isArray(nodes))
@@ -6093,7 +7158,7 @@ const procedure = /* @__PURE__ */ new Map([
 function isTraversal(token) {
   return !procedure.has(token.type);
 }
-const attributes$b = /* @__PURE__ */ new Map([
+const attributes$g = /* @__PURE__ */ new Map([
   [AttributeAction.Exists, 10],
   [AttributeAction.Equals, 8],
   [AttributeAction.Not, 7],
@@ -6120,7 +7185,7 @@ function getProcedure(token) {
   var _a2, _b;
   let proc = (_a2 = procedure.get(token.type)) !== null && _a2 !== void 0 ? _a2 : -1;
   if (token.type === SelectorType.Attribute) {
-    proc = (_b = attributes$b.get(token.action)) !== null && _b !== void 0 ? _b : 4;
+    proc = (_b = attributes$g.get(token.action)) !== null && _b !== void 0 ? _b : 4;
     if (token.action === AttributeAction.Equals && token.name === "id") {
       proc = 9;
     }
@@ -18918,6 +19983,18 @@ const analytics = ({ strapi: strapi2 }) => ({
     const uaInfo = parseUserAgent(data2.userAgent);
     const ipInfo = await parseIpLocation(data2.ip);
     const referrerDomain = extractReferrerDomain(data2.referrer);
+    let promoChannelCode = "";
+    try {
+      const tags = await strapi2.documents("plugin::zhao-track.source-tag").findMany({
+        filters: { tagId: data2.sessionId },
+        populate: { promoCampaign: { populate: { channel: true } } },
+        limit: 1
+      });
+      if (tags && tags.length > 0 && tags[0].promoCampaign?.channel) {
+        promoChannelCode = tags[0].promoCampaign.channel.code || "";
+      }
+    } catch {
+    }
     const log = await strapi2.documents("plugin::zhao-studio.browser-log").create({
       data: {
         eventType: "page-view",
@@ -18940,6 +20017,7 @@ const analytics = ({ strapi: strapi2 }) => ({
         city: ipInfo.city,
         referrer: data2.referrer,
         referrerDomain,
+        promoChannelCode,
         timestamp: /* @__PURE__ */ new Date()
       }
     });
@@ -18952,6 +20030,18 @@ const analytics = ({ strapi: strapi2 }) => ({
     }
     const uaInfo = parseUserAgent(data2.userAgent);
     const ipInfo = await parseIpLocation(data2.ip);
+    let promoChannelCode = "";
+    try {
+      const tags = await strapi2.documents("plugin::zhao-track.source-tag").findMany({
+        filters: { tagId: data2.sessionId },
+        populate: { promoCampaign: { populate: { channel: true } } },
+        limit: 1
+      });
+      if (tags && tags.length > 0 && tags[0].promoCampaign?.channel) {
+        promoChannelCode = tags[0].promoCampaign.channel.code || "";
+      }
+    } catch {
+    }
     const log = await strapi2.documents("plugin::zhao-studio.browser-log").create({
       data: {
         eventType: "ad-click",
@@ -18970,6 +20060,7 @@ const analytics = ({ strapi: strapi2 }) => ({
         ip: data2.ip,
         country: ipInfo.country,
         city: ipInfo.city,
+        promoChannelCode,
         timestamp: /* @__PURE__ */ new Date()
       }
     });
@@ -19438,6 +20529,339 @@ const syncEvent$1 = ({ strapi: strapi2 }) => ({
     });
   }
 });
+const CHANNEL_UID$1 = "plugin::zhao-studio.promo-channel";
+const CONFIG_UID = "plugin::zhao-studio.channel-platform-config";
+const promoChannel$1 = ({ strapi: strapi2 }) => {
+  const throwErr = (code, message) => {
+    const err = new Error(message);
+    err.code = code;
+    throw err;
+  };
+  return {
+    async listChannels(opts) {
+      const filters2 = {};
+      if (opts.scene) filters2.scene = opts.scene;
+      return strapi2.documents(CHANNEL_UID$1).findMany({
+        filters: filters2,
+        start: (opts.page - 1) * opts.pageSize,
+        limit: opts.pageSize,
+        populate: { platformConfigs: true, campaigns: true }
+      });
+    },
+    async getChannel(id) {
+      const channels = await strapi2.documents(CHANNEL_UID$1).findMany({
+        filters: { documentId: id },
+        populate: { platformConfigs: { populate: { platform: true } }, campaigns: true, coupons: true }
+      });
+      if (!channels || channels.length === 0) {
+        throwErr("STUDIO_PROMO_CHANNEL_NOT_FOUND", "推广渠道不存在");
+      }
+      return channels[0];
+    },
+    async createChannel(data2) {
+      const existing = await strapi2.documents(CHANNEL_UID$1).findMany({
+        filters: { code: data2.code }
+      });
+      if (existing && existing.length > 0) {
+        throwErr("STUDIO_PROMO_CHANNEL_CODE_DUPLICATE", "渠道 code 重复");
+      }
+      return strapi2.documents(CHANNEL_UID$1).create({ data: data2 });
+    },
+    async updateChannel(id, data2) {
+      return strapi2.documents(CHANNEL_UID$1).update({ documentId: id, data: data2 });
+    },
+    async deleteChannel(id) {
+      return strapi2.documents(CHANNEL_UID$1).delete({ documentId: id });
+    },
+    async addPlatformConfig(channelId, data2) {
+      const existing = await strapi2.documents(CONFIG_UID).findMany({
+        filters: { channel: channelId, platform: data2.platform }
+      });
+      if (existing && existing.length > 0) {
+        throwErr("STUDIO_PROMO_PLATFORM_CONFIG_DUPLICATE", "渠道+平台配置重复");
+      }
+      return strapi2.documents(CONFIG_UID).create({
+        data: { channel: channelId, ...data2 }
+      });
+    },
+    async updatePlatformConfig(configId, data2) {
+      return strapi2.documents(CONFIG_UID).update({ documentId: configId, data: data2 });
+    },
+    async removePlatformConfig(configId) {
+      return strapi2.documents(CONFIG_UID).delete({ documentId: configId });
+    }
+  };
+};
+const CAMPAIGN_UID = "plugin::zhao-studio.promo-campaign";
+const promoCampaign$1 = ({ strapi: strapi2 }) => {
+  const throwErr = (code, message) => {
+    const err = new Error(message);
+    err.code = code;
+    throw err;
+  };
+  return {
+    async listCampaigns(opts) {
+      const filters2 = {};
+      if (opts.channelId) filters2.channel = opts.channelId;
+      if (opts.status !== void 0) filters2.status = opts.status;
+      return strapi2.documents(CAMPAIGN_UID).findMany({
+        filters: filters2,
+        start: (opts.page - 1) * opts.pageSize,
+        limit: opts.pageSize,
+        populate: { channel: true, experiments: true }
+      });
+    },
+    async getCampaign(id) {
+      const campaigns = await strapi2.documents(CAMPAIGN_UID).findMany({
+        filters: { documentId: id },
+        populate: { channel: true, experiments: { populate: { variants: true } } }
+      });
+      if (!campaigns || campaigns.length === 0) {
+        throwErr("STUDIO_PROMO_CAMPAIGN_NOT_FOUND", "营销活动不存在");
+      }
+      return campaigns[0];
+    },
+    async createCampaign(data2) {
+      if (!data2.channel) {
+        throwErr("STUDIO_PROMO_CAMPAIGN_CHANNEL_REQUIRED", "活动必须关联渠道");
+      }
+      const existing = await strapi2.documents(CAMPAIGN_UID).findMany({
+        filters: { code: data2.code }
+      });
+      if (existing && existing.length > 0) {
+        throwErr("STUDIO_PROMO_CAMPAIGN_CODE_DUPLICATE", "活动 code 重复");
+      }
+      return strapi2.documents(CAMPAIGN_UID).create({ data: data2 });
+    },
+    async updateCampaign(id, data2) {
+      return strapi2.documents(CAMPAIGN_UID).update({ documentId: id, data: data2 });
+    },
+    async deleteCampaign(id) {
+      return strapi2.documents(CAMPAIGN_UID).delete({ documentId: id });
+    }
+  };
+};
+const EXPERIMENT_UID = "plugin::zhao-studio.ab-experiment";
+const CLICK_EVENT_UID$1 = "plugin::zhao-track.click-event";
+const ORDER_UID$1 = "plugin::zhao-track.order";
+const abTest = ({ strapi: strapi2 }) => {
+  const throwErr = (code, message) => {
+    const err = new Error(message);
+    err.code = code;
+    throw err;
+  };
+  const pickByWeight = (variants) => {
+    const totalWeight = variants.reduce((sum, v) => sum + (v.weight || 0), 0);
+    if (totalWeight <= 0) return variants[0];
+    let random = Math.random() * totalWeight;
+    for (const v of variants) {
+      random -= v.weight || 0;
+      if (random <= 0) return v;
+    }
+    return variants[variants.length - 1];
+  };
+  const getExperiment = async (id) => {
+    const experiments = await strapi2.documents(EXPERIMENT_UID).findMany({
+      filters: { documentId: id },
+      populate: { variants: true, channel: true, campaign: true }
+    });
+    if (!experiments || experiments.length === 0) {
+      throwErr("STUDIO_PROMO_EXPERIMENT_NOT_FOUND", "A/B 实验不存在");
+    }
+    return experiments[0];
+  };
+  return {
+    listExperiments: async (opts) => {
+      const filters2 = {};
+      if (opts.channelId) filters2.channel = opts.channelId;
+      if (opts.campaignId) filters2.campaign = opts.campaignId;
+      if (opts.status) filters2.status = opts.status;
+      return strapi2.documents(EXPERIMENT_UID).findMany({
+        filters: filters2,
+        start: (opts.page - 1) * opts.pageSize,
+        limit: opts.pageSize,
+        populate: { variants: true, channel: true, campaign: true }
+      });
+    },
+    getExperiment,
+    createExperiment: async (data2) => {
+      if (!data2.channel && !data2.campaign) {
+        throwErr("STUDIO_PROMO_EXPERIMENT_NOT_FOUND", "实验必须关联渠道或活动");
+      }
+      return strapi2.documents(EXPERIMENT_UID).create({ data: data2 });
+    },
+    startExperiment: async (id) => {
+      const exp = await getExperiment(id);
+      if (exp.status !== "draft" && exp.status !== "paused") {
+        throwErr("STUDIO_PROMO_EXPERIMENT_NOT_RUNNING", "实验当前状态不可启动");
+      }
+      return strapi2.documents(EXPERIMENT_UID).update({
+        documentId: id,
+        data: { status: "running", startAt: exp.startAt || (/* @__PURE__ */ new Date()).toISOString() }
+      });
+    },
+    stopExperiment: async (id) => {
+      return strapi2.documents(EXPERIMENT_UID).update({
+        documentId: id,
+        data: { status: "paused" }
+      });
+    },
+    pickVariant: async (opts) => {
+      const filters2 = { status: "running" };
+      if (opts.campaignId) filters2.campaign = opts.campaignId;
+      if (opts.channelId) filters2.channel = opts.channelId;
+      const experiments = await strapi2.documents(EXPERIMENT_UID).findMany({
+        filters: filters2,
+        populate: { variants: true },
+        limit: 1
+      });
+      if (!experiments || experiments.length === 0) return null;
+      const exp = experiments[0];
+      if (!exp.variants || exp.variants.length === 0) {
+        throwErr("STUDIO_PROMO_EXPERIMENT_NO_VARIANTS", "实验无变体");
+      }
+      return pickByWeight(exp.variants);
+    },
+    getExperimentReport: async (experimentId, opts) => {
+      const exp = await getExperiment(experimentId);
+      const variantIds = (exp.variants || []).map((v) => v.documentId);
+      const clicksByVariant = {};
+      const ordersByVariant = {};
+      for (const vid of variantIds) {
+        const clicks = await strapi2.documents(CLICK_EVENT_UID$1).findMany({
+          filters: {
+            abVariant: vid,
+            clickedAt: { $gte: opts.startDate, $lte: opts.endDate }
+          }
+        });
+        clicksByVariant[vid] = clicks ? clicks.length : 0;
+        const orders = await strapi2.documents(ORDER_UID$1).findMany({
+          filters: {
+            matchedClick: { abVariant: vid },
+            transactedAt: { $gte: opts.startDate, $lte: opts.endDate }
+          }
+        });
+        ordersByVariant[vid] = orders ? orders.length : 0;
+      }
+      return {
+        experiment: { documentId: exp.documentId, name: exp.name, status: exp.status },
+        variants: (exp.variants || []).map((v) => ({
+          documentId: v.documentId,
+          name: v.name,
+          weight: v.weight,
+          clicks: clicksByVariant[v.documentId] || 0,
+          orders: ordersByVariant[v.documentId] || 0,
+          conversionRate: clicksByVariant[v.documentId] > 0 ? Number(((ordersByVariant[v.documentId] || 0) / clicksByVariant[v.documentId] * 100).toFixed(2)) : 0
+        }))
+      };
+    }
+  };
+};
+const CHANNEL_UID = "plugin::zhao-studio.promo-channel";
+const BROWSER_LOG_UID = "plugin::zhao-studio.browser-log";
+const CLICK_EVENT_UID = "plugin::zhao-track.click-event";
+const ORDER_UID = "plugin::zhao-track.order";
+const channelReport = ({ strapi: strapi2 }) => {
+  const throwErr = (code, message) => {
+    const err = new Error(message);
+    err.code = code;
+    throw err;
+  };
+  const cache = /* @__PURE__ */ new Map();
+  const CACHE_TTL_MS = 5 * 60 * 1e3;
+  const CACHE_MAX = 1e4;
+  const getCache = (key) => {
+    const entry = cache.get(key);
+    if (!entry) return null;
+    if (Date.now() > entry.expireAt) {
+      cache.delete(key);
+      return null;
+    }
+    return entry.data;
+  };
+  const setCache = (key, data2) => {
+    if (cache.size >= CACHE_MAX) {
+      const firstKey = cache.keys().next().value;
+      if (firstKey) cache.delete(firstKey);
+    }
+    cache.set(key, { data: data2, expireAt: Date.now() + CACHE_TTL_MS });
+  };
+  return {
+    async getChannelReport(opts) {
+      const cacheKey = `channel-report:${opts.channelCode}:${opts.startDate}:${opts.endDate}:${opts.groupBy || ""}`;
+      const cached = getCache(cacheKey);
+      if (cached) return cached;
+      const channels = await strapi2.documents(CHANNEL_UID).findMany({
+        filters: { code: opts.channelCode },
+        populate: { campaigns: { populate: { experiments: { populate: { variants: true } } } } }
+      });
+      if (!channels || channels.length === 0) {
+        throwErr("STUDIO_PROMO_CHANNEL_NOT_FOUND", "推广渠道不存在");
+      }
+      const channel = channels[0];
+      const browserLogs = await strapi2.documents(BROWSER_LOG_UID).findMany({
+        filters: {
+          promoChannelCode: opts.channelCode,
+          timestamp: { $gte: opts.startDate, $lte: opts.endDate }
+        }
+      });
+      const impressions = (browserLogs || []).filter((l) => l.eventType === "page-view").length;
+      const adClicks = (browserLogs || []).filter((l) => l.eventType === "ad-click").length;
+      const campaignIds = (channel.campaigns || []).map((c) => c.documentId);
+      let couponClicks = 0;
+      let orders = 0;
+      let paidOrders = 0;
+      let totalCommission = 0;
+      let matchedCommission = 0;
+      if (campaignIds.length > 0) {
+        const clicks = await strapi2.documents(CLICK_EVENT_UID).findMany({
+          filters: {
+            promoCampaign: { $in: campaignIds },
+            clickedAt: { $gte: opts.startDate, $lte: opts.endDate }
+          }
+        });
+        couponClicks = clicks ? clicks.length : 0;
+        const orderList = await strapi2.documents(ORDER_UID).findMany({
+          filters: {
+            promoCampaign: { $in: campaignIds },
+            transactedAt: { $gte: opts.startDate, $lte: opts.endDate }
+          }
+        });
+        orders = orderList ? orderList.length : 0;
+        for (const o of orderList || []) {
+          const comm = Number(o.commission) || 0;
+          totalCommission += comm;
+          if (o.attributionQuality && o.attributionQuality !== "unmatched") {
+            matchedCommission += comm;
+          }
+          if (o.commissionStatus === "paid") {
+            paidOrders++;
+          }
+        }
+      }
+      const channelCost = Number(channel.actualCost) || 0;
+      const campaignCost = (channel.campaigns || []).reduce((sum, c) => sum + (Number(c.actualCost) || 0), 0);
+      const actualCost = channelCost + campaignCost;
+      const roi = actualCost > 0 ? Number(((matchedCommission - actualCost) / actualCost * 100).toFixed(2)) : 0;
+      const report = {
+        channel: { code: channel.code, name: channel.name, scene: channel.scene },
+        funnel: { impressions, adClicks, couponClicks, orders, paidOrders },
+        revenue: { totalCommission: Number(totalCommission.toFixed(2)), matchedCommission: Number(matchedCommission.toFixed(2)) },
+        cost: { budget: Number(channel.budget) || 0, actualCost },
+        roi,
+        byCampaign: (channel.campaigns || []).map((c) => ({
+          campaign: c.name,
+          code: c.code
+        }))
+      };
+      setCache(cacheKey, report);
+      return report;
+    },
+    _resetCache() {
+      cache.clear();
+    }
+  };
+};
 const services = {
   collect,
   scraper,
@@ -19449,16 +20873,95 @@ const services = {
   "status-sync": statusSync,
   analytics,
   aggregation,
-  "sync-event": syncEvent$1
+  "sync-event": syncEvent$1,
+  "promo-channel": promoChannel$1,
+  "promo-campaign": promoCampaign$1,
+  "ab-test": abTest,
+  "channel-report": channelReport
 };
 const policies = {};
 const middlewares = {};
+const kind$f = "collectionType";
+const collectionName$f = "zhao_article_drafts";
+const info$f = { "singularName": "article-draft", "pluralName": "article-drafts", "displayName": "草稿文章", "description": "采集并加工后的草稿文章" };
+const options$f = { "draftAndPublish": true };
+const pluginOptions$f = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
+const attributes$f = { "title": { "type": "string", "required": true, "maxLength": 200 }, "content": { "type": "richtext", "required": true }, "sourceUrl": { "type": "string" }, "sourceTitle": { "type": "string" }, "sourcePublishedAt": { "type": "datetime" }, "sourceAuthor": { "type": "string" }, "category": { "type": "string" }, "status": { "type": "enumeration", "enum": ["draft", "processing", "ready", "published"], "default": "draft" }, "aiProcessed": { "type": "boolean", "default": false }, "aiSummary": { "type": "text" }, "aiOptimizedTitle": { "type": "string" }, "publishRecords": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.publish-record", "mappedBy": "article" }, "browserLogs": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.browser-log", "mappedBy": "article" }, "statSummaries": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.stat-summary", "mappedBy": "article" }, "websiteArticles": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.article", "mappedBy": "sourceArticleDraft" }, "syncEvents": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.sync-event", "mappedBy": "targetDraftId" }, "scope": { "type": "enumeration", "enum": ["current", "global", "tenant"], "default": "current" }, "scopeTenantId": { "type": "string" }, "publishedAt": { "type": "datetime" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const schema$f = {
+  kind: kind$f,
+  collectionName: collectionName$f,
+  info: info$f,
+  options: options$f,
+  pluginOptions: pluginOptions$f,
+  attributes: attributes$f
+};
+const articleDraft = { schema: schema$f };
+const kind$e = "collectionType";
+const collectionName$e = "zhao_collect_sources";
+const info$e = { "singularName": "collect-source", "pluralName": "collect-sources", "displayName": "采集源", "description": "内容采集源配置" };
+const options$e = { "draftAndPublish": false };
+const pluginOptions$e = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
+const attributes$e = { "name": { "type": "string", "required": true, "maxLength": 100 }, "url": { "type": "string", "required": true }, "type": { "type": "enumeration", "enum": ["template", "custom"], "default": "template" }, "template": { "type": "string" }, "titleSelector": { "type": "string" }, "contentSelector": { "type": "string" }, "authorSelector": { "type": "string" }, "dateSelector": { "type": "string" }, "isActive": { "type": "boolean", "default": true }, "tasks": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.collect-task", "mappedBy": "source" }, "lastCollectedAt": { "type": "datetime" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const schema$e = {
+  kind: kind$e,
+  collectionName: collectionName$e,
+  info: info$e,
+  options: options$e,
+  pluginOptions: pluginOptions$e,
+  attributes: attributes$e
+};
+const collectSource = { schema: schema$e };
+const kind$d = "collectionType";
+const collectionName$d = "zhao_collect_tasks";
+const info$d = { "singularName": "collect-task", "pluralName": "collect-tasks", "displayName": "采集任务", "description": "内容采集任务临时状态" };
+const options$d = { "draftAndPublish": false };
+const pluginOptions$d = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
+const attributes$d = { "source": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.collect-source", "inversedBy": "tasks" }, "titles": { "type": "json" }, "selectedTitles": { "type": "json" }, "status": { "type": "enumeration", "enum": ["pending", "fetching_titles", "waiting_selection", "fetching_content", "completed", "failed"], "default": "pending" }, "error": { "type": "text" }, "retryCount": { "type": "integer", "default": 0 }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const schema$d = {
+  kind: kind$d,
+  collectionName: collectionName$d,
+  info: info$d,
+  options: options$d,
+  pluginOptions: pluginOptions$d,
+  attributes: attributes$d
+};
+const collectTask = { schema: schema$d };
+const kind$c = "collectionType";
+const collectionName$c = "zhao_publish_platforms";
+const info$c = { "singularName": "publish-platform", "pluralName": "publish-platforms", "displayName": "发布平台", "description": "发布平台类型配置" };
+const options$c = { "draftAndPublish": false };
+const pluginOptions$c = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
+const attributes$c = { "name": { "type": "string", "required": true, "maxLength": 100 }, "type": { "type": "enumeration", "enum": ["toutiao", "xiaohongshu", "wechat", "douyin", "bilibili", "taobao", "pdd", "douyin-ecom", "jd", "custom", "internal"], "required": true }, "category": { "type": "enumeration", "enum": ["content", "social", "ecommerce", "custom"], "required": true, "default": "content" }, "description": { "type": "text" }, "isActive": { "type": "boolean", "default": true }, "accounts": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.publish-account", "mappedBy": "platform" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const schema$c = {
+  kind: kind$c,
+  collectionName: collectionName$c,
+  info: info$c,
+  options: options$c,
+  pluginOptions: pluginOptions$c,
+  attributes: attributes$c
+};
+const publishPlatform = { schema: schema$c };
+const kind$b = "collectionType";
+const collectionName$b = "zhao_publish_accounts";
+const info$b = { "singularName": "publish-account", "pluralName": "publish-accounts", "displayName": "发布账号", "description": "发布账号配置（一个平台可有多个账号）" };
+const options$b = { "draftAndPublish": false };
+const pluginOptions$b = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
+const attributes$b = { "name": { "type": "string", "required": true, "maxLength": 100 }, "platform": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.publish-platform", "inversedBy": "accounts" }, "config": { "type": "json" }, "isActive": { "type": "boolean", "default": true }, "publishRecords": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.publish-record", "mappedBy": "account" }, "lastPublishedAt": { "type": "datetime" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const schema$b = {
+  kind: kind$b,
+  collectionName: collectionName$b,
+  info: info$b,
+  options: options$b,
+  pluginOptions: pluginOptions$b,
+  attributes: attributes$b
+};
+const publishAccount = { schema: schema$b };
 const kind$a = "collectionType";
-const collectionName$a = "zhao_article_drafts";
-const info$a = { "singularName": "article-draft", "pluralName": "article-drafts", "displayName": "草稿文章", "description": "采集并加工后的草稿文章" };
-const options$a = { "draftAndPublish": true };
+const collectionName$a = "zhao_publish_records";
+const info$a = { "singularName": "publish-record", "pluralName": "publish-records", "displayName": "发布记录", "description": "文章发布到账号的记录" };
+const options$a = { "draftAndPublish": false };
 const pluginOptions$a = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
-const attributes$a = { "title": { "type": "string", "required": true, "maxLength": 200 }, "content": { "type": "richtext", "required": true }, "sourceUrl": { "type": "string" }, "sourceTitle": { "type": "string" }, "sourcePublishedAt": { "type": "datetime" }, "sourceAuthor": { "type": "string" }, "category": { "type": "string" }, "status": { "type": "enumeration", "enum": ["draft", "processing", "ready", "published"], "default": "draft" }, "aiProcessed": { "type": "boolean", "default": false }, "aiSummary": { "type": "text" }, "aiOptimizedTitle": { "type": "string" }, "publishRecords": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.publish-record", "mappedBy": "article" }, "browserLogs": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.browser-log", "mappedBy": "article" }, "statSummaries": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.stat-summary", "mappedBy": "article" }, "websiteArticles": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.article", "mappedBy": "sourceArticleDraft" }, "syncEvents": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.sync-event", "mappedBy": "targetDraftId" }, "scope": { "type": "enumeration", "enum": ["current", "global", "tenant"], "default": "current" }, "scopeTenantId": { "type": "string" }, "publishedAt": { "type": "datetime" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const attributes$a = { "article": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.article-draft", "inversedBy": "publishRecords" }, "account": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.publish-account", "inversedBy": "publishRecords" }, "externalId": { "type": "string" }, "status": { "type": "enumeration", "enum": ["pending", "success", "failed"], "default": "pending" }, "error": { "type": "text" }, "retryCount": { "type": "integer", "default": 0 }, "publishedAt": { "type": "datetime" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" }, "abVariant": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.ab-variant" } };
 const schema$a = {
   kind: kind$a,
   collectionName: collectionName$a,
@@ -19467,13 +20970,13 @@ const schema$a = {
   pluginOptions: pluginOptions$a,
   attributes: attributes$a
 };
-const articleDraft = { schema: schema$a };
+const publishRecord = { schema: schema$a };
 const kind$9 = "collectionType";
-const collectionName$9 = "zhao_collect_sources";
-const info$9 = { "singularName": "collect-source", "pluralName": "collect-sources", "displayName": "采集源", "description": "内容采集源配置" };
+const collectionName$9 = "zhao_knowledge_point_indices";
+const info$9 = { "singularName": "knowledge-point-index", "pluralName": "knowledge-point-indices", "displayName": "知识点索引", "description": "文章与知识点的关联索引" };
 const options$9 = { "draftAndPublish": false };
 const pluginOptions$9 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
-const attributes$9 = { "name": { "type": "string", "required": true, "maxLength": 100 }, "url": { "type": "string", "required": true }, "type": { "type": "enumeration", "enum": ["template", "custom"], "default": "template" }, "template": { "type": "string" }, "titleSelector": { "type": "string" }, "contentSelector": { "type": "string" }, "authorSelector": { "type": "string" }, "dateSelector": { "type": "string" }, "isActive": { "type": "boolean", "default": true }, "tasks": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.collect-task", "mappedBy": "source" }, "lastCollectedAt": { "type": "datetime" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const attributes$9 = { "targetType": { "type": "string", "required": true }, "targetId": { "type": "string", "required": true }, "knowledgePoint": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-tag.knowledge-point" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
 const schema$9 = {
   kind: kind$9,
   collectionName: collectionName$9,
@@ -19482,13 +20985,13 @@ const schema$9 = {
   pluginOptions: pluginOptions$9,
   attributes: attributes$9
 };
-const collectSource = { schema: schema$9 };
+const knowledgePointIndex = { schema: schema$9 };
 const kind$8 = "collectionType";
-const collectionName$8 = "zhao_collect_tasks";
-const info$8 = { "singularName": "collect-task", "pluralName": "collect-tasks", "displayName": "采集任务", "description": "内容采集任务临时状态" };
+const collectionName$8 = "zhao_ad_slots";
+const info$8 = { "singularName": "ad-slot", "pluralName": "ad-slots", "displayName": "广告位", "description": "广告位配置管理" };
 const options$8 = { "draftAndPublish": false };
 const pluginOptions$8 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
-const attributes$8 = { "source": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.collect-source", "inversedBy": "tasks" }, "titles": { "type": "json" }, "selectedTitles": { "type": "json" }, "status": { "type": "enumeration", "enum": ["pending", "fetching_titles", "waiting_selection", "fetching_content", "completed", "failed"], "default": "pending" }, "error": { "type": "text" }, "retryCount": { "type": "integer", "default": 0 }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const attributes$8 = { "name": { "type": "string", "required": true }, "code": { "type": "string", "required": true, "unique": true }, "position": { "type": "enumeration", "enum": ["article-content", "sidebar", "footer", "header", "list-page", "home-page"], "default": "article-content" }, "type": { "type": "enumeration", "enum": ["product-link", "banner", "popup", "native"], "default": "product-link" }, "targetUrl": { "type": "string" }, "productId": { "type": "string" }, "imageUrl": { "type": "string" }, "isActive": { "type": "boolean", "default": true }, "browserLogs": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.browser-log", "mappedBy": "adSlot" }, "statSummaries": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.stat-summary", "mappedBy": "adSlot" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
 const schema$8 = {
   kind: kind$8,
   collectionName: collectionName$8,
@@ -19497,13 +21000,13 @@ const schema$8 = {
   pluginOptions: pluginOptions$8,
   attributes: attributes$8
 };
-const collectTask = { schema: schema$8 };
+const adSlot = { schema: schema$8 };
 const kind$7 = "collectionType";
-const collectionName$7 = "zhao_publish_platforms";
-const info$7 = { "singularName": "publish-platform", "pluralName": "publish-platforms", "displayName": "发布平台", "description": "发布平台类型配置" };
+const collectionName$7 = "zhao_browser_logs";
+const info$7 = { "singularName": "browser-log", "pluralName": "browser-logs", "displayName": "浏览器日志", "description": "用户浏览器信息和行为日志" };
 const options$7 = { "draftAndPublish": false };
 const pluginOptions$7 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
-const attributes$7 = { "name": { "type": "string", "required": true, "maxLength": 100 }, "type": { "type": "enumeration", "enum": ["toutiao", "xiaohongshu", "wechat", "custom", "internal"], "required": true }, "description": { "type": "text" }, "isActive": { "type": "boolean", "default": true }, "accounts": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.publish-account", "mappedBy": "platform" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const attributes$7 = { "eventType": { "type": "enumeration", "enum": ["page-view", "ad-click", "scroll", "read-duration", "user-register"], "required": true }, "article": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.article-draft" }, "adSlot": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.ad-slot" }, "user": { "type": "relation", "relation": "manyToOne", "target": "admin::user" }, "userId": { "type": "string" }, "sessionId": { "type": "string", "required": true }, "isRegistered": { "type": "boolean", "default": false }, "registeredAt": { "type": "datetime" }, "userAgent": { "type": "string" }, "platform": { "type": "string" }, "browser": { "type": "string" }, "browserVersion": { "type": "string" }, "os": { "type": "string" }, "osVersion": { "type": "string" }, "deviceType": { "type": "enumeration", "enum": ["desktop", "mobile", "tablet"], "default": "desktop" }, "screenWidth": { "type": "integer" }, "screenHeight": { "type": "integer" }, "language": { "type": "string" }, "ip": { "type": "string" }, "country": { "type": "string" }, "city": { "type": "string" }, "referrer": { "type": "string" }, "referrerDomain": { "type": "string" }, "readDuration": { "type": "integer", "default": 0 }, "scrollDepth": { "type": "integer", "default": 0 }, "timestamp": { "type": "datetime", "required": true }, "createdAt": { "type": "datetime" }, "promoChannelCode": { "type": "string" } };
 const schema$7 = {
   kind: kind$7,
   collectionName: collectionName$7,
@@ -19512,13 +21015,13 @@ const schema$7 = {
   pluginOptions: pluginOptions$7,
   attributes: attributes$7
 };
-const publishPlatform = { schema: schema$7 };
+const browserLog = { schema: schema$7 };
 const kind$6 = "collectionType";
-const collectionName$6 = "zhao_publish_accounts";
-const info$6 = { "singularName": "publish-account", "pluralName": "publish-accounts", "displayName": "发布账号", "description": "发布账号配置（一个平台可有多个账号）" };
+const collectionName$6 = "zhao_stat_summaries";
+const info$6 = { "singularName": "stat-summary", "pluralName": "stat-summaries", "displayName": "统计汇总", "description": "按日期聚合的统计数据" };
 const options$6 = { "draftAndPublish": false };
 const pluginOptions$6 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
-const attributes$6 = { "name": { "type": "string", "required": true, "maxLength": 100 }, "platform": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.publish-platform", "inversedBy": "accounts" }, "config": { "type": "json" }, "isActive": { "type": "boolean", "default": true }, "publishRecords": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.publish-record", "mappedBy": "account" }, "lastPublishedAt": { "type": "datetime" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const attributes$6 = { "date": { "type": "date", "required": true }, "article": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.article-draft" }, "adSlot": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.ad-slot" }, "summaryType": { "type": "enumeration", "enum": ["article-daily", "ad-slot-daily", "global-daily", "device-daily", "region-daily"], "required": true }, "pv": { "type": "integer", "default": 0 }, "uv": { "type": "integer", "default": 0 }, "clickCount": { "type": "integer", "default": 0 }, "clickRate": { "type": "float", "default": 0 }, "avgReadDuration": { "type": "float", "default": 0 }, "avgScrollDepth": { "type": "float", "default": 0 }, "deviceStats": { "type": "json" }, "regionStats": { "type": "json" }, "referrerStats": { "type": "json" }, "createdAt": { "type": "datetime" } };
 const schema$6 = {
   kind: kind$6,
   collectionName: collectionName$6,
@@ -19527,13 +21030,13 @@ const schema$6 = {
   pluginOptions: pluginOptions$6,
   attributes: attributes$6
 };
-const publishAccount = { schema: schema$6 };
+const statSummary = { schema: schema$6 };
 const kind$5 = "collectionType";
-const collectionName$5 = "zhao_publish_records";
-const info$5 = { "singularName": "publish-record", "pluralName": "publish-records", "displayName": "发布记录", "description": "文章发布到账号的记录" };
+const collectionName$5 = "zhao_studio_sync_events";
+const info$5 = { "singularName": "sync-event", "pluralName": "sync-events", "displayName": "同步事件" };
 const options$5 = { "draftAndPublish": false };
-const pluginOptions$5 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
-const attributes$5 = { "article": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.article-draft", "inversedBy": "publishRecords" }, "account": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.publish-account", "inversedBy": "publishRecords" }, "externalId": { "type": "string" }, "status": { "type": "enumeration", "enum": ["pending", "success", "failed"], "default": "pending" }, "error": { "type": "text" }, "retryCount": { "type": "integer", "default": 0 }, "publishedAt": { "type": "datetime" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const pluginOptions$5 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": false } };
+const attributes$5 = { "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config", "required": true, "inversedBy": "studio_sync_events" }, "sourceType": { "type": "enumeration", "enum": ["website"], "required": true }, "sourceContentType": { "type": "string", "required": true }, "sourceDocumentId": { "type": "string" }, "sourceUrl": { "type": "string" }, "sourceTitle": { "type": "string" }, "targetDraftId": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.article-draft", "inversedBy": "syncEvents" }, "eventStatus": { "type": "enumeration", "enum": ["pending", "resolved", "ignored"], "default": "pending" }, "eventPayload": { "type": "json" }, "resolvedAt": { "type": "datetime" }, "resolvedBy": { "type": "string" } };
 const schema$5 = {
   kind: kind$5,
   collectionName: collectionName$5,
@@ -19542,13 +21045,15 @@ const schema$5 = {
   pluginOptions: pluginOptions$5,
   attributes: attributes$5
 };
-const publishRecord = { schema: schema$5 };
+const syncEvent = {
+  schema: schema$5
+};
 const kind$4 = "collectionType";
-const collectionName$4 = "zhao_knowledge_point_indices";
-const info$4 = { "singularName": "knowledge-point-index", "pluralName": "knowledge-point-indices", "displayName": "知识点索引", "description": "文章与知识点的关联索引" };
+const collectionName$4 = "zhao_promo_channels";
+const info$4 = { "singularName": "promo-channel", "pluralName": "promo-channels", "displayName": "推广渠道", "description": "推广渠道管理" };
 const options$4 = { "draftAndPublish": false };
-const pluginOptions$4 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
-const attributes$4 = { "targetType": { "type": "string", "required": true }, "targetId": { "type": "string", "required": true }, "knowledgePoint": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-tag.knowledge-point" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const pluginOptions$4 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": false } };
+const attributes$4 = { "name": { "type": "string", "required": true, "maxLength": 100 }, "code": { "type": "string", "required": true, "unique": true }, "description": { "type": "text" }, "scene": { "type": "enumeration", "enum": ["wechat_group", "short_video", "live_stream", "poster", "article", "other"], "default": "other" }, "status": { "type": "boolean", "default": true }, "budget": { "type": "decimal" }, "actualCost": { "type": "decimal" }, "sortOrder": { "type": "integer", "default": 0 }, "platformConfigs": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.channel-platform-config", "mappedBy": "channel" }, "campaigns": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.promo-campaign", "mappedBy": "channel" }, "experiments": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.ab-experiment", "mappedBy": "channel" }, "coupons": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-deal.coupon", "mappedBy": "promoChannels" } };
 const schema$4 = {
   kind: kind$4,
   collectionName: collectionName$4,
@@ -19557,13 +21062,13 @@ const schema$4 = {
   pluginOptions: pluginOptions$4,
   attributes: attributes$4
 };
-const knowledgePointIndex = { schema: schema$4 };
+const promoChannel = { schema: schema$4 };
 const kind$3 = "collectionType";
-const collectionName$3 = "zhao_ad_slots";
-const info$3 = { "singularName": "ad-slot", "pluralName": "ad-slots", "displayName": "广告位", "description": "广告位配置管理" };
+const collectionName$3 = "zhao_channel_platform_configs";
+const info$3 = { "singularName": "channel-platform-config", "pluralName": "channel-platform-configs", "displayName": "渠道平台配置", "description": "渠道在各推广平台的推广位配置" };
 const options$3 = { "draftAndPublish": false };
-const pluginOptions$3 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
-const attributes$3 = { "name": { "type": "string", "required": true }, "code": { "type": "string", "required": true, "unique": true }, "position": { "type": "enumeration", "enum": ["article-content", "sidebar", "footer", "header", "list-page", "home-page"], "default": "article-content" }, "type": { "type": "enumeration", "enum": ["product-link", "banner", "popup", "native"], "default": "product-link" }, "targetUrl": { "type": "string" }, "productId": { "type": "string" }, "imageUrl": { "type": "string" }, "isActive": { "type": "boolean", "default": true }, "browserLogs": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.browser-log", "mappedBy": "adSlot" }, "statSummaries": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.stat-summary", "mappedBy": "adSlot" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const pluginOptions$3 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": false } };
+const attributes$3 = { "channel": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.promo-channel", "inversedBy": "platformConfigs" }, "platform": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.publish-platform" }, "promoPid": { "type": "string" }, "promoLink": { "type": "text" }, "isActive": { "type": "boolean", "default": true } };
 const schema$3 = {
   kind: kind$3,
   collectionName: collectionName$3,
@@ -19572,13 +21077,13 @@ const schema$3 = {
   pluginOptions: pluginOptions$3,
   attributes: attributes$3
 };
-const adSlot = { schema: schema$3 };
+const channelPlatformConfig = { schema: schema$3 };
 const kind$2 = "collectionType";
-const collectionName$2 = "zhao_browser_logs";
-const info$2 = { "singularName": "browser-log", "pluralName": "browser-logs", "displayName": "浏览器日志", "description": "用户浏览器信息和行为日志" };
+const collectionName$2 = "zhao_promo_campaigns";
+const info$2 = { "singularName": "promo-campaign", "pluralName": "promo-campaigns", "displayName": "营销活动", "description": "有时间范围的营销活动" };
 const options$2 = { "draftAndPublish": false };
-const pluginOptions$2 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
-const attributes$2 = { "eventType": { "type": "enumeration", "enum": ["page-view", "ad-click", "scroll", "read-duration", "user-register"], "required": true }, "article": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.article-draft" }, "adSlot": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.ad-slot" }, "user": { "type": "relation", "relation": "manyToOne", "target": "admin::user" }, "userId": { "type": "string" }, "sessionId": { "type": "string", "required": true }, "isRegistered": { "type": "boolean", "default": false }, "registeredAt": { "type": "datetime" }, "userAgent": { "type": "string" }, "platform": { "type": "string" }, "browser": { "type": "string" }, "browserVersion": { "type": "string" }, "os": { "type": "string" }, "osVersion": { "type": "string" }, "deviceType": { "type": "enumeration", "enum": ["desktop", "mobile", "tablet"], "default": "desktop" }, "screenWidth": { "type": "integer" }, "screenHeight": { "type": "integer" }, "language": { "type": "string" }, "ip": { "type": "string" }, "country": { "type": "string" }, "city": { "type": "string" }, "referrer": { "type": "string" }, "referrerDomain": { "type": "string" }, "readDuration": { "type": "integer", "default": 0 }, "scrollDepth": { "type": "integer", "default": 0 }, "timestamp": { "type": "datetime", "required": true }, "createdAt": { "type": "datetime" } };
+const pluginOptions$2 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": false } };
+const attributes$2 = { "name": { "type": "string", "required": true, "maxLength": 100 }, "code": { "type": "string", "required": true, "unique": true }, "channel": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.promo-channel", "inversedBy": "campaigns" }, "description": { "type": "text" }, "startAt": { "type": "datetime", "required": true }, "endAt": { "type": "datetime", "required": true }, "status": { "type": "boolean", "default": true }, "budget": { "type": "decimal" }, "actualCost": { "type": "decimal" }, "experiments": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.ab-experiment", "mappedBy": "campaign" } };
 const schema$2 = {
   kind: kind$2,
   collectionName: collectionName$2,
@@ -19587,13 +21092,13 @@ const schema$2 = {
   pluginOptions: pluginOptions$2,
   attributes: attributes$2
 };
-const browserLog = { schema: schema$2 };
+const promoCampaign = { schema: schema$2 };
 const kind$1 = "collectionType";
-const collectionName$1 = "zhao_stat_summaries";
-const info$1 = { "singularName": "stat-summary", "pluralName": "stat-summaries", "displayName": "统计汇总", "description": "按日期聚合的统计数据" };
+const collectionName$1 = "zhao_ab_experiments";
+const info$1 = { "singularName": "ab-experiment", "pluralName": "ab-experiments", "displayName": "AB实验", "description": "A/B 测试实验管理" };
 const options$1 = { "draftAndPublish": false };
-const pluginOptions$1 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
-const attributes$1 = { "date": { "type": "date", "required": true }, "article": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.article-draft" }, "adSlot": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.ad-slot" }, "summaryType": { "type": "enumeration", "enum": ["article-daily", "ad-slot-daily", "global-daily", "device-daily", "region-daily"], "required": true }, "pv": { "type": "integer", "default": 0 }, "uv": { "type": "integer", "default": 0 }, "clickCount": { "type": "integer", "default": 0 }, "clickRate": { "type": "float", "default": 0 }, "avgReadDuration": { "type": "float", "default": 0 }, "avgScrollDepth": { "type": "float", "default": 0 }, "deviceStats": { "type": "json" }, "regionStats": { "type": "json" }, "referrerStats": { "type": "json" }, "createdAt": { "type": "datetime" } };
+const pluginOptions$1 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": false } };
+const attributes$1 = { "name": { "type": "string", "required": true, "maxLength": 200 }, "channel": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.promo-channel", "inversedBy": "experiments" }, "campaign": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.promo-campaign", "inversedBy": "experiments" }, "description": { "type": "text" }, "status": { "type": "enumeration", "enum": ["draft", "running", "paused", "completed"], "default": "draft" }, "startAt": { "type": "datetime" }, "endAt": { "type": "datetime" }, "variants": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.ab-variant", "mappedBy": "experiment" } };
 const schema$1 = {
   kind: kind$1,
   collectionName: collectionName$1,
@@ -19602,13 +21107,13 @@ const schema$1 = {
   pluginOptions: pluginOptions$1,
   attributes: attributes$1
 };
-const statSummary = { schema: schema$1 };
+const abExperiment = { schema: schema$1 };
 const kind = "collectionType";
-const collectionName = "zhao_studio_sync_events";
-const info = { "singularName": "sync-event", "pluralName": "sync-events", "displayName": "同步事件" };
+const collectionName = "zhao_ab_variants";
+const info = { "singularName": "ab-variant", "pluralName": "ab-variants", "displayName": "AB变体", "description": "A/B 测试变体" };
 const options = { "draftAndPublish": false };
 const pluginOptions = { "content-manager": { "visible": true }, "content-type-builder": { "visible": false } };
-const attributes = { "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config", "required": true, "inversedBy": "studio_sync_events" }, "sourceType": { "type": "enumeration", "enum": ["website"], "required": true }, "sourceContentType": { "type": "string", "required": true }, "sourceDocumentId": { "type": "string" }, "sourceUrl": { "type": "string" }, "sourceTitle": { "type": "string" }, "targetDraftId": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.article-draft", "inversedBy": "syncEvents" }, "eventStatus": { "type": "enumeration", "enum": ["pending", "resolved", "ignored"], "default": "pending" }, "eventPayload": { "type": "json" }, "resolvedAt": { "type": "datetime" }, "resolvedBy": { "type": "string" } };
+const attributes = { "experiment": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.ab-experiment", "inversedBy": "variants" }, "name": { "type": "string", "required": true, "maxLength": 100 }, "weight": { "type": "integer", "required": true, "default": 1 }, "article": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.article-draft" }, "coupon": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-deal.coupon" }, "description": { "type": "text" } };
 const schema = {
   kind,
   collectionName,
@@ -19617,9 +21122,7 @@ const schema = {
   pluginOptions,
   attributes
 };
-const syncEvent = {
-  schema
-};
+const abVariant = { schema };
 const contentTypes = {
   "article-draft": articleDraft,
   "collect-source": collectSource,
@@ -19631,7 +21134,12 @@ const contentTypes = {
   "ad-slot": adSlot,
   "browser-log": browserLog,
   "stat-summary": statSummary,
-  "sync-event": syncEvent
+  "sync-event": syncEvent,
+  "promo-channel": promoChannel,
+  "channel-platform-config": channelPlatformConfig,
+  "promo-campaign": promoCampaign,
+  "ab-experiment": abExperiment,
+  "ab-variant": abVariant
 };
 const index = {
   register,

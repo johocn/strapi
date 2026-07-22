@@ -1,1 +1,1 @@
-{"version":3,"file":"register.d.ts","sourceRoot":"","sources":["../../../server/src/register.ts"],"names":[],"mappings":"yBAEgB,YAAY;IAAE,MAAM,EAAE,GAAG,CAAA;CAAE;AAA3C,wBAIE"}
+{"version":3,"file":"register.d.ts","sourceRoot":"","sources":["../../../server/src/register.ts"],"names":[],"mappings":"yBAEgB,YAAY;IAAE,MAAM,EAAE,GAAG,CAAA;CAAE;AAA3C,wBAoBE"}

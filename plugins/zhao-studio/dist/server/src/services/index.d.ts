@@ -252,6 +252,108 @@ declare const _default: {
         resolve(siteId: number, documentId: string, body: any): Promise<any>;
         createFromWebhook(payload: any): Promise<any>;
     };
+    'promo-channel': ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        listChannels(opts: {
+            page: number;
+            pageSize: number;
+            scene?: string;
+        }): Promise<import('@strapi/types/dist/modules/documents').AnyDocument[]>;
+        getChannel(id: string): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
+        createChannel(data: {
+            name: string;
+            code: string;
+            description?: string;
+            scene?: string;
+            budget?: number;
+            actualCost?: number;
+        }): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
+        updateChannel(id: string, data: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument | null>;
+        deleteChannel(id: string): Promise<{
+            documentId: import('@strapi/types/dist/modules/documents').ID;
+            entries: import('@strapi/types/dist/modules/documents').Result<TContentTypeUID, TParams>[];
+        }>;
+        addPlatformConfig(channelId: string, data: {
+            platform: string;
+            promoPid?: string;
+            promoLink?: string;
+            isActive?: boolean;
+        }): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
+        updatePlatformConfig(configId: string, data: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument | null>;
+        removePlatformConfig(configId: string): Promise<{
+            documentId: import('@strapi/types/dist/modules/documents').ID;
+            entries: import('@strapi/types/dist/modules/documents').Result<TContentTypeUID, TParams>[];
+        }>;
+    };
+    'promo-campaign': ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        listCampaigns(opts: {
+            page: number;
+            pageSize: number;
+            channelId?: string;
+            status?: boolean;
+        }): Promise<import('@strapi/types/dist/modules/documents').AnyDocument[]>;
+        getCampaign(id: string): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
+        createCampaign(data: {
+            name: string;
+            code: string;
+            channel: string;
+            description?: string;
+            startAt: string;
+            endAt: string;
+            status?: boolean;
+            budget?: number;
+            actualCost?: number;
+        }): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
+        updateCampaign(id: string, data: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument | null>;
+        deleteCampaign(id: string): Promise<{
+            documentId: import('@strapi/types/dist/modules/documents').ID;
+            entries: import('@strapi/types/dist/modules/documents').Result<TContentTypeUID, TParams>[];
+        }>;
+    };
+    'ab-test': ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        listExperiments: (opts: {
+            page: number;
+            pageSize: number;
+            channelId?: string;
+            campaignId?: string;
+            status?: string;
+        }) => Promise<import('@strapi/types/dist/modules/documents').AnyDocument[]>;
+        getExperiment: (id: string) => Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
+        createExperiment: (data: any) => Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
+        startExperiment: (id: string) => Promise<import('@strapi/types/dist/modules/documents').AnyDocument | null>;
+        stopExperiment: (id: string) => Promise<import('@strapi/types/dist/modules/documents').AnyDocument | null>;
+        pickVariant: (opts: {
+            channelId?: string;
+            campaignId?: string;
+        }) => Promise<any | null>;
+        getExperimentReport: (experimentId: string, opts: {
+            startDate: string;
+            endDate: string;
+        }) => Promise<{
+            experiment: {
+                documentId: string;
+                name: any;
+                status: any;
+            };
+            variants: any;
+        }>;
+    };
+    'channel-report': ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        getChannelReport(opts: {
+            channelCode: string;
+            startDate: string;
+            endDate: string;
+            groupBy?: "day" | "campaign" | "variant";
+        }): Promise<any>;
+        _resetCache(): void;
+    };
 };
 export default _default;
 //# sourceMappingURL=index.d.ts.map

@@ -108,6 +108,40 @@ declare const _default: {
         resolve(ctx: any): Promise<void>;
         createFromWebhook(ctx: any): Promise<void>;
     };
+    'promo-channel': ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        list(ctx: any): Promise<void>;
+        findOne(ctx: any): Promise<void>;
+        create(ctx: any): Promise<void>;
+        update(ctx: any): Promise<void>;
+        delete(ctx: any): Promise<void>;
+    };
+    'promo-campaign': ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        list(ctx: any): Promise<void>;
+        findOne(ctx: any): Promise<void>;
+        create(ctx: any): Promise<void>;
+        update(ctx: any): Promise<void>;
+        delete(ctx: any): Promise<void>;
+    };
+    'ab-test': ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        list(ctx: any): Promise<void>;
+        findOne(ctx: any): Promise<void>;
+        create(ctx: any): Promise<void>;
+        start(ctx: any): Promise<void>;
+        stop(ctx: any): Promise<void>;
+        report(ctx: any): Promise<void>;
+        pickVariant(ctx: any): Promise<void>;
+    };
+    'channel-report': ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        getChannelReport(ctx: any): Promise<void>;
+    };
 };
 export default _default;
 //# sourceMappingURL=index.d.ts.map

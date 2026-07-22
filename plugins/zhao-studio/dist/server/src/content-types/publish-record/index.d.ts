@@ -56,6 +56,11 @@ declare const _default: {
             updatedAt: {
                 type: string;
             };
+            abVariant: {
+                type: string;
+                relation: string;
+                target: string;
+            };
         };
     };
 };

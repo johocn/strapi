@@ -116,6 +116,9 @@ declare const _default: {
             createdAt: {
                 type: string;
             };
+            promoChannelCode: {
+                type: string;
+            };
         };
     };
 };

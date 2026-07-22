@@ -1,0 +1,34 @@
+declare const _default: {
+  "kind": "collectionType",
+  "collectionName": "zhao_channel_platform_configs",
+  "info": {
+    "singularName": "channel-platform-config",
+    "pluralName": "channel-platform-configs",
+    "displayName": "渠道平台配置",
+    "description": "渠道在各推广平台的推广位配置"
+  },
+  "options": { "draftAndPublish": false },
+  "pluginOptions": {
+    "content-manager": { "visible": true },
+    "content-type-builder": { "visible": false }
+  },
+  "attributes": {
+    "channel": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-studio.promo-channel",
+      "inversedBy": "platformConfigs"
+    },
+    "platform": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-studio.publish-platform"
+    },
+    "promoPid": { "type": "string" },
+    "promoLink": { "type": "text" },
+    "isActive": { "type": "boolean", "default": true }
+  }
+}
+;
+
+export default _default;
