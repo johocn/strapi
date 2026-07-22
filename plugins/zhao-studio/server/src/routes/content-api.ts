@@ -120,5 +120,30 @@ export default () => ({
 
     // webhook 公开路由（zhao-website → zhao-studio）
     publicRoute('POST', '/webhooks/sync-event', 'sync-event-api.createFromWebhook'),
+
+    // ============ 推广渠道模块 ============
+    adminRoute('GET', '/channels', 'promo-channel.list', 'zhao-studio.read'),
+    adminRoute('POST', '/channels', 'promo-channel.create', 'zhao-studio.create'),
+    adminRoute('GET', '/channels/:id', 'promo-channel.findOne', 'zhao-studio.read'),
+    adminRoute('PUT', '/channels/:id', 'promo-channel.update', 'zhao-studio.update'),
+    adminRoute('DELETE', '/channels/:id', 'promo-channel.delete', 'zhao-studio.delete'),
+
+    adminRoute('GET', '/campaigns', 'promo-campaign.list', 'zhao-studio.read'),
+    adminRoute('POST', '/campaigns', 'promo-campaign.create', 'zhao-studio.create'),
+    adminRoute('GET', '/campaigns/:id', 'promo-campaign.findOne', 'zhao-studio.read'),
+    adminRoute('PUT', '/campaigns/:id', 'promo-campaign.update', 'zhao-studio.update'),
+    adminRoute('DELETE', '/campaigns/:id', 'promo-campaign.delete', 'zhao-studio.delete'),
+
+    adminRoute('GET', '/experiments', 'ab-test.list', 'zhao-studio.read'),
+    adminRoute('POST', '/experiments', 'ab-test.create', 'zhao-studio.create'),
+    adminRoute('GET', '/experiments/:id', 'ab-test.findOne', 'zhao-studio.read'),
+    adminRoute('PUT', '/experiments/:id/start', 'ab-test.start', 'zhao-studio.update'),
+    adminRoute('PUT', '/experiments/:id/stop', 'ab-test.stop', 'zhao-studio.update'),
+    adminRoute('GET', '/experiments/:id/report', 'ab-test.report', 'zhao-studio.read'),
+
+    adminRoute('GET', '/channel-report', 'channel-report.getChannelReport', 'zhao-studio.read'),
+
+    // 公开路由：A/B 变体选择
+    publicRoute('GET', '/variants/pick', 'ab-test.pickVariant'),
   ],
 });
