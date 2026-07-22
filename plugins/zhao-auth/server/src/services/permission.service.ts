@@ -62,6 +62,53 @@ function expandPermissionKeys(keys: string[]): string[] {
   return Array.from(result);
 }
 
+const DEFAULT_SEED_VERSION = (DEFAULT_ROLE_PERMISSIONS as any).__version || '';
+
+/**
+ * 初始化并同步默认角色权限（每次启动时调用）
+ * - 创建角色时写入 seedVersion
+ * - 系统角色：仅当 seedVersion 不一致时才覆盖 permissions（保留管理员手动编辑）
+ * - 非系统角色：不覆盖
+ */
+export async function initDefaultRoles(strapi: any): Promise<string[]> {
+  const results: string[] = [];
+
+  for (const [role, defaultPerms] of Object.entries(DEFAULT_ROLE_PERMISSIONS)) {
+    if (role === '__version') continue;
+
+    const existing: any = await strapi.db.query(PERMISSION_UID).findOne({
+      where: { role },
+    });
+
+    if (!existing) {
+      await strapi.documents(PERMISSION_UID).create({
+        data: {
+          role,
+          displayName: (ROLE_LABELS as any)[role] || role,
+          description: "",
+          permissions: defaultPerms,
+          isSystem: Object.values(ROLES).includes(role as any),
+          seedVersion: DEFAULT_SEED_VERSION,
+        },
+      });
+      results.push(`${role}:created`);
+    } else if (existing.isSystem && existing.seedVersion !== DEFAULT_SEED_VERSION) {
+      await strapi.db.query(PERMISSION_UID).update({
+        where: { id: existing.id },
+        data: {
+          permissions: defaultPerms,
+          seedVersion: DEFAULT_SEED_VERSION,
+        },
+      });
+      results.push(`${role}:re-seeded`);
+    } else {
+      results.push(`${role}:skipped`);
+    }
+  }
+
+  return results;
+}
+
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
   /**
    * 获取权限树定义
@@ -486,61 +533,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
   /**
    * 初始化并同步默认角色权限（每次启动时调用）
-   * 系统角色的权限会与代码配置保持同步
+   * 委托给模块级命名导出函数，按 seedVersion 决定是否覆盖权限
    */
   async initDefaultRoles() {
-    const results: string[] = [];
-
-    for (const [role, defaultPerms] of Object.entries(DEFAULT_ROLE_PERMISSIONS)) {
-      const existing: any = await strapi.db.query(PERMISSION_UID).findOne({
-        where: { role },
-      });
-
-      if (!existing) {
-        // 创建新角色
-        await strapi.documents(PERMISSION_UID).create({
-          data: {
-            role,
-            displayName: (ROLE_LABELS as any)[role] || role,
-            description: "",
-            permissions: defaultPerms,
-            isSystem: Object.values(ROLES).includes(role as any),
-          },
-        });
-        results.push(`Created role: ${role}`);
-      } else {
-        // 系统角色：每次启动同步权限配置
-        const isSystemRole = Object.values(ROLES).includes(role as any);
-        if (isSystemRole) {
-          await strapi.documents(PERMISSION_UID).update({
-            documentId: existing.documentId,
-            data: {
-              displayName: (ROLE_LABELS as any)[role] || role,
-              description: existing.description || "",
-              permissions: defaultPerms,
-              isSystem: true,
-            } as any,
-          });
-          results.push(`Synced permissions for system role: ${role}`);
-        } else {
-          // 非系统角色：只补全字段，不覆盖权限
-          if (!existing.displayName) {
-            await strapi.documents(PERMISSION_UID).update({
-              documentId: existing.documentId,
-              data: {
-                displayName: (ROLE_LABELS as any)[role] || role,
-                description: "",
-                isSystem: false,
-              } as any,
-            });
-            results.push(`Updated role fields for: ${role}`);
-          } else {
-            results.push(`Role ${role} already exists, skipped (non-system)`);
-          }
-        }
-      }
-    }
-
-    return results;
+    return initDefaultRoles(strapi);
   },
 });
