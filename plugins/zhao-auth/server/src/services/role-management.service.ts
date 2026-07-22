@@ -63,128 +63,8 @@ function extractRoleNames(user: any): string[] {
 
 const PERMISSION_UID = "plugin::zhao-auth.permission";
 
-/**
- * 获取角色层级（支持自定义角色，查 zhao_permissions 表）
- */
-async function getRoleLevel(role: string): Promise<number> {
-  if (ROLE_HIERARCHY[role] != null) return ROLE_HIERARCHY[role];
-  const roleRecord = await strapi.db.query(PERMISSION_UID).findOne({
-    where: { role },
-    select: ["level"],
-  });
-  return (roleRecord as any)?.level ?? 20;
-}
-
-/**
- * 获取用户层级（取用户所有角色中的最高层级）
- */
-async function getUserLevel(userId: number): Promise<number> {
-  const user = await strapi.db.query(USER_UID).findOne({
-    where: { id: userId },
-    select: ["zhaoRoles"],
-    populate: ["role"],
-  });
-  if (!user) return 20;
-  const roles = extractRoleNames(user);
-  if (roles.length === 0) return 20;
-  const levels = await Promise.all(roles.map(getRoleLevel));
-  return Math.max(...levels);
-}
-
-/**
- * 计算操作者"拥有的角色全集"（用于子集校验 + getAssignableRoles）
- * = 操作者 zhaoRoles（显式分配 + 核心角色）∪ moduleVisibility 自动授权的 manager 角色
- *
- * admin 用户：返回 ROLES 中全部角色（admin 不受限）
- * 非 admin：合并 zhaoRoles + resolveModuleVisibility 自动授权角色
- *
- * @param operatorId 操作者用户 ID
- * @param operatorTenantDocumentId 操作者当前租户 documentId（来自 ctx.state.siteDocumentId）
- * @returns 角色名数组（去重）
- */
-async function computeOperatorOwnedRoles(
-  operatorId: number,
-  operatorTenantDocumentId?: string
-): Promise<string[]> {
-  const operator = await strapi.db.query(USER_UID).findOne({
-    where: { id: operatorId },
-    select: ["zhaoRoles"],
-  });
-  const operatorRoles: string[] = Array.isArray((operator as any)?.zhaoRoles)
-    ? (operator as any).zhaoRoles
-        .map((r: any) => (typeof r === "string" ? r : String(r)))
-        .filter((r: string) => r && r.trim())
-    : [];
-
-  // admin 不受限：返回全部角色
-  if (operatorRoles.includes("admin")) {
-    const { ROLES } = await import("../permissions");
-    return Object.values(ROLES);
-  }
-
-  // 非 admin：合并 moduleVisibility 自动授权的 manager 角色
-  const ownedSet = new Set<string>(operatorRoles);
-  try {
-    const moduleVisibility = await strapi
-      .plugin("zhao-auth")
-      .service("permission")
-      .resolveModuleVisibility(operatorTenantDocumentId);
-    const { MODULE_MANAGER_MAP } = await import("../permissions");
-    for (const [moduleKey, roles] of Object.entries(moduleVisibility)) {
-      // 仅当 channel-admin 在该模块的授权角色列表中，才自动叠加对应 manager 角色
-      if ((roles as string[]).includes("channel-admin")) {
-        const managerRole = (MODULE_MANAGER_MAP as any)[moduleKey];
-        if (managerRole) {
-          ownedSet.add(managerRole);
-        }
-      }
-    }
-  } catch {
-    // resolveModuleVisibility 失败时不影响已有角色，仅忽略 auto 部分
-  }
-  return Array.from(ownedSet);
-}
-
-/**
- * 解析当前操作者渠道下的用户 ID 列表
- *
- * 实现说明（卡点 5 修正）：
- * - 原计划假设有 tenant-member 表，实际不存在
- * - user 与 site-config（租户）无直接关系，通过 channel-member 关联到 channel
- * - 现有 assignRole 已用 channel-member（isCurrent=true）做渠道校验，此处复用同一逻辑
- * - tenantDocumentId 参数保留（供 annotateUserRoles 的 moduleVisibility 解析使用），本函数不使用
- *
- * @param operatorId 操作者 ID
- * @param tenantDocumentId 当前租户 documentId（本函数未使用，保留参数以对齐调用方签名）
- * @returns 用户 ID 数组；返回 null 表示查询失败（不应过滤）；返回空数组表示无成员
- */
-async function resolveTenantUserIds(
-  operatorId: number,
-  _tenantDocumentId?: string
-): Promise<number[] | null> {
-  try {
-    // 1. 查操作者的当前渠道（isCurrent=true 的 channel-member 记录）
-    const operatorChannels = await strapi.db.query("plugin::zhao-channel.channel-member").findMany({
-      where: { user: operatorId, isCurrent: true },
-      populate: { channel: { select: ["id"] } },
-    });
-    const operatorChannelIds = operatorChannels
-      .map((cm: any) => cm.channel?.id)
-      .filter(Boolean);
-    if (operatorChannelIds.length === 0) return null;
-
-    // 2. 查这些渠道下的所有成员
-    const targetMembers = await strapi.db.query("plugin::zhao-channel.channel-member").findMany({
-      where: { channel: { id: { $in: operatorChannelIds } } },
-      populate: { user: { select: ["id"] } },
-    });
-    return targetMembers
-      .map((m: any) => m.user?.id)
-      .filter((id: any) => id != null) as number[];
-  } catch {
-    return null;
-  }
-}
+// getRoleLevel, getUserLevel, computeOperatorOwnedRoles, resolveTenantUserIds
+// 已移入下方工厂闭包内，因为它们引用 strapi 闭包参数
 
 /**
  * 为用户角色标注来源（core/auto/explicit）
@@ -259,6 +139,133 @@ export async function checkPermission(
 }
 
 export default ({ strapi }: { strapi: Core.Strapi }) => {
+  // ===== 移入的 4 个函数（原模块级，因引用 strapi 闭包参数而移入）=====
+
+  /**
+   * 获取角色层级（支持自定义角色，查 zhao_permissions 表）
+   */
+  async function getRoleLevel(role: string): Promise<number> {
+    if (ROLE_HIERARCHY[role] != null) return ROLE_HIERARCHY[role];
+    const roleRecord = await strapi.db.query(PERMISSION_UID).findOne({
+      where: { role },
+      select: ["level"],
+    });
+    return (roleRecord as any)?.level ?? 20;
+  }
+
+  /**
+   * 获取用户层级（取用户所有角色中的最高层级）
+   */
+  async function getUserLevel(userId: number): Promise<number> {
+    const user = await strapi.db.query(USER_UID).findOne({
+      where: { id: userId },
+      select: ["zhaoRoles"],
+      populate: ["role"],
+    });
+    if (!user) return 20;
+    const roles = extractRoleNames(user);
+    if (roles.length === 0) return 20;
+    const levels = await Promise.all(roles.map(getRoleLevel));
+    return Math.max(...levels);
+  }
+
+  /**
+   * 计算操作者"拥有的角色全集"（用于子集校验 + getAssignableRoles）
+   * = 操作者 zhaoRoles（显式分配 + 核心角色）∪ moduleVisibility 自动授权的 manager 角色
+   *
+   * admin 用户：返回 ROLES 中全部角色（admin 不受限）
+   * 非 admin：合并 zhaoRoles + resolveModuleVisibility 自动授权角色
+   *
+   * @param operatorId 操作者用户 ID
+   * @param operatorTenantDocumentId 操作者当前租户 documentId（来自 ctx.state.siteDocumentId）
+   * @returns 角色名数组（去重）
+   */
+  async function computeOperatorOwnedRoles(
+    operatorId: number,
+    operatorTenantDocumentId?: string
+  ): Promise<string[]> {
+    const operator = await strapi.db.query(USER_UID).findOne({
+      where: { id: operatorId },
+      select: ["zhaoRoles"],
+    });
+    const operatorRoles: string[] = Array.isArray((operator as any)?.zhaoRoles)
+      ? (operator as any).zhaoRoles
+          .map((r: any) => (typeof r === "string" ? r : String(r)))
+          .filter((r: string) => r && r.trim())
+      : [];
+
+    // admin 不受限：返回全部角色
+    if (operatorRoles.includes("admin")) {
+      const { ROLES } = await import("../permissions");
+      return Object.values(ROLES);
+    }
+
+    // 非 admin：合并 moduleVisibility 自动授权的 manager 角色
+    const ownedSet = new Set<string>(operatorRoles);
+    try {
+      const moduleVisibility = await strapi
+        .plugin("zhao-auth")
+        .service("permission")
+        .resolveModuleVisibility(operatorTenantDocumentId);
+      const { MODULE_MANAGER_MAP } = await import("../permissions");
+      for (const [moduleKey, roles] of Object.entries(moduleVisibility)) {
+        // 仅当 channel-admin 在该模块的授权角色列表中，才自动叠加对应 manager 角色
+        if ((roles as string[]).includes("channel-admin")) {
+          const managerRole = (MODULE_MANAGER_MAP as any)[moduleKey];
+          if (managerRole) {
+            ownedSet.add(managerRole);
+          }
+        }
+      }
+    } catch {
+      // resolveModuleVisibility 失败时不影响已有角色，仅忽略 auto 部分
+    }
+    return Array.from(ownedSet);
+  }
+
+  /**
+   * 解析当前操作者渠道下的用户 ID 列表
+   *
+   * 实现说明（卡点 5 修正）：
+   * - 原计划假设有 tenant-member 表，实际不存在
+   * - user 与 site-config（租户）无直接关系，通过 channel-member 关联到 channel
+   * - 现有 assignRole 已用 channel-member（isCurrent=true）做渠道校验，此处复用同一逻辑
+   * - tenantDocumentId 参数保留（供 annotateUserRoles 的 moduleVisibility 解析使用），本函数不使用
+   *
+   * @param operatorId 操作者 ID
+   * @param tenantDocumentId 当前租户 documentId（本函数未使用，保留参数以对齐调用方签名）
+   * @returns 用户 ID 数组；返回 null 表示查询失败（不应过滤）；返回空数组表示无成员
+   */
+  async function resolveTenantUserIds(
+    operatorId: number,
+    _tenantDocumentId?: string
+  ): Promise<number[] | null> {
+    try {
+      // 1. 查操作者的当前渠道（isCurrent=true 的 channel-member 记录）
+      const operatorChannels = await strapi.db.query("plugin::zhao-channel.channel-member").findMany({
+        where: { user: operatorId, isCurrent: true },
+        populate: { channel: { select: ["id"] } },
+      });
+      const operatorChannelIds = operatorChannels
+        .map((cm: any) => cm.channel?.id)
+        .filter(Boolean);
+      if (operatorChannelIds.length === 0) return null;
+
+      // 2. 查这些渠道下的所有成员
+      const targetMembers = await strapi.db.query("plugin::zhao-channel.channel-member").findMany({
+        where: { channel: { id: { $in: operatorChannelIds } } },
+        populate: { user: { select: ["id"] } },
+      });
+      return targetMembers
+        .map((m: any) => m.user?.id)
+        .filter((id: any) => id != null) as number[];
+    } catch {
+      return null;
+    }
+  }
+
+  // ===== 原有闭包内函数 =====
+
   async function getUserEffectivePermissions(userId: number): Promise<UserPermissions> {
     const cached = permissionCache.get(userId);
     if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
