@@ -25,6 +25,19 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     // 提取referrer域名
     const referrerDomain = extractReferrerDomain(data.referrer);
 
+    // 解析 promoChannelCode（通过 sessionId 查 SourceTag）
+    let promoChannelCode = "";
+    try {
+      const tags = await strapi.documents("plugin::zhao-track.source-tag").findMany({
+        filters: { tagId: data.sessionId },
+        populate: { promoCampaign: { populate: { channel: true } } },
+        limit: 1,
+      });
+      if (tags && tags.length > 0 && tags[0].promoCampaign?.channel) {
+        promoChannelCode = tags[0].promoCampaign.channel.code || "";
+      }
+    } catch { /* 留空 */ }
+
     // 创建日志记录
     const log = await strapi.documents('plugin::zhao-studio.browser-log').create({
       data: {
@@ -48,6 +61,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         city: ipInfo.city,
         referrer: data.referrer,
         referrerDomain,
+        promoChannelCode,
         timestamp: new Date(),
       },
     });
@@ -78,6 +92,19 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     // 解析IP地理位置
     const ipInfo = await parseIpLocation(data.ip);
 
+    // 解析 promoChannelCode（通过 sessionId 查 SourceTag）
+    let promoChannelCode = "";
+    try {
+      const tags = await strapi.documents("plugin::zhao-track.source-tag").findMany({
+        filters: { tagId: data.sessionId },
+        populate: { promoCampaign: { populate: { channel: true } } },
+        limit: 1,
+      });
+      if (tags && tags.length > 0 && tags[0].promoCampaign?.channel) {
+        promoChannelCode = tags[0].promoCampaign.channel.code || "";
+      }
+    } catch { /* 留空 */ }
+
     // 创建日志记录
     const log = await strapi.documents('plugin::zhao-studio.browser-log').create({
       data: {
@@ -97,6 +124,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         ip: data.ip,
         country: ipInfo.country,
         city: ipInfo.city,
+        promoChannelCode,
         timestamp: new Date(),
       },
     });
