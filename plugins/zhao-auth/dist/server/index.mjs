@@ -208,6 +208,18 @@ const authService = ({ strapi: strapi2 }) => {
      * 新代码应通过 Strapi 原生 policies 导出机制注册
      */
     registerPolicy(_name, _handler) {
+    },
+    /**
+     * 检查用户是否具有特定权限（委托给 permission.service.getMyPermissions）
+     * 兼容 user 对象或 userId 数值
+     * @param user 用户对象（含 id）或 userId 数值
+     * @param action 权限 key
+     * @returns 是否具有权限
+     */
+    async checkPermission(user, action) {
+      const userId = typeof user === "object" && user !== null ? user.id : user;
+      const permissions2 = await strapi2.plugin("zhao-auth").service("permission").getMyPermissions(userId);
+      return permissions2.includes(action);
     }
   };
 };
@@ -930,7 +942,8 @@ const PERMISSION_TREE = {
           "studio.stat-summary.read": { label: "查看统计", type: "button" },
           "studio.stat-summary.export": { label: "导出统计", type: "button" },
           "studio.browser-log.read": { label: "查看浏览日志", type: "button" },
-          "studio.browser-log.export": { label: "导出浏览日志", type: "button" }
+          "studio.browser-log.export": { label: "导出浏览日志", type: "button" },
+          "zhao-studio.stat-summary.view": { label: "查看统计摘要", type: "button" }
         }
       },
       "menu.studio-ad": {
@@ -950,6 +963,37 @@ const PERMISSION_TREE = {
           "sync-event.read": { label: "查看同步事件", type: "button" },
           "sync-event.update": { label: "处理同步事件", type: "button" },
           "sync-event.manage": { label: "同步事件管理", type: "button" }
+        }
+      },
+      "promo-channel": {
+        label: "推广渠道",
+        type: "menu",
+        children: {
+          "zhao-studio.promo-channel.manage": { label: "管理", type: "button" },
+          "zhao-studio.promo-channel.archive": { label: "归档", type: "button" }
+        }
+      },
+      "promo-campaign": {
+        label: "营销活动",
+        type: "menu",
+        children: {
+          "zhao-studio.promo-campaign.manage": { label: "管理", type: "button" }
+        }
+      },
+      "ab-experiment": {
+        label: "AB实验",
+        type: "menu",
+        children: {
+          "zhao-studio.ab-experiment.manage": { label: "管理", type: "button" },
+          "zhao-studio.ab-experiment.start": { label: "启动", type: "button" },
+          "zhao-studio.ab-experiment.stop": { label: "停止", type: "button" }
+        }
+      },
+      "channel-report": {
+        label: "渠道报表",
+        type: "menu",
+        children: {
+          "zhao-studio.channel-report.view": { label: "查看", type: "button" }
         }
       }
     }
@@ -1348,6 +1392,155 @@ const PERMISSION_TREE = {
         }
       }
     }
+  },
+  // ===== 新增：三插件权限子树 =====
+  "zhao-deal": {
+    label: "优惠券分销",
+    type: "menu",
+    children: {
+      "platform": {
+        label: "平台管理",
+        type: "menu",
+        children: {
+          "zhao-deal.platform.manage": { label: "管理", type: "button" }
+        }
+      },
+      "category": {
+        label: "分类管理",
+        type: "menu",
+        children: {
+          "zhao-deal.category.manage": { label: "管理", type: "button" }
+        }
+      },
+      "coupon": {
+        label: "优惠券",
+        type: "menu",
+        children: {
+          "zhao-deal.coupon.manage": { label: "管理", type: "button" },
+          "zhao-deal.coupon.view": { label: "查看", type: "button" },
+          "zhao-deal.coupon.approve": { label: "审批", type: "button" }
+        }
+      },
+      "coupon-collection": {
+        label: "券集合",
+        type: "menu",
+        children: {
+          "zhao-deal.coupon-collection.manage": { label: "管理", type: "button" },
+          "zhao-deal.coupon-collection.publish": { label: "发布", type: "button" }
+        }
+      },
+      "coupon-candidate": {
+        label: "候选券",
+        type: "menu",
+        children: {
+          "zhao-deal.coupon-candidate.manage": { label: "管理", type: "button" },
+          "zhao-deal.coupon-candidate.view": { label: "查看", type: "button" },
+          "zhao-deal.coupon-candidate.approve": { label: "审批", type: "button" }
+        }
+      },
+      "product": {
+        label: "商品",
+        type: "menu",
+        children: {
+          "zhao-deal.product.manage": { label: "管理", type: "button" },
+          "zhao-deal.product.view": { label: "查看", type: "button" }
+        }
+      },
+      "product-candidate": {
+        label: "候选商品",
+        type: "menu",
+        children: {
+          "zhao-deal.product-candidate.manage": { label: "管理", type: "button" },
+          "zhao-deal.product-candidate.view": { label: "查看", type: "button" },
+          "zhao-deal.product-candidate.approve": { label: "审批", type: "button" }
+        }
+      },
+      "sync": {
+        label: "同步",
+        type: "menu",
+        children: {
+          "zhao-deal.sync.trigger": { label: "触发", type: "button" }
+        }
+      }
+    }
+  },
+  "zhao-track": {
+    label: "追踪",
+    type: "menu",
+    children: {
+      "source-tag": {
+        label: "来源标签",
+        type: "menu",
+        children: {
+          "zhao-track.source-tag.manage": { label: "管理", type: "button" }
+        }
+      },
+      "click-event": {
+        label: "点击事件",
+        type: "menu",
+        children: {
+          "zhao-track.click-event.manage": { label: "管理", type: "button" },
+          "zhao-track.click-event.view": { label: "查看", type: "button" }
+        }
+      },
+      "order": {
+        label: "订单",
+        type: "menu",
+        children: {
+          "zhao-track.order.manage": { label: "管理", type: "button" },
+          "zhao-track.order.view": { label: "查看", type: "button" }
+        }
+      },
+      "sync": {
+        label: "同步",
+        type: "menu",
+        children: {
+          "zhao-track.sync.schedule": { label: "调度", type: "button" }
+        }
+      }
+    }
+  },
+  "zhao-auth": {
+    label: "认证授权",
+    type: "menu",
+    children: {
+      "user": {
+        label: "用户",
+        type: "menu",
+        children: {
+          "zhao-auth.user.manage": { label: "管理", type: "button" }
+        }
+      },
+      "role": {
+        label: "角色",
+        type: "menu",
+        children: {
+          "zhao-auth.role.assign": { label: "分配", type: "button" },
+          "zhao-auth.role.batch-assign": { label: "批量分配", type: "button" }
+        }
+      },
+      "permission": {
+        label: "权限",
+        type: "menu",
+        children: {
+          "matrix": {
+            label: "矩阵",
+            type: "menu",
+            children: {
+              "zhao-auth.permission.matrix.edit": { label: "编辑", type: "button" }
+            }
+          },
+          "zhao-auth.permission.check": { label: "检查", type: "button" }
+        }
+      },
+      "audit-log": {
+        label: "审计日志",
+        type: "menu",
+        children: {
+          "zhao-auth.audit-log.view": { label: "查看", type: "button" }
+        }
+      }
+    }
   }
 };
 function flattenPermissions(tree) {
@@ -1468,7 +1661,13 @@ const DEFAULT_ROLE_PERMISSIONS = {
     // 注：不含 oss.media-meta.delete（删除需 admin 或 system-manager）
     // (13) 模板 + 第三方配置（只读，创建租户时需加载模板列表和第三方配置）
     "template.read",
-    "third-party-config.read"
+    "third-party-config.read",
+    // (14) 新增：工作室推广 + 审计日志（channel-admin 可管理推广渠道/活动/AB实验/渠道报表 + 查看审计日志）
+    "zhao-studio.promo-channel.manage",
+    "zhao-studio.promo-campaign.manage",
+    "zhao-studio.ab-experiment.manage",
+    "zhao-studio.channel-report.view",
+    "zhao-auth.audit-log.view"
     // ===== 显式排除（不再包含）=====
     // - flattenPermissions(PERMISSION_TREE)：不再自动获得全部中心权限
     // - tenant.delete：跨租户删除，不应下放
@@ -1655,7 +1854,12 @@ const DEFAULT_ROLE_PERMISSIONS = {
     "sso.sms-code.read",
     // 零散补全
     "oss.media-meta.read",
-    "auth.admin-login"
+    "auth.admin-login",
+    // 新增：deal/track 只读权限
+    "zhao-deal.coupon.view",
+    "zhao-deal.product.view",
+    "zhao-track.click-event.view",
+    "zhao-track.order.view"
   ]),
   [ROLES.INSTRUCTOR]: [
     // 课程中心
@@ -1764,8 +1968,17 @@ const DEFAULT_ROLE_PERMISSIONS = {
     "point.sign-in-record.read",
     "quiz.quiz-batch.read",
     "tag.tag-index.read",
-    "auth.admin-login"
+    "auth.admin-login",
     // 允许讲师登录后台
+    // 新增：deal/track 只读权限 + studio 推广只读
+    "zhao-deal.coupon.view",
+    "zhao-deal.product.view",
+    "zhao-deal.coupon-candidate.view",
+    "zhao-deal.product-candidate.view",
+    "zhao-track.click-event.view",
+    "zhao-track.order.view",
+    "zhao-studio.channel-report.view",
+    "zhao-studio.stat-summary.view"
   ],
   [ROLES.USER]: [],
   // ===== 11 个中心 × 2 = 22 个新角色 =====
@@ -1793,6 +2006,12 @@ const DEFAULT_ROLE_PERMISSIONS = {
   [ROLES.WEALTH_MANAGER]: centerPermissions("menu.wealth-center").concat(["auth.admin-login"]),
   [ROLES.WEALTH_EDITOR]: centerEditorPermissions("menu.wealth-center").concat(["auth.admin-login"])
 };
+Object.defineProperty(DEFAULT_ROLE_PERMISSIONS, "__version", {
+  value: "2026-07-22",
+  enumerable: false,
+  writable: false,
+  configurable: false
+});
 const permissions = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   DEFAULT_ROLE_PERMISSIONS,
@@ -1827,31 +2046,25 @@ const ROLE_INHERITANCE = {
   instructor: ["user"],
   user: []
 };
+const ABSOLUTE_CORE_ROLES = ["admin", "user"];
+function isProtected(assignment, operatorRoles) {
+  if (ABSOLUTE_CORE_ROLES.includes(assignment.role)) return true;
+  if (operatorRoles.includes("admin")) return false;
+  return assignment.assignedByRole === "admin";
+}
 const CACHE_TTL = 3e5;
 const permissionCache$1 = /* @__PURE__ */ new Map();
 function invalidateUserCache(userId) {
   permissionCache$1.delete(userId);
 }
 function extractRoleNames(user) {
-  if (Array.isArray(user.zhaoRoles) && user.zhaoRoles.length > 0) {
-    return user.zhaoRoles.map((r) => typeof r === "string" ? r : String(r)).filter((name) => name && name.trim());
-  }
-  if (Array.isArray(user.roles) && user.roles.length > 0) {
-    return user.roles.map((r) => typeof r === "string" ? r : r?.name || r?.type).filter((name) => name && name.trim());
-  }
-  if (user.role) {
-    if (Array.isArray(user.role)) {
-      return user.role.map((r) => r?.name || r?.type).filter((name2) => name2 && name2.trim());
-    }
-    const name = user.role.name || user.role.type;
-    return name ? [name] : [];
-  }
-  return [];
+  const arr = Array.isArray(user?.zhaoRoles) ? user.zhaoRoles : [];
+  return arr.map((r) => typeof r === "string" ? r : r?.role).filter((name) => typeof name === "string" && name.trim());
 }
-const PERMISSION_UID$1 = "plugin::zhao-auth.permission";
+const PERMISSION_UID$2 = "plugin::zhao-auth.permission";
 async function getRoleLevel(role) {
   if (ROLE_HIERARCHY[role] != null) return ROLE_HIERARCHY[role];
-  const roleRecord = await strapi.db.query(PERMISSION_UID$1).findOne({
+  const roleRecord = await strapi.db.query(PERMISSION_UID$2).findOne({
     where: { role },
     select: ["level"]
   });
@@ -1916,24 +2129,35 @@ async function annotateUserRoles(user, _tenantDocumentId) {
   const { ROLE_LABELS: ROLE_LABELS2 } = await Promise.resolve().then(() => permissions);
   const directRoles = extractRoleNames(user);
   const isAdmin = directRoles.includes("admin");
-  const CORE_ROLES = ["channel-admin", "instructor", "user", "plugin-manager", "admin"];
+  const rawAssignments = Array.isArray(user?.zhaoRoles) ? user.zhaoRoles : [];
   return directRoles.map((role) => {
+    const rawAssignment = rawAssignments.find(
+      (r) => typeof r === "string" ? r === role : r?.role === role
+    );
+    const assignedByRole = rawAssignment && typeof rawAssignment !== "string" ? rawAssignment.assignedByRole ?? "system" : "system";
+    const assignedAt = rawAssignment && typeof rawAssignment !== "string" ? rawAssignment.assignedAt ?? null : null;
     let source = "explicit";
     let sourceDescription = "显式分配";
     if (isAdmin) {
       source = "explicit";
       sourceDescription = "admin 显式分配";
-    } else if (CORE_ROLES.includes(role)) {
-      source = "core";
-      sourceDescription = "核心角色";
+    } else if (assignedByRole === "admin" || assignedByRole === "system") {
+      source = "explicit";
+      sourceDescription = assignedByRole === "admin" ? "admin 分配" : "系统分配";
     }
     return {
       role,
       label: ROLE_LABELS2[role] || role,
       source,
-      sourceDescription
+      sourceDescription,
+      assignedByRole,
+      assignedAt
     };
   });
+}
+async function checkPermission(userId, action, tenantDocumentId) {
+  const permissions2 = await this.strapi.plugin("zhao-auth").service("permission").getMyPermissions(userId, tenantDocumentId);
+  return permissions2.includes(action);
 }
 const roleManagementService = ({ strapi: strapi2 }) => {
   async function getUserEffectivePermissions(userId) {
@@ -2086,6 +2310,9 @@ const roleManagementService = ({ strapi: strapi2 }) => {
       if (currentRoles.includes(normalizedRole)) {
         throwErr("ROLE_ALREADY_ASSIGNED", 409, `用户已拥有角色: ${normalizedRole}`);
       }
+      if (ABSOLUTE_CORE_ROLES.includes(normalizedRole)) {
+        throwErr("ABSOLUTE_CORE_ROLE", 400, `绝对基础角色 ${normalizedRole} 不可手动分配`);
+      }
       const operatorLevel = await getUserLevel(operatorId);
       const isOperatorAdmin = operatorLevel >= 100;
       if (!isOperatorAdmin) {
@@ -2120,7 +2347,19 @@ const roleManagementService = ({ strapi: strapi2 }) => {
           );
         }
       }
-      const newRoles = [...currentRoles, normalizedRole];
+      const operator = await strapi2.db.query(USER_UID$1).findOne({
+        where: { id: operatorId },
+        select: ["zhaoRoles"]
+      });
+      const operatorRoles = extractRoleNames(operator);
+      const assignedByRole = operatorRoles.includes("admin") ? "admin" : operatorRoles[0] || "system";
+      const currentAssignments = Array.isArray(user.zhaoRoles) ? user.zhaoRoles : [];
+      const newAssignment = {
+        role: normalizedRole,
+        assignedByRole,
+        assignedAt: (/* @__PURE__ */ new Date()).toISOString()
+      };
+      const newRoles = [...currentAssignments, newAssignment];
       await strapi2.db.query(USER_UID$1).update({
         where: { id: userId },
         data: { zhaoRoles: newRoles }
@@ -2153,7 +2392,7 @@ const roleManagementService = ({ strapi: strapi2 }) => {
         message: `角色 ${role} 分配成功`,
         user: {
           id: userId,
-          roles: newRoles
+          roles: extractRoleNames({ zhaoRoles: newRoles })
         }
       };
     },
@@ -2184,6 +2423,25 @@ const roleManagementService = ({ strapi: strapi2 }) => {
       if (currentRoles.length === 1) {
         throwErr("MIN_ROLE_REQUIRED", 400, "用户至少需要拥有一个角色");
       }
+      if (ABSOLUTE_CORE_ROLES.includes(role)) {
+        throwErr("ABSOLUTE_CORE_ROLE", 400, `绝对基础角色 ${role} 不可撤销`);
+      }
+      const assignments = Array.isArray(user.zhaoRoles) ? user.zhaoRoles : [];
+      const assignment = assignments.find(
+        (r) => typeof r === "string" ? r === role : r?.role === role
+      );
+      if (!assignment) {
+        throwErr("ROLE_NOT_ASSIGNED", 404, `用户未拥有角色: ${role}`);
+      }
+      const operator = await strapi2.db.query(USER_UID$1).findOne({
+        where: { id: operatorId },
+        select: ["zhaoRoles"]
+      });
+      const operatorRoles = extractRoleNames(operator);
+      const assignmentObj = typeof assignment === "string" ? { role: assignment, assignedByRole: "system" } : assignment;
+      if (isProtected(assignmentObj, operatorRoles)) {
+        throwErr("PROTECTED_ROLE", 400, `角色 ${role} 受保护，当前操作者无权撤销`);
+      }
       const operatorLevel = await getUserLevel(operatorId);
       const isOperatorAdmin = operatorLevel >= 100;
       if (!isOperatorAdmin) {
@@ -2210,7 +2468,9 @@ const roleManagementService = ({ strapi: strapi2 }) => {
           );
         }
       }
-      const newRoles = currentRoles.filter((r) => r !== role);
+      const newRoles = assignments.filter(
+        (r) => typeof r === "string" ? r !== role : r?.role !== role
+      );
       await strapi2.db.query(USER_UID$1).update({
         where: { id: userId },
         data: { zhaoRoles: newRoles }
@@ -2226,7 +2486,7 @@ const roleManagementService = ({ strapi: strapi2 }) => {
         message: `角色 ${role} 撤销成功`,
         user: {
           id: userId,
-          roles: newRoles
+          roles: extractRoleNames({ zhaoRoles: newRoles })
         }
       };
     },
@@ -2307,7 +2567,7 @@ const roleManagementService = ({ strapi: strapi2 }) => {
       const ownedSet = new Set(ownedRoles);
       let dbRoles = [];
       try {
-        dbRoles = await strapi2.db.query(PERMISSION_UID$1).findMany({
+        dbRoles = await strapi2.db.query(PERMISSION_UID$2).findMany({
           orderBy: { id: "asc" }
         });
       } catch {
@@ -2324,6 +2584,7 @@ const roleManagementService = ({ strapi: strapi2 }) => {
       const isAdmin = operatorRoles.includes("admin");
       const result = [];
       for (const role of allRoleNames) {
+        if (ABSOLUTE_CORE_ROLES.includes(role)) continue;
         if (!isAdmin && !ownedSet.has(role)) continue;
         let source = "explicit";
         if (isAdmin) {
@@ -2446,14 +2707,14 @@ const roleManagementService = ({ strapi: strapi2 }) => {
       };
     },
     /**
-     * 检查用户是否具有特定权限（包含继承权限）
+     * 检查用户是否具有特定权限（委托给 permission.service.getMyPermissions）
      * @param userId 用户ID
-     * @param requiredRole 所需角色
+     * @param action 权限 key
+     * @param tenantDocumentId 租户 documentId（可选）
      * @returns 是否具有权限
      */
-    async checkPermission(userId, requiredRole) {
-      const effectiveRoles = await getUserEffectivePermissions(userId);
-      return effectiveRoles.effective.includes(requiredRole);
+    async checkPermission(userId, action, tenantDocumentId) {
+      return checkPermission.call({ strapi: strapi2 }, userId, action, tenantDocumentId);
     },
     /**
      * 获取用户有效权限信息
@@ -2525,7 +2786,7 @@ const DEFAULT_MODULE_VISIBILITY = {
   community: ["channel-admin", "plugin-manager", "marketing-manager"],
   forum: ["channel-admin", "plugin-manager", "marketing-manager"]
 };
-const PERMISSION_UID = "plugin::zhao-auth.permission";
+const PERMISSION_UID$1 = "plugin::zhao-auth.permission";
 const USER_UID = "plugin::users-permissions.user";
 const PERMISSION_CACHE_TTL = 6e4;
 const permissionCache = /* @__PURE__ */ new Map();
@@ -2544,7 +2805,7 @@ function invalidatePermissionCache(userId, tenantDocumentId) {
     permissionCache.clear();
   }
 }
-function normalizeRoleName(name) {
+function normalizeRoleName$1(name) {
   return String(name || "").trim().toLowerCase().replace(/\s+/g, "-");
 }
 function findNode(key, tree) {
@@ -2568,6 +2829,41 @@ function expandPermissionKeys(keys) {
   }
   return Array.from(result);
 }
+const DEFAULT_SEED_VERSION = DEFAULT_ROLE_PERMISSIONS.__version || "";
+async function initDefaultRoles(strapi2) {
+  const results = [];
+  for (const [role, defaultPerms] of Object.entries(DEFAULT_ROLE_PERMISSIONS)) {
+    if (role === "__version") continue;
+    const existing = await strapi2.db.query(PERMISSION_UID$1).findOne({
+      where: { role }
+    });
+    if (!existing) {
+      await strapi2.documents(PERMISSION_UID$1).create({
+        data: {
+          role,
+          displayName: ROLE_LABELS[role] || role,
+          description: "",
+          permissions: defaultPerms,
+          isSystem: Object.values(ROLES).includes(role),
+          seedVersion: DEFAULT_SEED_VERSION
+        }
+      });
+      results.push(`${role}:created`);
+    } else if (existing.isSystem && existing.seedVersion !== DEFAULT_SEED_VERSION) {
+      await strapi2.db.query(PERMISSION_UID$1).update({
+        where: { id: existing.id },
+        data: {
+          permissions: defaultPerms,
+          seedVersion: DEFAULT_SEED_VERSION
+        }
+      });
+      results.push(`${role}:re-seeded`);
+    } else {
+      results.push(`${role}:skipped`);
+    }
+  }
+  return results;
+}
 const permissionService = ({ strapi: strapi2 }) => ({
   /**
    * 获取权限树定义
@@ -2581,13 +2877,13 @@ const permissionService = ({ strapi: strapi2 }) => ({
   async listRoles(page = 1, pageSize = 20, filters = {}) {
     const where = {};
     if (filters.role) where.role = { $contains: filters.role };
-    const records = await strapi2.db.query(PERMISSION_UID).findMany({
+    const records = await strapi2.db.query(PERMISSION_UID$1).findMany({
       where,
       orderBy: { id: "asc" },
       limit: pageSize,
       offset: (page - 1) * pageSize
     });
-    const total = await strapi2.db.query(PERMISSION_UID).count({ where });
+    const total = await strapi2.db.query(PERMISSION_UID$1).count({ where });
     const list = records.map((r) => ({
       id: r.id,
       documentId: r.documentId,
@@ -2615,7 +2911,7 @@ const permissionService = ({ strapi: strapi2 }) => ({
    * 获取所有角色（不分页，用于下拉）
    */
   async getAllRoles() {
-    const records = await strapi2.db.query(PERMISSION_UID).findMany({
+    const records = await strapi2.db.query(PERMISSION_UID$1).findMany({
       orderBy: { id: "asc" }
     });
     return records.map((r) => ({
@@ -2629,7 +2925,7 @@ const permissionService = ({ strapi: strapi2 }) => ({
    * 获取单个角色
    */
   async getRole(roleName) {
-    const record = await strapi2.db.query(PERMISSION_UID).findOne({
+    const record = await strapi2.db.query(PERMISSION_UID$1).findOne({
       where: { role: roleName }
     });
     if (!record) return null;
@@ -2650,7 +2946,7 @@ const permissionService = ({ strapi: strapi2 }) => ({
    * 创建角色
    */
   async createRole(data, operatorId, operatorLevel) {
-    const role = normalizeRoleName(data.role);
+    const role = normalizeRoleName$1(data.role);
     if (!role) {
       const e = new Error("角色名不能为空");
       e.status = 400;
@@ -2663,7 +2959,7 @@ const permissionService = ({ strapi: strapi2 }) => ({
       e.status = 403;
       throw e;
     }
-    const existing = await strapi2.db.query(PERMISSION_UID).findOne({
+    const existing = await strapi2.db.query(PERMISSION_UID$1).findOne({
       where: { role }
     });
     if (existing) {
@@ -2689,7 +2985,7 @@ const permissionService = ({ strapi: strapi2 }) => ({
         }
       }
     }
-    const created = await strapi2.documents(PERMISSION_UID).create({
+    const created = await strapi2.documents(PERMISSION_UID$1).create({
       data: {
         role,
         displayName: data.displayName || role,
@@ -2715,7 +3011,7 @@ const permissionService = ({ strapi: strapi2 }) => ({
    * 更新角色
    */
   async updateRole(roleName, data) {
-    const existing = await strapi2.db.query(PERMISSION_UID).findOne({
+    const existing = await strapi2.db.query(PERMISSION_UID$1).findOne({
       where: { role: roleName }
     });
     if (!existing) {
@@ -2727,7 +3023,7 @@ const permissionService = ({ strapi: strapi2 }) => ({
     if (data.displayName !== void 0) updateData.displayName = data.displayName;
     if (data.description !== void 0) updateData.description = data.description;
     if (data.permissions !== void 0) updateData.permissions = data.permissions;
-    const updated = await strapi2.documents(PERMISSION_UID).update({
+    const updated = await strapi2.documents(PERMISSION_UID$1).update({
       documentId: existing.documentId,
       data: updateData
     });
@@ -2746,7 +3042,7 @@ const permissionService = ({ strapi: strapi2 }) => ({
    * 删除角色（系统角色不允许删除）
    */
   async deleteRole(roleName) {
-    const existing = await strapi2.db.query(PERMISSION_UID).findOne({
+    const existing = await strapi2.db.query(PERMISSION_UID$1).findOne({
       where: { role: roleName }
     });
     if (!existing) {
@@ -2759,14 +3055,14 @@ const permissionService = ({ strapi: strapi2 }) => ({
       e.status = 400;
       throw e;
     }
-    await strapi2.documents(PERMISSION_UID).delete({ documentId: existing.documentId });
+    await strapi2.documents(PERMISSION_UID$1).delete({ documentId: existing.documentId });
     return { success: true, role: roleName };
   },
   /**
    * 获取某角色权限
    */
   async getRolePermissions(role) {
-    const record = await strapi2.db.query(PERMISSION_UID).findOne({
+    const record = await strapi2.db.query(PERMISSION_UID$1).findOne({
       where: { role }
     });
     if (!record) {
@@ -2779,17 +3075,17 @@ const permissionService = ({ strapi: strapi2 }) => ({
    * 更新某角色权限
    */
   async updateRolePermissions(role, permissionKeys) {
-    const existing = await strapi2.db.query(PERMISSION_UID).findOne({
+    const existing = await strapi2.db.query(PERMISSION_UID$1).findOne({
       where: { role }
     });
     if (existing) {
-      const updated = await strapi2.documents(PERMISSION_UID).update({
+      const updated = await strapi2.documents(PERMISSION_UID$1).update({
         documentId: existing.documentId,
         data: { permissions: permissionKeys }
       });
       return { role, permissions: updated.permissions };
     }
-    const created = await strapi2.documents(PERMISSION_UID).create({
+    const created = await strapi2.documents(PERMISSION_UID$1).create({
       data: {
         role,
         displayName: ROLE_LABELS[role] || role,
@@ -2837,7 +3133,7 @@ const permissionService = ({ strapi: strapi2 }) => ({
     const allExpanded = /* @__PURE__ */ new Set();
     for (const roleName of userRoles) {
       try {
-        const record = await strapi2.db.query(PERMISSION_UID).findOne({
+        const record = await strapi2.db.query(PERMISSION_UID$1).findOne({
           where: { role: roleName }
         });
         if (record?.permissions && Array.isArray(record.permissions)) {
@@ -2858,7 +3154,7 @@ const permissionService = ({ strapi: strapi2 }) => ({
           const managerRole = MODULE_MANAGER_MAP[moduleKey];
           if (managerRole) {
             try {
-              const record = await strapi2.db.query(PERMISSION_UID).findOne({
+              const record = await strapi2.db.query(PERMISSION_UID$1).findOne({
                 where: { role: managerRole }
               });
               const managerPerms = record?.permissions || DEFAULT_ROLE_PERMISSIONS[managerRole] || [];
@@ -2909,56 +3205,10 @@ const permissionService = ({ strapi: strapi2 }) => ({
   },
   /**
    * 初始化并同步默认角色权限（每次启动时调用）
-   * 系统角色的权限会与代码配置保持同步
+   * 委托给模块级命名导出函数，按 seedVersion 决定是否覆盖权限
    */
   async initDefaultRoles() {
-    const results = [];
-    for (const [role, defaultPerms] of Object.entries(DEFAULT_ROLE_PERMISSIONS)) {
-      const existing = await strapi2.db.query(PERMISSION_UID).findOne({
-        where: { role }
-      });
-      if (!existing) {
-        await strapi2.documents(PERMISSION_UID).create({
-          data: {
-            role,
-            displayName: ROLE_LABELS[role] || role,
-            description: "",
-            permissions: defaultPerms,
-            isSystem: Object.values(ROLES).includes(role)
-          }
-        });
-        results.push(`Created role: ${role}`);
-      } else {
-        const isSystemRole = Object.values(ROLES).includes(role);
-        if (isSystemRole) {
-          await strapi2.documents(PERMISSION_UID).update({
-            documentId: existing.documentId,
-            data: {
-              displayName: ROLE_LABELS[role] || role,
-              description: existing.description || "",
-              permissions: defaultPerms,
-              isSystem: true
-            }
-          });
-          results.push(`Synced permissions for system role: ${role}`);
-        } else {
-          if (!existing.displayName) {
-            await strapi2.documents(PERMISSION_UID).update({
-              documentId: existing.documentId,
-              data: {
-                displayName: ROLE_LABELS[role] || role,
-                description: "",
-                isSystem: false
-              }
-            });
-            results.push(`Updated role fields for: ${role}`);
-          } else {
-            results.push(`Role ${role} already exists, skipped (non-system)`);
-          }
-        }
-      }
-    }
-    return results;
+    return initDefaultRoles(strapi2);
   }
 });
 const channelScopeService = ({ strapi: strapi2 }) => ({
@@ -3256,6 +3506,19 @@ const tenantService = ({ strapi: strapi2 }) => ({
     }));
   }
 });
+const permissionCheckService = ({ strapi: strapi2 }) => ({
+  async checkPermission(userId, action, tenantDocumentId) {
+    const reasons = [];
+    const result = await strapi2.plugin("zhao-auth").service("permission").getMyPermissions(userId, tenantDocumentId);
+    const permissions2 = Array.isArray(result) ? result : result?.permissions ?? [];
+    if (permissions2.includes(action)) {
+      return { allowed: true, reasons: ["Permission granted"] };
+    }
+    reasons.push(`Action "${action}" not in user's permissions`);
+    reasons.push(`User has ${permissions2.length} permissions`);
+    return { allowed: false, reasons };
+  }
+});
 const services = {
   auth: authService,
   jwt: jwtService,
@@ -3263,7 +3526,8 @@ const services = {
   permission: permissionService,
   "channel-scope": channelScopeService,
   "role-channel": roleChannelService,
-  tenant: tenantService
+  tenant: tenantService,
+  "permission-check": permissionCheckService
 };
 const middlewares = {};
 const roleManagementController = ({ strapi: strapi2 }) => ({
@@ -3476,6 +3740,35 @@ const roleManagementController = ({ strapi: strapi2 }) => ({
       ctx.status = error.status || 400;
       ctx.body = { error: error.message, code: error.code };
     }
+  },
+  async me(ctx) {
+    try {
+      const user = ctx.state?.user || ctx.state?.auth?.credentials;
+      if (!user) {
+        ctx.status = 401;
+        ctx.body = { error: "未认证" };
+        return;
+      }
+      const userId = user.id;
+      const permissionsResult = await strapi2.plugin("zhao-auth").service("permission").getMyPermissions(userId);
+      const permissions2 = Array.isArray(permissionsResult) ? permissionsResult : permissionsResult?.permissions ?? [];
+      const userRoles = await strapi2.plugin("zhao-auth").service("role-management").getUserRoles(userId);
+      let channelScope = { all: true, channelIds: [] };
+      try {
+        channelScope = await strapi2.plugin("zhao-channel").service("channel-scope").resolve(user);
+      } catch {
+      }
+      ctx.body = {
+        user: { id: user.id, username: user.username, zhaoRoles: userRoles },
+        permissions: permissions2,
+        channelScope,
+        tenant: ctx.state?.siteDocumentId ? { documentId: ctx.state.siteDocumentId } : null
+      };
+    } catch (error) {
+      strapi2.log.error(`[zhao-auth] me failed: ${error.message}`);
+      ctx.status = error.status || 400;
+      ctx.body = { error: error.message, code: error.code };
+    }
   }
 });
 const authController = ({ strapi: strapi2 }) => ({
@@ -3685,7 +3978,7 @@ const authController = ({ strapi: strapi2 }) => ({
       const flag = await strapi2.documents("plugin::zhao-common.feature-flag").findFirst({
         filters: { flagKey: "third_party_enabled" }
       });
-      return flag && flag.flagValue === true && flag.enabled !== false;
+      return !!(flag && flag.flagValue === true && flag.enabled !== false);
     } catch {
       return false;
     }
@@ -4127,19 +4420,115 @@ const moduleVisibilityController = {
     }
   }
 };
+const PERMISSION_UID = "plugin::zhao-auth.permission";
+function normalizeRoleName(name) {
+  return String(name || "").trim().toLowerCase().replace(/[_\s]+/g, "-");
+}
+const permissionMatrixController = ({ strapi: strapi2 }) => ({
+  async getMatrix(ctx) {
+    try {
+      const roles = await strapi2.db.query(PERMISSION_UID).findMany({ limit: 100 });
+      const allActions = flattenPermissions(PERMISSION_TREE);
+      ctx.send({
+        data: roles.map((r) => ({
+          role: r.role,
+          displayName: r.displayName,
+          permissions: r.permissions || [],
+          isSystem: r.isSystem,
+          seedVersion: r.seedVersion
+        })),
+        actions: allActions
+      });
+    } catch (error) {
+      strapi2.log.error(`[zhao-auth] getMatrix failed: ${error.message}`);
+      ctx.status = 500;
+      ctx.body = { error: error.message };
+    }
+  },
+  async updateRolePermissions(ctx) {
+    try {
+      const { role } = ctx.params;
+      const normalizedRole = normalizeRoleName(role);
+      const { permissions: permissions2 } = ctx.request.body;
+      if (!Array.isArray(permissions2)) {
+        return ctx.throw(400, "permissions must be an array");
+      }
+      if (normalizedRole === ROLES.ADMIN) {
+        return ctx.throw(403, "Cannot modify ADMIN role permissions");
+      }
+      const existing = await strapi2.db.query(PERMISSION_UID).findOne({ where: { role: normalizedRole } });
+      if (!existing) {
+        return ctx.throw(404, "Role not found");
+      }
+      await strapi2.db.query(PERMISSION_UID).update({
+        where: { id: existing.id },
+        data: { permissions: permissions2 }
+      });
+      strapi2.plugin("zhao-auth").service("permission").invalidatePermissionCache();
+      ctx.send({ success: true });
+    } catch (error) {
+      strapi2.log.error(`[zhao-auth] updateRolePermissions failed: ${error.message}`);
+      ctx.status = error.status || 500;
+      ctx.body = { error: error.message };
+    }
+  },
+  async resetRolePermissions(ctx) {
+    try {
+      const { role } = ctx.params;
+      const normalizedRole = normalizeRoleName(role);
+      if (normalizedRole === ROLES.ADMIN) {
+        return ctx.throw(403, "Cannot reset ADMIN role");
+      }
+      const defaultPerms = DEFAULT_ROLE_PERMISSIONS[normalizedRole];
+      if (!defaultPerms) {
+        return ctx.throw(404, "No default permissions for this role");
+      }
+      const existing = await strapi2.db.query(PERMISSION_UID).findOne({ where: { role: normalizedRole } });
+      if (!existing) {
+        return ctx.throw(404, "Role not found");
+      }
+      await strapi2.db.query(PERMISSION_UID).update({
+        where: { id: existing.id },
+        data: { permissions: defaultPerms }
+      });
+      strapi2.plugin("zhao-auth").service("permission").invalidatePermissionCache();
+      ctx.send({ success: true, permissions: defaultPerms });
+    } catch (error) {
+      strapi2.log.error(`[zhao-auth] resetRolePermissions failed: ${error.message}`);
+      ctx.status = error.status || 500;
+      ctx.body = { error: error.message };
+    }
+  },
+  async getActions(ctx) {
+    const allActions = flattenPermissions(PERMISSION_TREE);
+    ctx.send({ data: allActions });
+  }
+});
+const permissionCheckController = ({ strapi: strapi2 }) => ({
+  async check(ctx) {
+    const { userId, action } = ctx.request.body;
+    if (!userId || !action) {
+      return ctx.throw(400, "userId and action are required");
+    }
+    const result = await strapi2.plugin("zhao-auth").service("permission-check").checkPermission(userId, action);
+    ctx.send({ data: result });
+  }
+});
 const controllers = {
   "role-management": roleManagementController,
   auth: authController,
   permission: permissionController,
   "role-channel": roleChannelController,
   tenant: tenantController,
-  "module-visibility": moduleVisibilityController
+  "module-visibility": moduleVisibilityController,
+  "permission-matrix": permissionMatrixController,
+  "permission-check": permissionCheckController
 };
 const kind$2 = "collectionType";
 const collectionName$2 = "zhao_permissions";
 const info$2 = { "singularName": "permission", "pluralName": "permissions", "displayName": "角色权限" };
 const options$2 = { "draftAndPublish": false };
-const attributes$2 = { "role": { "type": "string", "required": true, "unique": true, "maxLength": 50 }, "displayName": { "type": "string", "required": true, "maxLength": 50 }, "description": { "type": "text" }, "permissions": { "type": "json", "required": true, "default": [] }, "isSystem": { "type": "boolean", "required": true, "default": false }, "level": { "type": "integer", "default": 20, "min": 1, "max": 100 } };
+const attributes$2 = { "role": { "type": "string", "required": true, "unique": true, "maxLength": 50 }, "displayName": { "type": "string", "required": true, "maxLength": 50 }, "description": { "type": "text" }, "permissions": { "type": "json", "required": true, "default": [] }, "isSystem": { "type": "boolean", "required": true, "default": false }, "level": { "type": "integer", "default": 20, "min": 1, "max": 100 }, "seedVersion": { "type": "string", "default": "" } };
 const permissionSchema = {
   kind: kind$2,
   collectionName: collectionName$2,
@@ -4268,18 +4657,19 @@ const hasChannelScope = async (policyContext, config2, { strapi: strapi2 }) => {
     } catch (err) {
       strapi2.log.error(`[has-channel-scope] 解析 token 失败: ${err.message}`);
     }
-  }
-  if (!user?.id) {
-    policyContext.state.channelScope = { all: false, channelIds: [], isGuest: true };
+    if (!user?.id) {
+      policyContext.state.channelScope = { all: false, channelIds: [], isGuest: true };
+      return true;
+    }
+    try {
+      const channelScopeService2 = strapi2.plugin("zhao-auth").service("channel-scope");
+      const scope = await channelScopeService2.resolve(user);
+      policyContext.state.channelScope = scope;
+    } catch (err) {
+      strapi2.log.error(`[has-channel-scope] 错误: ${err.message}`);
+      policyContext.state.channelScope = { all: false, channelIds: [], isGuest: false };
+    }
     return true;
-  }
-  try {
-    const channelScopeService2 = strapi2.plugin("zhao-auth").service("channel-scope");
-    const scope = await channelScopeService2.resolve(user);
-    policyContext.state.channelScope = scope;
-  } catch (err) {
-    strapi2.log.error(`[has-channel-scope] 错误: ${err.message}`);
-    policyContext.state.channelScope = { all: false, channelIds: [], isGuest: false };
   }
   return true;
 };
@@ -4502,7 +4892,27 @@ const contentApi = () => ({
     adminRoute$1("POST", "/role-channels", "role-channel.grant", "role.assign"),
     adminRoute$1("POST", "/role-channels/batch", "role-channel.batchGrant", "role.assign"),
     adminRoute$1("DELETE", "/role-channels/:id", "role-channel.revoke", "role.assign"),
-    adminRoute$1("DELETE", "/role-channels/role/:role", "role-channel.revokeByRole", "role.assign")
+    adminRoute$1("DELETE", "/role-channels/role/:role", "role-channel.revokeByRole", "role.assign"),
+    // === 新增 admin 路由（避免与现有路由重复）===
+    // me - 仅 1 件套（任何已认证用户都能查自己的权限，无需权限校验）
+    {
+      method: "GET",
+      path: "/v1/admin/me",
+      handler: "role-management.me",
+      config: {
+        auth: false,
+        policies: ["plugin::zhao-auth.is-authenticated"]
+      }
+    },
+    // permission matrix（新功能）
+    adminRoute$1("GET", "/permissions/matrix", "permission-matrix.getMatrix", "zhao-auth.permission.matrix.edit"),
+    adminRoute$1("PUT", "/permissions/roles/:role", "permission-matrix.updateRolePermissions", "zhao-auth.permission.matrix.edit"),
+    adminRoute$1("POST", "/permissions/roles/:role/reset", "permission-matrix.resetRolePermissions", "zhao-auth.permission.matrix.edit"),
+    adminRoute$1("GET", "/permissions/actions", "permission-matrix.getActions", "zhao-auth.permission.matrix.edit"),
+    // logs（更通用的 GET /logs，与现有 GET /roles/logs 并存）
+    adminRoute$1("GET", "/logs", "role-management.getActionLogs", "zhao-auth.audit-log.view"),
+    // check（新功能 - 权限检查工具）
+    adminRoute$1("POST", "/check", "permission-check.check", "zhao-auth.permission.check")
   ]
 });
 const tenant = () => ({

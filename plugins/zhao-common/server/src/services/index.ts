@@ -7,6 +7,7 @@ import siteConfig from "./site-config";
 import siteTemplate from "./site-template";
 import config from "./config";
 import migrationRunner from "./migration-runner";
+import globalConfig from "./global-config";
 
 export default {
   logger,
@@ -18,4 +19,5 @@ export default {
   "site-template": siteTemplate,
   config,
   "migration-runner": migrationRunner,
+  "global-config": globalConfig,
 };

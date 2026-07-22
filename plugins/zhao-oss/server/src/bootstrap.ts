@@ -1,6 +1,8 @@
 import type { Core } from "@strapi/strapi";
 import type { PluginConfig } from "./types";
 import PERMISSIONS from "./permissions";
+import * as fs from "fs/promises";
+import * as path from "path";
 
 function extractMediaFiles(obj: any, collected: Array<{ id: number; url: string }> = []): Array<{ id: number; url: string }> {
   if (!obj || typeof obj !== "object") return collected;
@@ -70,6 +72,41 @@ const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
       logger.warn("[zhao-oss] Fallback to local is disabled. Uploads may fail.");
     }
   }
+
+  // 一次性 URL 迁移：旧记录 url 形如 /covers/xxx.png → /static/covers/xxx.png
+  // 幂等：用 !url.startsWith("/static") 判断，已迁移的记录不会被重复处理
+  try {
+    const FILE_UID = "plugin::upload.file";
+    const staleFiles = await strapi.db.query(FILE_UID).findMany({
+      where: { provider: "zhao-oss-local" },
+    });
+    let migrated = 0;
+    for (const f of staleFiles) {
+      const updateData: any = {};
+      // url 字段
+      if (f.url && !f.url.startsWith("http") && !f.url.startsWith("/static")) {
+        updateData.url = `/static${f.url}`;
+      }
+      // provider_metadata.localUrl 字段
+      const meta = f.provider_metadata;
+      if (meta?.localUrl && !meta.localUrl.startsWith("http") && !meta.localUrl.startsWith("/static")) {
+        updateData.provider_metadata = { ...meta, localUrl: `/static${meta.localUrl}` };
+      }
+      if (Object.keys(updateData).length === 0) continue;
+      await strapi.documents(FILE_UID).update({
+        documentId: f.documentId,
+        data: updateData,
+      });
+      migrated++;
+      logger.info(`[zhao-oss] Migrated file ${f.id}: url=${updateData.url || f.url}`);
+    }
+    if (migrated > 0) {
+      logger.info(`[zhao-oss] URL migration completed: ${migrated} files migrated`);
+    }
+  } catch (e) {
+    logger.warn(`[zhao-oss] URL migration failed: ${(e as Error).message}`);
+  }
+
   const FOLDER_UID = "plugin::upload.folder";
 
   const DEFAULT_FOLDERS = [
@@ -229,6 +266,32 @@ const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
   });
 
   if (!isTest) logger.info("[zhao-oss] Upload lifecycle hooks registered successfully");
+
+  // 3.4 注册静态文件中间件（处理 /static/* 请求，映射到 public 目录）
+  // 本地开发环境无 nginx，由 Strapi 直接服务 /static/* 路径下的静态文件
+  strapi.server.use(async (ctx: any, next: any) => {
+    if ((ctx.method === "GET" || ctx.method === "HEAD") && ctx.path.startsWith("/static/")) {
+      const publicDir = strapi.dirs.static.public;
+      const relativePath = decodeURIComponent(ctx.path.slice("/static".length));
+      const filePath = path.resolve(publicDir, "." + relativePath);
+      // 安全检查：防止路径遍历
+      if (filePath.startsWith(publicDir)) {
+        try {
+          const stats = await fs.stat(filePath);
+          if (stats.isFile()) {
+            ctx.body = await fs.readFile(filePath);
+            ctx.type = path.extname(filePath);
+            return;
+          }
+        } catch (err) {
+          // 文件不存在，继续执行后续中间件
+        }
+      }
+    }
+    await next();
+  });
+
+  if (!isTest) logger.info("[zhao-oss] Static file middleware registered (/static/* → public/*)");
 
   // 3.5 注册 URL 重写中间件（Koa middleware，拦截响应替换媒体 URL）
   strapi.server.use(async (ctx: any, next: any) => {

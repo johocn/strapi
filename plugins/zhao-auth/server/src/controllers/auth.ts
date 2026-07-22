@@ -221,7 +221,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         filters: { flagKey: "third_party_enabled" },
       });
 
-      return flag && flag.flagValue === true && flag.enabled !== false;
+      return !!(flag && flag.flagValue === true && flag.enabled !== false);
     } catch {
       return false;
     }

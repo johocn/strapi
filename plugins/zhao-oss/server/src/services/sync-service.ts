@@ -53,7 +53,12 @@ export default ({ strapi }: { strapi: Core.Strapi }): SyncService => {
       let fileBuffer: Buffer;
       try {
         const uploadDir = strapi.dirs.static.public;
-        const filePath = file.url ? path.join(uploadDir, file.url) : null;
+        // 去除 /static 前缀后再拼接物理路径（url 是对外访问路径，物理文件在 public/ 下不包含 /static）
+        const LOCAL_URL_PREFIX = "/static";
+        const localPath = file.url?.startsWith(LOCAL_URL_PREFIX)
+          ? file.url.slice(LOCAL_URL_PREFIX.length)
+          : file.url;
+        const filePath = localPath ? path.join(uploadDir, localPath) : null;
 
         if (filePath && fs.access(filePath).then(() => true).catch(() => false)) {
           fileBuffer = await fs.readFile(filePath);
@@ -258,7 +263,12 @@ export default ({ strapi }: { strapi: Core.Strapi }): SyncService => {
         const path = require("path");
         const uploadDir = strapi.dirs.static.public;
         if (file.url) {
-          const filePath = path.join(uploadDir, file.url);
+          // 去除 /static 前缀后再拼接物理路径
+          const LOCAL_URL_PREFIX = "/static";
+          const localPath = file.url.startsWith(LOCAL_URL_PREFIX)
+            ? file.url.slice(LOCAL_URL_PREFIX.length)
+            : file.url;
+          const filePath = path.join(uploadDir, localPath);
           await fs.access(filePath);
           await fs.unlink(filePath);
           result.deletedLocal = true;

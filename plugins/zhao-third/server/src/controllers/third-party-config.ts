@@ -24,7 +24,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
   async create(ctx: any) {
     try {
-      const { name, platform, appType, appId, appSecret, enabled, site } = ctx.request.body;
+      const {
+        name, platform, appType, appId, appSecret,
+        token, encodingAESKey, merchantId, enabled, site,
+      } = ctx.request.body;
 
       if (!name || !platform || !appType || !appId || !appSecret) {
         ctx.status = 400;
@@ -33,7 +36,19 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       }
 
       const configService = strapi.plugin("zhao-third").service("third-party-config");
-      const data: Record<string, any> = { name, platform, appType, appId, appSecret, enabled: enabled !== false };
+      // 只提取 schema 已声明的字段，避免传入未知字段导致验证失败
+      const data: Record<string, any> = {
+        name,
+        platform,
+        appType,
+        appId,
+        appSecret,
+        enabled: enabled !== false,
+      };
+      // 可选字段仅在传值时写入（避免覆盖为 undefined）
+      if (token !== undefined) data.token = token;
+      if (encodingAESKey !== undefined) data.encodingAESKey = encodingAESKey;
+      if (merchantId !== undefined) data.merchantId = merchantId;
 
       const siteId = site || ctx.state?.siteId;
       if (siteId) {
@@ -61,8 +76,18 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         return;
       }
 
+      // 白名单过滤：只保留 schema 已声明的可写字段
+      const allowedFields = [
+        "name", "platform", "appType", "appId", "appSecret",
+        "token", "encodingAESKey", "merchantId", "enabled", "site",
+      ];
+      const data: Record<string, any> = {};
+      for (const key of allowedFields) {
+        if (body[key] !== undefined) data[key] = body[key];
+      }
+
       const configService = strapi.plugin("zhao-third").service("third-party-config");
-      const result = await configService.updateConfig(documentId, body);
+      const result = await configService.updateConfig(documentId, data);
       ctx.body = result;
     } catch (error: any) {
       strapi.log.error(`[zhao-third] 更新配置失败: ${error.message}`);

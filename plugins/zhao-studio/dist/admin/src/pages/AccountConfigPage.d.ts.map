@@ -1,1 +1,1 @@
-{"version":3,"file":"AccountConfigPage.d.ts","sourceRoot":"","sources":["../../../../admin/src/pages/AccountConfigPage.tsx"],"names":[],"mappings":"AAAA,OAAO,KAAK,MAAM,OAAO,CAAC;AAQ1B,QAAA,MAAM,iBAAiB,yBAoFtB,CAAC;AAEF,eAAe,iBAAiB,CAAC"}
+{"version":3,"file":"AccountConfigPage.d.ts","sourceRoot":"","sources":["../../../../admin/src/pages/AccountConfigPage.tsx"],"names":[],"mappings":"AAAA,OAAO,KAAK,MAAM,OAAO,CAAC;AAS1B,QAAA,MAAM,iBAAiB,yBAsFtB,CAAC;AAEF,eAAe,iBAAiB,CAAC"}

@@ -10,6 +10,9 @@ declare const _default: {
         getActionLogs(ctx: any): Promise<void>;
         getMyRoles(ctx: any): Promise<void>;
         getMyPermissions(ctx: any): Promise<void>;
+        getUserDetail(ctx: any): Promise<void>;
+        getAssignableRoles(ctx: any): Promise<void>;
+        me(ctx: any): Promise<void>;
     };
     auth: ({ strapi }: {
         strapi: import('@strapi/types/dist/core').Strapi;
@@ -20,6 +23,7 @@ declare const _default: {
         login(ctx: any): Promise<void>;
         config(ctx: any): Promise<void>;
         checkThirdPartyEnabled(): Promise<boolean>;
+        switchTenant(ctx: any): Promise<void>;
     };
     permission: ({ strapi }: {
         strapi: import('@strapi/types/dist/core').Strapi;
@@ -54,6 +58,19 @@ declare const _default: {
     "module-visibility": {
         get(ctx: any): Promise<void>;
         update(ctx: any): Promise<void>;
+    };
+    "permission-matrix": ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        getMatrix(ctx: any): Promise<void>;
+        updateRolePermissions(ctx: any): Promise<any>;
+        resetRolePermissions(ctx: any): Promise<any>;
+        getActions(ctx: any): Promise<void>;
+    };
+    "permission-check": ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        check(ctx: any): Promise<any>;
     };
 };
 export default _default;

@@ -10,5 +10,8 @@ declare const _default: ({ strapi }: {
     getActionLogs(ctx: any): Promise<void>;
     getMyRoles(ctx: any): Promise<void>;
     getMyPermissions(ctx: any): Promise<void>;
+    getUserDetail(ctx: any): Promise<void>;
+    getAssignableRoles(ctx: any): Promise<void>;
+    me(ctx: any): Promise<void>;
 };
 export default _default;

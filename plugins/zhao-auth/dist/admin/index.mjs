@@ -10,7 +10,7 @@ const index = {
         defaultMessage: "认证授权"
       },
       permissions: [{ action: "plugin::zhao-auth.user.manage", subject: null }],
-      Component: async () => import("./App-X_95ViT9.mjs")
+      Component: async () => import("./App-Dg_5o8Bo.mjs")
     });
     app.registerPlugin({
       id: pluginId,

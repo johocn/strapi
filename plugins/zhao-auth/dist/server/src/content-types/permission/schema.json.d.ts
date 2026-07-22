@@ -39,6 +39,10 @@ declare const _default: {
       "default": 20,
       "min": 1,
       "max": 100
+    },
+    "seedVersion": {
+      "type": "string",
+      "default": ""
     }
   }
 }

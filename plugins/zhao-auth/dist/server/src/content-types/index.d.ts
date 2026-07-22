@@ -42,6 +42,10 @@ declare const _default: {
                     min: number;
                     max: number;
                 };
+                seedVersion: {
+                    type: string;
+                    default: string;
+                };
             };
         };
     };

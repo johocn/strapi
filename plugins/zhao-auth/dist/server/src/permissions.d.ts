@@ -27,6 +27,13 @@ export declare const ROLES: {
     readonly WEALTH_MANAGER: "wealth-manager";
     readonly WEALTH_EDITOR: "wealth-editor";
 };
+/**
+ * 模块 → manager 角色映射表
+ * 用于 channel-admin 动态权限：moduleVisibility 开启的模块自动叠加该 manager 角色权限
+ * 注意：payment/community/forum 暂不映射（PERMISSION_TREE 无对应权限树）
+ * channel 模块不映射（核心权限已含）
+ */
+export declare const MODULE_MANAGER_MAP: Record<string, string>;
 export declare const ROLE_LABELS: Record<string, string>;
 export type RoleKey = (typeof ROLES)[keyof typeof ROLES];
 export interface PermissionItem {

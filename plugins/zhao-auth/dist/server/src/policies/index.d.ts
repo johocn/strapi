@@ -20,6 +20,9 @@ declare const _default: {
     "is-authenticated": (policyContext: any, config: any, { strapi }: {
         strapi: any;
     }) => Promise<boolean>;
+    "tenant-context-injector": (policyContext: any, config: any, { strapi }: {
+        strapi: any;
+    }) => Promise<boolean>;
     "has-permission": (policyContext: any, config: any, { strapi }: {
         strapi: any;
     }) => Promise<boolean>;

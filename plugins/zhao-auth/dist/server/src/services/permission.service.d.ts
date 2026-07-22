@@ -1,4 +1,12 @@
 import { Core } from '@strapi/strapi';
+export declare function invalidatePermissionCache(userId?: number, tenantDocumentId?: string): void;
+/**
+ * 初始化并同步默认角色权限（每次启动时调用）
+ * - 创建角色时写入 seedVersion
+ * - 系统角色：仅当 seedVersion 不一致时才覆盖 permissions（保留管理员手动编辑）
+ * - 非系统角色：不覆盖
+ */
+export declare function initDefaultRoles(strapi: any): Promise<string[]>;
 declare const _default: ({ strapi }: {
     strapi: Core.Strapi;
 }) => {
@@ -116,12 +124,20 @@ declare const _default: ({ strapi }: {
     /**
      * 获取当前用户的所有权限
      */
-    getMyPermissions(userId: number): Promise<{
+    getMyPermissions(userId: number, tenantDocumentId?: string): Promise<{
         permissions: string[];
     }>;
     /**
+     * 解析合并后的 moduleVisibility（全局默认 ∩ 租户覆盖，交集收窄）
+     */
+    resolveModuleVisibility(tenantDocumentId?: string): Promise<Record<string, string[]>>;
+    /**
+     * 失效权限缓存（代理方法，供外部通过 strapi.plugin().service() 调用）
+     */
+    invalidateCache(userId?: number, tenantDocumentId?: string): void;
+    /**
      * 初始化并同步默认角色权限（每次启动时调用）
-     * 系统角色的权限会与代码配置保持同步
+     * 委托给模块级命名导出函数，按 seedVersion 决定是否覆盖权限
      */
     initDefaultRoles(): Promise<string[]>;
 };

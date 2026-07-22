@@ -20,7 +20,7 @@ const index = {
         }
       ],
       Component: async () => {
-        const component = await Promise.resolve().then(() => require("./App-DWMDA5BM.js"));
+        const component = await Promise.resolve().then(() => require("./App-BDxNGB00.js"));
         return component;
       }
     });

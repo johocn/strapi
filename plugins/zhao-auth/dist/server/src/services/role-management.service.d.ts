@@ -8,22 +8,44 @@ export declare const ROLE_HIERARCHY: Record<string, number>;
  * 角色继承关系 - 定义各角色继承的父角色
  */
 export declare const ROLE_INHERITANCE: Record<string, string[]>;
+/**
+ * 检查用户是否具有特定权限（委托给 permission.service.getMyPermissions）
+ * 通过 this.strapi 获取 strapi 实例，便于在测试中用 checkPermission.call({ strapi }, ...) 调用
+ * @param this 上下文，需包含 strapi
+ * @param userId 用户ID
+ * @param action 权限 key
+ * @param tenantDocumentId 租户 documentId（可选）
+ * @returns 是否具有权限
+ */
+export declare function checkPermission(this: {
+    strapi: Core.Strapi;
+}, userId: number, action: string, tenantDocumentId?: string): Promise<boolean>;
 declare const _default: ({ strapi }: {
     strapi: Core.Strapi;
 }) => {
     /**
      * 查询用户列表
-     * @param filters 筛选条件
+     * @param filters 筛选条件（支持 username/email/role）
      * @param page 页码
      * @param pageSize 每页数量
+     * @param operatorId 操作者 ID（用于租户过滤）
+     * @param tenantDocumentId 当前租户 documentId（来自 ctx.state.siteDocumentId）
      */
-    findUsers(filters?: Record<string, any>, page?: number, pageSize?: number): Promise<{
-        data: {
+    findUsers(filters?: Record<string, any>, page?: number, pageSize?: number, operatorId?: number, tenantDocumentId?: string): Promise<{
+        list: {
             id: any;
             documentId: any;
             username: any;
             email: any;
-            roles: string[];
+            roles: any[];
+            roleSources: {
+                role: string;
+                label: any;
+                source: "explicit";
+                sourceDescription: string;
+                assignedByRole: any;
+                assignedAt: any;
+            }[];
             createdAt: any;
         }[];
         pagination: {
@@ -36,21 +58,18 @@ declare const _default: ({ strapi }: {
     /**
      * 分配角色给用户
      *
-     * 业务约束（admin 必须遵守，代码不强制校验）：
-     * - channel-admin 角色仅可分配给 ADMIN_CHANNEL_TIERS 渠道（core/senior/global/authorized/official/partner/agent）的所有者
-     * - 不应给 national 以下 tier 渠道所有者分配 channel-admin 角色（national 是分销节点，由父渠道代管）
-     * - 如需让 national owner 登录后台管理自己渠道，应先升级其渠道 tier（如 national → core），再分配 channel-admin
-     * - 误分配 channel-admin 给 national owner 会导致：national owner 能创建自己的租户，绕过分销体系
-     *
-     * 后续迭代（方案 B）：增加硬编码业务校验，当 role='channel-admin' 时查询被分配用户的
-     * channel-member（isCurrent=true）的 channel.channelTier，仅允许 ADMIN_CHANNEL_TIERS 包含的 tier
+     * 业务约束：
+     * - channel-admin 角色仅可分配给 ADMIN_CHANNEL_TIERS 渠道所有者
+     * - 非 admin 操作者只能分配自己拥有的角色（子集校验，ROLE_006）
+     * - 非 admin 操作者只能分配自己渠道内成员（ROLE_005）
      *
      * @param userId 用户ID
      * @param role 角色名称
      * @param operatorId 操作人ID
      * @param reason 操作原因
+     * @param operatorTenantDocumentId 操作者当前租户 documentId（来自 ctx.state.siteDocumentId）
      */
-    assignRole(userId: number, role: string, operatorId: number, reason?: string): Promise<{
+    assignRole(userId: number, role: string, operatorId: number, reason?: string, operatorTenantDocumentId?: string): Promise<{
         success: boolean;
         message: string;
         user: {
@@ -58,7 +77,18 @@ declare const _default: ({ strapi }: {
             roles: string[];
         };
     }>;
-    revokeRole(userId: number, role: string, operatorId: number, reason?: string): Promise<{
+    /**
+     * 撤销用户角色
+     * - 非 admin：渠道校验（只能撤销自己渠道内成员）+ 子集校验（只能撤销自己拥有的角色）
+     * - 保留"至少一个角色"校验
+     *
+     * @param userId 用户ID
+     * @param role 角色名称
+     * @param operatorId 操作人ID
+     * @param reason 操作原因
+     * @param operatorTenantDocumentId 操作者当前租户 documentId
+     */
+    revokeRole(userId: number, role: string, operatorId: number, reason?: string, operatorTenantDocumentId?: string): Promise<{
         success: boolean;
         message: string;
         user: {
@@ -83,13 +113,74 @@ declare const _default: ({ strapi }: {
         }[];
     }>;
     /**
-     * 批量分配角色
-     * @param userIds 用户ID列表
-     * @param role 角色名称
-     * @param operatorId 操作人ID
-     * @param reason 操作原因
+     * 获取用户详情（含角色来源标注）
+     * @param userId 目标用户 ID
+     * @param operatorId 操作者 ID（保留参数，便于未来加审计）
+     * @param tenantDocumentId 当前租户 documentId
      */
-    batchAssignRoles(userIds: number[], role: string, operatorId: number, reason?: string): Promise<{
+    getUserDetail(userId: number, operatorId?: number, tenantDocumentId?: string): Promise<{
+        user: {
+            id: any;
+            username: any;
+            email: any;
+            createdAt: any;
+        };
+        roles: {
+            role: string;
+            label: any;
+            source: "explicit";
+            sourceDescription: string;
+            assignedByRole: any;
+            assignedAt: any;
+        }[];
+        rolesBySource: {
+            core: {
+                role: string;
+                label: any;
+                source: "explicit";
+                sourceDescription: string;
+                assignedByRole: any;
+                assignedAt: any;
+            }[];
+            auto: {
+                role: string;
+                label: any;
+                source: "explicit";
+                sourceDescription: string;
+                assignedByRole: any;
+                assignedAt: any;
+            }[];
+            explicit: {
+                role: string;
+                label: any;
+                source: "explicit";
+                sourceDescription: string;
+                assignedByRole: any;
+                assignedAt: any;
+            }[];
+        };
+    }>;
+    /**
+     * 获取当前操作者可分配的角色列表
+     * - admin：返回全部角色（ROLES 全集 + 数据库自定义角色）
+     * - 非 admin：返回"拥有的角色全集"（zhaoRoles ∪ moduleVisibility 自动授权）
+     *
+     * @param operatorId 操作者 ID
+     * @param tenantDocumentId 当前租户 documentId
+     */
+    getAssignableRoles(operatorId: number, tenantDocumentId?: string): Promise<{
+        roles: {
+            role: string;
+            label: string;
+            source: "core" | "auto" | "explicit";
+        }[];
+        isAdmin: boolean;
+    }>;
+    /**
+     * 批量分配角色
+     * 透传 operatorTenantDocumentId 给 assignRole，自动执行子集校验
+     */
+    batchAssignRoles(userIds: number[], role: string, operatorId: number, reason?: string, operatorTenantDocumentId?: string): Promise<{
         success: boolean;
         message: string;
         results: {
@@ -124,12 +215,13 @@ declare const _default: ({ strapi }: {
         };
     }>;
     /**
-     * 检查用户是否具有特定权限（包含继承权限）
+     * 检查用户是否具有特定权限（委托给 permission.service.getMyPermissions）
      * @param userId 用户ID
-     * @param requiredRole 所需角色
+     * @param action 权限 key
+     * @param tenantDocumentId 租户 documentId（可选）
      * @returns 是否具有权限
      */
-    checkPermission(userId: number, requiredRole: string): Promise<boolean>;
+    checkPermission(userId: number, action: string, tenantDocumentId?: string): Promise<boolean>;
     /**
      * 获取用户有效权限信息
      * @param userId 用户ID

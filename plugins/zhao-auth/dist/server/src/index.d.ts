@@ -35,13 +35,21 @@ declare const _default: {
         "role-management": ({ strapi }: {
             strapi: import('@strapi/types/dist/core').Strapi;
         }) => {
-            findUsers(filters?: Record<string, any>, page?: number, pageSize?: number): Promise<{
-                data: {
+            findUsers(filters?: Record<string, any>, page?: number, pageSize?: number, operatorId?: number, tenantDocumentId?: string): Promise<{
+                list: {
                     id: any;
                     documentId: any;
                     username: any;
                     email: any;
-                    roles: string[];
+                    roles: any[];
+                    roleSources: {
+                        role: string;
+                        label: any;
+                        source: "explicit";
+                        sourceDescription: string;
+                        assignedByRole: any;
+                        assignedAt: any;
+                    }[];
                     createdAt: any;
                 }[];
                 pagination: {
@@ -51,7 +59,7 @@ declare const _default: {
                     pageCount: number;
                 };
             }>;
-            assignRole(userId: number, role: string, operatorId: number, reason?: string): Promise<{
+            assignRole(userId: number, role: string, operatorId: number, reason?: string, operatorTenantDocumentId?: string): Promise<{
                 success: boolean;
                 message: string;
                 user: {
@@ -59,7 +67,7 @@ declare const _default: {
                     roles: string[];
                 };
             }>;
-            revokeRole(userId: number, role: string, operatorId: number, reason?: string): Promise<{
+            revokeRole(userId: number, role: string, operatorId: number, reason?: string, operatorTenantDocumentId?: string): Promise<{
                 success: boolean;
                 message: string;
                 user: {
@@ -79,7 +87,57 @@ declare const _default: {
                     description: any;
                 }[];
             }>;
-            batchAssignRoles(userIds: number[], role: string, operatorId: number, reason?: string): Promise<{
+            getUserDetail(userId: number, operatorId?: number, tenantDocumentId?: string): Promise<{
+                user: {
+                    id: any;
+                    username: any;
+                    email: any;
+                    createdAt: any;
+                };
+                roles: {
+                    role: string;
+                    label: any;
+                    source: "explicit";
+                    sourceDescription: string;
+                    assignedByRole: any;
+                    assignedAt: any;
+                }[];
+                rolesBySource: {
+                    core: {
+                        role: string;
+                        label: any;
+                        source: "explicit";
+                        sourceDescription: string;
+                        assignedByRole: any;
+                        assignedAt: any;
+                    }[];
+                    auto: {
+                        role: string;
+                        label: any;
+                        source: "explicit";
+                        sourceDescription: string;
+                        assignedByRole: any;
+                        assignedAt: any;
+                    }[];
+                    explicit: {
+                        role: string;
+                        label: any;
+                        source: "explicit";
+                        sourceDescription: string;
+                        assignedByRole: any;
+                        assignedAt: any;
+                    }[];
+                };
+            }>;
+            getAssignableRoles(operatorId: number, tenantDocumentId?: string): Promise<{
+                roles: {
+                    role: string;
+                    label: string;
+                    source: "core" | "auto" | "explicit";
+                }[];
+                isAdmin: boolean;
+            }>;
+            batchAssignRoles(userIds: number[], role: string, operatorId: number, reason?: string, operatorTenantDocumentId?: string): Promise<{
                 success: boolean;
                 message: string;
                 results: {
@@ -98,7 +156,7 @@ declare const _default: {
                     pageCount: number;
                 };
             }>;
-            checkPermission(userId: number, requiredRole: string): Promise<boolean>;
+            checkPermission(userId: number, action: string, tenantDocumentId?: string): Promise<boolean>;
             getUserEffectivePermissions(userId: number): Promise<import('./utils/types').UserPermissions>;
             invalidateUserCache(userId: number): Promise<void>;
             getUserLevel(userId: number): Promise<number>;
@@ -194,9 +252,11 @@ declare const _default: {
                 role: string;
                 permissions: any;
             }>;
-            getMyPermissions(userId: number): Promise<{
+            getMyPermissions(userId: number, tenantDocumentId?: string): Promise<{
                 permissions: string[];
             }>;
+            resolveModuleVisibility(tenantDocumentId?: string): Promise<Record<string, string[]>>;
+            invalidateCache(userId?: number, tenantDocumentId?: string): void;
             initDefaultRoles(): Promise<string[]>;
         };
         "channel-scope": ({ strapi }: {
@@ -290,6 +350,14 @@ declare const _default: {
                 domain: any;
             }[]>;
         };
+        "permission-check": ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            checkPermission(userId: number, action: string, tenantDocumentId?: string): Promise<{
+                allowed: boolean;
+                reasons: string[];
+            }>;
+        };
     };
     controllers: {
         "role-management": ({ strapi }: {
@@ -303,6 +371,9 @@ declare const _default: {
             getActionLogs(ctx: any): Promise<void>;
             getMyRoles(ctx: any): Promise<void>;
             getMyPermissions(ctx: any): Promise<void>;
+            getUserDetail(ctx: any): Promise<void>;
+            getAssignableRoles(ctx: any): Promise<void>;
+            me(ctx: any): Promise<void>;
         };
         auth: ({ strapi }: {
             strapi: import('@strapi/types/dist/core').Strapi;
@@ -313,6 +384,7 @@ declare const _default: {
             login(ctx: any): Promise<void>;
             config(ctx: any): Promise<void>;
             checkThirdPartyEnabled(): Promise<boolean>;
+            switchTenant(ctx: any): Promise<void>;
         };
         permission: ({ strapi }: {
             strapi: import('@strapi/types/dist/core').Strapi;
@@ -347,6 +419,19 @@ declare const _default: {
         "module-visibility": {
             get(ctx: any): Promise<void>;
             update(ctx: any): Promise<void>;
+        };
+        "permission-matrix": ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            getMatrix(ctx: any): Promise<void>;
+            updateRolePermissions(ctx: any): Promise<any>;
+            resetRolePermissions(ctx: any): Promise<any>;
+            getActions(ctx: any): Promise<void>;
+        };
+        "permission-check": ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            check(ctx: any): Promise<any>;
         };
     };
     contentTypes: {
@@ -392,6 +477,10 @@ declare const _default: {
                         default: number;
                         min: number;
                         max: number;
+                    };
+                    seedVersion: {
+                        type: string;
+                        default: string;
                     };
                 };
             };
@@ -479,6 +568,9 @@ declare const _default: {
         "is-authenticated": (policyContext: any, config: any, { strapi }: {
             strapi: any;
         }) => Promise<boolean>;
+        "tenant-context-injector": (policyContext: any, config: any, { strapi }: {
+            strapi: any;
+        }) => Promise<boolean>;
         "has-permission": (policyContext: any, config: any, { strapi }: {
             strapi: any;
         }) => Promise<boolean>;
@@ -496,14 +588,22 @@ declare const _default: {
     routes: {
         "content-api": {
             type: "content-api";
-            routes: {
+            routes: ({
                 method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
                 path: string;
                 handler: string;
                 config: {
                     auth: boolean;
                 };
-            }[];
+            } | {
+                method: string;
+                path: string;
+                handler: string;
+                config: {
+                    auth: boolean;
+                    policies: string[];
+                };
+            })[];
         };
         tenant: {
             type: "content-api";

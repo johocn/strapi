@@ -1,11 +1,40 @@
-"use strict";
-Object.defineProperties(exports, { __esModule: { value: true }, [Symbol.toStringTag]: { value: "Module" } });
-const fs = require("fs");
-const path = require("path");
-const _interopDefault = (e) => e && e.__esModule ? e : { default: e };
-const fs__default = /* @__PURE__ */ _interopDefault(fs);
-const path__default = /* @__PURE__ */ _interopDefault(path);
-const hasTenantAccessLoose = async (policyContext, config2, { strapi: strapi2 }) => {
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+
+// plugins/zhao-common/server/src/index.ts
+var index_exports = {};
+__export(index_exports, {
+  default: () => index_default
+});
+module.exports = __toCommonJS(index_exports);
+
+// plugins/zhao-common/server/src/policies/has-tenant-access-loose.ts
+var hasTenantAccessLoose = async (policyContext, config, { strapi: strapi2 }) => {
   const user = policyContext.state?.user;
   if (!user?.id) {
     return false;
@@ -35,12 +64,12 @@ const hasTenantAccessLoose = async (policyContext, config2, { strapi: strapi2 })
   }
   let siteChannelIds = [];
   try {
-    const siteConfig2 = await strapi2.db.query("plugin::zhao-common.site-config").findOne({
+    const siteConfig = await strapi2.db.query("plugin::zhao-common.site-config").findOne({
       where: { documentId: siteId },
       populate: { channels: { select: ["id"] } }
     });
-    if (siteConfig2?.channels && Array.isArray(siteConfig2.channels)) {
-      siteChannelIds = siteConfig2.channels.map((c) => c?.id).filter((id) => typeof id === "number");
+    if (siteConfig?.channels && Array.isArray(siteConfig.channels)) {
+      siteChannelIds = siteConfig.channels.map((c) => c?.id).filter((id) => typeof id === "number");
     }
   } catch (e) {
     strapi2.log.warn(`[has-tenant-access-loose] failed to query site channels: ${e.message}`);
@@ -51,7 +80,10 @@ const hasTenantAccessLoose = async (policyContext, config2, { strapi: strapi2 })
   }
   return true;
 };
-const hasTenantAccessStrict = async (policyContext, config2, { strapi: strapi2 }) => {
+var has_tenant_access_loose_default = hasTenantAccessLoose;
+
+// plugins/zhao-common/server/src/policies/has-tenant-access-strict.ts
+var hasTenantAccessStrict = async (policyContext, config, { strapi: strapi2 }) => {
   const user = policyContext.state?.user;
   if (!user?.id) {
     return false;
@@ -73,12 +105,12 @@ const hasTenantAccessStrict = async (policyContext, config2, { strapi: strapi2 }
   }
   let siteChannelIds = [];
   try {
-    const siteConfig2 = await strapi2.db.query("plugin::zhao-common.site-config").findOne({
+    const siteConfig = await strapi2.db.query("plugin::zhao-common.site-config").findOne({
       where: { documentId: siteId },
       populate: { channels: { select: ["id"] } }
     });
-    if (siteConfig2?.channels && Array.isArray(siteConfig2.channels)) {
-      siteChannelIds = siteConfig2.channels.map((c) => c?.id).filter((id) => typeof id === "number");
+    if (siteConfig?.channels && Array.isArray(siteConfig.channels)) {
+      siteChannelIds = siteConfig.channels.map((c) => c?.id).filter((id) => typeof id === "number");
     }
   } catch (e) {
     strapi2.log.warn(`[has-tenant-access-strict] failed to query site channels: ${e.message}`);
@@ -89,7 +121,10 @@ const hasTenantAccessStrict = async (policyContext, config2, { strapi: strapi2 }
   }
   return true;
 };
-const resolveChannelScope = async (policyContext, config2, { strapi: strapi2 }) => {
+var has_tenant_access_strict_default = hasTenantAccessStrict;
+
+// plugins/zhao-common/server/src/policies/resolve-channel-scope.ts
+var resolveChannelScope = async (policyContext, config, { strapi: strapi2 }) => {
   const channelScope = policyContext.state?.channelScope;
   const isGuest = !channelScope || channelScope.isGuest === true || !channelScope.all && !channelScope.channelIds?.length;
   const userChannelIds = channelScope?.all ? [] : Array.isArray(channelScope?.channelIds) ? channelScope.channelIds : [];
@@ -105,21 +140,21 @@ const resolveChannelScope = async (policyContext, config2, { strapi: strapi2 }) 
   let siteChannelIds = [];
   let channelUsage = "site_cross_user";
   try {
-    const siteConfig2 = await strapi2.db.query("plugin::zhao-common.site-config").findOne({
+    const siteConfig = await strapi2.db.query("plugin::zhao-common.site-config").findOne({
       where: { documentId: siteId },
       select: ["channelUsage"],
       populate: { channels: { select: ["id"] } }
     });
-    if (siteConfig2) {
-      if (siteConfig2.channelUsage) {
-        channelUsage = siteConfig2.channelUsage;
+    if (siteConfig) {
+      if (siteConfig.channelUsage) {
+        channelUsage = siteConfig.channelUsage;
       }
-      if (Array.isArray(siteConfig2.channels)) {
-        siteChannelIds = siteConfig2.channels.map((c) => typeof c === "number" ? c : c?.id).filter((id) => typeof id === "number");
+      if (Array.isArray(siteConfig.channels)) {
+        siteChannelIds = siteConfig.channels.map((c) => typeof c === "number" ? c : c?.id).filter((id) => typeof id === "number");
       }
     }
   } catch (e) {
-    strapi2.log.warn(`[resolve-channel-scope] 查询 site-config 失败: ${e.message}`);
+    strapi2.log.warn(`[resolve-channel-scope] \u67E5\u8BE2 site-config \u5931\u8D25: ${e.message}`);
   }
   let mergedChannelIds;
   if (channelUsage === "site_cross_user" && !channelScope?.all) {
@@ -136,17 +171,25 @@ const resolveChannelScope = async (policyContext, config2, { strapi: strapi2 }) 
   policyContext.state.isGuest = isGuest;
   return true;
 };
-const policies = {
-  "has-tenant-access-loose": hasTenantAccessLoose,
-  "has-tenant-access-strict": hasTenantAccessStrict,
-  "resolve-channel-scope": resolveChannelScope
+var resolve_channel_scope_default = resolveChannelScope;
+
+// plugins/zhao-common/server/src/policies/index.ts
+var policies_default = {
+  "has-tenant-access-loose": has_tenant_access_loose_default,
+  "has-tenant-access-strict": has_tenant_access_strict_default,
+  "resolve-channel-scope": resolve_channel_scope_default
 };
-const register = ({ strapi: strapi2 }) => {
+
+// plugins/zhao-common/server/src/register.ts
+var register = ({ strapi: strapi2 }) => {
   const policyRegistry = strapi2.get("policies");
-  policyRegistry.add("plugin::zhao-common", policies);
-  strapi2.log.info("[zhao-common] 策略已注册");
+  policyRegistry.add("plugin::zhao-common", policies_default);
+  strapi2.log.info("[zhao-common] \u7B56\u7565\u5DF2\u6CE8\u518C");
 };
-const SITE_CONFIG_UID$3 = "plugin::zhao-common.site-config";
+var register_default = register;
+
+// plugins/zhao-common/server/src/middlewares/site-resolver.ts
+var SITE_CONFIG_UID = "plugin::zhao-common.site-config";
 function extractHost(input) {
   let v = (input || "").trim();
   if (!v) return "";
@@ -159,7 +202,7 @@ function extractHost(input) {
   }
   return v.replace(/:\d+$/, "");
 }
-const siteResolver = (config2, { strapi: strapi2 }) => {
+var siteResolver = (config, { strapi: strapi2 }) => {
   return async (ctx, next) => {
     if (ctx.state?.siteId) {
       return await next();
@@ -168,7 +211,7 @@ const siteResolver = (config2, { strapi: strapi2 }) => {
     const domain = extractHost(raw);
     try {
       if (domain) {
-        const records = await strapi2.documents(SITE_CONFIG_UID$3).findMany({
+        const records = await strapi2.documents(SITE_CONFIG_UID).findMany({
           filters: { domain },
           populate: ["channels", "template"],
           limit: 1
@@ -185,8 +228,11 @@ const siteResolver = (config2, { strapi: strapi2 }) => {
     await next();
   };
 };
-const SITE_CONFIG_UID$2 = "plugin::zhao-common.site-config";
-const tenantContextResolver = (config2, { strapi: strapi2 }) => {
+var site_resolver_default = siteResolver;
+
+// plugins/zhao-common/server/src/middlewares/tenant-context-resolver.ts
+var SITE_CONFIG_UID2 = "plugin::zhao-common.site-config";
+var tenantContextResolver = (config, { strapi: strapi2 }) => {
   return async (ctx, next) => {
     if (ctx.state?.siteId) {
       return await next();
@@ -196,7 +242,7 @@ const tenantContextResolver = (config2, { strapi: strapi2 }) => {
     const rawSiteId = siteIdFromHeader || siteIdFromQuery;
     if (rawSiteId) {
       try {
-        const site = await strapi2.db.query(SITE_CONFIG_UID$2).findOne({
+        const site = await strapi2.db.query(SITE_CONFIG_UID2).findOne({
           where: { documentId: String(rawSiteId) }
         });
         if (site) {
@@ -209,17 +255,20 @@ const tenantContextResolver = (config2, { strapi: strapi2 }) => {
     return await next();
   };
 };
-const SITE_CONFIG_UID$1 = "plugin::zhao-common.site-config";
-const TEMPLATE_UID$1 = "plugin::zhao-common.site-template";
-const DEFAULT_SITE_CONFIG = {
-  siteName: "圣麟教育",
-  siteDescription: "让学习更有价值",
-  seoKeywords: "教育,学习,课程",
-  seoDescription: "圣麟教育平台",
+var tenant_context_resolver_default = tenantContextResolver;
+
+// plugins/zhao-common/server/src/bootstrap.ts
+var SITE_CONFIG_UID3 = "plugin::zhao-common.site-config";
+var TEMPLATE_UID = "plugin::zhao-common.site-template";
+var DEFAULT_SITE_CONFIG = {
+  siteName: "\u5723\u9E9F\u6559\u80B2",
+  siteDescription: "\u8BA9\u5B66\u4E60\u66F4\u6709\u4EF7\u503C",
+  seoKeywords: "\u6559\u80B2,\u5B66\u4E60,\u8BFE\u7A0B",
+  seoDescription: "\u5723\u9E9F\u6559\u80B2\u5E73\u53F0",
   icpNumber: "",
   tencentMapKey: "",
-  shareTitle: "圣麟教育",
-  shareDescription: "让学习更有价值",
+  shareTitle: "\u5723\u9E9F\u6559\u80B2",
+  shareDescription: "\u8BA9\u5B66\u4E60\u66F4\u6709\u4EF7\u503C",
   customerServiceUrl: "",
   extraConfig: {
     // 认证
@@ -273,10 +322,10 @@ const DEFAULT_SITE_CONFIG = {
     debugMode: false
   }
 };
-const getSoftDeleteModels = (strapi2) => Object.keys(strapi2.contentTypes).filter(
+var getSoftDeleteModels = (strapi2) => Object.keys(strapi2.contentTypes).filter(
   (uid) => uid.startsWith("plugin::zhao-") && "deletedAt" in strapi2.contentTypes[uid].attributes
 );
-const addDeletedAtFilter = (event) => {
+var addDeletedAtFilter = (event) => {
   const { params } = event;
   if (!params) return;
   if (!params.where) {
@@ -285,21 +334,21 @@ const addDeletedAtFilter = (event) => {
   if ("deletedAt" in params.where) return;
   params.where.deletedAt = null;
 };
-const bootstrap = async ({ strapi: strapi2 }) => {
+var bootstrap = async ({ strapi: strapi2 }) => {
   try {
     const migrationService = strapi2.plugin("zhao-common").service("migration-runner");
     if (migrationService && typeof migrationService.runAllMigrations === "function") {
       await migrationService.runAllMigrations();
     }
   } catch (err) {
-    strapi2.log.error(`[zhao-common] 数据库迁移执行失败: ${err.message}`);
+    strapi2.log.error(`[zhao-common] \u6570\u636E\u5E93\u8FC1\u79FB\u6267\u884C\u5931\u8D25: ${err.message}`);
     throw err;
   }
   strapi2.server.use(async (ctx, next) => {
     if (ctx.path?.startsWith("/admin") || ctx.path?.startsWith("/content-manager") || ctx.path?.startsWith("/health")) {
       return next();
     }
-    const middleware = tenantContextResolver({}, { strapi: strapi2 });
+    const middleware = tenant_context_resolver_default({}, { strapi: strapi2 });
     if (typeof middleware === "function") {
       return middleware(ctx, next);
     }
@@ -309,34 +358,34 @@ const bootstrap = async ({ strapi: strapi2 }) => {
     if (ctx.path?.startsWith("/admin") || ctx.path?.startsWith("/content-manager") || ctx.path?.startsWith("/health")) {
       return next();
     }
-    const middleware = siteResolver({}, { strapi: strapi2 });
+    const middleware = site_resolver_default({}, { strapi: strapi2 });
     if (typeof middleware === "function") {
       return middleware(ctx, next);
     }
     return next();
   });
-  const existingConfig = await strapi2.documents(SITE_CONFIG_UID$1).findMany();
+  const existingConfig = await strapi2.documents(SITE_CONFIG_UID3).findMany();
   if (!existingConfig || Array.isArray(existingConfig) && existingConfig.length === 0) {
     let defaultTemplate = null;
-    const existingTemplates = await strapi2.documents(TEMPLATE_UID$1).findMany({
+    const existingTemplates = await strapi2.documents(TEMPLATE_UID).findMany({
       filters: { isDefault: true }
     });
     if (Array.isArray(existingTemplates) && existingTemplates.length > 0) {
       defaultTemplate = existingTemplates[0];
     } else {
-      defaultTemplate = await strapi2.documents(TEMPLATE_UID$1).create({
+      defaultTemplate = await strapi2.documents(TEMPLATE_UID).create({
         data: {
-          name: "默认模板",
-          description: "系统默认配置模板，所有字段均可编辑",
+          name: "\u9ED8\u8BA4\u6A21\u677F",
+          description: "\u7CFB\u7EDF\u9ED8\u8BA4\u914D\u7F6E\u6A21\u677F\uFF0C\u6240\u6709\u5B57\u6BB5\u5747\u53EF\u7F16\u8F91",
           presetConfig: DEFAULT_SITE_CONFIG.extraConfig,
           fieldConstraints: {},
           enabled: true,
           isDefault: true
         }
       });
-      strapi2.log.info(`[zhao-common] 默认模板已初始化`);
+      strapi2.log.info(`[zhao-common] \u9ED8\u8BA4\u6A21\u677F\u5DF2\u521D\u59CB\u5316`);
     }
-    await strapi2.documents(SITE_CONFIG_UID$1).create({
+    await strapi2.documents(SITE_CONFIG_UID3).create({
       data: {
         ...DEFAULT_SITE_CONFIG,
         extraConfig: {},
@@ -344,7 +393,7 @@ const bootstrap = async ({ strapi: strapi2 }) => {
         template: defaultTemplate?.documentId ?? null
       }
     });
-    strapi2.log.info(`[zhao-common] 站点配置已初始化`);
+    strapi2.log.info(`[zhao-common] \u7AD9\u70B9\u914D\u7F6E\u5DF2\u521D\u59CB\u5316`);
   }
   const softDeleteModels = getSoftDeleteModels(strapi2);
   if (softDeleteModels.length > 0) {
@@ -355,20 +404,20 @@ const bootstrap = async ({ strapi: strapi2 }) => {
       beforeCount: addDeletedAtFilter
     });
     strapi2.log.info(
-      `[zhao-common] soft-delete 自动过滤已注册，覆盖 ${softDeleteModels.length} 个 content-type`
+      `[zhao-common] soft-delete \u81EA\u52A8\u8FC7\u6EE4\u5DF2\u6CE8\u518C\uFF0C\u8986\u76D6 ${softDeleteModels.length} \u4E2A content-type`
     );
   }
   await initDefaultTemplates();
 };
 async function initDefaultTemplates() {
-  const TEMPLATE_UID2 = "plugin::zhao-common.site-template";
+  const TEMPLATE_UID3 = "plugin::zhao-common.site-template";
   try {
-    const existing = await strapi.db.query(TEMPLATE_UID2).count({ where: { name: "coursera-blue" } });
+    const existing = await strapi.db.query(TEMPLATE_UID3).count({ where: { name: "coursera-blue" } });
     if (existing > 0) return;
     const presets = [
       {
         name: "coursera-blue",
-        displayName: "Coursera 学术蓝",
+        displayName: "Coursera \u5B66\u672F\u84DD",
         presetConfig: {},
         fieldConstraints: {},
         themeConfig: JSON.stringify({
@@ -384,7 +433,7 @@ async function initDefaultTemplates() {
       },
       {
         name: "khan-green",
-        displayName: "Khan 学院绿",
+        displayName: "Khan \u5B66\u9662\u7EFF",
         presetConfig: {},
         fieldConstraints: {},
         themeConfig: JSON.stringify({
@@ -400,7 +449,7 @@ async function initDefaultTemplates() {
       },
       {
         name: "udemy-violet",
-        displayName: "Udemy 鲜艳紫",
+        displayName: "Udemy \u9C9C\u8273\u7D2B",
         presetConfig: {},
         fieldConstraints: {},
         themeConfig: JSON.stringify({
@@ -416,7 +465,7 @@ async function initDefaultTemplates() {
       },
       {
         name: "edx-deep",
-        displayName: "edX 深蓝学术",
+        displayName: "edX \u6DF1\u84DD\u5B66\u672F",
         presetConfig: {},
         fieldConstraints: {},
         themeConfig: JSON.stringify({
@@ -432,7 +481,7 @@ async function initDefaultTemplates() {
       },
       {
         name: "netease-red",
-        displayName: "网易课堂红",
+        displayName: "\u7F51\u6613\u8BFE\u5802\u7EA2",
         presetConfig: {},
         fieldConstraints: {},
         themeConfig: JSON.stringify({
@@ -448,19 +497,24 @@ async function initDefaultTemplates() {
       }
     ];
     for (const preset of presets) {
-      await strapi.db.query(TEMPLATE_UID2).create({ data: preset });
+      await strapi.db.query(TEMPLATE_UID3).create({ data: preset });
     }
-    strapi.log.info(`[bootstrap] 已生成 ${presets.length} 套预设模板`);
+    strapi.log.info(`[bootstrap] \u5DF2\u751F\u6210 ${presets.length} \u5957\u9884\u8BBE\u6A21\u677F`);
   } catch (e) {
     strapi.log.warn("[bootstrap] initDefaultTemplates failed:", e.message);
   }
 }
-const config$2 = {
+var bootstrap_default = bootstrap;
+
+// plugins/zhao-common/server/src/config/index.ts
+var config_default = {
   default: {},
   validator() {
   }
 };
-const logger = ({ strapi: strapi2 }) => ({
+
+// plugins/zhao-common/server/src/services/logger.ts
+var logger_default = ({ strapi: strapi2 }) => ({
   info(message, meta) {
     strapi2.log.info(`[zhao-common] ${message}`, meta || {});
   },
@@ -474,7 +528,9 @@ const logger = ({ strapi: strapi2 }) => ({
     strapi2.log.debug(`[zhao-common] ${message}`, meta || {});
   }
 });
-class AppError extends Error {
+
+// plugins/zhao-common/server/src/utils/errors.ts
+var AppError = class extends Error {
   constructor(code, context = {}, status = 400, message) {
     super(message || code);
     this.name = "AppError";
@@ -490,12 +546,36 @@ class AppError extends Error {
       context: this.context
     };
   }
-}
-const ErrorCodes = {
-  // ── 通用 (COMMON) ──
-  UNKNOWN_ERROR: "COMMON_001"
 };
-const errorHandler = ({ strapi: _strapi }) => ({
+
+// plugins/zhao-common/server/src/utils/codes.ts
+var ErrorCodes = {
+  // ── 通用 (COMMON) ──
+  UNKNOWN_ERROR: "COMMON_001",
+  VALIDATION_ERROR: "COMMON_002",
+  NOT_FOUND: "COMMON_003",
+  FORBIDDEN: "COMMON_004",
+  UNAUTHORIZED: "COMMON_005",
+  CONFIG_ERROR: "COMMON_006",
+  INTERNAL_ERROR: "COMMON_007",
+  // ── 渠道 (CHANNEL) ──
+  CHANNEL_NOT_FOUND: "CHANNEL_001",
+  CHANNEL_DEPTH_EXCEEDED: "CHANNEL_002",
+  CHANNEL_DISABLED: "CHANNEL_003",
+  INVITE_CODE_INVALID: "CHANNEL_004",
+  MEMBER_NOT_FOUND: "CHANNEL_005",
+  CHANNEL_DUPLICATE: "CHANNEL_006",
+  USER_NOT_LINKED: "CHANNEL_007",
+  // ── 认证 (AUTH) ──
+  TOKEN_MISSING: "AUTH_001",
+  TOKEN_INVALID: "AUTH_002",
+  ROLE_INSUFFICIENT: "AUTH_003",
+  SCOPE_FORBIDDEN: "AUTH_004",
+  RESOURCE_OWNER_MISMATCH: "AUTH_005"
+};
+
+// plugins/zhao-common/server/src/services/error-handler.ts
+var error_handler_default = ({ strapi: _strapi }) => ({
   createError(code, context = {}, message) {
     return new AppError(code, context, 400, message);
   },
@@ -516,7 +596,9 @@ const errorHandler = ({ strapi: _strapi }) => ({
     return { code: ErrorCodes.UNKNOWN_ERROR, message: "Unknown error" };
   }
 });
-const configManager = ({ strapi: strapi2 }) => ({
+
+// plugins/zhao-common/server/src/services/config-manager.ts
+var config_manager_default = ({ strapi: strapi2 }) => ({
   get(key, defaultValue) {
     const pluginConfig = strapi2.plugin("zhao-common")?.config ?? {};
     return pluginConfig[key] ?? defaultValue;
@@ -525,30 +607,32 @@ const configManager = ({ strapi: strapi2 }) => ({
     return strapi2.plugin("zhao-common")?.config ?? {};
   }
 });
-const MESSAGES = {
+
+// plugins/zhao-common/server/src/services/i18n.ts
+var MESSAGES = {
   // ── 通用 ──
-  COMMON_001: "未知错误",
-  COMMON_002: "参数校验失败: {reason}",
-  COMMON_003: "资源不存在: {resource}",
-  COMMON_004: "无权限访问",
-  COMMON_005: "认证失败",
-  COMMON_006: "配置错误: {detail}",
+  COMMON_001: "\u672A\u77E5\u9519\u8BEF",
+  COMMON_002: "\u53C2\u6570\u6821\u9A8C\u5931\u8D25: {reason}",
+  COMMON_003: "\u8D44\u6E90\u4E0D\u5B58\u5728: {resource}",
+  COMMON_004: "\u65E0\u6743\u9650\u8BBF\u95EE",
+  COMMON_005: "\u8BA4\u8BC1\u5931\u8D25",
+  COMMON_006: "\u914D\u7F6E\u9519\u8BEF: {detail}",
   // ── 渠道 ──
-  CHANNEL_001: "渠道不存在 (id={channelId})",
-  CHANNEL_002: "渠道层级深度超限（最大 2 级）",
-  CHANNEL_003: "渠道已被禁用",
-  CHANNEL_004: "邀请码不存在或已过期",
-  CHANNEL_005: "成员不存在",
-  CHANNEL_006: "渠道名已存在: {name}",
-  CHANNEL_007: "用户未关联渠道",
+  CHANNEL_001: "\u6E20\u9053\u4E0D\u5B58\u5728 (id={channelId})",
+  CHANNEL_002: "\u6E20\u9053\u5C42\u7EA7\u6DF1\u5EA6\u8D85\u9650\uFF08\u6700\u5927 2 \u7EA7\uFF09",
+  CHANNEL_003: "\u6E20\u9053\u5DF2\u88AB\u7981\u7528",
+  CHANNEL_004: "\u9080\u8BF7\u7801\u4E0D\u5B58\u5728\u6216\u5DF2\u8FC7\u671F",
+  CHANNEL_005: "\u6210\u5458\u4E0D\u5B58\u5728",
+  CHANNEL_006: "\u6E20\u9053\u540D\u5DF2\u5B58\u5728: {name}",
+  CHANNEL_007: "\u7528\u6237\u672A\u5173\u8054\u6E20\u9053",
   // ── 认证 ──
-  AUTH_001: "缺少认证令牌",
-  AUTH_002: "令牌无效或已过期",
-  AUTH_003: "角色权限不足 (需要: {roles})",
-  AUTH_004: "无权访问该渠道",
-  AUTH_005: "资源所有者不匹配"
+  AUTH_001: "\u7F3A\u5C11\u8BA4\u8BC1\u4EE4\u724C",
+  AUTH_002: "\u4EE4\u724C\u65E0\u6548\u6216\u5DF2\u8FC7\u671F",
+  AUTH_003: "\u89D2\u8272\u6743\u9650\u4E0D\u8DB3 (\u9700\u8981: {roles})",
+  AUTH_004: "\u65E0\u6743\u8BBF\u95EE\u8BE5\u6E20\u9053",
+  AUTH_005: "\u8D44\u6E90\u6240\u6709\u8005\u4E0D\u5339\u914D"
 };
-const i18n = ({ strapi: _strapi }) => {
+var i18n_default = ({ strapi: _strapi }) => {
   let messages = { ...MESSAGES };
   return {
     t(code, params) {
@@ -565,8 +649,10 @@ const i18n = ({ strapi: _strapi }) => {
     }
   };
 };
-const resolveUid = (contentType) => contentType.includes("::") ? contentType : `plugin::${contentType}`;
-const SOFT_DELETE_WHITELIST = /* @__PURE__ */ new Set([
+
+// plugins/zhao-common/server/src/services/soft-delete.ts
+var resolveUid = (contentType) => contentType.includes("::") ? contentType : `plugin::${contentType}`;
+var SOFT_DELETE_WHITELIST = /* @__PURE__ */ new Set([
   "plugin::zhao-tag.tag",
   "plugin::zhao-tag.knowledge-point",
   "plugin::zhao-quiz.quiz-exam",
@@ -606,12 +692,12 @@ const SOFT_DELETE_WHITELIST = /* @__PURE__ */ new Set([
 ]);
 function assertWhitelisted(uid) {
   if (!SOFT_DELETE_WHITELIST.has(uid)) {
-    const e = new Error(`contentType "${uid}" 不支持软删除`);
+    const e = new Error(`contentType "${uid}" \u4E0D\u652F\u6301\u8F6F\u5220\u9664`);
     e.status = 400;
     throw e;
   }
 }
-const softDelete$1 = ({ strapi: strapi2 }) => ({
+var soft_delete_default = ({ strapi: strapi2 }) => ({
   /**
    * 软删除：将 deletedAt 设为当前时间
    * 使用 strapi.db.query() 直接操作，绕过自动过滤
@@ -670,7 +756,7 @@ const softDelete$1 = ({ strapi: strapi2 }) => ({
    * 查询已软删除的记录（管理端"回收站"视图）
    * 支持分页和排序
    */
-  async findDeleted(contentType, options2 = {}) {
+  async findDeleted(contentType, options = {}) {
     const uid = resolveUid(contentType);
     assertWhitelisted(uid);
     const model = strapi2.contentType(uid);
@@ -679,13 +765,13 @@ const softDelete$1 = ({ strapi: strapi2 }) => ({
       return [];
     }
     const query = {
-      where: { ...options2.filters && typeof options2.filters === "object" && !Array.isArray(options2.filters) ? options2.filters : {}, deletedAt: { $ne: null } }
+      where: { ...options.filters && typeof options.filters === "object" && !Array.isArray(options.filters) ? options.filters : {}, deletedAt: { $ne: null } }
     };
-    if (options2.sort && typeof options2.sort === "string") query.orderBy = options2.sort;
-    if (options2.pagination) {
-      const pageSize = options2.pagination.pageSize ?? 25;
+    if (options.sort && typeof options.sort === "string") query.orderBy = options.sort;
+    if (options.pagination) {
+      const pageSize = options.pagination.pageSize ?? 25;
       query.limit = Math.min(Math.max(1, pageSize), 100);
-      const page = Math.max(1, options2.pagination.page ?? 1);
+      const page = Math.max(1, options.pagination.page ?? 1);
       query.offset = (page - 1) * query.limit;
     }
     const results = await strapi2.db.query(uid).findMany(query);
@@ -694,15 +780,17 @@ const softDelete$1 = ({ strapi: strapi2 }) => ({
       results: results ?? [],
       pagination: {
         total,
-        page: Math.max(1, options2.pagination.page ?? 1),
+        page: Math.max(1, options.pagination.page ?? 1),
         pageSize: query.limit,
         pageCount: Math.ceil(total / query.limit)
       }
     };
   }
 });
-const UID = "plugin::zhao-common.site-config";
-const DEFAULT_CONFIG = {
+
+// plugins/zhao-common/server/src/services/site-config.ts
+var UID = "plugin::zhao-common.site-config";
+var DEFAULT_CONFIG = {
   siteName: "",
   siteDescription: "",
   seoKeywords: "",
@@ -715,7 +803,7 @@ const DEFAULT_CONFIG = {
   domain: "",
   extraConfig: null
 };
-const PUBLIC_FIELDS = [
+var PUBLIC_FIELDS = [
   "siteName",
   "siteDescription",
   "seoKeywords",
@@ -727,7 +815,7 @@ const PUBLIC_FIELDS = [
   "customerServiceUrl",
   "domain"
 ];
-const siteConfig$2 = ({ strapi: strapi2 }) => ({
+var site_config_default = ({ strapi: strapi2 }) => ({
   /**
    * 获取站点配置，支持按 documentId 查询
    * 多租户安全：siteId 为空时不兜底，返回空配置，避免泄露其他租户数据
@@ -762,7 +850,7 @@ const siteConfig$2 = ({ strapi: strapi2 }) => ({
     if (Array.isArray(records)) {
       for (const record of records) {
         if (record.documentId !== excludeDocumentId) {
-          const e = new Error(`域名 "${domain}" 已被其他站点占用`);
+          const e = new Error(`\u57DF\u540D "${domain}" \u5DF2\u88AB\u5176\u4ED6\u7AD9\u70B9\u5360\u7528`);
           e.status = 409;
           throw e;
         }
@@ -795,14 +883,14 @@ const siteConfig$2 = ({ strapi: strapi2 }) => ({
    * @deprecated 使用 config 服务的 getPublicConfig（支持模板合并）
    */
   async getPublicConfig(siteId) {
-    const config2 = await this.getConfig(siteId);
+    const config = await this.getConfig(siteId);
     const result = {};
     for (const key of PUBLIC_FIELDS) {
-      result[key] = config2[key] ?? DEFAULT_CONFIG[key];
+      result[key] = config[key] ?? DEFAULT_CONFIG[key];
     }
-    if (config2.logo) result.logo = config2.logo;
-    if (config2.favicon) result.favicon = config2.favicon;
-    if (config2.shareImage) result.shareImage = config2.shareImage;
+    if (config.logo) result.logo = config.logo;
+    if (config.favicon) result.favicon = config.favicon;
+    if (config.shareImage) result.shareImage = config.shareImage;
     return result;
   },
   /**
@@ -815,9 +903,9 @@ const siteConfig$2 = ({ strapi: strapi2 }) => ({
   async getAvailableChannels(siteId, userId) {
     const siteChannels = [];
     if (siteId) {
-      const siteConfig2 = await this.getConfig(siteId);
-      if (siteConfig2?.channels && Array.isArray(siteConfig2.channels)) {
-        for (const ch of siteConfig2.channels) {
+      const siteConfig = await this.getConfig(siteId);
+      if (siteConfig?.channels && Array.isArray(siteConfig.channels)) {
+        for (const ch of siteConfig.channels) {
           siteChannels.push({
             id: ch.id,
             documentId: ch.documentId,
@@ -856,8 +944,10 @@ const siteConfig$2 = ({ strapi: strapi2 }) => ({
     return Array.from(merged.values());
   }
 });
-const TEMPLATE_UID = "plugin::zhao-common.site-template";
-const SITE_CONFIG_UID = "plugin::zhao-common.site-config";
+
+// plugins/zhao-common/server/src/services/site-template.ts
+var TEMPLATE_UID2 = "plugin::zhao-common.site-template";
+var SITE_CONFIG_UID4 = "plugin::zhao-common.site-config";
 function parseExtraConfig(raw) {
   if (raw && typeof raw === "object" && !Array.isArray(raw)) return raw;
   if (typeof raw === "string" && raw.trim()) {
@@ -869,67 +959,67 @@ function parseExtraConfig(raw) {
   }
   return {};
 }
-const siteTemplate$2 = ({ strapi: strapi2 }) => ({
+var site_template_default = ({ strapi: strapi2 }) => ({
   /**
    * 列出模板
    */
   async listTemplates(filters = {}) {
     const { pageSize, page, sort, ...safeFilters } = filters;
-    return strapi2.documents(TEMPLATE_UID).findMany({ filters: safeFilters, populate: { sites: { fields: ["documentId"] } } });
+    return strapi2.documents(TEMPLATE_UID2).findMany({ filters: safeFilters, populate: { sites: { fields: ["documentId"] } } });
   },
   /**
    * 获取模板
    */
   async getTemplate(documentId) {
-    return strapi2.documents(TEMPLATE_UID).findOne({ documentId, populate: { sites: { fields: ["documentId"] } } });
+    return strapi2.documents(TEMPLATE_UID2).findOne({ documentId, populate: { sites: { fields: ["documentId"] } } });
   },
   /**
    * 创建模板
    */
   async createTemplate(data) {
     if (!data.name || typeof data.name !== "string" || !data.name.trim()) {
-      const e = new Error("模板名称不能为空");
+      const e = new Error("\u6A21\u677F\u540D\u79F0\u4E0D\u80FD\u4E3A\u7A7A");
       e.status = 400;
       throw e;
     }
     if (data.presetConfig !== void 0 && (typeof data.presetConfig !== "object" || data.presetConfig === null || Array.isArray(data.presetConfig))) {
-      const e = new Error("presetConfig 必须是 JSON 对象");
+      const e = new Error("presetConfig \u5FC5\u987B\u662F JSON \u5BF9\u8C61");
       e.status = 400;
       throw e;
     }
     if (data.fieldConstraints !== void 0 && (typeof data.fieldConstraints !== "object" || data.fieldConstraints === null || Array.isArray(data.fieldConstraints))) {
-      const e = new Error("fieldConstraints 必须是 JSON 对象");
+      const e = new Error("fieldConstraints \u5FC5\u987B\u662F JSON \u5BF9\u8C61");
       e.status = 400;
       throw e;
     }
     if (data.isDefault) {
       await this._clearDefaultFlag();
     }
-    return strapi2.documents(TEMPLATE_UID).create({ data });
+    return strapi2.documents(TEMPLATE_UID2).create({ data });
   },
   /**
    * 更新模板
    */
   async updateTemplate(documentId, data) {
     if (data.name !== void 0 && (typeof data.name !== "string" || !data.name.trim())) {
-      const e = new Error("模板名称不能为空");
+      const e = new Error("\u6A21\u677F\u540D\u79F0\u4E0D\u80FD\u4E3A\u7A7A");
       e.status = 400;
       throw e;
     }
     if (data.presetConfig !== void 0 && (typeof data.presetConfig !== "object" || data.presetConfig === null || Array.isArray(data.presetConfig))) {
-      const e = new Error("presetConfig 必须是 JSON 对象");
+      const e = new Error("presetConfig \u5FC5\u987B\u662F JSON \u5BF9\u8C61");
       e.status = 400;
       throw e;
     }
     if (data.fieldConstraints !== void 0 && (typeof data.fieldConstraints !== "object" || data.fieldConstraints === null || Array.isArray(data.fieldConstraints))) {
-      const e = new Error("fieldConstraints 必须是 JSON 对象");
+      const e = new Error("fieldConstraints \u5FC5\u987B\u662F JSON \u5BF9\u8C61");
       e.status = 400;
       throw e;
     }
     if (data.isDefault) {
       await this._clearDefaultFlag(documentId);
     }
-    return strapi2.documents(TEMPLATE_UID).update({ documentId, data });
+    return strapi2.documents(TEMPLATE_UID2).update({ documentId, data });
   },
   /**
    * 删除模板
@@ -938,42 +1028,42 @@ const siteTemplate$2 = ({ strapi: strapi2 }) => ({
   async deleteTemplate(documentId) {
     const template = await this.getTemplate(documentId);
     if (!template) {
-      const e = new Error("模板不存在");
+      const e = new Error("\u6A21\u677F\u4E0D\u5B58\u5728");
       e.status = 404;
       throw e;
     }
     if (template.isDefault) {
-      const e = new Error("默认模板不可删除，请先将其他模板设为默认");
+      const e = new Error("\u9ED8\u8BA4\u6A21\u677F\u4E0D\u53EF\u5220\u9664\uFF0C\u8BF7\u5148\u5C06\u5176\u4ED6\u6A21\u677F\u8BBE\u4E3A\u9ED8\u8BA4");
       e.status = 400;
       throw e;
     }
     const presetConfig = template.presetConfig && typeof template.presetConfig === "object" && !Array.isArray(template.presetConfig) ? template.presetConfig : {};
-    const linkedSites = await strapi2.documents(SITE_CONFIG_UID).findMany({
+    const linkedSites = await strapi2.documents(SITE_CONFIG_UID4).findMany({
       filters: { template: documentId }
     });
     if (Array.isArray(linkedSites)) {
       for (const site of linkedSites) {
         const safeExtra = site.extraConfig && typeof site.extraConfig === "object" && !Array.isArray(site.extraConfig) ? site.extraConfig : {};
         const extraConfig = { ...presetConfig, ...safeExtra };
-        await strapi2.documents(SITE_CONFIG_UID).update({
+        await strapi2.documents(SITE_CONFIG_UID4).update({
           documentId: site.documentId,
           data: { template: null, extraConfig }
         });
       }
     }
-    return strapi2.documents(TEMPLATE_UID).delete({ documentId });
+    return strapi2.documents(TEMPLATE_UID2).delete({ documentId });
   },
   /**
    * 获取默认模板
    */
   async getDefaultTemplate() {
-    const records = await strapi2.documents(TEMPLATE_UID).findMany({
+    const records = await strapi2.documents(TEMPLATE_UID2).findMany({
       filters: { isDefault: true, enabled: true }
     });
     if (Array.isArray(records) && records.length > 0) {
       return records[0];
     }
-    const allRecords = await strapi2.documents(TEMPLATE_UID).findMany({
+    const allRecords = await strapi2.documents(TEMPLATE_UID2).findMany({
       filters: { enabled: true }
     });
     if (Array.isArray(allRecords) && allRecords.length > 0) {
@@ -988,22 +1078,22 @@ const siteTemplate$2 = ({ strapi: strapi2 }) => ({
   async applyTemplateToSite(templateDocumentId, siteDocumentId, mode = "merge") {
     const template = await this.getTemplate(templateDocumentId);
     if (!template) {
-      const e = new Error("模板不存在");
+      const e = new Error("\u6A21\u677F\u4E0D\u5B58\u5728");
       e.status = 404;
       throw e;
     }
     if (template.enabled === false) {
-      const e = new Error("模板已禁用，无法应用");
+      const e = new Error("\u6A21\u677F\u5DF2\u7981\u7528\uFF0C\u65E0\u6CD5\u5E94\u7528");
       e.status = 400;
       throw e;
     }
     let extraConfig;
-    const currentSite = await strapi2.documents(SITE_CONFIG_UID).findOne({
+    const currentSite = await strapi2.documents(SITE_CONFIG_UID4).findOne({
       documentId: siteDocumentId,
       populate: ["template"]
     });
     if (!currentSite) {
-      const e = new Error("站点不存在");
+      const e = new Error("\u7AD9\u70B9\u4E0D\u5B58\u5728");
       e.status = 404;
       throw e;
     }
@@ -1023,7 +1113,7 @@ const siteTemplate$2 = ({ strapi: strapi2 }) => ({
         }
       }
     }
-    await strapi2.documents(SITE_CONFIG_UID).update({
+    await strapi2.documents(SITE_CONFIG_UID4).update({
       documentId: siteDocumentId,
       data: {
         extraConfig,
@@ -1037,16 +1127,16 @@ const siteTemplate$2 = ({ strapi: strapi2 }) => ({
    * 租户自定义值覆盖模板预设值
    * @param siteConfig 站点配置对象（避免重复查询）
    */
-  async getMergedConfig(siteConfig2) {
-    if (!siteConfig2) {
+  async getMergedConfig(siteConfig) {
+    if (!siteConfig) {
       return { config: {}, meta: null };
     }
-    const templateId = siteConfig2.template?.documentId ?? siteConfig2.template;
+    const templateId = siteConfig.template?.documentId ?? siteConfig.template;
     let template = null;
     if (templateId) {
       template = await this.getTemplate(templateId);
     }
-    const tenantEc = parseExtraConfig(siteConfig2.extraConfig);
+    const tenantEc = parseExtraConfig(siteConfig.extraConfig);
     if (tenantEc.extraConfig) {
       const inner = parseExtraConfig(tenantEc.extraConfig);
       delete tenantEc.extraConfig;
@@ -1080,11 +1170,11 @@ const siteTemplate$2 = ({ strapi: strapi2 }) => ({
    */
   async validateUpdate(siteId, updateData) {
     const siteConfigService = strapi2.plugin("zhao-common").service("site-config");
-    const siteConfig2 = await siteConfigService.getConfig(siteId);
-    if (!siteConfig2) {
+    const siteConfig = await siteConfigService.getConfig(siteId);
+    if (!siteConfig) {
       return { valid: true };
     }
-    const templateId = siteConfig2.template?.documentId ?? siteConfig2.template;
+    const templateId = siteConfig.template?.documentId ?? siteConfig.template;
     if (!templateId) {
       return { valid: true };
     }
@@ -1107,7 +1197,7 @@ const siteTemplate$2 = ({ strapi: strapi2 }) => ({
       return {
         valid: false,
         deniedFields,
-        message: `以下字段受模板约束不可修改: ${deniedFields.join(", ")}`
+        message: `\u4EE5\u4E0B\u5B57\u6BB5\u53D7\u6A21\u677F\u7EA6\u675F\u4E0D\u53EF\u4FEE\u6539: ${deniedFields.join(", ")}`
       };
     }
     return { valid: true };
@@ -1117,13 +1207,13 @@ const siteTemplate$2 = ({ strapi: strapi2 }) => ({
    * @param excludeDocumentId 排除的模板ID（更新时排除自身）
    */
   async _clearDefaultFlag(excludeDocumentId) {
-    const defaults = await strapi2.documents(TEMPLATE_UID).findMany({
+    const defaults = await strapi2.documents(TEMPLATE_UID2).findMany({
       filters: { isDefault: true }
     });
     if (Array.isArray(defaults)) {
       for (const tpl of defaults) {
         if (tpl.documentId !== excludeDocumentId) {
-          await strapi2.documents(TEMPLATE_UID).update({
+          await strapi2.documents(TEMPLATE_UID2).update({
             documentId: tpl.documentId,
             data: { isDefault: false }
           });
@@ -1132,25 +1222,44 @@ const siteTemplate$2 = ({ strapi: strapi2 }) => ({
     }
   }
 });
-const config$1 = ({ strapi: strapi2 }) => ({
+
+// plugins/zhao-auth/server/src/constants/module-visibility.ts
+var VISIBILITY_MODULES = [
+  "website",
+  "logistics",
+  "studio",
+  "points",
+  "course",
+  "quiz",
+  "channel",
+  "sso",
+  "thirdParty",
+  "oss",
+  "payment",
+  "community",
+  "forum"
+];
+
+// plugins/zhao-common/server/src/services/config.ts
+var config_default2 = ({ strapi: strapi2 }) => ({
   // ========== 站点配置 ==========
   async getSiteConfig(siteId) {
     try {
       const service = strapi2.plugin("zhao-common")?.service("site-config");
       if (service && typeof service.getConfig === "function") {
-        const siteConfig2 = await service.getConfig(siteId);
-        if (siteConfig2) {
+        const siteConfig = await service.getConfig(siteId);
+        if (siteConfig) {
           const templateService = strapi2.plugin("zhao-common")?.service("site-template");
           if (templateService && typeof templateService.getMergedConfig === "function") {
-            const { config: config2, meta } = await templateService.getMergedConfig(siteConfig2);
+            const { config, meta } = await templateService.getMergedConfig(siteConfig);
             return {
-              ...siteConfig2,
-              extraConfig: config2,
+              ...siteConfig,
+              extraConfig: config,
               _meta: meta
             };
           }
         }
-        return siteConfig2;
+        return siteConfig;
       }
       return null;
     } catch (error) {
@@ -1299,7 +1408,7 @@ const config$1 = ({ strapi: strapi2 }) => ({
     }
   },
   async updateOssConfig(data) {
-    const e = new Error("OSS配置更新功能未实现");
+    const e = new Error("OSS\u914D\u7F6E\u66F4\u65B0\u529F\u80FD\u672A\u5B9E\u73B0");
     e.status = 501;
     throw e;
   },
@@ -1478,8 +1587,8 @@ const config$1 = ({ strapi: strapi2 }) => ({
         }
       }
       if (templateService && typeof templateService.getMergedConfig === "function" && fullConfig) {
-        const { config: config2 } = await templateService.getMergedConfig(fullConfig);
-        ec = config2 ?? {};
+        const { config } = await templateService.getMergedConfig(fullConfig);
+        ec = config ?? {};
       }
       if (channelId != null) {
         try {
@@ -1531,7 +1640,7 @@ const config$1 = ({ strapi: strapi2 }) => ({
         thirdPartyEnabled,
         ssoEnabled: siteFeatureFlags.sso ?? true,
         ssoLoginUrl: ec.ssoLoginUrl ?? null,
-        registerEnabled: ec.registerEnabled ?? false,
+        registerEnabled: ec.registerEnabled ?? true,
         inviteCodeRequired: ec.inviteCodeRequired ?? false
       };
       result.featureFlags = {
@@ -1605,14 +1714,47 @@ const config$1 = ({ strapi: strapi2 }) => ({
         tabBarColor: themeConfig.tabBarColor ?? "#667eea",
         tabBarActiveColor: themeConfig.tabBarActiveColor ?? "#ffffff"
       };
+      const globalConfigService = strapi2.plugin("zhao-common")?.service("global-config");
+      let moduleEnabled = {};
+      let moduleTenantGrants = {};
+      try {
+        const globalConfig = await globalConfigService?.getGlobalConfig();
+        moduleEnabled = globalConfig?.moduleEnabled ?? {};
+        moduleTenantGrants = globalConfig?.moduleTenantGrants ?? {};
+      } catch (e) {
+        strapi2.log.warn("[config] global-config load failed:", e.message);
+      }
+      const currentTenantDocId = siteId ?? "";
+      const moduleGrantedForCurrentTenant = {};
+      for (const key of VISIBILITY_MODULES) {
+        const globalEnabled = moduleEnabled[key] ?? false;
+        const granted = moduleTenantGrants[key]?.includes(currentTenantDocId) ?? false;
+        moduleGrantedForCurrentTenant[key] = globalEnabled || granted;
+      }
+      result.moduleEnabled = moduleEnabled;
+      result.moduleGrantedForCurrentTenant = moduleGrantedForCurrentTenant;
+      try {
+        const permissionService = strapi2.plugin("zhao-auth")?.service("permission");
+        if (permissionService && typeof permissionService.resolveModuleVisibility === "function") {
+          result.moduleVisibility = await permissionService.resolveModuleVisibility(siteId);
+        } else {
+          result.moduleVisibility = fullConfig?.moduleVisibility ?? {};
+        }
+      } catch {
+        result.moduleVisibility = fullConfig?.moduleVisibility ?? {};
+      }
     } catch (error) {
       strapi2.log.warn("[config] getPublicConfig failed:", error.message);
     }
     return result;
   }
 });
-const MIGRATION_TABLE = "zhao_schema_migrations";
-const PLUGIN_ORDER = [
+
+// plugins/zhao-common/server/src/services/migration-runner.ts
+var import_fs = __toESM(require("fs"));
+var import_path = __toESM(require("path"));
+var MIGRATION_TABLE = "zhao_schema_migrations";
+var PLUGIN_ORDER = [
   "zhao-common",
   "zhao-tag",
   "zhao-oss",
@@ -1631,16 +1773,16 @@ const PLUGIN_ORDER = [
 function getPluginRoot(plugin) {
   try {
     const pluginMain = require.resolve(`${plugin}/strapi-server.js`, { paths: [process.cwd()] });
-    return path__default.default.dirname(path__default.default.dirname(pluginMain));
+    return import_path.default.dirname(import_path.default.dirname(pluginMain));
   } catch {
     try {
       const currentFile = typeof __filename !== "undefined" ? __filename : module.filename;
-      const migrationRunnerDir = path__default.default.dirname(String(currentFile));
-      const serverDir = path__default.default.dirname(migrationRunnerDir);
-      const pluginDir = path__default.default.dirname(serverDir);
-      const pluginsDir = path__default.default.dirname(pluginDir);
-      const targetPlugin = path__default.default.join(pluginsDir, plugin);
-      if (fs__default.default.existsSync(targetPlugin)) {
+      const migrationRunnerDir = import_path.default.dirname(String(currentFile));
+      const serverDir = import_path.default.dirname(migrationRunnerDir);
+      const pluginDir = import_path.default.dirname(serverDir);
+      const pluginsDir = import_path.default.dirname(pluginDir);
+      const targetPlugin = import_path.default.join(pluginsDir, plugin);
+      if (import_fs.default.existsSync(targetPlugin)) {
         return targetPlugin;
       }
     } catch (e) {
@@ -1648,7 +1790,7 @@ function getPluginRoot(plugin) {
     return "";
   }
 }
-const migrationRunner = ({ strapi: strapi2 }) => ({
+var migration_runner_default = ({ strapi: strapi2 }) => ({
   async ensureMigrationTable() {
     const hasTable = await strapi2.db.connection.schema.hasTable(MIGRATION_TABLE);
     if (!hasTable) {
@@ -1660,7 +1802,7 @@ const migrationRunner = ({ strapi: strapi2 }) => ({
         table.timestamp("executed_at").notNullable().defaultTo(strapi2.db.connection.fn.now());
         table.unique(["plugin", "version"]);
       });
-      strapi2.log.info("[migration] 迁移记录表已创建");
+      strapi2.log.info("[migration] \u8FC1\u79FB\u8BB0\u5F55\u8868\u5DF2\u521B\u5EFA");
     }
   },
   async getExecutedMigrations(plugin) {
@@ -1669,11 +1811,11 @@ const migrationRunner = ({ strapi: strapi2 }) => ({
   },
   async getMigrationFiles(plugin) {
     const pluginRoot = getPluginRoot(plugin);
-    const migrationsDir = path__default.default.join(pluginRoot, "server", "database", "migrations");
-    if (!fs__default.default.existsSync(migrationsDir)) {
+    const migrationsDir = import_path.default.join(pluginRoot, "server", "database", "migrations");
+    if (!import_fs.default.existsSync(migrationsDir)) {
       return [];
     }
-    const files = fs__default.default.readdirSync(migrationsDir).filter((f) => f.endsWith(".js") || f.endsWith(".ts")).sort();
+    const files = import_fs.default.readdirSync(migrationsDir).filter((f) => f.endsWith(".js") || f.endsWith(".ts")).sort();
     const result = [];
     for (const file of files) {
       const match = file.match(/^(\d+)_(.+)\.(js|ts)$/);
@@ -1681,7 +1823,7 @@ const migrationRunner = ({ strapi: strapi2 }) => ({
         result.push({
           version: match[1],
           name: match[2],
-          filePath: path__default.default.join(migrationsDir, file)
+          filePath: import_path.default.join(migrationsDir, file)
         });
       }
     }
@@ -1692,7 +1834,7 @@ const migrationRunner = ({ strapi: strapi2 }) => ({
     const fn = migration[direction];
     if (!fn) {
       if (direction === "down") return;
-      throw new Error(`迁移脚本 ${filePath} 缺少 ${direction} 方法`);
+      throw new Error(`\u8FC1\u79FB\u811A\u672C ${filePath} \u7F3A\u5C11 ${direction} \u65B9\u6CD5`);
     }
     const ctx = {
       strapi: strapi2,
@@ -1725,13 +1867,13 @@ const migrationRunner = ({ strapi: strapi2 }) => ({
           await this.runMigration(plugin, file.version, file.name, file.filePath, "up");
           executedCount++;
         } catch (err) {
-          strapi2.log.error(`[migration] ${plugin}: v${file.version} ${file.name} 执行失败: ${err.message}`);
+          strapi2.log.error(`[migration] ${plugin}: v${file.version} ${file.name} \u6267\u884C\u5931\u8D25: ${err.message}`);
           throw err;
         }
       }
     }
     if (executedCount > 0) {
-      strapi2.log.info(`[migration] 数据库迁移完成，共执行 ${executedCount} 个`);
+      strapi2.log.info(`[migration] \u6570\u636E\u5E93\u8FC1\u79FB\u5B8C\u6210\uFF0C\u5171\u6267\u884C ${executedCount} \u4E2A`);
     }
   },
   async rollback(plugin, version) {
@@ -1739,55 +1881,511 @@ const migrationRunner = ({ strapi: strapi2 }) => ({
     const files = await this.getMigrationFiles(plugin);
     const target = files.find((f) => f.version === version);
     if (!target) {
-      throw new Error(`未找到迁移脚本: ${plugin} v${version}`);
+      throw new Error(`\u672A\u627E\u5230\u8FC1\u79FB\u811A\u672C: ${plugin} v${version}`);
     }
     const executed = await this.getExecutedMigrations(plugin);
     if (!executed.includes(version)) {
-      throw new Error(`迁移未执行，无法回滚: ${plugin} v${version}`);
+      throw new Error(`\u8FC1\u79FB\u672A\u6267\u884C\uFF0C\u65E0\u6CD5\u56DE\u6EDA: ${plugin} v${version}`);
     }
     await this.runMigration(plugin, version, target.name, target.filePath, "down");
-    strapi2.log.info(`[migration] ${plugin}: v${version} 回滚成功`);
+    strapi2.log.info(`[migration] ${plugin}: v${version} \u56DE\u6EDA\u6210\u529F`);
   }
 });
-const services = {
-  logger,
-  "error-handler": errorHandler,
-  "config-manager": configManager,
-  i18n,
-  "soft-delete": softDelete$1,
-  "site-config": siteConfig$2,
-  "site-template": siteTemplate$2,
-  config: config$1,
-  "migration-runner": migrationRunner
+
+// plugins/zhao-common/server/src/services/global-config.ts
+var UID2 = "plugin::zhao-common.global-config";
+var global_config_default = ({ strapi: strapi2 }) => ({
+  async getGlobalConfig() {
+    try {
+      const result = await strapi2.documents(UID2).findFirst({});
+      return result || { moduleEnabled: {}, moduleTenantGrants: {}, moduleVisibility: {} };
+    } catch (e) {
+      strapi2.log.error("[global-config] getGlobalConfig failed:", e);
+      return { moduleEnabled: {}, moduleTenantGrants: {}, moduleVisibility: {} };
+    }
+  },
+  async updateGlobalConfig(data) {
+    const existing = await this.getGlobalConfig();
+    const documentId = existing?.documentId;
+    const updateData = {
+      moduleEnabled: data.moduleEnabled ?? existing.moduleEnabled ?? {},
+      moduleTenantGrants: data.moduleTenantGrants ?? existing.moduleTenantGrants ?? {},
+      moduleVisibility: data.moduleVisibility ?? existing.moduleVisibility ?? {}
+    };
+    if (documentId) {
+      return await strapi2.documents(UID2).update({ documentId, data: updateData });
+    } else {
+      return await strapi2.documents(UID2).create({ data: updateData });
+    }
+  }
+});
+
+// plugins/zhao-common/server/src/services/index.ts
+var services_default = {
+  logger: logger_default,
+  "error-handler": error_handler_default,
+  "config-manager": config_manager_default,
+  i18n: i18n_default,
+  "soft-delete": soft_delete_default,
+  "site-config": site_config_default,
+  "site-template": site_template_default,
+  config: config_default2,
+  "migration-runner": migration_runner_default,
+  "global-config": global_config_default
 };
-const kind$1 = "collectionType";
-const collectionName$1 = "zhao_site_configs";
-const info$1 = { "singularName": "site-config", "pluralName": "site-configs", "displayName": "站点配置", "description": "站点通用配置（多租户）" };
-const options$1 = { "draftAndPublish": false };
-const attributes$1 = { "siteName": { "type": "string", "maxLength": 100 }, "siteDescription": { "type": "text" }, "logo": { "type": "media", "multiple": false, "required": false, "allowedTypes": ["images"] }, "favicon": { "type": "media", "multiple": false, "required": false, "allowedTypes": ["images"] }, "icpNumber": { "type": "string", "maxLength": 50 }, "seoKeywords": { "type": "string", "maxLength": 500 }, "seoDescription": { "type": "text" }, "tencentMapKey": { "type": "string", "maxLength": 64 }, "shareTitle": { "type": "string", "maxLength": 100 }, "shareDescription": { "type": "string", "maxLength": 200 }, "shareImage": { "type": "media", "multiple": false, "required": false, "allowedTypes": ["images"] }, "customerServiceUrl": { "type": "string", "maxLength": 500 }, "domain": { "type": "string", "maxLength": 255, "unique": true }, "channels": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-channel.channel", "mappedBy": "sites" }, "featureFlags": { "type": "json", "default": { "sso": false, "points": true, "quiz": true, "course": true, "channel": true, "thirdParty": true, "oss": false, "website": true, "logistics": true, "studio": true } }, "template": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-template", "inversedBy": "sites" }, "extraConfig": { "type": "json" }, "themeConfig": { "type": "json", "default": "{}" }, "channelUsage": { "type": "enumeration", "enum": ["site_only", "site_and_cross", "site_cross_user"], "default": "site_cross_user", "required": true }, "tags": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-tag.tag", "mappedBy": "site" }, "tagGroups": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-tag.tag-group", "mappedBy": "site" }, "website_seo_config": { "type": "relation", "relation": "oneToOne", "target": "plugin::zhao-website.seo-config", "mappedBy": "site" }, "website_brand_info": { "type": "relation", "relation": "oneToOne", "target": "plugin::zhao-website.brand-info", "mappedBy": "site" }, "website_articles": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.article", "mappedBy": "site" }, "website_article_categories": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.article-category", "mappedBy": "site" }, "website_cases": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.case", "mappedBy": "site" }, "website_faqs": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.faq", "mappedBy": "site" }, "website_tutorials": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.tutorial", "mappedBy": "site" }, "website_compliances": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.compliance", "mappedBy": "site" }, "website_downloads": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.download", "mappedBy": "site" }, "website_ai_summaries": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.ai-content-summary", "mappedBy": "site" }, "website_first_truths": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.first-truth-policy", "mappedBy": "site" }, "website_knowledge_entities": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.knowledge-entity", "mappedBy": "site" }, "website_knowledge_relations": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.knowledge-relation", "mappedBy": "site" }, "website_leads": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.lead", "mappedBy": "site" }, "website_interactions": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.interaction", "mappedBy": "site" }, "website_search_logs": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.search-log", "mappedBy": "site" }, "website_visit_logs": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.visit-log", "mappedBy": "site" }, "website_products": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.product", "mappedBy": "site" }, "logistics_tracking_providers": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-logistics.tracking-provider", "mappedBy": "site" }, "logistics_tracking_shipments": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-logistics.tracking-shipment", "mappedBy": "site" }, "logistics_tracking_nodes": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-logistics.tracking-node", "mappedBy": "site" }, "logistics_subscriptions": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-logistics.subscription", "mappedBy": "site" }, "logistics_quote_requests": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-logistics.quote-request", "mappedBy": "site" }, "logistics_quote_price_rules": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-logistics.quote-price-rule", "mappedBy": "site" }, "logistics_quote_price_formulas": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-logistics.quote-price-formula", "mappedBy": "site" }, "logistics_quote_field_rules": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-logistics.quote-field-rule", "mappedBy": "site" }, "logistics_customer_profiles": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-logistics.customer-profile", "mappedBy": "site" }, "logistics_conversion_events": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-logistics.conversion-event", "mappedBy": "site" }, "logistics_conversion_funnels": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-logistics.conversion-funnel", "mappedBy": "site" }, "logistics_contact_matrices": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-logistics.contact-matrix", "mappedBy": "site" }, "logistics_landing_pages": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-logistics.landing-page", "mappedBy": "site" }, "logistics_intent_orders": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-logistics.intent-order", "mappedBy": "site" }, "logistics_referrals": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-logistics.referral", "mappedBy": "site" }, "logistics_reviews": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-logistics.review", "mappedBy": "site" }, "studio_sync_events": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.sync-event", "mappedBy": "site" }, "website_brand_voices": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.brand-voice", "mappedBy": "site" } };
-const siteConfig$1 = {
-  kind: kind$1,
-  collectionName: collectionName$1,
-  info: info$1,
-  options: options$1,
-  attributes: attributes$1
+
+// plugins/zhao-common/server/src/content-types/site-config/schema.json
+var schema_default = {
+  kind: "collectionType",
+  collectionName: "zhao_site_configs",
+  info: {
+    singularName: "site-config",
+    pluralName: "site-configs",
+    displayName: "\u7AD9\u70B9\u914D\u7F6E",
+    description: "\u7AD9\u70B9\u901A\u7528\u914D\u7F6E\uFF08\u591A\u79DF\u6237\uFF09"
+  },
+  options: {
+    draftAndPublish: false
+  },
+  attributes: {
+    siteName: {
+      type: "string",
+      maxLength: 100
+    },
+    siteDescription: {
+      type: "text"
+    },
+    logo: {
+      type: "media",
+      multiple: false,
+      required: false,
+      allowedTypes: ["images"]
+    },
+    favicon: {
+      type: "media",
+      multiple: false,
+      required: false,
+      allowedTypes: ["images"]
+    },
+    icpNumber: {
+      type: "string",
+      maxLength: 50
+    },
+    seoKeywords: {
+      type: "string",
+      maxLength: 500
+    },
+    seoDescription: {
+      type: "text"
+    },
+    tencentMapKey: {
+      type: "string",
+      maxLength: 64
+    },
+    shareTitle: {
+      type: "string",
+      maxLength: 100
+    },
+    shareDescription: {
+      type: "string",
+      maxLength: 200
+    },
+    shareImage: {
+      type: "media",
+      multiple: false,
+      required: false,
+      allowedTypes: ["images"]
+    },
+    customerServiceUrl: {
+      type: "string",
+      maxLength: 500
+    },
+    domain: {
+      type: "string",
+      maxLength: 255,
+      unique: true
+    },
+    channels: {
+      type: "relation",
+      relation: "manyToMany",
+      target: "plugin::zhao-channel.channel",
+      mappedBy: "sites"
+    },
+    featureFlags: {
+      type: "json",
+      default: {
+        sso: false,
+        points: true,
+        quiz: true,
+        course: true,
+        channel: true,
+        thirdParty: true,
+        oss: false,
+        website: true,
+        logistics: true,
+        studio: true
+      }
+    },
+    moduleVisibility: {
+      type: "json",
+      default: {}
+    },
+    template: {
+      type: "relation",
+      relation: "manyToOne",
+      target: "plugin::zhao-common.site-template",
+      inversedBy: "sites"
+    },
+    extraConfig: {
+      type: "json"
+    },
+    themeConfig: {
+      type: "json",
+      default: "{}"
+    },
+    channelUsage: {
+      type: "enumeration",
+      enum: ["site_only", "site_and_cross", "site_cross_user"],
+      default: "site_cross_user",
+      required: true
+    },
+    tags: {
+      type: "relation",
+      relation: "oneToMany",
+      target: "plugin::zhao-tag.tag",
+      mappedBy: "site"
+    },
+    tagGroups: {
+      type: "relation",
+      relation: "oneToMany",
+      target: "plugin::zhao-tag.tag-group",
+      mappedBy: "site"
+    },
+    website_seo_config: {
+      type: "relation",
+      relation: "oneToOne",
+      target: "plugin::zhao-website.seo-config",
+      mappedBy: "site"
+    },
+    website_brand_info: {
+      type: "relation",
+      relation: "oneToOne",
+      target: "plugin::zhao-website.brand-info",
+      mappedBy: "site"
+    },
+    website_articles: {
+      type: "relation",
+      relation: "oneToMany",
+      target: "plugin::zhao-website.article",
+      mappedBy: "site"
+    },
+    website_article_categories: {
+      type: "relation",
+      relation: "oneToMany",
+      target: "plugin::zhao-website.article-category",
+      mappedBy: "site"
+    },
+    website_cases: {
+      type: "relation",
+      relation: "oneToMany",
+      target: "plugin::zhao-website.case",
+      mappedBy: "site"
+    },
+    website_faqs: {
+      type: "relation",
+      relation: "oneToMany",
+      target: "plugin::zhao-website.faq",
+      mappedBy: "site"
+    },
+    website_tutorials: {
+      type: "relation",
+      relation: "oneToMany",
+      target: "plugin::zhao-website.tutorial",
+      mappedBy: "site"
+    },
+    website_compliances: {
+      type: "relation",
+      relation: "oneToMany",
+      target: "plugin::zhao-website.compliance",
+      mappedBy: "site"
+    },
+    website_downloads: {
+      type: "relation",
+      relation: "oneToMany",
+      target: "plugin::zhao-website.download",
+      mappedBy: "site"
+    },
+    website_ai_summaries: {
+      type: "relation",
+      relation: "oneToMany",
+      target: "plugin::zhao-website.ai-content-summary",
+      mappedBy: "site"
+    },
+    website_first_truths: {
+      type: "relation",
+      relation: "oneToMany",
+      target: "plugin::zhao-website.first-truth-policy",
+      mappedBy: "site"
+    },
+    website_knowledge_entities: {
+      type: "relation",
+      relation: "oneToMany",
+      target: "plugin::zhao-website.knowledge-entity",
+      mappedBy: "site"
+    },
+    website_knowledge_relations: {
+      type: "relation",
+      relation: "oneToMany",
+      target: "plugin::zhao-website.knowledge-relation",
+      mappedBy: "site"
+    },
+    website_leads: {
+      type: "relation",
+      relation: "oneToMany",
+      target: "plugin::zhao-website.lead",
+      mappedBy: "site"
+    },
+    website_interactions: {
+      type: "relation",
+      relation: "oneToMany",
+      target: "plugin::zhao-website.interaction",
+      mappedBy: "site"
+    },
+    website_search_logs: {
+      type: "relation",
+      relation: "oneToMany",
+      target: "plugin::zhao-website.search-log",
+      mappedBy: "site"
+    },
+    website_visit_logs: {
+      type: "relation",
+      relation: "oneToMany",
+      target: "plugin::zhao-website.visit-log",
+      mappedBy: "site"
+    },
+    website_products: {
+      type: "relation",
+      relation: "oneToMany",
+      target: "plugin::zhao-website.product",
+      mappedBy: "site"
+    },
+    logistics_tracking_providers: {
+      type: "relation",
+      relation: "oneToMany",
+      target: "plugin::zhao-logistics.tracking-provider",
+      mappedBy: "site"
+    },
+    logistics_tracking_shipments: {
+      type: "relation",
+      relation: "oneToMany",
+      target: "plugin::zhao-logistics.tracking-shipment",
+      mappedBy: "site"
+    },
+    logistics_tracking_nodes: {
+      type: "relation",
+      relation: "oneToMany",
+      target: "plugin::zhao-logistics.tracking-node",
+      mappedBy: "site"
+    },
+    logistics_subscriptions: {
+      type: "relation",
+      relation: "oneToMany",
+      target: "plugin::zhao-logistics.subscription",
+      mappedBy: "site"
+    },
+    logistics_quote_requests: {
+      type: "relation",
+      relation: "oneToMany",
+      target: "plugin::zhao-logistics.quote-request",
+      mappedBy: "site"
+    },
+    logistics_quote_price_rules: {
+      type: "relation",
+      relation: "oneToMany",
+      target: "plugin::zhao-logistics.quote-price-rule",
+      mappedBy: "site"
+    },
+    logistics_quote_price_formulas: {
+      type: "relation",
+      relation: "oneToMany",
+      target: "plugin::zhao-logistics.quote-price-formula",
+      mappedBy: "site"
+    },
+    logistics_quote_field_rules: {
+      type: "relation",
+      relation: "oneToMany",
+      target: "plugin::zhao-logistics.quote-field-rule",
+      mappedBy: "site"
+    },
+    logistics_customer_profiles: {
+      type: "relation",
+      relation: "oneToMany",
+      target: "plugin::zhao-logistics.customer-profile",
+      mappedBy: "site"
+    },
+    logistics_conversion_events: {
+      type: "relation",
+      relation: "oneToMany",
+      target: "plugin::zhao-logistics.conversion-event",
+      mappedBy: "site"
+    },
+    logistics_conversion_funnels: {
+      type: "relation",
+      relation: "oneToMany",
+      target: "plugin::zhao-logistics.conversion-funnel",
+      mappedBy: "site"
+    },
+    logistics_contact_matrices: {
+      type: "relation",
+      relation: "oneToMany",
+      target: "plugin::zhao-logistics.contact-matrix",
+      mappedBy: "site"
+    },
+    logistics_landing_pages: {
+      type: "relation",
+      relation: "oneToMany",
+      target: "plugin::zhao-logistics.landing-page",
+      mappedBy: "site"
+    },
+    logistics_intent_orders: {
+      type: "relation",
+      relation: "oneToMany",
+      target: "plugin::zhao-logistics.intent-order",
+      mappedBy: "site"
+    },
+    logistics_referrals: {
+      type: "relation",
+      relation: "oneToMany",
+      target: "plugin::zhao-logistics.referral",
+      mappedBy: "site"
+    },
+    logistics_reviews: {
+      type: "relation",
+      relation: "oneToMany",
+      target: "plugin::zhao-logistics.review",
+      mappedBy: "site"
+    },
+    studio_sync_events: {
+      type: "relation",
+      relation: "oneToMany",
+      target: "plugin::zhao-studio.sync-event",
+      mappedBy: "site"
+    },
+    website_brand_voices: {
+      type: "relation",
+      relation: "oneToMany",
+      target: "plugin::zhao-website.brand-voice",
+      mappedBy: "site"
+    }
+  }
 };
-const kind = "collectionType";
-const collectionName = "zhao_site_templates";
-const info = { "singularName": "site-template", "pluralName": "site-templates", "displayName": "站点模板", "description": "租户配置模板，定义预设值和字段约束" };
-const options = { "draftAndPublish": false };
-const attributes = { "name": { "type": "string", "required": true, "maxLength": 100 }, "displayName": { "type": "string", "maxLength": 100 }, "description": { "type": "text" }, "presetConfig": { "type": "json", "required": true }, "fieldConstraints": { "type": "json", "required": true }, "enabled": { "type": "boolean", "default": true }, "isDefault": { "type": "boolean", "default": false }, "sites": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-common.site-config", "mappedBy": "template" }, "themeConfig": { "type": "json", "default": "{}" } };
-const siteTemplate$1 = {
-  kind,
-  collectionName,
-  info,
-  options,
-  attributes
+
+// plugins/zhao-common/server/src/content-types/site-template/schema.json
+var schema_default2 = {
+  kind: "collectionType",
+  collectionName: "zhao_site_templates",
+  info: {
+    singularName: "site-template",
+    pluralName: "site-templates",
+    displayName: "\u7AD9\u70B9\u6A21\u677F",
+    description: "\u79DF\u6237\u914D\u7F6E\u6A21\u677F\uFF0C\u5B9A\u4E49\u9884\u8BBE\u503C\u548C\u5B57\u6BB5\u7EA6\u675F"
+  },
+  options: {
+    draftAndPublish: false
+  },
+  attributes: {
+    name: {
+      type: "string",
+      required: true,
+      maxLength: 100
+    },
+    displayName: {
+      type: "string",
+      maxLength: 100
+    },
+    description: {
+      type: "text"
+    },
+    presetConfig: {
+      type: "json",
+      required: true
+    },
+    fieldConstraints: {
+      type: "json",
+      required: true
+    },
+    enabled: {
+      type: "boolean",
+      default: true
+    },
+    isDefault: {
+      type: "boolean",
+      default: false
+    },
+    sites: {
+      type: "relation",
+      relation: "oneToMany",
+      target: "plugin::zhao-common.site-config",
+      mappedBy: "template"
+    },
+    themeConfig: {
+      type: "json",
+      default: "{}"
+    }
+  }
 };
-const contentTypes = {
-  "site-config": { schema: siteConfig$1 },
-  "site-template": { schema: siteTemplate$1 }
+
+// plugins/zhao-common/server/src/content-types/global-config/schema.json
+var schema_default3 = {
+  kind: "collectionType",
+  collectionName: "zhao_global_configs",
+  info: {
+    singularName: "global-config",
+    pluralName: "global-configs",
+    displayName: "\u5168\u5C40\u914D\u7F6E",
+    description: "\u8DE8\u79DF\u6237\u7684\u5168\u5C40\u6A21\u5757\u5F00\u5173\uFF0C\u4F18\u5148\u7EA7\u6700\u9AD8\uFF0C\u4EC5 admin \u53EF\u6539"
+  },
+  options: {
+    draftAndPublish: false
+  },
+  attributes: {
+    moduleEnabled: {
+      type: "json",
+      default: {
+        website: false,
+        logistics: false,
+        studio: false,
+        points: true,
+        course: true,
+        quiz: true,
+        channel: true,
+        sso: false,
+        thirdParty: false,
+        oss: false,
+        payment: false,
+        community: false,
+        forum: false
+      }
+    },
+    moduleTenantGrants: {
+      type: "json",
+      default: {}
+    },
+    moduleVisibility: {
+      type: "json",
+      default: {}
+    }
+  }
 };
+
+// plugins/zhao-common/server/src/content-types/index.ts
+var content_types_default = {
+  "site-config": { schema: schema_default },
+  "site-template": { schema: schema_default2 },
+  "global-config": { schema: schema_default3 }
+};
+
+// plugins/zhao-common/server/src/controllers/config.ts
 function getChannelScopeService(strapi2) {
   return strapi2.plugin("zhao-auth")?.service("channel-scope");
 }
@@ -1813,13 +2411,13 @@ async function assertThirdPartyInScope(strapi2, ctx, record) {
 async function validateChannelsAgainstScope(strapi2, channelDocumentIds, scope) {
   if (!scope || scope.all === true) return;
   if (channelDocumentIds.length === 0) {
-    const e = new Error("请选择至少一个渠道");
+    const e = new Error("\u8BF7\u9009\u62E9\u81F3\u5C11\u4E00\u4E2A\u6E20\u9053");
     e.status = 400;
     throw e;
   }
   const allowedIds = Array.isArray(scope.channelIds) ? scope.channelIds : [];
   if (allowedIds.length === 0) {
-    const e = new Error("您没有任何渠道权限，无法创建租户");
+    const e = new Error("\u60A8\u6CA1\u6709\u4EFB\u4F55\u6E20\u9053\u6743\u9650\uFF0C\u65E0\u6CD5\u521B\u5EFA\u79DF\u6237");
     e.status = 400;
     throw e;
   }
@@ -1829,17 +2427,17 @@ async function validateChannelsAgainstScope(strapi2, channelDocumentIds, scope) 
   });
   const invalid = selected.find((ch) => !allowedIds.includes(ch.id));
   if (invalid) {
-    const e = new Error(`无权操作渠道 ${invalid.name || invalid.documentId}`);
+    const e = new Error(`\u65E0\u6743\u64CD\u4F5C\u6E20\u9053 ${invalid.name || invalid.documentId}`);
     e.status = 400;
     throw e;
   }
 }
 async function syncChannelsForSite(strapi2, siteConfigDocumentId, channelDocumentIds) {
-  const siteConfig2 = await strapi2.db.query("plugin::zhao-common.site-config").findOne({
+  const siteConfig = await strapi2.db.query("plugin::zhao-common.site-config").findOne({
     where: { documentId: siteConfigDocumentId },
     select: ["id"]
   });
-  if (!siteConfig2) return;
+  if (!siteConfig) return;
   let channelIds = [];
   if (channelDocumentIds.length > 0) {
     const numericIds = [];
@@ -1869,14 +2467,14 @@ async function syncChannelsForSite(strapi2, siteConfigDocumentId, channelDocumen
   }
   const knex = strapi2.db.connection;
   await knex.transaction(async (trx) => {
-    await trx("zhao_channels_sites_lnk").where("site_config_id", siteConfig2.id).del();
+    await trx("zhao_channels_sites_lnk").where("site_config_id", siteConfig.id).del();
     if (channelIds.length > 0) {
-      const rows = channelIds.map((cid) => ({ channel_id: cid, site_config_id: siteConfig2.id }));
+      const rows = channelIds.map((cid) => ({ channel_id: cid, site_config_id: siteConfig.id }));
       await trx("zhao_channels_sites_lnk").insert(rows);
     }
   });
 }
-const config = ({ strapi: strapi2 }) => ({
+var config_default3 = ({ strapi: strapi2 }) => ({
   // ========== 站点配置 ==========
   async getSiteList(ctx) {
     try {
@@ -1902,18 +2500,18 @@ const config = ({ strapi: strapi2 }) => ({
       const siteId = ctx.state?.siteId;
       if (!siteId) {
         ctx.status = 400;
-        ctx.body = { error: "缺少站点标识" };
+        ctx.body = { error: "\u7F3A\u5C11\u7AD9\u70B9\u6807\u8BC6" };
         return;
       }
       const service = strapi2.plugin("zhao-common").service("config");
-      const siteConfig2 = await service.getSiteConfig(siteId);
-      if (!siteConfig2) {
+      const siteConfig = await service.getSiteConfig(siteId);
+      if (!siteConfig) {
         ctx.status = 404;
-        ctx.body = { error: "站点配置不存在" };
+        ctx.body = { error: "\u7AD9\u70B9\u914D\u7F6E\u4E0D\u5B58\u5728" };
         return;
       }
-      const ec = siteConfig2.extraConfig ?? {};
-      const { extraConfig, _meta, ...siteFields } = siteConfig2;
+      const ec = siteConfig.extraConfig ?? {};
+      const { extraConfig, _meta, ...siteFields } = siteConfig;
       const safeEc = {};
       for (const [key, value] of Object.entries(ec)) {
         if (!(key in siteFields)) {
@@ -1937,14 +2535,14 @@ const config = ({ strapi: strapi2 }) => ({
     try {
       const { documentId } = ctx.params;
       const service = strapi2.plugin("zhao-common").service("config");
-      const siteConfig2 = await service.getSiteConfig(documentId);
-      if (!siteConfig2) {
+      const siteConfig = await service.getSiteConfig(documentId);
+      if (!siteConfig) {
         ctx.status = 404;
-        ctx.body = { error: "站点配置不存在" };
+        ctx.body = { error: "\u7AD9\u70B9\u914D\u7F6E\u4E0D\u5B58\u5728" };
         return;
       }
-      const ec = siteConfig2.extraConfig ?? {};
-      const { extraConfig, _meta, ...siteFields } = siteConfig2;
+      const ec = siteConfig.extraConfig ?? {};
+      const { extraConfig, _meta, ...siteFields } = siteConfig;
       const safeEc = {};
       for (const [key, value] of Object.entries(ec)) {
         if (!(key in siteFields)) {
@@ -1970,7 +2568,7 @@ const config = ({ strapi: strapi2 }) => ({
       const siteConfigService = strapi2.plugin("zhao-common")?.service("site-config");
       if (!siteConfigService || typeof siteConfigService.createConfig !== "function") {
         ctx.status = 500;
-        ctx.body = { error: "站点配置服务不可用" };
+        ctx.body = { error: "\u7AD9\u70B9\u914D\u7F6E\u670D\u52A1\u4E0D\u53EF\u7528" };
         return;
       }
       const SITE_FIELDS = /* @__PURE__ */ new Set([
@@ -2026,7 +2624,7 @@ const config = ({ strapi: strapi2 }) => ({
       const saved = await siteConfigService.createConfig(siteData);
       if (!saved) {
         ctx.status = 500;
-        ctx.body = { error: "创建站点配置失败" };
+        ctx.body = { error: "\u521B\u5EFA\u7AD9\u70B9\u914D\u7F6E\u5931\u8D25" };
         return;
       }
       if (saved?.documentId) {
@@ -2034,13 +2632,13 @@ const config = ({ strapi: strapi2 }) => ({
       }
       if (!saved) {
         ctx.status = 500;
-        ctx.body = { error: "创建站点配置失败" };
+        ctx.body = { error: "\u521B\u5EFA\u7AD9\u70B9\u914D\u7F6E\u5931\u8D25" };
         return;
       }
       const configService = strapi2.plugin("zhao-common").service("config");
-      const siteConfig2 = await configService.getSiteConfig(saved.documentId);
-      const ec = siteConfig2?.extraConfig ?? {};
-      const { extraConfig, _meta, ...siteFields } = siteConfig2 ?? {};
+      const siteConfig = await configService.getSiteConfig(saved.documentId);
+      const ec = siteConfig?.extraConfig ?? {};
+      const { extraConfig, _meta, ...siteFields } = siteConfig ?? {};
       const safeEc = {};
       for (const [key, value] of Object.entries(ec)) {
         if (!(key in siteFields)) {
@@ -2067,7 +2665,7 @@ const config = ({ strapi: strapi2 }) => ({
       const siteId = ctx.state?.siteId;
       if (!siteId) {
         ctx.status = 400;
-        ctx.body = { error: "缺少站点标识" };
+        ctx.body = { error: "\u7F3A\u5C11\u7AD9\u70B9\u6807\u8BC6" };
         return;
       }
       const body = ctx.request.body?.data || ctx.request.body;
@@ -2150,7 +2748,7 @@ const config = ({ strapi: strapi2 }) => ({
       const currentConfig = await siteConfigService.getConfig(siteId);
       if (!currentConfig) {
         ctx.status = 404;
-        ctx.body = { error: "站点配置不存在" };
+        ctx.body = { error: "\u7AD9\u70B9\u914D\u7F6E\u4E0D\u5B58\u5728" };
         return;
       }
       const safeCurrentExtra = currentConfig?.extraConfig && typeof currentConfig.extraConfig === "object" && !Array.isArray(currentConfig.extraConfig) ? currentConfig.extraConfig : {};
@@ -2200,7 +2798,7 @@ const config = ({ strapi: strapi2 }) => ({
         try {
           await syncChannelsForSite(strapi2, saved.documentId, channelIds);
         } catch (e) {
-          strapi2.log.warn(`[config] 更新渠道关联失败: ${e.message}`);
+          strapi2.log.warn(`[config] \u66F4\u65B0\u6E20\u9053\u5173\u8054\u5931\u8D25: ${e.message}`);
         }
       }
       const savedSiteConfig = await service.getSiteConfig(siteId);
@@ -2306,7 +2904,7 @@ const config = ({ strapi: strapi2 }) => ({
       const currentConfig = await siteConfigService.getConfig(documentId);
       if (!currentConfig) {
         ctx.status = 404;
-        ctx.body = { error: "站点配置不存在" };
+        ctx.body = { error: "\u7AD9\u70B9\u914D\u7F6E\u4E0D\u5B58\u5728" };
         return;
       }
       const safeCurrentExtra = currentConfig?.extraConfig && typeof currentConfig.extraConfig === "object" && !Array.isArray(currentConfig.extraConfig) ? currentConfig.extraConfig : {};
@@ -2383,7 +2981,7 @@ const config = ({ strapi: strapi2 }) => ({
       const siteConfigService = strapi2.plugin("zhao-common")?.service("site-config");
       if (!siteConfigService || typeof siteConfigService.deleteConfig !== "function") {
         ctx.status = 500;
-        ctx.body = { error: "站点配置服务不可用" };
+        ctx.body = { error: "\u7AD9\u70B9\u914D\u7F6E\u670D\u52A1\u4E0D\u53EF\u7528" };
         return;
       }
       const data = await siteConfigService.deleteConfig(documentId);
@@ -2416,7 +3014,7 @@ const config = ({ strapi: strapi2 }) => ({
       const data = await service.getThirdPartyConfig(documentId);
       if (!data) {
         ctx.status = 404;
-        ctx.body = { error: "三方配置不存在" };
+        ctx.body = { error: "\u4E09\u65B9\u914D\u7F6E\u4E0D\u5B58\u5728" };
         return;
       }
       await assertThirdPartyInScope(strapi2, ctx, data);
@@ -2455,7 +3053,7 @@ const config = ({ strapi: strapi2 }) => ({
       const existing = await service.getThirdPartyConfig(documentId);
       if (!existing) {
         ctx.status = 404;
-        ctx.body = { error: "三方配置不存在" };
+        ctx.body = { error: "\u4E09\u65B9\u914D\u7F6E\u4E0D\u5B58\u5728" };
         return;
       }
       await assertThirdPartyInScope(strapi2, ctx, existing);
@@ -2473,7 +3071,7 @@ const config = ({ strapi: strapi2 }) => ({
       const existing = await service.getThirdPartyConfig(documentId);
       if (!existing) {
         ctx.status = 404;
-        ctx.body = { error: "三方配置不存在" };
+        ctx.body = { error: "\u4E09\u65B9\u914D\u7F6E\u4E0D\u5B58\u5728" };
         return;
       }
       await assertThirdPartyInScope(strapi2, ctx, existing);
@@ -2546,7 +3144,7 @@ const config = ({ strapi: strapi2 }) => ({
       const data = await service.getSsoApp(documentId);
       if (!data) {
         ctx.status = 404;
-        ctx.body = { error: "SSO应用不存在" };
+        ctx.body = { error: "SSO\u5E94\u7528\u4E0D\u5B58\u5728" };
         return;
       }
       ctx.body = { data };
@@ -2609,7 +3207,7 @@ const config = ({ strapi: strapi2 }) => ({
       const userId = ctx.state?.user?.id;
       if (!siteId) {
         ctx.status = 400;
-        ctx.body = { error: "缺少站点标识" };
+        ctx.body = { error: "\u7F3A\u5C11\u7AD9\u70B9\u6807\u8BC6" };
         return;
       }
       const channels = await strapi2.plugin("zhao-common").service("site-config").getAvailableChannels(siteId, userId);
@@ -2622,7 +3220,9 @@ const config = ({ strapi: strapi2 }) => ({
     }
   }
 });
-const softDelete = ({ strapi: strapi2 }) => ({
+
+// plugins/zhao-common/server/src/controllers/soft-delete.ts
+var soft_delete_default2 = ({ strapi: strapi2 }) => ({
   async softDelete(ctx) {
     try {
       const { contentType, documentId } = ctx.params;
@@ -2683,12 +3283,14 @@ const softDelete = ({ strapi: strapi2 }) => ({
     }
   }
 });
-const siteConfig = ({ strapi: strapi2 }) => ({
+
+// plugins/zhao-common/server/src/controllers/site-config.ts
+var site_config_default2 = ({ strapi: strapi2 }) => ({
   async get(ctx) {
     try {
       const service = strapi2.plugin("zhao-common").service("site-config");
-      const config2 = await service.getConfig();
-      ctx.body = { data: config2 };
+      const config = await service.getConfig();
+      ctx.body = { data: config };
     } catch (e) {
       ctx.status = e.status ?? 400;
       ctx.body = { error: e.message };
@@ -2698,8 +3300,8 @@ const siteConfig = ({ strapi: strapi2 }) => ({
     try {
       const body = ctx.request.body?.data || ctx.request.body;
       const service = strapi2.plugin("zhao-common").service("site-config");
-      const config2 = await service.updateConfig(body);
-      ctx.body = { data: config2 };
+      const config = await service.updateConfig(body);
+      ctx.body = { data: config };
     } catch (e) {
       ctx.status = e.status ?? 400;
       ctx.body = { error: e.message };
@@ -2708,22 +3310,24 @@ const siteConfig = ({ strapi: strapi2 }) => ({
   async getPublic(ctx) {
     try {
       const service = strapi2.plugin("zhao-common").service("site-config");
-      const config2 = await service.getPublicConfig();
-      ctx.body = { data: config2 };
+      const config = await service.getPublicConfig();
+      ctx.body = { data: config };
     } catch (e) {
       ctx.status = e.status ?? 400;
       ctx.body = { error: e.message };
     }
   }
 });
-const siteTemplate = ({ strapi: strapi2 }) => ({
+
+// plugins/zhao-common/server/src/controllers/site-template.ts
+var site_template_default2 = ({ strapi: strapi2 }) => ({
   async list(ctx) {
     try {
       const service = strapi2.plugin("zhao-common").service("site-template");
       const data = await service.listTemplates(ctx.query);
       ctx.body = { data };
     } catch (error) {
-      strapi2.log.error(`[zhao-common] 获取模板列表失败: ${error.message}`);
+      strapi2.log.error(`[zhao-common] \u83B7\u53D6\u6A21\u677F\u5217\u8868\u5931\u8D25: ${error.message}`);
       ctx.status = error.status ?? 500;
       ctx.body = { error: error.message };
     }
@@ -2735,12 +3339,12 @@ const siteTemplate = ({ strapi: strapi2 }) => ({
       const data = await service.getTemplate(documentId);
       if (!data) {
         ctx.status = 404;
-        ctx.body = { error: "模板不存在" };
+        ctx.body = { error: "\u6A21\u677F\u4E0D\u5B58\u5728" };
         return;
       }
       ctx.body = { data };
     } catch (error) {
-      strapi2.log.error(`[zhao-common] 获取模板失败: ${error.message}`);
+      strapi2.log.error(`[zhao-common] \u83B7\u53D6\u6A21\u677F\u5931\u8D25: ${error.message}`);
       ctx.status = error.status ?? 500;
       ctx.body = { error: error.message };
     }
@@ -2752,7 +3356,7 @@ const siteTemplate = ({ strapi: strapi2 }) => ({
       const data = await service.createTemplate(body);
       ctx.body = { data };
     } catch (error) {
-      strapi2.log.error(`[zhao-common] 创建模板失败: ${error.message}`);
+      strapi2.log.error(`[zhao-common] \u521B\u5EFA\u6A21\u677F\u5931\u8D25: ${error.message}`);
       ctx.status = error.status ?? 500;
       ctx.body = { error: error.message };
     }
@@ -2765,7 +3369,7 @@ const siteTemplate = ({ strapi: strapi2 }) => ({
       const data = await service.updateTemplate(documentId, body);
       ctx.body = { data };
     } catch (error) {
-      strapi2.log.error(`[zhao-common] 更新模板失败: ${error.message}`);
+      strapi2.log.error(`[zhao-common] \u66F4\u65B0\u6A21\u677F\u5931\u8D25: ${error.message}`);
       ctx.status = error.status ?? 500;
       ctx.body = { error: error.message };
     }
@@ -2777,7 +3381,7 @@ const siteTemplate = ({ strapi: strapi2 }) => ({
       const data = await service.deleteTemplate(documentId);
       ctx.body = { data };
     } catch (error) {
-      strapi2.log.error(`[zhao-common] 删除模板失败: ${error.message}`);
+      strapi2.log.error(`[zhao-common] \u5220\u9664\u6A21\u677F\u5931\u8D25: ${error.message}`);
       ctx.status = error.status ?? 500;
       ctx.body = { error: error.message };
     }
@@ -2788,41 +3392,120 @@ const siteTemplate = ({ strapi: strapi2 }) => ({
       const siteDocumentId = ctx.state?.siteId;
       if (!templateDocumentId || !siteDocumentId) {
         ctx.status = 400;
-        ctx.body = { error: "缺少模板或站点信息" };
+        ctx.body = { error: "\u7F3A\u5C11\u6A21\u677F\u6216\u7AD9\u70B9\u4FE1\u606F" };
         return;
       }
       if (mode && !["merge", "overwrite"].includes(mode)) {
         ctx.status = 400;
-        ctx.body = { error: "mode 只支持 merge 或 overwrite" };
+        ctx.body = { error: "mode \u53EA\u652F\u6301 merge \u6216 overwrite" };
         return;
       }
       const service = strapi2.plugin("zhao-common").service("site-template");
       const data = await service.applyTemplateToSite(templateDocumentId, siteDocumentId, mode ?? "merge");
       ctx.body = { data };
     } catch (error) {
-      strapi2.log.error(`[zhao-common] 应用模板失败: ${error.message}`);
+      strapi2.log.error(`[zhao-common] \u5E94\u7528\u6A21\u677F\u5931\u8D25: ${error.message}`);
       ctx.status = error.status ?? 500;
       ctx.body = { error: error.message };
     }
   }
 });
-const controllers = {
-  config,
-  "soft-delete": softDelete,
-  "site-config": siteConfig,
-  "site-template": siteTemplate
+
+// plugins/zhao-common/server/src/controllers/global-config.ts
+var global_config_default2 = {
+  async get(ctx) {
+    const service = strapi.plugin("zhao-common").service("global-config");
+    const data = await service.getGlobalConfig();
+    ctx.body = { data };
+  },
+  async update(ctx) {
+    const body = ctx.request.body?.data || ctx.request.body;
+    const { moduleEnabled, moduleTenantGrants, moduleVisibility } = body;
+    if (moduleEnabled !== void 0) {
+      if (typeof moduleEnabled !== "object" || Array.isArray(moduleEnabled)) {
+        ctx.status = 400;
+        ctx.body = { error: "moduleEnabled must be an object" };
+        return;
+      }
+      for (const key of Object.keys(moduleEnabled)) {
+        if (!VISIBILITY_MODULES.includes(key)) {
+          strapi.log.warn(`[global-config] Unknown moduleKey ignored: ${key}`);
+          delete moduleEnabled[key];
+        }
+      }
+    }
+    if (moduleTenantGrants !== void 0) {
+      if (typeof moduleTenantGrants !== "object" || Array.isArray(moduleTenantGrants)) {
+        ctx.status = 400;
+        ctx.body = { error: "moduleTenantGrants must be an object" };
+        return;
+      }
+      for (const [key, tenantIds] of Object.entries(moduleTenantGrants)) {
+        if (!VISIBILITY_MODULES.includes(key)) continue;
+        if (!Array.isArray(tenantIds)) {
+          ctx.status = 400;
+          ctx.body = { error: `moduleTenantGrants.${key} must be an array` };
+          return;
+        }
+      }
+    }
+    if (moduleVisibility !== void 0) {
+      if (typeof moduleVisibility !== "object" || Array.isArray(moduleVisibility)) {
+        ctx.status = 400;
+        ctx.body = { error: "moduleVisibility must be an object" };
+        return;
+      }
+      for (const [key, roles] of Object.entries(moduleVisibility)) {
+        if (!VISIBILITY_MODULES.includes(key)) {
+          strapi.log.warn(`[global-config] Unknown moduleKey ignored: ${key}`);
+          delete moduleVisibility[key];
+          continue;
+        }
+        if (!Array.isArray(roles)) {
+          ctx.status = 400;
+          ctx.body = { error: `moduleVisibility.${key} must be an array` };
+          return;
+        }
+      }
+    }
+    try {
+      const service = strapi.plugin("zhao-common").service("global-config");
+      const saved = await service.updateGlobalConfig({ moduleEnabled, moduleTenantGrants, moduleVisibility });
+      try {
+        strapi.plugin("zhao-auth")?.service("permission")?.invalidateCache?.();
+      } catch {
+      }
+      ctx.body = { data: saved };
+    } catch (e) {
+      ctx.status = 500;
+      ctx.body = { error: e.message };
+    }
+  }
 };
-const admin = {
+
+// plugins/zhao-common/server/src/controllers/index.ts
+var controllers_default = {
+  config: config_default3,
+  "soft-delete": soft_delete_default2,
+  "site-config": site_config_default2,
+  "site-template": site_template_default2,
+  "global-config": global_config_default2
+};
+
+// plugins/zhao-common/server/src/routes/admin.ts
+var admin_default = {
   type: "admin",
   routes: []
 };
-const publicRoute = (method, path2, handler) => ({
+
+// plugins/zhao-common/server/src/routes/content-api.ts
+var publicRoute = (method, path2, handler) => ({
   method,
   path: `/v1${path2}`,
   handler,
   config: { auth: false }
 });
-const adminRoute = (method, path2, handler, permission) => ({
+var adminRoute = (method, path2, handler, permission) => ({
   method,
   path: `/v1/admin${path2}`,
   handler,
@@ -2837,7 +3520,7 @@ const adminRoute = (method, path2, handler, permission) => ({
     ]
   }
 });
-const strictUserRoute = (method, path2, handler) => ({
+var strictUserRoute = (method, path2, handler) => ({
   method,
   path: `/v1${path2}`,
   handler,
@@ -2850,7 +3533,7 @@ const strictUserRoute = (method, path2, handler) => ({
     ]
   }
 });
-const contentApi = () => ({
+var content_api_default = () => ({
   type: "content-api",
   routes: [
     // ===== 公开路由 =====
@@ -2889,21 +3572,27 @@ const contentApi = () => ({
     adminRoute("DELETE", "/templates/:documentId", "site-template.delete", "template.delete"),
     adminRoute("POST", "/templates/apply", "site-template.applyToSite", "template.update"),
     // 获取可用渠道（站点渠道 + 用户直接渠道，不扩展子树）- strict 策略
-    strictUserRoute("GET", "/channels/available", "config.getAvailableChannels")
+    strictUserRoute("GET", "/channels/available", "config.getAvailableChannels"),
+    // 全局配置路由
+    adminRoute("GET", "/global-config", "global-config.get", "global-config.read"),
+    adminRoute("PUT", "/global-config", "global-config.update", "global-config.update")
   ]
 });
-const routes = {
-  admin,
-  "content-api": contentApi
+
+// plugins/zhao-common/server/src/routes/index.ts
+var routes_default = {
+  admin: admin_default,
+  "content-api": content_api_default
 };
-const index = {
-  register,
-  bootstrap,
-  config: config$2,
-  services,
-  contentTypes,
-  controllers,
-  policies,
-  routes
+
+// plugins/zhao-common/server/src/index.ts
+var index_default = {
+  register: register_default,
+  bootstrap: bootstrap_default,
+  config: config_default,
+  services: services_default,
+  contentTypes: content_types_default,
+  controllers: controllers_default,
+  policies: policies_default,
+  routes: routes_default
 };
-exports.default = index;

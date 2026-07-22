@@ -45,7 +45,7 @@ export default {
         return;
       }
       filtered[key] = (roles as any[]).filter(
-        (r) => typeof r === "string" && VALID_ROLES.has(r)
+        (r) => typeof r === "string" && VALID_ROLES.has(r as any)
       );
     }
 

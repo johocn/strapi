@@ -1,1 +1,1 @@
-{"version":3,"file":"AIConfigPage.d.ts","sourceRoot":"","sources":["../../../../admin/src/pages/AIConfigPage.tsx"],"names":[],"mappings":"AAAA,OAAO,KAAK,MAAM,OAAO,CAAC;AAO1B,QAAA,MAAM,YAAY,yBA6BjB,CAAC;AAEF,eAAe,YAAY,CAAC"}
+{"version":3,"file":"AIConfigPage.d.ts","sourceRoot":"","sources":["../../../../admin/src/pages/AIConfigPage.tsx"],"names":[],"mappings":"AAAA,OAAO,KAAK,MAAM,OAAO,CAAC;AAQ1B,QAAA,MAAM,YAAY,yBA+BjB,CAAC;AAEF,eAAe,YAAY,CAAC"}

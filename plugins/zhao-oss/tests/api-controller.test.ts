@@ -83,6 +83,10 @@ describe('api-controller 测试', () => {
       await controller.upload(ctx);
       expect(ctx.body.provider_metadata.ossStatus).toBe('success');
       expect(ctx.body.provider_metadata.ossUrl).toBeTruthy();
+      // 新增：OSS 成功时 url 仍为 OSS 完整 URL，不受 /static 影响
+      expect(ctx.body.url).toMatch(/^https?:\/\//);
+      // localUrl 也应带 /static 前缀（作为回退）
+      expect(ctx.body.provider_metadata.localUrl).toMatch(/^\/static\//);
     });
 
     test('OSS 上传失败时回退本地', async () => {
@@ -108,6 +112,9 @@ describe('api-controller 测试', () => {
       await controller.upload(ctx);
       expect(ctx.body.provider_metadata.ossStatus).toBe('pending');
       expect(ctx.body.provider).toBe('zhao-oss-local');
+      // 新增：验证本地 URL 带 /static 前缀
+      expect(ctx.body.url).toMatch(/^\/static\//);
+      expect(ctx.body.provider_metadata.localUrl).toMatch(/^\/static\//);
     });
 
     test('默认 folderPath 为 /general', async () => {

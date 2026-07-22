@@ -107,5 +107,9 @@ export default () => ({
 
     // 获取可用渠道（站点渠道 + 用户直接渠道，不扩展子树）- strict 策略
     strictUserRoute("GET", "/channels/available", "config.getAvailableChannels"),
+
+    // 全局配置路由
+    adminRoute("GET", "/global-config", "global-config.get", "global-config.read"),
+    adminRoute("PUT", "/global-config", "global-config.update", "global-config.update"),
   ],
 });

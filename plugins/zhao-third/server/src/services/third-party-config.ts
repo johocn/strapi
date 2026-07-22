@@ -51,6 +51,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     if (!linkRow) return null;
 
     // 3. 直接用 knex 查 third_party_configs 表（只取已发布记录）
+    // 注意：此函数仅用于登录授权流程，只需 appId/appSecret 等基础字段
+    // token/encodingAESKey/merchantId 等扩展字段通过 Document Service 读取（list/get 接口）
     const row = await knex("third_party_configs")
       .select("id", "document_id", "name", "platform", "app_type", "app_id", "app_secret", "enabled")
       .where("id", linkRow.third_party_config_id)
