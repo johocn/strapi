@@ -1,0 +1,50 @@
+{
+  "kind": "collectionType",
+  "collectionName": "zhao_deal_products",
+  "info": {
+    "singularName": "product",
+    "pluralName": "products",
+    "displayName": "商品",
+    "description": "正式商品库"
+  },
+  "options": { "draftAndPublish": false },
+  "pluginOptions": {
+    "content-manager": { "visible": true },
+    "content-type-builder": { "visible": false }
+  },
+  "attributes": {
+    "productId": { "type": "uid", "required": true, "unique": true },
+    "platform": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-deal.platform",
+      "inversedBy": "products"
+    },
+    "title": { "type": "string", "required": true },
+    "mainImage": { "type": "media", "allowedTypes": ["images"], "multiple": false },
+    "detailUrl": { "type": "string" },
+    "originalPrice": { "type": "decimal" },
+    "couponAmount": { "type": "decimal" },
+    "finalPrice": { "type": "decimal" },
+    "sales30d": { "type": "integer" },
+    "reviewCount": { "type": "integer" },
+    "reviewScore": { "type": "decimal" },
+    "brand": { "type": "string" },
+    "category": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-deal.category",
+      "inversedBy": "products"
+    },
+    "coupon": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "plugin::zhao-deal.coupon",
+      "inversedBy": "product"
+    },
+    "isRecommended": { "type": "boolean", "default": false },
+    "isHot": { "type": "boolean", "default": false },
+    "isNew": { "type": "boolean", "default": false },
+    "sortOrder": { "type": "integer", "default": 0 }
+  }
+}

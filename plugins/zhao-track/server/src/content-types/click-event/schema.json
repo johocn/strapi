@@ -1,0 +1,40 @@
+{
+  "kind": "collectionType",
+  "collectionName": "zhao_track_click_events",
+  "info": {
+    "singularName": "click-event",
+    "pluralName": "click-events",
+    "displayName": "点击事件",
+    "description": "优惠券点击追踪"
+  },
+  "options": { "draftAndPublish": false },
+  "pluginOptions": {
+    "content-manager": { "visible": true },
+    "content-type-builder": { "visible": false }
+  },
+  "attributes": {
+    "coupon": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-deal.coupon",
+      "inversedBy": "clickEvents"
+    },
+    "sourceTag": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-track.source-tag",
+      "inversedBy": "clickEvents"
+    },
+    "promoChannelId": { "type": "string" },
+    "promoPid": { "type": "string" },
+    "deviceFingerprint": { "type": "string", "required": true },
+    "clickedAt": { "type": "datetime", "required": true },
+    "ip": { "type": "string" },
+    "userAgent": { "type": "text" },
+    "browser": { "type": "string" },
+    "os": { "type": "string" },
+    "device": { "type": "string" },
+    "referer": { "type": "text" },
+    "resolvedLink": { "type": "text" }
+  }
+}
