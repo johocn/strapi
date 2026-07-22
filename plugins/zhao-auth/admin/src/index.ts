@@ -13,7 +13,7 @@ export default {
         id: `${pluginId}.plugin.name`,
         defaultMessage: '认证授权',
       },
-      permissions: [{ action: 'plugin::zhao-auth.user.manage', subject: null }],
+      permissions: [{ action: 'zhao-auth.user.manage', subject: null }],
       Component: async () => import('./pages/App'),
     });
 
