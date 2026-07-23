@@ -7,14 +7,22 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     // admin 返回全部租户
     if (roles.includes("admin")) {
       const all = await strapi.db.query(SITE_CONFIG_UID).findMany({
-        select: ["id", "documentId", "siteName", "domain"],
+        select: ["id", "documentId", "siteName", "domain", "featureFlags", "updatedAt"],
+        populate: {
+          channels: { select: ["id"] },
+          template: { select: ["name"] },
+        },
         limit: 1000,
       });
       return all.map((s: any) => ({
         id: s.id,
         documentId: s.documentId,
-        name: s.siteName,
+        siteName: s.siteName,
         domain: s.domain,
+        featureFlags: s.featureFlags ?? {},
+        channelsCount: (s.channels ?? []).length,
+        templateName: s.template?.name ?? null,
+        updatedAt: s.updatedAt,
       }));
     }
 
@@ -50,14 +58,22 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     // 查 site-config 表获取租户详情
     const sites = await strapi.db.query(SITE_CONFIG_UID).findMany({
       where: { id: { $in: siteIds } },
-      select: ["id", "documentId", "siteName", "domain"],
+      select: ["id", "documentId", "siteName", "domain", "featureFlags", "updatedAt"],
+      populate: {
+        channels: { select: ["id"] },
+        template: { select: ["name"] },
+      },
     });
 
     return sites.map((s: any) => ({
       id: s.id,
       documentId: s.documentId,
-      name: s.siteName,
+      siteName: s.siteName,
       domain: s.domain,
+      featureFlags: s.featureFlags ?? {},
+      channelsCount: (s.channels ?? []).length,
+      templateName: s.template?.name ?? null,
+      updatedAt: s.updatedAt,
     }));
   },
 });
