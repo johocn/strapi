@@ -17,7 +17,8 @@ const buildMockStrapi = (opts: {
   const clickFindMany = jest.fn().mockImplementation((args: any) => {
     const filters = args.filters || {};
     if (filters.deviceFingerprint) return Promise.resolve(clicksByRule.rule2 || []);
-    if (filters.promoCampaign && filters.promoCampaign.$in) return Promise.resolve(clicksByRule.rule1 || clicksByRule.rule3 || []);
+    if (filters.promoCampaign && filters.promoCampaign.$in) return Promise.resolve(clicksByRule.rule1 || []);
+    if (filters.promoPid) return Promise.resolve(clicksByRule.rule3 || []);
     if (filters.coupon) return Promise.resolve(clicksByRule.rule4 || []);
     return Promise.resolve([]);
   });
@@ -76,23 +77,23 @@ describe("Attribution.findMatchingClick", () => {
     expect(result?.quality).toBe("click_match");
   });
 
-  it("规则 3：promoPid 反查 promoCampaign 命中 ClickEvent → weak_match（rule1 无命中时复用同流程）", async () => {
+  it("规则 3：order.promoPid 直接匹配 ClickEvent.promoPid → weak_match + sourceTagId", async () => {
     const order = {
       documentId: "o3", orderId: "po3", promoPid: "promo_003",
       transactedAt: "2026-07-20T10:00:00Z",
       coupon: { documentId: "c1" },
     };
     const { mockStrapi } = buildMockStrapi({
-      channelConfigsByPid: { promo_003: [{ documentId: "cfg3", channel: { documentId: "ch3" } }] },
-      campaignsByChannel: { ch3: [{ documentId: "camp3" }] },
-      // 规则 1 与规则 3 现共用同一反查流程；命中后由 rule1 优先返回 pid_match
-      clicksByRule: { rule1: [{ documentId: "click3", promoCampaign: "camp3" }] },
+      // 不提供 channelConfigsByPid → 规则 1 反查失败
+      clicksByRule: {
+        rule3: [{ documentId: "click3", promoCampaign: "camp3", sourceTag: { documentId: "stag3" } }],
+      },
     });
     const svc = attributionFactory({ strapi: mockStrapi as any });
     const result = await svc.findMatchingClick(order);
     expect(result).not.toBeNull();
-    // 规则 1 命中后直接返回，规则 3 不会触发；同流程命中标记为 pid_match
-    expect(result?.quality).toBe("pid_match");
+    expect(result?.quality).toBe("weak_match");
+    expect(result?.sourceTagId).toBe("stag3");
   });
 
   it("规则 4：仅 coupon 匹配 → fallback_match", async () => {

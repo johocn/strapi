@@ -53,9 +53,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
                 },
                 sort: { clickedAt: "desc" },
                 limit: 1,
+                populate: { sourceTag: true },
               });
               if (clicks && clicks.length > 0) {
-                return { click: clicks[0], quality: "pid_match" };
+                return { click: clicks[0], quality: "pid_match", sourceTagId: clicks[0].sourceTag?.documentId };
               }
             }
           }
@@ -76,45 +77,31 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
           },
           sort: { clickedAt: "desc" },
           limit: 1,
+          populate: { sourceTag: true },
         });
         if (clicks && clicks.length > 0) {
-          return { click: clicks[0], quality: "click_match" };
+          return { click: clicks[0], quality: "click_match", sourceTagId: clicks[0].sourceTag?.documentId };
         }
       } catch (err: any) {
         strapi.log.warn(`[attribution] rule2 (click_match) failed: ${err.message}`);
       }
     }
 
-    // 规则 3: coupon + channel 弱匹配（复用规则 1 的 channel 反查逻辑）
+    // 规则 3: coupon + promoPid 弱匹配（直接查 ClickEvent.promoPid，不走 channel 反查）
     if (order.promoPid) {
       try {
-        const configs = await strapi.documents(CHANNEL_CONFIG_UID).findMany({
-          filters: { promoPid: order.promoPid },
-          populate: { channel: true },
+        const clicks = await strapi.documents(CLICK_EVENT_UID).findMany({
+          filters: {
+            coupon: couponDocId,
+            promoPid: order.promoPid,
+            clickedAt: { $gte: windowStart.toISOString(), $lte: transactedAt.toISOString() },
+          },
+          sort: { clickedAt: "desc" },
           limit: 1,
+          populate: { sourceTag: true },
         });
-        if (configs && configs.length > 0) {
-          const channelId = configs[0].channel?.documentId;
-          if (channelId) {
-            const campaigns = await strapi.documents(CAMPAIGN_UID).findMany({
-              filters: { channel: channelId },
-            });
-            const campaignIds = (campaigns || []).map((c: any) => c.documentId);
-            if (campaignIds.length > 0) {
-              const clicks = await strapi.documents(CLICK_EVENT_UID).findMany({
-                filters: {
-                  coupon: couponDocId,
-                  promoCampaign: { $in: campaignIds },
-                  clickedAt: { $gte: windowStart.toISOString(), $lte: transactedAt.toISOString() },
-                },
-                sort: { clickedAt: "desc" },
-                limit: 1,
-              });
-              if (clicks && clicks.length > 0) {
-                return { click: clicks[0], quality: "weak_match" };
-              }
-            }
-          }
+        if (clicks && clicks.length > 0) {
+          return { click: clicks[0], quality: "weak_match", sourceTagId: clicks[0].sourceTag?.documentId };
         }
       } catch (err: any) {
         strapi.log.warn(`[attribution] rule3 (weak_match) failed: ${err.message}`);
@@ -130,9 +117,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         },
         sort: { clickedAt: "desc" },
         limit: 1,
+        populate: { sourceTag: true },
       });
       if (clicks && clicks.length > 0) {
-        return { click: clicks[0], quality: "fallback_match" };
+        return { click: clicks[0], quality: "fallback_match", sourceTagId: clicks[0].sourceTag?.documentId };
       }
     } catch (err: any) {
       strapi.log.warn(`[attribution] rule4 (fallback_match) failed: ${err.message}`);
@@ -152,7 +140,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       const limit = opts?.limit || 500;
       const pendingOrders = await strapi.documents(ORDER_UID).findMany({
         filters: { matchedClick: null },
-        populate: { coupon: true },
+        populate: { coupon: true, promoCampaign: true },
         limit,
         sort: { transactedAt: "asc" },
       });
