@@ -44,6 +44,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       if (opts.sourceTagId) {
         const tags = await strapi.documents(SOURCE_TAG_UID).findMany({
           filters: { tagId: opts.sourceTagId },
+          populate: { promoCampaign: { populate: { channel: true } } },
         });
         if (tags && tags.length > 0) {
           const tag = tags[0];
@@ -61,7 +62,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         if (opts.utm.utmSource) filters.utmSource = opts.utm.utmSource;
         if (opts.utm.utmMedium) filters.utmMedium = opts.utm.utmMedium;
         if (opts.utm.utmCampaign) filters.utmCampaign = opts.utm.utmCampaign;
-        const tags = await strapi.documents(SOURCE_TAG_UID).findMany({ filters });
+        const tags = await strapi.documents(SOURCE_TAG_UID).findMany({
+          filters,
+          populate: { promoCampaign: { populate: { channel: true } } },
+        });
         if (tags && tags.length > 0) {
           const tag = tags[0];
           await strapi.documents(SOURCE_TAG_UID).update({
@@ -81,6 +85,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
             lastSeenAt: { $gte: thirtyDaysAgo.toISOString() },
           },
           sort: { lastSeenAt: "desc" },
+          populate: { promoCampaign: { populate: { channel: true } } },
         });
         if (tags && tags.length > 0) {
           const tag = tags[0];
@@ -115,7 +120,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
           lastSeenAt: now,
         } as any,
       });
-      return { tag: newTag, isNew: true };
+      const populated = await strapi.documents(SOURCE_TAG_UID).findOne({
+        documentId: newTag.documentId,
+        populate: { promoCampaign: { populate: { channel: true } } },
+      });
+      return { tag: populated, isNew: true };
     },
   };
 };

@@ -23,7 +23,8 @@ describe('source-resolver migration to promoCampaign', () => {
       });
       const update = jest.fn().mockResolvedValue({});
       const create = jest.fn().mockResolvedValue({ documentId: 'tag1', tagId: 'utm_123' });
-      return { findMany, update, create };
+      const findOne = jest.fn().mockResolvedValue({ documentId: 'tag1', tagId: 'utm_123', promoCampaign: null });
+      return { findMany, update, create, findOne };
     });
     service = sourceResolverFactory({ strapi });
 
@@ -38,7 +39,8 @@ describe('source-resolver migration to promoCampaign', () => {
       const findMany = jest.fn().mockResolvedValue([]);
       const create = uid === 'plugin::zhao-track.source-tag' ? createMock : jest.fn();
       const update = jest.fn().mockResolvedValue({});
-      return { findMany, create, update };
+      const findOne = jest.fn().mockResolvedValue({ documentId: 'tag1', tagId: 'utm_123', promoCampaign: null });
+      return { findMany, create, update, findOne };
     });
     service = sourceResolverFactory({ strapi });
 
