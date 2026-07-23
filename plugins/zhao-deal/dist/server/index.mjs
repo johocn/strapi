@@ -456,12 +456,12 @@ class MockAdapter {
     return { list, total: this.orderList.length, hasNext: start + opts.pageSize < this.orderList.length };
   }
 }
-const PLATFORM_UID$2 = "plugin::zhao-deal.platform";
+const PLATFORM_UID$3 = "plugin::zhao-deal.platform";
 const bootstrap = async ({ strapi }) => {
   strapi.log.info("[zhao-deal] 插件已加载");
   const registry = new AdapterRegistry();
   try {
-    const platforms = await strapi.documents(PLATFORM_UID$2).findMany({});
+    const platforms = await strapi.documents(PLATFORM_UID$3).findMany({});
     for (const platform2 of platforms) {
       if (!platform2.syncEnabled) continue;
       const cfg = {
@@ -497,7 +497,7 @@ const destroy = ({ strapi }) => {
 const COUPON_UID$1 = "plugin::zhao-deal.coupon";
 const PRODUCT_UID$1 = "plugin::zhao-deal.product";
 const CATEGORY_UID$1 = "plugin::zhao-deal.category";
-const PLATFORM_UID$1 = "plugin::zhao-deal.platform";
+const PLATFORM_UID$2 = "plugin::zhao-deal.platform";
 const COLLECTION_UID = "plugin::zhao-deal.coupon-collection";
 const SORT_MAP = {
   recommended: "isRecommended:DESC,sortOrder:DESC,endAt:ASC",
@@ -590,7 +590,7 @@ const query = ({ strapi }) => {
       });
     },
     async listPlatforms() {
-      return strapi.documents(PLATFORM_UID$1).findMany({});
+      return strapi.documents(PLATFORM_UID$2).findMany({});
     },
     async listCollections() {
       const now = (/* @__PURE__ */ new Date()).toISOString();
@@ -813,7 +813,7 @@ const candidate = ({ strapi }) => {
     }
   };
 };
-const PLATFORM_UID = "plugin::zhao-deal.platform";
+const PLATFORM_UID$1 = "plugin::zhao-deal.platform";
 const CATEGORY_UID = "plugin::zhao-deal.category";
 const resolveTimeRange = (timeRange, customStart, customEnd) => {
   const now = /* @__PURE__ */ new Date();
@@ -858,7 +858,7 @@ const sync = ({ strapi }) => {
     async syncPlatformData(opts) {
       const { platformCode, type, conditions } = opts;
       const startedAt = Date.now();
-      const platforms = await strapi.documents(PLATFORM_UID).findMany({
+      const platforms = await strapi.documents(PLATFORM_UID$1).findMany({
         filters: { code: platformCode }
       });
       if (!platforms || platforms.length === 0) {
@@ -953,6 +953,7 @@ const sync = ({ strapi }) => {
     }
   };
 };
+const PLATFORM_UID = "plugin::zhao-deal.platform";
 const syncScheduler = ({ strapi }) => {
   const getStore = () => strapi.store({ type: "plugin", name: "zhao-deal" });
   return {
@@ -962,7 +963,7 @@ const syncScheduler = ({ strapi }) => {
       const lastRunStr = await getStore().get({ key: storeKey });
       const lastRun = lastRunStr ? new Date(lastRunStr) : /* @__PURE__ */ new Date(0);
       try {
-        const parser = cronParser.parseExpression(syncCron);
+        const parser = cronParser.parseExpression(syncCron, { currentDate: lastRun });
         const nextRun = parser.next().toDate();
         const now = /* @__PURE__ */ new Date();
         if (now >= nextRun && now.getTime() - lastRun.getTime() > 60 * 1e3) {
@@ -977,6 +978,59 @@ const syncScheduler = ({ strapi }) => {
     async getLastRun(platformCode) {
       const v = await getStore().get({ key: `sync_last_run::${platformCode}` });
       return v ? new Date(v) : null;
+    },
+    /**
+     * 扫描所有 syncEnabled + syncMode in ['scheduled','both'] 的平台，
+     * 对到期的平台触发优惠券 + 产品同步（候选机制，结果进入 pending 等待人工审核）
+     */
+    async run() {
+      let platforms = [];
+      try {
+        platforms = await strapi.documents(PLATFORM_UID).findMany({
+          filters: { syncEnabled: true, syncMode: { $in: ["scheduled", "both"] } }
+        });
+      } catch (err) {
+        strapi.log.warn(`[zhao-deal sync-scheduler] load platforms failed: ${err.message}`);
+        return { processed: 0 };
+      }
+      let processed = 0;
+      for (const platform2 of platforms) {
+        try {
+          const should = await this.shouldRunNow(platform2.code, platform2.syncCron);
+          if (!should) continue;
+          const syncService = strapi.plugin("zhao-deal").service("sync");
+          let platformFailed = false;
+          let couponStats;
+          try {
+            couponStats = await syncService.syncPlatformData({
+              platformCode: platform2.code,
+              type: "coupons"
+            });
+          } catch (err) {
+            platformFailed = true;
+            strapi.log.warn(`[zhao-deal sync-scheduler] platform ${platform2.code} coupons failed: ${err.message}`);
+          }
+          let productStats;
+          try {
+            productStats = await syncService.syncPlatformData({
+              platformCode: platform2.code,
+              type: "products"
+            });
+          } catch (err) {
+            platformFailed = true;
+            strapi.log.warn(`[zhao-deal sync-scheduler] platform ${platform2.code} products failed: ${err.message}`);
+          }
+          if (!platformFailed) {
+            strapi.log.info(
+              `[zhao-deal sync-scheduler] ${platform2.code}: coupons(fetched=${couponStats.fetched} created=${couponStats.created} updated=${couponStats.updated}) products(fetched=${productStats.fetched} created=${productStats.created} updated=${productStats.updated})`
+            );
+            processed++;
+          }
+        } catch (err) {
+          strapi.log.warn(`[zhao-deal sync-scheduler] platform ${platform2.code} failed: ${err.message}`);
+        }
+      }
+      return { processed };
     }
   };
 };

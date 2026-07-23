@@ -78,6 +78,14 @@ const config = ({ env }) => ({
         enabled: true,
         resolve: "./plugins/zhao-course",
     },
+    "zhao-deal": {
+        enabled: true,
+        resolve: "./plugins/zhao-deal",
+    },
+    "zhao-track": {
+        enabled: true,
+        resolve: "./plugins/zhao-track",
+    },
     "zhao-point": {
         enabled: true,
         resolve: "./plugins/zhao-point",
@@ -151,6 +159,10 @@ const config = ({ env }) => ({
                 { uid: "plugin::zhao-point.point-product", field: "video", label: "积分商品-视频" },
                 { uid: "plugin::zhao-point.pickup-location", field: "businessLicense", label: "自提点-营业执照" },
                 { uid: "plugin::zhao-point.pickup-location", field: "coverImage", label: "自提点-封面图" },
+                // ============ 优惠券中心 (zhao-deal) — 3 字段 ============
+                { uid: "plugin::zhao-deal.category", field: "icon", label: "商品分类-图标" },
+                { uid: "plugin::zhao-deal.product", field: "mainImage", label: "商品-主图" },
+                { uid: "plugin::zhao-deal.coupon-collection", field: "coverImage", label: "优惠券合集-封面图" },
             ],
         },
     },

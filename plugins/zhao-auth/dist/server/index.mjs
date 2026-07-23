@@ -2062,69 +2062,6 @@ function extractRoleNames(user) {
   return arr.map((r) => typeof r === "string" ? r : r?.role).filter((name) => typeof name === "string" && name.trim());
 }
 const PERMISSION_UID$2 = "plugin::zhao-auth.permission";
-async function getRoleLevel(role) {
-  if (ROLE_HIERARCHY[role] != null) return ROLE_HIERARCHY[role];
-  const roleRecord = await strapi.db.query(PERMISSION_UID$2).findOne({
-    where: { role },
-    select: ["level"]
-  });
-  return roleRecord?.level ?? 20;
-}
-async function getUserLevel(userId) {
-  const user = await strapi.db.query(USER_UID$1).findOne({
-    where: { id: userId },
-    select: ["zhaoRoles"],
-    populate: ["role"]
-  });
-  if (!user) return 20;
-  const roles = extractRoleNames(user);
-  if (roles.length === 0) return 20;
-  const levels = await Promise.all(roles.map(getRoleLevel));
-  return Math.max(...levels);
-}
-async function computeOperatorOwnedRoles(operatorId, operatorTenantDocumentId) {
-  const operator = await strapi.db.query(USER_UID$1).findOne({
-    where: { id: operatorId },
-    select: ["zhaoRoles"]
-  });
-  const operatorRoles = Array.isArray(operator?.zhaoRoles) ? operator.zhaoRoles.map((r) => typeof r === "string" ? r : String(r)).filter((r) => r && r.trim()) : [];
-  if (operatorRoles.includes("admin")) {
-    const { ROLES: ROLES2 } = await Promise.resolve().then(() => permissions);
-    return Object.values(ROLES2);
-  }
-  const ownedSet = new Set(operatorRoles);
-  try {
-    const moduleVisibility2 = await strapi.plugin("zhao-auth").service("permission").resolveModuleVisibility(operatorTenantDocumentId);
-    const { MODULE_MANAGER_MAP: MODULE_MANAGER_MAP2 } = await Promise.resolve().then(() => permissions);
-    for (const [moduleKey, roles] of Object.entries(moduleVisibility2)) {
-      if (roles.includes("channel-admin")) {
-        const managerRole = MODULE_MANAGER_MAP2[moduleKey];
-        if (managerRole) {
-          ownedSet.add(managerRole);
-        }
-      }
-    }
-  } catch {
-  }
-  return Array.from(ownedSet);
-}
-async function resolveTenantUserIds(operatorId, _tenantDocumentId) {
-  try {
-    const operatorChannels = await strapi.db.query("plugin::zhao-channel.channel-member").findMany({
-      where: { user: operatorId, isCurrent: true },
-      populate: { channel: { select: ["id"] } }
-    });
-    const operatorChannelIds = operatorChannels.map((cm) => cm.channel?.id).filter(Boolean);
-    if (operatorChannelIds.length === 0) return null;
-    const targetMembers = await strapi.db.query("plugin::zhao-channel.channel-member").findMany({
-      where: { channel: { id: { $in: operatorChannelIds } } },
-      populate: { user: { select: ["id"] } }
-    });
-    return targetMembers.map((m) => m.user?.id).filter((id) => id != null);
-  } catch {
-    return null;
-  }
-}
 async function annotateUserRoles(user, _tenantDocumentId) {
   const { ROLE_LABELS: ROLE_LABELS2 } = await Promise.resolve().then(() => permissions);
   const directRoles = extractRoleNames(user);
@@ -2160,6 +2097,69 @@ async function checkPermission(userId, action, tenantDocumentId) {
   return permissions2.includes(action);
 }
 const roleManagementService = ({ strapi: strapi2 }) => {
+  async function getRoleLevel(role) {
+    if (ROLE_HIERARCHY[role] != null) return ROLE_HIERARCHY[role];
+    const roleRecord = await strapi2.db.query(PERMISSION_UID$2).findOne({
+      where: { role },
+      select: ["level"]
+    });
+    return roleRecord?.level ?? 20;
+  }
+  async function getUserLevel(userId) {
+    const user = await strapi2.db.query(USER_UID$1).findOne({
+      where: { id: userId },
+      select: ["zhaoRoles"],
+      populate: ["role"]
+    });
+    if (!user) return 20;
+    const roles = extractRoleNames(user);
+    if (roles.length === 0) return 20;
+    const levels = await Promise.all(roles.map(getRoleLevel));
+    return Math.max(...levels);
+  }
+  async function computeOperatorOwnedRoles(operatorId, operatorTenantDocumentId) {
+    const operator = await strapi2.db.query(USER_UID$1).findOne({
+      where: { id: operatorId },
+      select: ["zhaoRoles"]
+    });
+    const operatorRoles = Array.isArray(operator?.zhaoRoles) ? operator.zhaoRoles.map((r) => typeof r === "string" ? r : String(r)).filter((r) => r && r.trim()) : [];
+    if (operatorRoles.includes("admin")) {
+      const { ROLES: ROLES2 } = await Promise.resolve().then(() => permissions);
+      return Object.values(ROLES2);
+    }
+    const ownedSet = new Set(operatorRoles);
+    try {
+      const moduleVisibility2 = await strapi2.plugin("zhao-auth").service("permission").resolveModuleVisibility(operatorTenantDocumentId);
+      const { MODULE_MANAGER_MAP: MODULE_MANAGER_MAP2 } = await Promise.resolve().then(() => permissions);
+      for (const [moduleKey, roles] of Object.entries(moduleVisibility2)) {
+        if (roles.includes("channel-admin")) {
+          const managerRole = MODULE_MANAGER_MAP2[moduleKey];
+          if (managerRole) {
+            ownedSet.add(managerRole);
+          }
+        }
+      }
+    } catch {
+    }
+    return Array.from(ownedSet);
+  }
+  async function resolveTenantUserIds(operatorId, _tenantDocumentId) {
+    try {
+      const operatorChannels = await strapi2.db.query("plugin::zhao-channel.channel-member").findMany({
+        where: { user: operatorId, isCurrent: true },
+        populate: { channel: { select: ["id"] } }
+      });
+      const operatorChannelIds = operatorChannels.map((cm) => cm.channel?.id).filter(Boolean);
+      if (operatorChannelIds.length === 0) return null;
+      const targetMembers = await strapi2.db.query("plugin::zhao-channel.channel-member").findMany({
+        where: { channel: { id: { $in: operatorChannelIds } } },
+        populate: { user: { select: ["id"] } }
+      });
+      return targetMembers.map((m) => m.user?.id).filter((id) => id != null);
+    } catch {
+      return null;
+    }
+  }
   async function getUserEffectivePermissions(userId) {
     const cached = permissionCache$1.get(userId);
     if (cached && Date.now() - cached.timestamp < CACHE_TTL) {

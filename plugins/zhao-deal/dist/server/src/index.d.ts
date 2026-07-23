@@ -674,6 +674,9 @@ declare const _default: {
         }) => {
             shouldRunNow(platformCode: string, syncCron: string): Promise<boolean>;
             getLastRun(platformCode: string): Promise<Date | null>;
+            run(): Promise<{
+                processed: number;
+            }>;
         };
     };
     routes: {
