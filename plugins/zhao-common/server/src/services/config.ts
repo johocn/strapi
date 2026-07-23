@@ -243,7 +243,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   },
 
   // ========== 公开配置（只返回非敏感字段，统一从 extraConfig 读取） ==========
-  async getPublicConfig(siteId?: string, channelId?: string | number) {
+  async getPublicConfig(siteDocId?: string, channelId?: string | number) {
     const result: Record<string, any> = {};
 
     try {
@@ -252,7 +252,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       if (!siteConfigService) return result;
 
       // 一次查询获取完整站点配置
-      const fullConfig: any = await siteConfigService.getConfig(siteId);
+      const fullConfig: any = await siteConfigService.getConfig(siteDocId);
 
       // siteId 为 null（域名未匹配）时返回完整默认配置
       if (!fullConfig) {
@@ -497,7 +497,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       }
 
       // 计算当前租户的授权状态（不暴露其他租户 documentId）
-      const currentTenantDocId = siteId ?? "";
+      const currentTenantDocId = siteDocId ?? "";
       const moduleGrantedForCurrentTenant: Record<string, boolean> = {};
       for (const key of VISIBILITY_MODULES) {
         const globalEnabled = moduleEnabled[key] ?? false;
@@ -511,7 +511,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       try {
         const permissionService = strapi.plugin("zhao-auth")?.service("permission");
         if (permissionService && typeof (permissionService as any).resolveModuleVisibility === "function") {
-          result.moduleVisibility = await (permissionService as any).resolveModuleVisibility(siteId);
+          result.moduleVisibility = await (permissionService as any).resolveModuleVisibility(siteDocId);
         } else {
           result.moduleVisibility = fullConfig?.moduleVisibility ?? {};
         }

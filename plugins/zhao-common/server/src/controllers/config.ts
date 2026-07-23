@@ -846,10 +846,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   // ========== 公开配置 ==========
   async getPublic(ctx: any) {
     try {
-      const siteId = ctx.state?.siteId;
+      const siteDocId = ctx.state?.siteDocumentId;
       const channelId = ctx.query.channel || ctx.state?.channelId;
       const service = strapi.plugin("zhao-common").service("config");
-      const data = await service.getPublicConfig(siteId, channelId);
+      const data = await service.getPublicConfig(siteDocId, channelId);
       ctx.body = { data };
     } catch (error: any) {
       ctx.status = error.status ?? 500;
