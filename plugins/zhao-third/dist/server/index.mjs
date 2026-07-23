@@ -20,7 +20,7 @@ const thirdPartyAuthService = ({ strapi }) => ({
   /**
    * 获取三方授权 URL
    */
-  async getAuthUrl(platform, appType, redirectUrl, siteId) {
+  async getAuthUrl(platform, appType, redirectUrl, siteId, state) {
     const configService = strapi.plugin("zhao-third").service("third-party-config");
     const config2 = await configService.findByPlatformAndAppType(platform, appType, siteId);
     if (!config2) {
@@ -41,7 +41,7 @@ const thirdPartyAuthService = ({ strapi }) => ({
       params.redirect_uri = redirectUrl;
       params.response_type = "code";
       params.scope = appType === "official_account" ? "snsapi_userinfo" : "snsapi_login";
-      params.state = Math.random().toString(36).substring(2, 10);
+      params.state = state || Math.random().toString(36).substring(2, 10);
     } else if (platform === "alipay") {
       params.app_id = config2.appId;
       params.scope = "auth_user";
@@ -51,7 +51,7 @@ const thirdPartyAuthService = ({ strapi }) => ({
       params.scope = "user_info";
       params.redirect_uri = redirectUrl;
       params.response_type = "code";
-      params.state = Math.random().toString(36).substring(2, 10);
+      params.state = state || Math.random().toString(36).substring(2, 10);
     }
     const queryString = Object.entries(params).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("&");
     let authUrl = platformConfig.authorizeUrl;
@@ -517,15 +517,15 @@ const services = {
 const thirdPartyAuthController = ({ strapi }) => ({
   async authUrl(ctx) {
     try {
-      const { platform, appType, redirectUrl } = ctx.request.body;
+      const { platform, appType, redirectUrl, state } = ctx.request.body;
       if (!platform || !appType || !redirectUrl) {
         ctx.status = 400;
         ctx.body = { error: "请提供 platform, appType 和 redirectUrl" };
         return;
       }
-      const siteId = ctx.state?.siteId;
+      const siteDocId = ctx.state?.siteDocumentId;
       const authService = strapi.plugin("zhao-third").service("third-party-auth");
-      const result = await authService.getAuthUrl(platform, appType, redirectUrl, siteId);
+      const result = await authService.getAuthUrl(platform, appType, redirectUrl, siteDocId, state);
       ctx.body = result;
     } catch (error) {
       strapi.log.error(`[zhao-third] 获取授权URL失败: ${error.message}`);
@@ -541,9 +541,9 @@ const thirdPartyAuthController = ({ strapi }) => ({
         ctx.body = { error: "请提供 redirectUrl" };
         return;
       }
-      const siteId = ctx.state?.siteId;
+      const siteDocId = ctx.state?.siteDocumentId;
       const authService = strapi.plugin("zhao-third").service("third-party-auth");
-      const result = await authService.getQrconnectUrl(redirectUrl, siteId);
+      const result = await authService.getQrconnectUrl(redirectUrl, siteDocId);
       ctx.body = result;
     } catch (error) {
       strapi.log.error(`[zhao-third] 获取扫码登录URL失败: ${error.message}`);
@@ -559,7 +559,7 @@ const thirdPartyAuthController = ({ strapi }) => ({
         ctx.body = { error: "请提供 platform, appType 和 code" };
         return;
       }
-      const siteId = ctx.state?.siteId;
+      const siteDocId = ctx.state?.siteDocumentId;
       const authService = strapi.plugin("zhao-third").service("third-party-auth");
       const result = await authService.handleCallback({
         platform,
@@ -568,7 +568,7 @@ const thirdPartyAuthController = ({ strapi }) => ({
         encryptedData,
         iv,
         inviteCode,
-        siteId
+        siteId: siteDocId
       });
       ctx.body = result;
     } catch (error) {
@@ -580,9 +580,9 @@ const thirdPartyAuthController = ({ strapi }) => ({
   async publicConfig(ctx) {
     try {
       const { platform, appType } = ctx.params;
-      const siteId = ctx.state?.siteId;
+      const siteDocId = ctx.state?.siteDocumentId;
       const authService = strapi.plugin("zhao-third").service("third-party-auth");
-      const result = await authService.getPublicConfig(platform, appType, siteId);
+      const result = await authService.getPublicConfig(platform, appType, siteDocId);
       if (!result) {
         ctx.status = 404;
         ctx.body = { error: "未找到配置" };
@@ -621,9 +621,9 @@ const thirdPartyAuthController = ({ strapi }) => ({
         ctx.body = { error: "请提供 url" };
         return;
       }
-      const siteId = ctx.state?.siteId;
+      const siteDocId = ctx.state?.siteDocumentId;
       const authService = strapi.plugin("zhao-third").service("third-party-auth");
-      const result = await authService.getJssdkSignature(url, siteId);
+      const result = await authService.getJssdkSignature(url, siteDocId);
       ctx.body = result;
     } catch (error) {
       strapi.log.error(`[zhao-third] 获取JS-SDK签名失败: ${error.message}`);

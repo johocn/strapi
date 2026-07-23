@@ -2,7 +2,7 @@ declare const _default: {
     "third-party-auth": ({ strapi }: {
         strapi: import('@strapi/types/dist/core').Strapi;
     }) => {
-        getAuthUrl(platform: string, appType: string, redirectUrl: string, siteId?: string): Promise<{
+        getAuthUrl(platform: string, appType: string, redirectUrl: string, siteId?: string, state?: string): Promise<{
             authUrl: any;
             state: string | null;
             appId: any;
