@@ -990,6 +990,7 @@ export interface PluginZhaoAuthPermission extends Struct.CollectionTypeSchema {
       Schema.Attribute.SetMinMaxLength<{
         maxLength: 50;
       }>;
+    seedVersion: Schema.Attribute.String & Schema.Attribute.DefaultTo<''>;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -1995,6 +1996,440 @@ export interface PluginZhaoCourseUserCourseAuth
       'manyToOne',
       'plugin::users-permissions.user'
     >;
+  };
+}
+
+export interface PluginZhaoDealCategory extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_deal_categories';
+  info: {
+    description: '\u5546\u54C1\u7C7B\u76EE\u7BA1\u7406';
+    displayName: '\u5546\u54C1\u5206\u7C7B';
+    pluralName: 'categories';
+    singularName: 'category';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: true;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+  };
+  attributes: {
+    code: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.Unique;
+    coupons: Schema.Attribute.Relation<'oneToMany', 'plugin::zhao-deal.coupon'>;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    icon: Schema.Attribute.Media<'images'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-deal.category'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    platform: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-deal.platform'
+    >;
+    products: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-deal.product'
+    >;
+    publishedAt: Schema.Attribute.DateTime;
+    sort: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface PluginZhaoDealCoupon extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_deal_coupons';
+  info: {
+    description: '\u6B63\u5F0F\u4F18\u60E0\u5238\u5E93';
+    displayName: '\u4F18\u60E0\u5238';
+    pluralName: 'coupons';
+    singularName: 'coupon';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: true;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+  };
+  attributes: {
+    amountDesc: Schema.Attribute.String & Schema.Attribute.Required;
+    category: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-deal.category'
+    >;
+    clickEvents: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-track.click-event'
+    >;
+    collection: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-deal.coupon-collection'
+    >;
+    couponId: Schema.Attribute.UID &
+      Schema.Attribute.Required &
+      Schema.Attribute.Unique;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    endAt: Schema.Attribute.DateTime;
+    isHot: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    isNew: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    isRecommended: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-deal.coupon'
+    > &
+      Schema.Attribute.Private;
+    offlineAt: Schema.Attribute.DateTime;
+    onlineAt: Schema.Attribute.DateTime;
+    originalPrice: Schema.Attribute.Decimal;
+    platform: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-deal.platform'
+    >;
+    product: Schema.Attribute.Relation<'oneToOne', 'plugin::zhao-deal.product'>;
+    promoChannels: Schema.Attribute.Relation<
+      'manyToMany',
+      'plugin::zhao-studio.promo-channel'
+    >;
+    promoLink: Schema.Attribute.Text & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    receiveCount: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    sortOrder: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    startAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    useCondition: Schema.Attribute.String;
+    usedCount: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    useRule: Schema.Attribute.Text;
+    useScope: Schema.Attribute.String;
+  };
+}
+
+export interface PluginZhaoDealCouponCandidate
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_deal_coupon_candidates';
+  info: {
+    description: '\u62C9\u53D6\u5019\u9009\u6C60\u5F85\u5BA1\u6838';
+    displayName: '\u4F18\u60E0\u5238\u5019\u9009';
+    pluralName: 'coupon-candidates';
+    singularName: 'coupon-candidate';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: true;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+  };
+  attributes: {
+    amountDesc: Schema.Attribute.String & Schema.Attribute.Required;
+    category: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-deal.category'
+    >;
+    couponAmount: Schema.Attribute.Decimal;
+    couponId: Schema.Attribute.UID & Schema.Attribute.Required;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    endAt: Schema.Attribute.DateTime;
+    fetchedAt: Schema.Attribute.DateTime & Schema.Attribute.Required;
+    importedCoupon: Schema.Attribute.Relation<
+      'oneToOne',
+      'plugin::zhao-deal.coupon'
+    >;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-deal.coupon-candidate'
+    > &
+      Schema.Attribute.Private;
+    offlineAt: Schema.Attribute.DateTime;
+    onlineAt: Schema.Attribute.DateTime;
+    originalPrice: Schema.Attribute.Decimal;
+    platform: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-deal.platform'
+    >;
+    promoLink: Schema.Attribute.Text & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    receiveCount: Schema.Attribute.Integer;
+    rejectReason: Schema.Attribute.String;
+    startAt: Schema.Attribute.DateTime;
+    status: Schema.Attribute.Enumeration<
+      ['pending', 'approved', 'rejected', 'imported']
+    > &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'pending'>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    useCondition: Schema.Attribute.String;
+    usedCount: Schema.Attribute.Integer;
+    useScope: Schema.Attribute.String;
+  };
+}
+
+export interface PluginZhaoDealCouponCollection
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_deal_coupon_collections';
+  info: {
+    description: '\u6D3B\u52A8\u4E13\u9898\u5408\u96C6';
+    displayName: '\u4F18\u60E0\u5238\u5408\u96C6';
+    pluralName: 'coupon-collections';
+    singularName: 'coupon-collection';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: true;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+  };
+  attributes: {
+    code: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.Unique;
+    coupons: Schema.Attribute.Relation<'oneToMany', 'plugin::zhao-deal.coupon'>;
+    coverImage: Schema.Attribute.Media<'images'>;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    description: Schema.Attribute.Text;
+    endAt: Schema.Attribute.DateTime;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-deal.coupon-collection'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    sortOrder: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    startAt: Schema.Attribute.DateTime;
+    status: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface PluginZhaoDealPlatform extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_deal_platforms';
+  info: {
+    description: '\u7535\u5546\u5E73\u53F0\u4E0E\u540C\u6B65\u914D\u7F6E';
+    displayName: '\u5E73\u53F0\u7BA1\u7406';
+    pluralName: 'platforms';
+    singularName: 'platform';
+  };
+  options: {
+    comment: '';
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: true;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+  };
+  attributes: {
+    apiEndpoint: Schema.Attribute.String;
+    appKey: Schema.Attribute.String;
+    appSecret: Schema.Attribute.Password;
+    categories: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-deal.category'
+    >;
+    code: Schema.Attribute.Enumeration<['taobao', 'pdd', 'douyin', 'jd']> &
+      Schema.Attribute.Required &
+      Schema.Attribute.Unique;
+    couponRule: Schema.Attribute.Text;
+    coupons: Schema.Attribute.Relation<'oneToMany', 'plugin::zhao-deal.coupon'>;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    fetchConfig: Schema.Attribute.JSON;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-deal.platform'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    products: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-deal.product'
+    >;
+    promoSite: Schema.Attribute.String;
+    publishedAt: Schema.Attribute.DateTime;
+    signRule: Schema.Attribute.String;
+    syncCron: Schema.Attribute.String;
+    syncEnabled: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    syncMode: Schema.Attribute.Enumeration<['manual', 'scheduled', 'both']> &
+      Schema.Attribute.DefaultTo<'manual'>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface PluginZhaoDealProduct extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_deal_products';
+  info: {
+    description: '\u6B63\u5F0F\u5546\u54C1\u5E93';
+    displayName: '\u5546\u54C1';
+    pluralName: 'products';
+    singularName: 'product';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: true;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+  };
+  attributes: {
+    brand: Schema.Attribute.String;
+    category: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-deal.category'
+    >;
+    coupon: Schema.Attribute.Relation<'oneToOne', 'plugin::zhao-deal.coupon'>;
+    couponAmount: Schema.Attribute.Decimal;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    detailUrl: Schema.Attribute.String;
+    finalPrice: Schema.Attribute.Decimal;
+    isHot: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    isNew: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    isRecommended: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-deal.product'
+    > &
+      Schema.Attribute.Private;
+    mainImage: Schema.Attribute.Media<'images'>;
+    originalPrice: Schema.Attribute.Decimal;
+    platform: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-deal.platform'
+    >;
+    productId: Schema.Attribute.UID &
+      Schema.Attribute.Required &
+      Schema.Attribute.Unique;
+    publishedAt: Schema.Attribute.DateTime;
+    reviewCount: Schema.Attribute.Integer;
+    reviewScore: Schema.Attribute.Decimal;
+    sales30d: Schema.Attribute.Integer;
+    sortOrder: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    title: Schema.Attribute.String & Schema.Attribute.Required;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface PluginZhaoDealProductCandidate
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_deal_product_candidates';
+  info: {
+    description: '\u62C9\u53D6\u5019\u9009\u6C60\u5F85\u5BA1\u6838';
+    displayName: '\u5546\u54C1\u5019\u9009';
+    pluralName: 'product-candidates';
+    singularName: 'product-candidate';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: true;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+  };
+  attributes: {
+    brand: Schema.Attribute.String;
+    category: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-deal.category'
+    >;
+    couponAmount: Schema.Attribute.Decimal;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    detailUrl: Schema.Attribute.String;
+    fetchedAt: Schema.Attribute.DateTime & Schema.Attribute.Required;
+    finalPrice: Schema.Attribute.Decimal;
+    importedProduct: Schema.Attribute.Relation<
+      'oneToOne',
+      'plugin::zhao-deal.product'
+    >;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-deal.product-candidate'
+    > &
+      Schema.Attribute.Private;
+    mainImage: Schema.Attribute.Media<'images'>;
+    originalPrice: Schema.Attribute.Decimal;
+    platform: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-deal.platform'
+    >;
+    productId: Schema.Attribute.UID & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    rejectReason: Schema.Attribute.String;
+    reviewCount: Schema.Attribute.Integer;
+    reviewScore: Schema.Attribute.Decimal;
+    sales30d: Schema.Attribute.Integer;
+    status: Schema.Attribute.Enumeration<
+      ['pending', 'approved', 'rejected', 'imported']
+    > &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'pending'>;
+    title: Schema.Attribute.String & Schema.Attribute.Required;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
   };
 }
 
@@ -4973,6 +5408,121 @@ export interface PluginZhaoSsoSsoUserAppRole
   };
 }
 
+export interface PluginZhaoStudioAbExperiment
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_ab_experiments';
+  info: {
+    description: 'A/B \u6D4B\u8BD5\u5B9E\u9A8C\u7BA1\u7406';
+    displayName: 'AB\u5B9E\u9A8C';
+    pluralName: 'ab-experiments';
+    singularName: 'ab-experiment';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: true;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+  };
+  attributes: {
+    campaign: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-studio.promo-campaign'
+    >;
+    channel: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-studio.promo-channel'
+    >;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    description: Schema.Attribute.Text;
+    endAt: Schema.Attribute.DateTime;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-studio.ab-experiment'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 200;
+      }>;
+    publishedAt: Schema.Attribute.DateTime;
+    startAt: Schema.Attribute.DateTime;
+    status: Schema.Attribute.Enumeration<
+      ['draft', 'running', 'paused', 'completed']
+    > &
+      Schema.Attribute.DefaultTo<'draft'>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    variants: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-studio.ab-variant'
+    >;
+  };
+}
+
+export interface PluginZhaoStudioAbVariant extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_ab_variants';
+  info: {
+    description: 'A/B \u6D4B\u8BD5\u53D8\u4F53';
+    displayName: 'AB\u53D8\u4F53';
+    pluralName: 'ab-variants';
+    singularName: 'ab-variant';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: true;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+  };
+  attributes: {
+    article: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-studio.article-draft'
+    >;
+    coupon: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-deal.coupon'>;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    description: Schema.Attribute.Text;
+    experiment: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-studio.ab-experiment'
+    >;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-studio.ab-variant'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    weight: Schema.Attribute.Integer &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<1>;
+  };
+}
+
 export interface PluginZhaoStudioAdSlot extends Struct.CollectionTypeSchema {
   collectionName: 'zhao_ad_slots';
   info: {
@@ -5172,6 +5722,7 @@ export interface PluginZhaoStudioBrowserLog
     os: Schema.Attribute.String;
     osVersion: Schema.Attribute.String;
     platform: Schema.Attribute.String;
+    promoChannelCode: Schema.Attribute.String;
     publishedAt: Schema.Attribute.DateTime;
     readDuration: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
     referrer: Schema.Attribute.String;
@@ -5188,6 +5739,54 @@ export interface PluginZhaoStudioBrowserLog
     user: Schema.Attribute.Relation<'manyToOne', 'admin::user'>;
     userAgent: Schema.Attribute.String;
     userId: Schema.Attribute.String;
+  };
+}
+
+export interface PluginZhaoStudioChannelPlatformConfig
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_channel_platform_configs';
+  info: {
+    description: '\u6E20\u9053\u5728\u5404\u63A8\u5E7F\u5E73\u53F0\u7684\u63A8\u5E7F\u4F4D\u914D\u7F6E';
+    displayName: '\u6E20\u9053\u5E73\u53F0\u914D\u7F6E';
+    pluralName: 'channel-platform-configs';
+    singularName: 'channel-platform-config';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: true;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+  };
+  attributes: {
+    channel: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-studio.promo-channel'
+    >;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    isActive: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-studio.channel-platform-config'
+    > &
+      Schema.Attribute.Private;
+    platform: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-studio.publish-platform'
+    >;
+    promoLink: Schema.Attribute.Text;
+    promoPid: Schema.Attribute.String;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
   };
 }
 
@@ -5346,6 +5945,142 @@ export interface PluginZhaoStudioKnowledgePointIndex
   };
 }
 
+export interface PluginZhaoStudioPromoCampaign
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_promo_campaigns';
+  info: {
+    description: '\u6709\u65F6\u95F4\u8303\u56F4\u7684\u8425\u9500\u6D3B\u52A8';
+    displayName: '\u8425\u9500\u6D3B\u52A8';
+    pluralName: 'promo-campaigns';
+    singularName: 'promo-campaign';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: true;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+  };
+  attributes: {
+    actualCost: Schema.Attribute.Decimal;
+    budget: Schema.Attribute.Decimal;
+    channel: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-studio.promo-channel'
+    >;
+    code: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.Unique;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    description: Schema.Attribute.Text;
+    endAt: Schema.Attribute.DateTime & Schema.Attribute.Required;
+    experiments: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-studio.ab-experiment'
+    >;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-studio.promo-campaign'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    publishedAt: Schema.Attribute.DateTime;
+    startAt: Schema.Attribute.DateTime & Schema.Attribute.Required;
+    status: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface PluginZhaoStudioPromoChannel
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_promo_channels';
+  info: {
+    description: '\u63A8\u5E7F\u6E20\u9053\u7BA1\u7406';
+    displayName: '\u63A8\u5E7F\u6E20\u9053';
+    pluralName: 'promo-channels';
+    singularName: 'promo-channel';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: true;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+  };
+  attributes: {
+    actualCost: Schema.Attribute.Decimal;
+    budget: Schema.Attribute.Decimal;
+    campaigns: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-studio.promo-campaign'
+    >;
+    code: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.Unique;
+    coupons: Schema.Attribute.Relation<
+      'manyToMany',
+      'plugin::zhao-deal.coupon'
+    >;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    description: Schema.Attribute.Text;
+    experiments: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-studio.ab-experiment'
+    >;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-studio.promo-channel'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    platformConfigs: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-studio.channel-platform-config'
+    >;
+    publishedAt: Schema.Attribute.DateTime;
+    scene: Schema.Attribute.Enumeration<
+      [
+        'wechat_group',
+        'short_video',
+        'live_stream',
+        'poster',
+        'article',
+        'other',
+      ]
+    > &
+      Schema.Attribute.DefaultTo<'other'>;
+    sortOrder: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    status: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
 export interface PluginZhaoStudioPublishAccount
   extends Struct.CollectionTypeSchema {
   collectionName: 'zhao_publish_accounts';
@@ -5424,6 +6159,11 @@ export interface PluginZhaoStudioPublishPlatform
       'oneToMany',
       'plugin::zhao-studio.publish-account'
     >;
+    category: Schema.Attribute.Enumeration<
+      ['content', 'social', 'ecommerce', 'custom']
+    > &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'content'>;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -5442,7 +6182,19 @@ export interface PluginZhaoStudioPublishPlatform
       }>;
     publishedAt: Schema.Attribute.DateTime;
     type: Schema.Attribute.Enumeration<
-      ['toutiao', 'xiaohongshu', 'wechat', 'custom', 'internal']
+      [
+        'toutiao',
+        'xiaohongshu',
+        'wechat',
+        'douyin',
+        'bilibili',
+        'taobao',
+        'pdd',
+        'douyin-ecom',
+        'jd',
+        'custom',
+        'internal',
+      ]
     > &
       Schema.Attribute.Required;
     updatedAt: Schema.Attribute.DateTime;
@@ -5472,6 +6224,10 @@ export interface PluginZhaoStudioPublishRecord
     };
   };
   attributes: {
+    abVariant: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-studio.ab-variant'
+    >;
     account: Schema.Attribute.Relation<
       'manyToOne',
       'plugin::zhao-studio.publish-account'
@@ -5898,19 +6654,31 @@ export interface PluginZhaoThirdThirdPartyConfig
     appId: Schema.Attribute.String & Schema.Attribute.Required;
     appSecret: Schema.Attribute.String & Schema.Attribute.Required;
     appType: Schema.Attribute.Enumeration<
-      ['official_account', 'mini_program', 'open_platform', 'h5', 'app']
+      [
+        'official_account',
+        'mini_program',
+        'open_platform',
+        'h5',
+        'app',
+        'alipay_life',
+        'alipay_mini',
+        'douyin_open',
+        'douyin_mini',
+      ]
     > &
       Schema.Attribute.Required;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     enabled: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    encodingAESKey: Schema.Attribute.String;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
       'plugin::zhao-third.third-party-config'
     > &
       Schema.Attribute.Private;
+    merchantId: Schema.Attribute.String;
     name: Schema.Attribute.String & Schema.Attribute.Required;
     platform: Schema.Attribute.Enumeration<['wechat', 'alipay', 'douyin']> &
       Schema.Attribute.Required;
@@ -5919,9 +6687,196 @@ export interface PluginZhaoThirdThirdPartyConfig
       'manyToOne',
       'plugin::zhao-common.site-config'
     >;
+    token: Schema.Attribute.String;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+  };
+}
+
+export interface PluginZhaoTrackClickEvent extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_track_click_events';
+  info: {
+    description: '\u4F18\u60E0\u5238\u70B9\u51FB\u8FFD\u8E2A';
+    displayName: '\u70B9\u51FB\u4E8B\u4EF6';
+    pluralName: 'click-events';
+    singularName: 'click-event';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: true;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+  };
+  attributes: {
+    abVariant: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-studio.ab-variant'
+    >;
+    browser: Schema.Attribute.String;
+    clickedAt: Schema.Attribute.DateTime & Schema.Attribute.Required;
+    coupon: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-deal.coupon'>;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    device: Schema.Attribute.String;
+    deviceFingerprint: Schema.Attribute.String & Schema.Attribute.Required;
+    ip: Schema.Attribute.String;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-track.click-event'
+    > &
+      Schema.Attribute.Private;
+    os: Schema.Attribute.String;
+    promoCampaign: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-studio.promo-campaign'
+    >;
+    promoPid: Schema.Attribute.String;
+    publishedAt: Schema.Attribute.DateTime;
+    referer: Schema.Attribute.Text;
+    resolvedLink: Schema.Attribute.Text;
+    sourceTag: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-track.source-tag'
+    >;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    userAgent: Schema.Attribute.Text;
+  };
+}
+
+export interface PluginZhaoTrackOrder extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_track_orders';
+  info: {
+    description: '\u4F63\u91D1\u8BA2\u5355\u4E0E\u5F52\u56E0';
+    displayName: '\u8BA2\u5355\u8BB0\u5F55';
+    pluralName: 'orders';
+    singularName: 'order';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: true;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+  };
+  attributes: {
+    amount: Schema.Attribute.Decimal & Schema.Attribute.Required;
+    attributionQuality: Schema.Attribute.Enumeration<
+      ['pid_match', 'click_match', 'weak_match', 'fallback_match', 'unmatched']
+    > &
+      Schema.Attribute.DefaultTo<'unmatched'>;
+    commission: Schema.Attribute.Decimal;
+    commissionStatus: Schema.Attribute.Enumeration<
+      ['pending', 'confirmed', 'paid', 'canceled']
+    > &
+      Schema.Attribute.DefaultTo<'pending'>;
+    coupon: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-deal.coupon'>;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    deviceFingerprint: Schema.Attribute.String;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-track.order'
+    > &
+      Schema.Attribute.Private;
+    matchedClick: Schema.Attribute.Relation<
+      'oneToOne',
+      'plugin::zhao-track.click-event'
+    >;
+    orderId: Schema.Attribute.UID &
+      Schema.Attribute.Required &
+      Schema.Attribute.Unique;
+    platform: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-deal.platform'
+    >;
+    promoCampaign: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-studio.promo-campaign'
+    >;
+    promoPid: Schema.Attribute.String;
+    publishedAt: Schema.Attribute.DateTime;
+    sourceTag: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-track.source-tag'
+    >;
+    syncedAt: Schema.Attribute.DateTime;
+    transactedAt: Schema.Attribute.DateTime & Schema.Attribute.Required;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface PluginZhaoTrackSourceTag extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_track_source_tags';
+  info: {
+    description: '\u7528\u6237\u6765\u6E90\u8BC6\u522B';
+    displayName: '\u6765\u6E90\u6807\u7B7E';
+    pluralName: 'source-tags';
+    singularName: 'source-tag';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: true;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+  };
+  attributes: {
+    clickEvents: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-track.click-event'
+    >;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    deviceFingerprint: Schema.Attribute.String;
+    firstSeenAt: Schema.Attribute.DateTime;
+    lastSeenAt: Schema.Attribute.DateTime;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-track.source-tag'
+    > &
+      Schema.Attribute.Private;
+    promoCampaign: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-studio.promo-campaign'
+    >;
+    publishedAt: Schema.Attribute.DateTime;
+    scene: Schema.Attribute.String;
+    sourceUrl: Schema.Attribute.Text;
+    tagId: Schema.Attribute.UID &
+      Schema.Attribute.Required &
+      Schema.Attribute.Unique;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    utmCampaign: Schema.Attribute.String;
+    utmContent: Schema.Attribute.String;
+    utmMedium: Schema.Attribute.String;
+    utmSource: Schema.Attribute.String;
+    utmTerm: Schema.Attribute.String;
   };
 }
 
@@ -8232,6 +9187,13 @@ declare module '@strapi/strapi' {
       'plugin::zhao-course.course-progress': PluginZhaoCourseCourseProgress;
       'plugin::zhao-course.lesson-progress': PluginZhaoCourseLessonProgress;
       'plugin::zhao-course.user-course-auth': PluginZhaoCourseUserCourseAuth;
+      'plugin::zhao-deal.category': PluginZhaoDealCategory;
+      'plugin::zhao-deal.coupon': PluginZhaoDealCoupon;
+      'plugin::zhao-deal.coupon-candidate': PluginZhaoDealCouponCandidate;
+      'plugin::zhao-deal.coupon-collection': PluginZhaoDealCouponCollection;
+      'plugin::zhao-deal.platform': PluginZhaoDealPlatform;
+      'plugin::zhao-deal.product': PluginZhaoDealProduct;
+      'plugin::zhao-deal.product-candidate': PluginZhaoDealProductCandidate;
       'plugin::zhao-logistics.contact-matrix': PluginZhaoLogisticsContactMatrix;
       'plugin::zhao-logistics.conversion-event': PluginZhaoLogisticsConversionEvent;
       'plugin::zhao-logistics.conversion-funnel': PluginZhaoLogisticsConversionFunnel;
@@ -8279,12 +9241,17 @@ declare module '@strapi/strapi' {
       'plugin::zhao-sso.sso-token': PluginZhaoSsoSsoToken;
       'plugin::zhao-sso.sso-user': PluginZhaoSsoSsoUser;
       'plugin::zhao-sso.sso-user-app-role': PluginZhaoSsoSsoUserAppRole;
+      'plugin::zhao-studio.ab-experiment': PluginZhaoStudioAbExperiment;
+      'plugin::zhao-studio.ab-variant': PluginZhaoStudioAbVariant;
       'plugin::zhao-studio.ad-slot': PluginZhaoStudioAdSlot;
       'plugin::zhao-studio.article-draft': PluginZhaoStudioArticleDraft;
       'plugin::zhao-studio.browser-log': PluginZhaoStudioBrowserLog;
+      'plugin::zhao-studio.channel-platform-config': PluginZhaoStudioChannelPlatformConfig;
       'plugin::zhao-studio.collect-source': PluginZhaoStudioCollectSource;
       'plugin::zhao-studio.collect-task': PluginZhaoStudioCollectTask;
       'plugin::zhao-studio.knowledge-point-index': PluginZhaoStudioKnowledgePointIndex;
+      'plugin::zhao-studio.promo-campaign': PluginZhaoStudioPromoCampaign;
+      'plugin::zhao-studio.promo-channel': PluginZhaoStudioPromoChannel;
       'plugin::zhao-studio.publish-account': PluginZhaoStudioPublishAccount;
       'plugin::zhao-studio.publish-platform': PluginZhaoStudioPublishPlatform;
       'plugin::zhao-studio.publish-record': PluginZhaoStudioPublishRecord;
@@ -8296,6 +9263,9 @@ declare module '@strapi/strapi' {
       'plugin::zhao-tag.tag-index': PluginZhaoTagTagIndex;
       'plugin::zhao-third.third-party-account': PluginZhaoThirdThirdPartyAccount;
       'plugin::zhao-third.third-party-config': PluginZhaoThirdThirdPartyConfig;
+      'plugin::zhao-track.click-event': PluginZhaoTrackClickEvent;
+      'plugin::zhao-track.order': PluginZhaoTrackOrder;
+      'plugin::zhao-track.source-tag': PluginZhaoTrackSourceTag;
       'plugin::zhao-wealth.wealth-annual-snapshot': PluginZhaoWealthWealthAnnualSnapshot;
       'plugin::zhao-wealth.wealth-collect-config': PluginZhaoWealthWealthCollectConfig;
       'plugin::zhao-wealth.wealth-company': PluginZhaoWealthWealthCompany;

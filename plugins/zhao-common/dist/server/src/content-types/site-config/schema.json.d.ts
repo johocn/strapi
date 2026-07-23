@@ -89,6 +89,10 @@ declare const _default: {
         "studio": true
       }
     },
+    "moduleVisibility": {
+      "type": "json",
+      "default": {}
+    },
     "template": {
       "type": "relation",
       "relation": "manyToOne",

@@ -62,6 +62,12 @@ declare const _default: {
                 lastSeenAt: {
                     type: string;
                 };
+                clickEvents: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    mappedBy: string;
+                };
             };
         };
     };

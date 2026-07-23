@@ -39,6 +39,18 @@ declare const _default: {
                     type: string;
                     required: boolean;
                 };
+                token: {
+                    type: string;
+                    required: boolean;
+                };
+                encodingAESKey: {
+                    type: string;
+                    required: boolean;
+                };
+                merchantId: {
+                    type: string;
+                    required: boolean;
+                };
                 enabled: {
                     type: string;
                     default: boolean;

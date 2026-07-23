@@ -15,7 +15,7 @@ const collectionName$6 = "zhao_deal_platforms";
 const info$6 = { "singularName": "platform", "pluralName": "platforms", "displayName": "平台管理", "description": "电商平台与同步配置" };
 const options$6 = { "draftAndPublish": false, "comment": "" };
 const pluginOptions$6 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": false } };
-const attributes$6 = { "name": { "type": "string", "required": true }, "code": { "type": "enumeration", "required": true, "unique": true, "enum": ["taobao", "pdd", "douyin", "jd"] }, "promoSite": { "type": "string" }, "couponRule": { "type": "text" }, "apiEndpoint": { "type": "string" }, "appKey": { "type": "string" }, "appSecret": { "type": "password" }, "signRule": { "type": "string" }, "syncEnabled": { "type": "boolean", "default": false }, "syncMode": { "type": "enumeration", "enum": ["manual", "scheduled", "both"], "default": "manual" }, "syncCron": { "type": "string" }, "fetchConfig": { "type": "json" } };
+const attributes$6 = { "name": { "type": "string", "required": true }, "code": { "type": "enumeration", "required": true, "unique": true, "enum": ["taobao", "pdd", "douyin", "jd"] }, "promoSite": { "type": "string" }, "couponRule": { "type": "text" }, "apiEndpoint": { "type": "string" }, "appKey": { "type": "string" }, "appSecret": { "type": "password" }, "signRule": { "type": "string" }, "syncEnabled": { "type": "boolean", "default": false }, "syncMode": { "type": "enumeration", "enum": ["manual", "scheduled", "both"], "default": "manual" }, "syncCron": { "type": "string" }, "fetchConfig": { "type": "json" }, "coupons": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-deal.coupon", "mappedBy": "platform" }, "products": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-deal.product", "mappedBy": "platform" }, "categories": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-deal.category", "mappedBy": "platform" } };
 const platform = {
   kind: kind$6,
   collectionName: collectionName$6,
@@ -29,7 +29,7 @@ const collectionName$5 = "zhao_deal_categories";
 const info$5 = { "singularName": "category", "pluralName": "categories", "displayName": "商品分类", "description": "商品类目管理" };
 const options$5 = { "draftAndPublish": false };
 const pluginOptions$5 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": false } };
-const attributes$5 = { "name": { "type": "string", "required": true }, "code": { "type": "string", "required": true, "unique": true }, "platform": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-deal.platform", "inversedBy": "categories" }, "sort": { "type": "integer", "default": 0 }, "icon": { "type": "media", "allowedTypes": ["images"], "multiple": false } };
+const attributes$5 = { "name": { "type": "string", "required": true }, "code": { "type": "string", "required": true, "unique": true }, "platform": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-deal.platform", "inversedBy": "categories" }, "sort": { "type": "integer", "default": 0 }, "icon": { "type": "media", "allowedTypes": ["images"], "multiple": false }, "coupons": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-deal.coupon", "mappedBy": "category" }, "products": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-deal.product", "mappedBy": "category" } };
 const category = {
   kind: kind$5,
   collectionName: collectionName$5,
@@ -43,7 +43,7 @@ const collectionName$4 = "zhao_deal_coupons";
 const info$4 = { "singularName": "coupon", "pluralName": "coupons", "displayName": "优惠券", "description": "正式优惠券库" };
 const options$4 = { "draftAndPublish": false };
 const pluginOptions$4 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": false } };
-const attributes$4 = { "couponId": { "type": "uid", "required": true, "unique": true }, "platform": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-deal.platform", "inversedBy": "coupons" }, "category": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-deal.category", "inversedBy": "coupons" }, "promoLink": { "type": "text", "required": true }, "amountDesc": { "type": "string", "required": true }, "useRule": { "type": "text" }, "useCondition": { "type": "string" }, "useScope": { "type": "string" }, "startAt": { "type": "datetime" }, "endAt": { "type": "datetime" }, "receiveCount": { "type": "integer", "default": 0 }, "usedCount": { "type": "integer", "default": 0 }, "originalPrice": { "type": "decimal" }, "onlineAt": { "type": "datetime" }, "offlineAt": { "type": "datetime" }, "isRecommended": { "type": "boolean", "default": false }, "isHot": { "type": "boolean", "default": false }, "isNew": { "type": "boolean", "default": false }, "sortOrder": { "type": "integer", "default": 0 }, "promoChannels": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-studio.promo-channel", "inversedBy": "coupons" }, "collection": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-deal.coupon-collection", "inversedBy": "coupons" } };
+const attributes$4 = { "couponId": { "type": "uid", "required": true, "unique": true }, "platform": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-deal.platform", "inversedBy": "coupons" }, "category": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-deal.category", "inversedBy": "coupons" }, "promoLink": { "type": "text", "required": true }, "amountDesc": { "type": "string", "required": true }, "useRule": { "type": "text" }, "useCondition": { "type": "string" }, "useScope": { "type": "string" }, "startAt": { "type": "datetime" }, "endAt": { "type": "datetime" }, "receiveCount": { "type": "integer", "default": 0 }, "usedCount": { "type": "integer", "default": 0 }, "originalPrice": { "type": "decimal" }, "onlineAt": { "type": "datetime" }, "offlineAt": { "type": "datetime" }, "isRecommended": { "type": "boolean", "default": false }, "isHot": { "type": "boolean", "default": false }, "isNew": { "type": "boolean", "default": false }, "sortOrder": { "type": "integer", "default": 0 }, "promoChannels": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-studio.promo-channel", "inversedBy": "coupons" }, "collection": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-deal.coupon-collection", "inversedBy": "coupons" }, "product": { "type": "relation", "relation": "oneToOne", "target": "plugin::zhao-deal.product", "mappedBy": "coupon" }, "clickEvents": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-track.click-event", "mappedBy": "coupon" } };
 const coupon$1 = {
   kind: kind$4,
   collectionName: collectionName$4,
@@ -299,16 +299,16 @@ const controllers = {
   candidate: candidate$1
 };
 const actions = [
-  { uid: "coupon.read", displayName: "读取优惠券" },
-  { uid: "coupon.create", displayName: "创建优惠券" },
-  { uid: "coupon.update", displayName: "更新优惠券" },
-  { uid: "coupon.delete", displayName: "删除优惠券" },
-  { uid: "product.read", displayName: "读取商品" },
-  { uid: "product.create", displayName: "创建商品" },
-  { uid: "product.update", displayName: "更新商品" },
-  { uid: "product.delete", displayName: "删除商品" },
-  { uid: "candidate.approve", displayName: "审核候选" },
-  { uid: "sync.trigger", displayName: "触发同步" }
+  { section: "plugins", pluginName: "zhao-deal", uid: "coupon.read", displayName: "读取优惠券" },
+  { section: "plugins", pluginName: "zhao-deal", uid: "coupon.create", displayName: "创建优惠券" },
+  { section: "plugins", pluginName: "zhao-deal", uid: "coupon.update", displayName: "更新优惠券" },
+  { section: "plugins", pluginName: "zhao-deal", uid: "coupon.delete", displayName: "删除优惠券" },
+  { section: "plugins", pluginName: "zhao-deal", uid: "product.read", displayName: "读取商品" },
+  { section: "plugins", pluginName: "zhao-deal", uid: "product.create", displayName: "创建商品" },
+  { section: "plugins", pluginName: "zhao-deal", uid: "product.update", displayName: "更新商品" },
+  { section: "plugins", pluginName: "zhao-deal", uid: "product.delete", displayName: "删除商品" },
+  { section: "plugins", pluginName: "zhao-deal", uid: "candidate.approve", displayName: "审核候选" },
+  { section: "plugins", pluginName: "zhao-deal", uid: "sync.trigger", displayName: "触发同步" }
 ];
 const permissions = { actions };
 const register = ({ strapi }) => {
@@ -461,40 +461,51 @@ class MockAdapter {
   }
 }
 const PLATFORM_UID$3 = "plugin::zhao-deal.platform";
-const bootstrap = async ({ strapi }) => {
-  strapi.log.info("[zhao-deal] 插件已加载");
+let registryInstance = null;
+async function initRegistry(strapi) {
   const registry = new AdapterRegistry();
-  try {
-    const platforms = await strapi.documents(PLATFORM_UID$3).findMany({});
-    for (const platform2 of platforms) {
-      if (!platform2.syncEnabled) continue;
-      const cfg = {
-        appKey: platform2.appKey || "",
-        appSecret: platform2.appSecret || "",
-        apiEndpoint: platform2.apiEndpoint || ""
-      };
-      switch (platform2.code) {
-        case "taobao":
-          registry.register(new TaobaoAdapter(cfg));
-          break;
-        case "pdd":
-          registry.register(new PddAdapter(cfg));
-          break;
-        case "douyin":
-          registry.register(new DouyinAdapter(cfg));
-          break;
-        case "jd":
-          registry.register(new JdAdapter(cfg));
-          break;
-      }
+  const platforms = await strapi.documents(PLATFORM_UID$3).findMany({});
+  for (const platform2 of platforms) {
+    if (!platform2.syncEnabled) continue;
+    const cfg = {
+      appKey: platform2.appKey || "",
+      appSecret: platform2.appSecret || "",
+      apiEndpoint: platform2.apiEndpoint || ""
+    };
+    switch (platform2.code) {
+      case "taobao":
+        registry.register(new TaobaoAdapter(cfg));
+        break;
+      case "pdd":
+        registry.register(new PddAdapter(cfg));
+        break;
+      case "douyin":
+        registry.register(new DouyinAdapter(cfg));
+        break;
+      case "jd":
+        registry.register(new JdAdapter(cfg));
+        break;
     }
-  } catch (err) {
-    strapi.log.warn(`[zhao-deal] 平台加载失败: ${err.message}`);
   }
   if (strapi.config.get("environment") === "development") {
     registry.register(new MockAdapter());
   }
-  strapi.plugin("zhao-deal").service("adapterRegistry", registry);
+  registryInstance = registry;
+  return registry;
+}
+const adapterRegistry = ({ strapi }) => {
+  if (!registryInstance) {
+    registryInstance = new AdapterRegistry();
+  }
+  return registryInstance;
+};
+const bootstrap = async ({ strapi }) => {
+  strapi.log.info("[zhao-deal] 插件已加载");
+  try {
+    await initRegistry(strapi);
+  } catch (err) {
+    strapi.log.warn(`[zhao-deal] 平台加载失败: ${err.message}`);
+  }
 };
 const destroy = ({ strapi }) => {
 };
@@ -543,13 +554,13 @@ const query = ({ strapi }) => {
         sort,
         page,
         pageSize,
-        populate: { platform: true, category: true, product: true }
+        populate: { platform: { fields: ["name", "code"] }, category: true, product: true }
       });
     },
     async getCoupon(couponId) {
       const results = await strapi.documents(COUPON_UID$1).findMany({
         filters: { couponId },
-        populate: { platform: true, category: true, product: true }
+        populate: { platform: { fields: ["name", "code"] }, category: true, product: true }
       });
       if (!results || results.length === 0) {
         const err = new Error("优惠券不存在");
@@ -570,7 +581,7 @@ const query = ({ strapi }) => {
         page,
         pageSize,
         sort: SORT_MAP[query2.sort] || SORT_MAP.recommended,
-        populate: { platform: true, category: true, coupon: true }
+        populate: { platform: { fields: ["name", "code"] }, category: true, coupon: true }
       });
     },
     async getProduct(productId) {
@@ -590,11 +601,13 @@ const query = ({ strapi }) => {
       return strapi.documents(CATEGORY_UID$1).findMany({
         filters,
         sort: "sort:ASC",
-        populate: { platform: true }
+        populate: { platform: { fields: ["name", "code"] } }
       });
     },
     async listPlatforms() {
-      return strapi.documents(PLATFORM_UID$2).findMany({});
+      return strapi.documents(PLATFORM_UID$2).findMany({
+        fields: ["name", "code", "promoSite"]
+      });
     },
     async listCollections() {
       const now = (/* @__PURE__ */ new Date()).toISOString();
@@ -611,7 +624,7 @@ const query = ({ strapi }) => {
     async getCollection(code) {
       const results = await strapi.documents(COLLECTION_UID).findMany({
         filters: { code },
-        populate: { coupons: { populate: { platform: true, product: true } }, coverImage: true }
+        populate: { coupons: { populate: { platform: { fields: ["name", "code"] }, product: true } }, coverImage: true }
       });
       if (!results || results.length === 0) {
         const err = new Error("合集不存在");
@@ -1043,7 +1056,8 @@ const services = {
   "pre-filter": preFilter,
   candidate,
   sync,
-  syncScheduler
+  syncScheduler,
+  adapterRegistry
 };
 const publicRoute = (method, path, handler) => ({
   method,

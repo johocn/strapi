@@ -33,7 +33,25 @@ declare const _default: {
       "default": "manual"
     },
     "syncCron": { "type": "string" },
-    "fetchConfig": { "type": "json" }
+    "fetchConfig": { "type": "json" },
+    "coupons": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-deal.coupon",
+      "mappedBy": "platform"
+    },
+    "products": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-deal.product",
+      "mappedBy": "platform"
+    },
+    "categories": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-deal.category",
+      "mappedBy": "platform"
+    }
   }
 }
 ;

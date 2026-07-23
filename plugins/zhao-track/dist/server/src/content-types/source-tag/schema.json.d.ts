@@ -28,7 +28,13 @@ declare const _default: {
     "utmTerm": { "type": "string" },
     "deviceFingerprint": { "type": "string" },
     "firstSeenAt": { "type": "datetime", "default": null },
-    "lastSeenAt": { "type": "datetime" }
+    "lastSeenAt": { "type": "datetime" },
+    "clickEvents": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-track.click-event",
+      "mappedBy": "sourceTag"
+    }
   }
 }
 ;

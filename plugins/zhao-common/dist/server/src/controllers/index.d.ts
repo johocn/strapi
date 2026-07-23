@@ -50,5 +50,9 @@ declare const _default: {
         delete(ctx: any): Promise<void>;
         applyToSite(ctx: any): Promise<void>;
     };
+    "global-config": {
+        get(ctx: any): Promise<void>;
+        update(ctx: any): Promise<void>;
+    };
 };
 export default _default;

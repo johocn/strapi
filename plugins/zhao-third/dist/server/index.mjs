@@ -663,14 +663,35 @@ const thirdPartyConfigController = ({ strapi }) => ({
   },
   async create(ctx) {
     try {
-      const { name, platform, appType, appId, appSecret, enabled, site } = ctx.request.body;
+      const {
+        name,
+        platform,
+        appType,
+        appId,
+        appSecret,
+        token,
+        encodingAESKey,
+        merchantId,
+        enabled,
+        site
+      } = ctx.request.body;
       if (!name || !platform || !appType || !appId || !appSecret) {
         ctx.status = 400;
         ctx.body = { error: "请提供 name, platform, appType, appId 和 appSecret" };
         return;
       }
       const configService = strapi.plugin("zhao-third").service("third-party-config");
-      const data = { name, platform, appType, appId, appSecret, enabled: enabled !== false };
+      const data = {
+        name,
+        platform,
+        appType,
+        appId,
+        appSecret,
+        enabled: enabled !== false
+      };
+      if (token !== void 0) data.token = token;
+      if (encodingAESKey !== void 0) data.encodingAESKey = encodingAESKey;
+      if (merchantId !== void 0) data.merchantId = merchantId;
       const siteId = site || ctx.state?.siteId;
       if (siteId) {
         data.site = siteId;
@@ -693,8 +714,24 @@ const thirdPartyConfigController = ({ strapi }) => ({
         ctx.body = { error: "请提供 documentId" };
         return;
       }
+      const allowedFields = [
+        "name",
+        "platform",
+        "appType",
+        "appId",
+        "appSecret",
+        "token",
+        "encodingAESKey",
+        "merchantId",
+        "enabled",
+        "site"
+      ];
+      const data = {};
+      for (const key of allowedFields) {
+        if (body[key] !== void 0) data[key] = body[key];
+      }
       const configService = strapi.plugin("zhao-third").service("third-party-config");
-      const result = await configService.updateConfig(documentId, body);
+      const result = await configService.updateConfig(documentId, data);
       ctx.body = result;
     } catch (error) {
       strapi.log.error(`[zhao-third] 更新配置失败: ${error.message}`);
@@ -747,7 +784,7 @@ const collectionName$1 = "third_party_configs";
 const info$1 = { "singularName": "third-party-config", "pluralName": "third-party-configs", "displayName": "三方登录配置" };
 const options$1 = { "draftAndPublish": false };
 const pluginOptions$1 = { "content-manager": { "visible": false } };
-const attributes$1 = { "name": { "type": "string", "required": true }, "platform": { "type": "enumeration", "enum": ["wechat", "alipay", "douyin"], "required": true }, "appType": { "type": "enumeration", "enum": ["official_account", "mini_program", "open_platform", "h5", "app"], "required": true }, "appId": { "type": "string", "required": true }, "appSecret": { "type": "string", "required": true }, "enabled": { "type": "boolean", "default": true }, "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config" } };
+const attributes$1 = { "name": { "type": "string", "required": true }, "platform": { "type": "enumeration", "enum": ["wechat", "alipay", "douyin"], "required": true }, "appType": { "type": "enumeration", "enum": ["official_account", "mini_program", "open_platform", "h5", "app", "alipay_life", "alipay_mini", "douyin_open", "douyin_mini"], "required": true }, "appId": { "type": "string", "required": true }, "appSecret": { "type": "string", "required": true }, "token": { "type": "string", "required": false }, "encodingAESKey": { "type": "string", "required": false }, "merchantId": { "type": "string", "required": false }, "enabled": { "type": "boolean", "default": true }, "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config" } };
 const thirdPartyConfigSchema = {
   kind: kind$1,
   collectionName: collectionName$1,

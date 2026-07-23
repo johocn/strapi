@@ -90,6 +90,10 @@ declare const _default: {
                     studio: boolean;
                 };
             };
+            moduleVisibility: {
+                type: string;
+                default: {};
+            };
             template: {
                 type: string;
                 relation: string;

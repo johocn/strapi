@@ -26,7 +26,7 @@ declare const _default: {
     },
     "appType": {
       "type": "enumeration",
-      "enum": ["official_account", "mini_program", "open_platform", "h5", "app"],
+      "enum": ["official_account", "mini_program", "open_platform", "h5", "app", "alipay_life", "alipay_mini", "douyin_open", "douyin_mini"],
       "required": true
     },
     "appId": {
@@ -36,6 +36,18 @@ declare const _default: {
     "appSecret": {
       "type": "string",
       "required": true
+    },
+    "token": {
+      "type": "string",
+      "required": false
+    },
+    "encodingAESKey": {
+      "type": "string",
+      "required": false
+    },
+    "merchantId": {
+      "type": "string",
+      "required": false
     },
     "enabled": {
       "type": "boolean",

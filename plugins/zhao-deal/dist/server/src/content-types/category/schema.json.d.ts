@@ -22,7 +22,19 @@ declare const _default: {
       "inversedBy": "categories"
     },
     "sort": { "type": "integer", "default": 0 },
-    "icon": { "type": "media", "allowedTypes": ["images"], "multiple": false }
+    "icon": { "type": "media", "allowedTypes": ["images"], "multiple": false },
+    "coupons": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-deal.coupon",
+      "mappedBy": "category"
+    },
+    "products": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-deal.product",
+      "mappedBy": "category"
+    }
   }
 }
 ;

@@ -51,5 +51,8 @@ declare const _default: {
             processed: number;
         }>;
     };
+    adapterRegistry: ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => import('./adapters/adapter-registry').AdapterRegistry;
 };
 export default _default;

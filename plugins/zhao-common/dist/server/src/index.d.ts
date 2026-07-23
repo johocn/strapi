@@ -160,6 +160,20 @@ declare const _default: {
             runAllMigrations(): Promise<void>;
             rollback(plugin: string, version: string): Promise<void>;
         };
+        "global-config": ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            getGlobalConfig(): Promise<import('@strapi/types/dist/modules/documents').AnyDocument | {
+                moduleEnabled: {};
+                moduleTenantGrants: {};
+                moduleVisibility: {};
+            }>;
+            updateGlobalConfig(data: {
+                moduleEnabled?: Record<string, boolean>;
+                moduleTenantGrants?: Record<string, string[]>;
+                moduleVisibility?: Record<string, string[]>;
+            }): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
+        };
     };
     contentTypes: {
         "site-config": {
@@ -253,6 +267,10 @@ declare const _default: {
                             logistics: boolean;
                             studio: boolean;
                         };
+                    };
+                    moduleVisibility: {
+                        type: string;
+                        default: {};
                     };
                     template: {
                         type: string;
@@ -559,6 +577,49 @@ declare const _default: {
                 };
             };
         };
+        "global-config": {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                    description: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                attributes: {
+                    moduleEnabled: {
+                        type: string;
+                        default: {
+                            website: boolean;
+                            logistics: boolean;
+                            studio: boolean;
+                            points: boolean;
+                            course: boolean;
+                            quiz: boolean;
+                            channel: boolean;
+                            sso: boolean;
+                            thirdParty: boolean;
+                            oss: boolean;
+                            payment: boolean;
+                            community: boolean;
+                            forum: boolean;
+                        };
+                    };
+                    moduleTenantGrants: {
+                        type: string;
+                        default: {};
+                    };
+                    moduleVisibility: {
+                        type: string;
+                        default: {};
+                    };
+                };
+            };
+        };
     };
     controllers: {
         config: ({ strapi }: {
@@ -611,6 +672,10 @@ declare const _default: {
             update(ctx: any): Promise<void>;
             delete(ctx: any): Promise<void>;
             applyToSite(ctx: any): Promise<void>;
+        };
+        "global-config": {
+            get(ctx: any): Promise<void>;
+            update(ctx: any): Promise<void>;
         };
     };
     policies: {

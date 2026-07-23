@@ -65,6 +65,24 @@ declare const _default: {
                 fetchConfig: {
                     type: string;
                 };
+                coupons: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    mappedBy: string;
+                };
+                products: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    mappedBy: string;
+                };
+                categories: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    mappedBy: string;
+                };
             };
         };
     };
@@ -113,6 +131,18 @@ declare const _default: {
                     type: string;
                     allowedTypes: string[];
                     multiple: boolean;
+                };
+                coupons: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    mappedBy: string;
+                };
+                products: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    mappedBy: string;
                 };
             };
         };
@@ -223,6 +253,18 @@ declare const _default: {
                     relation: string;
                     target: string;
                     inversedBy: string;
+                };
+                product: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    mappedBy: string;
+                };
+                clickEvents: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    mappedBy: string;
                 };
             };
         };

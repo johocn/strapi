@@ -12,7 +12,7 @@ const collectionName$2 = "zhao_track_source_tags";
 const info$2 = { "singularName": "source-tag", "pluralName": "source-tags", "displayName": "来源标签", "description": "用户来源识别" };
 const options$2 = { "draftAndPublish": false };
 const pluginOptions$2 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": false } };
-const attributes$2 = { "tagId": { "type": "uid", "required": true, "unique": true }, "promoCampaign": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.promo-campaign" }, "scene": { "type": "string" }, "sourceUrl": { "type": "text" }, "utmSource": { "type": "string" }, "utmMedium": { "type": "string" }, "utmCampaign": { "type": "string" }, "utmContent": { "type": "string" }, "utmTerm": { "type": "string" }, "deviceFingerprint": { "type": "string" }, "firstSeenAt": { "type": "datetime", "default": null }, "lastSeenAt": { "type": "datetime" } };
+const attributes$2 = { "tagId": { "type": "uid", "required": true, "unique": true }, "promoCampaign": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.promo-campaign" }, "scene": { "type": "string" }, "sourceUrl": { "type": "text" }, "utmSource": { "type": "string" }, "utmMedium": { "type": "string" }, "utmCampaign": { "type": "string" }, "utmContent": { "type": "string" }, "utmTerm": { "type": "string" }, "deviceFingerprint": { "type": "string" }, "firstSeenAt": { "type": "datetime", "default": null }, "lastSeenAt": { "type": "datetime" }, "clickEvents": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-track.click-event", "mappedBy": "sourceTag" } };
 const sourceTag = {
   kind: kind$2,
   collectionName: collectionName$2,
@@ -95,7 +95,7 @@ const source = ({ strapi }) => ({
       });
       ctx.body = wrap$2({
         tagId: tag.tagId,
-        promoChannelId: tag.promoChannelId,
+        promoCampaignId: tag.promoCampaign?.documentId || null,
         scene: tag.scene,
         isNew
       });
@@ -116,39 +116,39 @@ const CLICK_UID = "plugin::zhao-track.click-event";
 const ORDER_UID$3 = "plugin::zhao-track.order";
 const SOURCE_TAG_UID$1 = "plugin::zhao-track.source-tag";
 const query = ({ strapi }) => {
-  const buildWhere = (ctx, allowed) => {
-    const where = {};
+  const buildFilters = (ctx, allowed) => {
+    const filters = {};
     for (const key of allowed) {
-      if (ctx.query[key] !== void 0) where[key] = ctx.query[key];
+      if (ctx.query[key] !== void 0) filters[key] = ctx.query[key];
     }
     if (ctx.query.startDate || ctx.query.endDate) {
       const field = ctx.query.dateField || "createdAt";
-      where[field] = {};
-      if (ctx.query.startDate) where[field].$gte = ctx.query.startDate;
-      if (ctx.query.endDate) where[field].$lte = ctx.query.endDate;
+      filters[field] = {};
+      if (ctx.query.startDate) filters[field].$gte = ctx.query.startDate;
+      if (ctx.query.endDate) filters[field].$lte = ctx.query.endDate;
     }
-    return where;
+    return filters;
   };
   return {
     async clicks(ctx) {
       try {
         const { page = 1, pageSize = 20 } = ctx.query;
-        const where = buildWhere(ctx, ["coupon", "sourceTag", "promoChannelId", "deviceFingerprint"]);
+        const filters = buildFilters(ctx, ["coupon", "sourceTag", "promoCampaign", "deviceFingerprint"]);
         if (ctx.query.dateField === void 0) {
-          if (where.createdAt) {
-            where.clickedAt = where.createdAt;
-            delete where.createdAt;
+          if (filters.createdAt) {
+            filters.clickedAt = filters.createdAt;
+            delete filters.createdAt;
           }
         }
         const [results, total] = await Promise.all([
           strapi.documents(CLICK_UID).findMany({
-            where,
-            orderBy: { clickedAt: "desc" },
-            offset: (Number(page) - 1) * Number(pageSize),
+            filters,
+            sort: { clickedAt: "desc" },
+            start: (Number(page) - 1) * Number(pageSize),
             limit: Number(pageSize),
             populate: { coupon: true, sourceTag: true }
           }),
-          strapi.db.query(CLICK_UID).count({ where })
+          strapi.db.query(CLICK_UID).count({ where: filters })
         ]);
         ctx.body = wrapList({ results, total, page: Number(page), pageSize: Number(pageSize) });
       } catch (e) {
@@ -159,20 +159,20 @@ const query = ({ strapi }) => {
     async orders(ctx) {
       try {
         const { page = 1, pageSize = 20 } = ctx.query;
-        const where = buildWhere(ctx, ["promoChannelId", "commissionStatus", "orderStatus"]);
+        const filters = buildFilters(ctx, ["promoCampaign", "commissionStatus"]);
         if (ctx.query.startDate || ctx.query.endDate) {
-          where.transactedAt = where.createdAt || {};
-          delete where.createdAt;
+          filters.transactedAt = filters.createdAt || {};
+          delete filters.createdAt;
         }
         const [results, total] = await Promise.all([
           strapi.documents(ORDER_UID$3).findMany({
-            where,
-            orderBy: { transactedAt: "desc" },
-            offset: (Number(page) - 1) * Number(pageSize),
+            filters,
+            sort: { transactedAt: "desc" },
+            start: (Number(page) - 1) * Number(pageSize),
             limit: Number(pageSize),
             populate: { coupon: true, matchedClick: true, sourceTag: true }
           }),
-          strapi.db.query(ORDER_UID$3).count({ where })
+          strapi.db.query(ORDER_UID$3).count({ where: filters })
         ]);
         ctx.body = wrapList({ results, total, page: Number(page), pageSize: Number(pageSize) });
       } catch (e) {
@@ -183,15 +183,15 @@ const query = ({ strapi }) => {
     async sourceTags(ctx) {
       try {
         const { page = 1, pageSize = 20 } = ctx.query;
-        const where = buildWhere(ctx, ["promoChannelId"]);
+        const filters = buildFilters(ctx, ["promoCampaign"]);
         const [results, total] = await Promise.all([
           strapi.documents(SOURCE_TAG_UID$1).findMany({
-            where,
-            orderBy: { lastSeenAt: "desc" },
-            offset: (Number(page) - 1) * Number(pageSize),
+            filters,
+            sort: { lastSeenAt: "desc" },
+            start: (Number(page) - 1) * Number(pageSize),
             limit: Number(pageSize)
           }),
-          strapi.db.query(SOURCE_TAG_UID$1).count({ where })
+          strapi.db.query(SOURCE_TAG_UID$1).count({ where: filters })
         ]);
         ctx.body = wrapList({ results, total, page: Number(page), pageSize: Number(pageSize) });
       } catch (e) {
@@ -206,17 +206,18 @@ const ORDER_UID$2 = "plugin::zhao-track.order";
 const report = ({ strapi }) => ({
   async attributionReport(ctx) {
     try {
-      const { promoChannelId, startDate, endDate, groupBy = "day" } = ctx.query;
-      const where = {};
-      if (promoChannelId) where.promoChannelId = promoChannelId;
+      const { promoCampaign, startDate, endDate, groupBy = "day" } = ctx.query;
+      const filters = {};
+      if (promoCampaign) filters.promoCampaign = promoCampaign;
       if (startDate || endDate) {
-        where.transactedAt = {};
-        if (startDate) where.transactedAt.$gte = startDate;
-        if (endDate) where.transactedAt.$lte = endDate;
+        filters.transactedAt = {};
+        if (startDate) filters.transactedAt.$gte = startDate;
+        if (endDate) filters.transactedAt.$lte = endDate;
       }
       const orders = await strapi.documents(ORDER_UID$2).findMany({
-        where,
-        limit: 5e3
+        filters,
+        limit: 5e3,
+        populate: { coupon: true, promoCampaign: true }
       });
       const stats = {
         totalOrders: orders.length,
@@ -228,26 +229,26 @@ const report = ({ strapi }) => ({
         groups: {}
       };
       for (const o of orders) {
-        stats.totalCommission += Number(o.commissionAmount) || 0;
+        stats.totalCommission += Number(o.commission) || 0;
         const q = o.attributionQuality || "unmatched";
         stats.byQuality[q] = (stats.byQuality[q] || 0) + 1;
         if (q === "unmatched") {
           stats.unmatchedOrders++;
         } else {
           stats.matchedOrders++;
-          stats.matchedCommission += Number(o.commissionAmount) || 0;
+          stats.matchedCommission += Number(o.commission) || 0;
         }
         let groupKey = "all";
         if (groupBy === "day") {
           groupKey = new Date(o.transactedAt).toISOString().slice(0, 10);
         } else if (groupBy === "channel") {
-          groupKey = o.promoChannelId || "unknown";
+          groupKey = o.promoCampaign?.documentId || "unknown";
         } else if (groupBy === "coupon") {
           groupKey = o.coupon?.documentId || "unknown";
         }
         if (!stats.groups[groupKey]) stats.groups[groupKey] = { orders: 0, commission: 0 };
         stats.groups[groupKey].orders++;
-        stats.groups[groupKey].commission += Number(o.commissionAmount) || 0;
+        stats.groups[groupKey].commission += Number(o.commission) || 0;
       }
       ctx.body = wrap$1(stats);
     } catch (e) {
@@ -301,10 +302,10 @@ const controllers = {
 };
 const permissions = {
   actions: [
-    { uid: "track.click.read", displayName: "读取点击" },
-    { uid: "track.order.read", displayName: "读取订单" },
-    { uid: "track.source.read", displayName: "读取来源标签" },
-    { uid: "track.sync.trigger", displayName: "触发订单同步" }
+    { section: "plugins", pluginName: "zhao-track", uid: "track.click.read", displayName: "读取点击" },
+    { section: "plugins", pluginName: "zhao-track", uid: "track.order.read", displayName: "读取订单" },
+    { section: "plugins", pluginName: "zhao-track", uid: "track.source.read", displayName: "读取来源标签" },
+    { section: "plugins", pluginName: "zhao-track", uid: "track.sync.trigger", displayName: "触发订单同步" }
   ]
 };
 const register = ({ strapi }) => {
@@ -372,7 +373,8 @@ const sourceResolver = ({ strapi }) => {
       }
       if (opts.sourceTagId) {
         const tags = await strapi.documents(SOURCE_TAG_UID).findMany({
-          filters: { tagId: opts.sourceTagId }
+          filters: { tagId: opts.sourceTagId },
+          populate: { promoCampaign: { populate: { channel: true } } }
         });
         if (tags && tags.length > 0) {
           const tag = tags[0];
@@ -388,7 +390,10 @@ const sourceResolver = ({ strapi }) => {
         if (opts.utm.utmSource) filters.utmSource = opts.utm.utmSource;
         if (opts.utm.utmMedium) filters.utmMedium = opts.utm.utmMedium;
         if (opts.utm.utmCampaign) filters.utmCampaign = opts.utm.utmCampaign;
-        const tags = await strapi.documents(SOURCE_TAG_UID).findMany({ filters });
+        const tags = await strapi.documents(SOURCE_TAG_UID).findMany({
+          filters,
+          populate: { promoCampaign: { populate: { channel: true } } }
+        });
         if (tags && tags.length > 0) {
           const tag = tags[0];
           await strapi.documents(SOURCE_TAG_UID).update({
@@ -405,7 +410,8 @@ const sourceResolver = ({ strapi }) => {
             deviceFingerprint: opts.deviceFingerprint,
             lastSeenAt: { $gte: thirtyDaysAgo.toISOString() }
           },
-          sort: { lastSeenAt: "desc" }
+          sort: { lastSeenAt: "desc" },
+          populate: { promoCampaign: { populate: { channel: true } } }
         });
         if (tags && tags.length > 0) {
           const tag = tags[0];
@@ -438,7 +444,11 @@ const sourceResolver = ({ strapi }) => {
           lastSeenAt: now
         }
       });
-      return { tag: newTag, isNew: true };
+      const populated = await strapi.documents(SOURCE_TAG_UID).findOne({
+        documentId: newTag.documentId,
+        populate: { promoCampaign: { populate: { channel: true } } }
+      });
+      return { tag: populated, isNew: true };
     }
   };
 };
@@ -498,6 +508,12 @@ const rateLimiter = ({ strapi }) => {
 const COUPON_UID = "plugin::zhao-deal.coupon";
 const CLICK_EVENT_UID$1 = "plugin::zhao-track.click-event";
 const CHANNEL_CONFIG_UID$1 = "plugin::zhao-studio.channel-platform-config";
+const PLATFORM_TYPE_MAP = {
+  taobao: "taobao",
+  pdd: "pdd",
+  douyin: "douyin-ecom",
+  jd: "jd"
+};
 const clickOrchestrator = ({ strapi }) => {
   return {
     async orchestrate(req) {
@@ -552,7 +568,7 @@ const clickOrchestrator = ({ strapi }) => {
       if (channelId && coupon.platform?.code) {
         try {
           const configs = await strapi.documents(CHANNEL_CONFIG_UID$1).findMany({
-            filters: { channel: channelId, platform: { type: coupon.platform.code } },
+            filters: { channel: channelId, platform: { type: PLATFORM_TYPE_MAP[coupon.platform?.code] || coupon.platform?.code } },
             limit: 1
           });
           if (configs && configs.length > 0) {
@@ -667,10 +683,11 @@ const attribution = ({ strapi }) => {
                   clickedAt: { $gte: windowStart.toISOString(), $lte: transactedAt.toISOString() }
                 },
                 sort: { clickedAt: "desc" },
-                limit: 1
+                limit: 1,
+                populate: { sourceTag: true }
               });
               if (clicks && clicks.length > 0) {
-                return { click: clicks[0], quality: "pid_match" };
+                return { click: clicks[0], quality: "pid_match", sourceTagId: clicks[0].sourceTag?.documentId };
               }
             }
           }
@@ -688,10 +705,11 @@ const attribution = ({ strapi }) => {
             clickedAt: { $gte: windowStart.toISOString(), $lte: transactedAt.toISOString() }
           },
           sort: { clickedAt: "desc" },
-          limit: 1
+          limit: 1,
+          populate: { sourceTag: true }
         });
         if (clicks && clicks.length > 0) {
-          return { click: clicks[0], quality: "click_match" };
+          return { click: clicks[0], quality: "click_match", sourceTagId: clicks[0].sourceTag?.documentId };
         }
       } catch (err) {
         strapi.log.warn(`[attribution] rule2 (click_match) failed: ${err.message}`);
@@ -699,33 +717,18 @@ const attribution = ({ strapi }) => {
     }
     if (order2.promoPid) {
       try {
-        const configs = await strapi.documents(CHANNEL_CONFIG_UID).findMany({
-          filters: { promoPid: order2.promoPid },
-          populate: { channel: true },
-          limit: 1
+        const clicks = await strapi.documents(CLICK_EVENT_UID).findMany({
+          filters: {
+            coupon: couponDocId,
+            promoPid: order2.promoPid,
+            clickedAt: { $gte: windowStart.toISOString(), $lte: transactedAt.toISOString() }
+          },
+          sort: { clickedAt: "desc" },
+          limit: 1,
+          populate: { sourceTag: true }
         });
-        if (configs && configs.length > 0) {
-          const channelId = configs[0].channel?.documentId;
-          if (channelId) {
-            const campaigns = await strapi.documents(CAMPAIGN_UID).findMany({
-              filters: { channel: channelId }
-            });
-            const campaignIds = (campaigns || []).map((c) => c.documentId);
-            if (campaignIds.length > 0) {
-              const clicks = await strapi.documents(CLICK_EVENT_UID).findMany({
-                filters: {
-                  coupon: couponDocId,
-                  promoCampaign: { $in: campaignIds },
-                  clickedAt: { $gte: windowStart.toISOString(), $lte: transactedAt.toISOString() }
-                },
-                sort: { clickedAt: "desc" },
-                limit: 1
-              });
-              if (clicks && clicks.length > 0) {
-                return { click: clicks[0], quality: "weak_match" };
-              }
-            }
-          }
+        if (clicks && clicks.length > 0) {
+          return { click: clicks[0], quality: "weak_match", sourceTagId: clicks[0].sourceTag?.documentId };
         }
       } catch (err) {
         strapi.log.warn(`[attribution] rule3 (weak_match) failed: ${err.message}`);
@@ -738,10 +741,11 @@ const attribution = ({ strapi }) => {
           clickedAt: { $gte: windowStart.toISOString(), $lte: transactedAt.toISOString() }
         },
         sort: { clickedAt: "desc" },
-        limit: 1
+        limit: 1,
+        populate: { sourceTag: true }
       });
       if (clicks && clicks.length > 0) {
-        return { click: clicks[0], quality: "fallback_match" };
+        return { click: clicks[0], quality: "fallback_match", sourceTagId: clicks[0].sourceTag?.documentId };
       }
     } catch (err) {
       strapi.log.warn(`[attribution] rule4 (fallback_match) failed: ${err.message}`);
@@ -758,7 +762,7 @@ const attribution = ({ strapi }) => {
       const limit = opts?.limit || 500;
       const pendingOrders = await strapi.documents(ORDER_UID$1).findMany({
         filters: { matchedClick: null },
-        populate: { coupon: true },
+        populate: { coupon: true, promoCampaign: true },
         limit,
         sort: { transactedAt: "asc" }
       });
@@ -886,7 +890,6 @@ const orderSync = ({ strapi }) => {
                 data: {
                   orderId: item.orderId,
                   coupon: couponDocId,
-                  promoChannelId: item.promoChannelId,
                   promoPid: item.promoPid,
                   deviceFingerprint: item.deviceFingerprint,
                   amount: item.amount,
