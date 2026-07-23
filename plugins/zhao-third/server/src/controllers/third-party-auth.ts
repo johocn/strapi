@@ -3,7 +3,7 @@ import type { Core } from "@strapi/strapi";
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async authUrl(ctx: any) {
     try {
-      const { platform, appType, redirectUrl } = ctx.request.body;
+      const { platform, appType, redirectUrl, state } = ctx.request.body;
 
       if (!platform || !appType || !redirectUrl) {
         ctx.status = 400;
@@ -11,9 +11,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         return;
       }
 
-      const siteId = ctx.state?.siteId;
+      const siteDocId = ctx.state?.siteDocumentId;
       const authService = strapi.plugin("zhao-third").service("third-party-auth");
-      const result = await authService.getAuthUrl(platform, appType, redirectUrl, siteId);
+      const result = await authService.getAuthUrl(platform, appType, redirectUrl, siteDocId, state);
 
       ctx.body = result;
     } catch (error: any) {
@@ -33,9 +33,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         return;
       }
 
-      const siteId = ctx.state?.siteId;
+      const siteDocId = ctx.state?.siteDocumentId;
       const authService = strapi.plugin("zhao-third").service("third-party-auth");
-      const result = await authService.getQrconnectUrl(redirectUrl, siteId);
+      const result = await authService.getQrconnectUrl(redirectUrl, siteDocId);
 
       ctx.body = result;
     } catch (error: any) {
@@ -55,7 +55,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         return;
       }
 
-      const siteId = ctx.state?.siteId;
+      const siteDocId = ctx.state?.siteDocumentId;
       const authService = strapi.plugin("zhao-third").service("third-party-auth");
       const result = await authService.handleCallback({
         platform,
@@ -64,7 +64,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         encryptedData,
         iv,
         inviteCode,
-        siteId,
+        siteId: siteDocId,
       });
 
       ctx.body = result;
@@ -78,10 +78,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async publicConfig(ctx: any) {
     try {
       const { platform, appType } = ctx.params;
-      const siteId = ctx.state?.siteId;
+      const siteDocId = ctx.state?.siteDocumentId;
 
       const authService = strapi.plugin("zhao-third").service("third-party-auth");
-      const result = await authService.getPublicConfig(platform, appType, siteId);
+      const result = await authService.getPublicConfig(platform, appType, siteDocId);
 
       if (!result) {
         ctx.status = 404;
@@ -128,9 +128,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         return;
       }
 
-      const siteId = ctx.state?.siteId;
+      const siteDocId = ctx.state?.siteDocumentId;
       const authService = strapi.plugin("zhao-third").service("third-party-auth");
-      const result = await authService.getJssdkSignature(url, siteId);
+      const result = await authService.getJssdkSignature(url, siteDocId);
 
       ctx.body = result;
     } catch (error: any) {
