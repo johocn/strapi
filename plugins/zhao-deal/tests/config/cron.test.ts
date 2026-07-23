@@ -7,11 +7,11 @@ describe("zhao-deal cron config", () => {
     expect(keys).toContain("0 * * * *");
   });
 
-  it("每小时任务调用 sync-scheduler.run", async () => {
+  it("每小时任务调用 syncScheduler.run", async () => {
     const run = jest.fn().mockResolvedValue({ processed: 0 });
     const strapi: any = {
       plugin: () => ({
-        service: (name: string) => name === "sync-scheduler" ? { run } : null,
+        service: (name: string) => name === "syncScheduler" ? { run } : null,
       }),
       log: { warn: jest.fn(), info: jest.fn() },
     };
@@ -34,7 +34,7 @@ describe("zhao-deal cron config", () => {
     const warn = jest.fn();
     const strapi: any = {
       plugin: () => ({
-        service: (name: string) => name === "sync-scheduler" ? { run } : null,
+        service: (name: string) => name === "syncScheduler" ? { run } : null,
       }),
       log: { warn, info: jest.fn() },
     };

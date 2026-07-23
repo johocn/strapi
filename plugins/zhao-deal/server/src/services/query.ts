@@ -48,14 +48,14 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         sort,
         page,
         pageSize,
-        populate: { platform: true, category: true, product: true },
+        populate: { platform: { fields: ["name", "code"] }, category: true, product: true },
       });
     },
 
     async getCoupon(couponId: string) {
       const results = await strapi.documents(COUPON_UID).findMany({
         filters: { couponId },
-        populate: { platform: true, category: true, product: true },
+        populate: { platform: { fields: ["name", "code"] }, category: true, product: true },
       });
       if (!results || results.length === 0) {
         const err: any = new Error("优惠券不存在");
@@ -75,7 +75,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       return strapi.documents(PRODUCT_UID).findMany({
         filters, page, pageSize,
         sort: SORT_MAP[query.sort] || SORT_MAP.recommended,
-        populate: { platform: true, category: true, coupon: true },
+        populate: { platform: { fields: ["name", "code"] }, category: true, coupon: true },
       });
     },
 
@@ -97,12 +97,14 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       return strapi.documents(CATEGORY_UID).findMany({
         filters,
         sort: "sort:ASC",
-        populate: { platform: true },
+        populate: { platform: { fields: ["name", "code"] } },
       });
     },
 
     async listPlatforms() {
-      return strapi.documents(PLATFORM_UID).findMany({});
+      return strapi.documents(PLATFORM_UID).findMany({
+        fields: ["name", "code", "promoSite"],
+      });
     },
 
     async listCollections() {
@@ -121,7 +123,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     async getCollection(code: string) {
       const results = await strapi.documents(COLLECTION_UID).findMany({
         filters: { code },
-        populate: { coupons: { populate: { platform: true, product: true } }, coverImage: true },
+        populate: { coupons: { populate: { platform: { fields: ["name", "code"] }, product: true } }, coverImage: true },
       });
       if (!results || results.length === 0) {
         const err: any = new Error("合集不存在");
