@@ -5,6 +5,13 @@ const COUPON_UID = "plugin::zhao-deal.coupon";
 const CLICK_EVENT_UID = "plugin::zhao-track.click-event";
 const CHANNEL_CONFIG_UID = "plugin::zhao-studio.channel-platform-config";
 
+const PLATFORM_TYPE_MAP: Record<string, string> = {
+  taobao: "taobao",
+  pdd: "pdd",
+  douyin: "douyin-ecom",
+  jd: "jd",
+};
+
 export interface ClickRequest {
   couponId: string;
   sourceTagId?: string;
@@ -80,7 +87,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       if (channelId && coupon.platform?.code) {
         try {
           const configs = await strapi.documents(CHANNEL_CONFIG_UID).findMany({
-            filters: { channel: channelId, platform: { type: coupon.platform.code } },
+            filters: { channel: channelId, platform: { type: PLATFORM_TYPE_MAP[coupon.platform?.code] || coupon.platform?.code } },
             limit: 1,
           });
           if (configs && configs.length > 0) {
