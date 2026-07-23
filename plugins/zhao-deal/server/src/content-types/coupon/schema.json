@@ -53,6 +53,18 @@
       "relation": "manyToOne",
       "target": "plugin::zhao-deal.coupon-collection",
       "inversedBy": "coupons"
+    },
+    "product": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "plugin::zhao-deal.product",
+      "mappedBy": "coupon"
+    },
+    "clickEvents": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-track.click-event",
+      "mappedBy": "coupon"
     }
   }
 }
