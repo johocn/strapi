@@ -55,7 +55,22 @@ const siteResolver: Core.MiddlewareFactory = (config, { strapi }) => {
           ctx.state.siteId = site.id;
           ctx.state.siteDocumentId = site.documentId;
           // siteChannelIds 数组由 resolve-channel-scope 策略统一注入
+          return await next();
         }
+        // domain 未匹配 → 回退到默认站点
+        strapi.log.warn(`[site-resolver] domain "${domain}" 未匹配，回退到默认站点`);
+      }
+
+      // 回退：取 id 最小的站点作为默认（bootstrap 种子记录 id=1）
+      const fallback = await strapi.documents(SITE_CONFIG_UID).findMany({
+        sort: { id: "asc" },
+        limit: 1,
+        populate: ["channels", "template"],
+      });
+      if (Array.isArray(fallback) && fallback.length > 0) {
+        const site = fallback[0];
+        ctx.state.siteId = site.id;
+        ctx.state.siteDocumentId = site.documentId;
       }
     } catch (error) {
       strapi.log.error("[site-resolver] Failed to resolve site:", error);
