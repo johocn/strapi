@@ -668,16 +668,24 @@ Expected: FAIL with "expect(callArgs.populate).toBeDefined()"
 Run: `cd strapi/plugins/zhao-track && npx jest tests/services/source-resolver-populate.test.ts --no-cache`
 Expected: PASS (3 tests)
 
-- [ ] **Step 5: Run existing source-resolver tests to verify no regression**
+- [ ] **Step 5: Fix source-resolver-migration.test.ts mock (missing findOne)**
 
-Run: `cd strapi/plugins/zhao-track && npx jest tests/services/source-resolver.test.ts --no-cache`
-Expected: PASS（如有失败，修复 mock 以适配新的 findOne 调用）
+`source-resolver-migration.test.ts` 的 mock 不含 `findOne`，修改 source-resolver 后会崩溃。需在 2 处 mock 补加 `findOne`：
 
-- [ ] **Step 6: Commit**
+第 26 行：`return { findMany, update, create };` → `return { findMany, update, create, findOne: jest.fn().mockResolvedValue({ documentId: 'tag1', tagId: 'utm_123', promoCampaign: null }) };`
+
+第 41 行：`return { findMany, create, update };` → `return { findMany, create, update, findOne: jest.fn().mockResolvedValue({ documentId: 'tag1', tagId: 'utm_123', promoCampaign: null }) };`
+
+- [ ] **Step 6: Run existing source-resolver tests to verify no regression**
+
+Run: `cd strapi/plugins/zhao-track && npx jest tests/services/source-resolver.test.ts tests/services/source-resolver-migration.test.ts --no-cache`
+Expected: PASS
+
+- [ ] **Step 7: Commit**
 
 ```bash
 cd strapi/plugins/zhao-track
-git add server/src/services/source-resolver.ts tests/services/source-resolver-populate.test.ts
+git add server/src/services/source-resolver.ts tests/services/source-resolver-populate.test.ts tests/services/source-resolver-migration.test.ts
 git commit -m "fix: populate promoCampaign.channel in source-resolver identify (root cause of attribution chain)"
 ```
 
