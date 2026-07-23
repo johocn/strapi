@@ -11,10 +11,25 @@
 | # | 现象 | 根因 |
 |---|---|---|
 | B1 | 租户列表页 `/pages/tenant/list` 状态永远"已停用"、标签全灰、更新时间显示"-"、名称显示"未命名租户" | 后端 `GET /zhao-auth/v1/my/tenants` 只 `select: ["id","documentId","siteName","domain"]` 并把 `siteName` 重命名为 `name`，未 populate 关系，前端依赖的 `featureFlags/updatedAt/channels/template` 全部缺失 |
-| B2 | C 端 `GET /api/zhao-common/v1/public/config?domain=localhost` 返回 `site` 全空字符串（应返回"圣麟教育"） | `ctx.state.siteId`（数字主键）被当作 `documentId`（字符串）查询，`findOne({ documentId: 1 })` 永远查不到记录，返回 `DEFAULT_CONFIG` 空字符串 |
-| B3 | 同接口 `moduleGrantedForCurrentTenant` 13 个模块全 false | 同样的类型错位：`config.ts:500` 用数字 `siteId` 与 `moduleTenantGrants[key]`（documentId 字符串数组）比对，`includes(1)` 恒为 false |
+| B2 | C 端 `GET /api/zhao-common/v1/public/config?domain=localhost` 返回 `site` 全空字符串（应返回"圣麟教育"） | `controllers/config.ts:849` 把 `ctx.state.siteId`（数字主键）当作 `documentId`（字符串）传给 `getPublicConfig` → `site-config.ts:33` 用 `findOne({ documentId: 1 })` 查询，永远查不到记录，返回 `DEFAULT_CONFIG` 空字符串 |
+| B3 | 同接口 `moduleGrantedForCurrentTenant` 13 个模块全 false + `moduleVisibility` 未合并租户覆盖 | 同一类型错位的两个衍生点：(a) `config.ts:500` 用数字 `siteId` 与 `moduleTenantGrants[key]`（documentId 字符串数组）比对，`includes(1)` 恒为 false；(b) `config.ts:514` 调用 `resolveModuleVisibility(siteId)` 传的也是数字 id，但该函数签名要求 `tenantDocumentId`（documentId 字符串） |
 
 附带问题：种子记录"圣麟教育"创建时 `domain` 字段为空（`bootstrap.ts:8-77` 的 `DEFAULT_SITE_CONFIG` 未定义 `domain`），`?domain=localhost` 精确匹配也命中不了 → 需要 domain 回退逻辑。
+
+### 1.1 关键约束（自审发现，避免破坏其他模块）
+
+全局检索 `ctx.state.siteId` 使用情况发现：**30+ 个控制器（logistics/website/studio/third/course 等）都正确使用 `ctx.state.siteId`（数字 id）做 `db.query` 关系过滤**，这是正确的用法，不能动。
+
+**只有 `controllers/config.ts:849` 这一处误用**——它把数字 id 传给需要 documentId 的 `getPublicConfig`。修复方向是改这一处消费方（读 `siteDocumentId` 而非 `siteId`），而非改中间件写入语义。
+
+同理，`config.ts:500` 和 `config.ts:514` 都是 `getPublicConfig` 内部的衍生误用，随参数语义修正一并解决。
+
+### 1.2 已确认的代码事实
+
+- `tenant.service.ts` 用的是 `strapi.db.query`（非 documentService），`select` **不会自动返回时间戳**，需显式 `select: [..., "updatedAt", "createdAt"]`
+- 非 admin 分支与 admin 分支查询路径完全不同：先 `strapi.db.connection("zhao_channels_sites_lnk")` 查关联表拿数字 id，再 `db.query` 按 `id $in` 查
+- `resolveModuleVisibility(tenantDocumentId)` 签名要求 documentId 字符串（见 `permission.service.ts:486`）
+- `role-management.service.ts` 多处注释明确"来自 `ctx.state.siteDocumentId`"，证明项目已约定两个字段分工
 
 ## 2. 修复原则
 
@@ -27,35 +42,65 @@
 
 ### 3.1 当前问题
 
-`d:\zhao\strapi\plugins\zhao-auth\server\src\services\tenant.service.ts` 两个分支（admin 第 9-18 行、非 admin 第 51-61 行）都只 `select: ["id","documentId","siteName","domain"]`，并把 `siteName` 重命名为 `name`，未 populate 关系。
+`d:\zhao\strapi\plugins\zhao-auth\server\src\services\tenant.service.ts` 两个分支都只 `select: ["id","documentId","siteName","domain"]`，并把 `siteName` 重命名为 `name`，未 populate 关系，未 select 时间戳。
+
+**注意**：两个分支查询路径完全不同：
+- **admin 分支**（第 9-18 行）：直接 `strapi.db.query(SITE_CONFIG_UID).findMany` 全表查
+- **非 admin 分支**（第 22-61 行）：先 `strapi.db.connection("zhao_channels_sites_lnk").whereIn("channel_id", channelIds)` 查关联表拿数字 site id，再 `strapi.db.query(SITE_CONFIG_UID).findMany({ where: { id: { $in: siteIds } } })` 查租户详情
+
+两分支都用 `strapi.db.query`（非 documentService），**`select` 不会自动返回时间戳**，需显式加 `updatedAt`。
 
 ### 3.2 修复方案
 
 **文件**：`d:\zhao\strapi\plugins\zhao-auth\server\src\services\tenant.service.ts`
 
-admin 分支（第 9-18 行）改造：
+由于 `strapi.db.query` 的 `populate` 语法与 documentService 不同（用对象形式），且 channels 是 manyToMany 关系，需用 `populate: { channels: true, template: { select: ["name"] } }`。
+
+**admin 分支**（第 9-18 行）改造：
 
 ```typescript
-const sites = await strapi.documents(SITE_CONFIG_UID).findMany({
+const all = await strapi.db.query(SITE_CONFIG_UID).findMany({
+  select: ["id", "documentId", "siteName", "domain", "featureFlags", "updatedAt"],
   populate: {
-    channels: { fields: ["id"] },          // 仅需 length，select id 即可
-    template: { fields: ["name"] },         // 列表只显示模板名
+    channels: { select: ["id"] },            // manyToMany, 仅需 id 算 length
+    template: { select: ["name"] },           // manyToOne, 仅需 name
   },
+  limit: 1000,
 });
-
-return sites.map((s: any) => ({
+return all.map((s: any) => ({
   id: s.id,
   documentId: s.documentId,
-  siteName: s.siteName,                     // 不再重命名为 name
+  siteName: s.siteName,                       // 不再重命名为 name
   domain: s.domain,
-  featureFlags: s.featureFlags ?? {},       // 状态 + 标签数据源
-  channelsCount: (s.channels ?? []).length, // 避免传输完整 channels 数组
+  featureFlags: s.featureFlags ?? {},         // 状态 + 标签数据源
+  channelsCount: (s.channels ?? []).length,
   templateName: s.template?.name ?? null,
-  updatedAt: s.updatedAt,                   // Strapi 自动维护的时间戳
+  updatedAt: s.updatedAt,                     // 显式 select 才有值
 }));
 ```
 
-非 admin 分支（第 51-61 行）同上改造，仅 `filters` 不同（按 user.tenantGrants 过滤）。
+**非 admin 分支**（第 50-61 行）改造（仅改 `select` 和 `populate`，`where` 条件不变）：
+
+```typescript
+const sites = await strapi.db.query(SITE_CONFIG_UID).findMany({
+  where: { id: { $in: siteIds } },
+  select: ["id", "documentId", "siteName", "domain", "featureFlags", "updatedAt"],
+  populate: {
+    channels: { select: ["id"] },
+    template: { select: ["name"] },
+  },
+});
+return sites.map((s: any) => ({
+  id: s.id,
+  documentId: s.documentId,
+  siteName: s.siteName,
+  domain: s.domain,
+  featureFlags: s.featureFlags ?? {},
+  channelsCount: (s.channels ?? []).length,
+  templateName: s.template?.name ?? null,
+  updatedAt: s.updatedAt,
+}));
+```
 
 ### 3.3 字段映射对照（修复后）
 
@@ -64,7 +109,7 @@ return sites.map((s: any) => ({
 | `tenant.siteName` | `siteName` | 修复（不再重命名） |
 | `tenant.featureFlags?.channel` | `featureFlags.channel` | 修复 |
 | `tenant.featureFlags?.[key]`（标签） | `featureFlags[key]` | 修复 |
-| `tenant.updatedAt` | `updatedAt` | 修复 |
+| `tenant.updatedAt` | `updatedAt` | 修复（显式 select） |
 | `tenant.channels?.length` | `channelsCount` | 字段名变化 |
 | `tenant.template?.name` | `templateName` | 字段名扁平化 |
 | `tenant.thirdPartyConfigs?.length` | 不返回 | 显示 0（可接受） |
@@ -85,6 +130,7 @@ return sites.map((s: any) => ({
 2. **用 `templateName` 而非 `template` 对象**：同上，列表只需名称
 3. **`featureFlags` 返回完整对象**：前端需要 7 个子键判断标签状态，扁平化反而更复杂，保留原对象
 4. **不返回 `thirdPartyConfigs`**：schema 无此字段，前端 `?.length` 已安全降级为 0，不破坏 UI
+5. **保持 `strapi.db.query` 而非改用 documentService**：非 admin 分支依赖 `where: { id: { $in: siteIds } }` 按数字 id 过滤，documentService 只支持 documentId 过滤，改用会破坏查询逻辑；admin 分支为保持一致性也用 db.query
 
 ## 4. B2/B3 siteId 类型错位 + domain 回退
 
@@ -125,12 +171,16 @@ async getPublic(ctx: any) {
 
 **文件**：`d:\zhao\strapi\plugins\zhao-common\server\src\services\config.ts`
 
-- 第 246 行 `getPublicConfig(siteId, channelId)` 参数语义改为 `siteDocId`（类型仍是 string，但语义是 documentId）
-- 第 255 行 `siteConfigService.getConfig(siteId)` → `getConfig(siteDocId)`
-- 第 500 行 `moduleGrantedForCurrentTenant` 修复：
-  ```typescript
-  const currentTenantDocId = siteDocId ?? "";   // 改：用 documentId 比对 documentId 数组
-  ```
+`getPublicConfig` 内部有 **3 处**衍生误用，全部随参数语义从 `siteId`（数字）改为 `siteDocId`（documentId 字符串）一并修正：
+
+| 行号 | 当前代码 | 修复后 |
+|---|---|---|
+| 246 | `async getPublicConfig(siteId, channelId)` | `async getPublicConfig(siteDocId, channelId)` |
+| 255 | `siteConfigService.getConfig(siteId)` | `siteConfigService.getConfig(siteDocId)` |
+| 500 | `const currentTenantDocId = siteId ?? ""` | `const currentTenantDocId = siteDocId ?? ""` |
+| 514 | `resolveModuleVisibility(siteId)` | `resolveModuleVisibility(siteDocId)` |
+
+**关键**：第 514 行 `resolveModuleVisibility` 签名要求 `tenantDocumentId: string`（见 `permission.service.ts:486`），当前传数字 id 导致租户级 moduleVisibility 覆盖永远不生效（查不到租户配置就回退全局默认）。这是设计中原本遗漏的第 4 处修复点，自审时发现。
 
 ### 4.5 修复点 4：site-config 服务查询语义（不改）
 
@@ -192,7 +242,7 @@ return next();
 | `plugins/zhao-auth/tests/services/tenant.service.test.ts`（新增） | 单元 | B1 | 1. admin 分支返回 siteName/featureFlags/updatedAt/channelsCount/templateName<br>2. 非 admin 分支同上<br>3. featureFlags 为空时降级为 {} |
 | `plugins/zhao-common/tests/middlewares/site-resolver.test.ts`（新增） | 单元 | B2 | 1. domain 精确匹配 → 设置 siteDocumentId<br>2. domain 不匹配 → 回退到 id asc 第一条 + 打 warn<br>3. 表完全空 → 不设置 state（不崩溃） |
 | `plugins/zhao-common/tests/controllers/config-public.test.ts`（新增） | 单元 | B2/B3 | 1. 读取 ctx.state.siteDocumentId（非 siteId）传给 service<br>2. siteDocumentId 为 undefined 时返回 DEFAULT_CONFIG |
-| `plugins/zhao-common/tests/services/config-grants.test.ts`（新增） | 单元 | B3 | 1. currentTenantDocId 用 documentId 比对 moduleTenantGrants 数组 → 命中 true<br>2. documentId 不在数组 → false<br>3. globalEnabled=true 时即便未授权也 true |
+| `plugins/zhao-common/tests/services/config-grants.test.ts`（新增） | 单元 | B3 | 1. currentTenantDocId 用 documentId 比对 moduleTenantGrants 数组 → 命中 true<br>2. documentId 不在数组 → false<br>3. globalEnabled=true 时即便未授权也 true<br>4. `resolveModuleVisibility` 收到的是 documentId 字符串（非数字 id）→ 验证第 514 行修复 |
 
 **不写 E2E**：public/config 涉及中间件链，E2E 需启动完整 Strapi 实例，成本高收益低；单元测试覆盖中间件+控制器+服务三层已足够。
 
@@ -243,7 +293,9 @@ return next();
 
 | 风险 | 缓解 |
 |---|---|
-| 其他控制器也误用 `ctx.state.siteId` 当 documentId | 检索后确认只有 config.ts:849 一处误用 |
+| 其他控制器也误用 `ctx.state.siteId` 当 documentId | 全局检索确认：30+ 控制器（logistics/website/studio/third/course）都用数字 id 做 `db.query` 关系过滤，是正确用法；只有 `config.ts` 的 `getPublic`/`getPublicConfig` 链路误用，已全部覆盖在修复点 2/3 中 |
+| `getPublicConfig` 参数名从 `siteId` 改为 `siteDocId` 破坏其他调用方 | 检索确认 `getPublicConfig` 仅被 `controllers/config.ts:852` 一处调用 |
 | 前端其他页面也依赖 `name` 字段（非 `siteName`） | 检索后仅 list.vue 使用，detail.vue 用 documentId 单独查询 |
 | domain 回退掩盖生产域名配置错误 | 回退时打 warn 日志，可监控 |
 | tenant.service 返回字段变化破坏其他调用方 | tenant.service 仅被 tenant controller 调用，controller 仅返回给 list.vue |
+| `strapi.db.query` 的 `populate` 语法与 documentService 不同导致查询失败 | 已在测试用例中覆盖两个分支的 populate 行为；TypeScript 编译会捕获语法错误 |
