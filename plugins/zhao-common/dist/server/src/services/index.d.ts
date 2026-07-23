@@ -133,7 +133,7 @@ declare const _default: {
             documentId: import('@strapi/types/dist/modules/documents').ID;
             entries: import('@strapi/types/dist/modules/documents').Result<TContentTypeUID, TParams>[];
         }>;
-        getPublicConfig(siteId?: string, channelId?: string | number): Promise<Record<string, any>>;
+        getPublicConfig(siteDocId?: string, channelId?: string | number): Promise<Record<string, any>>;
     };
     "migration-runner": ({ strapi }: {
         strapi: import('@strapi/types/dist/core').Strapi;

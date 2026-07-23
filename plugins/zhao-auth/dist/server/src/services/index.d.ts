@@ -319,8 +319,12 @@ declare const _default: {
         getMyTenants(userId: number, roles: string[]): Promise<{
             id: any;
             documentId: any;
-            name: any;
+            siteName: any;
             domain: any;
+            featureFlags: any;
+            channelsCount: any;
+            templateName: any;
+            updatedAt: any;
         }[]>;
     };
     "permission-check": ({ strapi }: {

@@ -40,6 +40,6 @@ declare const _default: ({ strapi }: {
         documentId: import('@strapi/types/dist/modules/documents').ID;
         entries: import('@strapi/types/dist/modules/documents').Result<TContentTypeUID, TParams>[];
     }>;
-    getPublicConfig(siteId?: string, channelId?: string | number): Promise<Record<string, any>>;
+    getPublicConfig(siteDocId?: string, channelId?: string | number): Promise<Record<string, any>>;
 };
 export default _default;

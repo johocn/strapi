@@ -177,7 +177,19 @@ const siteResolver = (config2, { strapi: strapi2 }) => {
           const site = records[0];
           ctx.state.siteId = site.id;
           ctx.state.siteDocumentId = site.documentId;
+          return await next();
         }
+        strapi2.log.warn(`[site-resolver] domain "${domain}" 未匹配，回退到默认站点`);
+      }
+      const fallback = await strapi2.documents(SITE_CONFIG_UID$3).findMany({
+        sort: { id: "asc" },
+        limit: 1,
+        populate: ["channels", "template"]
+      });
+      if (Array.isArray(fallback) && fallback.length > 0) {
+        const site = fallback[0];
+        ctx.state.siteId = site.id;
+        ctx.state.siteDocumentId = site.documentId;
       }
     } catch (error) {
       strapi2.log.error("[site-resolver] Failed to resolve site:", error);
@@ -1363,13 +1375,13 @@ const config$1 = ({ strapi: strapi2 }) => ({
     }
   },
   // ========== 公开配置（只返回非敏感字段，统一从 extraConfig 读取） ==========
-  async getPublicConfig(siteId, channelId) {
+  async getPublicConfig(siteDocId, channelId) {
     const result = {};
     try {
       const siteConfigService = strapi2.plugin("zhao-common")?.service("site-config");
       const templateService = strapi2.plugin("zhao-common")?.service("site-template");
       if (!siteConfigService) return result;
-      const fullConfig = await siteConfigService.getConfig(siteId);
+      const fullConfig = await siteConfigService.getConfig(siteDocId);
       if (!fullConfig) {
         return {
           site: {
@@ -1630,7 +1642,7 @@ const config$1 = ({ strapi: strapi2 }) => ({
       } catch (e) {
         strapi2.log.warn("[config] global-config load failed:", e.message);
       }
-      const currentTenantDocId = siteId ?? "";
+      const currentTenantDocId = siteDocId ?? "";
       const moduleGrantedForCurrentTenant = {};
       for (const key of VISIBILITY_MODULES) {
         const globalEnabled = moduleEnabled[key] ?? false;
@@ -1642,7 +1654,7 @@ const config$1 = ({ strapi: strapi2 }) => ({
       try {
         const permissionService = strapi2.plugin("zhao-auth")?.service("permission");
         if (permissionService && typeof permissionService.resolveModuleVisibility === "function") {
-          result.moduleVisibility = await permissionService.resolveModuleVisibility(siteId);
+          result.moduleVisibility = await permissionService.resolveModuleVisibility(siteDocId);
         } else {
           result.moduleVisibility = fullConfig?.moduleVisibility ?? {};
         }
@@ -2676,10 +2688,10 @@ const config = ({ strapi: strapi2 }) => ({
   // ========== 公开配置 ==========
   async getPublic(ctx) {
     try {
-      const siteId = ctx.state?.siteId;
+      const siteDocId = ctx.state?.siteDocumentId;
       const channelId = ctx.query.channel || ctx.state?.channelId;
       const service = strapi2.plugin("zhao-common").service("config");
-      const data = await service.getPublicConfig(siteId, channelId);
+      const data = await service.getPublicConfig(siteDocId, channelId);
       ctx.body = { data };
     } catch (error) {
       ctx.status = error.status ?? 500;

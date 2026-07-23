@@ -3471,14 +3471,22 @@ const tenantService = ({ strapi: strapi2 }) => ({
   async getMyTenants(userId, roles) {
     if (roles.includes("admin")) {
       const all = await strapi2.db.query(SITE_CONFIG_UID).findMany({
-        select: ["id", "documentId", "siteName", "domain"],
+        select: ["id", "documentId", "siteName", "domain", "featureFlags", "updatedAt"],
+        populate: {
+          channels: { select: ["id"] },
+          template: { select: ["name"] }
+        },
         limit: 1e3
       });
       return all.map((s) => ({
         id: s.id,
         documentId: s.documentId,
-        name: s.siteName,
-        domain: s.domain
+        siteName: s.siteName,
+        domain: s.domain,
+        featureFlags: s.featureFlags ?? {},
+        channelsCount: (s.channels ?? []).length,
+        templateName: s.template?.name ?? null,
+        updatedAt: s.updatedAt
       }));
     }
     let channelIds = [];
@@ -3501,13 +3509,21 @@ const tenantService = ({ strapi: strapi2 }) => ({
     if (siteIds.length === 0) return [];
     const sites = await strapi2.db.query(SITE_CONFIG_UID).findMany({
       where: { id: { $in: siteIds } },
-      select: ["id", "documentId", "siteName", "domain"]
+      select: ["id", "documentId", "siteName", "domain", "featureFlags", "updatedAt"],
+      populate: {
+        channels: { select: ["id"] },
+        template: { select: ["name"] }
+      }
     });
     return sites.map((s) => ({
       id: s.id,
       documentId: s.documentId,
-      name: s.siteName,
-      domain: s.domain
+      siteName: s.siteName,
+      domain: s.domain,
+      featureFlags: s.featureFlags ?? {},
+      channelsCount: (s.channels ?? []).length,
+      templateName: s.template?.name ?? null,
+      updatedAt: s.updatedAt
     }));
   }
 });

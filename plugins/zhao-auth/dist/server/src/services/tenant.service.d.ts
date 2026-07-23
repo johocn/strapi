@@ -5,8 +5,12 @@ declare const _default: ({ strapi }: {
     getMyTenants(userId: number, roles: string[]): Promise<{
         id: any;
         documentId: any;
-        name: any;
+        siteName: any;
         domain: any;
+        featureFlags: any;
+        channelsCount: any;
+        templateName: any;
+        updatedAt: any;
     }[]>;
 };
 export default _default;
