@@ -65,6 +65,7 @@ describe("OrderSync.syncOrders", () => {
       adapterFetchResult: {
         list: [{
           orderId: "po_1", couponId: "coupon_1", promoPid: "promo_001",
+          promoChannelId: "legacy_ch1",
           commission: 5.2, amount: 100, commissionStatus: "paid",
           transactedAt: "2026-07-20T10:00:00Z",
         }],
@@ -77,6 +78,8 @@ describe("OrderSync.syncOrders", () => {
     expect(stats.fetched).toBe(1);
     expect(stats.created).toBe(1);
     expect(orderCreate).toHaveBeenCalled();
+    const createCall = orderCreate.mock.calls[0][0];
+    expect(createCall.data.promoChannelId).toBeUndefined();
   });
 
   it("已存在订单：update 并 stats.updated++", async () => {

@@ -101,7 +101,6 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
                 data: {
                   orderId: item.orderId,
                   coupon: couponDocId,
-                  promoChannelId: item.promoChannelId,
                   promoPid: item.promoPid,
                   deviceFingerprint: item.deviceFingerprint,
                   amount: item.amount,

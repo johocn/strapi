@@ -15,7 +15,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       });
       ctx.body = wrap({
         tagId: tag.tagId,
-        promoChannelId: tag.promoChannelId,
+        promoCampaignId: tag.promoCampaign?.documentId || null,
         scene: tag.scene,
         isNew,
       });
