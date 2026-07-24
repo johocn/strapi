@@ -7,7 +7,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   /**
    * 获取三方授权 URL
    */
-  async getAuthUrl(platform: string, appType: string, redirectUrl: string, siteId?: string, state?: string) {
+  async getAuthUrl(platform: string, appType: string, redirectUrl: string, siteId?: string, state?: string, scope?: string) {
     const configService = strapi.plugin("zhao-third").service("third-party-config");
     const config = await configService.findByPlatformAndAppType(platform, appType, siteId);
 
@@ -31,7 +31,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       params.appid = config.appId;
       params.redirect_uri = redirectUrl;
       params.response_type = "code";
-      params.scope = appType === "official_account" ? "snsapi_userinfo" : "snsapi_login";
+      params.scope = scope || (appType === "official_account" ? "snsapi_userinfo" : "snsapi_login");
       params.state = state || Math.random().toString(36).substring(2, 10);
     } else if (platform === "alipay") {
       params.app_id = config.appId;

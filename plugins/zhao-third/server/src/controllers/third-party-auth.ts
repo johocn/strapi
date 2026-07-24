@@ -3,7 +3,7 @@ import type { Core } from "@strapi/strapi";
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async authUrl(ctx: any) {
     try {
-      const { platform, appType, redirectUrl, state } = ctx.request.body;
+      const { platform, appType, redirectUrl, state, scope } = ctx.request.body;
 
       if (!platform || !appType || !redirectUrl) {
         ctx.status = 400;
@@ -13,7 +13,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
       const siteDocId = ctx.state?.siteDocumentId;
       const authService = strapi.plugin("zhao-third").service("third-party-auth");
-      const result = await authService.getAuthUrl(platform, appType, redirectUrl, siteDocId, state);
+      const result = await authService.getAuthUrl(platform, appType, redirectUrl, siteDocId, state, scope);
 
       ctx.body = result;
     } catch (error: any) {

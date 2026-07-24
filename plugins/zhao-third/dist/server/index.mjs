@@ -20,7 +20,7 @@ const thirdPartyAuthService = ({ strapi }) => ({
   /**
    * 获取三方授权 URL
    */
-  async getAuthUrl(platform, appType, redirectUrl, siteId, state) {
+  async getAuthUrl(platform, appType, redirectUrl, siteId, state, scope) {
     const configService = strapi.plugin("zhao-third").service("third-party-config");
     const config2 = await configService.findByPlatformAndAppType(platform, appType, siteId);
     if (!config2) {
@@ -40,7 +40,7 @@ const thirdPartyAuthService = ({ strapi }) => ({
       params.appid = config2.appId;
       params.redirect_uri = redirectUrl;
       params.response_type = "code";
-      params.scope = appType === "official_account" ? "snsapi_userinfo" : "snsapi_login";
+      params.scope = scope || (appType === "official_account" ? "snsapi_userinfo" : "snsapi_login");
       params.state = state || Math.random().toString(36).substring(2, 10);
     } else if (platform === "alipay") {
       params.app_id = config2.appId;
@@ -517,7 +517,7 @@ const services = {
 const thirdPartyAuthController = ({ strapi }) => ({
   async authUrl(ctx) {
     try {
-      const { platform, appType, redirectUrl, state } = ctx.request.body;
+      const { platform, appType, redirectUrl, state, scope } = ctx.request.body;
       if (!platform || !appType || !redirectUrl) {
         ctx.status = 400;
         ctx.body = { error: "请提供 platform, appType 和 redirectUrl" };
@@ -525,7 +525,7 @@ const thirdPartyAuthController = ({ strapi }) => ({
       }
       const siteDocId = ctx.state?.siteDocumentId;
       const authService = strapi.plugin("zhao-third").service("third-party-auth");
-      const result = await authService.getAuthUrl(platform, appType, redirectUrl, siteDocId, state);
+      const result = await authService.getAuthUrl(platform, appType, redirectUrl, siteDocId, state, scope);
       ctx.body = result;
     } catch (error) {
       strapi.log.error(`[zhao-third] 获取授权URL失败: ${error.message}`);

@@ -5,7 +5,7 @@ declare const _default: ({ strapi }: {
     /**
      * 获取三方授权 URL
      */
-    getAuthUrl(platform: string, appType: string, redirectUrl: string, siteId?: string, state?: string): Promise<{
+    getAuthUrl(platform: string, appType: string, redirectUrl: string, siteId?: string, state?: string, scope?: string): Promise<{
         authUrl: any;
         state: string | null;
         appId: any;
