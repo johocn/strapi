@@ -387,7 +387,7 @@ const thirdPartyAuthService = ({ strapi }) => ({
     if (!code) {
       return this.handleAuthError(ctx, "缺少 code 参数");
     }
-    const host = ctx.request.host;
+    const host = ctx.request.headers["x-forwarded-host"] || ctx.request.host;
     let siteId;
     try {
       const configService = strapi.plugin("zhao-common").service("config");
@@ -418,8 +418,8 @@ const thirdPartyAuthService = ({ strapi }) => ({
    * 构建前端重定向 URL
    */
   buildFrontendRedirectUrl(ctx, result, state) {
-    const protocol = ctx.request.protocol;
-    const host = ctx.request.host;
+    const protocol = ctx.request.headers["x-forwarded-proto"] || ctx.request.protocol;
+    const host = ctx.request.headers["x-forwarded-host"] || ctx.request.host;
     const queryParams = {};
     if (result.jwt) queryParams.token = result.jwt;
     if (result.user?.id) queryParams.userId = String(result.user.id);
@@ -433,8 +433,8 @@ const thirdPartyAuthService = ({ strapi }) => ({
    * 处理授权错误
    */
   handleAuthError(ctx, message) {
-    const protocol = ctx.request.protocol;
-    const host = ctx.request.host;
+    const protocol = ctx.request.headers["x-forwarded-proto"] || ctx.request.protocol;
+    const host = ctx.request.headers["x-forwarded-host"] || ctx.request.host;
     const errorUrl = `${protocol}://${host}/#/pages/auth-callback/auth-callback?error=${encodeURIComponent(message)}`;
     ctx.response.redirect(errorUrl);
   }

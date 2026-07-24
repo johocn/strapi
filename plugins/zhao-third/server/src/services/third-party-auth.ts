@@ -469,7 +469,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       return this.handleAuthError(ctx, "缺少 code 参数");
     }
 
-    const host = ctx.request.host;
+    const host = (ctx.request.headers["x-forwarded-host"] as string) || ctx.request.host;
     let siteId: string | undefined;
 
     try {
@@ -504,8 +504,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
    * 构建前端重定向 URL
    */
   buildFrontendRedirectUrl(ctx: any, result: any, state?: string): string {
-    const protocol = ctx.request.protocol;
-    const host = ctx.request.host;
+    const protocol = (ctx.request.headers["x-forwarded-proto"] as string) || ctx.request.protocol;
+    const host = (ctx.request.headers["x-forwarded-host"] as string) || ctx.request.host;
     const queryParams: Record<string, string> = {};
 
     if (result.jwt) queryParams.token = result.jwt;
@@ -523,8 +523,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
    * 处理授权错误
    */
   handleAuthError(ctx: any, message: string): void {
-    const protocol = ctx.request.protocol;
-    const host = ctx.request.host;
+    const protocol = (ctx.request.headers["x-forwarded-proto"] as string) || ctx.request.protocol;
+    const host = (ctx.request.headers["x-forwarded-host"] as string) || ctx.request.host;
     const errorUrl = `${protocol}://${host}/#/pages/auth-callback/auth-callback?error=${encodeURIComponent(message)}`;
     ctx.response.redirect(errorUrl);
   },
