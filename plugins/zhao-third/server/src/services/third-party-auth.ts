@@ -27,18 +27,19 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     }
 
     const params: Record<string, string> = {};
+    const cleanAppId = (config.appId || "").trim();
     if (platform === "wechat") {
-      params.appid = config.appId;
+      params.appid = cleanAppId;
       params.redirect_uri = redirectUrl;
       params.response_type = "code";
       params.scope = scope || (appType === "official_account" ? "snsapi_userinfo" : "snsapi_login");
       params.state = state || Math.random().toString(36).substring(2, 10);
     } else if (platform === "alipay") {
-      params.app_id = config.appId;
+      params.app_id = cleanAppId;
       params.scope = "auth_user";
       params.redirect_uri = redirectUrl;
     } else if (platform === "douyin") {
-      params.client_key = config.appId;
+      params.client_key = cleanAppId;
       params.scope = "user_info";
       params.redirect_uri = redirectUrl;
       params.response_type = "code";
@@ -56,7 +57,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       authUrl = `${authUrl}?${queryString}`;
     }
 
-    return { authUrl, state: params.state || null, appId: config.appId };
+    return { authUrl, state: params.state || null, appId: cleanAppId };
   },
 
   /**

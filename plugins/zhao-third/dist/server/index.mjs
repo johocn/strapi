@@ -36,18 +36,19 @@ const thirdPartyAuthService = ({ strapi }) => ({
       throw e;
     }
     const params = {};
+    const cleanAppId = (config2.appId || "").trim();
     if (platform === "wechat") {
-      params.appid = config2.appId;
+      params.appid = cleanAppId;
       params.redirect_uri = redirectUrl;
       params.response_type = "code";
       params.scope = scope || (appType === "official_account" ? "snsapi_userinfo" : "snsapi_login");
       params.state = state || Math.random().toString(36).substring(2, 10);
     } else if (platform === "alipay") {
-      params.app_id = config2.appId;
+      params.app_id = cleanAppId;
       params.scope = "auth_user";
       params.redirect_uri = redirectUrl;
     } else if (platform === "douyin") {
-      params.client_key = config2.appId;
+      params.client_key = cleanAppId;
       params.scope = "user_info";
       params.redirect_uri = redirectUrl;
       params.response_type = "code";
@@ -60,7 +61,7 @@ const thirdPartyAuthService = ({ strapi }) => ({
     } else {
       authUrl = `${authUrl}?${queryString}`;
     }
-    return { authUrl, state: params.state || null, appId: config2.appId };
+    return { authUrl, state: params.state || null, appId: cleanAppId };
   },
   /**
    * 获取微信开放平台扫码登录 URL（内嵌二维码 + 跳转模式）
