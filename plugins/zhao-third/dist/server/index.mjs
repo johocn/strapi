@@ -328,7 +328,7 @@ const thirdPartyAuthService = ({ strapi }) => ({
       throw e;
     }
     const tokenResponse = await fetch(
-      `https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=${config2.appId}&secret=${config2.appSecret}`
+      `https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=${(config2.appId || "").trim()}&secret=${(config2.appSecret || "").trim()}`
     );
     const tokenData = await tokenResponse.json();
     if (!tokenData.access_token) {
@@ -351,7 +351,7 @@ const thirdPartyAuthService = ({ strapi }) => ({
     const signStr = `jsapi_ticket=${ticketData.ticket}&noncestr=${nonceStr}&timestamp=${timestamp}&url=${url}`;
     const signature = crypto2.createHash("sha1").update(signStr).digest("hex");
     return {
-      appId: config2.appId,
+      appId: (config2.appId || "").trim(),
       timestamp,
       nonceStr,
       signature

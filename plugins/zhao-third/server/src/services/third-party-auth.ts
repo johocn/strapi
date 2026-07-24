@@ -395,7 +395,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
     // 获取 access_token
     const tokenResponse = await fetch(
-      `https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=${config.appId}&secret=${config.appSecret}`
+      `https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=${(config.appId || "").trim()}&secret=${(config.appSecret || "").trim()}`
     );
     const tokenData = await tokenResponse.json() as any;
 
@@ -425,7 +425,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     const signature = crypto.createHash("sha1").update(signStr).digest("hex");
 
     return {
-      appId: config.appId,
+      appId: (config.appId || "").trim(),
       timestamp,
       nonceStr,
       signature,
