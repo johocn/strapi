@@ -11,17 +11,17 @@ const sanitize = (doc: any) => {
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async list(ctx: any) {
     try {
-      const { page = 1, pageSize = 20, ...filters } = ctx.query;
-      const pageNum = Number(page);
-      const pageSizeNum = Number(pageSize);
+      const { pagination = {}, ...restFilters } = ctx.query;
+      const pageNum = Number(pagination.page || 1);
+      const pageSizeNum = Number(pagination.pageSize || 20);
       const results = await strapi.documents(UID).findMany({
-        filters,
+        filters: restFilters,
         populate: "*",
         sort: { createdAt: "desc" },
         limit: pageSizeNum,
         start: (pageNum - 1) * pageSizeNum,
       });
-      const total = await strapi.db.query(UID).count({ where: filters });
+      const total = await strapi.db.query(UID).count({ where: restFilters });
       ctx.body = {
         data: (results || []).map(sanitize),
         meta: { pagination: { page: pageNum, pageSize: pageSizeNum, total } },
