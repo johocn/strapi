@@ -85,19 +85,54 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   },
 
   async wechatRedirect(ctx: any) {
+    let state: string | null = null;
+    let redirectUri: string | undefined;
     try {
-      const { app_code, channel_code, redirect_uri } = ctx.query;
-      if (!redirect_uri) { ctx.status = 400; ctx.body = { error: "redirect_uri 必填" }; return; }
+      const { app_code, redirect_uri, invite_code, channel_code, scope } = ctx.query;
+      redirectUri = redirect_uri;
+      if (!redirectUri) { ctx.status = 400; ctx.body = { error: "redirect_uri 必填" }; return; }
+
+      // 按 User-Agent 判断 appType
+      const userAgent = (ctx.request.headers["user-agent"] as string) || "";
+      const appType = userAgent.includes("MicroMessenger") ? "official_account" : "open_platform";
+
       const wechatService = strapi.plugin("zhao-sso").service("sso-wechat");
-      const state = Buffer.from(JSON.stringify({
+
+      // 校验 scope
+      if (scope) {
+        const loginConfig = await wechatService.getWechatLoginConfig(appType);
+        const allowedScopes: string[] = loginConfig?.oauthScopes || [];
+        if (allowedScopes.length > 0 && !allowedScopes.includes(scope)) {
+          throw new Error(`不支持的 scope: ${scope}`);
+        }
+      }
+
+      state = Buffer.from(JSON.stringify({
         app_code: app_code || "default",
+        redirect_uri: redirectUri,
+        invite_code: invite_code || "",
         channel_code: channel_code || "",
-        redirect_uri,
+        app_type: appType,
+        scope: scope || "",
       })).toString("base64url");
-      const url = await wechatService.getAuthorizeUrl(state);
+
+      // 构造 callbackUrl（优先取 X-Forwarded-* 反代头）
+      const forwardedHost = ctx.request.headers["x-forwarded-host"];
+      const forwardedProto = ctx.request.headers["x-forwarded-proto"];
+      const host = forwardedHost || ctx.request.host;
+      const protocol = forwardedProto || ctx.request.protocol;
+      const callbackUrl = `${protocol}://${host}/api/zhao-sso/v1/auth/wechat/callback`;
+
+      const url = await wechatService.getAuthorizeUrl(state, appType, scope, callbackUrl);
       ctx.redirect(url);
     } catch (e: any) {
-      ctx.status = (e as any).status || 400; ctx.body = { error: e.message };
+      if (state && redirectUri) {
+        const separator = redirectUri.includes("?") ? "&" : "?";
+        ctx.redirect(`${redirectUri}${separator}error=${encodeURIComponent(e.message)}`);
+      } else {
+        ctx.status = (e as any).status || 400;
+        ctx.body = { error: e.message };
+      }
     }
   },
 
@@ -115,7 +150,18 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     const oauthService = strapi.plugin("zhao-sso").service("sso-oauth");
 
     try {
-      const { userId } = await wechatService.handleCallback(code);
+      const { userId } = await wechatService.handleCallback(code, stateData.app_type);
+
+      // 建立 sso-user 分销关系（失败只 warn 不阻断）
+      try {
+        const channelSync = strapi.plugin("zhao-sso").service("channel-sync").getSync();
+        if (channelSync) {
+          await channelSync.syncUserInvite(userId, stateData.invite_code, stateData.channel_code);
+        }
+      } catch (ce: any) {
+        strapi.log.warn(`[zhao-sso] 微信回调分销同步失败: ${ce.message}`);
+      }
+
       const appCode = stateData.app_code || "default";
 
       const authCode = await oauthService.generateAuthCode({
@@ -128,8 +174,140 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       const separator = redirectUri.includes("?") ? "&" : "?";
       ctx.redirect(`${redirectUri}${separator}code=${authCode}&state=${state}`);
     } catch (e: any) {
+      const separator = redirectUri.includes("?") ? "&" : "?";
+      ctx.redirect(`${redirectUri}${separator}error=${encodeURIComponent(e.message)}`);
+    }
+  },
+
+  async wechatMiniProgramLogin(ctx: any) {
+    try {
+      const body = ctx.request.body?.data || ctx.request.body;
+      const { code, appCode, inviteCode, channelCode } = body;
+      if (!code || !appCode) {
+        ctx.status = 400;
+        ctx.body = { error: "invalid_request", error_description: "code 和 appCode 必填" };
+        return;
+      }
+
+      const wechatService = strapi.plugin("zhao-sso").service("sso-wechat");
+      const { userId } = await wechatService.handleCallback(code, "mini_program");
+
+      // 建立 sso-user 分销关系
+      try {
+        const channelSync = strapi.plugin("zhao-sso").service("channel-sync").getSync();
+        if (channelSync) {
+          await channelSync.syncUserInvite(userId, inviteCode, channelCode);
+        }
+      } catch (ce: any) {
+        strapi.log.warn(`[zhao-sso] 小程序登录分销同步失败: ${ce.message}`);
+      }
+
+      const authService = strapi.plugin("zhao-sso").service("sso-auth");
+      const userService = strapi.plugin("zhao-sso").service("sso-user");
+      const user = await userService.findById(userId);
+      if (!user) {
+        ctx.status = 404;
+        ctx.body = { error: "user_not_found", error_description: "用户不存在" };
+        return;
+      }
+
+      const roles = await authService.getUserRoles(user.id, appCode);
+      const tokenPair = await strapi.plugin("zhao-sso").service("sso-jwt").signTokenPair({
+        sub: user.uuid,
+        app_code: appCode,
+        roles,
+        channel: channelCode,
+      });
+      await authService.saveTokenRecord(user.id, appCode, tokenPair, channelCode);
+
+      ctx.body = tokenPair;
+    } catch (e: any) {
       ctx.status = (e as any).status || 400;
-      ctx.body = { error: "wechat_oauth_failed", message: e.message };
+      ctx.body = { error: "wechat_login_failed", error_description: e.message };
+    }
+  },
+
+  async wechatAppLogin(ctx: any) {
+    try {
+      const body = ctx.request.body?.data || ctx.request.body;
+      const { code, appCode, inviteCode, channelCode } = body;
+      if (!code || !appCode) {
+        ctx.status = 400;
+        ctx.body = { error: "invalid_request", error_description: "code 和 appCode 必填" };
+        return;
+      }
+
+      const wechatService = strapi.plugin("zhao-sso").service("sso-wechat");
+      const { userId } = await wechatService.handleCallback(code, "app");
+
+      // 建立 sso-user 分销关系
+      try {
+        const channelSync = strapi.plugin("zhao-sso").service("channel-sync").getSync();
+        if (channelSync) {
+          await channelSync.syncUserInvite(userId, inviteCode, channelCode);
+        }
+      } catch (ce: any) {
+        strapi.log.warn(`[zhao-sso] App 登录分销同步失败: ${ce.message}`);
+      }
+
+      const authService = strapi.plugin("zhao-sso").service("sso-auth");
+      const userService = strapi.plugin("zhao-sso").service("sso-user");
+      const user = await userService.findById(userId);
+      if (!user) {
+        ctx.status = 404;
+        ctx.body = { error: "user_not_found", error_description: "用户不存在" };
+        return;
+      }
+
+      const roles = await authService.getUserRoles(user.id, appCode);
+      const tokenPair = await strapi.plugin("zhao-sso").service("sso-jwt").signTokenPair({
+        sub: user.uuid,
+        app_code: appCode,
+        roles,
+        channel: channelCode,
+      });
+      await authService.saveTokenRecord(user.id, appCode, tokenPair, channelCode);
+
+      ctx.body = tokenPair;
+    } catch (e: any) {
+      ctx.status = (e as any).status || 400;
+      ctx.body = { error: "wechat_login_failed", error_description: e.message };
+    }
+  },
+
+  async jssdkSignature(ctx: any) {
+    try {
+      const body = ctx.request.body?.data || ctx.request.body;
+      const { url, appType } = body;
+      if (!url) {
+        ctx.status = 400;
+        ctx.body = { error: "invalid_request", error_description: "url 必填" };
+        return;
+      }
+
+      const wechatService = strapi.plugin("zhao-sso").service("sso-wechat");
+      const signature = await wechatService.getJssdkSignature(url, appType || "official_account");
+      ctx.body = signature;
+    } catch (e: any) {
+      ctx.status = (e as any).status || 400;
+      ctx.body = { error: e.message };
+    }
+  },
+
+  async wechatConfig(ctx: any) {
+    try {
+      const { appType } = ctx.query;
+      const wechatService = strapi.plugin("zhao-sso").service("sso-wechat");
+      const config = await wechatService.getWechatLoginConfig(appType || "official_account");
+      ctx.body = {
+        enabled: config?.enabled ?? false,
+        appType: appType || "official_account",
+        oauthScopes: config?.oauthScopes || [],
+        appId: config?.appId || null,
+      };
+    } catch (e: any) {
+      ctx.status = (e as any).status || 400;
+      ctx.body = { error: e.message };
     }
   },
 

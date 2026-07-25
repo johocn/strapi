@@ -6,8 +6,10 @@ import { UsersTab } from "./UsersTab";
 import { AppsTab } from "./AppsTab";
 import { ChannelsTab } from "./ChannelsTab";
 import { LoginLogsTab } from "./LoginLogsTab";
+import { OauthConfigsTab } from "./OauthConfigsTab";
+import { BindingsTab } from "./BindingsTab";
 
-export const API_PREFIX = "/admin/plugins/zhao-sso";
+export const API_PREFIX = "/api/zhao-sso/v1/admin";
 
 const tabs = [
   { value: "dashboard", label: "仪表盘" },
@@ -15,6 +17,8 @@ const tabs = [
   { value: "apps", label: "应用管理" },
   { value: "channels", label: "渠道管理" },
   { value: "logs", label: "登录日志" },
+  { value: "oauth-configs", label: "OAuth配置" },
+  { value: "bindings", label: "三方绑定" },
 ];
 
 export const HomePage = () => {
@@ -58,6 +62,8 @@ export const HomePage = () => {
         {activeTab === "apps" && <AppsTab />}
         {activeTab === "channels" && <ChannelsTab />}
         {activeTab === "logs" && <LoginLogsTab />}
+        {activeTab === "oauth-configs" && <OauthConfigsTab />}
+        {activeTab === "bindings" && <BindingsTab />}
       </Box>
     </Main>
   );

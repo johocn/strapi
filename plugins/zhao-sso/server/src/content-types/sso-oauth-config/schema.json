@@ -8,7 +8,14 @@
   },
   "options": { "draftAndPublish": false },
   "attributes": {
+    "name": { "type": "string", "required": true },
     "provider": { "type": "string", "required": true },
+    "app_type": {
+      "type": "enumeration",
+      "required": true,
+      "enum": ["official_account", "open_platform", "mini_program", "app", "default"],
+      "default": "default"
+    },
     "app_id": { "type": "string", "required": true },
     "app_secret": { "type": "string", "required": true },
     "scope": { "type": "string" },

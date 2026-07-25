@@ -51,6 +51,30 @@ export default () => ({
       config: { auth: false },
     },
     {
+      method: "POST",
+      path: "/v1/auth/wechat/miniprogram",
+      handler: "oauth-controller.wechatMiniProgramLogin",
+      config: { auth: false },
+    },
+    {
+      method: "POST",
+      path: "/v1/auth/wechat/app",
+      handler: "oauth-controller.wechatAppLogin",
+      config: { auth: false },
+    },
+    {
+      method: "POST",
+      path: "/v1/auth/jssdk-signature",
+      handler: "oauth-controller.jssdkSignature",
+      config: { auth: false },
+    },
+    {
+      method: "GET",
+      path: "/v1/auth/wechat/config",
+      handler: "oauth-controller.wechatConfig",
+      config: { auth: false },
+    },
+    {
       method: "GET",
       path: "/v1/auth/alipay",
       handler: "oauth-controller.alipayRedirect",

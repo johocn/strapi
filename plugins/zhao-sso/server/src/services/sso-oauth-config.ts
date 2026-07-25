@@ -11,7 +11,29 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     return {
       id: row.id,
       documentId: row.documentId,
+      name: row.name,
       provider: row.provider,
+      appType: row.app_type,
+      appId: row.app_id,
+      appSecret: row.app_secret,
+      scope: row.scope,
+      extraConfig: row.extra_config,
+      redirectUris: row.redirect_uris,
+      isEnabled: row.is_enabled,
+    };
+  },
+
+  async findByProviderAndAppType(provider: string, appType: string) {
+    const row = await strapi.db.query(CONFIG_UID).findOne({
+      where: { provider, app_type: appType, is_enabled: true },
+    });
+    if (!row) return null;
+    return {
+      id: row.id,
+      documentId: row.documentId,
+      name: row.name,
+      provider: row.provider,
+      appType: row.app_type,
       appId: row.app_id,
       appSecret: row.app_secret,
       scope: row.scope,
@@ -29,7 +51,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   },
 
   async create(data: {
+    name: string;
     provider: string;
+    app_type?: string;
     app_id: string;
     app_secret: string;
     scope?: string;
@@ -40,7 +64,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   }) {
     return strapi.db.query(CONFIG_UID).create({
       data: {
+        name: data.name,
         provider: data.provider,
+        app_type: data.app_type || "default",
         app_id: data.app_id,
         app_secret: data.app_secret,
         scope: data.scope || null,
