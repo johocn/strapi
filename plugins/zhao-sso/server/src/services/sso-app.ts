@@ -55,4 +55,12 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     }
     return strapi.db.query(APP_UID).update({ where: { id }, data });
   },
+
+  async findOne(id: number) {
+    return strapi.db.query(APP_UID).findOne({ where: { id } });
+  },
+
+  async delete(id: number) {
+    return strapi.db.query(APP_UID).delete({ where: { id } });
+  },
 });

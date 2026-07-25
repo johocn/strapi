@@ -124,6 +124,41 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     }
   },
 
+  async getApp(ctx: any) {
+    try {
+      const { id } = ctx.params;
+      const appService = strapi.plugin("zhao-sso").service("sso-app");
+      const app = await appService.findOne(parseInt(id));
+      if (!app) {
+        ctx.status = 404;
+        ctx.body = { error: "应用不存在" };
+        return;
+      }
+      ctx.body = { data: app };
+    } catch (e: any) {
+      ctx.status = (e as any).status || 400;
+      ctx.body = { error: e.message };
+    }
+  },
+
+  async deleteApp(ctx: any) {
+    try {
+      const { id } = ctx.params;
+      const appService = strapi.plugin("zhao-sso").service("sso-app");
+      const app = await appService.findOne(parseInt(id));
+      if (!app) {
+        ctx.status = 404;
+        ctx.body = { error: "应用不存在" };
+        return;
+      }
+      await appService.delete(parseInt(id));
+      ctx.body = { data: { id: parseInt(id) } };
+    } catch (e: any) {
+      ctx.status = (e as any).status || 400;
+      ctx.body = { error: e.message };
+    }
+  },
+
   async listChannels(ctx: any) {
     try {
       const channelService = strapi.plugin("zhao-sso").service("sso-channel");
