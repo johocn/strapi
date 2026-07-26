@@ -33,9 +33,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     appCode: string;
     redirectUri: string;
     channelCode?: string;
+    inviteCode?: string;
     scopes?: string[];
   }) {
-    const { userId, appCode, redirectUri, channelCode, scopes } = params;
+    const { userId, appCode, redirectUri, channelCode, inviteCode, scopes } = params;
 
     const app = await this.findApp(appCode);
     if (!app || !app.is_active) throwErr("SSO_OAUTH_001", 404, "应用不存在或已禁用");
@@ -53,6 +54,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         app_code: appCode,
         redirect_uri: redirectUri,
         channel_code: channelCode || null,
+        invite_code: inviteCode || null,
         scopes: scopes || null,
         expires_at: new Date(Date.now() + expiresMs),
         used: false,
