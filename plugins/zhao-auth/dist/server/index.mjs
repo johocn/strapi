@@ -1,8 +1,6 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 const USER_UID$2 = "plugin::users-permissions.user";
-let ssoCache = null;
-const SSO_CACHE_TTL = 5 * 60 * 1e3;
 const authService = ({ strapi: strapi2 }) => {
   function throwErr2(code, status, message) {
     const e = new Error(message);
@@ -152,10 +150,33 @@ const authService = ({ strapi: strapi2 }) => {
     },
     /**
      * 检查 SSO 是否启用
+     *
+     * 数据源优先级：
+     * 1. 当前 site context 的 site-config.featureFlags.sso + extraConfig.ssoLoginUrl
+     *    （前端 tenant/detail.vue 编辑的就是这两个字段，必须以此为准）
+     * 2. 旧版 feature-flag 表的 sso_enabled 标记（兼容回退）
+     *
+     * 注意：原实现使用模块级缓存 ssoCache，但站点上下文切换后缓存会污染，
+     * 已改为每次实时查询（查询本身有 Strapi 内部缓存，性能可接受）。
      */
     async isSsoEnabled() {
-      if (ssoCache && Date.now() < ssoCache.expireAt) {
-        return { enabled: ssoCache.enabled, loginUrl: ssoCache.loginUrl };
+      try {
+        const siteCtx = strapi2.requestContext?.get?.();
+        const siteId = siteCtx?.state?.siteId || siteCtx?.state?.site?.id;
+        const filters = {};
+        if (siteId) filters.id = siteId;
+        const sites = await strapi2.documents("plugin::zhao-common.site-config").findMany({ filters });
+        const site = Array.isArray(sites) ? sites[0] : null;
+        if (site) {
+          const featureFlags = site.featureFlags || {};
+          const extraConfig = site.extraConfig || {};
+          if (featureFlags.sso === true) {
+            const loginUrl = extraConfig.ssoLoginUrl || strapi2.plugin("zhao-sso")?.config?.("loginUrl") || "/sso/login";
+            return { enabled: true, loginUrl };
+          }
+          return { enabled: false, loginUrl: "" };
+        }
+      } catch {
       }
       try {
         const ssoFlag = await strapi2.documents("plugin::zhao-common.feature-flag").findMany({
@@ -164,12 +185,10 @@ const authService = ({ strapi: strapi2 }) => {
         const flag = Array.isArray(ssoFlag) ? ssoFlag[0] : null;
         if (flag && flag.flagValue === true && flag.enabled !== false) {
           const loginUrl = strapi2.plugin("zhao-sso")?.config?.("loginUrl") || "/sso/login";
-          ssoCache = { enabled: true, loginUrl, expireAt: Date.now() + SSO_CACHE_TTL };
           return { enabled: true, loginUrl };
         }
       } catch {
       }
-      ssoCache = { enabled: false, loginUrl: "", expireAt: Date.now() + SSO_CACHE_TTL };
       return { enabled: false, loginUrl: "" };
     },
     /**

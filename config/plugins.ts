@@ -169,6 +169,11 @@ const config = ({ env }: Core.Config.Shared.ConfigParams): Core.Config.Plugin =>
     "zhao-sso": {
         enabled: true,
         resolve: "./plugins/zhao-sso",
+        config: {
+            jwt: {
+                secret: process.env.SSO_JWT_SECRET || "sso-jwt-secret-dev-2026",
+            },
+        },
     },
     "zhao-tag": {
         enabled: true,

@@ -9,6 +9,7 @@
   "options": { "draftAndPublish": false },
   "attributes": {
     "code": { "type": "string", "unique": true, "required": true },
+    "app_code": { "type": "string", "required": true },
     "creator": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user" },
     "invite_type": { "type": "enumeration", "enum": ["system", "user_campaign"], "required": true },
     "max_uses": { "type": "integer" },

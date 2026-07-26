@@ -60,9 +60,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     let distributionDepth = 0;
 
     if (inviterCode) {
-      // 查找邀请人
+      // 查找邀请人（populate user/inviteChannel 以正确解析关系字段）
       const inviterInvite = await strapi.db.query(USER_INVITE_UID).findOne({
         where: { inviteCode: inviterCode },
+        populate: ["user", "inviteChannel"],
       });
 
       if (inviterInvite) {

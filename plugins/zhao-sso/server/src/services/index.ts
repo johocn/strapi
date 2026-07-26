@@ -10,6 +10,7 @@ import channelSync from "./channel-sync";
 import ssoApp from "./sso-app";
 import ssoOauthConfig from "./sso-oauth-config";
 import ssoSms from "./sso-sms";
+import ssoInvite from "./sso-invite";
 
 export default {
   "sso-jwt": ssoJwt,
@@ -24,4 +25,5 @@ export default {
   "sso-app": ssoApp,
   "sso-oauth-config": ssoOauthConfig,
   "sso-sms": ssoSms,
+  "sso-invite": ssoInvite,
 };

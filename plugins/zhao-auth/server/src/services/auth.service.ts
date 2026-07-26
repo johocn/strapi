@@ -190,12 +190,42 @@ export default ({ strapi }: { strapi: Core.Strapi }): AuthService & Record<strin
 
   /**
    * 检查 SSO 是否启用
+   *
+   * 数据源优先级：
+   * 1. 当前 site context 的 site-config.featureFlags.sso + extraConfig.ssoLoginUrl
+   *    （前端 tenant/detail.vue 编辑的就是这两个字段，必须以此为准）
+   * 2. 旧版 feature-flag 表的 sso_enabled 标记（兼容回退）
+   *
+   * 注意：原实现使用模块级缓存 ssoCache，但站点上下文切换后缓存会污染，
+   * 已改为每次实时查询（查询本身有 Strapi 内部缓存，性能可接受）。
    */
   async isSsoEnabled(): Promise<{ enabled: boolean; loginUrl: string }> {
-    // 命中缓存直接返回
-    if (ssoCache && Date.now() < ssoCache.expireAt) {
-      return { enabled: ssoCache.enabled, loginUrl: ssoCache.loginUrl };
+    // 1. 优先读 site-config（按当前 x-site-id 上下文）
+    try {
+      const siteCtx = strapi.requestContext?.get?.() as any;
+      const siteId = siteCtx?.state?.siteId || siteCtx?.state?.site?.id;
+      const filters: any = {};
+      if (siteId) filters.id = siteId;
+      const sites = await strapi.documents("plugin::zhao-common.site-config").findMany({ filters });
+      const site = Array.isArray(sites) ? sites[0] : null;
+      if (site) {
+        const featureFlags = (site as any).featureFlags || {};
+        const extraConfig = (site as any).extraConfig || {};
+        if (featureFlags.sso === true) {
+          const loginUrl: string =
+            (extraConfig.ssoLoginUrl as string) ||
+            (strapi.plugin("zhao-sso")?.config?.("loginUrl") as string) ||
+            "/sso/login";
+          return { enabled: true, loginUrl };
+        }
+        // site-config 显式 sso=false 时直接返回禁用，不再回退到 feature-flag
+        return { enabled: false, loginUrl: "" };
+      }
+    } catch {
+      // site-config 查询失败，回退到 feature-flag
     }
+
+    // 2. 回退：旧版 feature-flag 表
     try {
       const ssoFlag = await strapi.documents("plugin::zhao-common.feature-flag").findMany({
         filters: { flagKey: "sso_enabled" },
@@ -203,13 +233,11 @@ export default ({ strapi }: { strapi: Core.Strapi }): AuthService & Record<strin
       const flag = Array.isArray(ssoFlag) ? ssoFlag[0] : null;
       if (flag && flag.flagValue === true && flag.enabled !== false) {
         const loginUrl: string = strapi.plugin("zhao-sso")?.config?.("loginUrl") as string || "/sso/login";
-        ssoCache = { enabled: true, loginUrl, expireAt: Date.now() + SSO_CACHE_TTL };
         return { enabled: true, loginUrl };
       }
     } catch {
       // feature-flag 查询失败，默认不启用
     }
-    ssoCache = { enabled: false, loginUrl: "", expireAt: Date.now() + SSO_CACHE_TTL };
     return { enabled: false, loginUrl: "" };
   },
 

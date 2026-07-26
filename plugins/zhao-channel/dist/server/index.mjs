@@ -7781,7 +7781,8 @@ const userInvite = ({ strapi }) => ({
     let distributionDepth = 0;
     if (inviterCode) {
       const inviterInvite = await strapi.db.query(USER_INVITE_UID).findOne({
-        where: { inviteCode: inviterCode }
+        where: { inviteCode: inviterCode },
+        populate: ["user", "inviteChannel"]
       });
       if (inviterInvite) {
         invitedBy = typeof inviterInvite.user === "object" ? inviterInvite.user.id : inviterInvite.user;

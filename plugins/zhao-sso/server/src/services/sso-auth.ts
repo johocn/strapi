@@ -1,5 +1,4 @@
 import type { Core } from "@strapi/strapi";
-import type { ChannelSyncResult } from "./channel-sync";
 
 const TOKEN_UID = "plugin::zhao-sso.sso-token";
 const USER_ROLE_UID = "plugin::zhao-sso.sso-user-app-role";
@@ -15,41 +14,36 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   const jwtService = () => strapi.plugin("zhao-sso").service("sso-jwt");
   const userService = () => strapi.plugin("zhao-sso").service("sso-user");
   const loginLogService = () => strapi.plugin("zhao-sso").service("sso-login-log");
+  const inviteService = () => strapi.plugin("zhao-sso").service("sso-invite");
 
   /**
-   * 获取 ChannelSyncService 实例（基于 channelSync.mode 配置）
+   * 建立分销关系（邀请码 + app_code 联合校验，含虚拟用户兜底）
+   * 邀请码无效时不阻断登录，仅记录日志
    */
-  const getChannelSync = () => {
-    const channelSyncService = strapi.plugin("zhao-sso").service("channel-sync");
-    if (!channelSyncService || typeof channelSyncService.getSync !== "function") return null;
-    return channelSyncService.getSync();
-  };
+  const buildInviteRelation = async (
+    inviteeId: number,
+    inviteCode: string | undefined,
+    appCode: string,
+    channelCode?: string
+  ) => {
+    if (!inviteCode) return; // 无邀请码，跳过
 
-  /**
-   * 分销双写：SSO 登录/注册成功后，通过 ChannelSyncService 同步 zhao-channel 分销关系
-   */
-  const syncChannelInvite = async (ssoUserId: number, inviteCode?: string, channelCode?: string) => {
     try {
-      // 检查 sso_enabled 开关
-      const ssoFlag = await strapi.documents("plugin::zhao-common.feature-flag").findMany({
-        filters: { flagKey: "sso_enabled" },
+      const result = await inviteService().buildReferralRelation({
+        inviteeId,
+        inviteCode,
+        appCode,
+        channelCode,
       });
-      const flag = Array.isArray(ssoFlag) ? ssoFlag[0] : null;
-      if (!flag || flag.flagValue !== true || flag.enabled === false) {
-        return; // SSO 未启用，不同步
-      }
-
-      const channelSync = getChannelSync();
-      if (!channelSync) return; // mode=off
-
-      const result: ChannelSyncResult = await channelSync.syncUserInvite(ssoUserId, inviteCode, channelCode);
       if (result.success) {
-        strapi.log.info(`[zhao-sso] 分销双写成功: userId=${ssoUserId}, channelCode=${channelCode}`);
+        if (!result.skip) {
+          strapi.log.info(`[zhao-sso] 分销关系建立: userId=${inviteeId}, code=${inviteCode}, msg=${result.message}`);
+        }
       } else {
-        strapi.log.warn(`[zhao-sso] 分销双写失败: userId=${ssoUserId}, ${result.message}`);
+        strapi.log.warn(`[zhao-sso] 分销关系建立失败: userId=${inviteeId}, code=${inviteCode}, msg=${result.message}`);
       }
     } catch (e: any) {
-      strapi.log.warn(`[zhao-sso] 分销双写失败: ${e.message}`);
+      strapi.log.warn(`[zhao-sso] 分销关系建立异常: ${e.message}`);
     }
   };
 
@@ -108,8 +102,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
 
       await loginLogService().log({ userId: user.id, loginType: type, channelCode, appCode, ip, userAgent, success: true });
 
-      // 分销双写
-      await syncChannelInvite(user.id, inviteCode, channelCode);
+      // 建立分销关系（邀请码无效不阻断登录）
+      await buildInviteRelation(user.id, inviteCode, appCode, channelCode);
 
       return {
         ...tokenPair,
@@ -148,7 +142,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
 
       await loginLogService().log({ userId: user.id, loginType: type, channelCode, appCode, ip, userAgent, success: true });
 
-      await syncChannelInvite(user.id, inviteCode, channelCode);
+      // 建立分销关系（邀请码无效不阻断登录）
+      await buildInviteRelation(user.id, inviteCode, appCode, channelCode);
 
       return {
         ...tokenPair,
@@ -207,8 +202,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       success: true,
     });
 
-    // 分销双写
-    await syncChannelInvite(user.id, inviteCode, channelCode);
+    // 建立分销关系（邀请码无效不阻断登录）
+    await buildInviteRelation(user.id, inviteCode, appCode, channelCode);
 
     return {
       ...tokenPair,

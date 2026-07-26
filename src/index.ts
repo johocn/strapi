@@ -1,5 +1,6 @@
 // import type { Core } from '@strapi/strapi';
 
+// 重载触发：刷新 zhao-auth 权限树（menu.sso-app）
 export default {
   /**
    * An asynchronous register function that runs before

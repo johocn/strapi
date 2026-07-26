@@ -26,6 +26,8 @@ function extractHost(input: string): string {
  * 识别顺序：query.domain → header x-site-domain → host
  * 输入值支持：纯 host（localhost）、带端口（localhost:5173）、完整 URL（http://localhost:5173/）
  * 未匹配到时不兜底，保持 siteId 为 null，由下游处理（多租户安全）
+ *
+ * 重要：next() 只能在最后调用一次，否则 koa-compose 会抛出 "next() called multiple times"
  */
 const siteResolver: Core.MiddlewareFactory = (config, { strapi }) => {
   return async (ctx: any, next: any) => {
@@ -41,6 +43,8 @@ const siteResolver: Core.MiddlewareFactory = (config, { strapi }) => {
       "";
     const domain = extractHost(raw);
 
+    let resolved = false;
+
     try {
       if (domain) {
         const records = await strapi.documents(SITE_CONFIG_UID).findMany({
@@ -51,32 +55,34 @@ const siteResolver: Core.MiddlewareFactory = (config, { strapi }) => {
 
         if (Array.isArray(records) && records.length > 0) {
           const site = records[0];
-          // siteId 为数字 id（用于 db.query manyToOne 关系过滤）；siteDocumentId 为 documentId（用于 documentService）
           ctx.state.siteId = site.id;
           ctx.state.siteDocumentId = site.documentId;
-          // siteChannelIds 数组由 resolve-channel-scope 策略统一注入
-          return await next();
+          resolved = true;
+        } else {
+          // domain 未匹配 → 回退到默认站点
+          strapi.log.warn(`[site-resolver] domain "${domain}" 未匹配，回退到默认站点`);
         }
-        // domain 未匹配 → 回退到默认站点
-        strapi.log.warn(`[site-resolver] domain "${domain}" 未匹配，回退到默认站点`);
       }
 
-      // 回退：取 id 最小的站点作为默认（bootstrap 种子记录 id=1）
-      const fallback = await strapi.documents(SITE_CONFIG_UID).findMany({
-        sort: { id: "asc" },
-        limit: 1,
-        populate: ["channels", "template"],
-      });
-      if (Array.isArray(fallback) && fallback.length > 0) {
-        const site = fallback[0];
-        ctx.state.siteId = site.id;
-        ctx.state.siteDocumentId = site.documentId;
+      if (!resolved) {
+        // 回退：取 id 最小的站点作为默认（bootstrap 种子记录 id=1）
+        const fallback = await strapi.documents(SITE_CONFIG_UID).findMany({
+          sort: { id: "asc" },
+          limit: 1,
+          populate: ["channels", "template"],
+        });
+        if (Array.isArray(fallback) && fallback.length > 0) {
+          const site = fallback[0];
+          ctx.state.siteId = site.id;
+          ctx.state.siteDocumentId = site.documentId;
+        }
       }
     } catch (error) {
       strapi.log.error("[site-resolver] Failed to resolve site:", error);
     }
 
-    await next();
+    // next() 只调用一次，避免 "next() called multiple times"
+    return await next();
   };
 };
 

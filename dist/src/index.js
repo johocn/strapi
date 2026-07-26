@@ -1,6 +1,7 @@
 "use strict";
 // import type { Core } from '@strapi/strapi';
 Object.defineProperty(exports, "__esModule", { value: true });
+// 重载触发：刷新 zhao-auth 权限树（menu.sso-app）
 exports.default = {
     /**
      * An asynchronous register function that runs before

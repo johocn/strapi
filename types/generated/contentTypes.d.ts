@@ -4914,6 +4914,7 @@ export interface PluginZhaoSsoSsoAuthCode extends Struct.CollectionTypeSchema {
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     expires_at: Schema.Attribute.DateTime & Schema.Attribute.Required;
+    invite_code: Schema.Attribute.String;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
@@ -4982,6 +4983,7 @@ export interface PluginZhaoSsoSsoInviteCode
     draftAndPublish: false;
   };
   attributes: {
+    app_code: Schema.Attribute.String & Schema.Attribute.Required;
     bonus_tags: Schema.Attribute.JSON;
     code: Schema.Attribute.String &
       Schema.Attribute.Required &
@@ -5141,6 +5143,11 @@ export interface PluginZhaoSsoSsoOauthConfig
   attributes: {
     app_id: Schema.Attribute.String & Schema.Attribute.Required;
     app_secret: Schema.Attribute.String & Schema.Attribute.Required;
+    app_type: Schema.Attribute.Enumeration<
+      ['official_account', 'open_platform', 'mini_program', 'app', 'default']
+    > &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'default'>;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -5155,6 +5162,7 @@ export interface PluginZhaoSsoSsoOauthConfig
       'plugin::zhao-sso.sso-oauth-config'
     > &
       Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
     provider: Schema.Attribute.String & Schema.Attribute.Required;
     publishedAt: Schema.Attribute.DateTime;
     redirect_uris: Schema.Attribute.JSON;
@@ -5357,7 +5365,9 @@ export interface PluginZhaoSsoSsoUser extends Struct.CollectionTypeSchema {
     password_hash: Schema.Attribute.String;
     publishedAt: Schema.Attribute.DateTime;
     register_channel: Schema.Attribute.String;
-    status: Schema.Attribute.Enumeration<['active', 'blocked', 'inactive']> &
+    status: Schema.Attribute.Enumeration<
+      ['active', 'blocked', 'inactive', 'virtual']
+    > &
       Schema.Attribute.Required &
       Schema.Attribute.DefaultTo<'active'>;
     third_party_bindings: Schema.Attribute.Relation<

@@ -15,7 +15,7 @@
     "password_hash": { "type": "string" },
     "avatar_url": { "type": "string" },
     "nickname": { "type": "string" },
-    "status": { "type": "enumeration", "enum": ["active", "blocked", "inactive"], "default": "active", "required": true },
+    "status": { "type": "enumeration", "enum": ["active", "blocked", "inactive", "virtual"], "default": "active", "required": true },
     "register_channel": { "type": "string" },
     "last_login_channel": { "type": "string" },
     "invite_code_used": { "type": "string" },

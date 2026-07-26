@@ -51,11 +51,12 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async create(ctx: any) {
     try {
       const data = ctx.request.body?.data || ctx.request.body;
-      const result = await strapi.documents(UID).create({ data, populate: "*" });
+      const result = await strapi.documents(UID).create({ data });
       ctx.body = { data: sanitize(result) };
     } catch (e: any) {
+      strapi.log.error(`[zhao-sso] create oauth-config error: ${e?.stack || e?.message || e}`);
       ctx.status = (e as any).status || 400;
-      ctx.body = { error: e.message };
+      ctx.body = { error: e.message, details: e?.details };
     }
   },
 
