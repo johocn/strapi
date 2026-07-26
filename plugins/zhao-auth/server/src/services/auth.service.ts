@@ -219,16 +219,16 @@ export default ({ strapi }: { strapi: Core.Strapi }): AuthService & Record<strin
   async localLogin(identifier: string, password: string) {
     const user = await this.findUserForLogin(identifier);
     if (!user) {
-      return { success: false, error: "Invalid identifier or password" };
+      return { success: false, error: "账号不存在或已注销" };
     }
 
     const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) {
-      return { success: false, error: "Invalid identifier or password" };
+      return { success: false, error: "密码错误" };
     }
 
     if (user.blocked) {
-      return { success: false, error: "账户已被锁定" };
+      return { success: false, error: "账户已被锁定，请联系管理员" };
     }
 
     // 解析角色（优先 zhaoRoles，回退到 Strapi 内置 role.type）

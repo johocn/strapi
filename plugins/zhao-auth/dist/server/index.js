@@ -183,14 +183,14 @@ const authService = ({ strapi: strapi2 }) => {
     async localLogin(identifier, password) {
       const user = await this.findUserForLogin(identifier);
       if (!user) {
-        return { success: false, error: "Invalid identifier or password" };
+        return { success: false, error: "账号不存在或已注销" };
       }
       const isValidPassword = await bcrypt__default.default.compare(password, user.password);
       if (!isValidPassword) {
-        return { success: false, error: "Invalid identifier or password" };
+        return { success: false, error: "密码错误" };
       }
       if (user.blocked) {
-        return { success: false, error: "账户已被锁定" };
+        return { success: false, error: "账户已被锁定，请联系管理员" };
       }
       let roles = [];
       let formattedRole = null;
@@ -752,13 +752,20 @@ const PERMISSION_TREE = {
           "sso.dashboard": { label: "查看仪表盘", type: "button" },
           "sso.user-read": { label: "查看用户", type: "button" },
           "sso.user-update": { label: "编辑用户", type: "button" },
-          "sso.app-read": { label: "查看应用", type: "button" },
-          "sso.app-create": { label: "创建应用", type: "button" },
-          "sso.app-update": { label: "编辑应用", type: "button" },
           "sso.channel-read": { label: "查看渠道", type: "button" },
           "sso.channel-create": { label: "创建渠道", type: "button" },
           "sso.channel-update": { label: "编辑渠道", type: "button" },
           "sso.log-read": { label: "查看日志", type: "button" },
+          "menu.sso-app": {
+            label: "应用管理",
+            type: "menu",
+            children: {
+              "sso.app-read": { label: "查看应用", type: "button" },
+              "sso.app-create": { label: "创建应用", type: "button" },
+              "sso.app-update": { label: "编辑应用", type: "button" },
+              "sso.app-delete": { label: "删除应用", type: "button" }
+            }
+          },
           "menu.sso-binding": {
             label: "三方绑定",
             type: "menu",
