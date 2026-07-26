@@ -46,11 +46,9 @@ export default () => ({
     },
     {
       method: "POST",
-      path: "/auth/password-authorize",
+      path: "/v1/auth/password-authorize",
       handler: "oauth-controller.passwordAuthorize",
-      config: {
-        policies: [],
-      },
+      config: { auth: false },
     },
     {
       method: "GET",
