@@ -3,7 +3,7 @@ import type { Core } from "@strapi/strapi";
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async login(ctx: any) {
     const body = ctx.request.body?.data || ctx.request.body;
-    const { type, identifier, password, code, app_code, channel_code } = body;
+    const { type, identifier, password, code, app_code, channel_code, invite_code } = body;
 
     if (!type) { ctx.status = 400; ctx.body = { error: "type 必填" }; return; }
     if (!app_code) { ctx.status = 400; ctx.body = { error: "app_code 必填" }; return; }
@@ -18,6 +18,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         code,
         appCode: app_code,
         channelCode: channel_code,
+        inviteCode: invite_code,
         ip: ctx.request.ip,
         userAgent: ctx.request.headers["user-agent"],
       });
