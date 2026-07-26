@@ -24,7 +24,9 @@ export const createLocalChannelSync = ({ strapi }: { strapi: Core.Strapi }): ICh
       return { success: false, message: "zhao-channel user-invite 服务不可用" };
     }
 
-    await userInviteService.createForUser(ssoUserId, undefined, undefined, inviteCode, channelCode);
+    // inviteCode 是邀请人的码（v.joho.cn），应传给 inviterCode（第 2 参数）建立 invitedBy 关系
+    // externalInviteCode（第 4 参数）留 undefined，让 createForUser 自动生成本用户的码
+    await userInviteService.createForUser(ssoUserId, inviteCode, undefined, undefined, channelCode);
     return { success: true };
   },
 });
