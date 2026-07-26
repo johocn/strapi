@@ -60,10 +60,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     code?: string;
     appCode: string;
     channelCode?: string;
+    inviteCode?: string;
     ip?: string;
     userAgent?: string;
   }) => {
-    const { type, identifier, password, code, appCode, channelCode, ip, userAgent } = params;
+    const { type, identifier, password, code, appCode, channelCode, inviteCode, ip, userAgent } = params;
 
     const maxAttempts = 5;
     if (ip) {
@@ -108,7 +109,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       await loginLogService().log({ userId: user.id, loginType: type, channelCode, appCode, ip, userAgent, success: true });
 
       // 分销双写
-      await syncChannelInvite(user.id, undefined, channelCode);
+      await syncChannelInvite(user.id, inviteCode, channelCode);
 
       return {
         ...tokenPair,
@@ -147,7 +148,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
 
       await loginLogService().log({ userId: user.id, loginType: type, channelCode, appCode, ip, userAgent, success: true });
 
-      await syncChannelInvite(user.id, undefined, channelCode);
+      await syncChannelInvite(user.id, inviteCode, channelCode);
 
       return {
         ...tokenPair,
