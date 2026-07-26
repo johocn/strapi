@@ -180,6 +180,50 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     }
   },
 
+  async passwordAuthorize(ctx: any) {
+    const body = ctx.request.body?.data || ctx.request.body;
+    const { app_code, identifier, password, redirect_uri, state, invite_code, channel_code, scopes } = body;
+
+    if (!app_code || !identifier || !password || !redirect_uri) {
+      ctx.status = 400;
+      ctx.body = { error: "app_code, identifier, password, redirect_uri 必填" };
+      return;
+    }
+
+    const authService = strapi.plugin("zhao-sso").service("sso-auth");
+    const oauthService = strapi.plugin("zhao-sso").service("sso-oauth");
+
+    try {
+      // 1. 密码校验 + 邀请码分销双写
+      const loginResult = await authService.login({
+        type: "password",
+        identifier,
+        password,
+        appCode: app_code,
+        channelCode: channel_code,
+        inviteCode: invite_code,
+        ip: ctx.request.ip,
+        userAgent: ctx.request.headers["user-agent"],
+      });
+
+      // 2. 校验 redirect_uri + 生成 OAuth code（含 invite_code 持久化）
+      const code = await oauthService.generateAuthCode({
+        userId: loginResult.user.id,
+        appCode: app_code,
+        redirectUri: redirect_uri,
+        channelCode: channel_code,
+        inviteCode: invite_code,
+        scopes,
+      });
+
+      // 3. 返回 code（前端自行跳转 redirect_uri?code=xxx&state=xxx）
+      ctx.body = { code, redirect_uri, state: state || "" };
+    } catch (e: any) {
+      ctx.status = e.status || 400;
+      ctx.body = { error: e.message, code: e.code };
+    }
+  },
+
   async wechatMiniProgramLogin(ctx: any) {
     try {
       const body = ctx.request.body?.data || ctx.request.body;

@@ -45,6 +45,14 @@ export default () => ({
       config: { auth: false },
     },
     {
+      method: "POST",
+      path: "/auth/password-authorize",
+      handler: "oauth-controller.passwordAuthorize",
+      config: {
+        policies: [],
+      },
+    },
+    {
       method: "GET",
       path: "/v1/auth/wechat/callback",
       handler: "oauth-controller.wechatCallback",
