@@ -92,6 +92,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     return {
       userId: authCode.user.id,
       channelCode: authCode.channel_code,
+      inviteCode: authCode.invite_code,
       scopes: authCode.scopes,
     };
   },
