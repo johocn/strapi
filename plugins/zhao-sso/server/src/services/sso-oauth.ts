@@ -78,6 +78,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
 
     const authCode = await strapi.db.query(AUTH_CODE_UID).findOne({
       where: { code, app_code: appCode },
+      populate: ["user"],
     });
     if (!authCode) throwErr("SSO_OAUTH_004", 404, "授权码不存在");
     if (authCode.used) throwErr("SSO_OAUTH_005", 400, "授权码已使用");
