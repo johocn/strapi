@@ -169,6 +169,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         appCode,
         redirectUri,
         channelCode: stateData.channel_code,
+        inviteCode: stateData.invite_code,
       });
 
       const separator = redirectUri.includes("?") ? "&" : "?";
@@ -350,6 +351,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         appCode,
         redirectUri,
         channelCode: stateData.channel_code,
+        inviteCode: stateData.invite_code,
       });
 
       const separator = redirectUri.includes("?") ? "&" : "?";
