@@ -84,6 +84,69 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     ctx.status = 400; ctx.body = { error: "不支持的 grant_type" }; return;
   },
 
+  /**
+   * 前端代理换 token（不暴露 app_secret）
+   * 用于 OAuth 回跳中转页调用，前端只传 code + app_code + redirect_uri
+   * 后端按 app_code 查 sso_apps 表获取 app_secret，复用 exchangeCode 逻辑
+   */
+  async exchangeToken(ctx: any) {
+    const body = ctx.request.body?.data || ctx.request.body;
+    const { code, app_code, redirect_uri } = body;
+
+    if (!code || !app_code || !redirect_uri) {
+      ctx.status = 400;
+      ctx.body = { error: "code, app_code, redirect_uri 必填" };
+      return;
+    }
+
+    const oauthService = strapi.plugin("zhao-sso").service("sso-oauth");
+    const authService = strapi.plugin("zhao-sso").service("sso-auth");
+
+    try {
+      // 1. 查应用获取 app_secret（前端不传）
+      const app = await oauthService.findApp(app_code);
+      if (!app || !app.is_active) {
+        ctx.status = 404;
+        ctx.body = { error: "应用不存在或已禁用" };
+        return;
+      }
+
+      // 2. 校验 redirect_uri 是否在白名单
+      if (!oauthService.validateRedirectUri(app, redirect_uri)) {
+        ctx.status = 400;
+        ctx.body = { error: "redirect_uri 不在白名单" };
+        return;
+      }
+
+      // 3. 复用 exchangeCodeInternal 完成授权码校验与核销（不校验 app_secret）
+      const { userId, channelCode } = await oauthService.exchangeCodeInternal({
+        code,
+        appCode: app_code,
+        app,
+        redirectUri: redirect_uri,
+      });
+
+      // 4. 签发 token 对
+      const userService = strapi.plugin("zhao-sso").service("sso-user");
+      const user = await userService.findById(userId);
+
+      const roles = await authService.getUserRoles(user.id, app_code);
+      const tokenPair = await strapi.plugin("zhao-sso").service("sso-jwt").signTokenPair({
+        sub: user.uuid,
+        app_code,
+        roles,
+        channel: channelCode,
+      });
+
+      await authService.saveTokenRecord(user.id, app_code, tokenPair, channelCode);
+
+      ctx.body = { ...tokenPair, user };
+    } catch (e: any) {
+      ctx.status = (e as any).status || 400;
+      ctx.body = { error: "invalid_grant", error_description: e.message };
+    }
+  },
+
   async wechatRedirect(ctx: any) {
     let state: string | null = null;
     let redirectUri: string | undefined;

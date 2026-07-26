@@ -76,6 +76,24 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     if (!app || !app.is_active) throwErr("SSO_OAUTH_001", 404, "应用不存在或已禁用");
     if (!bcrypt.compareSync(appSecret, app.app_secret)) throwErr("SSO_OAUTH_003", 401, "app_secret 验证失败");
 
+    return this.exchangeCodeInternal({ code, appCode, app, redirectUri });
+  },
+
+  /**
+   * 内部方法：校验并核销授权码，不校验 app_secret
+   * 用于服务端内部调用（如 exchange-token 代理接口，app_secret 由后端自查）
+   */
+  async exchangeCodeInternal(params: {
+    code: string;
+    appCode: string;
+    app: any;
+    redirectUri: string;
+  }) {
+    const { code, appCode, app, redirectUri } = params;
+
+    if (!app || !app.is_active) throwErr("SSO_OAUTH_001", 404, "应用不存在或已禁用");
+    if (!this.validateRedirectUri(app, redirectUri)) throwErr("SSO_OAUTH_002", 400, "redirect_uri 不在允许列表中");
+
     const authCode = await strapi.db.query(AUTH_CODE_UID).findOne({
       where: { code, app_code: appCode },
       populate: ["user"],

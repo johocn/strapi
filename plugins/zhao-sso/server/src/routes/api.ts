@@ -39,6 +39,12 @@ export default () => ({
       config: { auth: false },
     },
     {
+      method: "POST",
+      path: "/v1/auth/exchange-token",
+      handler: "oauth-controller.exchangeToken",
+      config: { auth: false },
+    },
+    {
       method: "GET",
       path: "/v1/auth/wechat",
       handler: "oauth-controller.wechatRedirect",
