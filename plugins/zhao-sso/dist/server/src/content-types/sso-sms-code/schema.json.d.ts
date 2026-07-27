@@ -1,0 +1,22 @@
+declare const _default: {
+  "kind": "collectionType",
+  "collectionName": "sso_sms_codes",
+  "info": {
+    "singularName": "sso-sms-code",
+    "pluralName": "sso-sms-codes",
+    "displayName": "SSO SMS Code"
+  },
+  "options": { "draftAndPublish": false },
+  "attributes": {
+    "mobile": { "type": "string", "required": true },
+    "code": { "type": "string", "required": true },
+    "scene": { "type": "string", "default": "login", "required": true },
+    "expires_at": { "type": "datetime", "required": true },
+    "used": { "type": "boolean", "default": false, "required": true },
+    "ip": { "type": "string" },
+    "provider": { "type": "string", "default": "mock" }
+  }
+}
+;
+
+export default _default;

@@ -151,13 +151,20 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     let state: string | null = null;
     let redirectUri: string | undefined;
     try {
-      const { app_code, redirect_uri, invite_code, channel_code, scope } = ctx.query;
+      const { app_code, redirect_uri, invite_code, channel_code, scope, app_type, debugWx } = ctx.query;
       redirectUri = redirect_uri;
       if (!redirectUri) { ctx.status = 400; ctx.body = { error: "redirect_uri 必填" }; return; }
 
-      // 按 User-Agent 判断 appType
+      // appType 优先级：query.app_type > debugWx=1 强制 official_account > User-Agent 判断
       const userAgent = (ctx.request.headers["user-agent"] as string) || "";
-      const appType = userAgent.includes("MicroMessenger") ? "official_account" : "open_platform";
+      let appType: string;
+      if (typeof app_type === "string" && app_type) {
+        appType = app_type;
+      } else if (debugWx === "1" || userAgent.includes("MicroMessenger")) {
+        appType = "official_account";
+      } else {
+        appType = "open_platform";
+      }
 
       const wechatService = strapi.plugin("zhao-sso").service("sso-wechat");
 

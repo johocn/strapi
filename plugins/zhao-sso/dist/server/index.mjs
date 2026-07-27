@@ -1,32 +1,9 @@
-"use strict";
-Object.defineProperties(exports, { __esModule: { value: true }, [Symbol.toStringTag]: { value: "Module" } });
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-const uuid = require("uuid");
-const crypto = require("crypto");
-const axios = require("axios");
-const _interopDefault = (e) => e && e.__esModule ? e : { default: e };
-function _interopNamespace(e) {
-  if (e && e.__esModule) return e;
-  const n = Object.create(null, { [Symbol.toStringTag]: { value: "Module" } });
-  if (e) {
-    for (const k in e) {
-      if (k !== "default") {
-        const d = Object.getOwnPropertyDescriptor(e, k);
-        Object.defineProperty(n, k, d.get ? d : {
-          enumerable: true,
-          get: () => e[k]
-        });
-      }
-    }
-  }
-  n.default = e;
-  return Object.freeze(n);
-}
-const bcrypt__default = /* @__PURE__ */ _interopDefault(bcrypt);
-const jwt__default = /* @__PURE__ */ _interopDefault(jwt);
-const crypto__namespace = /* @__PURE__ */ _interopNamespace(crypto);
-const axios__default = /* @__PURE__ */ _interopDefault(axios);
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import { v4 } from "uuid";
+import * as crypto from "crypto";
+import crypto__default from "crypto";
+import axios from "axios";
 const ssoAuthenticated = async (policyContext, config2, { strapi }) => {
   const authHeader = policyContext.request?.headers?.authorization;
   if (!authHeader || typeof authHeader !== "string") {
@@ -77,7 +54,7 @@ const bootstrap = async ({ strapi }) => {
       data: {
         app_code: "default",
         app_name: "默认应用",
-        app_secret: await bcrypt__default.default.hash(rawSecret, 10),
+        app_secret: await bcrypt.hash(rawSecret, 10),
         redirect_uris: ["http://localhost:*"],
         allowed_grant_types: ["authorization_code", "refresh_token"],
         is_active: true
@@ -2045,32 +2022,32 @@ const ssoJwt = ({ strapi }) => {
     const signPayload = {
       ...payload,
       type: "access",
-      jti: uuid.v4()
+      jti: v4()
     };
     const options2 = {
       algorithm: getAlgorithm(),
       expiresIn: getAccessTokenExpiry()
     };
-    return jwt__default.default.sign(signPayload, getSecret(), options2);
+    return jwt.sign(signPayload, getSecret(), options2);
   };
   const signRefreshToken = async (payload) => {
     const signPayload = {
       ...payload,
       type: "refresh",
-      jti: uuid.v4()
+      jti: v4()
     };
     const options2 = {
       algorithm: getAlgorithm(),
       expiresIn: getRefreshTokenExpiry()
     };
-    return jwt__default.default.sign(signPayload, getSecret(), options2);
+    return jwt.sign(signPayload, getSecret(), options2);
   };
   const signTokenPair = async (payload) => {
     const [accessToken, refreshToken] = await Promise.all([
       signAccessToken(payload),
       signRefreshToken(payload)
     ]);
-    const decoded = jwt__default.default.decode(accessToken);
+    const decoded = jwt.decode(accessToken);
     const expiresIn = decoded.exp - decoded.iat;
     return {
       access_token: accessToken,
@@ -2080,7 +2057,7 @@ const ssoJwt = ({ strapi }) => {
     };
   };
   const verifyToken = async (token) => {
-    return jwt__default.default.verify(token, getSecret(), { algorithms: [getAlgorithm()] });
+    return jwt.verify(token, getSecret(), { algorithms: [getAlgorithm()] });
   };
   const extractToken = (ctx) => {
     const authHeader = ctx.request?.headers?.authorization || ctx.headers?.authorization;
@@ -2116,10 +2093,10 @@ const ssoUser = ({ strapi }) => {
       if (!data.username && !data.mobile && !data.email) {
         throwErr("SSO_USER_001", 400, "username/mobile/email at least one required");
       }
-      const password_hash = data.password ? await bcrypt__default.default.hash(data.password, 12) : null;
+      const password_hash = data.password ? await bcrypt.hash(data.password, 12) : null;
       return strapi.db.query(USER_UID$3).create({
         data: {
-          uuid: uuid.v4(),
+          uuid: v4(),
           username: data.username || null,
           mobile: data.mobile || null,
           email: data.email || null,
@@ -2145,17 +2122,17 @@ const ssoUser = ({ strapi }) => {
         }
       });
     },
-    async findByUuid(uuid2) {
-      const user = await strapi.db.query(USER_UID$3).findOne({ where: { uuid: uuid2 } });
+    async findByUuid(uuid) {
+      const user = await strapi.db.query(USER_UID$3).findOne({ where: { uuid } });
       return sanitize(user);
     },
     async verifyPassword(user, password) {
       if (!user.password_hash) {
         const raw = await strapi.db.query(USER_UID$3).findOne({ where: { id: user.id }, select: ["password_hash"] });
         if (!raw?.password_hash) return false;
-        return bcrypt__default.default.compare(password, raw.password_hash);
+        return bcrypt.compare(password, raw.password_hash);
       }
-      return bcrypt__default.default.compare(password, user.password_hash);
+      return bcrypt.compare(password, user.password_hash);
     },
     async updateLoginInfo(userId, channelCode) {
       const current = await strapi.db.query(USER_UID$3).findOne({ where: { id: userId } });
@@ -2172,7 +2149,7 @@ const ssoUser = ({ strapi }) => {
       });
     },
     async changePassword(userId, newPassword) {
-      const password_hash = await bcrypt__default.default.hash(newPassword, 12);
+      const password_hash = await bcrypt.hash(newPassword, 12);
       return strapi.db.query(USER_UID$3).update({
         where: { id: userId },
         data: { password_hash, password_changed_at: /* @__PURE__ */ new Date() }
@@ -2190,7 +2167,7 @@ const ssoUser = ({ strapi }) => {
       if (type === "mobile") updateData.mobile = identifier;
       if (type === "email") updateData.email = identifier;
       if (type === "username") updateData.username = identifier;
-      if (password) updateData.password_hash = await bcrypt__default.default.hash(password, 12);
+      if (password) updateData.password_hash = await bcrypt.hash(password, 12);
       return strapi.db.query(USER_UID$3).update({ where: { id: userId }, data: updateData });
     },
     async bindThirdParty(userId, providerData) {
@@ -2382,7 +2359,7 @@ const ssoOauth = ({ strapi }) => {
       const app = await this.findApp(appCode);
       if (!app || !app.is_active) throwErr("SSO_OAUTH_001", 404, "应用不存在或已禁用");
       if (!this.validateRedirectUri(app, redirectUri)) throwErr("SSO_OAUTH_002", 400, "redirect_uri 不在允许列表中");
-      const code = uuid.v4() + "-" + uuid.v4();
+      const code = v4() + "-" + v4();
       const pluginConfig = strapi.config.get("plugin::zhao-sso");
       const expiresIn = pluginConfig?.security?.authCodeExpiresIn || "10m";
       const expiresMs = parseDuration(expiresIn);
@@ -2405,7 +2382,7 @@ const ssoOauth = ({ strapi }) => {
       const { code, appCode, appSecret, redirectUri } = params;
       const app = await this.findApp(appCode);
       if (!app || !app.is_active) throwErr("SSO_OAUTH_001", 404, "应用不存在或已禁用");
-      if (!bcrypt__default.default.compareSync(appSecret, app.app_secret)) throwErr("SSO_OAUTH_003", 401, "app_secret 验证失败");
+      if (!bcrypt.compareSync(appSecret, app.app_secret)) throwErr("SSO_OAUTH_003", 401, "app_secret 验证失败");
       return this.exchangeCodeInternal({ code, appCode, app, redirectUri });
     },
     /**
@@ -2692,7 +2669,7 @@ const ssoWechat = ({ strapi }) => {
       return cached.value;
     }
     const fetchToken = async () => {
-      const res = await axios__default.default.get("https://api.weixin.qq.com/cgi-bin/token", {
+      const res = await axios.get("https://api.weixin.qq.com/cgi-bin/token", {
         params: {
           grant_type: "client_credential",
           appid: config2.appId.trim(),
@@ -2721,7 +2698,7 @@ const ssoWechat = ({ strapi }) => {
     if (cached && cached.expiresAt > Date.now() + 6e4) {
       return cached.value;
     }
-    const res = await axios__default.default.get("https://api.weixin.qq.com/cgi-bin/ticket/getticket", {
+    const res = await axios.get("https://api.weixin.qq.com/cgi-bin/ticket/getticket", {
       params: { access_token: accessToken, type: "jsapi" }
     });
     const data = res.data || {};
@@ -2771,7 +2748,7 @@ const ssoWechat = ({ strapi }) => {
       let tokenData = {};
       let userInfo = null;
       if (appType === "mini_program") {
-        const sessionRes = await axios__default.default.get("https://api.weixin.qq.com/sns/jscode2session", {
+        const sessionRes = await axios.get("https://api.weixin.qq.com/sns/jscode2session", {
           params: {
             appid: cleanAppId,
             secret: config2.appSecret,
@@ -2786,7 +2763,7 @@ const ssoWechat = ({ strapi }) => {
         unionid = sessionRes.data.unionid || null;
         tokenData = sessionRes.data;
       } else {
-        const tokenRes = await axios__default.default.get("https://api.weixin.qq.com/sns/oauth2/access_token", {
+        const tokenRes = await axios.get("https://api.weixin.qq.com/sns/oauth2/access_token", {
           params: {
             appid: cleanAppId,
             secret: config2.appSecret,
@@ -2801,7 +2778,7 @@ const ssoWechat = ({ strapi }) => {
         const wxAccessToken = tokenRes.data.access_token;
         let userInfoRes = {};
         try {
-          userInfoRes = await axios__default.default.get("https://api.weixin.qq.com/sns/userinfo", {
+          userInfoRes = await axios.get("https://api.weixin.qq.com/sns/userinfo", {
             params: { access_token: wxAccessToken, openid }
           });
         } catch {
@@ -2817,7 +2794,7 @@ const ssoWechat = ({ strapi }) => {
       }
       const user = await strapi.db.query(USER_UID$2).create({
         data: {
-          uuid: uuid.v4(),
+          uuid: v4(),
           nickname: userInfo?.nickname || null,
           avatar_url: userInfo?.headimgurl || null,
           status: "active",
@@ -2842,10 +2819,10 @@ const ssoWechat = ({ strapi }) => {
       const config2 = await getConfig(appType);
       const accessToken = await getValidAccessToken(config2);
       const ticket = await getJsapiTicket(accessToken);
-      const nonceStr = uuid.v4().replace(/-/g, "").substring(0, 16);
+      const nonceStr = v4().replace(/-/g, "").substring(0, 16);
       const timestamp = Math.floor(Date.now() / 1e3).toString();
       const raw = `jsapi_ticket=${ticket}&noncestr=${nonceStr}&timestamp=${timestamp}&url=${url}`;
-      const signature = crypto__namespace.default.createHash("sha1").update(raw).digest("hex");
+      const signature = crypto__default.createHash("sha1").update(raw).digest("hex");
       return {
         appId: config2.appId.trim(),
         timestamp,
@@ -2916,7 +2893,7 @@ const ssoAlipay = ({ strapi }) => {
       }
       const user = await strapi.db.query(USER_UID$1).create({
         data: {
-          uuid: uuid.v4(),
+          uuid: v4(),
           nickname: userInfo.nick_name || null,
           avatar_url: userInfo.avatar || null,
           status: "active",
@@ -2941,7 +2918,7 @@ const ssoAlipay = ({ strapi }) => {
       const params = this.buildAlipayParams(appId, "alipay.system.oauth.token", bizContent);
       const sign = this.signParams(params, privateKey);
       params.sign = sign;
-      const res = await axios__default.default.post("https://openapi.alipay.com/gateway.do", null, { params });
+      const res = await axios.post("https://openapi.alipay.com/gateway.do", null, { params });
       const respKey = "alipay_system_oauth_token_response";
       if (res.data[respKey]) return res.data[respKey];
       throwErr("SSO_ALIPAY_003", 502, `Alipay token error: ${JSON.stringify(res.data)}`);
@@ -2951,7 +2928,7 @@ const ssoAlipay = ({ strapi }) => {
       const params = this.buildAlipayParams(appId, "alipay.user.info.share", bizContent);
       const sign = this.signParams(params, privateKey);
       params.sign = sign;
-      const res = await axios__default.default.post("https://openapi.alipay.com/gateway.do", null, { params });
+      const res = await axios.post("https://openapi.alipay.com/gateway.do", null, { params });
       const respKey = "alipay_user_info_share_response";
       if (res.data[respKey]) return res.data[respKey];
       return {};
@@ -2969,7 +2946,7 @@ const ssoAlipay = ({ strapi }) => {
     },
     signParams(params, privateKey) {
       const sorted = Object.keys(params).filter((k) => k !== "sign" && params[k]).sort().map((k) => `${k}=${params[k]}`).join("&");
-      const sign = crypto__namespace.default.createSign("RSA-SHA256");
+      const sign = crypto__default.createSign("RSA-SHA256");
       sign.update(sorted);
       sign.end();
       return sign.sign(privateKey, "base64");
@@ -3001,7 +2978,7 @@ const createRemoteChannelSync = ({
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
         const timestamp = Date.now().toString();
-        const signature = crypto__namespace.createHmac("sha256", appSecret).update(`${appCode}${timestamp}${body}`).digest("hex");
+        const signature = crypto.createHmac("sha256", appSecret).update(`${appCode}${timestamp}${body}`).digest("hex");
         const headers = {
           "Content-Type": "application/json",
           "X-App-Code": appCode,
@@ -3064,7 +3041,7 @@ const ssoApp = ({ strapi }) => ({
       data: {
         app_code: data.app_code,
         app_name: data.app_name,
-        app_secret: await bcrypt__default.default.hash(secret, 10),
+        app_secret: await bcrypt.hash(secret, 10),
         redirect_uris: data.redirect_uris || [],
         allowed_grant_types: data.allowed_grant_types || ["authorization_code", "refresh_token"],
         is_active: data.is_active !== void 0 ? data.is_active : true,
@@ -3079,7 +3056,7 @@ const ssoApp = ({ strapi }) => ({
       if (body[field] !== void 0) data[field] = body[field];
     }
     if (data.app_secret) {
-      data.app_secret = await bcrypt__default.default.hash(data.app_secret, 10);
+      data.app_secret = await bcrypt.hash(data.app_secret, 10);
     }
     return strapi.db.query(APP_UID).update({ where: { id }, data });
   },
@@ -3181,7 +3158,7 @@ const ssoSms = ({ strapi }) => {
       const provider = process.env.SMS_PROVIDER || "mock";
       const ttlMinutes = 5;
       const expiresAt = new Date(Date.now() + ttlMinutes * 60 * 1e3);
-      const code = provider === "mock" ? "1234" : crypto__namespace.default.randomInt(1e5, 999999).toString();
+      const code = provider === "mock" ? "1234" : crypto__default.randomInt(1e5, 999999).toString();
       await strapi.db.query(CODE_UID).create({
         data: { mobile, code, scene, expires_at: expiresAt, used: false, ip: ip || null, provider }
       });
@@ -3240,7 +3217,7 @@ const ssoSms = ({ strapi }) => {
         RegionId: "cn-hangzhou",
         SignName: signName,
         SignatureMethod: "HMAC-SHA1",
-        SignatureNonce: crypto__namespace.default.randomUUID(),
+        SignatureNonce: crypto__default.randomUUID(),
         SignatureVersion: "1.0",
         TemplateCode: templateCode,
         TemplateParam: JSON.stringify({ code }),
@@ -3249,9 +3226,9 @@ const ssoSms = ({ strapi }) => {
       };
       const canonicalized = Object.keys(params).sort().map((k) => `${percentEncode(k)}=${percentEncode(params[k])}`).join("&");
       const stringToSign = `GET&${percentEncode("/")}&${percentEncode(canonicalized)}`;
-      const signature = crypto__namespace.default.createHmac("sha1", `${accessKeySecret}&`).update(stringToSign).digest("base64");
+      const signature = crypto__default.createHmac("sha1", `${accessKeySecret}&`).update(stringToSign).digest("base64");
       const url = `https://dysmsapi.aliyuncs.com/?${canonicalized}&Signature=${percentEncode(signature)}`;
-      const resp = await axios__default.default.get(url, { timeout: 1e4 });
+      const resp = await axios.get(url, { timeout: 1e4 });
       if (resp.data?.Code !== "OK") {
         throwErr(
           "SSO_SMS_006",
@@ -3288,7 +3265,7 @@ const ssoSms = ({ strapi }) => {
         PhoneNumberSet: [`+86${mobile}`],
         TemplateParamSet: [code]
       });
-      const hashedPayload = crypto__namespace.default.createHash("sha256").update(payload).digest("hex");
+      const hashedPayload = crypto__default.createHash("sha256").update(payload).digest("hex");
       const canonicalHeaders = `content-type:application/json; charset=utf-8
 host:${host}
 x-tc-action:${action.toLowerCase()}
@@ -3301,17 +3278,17 @@ ${canonicalHeaders}
 ${signedHeaders}
 ${hashedPayload}`;
       const credentialScope = `${date}/${service}/tc3_request`;
-      const hashedCanonicalRequest = crypto__namespace.default.createHash("sha256").update(canonicalRequest).digest("hex");
+      const hashedCanonicalRequest = crypto__default.createHash("sha256").update(canonicalRequest).digest("hex");
       const stringToSign = `TC3-HMAC-SHA256
 ${timestamp}
 ${credentialScope}
 ${hashedCanonicalRequest}`;
-      const secretDate = crypto__namespace.default.createHmac("sha256", secretKey).update(date).digest();
-      const secretService = crypto__namespace.default.createHmac("sha256", secretDate).update(service).digest();
-      const secretSigning = crypto__namespace.default.createHmac("sha256", secretService).update("tc3_request").digest();
-      const signature = crypto__namespace.default.createHmac("sha256", secretSigning).update(stringToSign).digest("hex");
+      const secretDate = crypto__default.createHmac("sha256", secretKey).update(date).digest();
+      const secretService = crypto__default.createHmac("sha256", secretDate).update(service).digest();
+      const secretSigning = crypto__default.createHmac("sha256", secretService).update("tc3_request").digest();
+      const signature = crypto__default.createHmac("sha256", secretSigning).update(stringToSign).digest("hex");
       const authorization = `TC3-HMAC-SHA256 Credential=${secretId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
-      const resp = await axios__default.default.post(`https://${host}`, payload, {
+      const resp = await axios.post(`https://${host}`, payload, {
         timeout: 1e4,
         headers: {
           "Content-Type": "application/json; charset=utf-8",
@@ -3379,7 +3356,7 @@ const ssoInvite = ({ strapi }) => {
     if (existingVirtual) return existingVirtual;
     return strapi.db.query(USER_UID).create({
       data: {
-        uuid: uuid.v4(),
+        uuid: v4(),
         username: virtualUsername,
         mobile: null,
         email: null,
@@ -3580,4 +3557,6 @@ const index = {
   policies,
   middlewares
 };
-exports.default = index;
+export {
+  index as default
+};

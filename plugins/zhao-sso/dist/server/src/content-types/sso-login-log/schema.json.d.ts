@@ -1,0 +1,24 @@
+declare const _default: {
+  "kind": "collectionType",
+  "collectionName": "sso_login_logs",
+  "info": {
+    "singularName": "sso-login-log",
+    "pluralName": "sso-login-logs",
+    "displayName": "SSO Login Log"
+  },
+  "options": { "draftAndPublish": false },
+  "attributes": {
+    "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user" },
+    "login_type": { "type": "string", "required": true },
+    "provider": { "type": "string" },
+    "channel_code": { "type": "string" },
+    "app_code": { "type": "string" },
+    "ip": { "type": "string" },
+    "user_agent": { "type": "string" },
+    "success": { "type": "boolean", "required": true },
+    "fail_reason": { "type": "string" }
+  }
+}
+;
+
+export default _default;
