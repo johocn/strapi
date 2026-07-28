@@ -350,8 +350,7 @@ async function initDefaultRootChannel(strapi) {
       await strapi.db.query(ROLE_CHANNEL_UID$2).create({
         data: {
           role: adminRole.id,
-          channel: rootChannel.id,
-          grantedBy: "system"
+          channel: rootChannel.id
         }
       });
       strapi.log.info(`[zhao-channel] admin 角色已关联到根渠道 (Role ID: ${adminRole.id})`);
@@ -364,8 +363,7 @@ async function initDefaultRootChannel(strapi) {
     await strapi.db.query(USER_CHANNEL_UID$2).create({
       data: {
         user: adminUser.id,
-        channel: rootChannel.id,
-        grantedBy: "system"
+        channel: rootChannel.id
       }
     });
     strapi.log.info(`[zhao-channel] admin 用户渠道权限已授予 (User ID: ${adminUser.id})`);
@@ -6831,7 +6829,7 @@ const channel = ({ strapi }) => ({
             data: {
               user: user.id,
               channel: updated.id,
-              grantedBy: "self-register"
+              grantedBy: user.id
             }
           });
         } catch (e) {

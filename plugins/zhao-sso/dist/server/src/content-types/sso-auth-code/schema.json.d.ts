@@ -15,6 +15,7 @@ declare const _default: {
     "channel_code": { "type": "string" },
     "invite_code": { "type": "string" },
     "scopes": { "type": "json" },
+    "is_new": { "type": "boolean", "default": false },
     "expires_at": { "type": "datetime", "required": true },
     "used": { "type": "boolean", "default": false, "required": true }
   }

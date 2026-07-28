@@ -287,6 +287,10 @@ declare const _default: {
                     scopes: {
                         type: string;
                     };
+                    is_new: {
+                        type: string;
+                        default: boolean;
+                    };
                     expires_at: {
                         type: string;
                         required: boolean;
@@ -963,6 +967,7 @@ declare const _default: {
                 channelCode?: string;
                 inviteCode?: string;
                 scopes?: string[];
+                isNew?: boolean;
             }): Promise<string>;
             exchangeCode(params: {
                 code: string;
@@ -974,6 +979,7 @@ declare const _default: {
                 channelCode: any;
                 inviteCode: any;
                 scopes: any;
+                isNew: boolean;
             }>;
             exchangeCodeInternal(params: {
                 code: string;
@@ -985,9 +991,11 @@ declare const _default: {
                 channelCode: any;
                 inviteCode: any;
                 scopes: any;
+                isNew: boolean;
             }>;
             findApp(appCode: string): Promise<any>;
             validateRedirectUri(app: any, redirectUri: string): boolean;
+            validateGrantType(app: any, grantType: string): boolean;
         };
         "sso-auth": ({ strapi }: {
             strapi: import('@strapi/types/dist/core').Strapi;

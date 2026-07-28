@@ -28,7 +28,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   async getAuthorizeUrl(state: string): Promise<string> {
     const config = await getConfig();
     const serverUrl = strapi.config.get("server.url", "http://localhost:1337");
-    const redirectUri = `${serverUrl}/api/zhao-sso/auth/alipay/callback`;
+    const redirectUri = `${serverUrl}/api/zhao-sso/v1/auth/alipay/callback`;
     const params = new URLSearchParams({
       app_id: config.appId,
       redirect_uri: redirectUri,

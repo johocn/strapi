@@ -30,15 +30,16 @@ export function errorResponse(code: number, msg: string): ApiResponse<null> {
 
 /**
  * 分页响应
+ * 字段名 records 与前端 ProTable/useApi 约定一致
  */
 export function paginatedResponse<T>(
   data: T[],
   page: number,
   pageSize: number,
   total: number
-): ApiResponse<{ list: T[]; page: number; pageSize: number; total: number }> {
+): ApiResponse<{ records: T[]; page: number; pageSize: number; total: number }> {
   return successResponse({
-    list: data,
+    records: data,
     page,
     pageSize,
     total,

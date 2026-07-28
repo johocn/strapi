@@ -1,2 +1,2 @@
-declare const StatCards: () => import("react/jsx-runtime").JSX.Element;
+declare const StatCards: () => import("react").JSX.Element;
 export default StatCards;

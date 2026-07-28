@@ -38,6 +38,10 @@ declare const _default: {
             scopes: {
                 type: string;
             };
+            is_new: {
+                type: string;
+                default: boolean;
+            };
             expires_at: {
                 type: string;
                 required: boolean;

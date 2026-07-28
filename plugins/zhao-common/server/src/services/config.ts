@@ -400,6 +400,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         thirdPartyEnabled,
         ssoEnabled: siteFeatureFlags.sso ?? true,
         ssoLoginUrl: ec.ssoLoginUrl ?? null,
+        ssoAppCode: ec.ssoAppCode ?? 'course',
         registerEnabled: ec.registerEnabled ?? true,
         inviteCodeRequired: ec.inviteCodeRequired ?? false,
       };

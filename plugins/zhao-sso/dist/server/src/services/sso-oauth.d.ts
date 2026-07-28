@@ -9,6 +9,7 @@ declare const _default: ({ strapi }: {
         channelCode?: string;
         inviteCode?: string;
         scopes?: string[];
+        isNew?: boolean;
     }): Promise<string>;
     exchangeCode(params: {
         code: string;
@@ -20,6 +21,7 @@ declare const _default: ({ strapi }: {
         channelCode: any;
         inviteCode: any;
         scopes: any;
+        isNew: boolean;
     }>;
     /**
      * 内部方法：校验并核销授权码，不校验 app_secret
@@ -35,8 +37,15 @@ declare const _default: ({ strapi }: {
         channelCode: any;
         inviteCode: any;
         scopes: any;
+        isNew: boolean;
     }>;
     findApp(appCode: string): Promise<any>;
     validateRedirectUri(app: any, redirectUri: string): boolean;
+    /**
+     * 校验 app 是否允许使用指定 grant_type
+     * allowed_grant_types 为 sso_apps 表的 JSON 字段，如 ["authorization_code", "refresh_token"]
+     * 未配置或非数组时视为允许所有（向后兼容旧数据）
+     */
+    validateGrantType(app: any, grantType: string): boolean;
 };
 export default _default;

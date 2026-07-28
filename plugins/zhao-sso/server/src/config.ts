@@ -11,7 +11,9 @@ export default {
       authCodeExpiresIn: "10m",
     },
     defaults: {
-      appCode: "default",
+      // 与 zhao-common getPublicConfig 的 ssoAppCode 默认值保持一致
+      // 避免前端拿到 'course'、后端兜底 'default' 导致 app_code 不匹配
+      appCode: "course",
     },
     loginUrl: "/sso/login",
     channelSync: {

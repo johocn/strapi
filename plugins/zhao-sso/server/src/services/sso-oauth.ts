@@ -35,8 +35,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     channelCode?: string;
     inviteCode?: string;
     scopes?: string[];
+    isNew?: boolean;
   }) {
-    const { userId, appCode, redirectUri, channelCode, inviteCode, scopes } = params;
+    const { userId, appCode, redirectUri, channelCode, inviteCode, scopes, isNew } = params;
 
     const app = await this.findApp(appCode);
     if (!app || !app.is_active) throwErr("SSO_OAUTH_001", 404, "应用不存在或已禁用");
@@ -56,6 +57,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         channel_code: channelCode || null,
         invite_code: inviteCode || null,
         scopes: scopes || null,
+        is_new: !!isNew,
         expires_at: new Date(Date.now() + expiresMs),
         used: false,
       },
@@ -92,6 +94,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     const { code, appCode, app, redirectUri } = params;
 
     if (!app || !app.is_active) throwErr("SSO_OAUTH_001", 404, "应用不存在或已禁用");
+    if (!this.validateGrantType(app, "authorization_code")) throwErr("SSO_OAUTH_008", 400, "该应用未开启 authorization_code 授权");
     if (!this.validateRedirectUri(app, redirectUri)) throwErr("SSO_OAUTH_002", 400, "redirect_uri 不在允许列表中");
 
     const authCode = await strapi.db.query(AUTH_CODE_UID).findOne({
@@ -113,6 +116,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       channelCode: authCode.channel_code,
       inviteCode: authCode.invite_code,
       scopes: authCode.scopes,
+      isNew: !!authCode.is_new,
     };
   },
 
@@ -129,6 +133,17 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       }
       return pattern === redirectUri;
     });
+  },
+
+  /**
+   * 校验 app 是否允许使用指定 grant_type
+   * allowed_grant_types 为 sso_apps 表的 JSON 字段，如 ["authorization_code", "refresh_token"]
+   * 未配置或非数组时视为允许所有（向后兼容旧数据）
+   */
+  validateGrantType(app: any, grantType: string): boolean {
+    const allowed: string[] = Array.isArray(app?.allowed_grant_types) ? app.allowed_grant_types : [];
+    if (allowed.length === 0) return true;
+    return allowed.includes(grantType);
   },
   };
 };

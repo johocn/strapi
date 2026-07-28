@@ -1,4 +1,4 @@
 declare const TrendChart: ({ productId }: {
     productId: number;
-}) => import("react/jsx-runtime").JSX.Element;
+}) => import("react").JSX.Element;
 export default TrendChart;

@@ -578,18 +578,15 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
         // 显式授权用户访问自己的渠道（与 channel-member 双表冗余，语义分离）
         // user-channel：访问授权；channel-member：成员关系
-        try {
-          await strapi.db.query(USER_CHANNEL_UID).create({
-            data: {
-              user: user.id,
-              channel: updated.id,
-              grantedBy: "self-register",
-            },
-          });
-        } catch (e: any) {
-          // user-channel 写入失败不阻断注册（channel-member 已建，用户仍可通过 channel-member 拿到渠道）
-          strapi.log.warn(`[zhao-channel] register() failed to write user-channel: ${e.message}`);
-        }
+        // grantedBy 是 manyToOne 关系字段（指向 user），必须传 user ID
+        // 自注册场景：授权人 = 注册者自己
+        await strapi.db.query(USER_CHANNEL_UID).create({
+          data: {
+            user: user.id,
+            channel: updated.id,
+            grantedBy: user.id,
+          },
+        });
 
         // 更新 user-invite 记录（bootstrap 的 afterCreate hook 已自动创建）
         const parentOwner = await strapi.db

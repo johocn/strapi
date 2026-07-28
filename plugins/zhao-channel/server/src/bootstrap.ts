@@ -337,7 +337,6 @@ async function initDefaultRootChannel(strapi: Core.Strapi) {
         data: {
           role: adminRole.id,
           channel: rootChannel.id,
-          grantedBy: "system",
         },
       });
       strapi.log.info(`[zhao-channel] admin 角色已关联到根渠道 (Role ID: ${adminRole.id})`);
@@ -353,7 +352,6 @@ async function initDefaultRootChannel(strapi: Core.Strapi) {
       data: {
         user: adminUser.id,
         channel: rootChannel.id,
-        grantedBy: "system",
       },
     });
     strapi.log.info(`[zhao-channel] admin 用户渠道权限已授予 (User ID: ${adminUser.id})`);

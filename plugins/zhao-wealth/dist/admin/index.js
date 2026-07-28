@@ -38,7 +38,7 @@ const index = {
         defaultMessage: "理财基金管理"
       },
       Component: async () => {
-        const { App } = await Promise.resolve().then(() => require("./App-DvjFJhf3.js"));
+        const { App } = await Promise.resolve().then(() => require("./App-Bj5zBRLA.js"));
         return App;
       }
     });

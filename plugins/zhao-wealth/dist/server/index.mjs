@@ -6810,7 +6810,7 @@ function errorResponse(code, msg) {
 }
 function paginatedResponse(data, page, pageSize, total) {
   return successResponse({
-    list: data,
+    records: data,
     page,
     pageSize,
     total

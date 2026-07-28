@@ -251,6 +251,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   },
 
   async exchangeAlipayToken(code: string, config: any) {
+    // ⚠️ 此实现未签名，支付宝网关会拒绝所有未签名请求，当前不可用。
+    // 缺失：sign_type(RSA2)、sign(RSA-SHA256 签名)、timestamp、version、biz_content。
+    // 正确实现请参考 zhao-sso 插件的 sso-alipay.ts（buildAlipayParams + signParams + requestToken）。
+    // 该插件的 third-party-config schema 也缺少 privateKey/extraConfig 字段存储私钥。
+    // 建议：支付宝登录统一走 zhao-sso 流程，本方法待后续清理或迁移签名逻辑后再启用。
     const tokenUrl = "https://openapi.alipay.com/gateway.do";
     const params = new URLSearchParams();
     params.set("app_id", config.appId);

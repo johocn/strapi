@@ -64,20 +64,37 @@ const register = ({ strapi }) => {
 };
 const bootstrap = async ({ strapi }) => {
   strapi.log.info("[zhao-sso] Plugin bootstrapped");
+  const rawSecret = process.env.SSO_DEFAULT_APP_SECRET;
+  if (!rawSecret) {
+    strapi.log.warn("[zhao-sso] SSO_DEFAULT_APP_SECRET 未配置,跳过默认应用创建(请在 .env 中设置)");
+    return;
+  }
+  const hashedSecret = await bcrypt__default.default.hash(rawSecret, 10);
+  const courseApp = await strapi.db.query("plugin::zhao-sso.sso-app").findOne({
+    where: { app_code: "course" }
+  });
+  if (!courseApp) {
+    await strapi.db.query("plugin::zhao-sso.sso-app").create({
+      data: {
+        app_code: "course",
+        app_name: "课程应用",
+        app_secret: hashedSecret,
+        redirect_uris: ["http://localhost:*"],
+        allowed_grant_types: ["authorization_code", "refresh_token"],
+        is_active: true
+      }
+    });
+    strapi.log.info("[zhao-sso] Default app created (app_code=course)");
+  }
   const defaultApp = await strapi.db.query("plugin::zhao-sso.sso-app").findOne({
     where: { app_code: "default" }
   });
   if (!defaultApp) {
-    const rawSecret = process.env.SSO_DEFAULT_APP_SECRET;
-    if (!rawSecret) {
-      strapi.log.warn("[zhao-sso] SSO_DEFAULT_APP_SECRET 未配置,跳过默认应用创建(请在 .env 中设置)");
-      return;
-    }
     await strapi.db.query("plugin::zhao-sso.sso-app").create({
       data: {
         app_code: "default",
         app_name: "默认应用",
-        app_secret: await bcrypt__default.default.hash(rawSecret, 10),
+        app_secret: hashedSecret,
         redirect_uris: ["http://localhost:*"],
         allowed_grant_types: ["authorization_code", "refresh_token"],
         is_active: true
@@ -99,7 +116,9 @@ const config = {
       authCodeExpiresIn: "10m"
     },
     defaults: {
-      appCode: "default"
+      // 与 zhao-common getPublicConfig 的 ssoAppCode 默认值保持一致
+      // 避免前端拿到 'course'、后端兜底 'default' 导致 app_code 不匹配
+      appCode: "course"
     },
     loginUrl: "/sso/login",
     channelSync: {
@@ -166,7 +185,7 @@ const kind$9 = "collectionType";
 const collectionName$9 = "sso_auth_codes";
 const info$9 = { "singularName": "sso-auth-code", "pluralName": "sso-auth-codes", "displayName": "SSO Auth Code" };
 const options$9 = { "draftAndPublish": false };
-const attributes$9 = { "code": { "type": "string", "unique": true, "required": true }, "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user" }, "app_code": { "type": "string", "required": true }, "redirect_uri": { "type": "text", "required": true }, "channel_code": { "type": "string" }, "invite_code": { "type": "string" }, "scopes": { "type": "json" }, "expires_at": { "type": "datetime", "required": true }, "used": { "type": "boolean", "default": false, "required": true } };
+const attributes$9 = { "code": { "type": "string", "unique": true, "required": true }, "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user" }, "app_code": { "type": "string", "required": true }, "redirect_uri": { "type": "text", "required": true }, "channel_code": { "type": "string" }, "invite_code": { "type": "string" }, "scopes": { "type": "json" }, "is_new": { "type": "boolean", "default": false }, "expires_at": { "type": "datetime", "required": true }, "used": { "type": "boolean", "default": false, "required": true } };
 const schema$9 = {
   kind: kind$9,
   collectionName: collectionName$9,
@@ -469,6 +488,14 @@ const oauthController = ({ strapi }) => ({
       ctx.body = { error: e.message };
     }
   },
+  /**
+   * 标准 OAuth2 token 端点（RFC 6749）
+   * 服务端到服务端调用，必须传 app_secret。
+   * 支持 grant_type=authorization_code（换码）和 grant_type=refresh_token（刷新）。
+   *
+   * 与 exchange-token 的区别：本端点要求调用方持有 app_secret，适合后端直连；
+   * exchange-token 是前端代理，不暴露 app_secret，仅支持 authorization_code。
+   */
   async token(ctx) {
     const body = ctx.request.body?.data || ctx.request.body;
     const { grant_type, code, app_code, app_secret, redirect_uri } = body;
@@ -481,7 +508,7 @@ const oauthController = ({ strapi }) => ({
       const oauthService = strapi.plugin("zhao-sso").service("sso-oauth");
       const authService = strapi.plugin("zhao-sso").service("sso-auth");
       try {
-        const { userId, channelCode } = await oauthService.exchangeCode({ code, appCode: app_code, appSecret: app_secret, redirectUri: redirect_uri });
+        const { userId, channelCode, isNew } = await oauthService.exchangeCode({ code, appCode: app_code, appSecret: app_secret, redirectUri: redirect_uri });
         const userService = strapi.plugin("zhao-sso").service("sso-user");
         const user = await userService.findById(userId);
         await userService.updateLoginInfo(user.id, channelCode);
@@ -493,7 +520,7 @@ const oauthController = ({ strapi }) => ({
           channel: channelCode
         });
         await authService.saveTokenRecord(user.id, app_code, tokenPair, channelCode);
-        ctx.body = tokenPair;
+        ctx.body = { ...tokenPair, user, is_new: isNew };
       } catch (e) {
         ctx.status = e.status || 400;
         ctx.body = { error: "invalid_grant", error_description: e.message };
@@ -525,6 +552,11 @@ const oauthController = ({ strapi }) => ({
    * 前端代理换 token（不暴露 app_secret）
    * 用于 OAuth 回跳中转页调用，前端只传 code + app_code + redirect_uri
    * 后端按 app_code 查 sso_apps 表获取 app_secret，复用 exchangeCode 逻辑
+   *
+   * 与 token 端点的区别：本端点不要求调用方传 app_secret（由后端自查），
+   * 仅支持 authorization_code 流程，适合浏览器/小程序等前端环境；
+   * token 端点是标准 OAuth2 端点，要求 app_secret，适合后端直连。
+   * 命名保留现状：rename 会破坏所有前端调用方且无功能收益。
    */
   async exchangeToken(ctx) {
     const body = ctx.request.body?.data || ctx.request.body;
@@ -548,7 +580,7 @@ const oauthController = ({ strapi }) => ({
         ctx.body = { error: "redirect_uri 不在白名单" };
         return;
       }
-      const { userId, channelCode } = await oauthService.exchangeCodeInternal({
+      const { userId, channelCode, isNew } = await oauthService.exchangeCodeInternal({
         code,
         appCode: app_code,
         app,
@@ -564,7 +596,7 @@ const oauthController = ({ strapi }) => ({
         channel: channelCode
       });
       await authService.saveTokenRecord(user.id, app_code, tokenPair, channelCode);
-      ctx.body = { ...tokenPair, user };
+      ctx.body = { ...tokenPair, user, is_new: isNew };
     } catch (e) {
       ctx.status = e.status || 400;
       ctx.body = { error: "invalid_grant", error_description: e.message };
@@ -579,6 +611,13 @@ const oauthController = ({ strapi }) => ({
       if (!redirectUri) {
         ctx.status = 400;
         ctx.body = { error: "redirect_uri 必填" };
+        return;
+      }
+      const oauthService = strapi.plugin("zhao-sso").service("sso-oauth");
+      const app = await oauthService.findApp(app_code || "course");
+      if (!app || !app.is_active) {
+        ctx.status = 404;
+        ctx.body = { error: "应用不存在或已禁用" };
         return;
       }
       const userAgent = ctx.request.headers["user-agent"] || "";
@@ -599,7 +638,7 @@ const oauthController = ({ strapi }) => ({
         }
       }
       state = Buffer.from(JSON.stringify({
-        app_code: app_code || "default",
+        app_code: app_code || "course",
         redirect_uri: redirectUri,
         invite_code: invite_code || "",
         channel_code: channel_code || "",
@@ -644,7 +683,7 @@ const oauthController = ({ strapi }) => ({
     const wechatService = strapi.plugin("zhao-sso").service("sso-wechat");
     const oauthService = strapi.plugin("zhao-sso").service("sso-oauth");
     try {
-      const { userId } = await wechatService.handleCallback(code, stateData.app_type);
+      const { userId, isNew } = await wechatService.handleCallback(code, stateData.app_type);
       try {
         const channelSync2 = strapi.plugin("zhao-sso").service("channel-sync").getSync();
         if (channelSync2) {
@@ -653,13 +692,14 @@ const oauthController = ({ strapi }) => ({
       } catch (ce) {
         strapi.log.warn(`[zhao-sso] 微信回调分销同步失败: ${ce.message}`);
       }
-      const appCode = stateData.app_code || "default";
+      const appCode = stateData.app_code || "course";
       const authCode = await oauthService.generateAuthCode({
         userId,
         appCode,
         redirectUri,
         channelCode: stateData.channel_code,
-        inviteCode: stateData.invite_code
+        inviteCode: stateData.invite_code,
+        isNew
       });
       const separator = redirectUri.includes("?") ? "&" : "?";
       ctx.redirect(`${redirectUri}${separator}code=${authCode}&state=${state}`);
@@ -712,8 +752,15 @@ const oauthController = ({ strapi }) => ({
         ctx.body = { error: "invalid_request", error_description: "code 和 appCode 必填" };
         return;
       }
+      const oauthService = strapi.plugin("zhao-sso").service("sso-oauth");
+      const app = await oauthService.findApp(appCode);
+      if (!app || !app.is_active) {
+        ctx.status = 404;
+        ctx.body = { error: "app_not_found", error_description: "应用不存在或已禁用" };
+        return;
+      }
       const wechatService = strapi.plugin("zhao-sso").service("sso-wechat");
-      const { userId } = await wechatService.handleCallback(code, "mini_program");
+      const { userId, isNew } = await wechatService.handleCallback(code, "mini_program");
       try {
         const channelSync2 = strapi.plugin("zhao-sso").service("channel-sync").getSync();
         if (channelSync2) {
@@ -730,6 +777,21 @@ const oauthController = ({ strapi }) => ({
         ctx.body = { error: "user_not_found", error_description: "用户不存在" };
         return;
       }
+      try {
+        await userService.updateLoginInfo(user.id, channelCode);
+        await strapi.plugin("zhao-sso").service("sso-login-log").log({
+          userId: user.id,
+          loginType: "wechat_miniprogram",
+          provider: "wechat",
+          channelCode,
+          appCode,
+          ip: ctx.request.ip,
+          userAgent: ctx.request.headers["user-agent"],
+          success: true
+        });
+      } catch (le) {
+        strapi.log.warn(`[zhao-sso] 小程序登录日志写入失败: ${le.message}`);
+      }
       const roles = await authService.getUserRoles(user.id, appCode);
       const tokenPair = await strapi.plugin("zhao-sso").service("sso-jwt").signTokenPair({
         sub: user.uuid,
@@ -738,7 +800,7 @@ const oauthController = ({ strapi }) => ({
         channel: channelCode
       });
       await authService.saveTokenRecord(user.id, appCode, tokenPair, channelCode);
-      ctx.body = tokenPair;
+      ctx.body = { ...tokenPair, is_new: isNew };
     } catch (e) {
       ctx.status = e.status || 400;
       ctx.body = { error: "wechat_login_failed", error_description: e.message };
@@ -753,8 +815,15 @@ const oauthController = ({ strapi }) => ({
         ctx.body = { error: "invalid_request", error_description: "code 和 appCode 必填" };
         return;
       }
+      const oauthService = strapi.plugin("zhao-sso").service("sso-oauth");
+      const app = await oauthService.findApp(appCode);
+      if (!app || !app.is_active) {
+        ctx.status = 404;
+        ctx.body = { error: "app_not_found", error_description: "应用不存在或已禁用" };
+        return;
+      }
       const wechatService = strapi.plugin("zhao-sso").service("sso-wechat");
-      const { userId } = await wechatService.handleCallback(code, "app");
+      const { userId, isNew } = await wechatService.handleCallback(code, "app");
       try {
         const channelSync2 = strapi.plugin("zhao-sso").service("channel-sync").getSync();
         if (channelSync2) {
@@ -771,6 +840,21 @@ const oauthController = ({ strapi }) => ({
         ctx.body = { error: "user_not_found", error_description: "用户不存在" };
         return;
       }
+      try {
+        await userService.updateLoginInfo(user.id, channelCode);
+        await strapi.plugin("zhao-sso").service("sso-login-log").log({
+          userId: user.id,
+          loginType: "wechat_app",
+          provider: "wechat",
+          channelCode,
+          appCode,
+          ip: ctx.request.ip,
+          userAgent: ctx.request.headers["user-agent"],
+          success: true
+        });
+      } catch (le) {
+        strapi.log.warn(`[zhao-sso] App 登录日志写入失败: ${le.message}`);
+      }
       const roles = await authService.getUserRoles(user.id, appCode);
       const tokenPair = await strapi.plugin("zhao-sso").service("sso-jwt").signTokenPair({
         sub: user.uuid,
@@ -779,7 +863,7 @@ const oauthController = ({ strapi }) => ({
         channel: channelCode
       });
       await authService.saveTokenRecord(user.id, appCode, tokenPair, channelCode);
-      ctx.body = tokenPair;
+      ctx.body = { ...tokenPair, is_new: isNew };
     } catch (e) {
       ctx.status = e.status || 400;
       ctx.body = { error: "wechat_login_failed", error_description: e.message };
@@ -820,16 +904,24 @@ const oauthController = ({ strapi }) => ({
   },
   async alipayRedirect(ctx) {
     try {
-      const { app_code, channel_code, redirect_uri } = ctx.query;
+      const { app_code, channel_code, invite_code, redirect_uri } = ctx.query;
       if (!redirect_uri) {
         ctx.status = 400;
         ctx.body = { error: "redirect_uri 必填" };
         return;
       }
+      const oauthService = strapi.plugin("zhao-sso").service("sso-oauth");
+      const app = await oauthService.findApp(app_code || "course");
+      if (!app || !app.is_active) {
+        ctx.status = 404;
+        ctx.body = { error: "应用不存在或已禁用" };
+        return;
+      }
       const alipayService = strapi.plugin("zhao-sso").service("sso-alipay");
       const state = Buffer.from(JSON.stringify({
-        app_code: app_code || "default",
+        app_code: app_code || "course",
         channel_code: channel_code || "",
+        invite_code: invite_code || "",
         redirect_uri
       })).toString("base64url");
       const url = await alipayService.getAuthorizeUrl(state);
@@ -860,20 +952,29 @@ const oauthController = ({ strapi }) => ({
     const alipayService = strapi.plugin("zhao-sso").service("sso-alipay");
     const oauthService = strapi.plugin("zhao-sso").service("sso-oauth");
     try {
-      const { userId } = await alipayService.handleCallback(auth_code);
-      const appCode = stateData.app_code || "default";
+      const { userId, isNew } = await alipayService.handleCallback(auth_code);
+      const appCode = stateData.app_code || "course";
+      try {
+        const channelSync2 = strapi.plugin("zhao-sso").service("channel-sync").getSync();
+        if (channelSync2) {
+          await channelSync2.syncUserInvite(userId, stateData.invite_code || "", stateData.channel_code || "");
+        }
+      } catch (e) {
+        strapi.log.warn(`[zhao-sso] alipay 分销关系建立失败: ${e.message}`);
+      }
       const authCode = await oauthService.generateAuthCode({
         userId,
         appCode,
         redirectUri,
         channelCode: stateData.channel_code,
-        inviteCode: stateData.invite_code
+        inviteCode: stateData.invite_code,
+        isNew
       });
       const separator = redirectUri.includes("?") ? "&" : "?";
       ctx.redirect(`${redirectUri}${separator}code=${authCode}&state=${state}`);
     } catch (e) {
-      ctx.status = e.status || 400;
-      ctx.body = { error: "alipay_oauth_failed", message: e.message };
+      const separator = redirectUri.includes("?") ? "&" : "?";
+      ctx.redirect(`${redirectUri}${separator}error=${encodeURIComponent(e.message)}`);
     }
   }
 });
@@ -2378,7 +2479,7 @@ const ssoOauth = ({ strapi }) => {
   }
   return {
     async generateAuthCode(params) {
-      const { userId, appCode, redirectUri, channelCode, inviteCode, scopes } = params;
+      const { userId, appCode, redirectUri, channelCode, inviteCode, scopes, isNew } = params;
       const app = await this.findApp(appCode);
       if (!app || !app.is_active) throwErr("SSO_OAUTH_001", 404, "应用不存在或已禁用");
       if (!this.validateRedirectUri(app, redirectUri)) throwErr("SSO_OAUTH_002", 400, "redirect_uri 不在允许列表中");
@@ -2395,6 +2496,7 @@ const ssoOauth = ({ strapi }) => {
           channel_code: channelCode || null,
           invite_code: inviteCode || null,
           scopes: scopes || null,
+          is_new: !!isNew,
           expires_at: new Date(Date.now() + expiresMs),
           used: false
         }
@@ -2415,6 +2517,7 @@ const ssoOauth = ({ strapi }) => {
     async exchangeCodeInternal(params) {
       const { code, appCode, app, redirectUri } = params;
       if (!app || !app.is_active) throwErr("SSO_OAUTH_001", 404, "应用不存在或已禁用");
+      if (!this.validateGrantType(app, "authorization_code")) throwErr("SSO_OAUTH_008", 400, "该应用未开启 authorization_code 授权");
       if (!this.validateRedirectUri(app, redirectUri)) throwErr("SSO_OAUTH_002", 400, "redirect_uri 不在允许列表中");
       const authCode = await strapi.db.query(AUTH_CODE_UID).findOne({
         where: { code, app_code: appCode },
@@ -2432,7 +2535,8 @@ const ssoOauth = ({ strapi }) => {
         userId: authCode.user.id,
         channelCode: authCode.channel_code,
         inviteCode: authCode.invite_code,
-        scopes: authCode.scopes
+        scopes: authCode.scopes,
+        isNew: !!authCode.is_new
       };
     },
     async findApp(appCode) {
@@ -2447,6 +2551,16 @@ const ssoOauth = ({ strapi }) => {
         }
         return pattern === redirectUri;
       });
+    },
+    /**
+     * 校验 app 是否允许使用指定 grant_type
+     * allowed_grant_types 为 sso_apps 表的 JSON 字段，如 ["authorization_code", "refresh_token"]
+     * 未配置或非数组时视为允许所有（向后兼容旧数据）
+     */
+    validateGrantType(app, grantType) {
+      const allowed = Array.isArray(app?.allowed_grant_types) ? app.allowed_grant_types : [];
+      if (allowed.length === 0) return true;
+      return allowed.includes(grantType);
     }
   };
 };
@@ -2613,6 +2727,10 @@ const ssoAuth$1 = ({ strapi }) => {
     if (!tokenRecord) throwErr("SSO_AUTH_010", 404, "Token 记录不存在");
     if (tokenRecord.revoked) throwErr("SSO_AUTH_011", 401, "Refresh token 已被撤销");
     if (new Date(tokenRecord.refresh_expires_at) < /* @__PURE__ */ new Date()) throwErr("SSO_AUTH_012", 401, "Refresh token 已过期");
+    const oauthService = strapi.plugin("zhao-sso").service("sso-oauth");
+    const app = await oauthService.findApp(payload.app_code);
+    if (!app || !app.is_active) throwErr("SSO_OAUTH_001", 404, "应用不存在或已禁用");
+    if (!oauthService.validateGrantType(app, "refresh_token")) throwErr("SSO_OAUTH_008", 400, "该应用未开启 refresh_token 授权");
     await strapi.db.query(TOKEN_UID).update({
       where: { id: tokenRecord.id },
       data: { revoked: true, revoked_at: /* @__PURE__ */ new Date() }
@@ -2889,7 +3007,7 @@ const ssoAlipay = ({ strapi }) => {
     async getAuthorizeUrl(state) {
       const config2 = await getConfig();
       const serverUrl = strapi.config.get("server.url", "http://localhost:1337");
-      const redirectUri = `${serverUrl}/api/zhao-sso/auth/alipay/callback`;
+      const redirectUri = `${serverUrl}/api/zhao-sso/v1/auth/alipay/callback`;
       const params = new URLSearchParams({
         app_id: config2.appId,
         redirect_uri: redirectUri,

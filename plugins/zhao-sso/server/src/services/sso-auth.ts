@@ -238,6 +238,12 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     if (tokenRecord.revoked) throwErr("SSO_AUTH_011", 401, "Refresh token 已被撤销");
     if (new Date(tokenRecord.refresh_expires_at) < new Date()) throwErr("SSO_AUTH_012", 401, "Refresh token 已过期");
 
+    // 校验 app 是否允许 refresh_token 授权（payload.app_code 来自原 access token 签发时写入）
+    const oauthService = strapi.plugin("zhao-sso").service("sso-oauth");
+    const app = await oauthService.findApp(payload.app_code);
+    if (!app || !app.is_active) throwErr("SSO_OAUTH_001", 404, "应用不存在或已禁用");
+    if (!oauthService.validateGrantType(app, "refresh_token")) throwErr("SSO_OAUTH_008", 400, "该应用未开启 refresh_token 授权");
+
     await strapi.db.query(TOKEN_UID).update({
       where: { id: tokenRecord.id },
       data: { revoked: true, revoked_at: new Date() },

@@ -36,7 +36,7 @@ const index = {
         defaultMessage: "理财基金管理"
       },
       Component: async () => {
-        const { App } = await import("./App-AsUP3gOH.mjs");
+        const { App } = await import("./App-CsM9E-0w.mjs");
         return App;
       }
     });

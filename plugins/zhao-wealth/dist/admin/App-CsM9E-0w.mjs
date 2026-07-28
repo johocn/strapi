@@ -41,45 +41,50 @@ const useApi = () => {
     if (params) config.params = params;
     if (data) config.data = data;
     const res = await (method === "get" ? get(path, config) : method === "post" ? post(path, config) : method === "put" ? put(path, config) : del(path, config));
-    return res.data;
+    const body = res.data || {};
+    if (body.code !== void 0 && body.code !== 200) {
+      throw new Error(body.msg || `请求失败 (${body.code})`);
+    }
+    return body.data !== void 0 ? body.data : body;
   };
+  const P = `/${PLUGIN_ID}`;
   return {
     // 公司管理
-    getCompanies: (params) => call("get", `/admin/plugins/${PLUGIN_ID}/companies`, void 0, params),
-    getCompany: (id) => call("get", `/admin/plugins/${PLUGIN_ID}/companies/${id}`),
-    createCompany: (data) => call("post", `/admin/plugins/${PLUGIN_ID}/companies`, data),
-    updateCompany: (id, data) => call("put", `/admin/plugins/${PLUGIN_ID}/companies/${id}`, data),
-    deleteCompany: (id) => call("del", `/admin/plugins/${PLUGIN_ID}/companies/${id}`),
+    getCompanies: (params) => call("get", `${P}/companies`, void 0, params),
+    getCompany: (id) => call("get", `${P}/companies/${id}`),
+    createCompany: (data) => call("post", `${P}/companies`, data),
+    updateCompany: (id, data) => call("put", `${P}/companies/${id}`, data),
+    deleteCompany: (id) => call("del", `${P}/companies/${id}`),
     // 产品管理
-    getProducts: (params) => call("get", `/admin/plugins/${PLUGIN_ID}/products`, void 0, params),
-    getProduct: (id) => call("get", `/admin/plugins/${PLUGIN_ID}/products/${id}`),
-    createProduct: (data) => call("post", `/admin/plugins/${PLUGIN_ID}/products`, data),
-    updateProduct: (id, data) => call("put", `/admin/plugins/${PLUGIN_ID}/products/${id}`, data),
-    deleteProduct: (id) => call("del", `/admin/plugins/${PLUGIN_ID}/products/${id}`),
+    getProducts: (params) => call("get", `${P}/products`, void 0, params),
+    getProduct: (id) => call("get", `${P}/products/${id}`),
+    createProduct: (data) => call("post", `${P}/products`, data),
+    updateProduct: (id, data) => call("put", `${P}/products/${id}`, data),
+    deleteProduct: (id) => call("del", `${P}/products/${id}`),
     // 采集配置
-    getCollectConfigs: (params) => call("get", `/admin/plugins/${PLUGIN_ID}/collect-configs`, void 0, params),
-    updateCollectConfig: (id, data) => call("put", `/admin/plugins/${PLUGIN_ID}/collect-configs/${id}`, data),
-    triggerCollect: (productId) => call("post", `/admin/plugins/${PLUGIN_ID}/collect/trigger`, { productId }),
-    getCollectStatus: (productId) => call("get", `/admin/plugins/${PLUGIN_ID}/collect/status`, void 0, { productId }),
+    getCollectConfigs: (params) => call("get", `${P}/collect-configs`, void 0, params),
+    updateCollectConfig: (id, data) => call("put", `${P}/collect-configs/${id}`, data),
+    triggerCollect: (productId) => call("post", `${P}/collect/trigger`, { productId }),
+    getCollectStatus: (productId) => call("get", `${P}/collect/status`, void 0, { productId }),
     // 净值管理
-    getNavData: (productId, params) => call("get", `/admin/plugins/${PLUGIN_ID}/products/${productId}/nav`, void 0, params),
-    createNavData: (productId, data) => call("post", `/admin/plugins/${PLUGIN_ID}/products/${productId}/nav`, data),
-    updateNavData: (id, data) => call("put", `/admin/plugins/${PLUGIN_ID}/nav/${id}`, data),
+    getNavData: (productId, params) => call("get", `${P}/products/${productId}/nav`, void 0, params),
+    createNavData: (productId, data) => call("post", `${P}/products/${productId}/nav`, data),
+    updateNavData: (id, data) => call("put", `${P}/nav/${id}`, data),
     // 重算
-    triggerRecalculate: (params) => call("post", `/admin/plugins/${PLUGIN_ID}/recalculate`, params),
-    recalculateRiskMetric: (params) => call("post", `/admin/plugins/${PLUGIN_ID}/recalculate-risk-metric`, params),
+    triggerRecalculate: (params) => call("post", `${P}/recalculate`, params),
+    recalculateRiskMetric: (params) => call("post", `${P}/recalculate-risk-metric`, params),
     // 客户自选
-    getCustomerProducts: (params) => call("get", `/admin/plugins/${PLUGIN_ID}/customer-products`, void 0, params),
+    getCustomerProducts: (params) => call("get", `${P}/customer-products`, void 0, params),
     // 统计（仪表盘）
-    getStatsOverview: () => call("get", `/admin/plugins/${PLUGIN_ID}/stats/overview`),
-    getStatsAnomalies: (limit = 10) => call("get", `/admin/plugins/${PLUGIN_ID}/stats/anomalies`, void 0, { limit }),
+    getStatsOverview: () => call("get", `${P}/stats/overview`),
+    getStatsAnomalies: (limit = 10) => call("get", `${P}/stats/anomalies`, void 0, { limit }),
     // 指标中心
-    getMetricAggregate: (productId, period) => call("get", `/admin/plugins/${PLUGIN_ID}/risk-metrics/admin/aggregate`, void 0, { productId, period }),
-    getMetricTrend: (productId) => call("get", `/admin/plugins/${PLUGIN_ID}/risk-metrics/admin/trend`, void 0, { productId }),
-    getMetricPeers: (period, metricName, limit = 50) => call("get", `/admin/plugins/${PLUGIN_ID}/risk-metrics/admin/peers`, void 0, { period, metricName, limit }),
+    getMetricAggregate: (productId, period) => call("get", `${P}/risk-metrics/admin/aggregate`, void 0, { productId, period }),
+    getMetricTrend: (productId) => call("get", `${P}/risk-metrics/admin/trend`, void 0, { productId }),
+    getMetricPeers: (period, metricName, limit = 50) => call("get", `${P}/risk-metrics/admin/peers`, void 0, { period, metricName, limit }),
     // 采集与校验
-    collectProduct: (source, query) => call("post", `/admin/plugins/${PLUGIN_ID}/products/collect`, { source, query }),
-    collectConfirm: (data) => call("post", `/admin/plugins/${PLUGIN_ID}/products/collect/confirm`, data)
+    collectProduct: (source, query) => call("post", `${P}/products/collect`, { source, query }),
+    collectConfirm: (data) => call("post", `${P}/products/collect/confirm`, data)
   };
 };
 const StatCards = () => {

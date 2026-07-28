@@ -1,2 +1,2 @@
-declare const NavTab: () => import("react/jsx-runtime").JSX.Element;
+declare const NavTab: () => import("react").JSX.Element;
 export default NavTab;

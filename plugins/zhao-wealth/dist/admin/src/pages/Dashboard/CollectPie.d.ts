@@ -1,2 +1,2 @@
-declare const CollectPie: () => import("react/jsx-runtime").JSX.Element;
+declare const CollectPie: () => import("react").JSX.Element;
 export default CollectPie;
