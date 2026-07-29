@@ -9021,7 +9021,7 @@ class BaseCollector {
     throw new Error("Method not implemented");
   }
 }
-const CHROME_PATH = "C:\\Users\\Administrator\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe";
+const CHROME_PATH = process.env.PLAYWRIGHT_CHROME_PATH || (process.platform === "win32" ? "C:\\Users\\Administrator\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe" : "/usr/bin/google-chrome");
 const PAGE_TIMEOUT = 3e4;
 let browser = null;
 let initPromise = null;
@@ -9032,8 +9032,8 @@ async function initBrowser() {
     try {
       browser = await playwright.chromium.launch({
         executablePath: CHROME_PATH,
-        headless: false,
-        args: ["--disable-blink-features=AutomationControlled"]
+        headless: process.platform !== "win32",
+        args: ["--disable-blink-features=AutomationControlled", "--no-sandbox"]
       });
       console.log("[zhao-wealth] Playwright Browser 已启动");
       return browser;

@@ -1,6 +1,8 @@
 import { Browser, Page } from 'playwright';
 /**
- * 初始化 Browser 单例（headed 模式，复用本机 Chrome）
+ * 初始化 Browser 单例
+ * Windows: headed 模式（复用本机 Chrome，用于调试）
+ * Linux:   headless 模式（服务器无显示环境）
  */
 export declare function initBrowser(): Promise<Browser | null>;
 /**

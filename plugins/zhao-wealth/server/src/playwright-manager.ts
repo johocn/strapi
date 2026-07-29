@@ -2,14 +2,23 @@
 
 import { chromium, type Browser, type Page } from 'playwright';
 
-const CHROME_PATH = 'C:\\Users\\Administrator\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe';
+// Chrome 路径：优先用环境变量 PLAYWRIGHT_CHROME_PATH，否则按平台选默认路径
+// Windows: C:\Users\Administrator\AppData\Local\Google\Chrome\Application\chrome.exe
+// Linux:   /usr/bin/google-chrome 或 /usr/bin/chromium-browser
+const CHROME_PATH =
+  process.env.PLAYWRIGHT_CHROME_PATH ||
+  (process.platform === 'win32'
+    ? 'C:\\Users\\Administrator\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe'
+    : '/usr/bin/google-chrome');
 const PAGE_TIMEOUT = 30000;
 
 let browser: Browser | null = null;
 let initPromise: Promise<Browser | null> | null = null;
 
 /**
- * 初始化 Browser 单例（headed 模式，复用本机 Chrome）
+ * 初始化 Browser 单例
+ * Windows: headed 模式（复用本机 Chrome，用于调试）
+ * Linux:   headless 模式（服务器无显示环境）
  */
 export async function initBrowser(): Promise<Browser | null> {
   if (browser) return browser;
@@ -19,8 +28,8 @@ export async function initBrowser(): Promise<Browser | null> {
     try {
       browser = await chromium.launch({
         executablePath: CHROME_PATH,
-        headless: false,
-        args: ['--disable-blink-features=AutomationControlled'],
+        headless: process.platform !== 'win32',
+        args: ['--disable-blink-features=AutomationControlled', '--no-sandbox'],
       });
       console.log('[zhao-wealth] Playwright Browser 已启动');
       return browser;
