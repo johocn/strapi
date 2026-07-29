@@ -1,6 +1,7 @@
 import Redis from "ioredis";
 import Queue from "bull";
 import { chromium } from "playwright";
+import { existsSync } from "fs";
 const kind$9 = "collectionType";
 const collectionName$9 = "wealth_companies";
 const info$9 = { "singularName": "wealth-company", "pluralName": "wealth-companies", "displayName": "理财公司", "description": "银行理财公司信息管理" };
@@ -9016,24 +9017,66 @@ class BaseCollector {
     throw new Error("Method not implemented");
   }
 }
-const CHROME_PATH = process.env.PLAYWRIGHT_CHROME_PATH || (process.platform === "win32" ? "C:\\Users\\Administrator\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe" : "/usr/bin/google-chrome");
+const LINUX_CHROME_PATHS = [
+  "/usr/bin/google-chrome",
+  "/usr/bin/google-chrome-stable",
+  "/usr/bin/chromium-browser",
+  "/usr/bin/chromium",
+  "/snap/bin/chromium"
+];
+const WINDOWS_CHROME_PATHS = [
+  "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+  "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+  "C:\\Users\\Administrator\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe"
+];
+function detectChromePath() {
+  const envPath = process.env.PLAYWRIGHT_CHROME_PATH;
+  if (envPath) {
+    if (existsSync(envPath)) return envPath;
+    console.warn(`[zhao-wealth] PLAYWRIGHT_CHROME_PATH=${envPath} 不存在，将尝试其他路径`);
+  }
+  const paths = process.platform === "win32" ? WINDOWS_CHROME_PATHS : LINUX_CHROME_PATHS;
+  for (const p of paths) {
+    if (existsSync(p)) return p;
+  }
+  return void 0;
+}
 const PAGE_TIMEOUT = 3e4;
 let browser = null;
 let initPromise = null;
+let initFailed = false;
 async function initBrowser() {
   if (browser) return browser;
+  if (initFailed) return null;
   if (initPromise) return initPromise;
   initPromise = (async () => {
     try {
-      browser = await chromium.launch({
-        executablePath: CHROME_PATH,
+      const executablePath = detectChromePath();
+      const launchOptions = {
         headless: process.platform !== "win32",
-        args: ["--disable-blink-features=AutomationControlled", "--no-sandbox"]
-      });
+        args: ["--disable-blink-features=AutomationControlled", "--no-sandbox"],
+        ...executablePath ? { executablePath } : {}
+      };
+      if (executablePath) {
+        console.log(`[zhao-wealth] Playwright 使用 Chrome: ${executablePath}`);
+      } else {
+        console.log("[zhao-wealth] 未找到系统 Chrome，尝试使用 Playwright 自带 chromium");
+      }
+      browser = await chromium.launch(launchOptions);
       console.log("[zhao-wealth] Playwright Browser 已启动");
       return browser;
     } catch (error) {
-      console.error(`[zhao-wealth] Playwright Browser 启动失败: ${error.message}`);
+      const msg = error instanceof Error ? error.message : String(error);
+      console.error(`[zhao-wealth] Playwright Browser 启动失败: ${msg}`);
+      console.error("[zhao-wealth] 修复指引（任选其一）:");
+      console.error("  方案1: 安装系统 Chrome");
+      console.error("    CentOS/RHEL: yum install -y google-chrome-stable");
+      console.error("    Ubuntu/Debian: apt install -y chromium-browser");
+      console.error("  方案2: 安装 Playwright 自带 chromium");
+      console.error("    npx playwright install chromium");
+      console.error("  方案3: 在 .env 中设置 PLAYWRIGHT_CHROME_PATH 指向 Chrome 路径");
+      console.error("  注: 采集功能可选，不影响 Strapi 主功能；修复后重启 Strapi 即可");
+      initFailed = true;
       initPromise = null;
       return null;
     }
@@ -9068,6 +9111,7 @@ async function destroyBrowser() {
     }
     browser = null;
     initPromise = null;
+    initFailed = false;
     console.log("[zhao-wealth] Playwright Browser 已关闭");
   }
 }
