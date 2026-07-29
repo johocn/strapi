@@ -131,7 +131,9 @@ build/
 .strapi-updater.json
 .strapi-cloud.json
 
-# 服务器内存不足，允许构建产物提交
+# 服务器内存不足，无法在服务器上执行 npm run build
+# 构建策略：本地构建成功后上传仓库，服务器直接 git pull 拉取构建产物
+# 因此放行以下构建产物（dist/、build/、plugins/*/dist/）提交到仓库
 !dist/
 !build/
 !plugins/*/dist/
