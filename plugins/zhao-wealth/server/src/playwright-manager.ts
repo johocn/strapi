@@ -82,11 +82,12 @@ export async function initBrowser(): Promise<Browser | null> {
       const msg = error instanceof Error ? error.message : String(error);
       console.error(`[zhao-wealth] Playwright Browser 启动失败: ${msg}`);
       console.error('[zhao-wealth] 修复指引（任选其一）:');
-      console.error('  方案1: 安装系统 Chrome');
+      console.error('  方案1: 安装 Playwright 自带 chromium（推荐，自带依赖检测）');
+      console.error('    npx playwright install-deps chromium  # 安装系统依赖库（需 root）');
+      console.error('    npx playwright install chromium       # 下载 chromium 二进制');
+      console.error('  方案2: 安装系统 Chrome');
       console.error('    CentOS/RHEL: yum install -y google-chrome-stable');
       console.error('    Ubuntu/Debian: apt install -y chromium-browser');
-      console.error('  方案2: 安装 Playwright 自带 chromium');
-      console.error('    npx playwright install chromium');
       console.error('  方案3: 在 .env 中设置 PLAYWRIGHT_CHROME_PATH 指向 Chrome 路径');
       console.error('  注: 采集功能可选，不影响 Strapi 主功能；修复后重启 Strapi 即可');
       initFailed = true;
