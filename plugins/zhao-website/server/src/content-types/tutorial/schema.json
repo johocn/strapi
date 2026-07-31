@@ -53,6 +53,19 @@
       "type": "string",
       "maxLength": 50
     },
+    "videoUrl": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "thumbnailUrl": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "brandVoiceRef": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-website.brand-voice"
+    },
     "difficulty": {
       "type": "enumeration",
       "enum": ["beginner", "intermediate", "advanced"],

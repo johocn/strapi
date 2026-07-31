@@ -21,6 +21,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     return this.ensureDefault(siteId);
   },
 
+  async get(siteId: number): Promise<any> {
+    return this.find(siteId);
+  },
+
   async update(siteId: number, data: any): Promise<any> {
     const existing = await this.ensureDefault(siteId);
     return strapi.db.query(UID).update({

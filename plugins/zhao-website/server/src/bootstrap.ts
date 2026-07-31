@@ -70,6 +70,28 @@ const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
     return next();
   });
 
+  // 注册 301 重定向中间件
+  try {
+    const koaApp = strapi.server.app as any;
+    koaApp.use(async (ctx: any, next: any) => {
+      const siteId = ctx.state?.siteId;
+      if (siteId && ctx.method === "GET" && !ctx.path.startsWith("/api/") && !ctx.path.startsWith("/admin")) {
+        try {
+          const match = await strapi.plugin("zhao-website").service("redirect").match(siteId, ctx.path);
+          if (match) {
+            ctx.status = match.statusCode;
+            ctx.redirect(match.toUrl);
+            return;
+          }
+        } catch {}
+      }
+      return next();
+    });
+    if (!isTest) logger.info("[zhao-website] Redirect middleware registered");
+  } catch (err) {
+    logger.error("[zhao-website] Redirect middleware registration failed:", err);
+  }
+
   // 4. SIGTERM flush（异步写入队列 flush）
   process.on("SIGTERM", async () => {
     logger.info("[zhao-website] SIGTERM received, flushing queues...");

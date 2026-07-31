@@ -1,7 +1,6 @@
 import type { Core } from "@strapi/strapi";
 
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
-  // ===== Organization =====
   buildOrganization(brandInfo: any, seoConfig: any): any {
     const org: any = {
       "@context": "https://schema.org",
@@ -26,7 +25,21 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     return org;
   },
 
-  // ===== Article =====
+  buildLocalBusiness(brandInfo: any, seoConfig: any): any {
+    const org = this.buildOrganization(brandInfo, seoConfig);
+    org["@type"] = seoConfig?.organizationType || "LocalBusiness";
+    if (seoConfig?.geoPosition) {
+      const coords = seoConfig.geoPosition.split(";").map((s: string) => s.trim());
+      if (coords.length >= 2) {
+        org.geo = { "@type": "GeoCoordinates", latitude: coords[0], longitude: coords[1] };
+      }
+    }
+    if (seoConfig?.geoPlacename) {
+      org.address = { "@type": "PostalAddress", addressLocality: seoConfig.geoPlacename };
+    }
+    return org;
+  },
+
   buildArticle(article: any, brandInfo: any): any {
     const schema: any = {
       "@context": "https://schema.org",
@@ -48,6 +61,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     if (brandInfo?.companyName) schema.publisher = {
       "@type": "Organization",
       name: brandInfo.companyName,
+      logo: {
+        "@type": "ImageObject",
+        url: brandInfo?.logo?.url || "",
+      },
     };
     if (article.brandVoiceRef?.content) {
       schema.brand = {
@@ -59,7 +76,6 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     return schema;
   },
 
-  // ===== Product =====
   buildProduct(product: any, brandInfo: any): any {
     const schema: any = {
       "@context": "https://schema.org",
@@ -68,7 +84,6 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     };
     if (product.description) schema.description = product.description;
     if (product.coverImage) schema.image = product.coverImage.url;
-    if (product.brand) schema.brand = { "@type": "Brand", name: product.brand };
     if (product.specifications) {
       schema.additionalProperty = product.specifications.map((s: any) => ({
         "@type": "PropertyValue",
@@ -76,14 +91,31 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         value: s.value,
       }));
     }
-    if (product.priceRange) schema.offers = {
-      "@type": "Offer",
-      priceSpecification: { "@type": "PriceSpecification", priceCurrency: "CNY" },
-    };
+    if (product.price || product.priceRange) {
+      schema.offers = {
+        "@type": "Offer",
+        price: String(product.price || "0"),
+        priceCurrency: product.currency || "CNY",
+        availability: product.availability === "out_of_stock"
+          ? "https://schema.org/OutOfStock"
+          : product.availability === "pre_order"
+            ? "https://schema.org/PreOrder"
+            : "https://schema.org/InStock",
+      };
+      if (product.slug) {
+        schema.offers.url = `${brandInfo?.url || ""}/products/${product.slug}`;
+      }
+    }
+    if (product.brandVoiceRef?.content) {
+      schema.brand = {
+        "@type": "Brand",
+        name: product.brandVoiceRef.name,
+        description: product.brandVoiceRef.content,
+      };
+    }
     return schema;
   },
 
-  // ===== HowTo (tutorial) =====
   buildHowTo(tutorial: any): any {
     const schema: any = {
       "@context": "https://schema.org",
@@ -100,12 +132,18 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       }));
     }
     if (tutorial.estimatedTime) schema.totalTime = tutorial.estimatedTime;
+    if (tutorial.brandVoiceRef?.content) {
+      schema.brand = {
+        "@type": "Brand",
+        name: tutorial.brandVoiceRef.name,
+        description: tutorial.brandVoiceRef.content,
+      };
+    }
     return schema;
   },
 
-  // ===== FAQ =====
   buildFAQ(faqs: any[]): any {
-    return {
+    const schema: any = {
       "@context": "https://schema.org",
       "@type": "FAQPage",
       mainEntity: faqs.map((f) => ({
@@ -114,9 +152,29 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         acceptedAnswer: { "@type": "Answer", text: f.answer },
       })),
     };
+    if (faqs[0]?.brandVoiceRef?.content) {
+      schema.brand = {
+        "@type": "Brand",
+        name: faqs[0].brandVoiceRef.name,
+        description: faqs[0].brandVoiceRef.content,
+      };
+    }
+    return schema;
   },
 
-  // ===== BreadcrumbList =====
+  buildVideo(tutorial: any): any {
+    const schema: any = {
+      "@context": "https://schema.org",
+      "@type": "VideoObject",
+      name: tutorial.title,
+      uploadDate: tutorial.publishedAt,
+    };
+    if (tutorial.description) schema.description = tutorial.description;
+    if (tutorial.thumbnailUrl) schema.thumbnailUrl = tutorial.thumbnailUrl;
+    if (tutorial.videoUrl) schema.contentUrl = tutorial.videoUrl;
+    return schema;
+  },
+
   buildBreadcrumb(items: Array<{ name: string; url: string }>): any {
     return {
       "@context": "https://schema.org",
@@ -130,7 +188,6 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     };
   },
 
-  // ===== WebSite =====
   buildWebSite(seoConfig: any, siteUrl: string): any {
     return {
       "@context": "https://schema.org",

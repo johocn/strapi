@@ -146,6 +146,25 @@
       "target": "plugin::zhao-website.case",
       "mappedBy": "relatedProducts"
     },
+    "price": {
+      "type": "decimal",
+      "default": 0
+    },
+    "currency": {
+      "type": "string",
+      "maxLength": 10,
+      "default": "CNY"
+    },
+    "availability": {
+      "type": "enumeration",
+      "enum": ["in_stock", "out_of_stock", "pre_order"],
+      "default": "in_stock"
+    },
+    "brandVoiceRef": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-website.brand-voice"
+    },
     "structuredData": {
       "type": "json"
     },
