@@ -83,15 +83,29 @@ const SEOOutputPage = () => {
   );
 
   return (
-    <Tabs
-      activeKey={activeTab}
-      onChange={setActiveTab}
-      items={[
-        { key: 'sitemap', label: 'sitemap.xml', children: renderTab('sitemap.xml', sitemapFetch) },
-        { key: 'robots', label: 'robots.txt', children: renderTab('robots.txt', robotsFetch) },
-        { key: 'llms', label: 'llms.txt', children: renderTab('llms.txt', llmsFetch) },
-      ]}
-    />
+    <>
+      <Tabs
+        activeKey={activeTab}
+        onChange={setActiveTab}
+        items={[
+          { key: 'sitemap', label: 'sitemap.xml', children: renderTab('sitemap.xml', sitemapFetch) },
+          { key: 'robots', label: 'robots.txt', children: renderTab('robots.txt', robotsFetch) },
+          { key: 'llms', label: 'llms.txt', children: renderTab('llms.txt', llmsFetch) },
+        ]}
+      />
+      {/* 结构化数据校验 */}
+      <Card title="结构化数据校验" size="small" style={{ marginTop: 16 }}>
+        <Space direction="vertical">
+          <Typography.Text>使用外部工具校验你的结构化数据：</Typography.Text>
+          <a href="https://search.google.com/test/rich-results" target="_blank" rel="noopener noreferrer">
+            Google Rich Results Test
+          </a>
+          <a href="https://validator.schema.org/" target="_blank" rel="noopener noreferrer">
+            Schema.org Validator
+          </a>
+        </Space>
+      </Card>
+    </>
   );
 };
 
