@@ -22,6 +22,10 @@ import robots from "./robots";
 import searchEnginePush from "./search-engine-push";
 import studioBridge from "./studio-bridge";
 import brandVoice from "./brand-voice";
+import seoMeta from "./seo-meta";
+import cache from "./cache";
+import feed from "./feed";
+import redirect from "./redirect";
 
 export default {
   "seo-config": seoConfig,
@@ -48,4 +52,8 @@ export default {
   "search-engine-push": searchEnginePush,
   "studio-bridge": studioBridge,
   "brand-voice": brandVoice,
+  "seo-meta": seoMeta,
+  "cache": cache,
+  "feed": feed,
+  "redirect": redirect,
 };

@@ -17,6 +17,7 @@ import knowledgeRelation from "./knowledge-relation/schema.json";
 import aiContentSummary from "./ai-content-summary/schema.json";
 import firstTruthPolicy from "./first-truth-policy/schema.json";
 import brandVoice from "./brand-voice/schema.json";
+import redirectRule from "./redirect-rule/schema.json";
 
 export default {
   "seo-config": { schema: seoConfig },
@@ -38,4 +39,5 @@ export default {
   "ai-content-summary": { schema: aiContentSummary },
   "first-truth-policy": { schema: firstTruthPolicy },
   "brand-voice": { schema: brandVoice },
+  "redirect-rule": { schema: redirectRule },
 };

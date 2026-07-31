@@ -40,6 +40,12 @@ export default () => ({
     publicRoute("GET", "/llms.txt", "seo-output.llmsTxt"),
     publicRoute("GET", "/manifest.json", "seo-output.manifest"),
     publicRoute("GET", "/site-info", "site-info.info"),
+    publicRoute("GET", "/seo-meta", "seo-meta.meta"),
+    publicRoute("GET", "/knowledge-graph.json", "knowledge-graph.exportGraph"),
+    publicRoute("GET", "/knowledge-graph/:slug", "knowledge-graph.exportEntity"),
+    publicRoute("GET", "/facts.json", "knowledge-graph.exportFacts"),
+    publicRoute("GET", "/feed.xml", "feed.rss"),
+    publicRoute("GET", "/atom.xml", "feed.atom"),
     // 品牌话术公开路由（GEO AI 读取）
     publicRoute("GET", "/brand-voices", "brand-voice.publicList"),
     publicRoute("GET", "/brand-voices/by-category/:category", "brand-voice.publicByCategory"),

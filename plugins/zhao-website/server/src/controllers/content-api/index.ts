@@ -8,6 +8,9 @@ import download from "./download";
 import lead from "./lead";
 import seoOutput from "./seo-output";
 import siteInfo from "./site-info";
+import seoMeta from "./seo-meta";
+import knowledgeGraph from "./knowledge-graph";
+import feed from "./feed";
 
 export default {
   article,
@@ -20,4 +23,7 @@ export default {
   lead,
   "seo-output": seoOutput,
   "site-info": siteInfo,
+  "seo-meta": seoMeta,
+  "knowledge-graph": knowledgeGraph,
+  "feed": feed,
 };
