@@ -130,37 +130,51 @@ openssl rand -base64 32
 
 每个 secret 变量生成一次新的，不要复用。`APP_KEYS` 用逗号分隔多个 key（建议 4 个）。
 
-### 5. 构建插件
+### 5. 本地构建（生产环境）
 
-**重要**：插件的 `dist` 目录不会提交到仓库，必须在本地/服务器构建。
+> **重要**：构建产物（`dist/`、`build/`、`plugins/*/dist/`）已提交到 Git 仓库。
+> 服务器拉取代码后直接使用，无需在服务器上执行任何构建命令。
+> 本地开发使用 `npm run dev` 即可热重载，无需手动构建。
 
-#### Linux/Mac 批量构建
+#### Windows 一键构建
 
 ```bash
+build-prod.bat
+```
+
+`build-prod.bat` 自动完成：
+1. 检查 `node_modules` 是否存在，缺失则自动安装
+2. 构建所有插件（`plugins/zhao-*/dist/`）
+3. 构建 Strapi 主项目（`dist/`、`build/`）
+4. 构建完成后提示 git 提交命令
+
+#### Linux/Mac 构建
+
+```bash
+# 构建所有插件
 chmod +x scripts/build-plugins.sh
 ./scripts/build-plugins.sh
+
+# 构建 Strapi 主项目
+npm run build
 ```
 
-#### Windows 批量构建
+#### 构建后提交到仓库
 
-```powershell
-.\scripts\build-plugins.ps1
+```bash
+git add dist build plugins/*/dist
+git commit -m "build: production build"
+git push origin main
 ```
 
-#### 单个插件构建
+#### 单个插件构建（开发调试）
 
 ```bash
 cd plugins/zhao-auth
 npx strapi-plugin build
 ```
 
-### 6. 构建 Strapi 项目
-
-```bash
-npm run build
-```
-
-### 7. 启动项目
+### 6. 启动项目
 
 ```bash
 # 开发模式（热重载，监听插件源码变更）
@@ -258,7 +272,7 @@ admin 用户凭证从环境变量 `INIT_ADMIN_USERNAME` / `INIT_ADMIN_EMAIL` / `
 ### ensure-admin.js — 创建第一个 admin 用户
 
 ```bash
-# 确保项目已构建
+# 确保项目已构建（若构建产物不存在，先运行 build-prod.bat）
 npm run build
 
 # 运行脚本（通过环境变量传凭证）
@@ -395,7 +409,7 @@ Could not resolve "../../plugins/zhao-channel/./dist/admin/index.mjs"
 ```
 
 **解决方案**：
-1. 确保已构建插件：`./scripts/build-plugins.sh`
+1. 确保已构建插件：本地运行 `build-prod.bat`（Windows）或 `./scripts/build-plugins.sh && npm run build`（Linux/Mac）
 2. 检查 `config/plugins.ts` 中的 `resolve` 路径是否正确
 
 ### Q2: 构建产物缺失

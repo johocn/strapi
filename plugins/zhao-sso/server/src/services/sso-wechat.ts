@@ -176,13 +176,21 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       return { userId: binding.user.id, isNew: false };
     }
 
+    // 生成用户名：wx_昵称前12位_8位uuid短码，保证唯一性且可读
+    // 昵称清洗后若为空（如全为表情符号），用 wx_user 兜底
+    const rawNickname = (userInfo?.nickname || "wx_user").replace(/[^\w\u4e00-\u9fa5]/g, "").substring(0, 12) || "wx_user";
+    const shortId = uuidv4().replace(/-/g, "").substring(0, 8);
+    const username = `wx_${rawNickname}_${shortId}`;
+
     const user = await strapi.db.query(USER_UID).create({
       data: {
         uuid: uuidv4(),
+        username,
         nickname: userInfo?.nickname || null,
         avatar_url: userInfo?.headimgurl || null,
         status: "active",
         login_count: 0,
+        register_channel: `sso_wechat_${appType}`,
       },
     });
 

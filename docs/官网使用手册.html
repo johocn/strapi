@@ -1,0 +1,3069 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>官网使用手册 — GEO/SEO 内容发布全景指南</title>
+<style>
+  :root {
+    --primary: #1a56db;
+    --primary-light: #e0e7ff;
+    --success: #059669;
+    --success-light: #d1fae5;
+    --warning: #d97706;
+    --warning-light: #fef3c7;
+    --danger: #dc2626;
+    --danger-light: #fee2e2;
+    --info: #0891b2;
+    --info-light: #cffafe;
+    --bg: #f8fafc;
+    --surface: #ffffff;
+    --border: #e2e8f0;
+    --text: #1e293b;
+    --text-muted: #64748b;
+    --text-light: #94a3b8;
+    --sidebar-w: 280px;
+    --radius: 8px;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans CJK SC", "Microsoft YaHei", sans-serif;
+    --mono: "JetBrains Mono", "Fira Code", "Cascadia Code", Consolas, monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.75;
+    font-size: 15px;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    position: fixed;
+    top: 0; left: 0;
+    width: var(--sidebar-w);
+    height: 100vh;
+    background: #0f172a;
+    overflow-y: auto;
+    padding: 24px 0;
+    z-index: 100;
+  }
+  .sidebar::-webkit-scrollbar { width: 6px; }
+  .sidebar::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+  .sidebar-brand {
+    color: #f1f5f9;
+    font-size: 18px;
+    font-weight: 700;
+    padding: 0 24px 20px;
+    border-bottom: 1px solid #1e293b;
+    margin-bottom: 16px;
+  }
+  .sidebar-brand small { display: block; font-size: 12px; color: #64748b; font-weight: 400; margin-top: 4px; }
+  .sidebar-nav { list-style: none; }
+  .sidebar-nav li { margin: 0; }
+  .sidebar-nav a {
+    display: block;
+    padding: 8px 24px;
+    color: #94a3b8;
+    text-decoration: none;
+    font-size: 13.5px;
+    transition: all .15s;
+    border-left: 3px solid transparent;
+  }
+  .sidebar-nav a:hover { color: #f1f5f9; background: #1e293b; border-left-color: var(--primary); }
+  .sidebar-nav a.section-main { color: #f1f5f9; font-weight: 600; padding-left: 20px; }
+  .sidebar-nav a.section-sub { padding-left: 36px; font-size: 13px; }
+  .sidebar-nav .nav-group { margin-bottom: 8px; }
+  .sidebar-nav .nav-divider { height: 1px; background: #1e293b; margin: 12px 16px; }
+
+  /* Main content */
+  .main {
+    margin-left: var(--sidebar-w);
+    padding: 48px 56px;
+    max-width: 1100px;
+  }
+
+  /* Typography */
+  h1 { font-size: 32px; font-weight: 800; margin-bottom: 8px; letter-spacing: -0.5px; }
+  h2 {
+    font-size: 26px; font-weight: 700; margin-top: 56px; margin-bottom: 20px;
+    padding-bottom: 12px; border-bottom: 2px solid var(--primary);
+    color: #0f172a; letter-spacing: -0.3px;
+  }
+  h2 .ch-num { color: var(--primary); margin-right: 8px; }
+  h3 { font-size: 20px; font-weight: 700; margin-top: 36px; margin-bottom: 14px; color: #1e293b; }
+  h4 { font-size: 16px; font-weight: 600; margin-top: 24px; margin-bottom: 10px; color: #334155; }
+  p { margin-bottom: 12px; }
+  a { color: var(--primary); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  strong { font-weight: 700; color: #0f172a; }
+  code {
+    font-family: var(--mono);
+    background: var(--primary-light);
+    color: var(--primary);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 13px;
+  }
+  pre {
+    background: #0f172a;
+    color: #e2e8f0;
+    padding: 16px 20px;
+    border-radius: var(--radius);
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.6;
+    margin: 16px 0;
+  }
+  pre code { background: none; color: inherit; padding: 0; }
+
+  /* Cover */
+  .cover {
+    text-align: center;
+    padding: 80px 0 60px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 48px;
+  }
+  .cover h1 { font-size: 42px; margin-bottom: 16px; }
+  .cover .subtitle { font-size: 18px; color: var(--text-muted); margin-bottom: 32px; }
+  .cover .meta { display: inline-flex; gap: 32px; font-size: 14px; color: var(--text-light); }
+  .cover .meta span { display: flex; align-items: center; gap: 6px; }
+
+  /* Callouts */
+  .callout {
+    padding: 16px 20px;
+    border-radius: var(--radius);
+    margin: 16px 0;
+    border-left: 4px solid;
+  }
+  .callout-title { font-weight: 700; margin-bottom: 6px; font-size: 14px; }
+  .callout p { margin-bottom: 6px; }
+  .callout p:last-child { margin-bottom: 0; }
+  .callout-info { background: var(--info-light); border-color: var(--info); }
+  .callout-info .callout-title { color: var(--info); }
+  .callout-warning { background: var(--warning-light); border-color: var(--warning); }
+  .callout-warning .callout-title { color: var(--warning); }
+  .callout-danger { background: var(--danger-light); border-color: var(--danger); }
+  .callout-danger .callout-title { color: var(--danger); }
+  .callout-success { background: var(--success-light); border-color: var(--success); }
+  .callout-success .callout-title { color: var(--success); }
+
+  /* Tables */
+  .table-wrap { overflow-x: auto; margin: 16px 0; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+    background: var(--surface);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06);
+  }
+  th {
+    background: #0f172a;
+    color: #f1f5f9;
+    padding: 10px 14px;
+    text-align: left;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:nth-child(even) td { background: #f8fafc; }
+  td code { font-size: 12px; }
+
+  /* Field card (四件套) */
+  .field-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    margin: 16px 0;
+    box-shadow: 0 1px 2px rgba(0,0,0,.04);
+  }
+  .field-card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .field-card-header .field-name { font-family: var(--mono); font-size: 14px; font-weight: 700; color: var(--primary); }
+  .field-card-header .field-type { font-size: 12px; color: var(--text-muted); background: var(--bg); padding: 2px 8px; border-radius: 4px; }
+  .field-card-header .field-required { font-size: 12px; color: var(--danger); font-weight: 600; }
+  .field-card-body { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 24px; }
+  .field-card-body .field-item { }
+  .field-card-body .field-item-label { font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
+  .field-card-body .field-item-value { font-size: 13.5px; line-height: 1.6; }
+  .field-card-body .field-item-value.danger { color: var(--danger); }
+  .field-card-full { grid-column: 1 / -1; }
+
+  /* Steps */
+  .steps { list-style: none; counter-reset: step; margin: 16px 0; }
+  .steps li {
+    counter-increment: step;
+    padding: 12px 0 12px 48px;
+    position: relative;
+    border-left: 2px solid var(--border);
+    margin-left: 20px;
+  }
+  .steps li::before {
+    content: counter(step);
+    position: absolute;
+    left: -14px;
+    top: 12px;
+    width: 28px; height: 28px;
+    background: var(--primary);
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .steps li strong { display: block; margin-bottom: 2px; }
+
+  /* Checklist */
+  .checklist { list-style: none; margin: 12px 0; }
+  .checklist li {
+    padding: 6px 0 6px 28px;
+    position: relative;
+    font-size: 14px;
+  }
+  .checklist li::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 8px;
+    width: 18px; height: 18px;
+    border: 2px solid var(--success);
+    border-radius: 4px;
+  }
+  .checklist li::after {
+    content: "";
+    position: absolute;
+    left: 5px; top: 12px;
+    width: 5px; height: 9px;
+    border: solid var(--success);
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+
+  /* Case card */
+  .case-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin: 24px 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,.06);
+  }
+  .case-card-header {
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    color: #f1f5f9;
+    padding: 20px 24px;
+  }
+  .case-card-header .case-industry { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--primary-light); margin-bottom: 4px; }
+  .case-card-header .case-title { font-size: 20px; font-weight: 700; }
+  .case-card-body { padding: 20px 24px; }
+  .case-card-body h4 { margin-top: 16px; }
+
+  /* Badges */
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .badge-required { background: var(--danger-light); color: var(--danger); }
+  .badge-optional { background: var(--bg); color: var(--text-muted); }
+  .badge-seo { background: var(--primary-light); color: var(--primary); }
+  .badge-geo { background: var(--success-light); color: var(--success); }
+
+  /* Flow diagram */
+  .flow-diagram {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin: 20px 0;
+    text-align: center;
+  }
+  .flow-row { display: flex; justify-content: center; align-items: center; gap: 8px; margin: 8px 0; flex-wrap: wrap; }
+  .flow-node {
+    background: var(--primary-light);
+    color: var(--primary);
+    padding: 8px 16px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    font-weight: 600;
+    border: 1px solid var(--primary);
+  }
+  .flow-node.success { background: var(--success-light); color: var(--success); border-color: var(--success); }
+  .flow-node.warning { background: var(--warning-light); color: var(--warning); border-color: var(--warning); }
+  .flow-arrow { color: var(--text-light); font-size: 18px; }
+
+  /* Print */
+  @media print {
+    .sidebar { display: none; }
+    .main { margin-left: 0; padding: 20px; }
+    h2 { page-break-before: auto; }
+    .field-card, .case-card { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Sidebar Navigation -->
+<nav class="sidebar">
+  <div class="sidebar-brand">
+    官网使用手册
+    <small>GEO/SEO 内容发布全景指南</small>
+  </div>
+  <ul class="sidebar-nav">
+    <li class="nav-group">
+      <a href="#ch1" class="section-main">第一章 系统总览</a>
+      <a href="#ch1-1" class="section-sub">1.1 GEO 体系定位</a>
+      <a href="#ch1-2" class="section-sub">1.2 内容类型矩阵</a>
+      <a href="#ch1-3" class="section-sub">1.3 发布闭环机制</a>
+      <a href="#ch1-4" class="section-sub">1.4 联动逻辑</a>
+    </li>
+    <li class="nav-group">
+      <a href="#ch2" class="section-main">第二章 资讯文章</a>
+      <a href="#ch2-1" class="section-sub">2.1 设计目的</a>
+      <a href="#ch2-2" class="section-sub">2.2 运作原理</a>
+      <a href="#ch2-3" class="section-sub">2.3 适用人群</a>
+      <a href="#ch2-4" class="section-sub">2.4 字段说明</a>
+      <a href="#ch2-5" class="section-sub">2.5 发布流程</a>
+      <a href="#ch2-6" class="section-sub">2.6 闭环与禁忌</a>
+    </li>
+    <li class="nav-group">
+      <a href="#ch3" class="section-main">第三章 产品/方案</a>
+      <a href="#ch3-1" class="section-sub">3.1 设计目的</a>
+      <a href="#ch3-2" class="section-sub">3.2 运作原理</a>
+      <a href="#ch3-3" class="section-sub">3.3 适用人群</a>
+      <a href="#ch3-4" class="section-sub">3.4 字段说明</a>
+      <a href="#ch3-5" class="section-sub">3.5 发布流程</a>
+      <a href="#ch3-6" class="section-sub">3.6 闭环与禁忌</a>
+    </li>
+    <li class="nav-group">
+      <a href="#ch4" class="section-main">第四章 落地案例</a>
+      <a href="#ch4-1" class="section-sub">4.1 设计目的</a>
+      <a href="#ch4-2" class="section-sub">4.2 运作原理</a>
+      <a href="#ch4-3" class="section-sub">4.3 适用人群</a>
+      <a href="#ch4-4" class="section-sub">4.4 字段说明</a>
+      <a href="#ch4-5" class="section-sub">4.5 发布流程</a>
+      <a href="#ch4-6" class="section-sub">4.6 闭环与禁忌</a>
+    </li>
+    <li class="nav-group">
+      <a href="#ch5" class="section-main">第五章 教程/操作指南</a>
+      <a href="#ch5-1" class="section-sub">5.1 设计目的</a>
+      <a href="#ch5-2" class="section-sub">5.2 运作原理</a>
+      <a href="#ch5-3" class="section-sub">5.3 适用人群</a>
+      <a href="#ch5-4" class="section-sub">5.4 字段说明</a>
+      <a href="#ch5-5" class="section-sub">5.5 发布流程</a>
+      <a href="#ch5-6" class="section-sub">5.6 闭环与禁忌</a>
+    </li>
+    <li class="nav-group">
+      <a href="#ch6" class="section-main">第六章 常见问答</a>
+      <a href="#ch6-1" class="section-sub">6.1 设计目的</a>
+      <a href="#ch6-2" class="section-sub">6.2 运作原理</a>
+      <a href="#ch6-3" class="section-sub">6.3 适用人群</a>
+      <a href="#ch6-4" class="section-sub">6.4 字段说明</a>
+      <a href="#ch6-5" class="section-sub">6.5 发布流程</a>
+      <a href="#ch6-6" class="section-sub">6.6 闭环与禁忌</a>
+    </li>
+    <li class="nav-group">
+      <a href="#ch7" class="section-main">第七章 合规公示</a>
+      <a href="#ch7-1" class="section-sub">7.1 设计目的</a>
+      <a href="#ch7-2" class="section-sub">7.2 运作原理</a>
+      <a href="#ch7-3" class="section-sub">7.3 适用人群</a>
+      <a href="#ch7-4" class="section-sub">7.4 字段说明</a>
+      <a href="#ch7-5" class="section-sub">7.5 发布流程</a>
+      <a href="#ch7-6" class="section-sub">7.6 闭环与禁忌</a>
+    </li>
+    <li class="nav-divider"></li>
+    <li class="nav-group">
+      <a href="#ch8" class="section-main">第八章 行业示范案例</a>
+      <a href="#case-1" class="section-sub">案例一 SaaS 企业服务</a>
+      <a href="#case-2" class="section-sub">案例二 医疗器械</a>
+      <a href="#case-3" class="section-sub">案例三 教育培训</a>
+      <a href="#case-4" class="section-sub">案例四 工业制造</a>
+      <a href="#case-5" class="section-sub">案例五 电商平台</a>
+    </li>
+  </ul>
+</nav>
+
+<!-- Main Content -->
+<main class="main">
+
+<!-- Cover -->
+<div class="cover">
+  <h1>官网使用手册</h1>
+  <p class="subtitle">GEO/SEO 内容发布全景指南 — 从字段填写到流量闭环</p>
+  <div class="meta">
+    <span>版本 v2.0</span>
+    <span>更新日期 2026-07-31</span>
+    <span>适用系统 zhao-website 插件</span>
+  </div>
+</div>
+
+<!-- ==================== Chapter 1: System Overview ==================== -->
+<h2 id="ch1"><span class="ch-num">第一章</span>系统总览</h2>
+
+<h3 id="ch1-1">1.1 GEO 体系定位与核心逻辑</h3>
+
+<p>传统 SEO 解决的是"搜索引擎能不能找到你"的问题，GEO（Generative Engine Optimization）解决的是"AI 模型能不能正确理解你、引用你、推荐你"的问题。当用户向 ChatGPT、Perplexity、文心一言提问"XX 行业哪家公司靠谱"时，AI 的回答来自它训练和检索时抓取的网页内容。如果你的官网内容结构混乱、信息矛盾、缺乏机器可读的结构化数据，AI 就会跳过你或引用竞争对手。</p>
+
+<p>zhao-website 插件的 GEO 体系围绕三个核心能力构建：</p>
+
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>核心能力</th><th>技术实现</th><th>解决的问题</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>第一真值</strong></td><td><code>first-truth-policy</code> 内容类型 + <code>llms.txt</code> 输出</td><td>确保 AI 抓取到的是企业唯一权威信息，而非过时或矛盾版本</td></tr>
+<tr><td><strong>结构化数据</strong></td><td><code>schema-builder</code> 服务生成 JSON-LD</td><td>让搜索引擎和 AI 以标准格式理解页面内容类型（Article/Product/FAQ 等）</td></tr>
+<tr><td><strong>内容可达性</strong></td><td><code>sitemap.xml</code> + <code>robots.txt</code> + <code>RSS/Atom feed</code></td><td>确保所有发布内容能被搜索引擎和 AI 爬虫发现和抓取</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>不做这套体系的直接后果：官网有内容但 AI 不知道你存在，搜索结果里出现的信息可能是第三方平台的二手描述而非你的原文，用户在 AI 对话中问起你的产品时得到的是模糊甚至错误的答案。</p>
+
+<h3 id="ch1-2">1.2 内容类型矩阵</h3>
+
+<p>系统包含六种核心内容类型，每种在 GEO 体系中承担不同角色：</p>
+
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>内容类型</th><th>GEO 角色</th><th>结构化数据类型</th><th>Sitemap 优先级</th><th>AI 抓取策略</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>资讯文章</strong></td><td>行业知识权威性建设</td><td>Article</td><td>0.7</td><td>纳入 llms.txt Pages 清单</td></tr>
+<tr><td><strong>产品/方案</strong></td><td>产品事实声明与价格信号</td><td>Product + Offer</td><td>0.8</td><td>纳入 llms.txt Pages + Facts</td></tr>
+<tr><td><strong>落地案例</strong></td><td>社会证明与可信度背书</td><td>CaseStudy / Article</td><td>0.6</td><td>纳入 llms.txt Pages</td></tr>
+<tr><td><strong>教程/操作指南</strong></td><td>HowTo 知识图谱与视频搜索</td><td>HowTo + VideoObject</td><td>0.6</td><td>纳入 llms.txt Pages</td></tr>
+<tr><td><strong>常见问答</strong></td><td>直接匹配 AI 问答查询</td><td>FAQPage</td><td>0.5</td><td>纳入 llms.txt Pages（高优先匹配）</td></tr>
+<tr><td><strong>合规公示</strong></td><td>法律合规信号与信任建设</td><td>Article</td><td>0.3</td><td>纳入 llms.txt Pages</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="ch1-3">1.3 发布闭环机制</h3>
+
+<p>每一条内容从创建到产生流量效果，经过以下闭环链路：</p>
+
+<div class="flow-diagram">
+<div class="flow-row">
+  <span class="flow-node">内容创建</span>
+  <span class="flow-arrow">&rarr;</span>
+  <span class="flow-node">填写 SEO/GEO 字段</span>
+  <span class="flow-arrow">&rarr;</span>
+  <span class="flow-node">发布 (status=published)</span>
+</div>
+<div class="flow-row">
+  <span class="flow-arrow">&darr;</span>
+</div>
+<div class="flow-row">
+  <span class="flow-node success">Lifecycle 触发</span>
+  <span class="flow-arrow">&rarr;</span>
+  <span class="flow-node success">标签索引同步</span>
+  <span class="flow-arrow">&rarr;</span>
+  <span class="flow-node success">知识图谱同步</span>
+  <span class="flow-arrow">&rarr;</span>
+  <span class="flow-node success">搜索引擎推送</span>
+</div>
+<div class="flow-row">
+  <span class="flow-arrow">&darr;</span>
+</div>
+<div class="flow-row">
+  <span class="flow-node warning">Sitemap 更新</span>
+  <span class="flow-arrow">&rarr;</span>
+  <span class="flow-node warning">llms.txt 更新</span>
+  <span class="flow-arrow">&rarr;</span>
+  <span class="flow-node warning">RSS Feed 更新</span>
+  <span class="flow-arrow">&rarr;</span>
+  <span class="flow-node warning">缓存失效</span>
+</div>
+<div class="flow-row">
+  <span class="flow-arrow">&darr;</span>
+</div>
+<div class="flow-row">
+  <span class="flow-node">搜索引擎收录</span>
+  <span class="flow-arrow">&rarr;</span>
+  <span class="flow-node">AI 模型抓取</span>
+  <span class="flow-arrow">&rarr;</span>
+  <span class="flow-node">用户搜索/提问触达</span>
+  <span class="flow-arrow">&rarr;</span>
+  <span class="flow-node success">流量回流官网</span>
+</div>
+</div>
+
+<p>Lifecycle 钩子在内容发布（<code>afterCreate</code> / <code>afterUpdate</code>）时自动触发四个动作：<strong>标签索引同步</strong>（将文章标签写入全局标签索引，供标签页聚合展示）、<strong>知识图谱同步</strong>（将内容关联的实体写入知识图谱，构建实体关系网络）、<strong>搜索引擎推送</strong>（向百度/Google 主动推送 URL，加速收录）、<strong>缓存失效</strong>（清空 SEO 输出缓存，确保下次请求拿到最新内容）。删除时触发标签索引移除和缓存失效。</p>
+
+<h3 id="ch1-4">1.4 与官网、媒体中心、课程中心的联动逻辑</h3>
+
+<p>内容发布后会在多个子系统产生联动效果：</p>
+
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>联动系统</th><th>联动机制</th><th>数据流向</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>官网前端</strong></td><td>内容通过 <code>/api/v1/articles/:slug</code> 等公开 API 暴露，前端 SSR 渲染时注入 SEO meta 和结构化数据</td><td>zhao-website &rarr; 公开 API &rarr; Nuxt3 前端</td></tr>
+<tr><td><strong>媒体中心</strong></td><td>文章可关联 <code>sourceArticleDraft</code>（来自 zhao-studio 内容工作室），实现草稿到发布的跨系统流转</td><td>zhao-studio 草稿 &rarr; zhao-website 文章</td></tr>
+<tr><td><strong>课程中心</strong></td><td>教程内容可关联课程体系，教程的 <code>brandVoiceRef</code> 统一品牌话术，课程页引用相同知识实体</td><td>zhao-website 教程 &harr; zhao-course 课程</td></tr>
+<tr><td><strong>知识图谱</strong></td><td>所有内容类型通过 <code>mainEntity</code> 和 <code>mentionedEntities</code> 关联知识实体，构建跨内容类型的实体关系网</td><td>各内容类型 &rarr; knowledge-entity &rarr; 知识图谱 API</td></tr>
+<tr><td><strong>第一真值</strong></td><td>产品价格、企业资质等关键声明通过 <code>first-truth-policy</code> 统一管理，llms.txt 输出时交叉引用</td><td>内容字段 &harr; first-truth-policy &rarr; llms.txt</td></tr>
+</tbody>
+</table>
+</div>
+
+<p>这套联动逻辑的核心价值在于：<strong>一次发布，多端触达</strong>。你在官网发布一篇产品文章，搜索引擎通过 sitemap 发现它，AI 模型通过 llms.txt 抓取它，媒体中心可以引用它，课程中心可以关联它，知识图谱会更新实体关系——所有这些不需要手动操作，由 Lifecycle 钩子自动完成。</p>
+
+<div class="callout callout-info">
+<div class="callout-title">关键理解</div>
+<p>每一个字段都有它在 GEO 链路中的位置。标题写得好不好，直接决定 AI 是否引用你；结构化数据填不填，决定搜索引擎是否展示富媒体结果；<code>allowIndex</code> 开关决定了这条内容是否进入 sitemap 和 llms.txt——这些不是可选项，而是决定流量效果的必填项。</p>
+</div>
+
+<!-- ==================== Chapter 2: Article ==================== -->
+<h2 id="ch2"><span class="ch-num">第二章</span>资讯文章</h2>
+
+<h3 id="ch2-1">2.1 设计目的与 GEO 角色</h3>
+
+<p>资讯文章是官网内容产出的主力载体。它的设计目的是建立企业在特定领域的<strong>知识权威性</strong>——当用户或 AI 搜索"XX 行业怎么做"时，你的文章是那个被引用的答案来源。</p>
+
+<p>在 GEO 体系中，文章承担三个角色：<strong>知识播种</strong>（为 AI 模型提供可学习的行业知识语料）、<strong>长尾流量入口</strong>（通过覆盖行业长尾关键词获取搜索流量）、<strong>实体权重积累</strong>（每篇文章关联的知识实体在知识图谱中的置信度随引用次数增长）。</p>
+
+<p>不做文章发布的后果：AI 模型在回答行业问题时不会提到你的企业，搜索长尾词时流量全部流向竞争对手的内容平台，你的产品页面缺乏内链支撑导致权重低迷。正确使用的效果：一篇高质量行业文章可以在发布后 2-4 周内被搜索引擎收录，3-6 个月内开始稳定获取长尾搜索流量，同时被 AI 模型纳入回答引用来源。</p>
+
+<h3 id="ch2-2">2.2 页面运作原理</h3>
+
+<h4>数据上下游流转</h4>
+
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>环节</th><th>数据流向</th><th>触发机制</th></tr>
+</thead>
+<tbody>
+<tr><td>上游输入</td><td>zhao-studio 草稿 &rarr; <code>sourceArticleDraft</code> 关联 &rarr; 文章创建</td><td>工作室发布草稿时可选推送到官网</td></tr>
+<tr><td>创建/更新</td><td>填写字段 &rarr; 保存 &rarr; <code>afterCreate</code>/<code>afterUpdate</code> Lifecycle</td><td>Strapi 内容管理器保存操作</td></tr>
+<tr><td>Lifecycle 触发</td><td>标签索引同步 &rarr; 知识图谱同步 &rarr; 搜索引擎推送 &rarr; 缓存失效</td><td>自动，无需手动干预</td></tr>
+<tr><td>下游输出</td><td>公开 API <code>/api/v1/articles/:slug</code> &rarr; 前端 SSR &rarr; sitemap &rarr; llms.txt &rarr; RSS feed</td><td>前端请求 / 爬虫抓取</td></tr>
+<tr><td>流量回流</td><td>搜索引擎结果 &rarr; 用户点击 &rarr; 官网文章页 &rarr; 内链引导至产品页</td><td>用户搜索行为</td></tr>
+</tbody>
+</table>
+</div>
+
+<h4>发布触发的机制链</h4>
+
+<p>当文章 <code>status</code> 从 <code>draft</code> 变为 <code>published</code> 时，系统按顺序执行：</p>
+
+<ol class="steps">
+<li><strong>syncTagIndex</strong> — 将文章关联的标签写入 <code>zhao_tag_indices</code> 表，标签聚合页可以展示这篇文章</li>
+<li><strong>knowledgeGraphSync</strong> — 将文章的 <code>mainEntity</code> 和 <code>mentionedEntities</code> 同步到知识图谱，更新实体关系和置信度</li>
+<li><strong>triggerSyncEvent</strong> — 发布同步事件，通知其他子系统（如媒体中心）内容已更新</li>
+<li><strong>pushToSearchEngines</strong> — 向百度站长平台和 Google Search Console 主动推送文章 URL，加速收录</li>
+<li><strong>cache.invalidate</strong> — 清空 SEO 输出缓存，确保 sitemap、llms.txt、RSS feed 下次生成时包含最新内容</li>
+</ol>
+
+<h4>与各系统的联动</h4>
+
+<p>文章发布后，<strong>官网前端</strong>通过 API 获取文章内容并渲染，同时注入 <code>seoTitle</code>、<code>seoDescription</code>、<code>ogImage</code> 等 meta 标签和 <code>schemaJson</code> 结构化数据。<strong>媒体中心</strong>通过 <code>sourceArticleDraft</code> 关联回溯草稿来源。<strong>课程中心</strong>通过共享的 <code>knowledge-entity</code> 实现教程与文章的知识互联。<strong>AI 抓取</strong>通过 llms.txt 的 Pages 清单发现文章 URL，抓取后纳入模型训练/检索语料。</p>
+
+<h3 id="ch2-3">2.3 适用人群与禁止操作人群</h3>
+
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>类别</th><th>角色</th><th>说明</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>适用人群</strong></td><td>内容运营</td><td>负责日常行业文章撰写和发布</td></tr>
+<tr><td></td><td>SEO 专员</td><td>负责关键词规划和 SEO 字段优化</td></tr>
+<tr><td></td><td>产品经理</td><td>负责产品解读、行业分析类文章</td></tr>
+<tr><td></td><td>技术负责人</td><td>负责技术深度文章和方案架构解读</td></tr>
+<tr><td><strong>禁止操作人群</strong></td><td>未经培训的实习生</td><td>不了解 SEO/GEO 字段规范，容易造成字段误填</td></tr>
+<tr><td></td><td>外部外包人员</td><td>无系统权限上下文，无法正确关联知识实体和品牌话术</td></tr>
+<tr><td></td><td>市场部非内容岗</td><td>可能将广告文案直接作为文章发布，违反内容规范</td></tr>
+</tbody>
+</table>
+</div>
+
+<p><strong>发布内容最终用途：</strong>文章发布后同时服务于搜索引擎收录（获取搜索流量）、AI 模型抓取（建立知识权威性引用）、官网前端展示（用户阅读和内链导流）、RSS 订阅推送（内容分发到第三方平台）。同一篇内容，四种用途，因此填写时需同时满足机器可读（结构化数据）和人类可读（内容质量）两个维度。</p>
+
+<h3 id="ch2-4">2.4 页面区域分区说明与字段四件套</h3>
+
+<h4>区域分区概览</h4>
+
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>区域</th><th>设计初衷</th><th>功能价值</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>基础信息区</strong></td><td>定义文章的核心标识</td><td>标题、slug、摘要、正文构成文章的骨架</td></tr>
+<tr><td><strong>媒体资源区</strong></td><td>提供视觉吸引力要素</td><td>封面图用于列表展示和社交分享</td></tr>
+<tr><td><strong>分类标签区</strong></td><td>建立内容组织结构</td><td>分类用于导航聚合，标签用于跨内容关联</td></tr>
+<tr><td><strong>作者信息区</strong></td><td>建立内容可信度</td><td>作者署名和头衔增强 E-E-A-T 信号</td></tr>
+<tr><td><strong>SEO 配置区</strong></td><td>控制搜索引擎展示效果</td><td>独立设置标题、描述、关键词，区别于展示标题</td></tr>
+<tr><td><strong>社交分享区</strong></td><td>控制社交平台展示效果</td><td>OG 标签和 Twitter Card 控制分享卡片样式</td></tr>
+<tr><td><strong>结构化数据区</strong></td><td>向 AI 和搜索引擎声明内容类型</td><td>JSON-LD 结构化数据让机器理解内容语义</td></tr>
+<tr><td><strong>收录控制区</strong></td><td>管理内容的索引行为</td><td>控制是否进入 sitemap、是否允许 AI 抓取</td></tr>
+<tr><td><strong>知识图谱区</strong></td><td>建立内容与实体的关联</td><td>主实体和提及实体构建知识网络</td></tr>
+<tr><td><strong>来源追溯区</strong></td><td>管理内容原创性声明</td><td>标记原创/编译/外部来源，影响权重分配</td></tr>
+</tbody>
+</table>
+</div>
+
+<h4>字段四件套详解</h4>
+
+<!-- title -->
+<div class="field-card">
+<div class="field-card-header">
+<span class="field-name">title</span>
+<span class="field-type">string / maxLength:200</span>
+<span class="badge badge-required">必填</span>
+<span class="badge badge-seo">SEO</span>
+<span class="badge badge-geo">GEO</span>
+</div>
+<div class="field-card-body">
+<div class="field-item">
+<div class="field-item-label">设计初衷</div>
+<div class="field-item-value">文章的展示标题，同时作为 <code>&lt;title&gt;</code> 和 <code>&lt;h1&gt;</code> 的默认值。当未设置 <code>seoTitle</code> 时，搜索引擎和 AI 使用此字段。</div>
+</div>
+<div class="field-item">
+<div class="field-item-label">作用原理</div>
+<div class="field-item-value">写入数据库后，公开 API 返回此字段；前端 SSR 渲染为 <code>&lt;h1&gt;</code>；<code>seo-meta</code> 服务在未配置 <code>seoTitle</code> 时回退使用此值生成 <code>&lt;title&gt;</code> 标签。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">标准填写规范</div>
+<div class="field-item-value">15-35 个中文字符。格式建议：[核心关键词] + [修饰词] + [价值点]。例如"2026 年企业数字化转型指南：从战略到落地的完整路径"。标题中应包含目标搜索关键词，避免纯品牌词或纯情感表达。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">错误后果</div>
+<div class="field-item-value danger">标题超过 60 字符时搜索引擎会截断显示；不含关键词的标题无法匹配搜索查询；与 <code>seoTitle</code> 同时设置但内容差异过大时，AI 抓取可能产生语义混淆；标题重复（多篇相同标题）会被搜索引擎判定为重复内容。</div>
+</div>
+</div>
+</div>
+
+<!-- slug -->
+<div class="field-card">
+<div class="field-card-header">
+<span class="field-name">slug</span>
+<span class="field-type">uid / targetField:title</span>
+<span class="badge badge-required">必填</span>
+<span class="badge badge-seo">SEO</span>
+</div>
+<div class="field-card-body">
+<div class="field-item">
+<div class="field-item-label">设计初衷</div>
+<div class="field-item-value">生成文章的 URL 路径标识，决定 <code>/articles/:slug</code> 的最终地址。URL 是搜索引擎和 AI 抓取的第一个信号。</div>
+</div>
+<div class="field-item">
+<div class="field-item-label">作用原理</div>
+<div class="field-item-value">系统根据 <code>title</code> 自动生成拼音/英文 slug，也可手动修改。写入后不可随意变更——变更会导致旧 URL 失效，需配合 <code>redirect-rule</code> 做 301 跳转。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">标准填写规范</div>
+<div class="field-item-value">全小写英文，单词用连字符分隔，长度 10-60 字符。例如 <code>enterprise-digital-transformation-guide-2026</code>。包含核心关键词的英文翻译。禁止使用中文、特殊符号、下划线。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">错误后果</div>
+<div class="field-item-value danger">使用中文 slug 会导致 URL 编码后过长且不可读；随意修改已发布文章的 slug 会导致 404 错误和搜索引擎收录丢失；slug 中堆砌关键词（如 <code>best-cheap-fast-service</code>）会被搜索引擎判定为垃圾链接。</div>
+</div>
+</div>
+</div>
+
+<!-- excerpt -->
+<div class="field-card">
+<div class="field-card-header">
+<span class="field-name">excerpt</span>
+<span class="field-type">text</span>
+<span class="badge badge-optional">选填</span>
+<span class="badge badge-seo">SEO</span>
+<span class="badge badge-geo">GEO</span>
+</div>
+<div class="field-card-body">
+<div class="field-item">
+<div class="field-item-label">设计初衷</div>
+<div class="field-item-value">文章摘要，用于列表页展示、搜索结果描述回退、llms.txt 中的页面简介。当未设置 <code>seoDescription</code> 时，搜索引擎使用此字段作为描述。</div>
+</div>
+<div class="field-item">
+<div class="field-item-label">作用原理</div>
+<div class="field-item-value">在文章列表 API 中返回；<code>llms-txt</code> 服务将其作为页面描述输出到 llms.txt 文件中；<code>seo-meta</code> 服务在未配置 <code>seoDescription</code> 时回退使用此值。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">标准填写规范</div>
+<div class="field-item-value">80-160 个中文字符。用 1-2 句话概括文章核心观点和价值。包含主要关键词。避免直接复制正文第一段——摘要应独立概括全文。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">错误后果</div>
+<div class="field-item-value danger">留空时搜索引擎自动从正文提取，可能选取不相关段落；过长会被截断影响搜索结果展示效果；与正文内容不符会降低点击率。</div>
+</div>
+</div>
+</div>
+
+<!-- content -->
+<div class="field-card">
+<div class="field-card-header">
+<span class="field-name">content</span>
+<span class="field-type">text</span>
+<span class="badge badge-required">必填</span>
+</div>
+<div class="field-card-body">
+<div class="field-item">
+<div class="field-item-label">设计初衷</div>
+<div class="field-item-value">文章正文内容，支持富文本/Markdown 格式。这是 AI 模型抓取的核心语料来源。</div>
+</div>
+<div class="field-item">
+<div class="field-item-label">作用原理</div>
+<div class="field-item-value">通过 API 返回给前端渲染；AI 爬虫抓取页面 HTML 后提取正文内容用于训练和检索；<code>wordCount</code> 和 <code>readingTime</code> 基于此字段计算。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">标准填写规范</div>
+<div class="field-item-value">正文 800-3000 字为宜。结构清晰：开头点明主题（100 字内），中间分段论述（每段 200-400 字），结尾总结。使用 H2/H3 分段。包含数据、案例、操作步骤等具体信息。避免空洞的修饰性语句。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">错误后果</div>
+<div class="field-item-value danger">正文过短（&lt;300 字）会被搜索引擎判定为薄内容；纯图片无文字会导致 AI 无法抓取；内容与标题不符会增加跳出率，降低页面权重。</div>
+</div>
+</div>
+</div>
+
+<!-- coverImage -->
+<div class="field-card">
+<div class="field-card-header">
+<span class="field-name">coverImage</span>
+<span class="field-type">media</span>
+<span class="badge badge-optional">选填</span>
+<span class="badge badge-seo">SEO</span>
+</div>
+<div class="field-card-body">
+<div class="field-item">
+<div class="field-item-label">设计初衷</div>
+<div class="field-item-value">文章封面图，用于列表页缩略图、文章页顶部展示、社交分享卡片。同时作为 sitemap 图片条目输出。</div>
+</div>
+<div class="field-item">
+<div class="field-item-label">作用原理</div>
+<div class="field-item-value">图片 URL 写入 sitemap 的 <code>&lt;image:image&gt;</code> 标签；未设置 <code>ogImage</code> 时作为社交分享图片；前端列表页渲染为缩略图。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">标准填写规范</div>
+<div class="field-item-value">尺寸 1200x630px 或同比例，格式 JPG/WebP，大小不超过 300KB。图片内容应与文章主题相关。禁止使用纯文字图、纯色背景或与内容无关的装饰图。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">错误后果</div>
+<div class="field-item-value danger">图片过大导致页面加载缓慢，影响 Core Web Vitals 评分；无封面图的文章在列表页展示效果差，点击率降低 30-50%。</div>
+</div>
+</div>
+</div>
+
+<!-- category -->
+<div class="field-card">
+<div class="field-card-header">
+<span class="field-name">category</span>
+<span class="field-type">relation &rarr; article-category</span>
+<span class="badge badge-optional">选填</span>
+</div>
+<div class="field-card-body">
+<div class="field-item">
+<div class="field-item-label">设计初衷</div>
+<div class="field-item-value">文章分类，用于官网导航结构和内容聚合。分类页本身也是 SEO 着陆页。</div>
+</div>
+<div class="field-item">
+<div class="field-item-label">作用原理</div>
+<div class="field-item-value">关联到 <code>article-category</code> 内容类型；分类页通过 API 聚合该分类下所有文章；面包屑导航基于分类生成结构化数据。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">标准填写规范</div>
+<div class="field-item-value">每篇文章选择一个最相关的分类。分类应在创建文章前规划好，避免频繁新增分类导致结构混乱。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">错误后果</div>
+<div class="field-item-value danger">不设分类的文章不会出现在分类聚合页，减少内链入口；选错分类导致用户导航体验差和跳出率升高。</div>
+</div>
+</div>
+</div>
+
+<!-- tags -->
+<div class="field-card">
+<div class="field-card-header">
+<span class="field-name">tags</span>
+<span class="field-type">relation &rarr; tag (manyToMany)</span>
+<span class="badge badge-optional">选填</span>
+<span class="badge badge-geo">GEO</span>
+</div>
+<div class="field-card-body">
+<div class="field-item">
+<div class="field-item-label">设计初衷</div>
+<div class="field-item-value">文章标签，用于跨内容类型的主题关联。标签页是长尾关键词着陆页。</div>
+</div>
+<div class="field-item">
+<div class="field-item-label">作用原理</div>
+<div class="field-item-value">Lifecycle 的 <code>syncTagIndex</code> 将标签写入全局索引；标签聚合页展示相关文章、产品、案例；知识图谱通过标签建立实体关联。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">标准填写规范</div>
+<div class="field-item-value">每篇文章选择 3-7 个标签。标签应为具体的关键词而非宽泛的分类名。例如使用"数字化转型""CRM 系统"而非"技术""管理"。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">错误后果</div>
+<div class="field-item-value danger">标签过多（&gt;10 个）会分散主题焦点；标签过宽泛失去长尾匹配价值；不设标签的文章缺少跨内容关联入口。</div>
+</div>
+</div>
+</div>
+
+<!-- seoTitle -->
+<div class="field-card">
+<div class="field-card-header">
+<span class="field-name">seoTitle</span>
+<span class="field-type">string / maxLength:60</span>
+<span class="badge badge-optional">选填</span>
+<span class="badge badge-seo">SEO</span>
+</div>
+<div class="field-card-body">
+<div class="field-item">
+<div class="field-item-label">设计初衷</div>
+<div class="field-item-value">独立设置搜索引擎结果页显示的标题，允许与页面 <code>&lt;h1&gt;</code> 标题不同。用于在搜索结果中优化点击率。</div>
+</div>
+<div class="field-item">
+<div class="field-item-label">作用原理</div>
+<div class="field-item-value">写入 <code>&lt;title&gt;</code> 标签和 <code>og:title</code>。未设置时回退到 <code>title</code> 字段。搜索引擎在结果页展示此值（可能根据查询动态截断）。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">标准填写规范</div>
+<div class="field-item-value">25-35 个中文字符（搜索引擎通常展示 30-40 字符）。格式：[核心关键词] - [品牌名] 或 [吸引力描述] | [品牌名]。前置关键词，后置品牌。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">错误后果</div>
+<div class="field-item-value danger">超过 60 字符会被截断；关键词堆砌会被搜索引擎降权；与页面内容不符会导致高跳出率，长期降低排名。</div>
+</div>
+</div>
+</div>
+
+<!-- seoDescription -->
+<div class="field-card">
+<div class="field-card-header">
+<span class="field-name">seoDescription</span>
+<span class="field-type">string / maxLength:160</span>
+<span class="badge badge-optional">选填</span>
+<span class="badge badge-seo">SEO</span>
+</div>
+<div class="field-card-body">
+<div class="field-item">
+<div class="field-item-label">设计初衷</div>
+<div class="field-item-value">搜索引擎结果页的描述文本，直接影响点击率。同时作为 AI 抓取时的页面摘要。</div>
+</div>
+<div class="field-item">
+<div class="field-item-label">作用原理</div>
+<div class="field-item-value">写入 <code>&lt;meta name="description"&gt;</code> 和 <code>og:description</code>。搜索引擎不一定采用此值（可能自行提取正文），但正确设置时采纳率约 70%。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">标准填写规范</div>
+<div class="field-item-value">70-155 个中文字符。包含核心关键词。以行动号召或价值主张结尾。例如"了解 2026 年企业数字化转型的 5 个关键步骤，附实施时间表和成本评估方法。"</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">错误后果</div>
+<div class="field-item-value danger">留空时搜索引擎从正文提取，可能选取不理想段落；超过 160 字符被截断；纯关键词罗列（无完整句子）会被搜索引擎忽略。</div>
+</div>
+</div>
+</div>
+
+<!-- seoKeywords -->
+<div class="field-card">
+<div class="field-card-header">
+<span class="field-name">seoKeywords</span>
+<span class="field-type">string / maxLength:200</span>
+<span class="badge badge-optional">选填</span>
+</div>
+<div class="field-card-body">
+<div class="field-item">
+<div class="field-item-label">设计初衷</div>
+<div class="field-item-value">页面关键词声明。虽然主流搜索引擎已不再以此作为排名因素，但部分中文搜索引擎仍参考此字段。</div>
+</div>
+<div class="field-item">
+<div class="field-item-label">作用原理</div>
+<div class="field-item-value">写入 <code>&lt;meta name="keywords"&gt;</code> 标签。部分中文搜索引擎（搜狗、360）仍将其作为辅助参考。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">标准填写规范</div>
+<div class="field-item-value">3-5 个关键词，逗号分隔。选择页面实际涉及的具体词汇，不要堆砌不相关热词。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">错误后果</div>
+<div class="field-item-value danger">堆砌大量无关关键词可能被搜索引擎判定为作弊；留空无实质影响。</div>
+</div>
+</div>
+</div>
+
+<!-- canonicalUrl -->
+<div class="field-card">
+<div class="field-card-header">
+<span class="field-name">canonicalUrl</span>
+<span class="field-type">string / maxLength:500</span>
+<span class="badge badge-optional">选填</span>
+<span class="badge badge-seo">SEO</span>
+</div>
+<div class="field-card-body">
+<div class="field-item">
+<div class="field-item-label">设计初衷</div>
+<div class="field-item-value">规范 URL 声明，解决重复内容问题。当文章在多个平台发布时，告知搜索引擎哪个是原始版本。</div>
+</div>
+<div class="field-item">
+<div class="field-item-label">作用原理</div>
+<div class="field-item-value">写入 <code>&lt;link rel="canonical"&gt;</code> 标签。搜索引擎将权重集中到规范 URL 上，避免重复内容惩罚。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">标准填写规范</div>
+<div class="field-item-value">原创文章留空（系统自动生成规范 URL）。转载或同步发布到其他平台的文章，填写官网原始 URL。格式：<code>https://example.com/articles/slug</code>。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">错误后果</div>
+<div class="field-item-value danger">填错 URL 会导致权重转移到错误页面；将原创文章的 canonical 指向其他平台会导致自己官网失去收录。</div>
+</div>
+</div>
+</div>
+
+<!-- ogImage -->
+<div class="field-card">
+<div class="field-card-header">
+<span class="field-name">ogImage</span>
+<span class="field-type">media</span>
+<span class="badge badge-optional">选填</span>
+</div>
+<div class="field-card-body">
+<div class="field-item">
+<div class="field-item-label">设计初衷</div>
+<div class="field-item-value">社交分享时显示的图片，独立于封面图。允许为不同平台定制分享图片。</div>
+</div>
+<div class="field-item">
+<div class="field-item-label">作用原理</div>
+<div class="field-item-value">写入 <code>og:image</code> 标签。微信、微博、LinkedIn 等平台抓取此 URL 生成分享卡片。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">标准填写规范</div>
+<div class="field-item-value">尺寸 1200x630px，JPG/WebP 格式，小于 300KB。图片上可叠加标题文字和品牌 logo。留空时回退到 <code>coverImage</code>。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">错误后果</div>
+<div class="field-item-value danger">图片过小（&lt;200px）在社交平台显示模糊；图片过大导致分享加载缓慢；无图片的文章分享时显示空白卡片，点击率降低 60% 以上。</div>
+</div>
+</div>
+</div>
+
+<!-- allowIndex -->
+<div class="field-card">
+<div class="field-card-header">
+<span class="field-name">allowIndex</span>
+<span class="field-type">boolean / default:true</span>
+<span class="badge badge-optional">选填</span>
+<span class="badge badge-seo">SEO</span>
+<span class="badge badge-geo">GEO</span>
+</div>
+<div class="field-card-body">
+<div class="field-item">
+<div class="field-item-label">设计初衷</div>
+<div class="field-item-value">控制此文章是否允许被搜索引擎和 AI 抓取。这是内容进入 GEO 体系的总开关。</div>
+</div>
+<div class="field-item">
+<div class="field-item-label">作用原理</div>
+<div class="field-item-value">设为 <code>false</code> 时：文章不进入 sitemap、不进入 llms.txt、页面头部输出 <code>&lt;meta name="robots" content="noindex"&gt;</code>。设为 <code>true</code> 时：正常进入所有 SEO/GEO 输出通道。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">标准填写规范</div>
+<div class="field-item-value">正式发布的文章设为 <code>true</code>。内部测试文章、过期活动公告、仅面向登录用户的内容设为 <code>false</code>。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">错误后果</div>
+<div class="field-item-value danger">误将重要文章设为 <code>false</code> 会导致内容完全无法被搜索引擎和 AI 发现；将应保密的内容设为 <code>true</code> 会导致信息泄露。</div>
+</div>
+</div>
+</div>
+
+<!-- sitemapPriority & sitemapFrequency -->
+<div class="field-card">
+<div class="field-card-header">
+<span class="field-name">sitemapPriority / sitemapFrequency</span>
+<span class="field-type">decimal / enumeration</span>
+<span class="badge badge-optional">选填</span>
+<span class="badge badge-seo">SEO</span>
+</div>
+<div class="field-card-body">
+<div class="field-item">
+<div class="field-item-label">设计初衷</div>
+<div class="field-item-value">在 sitemap.xml 中声明此页面的优先级和更新频率，引导搜索引擎爬虫分配抓取资源。</div>
+</div>
+<div class="field-item">
+<div class="field-item-label">作用原理</div>
+<div class="field-item-value"><code>sitemapPriority</code> 写入 <code>&lt;priority&gt;</code> 标签（0.0-1.0）；<code>sitemapFrequency</code> 写入 <code>&lt;changefreq&gt;</code> 标签。搜索引擎将其作为爬虫调度参考（非强制）。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">标准填写规范</div>
+<div class="field-item-value">文章默认 priority=0.7, frequency=weekly。重磅文章可调至 0.8/daily；低价值内容降至 0.5/monthly。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">错误后果</div>
+<div class="field-item-value danger">所有文章都设为 1.0/always 会使优先级信号失效（搜索引擎忽略全高优先级的 sitemap）；设置与实际更新频率不符会影响爬虫信任度。</div>
+</div>
+</div>
+</div>
+
+<!-- mainEntity & mentionedEntities -->
+<div class="field-card">
+<div class="field-card-header">
+<span class="field-name">mainEntity / mentionedEntities</span>
+<span class="field-type">relation &rarr; knowledge-entity</span>
+<span class="badge badge-optional">选填</span>
+<span class="badge badge-geo">GEO</span>
+</div>
+<div class="field-card-body">
+<div class="field-item">
+<div class="field-item-label">设计初衷</div>
+<div class="field-item-value">将文章与知识图谱中的实体关联。<code>mainEntity</code> 是文章的核心主题实体，<code>mentionedEntities</code> 是文章中提及的其他实体。</div>
+</div>
+<div class="field-item">
+<div class="field-item-label">作用原理</div>
+<div class="field-item-value">Lifecycle 的 <code>knowledgeGraphSync</code> 将关联写入知识图谱；结构化数据中的 <code>about</code> 和 <code>mentions</code> 字段基于此生成；AI 抓取时通过实体关联理解内容的主题归属。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">标准填写规范</div>
+<div class="field-item-value">每篇文章设置 1 个 <code>mainEntity</code>（文章核心讨论的产品/概念/人物）。提及 2-5 个 <code>mentionedEntities</code>。实体需先在知识图谱中创建。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">错误后果</div>
+<div class="field-item-value danger">不设实体的文章在知识图谱中孤立，无法被实体查询触达；关联错误实体会导致 AI 对企业业务范围产生误解。</div>
+</div>
+</div>
+</div>
+
+<!-- brandVoiceRef -->
+<div class="field-card">
+<div class="field-card-header">
+<span class="field-name">brandVoiceRef</span>
+<span class="field-type">relation &rarr; brand-voice</span>
+<span class="badge badge-optional">选填</span>
+<span class="badge badge-geo">GEO</span>
+</div>
+<div class="field-card-body">
+<div class="field-item">
+<div class="field-item-label">设计初衷</div>
+<div class="field-item-value">关联品牌话术库，确保文章用词与企业标准话术一致。AI 抓取时获得统一的品牌表述。</div>
+</div>
+<div class="field-item">
+<div class="field-item-label">作用原理</div>
+<div class="field-item-value">关联到 <code>brand-voice</code> 内容类型；llms.txt 的 Brand Voice 部分会输出关联的话术内容；编辑时可在侧边栏参考标准话术。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">标准填写规范</div>
+<div class="field-item-value">选择与文章主题最相关的品牌话术条目。例如产品评测文章关联产品定位话术，行业分析文章关联行业观点话术。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">错误后果</div>
+<div class="field-item-value danger">不关联话术的文章可能使用了非标准表述，导致 AI 对品牌认知不一致；关联错误话术会误导内容方向。</div>
+</div>
+</div>
+</div>
+
+<!-- sourceType & sourceUrl -->
+<div class="field-card">
+<div class="field-card-header">
+<span class="field-name">sourceType / sourceUrl</span>
+<span class="field-type">enumeration / string</span>
+<span class="badge badge-optional">选填</span>
+</div>
+<div class="field-card-body">
+<div class="field-item">
+<div class="field-item-label">设计初衷</div>
+<div class="field-item-value">声明内容来源类型（原创/工作室/外部）和原始来源 URL，用于原创性追溯和版权管理。</div>
+</div>
+<div class="field-item">
+<div class="field-item-label">作用原理</div>
+<div class="field-item-value"><code>sourceType</code> 枚举值：<code>original</code>（原创）、<code>studio</code>（内容工作室产出）、<code>external</code>（外部来源）。<code>sourceUrl</code> 记录原始来源链接。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">标准填写规范</div>
+<div class="field-item-value">原创文章选 <code>original</code>；从 zhao-studio 工作室发布的选 <code>studio</code> 并关联 <code>sourceArticleDraft</code>；转载内容选 <code>external</code> 并填写原始 URL。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">错误后果</div>
+<div class="field-item-value danger">转载内容未标记来源可能引发版权纠纷；原创内容误标为外部来源会失去原创权重优势。</div>
+</div>
+</div>
+</div>
+
+<!-- status -->
+<div class="field-card">
+<div class="field-card-header">
+<span class="field-name">status</span>
+<span class="field-type">enumeration / default:draft</span>
+<span class="badge badge-required">必填</span>
+</div>
+<div class="field-card-body">
+<div class="field-item">
+<div class="field-item-label">设计初衷</div>
+<div class="field-item-value">控制文章的生命周期状态。只有 <code>published</code> 状态的文章才会进入公开 API、sitemap 和 llms.txt。</div>
+</div>
+<div class="field-item">
+<div class="field-item-label">作用原理</div>
+<div class="field-item-value">枚举值：<code>draft</code>（草稿，仅管理后台可见）、<code>published</code>（已发布，公开可见）、<code>archived</code>（已归档，从公开输出中移除但保留数据）。状态变更触发 Lifecycle。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">标准填写规范</div>
+<div class="field-item-value">创建时默认 <code>draft</code>，完成所有字段填写和自检后改为 <code>published</code>。过期内容改为 <code>archived</code> 而非删除。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">错误后果</div>
+<div class="field-item-value danger">未发布的文章无法被搜索引擎和 AI 发现；误将草稿发布会导致未完善内容被收录，影响站点质量评分。</div>
+</div>
+</div>
+</div>
+
+<h3 id="ch2-5">2.5 标准发布全流程</h3>
+
+<h4>素材准备清单</h4>
+
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>素材</th><th>要求</th><th>用途</th></tr>
+</thead>
+<tbody>
+<tr><td>正文文档</td><td>800-3000 字，结构化分段</td><td>填入 <code>content</code></td></tr>
+<tr><td>封面图</td><td>1200x630px, JPG/WebP, &lt;300KB</td><td>填入 <code>coverImage</code></td></tr>
+<tr><td>分享图（可选）</td><td>1200x630px, 含标题文字</td><td>填入 <code>ogImage</code></td></tr>
+<tr><td>SEO 标题</td><td>25-35 字, 含关键词</td><td>填入 <code>seoTitle</code></td></tr>
+<tr><td>SEO 描述</td><td>70-155 字, 含关键词和行动号召</td><td>填入 <code>seoDescription</code></td></tr>
+<tr><td>关键词列表</td><td>3-5 个核心关键词</td><td>填入 <code>seoKeywords</code> 和选择 <code>tags</code></td></tr>
+</tbody>
+</table>
+</div>
+
+<h4>填写顺序</h4>
+
+<ol class="steps">
+<li><strong>基础信息</strong> — 填写 <code>title</code>、<code>slug</code>（自动生成后检查）、<code>excerpt</code>、<code>content</code></li>
+<li><strong>媒体资源</strong> — 上传 <code>coverImage</code>，按需上传 <code>ogImage</code></li>
+<li><strong>分类标签</strong> — 选择 <code>category</code>，添加 <code>tags</code>（3-7 个）</li>
+<li><strong>作者信息</strong> — 填写 <code>author</code> 和 <code>authorTitle</code></li>
+<li><strong>SEO 配置</strong> — 填写 <code>seoTitle</code>、<code>seoDescription</code>、<code>seoKeywords</code>、<code>canonicalUrl</code></li>
+<li><strong>社交分享</strong> — 设置 <code>ogType</code>（默认 article）、<code>twitterCard</code>（默认 summary_large_image）</li>
+<li><strong>收录控制</strong> — 确认 <code>allowIndex</code>=true，调整 <code>sitemapPriority</code> 和 <code>sitemapFrequency</code></li>
+<li><strong>知识图谱</strong> — 选择 <code>mainEntity</code> 和 <code>mentionedEntities</code></li>
+<li><strong>品牌话术</strong> — 关联 <code>brandVoiceRef</code></li>
+<li><strong>来源声明</strong> — 设置 <code>sourceType</code> 和 <code>sourceUrl</code></li>
+<li><strong>自检</strong> — 对照自检清单逐项检查</li>
+<li><strong>发布</strong> — 将 <code>status</code> 改为 <code>published</code></li>
+</ol>
+
+<h4>发布前自检清单</h4>
+
+<ul class="checklist">
+<li>标题包含核心关键词，长度 15-35 字</li>
+<li>slug 为全小写英文，含关键词翻译</li>
+<li>摘要 80-160 字，独立概括全文</li>
+<li>正文 800 字以上，结构清晰，分段有 H2/H3</li>
+<li>封面图已上传，尺寸合规</li>
+<li>分类已选择，标签 3-7 个</li>
+<li>seoTitle 25-35 字，含关键词</li>
+<li>seoDescription 70-155 字，含行动号召</li>
+<li>allowIndex 设为 true</li>
+<li>mainEntity 已关联</li>
+<li>brandVoiceRef 已关联</li>
+<li>sourceType 已正确设置</li>
+<li>正文无错别字，数据准确</li>
+<li>内链已添加（指向产品页或相关文章）</li>
+</ul>
+
+<h3 id="ch2-6">2.6 发布后闭环运作与禁忌</h3>
+
+<h4>前端展示效果</h4>
+
+<p>文章发布后，官网前端通过 <code>/api/v1/articles/:slug</code> 获取内容并渲染。页面头部注入 <code>seoTitle</code> 作为 <code>&lt;title&gt;</code>，<code>seoDescription</code> 作为 meta description，<code>ogImage</code> 作为社交分享图。结构化数据以 JSON-LD 格式注入页面底部。文章出现在列表页、分类页和标签页。RSS feed 自动包含最新 20 篇文章。</p>
+
+<h4>对 GEO 收录的影响</h4>
+
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>时间节点</th><th>预期效果</th><th>验证方法</th></tr>
+</thead>
+<tbody>
+<tr><td>发布后 1 小时</td><td>sitemap.xml 更新，包含新文章 URL</td><td>访问 <code>/sitemap.xml</code> 确认</td></tr>
+<tr><td>发布后 24 小时</td><td>llms.txt 更新，搜索引擎推送完成</td><td>访问 <code>/llms.txt</code> 确认；百度站长平台查看推送状态</td></tr>
+<tr><td>发布后 3-7 天</td><td>百度/Google 开始收录</td><td><code>site:yourdomain.com/articles/slug</code> 搜索验证</td></tr>
+<tr><td>发布后 2-4 周</td><td>搜索引擎建立索引，开始出现在搜索结果</td><td>Google Search Console 查看索引状态</td></tr>
+<tr><td>发布后 1-3 个月</td><td>长尾关键词开始获取流量</td><td>Google Search Console / 百度统计查看搜索查询</td></tr>
+<tr><td>发布后 3-6 个月</td><td>AI 模型训练更新后开始引用</td><td>在 ChatGPT/Perplexity 中搜索相关关键词</td></tr>
+</tbody>
+</table>
+</div>
+
+<h4>对整体流量闭环的贡献</h4>
+
+<p>文章在流量闭环中承担<strong>入口</strong>角色：用户通过搜索长尾关键词进入文章页 &rarr; 文章内链引导至产品页 &rarr; 产品页引导至联系/试用 &rarr; 转化。一篇文章的平均生命周期流量在 12-24 个月内持续增长，是所有内容类型中长尾流量贡献最大的。</p>
+
+<h4>字段禁忌写法</h4>
+
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>字段</th><th>禁忌写法</th><th>后果</th></tr>
+</thead>
+<tbody>
+<tr><td>title</td><td>纯品牌名（如"XX 公司动态"）</td><td>无法匹配用户搜索查询</td></tr>
+<tr><td>slug</td><td>中文或数字 ID（如 <code>/articles/123</code>）</td><td>URL 无语义信息，AI 无法理解</td></tr>
+<tr><td>seoTitle</td><td>关键词堆砌（如"CRM CRM系统 客户管理 销售管理"）</td><td>搜索引擎降权处理</td></tr>
+<tr><td>seoDescription</td><td>纯关键词罗列无完整句子</td><td>搜索引擎忽略此描述</td></tr>
+<tr><td>content</td><td>纯图片无文字 / 大段复制粘贴</td><td>AI 无法抓取 / 重复内容惩罚</td></tr>
+<tr><td>tags</td><td>选择 10 个以上标签</td><td>主题焦点分散，标签页权重稀释</td></tr>
+</tbody>
+</table>
+</div>
+
+<h4>内容禁忌类型</h4>
+
+<div class="callout callout-danger">
+<div class="callout-title">禁止发布的内容类型</div>
+<p><strong>1. 虚假宣传内容</strong> — 夸大产品功能、伪造案例数据、虚构客户见证。后果：被搜索引擎降权，AI 标记为不可信来源，可能面临广告法处罚。</p>
+<p><strong>2. 重复/采集内容</strong> — 大段复制其他网站文章、多篇雷同内容换标题发布。后果：触发重复内容过滤，整个站点权重下降。</p>
+<p><strong>3. 关键词堆砌内容</strong> — 为SEO目的在正文中强行插入不相关关键词。后果：被搜索引擎判定为垃圾内容。</p>
+<p><strong>4. 过时未更新内容</strong> — 发布后长期不更新，数据/结论已过时。后果：用户跳出率高，AI 引用过时信息损害品牌。</p>
+<p><strong>5. 与品牌定位不符内容</strong> — 为追热点发布与企业业务无关的内容。后果：稀释主题相关性，AI 对企业业务范围产生混淆。</p>
+</div>
+
+<h4>违规发布后果</h4>
+
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>违规级别</th><th>行为描述</th><th>后果</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>轻度</strong></td><td>字段填写不规范但内容真实</td><td>收录速度慢，搜索展示效果差，需 2-3 周修复</td></tr>
+<tr><td><strong>中度</strong></td><td>发布采集/重复内容</td><td>页面不被收录，已收录页面可能被移除，需 1-2 个月恢复</td></tr>
+<tr><td><strong>重度</strong></td><td>发布虚假宣传/违规内容</td><td>整站降权，AI 标记为不可信来源，需 3-6 个月恢复，可能面临法律风险</td></tr>
+</tbody>
+</table>
+</div>
+
+<!-- ==================== Chapter 3: Product ==================== -->
+<h2 id="ch3"><span class="ch-num">第三章</span>产品/方案</h2>
+
+<h3 id="ch3-1">3.1 设计目的与 GEO 角色</h3>
+
+<p>产品/方案页面是官网的转化核心。它的设计目的是向搜索引擎和 AI 模型提供<strong>结构化的产品事实声明</strong>——产品名称、价格、可用性、规格参数，这些信息以 Product + Offer 结构化数据格式输出，让 AI 在用户询问"XX 产品多少钱""XX 类产品推荐"时直接引用你的产品信息。</p>
+
+<p>在 GEO 体系中，产品页承担三个角色：<strong>事实锚点</strong>（通过结构化数据向 AI 声明产品的核心属性，防止第三方平台提供错误信息）、<strong>转化着陆页</strong>（承接文章和案例的内链流量，引导用户咨询/试用）、<strong>价格信号源</strong>（价格和可用性数据通过 sitemap 和结构化数据输出，影响购物搜索和 AI 推荐结果）。</p>
+
+<p>不做产品页的后果：AI 模型在回答产品相关问题时使用第三方平台（如电商、评测网站）的数据，可能包含过时价格或错误规格；购物搜索结果中不出现你的产品；内链流量没有转化着陆点。正确使用的效果：产品结构化数据被 Google 收录后可在搜索结果中展示价格和库存状态，AI 模型在推荐产品时引用你的官方参数。</p>
+
+<h3 id="ch3-2">3.2 页面运作原理</h3>
+
+<h4>数据上下游流转</h4>
+
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>环节</th><th>数据流向</th><th>触发机制</th></tr>
+</thead>
+<tbody>
+<tr><td>上游输入</td><td>产品规划文档 &rarr; 手动创建产品记录</td><td>内容运营在管理后台创建</td></tr>
+<tr><td>创建/更新</td><td>填写字段 &rarr; 保存 &rarr; Lifecycle 触发</td><td>Strapi 内容管理器保存</td></tr>
+<tr><td>Lifecycle 触发</td><td>标签索引 &rarr; 知识图谱 &rarr; 搜索引擎推送 &rarr; 缓存失效</td><td>自动执行</td></tr>
+<tr><td>结构化数据生成</td><td><code>schema-builder</code> 生成 Product schema（含 offers）&rarr; 注入页面</td><td>前端请求时动态生成</td></tr>
+<tr><td>下游输出</td><td>公开 API &rarr; 前端产品页 &rarr; sitemap（priority 0.8）&rarr; llms.txt Pages + Facts</td><td>爬虫抓取 / 前端请求</td></tr>
+<tr><td>案例联动</td><td>产品 &harr; <code>cases</code> 关联 &rarr; 产品页展示相关案例</td><td>双向关联</td></tr>
+</tbody>
+</table>
+</div>
+
+<h4>结构化数据输出</h4>
+
+<p>产品页生成的 JSON-LD 结构化数据包含 <code>Product</code> 类型，嵌套 <code>Offer</code> 对象（含 <code>price</code>、<code>priceCurrency</code>、<code>availability</code>）。这些数据让搜索引擎在购物搜索中展示价格和库存信息，让 AI 模型在推荐产品时引用准确的产品参数。同时，产品的 <code>features</code> 和 <code>specifications</code> 通过 llms.txt 的 Pages 部分输出，成为 AI 可读的产品事实。</p>
+
+<h3 id="ch3-3">3.3 适用人群与禁止操作人群</h3>
+
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>类别</th><th>角色</th><th>说明</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>适用人群</strong></td><td>产品经理</td><td>最了解产品功能和规格，负责内容准确性</td></tr>
+<tr><td></td><td>产品运营</td><td>负责产品页面维护和 SEO 优化</td></tr>
+<tr><td></td><td>市场负责人</td><td>审核产品定位和价格信息的对外一致性</td></tr>
+<tr><td><strong>禁止操作人群</strong></td><td>销售人员</td><td>可能将谈判价格填入公开价格字段</td></tr>
+<tr><td></td><td>技术开发</td><td>不了解市场定位，可能填写过于技术化的描述</td></tr>
+<tr><td></td><td>外部兼职</td><td>无法获取准确的产品规格和定价信息</td></tr>
+</tbody>
+</table>
+</div>
+
+<p><strong>发布内容最终用途：</strong>产品页面同时服务于搜索引擎购物搜索（通过 Product schema 展示价格和库存）、AI 产品推荐（通过 llms.txt 提供产品事实）、官网转化（用户了解产品后发起咨询/试用）、案例关联展示（产品页展示相关落地案例增强说服力）。价格和规格数据的准确性直接影响 AI 是否信任你的产品信息。</p>
+
+<h3 id="ch3-4">3.4 字段四件套详解</h3>
+
+<!-- name -->
+<div class="field-card">
+<div class="field-card-header">
+<span class="field-name">name</span>
+<span class="field-type">string / maxLength:200</span>
+<span class="badge badge-required">必填</span>
+<span class="badge badge-seo">SEO</span>
+<span class="badge badge-geo">GEO</span>
+</div>
+<div class="field-card-body">
+<div class="field-item">
+<div class="field-item-label">设计初衷</div>
+<div class="field-item-value">产品/方案的正式名称，作为结构化数据 <code>Product.name</code> 输出。AI 模型在推荐产品时使用此名称。</div>
+</div>
+<div class="field-item">
+<div class="field-item-label">作用原理</div>
+<div class="field-item-value">写入 <code>&lt;h1&gt;</code> 和 Product schema 的 name 字段；llms.txt Pages 部分使用此名称作为链接文本；未设置 <code>seoTitle</code> 时作为 <code>&lt;title&gt;</code> 回退值。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">标准填写规范</div>
+<div class="field-item-value">使用产品的官方正式名称，包含品牌名和产品线名。例如"智造云 MES 系统"而非"MES"。长度 4-30 字。避免使用内部代号或英文缩写（除非是公认的行业标准缩写）。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">错误后果</div>
+<div class="field-item-value danger">使用内部代号导致 AI 和用户无法识别产品；名称频繁变更会导致知识图谱实体断裂；名称与第一真值中的声明不一致会降低 AI 信任度。</div>
+</div>
+</div>
+</div>
+
+<!-- tagline -->
+<div class="field-card">
+<div class="field-card-header">
+<span class="field-name">tagline</span>
+<span class="field-type">string / maxLength:200</span>
+<span class="badge badge-optional">选填</span>
+<span class="badge badge-geo">GEO</span>
+</div>
+<div class="field-card-body">
+<div class="field-item">
+<div class="field-item-label">设计初衷</div>
+<div class="field-item-value">产品一句话定位描述，用于列表页展示和 llms.txt 中的产品简介。AI 抓取时这是理解产品定位的第一信号。</div>
+</div>
+<div class="field-item">
+<div class="field-item-label">作用原理</div>
+<div class="field-item-value">在产品列表 API 中返回；llms.txt 的 Pages 部分将 tagline 输出为产品链接后的描述；前端产品卡片展示此字段。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">标准填写规范</div>
+<div class="field-item-value">10-30 字，用一句话说明产品的核心价值和目标场景。例如"为中小制造企业打造的轻量化生产管理系统"。避免空泛的形容词堆砌。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">错误后果</div>
+<div class="field-item-value danger">留空时 AI 从 description 中自行提取可能不准确；过长失去一句话定位的效果；与实际产品功能不符会误导用户预期。</div>
+</div>
+</div>
+</div>
+
+<!-- description & content -->
+<div class="field-card">
+<div class="field-card-header">
+<span class="field-name">description / content</span>
+<span class="field-type">text</span>
+<span class="badge badge-optional">选填</span>
+</div>
+<div class="field-card-body">
+<div class="field-item">
+<div class="field-item-label">设计初衷</div>
+<div class="field-item-value"><code>description</code> 是产品概述（用于列表页和 SEO 描述回退），<code>content</code> 是产品详情正文（用于详情页展示和 AI 语料）。</div>
+</div>
+<div class="field-item">
+<div class="field-item-label">作用原理</div>
+<div class="field-item-value">description 写入 Product schema 的 description 字段和 <code>og:description</code>；content 通过 API 返回给前端渲染为产品详情页正文。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">标准填写规范</div>
+<div class="field-item-value">description：50-100 字，概括产品功能、目标用户和核心价值。content：500-2000 字，包含产品概述、核心功能、技术架构、适用场景、对比优势。使用结构化分段（H2/H3）。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">错误后果</div>
+<div class="field-item-value danger">description 留空时 SEO 描述回退到 content 首段可能不理想；content 过短（&lt;200 字）的产品页被搜索引擎判定为薄内容。</div>
+</div>
+</div>
+</div>
+
+<!-- features & specifications -->
+<div class="field-card">
+<div class="field-card-header">
+<span class="field-name">features / specifications</span>
+<span class="field-type">json</span>
+<span class="badge badge-optional">选填</span>
+<span class="badge badge-geo">GEO</span>
+</div>
+<div class="field-card-body">
+<div class="field-item">
+<div class="field-item-label">设计初衷</div>
+<div class="field-item-value"><code>features</code> 是产品功能列表（JSON 数组），<code>specifications</code> 是技术规格参数（JSON 键值对）。两者作为产品事实数据输出给 AI。</div>
+</div>
+<div class="field-item">
+<div class="field-item-label">作用原理</div>
+<div class="field-item-value">通过 API 返回给前端渲染为功能列表和规格表；Product schema 的 additionalProperty 字段可包含规格数据；AI 抓取时这些结构化数据是回答"XX 产品有哪些功能""XX 产品规格参数"的直接来源。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">标准填写规范</div>
+<div class="field-item-value">features 格式：<code>[{"title":"功能名","description":"功能说明"},...]</code>，5-15 个功能点。specifications 格式：<code>{"部署方式":"云端/私有化","并发用户":"500+","数据存储":"MySQL/PostgreSQL",...}</code>，包含关键技术参数。数据必须与实际产品一致。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">错误后果</div>
+<div class="field-item-value danger">规格数据与实际不符会导致用户投诉和信任度下降；AI 引用错误规格会传播错误信息；留空会让 AI 无法回答产品参数相关问题。</div>
+</div>
+</div>
+</div>
+
+<!-- price / currency / availability -->
+<div class="field-card">
+<div class="field-card-header">
+<span class="field-name">price / currency / availability</span>
+<span class="field-type">decimal / string / enumeration</span>
+<span class="badge badge-optional">选填</span>
+<span class="badge badge-seo">SEO</span>
+<span class="badge badge-geo">GEO</span>
+</div>
+<div class="field-card-body">
+<div class="field-item">
+<div class="field-item-label">设计初衷</div>
+<div class="field-item-value">产品价格、货币类型和库存状态。这三个字段共同构成 Product schema 中的 <code>Offer</code> 对象，直接影响购物搜索展示和 AI 产品推荐。</div>
+</div>
+<div class="field-item">
+<div class="field-item-label">作用原理</div>
+<div class="field-item-value"><code>price</code> 写入 Offer.price；<code>currency</code> 写入 Offer.priceCurrency（默认 CNY）；<code>availability</code> 写入 Offer.availability（映射为 schema.org URL）。Google 购物搜索抓取这些数据展示在结果中。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">标准填写规范</div>
+<div class="field-item-value">price：填写产品的公开标价（非谈判价），无公开定价的填 0 或留空。currency：CNY（人民币）或 USD（美元）等 ISO 4217 货币代码。availability：在售选 <code>in_stock</code>，停产选 <code>out_of_stock</code>，预售选 <code>pre_order</code>。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">错误后果</div>
+<div class="field-item-value danger">填写谈判价格泄露定价策略；价格与实际不符引发用户投诉；availability 与实际不符导致搜索引擎展示错误库存信息；不填价格时购物搜索无法展示产品。</div>
+</div>
+</div>
+</div>
+
+<!-- priceRange & priceUnit -->
+<div class="field-card">
+<div class="field-card-header">
+<span class="field-name">priceRange / priceUnit</span>
+<span class="field-type">string</span>
+<span class="badge badge-optional">选填</span>
+</div>
+<div class="field-card-body">
+<div class="field-item">
+<div class="field-item-label">设计初衷</div>
+<div class="field-item-value">价格区间和计价单位。用于无固定价格的产品（如定制化方案、按需计费服务）。</div>
+</div>
+<div class="field-item">
+<div class="field-item-label">作用原理</div>
+<div class="field-item-value">priceRange 写入 Product schema 的 offers.priceRange 或作为页面展示文本；priceUnit 说明计价方式（如"元/年""元/用户/月"）。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">标准填写规范</div>
+<div class="field-item-value">priceRange 格式："5万-20万"或"￥1,000-￥5,000/月"。priceUnit："元/年""元/用户/月""元/次"等。与 <code>price</code> 字段二选一使用。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">错误后果</div>
+<div class="field-item-value danger">priceRange 与实际报价差距过大会误导用户；priceUnit 不明确导致用户对价格理解错误。</div>
+</div>
+</div>
+</div>
+
+<!-- cases -->
+<div class="field-card">
+<div class="field-card-header">
+<span class="field-name">cases</span>
+<span class="field-type">relation &rarr; case (manyToMany)</span>
+<span class="badge badge-optional">选填</span>
+</div>
+<div class="field-card-body">
+<div class="field-item">
+<div class="field-item-label">设计初衷</div>
+<div class="field-item-value">关联使用该产品的落地案例，在产品页展示成功案例增强说服力，同时构建产品-案例的知识关联。</div>
+</div>
+<div class="field-item">
+<div class="field-item-label">作用原理</div>
+<div class="field-item-value">双向关联：产品页通过 API 返回关联案例列表；案例页也展示关联产品。知识图谱通过此关联建立 Product-CaseStudy 关系。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">标准填写规范</div>
+<div class="field-item-value">每个产品关联 2-5 个代表性案例。选择有实际数据成果的案例，避免关联信息不完整的案例。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">错误后果</div>
+<div class="field-item-value danger">不关联案例的产品页缺乏社会证明，转化率低；关联不相关案例会误导用户预期。</div>
+</div>
+</div>
+</div>
+
+<!-- SEO and index fields -->
+<div class="field-card">
+<div class="field-card-header">
+<span class="field-name">seoTitle / seoDescription / seoKeywords / canonicalUrl / ogImage / allowIndex / sitemapPriority / sitemapFrequency</span>
+<span class="field-type">SEO 字段组</span>
+<span class="badge badge-seo">SEO</span>
+</div>
+<div class="field-card-body">
+<div class="field-item">
+<div class="field-item-label">设计初衷</div>
+<div class="field-item-value">与文章的 SEO 字段组功能一致，控制产品页在搜索结果和 AI 抓取中的表现。产品页默认 sitemapPriority=0.7，建议调至 0.8。</div>
+</div>
+<div class="field-item">
+<div class="field-item-label">作用原理</div>
+<div class="field-item-value">同文章 SEO 字段。产品页因转化价值高，建议 <code>sitemapFrequency</code> 设为 <code>weekly</code> 或 <code>daily</code>（价格变动频繁时）。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">标准填写规范</div>
+<div class="field-item-value">seoTitle："[产品名] - [核心功能] | [品牌名]"，25-35 字。seoDescription：包含产品核心价值、目标用户和价格信息，70-155 字。allowIndex：正式产品设为 true。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">错误后果</div>
+<div class="field-item-value danger">同文章 SEO 字段。产品页 SEO 错误的代价更高，因为产品页是转化入口。</div>
+</div>
+</div>
+</div>
+
+<h3 id="ch3-5">3.5 标准发布全流程</h3>
+
+<h4>素材准备清单</h4>
+
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>素材</th><th>要求</th><th>用途</th></tr>
+</thead>
+<tbody>
+<tr><td>产品文档</td><td>功能说明、技术规格、适用场景</td><td>填入 description 和 content</td></tr>
+<tr><td>产品图片</td><td>封面 1200x630px + 详情图 3-10 张</td><td>填入 coverImage 和 images</td></tr>
+<tr><td>功能列表</td><td>JSON 格式，5-15 个功能点</td><td>填入 features</td></tr>
+<tr><td>规格参数</td><td>JSON 键值对</td><td>填入 specifications</td></tr>
+<tr><td>定价信息</td><td>公开标价或价格区间</td><td>填入 price/priceRange</td></tr>
+<tr><td>关联案例</td><td>2-5 个已发布的落地案例</td><td>关联 cases</td></tr>
+</tbody>
+</table>
+</div>
+
+<h4>填写顺序</h4>
+
+<ol class="steps">
+<li><strong>基础信息</strong> — 填写 <code>name</code>、<code>slug</code>、<code>tagline</code>、<code>description</code>、<code>content</code></li>
+<li><strong>媒体资源</strong> — 上传 <code>coverImage</code> 和 <code>images</code>（多图）</li>
+<li><strong>功能规格</strong> — 填写 <code>features</code>（JSON 数组）和 <code>specifications</code>（JSON 键值对）</li>
+<li><strong>定价信息</strong> — 填写 <code>price</code>/<code>currency</code>/<code>availability</code> 或 <code>priceRange</code>/<code>priceUnit</code></li>
+<li><strong>分类标签</strong> — 选择 <code>category</code> 和 <code>tags</code></li>
+<li><strong>案例关联</strong> — 关联 <code>cases</code>（2-5 个已发布案例）</li>
+<li><strong>SEO 配置</strong> — 填写 <code>seoTitle</code>、<code>seoDescription</code>、<code>ogImage</code></li>
+<li><strong>收录控制</strong> — 确认 <code>allowIndex</code>=true，设 <code>sitemapPriority</code>=0.8</li>
+<li><strong>知识图谱</strong> — 选择 <code>mainEntity</code> 和 <code>mentionedEntities</code></li>
+<li><strong>品牌话术</strong> — 关联 <code>brandVoiceRef</code></li>
+<li><strong>自检</strong> — 对照自检清单</li>
+<li><strong>发布</strong> — <code>status</code> 改为 <code>published</code></li>
+</ol>
+
+<h4>发布前自检清单</h4>
+
+<ul class="checklist">
+<li>产品名称与官方品牌一致</li>
+<li>tagline 10-30 字，明确产品定位</li>
+<li>description 50-100 字，content 500 字以上</li>
+<li>features JSON 格式正确，5-15 个功能点</li>
+<li>specifications JSON 格式正确，关键参数齐全</li>
+<li>价格信息准确，与销售团队确认</li>
+<li>availability 与实际库存状态一致</li>
+<li>封面图和详情图已上传</li>
+<li>关联 2-5 个案例</li>
+<li>seoTitle 含产品名和核心功能</li>
+<li>allowIndex=true, sitemapPriority=0.8</li>
+<li>mainEntity 已关联</li>
+<li>brandVoiceRef 已关联</li>
+</ul>
+
+<h3 id="ch3-6">3.6 发布后闭环运作与禁忌</h3>
+
+<h4>前端展示与 GEO 效果</h4>
+
+<p>产品发布后，前端渲染产品详情页，注入 Product + Offer 结构化数据。Google 收录后可能在搜索结果中展示价格和库存富媒体片段。llms.txt 将产品名和 tagline 输出到 Pages 部分，AI 模型在回答产品推荐类问题时可引用。产品页与关联案例互相内链，形成转化闭环。</p>
+
+<h4>价格更新机制</h4>
+
+<div class="callout callout-warning">
+<div class="callout-title">价格变更操作规范</div>
+<p>产品价格变更时，只需更新 <code>price</code> 字段并保存。Lifecycle 自动触发搜索引擎推送和缓存失效，sitemap 的 lastmod 更新。不需要删除重建产品记录。价格变更后建议在 24 小时内验证 Google Search Console 中的结构化数据是否更新。</p>
+</div>
+
+<h4>字段禁忌写法</h4>
+
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>字段</th><th>禁忌写法</th><th>后果</th></tr>
+</thead>
+<tbody>
+<tr><td>name</td><td>使用内部代号（如"Project-X"）</td><td>AI 和用户无法识别产品</td></tr>
+<tr><td>tagline</td><td>空泛形容词（如"最好的产品"）</td><td>无信息量，AI 忽略</td></tr>
+<tr><td>price</td><td>填写 0 但实际有价格</td><td>AI 认为产品免费，传播错误信息</td></tr>
+<tr><td>features</td><td>填写文本而非 JSON 数组</td><td>前端渲染异常，结构化数据失效</td></tr>
+<tr><td>specifications</td><td>填写营销话术而非技术参数</td><td>AI 无法提取有效规格信息</td></tr>
+</tbody>
+</table>
+</div>
+
+<h4>内容禁忌类型</h4>
+
+<div class="callout callout-danger">
+<div class="callout-title">禁止发布的产品内容</div>
+<p><strong>1. 虚假价格</strong> — 标价与实际收费不符，误导用户和 AI。后果：用户投诉，AI 标记为不可信来源。</p>
+<p><strong>2. 夸大功能</strong> — 声明产品不具备的功能。后果：用户期望落差导致差评和退款，AI 传播错误信息损害品牌。</p>
+<p><strong>3. 竞品贬低</strong> — 在产品描述中恶意贬低竞争对手。后果：可能面临不正当竞争诉讼，搜索引擎可能降权。</p>
+<p><strong>4. 过时规格</strong> — 产品已升级但规格参数未更新。后果：AI 引用过时数据，用户获取错误信息。</p>
+<p><strong>5. 无结构化数据</strong> — features/specifications 留空。后果：产品页对 AI 无价值，无法被产品推荐触达。</p>
+</div>
+
+<!-- ==================== Chapter 4: Case ==================== -->
+<h2 id="ch4"><span class="ch-num">第四章</span>落地案例</h2>
+
+<h3 id="ch4-1">4.1 设计目的与 GEO 角色</h3>
+
+<p>落地案例是官网信任建设的核心内容。它的设计目的是通过真实的客户故事和量化成果，向潜在客户和 AI 模型提供<strong>社会证明</strong>——证明你的产品/方案在真实场景中有效。</p>
+
+<p>在 GEO 体系中，案例承担三个角色：<strong>可信度背书</strong>（CaseStudy 结构化数据向 AI 声明"这不是广告，是真实案例"）、<strong>长尾场景入口</strong>（通过"XX 行业 XX 问题解决方案"类长尾搜索获取流量）、<strong>产品页转化支撑</strong>（与产品双向关联，在产品页展示增强说服力）。</p>
+
+<p>不做案例发布的后果：产品页缺乏社会证明，转化率下降 40-60%；AI 在回答"XX 公司的客户案例""XX 行业有没有成功案例"时找不到你的信息；竞品有案例而你没有，在对比中被淘汰。正确使用的效果：案例页通过"行业+问题+方案"长尾词获取精准流量，案例中的客户名和量化数据增强 AI 引用可信度。</p>
+
+<h3 id="ch4-2">4.2 页面运作原理</h3>
+
+<h4>数据上下游流转</h4>
+
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>环节</th><th>数据流向</th><th>触发机制</th></tr>
+</thead>
+<tbody>
+<tr><td>上游输入</td><td>客户成功故事 &rarr; 内容运营整理 &rarr; 创建案例</td><td>手动创建</td></tr>
+<tr><td>创建/更新</td><td>填写字段 &rarr; 保存 &rarr; Lifecycle 触发</td><td>Strapi 保存</td></tr>
+<tr><td>Lifecycle 触发</td><td>标签索引 &rarr; 知识图谱 &rarr; 搜索引擎推送 &rarr; 缓存失效</td><td>自动</td></tr>
+<tr><td>产品联动</td><td>案例 &harr; <code>relatedProducts</code> 关联 &rarr; 产品页展示案例</td><td>双向关联</td></tr>
+<tr><td>下游输出</td><td>公开 API &rarr; 前端案例页 &rarr; sitemap &rarr; llms.txt</td><td>爬虫/前端</td></tr>
+</tbody>
+</table>
+</div>
+
+<h4>结构化数据输出</h4>
+
+<p>案例页生成 <code>CaseStudy</code> 或 <code>Article</code> 类型的结构化数据，包含客户行业、挑战、方案和成果。这些数据让 AI 在回答"XX 行业解决方案"类问题时引用你的案例作为证据。案例的 <code>results</code> 字段（JSON 格式的量化成果）是 AI 最关注的数据点。</p>
+
+<h3 id="ch4-3">4.3 适用人群与禁止操作人群</h3>
+
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>类别</th><th>角色</th><th>说明</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>适用人群</strong></td><td>客户成功经理</td><td>最了解客户使用过程和成果</td></tr>
+<tr><td></td><td>内容运营</td><td>负责将客户故事转化为案例内容</td></tr>
+<tr><td></td><td>市场负责人</td><td>审核客户授权和敏感信息</td></tr>
+<tr><td><strong>禁止操作人群</strong></td><td>销售人员</td><td>可能夸大成果或泄露客户隐私</td></tr>
+<tr><td></td><td>技术开发</td><td>不了解客户业务背景，无法准确描述挑战和方案</td></tr>
+<tr><td></td><td>未经授权的实习生</td><td>无法获取客户授权和准确数据</td></tr>
+</tbody>
+</table>
+</div>
+
+<p><strong>发布内容最终用途：</strong>案例同时服务于搜索引擎长尾流量（通过行业+问题关键词匹配）、AI 可信度引用（CaseStudy 结构化数据 + 量化成果）、产品页转化支撑（关联展示在产品详情页）、客户关系维护（展示客户成功故事增强合作粘性）。案例中的数据必须真实可验证——AI 和用户都可能交叉验证你声明的事实。</p>
+
+<h3 id="ch4-4">4.4 字段四件套详解</h3>
+
+<!-- title -->
+<div class="field-card">
+<div class="field-card-header">
+<span class="field-name">title</span>
+<span class="field-type">string / maxLength:200</span>
+<span class="badge badge-required">必填</span>
+<span class="badge badge-seo">SEO</span>
+</div>
+<div class="field-card-body">
+<div class="field-item">
+<div class="field-item-label">设计初衷</div>
+<div class="field-item-value">案例标题，应包含客户行业、核心问题或成果，用于搜索匹配和 AI 引用。</div>
+</div>
+<div class="field-item">
+<div class="field-item-label">作用原理</div>
+<div class="field-item-value">写入 <code>&lt;h1&gt;</code> 和结构化数据 name；搜索结果标题；llms.txt 中的链接文本。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">标准填写规范</div>
+<div class="field-item-value">格式建议："[客户名/行业]：[核心问题]的[方案类型]实践"或"[行业]数字化转型：[量化成果]的真实案例"。15-35 字。包含行业关键词和成果数据。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">错误后果</div>
+<div class="field-item-value danger">标题不含行业关键词无法匹配搜索；不含成果数据降低点击率；泄露不应公开的客户名称引发法律风险。</div>
+</div>
+</div>
+</div>
+
+<!-- clientName & clientLogo & clientIndustry -->
+<div class="field-card">
+<div class="field-card-header">
+<span class="field-name">clientName / clientLogo / clientIndustry</span>
+<span class="field-type">string / media / string</span>
+<span class="badge badge-required">clientName 必填</span>
+</div>
+<div class="field-card-body">
+<div class="field-item">
+<div class="field-item-label">设计初衷</div>
+<div class="field-item-value">客户名称、logo 和所属行业。客户名和 logo 是信任信号，行业用于案例筛选和 AI 分类。</div>
+</div>
+<div class="field-item">
+<div class="field-item-label">作用原理</div>
+<div class="field-item-value">clientName 写入结构化数据的提及实体；clientLogo 在案例页展示增强可信度；clientIndustry 用于案例列表的行业筛选和知识图谱分类。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">标准填写规范</div>
+<div class="field-item-value">clientName：使用客户正式名称，未获授权的使用"某XX企业"脱敏。clientLogo：PNG 透明背景，宽度 200-400px。clientIndustry：使用标准行业分类名（如"制造业""医疗""教育"）。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">错误后果</div>
+<div class="field-item-value danger">未经授权使用客户名称引发法律纠纷；logo 模糊或变形降低专业感；行业填写不规范导致案例筛选失效。</div>
+</div>
+</div>
+</div>
+
+<!-- challenge & solution & results -->
+<div class="field-card">
+<div class="field-card-header">
+<span class="field-name">challenge / solution / results</span>
+<span class="field-type">text / text / json</span>
+<span class="badge badge-required">全部必填</span>
+<span class="badge badge-geo">GEO</span>
+</div>
+<div class="field-card-body">
+<div class="field-item">
+<div class="field-item-label">设计初衷</div>
+<div class="field-item-value">案例三要素：客户面临的挑战、你提供的方案、取得的成果。这是 CaseStudy 结构化数据的核心内容，也是 AI 最关注的案例信息。</div>
+</div>
+<div class="field-item">
+<div class="field-item-label">作用原理</div>
+<div class="field-item-value">challenge 写入结构化数据描述；solution 作为方案正文展示；results 以 JSON 格式存储量化指标，AI 可直接提取数据点。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">标准填写规范</div>
+<div class="field-item-value">challenge：100-300 字，描述客户的具体痛点和业务影响。solution：300-800 字，分点说明方案的核心组成和实施步骤。results：JSON 数组格式 <code>[{"metric":"生产效率","value":"提升35%","before":"100件/小时","after":"135件/小时"},...]</code>，3-8 个量化指标，每个含指标名、数值、前后对比。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">错误后果</div>
+<div class="field-item-value danger">challenge 过于笼统（如"效率低下"）无法匹配搜索；results 不是 JSON 格式导致前端渲染异常和 AI 无法提取数据；成果数据不可验证损害可信度。</div>
+</div>
+</div>
+</div>
+
+<!-- testimonial & testimonialAuthor & testimonialTitle -->
+<div class="field-card">
+<div class="field-card-header">
+<span class="field-name">testimonial / testimonialAuthor / testimonialTitle</span>
+<span class="field-type">text / string / string</span>
+<span class="badge badge-optional">选填</span>
+</div>
+<div class="field-card-body">
+<div class="field-item">
+<div class="field-item-label">设计初衷</div>
+<div class="field-item-value">客户评价内容、评价人姓名和职位。客户原话评价是最强的社会证明。</div>
+</div>
+<div class="field-item">
+<div class="field-item-label">作用原理</div>
+<div class="field-item-value">在案例页突出展示；写入结构化数据的 review 字段；AI 抓取时作为客户满意度信号。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">标准填写规范</div>
+<div class="field-item-value">testimonial：50-150 字客户原话，需获客户授权。testimonialAuthor：评价人姓名（可脱敏为"张XX"）。testimonialTitle：评价人职位。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">错误后果</div>
+<div class="field-item-value danger">未经授权使用客户姓名和原话引发隐私纠纷；编造评价被发现后严重损害品牌信誉。</div>
+</div>
+</div>
+</div>
+
+<!-- relatedProducts -->
+<div class="field-card">
+<div class="field-card-header">
+<span class="field-name">relatedProducts</span>
+<span class="field-type">relation &rarr; product (manyToMany)</span>
+<span class="badge badge-optional">选填</span>
+</div>
+<div class="field-card-body">
+<div class="field-item">
+<div class="field-item-label">设计初衷</div>
+<div class="field-item-value">关联案例中使用的产品，实现案例与产品的双向内链。</div>
+</div>
+<div class="field-item">
+<div class="field-item-label">作用原理</div>
+<div class="field-item-value">双向关联：案例页展示使用的产品，产品页展示关联案例。知识图谱建立 CaseStudy-Product 关系。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">标准填写规范</div>
+<div class="field-item-value">关联案例中实际使用的产品，通常 1-3 个。避免关联未在案例中提及的产品。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">错误后果</div>
+<div class="field-item-value danger">不关联产品导致案例页缺少产品入口，流量无法导向转化；关联不相关产品误导用户。</div>
+</div>
+</div>
+</div>
+
+<h3 id="ch4-5">4.5 标准发布全流程</h3>
+
+<h4>素材准备清单</h4>
+
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>素材</th><th>要求</th><th>用途</th></tr>
+</thead>
+<tbody>
+<tr><td>客户授权书</td><td>书面授权使用客户名称和 logo</td><td>合规存档</td></tr>
+<tr><td>客户 logo</td><td>PNG 透明背景, 200-400px</td><td>填入 clientLogo</td></tr>
+<tr><td>挑战描述</td><td>100-300 字，具体痛点</td><td>填入 challenge</td></tr>
+<tr><td>方案描述</td><td>300-800 字，分点说明</td><td>填入 solution</td></tr>
+<tr><td>成果数据</td><td>JSON 格式, 3-8 个量化指标</td><td>填入 results</td></tr>
+<tr><td>客户评价</td><td>50-150 字原话 + 授权</td><td>填入 testimonial</td></tr>
+<tr><td>案例图片</td><td>封面 + 3-5 张实施过程图</td><td>填入 coverImage 和 images</td></tr>
+</tbody>
+</table>
+</div>
+
+<h4>填写顺序</h4>
+
+<ol class="steps">
+<li><strong>客户信息</strong> — 填写 <code>clientName</code>、上传 <code>clientLogo</code>、填写 <code>clientIndustry</code> 和 <code>clientDescription</code></li>
+<li><strong>案例三要素</strong> — 填写 <code>title</code>、<code>challenge</code>、<code>solution</code>、<code>results</code>（JSON）</li>
+<li><strong>客户评价</strong> — 填写 <code>testimonial</code>、<code>testimonialAuthor</code>、<code>testimonialTitle</code></li>
+<li><strong>媒体资源</strong> — 上传 <code>coverImage</code> 和 <code>images</code></li>
+<li><strong>产品关联</strong> — 关联 <code>relatedProducts</code></li>
+<li><strong>分类标签</strong> — 选择 <code>tags</code>（行业+产品+场景关键词）</li>
+<li><strong>SEO 配置</strong> — 填写 <code>seoTitle</code>、<code>seoDescription</code></li>
+<li><strong>收录控制</strong> — 确认 <code>allowIndex</code>=true</li>
+<li><strong>知识图谱</strong> — 选择 <code>mainEntity</code> 和 <code>mentionedEntities</code></li>
+<li><strong>自检</strong> — 对照自检清单</li>
+<li><strong>发布</strong> — <code>status</code> 改为 <code>published</code></li>
+</ol>
+
+<h4>发布前自检清单</h4>
+
+<ul class="checklist">
+<li>客户授权已获取（书面）</li>
+<li>title 含行业和成果关键词</li>
+<li>challenge 具体描述痛点（非空泛）</li>
+<li>solution 分点说明方案组成</li>
+<li>results JSON 格式正确，含前后对比数据</li>
+<li>客户评价已获授权</li>
+<li>封面图已上传</li>
+<li>关联 1-3 个产品</li>
+<li>tags 含行业和场景关键词</li>
+<li>seoTitle 和 seoDescription 已填写</li>
+<li>allowIndex=true</li>
+<li>成果数据可验证</li>
+</ul>
+
+<h3 id="ch4-6">4.6 发布后闭环运作与禁忌</h3>
+
+<h4>前端展示与联动效果</h4>
+
+<p>案例发布后，前端渲染案例详情页，展示客户信息、挑战-方案-成果三段式内容和客户评价。关联的产品页自动展示此案例。案例通过 sitemap 和 llms.txt 输出，搜索引擎和 AI 可发现和抓取。案例的 <code>results</code> JSON 数据是 AI 引用频率最高的字段——当用户询问"XX 产品的效果怎么样"时，AI 倾向于引用有量化数据的案例。</p>
+
+<h4>字段禁忌写法</h4>
+
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>字段</th><th>禁忌写法</th><th>后果</th></tr>
+</thead>
+<tbody>
+<tr><td>title</td><td>纯品牌宣传（如"XX公司成功案例"）</td><td>无搜索匹配价值</td></tr>
+<tr><td>challenge</td><td>空泛描述（如"面临数字化转型挑战"）</td><td>无法匹配具体问题搜索</td></tr>
+<tr><td>results</td><td>填写文本而非 JSON 数组</td><td>前端渲染异常，AI 无法提取数据</td></tr>
+<tr><td>results</td><td>无前后对比数据（只有"提升35%"）</td><td>数据可信度低</td></tr>
+<tr><td>testimonial</td><td>编造客户评价</td><td>被发现后严重损害品牌信誉</td></tr>
+</tbody>
+</table>
+</div>
+
+<h4>内容禁忌类型</h4>
+
+<div class="callout callout-danger">
+<div class="callout-title">禁止发布的案例内容</div>
+<p><strong>1. 未经授权的客户信息</strong> — 使用未获授权的客户名称、logo 或评价。后果：面临法律诉讼，客户关系破裂。</p>
+<p><strong>2. 虚构案例</strong> — 编造不存在的客户和成果。后果：被发现后品牌信誉归零，AI 标记为不可信来源。</p>
+<p><strong>3. 夸大成果</strong> — 数据造假或选择性呈现。后果：客户和 AI 交叉验证发现不一致，信任度下降。</p>
+<p><strong>4. 泄露商业机密</strong> — 暴露客户的运营数据、技术架构等敏感信息。后果：面临法律赔偿，客户终止合作。</p>
+<p><strong>5. 无量化数据</strong> — 案例只有描述没有数字。后果：AI 不引用（偏好有数据的案例），说服力低。</p>
+</div>
+
+<!-- ==================== Chapter 5: Tutorial ==================== -->
+<h2 id="ch5"><span class="ch-num">第五章</span>教程/操作指南</h2>
+
+<h3 id="ch5-1">5.1 设计目的与 GEO 角色</h3>
+
+<p>教程/操作指南是官网知识深度建设的载体。它的设计目的是通过结构化的操作步骤指导用户完成特定任务，同时以 HowTo + VideoObject 结构化数据向搜索引擎和 AI 声明"这是一篇可执行的教程"。</p>
+
+<p>在 GEO 体系中，教程承担三个角色：<strong>HowTo 知识图谱节点</strong>（HowTo 结构化数据让 AI 在回答"怎么做 XX"类问题时直接引用你的步骤）、<strong>视频搜索入口</strong>（通过 VideoObject 结构化数据进入 Google 视频搜索结果）、<strong>用户留存工具</strong>（教程内容关联课程中心，引导用户从免费教程进入付费课程体系）。</p>
+
+<p>不做教程的后果：AI 在回答"XX 怎么操作""XX 教程"类问题时引用第三方平台的教程，你的产品失去使用指导话语权；视频搜索结果中不出现你的教程视频；用户在产品使用中遇到困难时找不到官方指导，转向竞品。正确使用的效果：HowTo 结构化数据在搜索结果中展示步骤富媒体片段，教程视频进入 Google 视频搜索，教程引导用户进入课程中心形成学习闭环。</p>
+
+<h3 id="ch5-2">5.2 页面运作原理</h3>
+
+<h4>数据上下游流转</h4>
+
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>环节</th><th>数据流向</th><th>触发机制</th></tr>
+</thead>
+<tbody>
+<tr><td>上游输入</td><td>产品操作手册 / 课程内容片段 &rarr; 创建教程</td><td>内容运营或教研团队创建</td></tr>
+<tr><td>创建/更新</td><td>填写字段 &rarr; 保存 &rarr; Lifecycle 触发</td><td>Strapi 保存</td></tr>
+<tr><td>Lifecycle 触发</td><td>标签索引 &rarr; 知识图谱 &rarr; 搜索引擎推送 &rarr; 缓存失效</td><td>自动</td></tr>
+<tr><td>结构化数据</td><td><code>schema-builder</code> 生成 HowTo schema + VideoObject schema</td><td>前端请求时生成</td></tr>
+<tr><td>课程联动</td><td>教程 &harr; 课程中心（共享知识实体和品牌话术）</td><td>知识实体关联</td></tr>
+<tr><td>下游输出</td><td>公开 API &rarr; 前端教程页 &rarr; sitemap &rarr; llms.txt</td><td>爬虫/前端</td></tr>
+</tbody>
+</table>
+</div>
+
+<h4>结构化数据输出</h4>
+
+<p>教程页生成两类结构化数据：<code>HowTo</code>（包含步骤名称、描述、预计时间）和 <code>VideoObject</code>（包含视频标题、上传日期、缩略图、内容 URL）。HowTo 数据让 Google 在搜索结果中展示步骤富媒体片段——用户无需点击就能看到前几步，吸引点击。VideoObject 数据让教程视频进入 Google 视频搜索索引。</p>
+
+<h3 id="ch5-3">5.3 适用人群与禁止操作人群</h3>
+
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>类别</th><th>角色</th><th>说明</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>适用人群</strong></td><td>产品培训师</td><td>最了解产品操作流程</td></tr>
+<tr><td></td><td>教研团队</td><td>负责教程内容的教学设计</td></tr>
+<tr><td></td><td>技术文档工程师</td><td>负责技术类教程的准确性</td></tr>
+<tr><td></td><td>内容运营</td><td>负责 SEO 字段和发布流程</td></tr>
+<tr><td><strong>禁止操作人群</strong></td><td>市场部非内容岗</td><td>不了解操作细节，可能写出不准确的步骤</td></tr>
+<tr><td></td><td>未实际使用产品的实习生</td><td>无法验证步骤的正确性</td></tr>
+<tr><td></td><td>外部兼职</td><td>无法获取产品最新版本的操作流程</td></tr>
+</tbody>
+</table>
+</div>
+
+<p><strong>发布内容最终用途：</strong>教程同时服务于搜索引擎 HowTo 搜索（通过步骤富媒体片段获取流量）、AI 操作指导引用（HowTo 结构化数据被 AI 直接引用为操作步骤）、视频搜索（VideoObject 数据进入视频索引）、课程中心导流（教程作为免费内容引导用户进入付费课程）。教程的 <code>steps</code> JSON 数据是 AI 最关注的字段——当用户询问"XX 怎么做"时，AI 倾向于引用有结构化步骤的教程。</p>
+
+<h3 id="ch5-4">5.4 字段四件套详解</h3>
+
+<!-- title & description -->
+<div class="field-card">
+<div class="field-card-header">
+<span class="field-name">title / description</span>
+<span class="field-type">string / text</span>
+<span class="badge badge-required">title 必填</span>
+<span class="badge badge-seo">SEO</span>
+<span class="badge badge-geo">GEO</span>
+</div>
+<div class="field-card-body">
+<div class="field-item">
+<div class="field-item-label">设计初衷</div>
+<div class="field-item-value">教程标题和描述。标题应包含"怎么做""操作指南"等 HowTo 类关键词，描述概括教程目标和适用场景。</div>
+</div>
+<div class="field-item">
+<div class="field-item-label">作用原理</div>
+<div class="field-item-value">title 写入 HowTo schema 的 name 字段和 <code>&lt;h1&gt;</code>；description 写入 HowTo schema 的 description 和 <code>og:description</code>；llms.txt 使用 title 和 description 作为教程链接的描述。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">标准填写规范</div>
+<div class="field-item-value">title 格式："如何[完成某任务]"或"[产品名] [操作] 完整指南"。15-35 字。description：50-150 字，说明教程目标、适用版本和难度。例如"本教程指导你如何在 30 分钟内完成 MES 系统的初始配置，适用于 v3.0 以上版本。"</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">错误后果</div>
+<div class="field-item-value danger">标题不含"如何/怎么做"等 HowTo 关键词无法匹配 HowTo 搜索；description 不含适用版本信息导致用户按过时教程操作出错。</div>
+</div>
+</div>
+</div>
+
+<!-- steps -->
+<div class="field-card">
+<div class="field-card-header">
+<span class="field-name">steps</span>
+<span class="field-type">json</span>
+<span class="badge badge-required">必填</span>
+<span class="badge badge-geo">GEO</span>
+</div>
+<div class="field-card-body">
+<div class="field-item">
+<div class="field-item-label">设计初衷</div>
+<div class="field-item-value">教程操作步骤，以 JSON 数组格式存储。这是 HowTo 结构化数据的核心，也是 AI 引用教程时的直接数据来源。</div>
+</div>
+<div class="field-item">
+<div class="field-item-label">作用原理</div>
+<div class="field-item-value">前端渲染为分步展示；HowTo schema 将每个步骤转为 <code>HowToStep</code> 对象（含 name、text、image）；Google 搜索结果可能展示前 3-5 步的富媒体片段。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">标准填写规范</div>
+<div class="field-item-value">JSON 数组格式：<code>[{"name":"步骤标题","text":"详细操作说明","image":"步骤截图URL"},...]</code>。3-15 个步骤。每个步骤的 name 控制在 5-15 字，text 控制在 50-200 字。步骤顺序必须是可执行的操作顺序。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">错误后果</div>
+<div class="field-item-value danger">JSON 格式错误导致前端渲染异常和 HowTo schema 失效；步骤缺失关键操作导致用户卡住；步骤顺序混乱导致操作失败；无截图的步骤在搜索结果中展示效果差。</div>
+</div>
+</div>
+</div>
+
+<!-- videoUrl & thumbnailUrl -->
+<div class="field-card">
+<div class="field-card-header">
+<span class="field-name">videoUrl / thumbnailUrl</span>
+<span class="field-type">string</span>
+<span class="badge badge-optional">选填</span>
+<span class="badge badge-seo">SEO</span>
+</div>
+<div class="field-card-body">
+<div class="field-item">
+<div class="field-item-label">设计初衷</div>
+<div class="field-item-value">教程视频 URL 和缩略图 URL。填写后生成 VideoObject 结构化数据，让视频进入 Google 视频搜索索引。</div>
+</div>
+<div class="field-item">
+<div class="field-item-label">作用原理</div>
+<div class="field-item-value">videoUrl 写入 VideoObject.contentUrl；thumbnailUrl 写入 VideoObject.thumbnailUrl。Google 视频搜索抓取这些数据后在视频搜索结果中展示缩略图和链接。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">标准填写规范</div>
+<div class="field-item-value">videoUrl：填写视频的公开访问 URL（支持 MP4 直链或 YouTube/B 站嵌入链接）。thumbnailUrl：填写视频缩略图 URL，尺寸 1280x720px，JPG/WebP 格式。两个字段需同时填写。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">错误后果</div>
+<div class="field-item-value danger">videoUrl 不可访问导致 Google 视频索引失败；只填 videoUrl 不填 thumbnailUrl 导致视频搜索结果无缩略图；URL 指向需要登录才能访问的视频会被搜索引擎跳过。</div>
+</div>
+</div>
+</div>
+
+<!-- difficulty -->
+<div class="field-card">
+<div class="field-card-header">
+<span class="field-name">difficulty</span>
+<span class="field-type">enumeration</span>
+<span class="badge badge-optional">选填</span>
+</div>
+<div class="field-card-body">
+<div class="field-item">
+<div class="field-item-label">设计初衷</div>
+<div class="field-item-value">教程难度等级（入门/中级/高级），帮助用户选择适合自己水平的教程，同时让 AI 在推荐教程时考虑用户水平。</div>
+</div>
+<div class="field-item">
+<div class="field-item-label">作用原理</div>
+<div class="field-item-value">前端展示难度标签；教程列表按难度筛选；AI 抓取时通过难度标签理解教程的目标受众。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">标准填写规范</div>
+<div class="field-item-value">beginner：零基础可操作的基础教程。intermediate：需要一定产品使用经验的进阶教程。advanced：面向管理员或开发者的深度教程。根据教程实际需要的先决知识选择。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">错误后果</div>
+<div class="field-item-value danger">难度标记过低导致新手尝试后失败，体验差；难度标记过高吓退目标用户。</div>
+</div>
+</div>
+</div>
+
+<!-- materials & estimatedTime & result -->
+<div class="field-card">
+<div class="field-card-header">
+<span class="field-name">materials / estimatedTime / result</span>
+<span class="field-type">json / string / text</span>
+<span class="badge badge-optional">选填</span>
+</div>
+<div class="field-card-body">
+<div class="field-item">
+<div class="field-item-label">设计初衷</div>
+<div class="field-item-value"><code>materials</code> 是教程所需素材清单（JSON），<code>estimatedTime</code> 是预计完成时间，<code>result</code> 是教程完成后的预期结果描述。三者共同构成 HowTo schema 的补充信息。</div>
+</div>
+<div class="field-item">
+<div class="field-item-label">作用原理</div>
+<div class="field-item-value">materials 写入 HowTo.supply；estimatedTime 写入 HowTo.totalTime（ISO 8601 格式）；result 在教程末尾展示并写入 HowTo schema 的 expected结果描述。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">标准填写规范</div>
+<div class="field-item-value">materials 格式：<code>["账号权限","测试数据","操作手册PDF"]</code>。estimatedTime 格式："30分钟"或"PT30M"（ISO 8601）。result：50-100 字描述完成教程后的状态，例如"完成本教程后，你将拥有一个配置完整的生产管理系统，可以开始录入生产订单。"</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">错误后果</div>
+<div class="field-item-value danger">materials 不完整导致用户中途缺少素材无法继续；estimatedTime 与实际差距过大影响用户预期管理；result 不明确让用户不确定教程是否完成。</div>
+</div>
+</div>
+</div>
+
+<h3 id="ch5-5">5.5 标准发布全流程</h3>
+
+<h4>素材准备清单</h4>
+
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>素材</th><th>要求</th><th>用途</th></tr>
+</thead>
+<tbody>
+<tr><td>操作步骤文档</td><td>3-15 步，每步含标题和说明</td><td>填入 steps</td></tr>
+<tr><td>步骤截图</td><td>每步 1 张, 1280x720px</td><td>填入 steps 中的 image</td></tr>
+<tr><td>视频（可选）</td><td>MP4 或视频平台链接</td><td>填入 videoUrl</td></tr>
+<tr><td>视频缩略图</td><td>1280x720px, JPG/WebP</td><td>填入 thumbnailUrl</td></tr>
+<tr><td>封面图</td><td>1200x630px</td><td>填入 coverImage</td></tr>
+<tr><td>素材清单</td><td>JSON 数组</td><td>填入 materials</td></tr>
+</tbody>
+</table>
+</div>
+
+<h4>填写顺序</h4>
+
+<ol class="steps">
+<li><strong>基础信息</strong> — 填写 <code>title</code>、<code>slug</code>、<code>description</code></li>
+<li><strong>操作步骤</strong> — 填写 <code>steps</code>（JSON 数组，含 name/text/image）</li>
+<li><strong>补充信息</strong> — 填写 <code>materials</code>、<code>estimatedTime</code>、<code>result</code></li>
+<li><strong>难度与分类</strong> — 选择 <code>difficulty</code>、<code>category</code>、<code>tags</code></li>
+<li><strong>视频资源</strong> — 填写 <code>videoUrl</code> 和 <code>thumbnailUrl</code>（如有视频）</li>
+<li><strong>媒体资源</strong> — 上传 <code>coverImage</code></li>
+<li><strong>排序</strong> — 设置 <code>order</code>（同分类教程的展示顺序）</li>
+<li><strong>知识图谱</strong> — 选择 <code>mainEntity</code> 和 <code>mentionedEntities</code></li>
+<li><strong>品牌话术</strong> — 关联 <code>brandVoiceRef</code></li>
+<li><strong>自检</strong> — 对照自检清单</li>
+<li><strong>发布</strong> — <code>status</code> 改为 <code>published</code></li>
+</ol>
+
+<h4>发布前自检清单</h4>
+
+<ul class="checklist">
+<li>title 含"如何/怎么做/指南"等 HowTo 关键词</li>
+<li>steps JSON 格式正确，3-15 个步骤</li>
+<li>每个步骤含 name 和 text，有截图</li>
+<li>步骤顺序可执行，无遗漏</li>
+<li>difficulty 已选择</li>
+<li>materials 列表完整</li>
+<li>estimatedTime 合理</li>
+<li>result 描述明确</li>
+<li>视频 URL 可访问（如有）</li>
+<li>封面图已上传</li>
+<li>mainEntity 已关联</li>
+<li>实际操作验证步骤正确性</li>
+</ul>
+
+<h3 id="ch5-6">5.6 发布后闭环运作与禁忌</h3>
+
+<h4>前端展示与 GEO 效果</h4>
+
+<p>教程发布后，前端渲染分步教程页面，展示步骤列表、素材清单、预计时间和结果。HowTo 结构化数据让 Google 可能在搜索结果中展示步骤富媒体片段（前 3-5 步），显著提高点击率。VideoObject 数据让教程视频进入视频搜索。教程通过 llms.txt 输出，AI 在回答操作类问题时引用你的步骤。教程关联的知识实体与课程中心共享，用户从教程可跳转到相关课程。</p>
+
+<h4>与课程中心的联动</h4>
+
+<div class="callout callout-info">
+<div class="callout-title">教程到课程的学习闭环</div>
+<p>教程是免费内容，承担引流角色。用户通过搜索"怎么做 XX"进入教程页 &rarr; 完成教程操作 &rarr; 发现需要更系统的学习 &rarr; 通过知识实体关联跳转到课程中心 &rarr; 注册付费课程。这个闭环中，教程的知识实体和课程的实体重合，确保主题衔接。品牌话术 <code>brandVoiceRef</code> 统一两者的表述方式。</p>
+</div>
+
+<h4>字段禁忌写法</h4>
+
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>字段</th><th>禁忌写法</th><th>后果</th></tr>
+</thead>
+<tbody>
+<tr><td>title</td><td>不含 HowTo 关键词（如"产品介绍"）</td><td>无法匹配 HowTo 搜索</td></tr>
+<tr><td>steps</td><td>填写纯文本而非 JSON 数组</td><td>HowTo schema 失效，前端渲染异常</td></tr>
+<tr><td>steps</td><td>步骤无截图</td><td>搜索富媒体片段展示效果差</td></tr>
+<tr><td>videoUrl</td><td>填写需要登录才能访问的视频</td><td>Google 视频索引失败</td></tr>
+<tr><td>estimatedTime</td><td>与实际差距过大</td><td>用户预期管理失败，中途放弃</td></tr>
+</tbody>
+</table>
+</div>
+
+<h4>内容禁忌类型</h4>
+
+<div class="callout callout-danger">
+<div class="callout-title">禁止发布的教程内容</div>
+<p><strong>1. 未验证的步骤</strong> — 未实际操作验证的教程步骤。后果：用户操作失败，信任度下降，差评传播。</p>
+<p><strong>2. 过时操作</strong> — 产品已更新但教程未同步。后果：用户按旧教程操作出错，增加客服压力。</p>
+<p><strong>3. 步骤跳跃</strong> — 省略关键中间步骤。后果：新手用户卡住，教程完成率低。</p>
+<p><strong>4. 无截图教程</strong> — 纯文字无截图的操作教程。后果：HowTo 富媒体片段无法展示，用户体验差。</p>
+<p><strong>5. 与产品功能不符</strong> — 教程描述的操作在产品中不存在。后果：用户质疑产品功能，AI 传播错误操作信息。</p>
+</div>
+
+<!-- ==================== Chapter 6: FAQ ==================== -->
+<h2 id="ch6"><span class="ch-num">第六章</span>常见问答</h2>
+
+<h3 id="ch6-1">6.1 设计目的与 GEO 角色</h3>
+
+<p>常见问答是 GEO 体系中与 AI 对话最直接对接的内容类型。它的设计目的是以问答对的形式直接匹配用户的提问——当用户向搜索引擎或 AI 提问时，FAQ 的问答对是最容易被直接引用的内容格式。</p>
+
+<p>在 GEO 体系中，FAQ 承担三个角色：<strong>AI 问答直接匹配源</strong>（FAQPage 结构化数据中的每个问答对都可能被 AI 直接引用为回答）、<strong>语音搜索匹配</strong>（FAQ 的自然语言问句格式与语音搜索查询高度匹配）、<strong>客服成本降低</strong>（常见问题集中展示，减少重复咨询）。</p>
+
+<p>不做 FAQ 的后果：AI 在回答用户关于你产品/企业的问题时使用第三方信息或不回答；语音搜索中完全不出现你的内容；客服重复回答相同问题消耗资源。正确使用的效果：FAQPage 结构化数据被 Google 收录后可在搜索结果中展示 FAQ 富媒体片段（直接展示问答内容），AI 模型在回答相关问题时直接引用你的官方回答。</p>
+
+<h3 id="ch6-2">6.2 页面运作原理</h3>
+
+<h4>数据上下游流转</h4>
+
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>环节</th><th>数据流向</th><th>触发机制</th></tr>
+</thead>
+<tbody>
+<tr><td>上游输入</td><td>客服常见问题收集 / 产品文档 &rarr; 创建 FAQ</td><td>内容运营整理创建</td></tr>
+<tr><td>创建/更新</td><td>填写字段 &rarr; 保存 &rarr; Lifecycle 触发</td><td>Strapi 保存</td></tr>
+<tr><td>Lifecycle 触发</td><td>标签索引 &rarr; 知识图谱 &rarr; 搜索引擎推送 &rarr; 缓存失效</td><td>自动</td></tr>
+<tr><td>结构化数据</td><td>FAQPage schema 生成（含所有问答对）&rarr; 注入 FAQ 列表页</td><td>前端请求时生成</td></tr>
+<tr><td>下游输出</td><td>公开 API &rarr; 前端 FAQ 页 &rarr; sitemap &rarr; llms.txt（高优先级）</td><td>爬虫/前端</td></tr>
+</tbody>
+</table>
+</div>
+
+<h4>FAQPage 结构化数据</h4>
+
+<p>FAQ 列表页生成 <code>FAQPage</code> 类型结构化数据，包含所有已发布问答对的 <code>Question</code> 和 <code>Answer</code> 对象。Google 收录后可在搜索结果中直接展示问答内容（FAQ 富媒体片段），用户无需点击即可看到答案。这是所有内容类型中搜索结果展示信息量最大的格式。AI 模型在回答用户提问时，优先匹配 FAQ 中的问答对——格式完全一致，引用成本最低。</p>
+
+<h3 id="ch6-3">6.3 适用人群与禁止操作人群</h3>
+
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>类别</th><th>角色</th><th>说明</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>适用人群</strong></td><td>客服负责人</td><td>最了解用户常见问题</td></tr>
+<tr><td></td><td>产品经理</td><td>回答产品功能类问题</td></tr>
+<tr><td></td><td>内容运营</td><td>整理和优化问答表述</td></tr>
+<tr><td><strong>禁止操作人群</strong></td><td>销售</td><td>可能用营销话术替代客观回答</td></tr>
+<tr><td></td><td>不了解产品的外部写手</td><td>可能提供不准确的答案</td></tr>
+</tbody>
+</table>
+</div>
+
+<p><strong>发布内容最终用途：</strong>FAQ 同时服务于搜索引擎 FAQ 富媒体片段（搜索结果直接展示答案）、AI 问答直接引用（问答对格式与 AI 回答格式高度匹配）、官网自助服务（用户在 FAQ 页快速找到答案）、语音搜索匹配（自然语言问句匹配语音查询）。FAQ 的答案必须准确简洁——AI 和搜索引擎会直接展示给用户，没有二次点击确认的机会。</p>
+
+<h3 id="ch6-4">6.4 字段四件套详解</h3>
+
+<!-- question -->
+<div class="field-card">
+<div class="field-card-header">
+<span class="field-name">question</span>
+<span class="field-type">text</span>
+<span class="badge badge-required">必填</span>
+<span class="badge badge-seo">SEO</span>
+<span class="badge badge-geo">GEO</span>
+</div>
+<div class="field-card-body">
+<div class="field-item">
+<div class="field-item-label">设计初衷</div>
+<div class="field-item-value">FAQ 的问题文本。应使用用户自然提问的语言，而非产品文档中的正式术语。这是 AI 匹配用户查询的第一信号。</div>
+</div>
+<div class="field-item">
+<div class="field-item-label">作用原理</div>
+<div class="field-item-value">写入 FAQPage schema 的 Question.name 字段；作为 FAQ 页面的 <code>&lt;h2&gt;</code> 标题；llms.txt 输出为"FAQ: [question]"格式。搜索引擎和 AI 使用问题文本匹配用户查询。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">标准填写规范</div>
+<div class="field-item-value">使用用户口语化的提问方式。例如"你们的系统支持多语言吗？"而非"系统多语言支持能力说明"。10-40 字。一个问题只问一件事。避免使用内部术语。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">错误后果</div>
+<div class="field-item-value danger">使用正式术语而非用户语言导致无法匹配搜索查询；一个问题包含多个子问题导致 AI 无法精确匹配；问题过长影响搜索展示效果。</div>
+</div>
+</div>
+</div>
+
+<!-- answer -->
+<div class="field-card">
+<div class="field-card-header">
+<span class="field-name">answer</span>
+<span class="field-type">text</span>
+<span class="badge badge-required">必填</span>
+<span class="badge badge-seo">SEO</span>
+<span class="badge badge-geo">GEO</span>
+</div>
+<div class="field-card-body">
+<div class="field-item">
+<div class="field-item-label">设计初衷</div>
+<div class="field-item-value">FAQ 的回答文本。应直接、简洁地回答问题，这是 AI 和搜索引擎直接展示给用户的内容。</div>
+</div>
+<div class="field-item">
+<div class="field-item-label">作用原理</div>
+<div class="field-item-value">写入 FAQPage schema 的 Answer.text 字段；Google 搜索结果 FAQ 富媒体片段直接展示此文本；AI 引用时直接使用此文本作为回答。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">标准填写规范</div>
+<div class="field-item-value">50-200 字。先给出直接答案（是/否/数字），再补充必要说明。避免营销话术。避免"请联系客服"类的回避回答。如果答案需要操作步骤，简要概括并链接到教程。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">错误后果</div>
+<div class="field-item-value danger">答案过长在搜索结果中被截断；含营销话术导致 Google 拒绝展示 FAQ 富媒体片段；答案不准确被 AI 传播错误信息；回避性回答损害用户体验。</div>
+</div>
+</div>
+</div>
+
+<!-- slug & category & tags & order -->
+<div class="field-card">
+<div class="field-card-header">
+<span class="field-name">slug / category / tags / order</span>
+<span class="field-type">混合</span>
+<span class="badge badge-required">slug 必填</span>
+</div>
+<div class="field-card-body">
+<div class="field-item">
+<div class="field-item-label">设计初衷</div>
+<div class="field-item-value">slug 生成 FAQ 页面 URL；category 分类（产品/价格/技术/服务等）；tags 跨内容关联；order 控制展示顺序。</div>
+</div>
+<div class="field-item">
+<div class="field-item-label">作用原理</div>
+<div class="field-item-value">slug 基于 question 自动生成；category 用于 FAQ 页面的分组展示；tags 通过标签索引与其他内容类型关联；order 控制同分类 FAQ 的展示顺序（小的在前）。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">标准填写规范</div>
+<div class="field-item-value">slug：全小写英文，如 <code>support-multi-language</code>。category：选择最相关的分类。tags：2-5 个关键词标签。order：重要 FAQ 设为 0-10，一般 FAQ 设为 50-100。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">错误后果</div>
+<div class="field-item-value danger">slug 含中文导致 URL 不可读；不设 category 导致 FAQ 列表混乱；order 全部为 0 导致展示顺序随机。</div>
+</div>
+</div>
+</div>
+
+<h3 id="ch6-5">6.5 标准发布全流程</h3>
+
+<h4>素材准备</h4>
+
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>素材</th><th>要求</th><th>用途</th></tr>
+</thead>
+<tbody>
+<tr><td>问题文本</td><td>10-40 字，用户口语化</td><td>填入 question</td></tr>
+<tr><td>答案文本</td><td>50-200 字，直接简洁</td><td>填入 answer</td></tr>
+<tr><td>分类</td><td>选择已有分类</td><td>填入 category</td></tr>
+<tr><td>关键词标签</td><td>2-5 个</td><td>填入 tags</td></tr>
+</tbody>
+</table>
+</div>
+
+<h4>填写顺序</h4>
+
+<ol class="steps">
+<li><strong>问题</strong> — 填写 <code>question</code>（用户语言，10-40 字）</li>
+<li><strong>答案</strong> — 填写 <code>answer</code>（直接回答，50-200 字）</li>
+<li><strong>slug</strong> — 检查自动生成的 slug，按需修改为英文</li>
+<li><strong>分类标签</strong> — 选择 <code>category</code>，添加 <code>tags</code></li>
+<li><strong>排序</strong> — 设置 <code>order</code></li>
+<li><strong>知识图谱</strong> — 选择 <code>mainEntity</code> 和 <code>mentionedEntities</code>（如关联产品）</li>
+<li><strong>自检</strong> — 问题是否用用户语言，答案是否直接准确</li>
+<li><strong>发布</strong> — <code>status</code> 改为 <code>published</code></li>
+</ol>
+
+<h4>发布前自检清单</h4>
+
+<ul class="checklist">
+<li>question 使用用户口语化语言</li>
+<li>question 只问一件事</li>
+<li>answer 直接回答问题（非回避）</li>
+<li>answer 50-200 字，无营销话术</li>
+<li>slug 为全小写英文</li>
+<li>category 已选择</li>
+<li>tags 2-5 个</li>
+<li>order 已设置</li>
+<li>答案内容准确，已与产品团队确认</li>
+</ul>
+
+<h3 id="ch6-6">6.6 发布后闭环运作与禁忌</h3>
+
+<h4>前端展示与 GEO 效果</h4>
+
+<p>FAQ 发布后，前端 FAQ 页面按分类分组展示所有问答对。FAQPage 结构化数据包含所有已发布问答对，Google 收录后可在搜索结果中展示 FAQ 富媒体片段——直接在搜索结果页面展示问答内容，无需用户点击。这是所有内容类型中搜索结果信息密度最高的展示形式。AI 模型在回答用户提问时，FAQ 问答对的格式（question + answer）与 AI 的回答模式高度一致，是最容易被直接引用的内容格式。</p>
+
+<h4>字段禁忌写法</h4>
+
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>字段</th><th>禁忌写法</th><th>后果</th></tr>
+</thead>
+<tbody>
+<tr><td>question</td><td>使用产品术语而非用户语言（如"系统多语言支持能力"）</td><td>无法匹配用户搜索查询</td></tr>
+<tr><td>question</td><td>一个问题包含多个子问题</td><td>AI 无法精确匹配</td></tr>
+<tr><td>answer</td><td>含营销话术（如"我们是最优秀的产品"）</td><td>Google 拒绝展示 FAQ 富媒体片段</td></tr>
+<tr><td>answer</td><td>回避性回答（如"请联系客服了解详情"）</td><td>用户体验差，AI 无法引用</td></tr>
+<tr><td>answer</td><td>过长（&gt;200 字）</td><td>搜索结果截断，信息不完整</td></tr>
+</tbody>
+</table>
+</div>
+
+<h4>内容禁忌类型</h4>
+
+<div class="callout callout-danger">
+<div class="callout-title">禁止发布的 FAQ 内容</div>
+<p><strong>1. 营销话术回答</strong> — 用广告语言替代客观回答。后果：Google 拒绝展示 FAQ 富媒体片段，AI 不引用。</p>
+<p><strong>2. 回避性回答</strong> — 不直接回答问题，引导联系客服。后果：用户不满，AI 无法引用，失去 FAQ 价值。</p>
+<p><strong>3. 不准确答案</strong> — 答案与产品实际功能不符。后果：误导用户和 AI，损害品牌信任。</p>
+<p><strong>4. 过时答案</strong> — 产品已更新但 FAQ 未同步。后果：用户按旧信息操作出错。</p>
+<p><strong>5. 重复问答</strong> — 多条 FAQ 问的是同一件事的不同表述。后果：FAQ 列表臃肿，FAQPage schema 重复。</p>
+</div>
+
+<!-- ==================== Chapter 7: Compliance ==================== -->
+<h2 id="ch7"><span class="ch-num">第七章</span>合规公示</h2>
+
+<h3 id="ch7-1">7.1 设计目的与 GEO 角色</h3>
+
+<p>合规公示是官网法律合规和信任建设的底层支撑。它的设计目的是集中展示企业的法律资质、政策文件、合规报告和用户协议，向搜索引擎、AI 模型和用户声明企业的合规状态。</p>
+
+<p>在 GEO 体系中，合规公示承担三个角色：<strong>合规信号源</strong>（通过结构化数据向 AI 声明企业的合规状态和法律资质）、<strong>信任锚点</strong>（ICP 备案、营业执照、资质证书等是 AI 评估企业可信度的参考因素）、<strong>法律风险隔离</strong>（用户协议、隐私政策等公示内容是法律合规的要件）。</p>
+
+<p>不做合规公示的后果：AI 模型在评估企业可信度时缺少合规信号，可能将企业标记为"信息不完整"；用户无法找到隐私政策和用户协议，法律风险增加；搜索引擎对缺少合规信息的站点降低信任评分。正确使用的效果：合规信息通过结构化数据输出，增强 AI 对企业合法性的认知；用户协议和隐私政策公示满足法律合规要求。</p>
+
+<h3 id="ch7-2">7.2 页面运作原理</h3>
+
+<h4>数据上下游流转</h4>
+
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>环节</th><th>数据流向</th><th>触发机制</th></tr>
+</thead>
+<tbody>
+<tr><td>上游输入</td><td>法务文件 / 资质证书 &rarr; 内容运营录入</td><td>法务部门提供文件</td></tr>
+<tr><td>创建/更新</td><td>填写字段 &rarr; 保存 &rarr; Lifecycle 触发</td><td>Strapi 保存</td></tr>
+<tr><td>Lifecycle 触发</td><td>搜索引擎推送 &rarr; 缓存失效</td><td>自动</td></tr>
+<tr><td>下游输出</td><td>公开 API &rarr; 前端合规页 &rarr; sitemap &rarr; llms.txt</td><td>爬虫/前端</td></tr>
+</tbody>
+</table>
+</div>
+
+<h4>与 SEO 全局配置的联动</h4>
+
+<p>合规公示中的 ICP 备案号和公安备案号在 <code>seo-config</code> 中也有对应字段（<code>icpNumber</code> 和 <code>publicSecurityRecord</code>）。seo-config 中的备案号写入页面底部全局展示，合规公示中的备案文件作为可点击的详情页。两者互为补充：全局配置保证每页底部都有备案信息，合规公示提供完整的备案文件展示。</p>
+
+<h3 id="ch7-3">7.3 适用人群与禁止操作人群</h3>
+
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>类别</th><th>角色</th><th>说明</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>适用人群</strong></td><td>法务负责人</td><td>最了解法律文件内容和适用范围</td></tr>
+<tr><td></td><td>合规专员</td><td>负责资质证书和合规报告的更新</td></tr>
+<tr><td></td><td>内容运营</td><td>负责将法务文件录入系统</td></tr>
+<tr><td><strong>禁止操作人群</strong></td><td>市场部</td><td>可能将营销话术混入法律文件</td></tr>
+<tr><td></td><td>技术开发</td><td>不了解法律文件的表述要求</td></tr>
+<tr><td></td><td>任何非法务背景人员</td><td>无法判断文件内容的法律准确性</td></tr>
+</tbody>
+</table>
+</div>
+
+<p><strong>发布内容最终用途：</strong>合规公示同时服务于法律合规要求（用户协议、隐私政策的公示是法律要件）、AI 信任度评估（合规信号影响 AI 对企业合法性的判断）、用户信任建设（资质证书展示增强用户信心）、搜索引擎合规评分（ICP 备案等信息影响站点信任评分）。合规内容的准确性直接影响法律风险——错误或过时的合规信息可能导致法律纠纷。</p>
+
+<h3 id="ch7-4">7.4 字段四件套详解</h3>
+
+<!-- title & content -->
+<div class="field-card">
+<div class="field-card-header">
+<span class="field-name">title / content</span>
+<span class="field-type">string / text</span>
+<span class="badge badge-required">必填</span>
+</div>
+<div class="field-card-body">
+<div class="field-item">
+<div class="field-item-label">设计初衷</div>
+<div class="field-item-value">合规文件标题和正文内容。标题应明确文件类型和主题，正文为法律文件的完整文本。</div>
+</div>
+<div class="field-item">
+<div class="field-item-label">作用原理</div>
+<div class="field-item-value">title 写入 <code>&lt;h1&gt;</code> 和结构化数据；content 通过 API 返回前端渲染为合规文件页面；llms.txt 将合规文件链接输出到 Pages 部分。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">标准填写规范</div>
+<div class="field-item-value">title 格式："[文件类型] - [文件主题]"，如"用户协议 - 智造云平台服务条款"。content：法律文件完整文本，使用 HTML 或 Markdown 格式。包含版本号、生效日期、条款内容。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">错误后果</div>
+<div class="field-item-value danger">内容不完整或与实际法律文件不符可能导致法律纠纷；过时的协议版本可能导致条款无效。</div>
+</div>
+</div>
+</div>
+
+<!-- category -->
+<div class="field-card">
+<div class="field-card-header">
+<span class="field-name">category</span>
+<span class="field-type">enumeration</span>
+<span class="badge badge-required">必填</span>
+</div>
+<div class="field-card-body">
+<div class="field-item">
+<div class="field-item-label">设计初衷</div>
+<div class="field-item-value">合规文件分类，区分不同类型的公示文件。影响前端展示分组和 AI 分类理解。</div>
+</div>
+<div class="field-item">
+<div class="field-item-label">作用原理</div>
+<div class="field-item-value">枚举值：<code>notice</code>（公告）、<code>policy</code>（政策）、<code>report</code>（报告）、<code>certificate</code>（证书）、<code>agreement</code>（协议）。前端按分类分组展示。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">标准填写规范</div>
+<div class="field-item-value">notice：临时性公告（如系统维护通知）。policy：企业政策（如隐私政策、 Cookie 政策）。report：合规报告（如年度合规报告）。certificate：资质证书（如营业执照、ICP 备案）。agreement：用户协议（如服务条款、用户协议）。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">错误后果</div>
+<div class="field-item-value danger">分类错误导致文件出现在错误的公示分组中；用户协议被分类为公告可能被用户忽略。</div>
+</div>
+</div>
+</div>
+
+<!-- effectiveDate & expiryDate -->
+<div class="field-card">
+<div class="field-card-header">
+<span class="field-name">effectiveDate / expiryDate</span>
+<span class="field-type">date / date</span>
+<span class="badge badge-optional">选填</span>
+</div>
+<div class="field-card-body">
+<div class="field-item">
+<div class="field-item-label">设计初衷</div>
+<div class="field-item-value">合规文件的生效日期和失效日期。用于管理文件的有效期和提醒更新。</div>
+</div>
+<div class="field-item">
+<div class="field-item-label">作用原理</div>
+<div class="field-item-value">前端展示文件有效期；过期的协议文件前端标注"已更新"；管理后台可按到期日排序提醒更新。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">标准填写规范</div>
+<div class="field-item-value">effectiveDate：文件正式生效的日期。expiryDate：文件失效日期（长期有效的留空）。日期格式 YYYY-MM-DD。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">错误后果</div>
+<div class="field-item-value danger">生效日期填写错误可能导致协议在过渡期无效；未设置 expiryDate 的临时公告长期展示在页面上。</div>
+</div>
+</div>
+</div>
+
+<!-- isPinned -->
+<div class="field-card">
+<div class="field-card-header">
+<span class="field-name">isPinned</span>
+<span class="field-type">boolean / default:false</span>
+<span class="badge badge-optional">选填</span>
+</div>
+<div class="field-card-body">
+<div class="field-item">
+<div class="field-item-label">设计初衷</div>
+<div class="field-item-value">置顶开关。将重要合规文件（如用户协议、隐私政策）固定在列表顶部。</div>
+</div>
+<div class="field-item">
+<div class="field-item-label">作用原理</div>
+<div class="field-item-value">前端合规列表页将 isPinned=true 的文件排在最前面展示。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">标准填写规范</div>
+<div class="field-item-value">用户协议、隐私政策等核心文件设为 true。临时公告和报告设为 false。</div>
+</div>
+<div class="field-card-full">
+<div class="field-item-label">错误后果</div>
+<div class="field-item-value danger">过多文件设为置顶导致置顶功能失效；核心协议未置顶可能被用户忽略。</div>
+</div>
+</div>
+</div>
+
+<h3 id="ch7-5">7.5 标准发布全流程</h3>
+
+<h4>素材准备</h4>
+
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>素材</th><th>要求</th><th>用途</th></tr>
+</thead>
+<tbody>
+<tr><td>法务文件文本</td><td>完整法律文件，经法务审核</td><td>填入 content</td></tr>
+<tr><td>生效日期</td><td>法务确认的生效日</td><td>填入 effectiveDate</td></tr>
+<tr><td>资质证书图片（如有）</td><td>扫描件, 清晰可读</td><td>嵌入 content 中</td></tr>
+</tbody>
+</table>
+</div>
+
+<h4>填写顺序</h4>
+
+<ol class="steps">
+<li><strong>基础信息</strong> — 填写 <code>title</code>、<code>slug</code>、<code>content</code>（法律文件全文）</li>
+<li><strong>分类</strong> — 选择 <code>category</code>（notice/policy/report/certificate/agreement）</li>
+<li><strong>有效期</strong> — 填写 <code>effectiveDate</code> 和 <code>expiryDate</code>（如有）</li>
+<li><strong>置顶</strong> — 核心文件设 <code>isPinned</code>=true</li>
+<li><strong>SEO</strong> — 填写 <code>seoTitle</code> 和 <code>seoDescription</code></li>
+<li><strong>收录控制</strong> — <code>allowIndex</code>：公开文件设 true，内部文件设 false</li>
+<li><strong>法务审核</strong> — 提交法务负责人审核确认</li>
+<li><strong>发布</strong> — <code>status</code> 改为 <code>published</code></li>
+</ol>
+
+<h4>发布前自检清单</h4>
+
+<ul class="checklist">
+<li>title 明确文件类型和主题</li>
+<li>content 为法务审核通过的完整文本</li>
+<li>category 分类正确</li>
+<li>effectiveDate 已填写</li>
+<li>核心文件 isPinned=true</li>
+<li>法务负责人已审核确认</li>
+<li>allowIndex 设置正确（公开/内部）</li>
+<li>如为证书类，证书图片清晰可读</li>
+</ul>
+
+<h3 id="ch7-6">7.6 发布后闭环运作与禁忌</h3>
+
+<h4>前端展示与 GEO 效果</h4>
+
+<p>合规公示发布后，前端合规页面按分类分组展示所有文件。核心协议（用户协议、隐私政策）置顶展示。合规信息通过 sitemap 和 llms.txt 输出，AI 模型在评估企业合法性时可参考公示的资质和法律文件。ICP 备案号同时通过 <code>seo-config</code> 写入页面底部全局展示。</p>
+
+<h4>更新机制</h4>
+
+<div class="callout callout-warning">
+<div class="callout-title">合规文件更新操作规范</div>
+<p>用户协议或隐私政策更新时：创建新版本（新记录），将旧版本 <code>status</code> 改为 <code>archived</code> 并设置 <code>expiryDate</code> 为新版本生效日前一天。新版本设 <code>isPinned</code>=true。不要直接修改已发布的旧版本内容——保留历史版本用于法律追溯。</p>
+</div>
+
+<h4>内容禁忌类型</h4>
+
+<div class="callout callout-danger">
+<div class="callout-title">禁止发布的合规内容</div>
+<p><strong>1. 未经法务审核的文件</strong> — 未经法务审核的法律文件。后果：可能包含无效条款或法律漏洞，面临法律风险。</p>
+<p><strong>2. 过时的协议版本</strong> — 协议已更新但旧版本未归档。后果：用户可能引用过时条款产生纠纷。</p>
+<p><strong>3. 敏感信息泄露</strong> — 公示文件中包含商业机密或客户信息。后果：商业损失，可能面临法律赔偿。</p>
+<p><strong>4. 营销化表述</strong> — 在法律文件中使用营销话术。后果：法律文件失去法律效力，可能被法院判定为无效。</p>
+<p><strong>5. 缺失核心条款</strong> — 用户协议缺失免责条款、争议解决条款等。后果：法律纠纷时缺乏条款保护。</p>
+</div>
+
+<!-- ==================== Chapter 8: Industry Cases ==================== -->
+<h2 id="ch8"><span class="ch-num">第八章</span>行业示范案例</h2>
+
+<p>以下五个案例覆盖 SaaS 企业服务、医疗器械、教育培训、工业制造和电商平台五个行业，每个案例展示如何针对行业特点填写各内容类型的字段，包含标注文本内容供参考。</p>
+
+<!-- Case 1: SaaS -->
+<div class="case-card" id="case-1">
+<div class="case-card-header">
+<div class="case-industry">行业一 / SaaS 企业服务</div>
+<div class="case-title">智造云 MES 系统：从内容发布到 AI 引用的完整路径</div>
+</div>
+<div class="case-card-body">
+
+<h4>背景</h4>
+<p>某 SaaS 企业提供面向中小制造企业的 MES（制造执行系统），需要通过官网建立行业权威性，获取搜索流量，并让 AI 在推荐 MES 产品时引用其信息。</p>
+
+<h4>产品/方案 — 填写示范</h4>
+<div class="table-wrap">
+<table>
+<thead><tr><th>字段</th><th>填写内容</th></tr></thead>
+<tbody>
+<tr><td><code>name</code></td><td>智造云 MES 系统</td></tr>
+<tr><td><code>tagline</code></td><td>为中小制造企业打造的轻量化生产管理系统</td></tr>
+<tr><td><code>description</code></td><td>智造云 MES 是面向年营收 5000 万-5 亿的中小制造企业设计的一体化生产管理系统，覆盖生产排程、质量管理、设备监控和物料追溯四大核心场景。</td></tr>
+<tr><td><code>features</code></td><td><pre><code>[
+  {"title":"智能排程","description":"基于订单优先级和产能约束自动生成生产计划"},
+  {"title":"质量追溯","description":"每件产品可追溯到原材料批次和操作人员"},
+  {"title":"设备监控","description":"实时采集设备运行数据，异常自动告警"},
+  {"title":"物料管理","description":"原材料入库到成品出库的全链路物料跟踪"}
+]</code></pre></td></tr>
+<tr><td><code>specifications</code></td><td><pre><code>{
+  "部署方式":"云端SaaS/私有化",
+  "并发用户":"200-500",
+  "数据存储":"MySQL 8.0",
+  "API协议":"RESTful + WebSocket",
+  "认证标准":"ISO 27001"
+}</code></pre></td></tr>
+<tr><td><code>price</code></td><td>0（公开标价通过 priceRange 表达）</td></tr>
+<tr><td><code>priceRange</code></td><td>3万-15万/年</td></tr>
+<tr><td><code>priceUnit</code></td><td>元/年</td></tr>
+<tr><td><code>availability</code></td><td>in_stock</td></tr>
+<tr><td><code>seoTitle</code></td><td>智造云 MES 系统 - 中小制造企业生产管理方案 | 智造云</td></tr>
+<tr><td><code>seoDescription</code></td><td>面向中小制造企业的轻量化 MES 系统，覆盖排程、质量、设备、物料四大场景。年费 3 万起，30 天快速部署，已服务 200+ 制造企业。</td></tr>
+</tbody>
+</table>
+</div>
+
+<h4>资讯文章 — 填写示范</h4>
+<div class="table-wrap">
+<table>
+<thead><tr><th>字段</th><th>填写内容</th></tr></thead>
+<tbody>
+<tr><td><code>title</code></td><td>中小制造企业 MES 选型指南：5 个核心指标帮你避开陷阱</td></tr>
+<tr><td><code>excerpt</code></td><td>选 MES 不是选功能多的，而是选适合的。本文从部署成本、实施周期、行业适配度、数据安全性和扩展性五个维度，帮助中小制造企业建立 MES 选型评估框架。</td></tr>
+<tr><td><code>seoTitle</code></td><td>MES 选型指南：5 个核心指标评估框架 | 智造云</td></tr>
+<tr><td><code>seoDescription</code></td><td>中小制造企业 MES 选型必读：从部署成本、实施周期、行业适配度、数据安全、扩展性 5 个维度建立评估框架，附评分模板。</td></tr>
+<tr><td><code>tags</code></td><td>MES选型、制造业数字化、生产管理系统、SaaS选型</td></tr>
+<tr><td><code>mainEntity</code></td><td>知识实体：MES（制造执行系统）</td></tr>
+</tbody>
+</table>
+</div>
+
+<h4>落地案例 — 填写示范</h4>
+<div class="table-wrap">
+<table>
+<thead><tr><th>字段</th><th>填写内容</th></tr></thead>
+<tbody>
+<tr><td><code>title</code></td><td>某汽车零部件企业：MES 上线 3 个月生产效率提升 35% 的实施复盘</td></tr>
+<tr><td><code>clientName</code></td><td>某汽车零部件制造企业（已脱敏）</td></tr>
+<tr><td><code>clientIndustry</code></td><td>制造业 - 汽车零部件</td></tr>
+<tr><td><code>challenge</code></td><td>该企业年产 500 万件汽车零部件，使用 Excel 管理生产排程导致排程准确率仅 60%，质量追溯平均耗时 4 小时/次，设备故障响应时间超过 2 小时，无法满足主机厂对供应链数字化透明度的要求。</td></tr>
+<tr><td><code>solution</code></td><td>部署智造云 MES 系统，分三阶段实施：第一阶段（2 周）完成排程模块上线，将 Excel 排程迁移至系统自动排程；第二阶段（3 周）上线质量追溯模块，实现从原材料到成品的全链路追溯；第三阶段（2 周）接入设备监控模块，关键设备 IoT 数据实时采集。</td></tr>
+<tr><td><code>results</code></td><td><pre><code>[
+  {"metric":"排程准确率","value":"60%→95%","before":"60%","after":"95%"},
+  {"metric":"质量追溯耗时","value":"4小时→3分钟","before":"4小时","after":"3分钟"},
+  {"metric":"设备故障响应","value":"2小时→15分钟","before":"2小时","after":"15分钟"},
+  {"metric":"生产效率","value":"提升35%","before":"基准值100","after":"135"}
+]</code></pre></td></tr>
+<tr><td><code>testimonial</code></td><td>"上线 MES 后，主机厂的供应链审核一次通过，以前要反复整改三四轮。" —— 生产部 张部长</td></tr>
+</tbody>
+</table>
+</div>
+
+<h4>FAQ — 填写示范</h4>
+<div class="table-wrap">
+<table>
+<thead><tr><th>字段</th><th>填写内容</th></tr></thead>
+<tbody>
+<tr><td><code>question</code></td><td>你们的 MES 系统多少钱？</td></tr>
+<tr><td><code>answer</code></td><td>智造云 MES 年费 3-15 万元，具体取决于用户数和模块配置。基础版（排程+质量）年费 3 万起，全功能版年费 15 万。提供 30 天免费试用，可联系我们获取详细报价方案。</td></tr>
+</tbody>
+</table>
+</div>
+
+</div>
+</div>
+
+<!-- Case 2: Medical Devices -->
+<div class="case-card" id="case-2">
+<div class="case-card-header">
+<div class="case-industry">行业二 / 医疗器械</div>
+<div class="case-title">某医疗器械企业：合规驱动的官网内容体系建设</div>
+</div>
+<div class="case-card-body">
+
+<h4>背景</h4>
+<p>某医疗器械生产企业研发了一款便携式心电监测设备，需要通过官网展示产品参数和医疗资质，同时确保合规公示完整，让 AI 在用户询问相关医疗器械时引用其官方信息。</p>
+
+<h4>产品/方案 — 填写示范</h4>
+<div class="table-wrap">
+<table>
+<thead><tr><th>字段</th><th>填写内容</th></tr></thead>
+<tbody>
+<tr><td><code>name</code></td><td>芯卫士 便携式心电监测仪 Pro</td></tr>
+<tr><td><code>tagline</code></td><td>72 小时连续心电监测，家用级精准医疗设备</td></tr>
+<tr><td><code>specifications</code></td><td><pre><code>{
+  "监测导联":"12导联",
+  "采样率":"500Hz",
+  "连续监测":"72小时",
+  "电池续航":"80小时",
+  "数据传输":"蓝牙5.0 + 4G",
+  "认证标准":"NMPA二类医疗器械注册",
+  "注册证号":"国械注准2024XXXXXXX"
+}</code></pre></td></tr>
+<tr><td><code>price</code></td><td>2980</td></tr>
+<tr><td><code>currency</code></td><td>CNY</td></tr>
+<tr><td><code>availability</code></td><td>in_stock</td></tr>
+<tr><td><code>seoTitle</code></td><td>芯卫士便携式心电监测仪 - 72小时连续监测 NMPA认证 | 芯卫士</td></tr>
+<tr><td><code>seoDescription</code></td><td>NMPA 认证的便携式心电监测仪，12 导联精准监测，72 小时连续记录，蓝牙+4G 数据传输。适合心律失常筛查和术后监测。</td></tr>
+</tbody>
+</table>
+</div>
+
+<h4>合规公示 — 填写示范</h4>
+<div class="table-wrap">
+<table>
+<thead><tr><th>字段</th><th>填写内容</th></tr></thead>
+<tbody>
+<tr><td><code>title</code></td><td>医疗器械注册证 - 芯卫士便携式心电监测仪 Pro</td></tr>
+<tr><td><code>category</code></td><td>certificate</td></tr>
+<tr><td><code>content</code></td><td>注册证编号：国械注准2024XXXXXXX。注册人名称：XX医疗器械有限公司。生产地址：XX省XX市XX园区。有效期至：2029年X月X日。适用范围：适用于成人的心律失常筛查和监测...</td></tr>
+<tr><td><code>effectiveDate</code></td><td>2024-01-15</td></tr>
+<tr><td><code>expiryDate</code></td><td>2029-01-14</td></tr>
+<tr><td><code>isPinned</code></td><td>true</td></tr>
+<tr><td><code>allowIndex</code></td><td>true</td></tr>
+</tbody>
+</table>
+</div>
+
+<h4>资讯文章 — 填写示范</h4>
+<div class="table-wrap">
+<table>
+<thead><tr><th>字段</th><th>填写内容</th></tr></thead>
+<tbody>
+<tr><td><code>title</code></td><td>便携式心电监测仪选购指南：5 个关键参数决定监测精度</td></tr>
+<tr><td><code>excerpt</code></td><td>导联数、采样率、连续监测时间、数据传输方式和认证标准是评估便携式心电监测仪的 5 个核心参数。本文逐一解读每个参数的临床意义和选购建议。</td></tr>
+<tr><td><code>seoTitle</code></td><td>心电监测仪选购指南：5 个关键参数解读 | 芯卫士</td></tr>
+</tbody>
+</table>
+</div>
+
+<h4>FAQ — 填写示范</h4>
+<div class="table-wrap">
+<table>
+<thead><tr><th>字段</th><th>填写内容</th></tr></thead>
+<tbody>
+<tr><td><code>question</code></td><td>这个心电监测仪是医疗器械吗？有注册证吗？</td></tr>
+<tr><td><code>answer</code></td><td>是的，芯卫士便携式心电监测仪 Pro 是 NMPA 认证的二类医疗器械，注册证号：国械注准2024XXXXXXX，有效期至 2029 年。注册证信息可在国家药品监督管理局官网查询验证。</td></tr>
+</tbody>
+</table>
+</div>
+
+</div>
+</div>
+
+<!-- Case 3: Education -->
+<div class="case-card" id="case-3">
+<div class="case-card-header">
+<div class="case-industry">行业三 / 教育培训</div>
+<div class="case-title">某在线教育平台：教程引流到课程转化的内容闭环</div>
+</div>
+<div class="case-card-body">
+
+<h4>背景</h4>
+<p>某在线编程教育平台提供 Python 数据分析课程，需要通过免费教程获取搜索流量，再通过知识实体关联引导用户购买付费课程。</p>
+
+<h4>教程/操作指南 — 填写示范</h4>
+<div class="table-wrap">
+<table>
+<thead><tr><th>字段</th><th>填写内容</th></tr></thead>
+<tbody>
+<tr><td><code>title</code></td><td>如何用 Python Pandas 处理 10 万行 Excel 数据：完整操作指南</td></tr>
+<tr><td><code>description</code></td><td>本教程指导你使用 Python Pandas 库处理 10 万行以上的 Excel 数据，涵盖数据读取、清洗、聚合和导出全流程。适合有 Python 基础的数据分析初学者。</td></tr>
+<tr><td><code>difficulty</code></td><td>beginner</td></tr>
+<tr><td><code>estimatedTime</code></td><td>45分钟</td></tr>
+<tr><td><code>steps</code></td><td><pre><code>[
+  {"name":"安装 Pandas 库","text":"打开终端，执行 pip install pandas openpyxl 安装所需依赖。openpyxl 用于读写 Excel 文件。","image":"screenshot-01.png"},
+  {"name":"读取 Excel 数据","text":"使用 pd.read_excel() 函数读取 Excel 文件，指定 sheet_name 参数选择工作表。大文件建议设置 dtype 参数优化内存。","image":"screenshot-02.png"},
+  {"name":"数据清洗","text":"使用 dropna() 删除空值行，使用 fillna() 填充默认值，使用 drop_duplicates() 去重。","image":"screenshot-03.png"},
+  {"name":"数据聚合分析","text":"使用 groupby() 按指定列分组，配合 agg() 函数计算汇总统计量。","image":"screenshot-04.png"},
+  {"name":"导出结果","text":"使用 to_excel() 将处理结果导出为新的 Excel 文件，设置 index=False 避免输出索引列。","image":"screenshot-05.png"}
+]</code></pre></td></tr>
+<tr><td><code>materials</code></td><td><code>["Python 3.8+","示例数据文件 sample-sales-data.xlsx"]</code></td></tr>
+<tr><td><code>result</code></td><td>完成本教程后，你将掌握用 Pandas 处理大型 Excel 数据的完整流程，可以独立完成数据清洗和分析任务。</td></tr>
+<tr><td><code>videoUrl</code></td><td>https://cdn.example.com/tutorials/pandas-excel-tutorial.mp4</td></tr>
+<tr><td><code>thumbnailUrl</code></td><td>https://cdn.example.com/tutorials/pandas-thumbnail.jpg</td></tr>
+<tr><td><code>mainEntity</code></td><td>知识实体：Python Pandas</td></tr>
+</tbody>
+</table>
+</div>
+
+<h4>资讯文章 — 填写示范</h4>
+<div class="table-wrap">
+<table>
+<thead><tr><th>字段</th><th>填写内容</th></tr></thead>
+<tbody>
+<tr><td><code>title</code></td><td>2026 年数据分析师必备技能：Python vs Excel 的 6 个对比维度</td></tr>
+<tr><td><code>seoTitle</code></td><td>数据分析师技能指南：Python vs Excel 对比 | 编程学堂</td></tr>
+<tr><td><code>seoDescription</code></td><td>从数据处理量、自动化能力、可视化效果、学习曲线、部署成本和职业发展 6 个维度对比 Python 和 Excel，帮你选择适合的数据分析工具。</td></tr>
+<tr><td><code>mainEntity</code></td><td>知识实体：数据分析（与教程共享，建立关联）</td></tr>
+</tbody>
+</table>
+</div>
+
+<h4>FAQ — 填写示范</h4>
+<div class="table-wrap">
+<table>
+<thead><tr><th>字段</th><th>填写内容</th></tr></thead>
+<tbody>
+<tr><td><code>question</code></td><td>零基础能学 Python 数据分析吗？</td></tr>
+<tr><td><code>answer</code></td><td>可以。我们的 Python 数据分析课程从基础语法开始教学，零基础学员通常 4-6 周可以掌握数据处理核心技能。建议先试学免费教程「如何用 Python Pandas 处理 Excel 数据」了解学习风格。</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="callout callout-success">
+<div class="callout-title">闭环效果</div>
+<p>用户搜索"Python 处理 Excel" &rarr; 进入教程页（HowTo 富媒体片段） &rarr; 完成教程 &rarr; 发现需要系统学习 &rarr; 通过知识实体关联跳转到数据分析文章 &rarr; 文章引导至课程详情页 &rarr; 购买付费课程。教程和文章共享"数据分析"知识实体，品牌话术统一为"零基础友好的编程教育平台"。</p>
+</div>
+
+</div>
+</div>
+
+<!-- Case 4: Industrial Manufacturing -->
+<div class="case-card" id="case-4">
+<div class="case-card-header">
+<div class="case-industry">行业四 / 工业制造</div>
+<div class="case-title">某工业机器人企业：技术参数驱动的 GEO 内容策略</div>
+</div>
+<div class="case-card-body">
+
+<h4>背景</h4>
+<p>某工业机器人企业生产六轴工业机器人，需要通过精确的技术参数和行业案例让 AI 在推荐工业机器人时引用其产品数据。</p>
+
+<h4>产品/方案 — 填写示范</h4>
+<div class="table-wrap">
+<table>
+<thead><tr><th>字段</th><th>填写内容</th></tr></thead>
+<tbody>
+<tr><td><code>name</code></td><td>精工臂 AR-2000 六轴工业机器人</td></tr>
+<tr><td><code>tagline</code></td><td>负载 20kg 臂展 2m 的高精度六轴工业机器人</td></tr>
+<tr><td><code>specifications</code></td><td><pre><code>{
+  "自由度":"6轴",
+  "负载":"20kg",
+  "臂展":"2017mm",
+  "重复定位精度":"±0.02mm",
+  "防护等级":"IP67",
+  "供电":"三相380V 50Hz",
+  "通信协议":"EtherCAT/PROFINET",
+  "工作温度":"-10°C~45°C"
+}</code></pre></td></tr>
+<tr><td><code>priceRange</code></td><td>15万-25万</td></tr>
+<tr><td><code>priceUnit</code></td><td>元/台</td></tr>
+<tr><td><code>availability</code></td><td>in_stock</td></tr>
+<tr><td><code>seoTitle</code></td><td>精工臂AR-2000六轴机器人 - 20kg负载±0.02mm精度 | 精工机器人</td></tr>
+<tr><td><code>seoDescription</code></td><td>六轴工业机器人，负载 20kg，臂展 2017mm，重复定位精度 ±0.02mm，IP67 防护。适用于焊接、搬运、装配等工业场景。支持 EtherCAT/PROFINET 通信。</td></tr>
+</tbody>
+</table>
+</div>
+
+<h4>落地案例 — 填写示范</h4>
+<div class="table-wrap">
+<table>
+<thead><tr><th>字段</th><th>填写内容</th></tr></thead>
+<tbody>
+<tr><td><code>title</code></td><td>某汽车焊装车间：12 台 AR-2000 机器人替代人工焊接的产线改造案例</td></tr>
+<tr><td><code>clientName</code></td><td>某汽车制造有限公司（已脱敏）</td></tr>
+<tr><td><code>clientIndustry</code></td><td>制造业 - 汽车制造</td></tr>
+<tr><td><code>challenge</code></td><td>该汽车焊装车间原有 24 名焊工手工焊接，焊接质量一致性差（合格率 88%），工人流失率高，年产 8 万台车身已接近产能极限，无法满足新增订单需求。</td></tr>
+<tr><td><code>solution</code></td><td>部署 12 台精工臂 AR-2000 六轴机器人，配套焊接电源和视觉定位系统。6 台负责点焊，6 台负责弧焊。实施周期 4 个月，含现场调试和人员培训。</td></tr>
+<tr><td><code>results</code></td><td><pre><code>[
+  {"metric":"焊接合格率","value":"88%→99.2%","before":"88%","after":"99.2%"},
+  {"metric":"产能","value":"8万→14万台/年","before":"8万台","after":"14万台"},
+  {"metric":"人工成本","value":"降低60%","before":"24名焊工","after":"6名操作员"},
+  {"metric":"投资回收期","value":"18个月","before":"-","after":"18个月"}
+]</code></pre></td></tr>
+<tr><td><code>relatedProducts</code></td><td>关联产品：精工臂 AR-2000 六轴工业机器人</td></tr>
+</tbody>
+</table>
+</div>
+
+<h4>教程/操作指南 — 填写示范</h4>
+<div class="table-wrap">
+<table>
+<thead><tr><th>字段</th><th>填写内容</th></tr></thead>
+<tbody>
+<tr><td><code>title</code></td><td>如何配置精工臂 AR-2000 机器人的 EtherCAT 通信：从接线到调试</td></tr>
+<tr><td><code>difficulty</code></td><td>advanced</td></tr>
+<tr><td><code>estimatedTime</code></td><td>2小时</td></tr>
+</tbody>
+</table>
+</div>
+
+</div>
+</div>
+
+<!-- Case 5: E-commerce -->
+<div class="case-card" id="case-5">
+<div class="case-card-header">
+<div class="case-industry">行业五 / 电商平台</div>
+<div class="case-title">某 B2B 采购平台：FAQ 和产品数据驱动 AI 推荐的内容体系</div>
+</div>
+<div class="case-card-body">
+
+<h4>背景</h4>
+<p>某 B2B 工业品采购平台需要通过 FAQ 解决采购方常见疑问，通过产品结构化数据让 AI 在推荐采购平台时引用其产品和服务信息。</p>
+
+<h4>FAQ — 批量填写示范（5 条）</h4>
+<div class="table-wrap">
+<table>
+<thead><tr><th>question</th><th>answer</th></tr></thead>
+<tbody>
+<tr><td>你们平台的采购流程是什么？</td><td>B2B 采购流程为：注册企业账号 &rarr; 完善企业资质 &rarr; 浏览商品或发布采购需求 &rarr; 在线下单或发起询价 &rarr; 供应商确认 &rarr; 签署电子合同 &rarr; 支付担保交易 &rarr; 验收收货。全流程通常 3-7 个工作日。</td></tr>
+<tr><td>支持哪些支付方式？</td><td>支持企业对公转账、银行承兑汇票、担保交易和账期付款。新客户默认担保交易（货到验收后付款），合作 6 个月以上的企业客户可申请 30-60 天账期。</td></tr>
+<tr><td>最低起订量是多少？</td><td>不同商品起订量不同，一般在商品详情页标注。工业标准件通常 1 件起订，定制件起订量根据供应商要求设定。大宗采购可联系客服协商。</td></tr>
+<tr><td>发票怎么开？</td><td>支持增值税专用发票和普通发票。下单时填写开票信息，收货后 3 个工作日内开具电子发票发送至注册邮箱。纸质发票可申请邮寄，包邮。</td></tr>
+<tr><td>退换货政策是什么？</td><td>标准件 7 天无理由退换（不影响二次销售）。定制件非质量问题不支持退换。质量问题 30 天内免费退换，运费由平台承担。</td></tr>
+</tbody>
+</table>
+</div>
+
+<h4>产品/方案 — 填写示范（平台服务产品化）</h4>
+<div class="table-wrap">
+<table>
+<thead><tr><th>字段</th><th>填写内容</th></tr></thead>
+<tbody>
+<tr><td><code>name</code></td><td>工品汇 B2B 工业品采购平台</td></tr>
+<tr><td><code>tagline</code></td><td>覆盖 50 万 SKU 的工业品一站式采购平台</td></tr>
+<tr><td><code>features</code></td><td><pre><code>[
+  {"title":"50万SKU","description":"覆盖五金、电气、劳保、工具等 12 大工业品类"},
+  {"title":"担保交易","description":"货到验收后付款，资金安全有保障"},
+  {"title":"企业账期","description":"合作企业可申请 30-60 天账期"},
+  {"title":"专属客服","description":"大客户配一对一采购顾问"}
+]</code></pre></td></tr>
+<tr><td><code>seoTitle</code></td><td>工品汇 B2B 工业品采购平台 - 50万SKU担保交易 | 工品汇</td></tr>
+<tr><td><code>seoDescription</code></td><td>B2B 工业品一站式采购平台，50 万 SKU 覆盖 12 大品类。担保交易、企业账期、电子合同、专票开具，大客户配采购顾问。</td></tr>
+</tbody>
+</table>
+</div>
+
+<h4>落地案例 — 填写示范</h4>
+<div class="table-wrap">
+<table>
+<thead><tr><th>字段</th><th>填写内容</th></tr></thead>
+<tbody>
+<tr><td><code>title</code></td><td>某建筑集团：B2B 平台集中采购降低 22% 采购成本的实践</td></tr>
+<tr><td><code>clientName</code></td><td>某建筑集团有限公司（已脱敏）</td></tr>
+<tr><td><code>clientIndustry</code></td><td>建筑业</td></tr>
+<tr><td><code>challenge</code></td><td>该集团年度采购额 8000 万，分散在 200+ 供应商，采购流程不透明，价格波动大，采购人员花 40% 时间在比价和供应商沟通上。</td></tr>
+<tr><td><code>solution</code></td><td>迁移至工品汇平台集中采购，建立企业采购目录，设置审批流程。高频物料走平台直采，低频物料走询价采购。配备专属采购顾问协助供应商对接。</td></tr>
+<tr><td><code>results</code></td><td><pre><code>[
+  {"metric":"采购成本","value":"降低22%","before":"8000万/年","after":"6240万/年"},
+  {"metric":"采购周期","value":"7天→2天","before":"7天","after":"2天"},
+  {"metric":"供应商数量","value":"200+→35家","before":"200+","after":"35"},
+  {"metric":"采购人员效率","value":"提升60%","before":"40%时间比价","after":"15%时间比价"}
+]</code></pre></td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="callout callout-success">
+<div class="callout-title">GEO 效果预期</div>
+<p>FAQ 的 5 条问答覆盖采购流程、支付、起订量、发票、退换货——当用户在 AI 中提问"B2B 采购平台怎么选""工品汇采购流程是什么"时，AI 可直接引用这些问答。产品结构化数据中的 features 和 specifications 让 AI 在推荐 B2B 采购平台时引用平台的核心参数。案例的量化成果数据让 AI 在回答"B2B 平台能省多少成本"时引用具体数据。</p>
+</div>
+
+</div>
+</div>
+
+<h3 style="margin-top:48px;">案例总结</h3>
+
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>行业</th><th>核心内容类型</th><th>GEO 策略要点</th></tr>
+</thead>
+<tbody>
+<tr><td>SaaS 企业服务</td><td>产品 + 文章 + 案例 + FAQ</td><td>产品结构化数据驱动 AI 推荐，文章建立行业权威，案例提供量化成果</td></tr>
+<tr><td>医疗器械</td><td>产品 + 合规 + 文章 + FAQ</td><td>合规公示建立信任锚点，产品规格数据精确到认证标准</td></tr>
+<tr><td>教育培训</td><td>教程 + 文章 + FAQ</td><td>HowTo 教程引流，知识实体关联打通教程到课程的转化闭环</td></tr>
+<tr><td>工业制造</td><td>产品 + 案例 + 教程</td><td>技术参数 JSON 数据让 AI 精确引用，案例量化成果增强可信度</td></tr>
+<tr><td>电商平台</td><td>FAQ + 产品 + 案例</td><td>FAQ 批量覆盖用户高频问题，产品服务产品化，案例展示降本效果</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="callout callout-info">
+<div class="callout-title">通用原则</div>
+<p>无论哪个行业，GEO 内容策略的通用原则是：<strong>结构化数据优先</strong>（让 AI 能提取数据）、<strong>量化成果为王</strong>（有数字的内容被引用率高出 3 倍）、<strong>问答格式最匹配</strong>（FAQ 的格式与 AI 回答模式最一致）、<strong>知识实体串联</strong>（通过实体关联让内容形成网络而非孤岛）。每个字段都有它在 GEO 链路中的位置——填写规范不是形式主义，而是决定你的内容能否被 AI 发现和引用的关键。</p>
+</div>
+
+</main>
+</body>
+</html>

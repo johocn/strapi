@@ -45,7 +45,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         email: data.email || null,
         password_hash,
         status: "active",
-        register_channel: data.register_channel || null,
+        register_channel: data.register_channel || "sso_local",
         utm_source: data.utm_source || null,
         utm_medium: data.utm_medium || null,
         utm_campaign: data.utm_campaign || null,

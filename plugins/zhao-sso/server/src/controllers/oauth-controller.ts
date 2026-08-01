@@ -212,12 +212,16 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         scope: scope || "",
       })).toString("base64url");
 
-      // 构造 callbackUrl（优先取 X-Forwarded-* 反代头）
+      // 构造 callbackUrl - 微信 OAuth 必须使用 HTTPS
       const forwardedHost = ctx.request.headers["x-forwarded-host"];
-      const forwardedProto = ctx.request.headers["x-forwarded-proto"];
       const host = forwardedHost || ctx.request.host;
-      const protocol = forwardedProto || ctx.request.protocol;
-      const callbackUrl = `${protocol}://${host}/api/zhao-sso/v1/auth/wechat/callback`;
+      const callbackUrl = `https://${host}/api/zhao-sso/v1/auth/wechat/callback`;
+      // 验证 callbackUrl 域名是否与 SSO 服务域名一致（避免被 C 端域名劫持回调）
+      // 微信回调必须回到 SSO 服务器（h.joho.cn），由 SSO 处理认证后再回跳 C 端
+      const ssoHost = process.env.SSO_HOST || ctx.request.host;
+      if (host !== ssoHost) {
+        strapi.log.warn(`[zhao-sso] callbackUrl host 不匹配: ${host} != ${ssoHost}，微信回调将回 SSO 服务器`);
+      }
 
       const url = await wechatService.getAuthorizeUrl(state, appType, scope, callbackUrl);
       ctx.redirect(url);
