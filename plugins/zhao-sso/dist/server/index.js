@@ -650,6 +650,10 @@ const oauthController = ({ strapi }) => ({
       const host = forwardedHost || ctx.request.host;
       const protocol = forwardedProto || ctx.request.protocol;
       const callbackUrl = `${protocol}://${host}/api/zhao-sso/v1/auth/wechat/callback`;
+      const ssoHost = process.env.SSO_HOST || ctx.request.host;
+      if (host !== ssoHost) {
+        strapi.log.warn(`[zhao-sso] callbackUrl host 不匹配: ${host} != ${ssoHost}，微信回调将回 SSO 服务器`);
+      }
       const url = await wechatService.getAuthorizeUrl(state, appType, scope, callbackUrl);
       ctx.redirect(url);
     } catch (e) {
@@ -2226,7 +2230,7 @@ const ssoUser = ({ strapi }) => {
           email: data.email || null,
           password_hash,
           status: "active",
-          register_channel: data.register_channel || null,
+          register_channel: data.register_channel || "sso_local",
           utm_source: data.utm_source || null,
           utm_medium: data.utm_medium || null,
           utm_campaign: data.utm_campaign || null,
@@ -2933,13 +2937,18 @@ const ssoWechat = ({ strapi }) => {
       if (binding) {
         return { userId: binding.user.id, isNew: false };
       }
+      const rawNickname = (userInfo?.nickname || "wx_user").replace(/[^\w\u4e00-\u9fa5]/g, "").substring(0, 12) || "wx_user";
+      const shortId = uuid.v4().replace(/-/g, "").substring(0, 8);
+      const username = `wx_${rawNickname}_${shortId}`;
       const user = await strapi.db.query(USER_UID$2).create({
         data: {
           uuid: uuid.v4(),
+          username,
           nickname: userInfo?.nickname || null,
           avatar_url: userInfo?.headimgurl || null,
           status: "active",
-          login_count: 0
+          login_count: 0,
+          register_channel: `sso_wechat_${appType}`
         }
       });
       await strapi.db.query(BINDING_UID$1).create({
