@@ -40,6 +40,13 @@ declare const _default: ({ strapi }: {
         isNew: boolean;
     }>;
     findApp(appCode: string): Promise<any>;
+    /**
+     * 校验 redirect_uri 是否在白名单中
+     * 剥离 query 参数后比对（origin + path + hash），
+     * 与 zhao-third 行为对齐：不因 query 参数阻断合法回调地址。
+     * 白名单条目示例：https://h.joho.cn/#/pages/sso/login-callback
+     * 实际 redirectUri 可能携带 ?return_url=...&app_code=... 等参数，只比对基础部分。
+     */
     validateRedirectUri(app: any, redirectUri: string): boolean;
     /**
      * 校验 app 是否允许使用指定 grant_type

@@ -623,10 +623,8 @@ const oauthController = ({ strapi }) => ({
         scope: scope || ""
       })).toString("base64url");
       const forwardedHost = ctx.request.headers["x-forwarded-host"];
-      const forwardedProto = ctx.request.headers["x-forwarded-proto"];
       const host = forwardedHost || ctx.request.host;
-      const protocol = forwardedProto || ctx.request.protocol;
-      const callbackUrl = `${protocol}://${host}/api/zhao-sso/v1/auth/wechat/callback`;
+      const callbackUrl = `https://${host}/api/zhao-sso/v1/auth/wechat/callback`;
       const ssoHost = process.env.SSO_HOST || ctx.request.host;
       if (host !== ssoHost) {
         strapi.log.warn(`[zhao-sso] callbackUrl host 不匹配: ${host} != ${ssoHost}，微信回调将回 SSO 服务器`);
@@ -2507,7 +2505,9 @@ const ssoOauth = ({ strapi }) => {
       if (!authCode) throwErr("SSO_OAUTH_004", 404, "授权码不存在");
       if (authCode.used) throwErr("SSO_OAUTH_005", 400, "授权码已使用");
       if (new Date(authCode.expires_at) < /* @__PURE__ */ new Date()) throwErr("SSO_OAUTH_006", 400, "授权码已过期");
-      if (authCode.redirect_uri !== redirectUri) throwErr("SSO_OAUTH_007", 400, "redirect_uri 不匹配");
+      const storedBase = (authCode.redirect_uri || "").split("?")[0];
+      const requestBase = (redirectUri || "").split("?")[0];
+      if (storedBase !== requestBase) throwErr("SSO_OAUTH_007", 400, "redirect_uri 不匹配");
       await strapi.db.query(AUTH_CODE_UID).update({
         where: { id: authCode.id },
         data: { used: true }
@@ -2523,14 +2523,23 @@ const ssoOauth = ({ strapi }) => {
     async findApp(appCode) {
       return strapi.db.query(APP_UID$1).findOne({ where: { app_code: appCode } });
     },
+    /**
+     * 校验 redirect_uri 是否在白名单中
+     * 剥离 query 参数后比对（origin + path + hash），
+     * 与 zhao-third 行为对齐：不因 query 参数阻断合法回调地址。
+     * 白名单条目示例：https://h.joho.cn/#/pages/sso/login-callback
+     * 实际 redirectUri 可能携带 ?return_url=...&app_code=... 等参数，只比对基础部分。
+     */
     validateRedirectUri(app, redirectUri) {
       const allowed = app.redirect_uris || [];
+      const baseUri = (redirectUri || "").split("?")[0];
       return allowed.some((pattern) => {
-        if (pattern.includes("*")) {
-          const regex = new RegExp("^" + pattern.replace(/\*/g, ".*") + "$");
-          return regex.test(redirectUri);
+        const basePattern = (pattern || "").split("?")[0];
+        if (basePattern.includes("*")) {
+          const regex = new RegExp("^" + basePattern.replace(/\*/g, ".*") + "$");
+          return regex.test(baseUri);
         }
-        return pattern === redirectUri;
+        return basePattern === baseUri;
       });
     },
     /**
