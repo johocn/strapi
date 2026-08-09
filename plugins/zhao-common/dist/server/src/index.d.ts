@@ -174,6 +174,26 @@ declare const _default: {
                 moduleVisibility?: Record<string, string[]>;
             }): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
         };
+        "db-helper": ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            isDraftAndPublish(uid: string): boolean;
+            findOne(uid: string, documentId: string, populate?: any): Promise<any>;
+            findMany(uid: string, options?: any): Promise<any[]>;
+            queryOne(uid: string, where: any, populate?: any): Promise<any>;
+            queryMany(uid: string, where: any, populate?: any, opts?: {
+                limit?: number;
+                offset?: number;
+                orderBy?: any;
+            }): Promise<any[]>;
+            getDocumentId(entity: any): string | undefined;
+            findSmart(uid: string, options: {
+                documentId?: string;
+                where?: any;
+                populate?: any;
+                useDbQuery?: boolean;
+            }): Promise<any>;
+        };
     };
     contentTypes: {
         "site-config": {
@@ -518,6 +538,28 @@ declare const _default: {
                         relation: string;
                         target: string;
                         mappedBy: string;
+                    };
+                    website_redirect_rules: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    posterDefaultUserName: {
+                        type: string;
+                        maxLength: number;
+                        description: string;
+                    };
+                    posterDefaultUserAvatar: {
+                        type: string;
+                        multiple: boolean;
+                        required: boolean;
+                        allowedTypes: string[];
+                    };
+                    posterDefaultRecommendReason: {
+                        type: string;
+                        maxLength: number;
+                        description: string;
                     };
                 };
             };

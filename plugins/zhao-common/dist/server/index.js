@@ -166,6 +166,7 @@ const siteResolver = (config2, { strapi: strapi2 }) => {
     }
     const raw = typeof ctx.query?.domain === "string" && ctx.query.domain || typeof ctx.request?.header?.["x-site-domain"] === "string" && ctx.request.header["x-site-domain"] || ctx.request.header.host || "";
     const domain = extractHost(raw);
+    let resolved = false;
     try {
       if (domain) {
         const records = await strapi2.documents(SITE_CONFIG_UID$3).findMany({
@@ -177,24 +178,27 @@ const siteResolver = (config2, { strapi: strapi2 }) => {
           const site = records[0];
           ctx.state.siteId = site.id;
           ctx.state.siteDocumentId = site.documentId;
-          return await next();
+          resolved = true;
+        } else {
+          strapi2.log.warn(`[site-resolver] domain "${domain}" 未匹配，回退到默认站点`);
         }
-        strapi2.log.warn(`[site-resolver] domain "${domain}" 未匹配，回退到默认站点`);
       }
-      const fallback = await strapi2.documents(SITE_CONFIG_UID$3).findMany({
-        sort: { id: "asc" },
-        limit: 1,
-        populate: ["channels", "template"]
-      });
-      if (Array.isArray(fallback) && fallback.length > 0) {
-        const site = fallback[0];
-        ctx.state.siteId = site.id;
-        ctx.state.siteDocumentId = site.documentId;
+      if (!resolved) {
+        const fallback = await strapi2.documents(SITE_CONFIG_UID$3).findMany({
+          sort: { id: "asc" },
+          limit: 1,
+          populate: ["channels", "template"]
+        });
+        if (Array.isArray(fallback) && fallback.length > 0) {
+          const site = fallback[0];
+          ctx.state.siteId = site.id;
+          ctx.state.siteDocumentId = site.documentId;
+        }
       }
     } catch (error) {
       strapi2.log.error("[site-resolver] Failed to resolve site:", error);
     }
-    await next();
+    return await next();
   };
 };
 const SITE_CONFIG_UID$2 = "plugin::zhao-common.site-config";
@@ -746,7 +750,7 @@ const siteConfig$2 = ({ strapi: strapi2 }) => ({
    */
   async getConfig(siteId) {
     if (siteId) {
-      const record = await strapi2.documents(UID$1).findOne({ documentId: siteId, populate: ["channels", "template", "logo", "favicon", "shareImage"] });
+      const record = await strapi2.documents(UID$1).findOne({ documentId: siteId, populate: ["channels", "template", "logo", "favicon", "shareImage", "posterDefaultUserAvatar"] });
       if (record) return record;
     }
     return { ...DEFAULT_CONFIG };
@@ -757,7 +761,7 @@ const siteConfig$2 = ({ strapi: strapi2 }) => ({
   async getConfigByDomain(domain) {
     const records = await strapi2.documents(UID$1).findMany({
       filters: { domain },
-      populate: ["channels", "template", "logo", "favicon", "shareImage"]
+      populate: ["channels", "template", "logo", "favicon", "shareImage", "posterDefaultUserAvatar"]
     });
     if (Array.isArray(records) && records.length > 0) {
       return records[0];
@@ -1393,7 +1397,11 @@ const config$1 = ({ strapi: strapi2 }) => ({
             shareDescription: "",
             shareImage: "",
             sharePath: "/pages/index/index",
-            domain: ""
+            domain: "",
+            // 新增：海报兜底配置
+            posterDefaultUserName: "",
+            posterDefaultUserAvatar: "",
+            posterDefaultRecommendReason: ""
           },
           auth: {
             mode: "local",
@@ -1455,7 +1463,10 @@ const config$1 = ({ strapi: strapi2 }) => ({
         "shareDescription",
         "icpNumber",
         "customerServiceUrl",
-        "domain"
+        "domain",
+        // 新增：海报兜底配置
+        "posterDefaultUserName",
+        "posterDefaultRecommendReason"
       ];
       const DEFAULT_CONFIG2 = {
         siteName: "",
@@ -1467,7 +1478,9 @@ const config$1 = ({ strapi: strapi2 }) => ({
         shareDescription: "",
         icpNumber: "",
         customerServiceUrl: "",
-        domain: ""
+        domain: "",
+        posterDefaultUserName: "",
+        posterDefaultRecommendReason: ""
       };
       const sitePublic = {};
       for (const key of PUBLIC_FIELDS2) {
@@ -1476,6 +1489,7 @@ const config$1 = ({ strapi: strapi2 }) => ({
       if (fullConfig?.logo) sitePublic.logo = fullConfig.logo;
       if (fullConfig?.favicon) sitePublic.favicon = fullConfig.favicon;
       if (fullConfig?.shareImage) sitePublic.shareImage = fullConfig.shareImage;
+      if (fullConfig?.posterDefaultUserAvatar) sitePublic.posterDefaultUserAvatar = fullConfig.posterDefaultUserAvatar;
       result.site = sitePublic;
       let ec = {};
       const rawEc = fullConfig?.extraConfig;
@@ -1558,6 +1572,7 @@ const config$1 = ({ strapi: strapi2 }) => ({
         thirdPartyEnabled,
         ssoEnabled: siteFeatureFlags.sso ?? true,
         ssoLoginUrl: ec.ssoLoginUrl ?? null,
+        ssoAppCode: ec.ssoAppCode ?? "course",
         registerEnabled: ec.registerEnabled ?? true,
         inviteCodeRequired: ec.inviteCodeRequired ?? false
       };
@@ -1831,6 +1846,81 @@ const globalConfig$2 = ({ strapi: strapi2 }) => ({
     }
   }
 });
+const dbHelper = ({ strapi: strapi2 }) => ({
+  /**
+   * 判断 content type 是否启用了 draftAndPublish
+   */
+  isDraftAndPublish(uid) {
+    try {
+      const ct = strapi2.contentTypes[uid];
+      return !!ct?.options?.draftAndPublish;
+    } catch {
+      return false;
+    }
+  },
+  /**
+   * 通过 Document Service 查询单条已发布记录
+   * 自动处理 draftAndPublish=true 的 status:'published' 参数
+   */
+  async findOne(uid, documentId, populate) {
+    const opts = { documentId, populate };
+    if (this.isDraftAndPublish(uid)) {
+      opts.status = "published";
+    }
+    return strapi2.documents(uid).findOne(opts);
+  },
+  /**
+   * 通过 Document Service 查询多条已发布记录
+   * 自动处理 draftAndPublish=true 的 status:'published' 参数
+   */
+  async findMany(uid, options2 = {}) {
+    const opts = { ...options2 };
+    if (this.isDraftAndPublish(uid) && !opts.status) {
+      opts.status = "published";
+    }
+    return strapi2.documents(uid).findMany(opts);
+  },
+  /**
+   * 通过 db.query 查询单条记录（绕过 draft/publish 机制）
+   * 适用于：需要 populate draftAndPublish=true 关联、或需要 snake_case where 条件的场景
+   */
+  async queryOne(uid, where, populate) {
+    return strapi2.db.query(uid).findOne({ where, populate });
+  },
+  /**
+   * 通过 db.query 查询多条记录
+   */
+  async queryMany(uid, where, populate, opts) {
+    const queryOpts = { where, populate };
+    if (opts?.limit !== void 0) queryOpts.limit = opts.limit;
+    if (opts?.offset !== void 0) queryOpts.offset = opts.offset;
+    if (opts?.orderBy) queryOpts.orderBy = opts.orderBy;
+    return strapi2.db.query(uid).findMany(queryOpts);
+  },
+  /**
+   * 从实体对象中提取 documentId（兼容 camelCase 和 snake_case）
+   * strapi.db.query 返回 documentId，strapi.documents 也返回 documentId
+   * 但有时旧代码或 join 表结果会返回 document_id
+   */
+  getDocumentId(entity) {
+    if (!entity) return void 0;
+    return entity.documentId || entity.document_id;
+  },
+  /**
+   * 智能查询：自动判断用 Document Service 还是 db.query
+   * - 需要 populate draftAndPublish=true 关联 → 用 db.query
+   * - 其他场景 → 用 Document Service（自动加 status:'published'）
+   */
+  async findSmart(uid, options2) {
+    if (options2.useDbQuery || options2.where) {
+      return this.queryOne(uid, options2.where || {}, options2.populate);
+    }
+    if (options2.documentId) {
+      return this.findOne(uid, options2.documentId, options2.populate);
+    }
+    throw new Error("findSmart 需要 documentId 或 where 参数");
+  }
+});
 const services = {
   logger,
   "error-handler": errorHandler,
@@ -1841,13 +1931,14 @@ const services = {
   "site-template": siteTemplate$2,
   config: config$1,
   "migration-runner": migrationRunner,
-  "global-config": globalConfig$2
+  "global-config": globalConfig$2,
+  "db-helper": dbHelper
 };
 const kind$2 = "collectionType";
 const collectionName$2 = "zhao_site_configs";
 const info$2 = { "singularName": "site-config", "pluralName": "site-configs", "displayName": "站点配置", "description": "站点通用配置（多租户）" };
 const options$2 = { "draftAndPublish": false };
-const attributes$2 = { "siteName": { "type": "string", "maxLength": 100 }, "siteDescription": { "type": "text" }, "logo": { "type": "media", "multiple": false, "required": false, "allowedTypes": ["images"] }, "favicon": { "type": "media", "multiple": false, "required": false, "allowedTypes": ["images"] }, "icpNumber": { "type": "string", "maxLength": 50 }, "seoKeywords": { "type": "string", "maxLength": 500 }, "seoDescription": { "type": "text" }, "tencentMapKey": { "type": "string", "maxLength": 64 }, "shareTitle": { "type": "string", "maxLength": 100 }, "shareDescription": { "type": "string", "maxLength": 200 }, "shareImage": { "type": "media", "multiple": false, "required": false, "allowedTypes": ["images"] }, "customerServiceUrl": { "type": "string", "maxLength": 500 }, "domain": { "type": "string", "maxLength": 255, "unique": true }, "channels": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-channel.channel", "mappedBy": "sites" }, "featureFlags": { "type": "json", "default": { "sso": false, "points": true, "quiz": true, "course": true, "channel": true, "thirdParty": true, "oss": false, "website": true, "logistics": true, "studio": true } }, "moduleVisibility": { "type": "json", "default": {} }, "template": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-template", "inversedBy": "sites" }, "extraConfig": { "type": "json" }, "themeConfig": { "type": "json", "default": "{}" }, "channelUsage": { "type": "enumeration", "enum": ["site_only", "site_and_cross", "site_cross_user"], "default": "site_cross_user", "required": true }, "tags": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-tag.tag", "mappedBy": "site" }, "tagGroups": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-tag.tag-group", "mappedBy": "site" }, "website_seo_config": { "type": "relation", "relation": "oneToOne", "target": "plugin::zhao-website.seo-config", "mappedBy": "site" }, "website_brand_info": { "type": "relation", "relation": "oneToOne", "target": "plugin::zhao-website.brand-info", "mappedBy": "site" }, "website_articles": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.article", "mappedBy": "site" }, "website_article_categories": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.article-category", "mappedBy": "site" }, "website_cases": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.case", "mappedBy": "site" }, "website_faqs": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.faq", "mappedBy": "site" }, "website_tutorials": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.tutorial", "mappedBy": "site" }, "website_compliances": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.compliance", "mappedBy": "site" }, "website_downloads": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.download", "mappedBy": "site" }, "website_ai_summaries": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.ai-content-summary", "mappedBy": "site" }, "website_first_truths": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.first-truth-policy", "mappedBy": "site" }, "website_knowledge_entities": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.knowledge-entity", "mappedBy": "site" }, "website_knowledge_relations": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.knowledge-relation", "mappedBy": "site" }, "website_leads": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.lead", "mappedBy": "site" }, "website_interactions": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.interaction", "mappedBy": "site" }, "website_search_logs": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.search-log", "mappedBy": "site" }, "website_visit_logs": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.visit-log", "mappedBy": "site" }, "website_products": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.product", "mappedBy": "site" }, "logistics_tracking_providers": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-logistics.tracking-provider", "mappedBy": "site" }, "logistics_tracking_shipments": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-logistics.tracking-shipment", "mappedBy": "site" }, "logistics_tracking_nodes": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-logistics.tracking-node", "mappedBy": "site" }, "logistics_subscriptions": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-logistics.subscription", "mappedBy": "site" }, "logistics_quote_requests": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-logistics.quote-request", "mappedBy": "site" }, "logistics_quote_price_rules": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-logistics.quote-price-rule", "mappedBy": "site" }, "logistics_quote_price_formulas": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-logistics.quote-price-formula", "mappedBy": "site" }, "logistics_quote_field_rules": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-logistics.quote-field-rule", "mappedBy": "site" }, "logistics_customer_profiles": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-logistics.customer-profile", "mappedBy": "site" }, "logistics_conversion_events": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-logistics.conversion-event", "mappedBy": "site" }, "logistics_conversion_funnels": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-logistics.conversion-funnel", "mappedBy": "site" }, "logistics_contact_matrices": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-logistics.contact-matrix", "mappedBy": "site" }, "logistics_landing_pages": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-logistics.landing-page", "mappedBy": "site" }, "logistics_intent_orders": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-logistics.intent-order", "mappedBy": "site" }, "logistics_referrals": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-logistics.referral", "mappedBy": "site" }, "logistics_reviews": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-logistics.review", "mappedBy": "site" }, "studio_sync_events": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.sync-event", "mappedBy": "site" }, "website_brand_voices": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.brand-voice", "mappedBy": "site" } };
+const attributes$2 = { "siteName": { "type": "string", "maxLength": 100 }, "siteDescription": { "type": "text" }, "logo": { "type": "media", "multiple": false, "required": false, "allowedTypes": ["images"] }, "favicon": { "type": "media", "multiple": false, "required": false, "allowedTypes": ["images"] }, "icpNumber": { "type": "string", "maxLength": 50 }, "seoKeywords": { "type": "string", "maxLength": 500 }, "seoDescription": { "type": "text" }, "tencentMapKey": { "type": "string", "maxLength": 64 }, "shareTitle": { "type": "string", "maxLength": 100 }, "shareDescription": { "type": "string", "maxLength": 200 }, "shareImage": { "type": "media", "multiple": false, "required": false, "allowedTypes": ["images"] }, "customerServiceUrl": { "type": "string", "maxLength": 500 }, "domain": { "type": "string", "maxLength": 255, "unique": true }, "channels": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-channel.channel", "mappedBy": "sites" }, "featureFlags": { "type": "json", "default": { "sso": false, "points": true, "quiz": true, "course": true, "channel": true, "thirdParty": true, "oss": false, "website": true, "logistics": true, "studio": true } }, "moduleVisibility": { "type": "json", "default": {} }, "template": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-template", "inversedBy": "sites" }, "extraConfig": { "type": "json" }, "themeConfig": { "type": "json", "default": "{}" }, "channelUsage": { "type": "enumeration", "enum": ["site_only", "site_and_cross", "site_cross_user"], "default": "site_cross_user", "required": true }, "tags": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-tag.tag", "mappedBy": "site" }, "tagGroups": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-tag.tag-group", "mappedBy": "site" }, "website_seo_config": { "type": "relation", "relation": "oneToOne", "target": "plugin::zhao-website.seo-config", "mappedBy": "site" }, "website_brand_info": { "type": "relation", "relation": "oneToOne", "target": "plugin::zhao-website.brand-info", "mappedBy": "site" }, "website_articles": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.article", "mappedBy": "site" }, "website_article_categories": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.article-category", "mappedBy": "site" }, "website_cases": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.case", "mappedBy": "site" }, "website_faqs": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.faq", "mappedBy": "site" }, "website_tutorials": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.tutorial", "mappedBy": "site" }, "website_compliances": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.compliance", "mappedBy": "site" }, "website_downloads": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.download", "mappedBy": "site" }, "website_ai_summaries": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.ai-content-summary", "mappedBy": "site" }, "website_first_truths": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.first-truth-policy", "mappedBy": "site" }, "website_knowledge_entities": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.knowledge-entity", "mappedBy": "site" }, "website_knowledge_relations": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.knowledge-relation", "mappedBy": "site" }, "website_leads": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.lead", "mappedBy": "site" }, "website_interactions": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.interaction", "mappedBy": "site" }, "website_search_logs": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.search-log", "mappedBy": "site" }, "website_visit_logs": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.visit-log", "mappedBy": "site" }, "website_products": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.product", "mappedBy": "site" }, "logistics_tracking_providers": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-logistics.tracking-provider", "mappedBy": "site" }, "logistics_tracking_shipments": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-logistics.tracking-shipment", "mappedBy": "site" }, "logistics_tracking_nodes": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-logistics.tracking-node", "mappedBy": "site" }, "logistics_subscriptions": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-logistics.subscription", "mappedBy": "site" }, "logistics_quote_requests": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-logistics.quote-request", "mappedBy": "site" }, "logistics_quote_price_rules": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-logistics.quote-price-rule", "mappedBy": "site" }, "logistics_quote_price_formulas": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-logistics.quote-price-formula", "mappedBy": "site" }, "logistics_quote_field_rules": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-logistics.quote-field-rule", "mappedBy": "site" }, "logistics_customer_profiles": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-logistics.customer-profile", "mappedBy": "site" }, "logistics_conversion_events": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-logistics.conversion-event", "mappedBy": "site" }, "logistics_conversion_funnels": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-logistics.conversion-funnel", "mappedBy": "site" }, "logistics_contact_matrices": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-logistics.contact-matrix", "mappedBy": "site" }, "logistics_landing_pages": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-logistics.landing-page", "mappedBy": "site" }, "logistics_intent_orders": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-logistics.intent-order", "mappedBy": "site" }, "logistics_referrals": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-logistics.referral", "mappedBy": "site" }, "logistics_reviews": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-logistics.review", "mappedBy": "site" }, "studio_sync_events": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.sync-event", "mappedBy": "site" }, "website_brand_voices": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.brand-voice", "mappedBy": "site" }, "website_redirect_rules": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.redirect-rule", "mappedBy": "site" }, "posterDefaultUserName": { "type": "string", "maxLength": 50, "description": "海报默认用户名" }, "posterDefaultUserAvatar": { "type": "media", "multiple": false, "required": false, "allowedTypes": ["images"] }, "posterDefaultRecommendReason": { "type": "string", "maxLength": 200, "description": "海报默认推荐理由" } };
 const siteConfig$1 = {
   kind: kind$2,
   collectionName: collectionName$2,

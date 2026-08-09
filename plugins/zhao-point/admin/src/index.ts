@@ -10,10 +10,7 @@ export default {
         id: "zhao-point.plugin.name",
         defaultMessage: "积分管理",
       },
-      Component: async () => {
-        const { App } = await import("./pages/App");
-        return App;
-      },
+      Component: () => import("./pages/App").then((mod) => ({ default: mod.App })),
     });
 
     app.registerPlugin({

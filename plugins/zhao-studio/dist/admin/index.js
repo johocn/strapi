@@ -7,7 +7,7 @@ const PluginIcon = () => /* @__PURE__ */ jsxRuntime.jsx(icons.RobotOutlined, {})
 const index = {
   register(app) {
     app.addMenuLink({
-      to: `/plugins/${pluginId}`,
+      to: `plugins/${pluginId}`,
       icon: PluginIcon,
       intlLabel: {
         id: `${pluginId}.plugin.name`,
@@ -19,10 +19,7 @@ const index = {
           subject: null
         }
       ],
-      Component: async () => {
-        const component = await Promise.resolve().then(() => require("./App-BDxNGB00.js"));
-        return component;
-      }
+      Component: () => Promise.resolve().then(() => require("./App-aKUcLcEX.js")).then((mod) => ({ default: mod.default }))
     });
     app.registerPlugin({
       id: pluginId,

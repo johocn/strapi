@@ -1,0 +1,103 @@
+{
+  "kind": "collectionType",
+  "collectionName": "zhao_studio_poster_elements",
+  "info": {
+    "singularName": "poster-element",
+    "pluralName": "poster-elements",
+    "displayName": "海报元素",
+    "description": "海报模板中的元素定义"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "content-manager": { "visible": false },
+    "content-type-builder": { "visible": false }
+  },
+  "attributes": {
+    "posterTemplate": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-studio.poster-template",
+      "inversedBy": "elements",
+      "required": true
+    },
+    "elementType": {
+      "type": "enumeration",
+      "enum": ["text", "image", "qrcode", "shape", "background"],
+      "required": true,
+      "default": "text"
+    },
+    "elementKey": { "type": "string", "required": true },
+    "elementName": { "type": "string" },
+    "sortOrder": { "type": "integer", "default": 0 },
+
+    "isVariable": { "type": "boolean", "default": false },
+    "variableName": { "type": "string" },
+    "defaultValue": { "type": "text" },
+    "content": { "type": "text" },
+
+    "x": { "type": "integer", "default": 0 },
+    "y": { "type": "integer", "default": 0 },
+    "width": { "type": "integer", "default": 100 },
+    "height": { "type": "integer", "default": 100 },
+    "zIndex": { "type": "integer", "default": 0 },
+    "rotation": { "type": "integer", "default": 0 },
+    "opacity": { "type": "decimal", "default": 1 },
+
+    "fontSize": { "type": "integer", "default": 14 },
+    "fontColor": { "type": "string", "default": "#333333" },
+    "fontWeight": {
+      "type": "enumeration",
+      "enum": ["normal", "bold"],
+      "default": "normal"
+    },
+    "fontFamily": { "type": "string", "default": "sans-serif" },
+    "textAlign": {
+      "type": "enumeration",
+      "enum": ["left", "center", "right"],
+      "default": "left"
+    },
+    "lineHeight": { "type": "decimal", "default": 1.5 },
+    "letterSpacing": { "type": "integer", "default": 0 },
+
+    "borderRadius": { "type": "integer", "default": 0 },
+    "borderWidth": { "type": "integer", "default": 0 },
+    "borderColor": { "type": "string", "default": "#000000" },
+    "elementBgColor": { "type": "string" },
+
+    "imageFit": {
+      "type": "enumeration",
+      "enum": ["cover", "contain", "stretch", "tile"],
+      "default": "cover"
+    },
+
+    "qrContentMode": {
+      "type": "enumeration",
+      "enum": ["direct", "url_with_invite"],
+      "default": "direct"
+    },
+    "qrBaseUrl": { "type": "string" },
+    "qrInviteParam": { "type": "string", "default": "inviteCode" },
+    "qrInviteSeparator": { "type": "string", "default": "?" },
+    "qrFallbackMode": {
+      "type": "enumeration",
+      "enum": ["base_url_only", "default_value", "hide_element"],
+      "default": "base_url_only"
+    },
+    "qrErrorLevel": {
+      "type": "enumeration",
+      "enum": ["L", "M", "Q", "H"],
+      "default": "M"
+    },
+    "qrSize": { "type": "integer", "default": 120 },
+    "qrColor": { "type": "string", "default": "#000000" },
+    "qrBgColor": { "type": "string", "default": "#FFFFFF" },
+
+    "shapeType": {
+      "type": "enumeration",
+      "enum": ["rect", "circle", "line"],
+      "default": "rect"
+    }
+  }
+}

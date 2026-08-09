@@ -2,7 +2,7 @@ import type { Core } from "@strapi/strapi";
 import { buildPath, parsePathIds } from "../utils/path";
 
 const USER_INVITE_UID = "plugin::zhao-channel.user-invite";
-const USER_UID = "plugin::users-permissions.user";
+const USER_UID = "plugin::zhao-sso.sso-user";
 const CHANNEL_UID = "plugin::zhao-channel.channel";
 const CHANNEL_MEMBER_UID = "plugin::zhao-channel.channel-member";
 

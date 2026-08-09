@@ -199,7 +199,7 @@ export default ({ strapi }: { strapi: Core.Strapi }): AuthService & Record<strin
    * 注意：原实现使用模块级缓存 ssoCache，但站点上下文切换后缓存会污染，
    * 已改为每次实时查询（查询本身有 Strapi 内部缓存，性能可接受）。
    */
-  async isSsoEnabled(): Promise<{ enabled: boolean; loginUrl: string }> {
+  async isSsoEnabled(): Promise<{ enabled: boolean; loginUrl: string; appCode: string }> {
     // 1. 优先读 site-config（按当前 x-site-id 上下文）
     try {
       const siteCtx = strapi.requestContext?.get?.() as any;
@@ -216,10 +216,12 @@ export default ({ strapi }: { strapi: Core.Strapi }): AuthService & Record<strin
             (extraConfig.ssoLoginUrl as string) ||
             (strapi.plugin("zhao-sso")?.config?.("loginUrl") as string) ||
             "/sso/login";
-          return { enabled: true, loginUrl };
+          // ssoAppCode 从 extraConfig 读取，默认 'course'
+          const appCode: string = (extraConfig.ssoAppCode as string) || "course";
+          return { enabled: true, loginUrl, appCode };
         }
         // site-config 显式 sso=false 时直接返回禁用，不再回退到 feature-flag
-        return { enabled: false, loginUrl: "" };
+        return { enabled: false, loginUrl: "", appCode: "" };
       }
     } catch {
       // site-config 查询失败，回退到 feature-flag
@@ -233,12 +235,12 @@ export default ({ strapi }: { strapi: Core.Strapi }): AuthService & Record<strin
       const flag = Array.isArray(ssoFlag) ? ssoFlag[0] : null;
       if (flag && flag.flagValue === true && flag.enabled !== false) {
         const loginUrl: string = strapi.plugin("zhao-sso")?.config?.("loginUrl") as string || "/sso/login";
-        return { enabled: true, loginUrl };
+        return { enabled: true, loginUrl, appCode: "course" };
       }
     } catch {
       // feature-flag 查询失败，默认不启用
     }
-    return { enabled: false, loginUrl: "" };
+    return { enabled: false, loginUrl: "", appCode: "" };
   },
 
   /**

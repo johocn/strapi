@@ -3,6 +3,7 @@ Object.defineProperties(exports, { __esModule: { value: true }, [Symbol.toString
 const OSS = require("ali-oss");
 const crypto = require("crypto");
 const fs = require("fs/promises");
+const fsSync = require("fs");
 const path = require("path");
 const sharp = require("sharp");
 const _interopDefault = (e) => e && e.__esModule ? e : { default: e };
@@ -274,8 +275,32 @@ const bootstrap = async ({ strapi }) => {
         try {
           const stats = await fs__namespace.stat(filePath);
           if (stats.isFile()) {
-            ctx.body = await fs__namespace.readFile(filePath);
+            const fileSize = stats.size;
             ctx.type = path__namespace.extname(filePath);
+            ctx.set("Accept-Ranges", "bytes");
+
+            const rangeHeader = ctx.headers.range;
+            if (rangeHeader) {
+              const match = /bytes=(\d+)-(\d*)/.exec(rangeHeader);
+              if (match) {
+                const start = parseInt(match[1], 10);
+                const end = match[2] ? parseInt(match[2], 10) : fileSize - 1;
+                if (start >= 0 && end < fileSize && start <= end) {
+                  ctx.status = 206;
+                  ctx.set("Content-Range", `bytes ${start}-${end}/${fileSize}`);
+                  ctx.set("Content-Length", String(end - start + 1));
+                  if (ctx.method !== "HEAD") {
+                    ctx.body = fsSync.createReadStream(filePath, { start, end });
+                  }
+                  return;
+                }
+              }
+            }
+
+            ctx.set("Content-Length", String(fileSize));
+            if (ctx.method !== "HEAD") {
+              ctx.body = await fs__namespace.readFile(filePath);
+            }
             return;
           }
         } catch (err) {

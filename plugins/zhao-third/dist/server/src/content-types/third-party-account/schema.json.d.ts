@@ -41,7 +41,7 @@ declare const _default: {
     "user": {
       "type": "relation",
       "relation": "manyToOne",
-      "target": "plugin::users-permissions.user"
+      "target": "plugin::zhao-sso.sso-user"
     }
   }
 }

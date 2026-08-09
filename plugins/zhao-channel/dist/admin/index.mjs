@@ -1,4 +1,4 @@
-import { i } from "./index-C5-kHZPs.mjs";
+import { i } from "./index-COMk42AL.mjs";
 export {
   i as default
 };

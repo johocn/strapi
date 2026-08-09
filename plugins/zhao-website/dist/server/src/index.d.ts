@@ -10,6 +10,9 @@ declare const _default: {
     };
     controllers: {
         "knowledge-graph": {
+            exportGraph(ctx: any): Promise<void>;
+            exportEntity(ctx: any): Promise<void>;
+            exportFacts(ctx: any): Promise<void>;
             findEntities(ctx: any): Promise<void>;
             createEntity(ctx: any): Promise<void>;
             updateEntity(ctx: any): Promise<void>;
@@ -18,7 +21,6 @@ declare const _default: {
             addRelation(ctx: any): Promise<void>;
             deleteRelation(ctx: any): Promise<void>;
             disambiguate(ctx: any): Promise<void>;
-            exportGraph(ctx: any): Promise<void>;
             createGlobalEntity(ctx: any): Promise<void>;
             updateGlobalEntity(ctx: any): Promise<void>;
             deleteGlobalEntity(ctx: any): Promise<void>;
@@ -110,6 +112,13 @@ declare const _default: {
         "site-info": {
             info(ctx: any): Promise<void>;
         };
+        "seo-meta": {
+            meta(ctx: any): Promise<void>;
+        };
+        feed: {
+            rss(ctx: any): Promise<void>;
+            atom(ctx: any): Promise<void>;
+        };
         "article-admin": {
             find(ctx: any): Promise<void>;
             findOne(ctx: any): Promise<any>;
@@ -154,6 +163,7 @@ declare const _default: {
         }) => {
             ensureDefault(siteId: number): Promise<any>;
             find(siteId: number): Promise<any>;
+            get(siteId: number): Promise<any>;
             update(siteId: number, data: any): Promise<any>;
             findPublic(siteId: number): Promise<any>;
         };
@@ -162,6 +172,7 @@ declare const _default: {
         }) => {
             ensureDefault(siteId: number): Promise<any>;
             find(siteId: number): Promise<any>;
+            get(siteId: number): Promise<any>;
             update(siteId: number, data: any): Promise<any>;
             findPublic(siteId: number): Promise<any>;
         };
@@ -509,10 +520,12 @@ declare const _default: {
             strapi: import('@strapi/types/dist/core').Strapi;
         }) => {
             buildOrganization(brandInfo: any, seoConfig: any): any;
+            buildLocalBusiness(brandInfo: any, seoConfig: any): any;
             buildArticle(article: any, brandInfo: any): any;
             buildProduct(product: any, brandInfo: any): any;
             buildHowTo(tutorial: any): any;
             buildFAQ(faqs: any[]): any;
+            buildVideo(tutorial: any): any;
             buildBreadcrumb(items: Array<{
                 name: string;
                 url: string;
@@ -522,13 +535,24 @@ declare const _default: {
         "llms-txt": ({ strapi }: {
             strapi: import('@strapi/types/dist/core').Strapi;
         }) => {
-            generate(siteId: number): Promise<string>;
+            generate(siteId: number, siteUrl: string): Promise<string>;
         };
         sitemap: ({ strapi }: {
             strapi: import('@strapi/types/dist/core').Strapi;
         }) => {
             generate(siteId: number, siteUrl: string): Promise<string>;
-            _urlEntry(siteUrl: string, path: string, priority: string, changefreq: string, lastmod?: string): string;
+            _urlEntry(siteUrl: string, path: string, priority: string, changefreq: string, lastmod?: string, imageUrl?: string, hreflangEntries?: Array<{
+                hreflang: string;
+                href: string;
+            }>): string;
+            _buildHreflangEntries(seoConfig: any, siteUrl: string): Array<{
+                hreflang: string;
+                href: string;
+            }>;
+            _buildItemHreflang(seoConfig: any, siteUrl: string, path: string): Array<{
+                hreflang: string;
+                href: string;
+            }>;
         };
         robots: ({ strapi }: {
             strapi: import('@strapi/types/dist/core').Strapi;
@@ -564,6 +588,36 @@ declare const _default: {
             listByCategory(siteId: number | null, category: string): Promise<any[]>;
             resolveVariables(siteId: number | null, documentId: string, variables: Record<string, string>): Promise<any>;
             getRefContent(siteId: number | null, category: string): Promise<string>;
+        };
+        "seo-meta": ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            generate(siteId: number, requestHost: string): Promise<any>;
+            _buildHreflang(seoConfig: any, siteUrl: string): Array<{
+                hreflang: string;
+                href: string;
+            }>;
+            getAiCrawlerList(): string[];
+        };
+        cache: ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            get(key: string, ttl: number, generator: () => Promise<string>): Promise<string>;
+            invalidate(key?: string): void;
+        };
+        feed: ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            generateRSS(siteId: number, siteUrl: string): Promise<string>;
+            generateAtom(siteId: number, siteUrl: string): Promise<string>;
+        };
+        redirect: ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            match(siteId: number, requestPath: string): Promise<{
+                toUrl: string;
+                statusCode: number;
+            } | null>;
         };
     };
     contentTypes: {
@@ -713,6 +767,22 @@ declare const _default: {
                         maxLength: number;
                     };
                     publicSecurityRecord: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    allowedAiCrawlers: {
+                        type: string;
+                        default: any[];
+                    };
+                    twitterSite: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    twitterCreator: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    sogouSiteVerification: {
                         type: string;
                         maxLength: number;
                     };
@@ -1356,6 +1426,25 @@ declare const _default: {
                         target: string;
                         mappedBy: string;
                     };
+                    price: {
+                        type: string;
+                        default: number;
+                    };
+                    currency: {
+                        type: string;
+                        maxLength: number;
+                        default: string;
+                    };
+                    availability: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    brandVoiceRef: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                    };
                     structuredData: {
                         type: string;
                     };
@@ -1788,6 +1877,19 @@ declare const _default: {
                     estimatedTime: {
                         type: string;
                         maxLength: number;
+                    };
+                    videoUrl: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    thumbnailUrl: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    brandVoiceRef: {
+                        type: string;
+                        relation: string;
+                        target: string;
                     };
                     difficulty: {
                         type: string;
@@ -2856,6 +2958,58 @@ declare const _default: {
                         relation: string;
                         target: string;
                         mappedBy: string;
+                    };
+                    deletedAt: {
+                        type: string;
+                        default: any;
+                    };
+                };
+            };
+        };
+        "redirect-rule": {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                pluginOptions: {
+                    "content-manager": {
+                        visible: boolean;
+                    };
+                    "content-type-builder": {
+                        visible: boolean;
+                    };
+                };
+                attributes: {
+                    site: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        inversedBy: string;
+                    };
+                    fromPath: {
+                        type: string;
+                        required: boolean;
+                        maxLength: number;
+                    };
+                    toUrl: {
+                        type: string;
+                        required: boolean;
+                        maxLength: number;
+                    };
+                    statusCode: {
+                        type: string;
+                        default: number;
+                    };
+                    isActive: {
+                        type: string;
+                        default: boolean;
                     };
                     deletedAt: {
                         type: string;

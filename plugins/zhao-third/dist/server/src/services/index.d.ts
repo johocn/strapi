@@ -84,6 +84,20 @@ declare const _default: {
     }) => {
         findConfig(filters: Record<string, any>): Promise<import('@strapi/types/dist/modules/documents').AnyDocument | null>;
         findConfigs(filters: Record<string, any>): Promise<import('@strapi/types/dist/modules/documents').AnyDocument[]>;
+        findConfigsBySite(siteDocumentId: string): Promise<{
+            id: any;
+            documentId: any;
+            name: any;
+            platform: any;
+            appType: any;
+            appId: any;
+            appSecret: any;
+            token: any;
+            encodingAESKey: any;
+            merchantId: any;
+            enabled: any;
+        }[]>;
+        checkDuplicate(platform: string, appType: string, siteDocumentId: string, excludeDocumentId?: string): Promise<any>;
         createConfig(data: Record<string, any>): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
         updateConfig(documentId: string, data: Record<string, any>): Promise<import('@strapi/types/dist/modules/documents').AnyDocument | null>;
         deleteConfig(documentId: string): Promise<{

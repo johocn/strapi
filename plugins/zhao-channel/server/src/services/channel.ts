@@ -505,7 +505,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       let user: any = null;
       if (data.email && data.username && data.password) {
         // 检查邮箱是否已被注册
-        const existingUserByEmail = await strapi.db.query("plugin::users-permissions.user").findOne({
+        const existingUserByEmail = await strapi.db.query("plugin::zhao-sso.sso-user").findOne({
           where: { email: data.email },
         });
         if (existingUserByEmail) {
@@ -513,7 +513,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         }
 
         // 检查用户名是否已被注册
-        const existingUserByUsername = await strapi.db.query("plugin::users-permissions.user").findOne({
+        const existingUserByUsername = await strapi.db.query("plugin::zhao-sso.sso-user").findOne({
           where: { username: data.username },
         });
         if (existingUserByUsername) {
@@ -545,25 +545,12 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
       // ─── 创建登录用户（若提供了完整凭证） ───
       if (data.email && data.username && data.password) {
-        // 定义高级渠道层级（注册时自动获得 channel-admin 角色）
-        // agent 是 root 的直接子级（与 core/senior/.../partner 平级），应自动成为 channel-admin
-        const ADMIN_CHANNEL_TIERS = ['core', 'senior', 'global', 'authorized', 'official', 'partner', 'agent'];
-
-        // 确定用户角色：高级渠道注册自动分配 channel-admin
-        const userRoles = ADMIN_CHANNEL_TIERS.includes(childTier)
-          ? ['channel-admin', 'user']
-          : ['user'];
-
-        // 创建用户（用 entityService 确保密码被哈希）
-        user = await strapi.entityService.create("plugin::users-permissions.user", {
-          data: {
-            email: data.email,
-            username: data.username,
-            password: data.password,
-            provider: "local",
-            confirmed: true,
-            zhaoRoles: userRoles,
-          },
+        // 创建用户（使用 sso-user 服务确保密码哈希）
+        user = await strapi.plugin("zhao-sso").service("sso-user").createUser({
+          email: data.email,
+          username: data.username,
+          password: data.password,
+          register_channel: "sso_local",
         });
 
         // 创建 channel-member（注册者永远是渠道所有者，role 恒为 admin）

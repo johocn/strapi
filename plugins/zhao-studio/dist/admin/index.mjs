@@ -5,7 +5,7 @@ const PluginIcon = () => /* @__PURE__ */ jsx(RobotOutlined, {});
 const index = {
   register(app) {
     app.addMenuLink({
-      to: `/plugins/${pluginId}`,
+      to: `plugins/${pluginId}`,
       icon: PluginIcon,
       intlLabel: {
         id: `${pluginId}.plugin.name`,
@@ -17,10 +17,7 @@ const index = {
           subject: null
         }
       ],
-      Component: async () => {
-        const component = await import("./App-CYbU0A-6.mjs");
-        return component;
-      }
+      Component: () => import("./App-C61re12k.mjs").then((mod) => ({ default: mod.default }))
     });
     app.registerPlugin({
       id: pluginId,

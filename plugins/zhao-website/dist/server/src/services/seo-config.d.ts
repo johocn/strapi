@@ -7,6 +7,7 @@ declare const _default: ({ strapi }: {
      */
     ensureDefault(siteId: number): Promise<any>;
     find(siteId: number): Promise<any>;
+    get(siteId: number): Promise<any>;
     update(siteId: number, data: any): Promise<any>;
     /**
      * 公开路由返回（去除验证码字段）

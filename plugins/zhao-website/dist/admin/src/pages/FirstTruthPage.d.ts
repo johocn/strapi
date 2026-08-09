@@ -1,2 +1,3 @@
-declare const FirstTruthPage: () => import("react/jsx-runtime").JSX.Element;
+import { default as React } from 'react';
+declare const FirstTruthPage: () => React.JSX.Element;
 export default FirstTruthPage;

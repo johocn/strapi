@@ -200,6 +200,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         mode,
         methods: ["password", "sms"],
         ssoLoginUrl: sso.enabled ? sso.loginUrl : null,
+        ssoAppCode: sso.enabled ? sso.appCode : null,
         wechatEnabled: thirdEnabled,
         registerEnabled: true,
       };
@@ -209,6 +210,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         mode: "local",
         methods: ["password"],
         ssoLoginUrl: null,
+        ssoAppCode: null,
         wechatEnabled: false,
         registerEnabled: true,
       };

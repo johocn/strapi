@@ -4,17 +4,19 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async list(ctx: any) {
     try {
       const configService = strapi.plugin("zhao-third").service("third-party-config");
-      const filters: Record<string, any> = {};
 
+      // 优先用 query.site（前端传入的租户 documentId）
       const siteParam = ctx.query?.site;
-      const stateSiteId = ctx.state?.siteId;
-      const effectiveSiteId = siteParam || stateSiteId;
-      if (effectiveSiteId) {
-        filters.site = { documentId: effectiveSiteId };
-      }
 
-      const result = await configService.findConfigs(filters);
-      ctx.body = result;
+      if (siteParam) {
+        // 用 knex 直接查关联表，避免 Strapi v5 Document Service manyToOne 过滤不稳定
+        const result = await configService.findConfigsBySite(siteParam);
+        ctx.body = result;
+      } else {
+        // 无 site 参数时返回全部（超级管理员场景）
+        const result = await configService.findConfigs({});
+        ctx.body = result;
+      }
     } catch (error: any) {
       strapi.log.error(`[zhao-third] 获取配置列表失败: ${error.message}`);
       ctx.status = error.status || 400;
@@ -36,6 +38,20 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       }
 
       const configService = strapi.plugin("zhao-third").service("third-party-config");
+
+      // 确定关联站点 documentId：优先 body.site，其次 ctx.state.siteDocumentId（site-resolver 设置）
+      const siteDocumentId = site || ctx.state?.siteDocumentId;
+
+      // 重复性校验：同一站点下同 platform+appType 不允许重复
+      if (siteDocumentId) {
+        const conflict = await configService.checkDuplicate(platform, appType, siteDocumentId);
+        if (conflict) {
+          ctx.status = 409;
+          ctx.body = { error: `该租户下已存在 ${platform}/${appType} 配置（名称：${conflict.name}），请编辑现有配置而非重复添加` };
+          return;
+        }
+      }
+
       // 只提取 schema 已声明的字段，避免传入未知字段导致验证失败
       const data: Record<string, any> = {
         name,
@@ -50,9 +66,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       if (encodingAESKey !== undefined) data.encodingAESKey = encodingAESKey;
       if (merchantId !== undefined) data.merchantId = merchantId;
 
-      const siteId = site || ctx.state?.siteId;
-      if (siteId) {
-        data.site = siteId;
+      // Strapi v5 Document Service 关联用 documentId 设置
+      if (siteDocumentId) {
+        data.site = siteDocumentId;
       }
 
       const result = await configService.createConfig(data);
@@ -84,6 +100,20 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       const data: Record<string, any> = {};
       for (const key of allowedFields) {
         if (body[key] !== undefined) data[key] = body[key];
+      }
+
+      // 重复性校验：如果修改了 platform/appType，检查同站点下是否已有相同组合
+      if (data.platform && data.appType) {
+        const configService = strapi.plugin("zhao-third").service("third-party-config");
+        const siteDocumentId = data.site || ctx.state?.siteDocumentId;
+        if (siteDocumentId) {
+          const conflict = await configService.checkDuplicate(data.platform, data.appType, siteDocumentId, documentId);
+          if (conflict) {
+            ctx.status = 409;
+            ctx.body = { error: `该租户下已存在 ${data.platform}/${data.appType} 配置（名称：${conflict.name}）` };
+            return;
+          }
+        }
       }
 
       const configService = strapi.plugin("zhao-third").service("third-party-config");

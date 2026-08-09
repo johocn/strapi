@@ -3,14 +3,14 @@ const pluginId = "zhao-auth";
 const index = {
   register(app) {
     app.addMenuLink({
-      to: `/plugins/${pluginId}`,
+      to: `plugins/${pluginId}`,
       icon: LockOutlined,
       intlLabel: {
         id: `${pluginId}.plugin.name`,
         defaultMessage: "认证授权"
       },
       permissions: [{ action: "zhao-auth.user.manage", subject: null }],
-      Component: async () => import("./App-Dg_5o8Bo.mjs")
+      Component: () => import("./App-Dg_5o8Bo.mjs").then((mod) => ({ default: mod.default }))
     });
     app.registerPlugin({
       id: pluginId,

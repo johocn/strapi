@@ -1,0 +1,156 @@
+declare const _default: {
+  "kind": "collectionType",
+  "collectionName": "zhao_studio_ad_contents",
+  "info": {
+    "singularName": "ad-content",
+    "pluralName": "ad-contents",
+    "displayName": "广告内容",
+    "description": "广告素材与展示方式配置"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "content-manager": { "visible": true },
+    "content-type-builder": { "visible": true }
+  },
+  "attributes": {
+    "name": { "type": "string", "required": true },
+    "adZone": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-studio.ad-zone",
+      "inversedBy": "adContents",
+      "required": true
+    },
+    "site": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-common.site-config",
+      "required": true
+    },
+    "contentType": {
+      "type": "enumeration",
+      "enum": ["single-image", "multi-image", "slideshow", "video", "html"],
+      "default": "single-image",
+      "required": true
+    },
+    "isActive": { "type": "boolean", "default": true },
+    "sortOrder": { "type": "integer", "default": 0 },
+    "priority": { "type": "integer", "default": 0 },
+
+    "startAt": { "type": "datetime" },
+    "endAt": { "type": "datetime" },
+    "frequencyLimit": { "type": "integer", "default": 0 },
+    "frequencyPeriod": {
+      "type": "enumeration",
+      "enum": ["session", "daily", "weekly"],
+      "default": "session"
+    },
+
+    "title": { "type": "string" },
+    "titleColor": { "type": "string", "default": "#333333" },
+    "titleFontSize": { "type": "integer", "default": 16 },
+    "titleFontWeight": {
+      "type": "enumeration",
+      "enum": ["normal", "bold"],
+      "default": "normal"
+    },
+    "titleAlign": {
+      "type": "enumeration",
+      "enum": ["left", "center", "right"],
+      "default": "left"
+    },
+    "titleOverflow": {
+      "type": "enumeration",
+      "enum": ["clip", "ellipsis", "wrap", "scale"],
+      "default": "ellipsis"
+    },
+    "titleMaxLines": { "type": "integer", "default": 2 },
+    "titleLineHeight": { "type": "decimal", "default": 1.4 },
+
+    "subtitle": { "type": "string" },
+    "subtitleColor": { "type": "string", "default": "#666666" },
+    "subtitleFontSize": { "type": "integer", "default": 14 },
+    "subtitleOverflow": {
+      "type": "enumeration",
+      "enum": ["clip", "ellipsis", "wrap", "scale"],
+      "default": "ellipsis"
+    },
+    "subtitleMaxLines": { "type": "integer", "default": 1 },
+
+    "ctaText": { "type": "string" },
+    "ctaTextColor": { "type": "string", "default": "#FFFFFF" },
+    "ctaBgColor": { "type": "string", "default": "#FF4444" },
+    "ctaFontSize": { "type": "integer", "default": 14 },
+    "ctaBorderRadius": { "type": "integer", "default": 4 },
+    "ctaPosition": {
+      "type": "enumeration",
+      "enum": ["top", "bottom", "overlay", "inline"],
+      "default": "bottom"
+    },
+
+    "badgeText": { "type": "string" },
+    "badgeBgColor": { "type": "string", "default": "#FF4444" },
+    "badgeTextColor": { "type": "string", "default": "#FFFFFF" },
+    "badgePosition": {
+      "type": "enumeration",
+      "enum": ["top-left", "top-right", "bottom-left", "bottom-right"],
+      "default": "top-right"
+    },
+
+    "images": { "type": "json", "default": [] },
+
+    "videoUrl": { "type": "string" },
+    "videoPoster": { "type": "string" },
+    "videoAutoplay": { "type": "boolean", "default": false },
+    "videoMuted": { "type": "boolean", "default": true },
+    "videoLoop": { "type": "boolean", "default": false },
+    "videoControls": { "type": "boolean", "default": false },
+
+    "htmlContent": { "type": "text" },
+
+    "linkType": {
+      "type": "enumeration",
+      "enum": ["none", "internal", "external"],
+      "default": "none"
+    },
+    "linkUrl": { "type": "string" },
+    "linkTarget": {
+      "type": "enumeration",
+      "enum": ["_self", "_blank"],
+      "default": "_self"
+    },
+
+    "displayStyle": {
+      "type": "enumeration",
+      "enum": ["banner", "card", "modal", "inline", "float", "fullscreen"],
+      "default": "banner"
+    },
+    "width": { "type": "integer" },
+    "height": { "type": "integer" },
+    "borderRadius": { "type": "integer", "default": 0 },
+    "backgroundColor": { "type": "string", "default": "#FFFFFF" },
+
+    "slideshowAutoplay": { "type": "boolean", "default": true },
+    "slideshowInterval": { "type": "integer", "default": 3000 },
+    "slideshowEffect": {
+      "type": "enumeration",
+      "enum": ["fade", "slide", "none"],
+      "default": "slide"
+    },
+    "slideshowLoop": { "type": "boolean", "default": true },
+    "slideshowShowDots": { "type": "boolean", "default": true },
+    "slideshowShowArrows": { "type": "boolean", "default": false },
+    "slideshowPauseOnHover": { "type": "boolean", "default": true },
+
+    "closeDelay": { "type": "integer", "default": 0 },
+    "showCountdown": { "type": "boolean", "default": false },
+
+    "createdAt": { "type": "datetime" },
+    "updatedAt": { "type": "datetime" }
+  }
+}
+;
+
+export default _default;

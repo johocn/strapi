@@ -22,6 +22,30 @@ const actions = [
     displayName: "Delete",
     uid: "delete",
     pluginName: "zhao-studio"
+  },
+  {
+    section: "plugins",
+    displayName: "Ad Zone Manage",
+    uid: "ad-zone.manage",
+    pluginName: "zhao-studio"
+  },
+  {
+    section: "plugins",
+    displayName: "Ad Content Manage",
+    uid: "ad-content.manage",
+    pluginName: "zhao-studio"
+  },
+  {
+    section: "plugins",
+    displayName: "Poster Template Manage",
+    uid: "poster-template.manage",
+    pluginName: "zhao-studio"
+  },
+  {
+    section: "plugins",
+    displayName: "Poster Element Manage",
+    uid: "poster-element.manage",
+    pluginName: "zhao-studio"
   }
 ];
 const permissions = { actions };
@@ -41,12 +65,18 @@ const register = ({ strapi: strapi2 }) => {
       STUDIO_PROMO_EXPERIMENT_NOT_RUNNING: "实验未运行",
       STUDIO_PROMO_VARIANT_NOT_FOUND: "变体不存在",
       STUDIO_PROMO_VARIANT_NO_CONTENT: "变体未关联文章或优惠券",
-      STUDIO_PROMO_PLATFORM_CONFIG_DUPLICATE: "渠道+平台配置重复"
+      STUDIO_PROMO_PLATFORM_CONFIG_DUPLICATE: "渠道+平台配置重复",
+      STUDIO_AD_ZONE_NOT_FOUND: "广告区域不存在",
+      STUDIO_AD_ZONE_CODE_DUPLICATE: "广告区域 code 重复",
+      STUDIO_AD_CONTENT_NOT_FOUND: "广告内容不存在",
+      STUDIO_POSTER_TEMPLATE_NOT_FOUND: "海报模板不存在",
+      STUDIO_POSTER_TEMPLATE_CODE_DUPLICATE: "海报模板 code 重复",
+      STUDIO_POSTER_MISSING_REQUIRED_VAR: "缺少必传变量"
     });
   } catch {
   }
 };
-const bootstrap = ({ strapi: strapi2 }) => {
+const bootstrap = async ({ strapi: strapi2 }) => {
   const checkPlugin = (name) => {
     try {
       const p = strapi2.plugin(name);
@@ -59,7 +89,148 @@ const bootstrap = ({ strapi: strapi2 }) => {
   };
   checkPlugin("zhao-track");
   checkPlugin("zhao-deal");
+  try {
+    const posterService = strapi2.plugin("zhao-studio").service("poster");
+    if (posterService && typeof posterService.seedDefaultTemplate === "function") {
+      const result = await posterService.seedDefaultTemplate();
+      strapi2.log.info(`[zhao-studio] Poster seed result: ${JSON.stringify(result)}`);
+    } else {
+      strapi2.log.warn("[zhao-studio] poster service or seedDefaultTemplate not found");
+    }
+  } catch (e) {
+    strapi2.log.error(`[zhao-studio] Failed to seed default poster template: ${e.message}`);
+    strapi2.log.error(`[zhao-studio] Seed error stack: ${e.stack}`);
+  }
+  try {
+    const adResult = await seedAdData(strapi2);
+    strapi2.log.info(`[zhao-studio] Ad seed result: ${JSON.stringify(adResult)}`);
+  } catch (e) {
+    strapi2.log.error(`[zhao-studio] Failed to seed ad data: ${e.message}`);
+    strapi2.log.error(`[zhao-studio] Ad seed error stack: ${e.stack}`);
+  }
+  try {
+    const noticeResult = await seedNoticeData(strapi2);
+    strapi2.log.info(`[zhao-studio] Notice seed result: ${JSON.stringify(noticeResult)}`);
+  } catch (e) {
+    strapi2.log.error(`[zhao-studio] Failed to seed notice data: ${e.message}`);
+    strapi2.log.error(`[zhao-studio] Notice seed error stack: ${e.stack}`);
+  }
 };
+async function seedAdData(strapi2) {
+  strapi2.log.info("[zhao-studio] Starting ad data seed...");
+  const sites = await strapi2.documents("plugin::zhao-common.site-config").findMany({ limit: 1 });
+  if (!sites || sites.length === 0) {
+    strapi2.log.warn("[zhao-studio] No site found, skipping ad seed");
+    return { success: false, reason: "no_site" };
+  }
+  const siteId = sites[0].documentId;
+  strapi2.log.info(`[zhao-studio] Ad seed using site documentId: ${siteId}`);
+  const existingZones = await strapi2.documents("plugin::zhao-studio.ad-zone").findMany({
+    filters: { code: "course-home-banner" },
+    limit: 1
+  });
+  if (existingZones && existingZones.length > 0) {
+    strapi2.log.info('[zhao-studio] Ad zone "course-home-banner" already exists, skipping seed');
+    return { success: true, reason: "already_exists", zoneId: existingZones[0].documentId };
+  }
+  const zone = await strapi2.documents("plugin::zhao-studio.ad-zone").create({
+    data: {
+      name: "课程首页",
+      code: "course-home-banner",
+      position: "home-banner",
+      displayMode: "slideshow",
+      isActive: true,
+      suggestedWidth: 750,
+      suggestedHeight: 300,
+      site: siteId
+    }
+  });
+  strapi2.log.info(`[zhao-studio] Ad zone created: course-home-banner (documentId: ${zone.documentId})`);
+  await strapi2.documents("plugin::zhao-studio.ad-content").create({
+    data: {
+      name: "首页轮播广告",
+      contentType: "slideshow",
+      title: "精选好课 限时免费",
+      images: [
+        { url: "/uploads/ads/banner-courses.jpg", title: "精选好课 限时免费", subtitle: "名师授课，品质保证" },
+        { url: "/uploads/ads/banner-points.jpg", title: "学习赚积分", subtitle: "积分兑换好礼" }
+      ],
+      linkType: "internal",
+      linkUrl: "/pages/index/index",
+      isActive: true,
+      sortOrder: 0,
+      priority: 10,
+      slideshowAutoplay: true,
+      slideshowInterval: 4e3,
+      slideshowLoop: true,
+      slideshowShowDots: true,
+      adZone: zone.documentId,
+      site: siteId
+    }
+  });
+  strapi2.log.info("[zhao-studio] Ad content created: 首页轮播广告 (2 images)");
+  strapi2.log.info("[zhao-studio] Ad data seed completed: 1 zone + 1 content (2 images)");
+  return { success: true, zoneId: zone.documentId, contents: 1, images: 2 };
+}
+async function seedNoticeData(strapi2) {
+  strapi2.log.info("[zhao-studio] Starting notice data seed...");
+  const sites = await strapi2.documents("plugin::zhao-common.site-config").findMany({ limit: 1 });
+  if (!sites || sites.length === 0) {
+    strapi2.log.warn("[zhao-studio] No site found, skipping notice seed");
+    return { success: false, reason: "no_site" };
+  }
+  const siteId = sites[0].documentId;
+  const existingZones = await strapi2.documents("plugin::zhao-studio.ad-zone").findMany({
+    filters: { code: "course-home-notice" },
+    limit: 1
+  });
+  if (existingZones && existingZones.length > 0) {
+    strapi2.log.info('[zhao-studio] Notice zone "course-home-notice" already exists, skipping seed');
+    return { success: true, reason: "already_exists", zoneId: existingZones[0].documentId };
+  }
+  const zone = await strapi2.documents("plugin::zhao-studio.ad-zone").create({
+    data: {
+      name: "课程首页公告",
+      code: "course-home-notice",
+      position: "home-notice",
+      displayMode: "single",
+      isActive: true,
+      suggestedWidth: 750,
+      suggestedHeight: 64,
+      site: siteId
+    }
+  });
+  strapi2.log.info(`[zhao-studio] Notice zone created: course-home-notice (documentId: ${zone.documentId})`);
+  const noticeHtml = `<div style="padding: 10px 0;">
+  <h2 style="color: #0056D2; font-size: 18px; text-align: center; margin-bottom: 15px;">🎉 新学期优惠活动开启</h2>
+  <p style="color: #333; font-size: 14px; line-height: 1.8;">亲爱的学员们，新学期来临之际，我们为您准备了丰厚的优惠活动：</p>
+  <ul style="color: #666; font-size: 14px; line-height: 2; padding-left: 20px;">
+    <li>🎁 全场课程限时免费学习</li>
+    <li>💰 签到积分翻倍，连续签到7天得额外500积分</li>
+    <li>🏆 邀请好友注册，双方各得200积分</li>
+    <li>📚 精品课程包立减50%</li>
+  </ul>
+  <p style="color: #999; font-size: 12px; text-align: center; margin-top: 15px;">活动时间：2026年8月9日 - 8月31日</p>
+  <p style="color: #999; font-size: 12px; text-align: center;">最终解释权归圣麟教育所有</p>
+</div>`;
+  await strapi2.documents("plugin::zhao-studio.ad-content").create({
+    data: {
+      name: "首页公告",
+      contentType: "html",
+      title: "🎉 新学期优惠活动开启，全场课程限时免费！签到积分翻倍，邀请好友各得200积分！",
+      htmlContent: noticeHtml,
+      linkType: "none",
+      isActive: true,
+      sortOrder: 0,
+      priority: 10,
+      adZone: zone.documentId,
+      site: siteId
+    }
+  });
+  strapi2.log.info("[zhao-studio] Notice content created: 首页公告 (html)");
+  strapi2.log.info("[zhao-studio] Notice data seed completed: 1 zone + 1 content");
+  return { success: true, zoneId: zone.documentId, contents: 1 };
+}
 const destroy = ({ strapi: strapi2 }) => {
 };
 const config = {
@@ -691,6 +862,333 @@ const channelReport$1 = ({ strapi: strapi2 }) => ({
     ctx.body = { data: result };
   }
 });
+const ad$1 = ({ strapi: strapi2 }) => ({
+  // Public: Get ad zone by position
+  async getZoneByPosition(ctx) {
+    try {
+      const { position } = ctx.params;
+      const { site } = ctx.query;
+      const adService = strapi2.plugin("zhao-studio").service("ad");
+      const result = await adService.getZoneByPosition(position, site);
+      ctx.body = { data: result };
+    } catch (err) {
+      ctx.status = 500;
+      ctx.body = { error: { code: "AD_500", message: "Internal error" } };
+    }
+  },
+  // Public: Get all active zones
+  async getAllZones(ctx) {
+    try {
+      const { site } = ctx.query;
+      const adService = strapi2.plugin("zhao-studio").service("ad");
+      const zones = await adService.getAllZones(site);
+      ctx.body = { data: zones };
+    } catch (err) {
+      ctx.status = 500;
+      ctx.body = { error: { code: "AD_500", message: "Internal error" } };
+    }
+  },
+  // Admin: Zone CRUD
+  async listZones(ctx) {
+    try {
+      const adService = strapi2.plugin("zhao-studio").service("ad");
+      const zones = await adService.listZones(ctx.query.filters || {});
+      ctx.body = { data: zones };
+    } catch (err) {
+      ctx.status = 500;
+      ctx.body = { error: { code: "AD_500", message: err.message } };
+    }
+  },
+  async createZone(ctx) {
+    try {
+      const { data: data2 } = ctx.request.body;
+      const adService = strapi2.plugin("zhao-studio").service("ad");
+      const zone = await adService.createZone(data2);
+      ctx.body = { data: zone };
+    } catch (err) {
+      ctx.status = 400;
+      ctx.body = { error: { code: "AD_400", message: err.message } };
+    }
+  },
+  async findOneZone(ctx) {
+    try {
+      const { id } = ctx.params;
+      const adService = strapi2.plugin("zhao-studio").service("ad");
+      const zone = await adService.findOneZone(id);
+      if (!zone) {
+        ctx.status = 404;
+        ctx.body = { error: { code: "AD_001", message: "Zone not found" } };
+        return;
+      }
+      ctx.body = { data: zone };
+    } catch (err) {
+      ctx.status = 500;
+      ctx.body = { error: { code: "AD_500", message: err.message } };
+    }
+  },
+  async updateZone(ctx) {
+    try {
+      const { id } = ctx.params;
+      const { data: data2 } = ctx.request.body;
+      const adService = strapi2.plugin("zhao-studio").service("ad");
+      const zone = await adService.updateZone(id, data2);
+      ctx.body = { data: zone };
+    } catch (err) {
+      ctx.status = 400;
+      ctx.body = { error: { code: "AD_400", message: err.message } };
+    }
+  },
+  async deleteZone(ctx) {
+    try {
+      const { id } = ctx.params;
+      const adService = strapi2.plugin("zhao-studio").service("ad");
+      await adService.deleteZone(id);
+      ctx.body = { data: { success: true } };
+    } catch (err) {
+      ctx.status = 500;
+      ctx.body = { error: { code: "AD_500", message: err.message } };
+    }
+  },
+  // Admin: Content CRUD
+  async listContents(ctx) {
+    try {
+      const adService = strapi2.plugin("zhao-studio").service("ad");
+      const contents2 = await adService.listContents(ctx.query.filters || {});
+      ctx.body = { data: contents2 };
+    } catch (err) {
+      ctx.status = 500;
+      ctx.body = { error: { code: "AD_500", message: err.message } };
+    }
+  },
+  async createContent(ctx) {
+    try {
+      const { data: data2 } = ctx.request.body;
+      const adService = strapi2.plugin("zhao-studio").service("ad");
+      const content = await adService.createContent(data2);
+      ctx.body = { data: content };
+    } catch (err) {
+      ctx.status = 400;
+      ctx.body = { error: { code: "AD_400", message: err.message } };
+    }
+  },
+  async findOneContent(ctx) {
+    try {
+      const { id } = ctx.params;
+      const adService = strapi2.plugin("zhao-studio").service("ad");
+      const content = await adService.findOneContent(id);
+      if (!content) {
+        ctx.status = 404;
+        ctx.body = { error: { code: "AD_002", message: "Content not found" } };
+        return;
+      }
+      ctx.body = { data: content };
+    } catch (err) {
+      ctx.status = 500;
+      ctx.body = { error: { code: "AD_500", message: err.message } };
+    }
+  },
+  async updateContent(ctx) {
+    try {
+      const { id } = ctx.params;
+      const { data: data2 } = ctx.request.body;
+      const adService = strapi2.plugin("zhao-studio").service("ad");
+      const content = await adService.updateContent(id, data2);
+      ctx.body = { data: content };
+    } catch (err) {
+      ctx.status = 400;
+      ctx.body = { error: { code: "AD_400", message: err.message } };
+    }
+  },
+  async deleteContent(ctx) {
+    try {
+      const { id } = ctx.params;
+      const adService = strapi2.plugin("zhao-studio").service("ad");
+      await adService.deleteContent(id);
+      ctx.body = { data: { success: true } };
+    } catch (err) {
+      ctx.status = 500;
+      ctx.body = { error: { code: "AD_500", message: err.message } };
+    }
+  }
+});
+const poster$1 = ({ strapi: strapi2 }) => ({
+  // Public: Get template by code
+  async getTemplate(ctx) {
+    const { code } = ctx.params;
+    const posterService = strapi2.plugin("zhao-studio").service("poster");
+    const template = await posterService.getTemplate(code);
+    if (!template) {
+      ctx.status = 404;
+      ctx.body = { error: { code: "POSTER_001", message: "Template not found" } };
+      return;
+    }
+    ctx.body = { data: template };
+  },
+  // Public: Resolve template with variables
+  async resolveTemplate(ctx) {
+    const { templateCode, variables } = ctx.request.body;
+    const posterService = strapi2.plugin("zhao-studio").service("poster");
+    try {
+      const result = await posterService.resolveTemplate(templateCode, variables || {});
+      if (!result) {
+        ctx.status = 404;
+        ctx.body = { error: { code: "POSTER_001", message: "Template not found" } };
+        return;
+      }
+      ctx.body = { data: result };
+    } catch (err) {
+      if (err.code === "POSTER_002") {
+        ctx.status = 400;
+        ctx.body = { error: { code: err.code, message: err.message, details: err.details } };
+      } else {
+        ctx.status = 500;
+        ctx.body = { error: { code: "POSTER_500", message: "Internal error" } };
+      }
+    }
+  },
+  // Public: Manually trigger seed (for debugging/fixing)
+  async seedTemplates(ctx) {
+    try {
+      const posterService = strapi2.plugin("zhao-studio").service("poster");
+      const result = await posterService.seedDefaultTemplate();
+      ctx.body = { data: result };
+    } catch (err) {
+      strapi2.log.error("[zhao-studio] Seed error:", err);
+      ctx.status = 500;
+      ctx.body = { error: { code: "POSTER_500", message: err.message, stack: err.stack } };
+    }
+  },
+  // Admin: Template CRUD
+  async listTemplates(ctx) {
+    try {
+      const posterService = strapi2.plugin("zhao-studio").service("poster");
+      const templates = await posterService.listTemplates(ctx.query.filters || {});
+      ctx.body = { data: templates };
+    } catch (err) {
+      ctx.status = 500;
+      ctx.body = { error: { code: "POSTER_500", message: err.message } };
+    }
+  },
+  async createTemplate(ctx) {
+    try {
+      const { data: data2 } = ctx.request.body;
+      const posterService = strapi2.plugin("zhao-studio").service("poster");
+      const template = await posterService.createTemplate(data2);
+      ctx.body = { data: template };
+    } catch (err) {
+      ctx.status = 400;
+      ctx.body = { error: { code: "POSTER_400", message: err.message } };
+    }
+  },
+  async findOneTemplate(ctx) {
+    try {
+      const { id } = ctx.params;
+      const posterService = strapi2.plugin("zhao-studio").service("poster");
+      const template = await posterService.findOneTemplate(id);
+      if (!template) {
+        ctx.status = 404;
+        ctx.body = { error: { code: "POSTER_001", message: "Template not found" } };
+        return;
+      }
+      ctx.body = { data: template };
+    } catch (err) {
+      ctx.status = 500;
+      ctx.body = { error: { code: "POSTER_500", message: err.message } };
+    }
+  },
+  async updateTemplate(ctx) {
+    try {
+      const { id } = ctx.params;
+      const { data: data2 } = ctx.request.body;
+      const posterService = strapi2.plugin("zhao-studio").service("poster");
+      const template = await posterService.updateTemplate(id, data2);
+      ctx.body = { data: template };
+    } catch (err) {
+      ctx.status = 400;
+      ctx.body = { error: { code: "POSTER_400", message: err.message } };
+    }
+  },
+  async deleteTemplate(ctx) {
+    try {
+      const { id } = ctx.params;
+      const posterService = strapi2.plugin("zhao-studio").service("poster");
+      await posterService.deleteTemplate(id);
+      ctx.body = { data: { success: true } };
+    } catch (err) {
+      ctx.status = 500;
+      ctx.body = { error: { code: "POSTER_500", message: err.message } };
+    }
+  },
+  async cloneTemplate(ctx) {
+    try {
+      const { id } = ctx.params;
+      const posterService = strapi2.plugin("zhao-studio").service("poster");
+      const cloned = await posterService.cloneTemplate(id);
+      ctx.body = { data: cloned };
+    } catch (err) {
+      ctx.status = 400;
+      ctx.body = { error: { code: "POSTER_400", message: err.message } };
+    }
+  },
+  // Admin: Batch save elements
+  async batchSaveElements(ctx) {
+    try {
+      const { id } = ctx.params;
+      const { elements } = ctx.request.body;
+      const posterService = strapi2.plugin("zhao-studio").service("poster");
+      const saved = await posterService.batchSaveElements(id, elements || []);
+      ctx.body = { data: saved };
+    } catch (err) {
+      ctx.status = 500;
+      ctx.body = { error: { code: "POSTER_500", message: err.message } };
+    }
+  },
+  // Admin: Element CRUD
+  async listElements(ctx) {
+    try {
+      const posterService = strapi2.plugin("zhao-studio").service("poster");
+      const elements = await posterService.listElements(ctx.query.filters || {});
+      ctx.body = { data: elements };
+    } catch (err) {
+      ctx.status = 500;
+      ctx.body = { error: { code: "POSTER_500", message: err.message } };
+    }
+  },
+  async createElement(ctx) {
+    try {
+      const { data: data2 } = ctx.request.body;
+      const posterService = strapi2.plugin("zhao-studio").service("poster");
+      const element = await posterService.createElement(data2);
+      ctx.body = { data: element };
+    } catch (err) {
+      ctx.status = 400;
+      ctx.body = { error: { code: "POSTER_400", message: err.message } };
+    }
+  },
+  async updateElement(ctx) {
+    try {
+      const { id } = ctx.params;
+      const { data: data2 } = ctx.request.body;
+      const posterService = strapi2.plugin("zhao-studio").service("poster");
+      const element = await posterService.updateElement(id, data2);
+      ctx.body = { data: element };
+    } catch (err) {
+      ctx.status = 400;
+      ctx.body = { error: { code: "POSTER_400", message: err.message } };
+    }
+  },
+  async deleteElement(ctx) {
+    try {
+      const { id } = ctx.params;
+      const posterService = strapi2.plugin("zhao-studio").service("poster");
+      await posterService.deleteElement(id);
+      ctx.body = { data: { success: true } };
+    } catch (err) {
+      ctx.status = 500;
+      ctx.body = { error: { code: "POSTER_500", message: err.message } };
+    }
+  }
+});
 const controllers = {
   collect: collect$1,
   draft,
@@ -705,7 +1203,9 @@ const controllers = {
   "promo-channel": promoChannel$2,
   "promo-campaign": promoCampaign$2,
   "ab-test": abTest$1,
-  "channel-report": channelReport$1
+  "channel-report": channelReport$1,
+  ad: ad$1,
+  "poster": poster$1
 };
 const adminRoutes = () => ({
   type: "admin",
@@ -831,7 +1331,35 @@ const contentApiRoutes = () => ({
     adminRoute("GET", "/experiments/:id/report", "ab-test.report", "zhao-studio.ab-experiment.manage"),
     adminRoute("GET", "/channel-report", "channel-report.getChannelReport", "zhao-studio.channel-report.view"),
     // 公开路由：A/B 变体选择
-    publicRoute("GET", "/variants/pick", "ab-test.pickVariant")
+    publicRoute("GET", "/variants/pick", "ab-test.pickVariant"),
+    // ============ 广告展示管理 ============
+    publicRoute("GET", "/ads/zones/:position", "ad.getZoneByPosition"),
+    publicRoute("GET", "/ads/zones", "ad.getAllZones"),
+    adminRoute("GET", "/ad-zones", "ad.listZones", "zhao-studio.ad-zone.manage"),
+    adminRoute("POST", "/ad-zones", "ad.createZone", "zhao-studio.ad-zone.manage"),
+    adminRoute("GET", "/ad-zones/:id", "ad.findOneZone", "zhao-studio.ad-zone.manage"),
+    adminRoute("PUT", "/ad-zones/:id", "ad.updateZone", "zhao-studio.ad-zone.manage"),
+    adminRoute("DELETE", "/ad-zones/:id", "ad.deleteZone", "zhao-studio.ad-zone.manage"),
+    adminRoute("GET", "/ad-contents", "ad.listContents", "zhao-studio.ad-content.manage"),
+    adminRoute("POST", "/ad-contents", "ad.createContent", "zhao-studio.ad-content.manage"),
+    adminRoute("GET", "/ad-contents/:id", "ad.findOneContent", "zhao-studio.ad-content.manage"),
+    adminRoute("PUT", "/ad-contents/:id", "ad.updateContent", "zhao-studio.ad-content.manage"),
+    adminRoute("DELETE", "/ad-contents/:id", "ad.deleteContent", "zhao-studio.ad-content.manage"),
+    // ============ 海报模板管理 ============
+    publicRoute("GET", "/posters/templates/:code", "poster.getTemplate"),
+    publicRoute("POST", "/posters/render", "poster.resolveTemplate"),
+    publicRoute("POST", "/posters/seed", "poster.seedTemplates"),
+    adminRoute("GET", "/poster-templates", "poster.listTemplates", "zhao-studio.poster-template.manage"),
+    adminRoute("POST", "/poster-templates", "poster.createTemplate", "zhao-studio.poster-template.manage"),
+    adminRoute("GET", "/poster-templates/:id", "poster.findOneTemplate", "zhao-studio.poster-template.manage"),
+    adminRoute("PUT", "/poster-templates/:id", "poster.updateTemplate", "zhao-studio.poster-template.manage"),
+    adminRoute("DELETE", "/poster-templates/:id", "poster.deleteTemplate", "zhao-studio.poster-template.manage"),
+    adminRoute("POST", "/poster-templates/:id/clone", "poster.cloneTemplate", "zhao-studio.poster-template.manage"),
+    adminRoute("PUT", "/poster-templates/:id/elements", "poster.batchSaveElements", "zhao-studio.poster-template.manage"),
+    adminRoute("GET", "/poster-elements", "poster.listElements", "zhao-studio.poster-element.manage"),
+    adminRoute("POST", "/poster-elements", "poster.createElement", "zhao-studio.poster-element.manage"),
+    adminRoute("PUT", "/poster-elements/:id", "poster.updateElement", "zhao-studio.poster-element.manage"),
+    adminRoute("DELETE", "/poster-elements/:id", "poster.deleteElement", "zhao-studio.poster-element.manage")
   ]
 });
 const routes = {
@@ -7158,7 +7686,7 @@ const procedure = /* @__PURE__ */ new Map([
 function isTraversal(token) {
   return !procedure.has(token.type);
 }
-const attributes$g = /* @__PURE__ */ new Map([
+const attributes$k = /* @__PURE__ */ new Map([
   [AttributeAction.Exists, 10],
   [AttributeAction.Equals, 8],
   [AttributeAction.Not, 7],
@@ -7185,7 +7713,7 @@ function getProcedure(token) {
   var _a2, _b;
   let proc = (_a2 = procedure.get(token.type)) !== null && _a2 !== void 0 ? _a2 : -1;
   if (token.type === SelectorType.Attribute) {
-    proc = (_b = attributes$g.get(token.action)) !== null && _b !== void 0 ? _b : 4;
+    proc = (_b = attributes$k.get(token.action)) !== null && _b !== void 0 ? _b : 4;
     if (token.action === AttributeAction.Equals && token.name === "id") {
       proc = 9;
     }
@@ -20862,6 +21390,364 @@ const channelReport = ({ strapi: strapi2 }) => {
     }
   };
 };
+const ad = ({ strapi: strapi2 }) => ({
+  // Public: Get active ad zone by position with its active contents
+  async getZoneByPosition(position, siteDomain) {
+    const filters2 = { position, isActive: true };
+    if (siteDomain) {
+      const siteConfig = await strapi2.db.query("plugin::zhao-common.site-config").findOne({
+        where: { domain: siteDomain }
+      });
+      if (siteConfig) filters2.site = siteConfig.documentId;
+    }
+    const zones = await strapi2.documents("plugin::zhao-studio.ad-zone").findMany({
+      filters: filters2,
+      populate: { adContents: true, site: true },
+      limit: 1
+    });
+    if (!zones || zones.length === 0) return { zone: null, contents: [] };
+    const zone = zones[0];
+    const now = /* @__PURE__ */ new Date();
+    let contents2 = (zone.adContents || []).filter((c) => {
+      if (!c.isActive) return false;
+      if (c.startAt && new Date(c.startAt) > now) return false;
+      if (c.endAt && new Date(c.endAt) < now) return false;
+      return true;
+    });
+    contents2.sort((a, b) => {
+      if (b.priority !== a.priority) return b.priority - a.priority;
+      return a.sortOrder - b.sortOrder;
+    });
+    if (zone.displayMode === "single") {
+      contents2 = contents2.slice(0, 1);
+    } else if (zone.displayMode === "rotation" && contents2.length > 0) {
+      const idx = Math.floor(Math.random() * contents2.length);
+      contents2 = [contents2[idx]];
+    }
+    return { zone, contents: contents2 };
+  },
+  // Public: Get all active zones for a site (with filtered contents)
+  async getAllZones(siteDomain) {
+    const filters2 = { isActive: true };
+    if (siteDomain) {
+      const siteConfig = await strapi2.db.query("plugin::zhao-common.site-config").findOne({
+        where: { domain: siteDomain }
+      });
+      if (siteConfig) filters2.site = siteConfig.documentId;
+    }
+    const zones = await strapi2.documents("plugin::zhao-studio.ad-zone").findMany({
+      filters: filters2,
+      populate: { adContents: true },
+      sort: { sortOrder: "asc" }
+    });
+    if (!zones || zones.length === 0) return [];
+    const now = /* @__PURE__ */ new Date();
+    return zones.map((zone) => {
+      let contents2 = (zone.adContents || []).filter((c) => {
+        if (!c.isActive) return false;
+        if (c.startAt && new Date(c.startAt) > now) return false;
+        if (c.endAt && new Date(c.endAt) < now) return false;
+        return true;
+      });
+      contents2.sort((a, b) => {
+        if (b.priority !== a.priority) return b.priority - a.priority;
+        return a.sortOrder - b.sortOrder;
+      });
+      if (zone.displayMode === "single") {
+        contents2 = contents2.slice(0, 1);
+      } else if (zone.displayMode === "rotation" && contents2.length > 0) {
+        const idx = Math.floor(Math.random() * contents2.length);
+        contents2 = [contents2[idx]];
+      }
+      return { ...zone, adContents: contents2 };
+    });
+  },
+  // Admin CRUD for zones
+  async listZones(filters2 = {}) {
+    return await strapi2.documents("plugin::zhao-studio.ad-zone").findMany({
+      filters: filters2,
+      populate: { adContents: true, site: true },
+      sort: { sortOrder: "asc" }
+    });
+  },
+  async createZone(data2) {
+    return await strapi2.documents("plugin::zhao-studio.ad-zone").create({ data: data2 });
+  },
+  async findOneZone(documentId) {
+    return await strapi2.documents("plugin::zhao-studio.ad-zone").findOne({
+      documentId,
+      populate: { adContents: true, site: true }
+    });
+  },
+  async updateZone(documentId, data2) {
+    return await strapi2.documents("plugin::zhao-studio.ad-zone").update({ documentId, data: data2 });
+  },
+  async deleteZone(documentId) {
+    return await strapi2.documents("plugin::zhao-studio.ad-zone").delete({ documentId });
+  },
+  // Admin CRUD for contents
+  async listContents(filters2 = {}) {
+    return await strapi2.documents("plugin::zhao-studio.ad-content").findMany({
+      filters: filters2,
+      populate: { adZone: true, site: true },
+      sort: { priority: "desc", sortOrder: "asc" }
+    });
+  },
+  async createContent(data2) {
+    return await strapi2.documents("plugin::zhao-studio.ad-content").create({ data: data2 });
+  },
+  async findOneContent(documentId) {
+    return await strapi2.documents("plugin::zhao-studio.ad-content").findOne({
+      documentId,
+      populate: { adZone: true, site: true }
+    });
+  },
+  async updateContent(documentId, data2) {
+    return await strapi2.documents("plugin::zhao-studio.ad-content").update({ documentId, data: data2 });
+  },
+  async deleteContent(documentId) {
+    return await strapi2.documents("plugin::zhao-studio.ad-content").delete({ documentId });
+  }
+});
+const poster = ({ strapi: strapi2 }) => ({
+  // Public: Get template by code with elements
+  async getTemplate(code) {
+    const templates = await strapi2.documents("plugin::zhao-studio.poster-template").findMany({
+      filters: { code, isActive: true },
+      populate: { elements: true, site: true },
+      limit: 1
+    });
+    if (!templates || templates.length === 0) return null;
+    const template = templates[0];
+    if (template.elements && Array.isArray(template.elements)) {
+      template.elements.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+    }
+    return template;
+  },
+  // Public: Resolve template variables and return elements config
+  async resolveTemplate(code, variables) {
+    const template = await this.getTemplate(code);
+    if (!template) return null;
+    const resolvedElements = (template.elements || []).map((element) => {
+      const resolved = { ...element };
+      if (element.isVariable && element.variableName) {
+        if (element.variableName === "invite_code" && !variables.invite_code) {
+          resolved.resolvedContent = element.defaultValue || "";
+        } else {
+          resolved.resolvedContent = element.defaultValue || variables[element.variableName] || "";
+        }
+      } else {
+        resolved.resolvedContent = element.content || "";
+      }
+      if (element.elementType === "qrcode" && element.qrContentMode === "url_with_invite") {
+        const baseUrl = variables.qr_code || element.qrBaseUrl || "";
+        const inviteCode = variables.invite_code;
+        if (inviteCode) {
+          const separator = element.qrInviteSeparator || "?";
+          const param = element.qrInviteParam || "inviteCode";
+          resolved.resolvedContent = `${baseUrl}${separator}${param}=${inviteCode}`;
+        } else {
+          const fallback = element.qrFallbackMode || "base_url_only";
+          if (fallback === "base_url_only") {
+            resolved.resolvedContent = baseUrl;
+          } else if (fallback === "default_value") {
+            resolved.resolvedContent = element.defaultValue || baseUrl;
+          } else if (fallback === "hide_element") {
+            resolved.hidden = true;
+          }
+        }
+      }
+      return resolved;
+    }).filter((e) => !e.hidden);
+    return {
+      template: {
+        canvasWidth: template.canvasWidth,
+        canvasHeight: template.canvasHeight,
+        backgroundColor: template.backgroundColor,
+        backgroundImage: template.backgroundImage,
+        backgroundMode: template.backgroundMode
+      },
+      elements: resolvedElements
+    };
+  },
+  // Admin CRUD for templates
+  async listTemplates(filters2 = {}) {
+    return await strapi2.documents("plugin::zhao-studio.poster-template").findMany({
+      filters: filters2,
+      populate: { elements: true, site: true },
+      sort: { createdAt: "desc" }
+    });
+  },
+  async createTemplate(data2) {
+    return await strapi2.documents("plugin::zhao-studio.poster-template").create({ data: data2 });
+  },
+  async findOneTemplate(documentId) {
+    const template = await strapi2.documents("plugin::zhao-studio.poster-template").findOne({
+      documentId,
+      populate: { elements: true, site: true }
+    });
+    if (template && template.elements && Array.isArray(template.elements)) {
+      template.elements.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+    }
+    return template;
+  },
+  async updateTemplate(documentId, data2) {
+    return await strapi2.documents("plugin::zhao-studio.poster-template").update({ documentId, data: data2 });
+  },
+  async deleteTemplate(documentId) {
+    return await strapi2.documents("plugin::zhao-studio.poster-template").delete({ documentId });
+  },
+  async cloneTemplate(documentId) {
+    const original = await this.findOneTemplate(documentId);
+    if (!original) throw new Error("Template not found");
+    const { id, documentId: _, createdAt, updatedAt, elements, ...templateData } = original;
+    const cloned = await this.createTemplate({
+      ...templateData,
+      name: `${original.name} (副本)`,
+      code: `${original.code}_copy_${Date.now()}`,
+      isDefault: false
+    });
+    if (elements && elements.length > 0) {
+      for (const element of elements) {
+        const { id: eid, documentId: edid, createdAt: eca, updatedAt: eua, posterTemplate: ept, ...elementData } = element;
+        await strapi2.documents("plugin::zhao-studio.poster-element").create({
+          data: { ...elementData, posterTemplate: cloned.documentId }
+        });
+      }
+    }
+    return this.findOneTemplate(cloned.documentId);
+  },
+  // Batch save elements for a template
+  async batchSaveElements(templateDocumentId, elements) {
+    const existing = await strapi2.documents("plugin::zhao-studio.poster-element").findMany({
+      filters: { posterTemplate: templateDocumentId }
+    });
+    for (const el of existing || []) {
+      await strapi2.documents("plugin::zhao-studio.poster-element").delete({
+        documentId: el.documentId
+      });
+    }
+    const created = [];
+    for (const element of elements) {
+      const el = await strapi2.documents("plugin::zhao-studio.poster-element").create({
+        data: { ...element, posterTemplate: templateDocumentId }
+      });
+      created.push(el);
+    }
+    return created;
+  },
+  // Admin CRUD for elements
+  async listElements(filters2 = {}) {
+    return await strapi2.documents("plugin::zhao-studio.poster-element").findMany({
+      filters: filters2,
+      populate: { posterTemplate: true },
+      sort: { sortOrder: "asc" }
+    });
+  },
+  async createElement(data2) {
+    return await strapi2.documents("plugin::zhao-studio.poster-element").create({ data: data2 });
+  },
+  async updateElement(documentId, data2) {
+    return await strapi2.documents("plugin::zhao-studio.poster-element").update({ documentId, data: data2 });
+  },
+  async deleteElement(documentId) {
+    return await strapi2.documents("plugin::zhao-studio.poster-element").delete({ documentId });
+  },
+  // Seed default templates (called from bootstrap or manual trigger)
+  async seedDefaultTemplate() {
+    strapi2.log.info("[zhao-studio] Starting default poster template seed...");
+    const sites = await strapi2.documents("plugin::zhao-common.site-config").findMany({ limit: 1 });
+    if (!sites || sites.length === 0) {
+      strapi2.log.warn("[zhao-studio] No site found, skipping default poster template seed");
+      return { success: false, reason: "no_site" };
+    }
+    const siteId = sites[0].documentId;
+    strapi2.log.info(`[zhao-studio] Using site documentId: ${siteId}`);
+    const gradientColor = "#gradient:667eea,764ba2";
+    const templates = [
+      {
+        name: "企业品牌海报",
+        code: "brand_share",
+        isDefault: true,
+        requiredVariables: ["title", "values", "main_image", "qr_code"],
+        optionalVariables: ["logo", "invite_code"],
+        elements: [
+          { elementKey: "gradient_bar", elementType: "shape", elementName: "顶部渐变条", isVariable: false, shapeType: "rect", x: 0, y: 0, width: 600, height: 6, elementBgColor: gradientColor, zIndex: 1, sortOrder: 1 },
+          { elementKey: "logo", elementType: "image", elementName: "Logo", isVariable: true, variableName: "logo", defaultValue: "", x: 510, y: 40, width: 60, height: 60, imageFit: "contain", zIndex: 10, sortOrder: 2 },
+          { elementKey: "title", elementType: "text", elementName: "标题", isVariable: true, variableName: "title", defaultValue: "", x: 30, y: 120, width: 540, height: 50, fontSize: 36, fontColor: "#333333", fontWeight: "bold", textAlign: "center", zIndex: 10, sortOrder: 3 },
+          { elementKey: "values", elementType: "text", elementName: "价值描述", isVariable: true, variableName: "values", defaultValue: "", x: 30, y: 185, width: 540, height: 80, fontSize: 26, fontColor: "#666666", textAlign: "center", lineHeight: 1.6, zIndex: 10, sortOrder: 4 },
+          { elementKey: "main_image", elementType: "image", elementName: "主图", isVariable: true, variableName: "main_image", defaultValue: "", x: 30, y: 290, width: 540, height: 300, imageFit: "cover", borderRadius: 12, zIndex: 5, sortOrder: 5 },
+          { elementKey: "qr_code", elementType: "qrcode", elementName: "分享二维码", isVariable: false, qrContentMode: "url_with_invite", qrBaseUrl: "https://v.joho.cn/share", qrInviteParam: "inviteCode", qrFallbackMode: "base_url_only", x: 200, y: 640, width: 200, height: 200, qrSize: 200, qrColor: "#000000", qrBgColor: "#FFFFFF", zIndex: 10, sortOrder: 6 },
+          { elementKey: "footer_text", elementType: "text", elementName: "底部提示", isVariable: false, content: "扫码立即体验", x: 30, y: 870, width: 540, height: 30, fontSize: 24, fontColor: "#999999", textAlign: "center", zIndex: 10, sortOrder: 7 }
+        ]
+      },
+      {
+        name: "课程推荐海报",
+        code: "course_share",
+        isDefault: false,
+        requiredVariables: ["user_name", "course_image", "qr_code"],
+        optionalVariables: ["user_avatar", "recommend_reason", "invite_code"],
+        elements: [
+          { elementKey: "gradient_bar", elementType: "shape", elementName: "顶部渐变条", isVariable: false, shapeType: "rect", x: 0, y: 0, width: 600, height: 6, elementBgColor: gradientColor, zIndex: 1, sortOrder: 1 },
+          { elementKey: "user_avatar", elementType: "image", elementName: "用户头像", isVariable: true, variableName: "user_avatar", defaultValue: "", x: 30, y: 40, width: 50, height: 50, imageFit: "cover", borderRadius: 25, zIndex: 10, sortOrder: 2 },
+          { elementKey: "user_name", elementType: "text", elementName: "用户名", isVariable: true, variableName: "user_name", defaultValue: "", x: 90, y: 55, width: 300, height: 30, fontSize: 24, fontColor: "#333333", fontWeight: "bold", textAlign: "left", zIndex: 10, sortOrder: 3 },
+          { elementKey: "course_image", elementType: "image", elementName: "课程封面", isVariable: true, variableName: "course_image", defaultValue: "", x: 30, y: 120, width: 540, height: 280, imageFit: "cover", borderRadius: 12, zIndex: 5, sortOrder: 4 },
+          { elementKey: "recommend_reason", elementType: "text", elementName: "推荐理由", isVariable: true, variableName: "recommend_reason", defaultValue: "", x: 30, y: 430, width: 540, height: 100, fontSize: 26, fontColor: "#555555", textAlign: "left", lineHeight: 1.6, zIndex: 10, sortOrder: 5 },
+          { elementKey: "qr_code", elementType: "qrcode", elementName: "分享二维码", isVariable: false, qrContentMode: "url_with_invite", qrBaseUrl: "https://v.joho.cn/share", qrInviteParam: "inviteCode", qrFallbackMode: "base_url_only", x: 200, y: 580, width: 200, height: 200, qrSize: 200, qrColor: "#000000", qrBgColor: "#FFFFFF", zIndex: 10, sortOrder: 6 },
+          { elementKey: "footer_text", elementType: "text", elementName: "底部提示", isVariable: false, content: "扫码一起学习", x: 30, y: 810, width: 540, height: 30, fontSize: 24, fontColor: "#999999", textAlign: "center", zIndex: 10, sortOrder: 7 }
+        ]
+      },
+      {
+        name: "积分兑换海报",
+        code: "product_share",
+        isDefault: false,
+        requiredVariables: ["user_name", "product_image", "product_name", "product_price", "qr_code"],
+        optionalVariables: ["user_avatar", "recommend_reason", "invite_code"],
+        elements: [
+          { elementKey: "gradient_bar", elementType: "shape", elementName: "顶部渐变条", isVariable: false, shapeType: "rect", x: 0, y: 0, width: 600, height: 6, elementBgColor: gradientColor, zIndex: 1, sortOrder: 1 },
+          { elementKey: "user_avatar", elementType: "image", elementName: "用户头像", isVariable: true, variableName: "user_avatar", defaultValue: "", x: 30, y: 40, width: 50, height: 50, imageFit: "cover", borderRadius: 25, zIndex: 10, sortOrder: 2 },
+          { elementKey: "user_name", elementType: "text", elementName: "用户名", isVariable: true, variableName: "user_name", defaultValue: "", x: 90, y: 55, width: 300, height: 30, fontSize: 24, fontColor: "#333333", fontWeight: "bold", textAlign: "left", zIndex: 10, sortOrder: 3 },
+          { elementKey: "exchange_badge", elementType: "text", elementName: "兑换标签", isVariable: false, content: "积分兑换", x: 30, y: 130, width: 110, height: 32, fontSize: 14, fontColor: "#FFFFFF", fontWeight: "bold", textAlign: "center", elementBgColor: "#FF6B00", borderRadius: 4, zIndex: 20, sortOrder: 4 },
+          { elementKey: "product_image", elementType: "image", elementName: "产品图", isVariable: true, variableName: "product_image", defaultValue: "", x: 30, y: 120, width: 540, height: 260, imageFit: "cover", borderRadius: 12, zIndex: 5, sortOrder: 5 },
+          { elementKey: "product_name", elementType: "text", elementName: "产品名称", isVariable: true, variableName: "product_name", defaultValue: "", x: 30, y: 410, width: 540, height: 40, fontSize: 32, fontColor: "#333333", fontWeight: "bold", textAlign: "left", zIndex: 10, sortOrder: 6 },
+          { elementKey: "product_price", elementType: "text", elementName: "产品价格", isVariable: true, variableName: "product_price", defaultValue: "", x: 30, y: 465, width: 300, height: 35, fontSize: 28, fontColor: "#FF4444", fontWeight: "bold", textAlign: "left", zIndex: 10, sortOrder: 7 },
+          { elementKey: "recommend_reason", elementType: "text", elementName: "推荐理由", isVariable: true, variableName: "recommend_reason", defaultValue: "", x: 30, y: 520, width: 540, height: 70, fontSize: 24, fontColor: "#555555", textAlign: "left", lineHeight: 1.6, zIndex: 10, sortOrder: 8 },
+          { elementKey: "qr_code", elementType: "qrcode", elementName: "分享二维码", isVariable: false, qrContentMode: "url_with_invite", qrBaseUrl: "https://v.joho.cn/share", qrInviteParam: "inviteCode", qrFallbackMode: "base_url_only", x: 210, y: 620, width: 180, height: 180, qrSize: 180, qrColor: "#000000", qrBgColor: "#FFFFFF", zIndex: 10, sortOrder: 9 },
+          { elementKey: "footer_text", elementType: "text", elementName: "底部提示", isVariable: false, content: "扫码积分兑换好物", x: 30, y: 830, width: 540, height: 30, fontSize: 24, fontColor: "#999999", textAlign: "center", zIndex: 10, sortOrder: 10 }
+        ]
+      }
+    ];
+    for (const tpl of templates) {
+      const existing = await strapi2.documents("plugin::zhao-studio.poster-template").findMany({
+        filters: { code: tpl.code },
+        limit: 1
+      });
+      if (existing && existing.length > 0) {
+        strapi2.log.info(`[zhao-studio] Poster template "${tpl.code}" already exists, skipping`);
+        continue;
+      }
+      const template = await this.createTemplate({
+        name: tpl.name,
+        code: tpl.code,
+        site: siteId,
+        canvasWidth: 600,
+        canvasHeight: 1e3,
+        backgroundColor: "#FFFFFF",
+        isDefault: tpl.isDefault,
+        isActive: true,
+        requiredVariables: tpl.requiredVariables,
+        optionalVariables: tpl.optionalVariables
+      });
+      strapi2.log.info(`[zhao-studio] Template created: ${tpl.code} (documentId: ${template.documentId})`);
+      for (const el of tpl.elements) {
+        await this.createElement({ ...el, posterTemplate: template.documentId });
+      }
+      strapi2.log.info(`[zhao-studio] Poster template "${tpl.code}" seeded successfully`);
+    }
+    strapi2.log.info("[zhao-studio] Default poster templates seed completed");
+    return { success: true, templates: templates.length };
+  }
+});
 const services = {
   collect,
   scraper,
@@ -20877,16 +21763,78 @@ const services = {
   "promo-channel": promoChannel$1,
   "promo-campaign": promoCampaign$1,
   "ab-test": abTest,
-  "channel-report": channelReport
+  "channel-report": channelReport,
+  ad,
+  "poster": poster
 };
 const policies = {};
 const middlewares = {};
+const kind$j = "collectionType";
+const collectionName$j = "zhao_article_drafts";
+const info$j = { "singularName": "article-draft", "pluralName": "article-drafts", "displayName": "草稿文章", "description": "采集并加工后的草稿文章" };
+const options$j = { "draftAndPublish": true };
+const pluginOptions$j = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
+const attributes$j = { "title": { "type": "string", "required": true, "maxLength": 200 }, "content": { "type": "richtext", "required": true }, "sourceUrl": { "type": "string" }, "sourceTitle": { "type": "string" }, "sourcePublishedAt": { "type": "datetime" }, "sourceAuthor": { "type": "string" }, "category": { "type": "string" }, "status": { "type": "enumeration", "enum": ["draft", "processing", "ready", "published"], "default": "draft" }, "aiProcessed": { "type": "boolean", "default": false }, "aiSummary": { "type": "text" }, "aiOptimizedTitle": { "type": "string" }, "publishRecords": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.publish-record", "mappedBy": "article" }, "browserLogs": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.browser-log", "mappedBy": "article" }, "statSummaries": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.stat-summary", "mappedBy": "article" }, "websiteArticles": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.article", "mappedBy": "sourceArticleDraft" }, "syncEvents": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.sync-event", "mappedBy": "targetDraftId" }, "scope": { "type": "enumeration", "enum": ["current", "global", "tenant"], "default": "current" }, "scopeTenantId": { "type": "string" }, "publishedAt": { "type": "datetime" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const schema$j = {
+  kind: kind$j,
+  collectionName: collectionName$j,
+  info: info$j,
+  options: options$j,
+  pluginOptions: pluginOptions$j,
+  attributes: attributes$j
+};
+const articleDraft = { schema: schema$j };
+const kind$i = "collectionType";
+const collectionName$i = "zhao_collect_sources";
+const info$i = { "singularName": "collect-source", "pluralName": "collect-sources", "displayName": "采集源", "description": "内容采集源配置" };
+const options$i = { "draftAndPublish": false };
+const pluginOptions$i = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
+const attributes$i = { "name": { "type": "string", "required": true, "maxLength": 100 }, "url": { "type": "string", "required": true }, "type": { "type": "enumeration", "enum": ["template", "custom"], "default": "template" }, "template": { "type": "string" }, "titleSelector": { "type": "string" }, "contentSelector": { "type": "string" }, "authorSelector": { "type": "string" }, "dateSelector": { "type": "string" }, "isActive": { "type": "boolean", "default": true }, "tasks": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.collect-task", "mappedBy": "source" }, "lastCollectedAt": { "type": "datetime" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const schema$i = {
+  kind: kind$i,
+  collectionName: collectionName$i,
+  info: info$i,
+  options: options$i,
+  pluginOptions: pluginOptions$i,
+  attributes: attributes$i
+};
+const collectSource = { schema: schema$i };
+const kind$h = "collectionType";
+const collectionName$h = "zhao_collect_tasks";
+const info$h = { "singularName": "collect-task", "pluralName": "collect-tasks", "displayName": "采集任务", "description": "内容采集任务临时状态" };
+const options$h = { "draftAndPublish": false };
+const pluginOptions$h = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
+const attributes$h = { "source": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.collect-source", "inversedBy": "tasks" }, "titles": { "type": "json" }, "selectedTitles": { "type": "json" }, "status": { "type": "enumeration", "enum": ["pending", "fetching_titles", "waiting_selection", "fetching_content", "completed", "failed"], "default": "pending" }, "error": { "type": "text" }, "retryCount": { "type": "integer", "default": 0 }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const schema$h = {
+  kind: kind$h,
+  collectionName: collectionName$h,
+  info: info$h,
+  options: options$h,
+  pluginOptions: pluginOptions$h,
+  attributes: attributes$h
+};
+const collectTask = { schema: schema$h };
+const kind$g = "collectionType";
+const collectionName$g = "zhao_publish_platforms";
+const info$g = { "singularName": "publish-platform", "pluralName": "publish-platforms", "displayName": "发布平台", "description": "发布平台类型配置" };
+const options$g = { "draftAndPublish": false };
+const pluginOptions$g = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
+const attributes$g = { "name": { "type": "string", "required": true, "maxLength": 100 }, "type": { "type": "enumeration", "enum": ["toutiao", "xiaohongshu", "wechat", "douyin", "bilibili", "taobao", "pdd", "douyin-ecom", "jd", "custom", "internal"], "required": true }, "category": { "type": "enumeration", "enum": ["content", "social", "ecommerce", "custom"], "required": true, "default": "content" }, "description": { "type": "text" }, "isActive": { "type": "boolean", "default": true }, "accounts": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.publish-account", "mappedBy": "platform" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const schema$g = {
+  kind: kind$g,
+  collectionName: collectionName$g,
+  info: info$g,
+  options: options$g,
+  pluginOptions: pluginOptions$g,
+  attributes: attributes$g
+};
+const publishPlatform = { schema: schema$g };
 const kind$f = "collectionType";
-const collectionName$f = "zhao_article_drafts";
-const info$f = { "singularName": "article-draft", "pluralName": "article-drafts", "displayName": "草稿文章", "description": "采集并加工后的草稿文章" };
-const options$f = { "draftAndPublish": true };
+const collectionName$f = "zhao_publish_accounts";
+const info$f = { "singularName": "publish-account", "pluralName": "publish-accounts", "displayName": "发布账号", "description": "发布账号配置（一个平台可有多个账号）" };
+const options$f = { "draftAndPublish": false };
 const pluginOptions$f = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
-const attributes$f = { "title": { "type": "string", "required": true, "maxLength": 200 }, "content": { "type": "richtext", "required": true }, "sourceUrl": { "type": "string" }, "sourceTitle": { "type": "string" }, "sourcePublishedAt": { "type": "datetime" }, "sourceAuthor": { "type": "string" }, "category": { "type": "string" }, "status": { "type": "enumeration", "enum": ["draft", "processing", "ready", "published"], "default": "draft" }, "aiProcessed": { "type": "boolean", "default": false }, "aiSummary": { "type": "text" }, "aiOptimizedTitle": { "type": "string" }, "publishRecords": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.publish-record", "mappedBy": "article" }, "browserLogs": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.browser-log", "mappedBy": "article" }, "statSummaries": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.stat-summary", "mappedBy": "article" }, "websiteArticles": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.article", "mappedBy": "sourceArticleDraft" }, "syncEvents": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.sync-event", "mappedBy": "targetDraftId" }, "scope": { "type": "enumeration", "enum": ["current", "global", "tenant"], "default": "current" }, "scopeTenantId": { "type": "string" }, "publishedAt": { "type": "datetime" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const attributes$f = { "name": { "type": "string", "required": true, "maxLength": 100 }, "platform": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.publish-platform", "inversedBy": "accounts" }, "config": { "type": "json" }, "isActive": { "type": "boolean", "default": true }, "publishRecords": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.publish-record", "mappedBy": "account" }, "lastPublishedAt": { "type": "datetime" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
 const schema$f = {
   kind: kind$f,
   collectionName: collectionName$f,
@@ -20895,13 +21843,13 @@ const schema$f = {
   pluginOptions: pluginOptions$f,
   attributes: attributes$f
 };
-const articleDraft = { schema: schema$f };
+const publishAccount = { schema: schema$f };
 const kind$e = "collectionType";
-const collectionName$e = "zhao_collect_sources";
-const info$e = { "singularName": "collect-source", "pluralName": "collect-sources", "displayName": "采集源", "description": "内容采集源配置" };
+const collectionName$e = "zhao_publish_records";
+const info$e = { "singularName": "publish-record", "pluralName": "publish-records", "displayName": "发布记录", "description": "文章发布到账号的记录" };
 const options$e = { "draftAndPublish": false };
 const pluginOptions$e = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
-const attributes$e = { "name": { "type": "string", "required": true, "maxLength": 100 }, "url": { "type": "string", "required": true }, "type": { "type": "enumeration", "enum": ["template", "custom"], "default": "template" }, "template": { "type": "string" }, "titleSelector": { "type": "string" }, "contentSelector": { "type": "string" }, "authorSelector": { "type": "string" }, "dateSelector": { "type": "string" }, "isActive": { "type": "boolean", "default": true }, "tasks": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.collect-task", "mappedBy": "source" }, "lastCollectedAt": { "type": "datetime" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const attributes$e = { "article": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.article-draft", "inversedBy": "publishRecords" }, "account": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.publish-account", "inversedBy": "publishRecords" }, "externalId": { "type": "string" }, "status": { "type": "enumeration", "enum": ["pending", "success", "failed"], "default": "pending" }, "error": { "type": "text" }, "retryCount": { "type": "integer", "default": 0 }, "publishedAt": { "type": "datetime" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" }, "abVariant": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.ab-variant" } };
 const schema$e = {
   kind: kind$e,
   collectionName: collectionName$e,
@@ -20910,13 +21858,13 @@ const schema$e = {
   pluginOptions: pluginOptions$e,
   attributes: attributes$e
 };
-const collectSource = { schema: schema$e };
+const publishRecord = { schema: schema$e };
 const kind$d = "collectionType";
-const collectionName$d = "zhao_collect_tasks";
-const info$d = { "singularName": "collect-task", "pluralName": "collect-tasks", "displayName": "采集任务", "description": "内容采集任务临时状态" };
+const collectionName$d = "zhao_knowledge_point_indices";
+const info$d = { "singularName": "knowledge-point-index", "pluralName": "knowledge-point-indices", "displayName": "知识点索引", "description": "文章与知识点的关联索引" };
 const options$d = { "draftAndPublish": false };
 const pluginOptions$d = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
-const attributes$d = { "source": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.collect-source", "inversedBy": "tasks" }, "titles": { "type": "json" }, "selectedTitles": { "type": "json" }, "status": { "type": "enumeration", "enum": ["pending", "fetching_titles", "waiting_selection", "fetching_content", "completed", "failed"], "default": "pending" }, "error": { "type": "text" }, "retryCount": { "type": "integer", "default": 0 }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const attributes$d = { "targetType": { "type": "string", "required": true }, "targetId": { "type": "string", "required": true }, "knowledgePoint": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-tag.knowledge-point" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
 const schema$d = {
   kind: kind$d,
   collectionName: collectionName$d,
@@ -20925,13 +21873,13 @@ const schema$d = {
   pluginOptions: pluginOptions$d,
   attributes: attributes$d
 };
-const collectTask = { schema: schema$d };
+const knowledgePointIndex = { schema: schema$d };
 const kind$c = "collectionType";
-const collectionName$c = "zhao_publish_platforms";
-const info$c = { "singularName": "publish-platform", "pluralName": "publish-platforms", "displayName": "发布平台", "description": "发布平台类型配置" };
+const collectionName$c = "zhao_ad_slots";
+const info$c = { "singularName": "ad-slot", "pluralName": "ad-slots", "displayName": "广告位", "description": "广告位配置管理" };
 const options$c = { "draftAndPublish": false };
 const pluginOptions$c = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
-const attributes$c = { "name": { "type": "string", "required": true, "maxLength": 100 }, "type": { "type": "enumeration", "enum": ["toutiao", "xiaohongshu", "wechat", "douyin", "bilibili", "taobao", "pdd", "douyin-ecom", "jd", "custom", "internal"], "required": true }, "category": { "type": "enumeration", "enum": ["content", "social", "ecommerce", "custom"], "required": true, "default": "content" }, "description": { "type": "text" }, "isActive": { "type": "boolean", "default": true }, "accounts": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.publish-account", "mappedBy": "platform" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const attributes$c = { "name": { "type": "string", "required": true }, "code": { "type": "string", "required": true, "unique": true }, "position": { "type": "enumeration", "enum": ["article-content", "sidebar", "footer", "header", "list-page", "home-page"], "default": "article-content" }, "type": { "type": "enumeration", "enum": ["product-link", "banner", "popup", "native"], "default": "product-link" }, "targetUrl": { "type": "string" }, "productId": { "type": "string" }, "imageUrl": { "type": "string" }, "isActive": { "type": "boolean", "default": true }, "browserLogs": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.browser-log", "mappedBy": "adSlot" }, "statSummaries": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.stat-summary", "mappedBy": "adSlot" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
 const schema$c = {
   kind: kind$c,
   collectionName: collectionName$c,
@@ -20940,13 +21888,13 @@ const schema$c = {
   pluginOptions: pluginOptions$c,
   attributes: attributes$c
 };
-const publishPlatform = { schema: schema$c };
+const adSlot = { schema: schema$c };
 const kind$b = "collectionType";
-const collectionName$b = "zhao_publish_accounts";
-const info$b = { "singularName": "publish-account", "pluralName": "publish-accounts", "displayName": "发布账号", "description": "发布账号配置（一个平台可有多个账号）" };
+const collectionName$b = "zhao_browser_logs";
+const info$b = { "singularName": "browser-log", "pluralName": "browser-logs", "displayName": "浏览器日志", "description": "用户浏览器信息和行为日志" };
 const options$b = { "draftAndPublish": false };
 const pluginOptions$b = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
-const attributes$b = { "name": { "type": "string", "required": true, "maxLength": 100 }, "platform": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.publish-platform", "inversedBy": "accounts" }, "config": { "type": "json" }, "isActive": { "type": "boolean", "default": true }, "publishRecords": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.publish-record", "mappedBy": "account" }, "lastPublishedAt": { "type": "datetime" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const attributes$b = { "eventType": { "type": "enumeration", "enum": ["page-view", "ad-click", "scroll", "read-duration", "user-register"], "required": true }, "article": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.article-draft" }, "adSlot": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.ad-slot" }, "user": { "type": "relation", "relation": "manyToOne", "target": "admin::user" }, "userId": { "type": "string" }, "sessionId": { "type": "string", "required": true }, "isRegistered": { "type": "boolean", "default": false }, "registeredAt": { "type": "datetime" }, "userAgent": { "type": "string" }, "platform": { "type": "string" }, "browser": { "type": "string" }, "browserVersion": { "type": "string" }, "os": { "type": "string" }, "osVersion": { "type": "string" }, "deviceType": { "type": "enumeration", "enum": ["desktop", "mobile", "tablet"], "default": "desktop" }, "screenWidth": { "type": "integer" }, "screenHeight": { "type": "integer" }, "language": { "type": "string" }, "ip": { "type": "string" }, "country": { "type": "string" }, "city": { "type": "string" }, "referrer": { "type": "string" }, "referrerDomain": { "type": "string" }, "readDuration": { "type": "integer", "default": 0 }, "scrollDepth": { "type": "integer", "default": 0 }, "timestamp": { "type": "datetime", "required": true }, "createdAt": { "type": "datetime" }, "promoChannelCode": { "type": "string" } };
 const schema$b = {
   kind: kind$b,
   collectionName: collectionName$b,
@@ -20955,13 +21903,13 @@ const schema$b = {
   pluginOptions: pluginOptions$b,
   attributes: attributes$b
 };
-const publishAccount = { schema: schema$b };
+const browserLog = { schema: schema$b };
 const kind$a = "collectionType";
-const collectionName$a = "zhao_publish_records";
-const info$a = { "singularName": "publish-record", "pluralName": "publish-records", "displayName": "发布记录", "description": "文章发布到账号的记录" };
+const collectionName$a = "zhao_stat_summaries";
+const info$a = { "singularName": "stat-summary", "pluralName": "stat-summaries", "displayName": "统计汇总", "description": "按日期聚合的统计数据" };
 const options$a = { "draftAndPublish": false };
 const pluginOptions$a = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
-const attributes$a = { "article": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.article-draft", "inversedBy": "publishRecords" }, "account": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.publish-account", "inversedBy": "publishRecords" }, "externalId": { "type": "string" }, "status": { "type": "enumeration", "enum": ["pending", "success", "failed"], "default": "pending" }, "error": { "type": "text" }, "retryCount": { "type": "integer", "default": 0 }, "publishedAt": { "type": "datetime" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" }, "abVariant": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.ab-variant" } };
+const attributes$a = { "date": { "type": "date", "required": true }, "article": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.article-draft" }, "adSlot": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.ad-slot" }, "summaryType": { "type": "enumeration", "enum": ["article-daily", "ad-slot-daily", "global-daily", "device-daily", "region-daily"], "required": true }, "pv": { "type": "integer", "default": 0 }, "uv": { "type": "integer", "default": 0 }, "clickCount": { "type": "integer", "default": 0 }, "clickRate": { "type": "float", "default": 0 }, "avgReadDuration": { "type": "float", "default": 0 }, "avgScrollDepth": { "type": "float", "default": 0 }, "deviceStats": { "type": "json" }, "regionStats": { "type": "json" }, "referrerStats": { "type": "json" }, "createdAt": { "type": "datetime" } };
 const schema$a = {
   kind: kind$a,
   collectionName: collectionName$a,
@@ -20970,13 +21918,13 @@ const schema$a = {
   pluginOptions: pluginOptions$a,
   attributes: attributes$a
 };
-const publishRecord = { schema: schema$a };
+const statSummary = { schema: schema$a };
 const kind$9 = "collectionType";
-const collectionName$9 = "zhao_knowledge_point_indices";
-const info$9 = { "singularName": "knowledge-point-index", "pluralName": "knowledge-point-indices", "displayName": "知识点索引", "description": "文章与知识点的关联索引" };
+const collectionName$9 = "zhao_studio_sync_events";
+const info$9 = { "singularName": "sync-event", "pluralName": "sync-events", "displayName": "同步事件" };
 const options$9 = { "draftAndPublish": false };
-const pluginOptions$9 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
-const attributes$9 = { "targetType": { "type": "string", "required": true }, "targetId": { "type": "string", "required": true }, "knowledgePoint": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-tag.knowledge-point" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const pluginOptions$9 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": false } };
+const attributes$9 = { "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config", "required": true, "inversedBy": "studio_sync_events" }, "sourceType": { "type": "enumeration", "enum": ["website"], "required": true }, "sourceContentType": { "type": "string", "required": true }, "sourceDocumentId": { "type": "string" }, "sourceUrl": { "type": "string" }, "sourceTitle": { "type": "string" }, "targetDraftId": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.article-draft", "inversedBy": "syncEvents" }, "eventStatus": { "type": "enumeration", "enum": ["pending", "resolved", "ignored"], "default": "pending" }, "eventPayload": { "type": "json" }, "resolvedAt": { "type": "datetime" }, "resolvedBy": { "type": "string" } };
 const schema$9 = {
   kind: kind$9,
   collectionName: collectionName$9,
@@ -20985,13 +21933,15 @@ const schema$9 = {
   pluginOptions: pluginOptions$9,
   attributes: attributes$9
 };
-const knowledgePointIndex = { schema: schema$9 };
+const syncEvent = {
+  schema: schema$9
+};
 const kind$8 = "collectionType";
-const collectionName$8 = "zhao_ad_slots";
-const info$8 = { "singularName": "ad-slot", "pluralName": "ad-slots", "displayName": "广告位", "description": "广告位配置管理" };
+const collectionName$8 = "zhao_promo_channels";
+const info$8 = { "singularName": "promo-channel", "pluralName": "promo-channels", "displayName": "推广渠道", "description": "推广渠道管理" };
 const options$8 = { "draftAndPublish": false };
-const pluginOptions$8 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
-const attributes$8 = { "name": { "type": "string", "required": true }, "code": { "type": "string", "required": true, "unique": true }, "position": { "type": "enumeration", "enum": ["article-content", "sidebar", "footer", "header", "list-page", "home-page"], "default": "article-content" }, "type": { "type": "enumeration", "enum": ["product-link", "banner", "popup", "native"], "default": "product-link" }, "targetUrl": { "type": "string" }, "productId": { "type": "string" }, "imageUrl": { "type": "string" }, "isActive": { "type": "boolean", "default": true }, "browserLogs": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.browser-log", "mappedBy": "adSlot" }, "statSummaries": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.stat-summary", "mappedBy": "adSlot" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const pluginOptions$8 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": false } };
+const attributes$8 = { "name": { "type": "string", "required": true, "maxLength": 100 }, "code": { "type": "string", "required": true, "unique": true }, "description": { "type": "text" }, "scene": { "type": "enumeration", "enum": ["wechat_group", "short_video", "live_stream", "poster", "article", "other"], "default": "other" }, "status": { "type": "boolean", "default": true }, "budget": { "type": "decimal" }, "actualCost": { "type": "decimal" }, "sortOrder": { "type": "integer", "default": 0 }, "platformConfigs": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.channel-platform-config", "mappedBy": "channel" }, "campaigns": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.promo-campaign", "mappedBy": "channel" }, "experiments": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.ab-experiment", "mappedBy": "channel" }, "coupons": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-deal.coupon", "mappedBy": "promoChannels" } };
 const schema$8 = {
   kind: kind$8,
   collectionName: collectionName$8,
@@ -21000,13 +21950,13 @@ const schema$8 = {
   pluginOptions: pluginOptions$8,
   attributes: attributes$8
 };
-const adSlot = { schema: schema$8 };
+const promoChannel = { schema: schema$8 };
 const kind$7 = "collectionType";
-const collectionName$7 = "zhao_browser_logs";
-const info$7 = { "singularName": "browser-log", "pluralName": "browser-logs", "displayName": "浏览器日志", "description": "用户浏览器信息和行为日志" };
+const collectionName$7 = "zhao_channel_platform_configs";
+const info$7 = { "singularName": "channel-platform-config", "pluralName": "channel-platform-configs", "displayName": "渠道平台配置", "description": "渠道在各推广平台的推广位配置" };
 const options$7 = { "draftAndPublish": false };
-const pluginOptions$7 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
-const attributes$7 = { "eventType": { "type": "enumeration", "enum": ["page-view", "ad-click", "scroll", "read-duration", "user-register"], "required": true }, "article": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.article-draft" }, "adSlot": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.ad-slot" }, "user": { "type": "relation", "relation": "manyToOne", "target": "admin::user" }, "userId": { "type": "string" }, "sessionId": { "type": "string", "required": true }, "isRegistered": { "type": "boolean", "default": false }, "registeredAt": { "type": "datetime" }, "userAgent": { "type": "string" }, "platform": { "type": "string" }, "browser": { "type": "string" }, "browserVersion": { "type": "string" }, "os": { "type": "string" }, "osVersion": { "type": "string" }, "deviceType": { "type": "enumeration", "enum": ["desktop", "mobile", "tablet"], "default": "desktop" }, "screenWidth": { "type": "integer" }, "screenHeight": { "type": "integer" }, "language": { "type": "string" }, "ip": { "type": "string" }, "country": { "type": "string" }, "city": { "type": "string" }, "referrer": { "type": "string" }, "referrerDomain": { "type": "string" }, "readDuration": { "type": "integer", "default": 0 }, "scrollDepth": { "type": "integer", "default": 0 }, "timestamp": { "type": "datetime", "required": true }, "createdAt": { "type": "datetime" }, "promoChannelCode": { "type": "string" } };
+const pluginOptions$7 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": false } };
+const attributes$7 = { "channel": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.promo-channel", "inversedBy": "platformConfigs" }, "platform": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.publish-platform" }, "promoPid": { "type": "string" }, "promoLink": { "type": "text" }, "isActive": { "type": "boolean", "default": true } };
 const schema$7 = {
   kind: kind$7,
   collectionName: collectionName$7,
@@ -21015,13 +21965,13 @@ const schema$7 = {
   pluginOptions: pluginOptions$7,
   attributes: attributes$7
 };
-const browserLog = { schema: schema$7 };
+const channelPlatformConfig = { schema: schema$7 };
 const kind$6 = "collectionType";
-const collectionName$6 = "zhao_stat_summaries";
-const info$6 = { "singularName": "stat-summary", "pluralName": "stat-summaries", "displayName": "统计汇总", "description": "按日期聚合的统计数据" };
+const collectionName$6 = "zhao_promo_campaigns";
+const info$6 = { "singularName": "promo-campaign", "pluralName": "promo-campaigns", "displayName": "营销活动", "description": "有时间范围的营销活动" };
 const options$6 = { "draftAndPublish": false };
-const pluginOptions$6 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
-const attributes$6 = { "date": { "type": "date", "required": true }, "article": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.article-draft" }, "adSlot": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.ad-slot" }, "summaryType": { "type": "enumeration", "enum": ["article-daily", "ad-slot-daily", "global-daily", "device-daily", "region-daily"], "required": true }, "pv": { "type": "integer", "default": 0 }, "uv": { "type": "integer", "default": 0 }, "clickCount": { "type": "integer", "default": 0 }, "clickRate": { "type": "float", "default": 0 }, "avgReadDuration": { "type": "float", "default": 0 }, "avgScrollDepth": { "type": "float", "default": 0 }, "deviceStats": { "type": "json" }, "regionStats": { "type": "json" }, "referrerStats": { "type": "json" }, "createdAt": { "type": "datetime" } };
+const pluginOptions$6 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": false } };
+const attributes$6 = { "name": { "type": "string", "required": true, "maxLength": 100 }, "code": { "type": "string", "required": true, "unique": true }, "channel": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.promo-channel", "inversedBy": "campaigns" }, "description": { "type": "text" }, "startAt": { "type": "datetime", "required": true }, "endAt": { "type": "datetime", "required": true }, "status": { "type": "boolean", "default": true }, "budget": { "type": "decimal" }, "actualCost": { "type": "decimal" }, "experiments": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.ab-experiment", "mappedBy": "campaign" } };
 const schema$6 = {
   kind: kind$6,
   collectionName: collectionName$6,
@@ -21030,13 +21980,13 @@ const schema$6 = {
   pluginOptions: pluginOptions$6,
   attributes: attributes$6
 };
-const statSummary = { schema: schema$6 };
+const promoCampaign = { schema: schema$6 };
 const kind$5 = "collectionType";
-const collectionName$5 = "zhao_studio_sync_events";
-const info$5 = { "singularName": "sync-event", "pluralName": "sync-events", "displayName": "同步事件" };
+const collectionName$5 = "zhao_ab_experiments";
+const info$5 = { "singularName": "ab-experiment", "pluralName": "ab-experiments", "displayName": "AB实验", "description": "A/B 测试实验管理" };
 const options$5 = { "draftAndPublish": false };
 const pluginOptions$5 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": false } };
-const attributes$5 = { "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config", "required": true, "inversedBy": "studio_sync_events" }, "sourceType": { "type": "enumeration", "enum": ["website"], "required": true }, "sourceContentType": { "type": "string", "required": true }, "sourceDocumentId": { "type": "string" }, "sourceUrl": { "type": "string" }, "sourceTitle": { "type": "string" }, "targetDraftId": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.article-draft", "inversedBy": "syncEvents" }, "eventStatus": { "type": "enumeration", "enum": ["pending", "resolved", "ignored"], "default": "pending" }, "eventPayload": { "type": "json" }, "resolvedAt": { "type": "datetime" }, "resolvedBy": { "type": "string" } };
+const attributes$5 = { "name": { "type": "string", "required": true, "maxLength": 200 }, "channel": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.promo-channel", "inversedBy": "experiments" }, "campaign": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.promo-campaign", "inversedBy": "experiments" }, "description": { "type": "text" }, "status": { "type": "enumeration", "enum": ["draft", "running", "paused", "completed"], "default": "draft" }, "startAt": { "type": "datetime" }, "endAt": { "type": "datetime" }, "variants": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.ab-variant", "mappedBy": "experiment" } };
 const schema$5 = {
   kind: kind$5,
   collectionName: collectionName$5,
@@ -21045,15 +21995,13 @@ const schema$5 = {
   pluginOptions: pluginOptions$5,
   attributes: attributes$5
 };
-const syncEvent = {
-  schema: schema$5
-};
+const abExperiment = { schema: schema$5 };
 const kind$4 = "collectionType";
-const collectionName$4 = "zhao_promo_channels";
-const info$4 = { "singularName": "promo-channel", "pluralName": "promo-channels", "displayName": "推广渠道", "description": "推广渠道管理" };
+const collectionName$4 = "zhao_ab_variants";
+const info$4 = { "singularName": "ab-variant", "pluralName": "ab-variants", "displayName": "AB变体", "description": "A/B 测试变体" };
 const options$4 = { "draftAndPublish": false };
 const pluginOptions$4 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": false } };
-const attributes$4 = { "name": { "type": "string", "required": true, "maxLength": 100 }, "code": { "type": "string", "required": true, "unique": true }, "description": { "type": "text" }, "scene": { "type": "enumeration", "enum": ["wechat_group", "short_video", "live_stream", "poster", "article", "other"], "default": "other" }, "status": { "type": "boolean", "default": true }, "budget": { "type": "decimal" }, "actualCost": { "type": "decimal" }, "sortOrder": { "type": "integer", "default": 0 }, "platformConfigs": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.channel-platform-config", "mappedBy": "channel" }, "campaigns": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.promo-campaign", "mappedBy": "channel" }, "experiments": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.ab-experiment", "mappedBy": "channel" }, "coupons": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-deal.coupon", "mappedBy": "promoChannels" } };
+const attributes$4 = { "experiment": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.ab-experiment", "inversedBy": "variants" }, "name": { "type": "string", "required": true, "maxLength": 100 }, "weight": { "type": "integer", "required": true, "default": 1 }, "article": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.article-draft" }, "coupon": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-deal.coupon" }, "description": { "type": "text" } };
 const schema$4 = {
   kind: kind$4,
   collectionName: collectionName$4,
@@ -21062,13 +22010,13 @@ const schema$4 = {
   pluginOptions: pluginOptions$4,
   attributes: attributes$4
 };
-const promoChannel = { schema: schema$4 };
+const abVariant = { schema: schema$4 };
 const kind$3 = "collectionType";
-const collectionName$3 = "zhao_channel_platform_configs";
-const info$3 = { "singularName": "channel-platform-config", "pluralName": "channel-platform-configs", "displayName": "渠道平台配置", "description": "渠道在各推广平台的推广位配置" };
+const collectionName$3 = "zhao_studio_ad_zones";
+const info$3 = { "singularName": "ad-zone", "pluralName": "ad-zones", "displayName": "广告区域", "description": "广告展示位置定义" };
 const options$3 = { "draftAndPublish": false };
-const pluginOptions$3 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": false } };
-const attributes$3 = { "channel": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.promo-channel", "inversedBy": "platformConfigs" }, "platform": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.publish-platform" }, "promoPid": { "type": "string" }, "promoLink": { "type": "text" }, "isActive": { "type": "boolean", "default": true } };
+const pluginOptions$3 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
+const attributes$3 = { "name": { "type": "string", "required": true }, "code": { "type": "string", "required": true, "unique": true }, "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config", "required": true }, "position": { "type": "enumeration", "enum": ["home-banner", "home-notice", "home-sidebar", "list-top", "article-top", "article-bottom", "article-inline", "footer", "popup", "float", "custom"], "default": "home-banner" }, "displayMode": { "type": "enumeration", "enum": ["single", "rotation", "slideshow", "stack"], "default": "single" }, "suggestedWidth": { "type": "integer" }, "suggestedHeight": { "type": "integer" }, "adSlotCode": { "type": "string" }, "description": { "type": "text" }, "isActive": { "type": "boolean", "default": true }, "sortOrder": { "type": "integer", "default": 0 }, "adContents": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.ad-content", "mappedBy": "adZone" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
 const schema$3 = {
   kind: kind$3,
   collectionName: collectionName$3,
@@ -21077,13 +22025,13 @@ const schema$3 = {
   pluginOptions: pluginOptions$3,
   attributes: attributes$3
 };
-const channelPlatformConfig = { schema: schema$3 };
+const adZone = { schema: schema$3 };
 const kind$2 = "collectionType";
-const collectionName$2 = "zhao_promo_campaigns";
-const info$2 = { "singularName": "promo-campaign", "pluralName": "promo-campaigns", "displayName": "营销活动", "description": "有时间范围的营销活动" };
+const collectionName$2 = "zhao_studio_ad_contents";
+const info$2 = { "singularName": "ad-content", "pluralName": "ad-contents", "displayName": "广告内容", "description": "广告素材与展示方式配置" };
 const options$2 = { "draftAndPublish": false };
-const pluginOptions$2 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": false } };
-const attributes$2 = { "name": { "type": "string", "required": true, "maxLength": 100 }, "code": { "type": "string", "required": true, "unique": true }, "channel": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.promo-channel", "inversedBy": "campaigns" }, "description": { "type": "text" }, "startAt": { "type": "datetime", "required": true }, "endAt": { "type": "datetime", "required": true }, "status": { "type": "boolean", "default": true }, "budget": { "type": "decimal" }, "actualCost": { "type": "decimal" }, "experiments": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.ab-experiment", "mappedBy": "campaign" } };
+const pluginOptions$2 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
+const attributes$2 = { "name": { "type": "string", "required": true }, "adZone": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.ad-zone", "inversedBy": "adContents", "required": true }, "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config", "required": true }, "contentType": { "type": "enumeration", "enum": ["single-image", "multi-image", "slideshow", "video", "html"], "default": "single-image", "required": true }, "isActive": { "type": "boolean", "default": true }, "sortOrder": { "type": "integer", "default": 0 }, "priority": { "type": "integer", "default": 0 }, "startAt": { "type": "datetime" }, "endAt": { "type": "datetime" }, "frequencyLimit": { "type": "integer", "default": 0 }, "frequencyPeriod": { "type": "enumeration", "enum": ["session", "daily", "weekly"], "default": "session" }, "title": { "type": "string" }, "titleColor": { "type": "string", "default": "#333333" }, "titleFontSize": { "type": "integer", "default": 16 }, "titleFontWeight": { "type": "enumeration", "enum": ["normal", "bold"], "default": "normal" }, "titleAlign": { "type": "enumeration", "enum": ["left", "center", "right"], "default": "left" }, "titleOverflow": { "type": "enumeration", "enum": ["clip", "ellipsis", "wrap", "scale"], "default": "ellipsis" }, "titleMaxLines": { "type": "integer", "default": 2 }, "titleLineHeight": { "type": "decimal", "default": 1.4 }, "subtitle": { "type": "string" }, "subtitleColor": { "type": "string", "default": "#666666" }, "subtitleFontSize": { "type": "integer", "default": 14 }, "subtitleOverflow": { "type": "enumeration", "enum": ["clip", "ellipsis", "wrap", "scale"], "default": "ellipsis" }, "subtitleMaxLines": { "type": "integer", "default": 1 }, "ctaText": { "type": "string" }, "ctaTextColor": { "type": "string", "default": "#FFFFFF" }, "ctaBgColor": { "type": "string", "default": "#FF4444" }, "ctaFontSize": { "type": "integer", "default": 14 }, "ctaBorderRadius": { "type": "integer", "default": 4 }, "ctaPosition": { "type": "enumeration", "enum": ["top", "bottom", "overlay", "inline"], "default": "bottom" }, "badgeText": { "type": "string" }, "badgeBgColor": { "type": "string", "default": "#FF4444" }, "badgeTextColor": { "type": "string", "default": "#FFFFFF" }, "badgePosition": { "type": "enumeration", "enum": ["top-left", "top-right", "bottom-left", "bottom-right"], "default": "top-right" }, "images": { "type": "json", "default": [] }, "videoUrl": { "type": "string" }, "videoPoster": { "type": "string" }, "videoAutoplay": { "type": "boolean", "default": false }, "videoMuted": { "type": "boolean", "default": true }, "videoLoop": { "type": "boolean", "default": false }, "videoControls": { "type": "boolean", "default": false }, "htmlContent": { "type": "text" }, "linkType": { "type": "enumeration", "enum": ["none", "internal", "external"], "default": "none" }, "linkUrl": { "type": "string" }, "linkTarget": { "type": "enumeration", "enum": ["_self", "_blank"], "default": "_self" }, "displayStyle": { "type": "enumeration", "enum": ["banner", "card", "modal", "inline", "float", "fullscreen"], "default": "banner" }, "width": { "type": "integer" }, "height": { "type": "integer" }, "borderRadius": { "type": "integer", "default": 0 }, "backgroundColor": { "type": "string", "default": "#FFFFFF" }, "slideshowAutoplay": { "type": "boolean", "default": true }, "slideshowInterval": { "type": "integer", "default": 3e3 }, "slideshowEffect": { "type": "enumeration", "enum": ["fade", "slide", "none"], "default": "slide" }, "slideshowLoop": { "type": "boolean", "default": true }, "slideshowShowDots": { "type": "boolean", "default": true }, "slideshowShowArrows": { "type": "boolean", "default": false }, "slideshowPauseOnHover": { "type": "boolean", "default": true }, "closeDelay": { "type": "integer", "default": 0 }, "showCountdown": { "type": "boolean", "default": false }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
 const schema$2 = {
   kind: kind$2,
   collectionName: collectionName$2,
@@ -21092,13 +22040,13 @@ const schema$2 = {
   pluginOptions: pluginOptions$2,
   attributes: attributes$2
 };
-const promoCampaign = { schema: schema$2 };
+const adContent = { schema: schema$2 };
 const kind$1 = "collectionType";
-const collectionName$1 = "zhao_ab_experiments";
-const info$1 = { "singularName": "ab-experiment", "pluralName": "ab-experiments", "displayName": "AB实验", "description": "A/B 测试实验管理" };
+const collectionName$1 = "zhao_studio_poster_templates";
+const info$1 = { "singularName": "poster-template", "pluralName": "poster-templates", "displayName": "海报模板", "description": "自定义海报模板设计" };
 const options$1 = { "draftAndPublish": false };
-const pluginOptions$1 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": false } };
-const attributes$1 = { "name": { "type": "string", "required": true, "maxLength": 200 }, "channel": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.promo-channel", "inversedBy": "experiments" }, "campaign": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.promo-campaign", "inversedBy": "experiments" }, "description": { "type": "text" }, "status": { "type": "enumeration", "enum": ["draft", "running", "paused", "completed"], "default": "draft" }, "startAt": { "type": "datetime" }, "endAt": { "type": "datetime" }, "variants": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.ab-variant", "mappedBy": "experiment" } };
+const pluginOptions$1 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
+const attributes$1 = { "name": { "type": "string", "required": true }, "code": { "type": "string", "required": true, "unique": true }, "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config", "required": true }, "canvasWidth": { "type": "integer", "default": 600 }, "canvasHeight": { "type": "integer", "default": 1e3 }, "backgroundColor": { "type": "string", "default": "#FFFFFF" }, "backgroundImage": { "type": "string" }, "backgroundMode": { "type": "enumeration", "enum": ["cover", "contain", "stretch", "tile"], "default": "cover" }, "requiredVariables": { "type": "json", "default": ["title", "description", "image_url", "qr_code"] }, "optionalVariables": { "type": "json", "default": ["market_price", "sale_price", "invite_code"] }, "isActive": { "type": "boolean", "default": true }, "isDefault": { "type": "boolean", "default": false }, "elements": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.poster-element", "mappedBy": "posterTemplate" }, "thumbnail": { "type": "string" }, "description": { "type": "text" } };
 const schema$1 = {
   kind: kind$1,
   collectionName: collectionName$1,
@@ -21107,13 +22055,13 @@ const schema$1 = {
   pluginOptions: pluginOptions$1,
   attributes: attributes$1
 };
-const abExperiment = { schema: schema$1 };
+const posterTemplate = { schema: schema$1 };
 const kind = "collectionType";
-const collectionName = "zhao_ab_variants";
-const info = { "singularName": "ab-variant", "pluralName": "ab-variants", "displayName": "AB变体", "description": "A/B 测试变体" };
+const collectionName = "zhao_studio_poster_elements";
+const info = { "singularName": "poster-element", "pluralName": "poster-elements", "displayName": "海报元素", "description": "海报模板中的元素定义" };
 const options = { "draftAndPublish": false };
-const pluginOptions = { "content-manager": { "visible": true }, "content-type-builder": { "visible": false } };
-const attributes = { "experiment": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.ab-experiment", "inversedBy": "variants" }, "name": { "type": "string", "required": true, "maxLength": 100 }, "weight": { "type": "integer", "required": true, "default": 1 }, "article": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.article-draft" }, "coupon": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-deal.coupon" }, "description": { "type": "text" } };
+const pluginOptions = { "content-manager": { "visible": false }, "content-type-builder": { "visible": false } };
+const attributes = { "posterTemplate": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.poster-template", "inversedBy": "elements", "required": true }, "elementType": { "type": "enumeration", "enum": ["text", "image", "qrcode", "shape", "background"], "required": true, "default": "text" }, "elementKey": { "type": "string", "required": true }, "elementName": { "type": "string" }, "sortOrder": { "type": "integer", "default": 0 }, "isVariable": { "type": "boolean", "default": false }, "variableName": { "type": "string" }, "defaultValue": { "type": "text" }, "content": { "type": "text" }, "x": { "type": "integer", "default": 0 }, "y": { "type": "integer", "default": 0 }, "width": { "type": "integer", "default": 100 }, "height": { "type": "integer", "default": 100 }, "zIndex": { "type": "integer", "default": 0 }, "rotation": { "type": "integer", "default": 0 }, "opacity": { "type": "decimal", "default": 1 }, "fontSize": { "type": "integer", "default": 14 }, "fontColor": { "type": "string", "default": "#333333" }, "fontWeight": { "type": "enumeration", "enum": ["normal", "bold"], "default": "normal" }, "fontFamily": { "type": "string", "default": "sans-serif" }, "textAlign": { "type": "enumeration", "enum": ["left", "center", "right"], "default": "left" }, "lineHeight": { "type": "decimal", "default": 1.5 }, "letterSpacing": { "type": "integer", "default": 0 }, "borderRadius": { "type": "integer", "default": 0 }, "borderWidth": { "type": "integer", "default": 0 }, "borderColor": { "type": "string", "default": "#000000" }, "elementBgColor": { "type": "string" }, "imageFit": { "type": "enumeration", "enum": ["cover", "contain", "stretch", "tile"], "default": "cover" }, "qrContentMode": { "type": "enumeration", "enum": ["direct", "url_with_invite"], "default": "direct" }, "qrBaseUrl": { "type": "string" }, "qrInviteParam": { "type": "string", "default": "inviteCode" }, "qrInviteSeparator": { "type": "string", "default": "?" }, "qrFallbackMode": { "type": "enumeration", "enum": ["base_url_only", "default_value", "hide_element"], "default": "base_url_only" }, "qrErrorLevel": { "type": "enumeration", "enum": ["L", "M", "Q", "H"], "default": "M" }, "qrSize": { "type": "integer", "default": 120 }, "qrColor": { "type": "string", "default": "#000000" }, "qrBgColor": { "type": "string", "default": "#FFFFFF" }, "shapeType": { "type": "enumeration", "enum": ["rect", "circle", "line"], "default": "rect" } };
 const schema = {
   kind,
   collectionName,
@@ -21122,7 +22070,7 @@ const schema = {
   pluginOptions,
   attributes
 };
-const abVariant = { schema };
+const posterElement = { schema };
 const contentTypes = {
   "article-draft": articleDraft,
   "collect-source": collectSource,
@@ -21139,7 +22087,11 @@ const contentTypes = {
   "channel-platform-config": channelPlatformConfig,
   "promo-campaign": promoCampaign,
   "ab-experiment": abExperiment,
-  "ab-variant": abVariant
+  "ab-variant": abVariant,
+  "ad-zone": adZone,
+  "ad-content": adContent,
+  "poster-template": posterTemplate,
+  "poster-element": posterElement
 };
 const index = {
   register,

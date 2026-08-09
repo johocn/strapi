@@ -103,7 +103,7 @@ export default {
         user: {
           type: "relation",
           relation: "manyToOne",
-          target: "plugin::users-permissions.user",
+          target: "plugin::zhao-sso.sso-user",
           required: true
         },
         role: {
@@ -115,7 +115,7 @@ export default {
         invitedBy: {
           type: "relation",
           relation: "manyToOne",
-          target: "plugin::users-permissions.user"
+          target: "plugin::zhao-sso.sso-user"
         },
         "isCurrent": {
           "type": "boolean",
@@ -141,7 +141,7 @@ export default {
         user: {
           type: "relation",
           relation: "manyToOne",
-          target: "plugin::users-permissions.user",
+          target: "plugin::zhao-sso.sso-user",
           required: true
         },
         channel: {
@@ -153,7 +153,7 @@ export default {
         grantedBy: {
           type: "relation",
           relation: "manyToOne",
-          target: "plugin::users-permissions.user"
+          target: "plugin::zhao-sso.sso-user"
         },
         grantedAt: {
           type: "datetime"
@@ -178,7 +178,7 @@ export default {
         user: {
           type: "relation",
           relation: "oneToOne",
-          target: "plugin::users-permissions.user",
+          target: "plugin::zhao-sso.sso-user",
           required: true,
           unique: true
         },
@@ -191,7 +191,7 @@ export default {
         invitedBy: {
           type: "relation",
           relation: "manyToOne",
-          target: "plugin::users-permissions.user"
+          target: "plugin::zhao-sso.sso-user"
         },
         inviteChannel: {
           type: "relation",

@@ -339,6 +339,28 @@
       "relation": "oneToMany",
       "target": "plugin::zhao-website.brand-voice",
       "mappedBy": "site"
+    },
+    "website_redirect_rules": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-website.redirect-rule",
+      "mappedBy": "site"
+    },
+    "posterDefaultUserName": {
+      "type": "string",
+      "maxLength": 50,
+      "description": "海报默认用户名"
+    },
+    "posterDefaultUserAvatar": {
+      "type": "media",
+      "multiple": false,
+      "required": false,
+      "allowedTypes": ["images"]
+    },
+    "posterDefaultRecommendReason": {
+      "type": "string",
+      "maxLength": 200,
+      "description": "海报默认推荐理由"
     }
   }
 }

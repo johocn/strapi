@@ -35,10 +35,7 @@ const index = {
         id: `${PLUGIN_ID}.plugin.name`,
         defaultMessage: "OSS 备份"
       },
-      Component: async () => {
-        const { App } = await import("./App-Bas0X6f8.mjs");
-        return App;
-      }
+      Component: () => import("./App-Bas0X6f8.mjs").then((mod) => ({ default: mod.App }))
     });
     app.registerPlugin({
       id: PLUGIN_ID,

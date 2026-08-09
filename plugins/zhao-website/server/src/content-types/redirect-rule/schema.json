@@ -16,7 +16,7 @@
   "attributes": {
     "site": {
       "type": "relation",
-      "relation": "oneToOne",
+      "relation": "manyToOne",
       "target": "plugin::zhao-common.site-config",
       "inversedBy": "website_redirect_rules"
     },

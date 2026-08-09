@@ -4,5 +4,6 @@ declare const _default: {
         max: number;
         message?: string;
     }) => (ctx: any, next: any) => Promise<any>;
+    redirect: (ctx: any, next: any) => Promise<any>;
 };
 export default _default;

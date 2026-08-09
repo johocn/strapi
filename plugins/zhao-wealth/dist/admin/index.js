@@ -37,10 +37,7 @@ const index = {
         id: `${PLUGIN_ID}.plugin.name`,
         defaultMessage: "理财基金管理"
       },
-      Component: async () => {
-        const { App } = await Promise.resolve().then(() => require("./App-Bj5zBRLA.js"));
-        return App;
-      }
+      Component: () => Promise.resolve().then(() => require("./App-Bj5zBRLA.js")).then((mod) => ({ default: mod.App }))
     });
     app.registerPlugin({
       id: PLUGIN_ID,
@@ -53,7 +50,7 @@ const index = {
     return Promise.all(
       locales.map(async (locale) => {
         try {
-          const { default: data } = await __variableDynamicImportRuntimeHelper(/* @__PURE__ */ Object.assign({ "./translations/en.json": () => Promise.resolve().then(() => require("./en-G7eeNhAF.js")), "./translations/zh-Hans.json": () => Promise.resolve().then(() => require("./zh-Hans-CHtkyXkC.js")) }), `./translations/${locale}.json`, 3);
+          const { default: data } = await __variableDynamicImportRuntimeHelper(/* @__PURE__ */ Object.assign({ "./translations/en.json": () => Promise.resolve().then(() => require("./en-DcOh_O2i.js")), "./translations/zh-Hans.json": () => Promise.resolve().then(() => require("./zh-Hans-5jFKnkWJ.js")) }), `./translations/${locale}.json`, 3);
           return { data, locale };
         } catch {
           return { data: {}, locale };

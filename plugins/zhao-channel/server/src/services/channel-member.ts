@@ -9,7 +9,7 @@ function throwErr(code: string, status: number, message: string): never {
 
 const CHANNEL_UID = "plugin::zhao-channel.channel";
 const CHANNEL_MEMBER_UID = "plugin::zhao-channel.channel-member";
-const USER_UID = "plugin::users-permissions.user";
+const USER_UID = "plugin::zhao-sso.sso-user";
 const USER_INVITE_UID = "plugin::zhao-channel.user-invite";
 
 function formatChannel(channel: any) {
@@ -110,24 +110,12 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
     const isNewUser = !user;
 
-    // 定义高级渠道层级（邀请 admin 成员时自动获得 channel-admin 角色）
-    // 与 channel.ts register() 保持一致（同步加 agent）
-      const ADMIN_CHANNEL_TIERS = ['core', 'senior', 'global', 'authorized', 'official', 'partner', 'agent'];
-
       if (!user) {
       // 创建未注册用户
-      const userRole = ADMIN_CHANNEL_TIERS.includes(channel.channelTier as string) && data.role === "admin"
-        ? ['channel-admin', 'user']
-        : ['user'];
-
-      user = await strapi.entityService.create(USER_UID, {
-        data: {
-          email: data.email,
-          username: data.email.split("@")[0],
-          provider: "local",
-          confirmed: false,
-          zhaoRoles: userRole,
-        },
+      user = await strapi.plugin("zhao-sso").service("sso-user").createUser({
+        email: data.email,
+        username: data.email.split("@")[0],
+        register_channel: "sso_local",
       });
 
       // ── 新用户同时创建 channel-member，并标记为当前渠道 ──

@@ -142,6 +142,22 @@ declare const _default: {
       "type": "string",
       "maxLength": 50
     },
+    "allowedAiCrawlers": {
+      "type": "json",
+      "default": []
+    },
+    "twitterSite": {
+      "type": "string",
+      "maxLength": 50
+    },
+    "twitterCreator": {
+      "type": "string",
+      "maxLength": 50
+    },
+    "sogouSiteVerification": {
+      "type": "string",
+      "maxLength": 100
+    },
     "extraConfig": {
       "type": "json"
     },

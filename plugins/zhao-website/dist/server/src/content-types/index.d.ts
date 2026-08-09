@@ -148,6 +148,22 @@ declare const _default: {
                     type: string;
                     maxLength: number;
                 };
+                allowedAiCrawlers: {
+                    type: string;
+                    default: any[];
+                };
+                twitterSite: {
+                    type: string;
+                    maxLength: number;
+                };
+                twitterCreator: {
+                    type: string;
+                    maxLength: number;
+                };
+                sogouSiteVerification: {
+                    type: string;
+                    maxLength: number;
+                };
                 extraConfig: {
                     type: string;
                 };
@@ -788,6 +804,25 @@ declare const _default: {
                     target: string;
                     mappedBy: string;
                 };
+                price: {
+                    type: string;
+                    default: number;
+                };
+                currency: {
+                    type: string;
+                    maxLength: number;
+                    default: string;
+                };
+                availability: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
+                brandVoiceRef: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                };
                 structuredData: {
                     type: string;
                 };
@@ -1220,6 +1255,19 @@ declare const _default: {
                 estimatedTime: {
                     type: string;
                     maxLength: number;
+                };
+                videoUrl: {
+                    type: string;
+                    maxLength: number;
+                };
+                thumbnailUrl: {
+                    type: string;
+                    maxLength: number;
+                };
+                brandVoiceRef: {
+                    type: string;
+                    relation: string;
+                    target: string;
                 };
                 difficulty: {
                     type: string;
@@ -2288,6 +2336,58 @@ declare const _default: {
                     relation: string;
                     target: string;
                     mappedBy: string;
+                };
+                deletedAt: {
+                    type: string;
+                    default: any;
+                };
+            };
+        };
+    };
+    "redirect-rule": {
+        schema: {
+            kind: string;
+            collectionName: string;
+            info: {
+                singularName: string;
+                pluralName: string;
+                displayName: string;
+            };
+            options: {
+                draftAndPublish: boolean;
+            };
+            pluginOptions: {
+                "content-manager": {
+                    visible: boolean;
+                };
+                "content-type-builder": {
+                    visible: boolean;
+                };
+            };
+            attributes: {
+                site: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    inversedBy: string;
+                };
+                fromPath: {
+                    type: string;
+                    required: boolean;
+                    maxLength: number;
+                };
+                toUrl: {
+                    type: string;
+                    required: boolean;
+                    maxLength: number;
+                };
+                statusCode: {
+                    type: string;
+                    default: number;
+                };
+                isActive: {
+                    type: string;
+                    default: boolean;
                 };
                 deletedAt: {
                     type: string;

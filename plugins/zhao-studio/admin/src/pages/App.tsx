@@ -10,6 +10,9 @@ import PublishPage from './PublishPage';
 import PlatformConfigPage from './PlatformConfigPage';
 import AccountConfigPage from './AccountConfigPage';
 import AdSlotConfigPage from './AdSlotConfigPage';
+import AdZonePage from './AdZonePage';
+import AdContentPage from './AdContentPage';
+import PosterTemplatePage from './PosterTemplatePage';
 import StatsBasicPage from './StatsBasicPage';
 import StatsAdvancedPage from './StatsAdvancedPage';
 import StatsProPage from './StatsProPage';
@@ -27,6 +30,9 @@ const App = () => (
           <Route path="/platforms" element={<PlatformConfigPage />} />
           <Route path="/accounts" element={<AccountConfigPage />} />
           <Route path="/ad-slots" element={<AdSlotConfigPage />} />
+          <Route path="/ad-zones" element={<AdZonePage />} />
+          <Route path="/ad-contents" element={<AdContentPage />} />
+          <Route path="/poster-templates" element={<PosterTemplatePage />} />
           <Route path="/stats/basic" element={<StatsBasicPage />} />
           <Route path="/stats/advanced" element={<StatsAdvancedPage />} />
           <Route path="/stats/pro" element={<StatsProPage />} />

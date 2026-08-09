@@ -354,6 +354,75 @@ declare const _default: {
         }): Promise<any>;
         _resetCache(): void;
     };
+    ad: ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        getZoneByPosition(position: string, siteDomain?: string): Promise<{
+            zone: null;
+            contents: never[];
+        } | {
+            zone: import('@strapi/types/dist/modules/documents').AnyDocument;
+            contents: any;
+        }>;
+        getAllZones(siteDomain?: string): Promise<any[]>;
+        listZones(filters?: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument[]>;
+        createZone(data: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
+        findOneZone(documentId: string): Promise<import('@strapi/types/dist/modules/documents').AnyDocument | null>;
+        updateZone(documentId: string, data: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument | null>;
+        deleteZone(documentId: string): Promise<{
+            documentId: import('@strapi/types/dist/modules/documents').ID;
+            entries: import('@strapi/types/dist/modules/documents').Result<TContentTypeUID, TParams>[];
+        }>;
+        listContents(filters?: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument[]>;
+        createContent(data: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
+        findOneContent(documentId: string): Promise<import('@strapi/types/dist/modules/documents').AnyDocument | null>;
+        updateContent(documentId: string, data: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument | null>;
+        deleteContent(documentId: string): Promise<{
+            documentId: import('@strapi/types/dist/modules/documents').ID;
+            entries: import('@strapi/types/dist/modules/documents').Result<TContentTypeUID, TParams>[];
+        }>;
+    };
+    poster: ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        getTemplate(code: string): Promise<any>;
+        resolveTemplate(code: string, variables: Record<string, any>): Promise<{
+            template: {
+                canvasWidth: any;
+                canvasHeight: any;
+                backgroundColor: any;
+                backgroundImage: any;
+                backgroundMode: any;
+            };
+            elements: any;
+        } | null>;
+        listTemplates(filters?: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument[]>;
+        createTemplate(data: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
+        findOneTemplate(documentId: string): Promise<any>;
+        updateTemplate(documentId: string, data: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument | null>;
+        deleteTemplate(documentId: string): Promise<{
+            documentId: import('@strapi/types/dist/modules/documents').ID;
+            entries: import('@strapi/types/dist/modules/documents').Result<TContentTypeUID, TParams>[];
+        }>;
+        cloneTemplate(documentId: string): Promise<any>;
+        batchSaveElements(templateDocumentId: string, elements: any[]): Promise<import('@strapi/types/dist/modules/documents').AnyDocument[]>;
+        listElements(filters?: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument[]>;
+        createElement(data: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
+        updateElement(documentId: string, data: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument | null>;
+        deleteElement(documentId: string): Promise<{
+            documentId: import('@strapi/types/dist/modules/documents').ID;
+            entries: import('@strapi/types/dist/modules/documents').Result<TContentTypeUID, TParams>[];
+        }>;
+        seedDefaultTemplate(): Promise<{
+            success: boolean;
+            reason: string;
+            templates?: undefined;
+        } | {
+            success: boolean;
+            templates: number;
+            reason?: undefined;
+        }>;
+    };
 };
 export default _default;
 //# sourceMappingURL=index.d.ts.map

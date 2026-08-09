@@ -2,6 +2,7 @@ import type { Core } from "@strapi/strapi";
 import type { PluginConfig } from "./types";
 import PERMISSIONS from "./permissions";
 import * as fs from "fs/promises";
+import { createReadStream } from "fs";
 import * as path from "path";
 
 function extractMediaFiles(obj: any, collected: Array<{ id: number; url: string }> = []): Array<{ id: number; url: string }> {
@@ -279,8 +280,34 @@ const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
         try {
           const stats = await fs.stat(filePath);
           if (stats.isFile()) {
-            ctx.body = await fs.readFile(filePath);
+            const fileSize = stats.size;
             ctx.type = path.extname(filePath);
+            ctx.set("Accept-Ranges", "bytes");
+
+            // 支持 Range 请求（视频播放必需）
+            const rangeHeader = ctx.headers.range;
+            if (rangeHeader) {
+              const match = /bytes=(\d+)-(\d*)/.exec(rangeHeader);
+              if (match) {
+                const start = parseInt(match[1], 10);
+                const end = match[2] ? parseInt(match[2], 10) : fileSize - 1;
+                if (start >= 0 && end < fileSize && start <= end) {
+                  ctx.status = 206;
+                  ctx.set("Content-Range", `bytes ${start}-${end}/${fileSize}`);
+                  ctx.set("Content-Length", String(end - start + 1));
+                  if (ctx.method !== "HEAD") {
+                    ctx.body = createReadStream(filePath, { start, end });
+                  }
+                  return;
+                }
+              }
+            }
+
+            // 完整文件响应
+            ctx.set("Content-Length", String(fileSize));
+            if (ctx.method !== "HEAD") {
+              ctx.body = await fs.readFile(filePath);
+            }
             return;
           }
         } catch (err) {

@@ -94,7 +94,7 @@ function isAdminContext() {
 }
 const USER_CHANNEL_UID$2 = "plugin::zhao-channel.user-channel";
 const ROLE_CHANNEL_UID$2 = "plugin::zhao-channel.role-channel";
-const USER_UID$3 = "plugin::users-permissions.user";
+const USER_UID$3 = "plugin::zhao-sso.sso-user";
 const USER_INVITE_UID$2 = "plugin::zhao-channel.user-invite";
 const CHANNEL_MEMBER_UID$4 = "plugin::zhao-channel.channel-member";
 const CHANNEL_UID$3 = "plugin::zhao-channel.channel";
@@ -291,7 +291,7 @@ const bootstrap = ({ strapi }) => {
           (rc) => rc.channel?.id || rc.channel
         );
         await setRoleChannelCache2(targetId, allChannelIds);
-        const usersWithRole = await strapi.db.query("plugin::users-permissions.user").findMany({
+        const usersWithRole = await strapi.db.query(USER_UID$3).findMany({
           where: { role: targetId },
           select: ["id"]
         });
@@ -766,7 +766,7 @@ const contentTypes = {
         user: {
           type: "relation",
           relation: "manyToOne",
-          target: "plugin::users-permissions.user",
+          target: "plugin::zhao-sso.sso-user",
           required: true
         },
         role: {
@@ -778,7 +778,7 @@ const contentTypes = {
         invitedBy: {
           type: "relation",
           relation: "manyToOne",
-          target: "plugin::users-permissions.user"
+          target: "plugin::zhao-sso.sso-user"
         },
         "isCurrent": {
           "type": "boolean",
@@ -804,7 +804,7 @@ const contentTypes = {
         user: {
           type: "relation",
           relation: "manyToOne",
-          target: "plugin::users-permissions.user",
+          target: "plugin::zhao-sso.sso-user",
           required: true
         },
         channel: {
@@ -816,7 +816,7 @@ const contentTypes = {
         grantedBy: {
           type: "relation",
           relation: "manyToOne",
-          target: "plugin::users-permissions.user"
+          target: "plugin::zhao-sso.sso-user"
         },
         grantedAt: {
           type: "datetime"
@@ -841,7 +841,7 @@ const contentTypes = {
         user: {
           type: "relation",
           relation: "oneToOne",
-          target: "plugin::users-permissions.user",
+          target: "plugin::zhao-sso.sso-user",
           required: true,
           unique: true
         },
@@ -854,7 +854,7 @@ const contentTypes = {
         invitedBy: {
           type: "relation",
           relation: "manyToOne",
-          target: "plugin::users-permissions.user"
+          target: "plugin::zhao-sso.sso-user"
         },
         inviteChannel: {
           type: "relation",
@@ -6771,13 +6771,13 @@ const channel = ({ strapi }) => ({
     const result = await strapi.db.transaction(async () => {
       let user = null;
       if (data.email && data.username && data.password) {
-        const existingUserByEmail = await strapi.db.query("plugin::users-permissions.user").findOne({
+        const existingUserByEmail = await strapi.db.query("plugin::zhao-sso.sso-user").findOne({
           where: { email: data.email }
         });
         if (existingUserByEmail) {
           throwErr$1("030107", 409, "该邮箱已被注册");
         }
-        const existingUserByUsername = await strapi.db.query("plugin::users-permissions.user").findOne({
+        const existingUserByUsername = await strapi.db.query("plugin::zhao-sso.sso-user").findOne({
           where: { username: data.username }
         });
         if (existingUserByUsername) {
@@ -6804,17 +6804,11 @@ const channel = ({ strapi }) => ({
         data: { path: updatedPath }
       });
       if (data.email && data.username && data.password) {
-        const ADMIN_CHANNEL_TIERS = ["core", "senior", "global", "authorized", "official", "partner", "agent"];
-        const userRoles = ADMIN_CHANNEL_TIERS.includes(childTier) ? ["channel-admin", "user"] : ["user"];
-        user = await strapi.entityService.create("plugin::users-permissions.user", {
-          data: {
-            email: data.email,
-            username: data.username,
-            password: data.password,
-            provider: "local",
-            confirmed: true,
-            zhaoRoles: userRoles
-          }
+        user = await strapi.plugin("zhao-sso").service("sso-user").createUser({
+          email: data.email,
+          username: data.username,
+          password: data.password,
+          register_channel: "sso_local"
         });
         await strapi.db.query(CHANNEL_MEMBER_UID$3).create({
           data: {
@@ -6824,17 +6818,13 @@ const channel = ({ strapi }) => ({
             isCurrent: true
           }
         });
-        try {
-          await strapi.db.query(USER_CHANNEL_UID$1).create({
-            data: {
-              user: user.id,
-              channel: updated.id,
-              grantedBy: user.id
-            }
-          });
-        } catch (e) {
-          strapi.log.warn(`[zhao-channel] register() failed to write user-channel: ${e.message}`);
-        }
+        await strapi.db.query(USER_CHANNEL_UID$1).create({
+          data: {
+            user: user.id,
+            channel: updated.id,
+            grantedBy: user.id
+          }
+        });
         const parentOwner = await strapi.db.query(CHANNEL_MEMBER_UID$3).findOne({
           where: { channel: parentChannel.id, role: "admin" },
           populate: ["user"]
@@ -7069,7 +7059,7 @@ function throwErr(code, status, message) {
 }
 const CHANNEL_UID$1 = "plugin::zhao-channel.channel";
 const CHANNEL_MEMBER_UID$2 = "plugin::zhao-channel.channel-member";
-const USER_UID$2 = "plugin::users-permissions.user";
+const USER_UID$2 = "plugin::zhao-sso.sso-user";
 const USER_INVITE_UID$1 = "plugin::zhao-channel.user-invite";
 function formatChannel(channel2) {
   if (!channel2) return null;
@@ -7149,17 +7139,11 @@ const channelMember = ({ strapi }) => ({
       where: { email: data.email }
     });
     const isNewUser = !user;
-    const ADMIN_CHANNEL_TIERS = ["core", "senior", "global", "authorized", "official", "partner", "agent"];
     if (!user) {
-      const userRole = ADMIN_CHANNEL_TIERS.includes(channel2.channelTier) && data.role === "admin" ? ["channel-admin", "user"] : ["user"];
-      user = await strapi.entityService.create(USER_UID$2, {
-        data: {
-          email: data.email,
-          username: data.email.split("@")[0],
-          provider: "local",
-          confirmed: false,
-          zhaoRoles: userRole
-        }
+      user = await strapi.plugin("zhao-sso").service("sso-user").createUser({
+        email: data.email,
+        username: data.email.split("@")[0],
+        register_channel: "sso_local"
       });
       await strapi.db.query(CHANNEL_MEMBER_UID$2).create({
         data: {
@@ -7364,7 +7348,7 @@ const channelMember = ({ strapi }) => ({
 const USER_CHANNEL_UID = "plugin::zhao-channel.user-channel";
 const ROLE_CHANNEL_UID = "plugin::zhao-auth.role-channel";
 const CHANNEL_MEMBER_UID$1 = "plugin::zhao-channel.channel-member";
-const USER_UID$1 = "plugin::users-permissions.user";
+const USER_UID$1 = "plugin::zhao-sso.sso-user";
 const channelPermission = ({ strapi }) => ({
   async grantChannelsToUser(userId, channelIds, grantedBy) {
     const results = [];
@@ -7577,8 +7561,7 @@ const channelPermission = ({ strapi }) => ({
     }
     const user = await strapi.db.query(USER_UID$1).findOne({
       where: { id: userId },
-      select: ["id", "zhaoRoles"],
-      populate: ["role"]
+      select: ["id"]
     });
     if (user) {
       let roleNames = [];
@@ -7655,8 +7638,7 @@ const channelPermission = ({ strapi }) => ({
     }
     const user = await strapi.db.query(USER_UID$1).findOne({
       where: { id: userId },
-      select: ["id", "zhaoRoles"],
-      populate: ["role"]
+      select: ["id"]
     });
     if (user) {
       let roleNames = [];
@@ -7735,7 +7717,7 @@ const channelPermission = ({ strapi }) => ({
   }
 });
 const USER_INVITE_UID = "plugin::zhao-channel.user-invite";
-const USER_UID = "plugin::users-permissions.user";
+const USER_UID = "plugin::zhao-sso.sso-user";
 const CHANNEL_UID = "plugin::zhao-channel.channel";
 const CHANNEL_MEMBER_UID = "plugin::zhao-channel.channel-member";
 const MAX_DISTRIBUTION_DEPTH = 2;

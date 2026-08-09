@@ -43,6 +43,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   async checkAuth(userId: number, courseDocumentId: string): Promise<{ authorized: boolean; auth?: any }> {
     const course = await strapi.documents("plugin::zhao-course.course").findOne({
       documentId: courseDocumentId,
+      status: "published",
     });
 
     if (!course) {

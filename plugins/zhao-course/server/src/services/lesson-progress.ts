@@ -54,8 +54,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   },
 
   async reportProgress(userId: number, data: { lessonDocumentId: string; playPosition?: number; duration?: number; progress?: number }) {
-    const lesson = await strapi.documents("plugin::zhao-course.course-lesson").findOne({
-      documentId: data.lessonDocumentId,
+    const lesson = await strapi.db.query("plugin::zhao-course.course-lesson").findOne({
+      where: { document_id: data.lessonDocumentId },
       populate: { course: true },
     });
 

@@ -142,6 +142,40 @@ declare const _default: {
     }) => {
         getChannelReport(ctx: any): Promise<void>;
     };
+    ad: ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        getZoneByPosition(ctx: any): Promise<void>;
+        getAllZones(ctx: any): Promise<void>;
+        listZones(ctx: any): Promise<void>;
+        createZone(ctx: any): Promise<void>;
+        findOneZone(ctx: any): Promise<void>;
+        updateZone(ctx: any): Promise<void>;
+        deleteZone(ctx: any): Promise<void>;
+        listContents(ctx: any): Promise<void>;
+        createContent(ctx: any): Promise<void>;
+        findOneContent(ctx: any): Promise<void>;
+        updateContent(ctx: any): Promise<void>;
+        deleteContent(ctx: any): Promise<void>;
+    };
+    poster: ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        getTemplate(ctx: any): Promise<void>;
+        resolveTemplate(ctx: any): Promise<void>;
+        seedTemplates(ctx: any): Promise<void>;
+        listTemplates(ctx: any): Promise<void>;
+        createTemplate(ctx: any): Promise<void>;
+        findOneTemplate(ctx: any): Promise<void>;
+        updateTemplate(ctx: any): Promise<void>;
+        deleteTemplate(ctx: any): Promise<void>;
+        cloneTemplate(ctx: any): Promise<void>;
+        batchSaveElements(ctx: any): Promise<void>;
+        listElements(ctx: any): Promise<void>;
+        createElement(ctx: any): Promise<void>;
+        updateElement(ctx: any): Promise<void>;
+        deleteElement(ctx: any): Promise<void>;
+    };
 };
 export default _default;
 //# sourceMappingURL=index.d.ts.map

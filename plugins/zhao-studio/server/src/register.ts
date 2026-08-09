@@ -18,6 +18,12 @@ export default ({ strapi }: { strapi: any }) => {
       STUDIO_PROMO_VARIANT_NOT_FOUND: "变体不存在",
       STUDIO_PROMO_VARIANT_NO_CONTENT: "变体未关联文章或优惠券",
       STUDIO_PROMO_PLATFORM_CONFIG_DUPLICATE: "渠道+平台配置重复",
+      STUDIO_AD_ZONE_NOT_FOUND: "广告区域不存在",
+      STUDIO_AD_ZONE_CODE_DUPLICATE: "广告区域 code 重复",
+      STUDIO_AD_CONTENT_NOT_FOUND: "广告内容不存在",
+      STUDIO_POSTER_TEMPLATE_NOT_FOUND: "海报模板不存在",
+      STUDIO_POSTER_TEMPLATE_CODE_DUPLICATE: "海报模板 code 重复",
+      STUDIO_POSTER_MISSING_REQUIRED_VAR: "缺少必传变量",
     });
   } catch {}
 };

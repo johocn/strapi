@@ -1,1 +1,2 @@
-export default function BrandVoicePage(): import("react/jsx-runtime").JSX.Element;
+import { default as React } from 'react';
+export default function BrandVoicePage(): React.JSX.Element;

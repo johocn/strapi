@@ -145,5 +145,39 @@ export default () => ({
 
     // 公开路由：A/B 变体选择
     publicRoute('GET', '/variants/pick', 'ab-test.pickVariant'),
+
+    // ============ 广告展示管理 ============
+    publicRoute('GET', '/ads/zones/:position', 'ad.getZoneByPosition'),
+    publicRoute('GET', '/ads/zones', 'ad.getAllZones'),
+
+    adminRoute('GET', '/ad-zones', 'ad.listZones', 'zhao-studio.ad-zone.manage'),
+    adminRoute('POST', '/ad-zones', 'ad.createZone', 'zhao-studio.ad-zone.manage'),
+    adminRoute('GET', '/ad-zones/:id', 'ad.findOneZone', 'zhao-studio.ad-zone.manage'),
+    adminRoute('PUT', '/ad-zones/:id', 'ad.updateZone', 'zhao-studio.ad-zone.manage'),
+    adminRoute('DELETE', '/ad-zones/:id', 'ad.deleteZone', 'zhao-studio.ad-zone.manage'),
+
+    adminRoute('GET', '/ad-contents', 'ad.listContents', 'zhao-studio.ad-content.manage'),
+    adminRoute('POST', '/ad-contents', 'ad.createContent', 'zhao-studio.ad-content.manage'),
+    adminRoute('GET', '/ad-contents/:id', 'ad.findOneContent', 'zhao-studio.ad-content.manage'),
+    adminRoute('PUT', '/ad-contents/:id', 'ad.updateContent', 'zhao-studio.ad-content.manage'),
+    adminRoute('DELETE', '/ad-contents/:id', 'ad.deleteContent', 'zhao-studio.ad-content.manage'),
+
+    // ============ 海报模板管理 ============
+    publicRoute('GET', '/posters/templates/:code', 'poster.getTemplate'),
+    publicRoute('POST', '/posters/render', 'poster.resolveTemplate'),
+    publicRoute('POST', '/posters/seed', 'poster.seedTemplates'),
+
+    adminRoute('GET', '/poster-templates', 'poster.listTemplates', 'zhao-studio.poster-template.manage'),
+    adminRoute('POST', '/poster-templates', 'poster.createTemplate', 'zhao-studio.poster-template.manage'),
+    adminRoute('GET', '/poster-templates/:id', 'poster.findOneTemplate', 'zhao-studio.poster-template.manage'),
+    adminRoute('PUT', '/poster-templates/:id', 'poster.updateTemplate', 'zhao-studio.poster-template.manage'),
+    adminRoute('DELETE', '/poster-templates/:id', 'poster.deleteTemplate', 'zhao-studio.poster-template.manage'),
+    adminRoute('POST', '/poster-templates/:id/clone', 'poster.cloneTemplate', 'zhao-studio.poster-template.manage'),
+    adminRoute('PUT', '/poster-templates/:id/elements', 'poster.batchSaveElements', 'zhao-studio.poster-template.manage'),
+
+    adminRoute('GET', '/poster-elements', 'poster.listElements', 'zhao-studio.poster-element.manage'),
+    adminRoute('POST', '/poster-elements', 'poster.createElement', 'zhao-studio.poster-element.manage'),
+    adminRoute('PUT', '/poster-elements/:id', 'poster.updateElement', 'zhao-studio.poster-element.manage'),
+    adminRoute('DELETE', '/poster-elements/:id', 'poster.deleteElement', 'zhao-studio.poster-element.manage'),
   ],
 });

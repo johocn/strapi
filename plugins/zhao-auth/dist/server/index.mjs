@@ -172,9 +172,10 @@ const authService = ({ strapi: strapi2 }) => {
           const extraConfig = site.extraConfig || {};
           if (featureFlags.sso === true) {
             const loginUrl = extraConfig.ssoLoginUrl || strapi2.plugin("zhao-sso")?.config?.("loginUrl") || "/sso/login";
-            return { enabled: true, loginUrl };
+            const appCode = extraConfig.ssoAppCode || "course";
+            return { enabled: true, loginUrl, appCode };
           }
-          return { enabled: false, loginUrl: "" };
+          return { enabled: false, loginUrl: "", appCode: "" };
         }
       } catch {
       }
@@ -185,11 +186,11 @@ const authService = ({ strapi: strapi2 }) => {
         const flag = Array.isArray(ssoFlag) ? ssoFlag[0] : null;
         if (flag && flag.flagValue === true && flag.enabled !== false) {
           const loginUrl = strapi2.plugin("zhao-sso")?.config?.("loginUrl") || "/sso/login";
-          return { enabled: true, loginUrl };
+          return { enabled: true, loginUrl, appCode: "course" };
         }
       } catch {
       }
-      return { enabled: false, loginUrl: "" };
+      return { enabled: false, loginUrl: "", appCode: "" };
     },
     /**
      * 本地登录验证
@@ -4001,6 +4002,7 @@ const authController = ({ strapi: strapi2 }) => ({
         mode,
         methods: ["password", "sms"],
         ssoLoginUrl: sso.enabled ? sso.loginUrl : null,
+        ssoAppCode: sso.enabled ? sso.appCode : null,
         wechatEnabled: thirdEnabled,
         registerEnabled: true
       };
@@ -4010,6 +4012,7 @@ const authController = ({ strapi: strapi2 }) => ({
         mode: "local",
         methods: ["password"],
         ssoLoginUrl: null,
+        ssoAppCode: null,
         wechatEnabled: false,
         registerEnabled: true
       };
@@ -4614,17 +4617,52 @@ const contentTypes = {
   }
 };
 const isAuthenticated = async (policyContext, config2, { strapi: strapi2 }) => {
-  const authService2 = strapi2.plugin("zhao-auth").service("auth");
-  const token = authService2.extractToken(policyContext);
-  if (!token) {
-    return false;
-  }
   try {
-    const user = await authService2.authenticate(token);
-    policyContext.state.user = user;
-    policyContext.user = user;
-    return true;
+    const ctx = policyContext;
+    const authHeader = ctx?.request?.headers?.authorization || ctx?.headers?.authorization || ctx?.request?.headers?.get?.("authorization");
+    if (!authHeader || typeof authHeader !== "string") return false;
+    const parts = authHeader.split(" ");
+    if (parts.length !== 2 || parts[0] !== "Bearer") return false;
+    const token = parts[1];
+    try {
+      const jwtService2 = strapi2.plugin("zhao-auth").service("jwt");
+      const decoded = await jwtService2.verify(token);
+      const authService2 = strapi2.plugin("zhao-auth").service("auth");
+      const user = await authService2.authenticate(token);
+      ctx.state.user = user;
+      ctx.user = user;
+      return true;
+    } catch {
+      try {
+        const ssoJwtService = strapi2.plugin("zhao-sso")?.service("sso-jwt");
+        if (ssoJwtService && typeof ssoJwtService.verifyToken === "function") {
+          const ssoPayload = await ssoJwtService.verifyToken(token);
+          if (ssoPayload?.sub) {
+            const ssoUser = await strapi2.db.query("plugin::zhao-sso.sso-user").findOne({
+              where: { uuid: ssoPayload.sub }
+            });
+            if (ssoUser) {
+              const user = {
+                id: ssoUser.id,
+                documentId: ssoUser.documentId,
+                uuid: ssoUser.uuid,
+                username: ssoUser.username,
+                email: ssoUser.email,
+                mobile: ssoUser.mobile,
+                roles: ssoPayload.roles || []
+              };
+              ctx.state.user = user;
+              ctx.user = user;
+              return true;
+            }
+          }
+        }
+      } catch (ssoErr) {
+      }
+      return false;
+    }
   } catch (e) {
+    strapi2.log.error("[is-authenticated] policy error:", e?.message || e);
     return false;
   }
 };

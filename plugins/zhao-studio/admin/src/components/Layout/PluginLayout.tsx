@@ -7,6 +7,9 @@ import {
   BarChartOutlined,
   RobotOutlined,
   SyncOutlined,
+  PictureOutlined,
+  FileImageOutlined,
+  FormatPainterOutlined,
 } from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useMyPermissions } from '../../context/PermissionsProvider';
@@ -30,6 +33,9 @@ const menuConfig: MenuConfigItem[] = [
   { key: 'platforms', icon: <SettingOutlined />, label: '平台配置', permission: 'zhao-studio.publish-platform.manage' },
   { key: 'accounts', icon: <SettingOutlined />, label: '账号配置', permission: 'zhao-studio.publish-account.manage' },
   { key: 'ad-slots', icon: <SettingOutlined />, label: '广告位配置', permission: 'zhao-studio.ad-slot.manage' },
+  { key: 'ad-zones', icon: <PictureOutlined />, label: '广告区域', permission: 'zhao-studio.ad-zone.manage' },
+  { key: 'ad-contents', icon: <FileImageOutlined />, label: '广告内容', permission: 'zhao-studio.ad-content.manage' },
+  { key: 'poster-templates', icon: <FormatPainterOutlined />, label: '海报模板', permission: 'zhao-studio.poster-template.manage' },
   { key: 'sync-events', icon: <SyncOutlined />, label: '同步事件', permission: 'zhao-studio.sync-event.manage' },
   { key: 'ai-config', icon: <RobotOutlined />, label: 'AI 配置', permission: 'zhao-studio.article-draft.manage' },
 ];

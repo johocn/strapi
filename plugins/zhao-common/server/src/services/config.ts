@@ -261,6 +261,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
             siteName: "", siteDescription: "", logo: "", favicon: "",
             shareTitle: "", shareDescription: "", shareImage: "",
             sharePath: "/pages/index/index", domain: "",
+            // 新增：海报兜底配置
+            posterDefaultUserName: "", posterDefaultUserAvatar: "",
+            posterDefaultRecommendReason: "",
           },
           auth: {
             mode: "local",
@@ -299,11 +302,14 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         "siteName", "siteDescription", "seoKeywords", "seoDescription",
         "tencentMapKey", "shareTitle", "shareDescription", "icpNumber",
         "customerServiceUrl", "domain",
+        // 新增：海报兜底配置
+        "posterDefaultUserName", "posterDefaultRecommendReason",
       ];
       const DEFAULT_CONFIG: Record<string, string> = {
         siteName: "", siteDescription: "", seoKeywords: "", seoDescription: "",
         tencentMapKey: "", shareTitle: "", shareDescription: "", icpNumber: "",
         customerServiceUrl: "", domain: "",
+        posterDefaultUserName: "", posterDefaultRecommendReason: "",
       };
       const sitePublic: Record<string, any> = {};
       for (const key of PUBLIC_FIELDS) {
@@ -312,6 +318,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       if (fullConfig?.logo) sitePublic.logo = fullConfig.logo;
       if (fullConfig?.favicon) sitePublic.favicon = fullConfig.favicon;
       if (fullConfig?.shareImage) sitePublic.shareImage = fullConfig.shareImage;
+      // 新增：海报默认头像
+      if (fullConfig?.posterDefaultUserAvatar) sitePublic.posterDefaultUserAvatar = fullConfig.posterDefaultUserAvatar;
       result.site = sitePublic;
 
       // 合并模板预设值

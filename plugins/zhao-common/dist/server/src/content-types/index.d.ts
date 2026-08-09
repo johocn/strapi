@@ -342,6 +342,28 @@ declare const _default: {
                     target: string;
                     mappedBy: string;
                 };
+                website_redirect_rules: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    mappedBy: string;
+                };
+                posterDefaultUserName: {
+                    type: string;
+                    maxLength: number;
+                    description: string;
+                };
+                posterDefaultUserAvatar: {
+                    type: string;
+                    multiple: boolean;
+                    required: boolean;
+                    allowedTypes: string[];
+                };
+                posterDefaultRecommendReason: {
+                    type: string;
+                    maxLength: number;
+                    description: string;
+                };
             };
         };
     };

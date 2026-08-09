@@ -4,7 +4,7 @@ import { isAdminContext } from "./utils/registration-context";
 
 const USER_CHANNEL_UID = "plugin::zhao-channel.user-channel";
 const ROLE_CHANNEL_UID = "plugin::zhao-channel.role-channel";
-const USER_UID = "plugin::users-permissions.user";
+const USER_UID = "plugin::zhao-sso.sso-user";
 
 const USER_INVITE_UID = "plugin::zhao-channel.user-invite";
 const CHANNEL_MEMBER_UID = "plugin::zhao-channel.channel-member";
@@ -264,7 +264,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       await setRoleChannelCache(targetId, allChannelIds);
 
       const usersWithRole = await strapi.db
-        .query("plugin::users-permissions.user")
+        .query(USER_UID)
         .findMany({
           where: { role: targetId },
           select: ["id"],

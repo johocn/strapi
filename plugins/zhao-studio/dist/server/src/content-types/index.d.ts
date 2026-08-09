@@ -1125,6 +1125,632 @@ declare const _default: {
             };
         };
     };
+    'ad-zone': {
+        schema: {
+            kind: string;
+            collectionName: string;
+            info: {
+                singularName: string;
+                pluralName: string;
+                displayName: string;
+                description: string;
+            };
+            options: {
+                draftAndPublish: boolean;
+            };
+            pluginOptions: {
+                "content-manager": {
+                    visible: boolean;
+                };
+                "content-type-builder": {
+                    visible: boolean;
+                };
+            };
+            attributes: {
+                name: {
+                    type: string;
+                    required: boolean;
+                };
+                code: {
+                    type: string;
+                    required: boolean;
+                    unique: boolean;
+                };
+                site: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    required: boolean;
+                };
+                position: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
+                displayMode: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
+                suggestedWidth: {
+                    type: string;
+                };
+                suggestedHeight: {
+                    type: string;
+                };
+                adSlotCode: {
+                    type: string;
+                };
+                description: {
+                    type: string;
+                };
+                isActive: {
+                    type: string;
+                    default: boolean;
+                };
+                sortOrder: {
+                    type: string;
+                    default: number;
+                };
+                adContents: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    mappedBy: string;
+                };
+                createdAt: {
+                    type: string;
+                };
+                updatedAt: {
+                    type: string;
+                };
+            };
+        };
+    };
+    'ad-content': {
+        schema: {
+            kind: string;
+            collectionName: string;
+            info: {
+                singularName: string;
+                pluralName: string;
+                displayName: string;
+                description: string;
+            };
+            options: {
+                draftAndPublish: boolean;
+            };
+            pluginOptions: {
+                "content-manager": {
+                    visible: boolean;
+                };
+                "content-type-builder": {
+                    visible: boolean;
+                };
+            };
+            attributes: {
+                name: {
+                    type: string;
+                    required: boolean;
+                };
+                adZone: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    inversedBy: string;
+                    required: boolean;
+                };
+                site: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    required: boolean;
+                };
+                contentType: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                    required: boolean;
+                };
+                isActive: {
+                    type: string;
+                    default: boolean;
+                };
+                sortOrder: {
+                    type: string;
+                    default: number;
+                };
+                priority: {
+                    type: string;
+                    default: number;
+                };
+                startAt: {
+                    type: string;
+                };
+                endAt: {
+                    type: string;
+                };
+                frequencyLimit: {
+                    type: string;
+                    default: number;
+                };
+                frequencyPeriod: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
+                title: {
+                    type: string;
+                };
+                titleColor: {
+                    type: string;
+                    default: string;
+                };
+                titleFontSize: {
+                    type: string;
+                    default: number;
+                };
+                titleFontWeight: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
+                titleAlign: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
+                titleOverflow: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
+                titleMaxLines: {
+                    type: string;
+                    default: number;
+                };
+                titleLineHeight: {
+                    type: string;
+                    default: number;
+                };
+                subtitle: {
+                    type: string;
+                };
+                subtitleColor: {
+                    type: string;
+                    default: string;
+                };
+                subtitleFontSize: {
+                    type: string;
+                    default: number;
+                };
+                subtitleOverflow: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
+                subtitleMaxLines: {
+                    type: string;
+                    default: number;
+                };
+                ctaText: {
+                    type: string;
+                };
+                ctaTextColor: {
+                    type: string;
+                    default: string;
+                };
+                ctaBgColor: {
+                    type: string;
+                    default: string;
+                };
+                ctaFontSize: {
+                    type: string;
+                    default: number;
+                };
+                ctaBorderRadius: {
+                    type: string;
+                    default: number;
+                };
+                ctaPosition: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
+                badgeText: {
+                    type: string;
+                };
+                badgeBgColor: {
+                    type: string;
+                    default: string;
+                };
+                badgeTextColor: {
+                    type: string;
+                    default: string;
+                };
+                badgePosition: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
+                images: {
+                    type: string;
+                    default: never[];
+                };
+                videoUrl: {
+                    type: string;
+                };
+                videoPoster: {
+                    type: string;
+                };
+                videoAutoplay: {
+                    type: string;
+                    default: boolean;
+                };
+                videoMuted: {
+                    type: string;
+                    default: boolean;
+                };
+                videoLoop: {
+                    type: string;
+                    default: boolean;
+                };
+                videoControls: {
+                    type: string;
+                    default: boolean;
+                };
+                htmlContent: {
+                    type: string;
+                };
+                linkType: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
+                linkUrl: {
+                    type: string;
+                };
+                linkTarget: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
+                displayStyle: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
+                width: {
+                    type: string;
+                };
+                height: {
+                    type: string;
+                };
+                borderRadius: {
+                    type: string;
+                    default: number;
+                };
+                backgroundColor: {
+                    type: string;
+                    default: string;
+                };
+                slideshowAutoplay: {
+                    type: string;
+                    default: boolean;
+                };
+                slideshowInterval: {
+                    type: string;
+                    default: number;
+                };
+                slideshowEffect: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
+                slideshowLoop: {
+                    type: string;
+                    default: boolean;
+                };
+                slideshowShowDots: {
+                    type: string;
+                    default: boolean;
+                };
+                slideshowShowArrows: {
+                    type: string;
+                    default: boolean;
+                };
+                slideshowPauseOnHover: {
+                    type: string;
+                    default: boolean;
+                };
+                closeDelay: {
+                    type: string;
+                    default: number;
+                };
+                showCountdown: {
+                    type: string;
+                    default: boolean;
+                };
+                createdAt: {
+                    type: string;
+                };
+                updatedAt: {
+                    type: string;
+                };
+            };
+        };
+    };
+    'poster-template': {
+        schema: {
+            kind: string;
+            collectionName: string;
+            info: {
+                singularName: string;
+                pluralName: string;
+                displayName: string;
+                description: string;
+            };
+            options: {
+                draftAndPublish: boolean;
+            };
+            pluginOptions: {
+                "content-manager": {
+                    visible: boolean;
+                };
+                "content-type-builder": {
+                    visible: boolean;
+                };
+            };
+            attributes: {
+                name: {
+                    type: string;
+                    required: boolean;
+                };
+                code: {
+                    type: string;
+                    required: boolean;
+                    unique: boolean;
+                };
+                site: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    required: boolean;
+                };
+                canvasWidth: {
+                    type: string;
+                    default: number;
+                };
+                canvasHeight: {
+                    type: string;
+                    default: number;
+                };
+                backgroundColor: {
+                    type: string;
+                    default: string;
+                };
+                backgroundImage: {
+                    type: string;
+                };
+                backgroundMode: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
+                requiredVariables: {
+                    type: string;
+                    default: string[];
+                };
+                optionalVariables: {
+                    type: string;
+                    default: string[];
+                };
+                isActive: {
+                    type: string;
+                    default: boolean;
+                };
+                isDefault: {
+                    type: string;
+                    default: boolean;
+                };
+                elements: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    mappedBy: string;
+                };
+                thumbnail: {
+                    type: string;
+                };
+                description: {
+                    type: string;
+                };
+            };
+        };
+    };
+    'poster-element': {
+        schema: {
+            kind: string;
+            collectionName: string;
+            info: {
+                singularName: string;
+                pluralName: string;
+                displayName: string;
+                description: string;
+            };
+            options: {
+                draftAndPublish: boolean;
+            };
+            pluginOptions: {
+                "content-manager": {
+                    visible: boolean;
+                };
+                "content-type-builder": {
+                    visible: boolean;
+                };
+            };
+            attributes: {
+                posterTemplate: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    inversedBy: string;
+                    required: boolean;
+                };
+                elementType: {
+                    type: string;
+                    enum: string[];
+                    required: boolean;
+                    default: string;
+                };
+                elementKey: {
+                    type: string;
+                    required: boolean;
+                };
+                elementName: {
+                    type: string;
+                };
+                sortOrder: {
+                    type: string;
+                    default: number;
+                };
+                isVariable: {
+                    type: string;
+                    default: boolean;
+                };
+                variableName: {
+                    type: string;
+                };
+                defaultValue: {
+                    type: string;
+                };
+                content: {
+                    type: string;
+                };
+                x: {
+                    type: string;
+                    default: number;
+                };
+                y: {
+                    type: string;
+                    default: number;
+                };
+                width: {
+                    type: string;
+                    default: number;
+                };
+                height: {
+                    type: string;
+                    default: number;
+                };
+                zIndex: {
+                    type: string;
+                    default: number;
+                };
+                rotation: {
+                    type: string;
+                    default: number;
+                };
+                opacity: {
+                    type: string;
+                    default: number;
+                };
+                fontSize: {
+                    type: string;
+                    default: number;
+                };
+                fontColor: {
+                    type: string;
+                    default: string;
+                };
+                fontWeight: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
+                fontFamily: {
+                    type: string;
+                    default: string;
+                };
+                textAlign: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
+                lineHeight: {
+                    type: string;
+                    default: number;
+                };
+                letterSpacing: {
+                    type: string;
+                    default: number;
+                };
+                borderRadius: {
+                    type: string;
+                    default: number;
+                };
+                borderWidth: {
+                    type: string;
+                    default: number;
+                };
+                borderColor: {
+                    type: string;
+                    default: string;
+                };
+                elementBgColor: {
+                    type: string;
+                };
+                imageFit: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
+                qrContentMode: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
+                qrBaseUrl: {
+                    type: string;
+                };
+                qrInviteParam: {
+                    type: string;
+                    default: string;
+                };
+                qrInviteSeparator: {
+                    type: string;
+                    default: string;
+                };
+                qrFallbackMode: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
+                qrErrorLevel: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
+                qrSize: {
+                    type: string;
+                    default: number;
+                };
+                qrColor: {
+                    type: string;
+                    default: string;
+                };
+                qrBgColor: {
+                    type: string;
+                    default: string;
+                };
+                shapeType: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
+            };
+        };
+    };
 };
 export default _default;
 //# sourceMappingURL=index.d.ts.map

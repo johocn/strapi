@@ -8,6 +8,7 @@ import siteTemplate from "./site-template";
 import config from "./config";
 import migrationRunner from "./migration-runner";
 import globalConfig from "./global-config";
+import dbHelper from "./db-helper";
 
 export default {
   logger,
@@ -20,4 +21,5 @@ export default {
   config,
   "migration-runner": migrationRunner,
   "global-config": globalConfig,
+  "db-helper": dbHelper,
 };

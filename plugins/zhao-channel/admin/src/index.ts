@@ -12,11 +12,7 @@ export default {
         id: `${PLUGIN_ID}.plugin.name`,
         defaultMessage: PLUGIN_ID,
       },
-      Component: async () => {
-        const { App } = await import("./pages/App");
-
-        return App;
-      },
+      Component: () => import("./pages/App").then((mod) => ({ default: mod.App })),
     });
 
     app.registerPlugin({

@@ -4,6 +4,7 @@ declare const _default: {
     }) => {
         ensureDefault(siteId: number): Promise<any>;
         find(siteId: number): Promise<any>;
+        get(siteId: number): Promise<any>;
         update(siteId: number, data: any): Promise<any>;
         findPublic(siteId: number): Promise<any>;
     };
@@ -12,6 +13,7 @@ declare const _default: {
     }) => {
         ensureDefault(siteId: number): Promise<any>;
         find(siteId: number): Promise<any>;
+        get(siteId: number): Promise<any>;
         update(siteId: number, data: any): Promise<any>;
         findPublic(siteId: number): Promise<any>;
     };
@@ -359,10 +361,12 @@ declare const _default: {
         strapi: import('@strapi/types/dist/core').Strapi;
     }) => {
         buildOrganization(brandInfo: any, seoConfig: any): any;
+        buildLocalBusiness(brandInfo: any, seoConfig: any): any;
         buildArticle(article: any, brandInfo: any): any;
         buildProduct(product: any, brandInfo: any): any;
         buildHowTo(tutorial: any): any;
         buildFAQ(faqs: any[]): any;
+        buildVideo(tutorial: any): any;
         buildBreadcrumb(items: Array<{
             name: string;
             url: string;
@@ -372,13 +376,24 @@ declare const _default: {
     "llms-txt": ({ strapi }: {
         strapi: import('@strapi/types/dist/core').Strapi;
     }) => {
-        generate(siteId: number): Promise<string>;
+        generate(siteId: number, siteUrl: string): Promise<string>;
     };
     sitemap: ({ strapi }: {
         strapi: import('@strapi/types/dist/core').Strapi;
     }) => {
         generate(siteId: number, siteUrl: string): Promise<string>;
-        _urlEntry(siteUrl: string, path: string, priority: string, changefreq: string, lastmod?: string): string;
+        _urlEntry(siteUrl: string, path: string, priority: string, changefreq: string, lastmod?: string, imageUrl?: string, hreflangEntries?: Array<{
+            hreflang: string;
+            href: string;
+        }>): string;
+        _buildHreflangEntries(seoConfig: any, siteUrl: string): Array<{
+            hreflang: string;
+            href: string;
+        }>;
+        _buildItemHreflang(seoConfig: any, siteUrl: string, path: string): Array<{
+            hreflang: string;
+            href: string;
+        }>;
     };
     robots: ({ strapi }: {
         strapi: import('@strapi/types/dist/core').Strapi;
@@ -414,6 +429,36 @@ declare const _default: {
         listByCategory(siteId: number | null, category: string): Promise<any[]>;
         resolveVariables(siteId: number | null, documentId: string, variables: Record<string, string>): Promise<any>;
         getRefContent(siteId: number | null, category: string): Promise<string>;
+    };
+    "seo-meta": ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        generate(siteId: number, requestHost: string): Promise<any>;
+        _buildHreflang(seoConfig: any, siteUrl: string): Array<{
+            hreflang: string;
+            href: string;
+        }>;
+        getAiCrawlerList(): string[];
+    };
+    cache: ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        get(key: string, ttl: number, generator: () => Promise<string>): Promise<string>;
+        invalidate(key?: string): void;
+    };
+    feed: ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        generateRSS(siteId: number, siteUrl: string): Promise<string>;
+        generateAtom(siteId: number, siteUrl: string): Promise<string>;
+    };
+    redirect: ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        match(siteId: number, requestPath: string): Promise<{
+            toUrl: string;
+            statusCode: number;
+        } | null>;
     };
 };
 export default _default;

@@ -90,7 +90,7 @@ const kind$2 = "collectionType";
 const collectionName$2 = "wealth_customer_products";
 const info$2 = { "singularName": "wealth-customer-product", "pluralName": "wealth-customer-products", "displayName": "客户自选产品", "description": "客户关注的产品列表" };
 const options$2 = { "draftAndPublish": false };
-const attributes$2 = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::users-permissions.user" }, "product": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-product" }, "channel": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-channel.channel" }, "followTime": { "type": "datetime" }, "sortOrder": { "type": "integer", "default": 0 }, "remark": { "type": "string" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const attributes$2 = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user" }, "product": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-product" }, "channel": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-channel.channel" }, "followTime": { "type": "datetime" }, "sortOrder": { "type": "integer", "default": 0 }, "remark": { "type": "string" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
 const wealthCustomerProduct = {
   kind: kind$2,
   collectionName: collectionName$2,
@@ -8457,7 +8457,7 @@ const recommendService = ({ strapi }) => ({
       });
     }
     if (recommendations.length < limit) {
-      const user = await strapi.db.query("plugin::users-permissions.user").findOne({
+      const user = await strapi.db.query("plugin::zhao-sso.sso-user").findOne({
         where: { id: userId }
       });
       if (user && user.riskPreference) {

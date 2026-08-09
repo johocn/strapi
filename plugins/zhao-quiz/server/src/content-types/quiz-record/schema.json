@@ -13,7 +13,7 @@
     "user": {
       "type": "relation",
       "relation": "manyToOne",
-      "target": "plugin::users-permissions.user"
+      "target": "plugin::zhao-sso.sso-user"
     },
     "quiz": {
       "type": "relation",
@@ -46,7 +46,7 @@
     "grader": {
       "type": "relation",
       "relation": "manyToOne",
-      "target": "plugin::users-permissions.user"
+      "target": "plugin::zhao-sso.sso-user"
     },
     "gradedAt": {
       "type": "datetime"

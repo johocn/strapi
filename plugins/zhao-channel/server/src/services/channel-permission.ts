@@ -12,7 +12,7 @@ import { getDescendantIdsByPath } from "../utils/path";
 const USER_CHANNEL_UID = "plugin::zhao-channel.user-channel";
 const ROLE_CHANNEL_UID = "plugin::zhao-auth.role-channel";
 const CHANNEL_MEMBER_UID = "plugin::zhao-channel.channel-member";
-const USER_UID = "plugin::users-permissions.user";
+const USER_UID = "plugin::zhao-sso.sso-user";
 
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async grantChannelsToUser(userId: number, channelIds: number[], grantedBy: number) {
@@ -254,8 +254,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
     const user = await strapi.db.query(USER_UID).findOne({
       where: { id: userId },
-      select: ["id", "zhaoRoles"],
-      populate: ["role"],
+      select: ["id"],
     });
 
     if (user) {
@@ -342,8 +341,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     // 源 2：role-channel 表（角色授权）；admin 返回全部渠道
     const user = await strapi.db.query(USER_UID).findOne({
       where: { id: userId },
-      select: ["id", "zhaoRoles"],
-      populate: ["role"],
+      select: ["id"],
     });
 
     if (user) {

@@ -1,0 +1,51 @@
+declare const _default: {
+  "kind": "collectionType",
+  "collectionName": "zhao_studio_poster_templates",
+  "info": {
+    "singularName": "poster-template",
+    "pluralName": "poster-templates",
+    "displayName": "海报模板",
+    "description": "自定义海报模板设计"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "content-manager": { "visible": true },
+    "content-type-builder": { "visible": true }
+  },
+  "attributes": {
+    "name": { "type": "string", "required": true },
+    "code": { "type": "string", "required": true, "unique": true },
+    "site": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-common.site-config",
+      "required": true
+    },
+    "canvasWidth": { "type": "integer", "default": 600 },
+    "canvasHeight": { "type": "integer", "default": 1000 },
+    "backgroundColor": { "type": "string", "default": "#FFFFFF" },
+    "backgroundImage": { "type": "string" },
+    "backgroundMode": {
+      "type": "enumeration",
+      "enum": ["cover", "contain", "stretch", "tile"],
+      "default": "cover"
+    },
+    "requiredVariables": { "type": "json", "default": ["title", "description", "image_url", "qr_code"] },
+    "optionalVariables": { "type": "json", "default": ["market_price", "sale_price", "invite_code"] },
+    "isActive": { "type": "boolean", "default": true },
+    "isDefault": { "type": "boolean", "default": false },
+    "elements": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-studio.poster-element",
+      "mappedBy": "posterTemplate"
+    },
+    "thumbnail": { "type": "string" },
+    "description": { "type": "text" }
+  }
+}
+;
+
+export default _default;

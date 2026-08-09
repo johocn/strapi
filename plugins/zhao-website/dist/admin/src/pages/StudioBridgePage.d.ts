@@ -1,2 +1,3 @@
-declare const StudioBridgePage: () => import("react/jsx-runtime").JSX.Element;
+import { default as React } from 'react';
+declare const StudioBridgePage: () => React.JSX.Element;
 export default StudioBridgePage;

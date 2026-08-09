@@ -48,5 +48,17 @@ declare const _default: {
     "site-info": {
         info(ctx: any): Promise<void>;
     };
+    "seo-meta": {
+        meta(ctx: any): Promise<void>;
+    };
+    "knowledge-graph": {
+        exportGraph(ctx: any): Promise<void>;
+        exportEntity(ctx: any): Promise<void>;
+        exportFacts(ctx: any): Promise<void>;
+    };
+    feed: {
+        rss(ctx: any): Promise<void>;
+        atom(ctx: any): Promise<void>;
+    };
 };
 export default _default;

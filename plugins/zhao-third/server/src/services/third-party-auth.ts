@@ -1,7 +1,7 @@
 import type { Core } from "@strapi/strapi";
 import { decryptWechatData } from "../utils/wechat-crypto";
 
-const USER_UID = "plugin::users-permissions.user";
+const USER_UID = "plugin::zhao-sso.sso-user";
 
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
   /**
@@ -188,14 +188,16 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       : "https://api.weixin.qq.com/sns/oauth2/access_token";
 
     const params = new URLSearchParams();
+    const cleanAppId = (config.appId || "").trim();
+    const cleanAppSecret = (config.appSecret || "").trim();
     if (appType === "mini_program") {
-      params.set("appid", config.appId);
-      params.set("secret", config.appSecret);
+      params.set("appid", cleanAppId);
+      params.set("secret", cleanAppSecret);
       params.set("js_code", code);
       params.set("grant_type", "authorization_code");
     } else {
-      params.set("appid", config.appId);
-      params.set("secret", config.appSecret);
+      params.set("appid", cleanAppId);
+      params.set("secret", cleanAppSecret);
       params.set("code", code);
       params.set("grant_type", "authorization_code");
     }
@@ -322,15 +324,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     const username = `${prefix}_${tokenResult.openId.substring(0, 16)}`;
     const email = `${username}@third.placeholder`;
 
-    const user = await strapi.db.query(USER_UID).create({
-      data: {
-        username,
-        email,
-        provider: platform,
-        password: Math.random().toString(36).substring(2, 18),
-        confirmed: true,
-        blocked: false,
-      },
+    const user = await strapi.plugin("zhao-sso").service("sso-user").createUser({
+      username,
+      email,
+      password: Math.random().toString(36).substring(2, 18),
+      register_channel: `sso_${platform}`,
     });
 
     // 尝试处理邀请码
@@ -475,18 +473,22 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     }
 
     const host = (ctx.request.headers["x-forwarded-host"] as string) || ctx.request.host;
-    let siteId: string | undefined;
+    // 优先用 site-resolver 中间件已解析的 siteDocumentId
+    let siteId: string | undefined = ctx.state?.siteDocumentId;
 
-    try {
-      const configService = strapi.plugin("zhao-common").service("config");
-      if (configService) {
-        const site = await configService.getSiteByDomain(host);
-        if (site) {
-          siteId = site.documentId;
+    if (!siteId) {
+      try {
+        // 注意：方法名是 getConfigByDomain（在 site-config 服务下），不是 getSiteByDomain
+        const siteConfigService = strapi.plugin("zhao-common").service("site-config");
+        if (siteConfigService && typeof siteConfigService.getConfigByDomain === "function") {
+          const site = await siteConfigService.getConfigByDomain(host);
+          if (site) {
+            siteId = site.documentId;
+          }
         }
+      } catch (e) {
+        strapi.log.warn(`[zhao-third] 无法根据域名 ${host} 获取站点配置: ${(e as Error).message}`);
       }
-    } catch (e) {
-      strapi.log.warn(`[zhao-third] 无法根据域名 ${host} 获取站点配置: ${(e as Error).message}`);
     }
 
     try {

@@ -23,6 +23,30 @@ const actions = [
     uid: 'delete',
     pluginName: 'zhao-studio',
   },
+  {
+    section: 'plugins',
+    displayName: 'Ad Zone Manage',
+    uid: 'ad-zone.manage',
+    pluginName: 'zhao-studio',
+  },
+  {
+    section: 'plugins',
+    displayName: 'Ad Content Manage',
+    uid: 'ad-content.manage',
+    pluginName: 'zhao-studio',
+  },
+  {
+    section: 'plugins',
+    displayName: 'Poster Template Manage',
+    uid: 'poster-template.manage',
+    pluginName: 'zhao-studio',
+  },
+  {
+    section: 'plugins',
+    displayName: 'Poster Element Manage',
+    uid: 'poster-element.manage',
+    pluginName: 'zhao-studio',
+  },
 ];
 
 export default { actions };

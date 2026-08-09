@@ -12,6 +12,8 @@ import promoChannel from './promo-channel';
 import promoCampaign from './promo-campaign';
 import abTest from './ab-test';
 import channelReport from './channel-report';
+import ad from './ad';
+import poster from './poster';
 
 export default {
   collect,
@@ -28,4 +30,6 @@ export default {
   'promo-campaign': promoCampaign,
   'ab-test': abTest,
   'channel-report': channelReport,
+  ad,
+  'poster': poster,
 };

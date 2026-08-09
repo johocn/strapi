@@ -23,13 +23,13 @@ declare const _default: {
     "verifier": {
       "type": "relation",
       "relation": "manyToOne",
-      "target": "plugin::users-permissions.user",
+      "target": "plugin::zhao-sso.sso-user",
       "required": true
     },
     "verifiedUser": {
       "type": "relation",
       "relation": "manyToOne",
-      "target": "plugin::users-permissions.user",
+      "target": "plugin::zhao-sso.sso-user",
       "required": true
     },
     "channel": {

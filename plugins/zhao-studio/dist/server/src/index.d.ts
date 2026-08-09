@@ -4,7 +4,7 @@ declare const _default: {
     }) => void;
     bootstrap: ({ strapi }: {
         strapi: any;
-    }) => void;
+    }) => Promise<void>;
     destroy: ({ strapi }: {
         strapi: any;
     }) => void;
@@ -162,6 +162,40 @@ declare const _default: {
             strapi: import('@strapi/types/dist/core').Strapi;
         }) => {
             getChannelReport(ctx: any): Promise<void>;
+        };
+        ad: ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            getZoneByPosition(ctx: any): Promise<void>;
+            getAllZones(ctx: any): Promise<void>;
+            listZones(ctx: any): Promise<void>;
+            createZone(ctx: any): Promise<void>;
+            findOneZone(ctx: any): Promise<void>;
+            updateZone(ctx: any): Promise<void>;
+            deleteZone(ctx: any): Promise<void>;
+            listContents(ctx: any): Promise<void>;
+            createContent(ctx: any): Promise<void>;
+            findOneContent(ctx: any): Promise<void>;
+            updateContent(ctx: any): Promise<void>;
+            deleteContent(ctx: any): Promise<void>;
+        };
+        poster: ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            getTemplate(ctx: any): Promise<void>;
+            resolveTemplate(ctx: any): Promise<void>;
+            seedTemplates(ctx: any): Promise<void>;
+            listTemplates(ctx: any): Promise<void>;
+            createTemplate(ctx: any): Promise<void>;
+            findOneTemplate(ctx: any): Promise<void>;
+            updateTemplate(ctx: any): Promise<void>;
+            deleteTemplate(ctx: any): Promise<void>;
+            cloneTemplate(ctx: any): Promise<void>;
+            batchSaveElements(ctx: any): Promise<void>;
+            listElements(ctx: any): Promise<void>;
+            createElement(ctx: any): Promise<void>;
+            updateElement(ctx: any): Promise<void>;
+            deleteElement(ctx: any): Promise<void>;
         };
     };
     routes: {
@@ -536,6 +570,75 @@ declare const _default: {
                 groupBy?: "day" | "campaign" | "variant";
             }): Promise<any>;
             _resetCache(): void;
+        };
+        ad: ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            getZoneByPosition(position: string, siteDomain?: string): Promise<{
+                zone: null;
+                contents: never[];
+            } | {
+                zone: import('@strapi/types/dist/modules/documents').AnyDocument;
+                contents: any;
+            }>;
+            getAllZones(siteDomain?: string): Promise<any[]>;
+            listZones(filters?: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument[]>;
+            createZone(data: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
+            findOneZone(documentId: string): Promise<import('@strapi/types/dist/modules/documents').AnyDocument | null>;
+            updateZone(documentId: string, data: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument | null>;
+            deleteZone(documentId: string): Promise<{
+                documentId: import('@strapi/types/dist/modules/documents').ID;
+                entries: import('@strapi/types/dist/modules/documents').Result<TContentTypeUID, TParams>[];
+            }>;
+            listContents(filters?: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument[]>;
+            createContent(data: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
+            findOneContent(documentId: string): Promise<import('@strapi/types/dist/modules/documents').AnyDocument | null>;
+            updateContent(documentId: string, data: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument | null>;
+            deleteContent(documentId: string): Promise<{
+                documentId: import('@strapi/types/dist/modules/documents').ID;
+                entries: import('@strapi/types/dist/modules/documents').Result<TContentTypeUID, TParams>[];
+            }>;
+        };
+        poster: ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            getTemplate(code: string): Promise<any>;
+            resolveTemplate(code: string, variables: Record<string, any>): Promise<{
+                template: {
+                    canvasWidth: any;
+                    canvasHeight: any;
+                    backgroundColor: any;
+                    backgroundImage: any;
+                    backgroundMode: any;
+                };
+                elements: any;
+            } | null>;
+            listTemplates(filters?: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument[]>;
+            createTemplate(data: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
+            findOneTemplate(documentId: string): Promise<any>;
+            updateTemplate(documentId: string, data: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument | null>;
+            deleteTemplate(documentId: string): Promise<{
+                documentId: import('@strapi/types/dist/modules/documents').ID;
+                entries: import('@strapi/types/dist/modules/documents').Result<TContentTypeUID, TParams>[];
+            }>;
+            cloneTemplate(documentId: string): Promise<any>;
+            batchSaveElements(templateDocumentId: string, elements: any[]): Promise<import('@strapi/types/dist/modules/documents').AnyDocument[]>;
+            listElements(filters?: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument[]>;
+            createElement(data: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
+            updateElement(documentId: string, data: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument | null>;
+            deleteElement(documentId: string): Promise<{
+                documentId: import('@strapi/types/dist/modules/documents').ID;
+                entries: import('@strapi/types/dist/modules/documents').Result<TContentTypeUID, TParams>[];
+            }>;
+            seedDefaultTemplate(): Promise<{
+                success: boolean;
+                reason: string;
+                templates?: undefined;
+            } | {
+                success: boolean;
+                templates: number;
+                reason?: undefined;
+            }>;
         };
     };
     policies: {};
@@ -1663,6 +1766,632 @@ declare const _default: {
                     };
                     description: {
                         type: string;
+                    };
+                };
+            };
+        };
+        'ad-zone': {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                    description: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                pluginOptions: {
+                    "content-manager": {
+                        visible: boolean;
+                    };
+                    "content-type-builder": {
+                        visible: boolean;
+                    };
+                };
+                attributes: {
+                    name: {
+                        type: string;
+                        required: boolean;
+                    };
+                    code: {
+                        type: string;
+                        required: boolean;
+                        unique: boolean;
+                    };
+                    site: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        required: boolean;
+                    };
+                    position: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    displayMode: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    suggestedWidth: {
+                        type: string;
+                    };
+                    suggestedHeight: {
+                        type: string;
+                    };
+                    adSlotCode: {
+                        type: string;
+                    };
+                    description: {
+                        type: string;
+                    };
+                    isActive: {
+                        type: string;
+                        default: boolean;
+                    };
+                    sortOrder: {
+                        type: string;
+                        default: number;
+                    };
+                    adContents: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    createdAt: {
+                        type: string;
+                    };
+                    updatedAt: {
+                        type: string;
+                    };
+                };
+            };
+        };
+        'ad-content': {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                    description: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                pluginOptions: {
+                    "content-manager": {
+                        visible: boolean;
+                    };
+                    "content-type-builder": {
+                        visible: boolean;
+                    };
+                };
+                attributes: {
+                    name: {
+                        type: string;
+                        required: boolean;
+                    };
+                    adZone: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        inversedBy: string;
+                        required: boolean;
+                    };
+                    site: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        required: boolean;
+                    };
+                    contentType: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                        required: boolean;
+                    };
+                    isActive: {
+                        type: string;
+                        default: boolean;
+                    };
+                    sortOrder: {
+                        type: string;
+                        default: number;
+                    };
+                    priority: {
+                        type: string;
+                        default: number;
+                    };
+                    startAt: {
+                        type: string;
+                    };
+                    endAt: {
+                        type: string;
+                    };
+                    frequencyLimit: {
+                        type: string;
+                        default: number;
+                    };
+                    frequencyPeriod: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    title: {
+                        type: string;
+                    };
+                    titleColor: {
+                        type: string;
+                        default: string;
+                    };
+                    titleFontSize: {
+                        type: string;
+                        default: number;
+                    };
+                    titleFontWeight: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    titleAlign: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    titleOverflow: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    titleMaxLines: {
+                        type: string;
+                        default: number;
+                    };
+                    titleLineHeight: {
+                        type: string;
+                        default: number;
+                    };
+                    subtitle: {
+                        type: string;
+                    };
+                    subtitleColor: {
+                        type: string;
+                        default: string;
+                    };
+                    subtitleFontSize: {
+                        type: string;
+                        default: number;
+                    };
+                    subtitleOverflow: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    subtitleMaxLines: {
+                        type: string;
+                        default: number;
+                    };
+                    ctaText: {
+                        type: string;
+                    };
+                    ctaTextColor: {
+                        type: string;
+                        default: string;
+                    };
+                    ctaBgColor: {
+                        type: string;
+                        default: string;
+                    };
+                    ctaFontSize: {
+                        type: string;
+                        default: number;
+                    };
+                    ctaBorderRadius: {
+                        type: string;
+                        default: number;
+                    };
+                    ctaPosition: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    badgeText: {
+                        type: string;
+                    };
+                    badgeBgColor: {
+                        type: string;
+                        default: string;
+                    };
+                    badgeTextColor: {
+                        type: string;
+                        default: string;
+                    };
+                    badgePosition: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    images: {
+                        type: string;
+                        default: never[];
+                    };
+                    videoUrl: {
+                        type: string;
+                    };
+                    videoPoster: {
+                        type: string;
+                    };
+                    videoAutoplay: {
+                        type: string;
+                        default: boolean;
+                    };
+                    videoMuted: {
+                        type: string;
+                        default: boolean;
+                    };
+                    videoLoop: {
+                        type: string;
+                        default: boolean;
+                    };
+                    videoControls: {
+                        type: string;
+                        default: boolean;
+                    };
+                    htmlContent: {
+                        type: string;
+                    };
+                    linkType: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    linkUrl: {
+                        type: string;
+                    };
+                    linkTarget: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    displayStyle: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    width: {
+                        type: string;
+                    };
+                    height: {
+                        type: string;
+                    };
+                    borderRadius: {
+                        type: string;
+                        default: number;
+                    };
+                    backgroundColor: {
+                        type: string;
+                        default: string;
+                    };
+                    slideshowAutoplay: {
+                        type: string;
+                        default: boolean;
+                    };
+                    slideshowInterval: {
+                        type: string;
+                        default: number;
+                    };
+                    slideshowEffect: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    slideshowLoop: {
+                        type: string;
+                        default: boolean;
+                    };
+                    slideshowShowDots: {
+                        type: string;
+                        default: boolean;
+                    };
+                    slideshowShowArrows: {
+                        type: string;
+                        default: boolean;
+                    };
+                    slideshowPauseOnHover: {
+                        type: string;
+                        default: boolean;
+                    };
+                    closeDelay: {
+                        type: string;
+                        default: number;
+                    };
+                    showCountdown: {
+                        type: string;
+                        default: boolean;
+                    };
+                    createdAt: {
+                        type: string;
+                    };
+                    updatedAt: {
+                        type: string;
+                    };
+                };
+            };
+        };
+        'poster-template': {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                    description: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                pluginOptions: {
+                    "content-manager": {
+                        visible: boolean;
+                    };
+                    "content-type-builder": {
+                        visible: boolean;
+                    };
+                };
+                attributes: {
+                    name: {
+                        type: string;
+                        required: boolean;
+                    };
+                    code: {
+                        type: string;
+                        required: boolean;
+                        unique: boolean;
+                    };
+                    site: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        required: boolean;
+                    };
+                    canvasWidth: {
+                        type: string;
+                        default: number;
+                    };
+                    canvasHeight: {
+                        type: string;
+                        default: number;
+                    };
+                    backgroundColor: {
+                        type: string;
+                        default: string;
+                    };
+                    backgroundImage: {
+                        type: string;
+                    };
+                    backgroundMode: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    requiredVariables: {
+                        type: string;
+                        default: string[];
+                    };
+                    optionalVariables: {
+                        type: string;
+                        default: string[];
+                    };
+                    isActive: {
+                        type: string;
+                        default: boolean;
+                    };
+                    isDefault: {
+                        type: string;
+                        default: boolean;
+                    };
+                    elements: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    thumbnail: {
+                        type: string;
+                    };
+                    description: {
+                        type: string;
+                    };
+                };
+            };
+        };
+        'poster-element': {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                    description: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                pluginOptions: {
+                    "content-manager": {
+                        visible: boolean;
+                    };
+                    "content-type-builder": {
+                        visible: boolean;
+                    };
+                };
+                attributes: {
+                    posterTemplate: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        inversedBy: string;
+                        required: boolean;
+                    };
+                    elementType: {
+                        type: string;
+                        enum: string[];
+                        required: boolean;
+                        default: string;
+                    };
+                    elementKey: {
+                        type: string;
+                        required: boolean;
+                    };
+                    elementName: {
+                        type: string;
+                    };
+                    sortOrder: {
+                        type: string;
+                        default: number;
+                    };
+                    isVariable: {
+                        type: string;
+                        default: boolean;
+                    };
+                    variableName: {
+                        type: string;
+                    };
+                    defaultValue: {
+                        type: string;
+                    };
+                    content: {
+                        type: string;
+                    };
+                    x: {
+                        type: string;
+                        default: number;
+                    };
+                    y: {
+                        type: string;
+                        default: number;
+                    };
+                    width: {
+                        type: string;
+                        default: number;
+                    };
+                    height: {
+                        type: string;
+                        default: number;
+                    };
+                    zIndex: {
+                        type: string;
+                        default: number;
+                    };
+                    rotation: {
+                        type: string;
+                        default: number;
+                    };
+                    opacity: {
+                        type: string;
+                        default: number;
+                    };
+                    fontSize: {
+                        type: string;
+                        default: number;
+                    };
+                    fontColor: {
+                        type: string;
+                        default: string;
+                    };
+                    fontWeight: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    fontFamily: {
+                        type: string;
+                        default: string;
+                    };
+                    textAlign: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    lineHeight: {
+                        type: string;
+                        default: number;
+                    };
+                    letterSpacing: {
+                        type: string;
+                        default: number;
+                    };
+                    borderRadius: {
+                        type: string;
+                        default: number;
+                    };
+                    borderWidth: {
+                        type: string;
+                        default: number;
+                    };
+                    borderColor: {
+                        type: string;
+                        default: string;
+                    };
+                    elementBgColor: {
+                        type: string;
+                    };
+                    imageFit: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    qrContentMode: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    qrBaseUrl: {
+                        type: string;
+                    };
+                    qrInviteParam: {
+                        type: string;
+                        default: string;
+                    };
+                    qrInviteSeparator: {
+                        type: string;
+                        default: string;
+                    };
+                    qrFallbackMode: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    qrErrorLevel: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    qrSize: {
+                        type: string;
+                        default: number;
+                    };
+                    qrColor: {
+                        type: string;
+                        default: string;
+                    };
+                    qrBgColor: {
+                        type: string;
+                        default: string;
+                    };
+                    shapeType: {
+                        type: string;
+                        enum: string[];
+                        default: string;
                     };
                 };
             };

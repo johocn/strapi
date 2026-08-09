@@ -14,6 +14,10 @@ import channelPlatformConfig from './channel-platform-config';
 import promoCampaign from './promo-campaign';
 import abExperiment from './ab-experiment';
 import abVariant from './ab-variant';
+import adZone from './ad-zone';
+import adContent from './ad-content';
+import posterTemplate from './poster-template';
+import posterElement from './poster-element';
 
 export default {
   'article-draft': articleDraft,
@@ -32,4 +36,8 @@ export default {
   'promo-campaign': promoCampaign,
   'ab-experiment': abExperiment,
   'ab-variant': abVariant,
+  'ad-zone': adZone,
+  'ad-content': adContent,
+  'poster-template': posterTemplate,
+  'poster-element': posterElement,
 };

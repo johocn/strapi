@@ -1,0 +1,31 @@
+const en = {
+  "zhao-wealth.plugin.name": "Zhao Wealth",
+  "zhao-wealth.plugin.description": "Wealth and Fund Management Plugin",
+  "zhao-wealth.companies.title": "Companies",
+  "zhao-wealth.products.title": "Products",
+  "zhao-wealth.collect-configs.title": "Collect Configs",
+  "zhao-wealth.nav-data.title": "NAV Data",
+  "zhao-wealth.recommend.title": "Recommendations",
+  "zhao-wealth.customer-products.title": "Customer Products",
+  "zhao-wealth.stats.title": "Statistics",
+  "zhao-wealth.productType.bank-wealth": "Bank Wealth",
+  "zhao-wealth.productType.stock-fund": "Stock Fund",
+  "zhao-wealth.productType.bond-fund": "Bond Fund",
+  "zhao-wealth.productType.mixed-fund": "Mixed Fund",
+  "zhao-wealth.productType.money-fund": "Money Fund",
+  "zhao-wealth.riskLevel.R1": "Low Risk",
+  "zhao-wealth.riskLevel.R2": "Medium-Low Risk",
+  "zhao-wealth.riskLevel.R3": "Medium Risk",
+  "zhao-wealth.riskLevel.R4": "Medium-High Risk",
+  "zhao-wealth.riskLevel.R5": "High Risk",
+  "zhao-wealth.collectStatus.pending": "Pending",
+  "zhao-wealth.collectStatus.success": "Success",
+  "zhao-wealth.collectStatus.failed": "Failed",
+  "zhao-wealth.collectMethod.web-crawler": "Web Crawler",
+  "zhao-wealth.collectMethod.zip-pdf": "ZIP+PDF",
+  "zhao-wealth.collectMethod.manual": "Manual",
+  "zhao-wealth.collectMethod.api": "API"
+};
+export {
+  en as default
+};

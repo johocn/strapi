@@ -11,10 +11,7 @@ export default {
         id: `${PLUGIN_ID}.plugin.name`,
         defaultMessage: "课程管理",
       },
-      Component: async () => {
-        const { App } = await import("./pages/App");
-        return App;
-      },
+      Component: () => import("./pages/App").then((mod) => ({ default: mod.App })),
     });
 
     app.registerPlugin({

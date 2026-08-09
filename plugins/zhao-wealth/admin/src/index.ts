@@ -12,11 +12,7 @@ export default {
         id: `${PLUGIN_ID}.plugin.name`,
         defaultMessage: "理财基金管理",
       },
-      Component: async () => {
-        const { App } = await import("./App");
-
-        return App;
-      },
+      Component: () => import("./App").then((mod) => ({ default: mod.App })),
     });
 
     app.registerPlugin({

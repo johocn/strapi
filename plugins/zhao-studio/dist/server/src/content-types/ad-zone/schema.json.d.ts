@@ -1,0 +1,54 @@
+declare const _default: {
+  "kind": "collectionType",
+  "collectionName": "zhao_studio_ad_zones",
+  "info": {
+    "singularName": "ad-zone",
+    "pluralName": "ad-zones",
+    "displayName": "广告区域",
+    "description": "广告展示位置定义"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "content-manager": { "visible": true },
+    "content-type-builder": { "visible": true }
+  },
+  "attributes": {
+    "name": { "type": "string", "required": true },
+    "code": { "type": "string", "required": true, "unique": true },
+    "site": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-common.site-config",
+      "required": true
+    },
+    "position": {
+      "type": "enumeration",
+      "enum": ["home-banner", "home-notice", "home-sidebar", "list-top", "article-top", "article-bottom", "article-inline", "footer", "popup", "float", "custom"],
+      "default": "home-banner"
+    },
+    "displayMode": {
+      "type": "enumeration",
+      "enum": ["single", "rotation", "slideshow", "stack"],
+      "default": "single"
+    },
+    "suggestedWidth": { "type": "integer" },
+    "suggestedHeight": { "type": "integer" },
+    "adSlotCode": { "type": "string" },
+    "description": { "type": "text" },
+    "isActive": { "type": "boolean", "default": true },
+    "sortOrder": { "type": "integer", "default": 0 },
+    "adContents": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-studio.ad-content",
+      "mappedBy": "adZone"
+    },
+    "createdAt": { "type": "datetime" },
+    "updatedAt": { "type": "datetime" }
+  }
+}
+;
+
+export default _default;

@@ -41,7 +41,6 @@ function decryptWechatData(sessionKey, encryptedData, iv, appId) {
   }
   return decoded;
 }
-const USER_UID = "plugin::users-permissions.user";
 const thirdPartyAuthService = ({ strapi }) => ({
   /**
    * 获取三方授权 URL
@@ -179,14 +178,16 @@ const thirdPartyAuthService = ({ strapi }) => ({
   async exchangeWechatToken(appType, code, config2, encryptedData, iv) {
     const tokenUrl = appType === "mini_program" ? "https://api.weixin.qq.com/sns/jscode2session" : "https://api.weixin.qq.com/sns/oauth2/access_token";
     const params = new URLSearchParams();
+    const cleanAppId = (config2.appId || "").trim();
+    const cleanAppSecret = (config2.appSecret || "").trim();
     if (appType === "mini_program") {
-      params.set("appid", config2.appId);
-      params.set("secret", config2.appSecret);
+      params.set("appid", cleanAppId);
+      params.set("secret", cleanAppSecret);
       params.set("js_code", code);
       params.set("grant_type", "authorization_code");
     } else {
-      params.set("appid", config2.appId);
-      params.set("secret", config2.appSecret);
+      params.set("appid", cleanAppId);
+      params.set("secret", cleanAppSecret);
       params.set("code", code);
       params.set("grant_type", "authorization_code");
     }
@@ -290,15 +291,11 @@ const thirdPartyAuthService = ({ strapi }) => ({
     const prefix = platform === "wechat" ? "wx" : platform === "alipay" ? "alipay" : "dy";
     const username = `${prefix}_${tokenResult.openId.substring(0, 16)}`;
     const email = `${username}@third.placeholder`;
-    const user = await strapi.db.query(USER_UID).create({
-      data: {
-        username,
-        email,
-        provider: platform,
-        password: Math.random().toString(36).substring(2, 18),
-        confirmed: true,
-        blocked: false
-      }
+    const user = await strapi.plugin("zhao-sso").service("sso-user").createUser({
+      username,
+      email,
+      password: Math.random().toString(36).substring(2, 18),
+      register_channel: `sso_${platform}`
     });
     if (inviteCode) {
       try {
@@ -414,17 +411,19 @@ const thirdPartyAuthService = ({ strapi }) => ({
       return this.handleAuthError(ctx, "缺少 code 参数");
     }
     const host = ctx.request.headers["x-forwarded-host"] || ctx.request.host;
-    let siteId;
-    try {
-      const configService = strapi.plugin("zhao-common").service("config");
-      if (configService) {
-        const site = await configService.getSiteByDomain(host);
-        if (site) {
-          siteId = site.documentId;
+    let siteId = ctx.state?.siteDocumentId;
+    if (!siteId) {
+      try {
+        const siteConfigService = strapi.plugin("zhao-common").service("site-config");
+        if (siteConfigService && typeof siteConfigService.getConfigByDomain === "function") {
+          const site = await siteConfigService.getConfigByDomain(host);
+          if (site) {
+            siteId = site.documentId;
+          }
         }
+      } catch (e) {
+        strapi.log.warn(`[zhao-third] 无法根据域名 ${host} 获取站点配置: ${e.message}`);
       }
-    } catch (e) {
-      strapi.log.warn(`[zhao-third] 无法根据域名 ${host} 获取站点配置: ${e.message}`);
     }
     try {
       const result = await this.handleCallback({
@@ -472,6 +471,58 @@ const thirdPartyConfigService = ({ strapi }) => ({
   },
   async findConfigs(filters) {
     return strapi.documents(CONFIG_UID).findMany({ filters });
+  },
+  /**
+   * 按站点 documentId 查询所有关联的三方配置（用 knex 避免 Strapi v5 Document Service manyToOne 过滤不稳定）
+   * 返回全字段（含 token/encodingAESKey/merchantId），供管理后台 list 接口使用
+   */
+  async findConfigsBySite(siteDocumentId) {
+    const knex = strapi.db.connection;
+    const siteRow = await knex("zhao_site_configs").select("id").where("document_id", siteDocumentId).first();
+    if (!siteRow) return [];
+    const linkRows = await knex("third_party_configs_site_lnk").select("third_party_config_id").where("site_config_id", siteRow.id);
+    if (!linkRows || linkRows.length === 0) return [];
+    const configIds = linkRows.map((r) => r.third_party_config_id);
+    const rows = await knex("third_party_configs").select("*").whereIn("id", configIds).orderBy("id", "asc");
+    return rows.map((row) => {
+      const toCamel = (s) => s.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+      const mapped = {};
+      for (const [k, v] of Object.entries(row)) {
+        mapped[toCamel(k)] = v;
+      }
+      return {
+        id: mapped.id,
+        documentId: mapped.documentId,
+        name: mapped.name,
+        platform: mapped.platform,
+        appType: mapped.appType,
+        appId: mapped.appId,
+        appSecret: mapped.appSecret,
+        token: mapped.token,
+        encodingAESKey: mapped.encodingAesKey ?? mapped.encodingAEsKey ?? mapped.encodingAESKey,
+        merchantId: mapped.merchantId,
+        enabled: mapped.enabled
+      };
+    });
+  },
+  /**
+   * 重复性校验：同一站点下不允许存在相同 platform+appType 的配置
+   * @param excludeDocumentId 更新时排除当前记录的 documentId
+   * @returns 已存在的冲突记录，null 表示无冲突
+   */
+  async checkDuplicate(platform, appType, siteDocumentId, excludeDocumentId) {
+    const knex = strapi.db.connection;
+    const siteRow = await knex("zhao_site_configs").select("id").where("document_id", siteDocumentId).first();
+    if (!siteRow) return null;
+    const linkRows = await knex("third_party_configs_site_lnk").select("third_party_config_id").where("site_config_id", siteRow.id);
+    if (!linkRows || linkRows.length === 0) return null;
+    const configIds = linkRows.map((r) => r.third_party_config_id);
+    const query = knex("third_party_configs").select("id", "document_id", "name", "platform", "app_type").whereIn("id", configIds).where("platform", platform).where("app_type", appType);
+    if (excludeDocumentId) {
+      query.whereNot("document_id", excludeDocumentId);
+    }
+    const conflict = await query.first();
+    return conflict || null;
   },
   async createConfig(data) {
     return strapi.documents(CONFIG_UID).create({ data });
@@ -673,15 +724,14 @@ const thirdPartyConfigController = ({ strapi }) => ({
   async list(ctx) {
     try {
       const configService = strapi.plugin("zhao-third").service("third-party-config");
-      const filters = {};
       const siteParam = ctx.query?.site;
-      const stateSiteId = ctx.state?.siteId;
-      const effectiveSiteId = siteParam || stateSiteId;
-      if (effectiveSiteId) {
-        filters.site = { documentId: effectiveSiteId };
+      if (siteParam) {
+        const result = await configService.findConfigsBySite(siteParam);
+        ctx.body = result;
+      } else {
+        const result = await configService.findConfigs({});
+        ctx.body = result;
       }
-      const result = await configService.findConfigs(filters);
-      ctx.body = result;
     } catch (error) {
       strapi.log.error(`[zhao-third] 获取配置列表失败: ${error.message}`);
       ctx.status = error.status || 400;
@@ -708,6 +758,15 @@ const thirdPartyConfigController = ({ strapi }) => ({
         return;
       }
       const configService = strapi.plugin("zhao-third").service("third-party-config");
+      const siteDocumentId = site || ctx.state?.siteDocumentId;
+      if (siteDocumentId) {
+        const conflict = await configService.checkDuplicate(platform, appType, siteDocumentId);
+        if (conflict) {
+          ctx.status = 409;
+          ctx.body = { error: `该租户下已存在 ${platform}/${appType} 配置（名称：${conflict.name}），请编辑现有配置而非重复添加` };
+          return;
+        }
+      }
       const data = {
         name,
         platform,
@@ -719,9 +778,8 @@ const thirdPartyConfigController = ({ strapi }) => ({
       if (token !== void 0) data.token = token;
       if (encodingAESKey !== void 0) data.encodingAESKey = encodingAESKey;
       if (merchantId !== void 0) data.merchantId = merchantId;
-      const siteId = site || ctx.state?.siteId;
-      if (siteId) {
-        data.site = siteId;
+      if (siteDocumentId) {
+        data.site = siteDocumentId;
       }
       const result = await configService.createConfig(data);
       ctx.status = 201;
@@ -756,6 +814,18 @@ const thirdPartyConfigController = ({ strapi }) => ({
       const data = {};
       for (const key of allowedFields) {
         if (body[key] !== void 0) data[key] = body[key];
+      }
+      if (data.platform && data.appType) {
+        const configService2 = strapi.plugin("zhao-third").service("third-party-config");
+        const siteDocumentId = data.site || ctx.state?.siteDocumentId;
+        if (siteDocumentId) {
+          const conflict = await configService2.checkDuplicate(data.platform, data.appType, siteDocumentId, documentId);
+          if (conflict) {
+            ctx.status = 409;
+            ctx.body = { error: `该租户下已存在 ${data.platform}/${data.appType} 配置（名称：${conflict.name}）` };
+            return;
+          }
+        }
       }
       const configService = strapi.plugin("zhao-third").service("third-party-config");
       const result = await configService.updateConfig(documentId, data);
@@ -825,7 +895,7 @@ const collectionName = "third_party_accounts";
 const info = { "singularName": "third-party-account", "pluralName": "third-party-accounts", "displayName": "三方账号绑定" };
 const options = { "draftAndPublish": false };
 const pluginOptions = { "content-manager": { "visible": false } };
-const attributes = { "platform": { "type": "enumeration", "enum": ["wechat", "alipay", "douyin"], "required": true }, "appType": { "type": "enumeration", "enum": ["official_account", "mini_program", "open_platform", "h5", "app"], "required": true }, "openId": { "type": "string", "required": true }, "unionId": { "type": "string" }, "nickname": { "type": "string" }, "avatar": { "type": "string" }, "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::users-permissions.user" } };
+const attributes = { "platform": { "type": "enumeration", "enum": ["wechat", "alipay", "douyin"], "required": true }, "appType": { "type": "enumeration", "enum": ["official_account", "mini_program", "open_platform", "h5", "app"], "required": true }, "openId": { "type": "string", "required": true }, "unionId": { "type": "string" }, "nickname": { "type": "string" }, "avatar": { "type": "string" }, "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user" } };
 const thirdPartyAccountSchema = {
   kind,
   collectionName,

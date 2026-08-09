@@ -5,14 +5,14 @@ const pluginId = "zhao-auth";
 const index = {
   register(app) {
     app.addMenuLink({
-      to: `/plugins/${pluginId}`,
+      to: `plugins/${pluginId}`,
       icon: icons.LockOutlined,
       intlLabel: {
         id: `${pluginId}.plugin.name`,
         defaultMessage: "认证授权"
       },
       permissions: [{ action: "zhao-auth.user.manage", subject: null }],
-      Component: async () => Promise.resolve().then(() => require("./App-DuGo0ooh.js"))
+      Component: () => Promise.resolve().then(() => require("./App-DuGo0ooh.js")).then((mod) => ({ default: mod.default }))
     });
     app.registerPlugin({
       id: pluginId,

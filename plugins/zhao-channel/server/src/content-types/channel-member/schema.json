@@ -20,7 +20,7 @@
     "user": {
       "type": "relation",
       "relation": "manyToOne",
-      "target": "plugin::users-permissions.user"
+      "target": "plugin::zhao-sso.sso-user"
     },
     "role": {
       "type": "enumeration",
@@ -31,7 +31,7 @@
     "invitedBy": {
       "type": "relation",
       "relation": "manyToOne",
-      "target": "plugin::users-permissions.user"
+      "target": "plugin::zhao-sso.sso-user"
     },
     "isCurrent": {
       "type": "boolean",

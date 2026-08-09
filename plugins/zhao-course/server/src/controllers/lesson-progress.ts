@@ -77,13 +77,13 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         ctx.status = 401; ctx.body = { error: "用户未登录" }; return;
       }
       const { course } = ctx.query;
-      const filters: any = { user: { id: userId } };
+      const where: any = { user: { id: userId } };
       if (course) {
-        filters.course = { documentId: course };
+        where.course = { documentId: course };
       }
 
-      const results = await strapi.documents("plugin::zhao-course.lesson-progress").findMany({
-        filters,
+      const results = await strapi.db.query("plugin::zhao-course.lesson-progress").findMany({
+        where,
         populate: { lesson: true, course: true },
       });
       ctx.body = wrapList(results);
@@ -110,8 +110,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       }
 
       const lessonProgressService = strapi.plugin("zhao-course").service("lesson-progress");
-      const lesson = await strapi.documents("plugin::zhao-course.course-lesson").findOne({
-        documentId: effectiveLessonId,
+      const lesson = await strapi.db.query("plugin::zhao-course.course-lesson").findOne({
+        where: { document_id: effectiveLessonId },
         populate: { course: true },
       });
 
@@ -119,7 +119,21 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         ctx.status = 404; ctx.body = { error: "课时不存在" }; return;
       }
 
-      const authResult = await strapi.plugin("zhao-course").service("user-course-auth").checkAuth(userId, lesson.course.documentId);
+      const courseId = typeof lesson.course === "object" ? lesson.course?.id : lesson.course;
+      if (!courseId) {
+        ctx.status = 400; ctx.body = { error: "课时未关联课程" }; return;
+      }
+
+      // 查询课程 document_id（checkAuth 需要 documentId）
+      const course = await strapi.db.query("plugin::zhao-course.course").findOne({
+        where: { id: courseId },
+      });
+      if (!course) {
+        ctx.status = 404; ctx.body = { error: "课程不存在" }; return;
+      }
+
+      const courseDocId = course.document_id || course.documentId;
+      const authResult = await strapi.plugin("zhao-course").service("user-course-auth").checkAuth(userId, courseDocId);
       if (!authResult.authorized) {
         ctx.status = 403; ctx.body = { error: "未授权访问该课程" }; return;
       }

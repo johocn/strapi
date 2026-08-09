@@ -35,10 +35,7 @@ const index = {
         id: `${PLUGIN_ID}.plugin.name`,
         defaultMessage: "SSO 统一登录"
       },
-      Component: async () => {
-        const { App } = await import("./App-DolW3N2M.mjs");
-        return App;
-      }
+      Component: () => import("./App-DolW3N2M.mjs").then((mod) => ({ default: mod.App }))
     });
     app.registerPlugin({
       id: PLUGIN_ID,

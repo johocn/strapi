@@ -38,7 +38,7 @@ export default ({ strapi }) => ({
 
     // 2. 若不足limit条，补充客户偏好匹配
     if (recommendations.length < limit) {
-      const user = await strapi.db.query('plugin::users-permissions.user').findOne({
+      const user = await strapi.db.query('plugin::zhao-sso.sso-user').findOne({
         where: { id: userId },
       });
 

@@ -1,5 +1,8 @@
 declare const _default: {
     "knowledge-graph": {
+        exportGraph(ctx: any): Promise<void>;
+        exportEntity(ctx: any): Promise<void>;
+        exportFacts(ctx: any): Promise<void>;
         findEntities(ctx: any): Promise<void>;
         createEntity(ctx: any): Promise<void>;
         updateEntity(ctx: any): Promise<void>;
@@ -8,7 +11,6 @@ declare const _default: {
         addRelation(ctx: any): Promise<void>;
         deleteRelation(ctx: any): Promise<void>;
         disambiguate(ctx: any): Promise<void>;
-        exportGraph(ctx: any): Promise<void>;
         createGlobalEntity(ctx: any): Promise<void>;
         updateGlobalEntity(ctx: any): Promise<void>;
         deleteGlobalEntity(ctx: any): Promise<void>;
@@ -99,6 +101,13 @@ declare const _default: {
     };
     "site-info": {
         info(ctx: any): Promise<void>;
+    };
+    "seo-meta": {
+        meta(ctx: any): Promise<void>;
+    };
+    feed: {
+        rss(ctx: any): Promise<void>;
+        atom(ctx: any): Promise<void>;
     };
     "article-admin": {
         find(ctx: any): Promise<void>;

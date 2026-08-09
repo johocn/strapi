@@ -8,12 +8,15 @@ import download from "./content-api/download";
 import lead from "./content-api/lead";
 import seoOutput from "./content-api/seo-output";
 import siteInfo from "./content-api/site-info";
+import seoMeta from "./content-api/seo-meta";
+import feed from "./content-api/feed";
+import contentKnowledgeGraph from "./content-api/knowledge-graph";
 
 import adminArticle from "./admin-api/article";
 import adminSeoConfig from "./admin-api/seo-config";
 import adminBrandInfo from "./admin-api/brand-info";
 import generic from "./admin-api/generic";
-import knowledgeGraph from "./admin-api/knowledge-graph";
+import adminKnowledgeGraph from "./admin-api/knowledge-graph";
 import firstTruth from "./admin-api/first-truth";
 import aiContentSummary from "./admin-api/ai-content-summary";
 import studioBridge from "./admin-api/studio-bridge";
@@ -23,6 +26,11 @@ import brandVoice from "./admin-api/brand-voice";
 const adminGeneric = Object.fromEntries(
   Object.entries(generic).map(([key, value]) => [`${key}-admin`, value])
 );
+
+const knowledgeGraph = {
+  ...adminKnowledgeGraph,
+  ...contentKnowledgeGraph,
+};
 
 export default {
   article,
@@ -35,6 +43,8 @@ export default {
   lead,
   "seo-output": seoOutput,
   "site-info": siteInfo,
+  "seo-meta": seoMeta,
+  feed,
   "article-admin": adminArticle,
   "seo-config-admin": adminSeoConfig,
   "brand-info-admin": adminBrandInfo,

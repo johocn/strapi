@@ -37,10 +37,7 @@ const index = {
         id: `${PLUGIN_ID}.plugin.name`,
         defaultMessage: "OSS 备份"
       },
-      Component: async () => {
-        const { App } = await Promise.resolve().then(() => require("./App-BvwKiFvy.js"));
-        return App;
-      }
+      Component: () => Promise.resolve().then(() => require("./App-BvwKiFvy.js")).then((mod) => ({ default: mod.App }))
     });
     app.registerPlugin({
       id: PLUGIN_ID,

@@ -7,14 +7,14 @@ const pluginDescription = '认证授权管理';
 export default {
   register(app: any) {
     app.addMenuLink({
-      to: `/plugins/${pluginId}`,
+      to: `plugins/${pluginId}`,
       icon: LockOutlined,
       intlLabel: {
         id: `${pluginId}.plugin.name`,
         defaultMessage: '认证授权',
       },
       permissions: [{ action: 'zhao-auth.user.manage', subject: null }],
-      Component: async () => import('./pages/App'),
+      Component: () => import('./pages/App').then((mod) => ({ default: mod.default })),
     });
 
     app.registerPlugin({

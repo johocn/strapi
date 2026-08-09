@@ -114,7 +114,7 @@ const kind$2 = "collectionType";
 const collectionName$2 = "zhao_user_course_auths";
 const info$2 = { "singularName": "user-course-auth", "pluralName": "user-course-auths", "displayName": "用户课程授权" };
 const options$2 = { "draftAndPublish": false };
-const attributes$2 = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::users-permissions.user" }, "course": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-course.course" }, "authType": { "type": "enumeration", "enum": ["free", "paid", "admin_grant"], "default": "free" }, "expiresAt": { "type": "datetime" }, "isExpired": { "type": "boolean", "default": false }, "channel": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-channel.channel" }, "deletedAt": { "type": "datetime", "default": null } };
+const attributes$2 = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user" }, "course": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-course.course" }, "authType": { "type": "enumeration", "enum": ["free", "paid", "admin_grant"], "default": "free" }, "expiresAt": { "type": "datetime" }, "isExpired": { "type": "boolean", "default": false }, "channel": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-channel.channel" }, "deletedAt": { "type": "datetime", "default": null } };
 const userCourseAuth$2 = {
   kind: kind$2,
   collectionName: collectionName$2,
@@ -126,7 +126,7 @@ const kind$1 = "collectionType";
 const collectionName$1 = "zhao_course_progresses";
 const info$1 = { "singularName": "course-progress", "pluralName": "course-progresses", "displayName": "课程学习记录" };
 const options$1 = { "draftAndPublish": false };
-const attributes$1 = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::users-permissions.user" }, "course": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-course.course" }, "completedLessons": { "type": "integer", "default": 0 }, "totalLessons": { "type": "integer", "default": 0 }, "progress": { "type": "decimal", "precision": 5, "scale": 2, "default": 0 }, "isCompleted": { "type": "boolean", "default": false }, "pointsEarned": { "type": "integer", "default": 0 }, "isPointsClaimed": { "type": "boolean", "default": false }, "lessonPointsSummary": { "type": "json", "default": {} }, "lastStudyAt": { "type": "datetime" } };
+const attributes$1 = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user" }, "course": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-course.course" }, "completedLessons": { "type": "integer", "default": 0 }, "totalLessons": { "type": "integer", "default": 0 }, "progress": { "type": "decimal", "precision": 5, "scale": 2, "default": 0 }, "isCompleted": { "type": "boolean", "default": false }, "pointsEarned": { "type": "integer", "default": 0 }, "isPointsClaimed": { "type": "boolean", "default": false }, "lessonPointsSummary": { "type": "json", "default": {} }, "lastStudyAt": { "type": "datetime" } };
 const courseProgress$2 = {
   kind: kind$1,
   collectionName: collectionName$1,
@@ -138,7 +138,7 @@ const kind = "collectionType";
 const collectionName = "zhao_lesson_progresses";
 const info = { "singularName": "lesson-progress", "pluralName": "lesson-progresses", "displayName": "课时学习记录" };
 const options = { "draftAndPublish": false };
-const attributes = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::users-permissions.user" }, "lesson": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-course.course-lesson" }, "course": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-course.course" }, "progress": { "type": "decimal", "precision": 5, "scale": 2, "default": 0 }, "playPosition": { "type": "integer", "default": 0 }, "duration": { "type": "integer", "default": 0 }, "isCompleted": { "type": "boolean", "default": false }, "isAnswered": { "type": "boolean", "default": false }, "isCorrect": { "type": "boolean", "default": false }, "pointsEarned": { "type": "integer", "default": 0 }, "isPointsClaimed": { "type": "boolean", "default": false }, "calculatedPoints": { "type": "integer", "default": 0 }, "quizPointsDetail": { "type": "json", "default": {} }, "lastStudyAt": { "type": "datetime" } };
+const attributes = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user" }, "lesson": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-course.course-lesson" }, "course": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-course.course" }, "progress": { "type": "decimal", "precision": 5, "scale": 2, "default": 0 }, "playPosition": { "type": "integer", "default": 0 }, "duration": { "type": "integer", "default": 0 }, "isCompleted": { "type": "boolean", "default": false }, "isAnswered": { "type": "boolean", "default": false }, "isCorrect": { "type": "boolean", "default": false }, "pointsEarned": { "type": "integer", "default": 0 }, "isPointsClaimed": { "type": "boolean", "default": false }, "calculatedPoints": { "type": "integer", "default": 0 }, "quizPointsDetail": { "type": "json", "default": {} }, "lastStudyAt": { "type": "datetime" } };
 const lessonProgress$2 = {
   kind,
   collectionName,
@@ -1045,12 +1045,12 @@ const lessonProgress$1 = ({ strapi }) => ({
         return;
       }
       const { course: course2 } = ctx.query;
-      const filters = { user: { id: userId } };
+      const where = { user: { id: userId } };
       if (course2) {
-        filters.course = { documentId: course2 };
+        where.course = { documentId: course2 };
       }
-      const results = await strapi.documents("plugin::zhao-course.lesson-progress").findMany({
-        filters,
+      const results = await strapi.db.query("plugin::zhao-course.lesson-progress").findMany({
+        where,
         populate: { lesson: true, course: true }
       });
       ctx.body = wrapList(results);
@@ -1079,8 +1079,8 @@ const lessonProgress$1 = ({ strapi }) => ({
         return;
       }
       const lessonProgressService = strapi.plugin("zhao-course").service("lesson-progress");
-      const lesson = await strapi.documents("plugin::zhao-course.course-lesson").findOne({
-        documentId: effectiveLessonId,
+      const lesson = await strapi.db.query("plugin::zhao-course.course-lesson").findOne({
+        where: { document_id: effectiveLessonId },
         populate: { course: true }
       });
       if (!lesson) {
@@ -1088,7 +1088,22 @@ const lessonProgress$1 = ({ strapi }) => ({
         ctx.body = { error: "课时不存在" };
         return;
       }
-      const authResult = await strapi.plugin("zhao-course").service("user-course-auth").checkAuth(userId, lesson.course.documentId);
+      const courseId = typeof lesson.course === "object" ? lesson.course?.id : lesson.course;
+      if (!courseId) {
+        ctx.status = 400;
+        ctx.body = { error: "课时未关联课程" };
+        return;
+      }
+      const course2 = await strapi.db.query("plugin::zhao-course.course").findOne({
+        where: { id: courseId }
+      });
+      if (!course2) {
+        ctx.status = 404;
+        ctx.body = { error: "课程不存在" };
+        return;
+      }
+      const courseDocId = course2.document_id || course2.documentId;
+      const authResult = await strapi.plugin("zhao-course").service("user-course-auth").checkAuth(userId, courseDocId);
       if (!authResult.authorized) {
         ctx.status = 403;
         ctx.body = { error: "未授权访问该课程" };
@@ -1887,7 +1902,8 @@ const userCourseAuth = ({ strapi }) => {
      */
     async checkAuth(userId, courseDocumentId) {
       const course2 = await strapi.documents("plugin::zhao-course.course").findOne({
-        documentId: courseDocumentId
+        documentId: courseDocumentId,
+        status: "published"
       });
       if (!course2) {
         const i18n = strapi.plugin("zhao-common")?.service("i18n");
@@ -2220,8 +2236,8 @@ const lessonProgress = ({ strapi }) => {
       return strapi.documents(UID).delete({ documentId });
     },
     async reportProgress(userId, data) {
-      const lesson = await strapi.documents("plugin::zhao-course.course-lesson").findOne({
-        documentId: data.lessonDocumentId,
+      const lesson = await strapi.db.query("plugin::zhao-course.course-lesson").findOne({
+        where: { document_id: data.lessonDocumentId },
         populate: { course: true }
       });
       if (!lesson) {

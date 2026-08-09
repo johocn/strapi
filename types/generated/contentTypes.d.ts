@@ -1179,7 +1179,7 @@ export interface PluginZhaoChannelChannelMember
       Schema.Attribute.Private;
     invitedBy: Schema.Attribute.Relation<
       'manyToOne',
-      'plugin::users-permissions.user'
+      'plugin::zhao-sso.sso-user'
     >;
     isCurrent: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
@@ -1195,10 +1195,7 @@ export interface PluginZhaoChannelChannelMember
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    user: Schema.Attribute.Relation<
-      'manyToOne',
-      'plugin::users-permissions.user'
-    > &
+    user: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-sso.sso-user'> &
       Schema.Attribute.Required;
   };
 }
@@ -1227,7 +1224,7 @@ export interface PluginZhaoChannelUserChannel
     grantedAt: Schema.Attribute.DateTime;
     grantedBy: Schema.Attribute.Relation<
       'manyToOne',
-      'plugin::users-permissions.user'
+      'plugin::zhao-sso.sso-user'
     >;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
@@ -1239,10 +1236,7 @@ export interface PluginZhaoChannelUserChannel
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    user: Schema.Attribute.Relation<
-      'manyToOne',
-      'plugin::users-permissions.user'
-    > &
+    user: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-sso.sso-user'> &
       Schema.Attribute.Required;
   };
 }
@@ -1286,7 +1280,7 @@ export interface PluginZhaoChannelUserInvite
       }>;
     invitedBy: Schema.Attribute.Relation<
       'manyToOne',
-      'plugin::users-permissions.user'
+      'plugin::zhao-sso.sso-user'
     >;
     inviteMethod: Schema.Attribute.Enumeration<['invite_code', 'organic']> &
       Schema.Attribute.DefaultTo<'organic'>;
@@ -1301,10 +1295,7 @@ export interface PluginZhaoChannelUserInvite
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     used: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
-    user: Schema.Attribute.Relation<
-      'oneToOne',
-      'plugin::users-permissions.user'
-    > &
+    user: Schema.Attribute.Relation<'oneToOne', 'plugin::zhao-sso.sso-user'> &
       Schema.Attribute.Required &
       Schema.Attribute.Unique;
   };
@@ -1482,6 +1473,15 @@ export interface PluginZhaoCommonSiteConfig
     >;
     logo: Schema.Attribute.Media<'images'>;
     moduleVisibility: Schema.Attribute.JSON & Schema.Attribute.DefaultTo<{}>;
+    posterDefaultRecommendReason: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 200;
+      }>;
+    posterDefaultUserAvatar: Schema.Attribute.Media<'images'>;
+    posterDefaultUserName: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
     publishedAt: Schema.Attribute.DateTime;
     seoDescription: Schema.Attribute.Text;
     seoKeywords: Schema.Attribute.String &
@@ -1582,6 +1582,10 @@ export interface PluginZhaoCommonSiteConfig
     website_products: Schema.Attribute.Relation<
       'oneToMany',
       'plugin::zhao-website.product'
+    >;
+    website_redirect_rules: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-website.redirect-rule'
     >;
     website_search_logs: Schema.Attribute.Relation<
       'oneToMany',
@@ -1895,10 +1899,7 @@ export interface PluginZhaoCourseCourseProgress
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    user: Schema.Attribute.Relation<
-      'manyToOne',
-      'plugin::users-permissions.user'
-    >;
+    user: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-sso.sso-user'>;
   };
 }
 
@@ -1947,10 +1948,7 @@ export interface PluginZhaoCourseLessonProgress
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    user: Schema.Attribute.Relation<
-      'manyToOne',
-      'plugin::users-permissions.user'
-    >;
+    user: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-sso.sso-user'>;
   };
 }
 
@@ -1992,10 +1990,7 @@ export interface PluginZhaoCourseUserCourseAuth
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    user: Schema.Attribute.Relation<
-      'manyToOne',
-      'plugin::users-permissions.user'
-    >;
+    user: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-sso.sso-user'>;
   };
 }
 
@@ -2562,10 +2557,7 @@ export interface PluginZhaoLogisticsConversionEvent
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    user: Schema.Attribute.Relation<
-      'manyToOne',
-      'plugin::users-permissions.user'
-    >;
+    user: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-sso.sso-user'>;
     userAgent: Schema.Attribute.String &
       Schema.Attribute.SetMinMaxLength<{
         maxLength: 500;
@@ -3984,12 +3976,12 @@ export interface PluginZhaoPointChannelVerification
     verifiedAt: Schema.Attribute.DateTime;
     verifiedUser: Schema.Attribute.Relation<
       'manyToOne',
-      'plugin::users-permissions.user'
+      'plugin::zhao-sso.sso-user'
     > &
       Schema.Attribute.Required;
     verifier: Schema.Attribute.Relation<
       'manyToOne',
-      'plugin::users-permissions.user'
+      'plugin::zhao-sso.sso-user'
     > &
       Schema.Attribute.Required;
   };
@@ -4259,10 +4251,7 @@ export interface PluginZhaoPointPointRecord
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    user: Schema.Attribute.Relation<
-      'manyToOne',
-      'plugin::users-permissions.user'
-    > &
+    user: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-sso.sso-user'> &
       Schema.Attribute.Required;
     userChannel: Schema.Attribute.Relation<
       'manyToOne',
@@ -4362,10 +4351,7 @@ export interface PluginZhaoPointPointRedemption
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    user: Schema.Attribute.Relation<
-      'manyToOne',
-      'plugin::users-permissions.user'
-    > &
+    user: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-sso.sso-user'> &
       Schema.Attribute.Required;
   };
 }
@@ -4585,10 +4571,7 @@ export interface PluginZhaoPointSignInRecord
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    user: Schema.Attribute.Relation<
-      'manyToOne',
-      'plugin::users-permissions.user'
-    > &
+    user: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-sso.sso-user'> &
       Schema.Attribute.Required;
   };
 }
@@ -4793,10 +4776,7 @@ export interface PluginZhaoQuizQuizExamAttempt
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    user: Schema.Attribute.Relation<
-      'manyToOne',
-      'plugin::users-permissions.user'
-    >;
+    user: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-sso.sso-user'>;
   };
 }
 
@@ -4821,10 +4801,7 @@ export interface PluginZhaoQuizQuizRecord extends Struct.CollectionTypeSchema {
       Schema.Attribute.Private;
     duration: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
     gradedAt: Schema.Attribute.DateTime;
-    grader: Schema.Attribute.Relation<
-      'manyToOne',
-      'plugin::users-permissions.user'
-    >;
+    grader: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-sso.sso-user'>;
     isCorrect: Schema.Attribute.Boolean;
     lesson: Schema.Attribute.Relation<
       'manyToOne',
@@ -4849,10 +4826,7 @@ export interface PluginZhaoQuizQuizRecord extends Struct.CollectionTypeSchema {
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    user: Schema.Attribute.Relation<
-      'manyToOne',
-      'plugin::users-permissions.user'
-    >;
+    user: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-sso.sso-user'>;
   };
 }
 
@@ -5534,6 +5508,146 @@ export interface PluginZhaoStudioAbVariant extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface PluginZhaoStudioAdContent extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_studio_ad_contents';
+  info: {
+    description: '\u5E7F\u544A\u7D20\u6750\u4E0E\u5C55\u793A\u65B9\u5F0F\u914D\u7F6E';
+    displayName: '\u5E7F\u544A\u5185\u5BB9';
+    pluralName: 'ad-contents';
+    singularName: 'ad-content';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: true;
+    };
+    'content-type-builder': {
+      visible: true;
+    };
+  };
+  attributes: {
+    adZone: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-studio.ad-zone'
+    > &
+      Schema.Attribute.Required;
+    backgroundColor: Schema.Attribute.String &
+      Schema.Attribute.DefaultTo<'#FFFFFF'>;
+    badgeBgColor: Schema.Attribute.String &
+      Schema.Attribute.DefaultTo<'#FF4444'>;
+    badgePosition: Schema.Attribute.Enumeration<
+      ['top-left', 'top-right', 'bottom-left', 'bottom-right']
+    > &
+      Schema.Attribute.DefaultTo<'top-right'>;
+    badgeText: Schema.Attribute.String;
+    badgeTextColor: Schema.Attribute.String &
+      Schema.Attribute.DefaultTo<'#FFFFFF'>;
+    borderRadius: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    closeDelay: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    contentType: Schema.Attribute.Enumeration<
+      ['single-image', 'multi-image', 'slideshow', 'video', 'html']
+    > &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'single-image'>;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    ctaBgColor: Schema.Attribute.String & Schema.Attribute.DefaultTo<'#FF4444'>;
+    ctaBorderRadius: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<4>;
+    ctaFontSize: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<14>;
+    ctaPosition: Schema.Attribute.Enumeration<
+      ['top', 'bottom', 'overlay', 'inline']
+    > &
+      Schema.Attribute.DefaultTo<'bottom'>;
+    ctaText: Schema.Attribute.String;
+    ctaTextColor: Schema.Attribute.String &
+      Schema.Attribute.DefaultTo<'#FFFFFF'>;
+    displayStyle: Schema.Attribute.Enumeration<
+      ['banner', 'card', 'modal', 'inline', 'float', 'fullscreen']
+    > &
+      Schema.Attribute.DefaultTo<'banner'>;
+    endAt: Schema.Attribute.DateTime;
+    frequencyLimit: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    frequencyPeriod: Schema.Attribute.Enumeration<
+      ['session', 'daily', 'weekly']
+    > &
+      Schema.Attribute.DefaultTo<'session'>;
+    height: Schema.Attribute.Integer;
+    htmlContent: Schema.Attribute.Text;
+    images: Schema.Attribute.JSON & Schema.Attribute.DefaultTo<[]>;
+    isActive: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    linkTarget: Schema.Attribute.Enumeration<['_self', '_blank']> &
+      Schema.Attribute.DefaultTo<'_self'>;
+    linkType: Schema.Attribute.Enumeration<['none', 'internal', 'external']> &
+      Schema.Attribute.DefaultTo<'none'>;
+    linkUrl: Schema.Attribute.String;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-studio.ad-content'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    priority: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    publishedAt: Schema.Attribute.DateTime;
+    showCountdown: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    site: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-common.site-config'
+    > &
+      Schema.Attribute.Required;
+    slideshowAutoplay: Schema.Attribute.Boolean &
+      Schema.Attribute.DefaultTo<true>;
+    slideshowEffect: Schema.Attribute.Enumeration<['fade', 'slide', 'none']> &
+      Schema.Attribute.DefaultTo<'slide'>;
+    slideshowInterval: Schema.Attribute.Integer &
+      Schema.Attribute.DefaultTo<3000>;
+    slideshowLoop: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    slideshowPauseOnHover: Schema.Attribute.Boolean &
+      Schema.Attribute.DefaultTo<true>;
+    slideshowShowArrows: Schema.Attribute.Boolean &
+      Schema.Attribute.DefaultTo<false>;
+    slideshowShowDots: Schema.Attribute.Boolean &
+      Schema.Attribute.DefaultTo<true>;
+    sortOrder: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    startAt: Schema.Attribute.DateTime;
+    subtitle: Schema.Attribute.String;
+    subtitleColor: Schema.Attribute.String &
+      Schema.Attribute.DefaultTo<'#666666'>;
+    subtitleFontSize: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<14>;
+    subtitleMaxLines: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<1>;
+    subtitleOverflow: Schema.Attribute.Enumeration<
+      ['clip', 'ellipsis', 'wrap', 'scale']
+    > &
+      Schema.Attribute.DefaultTo<'ellipsis'>;
+    title: Schema.Attribute.String;
+    titleAlign: Schema.Attribute.Enumeration<['left', 'center', 'right']> &
+      Schema.Attribute.DefaultTo<'left'>;
+    titleColor: Schema.Attribute.String & Schema.Attribute.DefaultTo<'#333333'>;
+    titleFontSize: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<16>;
+    titleFontWeight: Schema.Attribute.Enumeration<['normal', 'bold']> &
+      Schema.Attribute.DefaultTo<'normal'>;
+    titleLineHeight: Schema.Attribute.Decimal & Schema.Attribute.DefaultTo<1.4>;
+    titleMaxLines: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<2>;
+    titleOverflow: Schema.Attribute.Enumeration<
+      ['clip', 'ellipsis', 'wrap', 'scale']
+    > &
+      Schema.Attribute.DefaultTo<'ellipsis'>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    videoAutoplay: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    videoControls: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    videoLoop: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    videoMuted: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    videoPoster: Schema.Attribute.String;
+    videoUrl: Schema.Attribute.String;
+    width: Schema.Attribute.Integer;
+  };
+}
+
 export interface PluginZhaoStudioAdSlot extends Struct.CollectionTypeSchema {
   collectionName: 'zhao_ad_slots';
   info: {
@@ -5595,6 +5709,81 @@ export interface PluginZhaoStudioAdSlot extends Struct.CollectionTypeSchema {
       ['product-link', 'banner', 'popup', 'native']
     > &
       Schema.Attribute.DefaultTo<'product-link'>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface PluginZhaoStudioAdZone extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_studio_ad_zones';
+  info: {
+    description: '\u5E7F\u544A\u5C55\u793A\u4F4D\u7F6E\u5B9A\u4E49';
+    displayName: '\u5E7F\u544A\u533A\u57DF';
+    pluralName: 'ad-zones';
+    singularName: 'ad-zone';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: true;
+    };
+    'content-type-builder': {
+      visible: true;
+    };
+  };
+  attributes: {
+    adContents: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-studio.ad-content'
+    >;
+    adSlotCode: Schema.Attribute.String;
+    code: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.Unique;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    description: Schema.Attribute.Text;
+    displayMode: Schema.Attribute.Enumeration<
+      ['single', 'rotation', 'slideshow', 'stack']
+    > &
+      Schema.Attribute.DefaultTo<'single'>;
+    isActive: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-studio.ad-zone'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    position: Schema.Attribute.Enumeration<
+      [
+        'home-banner',
+        'home-notice',
+        'home-sidebar',
+        'list-top',
+        'article-top',
+        'article-bottom',
+        'article-inline',
+        'footer',
+        'popup',
+        'float',
+        'custom',
+      ]
+    > &
+      Schema.Attribute.DefaultTo<'home-banner'>;
+    publishedAt: Schema.Attribute.DateTime;
+    site: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-common.site-config'
+    > &
+      Schema.Attribute.Required;
+    sortOrder: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    suggestedHeight: Schema.Attribute.Integer;
+    suggestedWidth: Schema.Attribute.Integer;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -5950,6 +6139,173 @@ export interface PluginZhaoStudioKnowledgePointIndex
     publishedAt: Schema.Attribute.DateTime;
     targetId: Schema.Attribute.String & Schema.Attribute.Required;
     targetType: Schema.Attribute.String & Schema.Attribute.Required;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface PluginZhaoStudioPosterElement
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_studio_poster_elements';
+  info: {
+    description: '\u6D77\u62A5\u6A21\u677F\u4E2D\u7684\u5143\u7D20\u5B9A\u4E49';
+    displayName: '\u6D77\u62A5\u5143\u7D20';
+    pluralName: 'poster-elements';
+    singularName: 'poster-element';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: false;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+  };
+  attributes: {
+    borderColor: Schema.Attribute.String &
+      Schema.Attribute.DefaultTo<'#000000'>;
+    borderRadius: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    borderWidth: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    content: Schema.Attribute.Text;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    defaultValue: Schema.Attribute.Text;
+    elementBgColor: Schema.Attribute.String;
+    elementKey: Schema.Attribute.String & Schema.Attribute.Required;
+    elementName: Schema.Attribute.String;
+    elementType: Schema.Attribute.Enumeration<
+      ['text', 'image', 'qrcode', 'shape', 'background']
+    > &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'text'>;
+    fontColor: Schema.Attribute.String & Schema.Attribute.DefaultTo<'#333333'>;
+    fontFamily: Schema.Attribute.String &
+      Schema.Attribute.DefaultTo<'sans-serif'>;
+    fontSize: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<14>;
+    fontWeight: Schema.Attribute.Enumeration<['normal', 'bold']> &
+      Schema.Attribute.DefaultTo<'normal'>;
+    height: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<100>;
+    imageFit: Schema.Attribute.Enumeration<
+      ['cover', 'contain', 'stretch', 'tile']
+    > &
+      Schema.Attribute.DefaultTo<'cover'>;
+    isVariable: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    letterSpacing: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    lineHeight: Schema.Attribute.Decimal & Schema.Attribute.DefaultTo<1.5>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-studio.poster-element'
+    > &
+      Schema.Attribute.Private;
+    opacity: Schema.Attribute.Decimal & Schema.Attribute.DefaultTo<1>;
+    posterTemplate: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-studio.poster-template'
+    > &
+      Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    qrBaseUrl: Schema.Attribute.String;
+    qrBgColor: Schema.Attribute.String & Schema.Attribute.DefaultTo<'#FFFFFF'>;
+    qrColor: Schema.Attribute.String & Schema.Attribute.DefaultTo<'#000000'>;
+    qrContentMode: Schema.Attribute.Enumeration<['direct', 'url_with_invite']> &
+      Schema.Attribute.DefaultTo<'direct'>;
+    qrErrorLevel: Schema.Attribute.Enumeration<['L', 'M', 'Q', 'H']> &
+      Schema.Attribute.DefaultTo<'M'>;
+    qrFallbackMode: Schema.Attribute.Enumeration<
+      ['base_url_only', 'default_value', 'hide_element']
+    > &
+      Schema.Attribute.DefaultTo<'base_url_only'>;
+    qrInviteParam: Schema.Attribute.String &
+      Schema.Attribute.DefaultTo<'inviteCode'>;
+    qrInviteSeparator: Schema.Attribute.String &
+      Schema.Attribute.DefaultTo<'?'>;
+    qrSize: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<120>;
+    rotation: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    shapeType: Schema.Attribute.Enumeration<['rect', 'circle', 'line']> &
+      Schema.Attribute.DefaultTo<'rect'>;
+    sortOrder: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    textAlign: Schema.Attribute.Enumeration<['left', 'center', 'right']> &
+      Schema.Attribute.DefaultTo<'left'>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    variableName: Schema.Attribute.String;
+    width: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<100>;
+    x: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    y: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    zIndex: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+  };
+}
+
+export interface PluginZhaoStudioPosterTemplate
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_studio_poster_templates';
+  info: {
+    description: '\u81EA\u5B9A\u4E49\u6D77\u62A5\u6A21\u677F\u8BBE\u8BA1';
+    displayName: '\u6D77\u62A5\u6A21\u677F';
+    pluralName: 'poster-templates';
+    singularName: 'poster-template';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: true;
+    };
+    'content-type-builder': {
+      visible: true;
+    };
+  };
+  attributes: {
+    backgroundColor: Schema.Attribute.String &
+      Schema.Attribute.DefaultTo<'#FFFFFF'>;
+    backgroundImage: Schema.Attribute.String;
+    backgroundMode: Schema.Attribute.Enumeration<
+      ['cover', 'contain', 'stretch', 'tile']
+    > &
+      Schema.Attribute.DefaultTo<'cover'>;
+    canvasHeight: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<1000>;
+    canvasWidth: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<600>;
+    code: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.Unique;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    description: Schema.Attribute.Text;
+    elements: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-studio.poster-element'
+    >;
+    isActive: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    isDefault: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-studio.poster-template'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    optionalVariables: Schema.Attribute.JSON &
+      Schema.Attribute.DefaultTo<['market_price', 'sale_price', 'invite_code']>;
+    publishedAt: Schema.Attribute.DateTime;
+    requiredVariables: Schema.Attribute.JSON &
+      Schema.Attribute.DefaultTo<
+        ['title', 'description', 'image_url', 'qr_code']
+      >;
+    site: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-common.site-config'
+    > &
+      Schema.Attribute.Required;
+    thumbnail: Schema.Attribute.String;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -6638,10 +6994,7 @@ export interface PluginZhaoThirdThirdPartyAccount
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    user: Schema.Attribute.Relation<
-      'manyToOne',
-      'plugin::users-permissions.user'
-    >;
+    user: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-sso.sso-user'>;
   };
 }
 
@@ -7058,10 +7411,7 @@ export interface PluginZhaoWealthWealthCustomerProduct
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    user: Schema.Attribute.Relation<
-      'manyToOne',
-      'plugin::users-permissions.user'
-    >;
+    user: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-sso.sso-user'>;
   };
 }
 
@@ -8276,10 +8626,7 @@ export interface PluginZhaoWebsiteInteraction
       Schema.Attribute.SetMinMaxLength<{
         maxLength: 500;
       }>;
-    userId: Schema.Attribute.Relation<
-      'manyToOne',
-      'plugin::users-permissions.user'
-    >;
+    userId: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-sso.sso-user'>;
     visitorId: Schema.Attribute.String &
       Schema.Attribute.Required &
       Schema.Attribute.SetMinMaxLength<{
@@ -8665,6 +9012,14 @@ export interface PluginZhaoWebsiteProduct extends Struct.CollectionTypeSchema {
   };
   attributes: {
     allowIndex: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    availability: Schema.Attribute.Enumeration<
+      ['in_stock', 'out_of_stock', 'pre_order']
+    > &
+      Schema.Attribute.DefaultTo<'in_stock'>;
+    brandVoiceRef: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-website.brand-voice'
+    >;
     canonicalUrl: Schema.Attribute.String &
       Schema.Attribute.SetMinMaxLength<{
         maxLength: 500;
@@ -8679,6 +9034,11 @@ export interface PluginZhaoWebsiteProduct extends Struct.CollectionTypeSchema {
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+    currency: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 10;
+      }> &
+      Schema.Attribute.DefaultTo<'CNY'>;
     deletedAt: Schema.Attribute.DateTime;
     description: Schema.Attribute.Text;
     features: Schema.Attribute.JSON;
@@ -8703,6 +9063,7 @@ export interface PluginZhaoWebsiteProduct extends Struct.CollectionTypeSchema {
         maxLength: 200;
       }>;
     ogImage: Schema.Attribute.Media;
+    price: Schema.Attribute.Decimal & Schema.Attribute.DefaultTo<0>;
     priceRange: Schema.Attribute.String &
       Schema.Attribute.SetMinMaxLength<{
         maxLength: 100;
@@ -8749,6 +9110,59 @@ export interface PluginZhaoWebsiteProduct extends Struct.CollectionTypeSchema {
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     viewCount: Schema.Attribute.BigInteger & Schema.Attribute.DefaultTo<0>;
+  };
+}
+
+export interface PluginZhaoWebsiteRedirectRule
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_website_redirect_rules';
+  info: {
+    displayName: '\u91CD\u5B9A\u5411\u89C4\u5219';
+    pluralName: 'redirect-rules';
+    singularName: 'redirect-rule';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: true;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    deletedAt: Schema.Attribute.DateTime;
+    fromPath: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 500;
+      }>;
+    isActive: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-website.redirect-rule'
+    > &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    site: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-common.site-config'
+    >;
+    statusCode: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<301>;
+    toUrl: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 500;
+      }>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
   };
 }
 
@@ -8832,6 +9246,7 @@ export interface PluginZhaoWebsiteSeoConfig
       ['allow_all', 'block_all', 'selective']
     > &
       Schema.Attribute.DefaultTo<'allow_all'>;
+    allowedAiCrawlers: Schema.Attribute.JSON & Schema.Attribute.DefaultTo<[]>;
     alternateLocales: Schema.Attribute.JSON;
     baiduAnalyticsId: Schema.Attribute.String &
       Schema.Attribute.SetMinMaxLength<{
@@ -8935,9 +9350,21 @@ export interface PluginZhaoWebsiteSeoConfig
     > &
       Schema.Attribute.Required;
     sitemapExcludeTypes: Schema.Attribute.JSON;
+    sogouSiteVerification: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
     titleTemplate: Schema.Attribute.String &
       Schema.Attribute.SetMinMaxLength<{
         maxLength: 60;
+      }>;
+    twitterCreator: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
+    twitterSite: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
       }>;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
@@ -8967,6 +9394,10 @@ export interface PluginZhaoWebsiteTutorial extends Struct.CollectionTypeSchema {
     };
   };
   attributes: {
+    brandVoiceRef: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-website.brand-voice'
+    >;
     category: Schema.Attribute.Relation<
       'manyToOne',
       'plugin::zhao-website.article-category'
@@ -9014,6 +9445,10 @@ export interface PluginZhaoWebsiteTutorial extends Struct.CollectionTypeSchema {
     steps: Schema.Attribute.JSON & Schema.Attribute.Required;
     structuredData: Schema.Attribute.JSON;
     tags: Schema.Attribute.Relation<'manyToMany', 'plugin::zhao-tag.tag'>;
+    thumbnailUrl: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 500;
+      }>;
     title: Schema.Attribute.String &
       Schema.Attribute.Required &
       Schema.Attribute.SetMinMaxLength<{
@@ -9022,6 +9457,10 @@ export interface PluginZhaoWebsiteTutorial extends Struct.CollectionTypeSchema {
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+    videoUrl: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 500;
+      }>;
     viewCount: Schema.Attribute.BigInteger & Schema.Attribute.DefaultTo<0>;
   };
 }
@@ -9138,10 +9577,7 @@ export interface PluginZhaoWebsiteVisitLog extends Struct.CollectionTypeSchema {
       Schema.Attribute.SetMinMaxLength<{
         maxLength: 500;
       }>;
-    userId: Schema.Attribute.Relation<
-      'manyToOne',
-      'plugin::users-permissions.user'
-    >;
+    userId: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-sso.sso-user'>;
     utmCampaign: Schema.Attribute.String &
       Schema.Attribute.SetMinMaxLength<{
         maxLength: 200;
@@ -9254,13 +9690,17 @@ declare module '@strapi/strapi' {
       'plugin::zhao-sso.sso-user-app-role': PluginZhaoSsoSsoUserAppRole;
       'plugin::zhao-studio.ab-experiment': PluginZhaoStudioAbExperiment;
       'plugin::zhao-studio.ab-variant': PluginZhaoStudioAbVariant;
+      'plugin::zhao-studio.ad-content': PluginZhaoStudioAdContent;
       'plugin::zhao-studio.ad-slot': PluginZhaoStudioAdSlot;
+      'plugin::zhao-studio.ad-zone': PluginZhaoStudioAdZone;
       'plugin::zhao-studio.article-draft': PluginZhaoStudioArticleDraft;
       'plugin::zhao-studio.browser-log': PluginZhaoStudioBrowserLog;
       'plugin::zhao-studio.channel-platform-config': PluginZhaoStudioChannelPlatformConfig;
       'plugin::zhao-studio.collect-source': PluginZhaoStudioCollectSource;
       'plugin::zhao-studio.collect-task': PluginZhaoStudioCollectTask;
       'plugin::zhao-studio.knowledge-point-index': PluginZhaoStudioKnowledgePointIndex;
+      'plugin::zhao-studio.poster-element': PluginZhaoStudioPosterElement;
+      'plugin::zhao-studio.poster-template': PluginZhaoStudioPosterTemplate;
       'plugin::zhao-studio.promo-campaign': PluginZhaoStudioPromoCampaign;
       'plugin::zhao-studio.promo-channel': PluginZhaoStudioPromoChannel;
       'plugin::zhao-studio.publish-account': PluginZhaoStudioPublishAccount;
@@ -9302,6 +9742,7 @@ declare module '@strapi/strapi' {
       'plugin::zhao-website.knowledge-relation': PluginZhaoWebsiteKnowledgeRelation;
       'plugin::zhao-website.lead': PluginZhaoWebsiteLead;
       'plugin::zhao-website.product': PluginZhaoWebsiteProduct;
+      'plugin::zhao-website.redirect-rule': PluginZhaoWebsiteRedirectRule;
       'plugin::zhao-website.search-log': PluginZhaoWebsiteSearchLog;
       'plugin::zhao-website.seo-config': PluginZhaoWebsiteSeoConfig;
       'plugin::zhao-website.tutorial': PluginZhaoWebsiteTutorial;

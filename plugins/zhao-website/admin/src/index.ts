@@ -5,7 +5,7 @@ export { pluginId };
 export default {
   register(app: any) {
     app.addMenuLink({
-      to: `/plugins/${pluginId}`,
+      to: `plugins/${pluginId}`,
       icon: PluginIcon,
       intlLabel: {
         id: `${pluginId}.plugin.name`,
@@ -17,10 +17,7 @@ export default {
           subject: null,
         },
       ],
-      Component: async () => {
-        const component = await import('./pages/App');
-        return component;
-      },
+      Component: () => import('./pages/App').then((mod) => ({ default: mod.default })),
     });
     app.registerPlugin({
       id: pluginId,
