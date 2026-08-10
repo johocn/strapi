@@ -156,6 +156,10 @@
       "type": "integer",
       "default": 0
     },
+    "sequenceNumber": {
+      "type": "integer",
+      "default": 0
+    },
     "enablePoints": {
       "type": "boolean",
       "default": false
