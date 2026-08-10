@@ -197,6 +197,26 @@
       "relation": "manyToOne",
       "target": "plugin::zhao-channel.channel"
     },
+    "enforceSequence": {
+      "type": "boolean",
+      "default": false
+    },
+    "sequenceTag": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-tag.tag",
+      "inversedBy": "sequenceCourses"
+    },
+    "allowRetakeQuiz": {
+      "type": "boolean",
+      "default": false
+    },
+    "quizRetryCount": {
+      "type": "enumeration",
+      "enum": ["no_retry", "retry_1", "retry_2", "retry_3", "retry_4"],
+      "default": "no_retry",
+      "required": true
+    },
     "deletedAt": {
       "type": "datetime",
       "default": null
