@@ -121,6 +121,16 @@
       "enum": ["lesson_points", "quiz_points"],
       "default": "lesson_points"
     },
+    "enforceSequence": {
+      "type": "boolean",
+      "default": false
+    },
+    "sequenceTag": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-tag.tag",
+      "inversedBy": "sequenceLessons"
+    },
     "deletedAt": {
       "type": "datetime",
       "default": null
