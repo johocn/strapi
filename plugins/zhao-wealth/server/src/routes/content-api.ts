@@ -92,31 +92,49 @@ export default () => ({
       method: 'GET',
       path: '/v1/wealth/compare',
       handler: 'compare.compare',
+      config: {
+        policies: ['plugin::zhao-auth.has-channel-access', 'plugin::zhao-auth.has-tenant-access'],
+      },
     },
     {
       method: 'GET',
       path: '/v1/wealth/holdings',
       handler: 'holding.list',
+      config: {
+        policies: ['plugin::zhao-auth.is-authenticated', 'plugin::zhao-auth.has-channel-access'],
+      },
     },
     {
       method: 'GET',
       path: '/v1/wealth/holdings/:id',
       handler: 'holding.detail',
+      config: {
+        policies: ['plugin::zhao-auth.is-authenticated', 'plugin::zhao-auth.has-channel-access'],
+      },
     },
     {
       method: 'GET',
       path: '/v1/wealth/holdings/:id/profit-trend',
       handler: 'holding.profitTrend',
+      config: {
+        policies: ['plugin::zhao-auth.is-authenticated', 'plugin::zhao-auth.has-channel-access'],
+      },
     },
     {
       method: 'POST',
       path: '/v1/wealth/holdings',
       handler: 'holding.add',
+      config: {
+        policies: ['plugin::zhao-auth.is-authenticated', 'plugin::zhao-auth.has-channel-access'],
+      },
     },
     {
       method: 'DELETE',
       path: '/v1/wealth/holdings/:id',
       handler: 'holding.remove',
+      config: {
+        policies: ['plugin::zhao-auth.is-authenticated', 'plugin::zhao-auth.has-channel-access'],
+      },
     },
   ],
 });

@@ -21,14 +21,14 @@ export default ({ strapi }) => ({
     const annualField = PERIOD_TO_ANNUAL_FIELD[period] || PERIOD_TO_ANNUAL_FIELD.m1;
 
     const results = await Promise.all(productIds.map(async (productId: number) => {
-      // 产品基本信息
+      // 产品基本信息（仅上架产品可对比）
       const product = await strapi.db.query('plugin::zhao-wealth.wealth-product').findOne({
-        where: { id: productId },
+        where: { id: productId, status: true },
         populate: ['company'],
       });
 
       if (!product) {
-        throw new Error(`产品 ${productId} 不存在`);
+        throw new Error(`产品 ${productId} 不存在或已下架`);
       }
 
       // 最新净值
