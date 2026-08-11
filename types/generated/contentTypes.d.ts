@@ -1667,6 +1667,8 @@ export interface PluginZhaoCourseCourse extends Struct.CollectionTypeSchema {
   attributes: {
     allowCrossChannel: Schema.Attribute.Boolean &
       Schema.Attribute.DefaultTo<true>;
+    allowRetakeQuiz: Schema.Attribute.Boolean &
+      Schema.Attribute.DefaultTo<false>;
     auditStatus: Schema.Attribute.Enumeration<
       ['pending', 'approved', 'rejected']
     > &
@@ -1681,6 +1683,8 @@ export interface PluginZhaoCourseCourse extends Struct.CollectionTypeSchema {
       Schema.Attribute.DefaultTo<'all'>;
     courseEndDate: Schema.Attribute.DateTime;
     courseStartDate: Schema.Attribute.DateTime;
+    courseType: Schema.Attribute.Enumeration<['free', 'points', 'paid']> &
+      Schema.Attribute.DefaultTo<'free'>;
     cover: Schema.Attribute.Media;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
@@ -1694,7 +1698,11 @@ export interface PluginZhaoCourseCourse extends Struct.CollectionTypeSchema {
     discountPrice: Schema.Attribute.Decimal & Schema.Attribute.DefaultTo<0>;
     duration: Schema.Attribute.String;
     enablePoints: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    enforceSequence: Schema.Attribute.Boolean &
+      Schema.Attribute.DefaultTo<false>;
     enrollEndDate: Schema.Attribute.DateTime;
+    enrollMode: Schema.Attribute.Enumeration<['none', 'required', 'period']> &
+      Schema.Attribute.DefaultTo<'none'>;
     enrollStartDate: Schema.Attribute.DateTime;
     exams: Schema.Attribute.Relation<
       'oneToMany',
@@ -1729,6 +1737,7 @@ export interface PluginZhaoCourseCourse extends Struct.CollectionTypeSchema {
       'plugin::zhao-channel.channel'
     >;
     points: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    pointsPrice: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
     pointsType: Schema.Attribute.Enumeration<
       ['course_points', 'lesson_points']
     > &
@@ -1736,9 +1745,16 @@ export interface PluginZhaoCourseCourse extends Struct.CollectionTypeSchema {
     price: Schema.Attribute.Decimal & Schema.Attribute.DefaultTo<0>;
     publishDate: Schema.Attribute.DateTime;
     publishedAt: Schema.Attribute.DateTime;
+    quizRetryCount: Schema.Attribute.Enumeration<
+      ['no_retry', 'retry_1', 'retry_2', 'retry_3', 'retry_4']
+    > &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'no_retry'>;
     quizzes: Schema.Attribute.Relation<'oneToMany', 'plugin::zhao-quiz.quiz'>;
     rating: Schema.Attribute.Decimal & Schema.Attribute.DefaultTo<0>;
     ratingCount: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    sequenceNumber: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    sequenceTag: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-tag.tag'>;
     slug: Schema.Attribute.UID<'title'>;
     sort: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
     status: Schema.Attribute.Enumeration<
@@ -1824,6 +1840,8 @@ export interface PluginZhaoCourseCourseLesson
     deletedAt: Schema.Attribute.DateTime;
     duration: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
     enablePoints: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    enforceSequence: Schema.Attribute.Boolean &
+      Schema.Attribute.DefaultTo<false>;
     exams: Schema.Attribute.Relation<
       'oneToMany',
       'plugin::zhao-quiz.quiz-exam'
@@ -1846,6 +1864,7 @@ export interface PluginZhaoCourseCourseLesson
     publishedAt: Schema.Attribute.DateTime;
     quizzes: Schema.Attribute.Relation<'oneToMany', 'plugin::zhao-quiz.quiz'>;
     sequenceNumber: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    sequenceTag: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-tag.tag'>;
     slug: Schema.Attribute.UID<'title'>;
     sort: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
     summary: Schema.Attribute.Text;
@@ -6828,6 +6847,14 @@ export interface PluginZhaoTagTag extends Struct.CollectionTypeSchema {
     name: Schema.Attribute.String & Schema.Attribute.Required;
     parent: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-tag.tag'>;
     publishedAt: Schema.Attribute.DateTime;
+    sequenceCourses: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-course.course'
+    >;
+    sequenceLessons: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-course.course-lesson'
+    >;
     site: Schema.Attribute.Relation<
       'manyToOne',
       'plugin::zhao-common.site-config'
@@ -7374,6 +7401,52 @@ export interface PluginZhaoWealthWealthCompany
   };
 }
 
+export interface PluginZhaoWealthWealthCustomerHolding
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'wealth_customer_holdings';
+  info: {
+    description: '\u5BA2\u6237\u5B9E\u9645\u6301\u4ED3\u8BB0\u5F55';
+    displayName: '\u5BA2\u6237\u6301\u4ED3';
+    pluralName: 'wealth-customer-holdings';
+    singularName: 'wealth-customer-holding';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    buyAmount: Schema.Attribute.Decimal & Schema.Attribute.Required;
+    buyDate: Schema.Attribute.Date & Schema.Attribute.Required;
+    buyNav: Schema.Attribute.Decimal;
+    channel: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-channel.channel'
+    >;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    createdByManager: Schema.Attribute.Relation<'manyToOne', 'admin::user'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-wealth.wealth-customer-holding'
+    > &
+      Schema.Attribute.Private;
+    product: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-wealth.wealth-product'
+    >;
+    publishedAt: Schema.Attribute.DateTime;
+    redeemDate: Schema.Attribute.Date;
+    remark: Schema.Attribute.String;
+    status: Schema.Attribute.Enumeration<['holding', 'redeemed']> &
+      Schema.Attribute.DefaultTo<'holding'>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    user: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-sso.sso-user'>;
+  };
+}
+
 export interface PluginZhaoWealthWealthCustomerProduct
   extends Struct.CollectionTypeSchema {
   collectionName: 'wealth_customer_products';
@@ -7412,6 +7485,50 @@ export interface PluginZhaoWealthWealthCustomerProduct
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     user: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-sso.sso-user'>;
+  };
+}
+
+export interface PluginZhaoWealthWealthDisclosure
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'wealth_disclosures';
+  info: {
+    description: '\u6309\u4EA7\u54C1\u7C7B\u578B\u7684\u5408\u89C4\u62AB\u9732\u6587\u6848';
+    displayName: '\u5408\u89C4\u62AB\u9732';
+    pluralName: 'wealth-disclosures';
+    singularName: 'wealth-disclosure';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    content: Schema.Attribute.Text & Schema.Attribute.Required;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    effectiveDate: Schema.Attribute.Date & Schema.Attribute.Required;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-wealth.wealth-disclosure'
+    > &
+      Schema.Attribute.Private;
+    productType: Schema.Attribute.Enumeration<
+      [
+        'bank-wealth',
+        'stock-fund',
+        'bond-fund',
+        'mixed-fund',
+        'money-fund',
+        'all',
+      ]
+    > &
+      Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    status: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    title: Schema.Attribute.String & Schema.Attribute.Required;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
   };
 }
 
@@ -9720,7 +9837,9 @@ declare module '@strapi/strapi' {
       'plugin::zhao-wealth.wealth-annual-snapshot': PluginZhaoWealthWealthAnnualSnapshot;
       'plugin::zhao-wealth.wealth-collect-config': PluginZhaoWealthWealthCollectConfig;
       'plugin::zhao-wealth.wealth-company': PluginZhaoWealthWealthCompany;
+      'plugin::zhao-wealth.wealth-customer-holding': PluginZhaoWealthWealthCustomerHolding;
       'plugin::zhao-wealth.wealth-customer-product': PluginZhaoWealthWealthCustomerProduct;
+      'plugin::zhao-wealth.wealth-disclosure': PluginZhaoWealthWealthDisclosure;
       'plugin::zhao-wealth.wealth-money-income': PluginZhaoWealthWealthMoneyIncome;
       'plugin::zhao-wealth.wealth-nav': PluginZhaoWealthWealthNav;
       'plugin::zhao-wealth.wealth-product': PluginZhaoWealthWealthProduct;

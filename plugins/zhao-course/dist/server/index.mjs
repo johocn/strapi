@@ -90,7 +90,7 @@ const kind$4 = "collectionType";
 const collectionName$4 = "zhao_courses";
 const info$4 = { "singularName": "course", "pluralName": "courses", "displayName": "课程" };
 const options$4 = { "draftAndPublish": true };
-const attributes$4 = { "title": { "type": "string", "required": true }, "slug": { "type": "uid", "targetField": "title", "required": false }, "description": { "type": "text" }, "cover": { "type": "media", "multiple": false, "required": false }, "thumbnail": { "type": "media", "multiple": false, "required": false }, "author": { "type": "string" }, "difficulty": { "type": "enumeration", "enum": ["beginner", "intermediate", "advanced", "expert"], "default": "beginner" }, "duration": { "type": "string" }, "level": { "type": "enumeration", "enum": ["introductory", "foundation", "advanced", "professional"], "default": "introductory" }, "language": { "type": "enumeration", "enum": ["zh-CN", "zh-TW", "en-US", "ja-JP", "ko-KR"], "default": "zh-CN" }, "keywords": { "type": "json" }, "studentCount": { "type": "integer", "default": 0 }, "viewCount": { "type": "integer", "default": 0 }, "likeCount": { "type": "integer", "default": 0 }, "isFeatured": { "type": "boolean", "default": false }, "isFree": { "type": "boolean", "default": false }, "originalPrice": { "type": "decimal", "precision": 10, "scale": 2, "default": 0 }, "discountPrice": { "type": "decimal", "precision": 10, "scale": 2, "default": 0 }, "enrollStartDate": { "type": "datetime" }, "enrollEndDate": { "type": "datetime" }, "courseStartDate": { "type": "datetime" }, "courseEndDate": { "type": "datetime" }, "publishDate": { "type": "datetime" }, "status": { "type": "enumeration", "enum": ["draft", "pending", "published", "archived"], "default": "draft" }, "auditStatus": { "type": "enumeration", "enum": ["pending", "approved", "rejected"], "default": "pending" }, "rating": { "type": "decimal", "precision": 3, "scale": 1, "default": 0 }, "ratingCount": { "type": "integer", "default": 0 }, "category": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-course.course-category", "inversedBy": "courses" }, "tags": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-tag.tag" }, "lessons": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-course.course-lesson", "mappedBy": "course" }, "quizzes": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-quiz.quiz", "mappedBy": "course" }, "exams": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-quiz.quiz-exam", "mappedBy": "course" }, "sort": { "type": "integer", "default": 0 }, "enablePoints": { "type": "boolean", "default": false }, "points": { "type": "integer", "default": 0 }, "pointsType": { "type": "enumeration", "enum": ["course_points", "lesson_points"], "default": "course_points" }, "isPaid": { "type": "boolean", "default": false }, "price": { "type": "decimal", "precision": 10, "scale": 2, "default": 0 }, "channelScope": { "type": "enumeration", "enum": ["all", "specific"], "default": "all" }, "channelIds": { "type": "json", "default": "[]" }, "allowCrossChannel": { "type": "boolean", "default": true }, "pointChannel": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-channel.channel" }, "deletedAt": { "type": "datetime", "default": null } };
+const attributes$4 = { "title": { "type": "string", "required": true }, "slug": { "type": "uid", "targetField": "title", "required": false }, "description": { "type": "text" }, "cover": { "type": "media", "multiple": false, "required": false }, "thumbnail": { "type": "media", "multiple": false, "required": false }, "author": { "type": "string" }, "difficulty": { "type": "enumeration", "enum": ["beginner", "intermediate", "advanced", "expert"], "default": "beginner" }, "duration": { "type": "string" }, "level": { "type": "enumeration", "enum": ["introductory", "foundation", "advanced", "professional"], "default": "introductory" }, "language": { "type": "enumeration", "enum": ["zh-CN", "zh-TW", "en-US", "ja-JP", "ko-KR"], "default": "zh-CN" }, "keywords": { "type": "json" }, "studentCount": { "type": "integer", "default": 0 }, "viewCount": { "type": "integer", "default": 0 }, "likeCount": { "type": "integer", "default": 0 }, "isFeatured": { "type": "boolean", "default": false }, "isFree": { "type": "boolean", "default": false }, "originalPrice": { "type": "decimal", "precision": 10, "scale": 2, "default": 0 }, "discountPrice": { "type": "decimal", "precision": 10, "scale": 2, "default": 0 }, "courseType": { "type": "enumeration", "enum": ["free", "points", "paid"], "default": "free" }, "pointsPrice": { "type": "integer", "default": 0 }, "enrollMode": { "type": "enumeration", "enum": ["none", "required", "period"], "default": "none" }, "enrollStartDate": { "type": "datetime" }, "enrollEndDate": { "type": "datetime" }, "courseStartDate": { "type": "datetime" }, "courseEndDate": { "type": "datetime" }, "publishDate": { "type": "datetime" }, "status": { "type": "enumeration", "enum": ["draft", "pending", "published", "archived"], "default": "draft" }, "auditStatus": { "type": "enumeration", "enum": ["pending", "approved", "rejected"], "default": "pending" }, "rating": { "type": "decimal", "precision": 3, "scale": 1, "default": 0 }, "ratingCount": { "type": "integer", "default": 0 }, "category": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-course.course-category", "inversedBy": "courses" }, "tags": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-tag.tag" }, "lessons": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-course.course-lesson", "mappedBy": "course" }, "quizzes": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-quiz.quiz", "mappedBy": "course" }, "exams": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-quiz.quiz-exam", "mappedBy": "course" }, "sort": { "type": "integer", "default": 0 }, "sequenceNumber": { "type": "integer", "default": 0 }, "enablePoints": { "type": "boolean", "default": false }, "points": { "type": "integer", "default": 0 }, "pointsType": { "type": "enumeration", "enum": ["course_points", "lesson_points"], "default": "course_points" }, "isPaid": { "type": "boolean", "default": false }, "price": { "type": "decimal", "precision": 10, "scale": 2, "default": 0 }, "channelScope": { "type": "enumeration", "enum": ["all", "specific"], "default": "all" }, "channelIds": { "type": "json", "default": "[]" }, "allowCrossChannel": { "type": "boolean", "default": true }, "pointChannel": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-channel.channel" }, "enforceSequence": { "type": "boolean", "default": false }, "sequenceTag": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-tag.tag", "inversedBy": "sequenceCourses" }, "allowRetakeQuiz": { "type": "boolean", "default": false }, "quizRetryCount": { "type": "enumeration", "enum": ["no_retry", "retry_1", "retry_2", "retry_3", "retry_4"], "default": "no_retry", "required": true }, "deletedAt": { "type": "datetime", "default": null } };
 const course$2 = {
   kind: kind$4,
   collectionName: collectionName$4,
@@ -102,7 +102,7 @@ const kind$3 = "collectionType";
 const collectionName$3 = "zhao_course_lessons";
 const info$3 = { "singularName": "course-lesson", "pluralName": "course-lessons", "displayName": "课时" };
 const options$3 = { "draftAndPublish": false };
-const attributes$3 = { "title": { "type": "string", "required": true }, "slug": { "type": "uid", "targetField": "title", "required": false }, "type": { "type": "enumeration", "enum": ["video", "audio", "article", "quiz"], "default": "video" }, "thumbnail": { "type": "media", "multiple": false, "required": false }, "summary": { "type": "text" }, "content": { "type": "richtext" }, "video_url": { "type": "string" }, "audio_url": { "type": "string" }, "images": { "type": "media", "multiple": true, "required": false }, "attachments": { "type": "media", "multiple": true, "required": false }, "duration": { "type": "integer", "default": 0 }, "isFreePreview": { "type": "boolean", "default": false }, "previewDuration": { "type": "integer", "default": 0 }, "sequenceNumber": { "type": "integer", "default": 0 }, "learningObjectives": { "type": "text" }, "prerequisites": { "type": "text" }, "completionThreshold": { "type": "integer", "default": 100 }, "isRequired": { "type": "boolean", "default": true }, "course": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-course.course", "inversedBy": "lessons" }, "tags": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-tag.tag" }, "quizzes": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-quiz.quiz", "mappedBy": "lesson" }, "exams": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-quiz.quiz-exam", "mappedBy": "lesson" }, "sort": { "type": "integer", "default": 0 }, "enablePoints": { "type": "boolean", "default": false }, "points": { "type": "integer", "default": 0 }, "pointsType": { "type": "enumeration", "enum": ["lesson_points", "quiz_points"], "default": "lesson_points" }, "deletedAt": { "type": "datetime", "default": null } };
+const attributes$3 = { "title": { "type": "string", "required": true }, "slug": { "type": "uid", "targetField": "title", "required": false }, "type": { "type": "enumeration", "enum": ["video", "audio", "article", "quiz"], "default": "video" }, "thumbnail": { "type": "media", "multiple": false, "required": false }, "summary": { "type": "text" }, "content": { "type": "richtext" }, "video_url": { "type": "string" }, "audio_url": { "type": "string" }, "images": { "type": "media", "multiple": true, "required": false }, "attachments": { "type": "media", "multiple": true, "required": false }, "duration": { "type": "integer", "default": 0 }, "isFreePreview": { "type": "boolean", "default": false }, "previewDuration": { "type": "integer", "default": 0 }, "sequenceNumber": { "type": "integer", "default": 0 }, "learningObjectives": { "type": "text" }, "prerequisites": { "type": "text" }, "completionThreshold": { "type": "integer", "default": 100 }, "isRequired": { "type": "boolean", "default": true }, "course": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-course.course", "inversedBy": "lessons" }, "tags": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-tag.tag" }, "quizzes": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-quiz.quiz", "mappedBy": "lesson" }, "exams": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-quiz.quiz-exam", "mappedBy": "lesson" }, "sort": { "type": "integer", "default": 0 }, "enablePoints": { "type": "boolean", "default": false }, "points": { "type": "integer", "default": 0 }, "pointsType": { "type": "enumeration", "enum": ["lesson_points", "quiz_points"], "default": "lesson_points" }, "enforceSequence": { "type": "boolean", "default": false }, "sequenceTag": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-tag.tag", "inversedBy": "sequenceLessons" }, "deletedAt": { "type": "datetime", "default": null } };
 const courseLesson$2 = {
   kind: kind$3,
   collectionName: collectionName$3,
@@ -1493,7 +1493,8 @@ const course = ({ strapi }) => {
         tags: true,
         cover: true,
         thumbnail: true,
-        lessons: true
+        lessons: true,
+        sequenceTag: true
       }
     });
   };
@@ -1511,7 +1512,8 @@ const course = ({ strapi }) => {
         tags: true,
         cover: true,
         thumbnail: true,
-        lessons: true
+        lessons: true,
+        sequenceTag: true
       }
     });
   };
@@ -1600,7 +1602,7 @@ const course = ({ strapi }) => {
           limit: 1e3,
           orderBy: { id: "asc" }
         };
-        const dbPopulate = ["category", "tags", "cover", "thumbnail"];
+        const dbPopulate = ["category", "tags", "cover", "thumbnail", "sequenceTag", "lessons"];
         if (dbPopulate.length > 0) dbQueryParams.populate = dbPopulate;
         const allRows = await strapi.db.query(UID$4).findMany(dbQueryParams);
         const docMap = /* @__PURE__ */ new Map();
@@ -1627,6 +1629,7 @@ const course = ({ strapi }) => {
             tags: true,
             cover: true,
             thumbnail: true,
+            sequenceTag: true,
             ...populate || {}
           }
         };
@@ -1696,7 +1699,8 @@ const course = ({ strapi }) => {
           cover: true,
           thumbnail: true,
           lessons: true,
-          pointChannel: true
+          pointChannel: true,
+          sequenceTag: true
         }
       };
       if (publicOnly) {
@@ -1719,7 +1723,8 @@ const course = ({ strapi }) => {
           tags: true,
           cover: true,
           thumbnail: true,
-          lessons: true
+          lessons: true,
+          sequenceTag: true
         }
       });
       if (needPublish && result?.documentId) {
@@ -1760,7 +1765,8 @@ const course = ({ strapi }) => {
           tags: true,
           cover: true,
           thumbnail: true,
-          lessons: true
+          lessons: true,
+          sequenceTag: true
         }
       });
       if (needPublish && result?.documentId) {
@@ -1817,6 +1823,7 @@ const courseLesson = ({ strapi }) => ({
         attachments: true,
         thumbnail: true,
         tags: true,
+        sequenceTag: true,
         ...populate || {}
       }
     };
@@ -1841,13 +1848,13 @@ const courseLesson = ({ strapi }) => ({
   async findOne(documentId) {
     return strapi.documents(UID$3).findOne({
       documentId,
-      populate: { course: true, images: true, attachments: true, thumbnail: true, tags: true }
+      populate: { course: true, images: true, attachments: true, thumbnail: true, tags: true, sequenceTag: true }
     });
   },
   async create(data) {
     const result = await strapi.documents(UID$3).create({
       data,
-      populate: { course: true, images: true, attachments: true, thumbnail: true, tags: true }
+      populate: { course: true, images: true, attachments: true, thumbnail: true, tags: true, sequenceTag: true }
     });
     await syncTagIndex(strapi, TARGET_TYPE, result.documentId, extractTagIds(result));
     return result;
@@ -1856,7 +1863,7 @@ const courseLesson = ({ strapi }) => ({
     const result = await strapi.documents(UID$3).update({
       documentId,
       data,
-      populate: { course: true, images: true, attachments: true, thumbnail: true, tags: true }
+      populate: { course: true, images: true, attachments: true, thumbnail: true, tags: true, sequenceTag: true }
     });
     await syncTagIndex(strapi, TARGET_TYPE, result.documentId, extractTagIds(result));
     return result;

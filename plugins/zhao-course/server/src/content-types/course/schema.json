@@ -88,6 +88,20 @@
       "scale": 2,
       "default": 0
     },
+    "courseType": {
+      "type": "enumeration",
+      "enum": ["free", "points", "paid"],
+      "default": "free"
+    },
+    "pointsPrice": {
+      "type": "integer",
+      "default": 0
+    },
+    "enrollMode": {
+      "type": "enumeration",
+      "enum": ["none", "required", "period"],
+      "default": "none"
+    },
     "enrollStartDate": {
       "type": "datetime"
     },

@@ -39,6 +39,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         attachments: true,
         thumbnail: true,
         tags: true,
+        sequenceTag: true,
         ...(populate || {}),
       },
     };
@@ -67,14 +68,14 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async findOne(documentId: string) {
     return strapi.documents(UID).findOne({
       documentId,
-      populate: { course: true, images: true, attachments: true, thumbnail: true, tags: true },
+      populate: { course: true, images: true, attachments: true, thumbnail: true, tags: true, sequenceTag: true },
     });
   },
 
   async create(data: any) {
     const result = await strapi.documents(UID).create({
       data,
-      populate: { course: true, images: true, attachments: true, thumbnail: true, tags: true },
+      populate: { course: true, images: true, attachments: true, thumbnail: true, tags: true, sequenceTag: true },
     });
     await syncTagIndex(strapi, TARGET_TYPE, result.documentId, extractTagIds(result));
     return result;
@@ -84,7 +85,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     const result = await strapi.documents(UID).update({
       documentId,
       data,
-      populate: { course: true, images: true, attachments: true, thumbnail: true, tags: true },
+      populate: { course: true, images: true, attachments: true, thumbnail: true, tags: true, sequenceTag: true },
     });
     await syncTagIndex(strapi, TARGET_TYPE, result.documentId, extractTagIds(result));
     return result;

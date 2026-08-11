@@ -132,6 +132,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         cover: true,
         thumbnail: true,
         lessons: true,
+        sequenceTag: true,
       },
     });
   };
@@ -153,6 +154,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         cover: true,
         thumbnail: true,
         lessons: true,
+        sequenceTag: true,
       },
     });
   };
@@ -260,7 +262,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         orderBy: { id: "asc" },
       };
       // populate 关系字段
-      const dbPopulate: string[] = ["category", "tags", "cover", "thumbnail"];
+      const dbPopulate: string[] = ["category", "tags", "cover", "thumbnail", "sequenceTag", "lessons"];
       if (dbPopulate.length > 0) dbQueryParams.populate = dbPopulate;
 
       const allRows = await strapi.db.query(UID).findMany(dbQueryParams);
@@ -292,6 +294,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
           tags: true,
           cover: true,
           thumbnail: true,
+          sequenceTag: true,
           ...(populate || {}),
         },
       };
@@ -375,6 +378,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         thumbnail: true,
         lessons: true,
         pointChannel: true,
+        sequenceTag: true,
       },
     };
     if (publicOnly) {
@@ -402,6 +406,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         cover: true,
         thumbnail: true,
         lessons: true,
+        sequenceTag: true,
       },
     });
     if (needPublish && result?.documentId) {
@@ -449,6 +454,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         cover: true,
         thumbnail: true,
         lessons: true,
+        sequenceTag: true,
       },
     });
     if (needPublish && result?.documentId) {
