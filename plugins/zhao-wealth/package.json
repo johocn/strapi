@@ -28,7 +28,9 @@
     "build": "strapi-plugin build",
     "watch": "strapi-plugin watch",
     "watch:link": "strapi-plugin watch:link",
-    "verify": "strapi-plugin verify"
+    "verify": "strapi-plugin verify",
+    "test": "jest",
+    "test:watch": "jest --watch"
   },
   "dependencies": {
     "@ant-design/icons": "^5.6.1",
@@ -45,7 +47,10 @@
     "@strapi/sdk-plugin": "^6.1.0",
     "@strapi/strapi": "^5.45.0",
     "@strapi/typescript-utils": "^5.45.0",
+    "@types/jest": "^29.5.14",
     "@types/node": "^20.11.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.4.12",
     "typescript": "^5.9.3"
   },
   "peerDependencies": {

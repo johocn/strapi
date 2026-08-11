@@ -20,5 +20,11 @@ declare const _default: {
     'wealth-risk-metric': {
         actions: string[];
     };
+    'wealth-disclosure': {
+        actions: string[];
+    };
+    'wealth-customer-holding': {
+        actions: string[];
+    };
 };
 export default _default;

@@ -228,6 +228,36 @@ export default ({ strapi }) => ({
   },
 
   /**
+   * 获取 Calmar 比率 = 年化收益 / |最大回撤|
+   */
+  async getCalmarRatio(productId: number, period: string): Promise<number | null> {
+    const annualField = PERIOD_TO_ANNUAL_FIELD[period];
+
+    // 取最新年化快照
+    const snapshot = await strapi.db.query('plugin::zhao-wealth.wealth-annual-snapshot').findOne({
+      where: { product: productId },
+      orderBy: { snapshotDate: 'desc' },
+    });
+
+    const annualReturn = snapshot ? snapshot[annualField] : null;
+
+    // 取最新 maxDrawdown
+    const drawdownRecords = await strapi.db.query('plugin::zhao-wealth.wealth-risk-metric').findMany({
+      where: { product: productId, period, metricName: 'maxDrawdown' },
+      orderBy: { snapshotDate: 'desc' },
+      limit: 1,
+    });
+
+    const maxDrawdown = drawdownRecords.length > 0 ? drawdownRecords[0].metricValue : null;
+
+    if (annualReturn === null || maxDrawdown === null || maxDrawdown === 0) {
+      return null;
+    }
+
+    return annualReturn / Math.abs(maxDrawdown);
+  },
+
+  /**
    * 批量计算当日所有产品的风险指标
    */
   async calculateAllForDate(snapshotDate: Date): Promise<void> {

@@ -24,4 +24,10 @@ export default {
   'wealth-risk-metric': {
     actions: ['aggregate', 'trend', 'peers', 'recalculate'],
   },
+  'wealth-disclosure': {
+    actions: ['find', 'findOne', 'create', 'update', 'delete'],
+  },
+  'wealth-customer-holding': {
+    actions: ['find', 'findOne', 'create', 'update', 'delete'],
+  },
 };

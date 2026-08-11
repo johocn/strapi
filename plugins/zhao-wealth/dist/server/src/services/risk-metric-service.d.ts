@@ -23,6 +23,10 @@ declare const _default: ({ strapi }: {
      */
     calculateAndSaveMetrics(productId: number, snapshotDate: Date): Promise<void>;
     /**
+     * 获取 Calmar 比率 = 年化收益 / |最大回撤|
+     */
+    getCalmarRatio(productId: number, period: string): Promise<number | null>;
+    /**
      * 批量计算当日所有产品的风险指标
      */
     calculateAllForDate(snapshotDate: Date): Promise<void>;

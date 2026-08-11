@@ -163,5 +163,35 @@ export default () => ({
       path: '/risk-metrics/admin/peers',
       handler: 'risk-metric.adminPeers',
     },
+    {
+      method: 'GET',
+      path: '/disclosures',
+      handler: 'disclosure.adminList',
+    },
+    {
+      method: 'POST',
+      path: '/disclosures',
+      handler: 'disclosure.adminCreate',
+    },
+    {
+      method: 'PUT',
+      path: '/disclosures/:id',
+      handler: 'disclosure.adminUpdate',
+    },
+    {
+      method: 'DELETE',
+      path: '/disclosures/:id',
+      handler: 'disclosure.adminDelete',
+    },
+    {
+      method: 'GET',
+      path: '/holdings',
+      handler: 'holding.adminList',
+    },
+    {
+      method: 'POST',
+      path: '/holdings',
+      handler: 'holding.adminCreate',
+    },
   ],
 });

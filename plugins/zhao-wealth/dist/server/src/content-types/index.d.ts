@@ -571,5 +571,118 @@ declare const _default: {
             };
         };
     };
+    'wealth-disclosure': {
+        schema: {
+            kind: string;
+            collectionName: string;
+            info: {
+                singularName: string;
+                pluralName: string;
+                displayName: string;
+                description: string;
+            };
+            options: {
+                draftAndPublish: boolean;
+            };
+            attributes: {
+                productType: {
+                    type: string;
+                    enum: string[];
+                    required: boolean;
+                };
+                title: {
+                    type: string;
+                    required: boolean;
+                };
+                content: {
+                    type: string;
+                    required: boolean;
+                };
+                effectiveDate: {
+                    type: string;
+                    required: boolean;
+                };
+                status: {
+                    type: string;
+                    default: boolean;
+                };
+                createdAt: {
+                    type: string;
+                };
+                updatedAt: {
+                    type: string;
+                };
+            };
+        };
+    };
+    'wealth-customer-holding': {
+        schema: {
+            kind: string;
+            collectionName: string;
+            info: {
+                singularName: string;
+                pluralName: string;
+                displayName: string;
+                description: string;
+            };
+            options: {
+                draftAndPublish: boolean;
+            };
+            attributes: {
+                user: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                };
+                product: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                };
+                channel: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                };
+                buyDate: {
+                    type: string;
+                    required: boolean;
+                };
+                buyAmount: {
+                    type: string;
+                    precision: number;
+                    scale: number;
+                    required: boolean;
+                };
+                buyNav: {
+                    type: string;
+                    precision: number;
+                    scale: number;
+                };
+                remark: {
+                    type: string;
+                };
+                status: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
+                redeemDate: {
+                    type: string;
+                };
+                createdByManager: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                };
+                createdAt: {
+                    type: string;
+                };
+                updatedAt: {
+                    type: string;
+                };
+            };
+        };
+    };
 };
 export default _default;

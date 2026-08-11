@@ -1,0 +1,27 @@
+{
+  "kind": "collectionType",
+  "collectionName": "wealth_customer_holdings",
+  "info": {
+    "singularName": "wealth-customer-holding",
+    "pluralName": "wealth-customer-holdings",
+    "displayName": "客户持仓",
+    "description": "客户实际持仓记录"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user" },
+    "product": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-product" },
+    "channel": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-channel.channel" },
+    "buyDate": { "type": "date", "required": true },
+    "buyAmount": { "type": "decimal", "precision": 14, "scale": 2, "required": true },
+    "buyNav": { "type": "decimal", "precision": 10, "scale": 4 },
+    "remark": { "type": "string" },
+    "status": { "type": "enumeration", "enum": ["holding", "redeemed"], "default": "holding" },
+    "redeemDate": { "type": "date" },
+    "createdByManager": { "type": "relation", "relation": "manyToOne", "target": "admin::user" },
+    "createdAt": { "type": "datetime" },
+    "updatedAt": { "type": "datetime" }
+  }
+}

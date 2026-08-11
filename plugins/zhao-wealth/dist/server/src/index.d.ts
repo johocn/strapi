@@ -572,6 +572,119 @@ declare const _default: {
                 };
             };
         };
+        'wealth-disclosure': {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                    description: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                attributes: {
+                    productType: {
+                        type: string;
+                        enum: string[];
+                        required: boolean;
+                    };
+                    title: {
+                        type: string;
+                        required: boolean;
+                    };
+                    content: {
+                        type: string;
+                        required: boolean;
+                    };
+                    effectiveDate: {
+                        type: string;
+                        required: boolean;
+                    };
+                    status: {
+                        type: string;
+                        default: boolean;
+                    };
+                    createdAt: {
+                        type: string;
+                    };
+                    updatedAt: {
+                        type: string;
+                    };
+                };
+            };
+        };
+        'wealth-customer-holding': {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                    description: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                attributes: {
+                    user: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                    };
+                    product: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                    };
+                    channel: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                    };
+                    buyDate: {
+                        type: string;
+                        required: boolean;
+                    };
+                    buyAmount: {
+                        type: string;
+                        precision: number;
+                        scale: number;
+                        required: boolean;
+                    };
+                    buyNav: {
+                        type: string;
+                        precision: number;
+                        scale: number;
+                    };
+                    remark: {
+                        type: string;
+                    };
+                    status: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    redeemDate: {
+                        type: string;
+                    };
+                    createdByManager: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                    };
+                    createdAt: {
+                        type: string;
+                    };
+                    updatedAt: {
+                        type: string;
+                    };
+                };
+            };
+        };
     };
     controllers: {
         product: ({ strapi }: {
@@ -659,18 +772,48 @@ declare const _default: {
             adminTrend(ctx: any): Promise<void>;
             adminPeers(ctx: any): Promise<void>;
         };
+        disclosure: ({ strapi }: {
+            strapi: any;
+        }) => {
+            getByProductType(ctx: any): Promise<void>;
+            adminList(ctx: any): Promise<void>;
+            adminCreate(ctx: any): Promise<void>;
+            adminUpdate(ctx: any): Promise<void>;
+            adminDelete(ctx: any): Promise<void>;
+        };
+        holding: ({ strapi }: {
+            strapi: any;
+        }) => {
+            list(ctx: any): Promise<void>;
+            detail(ctx: any): Promise<void>;
+            profitTrend(ctx: any): Promise<void>;
+            add(ctx: any): Promise<void>;
+            remove(ctx: any): Promise<void>;
+            adminList(ctx: any): Promise<void>;
+            adminCreate(ctx: any): Promise<void>;
+        };
+        compare: ({ strapi }: {
+            strapi: any;
+        }) => {
+            compare(ctx: any): Promise<void>;
+        };
     };
     routes: {
         'content-api': {
             type: string;
-            routes: {
+            routes: ({
                 method: string;
                 path: string;
                 handler: string;
                 config: {
                     policies: string[];
                 };
-            }[];
+            } | {
+                method: string;
+                path: string;
+                handler: string;
+                config?: undefined;
+            })[];
         };
         'admin-api': {
             type: string;
@@ -750,6 +893,7 @@ declare const _default: {
             }>;
             calculateRankPercentile(productId: number, snapshotDate: Date, period: string): Promise<number | null>;
             calculateAndSaveMetrics(productId: number, snapshotDate: Date): Promise<void>;
+            getCalmarRatio(productId: number, period: string): Promise<number | null>;
             calculateAllForDate(snapshotDate: Date): Promise<void>;
             recalculateAll(): Promise<void>;
             adminAggregate(productId: number, period: string): Promise<Record<string, number>>;
@@ -774,6 +918,57 @@ declare const _default: {
                 todayAnomaly: any;
             }>;
             getAnomalies(limit?: number): Promise<any[]>;
+        };
+        'disclosure-service': ({ strapi }: {
+            strapi: any;
+        }) => {
+            getByProductType(productType: string): Promise<any>;
+        };
+        'holding-service': ({ strapi }: {
+            strapi: any;
+        }) => {
+            getUserHoldings(userId: number, page: number, pageSize: number): Promise<{
+                list: any[];
+                page: number;
+                pageSize: number;
+                total: any;
+            }>;
+            getHoldingDetail(holdingId: number, userId: number): Promise<any>;
+            createHolding(data: {
+                userId: number;
+                productId: number;
+                channelId: number;
+                buyDate: string;
+                buyAmount: number;
+                buyNav?: number;
+                remark?: string;
+                createdByManager?: number;
+            }): Promise<any>;
+            calcProfitTrend(holdingId: number, startDate: string, endDate: string): Promise<any>;
+            updateHolding(holdingId: number, userId: number, data: any): Promise<any>;
+            deleteHolding(holdingId: number, userId: number): Promise<any>;
+        };
+        'compare-service': ({ strapi }: {
+            strapi: any;
+        }) => {
+            compareProducts(productIds: number[], period: string): Promise<{
+                productId: any;
+                productName: any;
+                productType: any;
+                riskLevel: any;
+                companyName: any;
+                latestNav: any;
+                annualSnapshot: {
+                    annual1m: any;
+                    annual3m: any;
+                    annual6m: any;
+                    annual1y: any;
+                    isEstimate: any;
+                };
+                riskMetric: {
+                    calmarRatio: number;
+                };
+            }[]>;
         };
     };
     policies: {

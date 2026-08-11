@@ -67,6 +67,7 @@ declare const _default: {
         }>;
         calculateRankPercentile(productId: number, snapshotDate: Date, period: string): Promise<number | null>;
         calculateAndSaveMetrics(productId: number, snapshotDate: Date): Promise<void>;
+        getCalmarRatio(productId: number, period: string): Promise<number | null>;
         calculateAllForDate(snapshotDate: Date): Promise<void>;
         recalculateAll(): Promise<void>;
         adminAggregate(productId: number, period: string): Promise<Record<string, number>>;
@@ -91,6 +92,57 @@ declare const _default: {
             todayAnomaly: any;
         }>;
         getAnomalies(limit?: number): Promise<any[]>;
+    };
+    'disclosure-service': ({ strapi }: {
+        strapi: any;
+    }) => {
+        getByProductType(productType: string): Promise<any>;
+    };
+    'holding-service': ({ strapi }: {
+        strapi: any;
+    }) => {
+        getUserHoldings(userId: number, page: number, pageSize: number): Promise<{
+            list: any[];
+            page: number;
+            pageSize: number;
+            total: any;
+        }>;
+        getHoldingDetail(holdingId: number, userId: number): Promise<any>;
+        createHolding(data: {
+            userId: number;
+            productId: number;
+            channelId: number;
+            buyDate: string;
+            buyAmount: number;
+            buyNav?: number;
+            remark?: string;
+            createdByManager?: number;
+        }): Promise<any>;
+        calcProfitTrend(holdingId: number, startDate: string, endDate: string): Promise<any>;
+        updateHolding(holdingId: number, userId: number, data: any): Promise<any>;
+        deleteHolding(holdingId: number, userId: number): Promise<any>;
+    };
+    'compare-service': ({ strapi }: {
+        strapi: any;
+    }) => {
+        compareProducts(productIds: number[], period: string): Promise<{
+            productId: any;
+            productName: any;
+            productType: any;
+            riskLevel: any;
+            companyName: any;
+            latestNav: any;
+            annualSnapshot: {
+                annual1m: any;
+                annual3m: any;
+                annual6m: any;
+                annual1y: any;
+                isEstimate: any;
+            };
+            riskMetric: {
+                calmarRatio: number;
+            };
+        }[]>;
     };
 };
 export default _default;

@@ -84,5 +84,30 @@ declare const _default: {
         adminTrend(ctx: any): Promise<void>;
         adminPeers(ctx: any): Promise<void>;
     };
+    disclosure: ({ strapi }: {
+        strapi: any;
+    }) => {
+        getByProductType(ctx: any): Promise<void>;
+        adminList(ctx: any): Promise<void>;
+        adminCreate(ctx: any): Promise<void>;
+        adminUpdate(ctx: any): Promise<void>;
+        adminDelete(ctx: any): Promise<void>;
+    };
+    holding: ({ strapi }: {
+        strapi: any;
+    }) => {
+        list(ctx: any): Promise<void>;
+        detail(ctx: any): Promise<void>;
+        profitTrend(ctx: any): Promise<void>;
+        add(ctx: any): Promise<void>;
+        remove(ctx: any): Promise<void>;
+        adminList(ctx: any): Promise<void>;
+        adminCreate(ctx: any): Promise<void>;
+    };
+    compare: ({ strapi }: {
+        strapi: any;
+    }) => {
+        compare(ctx: any): Promise<void>;
+    };
 };
 export default _default;

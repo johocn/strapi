@@ -83,5 +83,40 @@ export default () => ({
         policies: ['plugin::zhao-auth.has-channel-access', 'plugin::zhao-auth.has-tenant-access'],
       },
     },
+    {
+      method: 'GET',
+      path: '/v1/wealth/disclosure',
+      handler: 'disclosure.getByProductType',
+    },
+    {
+      method: 'GET',
+      path: '/v1/wealth/compare',
+      handler: 'compare.compare',
+    },
+    {
+      method: 'GET',
+      path: '/v1/wealth/holdings',
+      handler: 'holding.list',
+    },
+    {
+      method: 'GET',
+      path: '/v1/wealth/holdings/:id',
+      handler: 'holding.detail',
+    },
+    {
+      method: 'GET',
+      path: '/v1/wealth/holdings/:id/profit-trend',
+      handler: 'holding.profitTrend',
+    },
+    {
+      method: 'POST',
+      path: '/v1/wealth/holdings',
+      handler: 'holding.add',
+    },
+    {
+      method: 'DELETE',
+      path: '/v1/wealth/holdings/:id',
+      handler: 'holding.remove',
+    },
   ],
 });
