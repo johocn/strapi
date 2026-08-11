@@ -123,6 +123,18 @@ declare const _default: {
                     target: string;
                     mappedBy: string;
                 };
+                sequenceCourses: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    mappedBy: string;
+                };
+                sequenceLessons: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    mappedBy: string;
+                };
                 deletedAt: {
                     type: string;
                     default: null;

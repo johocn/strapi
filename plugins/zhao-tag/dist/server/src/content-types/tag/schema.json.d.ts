@@ -119,6 +119,18 @@ declare const _default: {
       "target": "plugin::zhao-website.product",
       "mappedBy": "tags"
     },
+    "sequenceCourses": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-course.course",
+      "mappedBy": "sequenceTag"
+    },
+    "sequenceLessons": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-course.course-lesson",
+      "mappedBy": "sequenceTag"
+    },
     "deletedAt": {
       "type": "datetime",
       "default": null
