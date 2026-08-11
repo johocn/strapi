@@ -4,6 +4,8 @@ import courseLesson from "./course-lesson";
 import userCourseAuth from "./user-course-auth";
 import courseProgress from "./course-progress";
 import lessonProgress from "./lesson-progress";
+import enrollment from "./enrollment";
+import accessCode from "./access-code";
 
 export default {
   "course-category": courseCategory,
@@ -12,4 +14,6 @@ export default {
   "user-course-auth": userCourseAuth,
   "course-progress": courseProgress,
   "lesson-progress": lessonProgress,
+  enrollment,
+  "access-code": accessCode,
 };

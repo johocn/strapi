@@ -1,0 +1,66 @@
+{
+  "kind": "collectionType",
+  "collectionName": "zhao_course_enrollments",
+  "info": {
+    "singularName": "course-enrollment",
+    "pluralName": "course-enrollments",
+    "displayName": "课程报名记录"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "user": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-sso.sso-user"
+    },
+    "course": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-course.course",
+      "inversedBy": "enrollments"
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": ["enrolled", "pending_review", "rejected", "revoked"],
+      "default": "enrolled"
+    },
+    "enrollType": {
+      "type": "enumeration",
+      "enum": ["free", "points", "paid", "code"],
+      "required": true
+    },
+    "pointsSpent": {
+      "type": "integer",
+      "default": 0
+    },
+    "voucherUrl": {
+      "type": "string"
+    },
+    "voucherNote": {
+      "type": "text"
+    },
+    "accessCode": {
+      "type": "string"
+    },
+    "reviewer": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "plugin::zhao-sso.sso-user"
+    },
+    "reviewedAt": {
+      "type": "datetime"
+    },
+    "reviewNote": {
+      "type": "text"
+    },
+    "enrolledAt": {
+      "type": "datetime"
+    },
+    "deletedAt": {
+      "type": "datetime",
+      "default": null
+    }
+  }
+}

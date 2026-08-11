@@ -1,0 +1,61 @@
+{
+  "kind": "collectionType",
+  "collectionName": "zhao_course_access_codes",
+  "info": {
+    "singularName": "course-access-code",
+    "pluralName": "course-access-codes",
+    "displayName": "课程开通码"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "code": {
+      "type": "string",
+      "unique": true,
+      "required": true
+    },
+    "course": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-course.course",
+      "inversedBy": "accessCodes"
+    },
+    "totalQuota": {
+      "type": "integer",
+      "default": -1
+    },
+    "usedCount": {
+      "type": "integer",
+      "default": 0
+    },
+    "expireAt": {
+      "type": "datetime"
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": ["active", "disabled", "expired"],
+      "default": "active"
+    },
+    "createdBy": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "plugin::zhao-sso.sso-user"
+    },
+    "batchNote": {
+      "type": "string"
+    },
+    "usedBy": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "plugin::zhao-sso.sso-user"
+    },
+    "usedAt": {
+      "type": "datetime"
+    },
+    "deletedAt": {
+      "type": "datetime",
+      "default": null
+    }
+  }
+}

@@ -4,6 +4,8 @@ import courseLesson from "./course-lesson/schema.json";
 import userCourseAuth from "./user-course-auth/schema.json";
 import courseProgress from "./course-progress/schema.json";
 import lessonProgress from "./lesson-progress/schema.json";
+import courseEnrollment from "./course-enrollment/schema.json";
+import courseAccessCode from "./course-access-code/schema.json";
 
 import courseLifecycles from "./course/lifecycles";
 import courseLessonLifecycles from "./course-lesson/lifecycles";
@@ -15,4 +17,6 @@ export default {
   "user-course-auth": { schema: userCourseAuth },
   "course-progress": { schema: courseProgress },
   "lesson-progress": { schema: lessonProgress },
+  "course-enrollment": { schema: courseEnrollment },
+  "course-access-code": { schema: courseAccessCode },
 };

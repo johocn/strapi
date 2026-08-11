@@ -71,6 +71,11 @@ export default () => ({
     userRoute("POST", "/my/claim-course-points/:documentId", "course-progress.claimPoints"),
     userRoute("GET", "/my/course-auth/:courseDocumentId", "user-course-auth.checkAuth"),
 
+    // ===== 报名相关（C 端用户） =====
+    userRoute("GET", "/enrollments/me", "enrollment.myEnrollment"),
+    userRoute("GET", "/enrollments", "enrollment.myEnrollments"),
+    userRoute("POST", "/enrollments", "enrollment.create"),
+
     // ===== 管理员路由 =====
     channelScopeRoute("GET", "/courses", "course.find", "course.read"),
     channelScopeRoute("GET", "/courses/:documentId", "course.findOne", "course.read"),
@@ -110,5 +115,19 @@ export default () => ({
     channelScopeRoute("GET", "/lesson-progresses", "lesson-progress.find", "lesson-progress.read"),
     channelScopeRoute("GET", "/lesson-progresses/:documentId", "lesson-progress.findOne", "lesson-progress.read"),
     channelScopeRoute("PUT", "/lesson-progresses/:documentId", "lesson-progress.update", "lesson-progress.update"),
+
+    // ===== 报名管理（管理员） =====
+    channelScopeRoute("GET", "/enrollments", "enrollment.find", "course.read"),
+    channelScopeRoute("GET", "/enrollments/:documentId", "enrollment.findOne", "course.read"),
+    channelScopeRoute("PUT", "/enrollments/:documentId/approve", "enrollment.approve", "course.update"),
+    channelScopeRoute("PUT", "/enrollments/:documentId/reject", "enrollment.reject", "course.update"),
+    channelScopeRoute("PUT", "/enrollments/:documentId/revoke", "enrollment.revoke", "course.update"),
+
+    // ===== 开通码管理（管理员） =====
+    channelScopeRoute("GET", "/access-codes", "access-code.find", "course.read"),
+    channelScopeRoute("GET", "/access-codes/:documentId", "access-code.findOne", "course.read"),
+    channelScopeRoute("POST", "/access-codes/batch", "access-code.batchGenerate", "course.create"),
+    channelScopeRoute("PUT", "/access-codes/:documentId/disable", "access-code.disable", "course.update"),
+    channelScopeRoute("DELETE", "/access-codes/:documentId", "access-code.delete", "course.update"),
   ],
 });

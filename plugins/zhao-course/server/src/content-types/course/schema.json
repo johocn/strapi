@@ -235,6 +235,18 @@
       "default": "no_retry",
       "required": true
     },
+    "enrollments": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-course.course-enrollment",
+      "mappedBy": "course"
+    },
+    "accessCodes": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-course.course-access-code",
+      "mappedBy": "course"
+    },
     "deletedAt": {
       "type": "datetime",
       "default": null
