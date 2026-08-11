@@ -1665,6 +1665,10 @@ export interface PluginZhaoCourseCourse extends Struct.CollectionTypeSchema {
     draftAndPublish: true;
   };
   attributes: {
+    accessCodes: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-course.course-access-code'
+    >;
     allowCrossChannel: Schema.Attribute.Boolean &
       Schema.Attribute.DefaultTo<true>;
     allowRetakeQuiz: Schema.Attribute.Boolean &
@@ -1701,6 +1705,10 @@ export interface PluginZhaoCourseCourse extends Struct.CollectionTypeSchema {
     enforceSequence: Schema.Attribute.Boolean &
       Schema.Attribute.DefaultTo<false>;
     enrollEndDate: Schema.Attribute.DateTime;
+    enrollments: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-course.course-enrollment'
+    >;
     enrollMode: Schema.Attribute.Enumeration<['none', 'required', 'period']> &
       Schema.Attribute.DefaultTo<'none'>;
     enrollStartDate: Schema.Attribute.DateTime;
@@ -1772,6 +1780,50 @@ export interface PluginZhaoCourseCourse extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface PluginZhaoCourseCourseAccessCode
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_course_access_codes';
+  info: {
+    displayName: '\u8BFE\u7A0B\u5F00\u901A\u7801';
+    pluralName: 'course-access-codes';
+    singularName: 'course-access-code';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    batchNote: Schema.Attribute.String;
+    code: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.Unique;
+    course: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-course.course'
+    >;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    deletedAt: Schema.Attribute.DateTime;
+    expireAt: Schema.Attribute.DateTime;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-course.course-access-code'
+    > &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    status: Schema.Attribute.Enumeration<['active', 'disabled', 'expired']> &
+      Schema.Attribute.DefaultTo<'active'>;
+    totalQuota: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<-1>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    usedAt: Schema.Attribute.DateTime;
+    usedBy: Schema.Attribute.Relation<'oneToOne', 'plugin::zhao-sso.sso-user'>;
+    usedCount: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+  };
+}
+
 export interface PluginZhaoCourseCourseCategory
   extends Struct.CollectionTypeSchema {
   collectionName: 'zhao_course_categories';
@@ -1810,6 +1862,59 @@ export interface PluginZhaoCourseCourseCategory
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+  };
+}
+
+export interface PluginZhaoCourseCourseEnrollment
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_course_enrollments';
+  info: {
+    displayName: '\u8BFE\u7A0B\u62A5\u540D\u8BB0\u5F55';
+    pluralName: 'course-enrollments';
+    singularName: 'course-enrollment';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    accessCode: Schema.Attribute.String;
+    course: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-course.course'
+    >;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    deletedAt: Schema.Attribute.DateTime;
+    enrolledAt: Schema.Attribute.DateTime;
+    enrollType: Schema.Attribute.Enumeration<
+      ['free', 'points', 'paid', 'code']
+    > &
+      Schema.Attribute.Required;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-course.course-enrollment'
+    > &
+      Schema.Attribute.Private;
+    pointsSpent: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    publishedAt: Schema.Attribute.DateTime;
+    reviewedAt: Schema.Attribute.DateTime;
+    reviewer: Schema.Attribute.Relation<
+      'oneToOne',
+      'plugin::zhao-sso.sso-user'
+    >;
+    reviewNote: Schema.Attribute.Text;
+    status: Schema.Attribute.Enumeration<
+      ['enrolled', 'pending_review', 'rejected', 'revoked']
+    > &
+      Schema.Attribute.DefaultTo<'enrolled'>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    user: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-sso.sso-user'>;
+    voucherNote: Schema.Attribute.Text;
+    voucherUrl: Schema.Attribute.String;
   };
 }
 
@@ -9746,7 +9851,9 @@ declare module '@strapi/strapi' {
       'plugin::zhao-common.site-config': PluginZhaoCommonSiteConfig;
       'plugin::zhao-common.site-template': PluginZhaoCommonSiteTemplate;
       'plugin::zhao-course.course': PluginZhaoCourseCourse;
+      'plugin::zhao-course.course-access-code': PluginZhaoCourseCourseAccessCode;
       'plugin::zhao-course.course-category': PluginZhaoCourseCourseCategory;
+      'plugin::zhao-course.course-enrollment': PluginZhaoCourseCourseEnrollment;
       'plugin::zhao-course.course-lesson': PluginZhaoCourseCourseLesson;
       'plugin::zhao-course.course-progress': PluginZhaoCourseCourseProgress;
       'plugin::zhao-course.lesson-progress': PluginZhaoCourseLessonProgress;

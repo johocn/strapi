@@ -7,6 +7,7 @@ import siteConfig from "./site-config";
 import siteTemplate from "./site-template";
 import config from "./config";
 import migrationRunner from "./migration-runner";
+import seedRunner from "./seed-runner";
 import globalConfig from "./global-config";
 import dbHelper from "./db-helper";
 
@@ -20,6 +21,7 @@ export default {
   "site-template": siteTemplate,
   config,
   "migration-runner": migrationRunner,
+  "seed-runner": seedRunner,
   "global-config": globalConfig,
   "db-helper": dbHelper,
 };

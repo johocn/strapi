@@ -110,6 +110,18 @@ const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
     throw err;
   }
 
+  // 执行种子数据（幂等，启动时自动跑未执行的 seed 文件）
+  try {
+    const seedService = strapi.plugin("zhao-common").service("seed-runner");
+    if (seedService && typeof seedService.runAllSeeds === "function") {
+      await seedService.runAllSeeds();
+    }
+  } catch (err: any) {
+    strapi.log.error(`[zhao-common] 种子数据执行失败: ${err.message}`);
+    // 种子失败不阻断启动（避免种子脚本 bug 导致整个服务无法启动）
+    // 生产环境可根据需要改为 throw err
+  }
+
   strapi.server.use(async (ctx: any, next: any) => {
     if (ctx.path?.startsWith("/admin") || ctx.path?.startsWith("/content-manager") || ctx.path?.startsWith("/health")) {
       return next();

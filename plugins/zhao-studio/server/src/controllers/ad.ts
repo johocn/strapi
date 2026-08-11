@@ -6,10 +6,16 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     try {
       const { position } = ctx.params;
       const { site } = ctx.query;
-      
+
+      // 优先使用 site-resolver 中间件识别的 siteDocumentId（基于 host 域名）
+      // 兼容：显式传 ?site=domain 时仍按 domain 查 site-config
       const adService = strapi.plugin('zhao-studio').service('ad');
-      const result = await adService.getZoneByPosition(position, site);
-      
+      const result = await adService.getZoneByPosition(
+        position,
+        site,
+        ctx.state?.siteDocumentId
+      );
+
       ctx.body = { data: result };
     } catch (err: any) {
       ctx.status = 500;
@@ -21,10 +27,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async getAllZones(ctx: any) {
     try {
       const { site } = ctx.query;
-      
+
       const adService = strapi.plugin('zhao-studio').service('ad');
-      const zones = await adService.getAllZones(site);
-      
+      const zones = await adService.getAllZones(site, ctx.state?.siteDocumentId);
+
       ctx.body = { data: zones };
     } catch (err: any) {
       ctx.status = 500;

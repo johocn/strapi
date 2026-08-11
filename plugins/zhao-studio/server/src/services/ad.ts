@@ -2,27 +2,31 @@ import type { Core } from '@strapi/strapi';
 
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
   // Public: Get active ad zone by position with its active contents
-  async getZoneByPosition(position: string, siteDomain?: string) {
+  async getZoneByPosition(position: string, siteDomain?: string, siteDocumentId?: string) {
     // Find zone by position and site
     const filters: any = { position, isActive: true };
-    if (siteDomain) {
-      // Use db.query to find site by domain
+
+    // 优先使用 site-resolver 中间件识别的 siteDocumentId（基于 host 域名）
+    // 兼容：显式传 siteDomain 时仍按 domain 查 site-config
+    if (siteDocumentId) {
+      filters.site = siteDocumentId;
+    } else if (siteDomain) {
       const siteConfig = await strapi.db.query('plugin::zhao-common.site-config').findOne({
         where: { domain: siteDomain }
       });
       if (siteConfig) filters.site = siteConfig.documentId;
     }
-    
+
     const zones = await strapi.documents('plugin::zhao-studio.ad-zone').findMany({
       filters,
       populate: { adContents: true, site: true },
       limit: 1,
     });
-    
+
     if (!zones || zones.length === 0) return { zone: null, contents: [] };
-    
+
     const zone = zones[0];
-    
+
     // Filter active contents within date range
     const now = new Date();
     let contents = (zone.adContents || []).filter((c: any) => {
@@ -31,13 +35,13 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       if (c.endAt && new Date(c.endAt) < now) return false;
       return true;
     });
-    
+
     // Sort by priority desc, sortOrder asc
     contents.sort((a: any, b: any) => {
       if (b.priority !== a.priority) return b.priority - a.priority;
       return a.sortOrder - b.sortOrder;
     });
-    
+
     // Apply displayMode
     if (zone.displayMode === 'single') {
       contents = contents.slice(0, 1);
@@ -46,26 +50,29 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       contents = [contents[idx]];
     }
     // slideshow and stack return all
-    
+
     return { zone, contents };
   },
 
   // Public: Get all active zones for a site (with filtered contents)
-  async getAllZones(siteDomain?: string) {
+  async getAllZones(siteDomain?: string, siteDocumentId?: string) {
     const filters: any = { isActive: true };
-    if (siteDomain) {
+
+    if (siteDocumentId) {
+      filters.site = siteDocumentId;
+    } else if (siteDomain) {
       const siteConfig = await strapi.db.query('plugin::zhao-common.site-config').findOne({
         where: { domain: siteDomain }
       });
       if (siteConfig) filters.site = siteConfig.documentId;
     }
-    
+
     const zones = await strapi.documents('plugin::zhao-studio.ad-zone').findMany({
       filters,
       populate: { adContents: true },
       sort: { sortOrder: 'asc' },
     });
-    
+
     if (!zones || zones.length === 0) return [];
     
     // Filter active contents within date range for each zone
