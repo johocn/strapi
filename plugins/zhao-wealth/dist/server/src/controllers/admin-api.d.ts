@@ -40,5 +40,12 @@ declare const _default: ({ strapi }: {
             description: string;
         }[];
     };
+    /**
+     * 合并双源数据：以中国理财网数据为主，渤银数据补充缺失字段
+     * 理财网字段：productName, registerCode, riskLevel, termType, productType,
+     *            companyName, productStatus, operationMode, unitNav, navDate
+     * 渤银补充：productCode, saleCode, benchmark, issueDate, maturityDate, company
+     */
+    mergeProductData(sourceData: any, officialData: any): any;
 };
 export default _default;

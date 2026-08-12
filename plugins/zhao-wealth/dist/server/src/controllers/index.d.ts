@@ -74,6 +74,7 @@ declare const _default: {
                 description: string;
             }[];
         };
+        mergeProductData(sourceData: any, officialData: any): any;
     };
     'risk-metric': ({ strapi }: {
         strapi: any;

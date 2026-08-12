@@ -1,6 +1,7 @@
 'use strict';
 
 import { successResponse, paginatedResponse, errorResponse } from '../utils';
+import { getCollector, getChinawealthCollector } from '../collectors/collector-factory';
 
 export default ({ strapi }) => ({
   // ===== 公司管理 =====
@@ -466,9 +467,8 @@ export default ({ strapi }) => ({
         return;
       }
 
-      const { getCollector, getChinawealthCollector } = require('../collectors/collector-factory');
-
       // 1. 从数据源采集
+      strapi.log.info(`[zhao-wealth] 开始采集: source=${source}, query=${query}`);
       const collector = getCollector(source);
       if (!collector) {
         ctx.body = errorResponse(400, `不支持的数据源: ${source}`);
@@ -481,29 +481,41 @@ export default ({ strapi }) => ({
         return;
       }
 
-      // 2. 用登记编码查询中国理财网校验
+      strapi.log.info(`[zhao-wealth] 源数据采集完成: registerCode=${sourceData.registerCode || '(无)'}, productName=${sourceData.productName}`);
+
+      // 2. 用登记编码查询中国理财网（以理财网数据为准，统一标准）
       let officialData = null;
       let verification: any = { status: 'no_register_code', matchScore: 0, differences: [] };
 
       if (sourceData.registerCode) {
         try {
+          strapi.log.info(`[zhao-wealth] 查询中国理财网: registerCode=${sourceData.registerCode}`);
           const cwCollector = getChinawealthCollector();
           officialData = await cwCollector.collectByRegisterCode(sourceData.registerCode);
 
           if (officialData) {
+            strapi.log.info(`[zhao-wealth] 理财网数据采集完成: productName=${officialData.productName}, registerCode=${officialData.registerCode}`);
             verification = this.compareData(sourceData, officialData);
           } else {
+            strapi.log.warn(`[zhao-wealth] 理财网未找到该登记编码: ${sourceData.registerCode}`);
             verification = { status: 'not_found_on_official', matchScore: 0, differences: [] };
           }
         } catch (error) {
           strapi.log.warn(`[zhao-wealth] 中国理财网校验失败: ${error.message}`);
           verification = { status: 'verification_failed', matchScore: 0, differences: [], error: error.message };
         }
+      } else {
+        strapi.log.warn(`[zhao-wealth] 源数据无登记编码，跳过理财网校验`);
       }
+
+      // 3. 合并数据：以中国理财网数据为主，渤银数据补充缺失字段
+      const mergedData = this.mergeProductData(sourceData, officialData);
+      strapi.log.info(`[zhao-wealth] 数据合并完成: mergedRegisterCode=${mergedData.registerCode || '(无)'}, mergedProductName=${mergedData.productName}`);
 
       ctx.body = successResponse({
         sourceData,
         officialData,
+        mergedData,
         verification,
       });
     } catch (error) {
@@ -642,5 +654,43 @@ export default ({ strapi }) => ({
     const status = matchScore === 1.0 ? 'full_match' : matchScore >= 0.8 ? 'partial_match' : 'mismatch';
 
     return { status, matchScore, differences };
+  },
+
+  /**
+   * 合并双源数据：以中国理财网数据为主，渤银数据补充缺失字段
+   * 理财网字段：productName, registerCode, riskLevel, termType, productType,
+   *            companyName, productStatus, operationMode, unitNav, navDate
+   * 渤银补充：productCode, saleCode, benchmark, issueDate, maturityDate, company
+   */
+  mergeProductData(sourceData: any, officialData: any) {
+    if (!officialData) return sourceData;
+    if (!sourceData) return officialData;
+
+    // 理财网优先字段（统一标准）
+    const merged: any = {
+      productName: officialData.productName || sourceData.productName || '',
+      registerCode: officialData.registerCode || sourceData.registerCode || '',
+      riskLevel: officialData.riskLevel || sourceData.riskLevel || 'R2',
+      riskLevelRaw: officialData.riskLevelRaw || sourceData.riskLevelRaw || '',
+      termType: officialData.termType || sourceData.termType || null,
+      termTypeRaw: officialData.termTypeRaw || sourceData.termTypeRaw || '',
+      productType: officialData.productType || sourceData.productType || 'bank-wealth',
+      productTypeRaw: officialData.productTypeRaw || sourceData.productTypeRaw || '',
+      companyName: officialData.companyName || sourceData.company || '',
+      productStatus: officialData.productStatus || '',
+      operationMode: officialData.operationMode || '',
+      unitNav: officialData.unitNav || null,
+      navDate: officialData.navDate || null,
+    };
+
+    // 渤银补充字段（理财网没有的）
+    merged.productCode = sourceData.productCode || sourceData.saleCode || '';
+    merged.saleCode = sourceData.saleCode || '';
+    merged.benchmark = sourceData.benchmark || '';
+    merged.issueDate = sourceData.issueDate || '';
+    merged.maturityDate = sourceData.maturityDate || '';
+    merged.company = sourceData.company || merged.companyName || '';
+
+    return merged;
   },
 });
