@@ -7201,6 +7201,510 @@ const collect = ({ strapi }) => ({
     }
   }
 });
+class BaseCollector {
+  /**
+   * 采集产品基本信息
+   */
+  async collectProductInfo(productCode) {
+    throw new Error("Method not implemented");
+  }
+  /**
+   * 采集净值数据
+   */
+  async collectNavData(productCode) {
+    throw new Error("Method not implemented");
+  }
+  /**
+   * 数据入库
+   */
+  async saveToDatabase(productId, data) {
+    throw new Error("Method not implemented");
+  }
+}
+const LINUX_CHROME_PATHS = [
+  "/usr/bin/google-chrome",
+  "/usr/bin/google-chrome-stable",
+  "/usr/bin/chromium-browser",
+  "/usr/bin/chromium",
+  "/snap/bin/chromium"
+];
+const WINDOWS_CHROME_PATHS = [
+  "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+  "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+  // 动态匹配当前用户（LOCALAPPDATA 在 Windows 上指向 %USERPROFILE%\AppData\Local）
+  ...process.env.LOCALAPPDATA ? [`${process.env.LOCALAPPDATA}\\Google\\Chrome\\Application\\chrome.exe`] : ["C:\\Users\\Administrator\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe"],
+  // Edge 作为备选（Chromium 内核，Playwright 兼容）
+  "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+  "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe"
+];
+function detectChromePath() {
+  const envPath = process.env.PLAYWRIGHT_CHROME_PATH;
+  if (envPath) {
+    if (fs.existsSync(envPath)) return envPath;
+    console.warn(`[zhao-wealth] PLAYWRIGHT_CHROME_PATH=${envPath} 不存在，将尝试其他路径`);
+  }
+  const paths = process.platform === "win32" ? WINDOWS_CHROME_PATHS : LINUX_CHROME_PATHS;
+  for (const p of paths) {
+    if (fs.existsSync(p)) return p;
+  }
+  return void 0;
+}
+const PAGE_TIMEOUT = 3e4;
+let browser = null;
+let initPromise = null;
+let initFailed = false;
+async function initBrowser() {
+  if (browser) return browser;
+  if (initFailed) return null;
+  if (initPromise) return initPromise;
+  initPromise = (async () => {
+    try {
+      const executablePath = detectChromePath();
+      const launchOptions = {
+        headless: process.platform !== "win32",
+        args: ["--disable-blink-features=AutomationControlled", "--no-sandbox"],
+        ...executablePath ? { executablePath } : {}
+      };
+      if (executablePath) {
+        console.log(`[zhao-wealth] Playwright 使用 Chrome: ${executablePath}`);
+      } else {
+        console.log("[zhao-wealth] 未找到系统 Chrome，尝试使用 Playwright 自带 chromium");
+      }
+      browser = await playwright.chromium.launch(launchOptions);
+      console.log("[zhao-wealth] Playwright Browser 已启动");
+      return browser;
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      console.error(`[zhao-wealth] Playwright Browser 启动失败: ${msg}`);
+      console.error("[zhao-wealth] 修复指引（任选其一）:");
+      console.error("  方案1: 安装 Playwright 自带 chromium（推荐，自带依赖检测）");
+      console.error("    npx playwright install-deps chromium  # 安装系统依赖库（需 root）");
+      console.error("    npx playwright install chromium       # 下载 chromium 二进制");
+      console.error("  方案2: 安装系统 Chrome");
+      console.error("    CentOS/RHEL: yum install -y google-chrome-stable");
+      console.error("    Ubuntu/Debian: apt install -y chromium-browser");
+      console.error("  方案3: 在 .env 中设置 PLAYWRIGHT_CHROME_PATH 指向 Chrome 路径");
+      console.error("  注: 采集功能可选，不影响 Strapi 主功能；修复后重启 Strapi 即可");
+      initFailed = true;
+      initPromise = null;
+      return null;
+    }
+  })();
+  return initPromise;
+}
+async function createPage() {
+  if (!browser) {
+    browser = await initBrowser();
+  }
+  if (!browser) return null;
+  const context = await browser.newContext({
+    userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36"
+  });
+  const page = await context.newPage();
+  page.setDefaultTimeout(PAGE_TIMEOUT);
+  return page;
+}
+async function closePage(page) {
+  try {
+    const context = page.context();
+    await page.close();
+    await context.close();
+  } catch {
+  }
+}
+async function destroyBrowser() {
+  if (browser) {
+    try {
+      await browser.close();
+    } catch {
+    }
+    browser = null;
+    initPromise = null;
+    initFailed = false;
+    console.log("[zhao-wealth] Playwright Browser 已关闭");
+  }
+}
+const BASE_URL = "https://www.cbhbwm.com.cn";
+const RISK_MAP = {
+  "低风险": "R1",
+  "中低风险": "R2",
+  "中风险": "R3",
+  "中高风险": "R4",
+  "高风险": "R5"
+};
+const TERM_MAP = {
+  "3-6个月": "short",
+  "6-12个月": "medium",
+  "1-3年": "long",
+  "3年以上": "long"
+};
+class CbhbCollector extends BaseCollector {
+  /**
+   * 通过销售编码采集渤银理财产品详情
+   * 页面结构为纯文本展示，不依赖 CSS class，通过文本内容匹配提取字段
+   */
+  async collectProductInfo(productCode) {
+    const page = await createPage();
+    if (!page) {
+      throw new Error("Playwright Browser 不可用");
+    }
+    try {
+      await page.goto(`${BASE_URL}/cbhbwm/gmcp/gmxqy/index.html?saleCode=${productCode}`, {
+        waitUntil: "domcontentloaded"
+      });
+      await page.waitForFunction(
+        () => (document.body.textContent || "").includes("登记编号") || (document.body.textContent || "").includes("销售编号"),
+        { timeout: 15e3 }
+      ).catch(() => {
+      });
+      await page.waitForTimeout(2e3);
+      const productInfo = await page.evaluate(() => {
+        const bodyText = document.body.textContent || "";
+        const extractByLabel = (labels) => {
+          for (const label of labels) {
+            const regex1 = new RegExp(label + "[：:]\\s*([\\s\\S]*?)(?=\\n|[a-zA-Z\\u4e00-\\u9fa5]+[：:]|$)");
+            const match1 = bodyText.match(regex1);
+            if (match1 && match1[1]) {
+              const val = match1[1].trim();
+              if (val) return val;
+            }
+            const regex2 = new RegExp(label + "[：:]\\s*([^\\s\\n，,]+)");
+            const match2 = bodyText.match(regex2);
+            if (match2 && match2[1]) {
+              return match2[1].trim();
+            }
+          }
+          return "";
+        };
+        const registerCode = extractByLabel(["登记编号", "登记编码"]);
+        const saleCode = extractByLabel(["销售编号", "销售编码"]);
+        let name = "";
+        const headings = document.querySelectorAll("h1, h2, h3, .title, .product-name");
+        for (const h of headings) {
+          const text = h.textContent?.trim() || "";
+          if (text && text.length > 4 && !text.includes("当前位置") && !text.includes("理财产品")) {
+            name = text;
+            break;
+          }
+        }
+        if (!name) {
+          const nameMatch = bodyText.match(/渤银理财[^\n，,]+/);
+          if (nameMatch) {
+            name = nameMatch[0].trim();
+          }
+        }
+        let riskText = "";
+        const riskLevels = ["中低风险", "中高风险", "低风险", "中风险", "高风险"];
+        for (const key of riskLevels) {
+          if (bodyText.includes(key)) {
+            riskText = key;
+            break;
+          }
+        }
+        let benchmark = "";
+        const benchMatch = bodyText.match(/(\d+\.?\d*%-?\d*\.?\d*%?)/);
+        if (benchMatch) {
+          benchmark = benchMatch[1];
+        }
+        let productTypeText = "";
+        const typeKeywords = ["封闭型", "定期开放型", "现金管理类", "每日开放申赎型", "客户周期开放型", "最短持有期型"];
+        for (const kw of typeKeywords) {
+          if (bodyText.includes(kw)) {
+            productTypeText = kw;
+            break;
+          }
+        }
+        const issueDate = extractByLabel(["产品募集起始日", "募集起始日", "发行日", "成立日"]);
+        const raiseEndDate = extractByLabel(["产品募集结束日", "募集结束日"]);
+        const maturityDate = extractByLabel(["产品到期日", "到期日"]);
+        const establishDate = extractByLabel(["发行成立日", "成立日"]);
+        const issuer = extractByLabel(["销售商名称", "发行机构", "管理机构"]);
+        return {
+          name,
+          registerCode,
+          saleCode,
+          riskText,
+          benchmark,
+          productTypeText,
+          issueDate,
+          raiseEndDate,
+          maturityDate,
+          establishDate,
+          issuer
+        };
+      });
+      if (!productInfo.name && !productInfo.registerCode) {
+        return await this.collectFromListPage(productCode);
+      }
+      return {
+        productCode,
+        productName: productInfo.name,
+        registerCode: productInfo.registerCode,
+        riskLevel: this.parseRiskLevel(productInfo.riskText),
+        riskLevelRaw: productInfo.riskText,
+        termType: this.parseTermType(productInfo.productTypeText),
+        termTypeRaw: productInfo.productTypeText,
+        productType: "bank-wealth",
+        productTypeRaw: "固定收益类",
+        issueDate: productInfo.issueDate,
+        maturityDate: productInfo.maturityDate,
+        benchmark: productInfo.benchmark,
+        company: "渤银理财",
+        issuer: productInfo.issuer,
+        establishDate: productInfo.establishDate,
+        raiseEndDate: productInfo.raiseEndDate
+      };
+    } catch (error) {
+      throw new Error(`渤银官网采集失败: ${error.message}`);
+    } finally {
+      await closePage(page);
+    }
+  }
+  /**
+   * 从列表页搜索产品
+   * 列表页也包含登记编码、销售编码等关键信息
+   */
+  async collectFromListPage(productCode) {
+    const page = await createPage();
+    if (!page) {
+      throw new Error("Playwright Browser 不可用");
+    }
+    try {
+      await page.goto(`${BASE_URL}/cbhbwm/gmcp/qbcp/index.html`, {
+        waitUntil: "domcontentloaded"
+      });
+      await page.waitForFunction(
+        () => (document.body.textContent || "").includes("登记编码") || (document.body.textContent || "").includes("销售编码"),
+        { timeout: 15e3 }
+      ).catch(() => {
+      });
+      await page.waitForTimeout(2e3);
+      const found = await page.evaluate((code) => {
+        const bodyText = document.body.textContent || "";
+        if (bodyText.includes(code)) {
+          const idx = bodyText.indexOf(code);
+          const context = bodyText.substring(Math.max(0, idx - 500), idx + 500);
+          const regMatch = context.match(/登记编码[：:]\s*([A-Z0-9]+)/);
+          const registerCode = regMatch ? regMatch[1] : "";
+          const nameMatch = context.match(/渤银理财[^\n，,]+/);
+          const name = nameMatch ? nameMatch[0].trim() : "";
+          let riskText = "";
+          for (const key of ["中低风险", "中高风险", "低风险", "中风险", "高风险"]) {
+            if (context.includes(key)) {
+              riskText = key;
+              break;
+            }
+          }
+          const benchMatch = context.match(/(\d+\.?\d*%-?\d*\.?\d*%?)/);
+          const benchmark = benchMatch ? benchMatch[1] : "";
+          const dateMatch = context.match(/(\d{4}-\d{2}-\d{2})/g);
+          const issueDate = dateMatch && dateMatch[0] ? dateMatch[0] : "";
+          const maturityDate = dateMatch && dateMatch[2] ? dateMatch[2] : "";
+          return { name, registerCode, riskText, benchmark, issueDate, maturityDate, raw: context };
+        }
+        return null;
+      }, productCode);
+      if (!found) {
+        return null;
+      }
+      return {
+        productCode,
+        productName: found.name,
+        registerCode: found.registerCode,
+        riskLevel: this.parseRiskLevel(found.riskText),
+        riskLevelRaw: found.riskText,
+        termType: "medium",
+        termTypeRaw: "",
+        productType: "bank-wealth",
+        productTypeRaw: "固定收益类",
+        issueDate: found.issueDate,
+        maturityDate: found.maturityDate,
+        benchmark: found.benchmark,
+        company: "渤银理财",
+        _listMatch: found.raw
+      };
+    } finally {
+      await closePage(page);
+    }
+  }
+  /**
+   * 采集净值数据（占位，当前不实现）
+   */
+  async collectNavData(productCode) {
+    return [];
+  }
+  parseRiskLevel(text) {
+    const sortedKeys = Object.keys(RISK_MAP).sort((a, b) => b.length - a.length);
+    for (const key of sortedKeys) {
+      if (text.includes(key)) return RISK_MAP[key];
+    }
+    return "R2";
+  }
+  parseTermType(text) {
+    for (const [key, value] of Object.entries(TERM_MAP)) {
+      if (text.includes(key)) return value;
+    }
+    if (text.includes("封闭")) return "long";
+    if (text.includes("现金管理") || text.includes("每日开放")) return "short";
+    return "medium";
+  }
+}
+const CHINAWEALTH_URL = "https://www.chinawealth.com.cn";
+const CW_RISK_MAP = {
+  "一级(低)": "R1",
+  "二级(中低)": "R2",
+  "三级(中)": "R3",
+  "四级(中高)": "R4",
+  "五级(高)": "R5"
+};
+const CW_TERM_MAP = {
+  "3-6个月(含)": "short",
+  "6-12个月(含)": "medium",
+  "1-3年(含)": "long",
+  "3年以上": "long",
+  "T+0": "short",
+  "T+1": "short"
+};
+const CW_TYPE_MAP = {
+  "固定收益类": "bank-wealth",
+  "权益类": "stock-fund",
+  "混合类": "mixed-fund",
+  "商品及金融衍生品类": "mixed-fund"
+};
+class ChinawealthCollector extends BaseCollector {
+  /**
+   * 通过登记编码查询中国理财网
+   */
+  async collectByRegisterCode(registerCode) {
+    const page = await createPage();
+    if (!page) {
+      throw new Error("Playwright Browser 不可用");
+    }
+    try {
+      await page.goto(`${CHINAWEALTH_URL}/zzlc/jrcpxx/jrcp.shtml`, {
+        waitUntil: "domcontentloaded"
+      });
+      await page.waitForTimeout(2e3);
+      const inputSelector = 'input.el-input__inner, input[placeholder*="登记编码"], input[placeholder*="产品名称"]';
+      await page.waitForSelector(inputSelector, { timeout: 1e4 });
+      const input = await page.$(inputSelector);
+      if (input) {
+        await input.click({ clickCount: 3 });
+        await input.fill("");
+        await input.type(registerCode, { delay: 50 });
+      }
+      const searchBtn = await page.$('button.el-button--primary, .search-btn, button:has-text("查询")');
+      if (searchBtn) {
+        await searchBtn.click();
+      }
+      await page.waitForTimeout(3e3);
+      const result = await page.evaluate(() => {
+        const doc = globalThis.document || {};
+        const rows = doc.querySelectorAll(".el-table__body-wrapper tbody tr, .result-item, .product-list-item");
+        if (rows.length === 0) return null;
+        const firstRow2 = rows[0];
+        const cells = firstRow2.querySelectorAll("td, .cell");
+        const texts = Array.from(cells).map((cell) => cell.textContent?.trim() || "");
+        return {
+          rawTexts: texts,
+          rowCount: rows.length
+        };
+      });
+      if (!result || result.rowCount === 0) {
+        return null;
+      }
+      const firstRow = await page.$(".el-table__body-wrapper tbody tr:first-child, .result-item:first-child");
+      if (firstRow) {
+        await firstRow.click();
+        await page.waitForTimeout(2e3);
+      }
+      const detail = await page.evaluate(() => {
+        const doc = globalThis.document || {};
+        const getText = (label) => {
+          const allCells = doc.querySelectorAll("td, .el-descriptions__cell, .info-item");
+          for (const cell of allCells) {
+            const text = cell.textContent?.trim() || "";
+            if (text.startsWith(label)) {
+              return text.replace(label, "").replace("：", "").replace(":", "").trim();
+            }
+          }
+          return "";
+        };
+        return {
+          productName: getText("产品名称") || getText("产品全称"),
+          registerCode: getText("登记编码") || getText("产品编码"),
+          riskLevel: getText("风险等级"),
+          termType: getText("产品期限") || getText("投资期限"),
+          investmentType: getText("投资性质") || getText("投资类型"),
+          productStatus: getText("产品状态"),
+          operationMode: getText("运作模式") || getText("运作方式"),
+          companyName: getText("发行机构") || getText("管理机构")
+        };
+      });
+      return {
+        productName: detail.productName,
+        registerCode: detail.registerCode || registerCode,
+        riskLevel: this.parseRiskLevel(detail.riskLevel),
+        riskLevelRaw: detail.riskLevel,
+        termType: this.parseTermType(detail.termType),
+        termTypeRaw: detail.termType,
+        productType: this.parseProductType(detail.investmentType),
+        productTypeRaw: detail.investmentType,
+        companyName: detail.companyName,
+        productStatus: detail.productStatus,
+        operationMode: detail.operationMode
+      };
+    } catch (error) {
+      throw new Error(`中国理财网查询失败: ${error.message}`);
+    } finally {
+      await closePage(page);
+    }
+  }
+  /**
+   * 采集产品信息（兼容 BaseCollector 接口）
+   */
+  async collectProductInfo(productCode) {
+    return this.collectByRegisterCode(productCode);
+  }
+  /**
+   * 采集净值数据（占位）
+   */
+  async collectNavData(productCode) {
+    return [];
+  }
+  parseRiskLevel(text) {
+    for (const [key, value] of Object.entries(CW_RISK_MAP)) {
+      if (text.includes(key)) return value;
+    }
+    const match2 = text.match(/R(\d)/);
+    if (match2) return `R${match2[1]}`;
+    return "R2";
+  }
+  parseTermType(text) {
+    for (const [key, value] of Object.entries(CW_TERM_MAP)) {
+      if (text.includes(key)) return value;
+    }
+    return "medium";
+  }
+  parseProductType(text) {
+    for (const [key, value] of Object.entries(CW_TYPE_MAP)) {
+      if (text.includes(key)) return value;
+    }
+    return "bank-wealth";
+  }
+}
+const COLLECTOR_MAP = {
+  "cbhb": CbhbCollector,
+  "渤银理财": CbhbCollector
+  // 后续扩展：'工银理财': IcbcCollector, ...
+};
+function getCollector$1(source) {
+  const Cls = COLLECTOR_MAP[source];
+  return Cls ? new Cls() : null;
+}
+function getChinawealthCollector() {
+  return new ChinawealthCollector();
+}
 const adminApi$1 = ({ strapi }) => ({
   // ===== 公司管理 =====
   async companiesList(ctx) {
@@ -7583,8 +8087,7 @@ const adminApi$1 = ({ strapi }) => ({
         ctx.body = errorResponse(400, "缺少 source 或 query 参数");
         return;
       }
-      const { getCollector: getCollector2, getChinawealthCollector } = require("../collectors/collector-factory");
-      const collector = getCollector2(source);
+      const collector = getCollector$1(source);
       if (!collector) {
         ctx.body = errorResponse(400, `不支持的数据源: ${source}`);
         return;
@@ -8293,228 +8796,116 @@ const contentApi = () => ({
     {
       method: "GET",
       path: "/v1/wealth/compare",
-      handler: "compare.compare"
+      handler: "compare.compare",
+      config: {
+        policies: ["plugin::zhao-auth.has-channel-access", "plugin::zhao-auth.has-tenant-access"]
+      }
     },
     {
       method: "GET",
       path: "/v1/wealth/holdings",
-      handler: "holding.list"
+      handler: "holding.list",
+      config: {
+        policies: ["plugin::zhao-auth.is-authenticated", "plugin::zhao-auth.has-channel-access"]
+      }
     },
     {
       method: "GET",
       path: "/v1/wealth/holdings/:id",
-      handler: "holding.detail"
+      handler: "holding.detail",
+      config: {
+        policies: ["plugin::zhao-auth.is-authenticated", "plugin::zhao-auth.has-channel-access"]
+      }
     },
     {
       method: "GET",
       path: "/v1/wealth/holdings/:id/profit-trend",
-      handler: "holding.profitTrend"
+      handler: "holding.profitTrend",
+      config: {
+        policies: ["plugin::zhao-auth.is-authenticated", "plugin::zhao-auth.has-channel-access"]
+      }
     },
     {
       method: "POST",
       path: "/v1/wealth/holdings",
-      handler: "holding.add"
+      handler: "holding.add",
+      config: {
+        policies: ["plugin::zhao-auth.is-authenticated", "plugin::zhao-auth.has-channel-access"]
+      }
     },
     {
       method: "DELETE",
       path: "/v1/wealth/holdings/:id",
-      handler: "holding.remove"
+      handler: "holding.remove",
+      config: {
+        policies: ["plugin::zhao-auth.is-authenticated", "plugin::zhao-auth.has-channel-access"]
+      }
     }
   ]
 });
+const adminRoute = (method, path, handler) => ({
+  method,
+  path,
+  handler,
+  config: {
+    auth: false,
+    policies: ["plugin::zhao-auth.is-authenticated"]
+  }
+});
 const adminApi = () => ({
-  type: "admin",
+  type: "content-api",
   routes: [
-    {
-      method: "GET",
-      path: "/companies",
-      handler: "admin-api.companiesList"
-    },
-    {
-      method: "GET",
-      path: "/companies/:id",
-      handler: "admin-api.companyDetail"
-    },
-    {
-      method: "POST",
-      path: "/companies",
-      handler: "admin-api.companyCreate"
-    },
-    {
-      method: "PUT",
-      path: "/companies/:id",
-      handler: "admin-api.companyUpdate"
-    },
-    {
-      method: "DELETE",
-      path: "/companies/:id",
-      handler: "admin-api.companyDelete"
-    },
-    {
-      method: "GET",
-      path: "/products",
-      handler: "admin-api.productsList"
-    },
-    {
-      method: "GET",
-      path: "/products/:id",
-      handler: "admin-api.productDetail"
-    },
-    {
-      method: "POST",
-      path: "/products",
-      handler: "admin-api.productCreate"
-    },
-    {
-      method: "PUT",
-      path: "/products/:id",
-      handler: "admin-api.productUpdate"
-    },
-    {
-      method: "DELETE",
-      path: "/products/:id",
-      handler: "admin-api.productDelete"
-    },
-    {
-      method: "GET",
-      path: "/collect-configs",
-      handler: "admin-api.collectConfigsList"
-    },
-    {
-      method: "PUT",
-      path: "/collect-configs/:id",
-      handler: "admin-api.collectConfigUpdate"
-    },
-    {
-      method: "POST",
-      path: "/collect/trigger",
-      handler: "collect.trigger"
-    },
-    {
-      method: "GET",
-      path: "/collect/status",
-      handler: "collect.status"
-    },
-    {
-      method: "GET",
-      path: "/products/:id/nav",
-      handler: "admin-api.navDataList"
-    },
-    {
-      method: "POST",
-      path: "/products/:id/nav",
-      handler: "admin-api.navDataCreate"
-    },
-    {
-      method: "PUT",
-      path: "/nav/:id",
-      handler: "admin-api.navDataUpdate"
-    },
-    {
-      method: "POST",
-      path: "/recalculate",
-      handler: "collect.recalculate"
-    },
-    {
-      method: "GET",
-      path: "/recommend-configs",
-      handler: "admin-api.recommendConfigsList"
-    },
-    {
-      method: "POST",
-      path: "/recommend-configs",
-      handler: "admin-api.recommendConfigCreate"
-    },
-    {
-      method: "PUT",
-      path: "/recommend-configs/:id",
-      handler: "admin-api.recommendConfigUpdate"
-    },
-    {
-      method: "DELETE",
-      path: "/recommend-configs/:id",
-      handler: "admin-api.recommendConfigDelete"
-    },
-    {
-      method: "GET",
-      path: "/customer-products",
-      handler: "admin-api.customerProductsList"
-    },
-    {
-      method: "GET",
-      path: "/stats",
-      handler: "admin-api.stats"
-    },
-    {
-      method: "POST",
-      path: "/recalculate-risk-metric",
-      handler: "risk-metric.recalculate"
-    },
-    {
-      method: "GET",
-      path: "/stats/overview",
-      handler: "admin-api.statsOverview"
-    },
-    {
-      method: "GET",
-      path: "/stats/anomalies",
-      handler: "admin-api.statsAnomalies"
-    },
-    {
-      method: "POST",
-      path: "/products/collect",
-      handler: "admin-api.collect"
-    },
-    {
-      method: "POST",
-      path: "/products/collect/confirm",
-      handler: "admin-api.collectConfirm"
-    },
-    {
-      method: "GET",
-      path: "/risk-metrics/admin/aggregate",
-      handler: "risk-metric.adminAggregate"
-    },
-    {
-      method: "GET",
-      path: "/risk-metrics/admin/trend",
-      handler: "risk-metric.adminTrend"
-    },
-    {
-      method: "GET",
-      path: "/risk-metrics/admin/peers",
-      handler: "risk-metric.adminPeers"
-    },
-    {
-      method: "GET",
-      path: "/disclosures",
-      handler: "disclosure.adminList"
-    },
-    {
-      method: "POST",
-      path: "/disclosures",
-      handler: "disclosure.adminCreate"
-    },
-    {
-      method: "PUT",
-      path: "/disclosures/:id",
-      handler: "disclosure.adminUpdate"
-    },
-    {
-      method: "DELETE",
-      path: "/disclosures/:id",
-      handler: "disclosure.adminDelete"
-    },
-    {
-      method: "GET",
-      path: "/holdings",
-      handler: "holding.adminList"
-    },
-    {
-      method: "POST",
-      path: "/holdings",
-      handler: "holding.adminCreate"
-    }
+    // ===== 公司管理 =====
+    adminRoute("GET", "/v1/admin/companies", "admin-api.companiesList"),
+    adminRoute("GET", "/v1/admin/companies/:id", "admin-api.companyDetail"),
+    adminRoute("POST", "/v1/admin/companies", "admin-api.companyCreate"),
+    adminRoute("PUT", "/v1/admin/companies/:id", "admin-api.companyUpdate"),
+    adminRoute("DELETE", "/v1/admin/companies/:id", "admin-api.companyDelete"),
+    // ===== 产品管理 =====
+    adminRoute("GET", "/v1/admin/products", "admin-api.productsList"),
+    adminRoute("GET", "/v1/admin/products/:id", "admin-api.productDetail"),
+    adminRoute("POST", "/v1/admin/products", "admin-api.productCreate"),
+    adminRoute("PUT", "/v1/admin/products/:id", "admin-api.productUpdate"),
+    adminRoute("DELETE", "/v1/admin/products/:id", "admin-api.productDelete"),
+    // ===== 采集配置 =====
+    adminRoute("GET", "/v1/admin/collect-configs", "admin-api.collectConfigsList"),
+    adminRoute("PUT", "/v1/admin/collect-configs/:id", "admin-api.collectConfigUpdate"),
+    // ===== 批量采集 =====
+    adminRoute("POST", "/v1/admin/collect/trigger", "collect.trigger"),
+    adminRoute("GET", "/v1/admin/collect/status", "collect.status"),
+    // ===== 净值数据 =====
+    adminRoute("GET", "/v1/admin/products/:id/nav", "admin-api.navDataList"),
+    adminRoute("POST", "/v1/admin/products/:id/nav", "admin-api.navDataCreate"),
+    adminRoute("PUT", "/v1/admin/nav/:id", "admin-api.navDataUpdate"),
+    // ===== 年化重算 =====
+    adminRoute("POST", "/v1/admin/recalculate", "collect.recalculate"),
+    // ===== 推荐配置 =====
+    adminRoute("GET", "/v1/admin/recommend-configs", "admin-api.recommendConfigsList"),
+    adminRoute("POST", "/v1/admin/recommend-configs", "admin-api.recommendConfigCreate"),
+    adminRoute("PUT", "/v1/admin/recommend-configs/:id", "admin-api.recommendConfigUpdate"),
+    adminRoute("DELETE", "/v1/admin/recommend-configs/:id", "admin-api.recommendConfigDelete"),
+    // ===== 客户自选 =====
+    adminRoute("GET", "/v1/admin/customer-products", "admin-api.customerProductsList"),
+    // ===== 统计 =====
+    adminRoute("GET", "/v1/admin/stats", "admin-api.stats"),
+    adminRoute("GET", "/v1/admin/stats/overview", "admin-api.statsOverview"),
+    adminRoute("GET", "/v1/admin/stats/anomalies", "admin-api.statsAnomalies"),
+    // ===== 风险指标 =====
+    adminRoute("POST", "/v1/admin/recalculate-risk-metric", "risk-metric.recalculate"),
+    adminRoute("GET", "/v1/admin/risk-metrics/aggregate", "risk-metric.adminAggregate"),
+    adminRoute("GET", "/v1/admin/risk-metrics/trend", "risk-metric.adminTrend"),
+    adminRoute("GET", "/v1/admin/risk-metrics/peers", "risk-metric.adminPeers"),
+    // ===== 产品采集（双源采集 + 中国理财网校验） =====
+    adminRoute("POST", "/v1/admin/products/collect", "admin-api.collect"),
+    adminRoute("POST", "/v1/admin/products/collect/confirm", "admin-api.collectConfirm"),
+    // ===== 合规披露 =====
+    adminRoute("GET", "/v1/admin/disclosures", "disclosure.adminList"),
+    adminRoute("POST", "/v1/admin/disclosures", "disclosure.adminCreate"),
+    adminRoute("PUT", "/v1/admin/disclosures/:id", "disclosure.adminUpdate"),
+    adminRoute("DELETE", "/v1/admin/disclosures/:id", "disclosure.adminDelete"),
+    // ===== 持仓管理（后台代客录入） =====
+    adminRoute("GET", "/v1/admin/holdings", "holding.adminList"),
+    adminRoute("POST", "/v1/admin/holdings", "holding.adminCreate")
   ]
 });
 const routes = {
@@ -8523,7 +8914,7 @@ const routes = {
     routes: contentApi().routes
   },
   "admin-api": {
-    type: "admin",
+    type: "content-api",
     routes: adminApi().routes
   }
 };
@@ -9595,11 +9986,11 @@ const compareService = ({ strapi }) => ({
     const annualField = PERIOD_TO_ANNUAL_FIELD[period] || PERIOD_TO_ANNUAL_FIELD.m1;
     const results = await Promise.all(productIds.map(async (productId) => {
       const product2 = await strapi.db.query("plugin::zhao-wealth.wealth-product").findOne({
-        where: { id: productId },
+        where: { id: productId, status: true },
         populate: ["company"]
       });
       if (!product2) {
-        throw new Error(`产品 ${productId} 不存在`);
+        throw new Error(`产品 ${productId} 不存在或已下架`);
       }
       const latestNav = await strapi.db.query("plugin::zhao-wealth.wealth-nav").findOne({
         where: { product: productId },
@@ -9691,260 +10082,6 @@ const policies = {
 const register = ({ strapi }) => {
   strapi.log.info("[zhao-wealth] 插件已注册");
 };
-class BaseCollector {
-  /**
-   * 采集产品基本信息
-   */
-  async collectProductInfo(productCode) {
-    throw new Error("Method not implemented");
-  }
-  /**
-   * 采集净值数据
-   */
-  async collectNavData(productCode) {
-    throw new Error("Method not implemented");
-  }
-  /**
-   * 数据入库
-   */
-  async saveToDatabase(productId, data) {
-    throw new Error("Method not implemented");
-  }
-}
-const LINUX_CHROME_PATHS = [
-  "/usr/bin/google-chrome",
-  "/usr/bin/google-chrome-stable",
-  "/usr/bin/chromium-browser",
-  "/usr/bin/chromium",
-  "/snap/bin/chromium"
-];
-const WINDOWS_CHROME_PATHS = [
-  "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
-  "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
-  "C:\\Users\\Administrator\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe"
-];
-function detectChromePath() {
-  const envPath = process.env.PLAYWRIGHT_CHROME_PATH;
-  if (envPath) {
-    if (fs.existsSync(envPath)) return envPath;
-    console.warn(`[zhao-wealth] PLAYWRIGHT_CHROME_PATH=${envPath} 不存在，将尝试其他路径`);
-  }
-  const paths = process.platform === "win32" ? WINDOWS_CHROME_PATHS : LINUX_CHROME_PATHS;
-  for (const p of paths) {
-    if (fs.existsSync(p)) return p;
-  }
-  return void 0;
-}
-const PAGE_TIMEOUT = 3e4;
-let browser = null;
-let initPromise = null;
-let initFailed = false;
-async function initBrowser() {
-  if (browser) return browser;
-  if (initFailed) return null;
-  if (initPromise) return initPromise;
-  initPromise = (async () => {
-    try {
-      const executablePath = detectChromePath();
-      const launchOptions = {
-        headless: process.platform !== "win32",
-        args: ["--disable-blink-features=AutomationControlled", "--no-sandbox"],
-        ...executablePath ? { executablePath } : {}
-      };
-      if (executablePath) {
-        console.log(`[zhao-wealth] Playwright 使用 Chrome: ${executablePath}`);
-      } else {
-        console.log("[zhao-wealth] 未找到系统 Chrome，尝试使用 Playwright 自带 chromium");
-      }
-      browser = await playwright.chromium.launch(launchOptions);
-      console.log("[zhao-wealth] Playwright Browser 已启动");
-      return browser;
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : String(error);
-      console.error(`[zhao-wealth] Playwright Browser 启动失败: ${msg}`);
-      console.error("[zhao-wealth] 修复指引（任选其一）:");
-      console.error("  方案1: 安装 Playwright 自带 chromium（推荐，自带依赖检测）");
-      console.error("    npx playwright install-deps chromium  # 安装系统依赖库（需 root）");
-      console.error("    npx playwright install chromium       # 下载 chromium 二进制");
-      console.error("  方案2: 安装系统 Chrome");
-      console.error("    CentOS/RHEL: yum install -y google-chrome-stable");
-      console.error("    Ubuntu/Debian: apt install -y chromium-browser");
-      console.error("  方案3: 在 .env 中设置 PLAYWRIGHT_CHROME_PATH 指向 Chrome 路径");
-      console.error("  注: 采集功能可选，不影响 Strapi 主功能；修复后重启 Strapi 即可");
-      initFailed = true;
-      initPromise = null;
-      return null;
-    }
-  })();
-  return initPromise;
-}
-async function createPage() {
-  if (!browser) {
-    browser = await initBrowser();
-  }
-  if (!browser) return null;
-  const context = await browser.newContext({
-    userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36"
-  });
-  const page = await context.newPage();
-  page.setDefaultTimeout(PAGE_TIMEOUT);
-  return page;
-}
-async function closePage(page) {
-  try {
-    const context = page.context();
-    await page.close();
-    await context.close();
-  } catch {
-  }
-}
-async function destroyBrowser() {
-  if (browser) {
-    try {
-      await browser.close();
-    } catch {
-    }
-    browser = null;
-    initPromise = null;
-    initFailed = false;
-    console.log("[zhao-wealth] Playwright Browser 已关闭");
-  }
-}
-const BASE_URL = "https://www.cbhbwm.com.cn";
-const RISK_MAP = {
-  "低风险": "R1",
-  "中低风险": "R2",
-  "中风险": "R3",
-  "中高风险": "R4",
-  "高风险": "R5"
-};
-const TERM_MAP = {
-  "3-6个月": "short",
-  "6-12个月": "medium",
-  "1-3年": "long",
-  "3年以上": "long"
-};
-class CbhbCollector extends BaseCollector {
-  /**
-   * 通过销售编码采集渤银理财产品详情
-   */
-  async collectProductInfo(productCode) {
-    const page = await createPage();
-    if (!page) {
-      throw new Error("Playwright Browser 不可用");
-    }
-    try {
-      await page.goto(`${BASE_URL}/cbhbwm/gmcp/gmxqy/index.html?saleCode=${productCode}`, {
-        waitUntil: "domcontentloaded"
-      });
-      await page.waitForSelector(".product-detail, .detail-info, .pro-detail", { timeout: 1e4 }).catch(() => {
-      });
-      const productInfo = await page.evaluate(() => {
-        const doc = globalThis.document || {};
-        const getText = (selector) => {
-          const el = doc.querySelector(selector);
-          return el ? el.textContent?.trim() || "" : "";
-        };
-        const name = getText(".product-title, .pro-name, .detail-title, h2");
-        const registerCode = getText(".register-code, .reg-code, .pro-code").replace("登记编号：", "").replace("登记编号:", "");
-        const riskText = getText(".risk-type, .risk-level, .pro-risk");
-        const termText = getText(".term-type, .pro-term, .invest-period");
-        const issueDate = getText(".issue-date, .start-date, .raise-start");
-        const maturityDate = getText(".maturity-date, .end-date, .raise-end");
-        const benchmark = getText(".benchmark, .pro-benchmark, .performance-benchmark, .yield-benchmark");
-        return { name, registerCode, riskText, termText, issueDate, maturityDate, benchmark };
-      });
-      if (!productInfo.name) {
-        return await this.collectFromListPage(productCode);
-      }
-      return {
-        productCode,
-        productName: productInfo.name,
-        registerCode: productInfo.registerCode,
-        riskLevel: this.parseRiskLevel(productInfo.riskText),
-        riskLevelRaw: productInfo.riskText,
-        termType: this.parseTermType(productInfo.termText),
-        termTypeRaw: productInfo.termText,
-        productType: "bank-wealth",
-        productTypeRaw: "固定收益类",
-        issueDate: productInfo.issueDate,
-        maturityDate: productInfo.maturityDate,
-        benchmark: productInfo.benchmark,
-        company: "渤银理财"
-      };
-    } catch (error) {
-      throw new Error(`渤银官网采集失败: ${error.message}`);
-    } finally {
-      await closePage(page);
-    }
-  }
-  /**
-   * 从列表页搜索产品
-   */
-  async collectFromListPage(productCode) {
-    const page = await createPage();
-    if (!page) {
-      throw new Error("Playwright Browser 不可用");
-    }
-    try {
-      await page.goto(`${BASE_URL}/cbhbwm/gmcp/qbcp/index.html`, {
-        waitUntil: "domcontentloaded"
-      });
-      await page.waitForSelector(".product-item, .pro-item, .list-item", { timeout: 1e4 }).catch(() => {
-      });
-      const found = await page.evaluate((code) => {
-        const doc = globalThis.document || {};
-        const items = doc.querySelectorAll(".product-item, .pro-item, .list-item, tr");
-        for (const item of items) {
-          const text = item.textContent || "";
-          if (text.includes(code)) {
-            return text.trim();
-          }
-        }
-        return "";
-      }, productCode);
-      if (!found) {
-        return null;
-      }
-      return {
-        productCode,
-        productName: "",
-        registerCode: "",
-        riskLevel: "R2",
-        riskLevelRaw: "",
-        termType: "medium",
-        termTypeRaw: "",
-        productType: "bank-wealth",
-        productTypeRaw: "固定收益类",
-        issueDate: "",
-        maturityDate: "",
-        benchmark: "",
-        company: "渤银理财",
-        _listMatch: found
-      };
-    } finally {
-      await closePage(page);
-    }
-  }
-  /**
-   * 采集净值数据（占位，当前不实现）
-   */
-  async collectNavData(productCode) {
-    return [];
-  }
-  parseRiskLevel(text) {
-    for (const [key, value] of Object.entries(RISK_MAP)) {
-      if (text.includes(key)) return value;
-    }
-    return "R2";
-  }
-  parseTermType(text) {
-    for (const [key, value] of Object.entries(TERM_MAP)) {
-      if (text.includes(key)) return value;
-    }
-    return "medium";
-  }
-}
 function getCollector(collectMethod) {
   switch (collectMethod) {
     case "web-crawler":
