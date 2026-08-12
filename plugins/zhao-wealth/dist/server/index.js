@@ -8311,6 +8311,24 @@ const adminApi$1 = ({ strapi }) => ({
         ctx.body = errorResponse(400, `产品代码 ${data.productCode} 已存在`);
         return;
       }
+      let companyId = null;
+      if (data.company) {
+        if (typeof data.company === "number") {
+          companyId = data.company;
+        } else {
+          const companyName = String(data.company).trim();
+          let company = await strapi.db.query("plugin::zhao-wealth.wealth-company").findOne({
+            where: { name: companyName }
+          });
+          if (!company) {
+            company = await strapi.db.query("plugin::zhao-wealth.wealth-company").create({
+              data: { name: companyName, companyType: "bank-subsidiary", status: true }
+            });
+            strapi.log.info(`[zhao-wealth] 自动创建公司: ${companyName} (ID: ${company.id})`);
+          }
+          companyId = company.id;
+        }
+      }
       const product2 = await strapi.db.query("plugin::zhao-wealth.wealth-product").create({
         data: {
           productCode: data.productCode,
@@ -8325,7 +8343,7 @@ const adminApi$1 = ({ strapi }) => ({
           maturityDate: data.maturityDate || null,
           benchmark: data.benchmark || null,
           remark: data.remark || null,
-          company: data.company || null,
+          company: companyId,
           recommendEnabled: data.recommendEnabled ?? false,
           status: data.status ?? true
         }

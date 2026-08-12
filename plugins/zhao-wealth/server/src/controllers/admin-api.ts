@@ -538,6 +538,31 @@ export default ({ strapi }) => ({
         return;
       }
 
+      // 处理 company 关联：前端传的是公司名称字符串，需查找或创建公司记录获取 ID
+      let companyId = null;
+      if (data.company) {
+        if (typeof data.company === 'number') {
+          // 已经是 ID，直接用
+          companyId = data.company;
+        } else {
+          // 字符串：按名称查找公司
+          const companyName = String(data.company).trim();
+          let company = await strapi.db.query('plugin::zhao-wealth.wealth-company').findOne({
+            where: { name: companyName },
+          });
+
+          if (!company) {
+            // 公司不存在则自动创建
+            company = await strapi.db.query('plugin::zhao-wealth.wealth-company').create({
+              data: { name: companyName, companyType: 'bank-subsidiary', status: true },
+            });
+            strapi.log.info(`[zhao-wealth] 自动创建公司: ${companyName} (ID: ${company.id})`);
+          }
+
+          companyId = company.id;
+        }
+      }
+
       // 创建产品
       const product = await strapi.db.query('plugin::zhao-wealth.wealth-product').create({
         data: {
@@ -553,7 +578,7 @@ export default ({ strapi }) => ({
           maturityDate: data.maturityDate || null,
           benchmark: data.benchmark || null,
           remark: data.remark || null,
-          company: data.company || null,
+          company: companyId,
           recommendEnabled: data.recommendEnabled ?? false,
           status: data.status ?? true,
         },
