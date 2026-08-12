@@ -66,22 +66,24 @@ module.exports = {
       console.log(`[seed 20260812] [OK] 创建 ad-zone: ${z.position} (${z.name})`);
     }
 
-    // 4. 创建示例广告内容（按 zone + title 幂等）
+    // 4. 创建示例广告内容（按 zone + name 幂等）
     const SAMPLE_CONTENTS = [
       {
         zonePosition: 'home-notice',
+        name: '欢迎来到 Joho 学院',
         title: '欢迎来到 Joho 学院',
-        content: '专注金融理财与职场技能培训，开启你的成长之旅',
-        contentType: 'text',
+        htmlContent: '专注金融理财与职场技能培训，开启你的成长之旅',
+        contentType: 'html',
         linkType: 'none',
         priority: 100,
         sortOrder: 1,
       },
       {
         zonePosition: 'home-notice',
+        name: '新课上线优惠',
         title: '新课上线优惠',
-        content: '限时优惠，金融理财系列课程 8 折起',
-        contentType: 'text',
+        htmlContent: '限时优惠，金融理财系列课程 8 折起',
+        contentType: 'html',
         linkType: 'none',
         priority: 90,
         sortOrder: 2,
@@ -91,18 +93,18 @@ module.exports = {
     for (const c of SAMPLE_CONTENTS) {
       const zone = positionToZone[c.zonePosition];
       if (!zone) {
-        console.log(`[seed 20260812] [WARN] zone ${c.zonePosition} 未创建，跳过内容 "${c.title}"`);
+        console.log(`[seed 20260812] [WARN] zone ${c.zonePosition} 未创建，跳过内容 "${c.name}"`);
         continue;
       }
 
       const existing = await contentService.findMany({
         filters: {
-          title: { $eq: c.title },
+          name: { $eq: c.name },
           adZone: { documentId: zone.documentId },
         },
       });
       if (existing && existing.length > 0) {
-        console.log(`[seed 20260812] [SKIP] ad-content 已存在: "${c.title}"`);
+        console.log(`[seed 20260812] [SKIP] ad-content 已存在: "${c.name}"`);
         continue;
       }
 
@@ -112,9 +114,10 @@ module.exports = {
           ...contentData,
           isActive: true,
           adZone: zone.documentId,
+          site: defaultSiteDocId,
         },
       });
-      console.log(`[seed 20260812] [OK] 创建 ad-content: "${c.title}"`);
+      console.log(`[seed 20260812] [OK] 创建 ad-content: "${c.name}"`);
     }
   },
 
