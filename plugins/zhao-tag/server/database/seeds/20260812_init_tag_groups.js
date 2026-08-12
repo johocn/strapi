@@ -101,9 +101,9 @@ module.exports = {
         continue;
       }
 
-      // 检查是否已关联（tag.tagGroups 数组中是否包含该 group）
-      const existingGroups = tag.tagGroups || [];
-      const alreadyLinked = existingGroups.some((g: any) => g.documentId === groupDocId);
+      // 检查是否已关联（tagGroup 是 manyToOne 单数关系）
+      const currentGroup = tag.tagGroup;
+      const alreadyLinked = currentGroup && currentGroup.documentId === groupDocId;
       if (alreadyLinked) {
         skipped++;
         continue;
@@ -112,7 +112,7 @@ module.exports = {
       await tagService.update({
         documentId: tag.documentId,
         data: {
-          tagGroups: [...existingGroups.map((g: any) => g.documentId), groupDocId],
+          tagGroup: groupDocId,
         },
       });
       linked++;
