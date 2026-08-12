@@ -152,6 +152,12 @@ declare const _default: {
                     benchmark: {
                         type: string;
                     };
+                    operationMode: {
+                        type: string;
+                    };
+                    productStatus: {
+                        type: string;
+                    };
                     remark: {
                         type: string;
                     };
@@ -819,7 +825,7 @@ declare const _default: {
         'admin-api': {
             type: string;
             routes: {
-                method: "GET" | "POST" | "DELETE" | "PUT" | "PATCH";
+                method: "GET" | "DELETE" | "POST" | "PUT" | "PATCH";
                 path: string;
                 handler: string;
                 config: {

@@ -31,6 +31,8 @@ declare const _default: {
     "recommendReason": { "type": "text" },
     "status": { "type": "boolean", "default": true },
     "benchmark": { "type": "string" },
+    "operationMode": { "type": "string" },
+    "productStatus": { "type": "string" },
     "remark": { "type": "text" },
     "createdAt": { "type": "datetime" },
     "updatedAt": { "type": "datetime" }

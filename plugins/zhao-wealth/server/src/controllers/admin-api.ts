@@ -547,6 +547,8 @@ export default ({ strapi }) => ({
           registerCode: data.registerCode || null,
           riskLevel: data.riskLevel || 'R2',
           termType: data.termType || null,
+          operationMode: data.operationMode || null,
+          productStatus: data.productStatus || null,
           issueDate: data.issueDate || null,
           maturityDate: data.maturityDate || null,
           benchmark: data.benchmark || null,

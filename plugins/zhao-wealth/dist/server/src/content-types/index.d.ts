@@ -151,6 +151,12 @@ declare const _default: {
                 benchmark: {
                     type: string;
                 };
+                operationMode: {
+                    type: string;
+                };
+                productStatus: {
+                    type: string;
+                };
                 remark: {
                     type: string;
                 };

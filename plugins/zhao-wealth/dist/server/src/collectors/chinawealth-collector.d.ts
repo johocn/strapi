@@ -3,43 +3,37 @@ export default class ChinawealthCollector extends BaseCollector {
     /**
      * 通过登记编码查询中国理财网
      *
-     * 策略：
-     * 1. 用 Playwright 打开页面 → 等待 JS 渲染
-     * 2. 拦截所有 XHR/fetch 响应
-     * 3. 智能定位登记编码输入框（通过 placeholder/label/索引多种方式）
-     * 4. 填入登记编码 → 点击查询
-     * 5. 从拦截到的 API 响应中提取产品数据
-     * 6. Fallback: 从页面 DOM/文本内容提取
+     * 主策略：HTTP GET + Cheerio 解析 HTML 表格
+     * 兜底策略：Playwright 打开同一 URL，从 DOM 提取
+     *
+     * URL: /queryMenu/prodType?cpmc=&fxjg=&cpdjbm={registerCode}
      */
     collectByRegisterCode(registerCode: string): Promise<any>;
     /**
-     * 从 API 响应中提取产品数据
-     * 兼容多种响应格式
+     * 主策略：HTTP GET + Cheerio 解析 HTML 表格
      */
-    private extractProductFromApiResponse;
+    private collectViaHttp;
     /**
-     * 从页面 DOM 中提取表格数据
-     * 中国理财网使用 Element UI Table，数据在 .el-table__row 中
+     * 用 Cheerio 解析 HTML 表格
+     * 中国理财网返回服务端渲染的 HTML，包含一个 11 列的产品表格
+     * 表头：序号 | 产品名称 | 登记编码 | 发行机构 | 产品状态 | 投资性质 | 运作模式 | 风险等级 | 期限类型 | 份额代码 | 份额净值 | 净值日期
+     *
+     * 策略：先解析表头建立列名→索引映射，再按列名提取数据（不依赖固定列位置）
      */
-    private extractFromDom;
+    private parseHtmlTable;
     /**
-     * 从表格单元格数组解析产品数据
-     * 中国理财网表格列顺序通常为：
-     * 产品名称 | 登记编码 | 发行机构 | 产品状态 | 投资性质 | 运作模式 | 风险等级 | 期限类型
+     * 按表头名称匹配列（推荐，抗列顺序变化）
      */
-    private parseTableCells;
+    private parseByHeader;
     /**
-     * 从 API 返回的产品对象中解析结构化数据
+     * 按固定列位置解析（表头解析失败时兜底）
+     * 标准布局: 序号|产品名称|登记编码|发行机构|产品状态|投资性质|运作模式|风险等级|期限类型|份额代码|份额净值|净值日期
      */
-    private parseApiProduct;
+    private parseByPosition;
     /**
-     * 从对象中按多个候选 key 获取值
+     * 兜底策略：Playwright 打开同一 URL，从 DOM 提取
      */
-    private getFieldValue;
-    /**
-     * 从页面文本内容提取产品信息（Fallback）
-     */
-    private parseFromText;
+    private collectViaPlaywright;
     /**
      * 采集产品信息（兼容 BaseCollector 接口）
      */
