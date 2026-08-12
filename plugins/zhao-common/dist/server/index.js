@@ -311,6 +311,14 @@ const bootstrap = async ({ strapi: strapi2 }) => {
     strapi2.log.error(`[zhao-common] 数据库迁移执行失败: ${err.message}`);
     throw err;
   }
+  try {
+    const seedService = strapi2.plugin("zhao-common").service("seed-runner");
+    if (seedService && typeof seedService.runAllSeeds === "function") {
+      await seedService.runAllSeeds();
+    }
+  } catch (err) {
+    strapi2.log.error(`[zhao-common] 种子数据执行失败: ${err.message}`);
+  }
   strapi2.server.use(async (ctx, next) => {
     if (ctx.path?.startsWith("/admin") || ctx.path?.startsWith("/content-manager") || ctx.path?.startsWith("/health")) {
       return next();
@@ -1683,7 +1691,7 @@ const config$1 = ({ strapi: strapi2 }) => ({
   }
 });
 const MIGRATION_TABLE = "zhao_schema_migrations";
-const PLUGIN_ORDER = [
+const PLUGIN_ORDER$1 = [
   "zhao-common",
   "zhao-tag",
   "zhao-oss",
@@ -1699,7 +1707,7 @@ const PLUGIN_ORDER = [
   "zhao-website",
   "zhao-logistics"
 ];
-function getPluginRoot(plugin) {
+function getPluginRoot$1(plugin) {
   try {
     const pluginMain = require.resolve(`${plugin}/strapi-server.js`, { paths: [process.cwd()] });
     return path__default.default.dirname(path__default.default.dirname(pluginMain));
@@ -1739,7 +1747,7 @@ const migrationRunner = ({ strapi: strapi2 }) => ({
     return rows.map((r) => r.version);
   },
   async getMigrationFiles(plugin) {
-    const pluginRoot = getPluginRoot(plugin);
+    const pluginRoot = getPluginRoot$1(plugin);
     const migrationsDir = path__default.default.join(pluginRoot, "server", "database", "migrations");
     if (!fs__default.default.existsSync(migrationsDir)) {
       return [];
@@ -1783,7 +1791,7 @@ const migrationRunner = ({ strapi: strapi2 }) => ({
   async runAllMigrations() {
     await this.ensureMigrationTable();
     const enabledPlugins = Object.keys(strapi2.plugins).filter((p) => p.startsWith("zhao-"));
-    const sortedPlugins = PLUGIN_ORDER.filter((p) => enabledPlugins.includes(p));
+    const sortedPlugins = PLUGIN_ORDER$1.filter((p) => enabledPlugins.includes(p));
     let executedCount = 0;
     for (const plugin of sortedPlugins) {
       const files = await this.getMigrationFiles(plugin);
@@ -1818,6 +1826,178 @@ const migrationRunner = ({ strapi: strapi2 }) => ({
     }
     await this.runMigration(plugin, version, target.name, target.filePath, "down");
     strapi2.log.info(`[migration] ${plugin}: v${version} 回滚成功`);
+  }
+});
+const SEED_TABLE = "zhao_schema_seeds";
+const PLUGIN_ORDER = [
+  "zhao-common",
+  "zhao-tag",
+  "zhao-oss",
+  "zhao-channel",
+  "zhao-auth",
+  "zhao-course",
+  "zhao-point",
+  "zhao-quiz",
+  "zhao-third",
+  "zhao-wealth",
+  "zhao-sso",
+  "zhao-studio",
+  "zhao-website",
+  "zhao-logistics"
+];
+function getPluginRoot(plugin) {
+  try {
+    const pluginMain = require.resolve(`${plugin}/strapi-server.js`, { paths: [process.cwd()] });
+    return path__default.default.dirname(path__default.default.dirname(pluginMain));
+  } catch {
+    try {
+      const currentFile = typeof __filename !== "undefined" ? __filename : module.filename;
+      const seedRunnerDir = path__default.default.dirname(String(currentFile));
+      const serverDir = path__default.default.dirname(seedRunnerDir);
+      const pluginDir = path__default.default.dirname(serverDir);
+      const pluginsDir = path__default.default.dirname(pluginDir);
+      const targetPlugin = path__default.default.join(pluginsDir, plugin);
+      if (fs__default.default.existsSync(targetPlugin)) {
+        return targetPlugin;
+      }
+    } catch (e) {
+    }
+    return "";
+  }
+}
+const seedRunner = ({ strapi: strapi2 }) => ({
+  async ensureSeedTable() {
+    const hasTable = await strapi2.db.connection.schema.hasTable(SEED_TABLE);
+    if (!hasTable) {
+      await strapi2.db.connection.schema.createTable(SEED_TABLE, (table) => {
+        table.increments("id").primary();
+        table.string("plugin", 64).notNullable();
+        table.string("version", 32).notNullable();
+        table.string("name", 255).notNullable();
+        table.timestamp("executed_at").notNullable().defaultTo(strapi2.db.connection.fn.now());
+        table.unique(["plugin", "version"]);
+      });
+      strapi2.log.info("[seed] 种子数据记录表已创建");
+    }
+  },
+  async getExecutedSeeds(plugin) {
+    const rows = await strapi2.db.connection(SEED_TABLE).where({ plugin }).select("version");
+    return rows.map((r) => r.version);
+  },
+  async getSeedFiles(plugin) {
+    const pluginRoot = getPluginRoot(plugin);
+    const seedsDir = path__default.default.join(pluginRoot, "server", "database", "seeds");
+    if (!fs__default.default.existsSync(seedsDir)) {
+      return [];
+    }
+    const files = fs__default.default.readdirSync(seedsDir).filter((f) => f.endsWith(".js") || f.endsWith(".ts")).sort();
+    const result = [];
+    for (const file of files) {
+      const match = file.match(/^(\d+)_(.+)\.(js|ts)$/);
+      if (match) {
+        result.push({
+          version: match[1],
+          name: match[2],
+          filePath: path__default.default.join(seedsDir, file)
+        });
+      }
+    }
+    return result;
+  },
+  async runSeed(plugin, version, name, filePath, direction = "up") {
+    const seed = require(filePath);
+    const fn = seed[direction];
+    if (!fn) {
+      if (direction === "down") return;
+      throw new Error(`种子脚本 ${filePath} 缺少 ${direction} 方法`);
+    }
+    const ctx = {
+      strapi: strapi2,
+      db: strapi2.db.connection
+    };
+    await fn(ctx);
+    if (direction === "up") {
+      await strapi2.db.connection(SEED_TABLE).insert({
+        plugin,
+        version,
+        name
+      });
+    } else {
+      await strapi2.db.connection(SEED_TABLE).where({ plugin, version }).del();
+    }
+  },
+  /**
+   * 启动时自动执行所有未执行的种子脚本
+   * 幂等性保证：追踪表记录已执行版本，不会重复执行
+   * 同时要求 seed 文件内部做 findOrCreate 幂等检查（防止手动重跑或追踪表丢失）
+   */
+  async runAllSeeds() {
+    await this.ensureSeedTable();
+    const enabledPlugins = Object.keys(strapi2.plugins).filter((p) => p.startsWith("zhao-"));
+    const sortedPlugins = PLUGIN_ORDER.filter((p) => enabledPlugins.includes(p));
+    let executedCount = 0;
+    for (const plugin of sortedPlugins) {
+      const files = await this.getSeedFiles(plugin);
+      if (files.length === 0) continue;
+      const executed = await this.getExecutedSeeds(plugin);
+      const pending = files.filter((f) => !executed.includes(f.version));
+      if (pending.length === 0) continue;
+      strapi2.log.info(`[seed] ${plugin}: 发现 ${pending.length} 个待执行种子脚本`);
+      for (const file of pending) {
+        try {
+          await this.runSeed(plugin, file.version, file.name, file.filePath, "up");
+          executedCount++;
+          strapi2.log.info(`[seed] ${plugin}: v${file.version} ${file.name} 执行成功`);
+        } catch (err) {
+          strapi2.log.error(`[seed] ${plugin}: v${file.version} ${file.name} 执行失败: ${err.message}`);
+          throw err;
+        }
+      }
+    }
+    if (executedCount > 0) {
+      strapi2.log.info(`[seed] 种子数据执行完成，共执行 ${executedCount} 个`);
+    }
+  },
+  /**
+   * 回滚指定种子（需 seed 文件提供 down 方法）
+   */
+  async rollback(plugin, version) {
+    await this.ensureSeedTable();
+    const files = await this.getSeedFiles(plugin);
+    const target = files.find((f) => f.version === version);
+    if (!target) {
+      throw new Error(`未找到种子脚本: ${plugin} v${version}`);
+    }
+    const executed = await this.getExecutedSeeds(plugin);
+    if (!executed.includes(version)) {
+      throw new Error(`种子未执行，无法回滚: ${plugin} v${version}`);
+    }
+    await this.runSeed(plugin, version, target.name, target.filePath, "down");
+    strapi2.log.info(`[seed] ${plugin}: v${version} 回滚成功`);
+  },
+  /**
+   * 列出所有种子文件及执行状态（供诊断使用）
+   */
+  async listSeeds(plugin) {
+    await this.ensureSeedTable();
+    const plugins = plugin ? [plugin] : PLUGIN_ORDER.filter((p) => Object.keys(strapi2.plugins).includes(p));
+    const result = [];
+    for (const p of plugins) {
+      const files = await this.getSeedFiles(p);
+      const executed = await this.getExecutedSeeds(p);
+      const executedRows = await strapi2.db.connection(SEED_TABLE).where({ plugin: p }).select("version", "executed_at");
+      const executedMap = new Map(executedRows.map((r) => [r.version, r.executed_at]));
+      for (const f of files) {
+        result.push({
+          plugin: p,
+          version: f.version,
+          name: f.name,
+          executed: executed.includes(f.version),
+          executedAt: executedMap.get(f.version)
+        });
+      }
+    }
+    return result;
   }
 });
 const UID = "plugin::zhao-common.global-config";
@@ -1931,6 +2111,7 @@ const services = {
   "site-template": siteTemplate$2,
   config: config$1,
   "migration-runner": migrationRunner,
+  "seed-runner": seedRunner,
   "global-config": globalConfig$2,
   "db-helper": dbHelper
 };

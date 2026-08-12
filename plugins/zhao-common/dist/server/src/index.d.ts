@@ -160,6 +160,27 @@ declare const _default: {
             runAllMigrations(): Promise<void>;
             rollback(plugin: string, version: string): Promise<void>;
         };
+        "seed-runner": ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            ensureSeedTable(): Promise<void>;
+            getExecutedSeeds(plugin: string): Promise<string[]>;
+            getSeedFiles(plugin: string): Promise<Array<{
+                version: string;
+                name: string;
+                filePath: string;
+            }>>;
+            runSeed(plugin: string, version: string, name: string, filePath: string, direction?: "up" | "down"): Promise<void>;
+            runAllSeeds(): Promise<void>;
+            rollback(plugin: string, version: string): Promise<void>;
+            listSeeds(plugin?: string): Promise<{
+                plugin: string;
+                version: string;
+                name: string;
+                executed: boolean;
+                executedAt?: string;
+            }[]>;
+        };
         "global-config": ({ strapi }: {
             strapi: import('@strapi/types/dist/core').Strapi;
         }) => {
