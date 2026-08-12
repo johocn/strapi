@@ -1,5 +1,7 @@
 /**
- * seed：初始化内容标签体系（7 个标签组 + 350+ 标签 + 知识点）
+ * seed：初始化内容标签体系（7 个标签组 + 362 标签 + 40 知识点）
+ *
+ * 版本号 20260813（区别于 20260812_init_tag_groups.js，避免版本冲突被跳过）
  *
  * 标签组：
  *   1. 医疗健康    (medical-health)
@@ -216,7 +218,7 @@ module.exports = {
       });
       if (existing && existing.length > 0) {
         slugToDocId[g.slug] = existing[0].documentId;
-        console.log(`[seed content-tags] [SKIP] tag-group 已存在: "${g.name}" (slug=${g.slug})`);
+        console.log(`[seed 20260813] [SKIP] tag-group 已存在: "${g.name}" (slug=${g.slug})`);
         continue;
       }
       const created = await groupService.create({
@@ -230,7 +232,7 @@ module.exports = {
         },
       });
       slugToDocId[g.slug] = created.documentId;
-      console.log(`[seed content-tags] [OK] 创建 tag-group: "${g.name}" (slug=${g.slug})`);
+      console.log(`[seed 20260813] [OK] 创建 tag-group: "${g.name}" (slug=${g.slug})`);
     }
 
     // --- 2. 创建标签并关联到分组（按 name 幂等） ---
@@ -241,7 +243,7 @@ module.exports = {
     for (const g of GROUPS_WITH_TAGS) {
       const groupDocId = slugToDocId[g.slug];
       if (!groupDocId) {
-        console.log(`[seed content-tags] [WARN] 分组 ${g.slug} 无 documentId，跳过标签创建`);
+        console.log(`[seed 20260813] [WARN] 分组 ${g.slug} 无 documentId，跳过标签创建`);
         continue;
       }
 
@@ -283,10 +285,10 @@ module.exports = {
         tagCreated++;
       }
 
-      console.log(`[seed content-tags] 分组 "${g.name}" 处理完成 (${g.tags.length} 个标签)`);
+      console.log(`[seed 20260813] 分组 "${g.name}" 处理完成 (${g.tags.length} 个标签)`);
     }
 
-    console.log(`[seed content-tags] 标签统计: 新建 ${tagCreated}, 跳过 ${tagSkipped}, 补充关联 ${tagLinked}`);
+    console.log(`[seed 20260813] 标签统计: 新建 ${tagCreated}, 跳过 ${tagSkipped}, 补充关联 ${tagLinked}`);
 
     // --- 3. 创建知识点（按 name 幂等） ---
     let kpCreated = 0;
@@ -315,8 +317,8 @@ module.exports = {
       kpCreated++;
     }
 
-    console.log(`[seed content-tags] 知识点统计: 新建 ${kpCreated}, 跳过 ${kpSkipped}`);
-    console.log(`[seed content-tags] 全部完成 ✓`);
+    console.log(`[seed 20260813] 知识点统计: 新建 ${kpCreated}, 跳过 ${kpSkipped}`);
+    console.log(`[seed 20260813] 全部完成 ✓`);
   },
 
   async down({ strapi, db }) {
@@ -330,7 +332,7 @@ module.exports = {
       const existing = await groupService.findMany({ filters: { slug: { $eq: slug } } });
       if (existing && existing.length > 0) {
         await groupService.delete({ documentId: existing[0].documentId });
-        console.log(`[seed content-tags] [DOWN] 删除 tag-group: slug=${slug}`);
+        console.log(`[seed 20260813] [DOWN] 删除 tag-group: slug=${slug}`);
       }
     }
 
@@ -346,6 +348,6 @@ module.exports = {
         await kpService.delete({ documentId: kp.documentId });
       }
     }
-    console.log(`[seed content-tags] [DOWN] 知识点已清理`);
+    console.log(`[seed 20260813] [DOWN] 知识点已清理`);
   },
 };
