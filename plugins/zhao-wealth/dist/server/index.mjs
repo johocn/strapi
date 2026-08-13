@@ -2,8 +2,6 @@ import Redis from "ioredis";
 import Queue from "bull";
 import { chromium } from "playwright";
 import { existsSync } from "fs";
-import axios from "axios";
-import * as cheerio from "cheerio";
 const kind$b = "collectionType";
 const collectionName$b = "wealth_companies";
 const info$b = { "singularName": "wealth-company", "pluralName": "wealth-companies", "displayName": "理财公司", "description": "银行理财公司信息管理" };
@@ -7399,9 +7397,12 @@ class CbhbCollector extends BaseCollector {
           }
         }
         let benchmark = "";
-        const benchMatch = bodyText.match(/(\d+\.?\d+%[-~至]\d+\.?\d+%|\d+\.?\d+%)/);
-        if (benchMatch) {
-          benchmark = benchMatch[1];
+        const benchRaw = extractByLabel(["业绩比较基准", "业绩基准"]);
+        if (benchRaw) {
+          const benchMatch = benchRaw.match(/(\d+\.?\d+%[-~至]\d+\.?\d+%|\d+\.?\d+%)/);
+          if (benchMatch) {
+            benchmark = benchMatch[1];
+          }
         }
         let productTypeText = "";
         const typeKeywords = ["封闭型", "定期开放型", "现金管理类", "每日开放申赎型", "客户周期开放型", "最短持有期型"];
@@ -7546,7 +7547,7 @@ class CbhbCollector extends BaseCollector {
     return "medium";
   }
 }
-const CW_QUERY_URL = "https://xinxipilu.chinawealth.com.cn/queryMenu/prodType";
+const CW_DETAIL_URL = "https://xinxipilu.chinawealth.com.cn/queryMenu/prodType/prodTypeDetail";
 const CW_RISK_MAP = {
   "一级(低)": "R1",
   "二级(中低)": "R2",
@@ -7559,16 +7560,6 @@ const CW_RISK_MAP = {
   "R4": "R4",
   "R5": "R5"
 };
-const CW_TERM_MAP = {
-  "1-3个月(含)": "short",
-  "3-6个月(含)": "short",
-  "6-12个月(含)": "medium",
-  "1-3年(含)": "long",
-  "3年以上": "long",
-  "T+0": "short",
-  "T+1": "short",
-  "每日": "short"
-};
 const CW_TYPE_MAP = {
   "固定收益类": "bank-wealth",
   "权益类": "stock-fund",
@@ -7577,207 +7568,29 @@ const CW_TYPE_MAP = {
 };
 class ChinawealthCollector extends BaseCollector {
   /**
-   * 通过登记编码查询中国理财网
+   * 通过登记编码查询中国理财网产品详情页
    *
-   * 主策略：HTTP GET + Cheerio 解析 HTML 表格
-   * 兜底策略：Playwright 打开同一 URL，从 DOM 提取
-   *
-   * URL: /queryMenu/prodType?cpmc=&fxjg=&cpdjbm={registerCode}
+   * URL: /queryMenu/prodType/prodTypeDetail?prodRegCode={registerCode}
+   * 页面为 Vue SPA（Element Plus），需 Playwright 渲染后从 DOM 提取
    */
   async collectByRegisterCode(registerCode) {
     console.log(`[chinawealth] 开始查询登记编码: ${registerCode}`);
-    const url = `${CW_QUERY_URL}?cpmc=&fxjg=&cpdjbm=${encodeURIComponent(registerCode)}`;
-    console.log(`[chinawealth] 查询 URL: ${url}`);
-    try {
-      const product2 = await this.collectViaHttp(url, registerCode);
-      if (product2) {
-        console.log(`[chinawealth] HTTP 采集成功: ${product2.productName}`);
-        return product2;
-      }
-      console.log("[chinawealth] HTTP 采集未获取到数据，尝试 Playwright 兜底");
-    } catch (error) {
-      console.warn(`[chinawealth] HTTP 采集失败: ${error.message}，尝试 Playwright 兜底`);
-    }
+    const url = `${CW_DETAIL_URL}?prodRegCode=${encodeURIComponent(registerCode)}`;
+    console.log(`[chinawealth] 详情页 URL: ${url}`);
     try {
       const product2 = await this.collectViaPlaywright(url, registerCode);
       if (product2) {
-        console.log(`[chinawealth] Playwright 采集成功: ${product2.productName}`);
+        console.log(`[chinawealth] 采集成功: ${product2.productName}`);
         return product2;
       }
     } catch (error) {
-      console.error(`[chinawealth] Playwright 采集也失败: ${error.message}`);
+      console.error(`[chinawealth] Playwright 采集失败: ${error.message}`);
     }
-    console.log("[chinawealth] 所有策略均未获取到产品数据");
+    console.log("[chinawealth] 未能获取到产品数据");
     return null;
   }
   /**
-   * 主策略：HTTP GET + Cheerio 解析 HTML 表格
-   */
-  async collectViaHttp(url, registerCode) {
-    const response = await axios.get(url, {
-      timeout: 15e3,
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "zh-CN,zh;q=0.9"
-      }
-    });
-    const html = response.data;
-    if (!html || typeof html !== "string") {
-      console.log("[chinawealth] HTTP 返回非 HTML 内容");
-      return null;
-    }
-    console.log(`[chinawealth] HTML 长度: ${html.length}`);
-    return this.parseHtmlTable(html, registerCode);
-  }
-  /**
-   * 用 Cheerio 解析 HTML 表格
-   * 中国理财网返回服务端渲染的 HTML，包含一个 11 列的产品表格
-   * 表头：序号 | 产品名称 | 登记编码 | 发行机构 | 产品状态 | 投资性质 | 运作模式 | 风险等级 | 期限类型 | 份额代码 | 份额净值 | 净值日期
-   *
-   * 策略：先解析表头建立列名→索引映射，再按列名提取数据（不依赖固定列位置）
-   */
-  parseHtmlTable(html, registerCode) {
-    const $ = cheerio.load(html);
-    let headerCells = [];
-    let dataRow = null;
-    $("table thead tr th, table tr:first-child td").each((_, el) => {
-      const text = $(el).text().trim();
-      if (text) headerCells.push(text);
-    });
-    if (headerCells.length === 0) {
-      $(".el-table__header th .cell, .el-table__header-wrapper th").each((_, el) => {
-        const text = $(el).text().trim();
-        if (text) headerCells.push(text);
-      });
-    }
-    const allSelectors = [
-      "table tbody tr",
-      "table tr",
-      ".el-table__row",
-      ".el-table__body-wrapper tr"
-    ];
-    for (const selector of allSelectors) {
-      const rows = $(selector);
-      if (rows.length === 0) continue;
-      rows.each((_, row) => {
-        const rowText = $(row).text();
-        if (rowText.includes(registerCode)) {
-          dataRow = $(row);
-          return false;
-        }
-      });
-      if (dataRow) break;
-      if (!dataRow && rows.length === 1) {
-        const firstText = $(rows[0]).text().trim();
-        if (!firstText.includes("序号") && !firstText.includes("产品名称")) {
-          dataRow = $(rows[0]);
-        }
-      }
-    }
-    if (!dataRow) {
-      console.log("[chinawealth] HTML 中未找到包含登记编码的数据行");
-      return null;
-    }
-    const cells = [];
-    dataRow.find("td, .cell").each((_, cell) => {
-      cells.push($(cell).text().trim());
-    });
-    if (cells.length === 0) {
-      console.log("[chinawealth] 数据行中未找到单元格");
-      return null;
-    }
-    console.log(`[chinawealth] 表头: ${headerCells.join(" | ")}`);
-    console.log(`[chinawealth] 数据: ${cells.join(" | ")}`);
-    if (headerCells.length >= cells.length && headerCells.length > 0) {
-      return this.parseByHeader(headerCells, cells, registerCode);
-    }
-    return this.parseByPosition(cells, registerCode);
-  }
-  /**
-   * 按表头名称匹配列（推荐，抗列顺序变化）
-   */
-  parseByHeader(headers, cells, fallbackCode) {
-    const colMap = {};
-    headers.forEach((header, idx) => {
-      const h = header.trim();
-      if (h.includes("产品名称") || h === "产品名称") colMap.productName = idx;
-      else if (h.includes("登记编码") || h.includes("登记代码")) colMap.registerCode = idx;
-      else if (h.includes("发行机构") || h.includes("发行人")) colMap.companyName = idx;
-      else if (h.includes("产品状态")) colMap.productStatus = idx;
-      else if (h.includes("投资性质") || h.includes("投资类型")) colMap.investNature = idx;
-      else if (h.includes("运作模式") || h.includes("运作类型")) colMap.operationMode = idx;
-      else if (h.includes("风险等级") || h.includes("风险")) colMap.riskLevel = idx;
-      else if (h.includes("期限类型") || h.includes("期限")) colMap.termType = idx;
-    });
-    const get = (key) => {
-      const idx = colMap[key];
-      return idx != null ? (cells[idx] || "").trim() : "";
-    };
-    const productName = get("productName");
-    if (!productName) {
-      console.log("[chinawealth] 按表头匹配未找到产品名称");
-      return null;
-    }
-    const riskLevelRaw = get("riskLevel");
-    const termTypeRaw = get("termType");
-    const investNature = get("investNature");
-    const operationMode = get("operationMode");
-    const productStatus = get("productStatus");
-    const companyName = get("companyName");
-    const regCode = get("registerCode") || fallbackCode;
-    return {
-      productName,
-      registerCode: regCode,
-      riskLevel: this.parseRiskLevel(riskLevelRaw),
-      riskLevelRaw,
-      termType: this.parseTermType(termTypeRaw),
-      termTypeRaw,
-      productType: this.parseProductType(investNature),
-      productTypeRaw: investNature,
-      companyName,
-      productStatus,
-      operationMode,
-      unitNav: null,
-      navDate: null
-    };
-  }
-  /**
-   * 按固定列位置解析（表头解析失败时兜底）
-   * 标准布局: 序号|产品名称|登记编码|发行机构|产品状态|投资性质|运作模式|风险等级|期限类型|份额代码|份额净值|净值日期
-   */
-  parseByPosition(cells, fallbackCode) {
-    let offset2 = 0;
-    if (cells.length > 0 && /^\d+$/.test(cells[0])) {
-      offset2 = 1;
-    }
-    const productName = cells[offset2] || "";
-    if (!productName) return null;
-    const regCode = cells[offset2 + 1] || fallbackCode;
-    const companyName = cells[offset2 + 2] || "";
-    const productStatus = cells[offset2 + 3] || "";
-    const investNature = cells[offset2 + 4] || "";
-    const operationMode = cells[offset2 + 5] || "";
-    const riskLevelRaw = cells[offset2 + 6] || "";
-    const termTypeRaw = cells[offset2 + 7] || "";
-    return {
-      productName: productName.trim(),
-      registerCode: regCode.trim(),
-      riskLevel: this.parseRiskLevel(riskLevelRaw),
-      riskLevelRaw: riskLevelRaw.trim(),
-      termType: this.parseTermType(termTypeRaw),
-      termTypeRaw: termTypeRaw.trim(),
-      productType: this.parseProductType(investNature),
-      productTypeRaw: investNature.trim(),
-      companyName: companyName.trim(),
-      productStatus: productStatus.trim(),
-      operationMode: operationMode.trim(),
-      unitNav: null,
-      navDate: null
-    };
-  }
-  /**
-   * 兜底策略：Playwright 打开同一 URL，从 DOM 提取
+   * Playwright 策略：打开详情页，从 .basic-info DOM 提取字段
    */
   async collectViaPlaywright(url, registerCode) {
     const page = await createPage();
@@ -7787,10 +7600,87 @@ class ChinawealthCollector extends BaseCollector {
     }
     try {
       console.log(`[chinawealth] Playwright 打开: ${url}`);
-      await page.goto(url, { waitUntil: "domcontentloaded", timeout: 3e4 });
+      await page.goto(url, { waitUntil: "networkidle", timeout: 3e4 });
       await page.waitForTimeout(3e3);
-      const html = await page.content();
-      return this.parseHtmlTable(html, registerCode);
+      const product2 = await page.evaluate((regCode) => {
+        const bodyText = document.body.textContent || "";
+        const extractByLabel = (labels) => {
+          for (const label of labels) {
+            const regex1 = new RegExp(label + "[：:]\\s*([\\s\\S]*?)(?=\\n|[a-zA-Z\\u4e00-\\u9fa5]+[：:]|$)");
+            const match1 = bodyText.match(regex1);
+            if (match1 && match1[1]) {
+              const val = match1[1].trim();
+              if (val) return val;
+            }
+            const regex2 = new RegExp(label + "[：:]\\s*([^\\s\\n，,]+)");
+            const match2 = bodyText.match(regex2);
+            if (match2 && match2[1]) {
+              return match2[1].trim();
+            }
+          }
+          return "";
+        };
+        const fieldValueMap = {};
+        const basicInfo = document.querySelector(".basic-info");
+        if (basicInfo) {
+          const rows = basicInfo.querySelectorAll(".el-row");
+          for (const row of rows) {
+            const cols = row.querySelectorAll(".el-col");
+            for (let i = 0; i < cols.length - 1; i += 2) {
+              const label = cols[i]?.textContent?.trim() || "";
+              const value = cols[i + 1]?.textContent?.trim() || "";
+              if (label && value && !value.includes("暂无数据") && !label.includes("业绩比较基准")) {
+                fieldValueMap[label] = value;
+              }
+            }
+          }
+        }
+        let productName = "";
+        const headerEl = document.querySelector(".el-card__header");
+        if (headerEl) {
+          const headerText = headerEl.textContent?.trim() || "";
+          if (headerText.length > 4 && !headerText.includes("信息披露平台")) {
+            productName = headerText;
+          }
+        }
+        if (!productName) {
+          productName = fieldValueMap["产品名称"] || "";
+        }
+        const extractedRegCode = extractByLabel(["登记编码"]) || regCode;
+        const companyName = fieldValueMap["发行机构"] || extractByLabel(["发行机构"]);
+        const operationMode = fieldValueMap["运作模式"] || extractByLabel(["运作模式"]);
+        const riskLevelRaw = fieldValueMap["风险等级"] || "";
+        const productTypeRaw = fieldValueMap["投资性质"] || extractByLabel(["投资性质"]);
+        const productCode = fieldValueMap["产品代码"] || extractByLabel(["份额代码"]);
+        const issueDate = extractByLabel(["起始日期"]);
+        const maturityDate = extractByLabel(["结束日期"]);
+        if (!productName) {
+          console.log("[chinawealth] 未找到产品名称");
+          return null;
+        }
+        return {
+          productName,
+          registerCode: extractedRegCode,
+          companyName,
+          operationMode,
+          riskLevelRaw,
+          productTypeRaw,
+          productCode,
+          issueDate,
+          maturityDate
+        };
+      }, registerCode);
+      if (!product2) return null;
+      product2.riskLevel = this.parseRiskLevel(product2.riskLevelRaw);
+      product2.productType = this.parseProductType(product2.productTypeRaw);
+      if (product2.issueDate) {
+        product2.issueDate = product2.issueDate.replace(/\//g, "-");
+      }
+      if (product2.maturityDate) {
+        product2.maturityDate = product2.maturityDate.replace(/\//g, "-");
+      }
+      console.log(`[chinawealth] 字段: name=${product2.productName}, company=${product2.companyName}, risk=${product2.riskLevel}, type=${product2.productType}, opMode=${product2.operationMode}`);
+      return product2;
     } catch (error) {
       console.error(`[chinawealth] Playwright 采集失败: ${error.message}`);
       return null;
@@ -7819,14 +7709,6 @@ class ChinawealthCollector extends BaseCollector {
     const match2 = text.match(/R(\d)/);
     if (match2) return `R${match2[1]}`;
     return "R2";
-  }
-  parseTermType(text) {
-    if (!text) return "medium";
-    const sortedKeys = Object.keys(CW_TERM_MAP).sort((a, b) => b.length - a.length);
-    for (const key of sortedKeys) {
-      if (text.includes(key)) return CW_TERM_MAP[key];
-    }
-    return "medium";
   }
   parseProductType(text) {
     if (!text) return "bank-wealth";
@@ -8293,16 +8175,14 @@ const adminApi$1 = ({ strapi }) => ({
           companyId = data.company;
         } else {
           const companyName = String(data.company).trim();
-          let company = await strapi.db.query("plugin::zhao-wealth.wealth-company").findOne({
+          const company = await strapi.db.query("plugin::zhao-wealth.wealth-company").findOne({
             where: { name: companyName }
           });
-          if (!company) {
-            company = await strapi.db.query("plugin::zhao-wealth.wealth-company").create({
-              data: { name: companyName, companyType: "bank-subsidiary", status: true }
-            });
-            strapi.log.info(`[zhao-wealth] 自动创建公司: ${companyName} (ID: ${company.id})`);
+          if (company) {
+            companyId = company.id;
+          } else {
+            strapi.log.warn(`[zhao-wealth] 公司不存在: ${companyName}，请先在系统中录入`);
           }
-          companyId = company.id;
         }
       }
       const product2 = await strapi.db.query("plugin::zhao-wealth.wealth-product").create({

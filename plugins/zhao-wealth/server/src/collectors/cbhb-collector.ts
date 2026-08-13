@@ -110,12 +110,15 @@ export default class CbhbCollector extends BaseCollector {
           }
         }
 
-        // 提取业绩比较基准：仅匹配明确的百分比格式（如 2.50%-3.00% 或 2.50%）
-        // 不确定的不填，留空
+        // 提取业绩比较基准：先定位"业绩比较基准"标签，再从中提取百分比
+        // 避免匹配到页面其他位置的百分比（如"投资比例不超过70%"）
         let benchmark = '';
-        const benchMatch = bodyText.match(/(\d+\.?\d+%[-~至]\d+\.?\d+%|\d+\.?\d+%)/);
-        if (benchMatch) {
-          benchmark = benchMatch[1];
+        const benchRaw = extractByLabel(['业绩比较基准', '业绩基准']);
+        if (benchRaw) {
+          const benchMatch = benchRaw.match(/(\d+\.?\d+%[-~至]\d+\.?\d+%|\d+\.?\d+%)/);
+          if (benchMatch) {
+            benchmark = benchMatch[1];
+          }
         }
 
         // 提取产品类型：封闭型、定期开放型、现金管理类等

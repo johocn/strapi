@@ -831,7 +831,7 @@ declare const _default: {
         'admin-api': {
             type: string;
             routes: {
-                method: "GET" | "DELETE" | "POST" | "PUT" | "PATCH";
+                method: "GET" | "POST" | "DELETE" | "PUT" | "PATCH";
                 path: string;
                 handler: string;
                 config: {
