@@ -71,7 +71,6 @@ declare const _default: {
                 };
                 productNameCw: {
                     type: string;
-                    required: boolean;
                 };
                 saleCode: {
                     type: string;

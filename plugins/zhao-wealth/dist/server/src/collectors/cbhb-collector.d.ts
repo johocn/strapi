@@ -1,15 +1,22 @@
 import { default as BaseCollector } from './base-collector';
 export default class CbhbCollector extends BaseCollector {
     /**
-     * 通过销售编码采集渤银理财产品详情
-     * 页面结构为纯文本展示，不依赖 CSS class，通过文本内容匹配提取字段
+     * 通过销售编码采集渤银理财产品详情 — 直接调用 API
+     * API: POST /eportalapply/portlet/bwmweb/queryGPro
+     *
+     * 字段映射：
+     *   prodName  → productName
+     *   saleCode  → saleCode / productCode
+     *   checkInon → registerCode（登记编码）
+     *   orgnoName → issuer（发行机构）
+     *   riskLev   → riskLevel（"01"=R1, "02"=R2...）
+     *   achievementValue → benchmark（业绩比较基准）
+     *   subsBdate → issueDate（募集起始日 YYYYMMDD→YYYY-MM-DD）
+     *   endDate   → maturityDate（到期日）
+     *   establishDate → establishDate（成立日）
+     *   gwProdCycle → 产品周期类型
      */
     collectProductInfo(productCode: string): Promise<any>;
-    /**
-     * 从列表页搜索产品
-     * 列表页也包含登记编码、销售编码等关键信息
-     */
-    private collectFromListPage;
     /**
      * 采集净值数据 — 直接调用 cbhbwm.com.cn 后端 API
      * API: POST /eportalapply/portlet/bwmweb/queryProJz

@@ -25,7 +25,7 @@ const kind$a = "collectionType";
 const collectionName$a = "wealth_products";
 const info$a = { "singularName": "wealth-product", "pluralName": "wealth-products", "displayName": "理财产品", "description": "理财/基金产品信息" };
 const options$a = { "draftAndPublish": false };
-const attributes$a = { "productCode": { "type": "string", "unique": true }, "productName": { "type": "string", "required": true }, "productNameCw": { "type": "string", "required": true }, "saleCode": { "type": "string" }, "productType": { "type": "enumeration", "enum": ["bank-wealth", "stock-fund", "bond-fund", "mixed-fund", "money-fund"] }, "registerCode": { "type": "string", "unique": true, "required": true }, "riskLevel": { "type": "enumeration", "enum": ["R1", "R2", "R3", "R4", "R5"], "default": "R2" }, "termType": { "type": "enumeration", "enum": ["short", "medium", "long"] }, "issueDate": { "type": "date" }, "maturityDate": { "type": "date" }, "company": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-company", "inversedBy": "products" }, "navs": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-nav", "mappedBy": "product" }, "moneyIncomes": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-money-income", "mappedBy": "product" }, "annualSnapshots": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-annual-snapshot", "mappedBy": "product" }, "yearlyReturns": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-yearly-return", "mappedBy": "product" }, "riskMetrics": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-risk-metric", "mappedBy": "product" }, "recommendWeight": { "type": "integer", "default": 0 }, "recommendTags": { "type": "json" }, "recommendEnabled": { "type": "boolean", "default": false }, "recommendReason": { "type": "text" }, "status": { "type": "boolean", "default": true }, "benchmark": { "type": "string" }, "operationMode": { "type": "string" }, "productStatus": { "type": "string" }, "remark": { "type": "text" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const attributes$a = { "productCode": { "type": "string", "unique": true }, "productName": { "type": "string", "required": true }, "productNameCw": { "type": "string" }, "saleCode": { "type": "string" }, "productType": { "type": "enumeration", "enum": ["bank-wealth", "stock-fund", "bond-fund", "mixed-fund", "money-fund"] }, "registerCode": { "type": "string", "unique": true, "required": true }, "riskLevel": { "type": "enumeration", "enum": ["R1", "R2", "R3", "R4", "R5"], "default": "R2" }, "termType": { "type": "enumeration", "enum": ["short", "medium", "long"] }, "issueDate": { "type": "date" }, "maturityDate": { "type": "date" }, "company": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-company", "inversedBy": "products" }, "navs": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-nav", "mappedBy": "product" }, "moneyIncomes": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-money-income", "mappedBy": "product" }, "annualSnapshots": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-annual-snapshot", "mappedBy": "product" }, "yearlyReturns": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-yearly-return", "mappedBy": "product" }, "riskMetrics": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-risk-metric", "mappedBy": "product" }, "recommendWeight": { "type": "integer", "default": 0 }, "recommendTags": { "type": "json" }, "recommendEnabled": { "type": "boolean", "default": false }, "recommendReason": { "type": "text" }, "status": { "type": "boolean", "default": true }, "benchmark": { "type": "string" }, "operationMode": { "type": "string" }, "productStatus": { "type": "string" }, "remark": { "type": "text" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
 const wealthProduct = {
   kind: kind$a,
   collectionName: collectionName$a,
@@ -7205,6 +7205,191 @@ class BaseCollector {
     throw new Error("Method not implemented");
   }
 }
+const BASE_URL$1 = "https://www.cbhbwm.com.cn";
+const RISK_MAP$1 = {
+  "低风险": "R1",
+  "中低风险": "R2",
+  "中风险": "R3",
+  "中高风险": "R4",
+  "高风险": "R5"
+};
+const RISK_CODE_MAP = {
+  "01": "R1",
+  "02": "R2",
+  "03": "R3",
+  "04": "R4",
+  "05": "R5"
+};
+const TERM_MAP = {
+  "3-6个月": "short",
+  "6-12个月": "medium",
+  "1-3年": "long",
+  "3年以上": "long"
+};
+class CbhbCollector extends BaseCollector {
+  /**
+   * 通过销售编码采集渤银理财产品详情 — 直接调用 API
+   * API: POST /eportalapply/portlet/bwmweb/queryGPro
+   *
+   * 字段映射：
+   *   prodName  → productName
+   *   saleCode  → saleCode / productCode
+   *   checkInon → registerCode（登记编码）
+   *   orgnoName → issuer（发行机构）
+   *   riskLev   → riskLevel（"01"=R1, "02"=R2...）
+   *   achievementValue → benchmark（业绩比较基准）
+   *   subsBdate → issueDate（募集起始日 YYYYMMDD→YYYY-MM-DD）
+   *   endDate   → maturityDate（到期日）
+   *   establishDate → establishDate（成立日）
+   *   gwProdCycle → 产品周期类型
+   */
+  async collectProductInfo(productCode) {
+    const saleCode = productCode;
+    const url = `${BASE_URL$1}/eportalapply/portlet/bwmweb/queryGPro`;
+    const params = new URLSearchParams({
+      pageNo: "1",
+      pageSize: "10",
+      sortKey: "",
+      sortType: "",
+      searchStr: "",
+      collMod: "",
+      custType: "",
+      gwProdMod: "",
+      gwProdCycle: "",
+      prodSeriesId: "",
+      prodSaleStatus: "",
+      saleCode
+    });
+    try {
+      const resp = await httpClient.post(url, params.toString(), {
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+          "X-Requested-With": "XMLHttpRequest",
+          "Referer": `${BASE_URL$1}/cbhbwm/gmcp/gmxqy/index.html?saleCode=${saleCode}`
+        }
+      });
+      const raw = resp.data;
+      const parsed = typeof raw.data === "string" ? JSON.parse(raw.data) : raw.data;
+      const records = parsed.data || [];
+      if (records.length === 0) {
+        console.log(`[cbhb] 产品详情API未返回数据: saleCode=${saleCode}`);
+        return null;
+      }
+      const r = records[0];
+      const formatDate = (d) => {
+        if (!d || d.length !== 8) return d || "";
+        return `${d.substring(0, 4)}-${d.substring(4, 6)}-${d.substring(6, 8)}`;
+      };
+      const riskLevCode = String(r.riskLev || "");
+      const riskLevel = RISK_CODE_MAP[riskLevCode] || "R2";
+      const prodPeriod = Number(r.prodPeriod || 0);
+      let termType = "medium";
+      if (prodPeriod > 0) {
+        if (prodPeriod <= 180) termType = "short";
+        else if (prodPeriod <= 365) termType = "medium";
+        else termType = "long";
+      }
+      const statusMap = {
+        "0": "待售",
+        "1": "在售",
+        "2": "已结束",
+        "3": "已到期"
+      };
+      const productStatus = statusMap[String(r.prodSaleStatus)] || "";
+      console.log(`[cbhb] 产品详情API采集完成: prodName=${r.prodName}, registerCode=${r.checkInon}`);
+      return {
+        saleCode: r.saleCode || saleCode,
+        productCode: r.saleCode || saleCode,
+        productName: r.prodName || "",
+        registerCode: r.checkInon || "",
+        riskLevel,
+        riskLevelRaw: r.riskLev || "",
+        termType,
+        termTypeRaw: r.prodPeriod ? `${r.prodPeriod}天` : "",
+        productType: "bank-wealth",
+        productTypeRaw: "固定收益类",
+        issueDate: formatDate(r.subsBdate),
+        maturityDate: formatDate(r.endDate),
+        establishDate: formatDate(r.establishDate),
+        benchmark: r.achievementValue || "",
+        company: "渤银理财",
+        issuer: r.orgnoName || "渤银理财有限责任公司",
+        distributor: r.sumDistributorName || "",
+        productStatus
+      };
+    } catch (error) {
+      throw new Error(`渤银产品详情API采集失败: ${error.message}`);
+    }
+  }
+  /**
+   * 采集净值数据 — 直接调用 cbhbwm.com.cn 后端 API
+   * API: POST /eportalapply/portlet/bwmweb/queryProJz
+   * 无需 Playwright，纯 HTTP 请求，速度快、稳定性高
+   *
+   * 字段映射：value1=日期(YYYYMMDD) value2=单位净值 value3=累计净值
+   */
+  async collectNavData(productCode, options2) {
+    const saleCode = productCode;
+    const checkInon = options2?.registerCode || "";
+    const url = `${BASE_URL$1}/eportalapply/portlet/bwmweb/queryProJz`;
+    const params = new URLSearchParams({
+      pageNo: "1",
+      pageSize: "1000",
+      collMod: "0",
+      gwProdMod: "3",
+      beginDate: "",
+      endDate: "",
+      saleCode,
+      checkInon,
+      prodCode: saleCode,
+      prodFlag: "3",
+      xsshareName: "A"
+    });
+    try {
+      const resp = await httpClient.post(url, params.toString(), {
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+          "X-Requested-With": "XMLHttpRequest",
+          "Request-By": "ajax-request-tag",
+          "Referer": `${BASE_URL$1}/cbhbwm/gmcp/gmxqy/index.html?saleCode=${saleCode}`
+        }
+      });
+      const raw = resp.data;
+      const parsed = typeof raw.data === "string" ? JSON.parse(raw.data) : raw.data;
+      const records = parsed.data || [];
+      const navData = records.map((r) => {
+        const d = String(r.value1 || "");
+        const navDate = d.length === 8 ? `${d.substring(0, 4)}-${d.substring(4, 6)}-${d.substring(6, 8)}` : d;
+        return {
+          navDate,
+          unitNav: r.value2 ? String(r.value2) : null,
+          accNav: r.value3 ? String(r.value3) : r.value2 ? String(r.value2) : null,
+          dataSource: "crawler"
+        };
+      });
+      navData.sort((a, b) => b.navDate.localeCompare(a.navDate));
+      console.log(`[cbhb] 净值API采集完成: saleCode=${saleCode}, 共${navData.length}条`);
+      return navData;
+    } catch (error) {
+      throw new Error(`渤银净值API采集失败: ${error.message}`);
+    }
+  }
+  parseRiskLevel(text) {
+    const sortedKeys = Object.keys(RISK_MAP$1).sort((a, b) => b.length - a.length);
+    for (const key of sortedKeys) {
+      if (text.includes(key)) return RISK_MAP$1[key];
+    }
+    return "R2";
+  }
+  parseTermType(text) {
+    for (const [key, value] of Object.entries(TERM_MAP)) {
+      if (text.includes(key)) return value;
+    }
+    if (text.includes("封闭")) return "long";
+    if (text.includes("现金管理") || text.includes("每日开放")) return "short";
+    return "medium";
+  }
+}
 const LINUX_CHROME_PATHS = [
   "/usr/bin/google-chrome",
   "/usr/bin/google-chrome-stable",
@@ -7306,278 +7491,6 @@ async function destroyBrowser() {
     initPromise = null;
     initFailed = false;
     console.log("[zhao-wealth] Playwright Browser 已关闭");
-  }
-}
-const BASE_URL$1 = "https://www.cbhbwm.com.cn";
-const RISK_MAP$1 = {
-  "低风险": "R1",
-  "中低风险": "R2",
-  "中风险": "R3",
-  "中高风险": "R4",
-  "高风险": "R5"
-};
-const TERM_MAP = {
-  "3-6个月": "short",
-  "6-12个月": "medium",
-  "1-3年": "long",
-  "3年以上": "long"
-};
-class CbhbCollector extends BaseCollector {
-  /**
-   * 通过销售编码采集渤银理财产品详情
-   * 页面结构为纯文本展示，不依赖 CSS class，通过文本内容匹配提取字段
-   */
-  async collectProductInfo(productCode) {
-    const page = await createPage();
-    if (!page) {
-      throw new Error("Playwright Browser 不可用");
-    }
-    try {
-      await page.goto(`${BASE_URL$1}/cbhbwm/gmcp/gmxqy/index.html?saleCode=${productCode}`, {
-        waitUntil: "domcontentloaded"
-      });
-      await page.waitForFunction(
-        () => (document.body.textContent || "").includes("登记编号") || (document.body.textContent || "").includes("销售编号"),
-        { timeout: 15e3 }
-      ).catch(() => {
-      });
-      await page.waitForTimeout(2e3);
-      const productInfo = await page.evaluate(() => {
-        const bodyText = document.body.textContent || "";
-        const extractByLabel = (labels) => {
-          for (const label of labels) {
-            const regex1 = new RegExp(label + "[：:]\\s*([\\s\\S]*?)(?=\\n|[a-zA-Z\\u4e00-\\u9fa5]+[：:]|$)");
-            const match1 = bodyText.match(regex1);
-            if (match1 && match1[1]) {
-              const val = match1[1].trim();
-              if (val) return val;
-            }
-            const regex2 = new RegExp(label + "[：:]\\s*([^\\s\\n，,]+)");
-            const match2 = bodyText.match(regex2);
-            if (match2 && match2[1]) {
-              return match2[1].trim();
-            }
-          }
-          return "";
-        };
-        const registerCode = extractByLabel(["登记编号", "登记编码"]);
-        const saleCode = extractByLabel(["销售编号", "销售编码"]);
-        let name = "";
-        const headings = document.querySelectorAll("h1, h2, h3, .title, .product-name");
-        for (const h of headings) {
-          const text = h.textContent?.trim() || "";
-          if (text && text.length > 4 && !text.includes("当前位置") && !text.includes("理财产品")) {
-            name = text;
-            break;
-          }
-        }
-        if (!name) {
-          const nameMatch = bodyText.match(/渤银理财[^\n，,]+/);
-          if (nameMatch) {
-            name = nameMatch[0].trim();
-          }
-        }
-        let riskText = "";
-        const riskLevels = ["中低风险", "中高风险", "低风险", "中风险", "高风险"];
-        for (const key of riskLevels) {
-          if (bodyText.includes(key)) {
-            riskText = key;
-            break;
-          }
-        }
-        let benchmark = "";
-        const benchRaw = extractByLabel(["业绩比较基准", "业绩基准"]);
-        if (benchRaw) {
-          benchmark = benchRaw;
-        }
-        let productTypeText = "";
-        const typeKeywords = ["封闭型", "定期开放型", "现金管理类", "每日开放申赎型", "客户周期开放型", "最短持有期型"];
-        for (const kw of typeKeywords) {
-          if (bodyText.includes(kw)) {
-            productTypeText = kw;
-            break;
-          }
-        }
-        const issueDate = extractByLabel(["产品募集起始日", "募集起始日", "发行日", "成立日"]);
-        const raiseEndDate = extractByLabel(["产品募集结束日", "募集结束日"]);
-        const maturityDate = extractByLabel(["产品到期日", "到期日"]);
-        const establishDate = extractByLabel(["发行成立日", "成立日"]);
-        const issuer = "渤银理财";
-        return {
-          name,
-          registerCode,
-          saleCode,
-          riskText,
-          benchmark,
-          productTypeText,
-          issueDate,
-          raiseEndDate,
-          maturityDate,
-          establishDate,
-          issuer
-        };
-      });
-      if (!productInfo.name && !productInfo.registerCode) {
-        return await this.collectFromListPage(productCode);
-      }
-      return {
-        saleCode: productCode,
-        productName: productInfo.name,
-        registerCode: productInfo.registerCode,
-        riskLevel: this.parseRiskLevel(productInfo.riskText),
-        riskLevelRaw: productInfo.riskText,
-        termType: this.parseTermType(productInfo.productTypeText),
-        termTypeRaw: productInfo.productTypeText,
-        productType: "bank-wealth",
-        productTypeRaw: "固定收益类",
-        issueDate: productInfo.issueDate,
-        maturityDate: productInfo.maturityDate,
-        benchmark: productInfo.benchmark,
-        company: "渤银理财",
-        issuer: productInfo.issuer,
-        establishDate: productInfo.establishDate,
-        raiseEndDate: productInfo.raiseEndDate
-      };
-    } catch (error) {
-      throw new Error(`渤银官网采集失败: ${error.message}`);
-    } finally {
-      await closePage(page);
-    }
-  }
-  /**
-   * 从列表页搜索产品
-   * 列表页也包含登记编码、销售编码等关键信息
-   */
-  async collectFromListPage(productCode) {
-    const page = await createPage();
-    if (!page) {
-      throw new Error("Playwright Browser 不可用");
-    }
-    try {
-      await page.goto(`${BASE_URL$1}/cbhbwm/gmcp/qbcp/index.html`, {
-        waitUntil: "domcontentloaded"
-      });
-      await page.waitForFunction(
-        () => (document.body.textContent || "").includes("登记编码") || (document.body.textContent || "").includes("销售编码"),
-        { timeout: 15e3 }
-      ).catch(() => {
-      });
-      await page.waitForTimeout(2e3);
-      const found = await page.evaluate((code) => {
-        const bodyText = document.body.textContent || "";
-        if (bodyText.includes(code)) {
-          const idx = bodyText.indexOf(code);
-          const context = bodyText.substring(Math.max(0, idx - 500), idx + 500);
-          const regMatch = context.match(/登记编码[：:]\s*([A-Z0-9]+)/);
-          const registerCode = regMatch ? regMatch[1] : "";
-          const nameMatch = context.match(/渤银理财[^\n，,]+/);
-          const name = nameMatch ? nameMatch[0].trim() : "";
-          let riskText = "";
-          for (const key of ["中低风险", "中高风险", "低风险", "中风险", "高风险"]) {
-            if (context.includes(key)) {
-              riskText = key;
-              break;
-            }
-          }
-          const benchMatch = context.match(/(\d+\.?\d*%-?\d*\.?\d*%?)/);
-          const benchmark = benchMatch ? benchMatch[1] : "";
-          const dateMatch = context.match(/(\d{4}-\d{2}-\d{2})/g);
-          const issueDate = dateMatch && dateMatch[0] ? dateMatch[0] : "";
-          const maturityDate = dateMatch && dateMatch[2] ? dateMatch[2] : "";
-          return { name, registerCode, riskText, benchmark, issueDate, maturityDate, raw: context };
-        }
-        return null;
-      }, productCode);
-      if (!found) {
-        return null;
-      }
-      return {
-        saleCode: productCode,
-        productName: found.name,
-        registerCode: found.registerCode,
-        riskLevel: this.parseRiskLevel(found.riskText),
-        riskLevelRaw: found.riskText,
-        termType: "medium",
-        termTypeRaw: "",
-        productType: "bank-wealth",
-        productTypeRaw: "固定收益类",
-        issueDate: found.issueDate,
-        maturityDate: found.maturityDate,
-        benchmark: found.benchmark,
-        company: "渤银理财",
-        _listMatch: found.raw
-      };
-    } finally {
-      await closePage(page);
-    }
-  }
-  /**
-   * 采集净值数据 — 直接调用 cbhbwm.com.cn 后端 API
-   * API: POST /eportalapply/portlet/bwmweb/queryProJz
-   * 无需 Playwright，纯 HTTP 请求，速度快、稳定性高
-   *
-   * 字段映射：value1=日期(YYYYMMDD) value2=单位净值 value3=累计净值
-   */
-  async collectNavData(productCode, options2) {
-    const saleCode = productCode;
-    const checkInon = options2?.registerCode || "";
-    const url = `${BASE_URL$1}/eportalapply/portlet/bwmweb/queryProJz`;
-    const params = new URLSearchParams({
-      pageNo: "1",
-      pageSize: "1000",
-      collMod: "0",
-      gwProdMod: "3",
-      beginDate: "",
-      endDate: "",
-      saleCode,
-      checkInon,
-      prodCode: saleCode,
-      prodFlag: "3",
-      xsshareName: "A"
-    });
-    try {
-      const resp = await httpClient.post(url, params.toString(), {
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-          "X-Requested-With": "XMLHttpRequest",
-          "Request-By": "ajax-request-tag",
-          "Referer": `${BASE_URL$1}/cbhbwm/gmcp/gmxqy/index.html?saleCode=${saleCode}`
-        }
-      });
-      const raw = resp.data;
-      const parsed = typeof raw.data === "string" ? JSON.parse(raw.data) : raw.data;
-      const records = parsed.data || [];
-      const navData = records.map((r) => {
-        const d = String(r.value1 || "");
-        const navDate = d.length === 8 ? `${d.substring(0, 4)}-${d.substring(4, 6)}-${d.substring(6, 8)}` : d;
-        return {
-          navDate,
-          unitNav: r.value2 ? String(r.value2) : null,
-          accNav: r.value3 ? String(r.value3) : r.value2 ? String(r.value2) : null,
-          dataSource: "crawler"
-        };
-      });
-      navData.sort((a, b) => b.navDate.localeCompare(a.navDate));
-      console.log(`[cbhb] 净值API采集完成: saleCode=${saleCode}, 共${navData.length}条`);
-      return navData;
-    } catch (error) {
-      throw new Error(`渤银净值API采集失败: ${error.message}`);
-    }
-  }
-  parseRiskLevel(text) {
-    const sortedKeys = Object.keys(RISK_MAP$1).sort((a, b) => b.length - a.length);
-    for (const key of sortedKeys) {
-      if (text.includes(key)) return RISK_MAP$1[key];
-    }
-    return "R2";
-  }
-  parseTermType(text) {
-    for (const [key, value] of Object.entries(TERM_MAP)) {
-      if (text.includes(key)) return value;
-    }
-    if (text.includes("封闭")) return "long";
-    if (text.includes("现金管理") || text.includes("每日开放")) return "short";
-    return "medium";
   }
 }
 const CW_DETAIL_URL = "https://xinxipilu.chinawealth.com.cn/queryMenu/prodType/prodTypeDetail";
