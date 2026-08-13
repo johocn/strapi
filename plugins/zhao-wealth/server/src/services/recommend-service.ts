@@ -39,48 +39,51 @@ export default ({ strapi }) => ({
       });
     }
 
-    // 2. 若不足limit条，补充客户偏好匹配
+    // 2. 若不足limit条，补充评分排序（替代风险偏好匹配）
     if (recommendations.length < limit) {
-      const user = await strapi.db.query('plugin::zhao-sso.sso-user').findOne({
-        where: { id: userId },
+      const remaining = limit - recommendations.length;
+      const existingIds = recommendations.map((r: any) => r.productId);
+
+      // 查询有评分的产品
+      const scoreQuery = strapi.db.query('plugin::zhao-wealth.wealth-score-snapshot');
+      const productQuery = strapi.db.query('plugin::zhao-wealth.wealth-product');
+
+      // 获取所有上架且未被推荐的产品
+      const excludeFilter = existingIds.length > 0 ? { id: { $notIn: existingIds } } : {};
+      const products = await productQuery.findMany({
+        where: { status: true, ...excludeFilter },
+        limit: 50,
+        populate: ['company'],
       });
 
-      if (user && user.riskPreference) {
-        // P0修复：riskLevel 是字符串枚举 "R1".."R5"，riskPreference 是数字
-        // 将数字风险偏好转为匹配的 riskLevel 列表，如 riskPreference=3 → ["R1","R2","R3"]
-        // P2修复：riskPreference 可能无法转为数字（NaN），默认设为 R3
-        const rawPref = Number(user.riskPreference);
-        const prefLevel = isNaN(rawPref) ? 3 : Math.min(Math.max(rawPref, 1), 5);
-        const allowedRiskLevels = Array.from({ length: prefLevel }, (_, i) => `R${i + 1}`);
-
-        const matchedProducts = await strapi.db.query('plugin::zhao-wealth.wealth-product').findMany({
-          where: {
-            riskLevel: { $in: allowedRiskLevels },
-            status: true,
-          },
-          orderBy: { recommendWeight: 'desc' },
-          limit: limit - recommendations.length,
+      // 获取每个产品的评分
+      const scoredProducts = [];
+      for (const product of products) {
+        const score = await scoreQuery.findOne({
+          where: { product: product.id, period: 'm1' },
+          orderBy: { snapshotDate: 'desc' },
         });
-
-        for (const product of matchedProducts) {
-          if (recommendations.some(r => r.productId === product.id)) continue;
-
-          const latestSnapshot = await strapi.db.query('plugin::zhao-wealth.wealth-annual-snapshot').findOne({
-            where: { product: product.id },
-            orderBy: { snapshotDate: 'desc' },
-          });
-
-          recommendations.push({
-            productId: product.id,
-            productName: product.productName,
-            productType: product.productType,
-            riskLevel: product.riskLevel,
-            recommendSource: 'preference',
-            recommendReason: '符合您的风险偏好',
-            annual1y: latestSnapshot?.annual1y,
-            latestNav: null,
-          });
+        if (score && score.compositeScore) {
+          scoredProducts.push({ ...product, score });
         }
+      }
+
+      // 按评分降序排序
+      scoredProducts.sort((a: any, b: any) => Number(b.score.compositeScore) - Number(a.score.compositeScore));
+
+      for (const product of scoredProducts.slice(0, remaining)) {
+        recommendations.push({
+          productId: product.id,
+          productName: product.productName,
+          productType: product.productType,
+          riskLevel: product.riskLevel,
+          recommendSource: 'score-ranking',
+          recommendReason: `综合评分 ${Number(product.score.compositeScore).toFixed(0)} 分`,
+          annual1y: null,
+          latestNav: null,
+          starRating: product.score.starRating,
+          compositeScore: Number(product.score.compositeScore),
+        });
       }
     }
 

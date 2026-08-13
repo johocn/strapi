@@ -9260,6 +9260,268 @@ const compare = ({ strapi }) => ({
     }
   }
 });
+const scoring = ({ strapi }) => ({
+  /**
+   * GET /v1/wealth/scores/leaderboard
+   */
+  async leaderboard(ctx) {
+    try {
+      const { productType, operationMode, period, riskLevel, page, pageSize } = ctx.query;
+      const result = await strapi.service("plugin::zhao-wealth.scoring-service").getScoreLeaderboard({
+        productType,
+        operationMode,
+        period: period || "m1",
+        riskLevel,
+        page: Number(page) || 1,
+        pageSize: Number(pageSize) || 10
+      });
+      ctx.body = paginatedResponse(result.records, result.page, result.pageSize, result.total);
+    } catch (error) {
+      strapi.log.error(`[zhao-wealth] 评分榜单查询失败: ${error.message}`);
+      ctx.body = errorResponse(500, "查询失败");
+    }
+  },
+  /**
+   * GET /v1/wealth/products/:id/scores
+   */
+  async breakdown(ctx) {
+    try {
+      const { id } = ctx.params;
+      const { period } = ctx.query;
+      const result = await strapi.service("plugin::zhao-wealth.scoring-service").getScoreBreakdown(Number(id), period || "m1");
+      if (!result) {
+        ctx.body = errorResponse(404, "评分数据不存在");
+        return;
+      }
+      ctx.body = successResponse(result);
+    } catch (error) {
+      strapi.log.error(`[zhao-wealth] 评分明细查询失败: ${error.message}`);
+      ctx.body = errorResponse(500, "查询失败");
+    }
+  },
+  /**
+   * POST /v1/wealth/scores/recalculate
+   */
+  async recalculate(ctx) {
+    try {
+      const { period } = ctx.request.body;
+      const result = await strapi.service("plugin::zhao-wealth.scoring-service").recalculateAllScores(period || "m1");
+      ctx.body = successResponse(result, `评分重算完成: 成功${result.success}个, 失败${result.failed}个`);
+    } catch (error) {
+      strapi.log.error(`[zhao-wealth] 评分重算失败: ${error.message}`);
+      ctx.body = errorResponse(500, "重算失败");
+    }
+  }
+});
+const portfolio = ({ strapi }) => ({
+  /**
+   * GET /v1/wealth/portfolio-plans
+   */
+  async list(ctx) {
+    try {
+      const userId = ctx.state.user?.id || ctx.state.ssoUser?.id;
+      if (!userId) {
+        ctx.body = errorResponse(401, "未登录");
+        return;
+      }
+      const { page, pageSize } = ctx.query;
+      const result = await strapi.service("plugin::zhao-wealth.portfolio-service").getPlans(String(userId), {
+        page: Number(page) || 1,
+        pageSize: Number(pageSize) || 20
+      });
+      ctx.body = paginatedResponse(result.records, result.page, result.pageSize, result.total);
+    } catch (error) {
+      strapi.log.error(`[zhao-wealth] 组合方案列表查询失败: ${error.message}`);
+      ctx.body = errorResponse(500, "查询失败");
+    }
+  },
+  /**
+   * POST /v1/wealth/portfolio-plans
+   */
+  async create(ctx) {
+    try {
+      const userId = ctx.state.user?.id || ctx.state.ssoUser?.id;
+      if (!userId) {
+        ctx.body = errorResponse(401, "未登录");
+        return;
+      }
+      const { planName, planType, products, totalAmount } = ctx.request.body;
+      if (!planName || !products) {
+        ctx.body = errorResponse(400, "planName 和 products 必填");
+        return;
+      }
+      const record = await strapi.service("plugin::zhao-wealth.portfolio-service").createPlan(String(userId), {
+        planName,
+        planType,
+        products,
+        totalAmount
+      });
+      ctx.body = successResponse(record, "创建成功");
+    } catch (error) {
+      strapi.log.error(`[zhao-wealth] 创建组合方案失败: ${error.message}`);
+      ctx.body = errorResponse(500, "创建失败");
+    }
+  },
+  /**
+   * GET /v1/wealth/portfolio-plans/:id
+   */
+  async detail(ctx) {
+    try {
+      const { id } = ctx.params;
+      const record = await strapi.service("plugin::zhao-wealth.portfolio-service").getPlanDetail(Number(id));
+      if (!record) {
+        ctx.body = errorResponse(404, "组合方案不存在");
+        return;
+      }
+      ctx.body = successResponse(record);
+    } catch (error) {
+      strapi.log.error(`[zhao-wealth] 组合方案详情查询失败: ${error.message}`);
+      ctx.body = errorResponse(500, "查询失败");
+    }
+  },
+  /**
+   * PUT /v1/wealth/portfolio-plans/:id
+   */
+  async update(ctx) {
+    try {
+      const { id } = ctx.params;
+      const data = ctx.request.body;
+      const record = await strapi.service("plugin::zhao-wealth.portfolio-service").updatePlan(Number(id), data);
+      ctx.body = successResponse(record, "更新成功");
+    } catch (error) {
+      strapi.log.error(`[zhao-wealth] 更新组合方案失败: ${error.message}`);
+      ctx.body = errorResponse(500, "更新失败");
+    }
+  },
+  /**
+   * DELETE /v1/wealth/portfolio-plans/:id
+   */
+  async remove(ctx) {
+    try {
+      const { id } = ctx.params;
+      const record = await strapi.service("plugin::zhao-wealth.portfolio-service").deletePlan(Number(id));
+      ctx.body = successResponse(record, "删除成功");
+    } catch (error) {
+      strapi.log.error(`[zhao-wealth] 删除组合方案失败: ${error.message}`);
+      ctx.body = errorResponse(500, "删除失败");
+    }
+  },
+  /**
+   * GET /v1/wealth/portfolio-plans/:id/performance
+   */
+  async performance(ctx) {
+    try {
+      const { id } = ctx.params;
+      const { period } = ctx.query;
+      const result = await strapi.service("plugin::zhao-wealth.portfolio-service").calculatePlanPerformance(Number(id), period || "m1");
+      if (!result) {
+        ctx.body = errorResponse(404, "组合方案不存在或无产品数据");
+        return;
+      }
+      ctx.body = successResponse(result);
+    } catch (error) {
+      strapi.log.error(`[zhao-wealth] 组合业绩查询失败: ${error.message}`);
+      ctx.body = errorResponse(500, "查询失败");
+    }
+  },
+  /**
+   * POST /v1/wealth/portfolio-plans/:id/export
+   */
+  async export(ctx) {
+    try {
+      const { id } = ctx.params;
+      const result = await strapi.service("plugin::zhao-wealth.portfolio-service").exportPlanSummary(Number(id));
+      if (!result) {
+        ctx.body = errorResponse(404, "组合方案不存在");
+        return;
+      }
+      ctx.body = successResponse(result);
+    } catch (error) {
+      strapi.log.error(`[zhao-wealth] 导出方案摘要失败: ${error.message}`);
+      ctx.body = errorResponse(500, "导出失败");
+    }
+  }
+});
+const consultation = ({ strapi }) => ({
+  /**
+   * POST /v1/wealth/consultations
+   */
+  async create(ctx) {
+    try {
+      const userId = ctx.state.user?.id || ctx.state.ssoUser?.id;
+      if (!userId) {
+        ctx.body = errorResponse(401, "未登录");
+        return;
+      }
+      const { name, phone, productId, portfolioPlanId, preferredTime, preferredChannel, message } = ctx.request.body;
+      if (!name || !phone) {
+        ctx.body = errorResponse(400, "name 和 phone 必填");
+        return;
+      }
+      const record = await strapi.service("plugin::zhao-wealth.consultation-service").createBooking(String(userId), {
+        name,
+        phone,
+        productId,
+        portfolioPlanId,
+        preferredTime,
+        preferredChannel,
+        message
+      });
+      ctx.body = successResponse(record, "预约成功，我们将在1个工作日内与您联系");
+    } catch (error) {
+      strapi.log.error(`[zhao-wealth] 创建预约咨询失败: ${error.message}`);
+      ctx.body = errorResponse(500, "预约失败");
+    }
+  },
+  /**
+   * GET /v1/wealth/consultations
+   */
+  async list(ctx) {
+    try {
+      const userId = ctx.state.user?.id || ctx.state.ssoUser?.id;
+      if (!userId) {
+        ctx.body = errorResponse(401, "未登录");
+        return;
+      }
+      const records = await strapi.service("plugin::zhao-wealth.consultation-service").getBookings(String(userId));
+      ctx.body = successResponse(records);
+    } catch (error) {
+      strapi.log.error(`[zhao-wealth] 预约列表查询失败: ${error.message}`);
+      ctx.body = errorResponse(500, "查询失败");
+    }
+  },
+  /**
+   * POST /v1/wealth/consultations/:id/cancel
+   */
+  async cancel(ctx) {
+    try {
+      const { id } = ctx.params;
+      const record = await strapi.service("plugin::zhao-wealth.consultation-service").cancelBooking(Number(id));
+      ctx.body = successResponse(record, "已取消预约");
+    } catch (error) {
+      strapi.log.error(`[zhao-wealth] 取消预约失败: ${error.message}`);
+      ctx.body = errorResponse(500, "取消失败");
+    }
+  },
+  /**
+   * GET /v1/wealth/products/:id/risk-disclosure
+   */
+  async disclosure(ctx) {
+    try {
+      const { id } = ctx.params;
+      const { period } = ctx.query;
+      const result = await strapi.service("plugin::zhao-wealth.risk-disclosure-service").getDynamicDisclosure(Number(id), period || "m1");
+      if (!result) {
+        ctx.body = errorResponse(404, "产品不存在");
+        return;
+      }
+      ctx.body = successResponse(result);
+    } catch (error) {
+      strapi.log.error(`[zhao-wealth] 风险揭示查询失败: ${error.message}`);
+      ctx.body = errorResponse(500, "查询失败");
+    }
+  }
+});
 const controllers = {
   product: product$1,
   nav,
@@ -9271,7 +9533,10 @@ const controllers = {
   "risk-metric": riskMetric,
   disclosure,
   holding,
-  compare
+  compare,
+  scoring,
+  portfolio,
+  consultation
 };
 const contentApi = () => ({
   type: "content-api",
@@ -9423,6 +9688,135 @@ const contentApi = () => ({
       method: "DELETE",
       path: "/v1/wealth/holdings/:id",
       handler: "holding.remove",
+      config: {
+        auth: false,
+        policies: ["plugin::zhao-sso.sso-authenticated"]
+      }
+    },
+    // === 评分相关 ===
+    {
+      method: "GET",
+      path: "/v1/wealth/scores/leaderboard",
+      handler: "scoring.leaderboard",
+      config: {
+        auth: false,
+        policies: ["plugin::zhao-sso.sso-authenticated"]
+      }
+    },
+    {
+      method: "GET",
+      path: "/v1/wealth/products/:id/scores",
+      handler: "scoring.breakdown",
+      config: {
+        auth: false,
+        policies: ["plugin::zhao-sso.sso-authenticated"]
+      }
+    },
+    {
+      method: "POST",
+      path: "/v1/wealth/scores/recalculate",
+      handler: "scoring.recalculate",
+      config: {
+        auth: false,
+        policies: ["plugin::zhao-sso.sso-authenticated"]
+      }
+    },
+    // === 组合方案 ===
+    {
+      method: "GET",
+      path: "/v1/wealth/portfolio-plans",
+      handler: "portfolio.list",
+      config: {
+        auth: false,
+        policies: ["plugin::zhao-sso.sso-authenticated"]
+      }
+    },
+    {
+      method: "POST",
+      path: "/v1/wealth/portfolio-plans",
+      handler: "portfolio.create",
+      config: {
+        auth: false,
+        policies: ["plugin::zhao-sso.sso-authenticated"]
+      }
+    },
+    {
+      method: "GET",
+      path: "/v1/wealth/portfolio-plans/:id",
+      handler: "portfolio.detail",
+      config: {
+        auth: false,
+        policies: ["plugin::zhao-sso.sso-authenticated"]
+      }
+    },
+    {
+      method: "PUT",
+      path: "/v1/wealth/portfolio-plans/:id",
+      handler: "portfolio.update",
+      config: {
+        auth: false,
+        policies: ["plugin::zhao-sso.sso-authenticated"]
+      }
+    },
+    {
+      method: "DELETE",
+      path: "/v1/wealth/portfolio-plans/:id",
+      handler: "portfolio.remove",
+      config: {
+        auth: false,
+        policies: ["plugin::zhao-sso.sso-authenticated"]
+      }
+    },
+    {
+      method: "GET",
+      path: "/v1/wealth/portfolio-plans/:id/performance",
+      handler: "portfolio.performance",
+      config: {
+        auth: false,
+        policies: ["plugin::zhao-sso.sso-authenticated"]
+      }
+    },
+    {
+      method: "POST",
+      path: "/v1/wealth/portfolio-plans/:id/export",
+      handler: "portfolio.export",
+      config: {
+        auth: false,
+        policies: ["plugin::zhao-sso.sso-authenticated"]
+      }
+    },
+    // === 预约咨询 ===
+    {
+      method: "POST",
+      path: "/v1/wealth/consultations",
+      handler: "consultation.create",
+      config: {
+        auth: false,
+        policies: ["plugin::zhao-sso.sso-authenticated"]
+      }
+    },
+    {
+      method: "GET",
+      path: "/v1/wealth/consultations",
+      handler: "consultation.list",
+      config: {
+        auth: false,
+        policies: ["plugin::zhao-sso.sso-authenticated"]
+      }
+    },
+    {
+      method: "POST",
+      path: "/v1/wealth/consultations/:id/cancel",
+      handler: "consultation.cancel",
+      config: {
+        auth: false,
+        policies: ["plugin::zhao-sso.sso-authenticated"]
+      }
+    },
+    {
+      method: "GET",
+      path: "/v1/wealth/products/:id/risk-disclosure",
+      handler: "consultation.disclosure",
       config: {
         auth: false,
         policies: ["plugin::zhao-sso.sso-authenticated"]
@@ -9869,38 +10263,40 @@ const recommendService = ({ strapi }) => ({
       });
     }
     if (recommendations.length < limit) {
-      const user = await strapi.db.query("plugin::zhao-sso.sso-user").findOne({
-        where: { id: userId }
+      const remaining = limit - recommendations.length;
+      const existingIds = recommendations.map((r) => r.productId);
+      const scoreQuery = strapi.db.query("plugin::zhao-wealth.wealth-score-snapshot");
+      const productQuery = strapi.db.query("plugin::zhao-wealth.wealth-product");
+      const excludeFilter = existingIds.length > 0 ? { id: { $notIn: existingIds } } : {};
+      const products = await productQuery.findMany({
+        where: { status: true, ...excludeFilter },
+        limit: 50,
+        populate: ["company"]
       });
-      if (user && user.riskPreference) {
-        const rawPref = Number(user.riskPreference);
-        const prefLevel = isNaN(rawPref) ? 3 : Math.min(Math.max(rawPref, 1), 5);
-        const allowedRiskLevels = Array.from({ length: prefLevel }, (_, i) => `R${i + 1}`);
-        const matchedProducts = await strapi.db.query("plugin::zhao-wealth.wealth-product").findMany({
-          where: {
-            riskLevel: { $in: allowedRiskLevels },
-            status: true
-          },
-          orderBy: { recommendWeight: "desc" },
-          limit: limit - recommendations.length
+      const scoredProducts = [];
+      for (const product2 of products) {
+        const score = await scoreQuery.findOne({
+          where: { product: product2.id, period: "m1" },
+          orderBy: { snapshotDate: "desc" }
         });
-        for (const product2 of matchedProducts) {
-          if (recommendations.some((r) => r.productId === product2.id)) continue;
-          const latestSnapshot = await strapi.db.query("plugin::zhao-wealth.wealth-annual-snapshot").findOne({
-            where: { product: product2.id },
-            orderBy: { snapshotDate: "desc" }
-          });
-          recommendations.push({
-            productId: product2.id,
-            productName: product2.productName,
-            productType: product2.productType,
-            riskLevel: product2.riskLevel,
-            recommendSource: "preference",
-            recommendReason: "符合您的风险偏好",
-            annual1y: latestSnapshot?.annual1y,
-            latestNav: null
-          });
+        if (score && score.compositeScore) {
+          scoredProducts.push({ ...product2, score });
         }
+      }
+      scoredProducts.sort((a, b) => Number(b.score.compositeScore) - Number(a.score.compositeScore));
+      for (const product2 of scoredProducts.slice(0, remaining)) {
+        recommendations.push({
+          productId: product2.id,
+          productName: product2.productName,
+          productType: product2.productType,
+          riskLevel: product2.riskLevel,
+          recommendSource: "score-ranking",
+          recommendReason: `综合评分 ${Number(product2.score.compositeScore).toFixed(0)} 分`,
+          annual1y: null,
+          latestNav: null,
+          starRating: product2.score.starRating,
+          compositeScore: Number(product2.score.compositeScore)
+        });
       }
     }
     if (recommendations.length < limit) {

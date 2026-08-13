@@ -119,5 +119,31 @@ declare const _default: {
     }) => {
         compare(ctx: any): Promise<void>;
     };
+    scoring: ({ strapi }: {
+        strapi: any;
+    }) => {
+        leaderboard(ctx: any): Promise<void>;
+        breakdown(ctx: any): Promise<void>;
+        recalculate(ctx: any): Promise<void>;
+    };
+    portfolio: ({ strapi }: {
+        strapi: any;
+    }) => {
+        list(ctx: any): Promise<void>;
+        create(ctx: any): Promise<void>;
+        detail(ctx: any): Promise<void>;
+        update(ctx: any): Promise<void>;
+        remove(ctx: any): Promise<void>;
+        performance(ctx: any): Promise<void>;
+        export(ctx: any): Promise<void>;
+    };
+    consultation: ({ strapi }: {
+        strapi: any;
+    }) => {
+        create(ctx: any): Promise<void>;
+        list(ctx: any): Promise<void>;
+        cancel(ctx: any): Promise<void>;
+        disclosure(ctx: any): Promise<void>;
+    };
 };
 export default _default;
