@@ -7066,10 +7066,14 @@ const recommend = ({ strapi }) => ({
   async list(ctx) {
     try {
       const { page = 1, pageSize = 10 } = ctx.query;
-      const userId = ctx.state.user?.id;
-      const channelId = ctx.state.channel?.id;
-      if (!userId || !channelId) {
+      const userId = ctx.state.ssoUser?.sub;
+      const channelId = ctx.state.ssoUser?.channel;
+      if (!userId) {
         ctx.body = errorResponse(403, "需要登录");
+        return;
+      }
+      if (!channelId) {
+        ctx.body = paginatedResponse([], page, pageSize, 0);
         return;
       }
       const recommendations = await strapi.service("plugin::zhao-wealth.recommend-service").getRecommendations(
@@ -7091,7 +7095,7 @@ const customerProduct$1 = ({ strapi }) => ({
   async list(ctx) {
     try {
       const { page = 1, pageSize = 20 } = ctx.query;
-      const userId = ctx.state.user?.id;
+      const userId = ctx.state.ssoUser?.sub;
       if (!userId) {
         ctx.body = errorResponse(403, "需要登录");
         return;
@@ -7109,9 +7113,9 @@ const customerProduct$1 = ({ strapi }) => ({
   async add(ctx) {
     try {
       const { productId } = ctx.request.body;
-      const userId = ctx.state.user?.id;
-      const channelId = ctx.state.channel?.id;
-      if (!userId || !channelId) {
+      const userId = ctx.state.ssoUser?.sub;
+      const channelId = ctx.state.ssoUser?.channel;
+      if (!userId) {
         ctx.body = errorResponse(403, "需要登录");
         return;
       }
@@ -7128,7 +7132,7 @@ const customerProduct$1 = ({ strapi }) => ({
   async remove(ctx) {
     try {
       const { id } = ctx.params;
-      const userId = ctx.state.user?.id;
+      const userId = ctx.state.ssoUser?.sub;
       if (!userId) {
         ctx.body = errorResponse(403, "需要登录");
         return;
@@ -9027,7 +9031,7 @@ const holding = ({ strapi }) => ({
   async list(ctx) {
     try {
       const { page = 1, pageSize = 20 } = ctx.query;
-      const userId = ctx.state.user?.id;
+      const userId = ctx.state.ssoUser?.sub;
       if (!userId) {
         ctx.body = errorResponse(403, "需要登录");
         return;
@@ -9046,7 +9050,7 @@ const holding = ({ strapi }) => ({
   async detail(ctx) {
     try {
       const { id } = ctx.params;
-      const userId = ctx.state.user?.id;
+      const userId = ctx.state.ssoUser?.sub;
       if (!userId) {
         ctx.body = errorResponse(403, "需要登录");
         return;
@@ -9070,7 +9074,7 @@ const holding = ({ strapi }) => ({
     try {
       const { id } = ctx.params;
       const { startDate, endDate } = ctx.query;
-      const userId = ctx.state.user?.id;
+      const userId = ctx.state.ssoUser?.sub;
       if (!userId) {
         ctx.body = errorResponse(403, "需要登录");
         return;
@@ -9094,9 +9098,9 @@ const holding = ({ strapi }) => ({
   async add(ctx) {
     try {
       const { productId, buyDate, buyAmount, buyNav, remark } = ctx.request.body;
-      const userId = ctx.state.user?.id;
-      const channelId = ctx.state.channel?.id;
-      if (!userId || !channelId) {
+      const userId = ctx.state.ssoUser?.sub;
+      const channelId = ctx.state.ssoUser?.channel;
+      if (!userId) {
         ctx.body = errorResponse(403, "需要登录");
         return;
       }
@@ -9126,7 +9130,7 @@ const holding = ({ strapi }) => ({
   async remove(ctx) {
     try {
       const { id } = ctx.params;
-      const userId = ctx.state.user?.id;
+      const userId = ctx.state.ssoUser?.sub;
       if (!userId) {
         ctx.body = errorResponse(403, "需要登录");
         return;
@@ -9244,7 +9248,8 @@ const contentApi = () => ({
       path: "/v1/wealth/products",
       handler: "product.list",
       config: {
-        policies: ["plugin::zhao-auth.has-channel-access", "plugin::zhao-auth.has-tenant-access"]
+        auth: false,
+        policies: ["plugin::zhao-sso.sso-authenticated"]
       }
     },
     {
@@ -9252,7 +9257,8 @@ const contentApi = () => ({
       path: "/v1/wealth/products/:id",
       handler: "product.detail",
       config: {
-        policies: ["plugin::zhao-auth.has-channel-access", "plugin::zhao-auth.has-tenant-access"]
+        auth: false,
+        policies: ["plugin::zhao-sso.sso-authenticated"]
       }
     },
     {
@@ -9260,7 +9266,8 @@ const contentApi = () => ({
       path: "/v1/wealth/products/:id/nav",
       handler: "nav.timeSeries",
       config: {
-        policies: ["plugin::zhao-auth.has-channel-access", "plugin::zhao-auth.has-tenant-access"]
+        auth: false,
+        policies: ["plugin::zhao-sso.sso-authenticated"]
       }
     },
     {
@@ -9268,7 +9275,8 @@ const contentApi = () => ({
       path: "/v1/wealth/products/:id/annual-snapshot",
       handler: "annual.snapshotTimeSeries",
       config: {
-        policies: ["plugin::zhao-auth.has-channel-access", "plugin::zhao-auth.has-tenant-access"]
+        auth: false,
+        policies: ["plugin::zhao-sso.sso-authenticated"]
       }
     },
     {
@@ -9276,7 +9284,8 @@ const contentApi = () => ({
       path: "/v1/wealth/products/:id/yearly-return",
       handler: "annual.yearlyReturns",
       config: {
-        policies: ["plugin::zhao-auth.has-channel-access", "plugin::zhao-auth.has-tenant-access"]
+        auth: false,
+        policies: ["plugin::zhao-sso.sso-authenticated"]
       }
     },
     {
@@ -9284,7 +9293,8 @@ const contentApi = () => ({
       path: "/v1/wealth/recommend",
       handler: "recommend.list",
       config: {
-        policies: ["plugin::zhao-auth.is-authenticated"]
+        auth: false,
+        policies: ["plugin::zhao-sso.sso-authenticated"]
       }
     },
     {
@@ -9292,7 +9302,8 @@ const contentApi = () => ({
       path: "/v1/wealth/customer-products",
       handler: "customer-product.list",
       config: {
-        policies: ["plugin::zhao-auth.is-authenticated"]
+        auth: false,
+        policies: ["plugin::zhao-sso.sso-authenticated"]
       }
     },
     {
@@ -9300,7 +9311,8 @@ const contentApi = () => ({
       path: "/v1/wealth/customer-products",
       handler: "customer-product.add",
       config: {
-        policies: ["plugin::zhao-auth.is-authenticated"]
+        auth: false,
+        policies: ["plugin::zhao-sso.sso-authenticated"]
       }
     },
     {
@@ -9308,7 +9320,8 @@ const contentApi = () => ({
       path: "/v1/wealth/customer-products/:id",
       handler: "customer-product.remove",
       config: {
-        policies: ["plugin::zhao-auth.is-authenticated"]
+        auth: false,
+        policies: ["plugin::zhao-sso.sso-authenticated"]
       }
     },
     {
@@ -9316,20 +9329,25 @@ const contentApi = () => ({
       path: "/v1/wealth/products/:id/risk-metrics",
       handler: "risk-metric.getMetrics",
       config: {
-        policies: ["plugin::zhao-auth.has-channel-access", "plugin::zhao-auth.has-tenant-access"]
+        auth: false,
+        policies: ["plugin::zhao-sso.sso-authenticated"]
       }
     },
     {
       method: "GET",
       path: "/v1/wealth/disclosure",
-      handler: "disclosure.getByProductType"
+      handler: "disclosure.getByProductType",
+      config: {
+        auth: false
+      }
     },
     {
       method: "GET",
       path: "/v1/wealth/compare",
       handler: "compare.compare",
       config: {
-        policies: ["plugin::zhao-auth.has-channel-access", "plugin::zhao-auth.has-tenant-access"]
+        auth: false,
+        policies: ["plugin::zhao-sso.sso-authenticated"]
       }
     },
     {
@@ -9337,7 +9355,8 @@ const contentApi = () => ({
       path: "/v1/wealth/holdings",
       handler: "holding.list",
       config: {
-        policies: ["plugin::zhao-auth.is-authenticated", "plugin::zhao-auth.has-channel-access"]
+        auth: false,
+        policies: ["plugin::zhao-sso.sso-authenticated"]
       }
     },
     {
@@ -9345,7 +9364,8 @@ const contentApi = () => ({
       path: "/v1/wealth/holdings/:id",
       handler: "holding.detail",
       config: {
-        policies: ["plugin::zhao-auth.is-authenticated", "plugin::zhao-auth.has-channel-access"]
+        auth: false,
+        policies: ["plugin::zhao-sso.sso-authenticated"]
       }
     },
     {
@@ -9353,7 +9373,8 @@ const contentApi = () => ({
       path: "/v1/wealth/holdings/:id/profit-trend",
       handler: "holding.profitTrend",
       config: {
-        policies: ["plugin::zhao-auth.is-authenticated", "plugin::zhao-auth.has-channel-access"]
+        auth: false,
+        policies: ["plugin::zhao-sso.sso-authenticated"]
       }
     },
     {
@@ -9361,7 +9382,8 @@ const contentApi = () => ({
       path: "/v1/wealth/holdings",
       handler: "holding.add",
       config: {
-        policies: ["plugin::zhao-auth.is-authenticated", "plugin::zhao-auth.has-channel-access"]
+        auth: false,
+        policies: ["plugin::zhao-sso.sso-authenticated"]
       }
     },
     {
@@ -9369,7 +9391,8 @@ const contentApi = () => ({
       path: "/v1/wealth/holdings/:id",
       handler: "holding.remove",
       config: {
-        policies: ["plugin::zhao-auth.is-authenticated", "plugin::zhao-auth.has-channel-access"]
+        auth: false,
+        policies: ["plugin::zhao-sso.sso-authenticated"]
       }
     }
   ]

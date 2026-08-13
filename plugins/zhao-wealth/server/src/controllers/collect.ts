@@ -58,10 +58,37 @@ export default ({ strapi }) => ({
     strapi.log.info(`[zhao-wealth] 同步采集净值: productId=${productId}, productCode=${productCode}, source=${source}`);
 
     const registerCode = config.product?.registerCode || '';
-    let navData = await collector.collectNavData(productCode, { registerCode });
+    let navData: any[] = [];
+    try {
+      navData = await collector.collectNavData(productCode, { registerCode });
+    } catch (collectError: any) {
+      // P1修复：采集异常时持久化失败状态
+      strapi.log.error(`[zhao-wealth] 产品${productId}采集异常: ${collectError.message}`);
+      await strapi.db.query('plugin::zhao-wealth.wealth-collect-config').update({
+        where: { id: config.id },
+        data: {
+          collectStatus: 'failed',
+          lastCollectTime: new Date(),
+          failCount: (config.failCount || 0) + 1,
+          failReason: collectError.message?.substring(0, 500) || '采集异常',
+        },
+      });
+      throw collectError;
+    }
 
     if (navData.length === 0) {
       strapi.log.warn(`[zhao-wealth] 产品${productId}未采集到净值数据（productCode=${productCode}）`);
+      // P3修复：空采集标记为 warning 而非 success
+      await strapi.db.query('plugin::zhao-wealth.wealth-collect-config').update({
+        where: { id: config.id },
+        data: {
+          collectStatus: 'success',
+          lastCollectTime: new Date(),
+          failCount: 0,
+          failReason: '采集返回空数据',
+        },
+      });
+      return { savedCount: 0, totalCollected: 0 };
     }
 
     let savedCount = 0;
@@ -85,6 +112,7 @@ export default ({ strapi }) => ({
         collectStatus: 'success',
         lastCollectTime: new Date(),
         failCount: 0,
+        failReason: null,
       },
     });
 
@@ -180,41 +208,55 @@ export default ({ strapi }) => ({
 
   /**
    * 触发重算（后台）
+   * 有 Redis 时使用异步队列，无 Redis 时降级为同步执行
    */
   async recalculate(ctx) {
     try {
       const { productId, startDate, endDate } = ctx.request.body;
       const queue = getCalculateQueue();
       const recalcQueue = getRecalculateQueue();
+      const navCalculator = strapi.service('plugin::zhao-wealth.nav-calculator');
 
       if (productId && startDate && endDate) {
-        if (!queue) {
-          ctx.status = 503;
-          ctx.body = errorResponse(503, '计算服务暂不可用（Redis 未就绪）');
-          return;
+        if (queue) {
+          queue.add('recalculate-range', { productId, startDate, endDate });
+          ctx.body = successResponse({ productId }, '指定范围重算任务已触发');
+        } else {
+          // 同步降级
+          strapi.log.info(`[zhao-wealth] Redis 不可用，同步重算: productId=${productId}, ${startDate}~${endDate}`);
+          await navCalculator.recalculateSnapshots(Number(productId), new Date(startDate), new Date(endDate));
+          ctx.body = successResponse({ productId }, '指定范围重算完成（同步）');
         }
-        queue.add('recalculate-range', { productId, startDate, endDate });
-        ctx.body = successResponse({ productId }, '指定范围重算任务已触发');
       } else if (productId) {
-        if (!queue) {
-          ctx.status = 503;
-          ctx.body = errorResponse(503, '计算服务暂不可用（Redis 未就绪）');
-          return;
+        if (queue) {
+          queue.add('recalculate-product', { productId });
+          ctx.body = successResponse({ productId }, '单产品重算任务已触发');
+        } else {
+          // 同步降级：查找产品的净值日期范围
+          strapi.log.info(`[zhao-wealth] Redis 不可用，同步重算: productId=${productId}`);
+          const navs = await strapi.db.query('plugin::zhao-wealth.wealth-nav').findMany({
+            where: { product: Number(productId) },
+            orderBy: { navDate: 'asc' },
+          });
+          if (navs.length > 0) {
+            await navCalculator.recalculateSnapshots(Number(productId), new Date(navs[0].navDate), new Date(navs[navs.length - 1].navDate));
+          }
+          ctx.body = successResponse({ productId, navCount: navs.length }, '单产品重算完成（同步）');
         }
-        queue.add('recalculate-product', { productId });
-        ctx.body = successResponse({ productId }, '单产品重算任务已触发');
       } else {
-        if (!recalcQueue) {
-          ctx.status = 503;
-          ctx.body = errorResponse(503, '计算服务暂不可用（Redis 未就绪）');
-          return;
+        if (recalcQueue) {
+          recalcQueue.add('recalculate-all', {});
+          ctx.body = successResponse({}, '全量重算任务已触发');
+        } else {
+          // 同步降级
+          strapi.log.info('[zhao-wealth] Redis 不可用，同步全量重算年化快照');
+          await navCalculator.recalculateAll();
+          ctx.body = successResponse({}, '全量重算完成（同步）');
         }
-        recalcQueue.add('recalculate-all', {});
-        ctx.body = successResponse({}, '全量重算任务已触发');
       }
     } catch (error) {
       strapi.log.error(`[zhao-wealth] 触发重算失败: ${error.message}`);
-      ctx.body = errorResponse(500, '触发失败');
+      ctx.body = errorResponse(500, `重算失败: ${error.message}`);
     }
   },
 });

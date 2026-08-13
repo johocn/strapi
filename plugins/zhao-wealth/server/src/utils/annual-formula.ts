@@ -5,21 +5,29 @@
  * 公式: 年化 = (期末净值/期初净值)^(365/区间自然日天数) - 1
  */
 export function calculateAnnualReturn(
-  startNav: number,
-  endNav: number,
+  startNav: number | string,
+  endNav: number | string,
   naturalDays: number
 ): number | null {
+  // 显式转换为 Number（PostgreSQL numeric 可能返回字符串）
+  const start = Number(startNav);
+  const end = Number(endNav);
+
   // 边界检查
-  if (startNav <= 0 || endNav <= 0) {
+  if (isNaN(start) || isNaN(end) || start <= 0 || end <= 0) {
     return null;
   }
 
-  if (naturalDays <= 0) {
+  if (isNaN(naturalDays) || naturalDays <= 0) {
     return null;
   }
 
-  const ratio = endNav / startNav;
+  const ratio = end / start;
   const annualReturn = Math.pow(ratio, 365 / naturalDays) - 1;
+
+  if (isNaN(annualReturn) || !isFinite(annualReturn)) {
+    return null;
+  }
 
   // 保留6位小数
   return Math.round(annualReturn * 1000000) / 1000000;
@@ -33,12 +41,16 @@ export function calculateMoneyFundAnnual(
   totalIncome: number,
   naturalDays: number
 ): number | null {
-  if (naturalDays <= 0) {
+  if (isNaN(totalIncome) || isNaN(naturalDays) || naturalDays <= 0) {
     return null;
   }
 
   const avgIncome = totalIncome / naturalDays;
   const annualReturn = avgIncome * 365 / 10000;
+
+  if (isNaN(annualReturn) || !isFinite(annualReturn)) {
+    return null;
+  }
 
   return Math.round(annualReturn * 1000000) / 1000000;
 }
@@ -52,8 +64,9 @@ export function calculateYearlyReturn(
   year: number,
   productType: string
 ): { annualReturn: number | null; baseDays: number } {
-  // 判断是否为完整年度
-  const yearDays = productType === 'money-fund' ? 365 : 365;
+  // P2修复：根据年份判断闰年，原代码两分支均为 365
+  const isLeapYear = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+  const yearDays = isLeapYear ? 366 : 365;
 
   const annualReturn = calculateAnnualReturn(startNav, endNav, yearDays);
 

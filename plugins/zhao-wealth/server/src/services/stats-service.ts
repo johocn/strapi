@@ -31,7 +31,8 @@ export default ({ strapi }) => ({
     }
 
     // 今日采集：今日新增的净值记录数
-    const today = new Date().toISOString().slice(0, 10);
+    // P2修复：使用 UTC+8 时区获取"今日"，避免服务器非 UTC+8 时日期偏移
+    const today = new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 10);
     const todayNavResult = await strapi.db.connection.raw(`
       SELECT COUNT(*) AS cnt FROM wealth_navs
       WHERE created_at >= ?

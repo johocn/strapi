@@ -1,6 +1,6 @@
 'use strict';
 
-import { isTradingDay, getTradingDays, getPreviousTradingDay, getNaturalDays } from './trading-day';
+import { isTradingDay, getTradingDays, getPreviousTradingDay, getNaturalDays, toDateStr } from './trading-day';
 import { calculateAnnualReturn, calculateMoneyFundAnnual, calculateYearlyReturn, isEstimateValue } from './annual-formula';
 import { getRedisClient, acquireLock, releaseLock, ensureRedisAvailable, markRedisUnavailable, closeRedisClient } from './redis-client';
 import { successResponse, errorResponse, paginatedResponse } from './response';
@@ -11,6 +11,7 @@ export {
   getTradingDays,
   getPreviousTradingDay,
   getNaturalDays,
+  toDateStr,
   calculateAnnualReturn,
   calculateMoneyFundAnnual,
   calculateYearlyReturn,

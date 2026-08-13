@@ -1,6 +1,6 @@
 ﻿'use strict';
 
-import { getPreviousTradingDay, getNaturalDays, calculateAnnualReturn, calculateMoneyFundAnnual, isEstimateValue } from '../utils';
+import { getPreviousTradingDay, getNaturalDays, calculateAnnualReturn, calculateMoneyFundAnnual, isEstimateValue, toDateStr } from '../utils';
 
 export default ({ strapi }) => ({
   /**
@@ -45,13 +45,13 @@ export default ({ strapi }) => ({
       snapshotDate,
     };
 
-    // 获取当日净值
+    // 获取当日净值（使用日期字符串查询，避免时区偏移）
     const currentNav = await strapi.db.query('plugin::zhao-wealth.wealth-nav').findOne({
-      where: { product: productId, navDate: snapshotDate },
+      where: { product: productId, navDate: toDateStr(snapshotDate) },
     });
 
     if (!currentNav || !currentNav.unitNav) {
-      strapi.log.warn(`[zhao-wealth] 产品${productId}当日无净值数据`);
+      strapi.log.warn(`[zhao-wealth] 产品${productId}当日(${toDateStr(snapshotDate)})无净值数据`);
       return null;
     }
 
@@ -64,7 +64,7 @@ export default ({ strapi }) => ({
       }
 
       const prevNav = await strapi.db.query('plugin::zhao-wealth.wealth-nav').findOne({
-        where: { product: productId, navDate: prevDate },
+        where: { product: productId, navDate: toDateStr(prevDate) },
       });
 
       if (!prevNav || !prevNav.unitNav || prevNav.unitNav <= 0) {
@@ -76,7 +76,8 @@ export default ({ strapi }) => ({
       const naturalDays = getNaturalDays(prevDate, snapshotDate);
       const annualReturn = calculateAnnualReturn(prevNav.unitNav, currentNav.unitNav, naturalDays);
 
-      snapshot[period.field] = annualReturn;
+      // 确保不保存 NaN
+      snapshot[period.field] = (annualReturn !== null && !isNaN(Number(annualReturn))) ? annualReturn : null;
     }
 
     // 判断是否为估算值
@@ -114,7 +115,7 @@ export default ({ strapi }) => ({
       const incomes = await strapi.db.query('plugin::zhao-wealth.wealth-money-income').findMany({
         where: {
           product: productId,
-          incomeDate: { $gte: startDate, $lte: snapshotDate },
+          incomeDate: { $gte: toDateStr(startDate), $lte: toDateStr(snapshotDate) },
         },
       });
 
@@ -141,7 +142,7 @@ export default ({ strapi }) => ({
     const navs = await strapi.db.query('plugin::zhao-wealth.wealth-nav').findMany({
       where: {
         product: productId,
-        navDate: { $gte: startDate, $lte: endDate },
+        navDate: { $gte: toDateStr(startDate), $lte: toDateStr(endDate) },
       },
       orderBy: { navDate: 'asc' },
     });
@@ -150,9 +151,9 @@ export default ({ strapi }) => ({
       const snapshot = await this.calculateSnapshot(productId, nav.navDate);
 
       if (snapshot) {
-        // 更新或创建快照
+        // 更新或创建快照（使用日期字符串查询，避免时区偏移）
         const existing = await strapi.db.query('plugin::zhao-wealth.wealth-annual-snapshot').findOne({
-          where: { product: productId, snapshotDate: nav.navDate },
+          where: { product: productId, snapshotDate: toDateStr(nav.navDate) },
         });
 
         if (existing) {

@@ -5,15 +5,6 @@ import { httpClient } from '../utils/http-client';
 
 const BASE_URL = 'https://www.cbhbwm.com.cn';
 
-// 风险等级映射（文本）
-const RISK_MAP: Record<string, string> = {
-  '低风险': 'R1',
-  '中低风险': 'R2',
-  '中风险': 'R3',
-  '中高风险': 'R4',
-  '高风险': 'R5',
-};
-
 // 风险等级映射（API 数字编码）
 const RISK_CODE_MAP: Record<string, string> = {
   '01': 'R1',
@@ -21,14 +12,6 @@ const RISK_CODE_MAP: Record<string, string> = {
   '03': 'R3',
   '04': 'R4',
   '05': 'R5',
-};
-
-// 期限类型映射
-const TERM_MAP: Record<string, string> = {
-  '3-6个月': 'short',
-  '6-12个月': 'medium',
-  '1-3年': 'long',
-  '3年以上': 'long',
 };
 
 export default class CbhbCollector extends BaseCollector {
@@ -96,6 +79,10 @@ export default class CbhbCollector extends BaseCollector {
       // 风险等级：优先用 API 编码映射，回退到文本匹配
       const riskLevCode = String(r.riskLev || '');
       const riskLevel = RISK_CODE_MAP[riskLevCode] || 'R2';
+      // P3修复：未知风险等级告警，金融场景应保守处理
+      if (riskLevCode && !RISK_CODE_MAP[riskLevCode]) {
+        console.warn(`[cbhb] 未知风险等级编码: riskLev=${r.riskLev}，默认设为 R2`);
+      }
 
       // 期限类型：根据产品期限天数推断
       const prodPeriod = Number(r.prodPeriod || 0);
@@ -208,22 +195,4 @@ export default class CbhbCollector extends BaseCollector {
     }
   }
 
-  private parseRiskLevel(text: string): string {
-    // 按关键词长度降序检查，避免"低风险"匹配到"中低风险"的子串
-    const sortedKeys = Object.keys(RISK_MAP).sort((a, b) => b.length - a.length);
-    for (const key of sortedKeys) {
-      if (text.includes(key)) return RISK_MAP[key];
-    }
-    return 'R2';
-  }
-
-  private parseTermType(text: string): string {
-    for (const [key, value] of Object.entries(TERM_MAP)) {
-      if (text.includes(key)) return value;
-    }
-    // 根据产品类型推断
-    if (text.includes('封闭')) return 'long';
-    if (text.includes('现金管理') || text.includes('每日开放')) return 'short';
-    return 'medium';
-  }
 }

@@ -7753,21 +7753,23 @@ export interface PluginZhaoWealthWealthProduct
       'oneToMany',
       'plugin::zhao-wealth.wealth-nav'
     >;
-    productCode: Schema.Attribute.String &
-      Schema.Attribute.Required &
-      Schema.Attribute.Unique;
+    operationMode: Schema.Attribute.String;
+    productCode: Schema.Attribute.String & Schema.Attribute.Unique;
     productName: Schema.Attribute.String & Schema.Attribute.Required;
+    productNameCw: Schema.Attribute.String;
+    productStatus: Schema.Attribute.String;
     productType: Schema.Attribute.Enumeration<
       ['bank-wealth', 'stock-fund', 'bond-fund', 'mixed-fund', 'money-fund']
-    > &
-      Schema.Attribute.Required;
+    >;
     publishedAt: Schema.Attribute.DateTime;
     recommendEnabled: Schema.Attribute.Boolean &
       Schema.Attribute.DefaultTo<false>;
     recommendReason: Schema.Attribute.Text;
     recommendTags: Schema.Attribute.JSON;
     recommendWeight: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
-    registerCode: Schema.Attribute.String & Schema.Attribute.Unique;
+    registerCode: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.Unique;
     remark: Schema.Attribute.Text;
     riskLevel: Schema.Attribute.Enumeration<['R1', 'R2', 'R3', 'R4', 'R5']> &
       Schema.Attribute.DefaultTo<'R2'>;
@@ -7775,6 +7777,7 @@ export interface PluginZhaoWealthWealthProduct
       'oneToMany',
       'plugin::zhao-wealth.wealth-risk-metric'
     >;
+    saleCode: Schema.Attribute.String;
     status: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
     termType: Schema.Attribute.Enumeration<['short', 'medium', 'long']>;
     updatedAt: Schema.Attribute.DateTime;

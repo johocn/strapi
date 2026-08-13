@@ -52,6 +52,11 @@ export default ({ strapi }) => ({
 
     const isMoneyFund = product.productType === 'money-fund';
 
+    // P1修复：upsert 逻辑，先查再更新/创建，避免重复记录
+    const existing = await strapi.db.query('plugin::zhao-wealth.wealth-yearly-return').findOne({
+      where: { product: productId, year },
+    });
+
     if (isMoneyFund) {
       // 货币基金年度收益计算
       const yearStart = new Date(year, 0, 1);
@@ -73,16 +78,22 @@ export default ({ strapi }) => ({
       const avgIncome = totalIncome / incomes.length;
       const annualReturn = avgIncome * 365 / 10000;
 
-      return await strapi.db.query('plugin::zhao-wealth.wealth-yearly-return').create({
-        data: {
-          product: productId,
-          year,
-          annualReturn: Math.round(annualReturn * 1000000) / 1000000,
-          baseDays: 365,
-        },
-      });
+      const data = {
+        product: productId,
+        year,
+        annualReturn: Math.round(annualReturn * 1000000) / 1000000,
+        baseDays: 365,
+      };
+
+      if (existing) {
+        return await strapi.db.query('plugin::zhao-wealth.wealth-yearly-return').update({
+          where: { id: existing.id },
+          data,
+        });
+      }
+      return await strapi.db.query('plugin::zhao-wealth.wealth-yearly-return').create({ data });
     } else {
-      // 理财/普通基金年度收益计算（修复：按当年日期范围过滤，避免取到全历史首尾）
+      // 理财/普通基金年度收益计算
       const yearStart = new Date(year, 0, 1);
       const yearEnd = new Date(year, 11, 31);
 
@@ -107,16 +118,30 @@ export default ({ strapi }) => ({
         return null;
       }
 
-      const annualReturn = yearEndNav.unitNav / yearStartNav.unitNav - 1;
+      // P1修复：防止 unitNav 为 0 或无效导致除零/Infinity
+      const startNav = Number(yearStartNav.unitNav);
+      const endNav = Number(yearEndNav.unitNav);
+      if (!startNav || startNav <= 0 || isNaN(startNav) || !endNav || isNaN(endNav)) {
+        strapi.log.warn(`[zhao-wealth] 产品${productId} ${year}年净值无效: start=${yearStartNav.unitNav}, end=${yearEndNav.unitNav}`);
+        return null;
+      }
 
-      return await strapi.db.query('plugin::zhao-wealth.wealth-yearly-return').create({
-        data: {
-          product: productId,
-          year,
-          annualReturn: Math.round(annualReturn * 1000000) / 1000000,
-          baseDays: 365,
-        },
-      });
+      const annualReturn = endNav / startNav - 1;
+
+      const data = {
+        product: productId,
+        year,
+        annualReturn: Math.round(annualReturn * 1000000) / 1000000,
+        baseDays: 365,
+      };
+
+      if (existing) {
+        return await strapi.db.query('plugin::zhao-wealth.wealth-yearly-return').update({
+          where: { id: existing.id },
+          data,
+        });
+      }
+      return await strapi.db.query('plugin::zhao-wealth.wealth-yearly-return').create({ data });
     }
   },
 });

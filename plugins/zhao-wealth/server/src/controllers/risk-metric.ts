@@ -1,5 +1,6 @@
 'use strict';
 
+// Risk metric controller
 import { successResponse, errorResponse } from '../utils';
 import { getCalculateQueue, getRecalculateQueue } from '../jobs/queue-setup';
 
@@ -72,29 +73,44 @@ export default ({ strapi }) => ({
 
       const queue = getCalculateQueue();
       const recalcQueue = getRecalculateQueue();
+      const riskMetricService = strapi.service('plugin::zhao-wealth.risk-metric-service');
 
       if (productId) {
         // 单产品重算
-        if (!queue) {
-          ctx.status = 503;
-          ctx.body = errorResponse(503, '计算服务暂不可用（Redis 未就绪）');
-          return;
+        if (queue) {
+          queue.add('recalculate-risk-metric-product', { productId });
+          ctx.body = successResponse({ productId }, '单产品风险指标重算任务已触发');
+        } else {
+          // 同步降级：遍历该产品所有净值日期计算风险指标
+          strapi.log.info(`[zhao-wealth] Redis 不可用，同步重算风险指标: productId=${productId}`);
+          const navs = await strapi.db.query('plugin::zhao-wealth.wealth-nav').findMany({
+            where: { product: Number(productId) },
+            orderBy: { navDate: 'asc' },
+          });
+          for (const nav of navs) {
+            try {
+              await riskMetricService.calculateAndSaveMetrics(Number(productId), new Date(nav.navDate));
+            } catch (e) {
+              strapi.log.warn(`[zhao-wealth] 产品${productId}日期${nav.navDate}风险指标计算跳过: ${e.message}`);
+            }
+          }
+          ctx.body = successResponse({ productId, navCount: navs.length }, '单产品风险指标重算完成（同步）');
         }
-        queue.add('recalculate-risk-metric-product', { productId });
-        ctx.body = successResponse({ productId }, '单产品风险指标重算任务已触发');
       } else {
         // 全量重算
-        if (!recalcQueue) {
-          ctx.status = 503;
-          ctx.body = errorResponse(503, '计算服务暂不可用（Redis 未就绪）');
-          return;
+        if (recalcQueue) {
+          recalcQueue.add('recalculate-all-risk-metrics', {});
+          ctx.body = successResponse({}, '全量风险指标重算任务已触发');
+        } else {
+          // 同步降级
+          strapi.log.info('[zhao-wealth] Redis 不可用，同步全量重算风险指标');
+          await riskMetricService.recalculateAll();
+          ctx.body = successResponse({}, '全量风险指标重算完成（同步）');
         }
-        recalcQueue.add('recalculate-all-risk-metrics', {});
-        ctx.body = successResponse({}, '全量风险指标重算任务已触发');
       }
     } catch (error) {
       strapi.log.error(`[zhao-wealth] 触发风险指标重算失败: ${error.message}`);
-      ctx.body = errorResponse(500, '触发失败');
+      ctx.body = errorResponse(500, `重算失败: ${error.message}`);
     }
   },
 
@@ -118,11 +134,11 @@ export default ({ strapi }) => ({
         return;
       }
 
-      const result = await strapi.plugin('zhao-wealth').service('risk-metric').adminAggregate(Number(productId), period);
+      const result = await strapi.plugin('zhao-wealth').service('risk-metric-service').adminAggregate(Number(productId), period);
       ctx.body = successResponse(result);
     } catch (error) {
       strapi.log.error(`[zhao-wealth] 指标聚合查询失败: ${error.message}`);
-      ctx.body = errorResponse(500, '查询失败');
+      ctx.body = errorResponse(500, `查询失败: ${error.message}`);
     }
   },
 
@@ -139,11 +155,11 @@ export default ({ strapi }) => ({
         return;
       }
 
-      const result = await strapi.plugin('zhao-wealth').service('risk-metric').adminTrend(Number(productId));
+      const result = await strapi.plugin('zhao-wealth').service('risk-metric-service').adminTrend(Number(productId));
       ctx.body = successResponse(result);
     } catch (error) {
       strapi.log.error(`[zhao-wealth] 指标趋势查询失败: ${error.message}`);
-      ctx.body = errorResponse(500, '查询失败');
+      ctx.body = errorResponse(500, `查询失败: ${error.message}`);
     }
   },
 
@@ -168,11 +184,11 @@ export default ({ strapi }) => ({
         return;
       }
 
-      const result = await strapi.plugin('zhao-wealth').service('risk-metric').adminPeers(period, metricName, Number(limit) || 50);
+      const result = await strapi.plugin('zhao-wealth').service('risk-metric-service').adminPeers(period, metricName, Number(limit) || 50);
       ctx.body = successResponse(result);
     } catch (error) {
       strapi.log.error(`[zhao-wealth] 同类对比查询失败: ${error.message}`);
-      ctx.body = errorResponse(500, '查询失败');
+      ctx.body = errorResponse(500, `查询失败: ${error.message}`);
     }
   },
 });

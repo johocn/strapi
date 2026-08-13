@@ -1,6 +1,7 @@
 'use strict';
 
 import pluginConfig from '../config';
+import { toDateStr } from '../utils';
 
 /**
  * 周期对应的天数
@@ -39,18 +40,18 @@ function getPeriodRange(snapshotDate: Date, period: string): { start: Date; end:
  * 计算波动率
  * std(dailyReturns) × sqrt(250)
  */
-function calculateVolatility(navs: { navDate: string; unitNav: number }[]): number | null {
+function calculateVolatility(navs: { navDate: string; unitNav: number | string }[]): number | null {
   if (navs.length < 2) return null;
 
   // 按日期升序
   const sorted = [...navs].sort((a, b) => new Date(a.navDate).getTime() - new Date(b.navDate).getTime());
 
-  // 计算每日收益率
+  // 计算每日收益率（显式转 Number，PostgreSQL numeric 返回字符串）
   const returns: number[] = [];
   for (let i = 1; i < sorted.length; i++) {
-    const prev = sorted[i - 1].unitNav;
-    const curr = sorted[i].unitNav;
-    if (prev <= 0) return null;
+    const prev = Number(sorted[i - 1].unitNav);
+    const curr = Number(sorted[i].unitNav);
+    if (isNaN(prev) || isNaN(curr) || prev <= 0) return null;
     returns.push(curr / prev - 1);
   }
 
@@ -68,20 +69,22 @@ function calculateVolatility(navs: { navDate: string; unitNav: number }[]): numb
  * max((peak - trough) / peak)
  * 返回负数（如 -0.05 表示 -5%）
  */
-function calculateMaxDrawdown(navs: { navDate: string; unitNav: number }[]): number | null {
+function calculateMaxDrawdown(navs: { navDate: string; unitNav: number | string }[]): number | null {
   if (navs.length < 2) return null;
 
   const sorted = [...navs].sort((a, b) => new Date(a.navDate).getTime() - new Date(b.navDate).getTime());
 
-  let peak = sorted[0].unitNav;
+  let peak = Number(sorted[0].unitNav);
   let maxDrawdown = 0;
 
   for (const nav of sorted) {
-    if (nav.unitNav > peak) {
-      peak = nav.unitNav;
+    const unitNav = Number(nav.unitNav);
+    if (isNaN(unitNav)) continue;
+    if (unitNav > peak) {
+      peak = unitNav;
     }
     if (peak > 0) {
-      const drawdown = (peak - nav.unitNav) / peak;
+      const drawdown = (peak - unitNav) / peak;
       if (drawdown > maxDrawdown) {
         maxDrawdown = drawdown;
       }
@@ -95,9 +98,11 @@ function calculateMaxDrawdown(navs: { navDate: string; unitNav: number }[]): num
  * 计算夏普比率
  * (annualReturn - riskFreeRate) / volatility
  */
-function calculateSharpe(annualReturn: number | null, volatility: number | null, riskFreeRate: number): number | null {
-  if (annualReturn === null || volatility === null || volatility === 0) return null;
-  return (annualReturn - riskFreeRate) / volatility;
+function calculateSharpe(annualReturn: number | string | null, volatility: number | null, riskFreeRate: number): number | null {
+  if (annualReturn === null || annualReturn === undefined || volatility === null || volatility === 0) return null;
+  const annualRet = Number(annualReturn);
+  if (isNaN(annualRet)) return null;
+  return (annualRet - riskFreeRate) / volatility;
 }
 
 export default ({ strapi }) => ({
@@ -118,7 +123,7 @@ export default ({ strapi }) => ({
     const navs = await strapi.db.query('plugin::zhao-wealth.wealth-nav').findMany({
       where: {
         product: productId,
-        navDate: { $gte: start.toISOString().slice(0, 10), $lte: end.toISOString().slice(0, 10) },
+        navDate: { $gte: toDateStr(start), $lte: toDateStr(end) },
       },
       orderBy: { navDate: 'asc' },
     });
@@ -131,7 +136,7 @@ export default ({ strapi }) => ({
     const snapshot = await strapi.db.query('plugin::zhao-wealth.wealth-annual-snapshot').findOne({
       where: {
         product: productId,
-        snapshotDate: snapshotDate.toISOString().slice(0, 10),
+        snapshotDate: toDateStr(snapshotDate),
       },
     });
 
@@ -160,7 +165,7 @@ export default ({ strapi }) => ({
     // 取同类所有产品当日快照（含产品信息用于 productType 过滤）
     const snapshots = await strapi.db.query('plugin::zhao-wealth.wealth-annual-snapshot').findMany({
       where: {
-        snapshotDate: snapshotDate.toISOString().slice(0, 10),
+        snapshotDate: toDateStr(snapshotDate),
         product: { productType: product.productType },
       },
       populate: ['product'],
@@ -172,7 +177,8 @@ export default ({ strapi }) => ({
     if (valid.length < 2) return null;
 
     // 按 annualReturn 降序排序
-    const sorted = valid.sort((a, b) => b[annualField] - a[annualField]);
+    // P2修复：PG numeric 返回字符串，需显式 Number() 转换，否则字符串减法返回 NaN
+    const sorted = valid.sort((a, b) => Number(b[annualField]) - Number(a[annualField]));
 
     // 找到当前产品的排名
     const rank = sorted.findIndex(s => s.product.id === productId) + 1;
@@ -186,7 +192,7 @@ export default ({ strapi }) => ({
    * 计算单个产品的所有 4 周期 × 4 指标并写入数据库
    */
   async calculateAndSaveMetrics(productId: number, snapshotDate: Date): Promise<void> {
-    const dateStr = snapshotDate.toISOString().slice(0, 10);
+    const dateStr = toDateStr(snapshotDate);
     const periods = pluginConfig.riskMetricPeriods;
 
     for (const period of periods) {
@@ -389,10 +395,11 @@ export default ({ strapi }) => ({
     const valid = records.filter(r => r.metricValue !== null && r.product);
 
     // 排序方向：maxDrawdown 升序（越小越好），其他降序
+    // P2修复：metricValue 可能为字符串（PG numeric），需显式 Number() 转换
     if (metricName === 'maxDrawdown') {
-      valid.sort((a, b) => a.metricValue - b.metricValue);
+      valid.sort((a, b) => Number(a.metricValue) - Number(b.metricValue));
     } else {
-      valid.sort((a, b) => b.metricValue - a.metricValue);
+      valid.sort((a, b) => Number(b.metricValue) - Number(a.metricValue));
     }
 
     return valid.map((r, index) => ({

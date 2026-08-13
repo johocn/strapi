@@ -8,7 +8,8 @@ export default () => ({
       path: '/v1/wealth/products',
       handler: 'product.list',
       config: {
-        policies: ['plugin::zhao-auth.has-channel-access', 'plugin::zhao-auth.has-tenant-access'],
+        auth: false,
+        policies: ['plugin::zhao-sso.sso-authenticated'],
       },
     },
     {
@@ -16,7 +17,8 @@ export default () => ({
       path: '/v1/wealth/products/:id',
       handler: 'product.detail',
       config: {
-        policies: ['plugin::zhao-auth.has-channel-access', 'plugin::zhao-auth.has-tenant-access'],
+        auth: false,
+        policies: ['plugin::zhao-sso.sso-authenticated'],
       },
     },
     {
@@ -24,7 +26,8 @@ export default () => ({
       path: '/v1/wealth/products/:id/nav',
       handler: 'nav.timeSeries',
       config: {
-        policies: ['plugin::zhao-auth.has-channel-access', 'plugin::zhao-auth.has-tenant-access'],
+        auth: false,
+        policies: ['plugin::zhao-sso.sso-authenticated'],
       },
     },
     {
@@ -32,7 +35,8 @@ export default () => ({
       path: '/v1/wealth/products/:id/annual-snapshot',
       handler: 'annual.snapshotTimeSeries',
       config: {
-        policies: ['plugin::zhao-auth.has-channel-access', 'plugin::zhao-auth.has-tenant-access'],
+        auth: false,
+        policies: ['plugin::zhao-sso.sso-authenticated'],
       },
     },
     {
@@ -40,7 +44,8 @@ export default () => ({
       path: '/v1/wealth/products/:id/yearly-return',
       handler: 'annual.yearlyReturns',
       config: {
-        policies: ['plugin::zhao-auth.has-channel-access', 'plugin::zhao-auth.has-tenant-access'],
+        auth: false,
+        policies: ['plugin::zhao-sso.sso-authenticated'],
       },
     },
     {
@@ -48,7 +53,8 @@ export default () => ({
       path: '/v1/wealth/recommend',
       handler: 'recommend.list',
       config: {
-        policies: ['plugin::zhao-auth.is-authenticated'],
+        auth: false,
+        policies: ['plugin::zhao-sso.sso-authenticated'],
       },
     },
     {
@@ -56,7 +62,8 @@ export default () => ({
       path: '/v1/wealth/customer-products',
       handler: 'customer-product.list',
       config: {
-        policies: ['plugin::zhao-auth.is-authenticated'],
+        auth: false,
+        policies: ['plugin::zhao-sso.sso-authenticated'],
       },
     },
     {
@@ -64,7 +71,8 @@ export default () => ({
       path: '/v1/wealth/customer-products',
       handler: 'customer-product.add',
       config: {
-        policies: ['plugin::zhao-auth.is-authenticated'],
+        auth: false,
+        policies: ['plugin::zhao-sso.sso-authenticated'],
       },
     },
     {
@@ -72,7 +80,8 @@ export default () => ({
       path: '/v1/wealth/customer-products/:id',
       handler: 'customer-product.remove',
       config: {
-        policies: ['plugin::zhao-auth.is-authenticated'],
+        auth: false,
+        policies: ['plugin::zhao-sso.sso-authenticated'],
       },
     },
     {
@@ -80,20 +89,25 @@ export default () => ({
       path: '/v1/wealth/products/:id/risk-metrics',
       handler: 'risk-metric.getMetrics',
       config: {
-        policies: ['plugin::zhao-auth.has-channel-access', 'plugin::zhao-auth.has-tenant-access'],
+        auth: false,
+        policies: ['plugin::zhao-sso.sso-authenticated'],
       },
     },
     {
       method: 'GET',
       path: '/v1/wealth/disclosure',
       handler: 'disclosure.getByProductType',
+      config: {
+        auth: false,
+      },
     },
     {
       method: 'GET',
       path: '/v1/wealth/compare',
       handler: 'compare.compare',
       config: {
-        policies: ['plugin::zhao-auth.has-channel-access', 'plugin::zhao-auth.has-tenant-access'],
+        auth: false,
+        policies: ['plugin::zhao-sso.sso-authenticated'],
       },
     },
     {
@@ -101,7 +115,8 @@ export default () => ({
       path: '/v1/wealth/holdings',
       handler: 'holding.list',
       config: {
-        policies: ['plugin::zhao-auth.is-authenticated', 'plugin::zhao-auth.has-channel-access'],
+        auth: false,
+        policies: ['plugin::zhao-sso.sso-authenticated'],
       },
     },
     {
@@ -109,7 +124,8 @@ export default () => ({
       path: '/v1/wealth/holdings/:id',
       handler: 'holding.detail',
       config: {
-        policies: ['plugin::zhao-auth.is-authenticated', 'plugin::zhao-auth.has-channel-access'],
+        auth: false,
+        policies: ['plugin::zhao-sso.sso-authenticated'],
       },
     },
     {
@@ -117,7 +133,8 @@ export default () => ({
       path: '/v1/wealth/holdings/:id/profit-trend',
       handler: 'holding.profitTrend',
       config: {
-        policies: ['plugin::zhao-auth.is-authenticated', 'plugin::zhao-auth.has-channel-access'],
+        auth: false,
+        policies: ['plugin::zhao-sso.sso-authenticated'],
       },
     },
     {
@@ -125,7 +142,8 @@ export default () => ({
       path: '/v1/wealth/holdings',
       handler: 'holding.add',
       config: {
-        policies: ['plugin::zhao-auth.is-authenticated', 'plugin::zhao-auth.has-channel-access'],
+        auth: false,
+        policies: ['plugin::zhao-sso.sso-authenticated'],
       },
     },
     {
@@ -133,7 +151,8 @@ export default () => ({
       path: '/v1/wealth/holdings/:id',
       handler: 'holding.remove',
       config: {
-        policies: ['plugin::zhao-auth.is-authenticated', 'plugin::zhao-auth.has-channel-access'],
+        auth: false,
+        policies: ['plugin::zhao-sso.sso-authenticated'],
       },
     },
   ],

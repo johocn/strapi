@@ -27,11 +27,23 @@ export default ({ strapi }) => ({
         orderBy: { navDate: 'desc' },
       });
 
-      const currentNav = latestNav?.unitNav || 0;
-      const buyNav = Number(h.buyNav) || 1;
-      const currentValue = Number(h.buyAmount) * (currentNav / buyNav);
+      // P1修复：无净值数据时返回 null 而非 -100% 亏损
+      const navVal = latestNav?.unitNav ? Number(latestNav.unitNav) : null;
+      const buyNavVal = Number(h.buyNav) || 0;
+
+      if (navVal === null || buyNavVal <= 0 || isNaN(navVal)) {
+        return {
+          ...h,
+          latestNav,
+          currentValue: null,
+          profit: null,
+          profitPercent: null,
+        };
+      }
+
+      const currentValue = Number(h.buyAmount) * (navVal / buyNavVal);
       const profit = currentValue - Number(h.buyAmount);
-      const profitPercent = buyNav > 0 ? (currentNav / buyNav - 1) : 0;
+      const profitPercent = navVal / buyNavVal - 1;
 
       return {
         ...h,
@@ -61,11 +73,23 @@ export default ({ strapi }) => ({
       orderBy: { navDate: 'desc' },
     });
 
-    const currentNav = latestNav?.unitNav || 0;
-    const buyNav = Number(holding.buyNav) || 1;
-    const currentValue = Number(holding.buyAmount) * (currentNav / buyNav);
+    // P1修复：无净值数据时返回 null 而非 -100% 亏损
+    const navVal = latestNav?.unitNav ? Number(latestNav.unitNav) : null;
+    const buyNavVal = Number(holding.buyNav) || 0;
+
+    if (navVal === null || buyNavVal <= 0 || isNaN(navVal)) {
+      return {
+        ...holding,
+        latestNav,
+        currentValue: null,
+        profit: null,
+        profitPercent: null,
+      };
+    }
+
+    const currentValue = Number(holding.buyAmount) * (navVal / buyNavVal);
     const profit = currentValue - Number(holding.buyAmount);
-    const profitPercent = buyNav > 0 ? (currentNav / buyNav - 1) : 0;
+    const profitPercent = navVal / buyNavVal - 1;
 
     return {
       ...holding,
@@ -111,6 +135,10 @@ export default ({ strapi }) => ({
       }
 
       buyNav = Number(nav.unitNav);
+      // P1修复：防止 buyNav 为 0 导致后续除零
+      if (!buyNav || buyNav <= 0 || isNaN(buyNav)) {
+        throw new Error(`产品净值无效（unitNav=${nav.unitNav}），无法录入持仓`);
+      }
     }
 
     return await strapi.db.query('plugin::zhao-wealth.wealth-customer-holding').create({
@@ -136,13 +164,20 @@ export default ({ strapi }) => ({
   async calcProfitTrend(holdingId: number, startDate: string, endDate: string) {
     const holding = await strapi.db.query('plugin::zhao-wealth.wealth-customer-holding').findOne({
       where: { id: holdingId },
+      populate: ['product'],
     });
 
     if (!holding) return [];
 
-    const buyNav = Number(holding.buyNav) || 1;
+    const buyNav = Number(holding.buyNav) || 0;
     const buyAmount = Number(holding.buyAmount);
     const buyDate = new Date(holding.buyDate);
+
+    // P1修复：buyNav 无效时返回空数组，避免后续全部 NaN
+    if (buyNav <= 0 || isNaN(buyNav) || isNaN(buyAmount)) {
+      strapi.log.warn(`[zhao-wealth] 持仓${holdingId}数据异常: buyNav=${holding.buyNav}, buyAmount=${holding.buyAmount}`);
+      return [];
+    }
 
     const navs = await strapi.db.query('plugin::zhao-wealth.wealth-nav').findMany({
       where: {
@@ -153,17 +188,30 @@ export default ({ strapi }) => ({
     });
 
     return navs.map((nav: any) => {
+      // P1修复：NaN 防护，无效净值跳过计算
       const currentNav = Number(nav.unitNav);
+      if (isNaN(currentNav) || currentNav <= 0) {
+        return {
+          date: nav.navDate,
+          nav: null,
+          marketValue: null,
+          profit: null,
+          profitPercent: null,
+          annualizedProfit: null,
+        };
+      }
+
       const marketValue = buyAmount * (currentNav / buyNav);
       const profit = marketValue - buyAmount;
-      const profitPercent = buyNav > 0 ? (currentNav / buyNav - 1) : 0;
+      const profitPercent = currentNav / buyNav - 1;
 
       // 年化盈亏
       const navDate = new Date(nav.navDate);
       const holdingDays = Math.floor((navDate.getTime() - buyDate.getTime()) / (1000 * 60 * 60 * 24));
       let annualizedProfit: number | null = null;
-      if (holdingDays >= 1 && buyNav > 0) {
+      if (holdingDays >= 1) {
         annualizedProfit = Math.pow(currentNav / buyNav, 365 / holdingDays) - 1;
+        if (isNaN(annualizedProfit) || !isFinite(annualizedProfit)) annualizedProfit = null;
       }
 
       return {

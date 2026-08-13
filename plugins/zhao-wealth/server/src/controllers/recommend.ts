@@ -9,11 +9,17 @@ export default ({ strapi }) => ({
   async list(ctx) {
     try {
       const { page = 1, pageSize = 10 } = ctx.query;
-      const userId = ctx.state.user?.id;
-      const channelId = ctx.state.channel?.id;
+      const userId = ctx.state.ssoUser?.sub;
+      const channelId = ctx.state.ssoUser?.channel;
 
-      if (!userId || !channelId) {
+      if (!userId) {
         ctx.body = errorResponse(403, '需要登录');
+        return;
+      }
+
+      // channel 为可选：未提供渠道时不报错，返回空列表
+      if (!channelId) {
+        ctx.body = paginatedResponse([], page, pageSize, 0);
         return;
       }
 

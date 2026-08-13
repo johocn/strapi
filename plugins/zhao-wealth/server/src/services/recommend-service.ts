@@ -1,4 +1,4 @@
-﻿'use strict';
+'use strict';
 
 export default ({ strapi }) => ({
   /**
@@ -19,6 +19,9 @@ export default ({ strapi }) => ({
     });
 
     for (const config of manualRecommend) {
+      // P0修复：产品被删除时跳过，避免 NPE
+      if (!config.product) continue;
+
       const latestSnapshot = await strapi.db.query('plugin::zhao-wealth.wealth-annual-snapshot').findOne({
         where: { product: config.product.id },
         orderBy: { snapshotDate: 'desc' },
@@ -43,9 +46,16 @@ export default ({ strapi }) => ({
       });
 
       if (user && user.riskPreference) {
+        // P0修复：riskLevel 是字符串枚举 "R1".."R5"，riskPreference 是数字
+        // 将数字风险偏好转为匹配的 riskLevel 列表，如 riskPreference=3 → ["R1","R2","R3"]
+        // P2修复：riskPreference 可能无法转为数字（NaN），默认设为 R3
+        const rawPref = Number(user.riskPreference);
+        const prefLevel = isNaN(rawPref) ? 3 : Math.min(Math.max(rawPref, 1), 5);
+        const allowedRiskLevels = Array.from({ length: prefLevel }, (_, i) => `R${i + 1}`);
+
         const matchedProducts = await strapi.db.query('plugin::zhao-wealth.wealth-product').findMany({
           where: {
-            riskLevel: { $lte: user.riskPreference },
+            riskLevel: { $in: allowedRiskLevels },
             status: true,
           },
           orderBy: { recommendWeight: 'desc' },
@@ -86,6 +96,8 @@ export default ({ strapi }) => ({
       });
 
       for (const snapshot of topProducts) {
+        // P0修复：snapshot.product 可能为 null（产品被删除）
+        if (!snapshot.product) continue;
         if (recommendations.some(r => r.productId === snapshot.product.id)) continue;
 
         recommendations.push({

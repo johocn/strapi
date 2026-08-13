@@ -47,6 +47,24 @@ const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
     });
     strapi.log.info("[zhao-sso] Default app created (app_code=default)");
   }
+
+  // 确保 'wealth' 应用存在（理财应用）
+  const wealthApp = await strapi.db.query("plugin::zhao-sso.sso-app").findOne({
+    where: { app_code: "wealth" },
+  });
+  if (!wealthApp) {
+    await strapi.db.query("plugin::zhao-sso.sso-app").create({
+      data: {
+        app_code: "wealth",
+        app_name: "理财应用",
+        app_secret: hashedSecret,
+        redirect_uris: ["http://localhost:*"],
+        allowed_grant_types: ["authorization_code", "refresh_token"],
+        is_active: true,
+      },
+    });
+    strapi.log.info("[zhao-sso] Default app created (app_code=wealth)");
+  }
 };
 
 export default bootstrap;

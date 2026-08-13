@@ -1,8 +1,8 @@
 'use strict';
 
-import { getCollectQueue } from './queue-setup';
+import { getCollectQueue, getCalculateQueue } from './queue-setup';
 import { getCollector } from '../collectors';
-import { isTradingDay, acquireLock, releaseLock } from '../utils';
+import { acquireLock, releaseLock } from '../utils';
 
 /**
  * 根据采集配置查找对应采集器
@@ -113,19 +113,21 @@ export function registerCollectJobs(strapi: any) {
       strapi.log.info(`[zhao-wealth] 产品${productId}采集成功，保存${savedCount}/${navData.length}条净值`);
 
       // 触发年化计算
-      const calculateQueue = getCollectQueue();
+      const calculateQueue = getCalculateQueue();
       if (calculateQueue) {
         calculateQueue.add('calculate-snapshot', { productId });
       }
     } catch (error) {
-      strapi.log.error(`[zhao-wealth] 产品${productId}采集失败: ${error.message}`);
+      // P2修复：安全获取错误信息，防止非 Error 对象 throw 时 message 为 undefined
+      const errMsg = error instanceof Error ? error.message : String(error);
+      strapi.log.error(`[zhao-wealth] 产品${productId}采集失败: ${errMsg}`);
 
       await strapi.db.query('plugin::zhao-wealth.wealth-collect-config').update({
         where: { id: config.id },
         data: {
           collectStatus: 'failed',
           failCount: (config.failCount || 0) + 1,
-          failReason: error.message,
+          failReason: errMsg,
         },
       });
     }

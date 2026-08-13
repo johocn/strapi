@@ -10,7 +10,7 @@ export default ({ strapi }) => ({
   async list(ctx) {
     try {
       const { page = 1, pageSize = 20 } = ctx.query;
-      const userId = ctx.state.user?.id;
+      const userId = ctx.state.ssoUser?.sub;
 
       if (!userId) {
         ctx.body = errorResponse(403, '需要登录');
@@ -33,7 +33,7 @@ export default ({ strapi }) => ({
   async detail(ctx) {
     try {
       const { id } = ctx.params;
-      const userId = ctx.state.user?.id;
+      const userId = ctx.state.ssoUser?.sub;
 
       if (!userId) {
         ctx.body = errorResponse(403, '需要登录');
@@ -62,7 +62,7 @@ export default ({ strapi }) => ({
     try {
       const { id } = ctx.params;
       const { startDate, endDate } = ctx.query;
-      const userId = ctx.state.user?.id;
+      const userId = ctx.state.ssoUser?.sub;
 
       if (!userId) {
         ctx.body = errorResponse(403, '需要登录');
@@ -92,10 +92,10 @@ export default ({ strapi }) => ({
   async add(ctx) {
     try {
       const { productId, buyDate, buyAmount, buyNav, remark } = ctx.request.body;
-      const userId = ctx.state.user?.id;
-      const channelId = ctx.state.channel?.id;
+      const userId = ctx.state.ssoUser?.sub;
+      const channelId = ctx.state.ssoUser?.channel;
 
-      if (!userId || !channelId) {
+      if (!userId) {
         ctx.body = errorResponse(403, '需要登录');
         return;
       }
@@ -123,7 +123,7 @@ export default ({ strapi }) => ({
   async remove(ctx) {
     try {
       const { id } = ctx.params;
-      const userId = ctx.state.user?.id;
+      const userId = ctx.state.ssoUser?.sub;
 
       if (!userId) {
         ctx.body = errorResponse(403, '需要登录');
