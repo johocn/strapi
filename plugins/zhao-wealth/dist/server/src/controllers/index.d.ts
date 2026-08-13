@@ -21,13 +21,6 @@ declare const _default: {
     }) => {
         list(ctx: any): Promise<void>;
     };
-    'customer-product': ({ strapi }: {
-        strapi: any;
-    }) => {
-        list(ctx: any): Promise<void>;
-        add(ctx: any): Promise<void>;
-        remove(ctx: any): Promise<void>;
-    };
     collect: ({ strapi }: {
         strapi: any;
     }) => {
@@ -102,17 +95,6 @@ declare const _default: {
         adminCreate(ctx: any): Promise<void>;
         adminUpdate(ctx: any): Promise<void>;
         adminDelete(ctx: any): Promise<void>;
-    };
-    holding: ({ strapi }: {
-        strapi: any;
-    }) => {
-        list(ctx: any): Promise<void>;
-        detail(ctx: any): Promise<void>;
-        profitTrend(ctx: any): Promise<void>;
-        add(ctx: any): Promise<void>;
-        remove(ctx: any): Promise<void>;
-        adminList(ctx: any): Promise<void>;
-        adminCreate(ctx: any): Promise<void>;
     };
     compare: ({ strapi }: {
         strapi: any;
