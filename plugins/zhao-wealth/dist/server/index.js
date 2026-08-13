@@ -8437,28 +8437,6 @@ const adminApi$1 = ({ strapi }) => ({
       ctx.body = errorResponse(500, "删除失败");
     }
   },
-  // ===== 客户自选 =====
-  async customerProductsList(ctx) {
-    try {
-      const { page = 1, pageSize = 100, channelId } = ctx.query;
-      const limit = Math.min(pageSize, 500);
-      const offset2 = (page - 1) * limit;
-      const filters = {};
-      if (channelId) filters.channel = Number(channelId);
-      const customerProducts = await strapi.db.query("plugin::zhao-wealth.wealth-customer-product").findMany({
-        where: filters,
-        limit,
-        offset: offset2,
-        populate: ["user", "product", "channel"],
-        orderBy: { followTime: "desc" }
-      });
-      const total = await strapi.db.query("plugin::zhao-wealth.wealth-customer-product").count({ where: filters });
-      ctx.body = paginatedResponse(customerProducts, page, limit, total);
-    } catch (error) {
-      strapi.log.error(`[zhao-wealth] 客户自选列表查询失败: ${error.message}`);
-      ctx.body = errorResponse(500, "查询失败");
-    }
-  },
   // ===== 统计 =====
   async stats(ctx) {
     try {
@@ -9558,8 +9536,6 @@ const adminApi = () => ({
     adminRoute("POST", "/v1/admin/recommend-configs", "admin-api.recommendConfigCreate"),
     adminRoute("PUT", "/v1/admin/recommend-configs/:id", "admin-api.recommendConfigUpdate"),
     adminRoute("DELETE", "/v1/admin/recommend-configs/:id", "admin-api.recommendConfigDelete"),
-    // ===== 客户自选 =====
-    adminRoute("GET", "/v1/admin/customer-products", "admin-api.customerProductsList"),
     // ===== 统计 =====
     adminRoute("GET", "/v1/admin/stats", "admin-api.stats"),
     adminRoute("GET", "/v1/admin/stats/overview", "admin-api.statsOverview"),
@@ -9576,10 +9552,7 @@ const adminApi = () => ({
     adminRoute("GET", "/v1/admin/disclosures", "disclosure.adminList"),
     adminRoute("POST", "/v1/admin/disclosures", "disclosure.adminCreate"),
     adminRoute("PUT", "/v1/admin/disclosures/:id", "disclosure.adminUpdate"),
-    adminRoute("DELETE", "/v1/admin/disclosures/:id", "disclosure.adminDelete"),
-    // ===== 持仓管理（后台代客录入） =====
-    adminRoute("GET", "/v1/admin/holdings", "holding.adminList"),
-    adminRoute("POST", "/v1/admin/holdings", "holding.adminCreate")
+    adminRoute("DELETE", "/v1/admin/disclosures/:id", "disclosure.adminDelete")
   ]
 });
 const routes = {

@@ -386,33 +386,6 @@ export default ({ strapi }) => ({
     }
   },
 
-  // ===== 客户自选 =====
-  async customerProductsList(ctx) {
-    try {
-      const { page = 1, pageSize = 100, channelId } = ctx.query;
-      const limit = Math.min(pageSize, 500);
-      const offset = (page - 1) * limit;
-
-      const filters: any = {};
-      if (channelId) filters.channel = Number(channelId);
-
-      const customerProducts = await strapi.db.query('plugin::zhao-wealth.wealth-customer-product').findMany({
-        where: filters,
-        limit,
-        offset,
-        populate: ['user', 'product', 'channel'],
-        orderBy: { followTime: 'desc' },
-      });
-
-      const total = await strapi.db.query('plugin::zhao-wealth.wealth-customer-product').count({ where: filters });
-
-      ctx.body = paginatedResponse(customerProducts, page, limit, total);
-    } catch (error) {
-      strapi.log.error(`[zhao-wealth] 客户自选列表查询失败: ${error.message}`);
-      ctx.body = errorResponse(500, '查询失败');
-    }
-  },
-
   // ===== 统计 =====
   async stats(ctx) {
     try {

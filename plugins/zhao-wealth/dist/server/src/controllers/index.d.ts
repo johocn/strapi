@@ -59,7 +59,6 @@ declare const _default: {
         recommendConfigCreate(ctx: any): Promise<void>;
         recommendConfigUpdate(ctx: any): Promise<void>;
         recommendConfigDelete(ctx: any): Promise<void>;
-        customerProductsList(ctx: any): Promise<void>;
         stats(ctx: any): Promise<void>;
         statsOverview(ctx: any): Promise<void>;
         statsAnomalies(ctx: any): Promise<void>;

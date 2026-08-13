@@ -57,9 +57,6 @@ export default () => ({
     adminRoute('PUT', '/v1/admin/recommend-configs/:id', 'admin-api.recommendConfigUpdate'),
     adminRoute('DELETE', '/v1/admin/recommend-configs/:id', 'admin-api.recommendConfigDelete'),
 
-    // ===== 客户自选 =====
-    adminRoute('GET', '/v1/admin/customer-products', 'admin-api.customerProductsList'),
-
     // ===== 统计 =====
     adminRoute('GET', '/v1/admin/stats', 'admin-api.stats'),
     adminRoute('GET', '/v1/admin/stats/overview', 'admin-api.statsOverview'),
@@ -80,9 +77,5 @@ export default () => ({
     adminRoute('POST', '/v1/admin/disclosures', 'disclosure.adminCreate'),
     adminRoute('PUT', '/v1/admin/disclosures/:id', 'disclosure.adminUpdate'),
     adminRoute('DELETE', '/v1/admin/disclosures/:id', 'disclosure.adminDelete'),
-
-    // ===== 持仓管理（后台代客录入） =====
-    adminRoute('GET', '/v1/admin/holdings', 'holding.adminList'),
-    adminRoute('POST', '/v1/admin/holdings', 'holding.adminCreate'),
   ],
 });

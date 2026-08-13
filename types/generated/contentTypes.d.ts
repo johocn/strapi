@@ -7506,6 +7506,50 @@ export interface PluginZhaoWealthWealthCompany
   };
 }
 
+export interface PluginZhaoWealthWealthConsultation
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'wealth_consultations';
+  info: {
+    description: '\u5BA2\u6237\u9884\u7EA6\u7406\u8D22\u54A8\u8BE2\u670D\u52A1\u8BB0\u5F55';
+    displayName: '\u9884\u7EA6\u54A8\u8BE2';
+    pluralName: 'wealth-consultations';
+    singularName: 'wealth-consultation';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-wealth.wealth-consultation'
+    > &
+      Schema.Attribute.Private;
+    message: Schema.Attribute.Text;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    phone: Schema.Attribute.String & Schema.Attribute.Required;
+    portfolioPlanId: Schema.Attribute.Integer;
+    preferredChannel: Schema.Attribute.Enumeration<
+      ['online', 'branch', 'phone']
+    > &
+      Schema.Attribute.DefaultTo<'branch'>;
+    preferredTime: Schema.Attribute.DateTime;
+    productId: Schema.Attribute.Integer;
+    publishedAt: Schema.Attribute.DateTime;
+    status: Schema.Attribute.Enumeration<
+      ['pending', 'confirmed', 'completed', 'cancelled']
+    > &
+      Schema.Attribute.DefaultTo<'pending'>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    userId: Schema.Attribute.String & Schema.Attribute.Required;
+  };
+}
+
 export interface PluginZhaoWealthWealthCustomerHolding
   extends Struct.CollectionTypeSchema {
   collectionName: 'wealth_customer_holdings';
@@ -7712,6 +7756,45 @@ export interface PluginZhaoWealthWealthNav extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface PluginZhaoWealthWealthPortfolioPlan
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'wealth_portfolio_plans';
+  info: {
+    description: '\u7528\u6237\u521B\u5EFA\u7684\u4EA7\u54C1\u7EC4\u5408\u65B9\u6848\uFF08\u5173\u6CE8\u4EA7\u54C1+\u914D\u6BD4+\u5047\u8BBE\u91D1\u989D\uFF09';
+    displayName: '\u7EC4\u5408\u65B9\u6848';
+    pluralName: 'wealth-portfolio-plans';
+    singularName: 'wealth-portfolio-plan';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-wealth.wealth-portfolio-plan'
+    > &
+      Schema.Attribute.Private;
+    planName: Schema.Attribute.String & Schema.Attribute.Required;
+    planType: Schema.Attribute.Enumeration<
+      ['conservative', 'balanced', 'aggressive', 'custom']
+    > &
+      Schema.Attribute.DefaultTo<'custom'>;
+    products: Schema.Attribute.JSON & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    status: Schema.Attribute.Enumeration<['active', 'archived']> &
+      Schema.Attribute.DefaultTo<'active'>;
+    totalAmount: Schema.Attribute.Decimal;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    userId: Schema.Attribute.String & Schema.Attribute.Required;
+  };
+}
+
 export interface PluginZhaoWealthWealthProduct
   extends Struct.CollectionTypeSchema {
   collectionName: 'wealth_products';
@@ -7753,7 +7836,9 @@ export interface PluginZhaoWealthWealthProduct
       'oneToMany',
       'plugin::zhao-wealth.wealth-nav'
     >;
-    operationMode: Schema.Attribute.String;
+    operationMode: Schema.Attribute.Enumeration<
+      ['daily-open', 'fixed-term', 'closed']
+    >;
     productCode: Schema.Attribute.String & Schema.Attribute.Unique;
     productName: Schema.Attribute.String & Schema.Attribute.Required;
     productNameCw: Schema.Attribute.String;
@@ -7778,6 +7863,10 @@ export interface PluginZhaoWealthWealthProduct
       'plugin::zhao-wealth.wealth-risk-metric'
     >;
     saleCode: Schema.Attribute.String;
+    scoreSnapshots: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-wealth.wealth-score-snapshot'
+    >;
     status: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
     termType: Schema.Attribute.Enumeration<['short', 'medium', 'long']>;
     updatedAt: Schema.Attribute.DateTime;
@@ -7868,6 +7957,49 @@ export interface PluginZhaoWealthWealthRiskMetric
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+  };
+}
+
+export interface PluginZhaoWealthWealthScoreSnapshot
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'wealth_score_snapshots';
+  info: {
+    description: '\u4EA7\u54C1\u7EFC\u5408\u8BC4\u5206\u5FEB\u7167\uFF08\u6536\u76CA/\u6CE2\u52A8/\u56DE\u64A4/\u540C\u7C7B\u6392\u540D\u52A0\u6743\uFF09';
+    displayName: '\u8BC4\u5206\u5FEB\u7167';
+    pluralName: 'wealth-score-snapshots';
+    singularName: 'wealth-score-snapshot';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    compositeScore: Schema.Attribute.Decimal & Schema.Attribute.Required;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    drawdownScore: Schema.Attribute.Decimal;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-wealth.wealth-score-snapshot'
+    > &
+      Schema.Attribute.Private;
+    peerRankScore: Schema.Attribute.Decimal;
+    period: Schema.Attribute.Enumeration<['m1', 'm3', 'm6', 'y1']> &
+      Schema.Attribute.Required;
+    product: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-wealth.wealth-product'
+    >;
+    publishedAt: Schema.Attribute.DateTime;
+    returnScore: Schema.Attribute.Decimal;
+    snapshotDate: Schema.Attribute.Date & Schema.Attribute.Required;
+    starRating: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<1>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    volatilityScore: Schema.Attribute.Decimal;
+    weightProfile: Schema.Attribute.String;
   };
 }
 
@@ -9947,14 +10079,17 @@ declare module '@strapi/strapi' {
       'plugin::zhao-wealth.wealth-annual-snapshot': PluginZhaoWealthWealthAnnualSnapshot;
       'plugin::zhao-wealth.wealth-collect-config': PluginZhaoWealthWealthCollectConfig;
       'plugin::zhao-wealth.wealth-company': PluginZhaoWealthWealthCompany;
+      'plugin::zhao-wealth.wealth-consultation': PluginZhaoWealthWealthConsultation;
       'plugin::zhao-wealth.wealth-customer-holding': PluginZhaoWealthWealthCustomerHolding;
       'plugin::zhao-wealth.wealth-customer-product': PluginZhaoWealthWealthCustomerProduct;
       'plugin::zhao-wealth.wealth-disclosure': PluginZhaoWealthWealthDisclosure;
       'plugin::zhao-wealth.wealth-money-income': PluginZhaoWealthWealthMoneyIncome;
       'plugin::zhao-wealth.wealth-nav': PluginZhaoWealthWealthNav;
+      'plugin::zhao-wealth.wealth-portfolio-plan': PluginZhaoWealthWealthPortfolioPlan;
       'plugin::zhao-wealth.wealth-product': PluginZhaoWealthWealthProduct;
       'plugin::zhao-wealth.wealth-recommend-config': PluginZhaoWealthWealthRecommendConfig;
       'plugin::zhao-wealth.wealth-risk-metric': PluginZhaoWealthWealthRiskMetric;
+      'plugin::zhao-wealth.wealth-score-snapshot': PluginZhaoWealthWealthScoreSnapshot;
       'plugin::zhao-wealth.wealth-yearly-return': PluginZhaoWealthWealthYearlyReturn;
       'plugin::zhao-website.ai-content-summary': PluginZhaoWebsiteAiContentSummary;
       'plugin::zhao-website.article': PluginZhaoWebsiteArticle;
