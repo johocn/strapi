@@ -27,6 +27,4 @@ export default class CbhbCollector extends BaseCollector {
     collectNavData(productCode: string, options?: {
         registerCode?: string;
     }): Promise<any[]>;
-    private parseRiskLevel;
-    private parseTermType;
 }

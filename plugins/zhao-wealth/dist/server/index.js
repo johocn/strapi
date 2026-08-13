@@ -6752,17 +6752,20 @@ function calculateAnnualReturn(startNav, endNav, naturalDays) {
   }
   const ratio = end / start;
   const annualReturn = Math.pow(ratio, 365 / naturalDays) - 1;
-  if (isNaN(annualReturn)) {
+  if (isNaN(annualReturn) || !isFinite(annualReturn)) {
     return null;
   }
   return Math.round(annualReturn * 1e6) / 1e6;
 }
 function calculateMoneyFundAnnual(totalIncome, naturalDays) {
-  if (naturalDays <= 0) {
+  if (isNaN(totalIncome) || isNaN(naturalDays) || naturalDays <= 0) {
     return null;
   }
   const avgIncome = totalIncome / naturalDays;
   const annualReturn = avgIncome * 365 / 1e4;
+  if (isNaN(annualReturn) || !isFinite(annualReturn)) {
+    return null;
+  }
   return Math.round(annualReturn * 1e6) / 1e6;
 }
 function isEstimateValue(naturalDays) {
@@ -7223,25 +7226,12 @@ class BaseCollector {
   }
 }
 const BASE_URL$1 = "https://www.cbhbwm.com.cn";
-const RISK_MAP$1 = {
-  "低风险": "R1",
-  "中低风险": "R2",
-  "中风险": "R3",
-  "中高风险": "R4",
-  "高风险": "R5"
-};
 const RISK_CODE_MAP = {
   "01": "R1",
   "02": "R2",
   "03": "R3",
   "04": "R4",
   "05": "R5"
-};
-const TERM_MAP = {
-  "3-6个月": "short",
-  "6-12个月": "medium",
-  "1-3年": "long",
-  "3年以上": "long"
 };
 class CbhbCollector extends BaseCollector {
   /**
@@ -7299,6 +7289,9 @@ class CbhbCollector extends BaseCollector {
       };
       const riskLevCode = String(r.riskLev || "");
       const riskLevel = RISK_CODE_MAP[riskLevCode] || "R2";
+      if (riskLevCode && !RISK_CODE_MAP[riskLevCode]) {
+        console.warn(`[cbhb] 未知风险等级编码: riskLev=${r.riskLev}，默认设为 R2`);
+      }
       const prodPeriod = Number(r.prodPeriod || 0);
       let termType = "medium";
       if (prodPeriod > 0) {
@@ -7390,21 +7383,6 @@ class CbhbCollector extends BaseCollector {
     } catch (error) {
       throw new Error(`渤银净值API采集失败: ${error.message}`);
     }
-  }
-  parseRiskLevel(text) {
-    const sortedKeys = Object.keys(RISK_MAP$1).sort((a, b) => b.length - a.length);
-    for (const key of sortedKeys) {
-      if (text.includes(key)) return RISK_MAP$1[key];
-    }
-    return "R2";
-  }
-  parseTermType(text) {
-    for (const [key, value] of Object.entries(TERM_MAP)) {
-      if (text.includes(key)) return value;
-    }
-    if (text.includes("封闭")) return "long";
-    if (text.includes("现金管理") || text.includes("每日开放")) return "short";
-    return "medium";
   }
 }
 const LINUX_CHROME_PATHS = [
@@ -9839,7 +9817,8 @@ const recommendService = ({ strapi }) => ({
         where: { id: userId }
       });
       if (user && user.riskPreference) {
-        const prefLevel = Math.min(Math.max(Number(user.riskPreference), 1), 5);
+        const rawPref = Number(user.riskPreference);
+        const prefLevel = isNaN(rawPref) ? 3 : Math.min(Math.max(rawPref, 1), 5);
         const allowedRiskLevels = Array.from({ length: prefLevel }, (_, i) => `R${i + 1}`);
         const matchedProducts = await strapi.db.query("plugin::zhao-wealth.wealth-product").findMany({
           where: {
@@ -10100,7 +10079,7 @@ const riskMetricService = ({ strapi }) => ({
     });
     const valid = snapshots.filter((s2) => s2[annualField] !== null && s2[annualField] !== void 0);
     if (valid.length < 2) return null;
-    const sorted = valid.sort((a, b) => b[annualField] - a[annualField]);
+    const sorted = valid.sort((a, b) => Number(b[annualField]) - Number(a[annualField]));
     const rank = sorted.findIndex((s2) => s2.product.id === productId) + 1;
     if (rank === 0) return null;
     return rank / valid.length * 100;
@@ -10270,9 +10249,9 @@ const riskMetricService = ({ strapi }) => ({
     });
     const valid = records.filter((r) => r.metricValue !== null && r.product);
     if (metricName === "maxDrawdown") {
-      valid.sort((a, b) => a.metricValue - b.metricValue);
+      valid.sort((a, b) => Number(a.metricValue) - Number(b.metricValue));
     } else {
-      valid.sort((a, b) => b.metricValue - a.metricValue);
+      valid.sort((a, b) => Number(b.metricValue) - Number(a.metricValue));
     }
     return valid.map((r, index2) => ({
       rank: index2 + 1,
@@ -10308,7 +10287,7 @@ const statsService = ({ strapi }) => ({
         riskMetricCoverage = 0;
       }
     }
-    const today = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
+    const today = new Date(Date.now() + 8 * 3600 * 1e3).toISOString().slice(0, 10);
     const todayNavResult = await strapi.db.connection.raw(`
       SELECT COUNT(*) AS cnt FROM wealth_navs
       WHERE created_at >= ?
@@ -10555,7 +10534,7 @@ const holdingService = ({ strapi }) => ({
       let annualizedProfit = null;
       if (holdingDays >= 1) {
         annualizedProfit = Math.pow(currentNav / buyNav, 365 / holdingDays) - 1;
-        if (isNaN(annualizedProfit)) annualizedProfit = null;
+        if (isNaN(annualizedProfit) || !isFinite(annualizedProfit)) annualizedProfit = null;
       }
       return {
         date: nav2.navDate,
@@ -10789,18 +10768,19 @@ function registerCollectJobs(strapi) {
         }
       });
       strapi.log.info(`[zhao-wealth] 产品${productId}采集成功，保存${savedCount}/${navData.length}条净值`);
-      const calculateQueue2 = getCollectQueue();
+      const calculateQueue2 = getCalculateQueue();
       if (calculateQueue2) {
         calculateQueue2.add("calculate-snapshot", { productId });
       }
     } catch (error) {
-      strapi.log.error(`[zhao-wealth] 产品${productId}采集失败: ${error.message}`);
+      const errMsg = error instanceof Error ? error.message : String(error);
+      strapi.log.error(`[zhao-wealth] 产品${productId}采集失败: ${errMsg}`);
       await strapi.db.query("plugin::zhao-wealth.wealth-collect-config").update({
         where: { id: config.id },
         data: {
           collectStatus: "failed",
           failCount: (config.failCount || 0) + 1,
-          failReason: error.message
+          failReason: errMsg
         }
       });
     }
