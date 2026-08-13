@@ -15,7 +15,7 @@ declare const _default: ({ strapi }: {
      */
     collectNavSync(productId: number): Promise<{
         savedCount: number;
-        totalCollected: any;
+        totalCollected: number;
     }>;
     /**
      * 触发采集（后台）
@@ -28,6 +28,7 @@ declare const _default: ({ strapi }: {
     status(ctx: any): Promise<void>;
     /**
      * 触发重算（后台）
+     * 有 Redis 时使用异步队列，无 Redis 时降级为同步执行
      */
     recalculate(ctx: any): Promise<void>;
 };

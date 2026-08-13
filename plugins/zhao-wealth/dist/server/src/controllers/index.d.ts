@@ -38,7 +38,7 @@ declare const _default: {
         }>;
         collectNavSync(productId: number): Promise<{
             savedCount: number;
-            totalCollected: any;
+            totalCollected: number;
         }>;
         trigger(ctx: any): Promise<void>;
         status(ctx: any): Promise<void>;

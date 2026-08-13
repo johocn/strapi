@@ -6696,9 +6696,18 @@ const WORKDAYS_ON_WEEKEND_2026 = [
   "2026-10-11"
   // 国庆调休
 ];
+function ensureDate(value) {
+  if (value instanceof Date) return value;
+  return new Date(value);
+}
+function toDateStr(value) {
+  const dateObj = ensureDate(value);
+  return DateTime.fromJSDate(dateObj).toISODate();
+}
 function isTradingDay(date) {
-  const dateStr = DateTime.fromJSDate(date).toISODate();
-  const dayOfWeek2 = date.getDay();
+  const dateObj = ensureDate(date);
+  const dateStr = DateTime.fromJSDate(dateObj).toISODate();
+  const dayOfWeek2 = dateObj.getDay();
   if (WORKDAYS_ON_WEEKEND_2026.includes(dateStr)) {
     return true;
   }
@@ -6711,33 +6720,41 @@ function isTradingDay(date) {
   return true;
 }
 function getPreviousTradingDay(currentDate, tradingDaysCount) {
+  const dateObj = ensureDate(currentDate);
   let count = 0;
-  let checkDate = new Date(currentDate);
+  let checkDate = new Date(dateObj);
   while (count < tradingDaysCount) {
     checkDate.setDate(checkDate.getDate() - 1);
     if (isTradingDay(checkDate)) {
       count++;
     }
-    if (DateTime.fromJSDate(currentDate).diff(DateTime.fromJSDate(checkDate), "days").days > 365) {
+    if (DateTime.fromJSDate(dateObj).diff(DateTime.fromJSDate(checkDate), "days").days > 365) {
       return null;
     }
   }
   return checkDate;
 }
 function getNaturalDays(startDate, endDate) {
-  const start = DateTime.fromJSDate(startDate);
-  const end = DateTime.fromJSDate(endDate);
-  return Math.floor(end.diff(start, "days").days);
+  const start = DateTime.fromJSDate(ensureDate(startDate));
+  const end = DateTime.fromJSDate(ensureDate(endDate));
+  const diff2 = end.diff(start, "days").days;
+  if (isNaN(diff2)) return 0;
+  return Math.floor(diff2);
 }
 function calculateAnnualReturn(startNav, endNav, naturalDays) {
-  if (startNav <= 0 || endNav <= 0) {
+  const start = Number(startNav);
+  const end = Number(endNav);
+  if (isNaN(start) || isNaN(end) || start <= 0 || end <= 0) {
     return null;
   }
-  if (naturalDays <= 0) {
+  if (isNaN(naturalDays) || naturalDays <= 0) {
     return null;
   }
-  const ratio = endNav / startNav;
+  const ratio = end / start;
   const annualReturn = Math.pow(ratio, 365 / naturalDays) - 1;
+  if (isNaN(annualReturn)) {
+    return null;
+  }
   return Math.round(annualReturn * 1e6) / 1e6;
 }
 function calculateMoneyFundAnnual(totalIncome, naturalDays) {
@@ -7972,9 +7989,34 @@ const collect = ({ strapi }) => ({
     }
     strapi.log.info(`[zhao-wealth] 同步采集净值: productId=${productId}, productCode=${productCode}, source=${source}`);
     const registerCode = config.product?.registerCode || "";
-    let navData = await collector.collectNavData(productCode, { registerCode });
+    let navData = [];
+    try {
+      navData = await collector.collectNavData(productCode, { registerCode });
+    } catch (collectError) {
+      strapi.log.error(`[zhao-wealth] 产品${productId}采集异常: ${collectError.message}`);
+      await strapi.db.query("plugin::zhao-wealth.wealth-collect-config").update({
+        where: { id: config.id },
+        data: {
+          collectStatus: "failed",
+          lastCollectTime: /* @__PURE__ */ new Date(),
+          failCount: (config.failCount || 0) + 1,
+          failReason: collectError.message?.substring(0, 500) || "采集异常"
+        }
+      });
+      throw collectError;
+    }
     if (navData.length === 0) {
       strapi.log.warn(`[zhao-wealth] 产品${productId}未采集到净值数据（productCode=${productCode}）`);
+      await strapi.db.query("plugin::zhao-wealth.wealth-collect-config").update({
+        where: { id: config.id },
+        data: {
+          collectStatus: "success",
+          lastCollectTime: /* @__PURE__ */ new Date(),
+          failCount: 0,
+          failReason: "采集返回空数据"
+        }
+      });
+      return { savedCount: 0, totalCollected: 0 };
     }
     let savedCount = 0;
     for (const nav2 of navData) {
@@ -7992,7 +8034,8 @@ const collect = ({ strapi }) => ({
       data: {
         collectStatus: "success",
         lastCollectTime: /* @__PURE__ */ new Date(),
-        failCount: 0
+        failCount: 0,
+        failReason: null
       }
     });
     strapi.log.info(`[zhao-wealth] 产品${productId}采集完成，保存${savedCount}/${navData.length}条净值`);
@@ -8074,40 +8117,51 @@ const collect = ({ strapi }) => ({
   },
   /**
    * 触发重算（后台）
+   * 有 Redis 时使用异步队列，无 Redis 时降级为同步执行
    */
   async recalculate(ctx) {
     try {
       const { productId, startDate, endDate } = ctx.request.body;
       const queue = getCalculateQueue();
       const recalcQueue = getRecalculateQueue();
+      const navCalculator2 = strapi.service("plugin::zhao-wealth.nav-calculator");
       if (productId && startDate && endDate) {
-        if (!queue) {
-          ctx.status = 503;
-          ctx.body = errorResponse(503, "计算服务暂不可用（Redis 未就绪）");
-          return;
+        if (queue) {
+          queue.add("recalculate-range", { productId, startDate, endDate });
+          ctx.body = successResponse({ productId }, "指定范围重算任务已触发");
+        } else {
+          strapi.log.info(`[zhao-wealth] Redis 不可用，同步重算: productId=${productId}, ${startDate}~${endDate}`);
+          await navCalculator2.recalculateSnapshots(Number(productId), new Date(startDate), new Date(endDate));
+          ctx.body = successResponse({ productId }, "指定范围重算完成（同步）");
         }
-        queue.add("recalculate-range", { productId, startDate, endDate });
-        ctx.body = successResponse({ productId }, "指定范围重算任务已触发");
       } else if (productId) {
-        if (!queue) {
-          ctx.status = 503;
-          ctx.body = errorResponse(503, "计算服务暂不可用（Redis 未就绪）");
-          return;
+        if (queue) {
+          queue.add("recalculate-product", { productId });
+          ctx.body = successResponse({ productId }, "单产品重算任务已触发");
+        } else {
+          strapi.log.info(`[zhao-wealth] Redis 不可用，同步重算: productId=${productId}`);
+          const navs = await strapi.db.query("plugin::zhao-wealth.wealth-nav").findMany({
+            where: { product: Number(productId) },
+            orderBy: { navDate: "asc" }
+          });
+          if (navs.length > 0) {
+            await navCalculator2.recalculateSnapshots(Number(productId), new Date(navs[0].navDate), new Date(navs[navs.length - 1].navDate));
+          }
+          ctx.body = successResponse({ productId, navCount: navs.length }, "单产品重算完成（同步）");
         }
-        queue.add("recalculate-product", { productId });
-        ctx.body = successResponse({ productId }, "单产品重算任务已触发");
       } else {
-        if (!recalcQueue) {
-          ctx.status = 503;
-          ctx.body = errorResponse(503, "计算服务暂不可用（Redis 未就绪）");
-          return;
+        if (recalcQueue) {
+          recalcQueue.add("recalculate-all", {});
+          ctx.body = successResponse({}, "全量重算任务已触发");
+        } else {
+          strapi.log.info("[zhao-wealth] Redis 不可用，同步全量重算年化快照");
+          await navCalculator2.recalculateAll();
+          ctx.body = successResponse({}, "全量重算完成（同步）");
         }
-        recalcQueue.add("recalculate-all", {});
-        ctx.body = successResponse({}, "全量重算任务已触发");
       }
     } catch (error) {
       strapi.log.error(`[zhao-wealth] 触发重算失败: ${error.message}`);
-      ctx.body = errorResponse(500, "触发失败");
+      ctx.body = errorResponse(500, `重算失败: ${error.message}`);
     }
   }
 });
@@ -8770,26 +8824,39 @@ const riskMetric = ({ strapi }) => ({
       }
       const queue = getCalculateQueue();
       const recalcQueue = getRecalculateQueue();
+      const riskMetricService2 = strapi.service("plugin::zhao-wealth.risk-metric-service");
       if (productId) {
-        if (!queue) {
-          ctx.status = 503;
-          ctx.body = errorResponse(503, "计算服务暂不可用（Redis 未就绪）");
-          return;
+        if (queue) {
+          queue.add("recalculate-risk-metric-product", { productId });
+          ctx.body = successResponse({ productId }, "单产品风险指标重算任务已触发");
+        } else {
+          strapi.log.info(`[zhao-wealth] Redis 不可用，同步重算风险指标: productId=${productId}`);
+          const navs = await strapi.db.query("plugin::zhao-wealth.wealth-nav").findMany({
+            where: { product: Number(productId) },
+            orderBy: { navDate: "asc" }
+          });
+          for (const nav2 of navs) {
+            try {
+              await riskMetricService2.calculateAndSaveMetrics(Number(productId), new Date(nav2.navDate));
+            } catch (e) {
+              strapi.log.warn(`[zhao-wealth] 产品${productId}日期${nav2.navDate}风险指标计算跳过: ${e.message}`);
+            }
+          }
+          ctx.body = successResponse({ productId, navCount: navs.length }, "单产品风险指标重算完成（同步）");
         }
-        queue.add("recalculate-risk-metric-product", { productId });
-        ctx.body = successResponse({ productId }, "单产品风险指标重算任务已触发");
       } else {
-        if (!recalcQueue) {
-          ctx.status = 503;
-          ctx.body = errorResponse(503, "计算服务暂不可用（Redis 未就绪）");
-          return;
+        if (recalcQueue) {
+          recalcQueue.add("recalculate-all-risk-metrics", {});
+          ctx.body = successResponse({}, "全量风险指标重算任务已触发");
+        } else {
+          strapi.log.info("[zhao-wealth] Redis 不可用，同步全量重算风险指标");
+          await riskMetricService2.recalculateAll();
+          ctx.body = successResponse({}, "全量风险指标重算完成（同步）");
         }
-        recalcQueue.add("recalculate-all-risk-metrics", {});
-        ctx.body = successResponse({}, "全量风险指标重算任务已触发");
       }
     } catch (error) {
       strapi.log.error(`[zhao-wealth] 触发风险指标重算失败: ${error.message}`);
-      ctx.body = errorResponse(500, "触发失败");
+      ctx.body = errorResponse(500, `重算失败: ${error.message}`);
     }
   },
   /**
@@ -8810,11 +8877,11 @@ const riskMetric = ({ strapi }) => ({
         ctx.body = errorResponse(400, "无效的 period");
         return;
       }
-      const result = await strapi.plugin("zhao-wealth").service("risk-metric").adminAggregate(Number(productId), period);
+      const result = await strapi.plugin("zhao-wealth").service("risk-metric-service").adminAggregate(Number(productId), period);
       ctx.body = successResponse(result);
     } catch (error) {
       strapi.log.error(`[zhao-wealth] 指标聚合查询失败: ${error.message}`);
-      ctx.body = errorResponse(500, "查询失败");
+      ctx.body = errorResponse(500, `查询失败: ${error.message}`);
     }
   },
   /**
@@ -8829,11 +8896,11 @@ const riskMetric = ({ strapi }) => ({
         ctx.body = errorResponse(400, "productId 必填");
         return;
       }
-      const result = await strapi.plugin("zhao-wealth").service("risk-metric").adminTrend(Number(productId));
+      const result = await strapi.plugin("zhao-wealth").service("risk-metric-service").adminTrend(Number(productId));
       ctx.body = successResponse(result);
     } catch (error) {
       strapi.log.error(`[zhao-wealth] 指标趋势查询失败: ${error.message}`);
-      ctx.body = errorResponse(500, "查询失败");
+      ctx.body = errorResponse(500, `查询失败: ${error.message}`);
     }
   },
   /**
@@ -8855,11 +8922,11 @@ const riskMetric = ({ strapi }) => ({
         ctx.body = errorResponse(400, "无效的 period 或 metricName");
         return;
       }
-      const result = await strapi.plugin("zhao-wealth").service("risk-metric").adminPeers(period, metricName, Number(limit) || 50);
+      const result = await strapi.plugin("zhao-wealth").service("risk-metric-service").adminPeers(period, metricName, Number(limit) || 50);
       ctx.body = successResponse(result);
     } catch (error) {
       strapi.log.error(`[zhao-wealth] 同类对比查询失败: ${error.message}`);
-      ctx.body = errorResponse(500, "查询失败");
+      ctx.body = errorResponse(500, `查询失败: ${error.message}`);
     }
   }
 });
@@ -9501,10 +9568,10 @@ const navCalculator = ({ strapi }) => ({
       snapshotDate
     };
     const currentNav = await strapi.db.query("plugin::zhao-wealth.wealth-nav").findOne({
-      where: { product: productId, navDate: snapshotDate }
+      where: { product: productId, navDate: toDateStr(snapshotDate) }
     });
     if (!currentNav || !currentNav.unitNav) {
-      strapi.log.warn(`[zhao-wealth] 产品${productId}当日无净值数据`);
+      strapi.log.warn(`[zhao-wealth] 产品${productId}当日(${toDateStr(snapshotDate)})无净值数据`);
       return null;
     }
     for (const period of periods) {
@@ -9514,7 +9581,7 @@ const navCalculator = ({ strapi }) => ({
         continue;
       }
       const prevNav = await strapi.db.query("plugin::zhao-wealth.wealth-nav").findOne({
-        where: { product: productId, navDate: prevDate }
+        where: { product: productId, navDate: toDateStr(prevDate) }
       });
       if (!prevNav || !prevNav.unitNav || prevNav.unitNav <= 0) {
         snapshot[period.field] = null;
@@ -9523,7 +9590,7 @@ const navCalculator = ({ strapi }) => ({
       }
       const naturalDays = getNaturalDays(prevDate, snapshotDate);
       const annualReturn = calculateAnnualReturn(prevNav.unitNav, currentNav.unitNav, naturalDays);
-      snapshot[period.field] = annualReturn;
+      snapshot[period.field] = annualReturn !== null && !isNaN(Number(annualReturn)) ? annualReturn : null;
     }
     const minNaturalDays = getNaturalDays(getPreviousTradingDay(snapshotDate, 7), snapshotDate);
     snapshot.isEstimate = isEstimateValue(minNaturalDays || 0);
@@ -9554,7 +9621,7 @@ const navCalculator = ({ strapi }) => ({
       const incomes = await strapi.db.query("plugin::zhao-wealth.wealth-money-income").findMany({
         where: {
           product: productId,
-          incomeDate: { $gte: startDate, $lte: snapshotDate }
+          incomeDate: { $gte: toDateStr(startDate), $lte: toDateStr(snapshotDate) }
         }
       });
       if (incomes.length < period.days) {
@@ -9575,7 +9642,7 @@ const navCalculator = ({ strapi }) => ({
     const navs = await strapi.db.query("plugin::zhao-wealth.wealth-nav").findMany({
       where: {
         product: productId,
-        navDate: { $gte: startDate, $lte: endDate }
+        navDate: { $gte: toDateStr(startDate), $lte: toDateStr(endDate) }
       },
       orderBy: { navDate: "asc" }
     });
@@ -9583,7 +9650,7 @@ const navCalculator = ({ strapi }) => ({
       const snapshot = await this.calculateSnapshot(productId, nav2.navDate);
       if (snapshot) {
         const existing = await strapi.db.query("plugin::zhao-wealth.wealth-annual-snapshot").findOne({
-          where: { product: productId, snapshotDate: nav2.navDate }
+          where: { product: productId, snapshotDate: toDateStr(nav2.navDate) }
         });
         if (existing) {
           await strapi.db.query("plugin::zhao-wealth.wealth-annual-snapshot").update({
@@ -9659,6 +9726,9 @@ const annualSnapshot = ({ strapi }) => ({
     });
     if (!product2) return null;
     const isMoneyFund = product2.productType === "money-fund";
+    const existing = await strapi.db.query("plugin::zhao-wealth.wealth-yearly-return").findOne({
+      where: { product: productId, year }
+    });
     if (isMoneyFund) {
       const yearStart = new Date(year, 0, 1);
       const yearEnd = new Date(year, 11, 31);
@@ -9675,14 +9745,19 @@ const annualSnapshot = ({ strapi }) => ({
       const totalIncome = incomes.reduce((sum, item) => sum + (item.tenThousandIncome || 0), 0);
       const avgIncome = totalIncome / incomes.length;
       const annualReturn = avgIncome * 365 / 1e4;
-      return await strapi.db.query("plugin::zhao-wealth.wealth-yearly-return").create({
-        data: {
-          product: productId,
-          year,
-          annualReturn: Math.round(annualReturn * 1e6) / 1e6,
-          baseDays: 365
-        }
-      });
+      const data = {
+        product: productId,
+        year,
+        annualReturn: Math.round(annualReturn * 1e6) / 1e6,
+        baseDays: 365
+      };
+      if (existing) {
+        return await strapi.db.query("plugin::zhao-wealth.wealth-yearly-return").update({
+          where: { id: existing.id },
+          data
+        });
+      }
+      return await strapi.db.query("plugin::zhao-wealth.wealth-yearly-return").create({ data });
     } else {
       const yearStart = new Date(year, 0, 1);
       const yearEnd = new Date(year, 11, 31);
@@ -9704,15 +9779,26 @@ const annualSnapshot = ({ strapi }) => ({
         strapi.log.warn(`[zhao-wealth] 产品${productId} ${year}年净值数据不完整`);
         return null;
       }
-      const annualReturn = yearEndNav.unitNav / yearStartNav.unitNav - 1;
-      return await strapi.db.query("plugin::zhao-wealth.wealth-yearly-return").create({
-        data: {
-          product: productId,
-          year,
-          annualReturn: Math.round(annualReturn * 1e6) / 1e6,
-          baseDays: 365
-        }
-      });
+      const startNav = Number(yearStartNav.unitNav);
+      const endNav = Number(yearEndNav.unitNav);
+      if (!startNav || startNav <= 0 || isNaN(startNav) || !endNav || isNaN(endNav)) {
+        strapi.log.warn(`[zhao-wealth] 产品${productId} ${year}年净值无效: start=${yearStartNav.unitNav}, end=${yearEndNav.unitNav}`);
+        return null;
+      }
+      const annualReturn = endNav / startNav - 1;
+      const data = {
+        product: productId,
+        year,
+        annualReturn: Math.round(annualReturn * 1e6) / 1e6,
+        baseDays: 365
+      };
+      if (existing) {
+        return await strapi.db.query("plugin::zhao-wealth.wealth-yearly-return").update({
+          where: { id: existing.id },
+          data
+        });
+      }
+      return await strapi.db.query("plugin::zhao-wealth.wealth-yearly-return").create({ data });
     }
   }
 });
@@ -9732,6 +9818,7 @@ const recommendService = ({ strapi }) => ({
       populate: ["product"]
     });
     for (const config of manualRecommend) {
+      if (!config.product) continue;
       const latestSnapshot = await strapi.db.query("plugin::zhao-wealth.wealth-annual-snapshot").findOne({
         where: { product: config.product.id },
         orderBy: { snapshotDate: "desc" }
@@ -9752,9 +9839,11 @@ const recommendService = ({ strapi }) => ({
         where: { id: userId }
       });
       if (user && user.riskPreference) {
+        const prefLevel = Math.min(Math.max(Number(user.riskPreference), 1), 5);
+        const allowedRiskLevels = Array.from({ length: prefLevel }, (_, i) => `R${i + 1}`);
         const matchedProducts = await strapi.db.query("plugin::zhao-wealth.wealth-product").findMany({
           where: {
-            riskLevel: { $lte: user.riskPreference },
+            riskLevel: { $in: allowedRiskLevels },
             status: true
           },
           orderBy: { recommendWeight: "desc" },
@@ -9789,6 +9878,7 @@ const recommendService = ({ strapi }) => ({
         populate: ["product"]
       });
       for (const snapshot of topProducts) {
+        if (!snapshot.product) continue;
         if (recommendations.some((r) => r.productId === snapshot.product.id)) continue;
         recommendations.push({
           productId: snapshot.product.id,
@@ -9926,9 +10016,9 @@ function calculateVolatility(navs) {
   const sorted = [...navs].sort((a, b) => new Date(a.navDate).getTime() - new Date(b.navDate).getTime());
   const returns = [];
   for (let i = 1; i < sorted.length; i++) {
-    const prev = sorted[i - 1].unitNav;
-    const curr = sorted[i].unitNav;
-    if (prev <= 0) return null;
+    const prev = Number(sorted[i - 1].unitNav);
+    const curr = Number(sorted[i].unitNav);
+    if (isNaN(prev) || isNaN(curr) || prev <= 0) return null;
     returns.push(curr / prev - 1);
   }
   const mean = returns.reduce((sum, r) => sum + r, 0) / returns.length;
@@ -9939,14 +10029,16 @@ function calculateVolatility(navs) {
 function calculateMaxDrawdown(navs) {
   if (navs.length < 2) return null;
   const sorted = [...navs].sort((a, b) => new Date(a.navDate).getTime() - new Date(b.navDate).getTime());
-  let peak = sorted[0].unitNav;
+  let peak = Number(sorted[0].unitNav);
   let maxDrawdown = 0;
   for (const nav2 of sorted) {
-    if (nav2.unitNav > peak) {
-      peak = nav2.unitNav;
+    const unitNav = Number(nav2.unitNav);
+    if (isNaN(unitNav)) continue;
+    if (unitNav > peak) {
+      peak = unitNav;
     }
     if (peak > 0) {
-      const drawdown = (peak - nav2.unitNav) / peak;
+      const drawdown = (peak - unitNav) / peak;
       if (drawdown > maxDrawdown) {
         maxDrawdown = drawdown;
       }
@@ -9955,8 +10047,10 @@ function calculateMaxDrawdown(navs) {
   return -maxDrawdown;
 }
 function calculateSharpe(annualReturn, volatility, riskFreeRate) {
-  if (annualReturn === null || volatility === null || volatility === 0) return null;
-  return (annualReturn - riskFreeRate) / volatility;
+  if (annualReturn === null || annualReturn === void 0 || volatility === null || volatility === 0) return null;
+  const annualRet = Number(annualReturn);
+  if (isNaN(annualRet)) return null;
+  return (annualRet - riskFreeRate) / volatility;
 }
 const riskMetricService = ({ strapi }) => ({
   /**
@@ -9969,7 +10063,7 @@ const riskMetricService = ({ strapi }) => ({
     const navs = await strapi.db.query("plugin::zhao-wealth.wealth-nav").findMany({
       where: {
         product: productId,
-        navDate: { $gte: start.toISOString().slice(0, 10), $lte: end.toISOString().slice(0, 10) }
+        navDate: { $gte: toDateStr(start), $lte: toDateStr(end) }
       },
       orderBy: { navDate: "asc" }
     });
@@ -9979,7 +10073,7 @@ const riskMetricService = ({ strapi }) => ({
     const snapshot = await strapi.db.query("plugin::zhao-wealth.wealth-annual-snapshot").findOne({
       where: {
         product: productId,
-        snapshotDate: snapshotDate.toISOString().slice(0, 10)
+        snapshotDate: toDateStr(snapshotDate)
       }
     });
     const annualReturn = snapshot ? snapshot[annualField] : null;
@@ -9999,7 +10093,7 @@ const riskMetricService = ({ strapi }) => ({
     if (!product2) return null;
     const snapshots = await strapi.db.query("plugin::zhao-wealth.wealth-annual-snapshot").findMany({
       where: {
-        snapshotDate: snapshotDate.toISOString().slice(0, 10),
+        snapshotDate: toDateStr(snapshotDate),
         product: { productType: product2.productType }
       },
       populate: ["product"]
@@ -10015,7 +10109,7 @@ const riskMetricService = ({ strapi }) => ({
    * 计算单个产品的所有 4 周期 × 4 指标并写入数据库
    */
   async calculateAndSaveMetrics(productId, snapshotDate) {
-    const dateStr = snapshotDate.toISOString().slice(0, 10);
+    const dateStr = toDateStr(snapshotDate);
     const periods = pluginConfig.riskMetricPeriods;
     for (const period of periods) {
       const metrics = await this.calculateMetricsForPeriod(productId, snapshotDate, period);
@@ -10320,11 +10414,20 @@ const holdingService = ({ strapi }) => ({
         where: { product: h.product.id },
         orderBy: { navDate: "desc" }
       });
-      const currentNav = latestNav?.unitNav || 0;
-      const buyNav = Number(h.buyNav) || 1;
-      const currentValue = Number(h.buyAmount) * (currentNav / buyNav);
+      const navVal = latestNav?.unitNav ? Number(latestNav.unitNav) : null;
+      const buyNavVal = Number(h.buyNav) || 0;
+      if (navVal === null || buyNavVal <= 0 || isNaN(navVal)) {
+        return {
+          ...h,
+          latestNav,
+          currentValue: null,
+          profit: null,
+          profitPercent: null
+        };
+      }
+      const currentValue = Number(h.buyAmount) * (navVal / buyNavVal);
       const profit = currentValue - Number(h.buyAmount);
-      const profitPercent = buyNav > 0 ? currentNav / buyNav - 1 : 0;
+      const profitPercent = navVal / buyNavVal - 1;
       return {
         ...h,
         latestNav,
@@ -10348,11 +10451,20 @@ const holdingService = ({ strapi }) => ({
       where: { product: holding2.product.id },
       orderBy: { navDate: "desc" }
     });
-    const currentNav = latestNav?.unitNav || 0;
-    const buyNav = Number(holding2.buyNav) || 1;
-    const currentValue = Number(holding2.buyAmount) * (currentNav / buyNav);
+    const navVal = latestNav?.unitNav ? Number(latestNav.unitNav) : null;
+    const buyNavVal = Number(holding2.buyNav) || 0;
+    if (navVal === null || buyNavVal <= 0 || isNaN(navVal)) {
+      return {
+        ...holding2,
+        latestNav,
+        currentValue: null,
+        profit: null,
+        profitPercent: null
+      };
+    }
+    const currentValue = Number(holding2.buyAmount) * (navVal / buyNavVal);
     const profit = currentValue - Number(holding2.buyAmount);
-    const profitPercent = buyNav > 0 ? currentNav / buyNav - 1 : 0;
+    const profitPercent = navVal / buyNavVal - 1;
     return {
       ...holding2,
       latestNav,
@@ -10380,6 +10492,9 @@ const holdingService = ({ strapi }) => ({
         throw new Error("产品无净值数据，无法录入持仓");
       }
       buyNav = Number(nav2.unitNav);
+      if (!buyNav || buyNav <= 0 || isNaN(buyNav)) {
+        throw new Error(`产品净值无效（unitNav=${nav2.unitNav}），无法录入持仓`);
+      }
     }
     return await strapi.db.query("plugin::zhao-wealth.wealth-customer-holding").create({
       data: {
@@ -10402,12 +10517,17 @@ const holdingService = ({ strapi }) => ({
    */
   async calcProfitTrend(holdingId, startDate, endDate) {
     const holding2 = await strapi.db.query("plugin::zhao-wealth.wealth-customer-holding").findOne({
-      where: { id: holdingId }
+      where: { id: holdingId },
+      populate: ["product"]
     });
     if (!holding2) return [];
-    const buyNav = Number(holding2.buyNav) || 1;
+    const buyNav = Number(holding2.buyNav) || 0;
     const buyAmount = Number(holding2.buyAmount);
     const buyDate = new Date(holding2.buyDate);
+    if (buyNav <= 0 || isNaN(buyNav) || isNaN(buyAmount)) {
+      strapi.log.warn(`[zhao-wealth] 持仓${holdingId}数据异常: buyNav=${holding2.buyNav}, buyAmount=${holding2.buyAmount}`);
+      return [];
+    }
     const navs = await strapi.db.query("plugin::zhao-wealth.wealth-nav").findMany({
       where: {
         product: holding2.product,
@@ -10417,14 +10537,25 @@ const holdingService = ({ strapi }) => ({
     });
     return navs.map((nav2) => {
       const currentNav = Number(nav2.unitNav);
+      if (isNaN(currentNav) || currentNav <= 0) {
+        return {
+          date: nav2.navDate,
+          nav: null,
+          marketValue: null,
+          profit: null,
+          profitPercent: null,
+          annualizedProfit: null
+        };
+      }
       const marketValue = buyAmount * (currentNav / buyNav);
       const profit = marketValue - buyAmount;
-      const profitPercent = buyNav > 0 ? currentNav / buyNav - 1 : 0;
+      const profitPercent = currentNav / buyNav - 1;
       const navDate = new Date(nav2.navDate);
       const holdingDays = Math.floor((navDate.getTime() - buyDate.getTime()) / (1e3 * 60 * 60 * 24));
       let annualizedProfit = null;
-      if (holdingDays >= 1 && buyNav > 0) {
+      if (holdingDays >= 1) {
         annualizedProfit = Math.pow(currentNav / buyNav, 365 / holdingDays) - 1;
+        if (isNaN(annualizedProfit)) annualizedProfit = null;
       }
       return {
         date: nav2.navDate,
