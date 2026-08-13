@@ -10702,6 +10702,525 @@ const compareService = ({ strapi }) => ({
     return results;
   }
 });
+const scoringService = ({ strapi }) => {
+  const config = strapi.config.get("plugin::zhao-wealth");
+  const scoreWeights = config?.scoreWeights || {};
+  const starThresholds = config?.starThresholds || { five: 90, four: 75, three: 60, two: 40 };
+  const PERIOD_TO_ANNUAL_FIELD2 = {
+    m1: "annual1m",
+    m3: "annual3m",
+    m6: "annual6m",
+    y1: "annual1y"
+  };
+  const PERIOD_TO_METRIC_PERIOD = {
+    m1: "m1",
+    m3: "m3",
+    m6: "m6",
+    y1: "y1"
+  };
+  function getWeightProfile(productType, operationMode) {
+    if (operationMode) {
+      const specificKey = `${productType}:${operationMode}`;
+      if (scoreWeights[specificKey]) {
+        return specificKey;
+      }
+    }
+    return productType;
+  }
+  function getWeights(weightProfile) {
+    return scoreWeights[weightProfile] || scoreWeights["bank-wealth"] || { returns: 0.3, volatility: 0.25, drawdown: 0.25, peerRank: 0.2 };
+  }
+  function percentileScore(value, allValues, ascending) {
+    const validValues = allValues.filter((v) => v !== null && !isNaN(v) && isFinite(v));
+    if (validValues.length === 0 || value === null || isNaN(value) || !isFinite(value)) {
+      return 50;
+    }
+    if (ascending) {
+      const below = validValues.filter((v) => v < value).length;
+      return Math.round(below / validValues.length * 100);
+    } else {
+      const above = validValues.filter((v) => v > value).length;
+      return Math.round(above / validValues.length * 100);
+    }
+  }
+  function scoreToStars(score) {
+    if (score >= starThresholds.five) return 5;
+    if (score >= starThresholds.four) return 4;
+    if (score >= starThresholds.three) return 3;
+    if (score >= starThresholds.two) return 2;
+    return 1;
+  }
+  async function getPeerMetrics(productType, operationMode, period, snapshotDate) {
+    const annualField = PERIOD_TO_ANNUAL_FIELD2[period] || "annual1m";
+    const metricPeriod = PERIOD_TO_METRIC_PERIOD[period] || "m1";
+    const productQuery = strapi.db.query("plugin::zhao-wealth.wealth-product");
+    const productWhere = { productType, status: true };
+    if (operationMode) {
+      productWhere.operationMode = operationMode;
+    }
+    const products = await productQuery.findMany({
+      where: productWhere,
+      limit: 500
+    });
+    if (!products || products.length === 0) return [];
+    const productIds = products.map((p) => p.id);
+    const snapshotQuery = strapi.db.query("plugin::zhao-wealth.wealth-annual-snapshot");
+    const latestSnapshots = {};
+    for (const pid of productIds) {
+      const snapshot = await snapshotQuery.findOne({
+        where: { product: pid },
+        orderBy: { snapshotDate: "desc" }
+      });
+      if (snapshot) {
+        latestSnapshots[pid] = snapshot;
+      }
+    }
+    const metricQuery = strapi.db.query("plugin::zhao-wealth.wealth-risk-metric");
+    const result = [];
+    for (const pid of productIds) {
+      const snapshot = latestSnapshots[pid];
+      const annualReturn = snapshot ? Number(snapshot[annualField]) : null;
+      const metrics = await metricQuery.findMany({
+        where: {
+          product: pid,
+          period: metricPeriod
+        },
+        orderBy: { snapshotDate: "desc" },
+        limit: 4
+      });
+      const metricMap = {};
+      for (const m of metrics) {
+        metricMap[m.metricName] = m.metricValue !== null ? Number(m.metricValue) : null;
+      }
+      result.push({
+        productId: pid,
+        annualReturn: annualReturn !== null && !isNaN(annualReturn) ? annualReturn : null,
+        volatility: metricMap["volatility"] ?? null,
+        maxDrawdown: metricMap["maxDrawdown"] ?? null,
+        rankPercentile: metricMap["rankPercentile"] ?? null
+      });
+    }
+    return result;
+  }
+  async function calculateScore(productId, period) {
+    const product2 = await strapi.db.query("plugin::zhao-wealth.wealth-product").findOne({
+      where: { id: productId }
+    });
+    if (!product2) return null;
+    const weightProfile = getWeightProfile(product2.productType, product2.operationMode);
+    const weights = getWeights(weightProfile);
+    const peerMetrics = await getPeerMetrics(product2.productType, product2.operationMode, period);
+    if (peerMetrics.length === 0) return null;
+    const currentProduct = peerMetrics.find((p) => p.productId === productId);
+    if (!currentProduct) return null;
+    const allReturns = peerMetrics.map((p) => p.annualReturn);
+    const allVolatilities = peerMetrics.map((p) => p.volatility);
+    const allDrawdowns = peerMetrics.map((p) => p.maxDrawdown);
+    peerMetrics.map((p) => p.rankPercentile);
+    const returnScore = percentileScore(currentProduct.annualReturn, allReturns, false);
+    const volatilityScore = percentileScore(currentProduct.volatility, allVolatilities, true);
+    const drawdownScore = percentileScore(currentProduct.maxDrawdown, allDrawdowns, true);
+    const peerRankScore = currentProduct.rankPercentile !== null ? Math.round(Number(currentProduct.rankPercentile)) : 50;
+    const compositeScore = Math.round(
+      returnScore * weights.returns + volatilityScore * weights.volatility + drawdownScore * weights.drawdown + peerRankScore * weights.peerRank
+    );
+    return {
+      compositeScore,
+      starRating: scoreToStars(compositeScore),
+      returnScore,
+      volatilityScore,
+      drawdownScore,
+      peerRankScore,
+      weightProfile,
+      period
+    };
+  }
+  async function calculateAndSaveScoreSnapshot(productId, snapshotDate, period) {
+    const score = await calculateScore(productId, period);
+    if (!score) return;
+    const query = strapi.db.query("plugin::zhao-wealth.wealth-score-snapshot");
+    await query.deleteMany({
+      where: { product: productId, snapshotDate, period }
+    });
+    await query.create({
+      data: {
+        product: productId,
+        snapshotDate,
+        period,
+        compositeScore: score.compositeScore,
+        starRating: score.starRating,
+        returnScore: score.returnScore,
+        volatilityScore: score.volatilityScore,
+        drawdownScore: score.drawdownScore,
+        peerRankScore: score.peerRankScore,
+        weightProfile: score.weightProfile
+      }
+    });
+  }
+  async function getScoreLeaderboard(params) {
+    const {
+      productType,
+      operationMode,
+      period = "m1",
+      riskLevel,
+      page = 1,
+      pageSize = 10
+    } = params;
+    const productQuery = strapi.db.query("plugin::zhao-wealth.wealth-product");
+    const where = { status: true };
+    if (productType) where.productType = productType;
+    if (operationMode) where.operationMode = operationMode;
+    if (riskLevel) where.riskLevel = riskLevel;
+    const limit = Math.min(pageSize, 50);
+    const offset2 = (page - 1) * limit;
+    const products = await productQuery.findMany({
+      where,
+      limit,
+      offset: offset2,
+      orderBy: { recommendWeight: "desc" },
+      populate: ["company"]
+    });
+    const total = await productQuery.count({ where });
+    const scoreQuery = strapi.db.query("plugin::zhao-wealth.wealth-score-snapshot");
+    const records = [];
+    for (const product2 of products) {
+      const score = await scoreQuery.findOne({
+        where: { product: product2.id, period },
+        orderBy: { snapshotDate: "desc" }
+      });
+      records.push({
+        ...product2,
+        score: score || null
+      });
+    }
+    records.sort((a, b) => {
+      const sa = a.score?.compositeScore ?? 0;
+      const sb = b.score?.compositeScore ?? 0;
+      return sb - sa;
+    });
+    return { records, total, page, pageSize: limit };
+  }
+  async function getScoreBreakdown(productId, period) {
+    const scoreQuery = strapi.db.query("plugin::zhao-wealth.wealth-score-snapshot");
+    const score = await scoreQuery.findOne({
+      where: { product: productId, period },
+      orderBy: { snapshotDate: "desc" }
+    });
+    if (score) {
+      return {
+        compositeScore: Number(score.compositeScore),
+        starRating: score.starRating,
+        returnScore: Number(score.returnScore),
+        volatilityScore: Number(score.volatilityScore),
+        drawdownScore: Number(score.drawdownScore),
+        peerRankScore: Number(score.peerRankScore),
+        weightProfile: score.weightProfile,
+        period: score.period
+      };
+    }
+    return calculateScore(productId, period);
+  }
+  async function recalculateAllScores(period = "m1") {
+    const products = await strapi.db.query("plugin::zhao-wealth.wealth-product").findMany({
+      where: { status: true },
+      limit: 500
+    });
+    const today = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
+    let success = 0;
+    let failed = 0;
+    for (const product2 of products) {
+      try {
+        await calculateAndSaveScoreSnapshot(product2.id, today, period);
+        success++;
+      } catch (error) {
+        strapi.log.error(`[zhao-wealth] 评分计算失败 productId=${product2.id}: ${error.message}`);
+        failed++;
+      }
+    }
+    return { total: products.length, success, failed };
+  }
+  return {
+    calculateScore,
+    calculateAndSaveScoreSnapshot,
+    getScoreLeaderboard,
+    getScoreBreakdown,
+    recalculateAllScores
+  };
+};
+const portfolioService = ({ strapi }) => {
+  const PERIOD_TO_ANNUAL_FIELD2 = {
+    m1: "annual1m",
+    m3: "annual3m",
+    m6: "annual6m",
+    y1: "annual1y"
+  };
+  async function createPlan(userId, planData) {
+    const query = strapi.db.query("plugin::zhao-wealth.wealth-portfolio-plan");
+    const record = await query.create({
+      data: {
+        userId,
+        planName: planData.planName,
+        planType: planData.planType || "custom",
+        products: planData.products,
+        totalAmount: planData.totalAmount || null,
+        status: "active"
+      }
+    });
+    return record;
+  }
+  async function getPlans(userId, params) {
+    const { page = 1, pageSize = 20 } = params;
+    const limit = Math.min(pageSize, 100);
+    const offset2 = (page - 1) * limit;
+    const query = strapi.db.query("plugin::zhao-wealth.wealth-portfolio-plan");
+    const records = await query.findMany({
+      where: { userId, status: "active" },
+      limit,
+      offset: offset2,
+      orderBy: { updatedAt: "desc" }
+    });
+    const total = await query.count({ where: { userId, status: "active" } });
+    return { records, total, page, pageSize: limit };
+  }
+  async function getPlanDetail(planId) {
+    const query = strapi.db.query("plugin::zhao-wealth.wealth-portfolio-plan");
+    const plan = await query.findOne({ where: { id: planId } });
+    if (!plan) return null;
+    const products = typeof plan.products === "string" ? JSON.parse(plan.products) : plan.products || [];
+    const productDetails = [];
+    for (const item of products) {
+      const product2 = await strapi.db.query("plugin::zhao-wealth.wealth-product").findOne({
+        where: { id: item.productId },
+        populate: ["company"]
+      });
+      if (product2) {
+        productDetails.push({
+          ...product2,
+          allocationRatio: item.allocationRatio,
+          addedDate: item.addedDate
+        });
+      }
+    }
+    return {
+      ...plan,
+      productDetails
+    };
+  }
+  async function updatePlan(planId, planData) {
+    const query = strapi.db.query("plugin::zhao-wealth.wealth-portfolio-plan");
+    const data = {};
+    if (planData.planName !== void 0) data.planName = planData.planName;
+    if (planData.planType !== void 0) data.planType = planData.planType;
+    if (planData.products !== void 0) data.products = planData.products;
+    if (planData.totalAmount !== void 0) data.totalAmount = planData.totalAmount;
+    const record = await query.update({ where: { id: planId }, data });
+    return record;
+  }
+  async function deletePlan(planId) {
+    const query = strapi.db.query("plugin::zhao-wealth.wealth-portfolio-plan");
+    const record = await query.update({
+      where: { id: planId },
+      data: { status: "archived" }
+    });
+    return record;
+  }
+  async function calculatePlanPerformance(planId, period = "m1") {
+    const plan = await getPlanDetail(planId);
+    if (!plan || !plan.productDetails || plan.productDetails.length === 0) return null;
+    const annualField = PERIOD_TO_ANNUAL_FIELD2[period] || "annual1m";
+    const metricPeriod = period;
+    let totalWeight = 0;
+    let weightedReturn = 0;
+    let weightedVolatility = 0;
+    let weightedDrawdown = 0;
+    let hasReturn = false;
+    let hasVolatility = false;
+    let hasDrawdown = false;
+    for (const product2 of plan.productDetails) {
+      const ratio = Number(product2.allocationRatio) || 0;
+      if (ratio <= 0) continue;
+      totalWeight += ratio;
+      const snapshot = await strapi.db.query("plugin::zhao-wealth.wealth-annual-snapshot").findOne({
+        where: { product: product2.id },
+        orderBy: { snapshotDate: "desc" }
+      });
+      if (snapshot && snapshot[annualField] !== null) {
+        const annualReturn = Number(snapshot[annualField]);
+        if (!isNaN(annualReturn)) {
+          weightedReturn += annualReturn * ratio;
+          hasReturn = true;
+        }
+      }
+      const metrics = await strapi.db.query("plugin::zhao-wealth.wealth-risk-metric").findMany({
+        where: { product: product2.id, period: metricPeriod },
+        orderBy: { snapshotDate: "desc" },
+        limit: 4
+      });
+      for (const m of metrics) {
+        if (m.metricValue === null) continue;
+        const value = Number(m.metricValue);
+        if (isNaN(value)) continue;
+        if (m.metricName === "volatility") {
+          weightedVolatility += value * ratio;
+          hasVolatility = true;
+        } else if (m.metricName === "maxDrawdown") {
+          weightedDrawdown += value * ratio;
+          hasDrawdown = true;
+        }
+      }
+    }
+    if (totalWeight > 0) {
+      weightedReturn /= totalWeight;
+      weightedVolatility /= totalWeight;
+      weightedDrawdown /= totalWeight;
+    }
+    return {
+      weightedReturn: hasReturn ? Math.round(weightedReturn * 1e4) / 1e4 : null,
+      weightedVolatility: hasVolatility ? Math.round(weightedVolatility * 1e4) / 1e4 : null,
+      weightedDrawdown: hasDrawdown ? Math.round(weightedDrawdown * 1e4) / 1e4 : null,
+      totalProducts: plan.productDetails.length,
+      totalAmount: plan.totalAmount ? Number(plan.totalAmount) : null,
+      period
+    };
+  }
+  async function exportPlanSummary(planId) {
+    const plan = await getPlanDetail(planId);
+    if (!plan) return null;
+    const performance = await calculatePlanPerformance(planId, "m1");
+    return {
+      planName: plan.planName,
+      planType: plan.planType,
+      totalAmount: plan.totalAmount ? Number(plan.totalAmount) : null,
+      products: plan.productDetails.map((p) => ({
+        productName: p.productName,
+        productType: p.productType,
+        riskLevel: p.riskLevel,
+        allocationRatio: p.allocationRatio,
+        company: p.company?.shortName || p.company?.name || ""
+      })),
+      performance,
+      exportDate: (/* @__PURE__ */ new Date()).toISOString(),
+      disclaimer: "本方案仅供参考，不构成投资建议。理财产品非存款，产品有风险，投资须谨慎。请前往银行网点或咨询理财顾问了解详细情况。"
+    };
+  }
+  return {
+    createPlan,
+    getPlans,
+    getPlanDetail,
+    updatePlan,
+    deletePlan,
+    calculatePlanPerformance,
+    exportPlanSummary
+  };
+};
+const consultationService = ({ strapi }) => ({
+  /**
+   * 创建预约咨询
+   */
+  async createBooking(userId, bookingData) {
+    const query = strapi.db.query("plugin::zhao-wealth.wealth-consultation");
+    const record = await query.create({
+      data: {
+        userId,
+        name: bookingData.name,
+        phone: bookingData.phone,
+        productId: bookingData.productId || null,
+        portfolioPlanId: bookingData.portfolioPlanId || null,
+        preferredTime: bookingData.preferredTime || null,
+        preferredChannel: bookingData.preferredChannel || "branch",
+        message: bookingData.message || null,
+        status: "pending"
+      }
+    });
+    return record;
+  },
+  /**
+   * 获取用户的预约列表
+   */
+  async getBookings(userId) {
+    const query = strapi.db.query("plugin::zhao-wealth.wealth-consultation");
+    const records = await query.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+      limit: 100
+    });
+    return records;
+  },
+  /**
+   * 取消预约
+   */
+  async cancelBooking(bookingId) {
+    const query = strapi.db.query("plugin::zhao-wealth.wealth-consultation");
+    const record = await query.update({
+      where: { id: bookingId },
+      data: { status: "cancelled" }
+    });
+    return record;
+  }
+});
+const riskDisclosureService = ({ strapi }) => ({
+  /**
+   * 获取动态风险揭示
+   */
+  async getDynamicDisclosure(productId, period) {
+    const product2 = await strapi.db.query("plugin::zhao-wealth.wealth-product").findOne({
+      where: { id: productId }
+    });
+    if (!product2) return null;
+    const warnings = [];
+    warnings.push("本平台提供的信息仅供参考，不构成投资建议。理财产品非存款，产品有风险，投资须谨慎。");
+    if (period === "m1") {
+      warnings.push("短期收益不能代表长期趋势，近1月收益率仅供参考，请关注更长周期的收益表现。");
+    } else if (period === "m3") {
+      warnings.push("近3月收益仅供参考，历史业绩不代表未来表现。");
+    }
+    if (product2.productType === "bank-wealth" && product2.operationMode === "daily-open") {
+      warnings.push("日开理财回撤较小但收益空间有限，适合资金流动性管理，不适合追求较高回报。");
+    } else if (product2.productType === "stock-fund" || product2.productType === "mixed-fund") {
+      warnings.push("该类产品波动较大，净值可能出现较大幅度的涨跌，请确保风险承受能力匹配。");
+    } else if (product2.productType === "money-fund") {
+      warnings.push("货币基金收益较低但稳定性高，适合短期资金管理。");
+    }
+    const snapshot = await strapi.db.query("plugin::zhao-wealth.wealth-annual-snapshot").findOne({
+      where: { product: productId },
+      orderBy: { snapshotDate: "desc" }
+    });
+    if (snapshot) {
+      const annualField = period === "m1" ? "annual1m" : period === "m3" ? "annual3m" : period === "m6" ? "annual6m" : "annual1y";
+      const annualReturn = snapshot[annualField] ? Number(snapshot[annualField]) : null;
+      if (annualReturn !== null && !isNaN(annualReturn) && annualReturn > 0.08) {
+        warnings.push(`该产品近期年化收益较高（${(annualReturn * 100).toFixed(2)}%），高收益伴随高风险，请关注波动率和回撤指标。`);
+      }
+    }
+    const score = await strapi.db.query("plugin::zhao-wealth.wealth-score-snapshot").findOne({
+      where: { product: productId, period },
+      orderBy: { snapshotDate: "desc" }
+    });
+    if (score) {
+      if (score.starRating <= 2) {
+        warnings.push("该产品综合评分较低，建议优先考虑同类评分更高的产品。");
+      }
+      warnings.push(`综合评分基于近${period === "m1" ? "1月" : period === "m3" ? "3月" : period === "m6" ? "6月" : "1年"}收益、波动率、最大回撤、同类排名加权计算，评分仅反映历史数据，不代表未来表现。`);
+    }
+    return {
+      warnings,
+      productType: product2.productType,
+      operationMode: product2.operationMode
+    };
+  },
+  /**
+   * 获取评分方法论说明
+   */
+  getScoreDisclaimer(productType, operationMode) {
+    let text = "综合评分基于收益、波动率、最大回撤、同类排名加权计算，仅反映历史数据。";
+    if (productType === "bank-wealth" && operationMode === "daily-open") {
+      text += "日开理财回撤指标已降权处理（权重5%），更侧重收益能力和同类排名。";
+    } else if (productType === "money-fund") {
+      text += "货币基金不使用回撤指标，更侧重万份收益同类排名。";
+    }
+    return text;
+  }
+});
 const services = {
   product,
   "nav-calculator": navCalculator,
@@ -10712,7 +11231,11 @@ const services = {
   stats: statsService,
   "disclosure-service": disclosureService,
   "holding-service": holdingService,
-  "compare-service": compareService
+  "compare-service": compareService,
+  "scoring-service": scoringService,
+  "portfolio-service": portfolioService,
+  "consultation-service": consultationService,
+  "risk-disclosure-service": riskDisclosureService
 };
 const hasChannelAccess = async (ctx, config, { strapi }) => {
   const user = ctx.state.user;
