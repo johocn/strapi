@@ -2,10 +2,13 @@
 
 import CbhbCollector from './cbhb-collector';
 import ChinawealthCollector from './chinawealth-collector';
+import HzbankCollector from './hzbank-collector';
 
 const COLLECTOR_MAP: Record<string, any> = {
   'cbhb': CbhbCollector,
   '渤银理财': CbhbCollector,
+  'hzbank': HzbankCollector,
+  '杭银理财': HzbankCollector,
   // 后续扩展：'工银理财': IcbcCollector, ...
 };
 
@@ -30,6 +33,7 @@ export function getChinawealthCollector(): ChinawealthCollector {
 export function getAvailableSources(): Array<{ value: string; label: string }> {
   return [
     { value: 'cbhb', label: '渤银理财' },
+    { value: 'hzbank', label: '杭银理财' },
     // 后续扩展
   ];
 }

@@ -21,9 +21,10 @@ export default class ChinawealthCollector extends BaseCollector {
      */
     collectProductInfo(productCode: string): Promise<any>;
     /**
-     * 采集净值数据（占位，后续按产品类型实现）
+     * 采集净值数据
+     * 通过登记编码访问中国理财网产品详情页，拦截 AJAX 请求或解析页面表格获取净值
      */
-    collectNavData(productCode: string): Promise<any[]>;
+    collectNavData(registerCode: string): Promise<any[]>;
     private parseRiskLevel;
     private parseProductType;
 }

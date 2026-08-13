@@ -4,6 +4,7 @@ import { isTradingDay, getTradingDays, getPreviousTradingDay, getNaturalDays } f
 import { calculateAnnualReturn, calculateMoneyFundAnnual, calculateYearlyReturn, isEstimateValue } from './annual-formula';
 import { getRedisClient, acquireLock, releaseLock, ensureRedisAvailable, markRedisUnavailable, closeRedisClient } from './redis-client';
 import { successResponse, errorResponse, paginatedResponse } from './response';
+import { httpClient, createHttpClient } from './http-client';
 
 export {
   isTradingDay,
@@ -23,4 +24,6 @@ export {
   successResponse,
   errorResponse,
   paginatedResponse,
+  httpClient,
+  createHttpClient,
 };

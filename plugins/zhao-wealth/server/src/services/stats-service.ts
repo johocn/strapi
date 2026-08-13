@@ -16,36 +16,48 @@ export default ({ strapi }) => ({
     const collectTotal = collectSuccess + collectFailed + collectPending;
     const collectSuccessRate = collectTotal > 0 ? collectSuccess / collectTotal : 0;
 
-    // 指标覆盖率：有 risk_metric 记录的产品数 / 产品总数
+    // 指标覆盖率：有 risk_metric 记录的产品数 / 产品总数（通过链接表关联）
     let riskMetricCoverage = 0;
     if (productCount > 0) {
-      const productsWithMetrics = await strapi.db.connection.raw(`
-        SELECT COUNT(DISTINCT p.id) AS cnt
-        FROM wealth_products p
-        JOIN wealth_risk_metrics rm ON rm.product_id = p.id
-      `);
-      riskMetricCoverage = productsWithMetrics.rows[0].cnt / productCount;
+      try {
+        const productsWithMetrics = await strapi.db.connection.raw(`
+          SELECT COUNT(DISTINCT lnk.wealth_product_id) AS cnt
+          FROM wealth_risk_metrics_product_lnk lnk
+        `);
+        riskMetricCoverage = Number(productsWithMetrics.rows[0].cnt) / productCount;
+      } catch {
+        riskMetricCoverage = 0;
+      }
     }
 
-    // 今日异常：今日采集失败 + 指标计算失败（metricValue is null）
+    // 今日采集：今日新增的净值记录数
     const today = new Date().toISOString().slice(0, 10);
-    const todayFailedCollect = await strapi.db.query('plugin::zhao-wealth.wealth-collect-config').count({
-      where: { collectStatus: 'failed' },
-    });
-
-    const nullMetrics = await strapi.db.connection.raw(`
-      SELECT COUNT(*) AS cnt FROM wealth_risk_metrics
-      WHERE snapshot_date = ? AND metric_value IS NULL
+    const todayNavResult = await strapi.db.connection.raw(`
+      SELECT COUNT(*) AS cnt FROM wealth_navs
+      WHERE created_at >= ?
     `, [today]);
+    const todayCollected = Number(todayNavResult.rows[0].cnt);
 
-    const todayAnomaly = todayFailedCollect + Number(nullMetrics.rows[0].cnt);
+    // 失败数：采集状态为 failed 的配置数
+    const failedCount = collectFailed;
+
+    // 最后运行时间：最近一次采集成功的时间
+    const lastConfig = await strapi.db.query('plugin::zhao-wealth.wealth-collect-config').findOne({
+      where: { collectStatus: 'success' },
+      orderBy: { lastCollectTime: 'desc' },
+    });
+    const lastRunTime = lastConfig?.lastCollectTime
+      ? new Date(lastConfig.lastCollectTime).toISOString().slice(0, 16).replace('T', ' ')
+      : '--';
 
     return {
-      productCount,
+      totalProducts: productCount,
       companyCount,
+      todayCollected,
+      failedCount,
+      lastRunTime,
       collectSuccessRate: Number(collectSuccessRate.toFixed(4)),
       riskMetricCoverage: Number(riskMetricCoverage.toFixed(4)),
-      todayAnomaly,
     };
   },
 

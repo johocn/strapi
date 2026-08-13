@@ -31,6 +31,15 @@ declare const _default: {
     collect: ({ strapi }: {
         strapi: any;
     }) => {
+        getCollectorForProduct(productId: number): Promise<{
+            collector: any;
+            config: any;
+            source: string;
+        }>;
+        collectNavSync(productId: number): Promise<{
+            savedCount: number;
+            totalCollected: any;
+        }>;
         trigger(ctx: any): Promise<void>;
         status(ctx: any): Promise<void>;
         recalculate(ctx: any): Promise<void>;

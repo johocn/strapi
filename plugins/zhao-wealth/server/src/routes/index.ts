@@ -9,7 +9,7 @@ export default {
     routes: contentApi().routes,
   },
   'admin-api': {
-    type: 'admin',
+    type: 'content-api',
     routes: adminApi().routes,
   },
 };

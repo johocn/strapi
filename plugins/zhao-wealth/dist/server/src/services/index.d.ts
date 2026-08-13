@@ -85,11 +85,13 @@ declare const _default: {
         strapi: any;
     }) => {
         getOverview(): Promise<{
-            productCount: any;
+            totalProducts: any;
             companyCount: any;
+            todayCollected: number;
+            failedCount: any;
+            lastRunTime: string;
             collectSuccessRate: number;
             riskMetricCoverage: number;
-            todayAnomaly: any;
         }>;
         getAnomalies(limit?: number): Promise<any[]>;
     };

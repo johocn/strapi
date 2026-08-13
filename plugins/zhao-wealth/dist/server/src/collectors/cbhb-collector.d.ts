@@ -11,9 +11,15 @@ export default class CbhbCollector extends BaseCollector {
      */
     private collectFromListPage;
     /**
-     * 采集净值数据（占位，当前不实现）
+     * 采集净值数据 — 直接调用 cbhbwm.com.cn 后端 API
+     * API: POST /eportalapply/portlet/bwmweb/queryProJz
+     * 无需 Playwright，纯 HTTP 请求，速度快、稳定性高
+     *
+     * 字段映射：value1=日期(YYYYMMDD) value2=单位净值 value3=累计净值
      */
-    collectNavData(productCode: string): Promise<any[]>;
+    collectNavData(productCode: string, options?: {
+        registerCode?: string;
+    }): Promise<any[]>;
     private parseRiskLevel;
     private parseTermType;
 }

@@ -731,6 +731,15 @@ declare const _default: {
         collect: ({ strapi }: {
             strapi: any;
         }) => {
+            getCollectorForProduct(productId: number): Promise<{
+                collector: any;
+                config: any;
+                source: string;
+            }>;
+            collectNavSync(productId: number): Promise<{
+                savedCount: number;
+                totalCollected: any;
+            }>;
             trigger(ctx: any): Promise<void>;
             status(ctx: any): Promise<void>;
             recalculate(ctx: any): Promise<void>;
@@ -831,7 +840,7 @@ declare const _default: {
         'admin-api': {
             type: string;
             routes: {
-                method: "GET" | "POST" | "DELETE" | "PUT" | "PATCH";
+                method: "GET" | "DELETE" | "POST" | "PUT" | "PATCH";
                 path: string;
                 handler: string;
                 config: {
@@ -928,11 +937,13 @@ declare const _default: {
             strapi: any;
         }) => {
             getOverview(): Promise<{
-                productCount: any;
+                totalProducts: any;
                 companyCount: any;
+                todayCollected: number;
+                failedCount: any;
+                lastRunTime: string;
                 collectSuccessRate: number;
                 riskMetricCoverage: number;
-                todayAnomaly: any;
             }>;
             getAnomalies(limit?: number): Promise<any[]>;
         };

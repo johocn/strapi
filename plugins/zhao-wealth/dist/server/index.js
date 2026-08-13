@@ -1,11 +1,13 @@
 "use strict";
 Object.defineProperties(exports, { __esModule: { value: true }, [Symbol.toStringTag]: { value: "Module" } });
 const Redis = require("ioredis");
+const axios = require("axios");
 const Queue = require("bull");
 const playwright = require("playwright");
 const fs = require("fs");
 const _interopDefault = (e) => e && e.__esModule ? e : { default: e };
 const Redis__default = /* @__PURE__ */ _interopDefault(Redis);
+const axios__default = /* @__PURE__ */ _interopDefault(axios);
 const Queue__default = /* @__PURE__ */ _interopDefault(Queue);
 const kind$b = "collectionType";
 const collectionName$b = "wealth_companies";
@@ -6848,6 +6850,74 @@ function paginatedResponse(data, page, pageSize, total) {
     total
   });
 }
+const DEFAULT_HEADERS = {
+  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+  "Accept": "application/json, text/javascript, */*; q=0.01",
+  "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8"
+};
+const DEFAULT_TIMEOUT = 15e3;
+function createAxiosInstance() {
+  const instance2 = axios__default.default.create({
+    timeout: DEFAULT_TIMEOUT,
+    headers: DEFAULT_HEADERS,
+    // 不自动跟随重定向（某些采集接口重定向到错误页）
+    maxRedirects: 3,
+    // 响应大小限制 10MB
+    maxContentLength: 10 * 1024 * 1024
+  });
+  instance2.interceptors.request.use(
+    (config) => {
+      const url = config.url || "";
+      console.log(`[http] ${config.method?.toUpperCase() || "GET"} ${url.substring(0, 120)}`);
+      return config;
+    },
+    (error) => {
+      console.error(`[http] 请求构造失败: ${error.message}`);
+      return Promise.reject(error);
+    }
+  );
+  instance2.interceptors.response.use(
+    (response) => response,
+    (error) => {
+      if (error.response) {
+        const { status, statusText, config } = error.response;
+        const errMsg = `HTTP ${status} ${statusText} — ${config?.url?.substring(0, 80) || ""}`;
+        console.error(`[http] 响应错误: ${errMsg}`);
+        return Promise.reject(new Error(errMsg));
+      } else if (error.request) {
+        const errMsg = error.code === "ECONNABORTED" ? `请求超时 (${error.config?.timeout || DEFAULT_TIMEOUT}ms) — ${error.config?.url?.substring(0, 80) || ""}` : `网络错误: ${error.message}`;
+        console.error(`[http] ${errMsg}`);
+        return Promise.reject(new Error(errMsg));
+      } else {
+        console.error(`[http] 请求失败: ${error.message}`);
+        return Promise.reject(error);
+      }
+    }
+  );
+  return instance2;
+}
+const instance = createAxiosInstance();
+const httpClient = {
+  /**
+   * GET 请求
+   */
+  async get(url, config) {
+    return instance.get(url, config);
+  },
+  /**
+   * POST 请求
+   * data 可以是对象（自动序列化）或字符串（如 URLSearchParams）
+   */
+  async post(url, data, config) {
+    return instance.post(url, data, config);
+  },
+  /**
+   * 获取底层 axios 实例（用于高级配置）
+   */
+  get instance() {
+    return instance;
+  }
+};
 const product$1 = ({ strapi }) => ({
   /**
    * 获取产品列表（C端）
@@ -7115,92 +7185,6 @@ function getCalculateQueue() {
 function getRecalculateQueue() {
   return recalculateQueue;
 }
-const collect = ({ strapi }) => ({
-  /**
-   * 触发采集（后台）
-   */
-  async trigger(ctx) {
-    try {
-      const { productId } = ctx.request.body;
-      const queue = getCollectQueue();
-      if (!queue) {
-        ctx.status = 503;
-        ctx.body = errorResponse(503, "采集服务暂不可用（Redis 未就绪）");
-        return;
-      }
-      if (productId) {
-        queue.add("collect-single", { productId });
-        ctx.body = successResponse({ productId }, "单产品采集任务已触发");
-      } else {
-        queue.add("collect-all", {});
-        ctx.body = successResponse({}, "全量采集任务已触发");
-      }
-    } catch (error) {
-      strapi.log.error(`[zhao-wealth] 触发采集失败: ${error.message}`);
-      ctx.body = errorResponse(500, "触发失败");
-    }
-  },
-  /**
-   * 查询采集状态（后台）
-   */
-  async status(ctx) {
-    try {
-      const { productId } = ctx.query;
-      if (productId) {
-        const config = await strapi.db.query("plugin::zhao-wealth.wealth-collect-config").findOne({
-          where: { product: Number(productId) }
-        });
-        ctx.body = successResponse(config);
-      } else {
-        const configs = await strapi.db.query("plugin::zhao-wealth.wealth-collect-config").findMany({
-          populate: ["product"]
-        });
-        ctx.body = successResponse(configs);
-      }
-    } catch (error) {
-      strapi.log.error(`[zhao-wealth] 查询采集状态失败: ${error.message}`);
-      ctx.body = errorResponse(500, "查询失败");
-    }
-  },
-  /**
-   * 触发重算（后台）
-   */
-  async recalculate(ctx) {
-    try {
-      const { productId, startDate, endDate } = ctx.request.body;
-      const queue = getCalculateQueue();
-      const recalcQueue = getRecalculateQueue();
-      if (productId && startDate && endDate) {
-        if (!queue) {
-          ctx.status = 503;
-          ctx.body = errorResponse(503, "计算服务暂不可用（Redis 未就绪）");
-          return;
-        }
-        queue.add("recalculate-range", { productId, startDate, endDate });
-        ctx.body = successResponse({ productId }, "指定范围重算任务已触发");
-      } else if (productId) {
-        if (!queue) {
-          ctx.status = 503;
-          ctx.body = errorResponse(503, "计算服务暂不可用（Redis 未就绪）");
-          return;
-        }
-        queue.add("recalculate-product", { productId });
-        ctx.body = successResponse({ productId }, "单产品重算任务已触发");
-      } else {
-        if (!recalcQueue) {
-          ctx.status = 503;
-          ctx.body = errorResponse(503, "计算服务暂不可用（Redis 未就绪）");
-          return;
-        }
-        recalcQueue.add("recalculate-all", {});
-        ctx.body = successResponse({}, "全量重算任务已触发");
-      }
-    } catch (error) {
-      strapi.log.error(`[zhao-wealth] 触发重算失败: ${error.message}`);
-      ctx.body = errorResponse(500, "触发失败");
-    }
-  }
-});
 class BaseCollector {
   /**
    * 采集产品基本信息
@@ -7324,8 +7308,8 @@ async function destroyBrowser() {
     console.log("[zhao-wealth] Playwright Browser 已关闭");
   }
 }
-const BASE_URL = "https://www.cbhbwm.com.cn";
-const RISK_MAP = {
+const BASE_URL$1 = "https://www.cbhbwm.com.cn";
+const RISK_MAP$1 = {
   "低风险": "R1",
   "中低风险": "R2",
   "中风险": "R3",
@@ -7349,7 +7333,7 @@ class CbhbCollector extends BaseCollector {
       throw new Error("Playwright Browser 不可用");
     }
     try {
-      await page.goto(`${BASE_URL}/cbhbwm/gmcp/gmxqy/index.html?saleCode=${productCode}`, {
+      await page.goto(`${BASE_URL$1}/cbhbwm/gmcp/gmxqy/index.html?saleCode=${productCode}`, {
         waitUntil: "domcontentloaded"
       });
       await page.waitForFunction(
@@ -7470,7 +7454,7 @@ class CbhbCollector extends BaseCollector {
       throw new Error("Playwright Browser 不可用");
     }
     try {
-      await page.goto(`${BASE_URL}/cbhbwm/gmcp/qbcp/index.html`, {
+      await page.goto(`${BASE_URL$1}/cbhbwm/gmcp/qbcp/index.html`, {
         waitUntil: "domcontentloaded"
       });
       await page.waitForFunction(
@@ -7528,15 +7512,62 @@ class CbhbCollector extends BaseCollector {
     }
   }
   /**
-   * 采集净值数据（占位，当前不实现）
+   * 采集净值数据 — 直接调用 cbhbwm.com.cn 后端 API
+   * API: POST /eportalapply/portlet/bwmweb/queryProJz
+   * 无需 Playwright，纯 HTTP 请求，速度快、稳定性高
+   *
+   * 字段映射：value1=日期(YYYYMMDD) value2=单位净值 value3=累计净值
    */
-  async collectNavData(productCode) {
-    return [];
+  async collectNavData(productCode, options2) {
+    const saleCode = productCode;
+    const checkInon = options2?.registerCode || "";
+    const url = `${BASE_URL$1}/eportalapply/portlet/bwmweb/queryProJz`;
+    const params = new URLSearchParams({
+      pageNo: "1",
+      pageSize: "1000",
+      collMod: "0",
+      gwProdMod: "3",
+      beginDate: "",
+      endDate: "",
+      saleCode,
+      checkInon,
+      prodCode: saleCode,
+      prodFlag: "3",
+      xsshareName: "A"
+    });
+    try {
+      const resp = await httpClient.post(url, params.toString(), {
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+          "X-Requested-With": "XMLHttpRequest",
+          "Request-By": "ajax-request-tag",
+          "Referer": `${BASE_URL$1}/cbhbwm/gmcp/gmxqy/index.html?saleCode=${saleCode}`
+        }
+      });
+      const raw = resp.data;
+      const parsed = typeof raw.data === "string" ? JSON.parse(raw.data) : raw.data;
+      const records = parsed.data || [];
+      const navData = records.map((r) => {
+        const d = String(r.value1 || "");
+        const navDate = d.length === 8 ? `${d.substring(0, 4)}-${d.substring(4, 6)}-${d.substring(6, 8)}` : d;
+        return {
+          navDate,
+          unitNav: r.value2 ? String(r.value2) : null,
+          accNav: r.value3 ? String(r.value3) : r.value2 ? String(r.value2) : null,
+          dataSource: "crawler"
+        };
+      });
+      navData.sort((a, b) => b.navDate.localeCompare(a.navDate));
+      console.log(`[cbhb] 净值API采集完成: saleCode=${saleCode}, 共${navData.length}条`);
+      return navData;
+    } catch (error) {
+      throw new Error(`渤银净值API采集失败: ${error.message}`);
+    }
   }
   parseRiskLevel(text) {
-    const sortedKeys = Object.keys(RISK_MAP).sort((a, b) => b.length - a.length);
+    const sortedKeys = Object.keys(RISK_MAP$1).sort((a, b) => b.length - a.length);
     for (const key of sortedKeys) {
-      if (text.includes(key)) return RISK_MAP[key];
+      if (text.includes(key)) return RISK_MAP$1[key];
     }
     return "R2";
   }
@@ -7692,10 +7723,130 @@ class ChinawealthCollector extends BaseCollector {
     return this.collectByRegisterCode(productCode);
   }
   /**
-   * 采集净值数据（占位，后续按产品类型实现）
+   * 采集净值数据
+   * 通过登记编码访问中国理财网产品详情页，拦截 AJAX 请求或解析页面表格获取净值
    */
-  async collectNavData(productCode) {
-    return [];
+  async collectNavData(registerCode) {
+    console.log(`[chinawealth] 开始采集净值: registerCode=${registerCode}`);
+    const page = await createPage();
+    if (!page) {
+      console.log("[chinawealth] Playwright Browser 不可用");
+      return [];
+    }
+    const capturedApiData = [];
+    try {
+      page.on("response", async (response) => {
+        const url2 = response.url().toLowerCase();
+        if (url2.includes("nav") || url2.includes("netvalue") || url2.includes("jz") || url2.includes("net") || url2.includes("value") || url2.includes("detail")) {
+          try {
+            const ct = response.headers()["content-type"] || "";
+            if (ct.includes("json")) {
+              const body = await response.json();
+              if (body) {
+                const dataArr = body.data || body.list || body.rows || body.result;
+                if (Array.isArray(dataArr) && dataArr.length > 0) {
+                  capturedApiData.push(...dataArr);
+                }
+              }
+            }
+          } catch {
+          }
+        }
+      });
+      const url = `${CW_DETAIL_URL}?prodRegCode=${encodeURIComponent(registerCode)}`;
+      console.log(`[chinawealth] Playwright 打开: ${url}`);
+      await page.goto(url, { waitUntil: "networkidle", timeout: 3e4 });
+      await page.waitForTimeout(3e3);
+      const navTabSelectors = [
+        "text=净值",
+        "text=历史净值",
+        "text=净值走势",
+        "text=产品净值",
+        "text=单位净值",
+        "text=每日净值",
+        "text=净值信息"
+      ];
+      for (const sel of navTabSelectors) {
+        try {
+          const el = await page.$(sel);
+          if (el) {
+            await el.click({ timeout: 3e3 }).catch(() => {
+            });
+            await page.waitForTimeout(2e3);
+            break;
+          }
+        } catch {
+        }
+      }
+      const tableNavData = await page.evaluate(() => {
+        const result = [];
+        const tables = document.querySelectorAll("table");
+        for (const table of tables) {
+          const rows = table.querySelectorAll("tr");
+          for (let i = 0; i < rows.length; i++) {
+            const cells = Array.from(rows[i].querySelectorAll("td, th"));
+            const cellTexts = cells.map((c) => (c.textContent || "").trim());
+            const dateCell = cellTexts.find((t) => /\d{4}[-/]\d{2}[-/]\d{2}/.test(t));
+            if (dateCell) {
+              const normalizedDate = dateCell.replace(/\//g, "-");
+              const numbers = cellTexts.filter((t) => /^\d+\.\d+$/.test(t));
+              if (numbers.length >= 1) {
+                result.push({
+                  navDate: normalizedDate,
+                  unitNav: numbers[0] || null,
+                  accNav: numbers[1] || numbers[0] || null,
+                  dataSource: "crawler"
+                });
+              }
+            }
+          }
+        }
+        if (result.length === 0) {
+          const bodyText = document.body.textContent || "";
+          const regex = /(\d{4}[-/]\d{2}[-/]\d{2})[\s\S]{0,30}?(\d+\.\d{2,6})[\s\S]{0,30}?(\d+\.\d{2,6})/g;
+          let match2;
+          while ((match2 = regex.exec(bodyText)) !== null) {
+            result.push({
+              navDate: match2[1].replace(/\//g, "-"),
+              unitNav: match2[2],
+              accNav: match2[3],
+              dataSource: "crawler"
+            });
+          }
+        }
+        return result;
+      });
+      const apiNavData = [];
+      for (const item of capturedApiData) {
+        const navDate = item.navDate || item.netDate || item.date || item.priceDate;
+        const unitNav = item.unitNav || item.netValue || item.unitNetValue || item.dwjz;
+        const accNav = item.accNav || item.accNetValue || item.totalNetValue || item.ljjz;
+        if (navDate) {
+          apiNavData.push({
+            navDate: typeof navDate === "string" ? navDate.replace(/\//g, "-") : navDate,
+            unitNav: unitNav ? String(unitNav) : null,
+            accNav: accNav ? String(accNav) : unitNav ? String(unitNav) : null,
+            dataSource: "crawler"
+          });
+        }
+      }
+      const allNavData = [...apiNavData];
+      const existingDates = new Set(allNavData.map((d) => d.navDate));
+      for (const item of tableNavData) {
+        if (!existingDates.has(item.navDate)) {
+          allNavData.push(item);
+          existingDates.add(item.navDate);
+        }
+      }
+      allNavData.sort((a, b) => b.navDate.localeCompare(a.navDate));
+      console.log(`[chinawealth] 净值采集完成: registerCode=${registerCode}, API拦截=${apiNavData.length}条, 页面解析=${tableNavData.length}条, 合计=${allNavData.length}条`);
+      return allNavData;
+    } catch (error) {
+      console.error(`[chinawealth] 净值采集失败: ${error.message}`);
+      return [];
+    } finally {
+      await closePage(page);
+    }
   }
   parseRiskLevel(text) {
     if (!text) return "R2";
@@ -7716,18 +7867,337 @@ class ChinawealthCollector extends BaseCollector {
     return "bank-wealth";
   }
 }
+const BASE_URL = "https://www.hzbankwealth.com.cn";
+const RISK_MAP = {
+  "低风险": "R1",
+  "中低风险": "R2",
+  "中风险": "R3",
+  "中高风险": "R4",
+  "高风险": "R5"
+};
+const OPMODE_MAP = {
+  "开放式": "open",
+  "封闭式": "closed",
+  "定期开放式": "periodic"
+};
+class HzbankCollector extends BaseCollector {
+  /**
+   * 采集净值数据 — 直接 GET 静态 JSON 文件
+   *
+   * API: GET /eportal/hzbw/netval/{productCode}_netval.json
+   * 无需认证，无需 Playwright，纯 HTTP 请求
+   *
+   * 字段映射：
+   *   net_value_date → navDate（已是 YYYY-MM-DD 格式）
+   *   unit_net_value → unitNav（单位净值）
+   *   acc_net_value  → accNav（累计净值）
+   *   ten_thousand_income → tenThousandIncome（万份收益，货币基金类用）
+   *   seven_days_annualized_rate → sevenDayAnnualized（七日年化收益率）
+   */
+  async collectNavData(productCode, options2) {
+    const code = productCode.toUpperCase();
+    const url = `${BASE_URL}/eportal/hzbw/netval/${code}_netval.json`;
+    try {
+      const resp = await httpClient.get(url, {
+        headers: {
+          "Referer": `${BASE_URL}/hzbankwealth/xqy/gmcp/index.html?code=${productCode}`
+        }
+      });
+      const records = Array.isArray(resp.data) ? resp.data : [];
+      const navData = records.map((r) => ({
+        navDate: r.net_value_date || "",
+        unitNav: r.unit_net_value != null ? String(r.unit_net_value) : null,
+        accNav: r.acc_net_value != null ? String(r.acc_net_value) : null,
+        tenThousandIncome: r.ten_thousand_income != null ? String(r.ten_thousand_income) : null,
+        sevenDayAnnualized: r.seven_days_annualized_rate != null ? String(r.seven_days_annualized_rate) : null,
+        dataSource: "crawler"
+      }));
+      const validData = navData.filter((d) => d.navDate && (d.unitNav || d.accNav || d.tenThousandIncome));
+      validData.sort((a, b) => b.navDate.localeCompare(a.navDate));
+      console.log(`[hzbank] 净值采集完成: code=${code}, 共${validData.length}条（原始${navData.length}条）`);
+      return validData;
+    } catch (error) {
+      throw new Error(`杭银净值采集失败: ${error.message}`);
+    }
+  }
+  /**
+   * 采集产品基本信息 — GET 静态 JSON 文件
+   *
+   * API: GET /eportal/hzbw/detail/{productCode}_detail.json
+   *
+   * 字段映射：
+   *   contenttitle → productName
+   *   dengjino     → registerCode（登记编码）
+   *   rizengzhang  → riskLevel（风险等级，中文描述）
+   *   touzileixin  → productTypeRaw（投资类型）
+   *   yunzuomoshi  → operationMode（运作模式）
+   *   licaiqixian  → termInfo（理财期限）
+   *   chengliriqi  → establishDate（成立日期）
+   *   jieshuriqi   → maturityDate（结束日期）
+   *   danweijingzhi → unitNetValue（当前单位净值）
+   *   leijijingzhi → accNetValue（当前累计净值）
+   *   seven_days_annualized_rate → sevenDayAnnualized
+   *   ten_thousand_income → tenThousandIncome
+   */
+  async collectProductInfo(productCode) {
+    const code = productCode.toUpperCase();
+    const url = `${BASE_URL}/eportal/hzbw/detail/${code}_detail.json`;
+    try {
+      const resp = await httpClient.get(url, {
+        headers: {
+          "Referer": `${BASE_URL}/hzbankwealth/xqy/gmcp/index.html?code=${productCode}`
+        }
+      });
+      const d = resp.data;
+      if (!d || !d.contenttitle) {
+        console.log(`[hzbank] 产品详情为空: code=${code}`);
+        return null;
+      }
+      const riskText = d.rizengzhang || "";
+      const riskLevel = this.parseRiskLevel(riskText);
+      const opModeText = d.yunzuomoshi || "";
+      const operationMode = OPMODE_MAP[opModeText] || "open";
+      let productType = "bank-wealth";
+      if (d.touzileixin === "固定收益类") productType = "bank-wealth";
+      else if (d.touzileixin === "权益类") productType = "stock-fund";
+      else if (d.touzileixin === "混合类") productType = "mixed-fund";
+      return {
+        productCode: code,
+        productName: d.contenttitle || "",
+        registerCode: d.dengjino || "",
+        riskLevel,
+        riskLevelRaw: riskText,
+        productType,
+        productTypeRaw: d.touzileixin || "",
+        operationMode,
+        operationModeRaw: opModeText,
+        termInfo: d.licaiqixian || "",
+        establishDate: d.chengliriqi || "",
+        maturityDate: d.jieshuriqi || "",
+        issueDate: d.order_fund_date || "",
+        unitNetValue: d.danweijingzhi || "",
+        accNetValue: d.leijijingzhi || "",
+        sevenDayAnnualized: d.seven_days_annualized_rate || "",
+        tenThousandIncome: d.ten_thousand_income || "",
+        company: "杭银理财",
+        issuer: d.guanliren || "杭银理财有限责任公司",
+        custodian: d.tuoguanren || "",
+        salesTarget: d.xiaoshouduixiang || "",
+        productStatus: d.chanpinzhuangtai || "",
+        leixing: d.leixing || ""
+      };
+    } catch (error) {
+      throw new Error(`杭银产品详情采集失败: ${error.message}`);
+    }
+  }
+  /**
+   * 解析风险等级
+   * 按关键词长度降序检查，避免"低风险"匹配到"中低风险"的子串
+   */
+  parseRiskLevel(text) {
+    const sortedKeys = Object.keys(RISK_MAP).sort((a, b) => b.length - a.length);
+    for (const key of sortedKeys) {
+      if (text.includes(key)) return RISK_MAP[key];
+    }
+    return "R2";
+  }
+}
 const COLLECTOR_MAP = {
   "cbhb": CbhbCollector,
-  "渤银理财": CbhbCollector
+  "渤银理财": CbhbCollector,
+  "hzbank": HzbankCollector,
+  "杭银理财": HzbankCollector
   // 后续扩展：'工银理财': IcbcCollector, ...
 };
-function getCollector$1(source) {
+function getCollector(source) {
   const Cls = COLLECTOR_MAP[source];
   return Cls ? new Cls() : null;
 }
 function getChinawealthCollector() {
   return new ChinawealthCollector();
 }
+const collect = ({ strapi }) => ({
+  /**
+   * 根据产品查找对应采集器
+   * 优先从 collectRules.source 获取，其次从公司简称匹配
+   */
+  async getCollectorForProduct(productId) {
+    const config = await strapi.db.query("plugin::zhao-wealth.wealth-collect-config").findOne({
+      where: { product: productId },
+      populate: ["product", "product.company"]
+    });
+    if (!config) return null;
+    let source = null;
+    if (config.collectRules) {
+      try {
+        const rules = typeof config.collectRules === "string" ? JSON.parse(config.collectRules) : config.collectRules;
+        source = rules?.source || null;
+      } catch {
+      }
+    }
+    if (!source && config.product?.company?.shortName) {
+      source = config.product.company.shortName;
+    }
+    const collector = source ? getCollector(source) : null;
+    return { collector, config, source };
+  },
+  /**
+   * 同步采集单个产品净值（无 Redis 时的降级方案）
+   */
+  async collectNavSync(productId) {
+    const result = await this.getCollectorForProduct(productId);
+    if (!result) {
+      throw new Error(`产品${productId}无采集配置`);
+    }
+    const { collector, config, source } = result;
+    if (!collector) {
+      throw new Error(`未找到匹配的采集器（source=${source || "未知"}）`);
+    }
+    const productCode = config.product?.productCode || config.product?.saleCode;
+    if (!productCode) {
+      throw new Error(`产品${productId}无产品代码，无法采集净值`);
+    }
+    strapi.log.info(`[zhao-wealth] 同步采集净值: productId=${productId}, productCode=${productCode}, source=${source}`);
+    const registerCode = config.product?.registerCode || "";
+    let navData = await collector.collectNavData(productCode, { registerCode });
+    if (navData.length === 0) {
+      strapi.log.warn(`[zhao-wealth] 产品${productId}未采集到净值数据（productCode=${productCode}）`);
+    }
+    let savedCount = 0;
+    for (const nav2 of navData) {
+      const existing = await strapi.db.query("plugin::zhao-wealth.wealth-nav").findOne({
+        where: { product: productId, navDate: nav2.navDate }
+      });
+      if (existing) continue;
+      await strapi.db.query("plugin::zhao-wealth.wealth-nav").create({
+        data: { product: productId, ...nav2 }
+      });
+      savedCount++;
+    }
+    await strapi.db.query("plugin::zhao-wealth.wealth-collect-config").update({
+      where: { id: config.id },
+      data: {
+        collectStatus: "success",
+        lastCollectTime: /* @__PURE__ */ new Date(),
+        failCount: 0
+      }
+    });
+    strapi.log.info(`[zhao-wealth] 产品${productId}采集完成，保存${savedCount}/${navData.length}条净值`);
+    return { savedCount, totalCollected: navData.length };
+  },
+  /**
+   * 触发采集（后台）
+   * 有 Redis 时使用异步队列，无 Redis 时降级为同步执行
+   */
+  async trigger(ctx) {
+    try {
+      const { productId } = ctx.request.body;
+      const queue = getCollectQueue();
+      if (queue) {
+        if (productId) {
+          queue.add("collect-single", { productId });
+          ctx.body = successResponse({ productId }, "单产品采集任务已触发");
+        } else {
+          queue.add("collect-all", {});
+          ctx.body = successResponse({}, "全量采集任务已触发");
+        }
+      } else {
+        strapi.log.info("[zhao-wealth] Redis 不可用，降级为同步采集");
+        if (productId) {
+          const result = await this.collectNavSync(Number(productId));
+          ctx.body = successResponse(
+            { productId, ...result },
+            `采集完成，保存${result.savedCount}条净值`
+          );
+        } else {
+          const configs = await strapi.db.query("plugin::zhao-wealth.wealth-collect-config").findMany({
+            populate: ["product"]
+          });
+          let successCount = 0;
+          let failCount = 0;
+          for (const config of configs) {
+            try {
+              if (config.product?.id) {
+                await this.collectNavSync(config.product.id);
+                successCount++;
+              }
+            } catch (e) {
+              strapi.log.error(`[zhao-wealth] 产品${config.product?.id}采集失败: ${e.message}`);
+              failCount++;
+            }
+          }
+          ctx.body = successResponse(
+            { successCount, failCount },
+            `批量采集完成：成功${successCount}个，失败${failCount}个`
+          );
+        }
+      }
+    } catch (error) {
+      strapi.log.error(`[zhao-wealth] 触发采集失败: ${error.message}`);
+      ctx.body = errorResponse(500, `采集失败: ${error.message}`);
+    }
+  },
+  /**
+   * 查询采集状态（后台）
+   */
+  async status(ctx) {
+    try {
+      const { productId } = ctx.query;
+      if (productId) {
+        const config = await strapi.db.query("plugin::zhao-wealth.wealth-collect-config").findOne({
+          where: { product: Number(productId) }
+        });
+        ctx.body = successResponse(config);
+      } else {
+        const configs = await strapi.db.query("plugin::zhao-wealth.wealth-collect-config").findMany({
+          populate: ["product"]
+        });
+        ctx.body = successResponse(configs);
+      }
+    } catch (error) {
+      strapi.log.error(`[zhao-wealth] 查询采集状态失败: ${error.message}`);
+      ctx.body = errorResponse(500, "查询失败");
+    }
+  },
+  /**
+   * 触发重算（后台）
+   */
+  async recalculate(ctx) {
+    try {
+      const { productId, startDate, endDate } = ctx.request.body;
+      const queue = getCalculateQueue();
+      const recalcQueue = getRecalculateQueue();
+      if (productId && startDate && endDate) {
+        if (!queue) {
+          ctx.status = 503;
+          ctx.body = errorResponse(503, "计算服务暂不可用（Redis 未就绪）");
+          return;
+        }
+        queue.add("recalculate-range", { productId, startDate, endDate });
+        ctx.body = successResponse({ productId }, "指定范围重算任务已触发");
+      } else if (productId) {
+        if (!queue) {
+          ctx.status = 503;
+          ctx.body = errorResponse(503, "计算服务暂不可用（Redis 未就绪）");
+          return;
+        }
+        queue.add("recalculate-product", { productId });
+        ctx.body = successResponse({ productId }, "单产品重算任务已触发");
+      } else {
+        if (!recalcQueue) {
+          ctx.status = 503;
+          ctx.body = errorResponse(503, "计算服务暂不可用（Redis 未就绪）");
+          return;
+        }
+        recalcQueue.add("recalculate-all", {});
+        ctx.body = successResponse({}, "全量重算任务已触发");
+      }
+    } catch (error) {
+      strapi.log.error(`[zhao-wealth] 触发重算失败: ${error.message}`);
+      ctx.body = errorResponse(500, "触发失败");
+    }
+  }
+});
 const adminApi$1 = ({ strapi }) => ({
   // ===== 公司管理 =====
   async companiesList(ctx) {
@@ -8111,7 +8581,7 @@ const adminApi$1 = ({ strapi }) => ({
         return;
       }
       strapi.log.info(`[zhao-wealth] 开始采集: source=${source}, query=${query}`);
-      const collector = getCollector$1(source);
+      const collector = getCollector(source);
       if (!collector) {
         ctx.body = errorResponse(400, `不支持的数据源: ${source}`);
         return;
@@ -8207,7 +8677,8 @@ const adminApi$1 = ({ strapi }) => ({
         data: {
           product: product2.id,
           collectMethod: "web-crawler",
-          collectStatus: "pending"
+          collectStatus: "pending",
+          collectRules: { source: data.source || null }
         }
       });
       ctx.body = successResponse(product2, "采集入库成功");
@@ -9819,28 +10290,36 @@ const statsService = ({ strapi }) => ({
     const collectSuccessRate = collectTotal > 0 ? collectSuccess / collectTotal : 0;
     let riskMetricCoverage = 0;
     if (productCount > 0) {
-      const productsWithMetrics = await strapi.db.connection.raw(`
-        SELECT COUNT(DISTINCT p.id) AS cnt
-        FROM wealth_products p
-        JOIN wealth_risk_metrics rm ON rm.product_id = p.id
-      `);
-      riskMetricCoverage = productsWithMetrics.rows[0].cnt / productCount;
+      try {
+        const productsWithMetrics = await strapi.db.connection.raw(`
+          SELECT COUNT(DISTINCT lnk.wealth_product_id) AS cnt
+          FROM wealth_risk_metrics_product_lnk lnk
+        `);
+        riskMetricCoverage = Number(productsWithMetrics.rows[0].cnt) / productCount;
+      } catch {
+        riskMetricCoverage = 0;
+      }
     }
     const today = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
-    const todayFailedCollect = await strapi.db.query("plugin::zhao-wealth.wealth-collect-config").count({
-      where: { collectStatus: "failed" }
-    });
-    const nullMetrics = await strapi.db.connection.raw(`
-      SELECT COUNT(*) AS cnt FROM wealth_risk_metrics
-      WHERE snapshot_date = ? AND metric_value IS NULL
+    const todayNavResult = await strapi.db.connection.raw(`
+      SELECT COUNT(*) AS cnt FROM wealth_navs
+      WHERE created_at >= ?
     `, [today]);
-    const todayAnomaly = todayFailedCollect + Number(nullMetrics.rows[0].cnt);
+    const todayCollected = Number(todayNavResult.rows[0].cnt);
+    const failedCount = collectFailed;
+    const lastConfig = await strapi.db.query("plugin::zhao-wealth.wealth-collect-config").findOne({
+      where: { collectStatus: "success" },
+      orderBy: { lastCollectTime: "desc" }
+    });
+    const lastRunTime = lastConfig?.lastCollectTime ? new Date(lastConfig.lastCollectTime).toISOString().slice(0, 16).replace("T", " ") : "--";
     return {
-      productCount,
+      totalProducts: productCount,
       companyCount,
+      todayCollected,
+      failedCount,
+      lastRunTime,
       collectSuccessRate: Number(collectSuccessRate.toFixed(4)),
-      riskMetricCoverage: Number(riskMetricCoverage.toFixed(4)),
-      todayAnomaly
+      riskMetricCoverage: Number(riskMetricCoverage.toFixed(4))
     };
   },
   /**
@@ -10183,13 +10662,29 @@ const policies = {
 const register = ({ strapi }) => {
   strapi.log.info("[zhao-wealth] 插件已注册");
 };
-function getCollector(collectMethod) {
-  switch (collectMethod) {
-    case "web-crawler":
-      return new CbhbCollector();
-    default:
-      return new BaseCollector();
+async function getCollectorForConfig(strapi, config) {
+  let source = null;
+  if (config.collectRules) {
+    try {
+      const rules = typeof config.collectRules === "string" ? JSON.parse(config.collectRules) : config.collectRules;
+      source = rules?.source || null;
+    } catch {
+    }
   }
+  if (!source && config.product?.company?.shortName) {
+    source = config.product.company.shortName;
+  }
+  if (!source && config.product?.id) {
+    const fullProduct = await strapi.db.query("plugin::zhao-wealth.wealth-product").findOne({
+      where: { id: config.product.id },
+      populate: ["company"]
+    });
+    if (fullProduct?.company?.shortName) {
+      source = fullProduct.company.shortName;
+    }
+  }
+  const collector = source ? getCollector(source) : null;
+  return { collector, source };
 }
 function registerCollectJobs(strapi) {
   const queue = getCollectQueue();
@@ -10201,22 +10696,44 @@ function registerCollectJobs(strapi) {
     const { productId } = job.data;
     const config = await strapi.db.query("plugin::zhao-wealth.wealth-collect-config").findOne({
       where: { product: productId },
-      populate: ["product"]
+      populate: ["product", "product.company"]
     });
     if (!config) {
       strapi.log.warn(`[zhao-wealth] 产品${productId}无采集配置`);
       return;
     }
-    const collector = getCollector(config.collectMethod);
+    const { collector, source } = await getCollectorForConfig(strapi, config);
+    if (!collector) {
+      strapi.log.error(`[zhao-wealth] 产品${productId}未找到匹配的采集器（source=${source || "未知"}）`);
+      await strapi.db.query("plugin::zhao-wealth.wealth-collect-config").update({
+        where: { id: config.id },
+        data: {
+          collectStatus: "failed",
+          failCount: (config.failCount || 0) + 1,
+          failReason: `未找到匹配的采集器（source=${source || "未知"}）`
+        }
+      });
+      return;
+    }
     try {
-      const navData = await collector.collectNavData(config.product.productCode);
+      const productCode = config.product?.productCode || config.product?.saleCode;
+      if (!productCode) {
+        throw new Error("产品无代码，无法采集");
+      }
+      const navData = await collector.collectNavData(productCode);
+      let savedCount = 0;
       for (const nav2 of navData) {
+        const existing = await strapi.db.query("plugin::zhao-wealth.wealth-nav").findOne({
+          where: { product: productId, navDate: nav2.navDate }
+        });
+        if (existing) continue;
         await strapi.db.query("plugin::zhao-wealth.wealth-nav").create({
           data: {
             product: productId,
             ...nav2
           }
         });
+        savedCount++;
       }
       await strapi.db.query("plugin::zhao-wealth.wealth-collect-config").update({
         where: { id: config.id },
@@ -10226,7 +10743,7 @@ function registerCollectJobs(strapi) {
           failCount: 0
         }
       });
-      strapi.log.info(`[zhao-wealth] 产品${productId}采集成功，${navData.length}条净值`);
+      strapi.log.info(`[zhao-wealth] 产品${productId}采集成功，保存${savedCount}/${navData.length}条净值`);
       const calculateQueue2 = getCollectQueue();
       if (calculateQueue2) {
         calculateQueue2.add("calculate-snapshot", { productId });
@@ -10237,7 +10754,7 @@ function registerCollectJobs(strapi) {
         where: { id: config.id },
         data: {
           collectStatus: "failed",
-          failCount: config.failCount + 1,
+          failCount: (config.failCount || 0) + 1,
           failReason: error.message
         }
       });

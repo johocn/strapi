@@ -582,12 +582,13 @@ export default ({ strapi }) => ({
         },
       });
 
-      // 自动创建采集配置
+      // 自动创建采集配置（存储数据源标识到 collectRules，供采集器查找）
       await strapi.db.query('plugin::zhao-wealth.wealth-collect-config').create({
         data: {
           product: product.id,
           collectMethod: 'web-crawler',
           collectStatus: 'pending',
+          collectRules: { source: data.source || null },
         },
       });
 

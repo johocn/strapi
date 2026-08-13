@@ -2,17 +2,14 @@
 
 import BaseCollector from './base-collector';
 import CbhbCollector from './cbhb-collector';
+import ChinawealthCollector from './chinawealth-collector';
+import HzbankCollector from './hzbank-collector';
+
+export { getCollector, getChinawealthCollector, getAvailableSources } from './collector-factory';
 
 export default {
   'base-collector': BaseCollector,
   'cbhb-collector': CbhbCollector,
+  'chinawealth-collector': ChinawealthCollector,
+  'hzbank-collector': HzbankCollector,
 };
-
-export function getCollector(collectMethod: string): BaseCollector {
-  switch (collectMethod) {
-    case 'web-crawler':
-      return new CbhbCollector();
-    default:
-      return new BaseCollector();
-  }
-}

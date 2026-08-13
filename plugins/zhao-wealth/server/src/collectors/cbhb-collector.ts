@@ -2,6 +2,7 @@
 
 import BaseCollector from './base-collector';
 import { createPage, closePage } from '../playwright-manager';
+import { httpClient } from '../utils/http-client';
 
 const BASE_URL = 'https://www.cbhbwm.com.cn';
 
@@ -272,10 +273,69 @@ export default class CbhbCollector extends BaseCollector {
   }
 
   /**
-   * 采集净值数据（占位，当前不实现）
+   * 采集净值数据 — 直接调用 cbhbwm.com.cn 后端 API
+   * API: POST /eportalapply/portlet/bwmweb/queryProJz
+   * 无需 Playwright，纯 HTTP 请求，速度快、稳定性高
+   *
+   * 字段映射：value1=日期(YYYYMMDD) value2=单位净值 value3=累计净值
    */
-  async collectNavData(productCode: string): Promise<any[]> {
-    return [];
+  async collectNavData(productCode: string, options?: { registerCode?: string }): Promise<any[]> {
+    const saleCode = productCode;
+    const checkInon = options?.registerCode || '';
+    const url = `${BASE_URL}/eportalapply/portlet/bwmweb/queryProJz`;
+
+    const params = new URLSearchParams({
+      pageNo: '1',
+      pageSize: '1000',
+      collMod: '0',
+      gwProdMod: '3',
+      beginDate: '',
+      endDate: '',
+      saleCode,
+      checkInon,
+      prodCode: saleCode,
+      prodFlag: '3',
+      xsshareName: 'A',
+    });
+
+    try {
+      const resp = await httpClient.post(url, params.toString(), {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+          'X-Requested-With': 'XMLHttpRequest',
+          'Request-By': 'ajax-request-tag',
+          'Referer': `${BASE_URL}/cbhbwm/gmcp/gmxqy/index.html?saleCode=${saleCode}`,
+        },
+      });
+
+      // axios 自动解析 JSON，resp.data 已是对象
+      const raw = resp.data;
+      // data 字段是双重编码的 JSON 字符串
+      const parsed = typeof raw.data === 'string' ? JSON.parse(raw.data) : raw.data;
+      const records = parsed.data || [];
+
+      const navData = records.map((r: any) => {
+        const d = String(r.value1 || '');
+        // YYYYMMDD → YYYY-MM-DD
+        const navDate = d.length === 8
+          ? `${d.substring(0, 4)}-${d.substring(4, 6)}-${d.substring(6, 8)}`
+          : d;
+        return {
+          navDate,
+          unitNav: r.value2 ? String(r.value2) : null,
+          accNav: r.value3 ? String(r.value3) : (r.value2 ? String(r.value2) : null),
+          dataSource: 'crawler',
+        };
+      });
+
+      // 按日期降序排序
+      navData.sort((a: any, b: any) => b.navDate.localeCompare(a.navDate));
+
+      console.log(`[cbhb] 净值API采集完成: saleCode=${saleCode}, 共${navData.length}条`);
+      return navData;
+    } catch (error) {
+      throw new Error(`渤银净值API采集失败: ${error.message}`);
+    }
   }
 
   private parseRiskLevel(text: string): string {

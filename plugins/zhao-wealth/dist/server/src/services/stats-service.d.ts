@@ -6,11 +6,13 @@ declare const _default: ({ strapi }: {
      * 返回 productCount/companyCount/collectSuccessRate/riskMetricCoverage/todayAnomaly
      */
     getOverview(): Promise<{
-        productCount: any;
+        totalProducts: any;
         companyCount: any;
+        todayCollected: number;
+        failedCount: any;
+        lastRunTime: string;
         collectSuccessRate: number;
         riskMetricCoverage: number;
-        todayAnomaly: any;
     }>;
     /**
      * 异常列表

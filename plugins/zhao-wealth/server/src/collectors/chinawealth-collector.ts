@@ -179,10 +179,144 @@ export default class ChinawealthCollector extends BaseCollector {
   }
 
   /**
-   * 采集净值数据（占位，后续按产品类型实现）
+   * 采集净值数据
+   * 通过登记编码访问中国理财网产品详情页，拦截 AJAX 请求或解析页面表格获取净值
    */
-  async collectNavData(productCode: string): Promise<any[]> {
-    return [];
+  async collectNavData(registerCode: string): Promise<any[]> {
+    console.log(`[chinawealth] 开始采集净值: registerCode=${registerCode}`);
+
+    const page = await createPage();
+    if (!page) {
+      console.log('[chinawealth] Playwright Browser 不可用');
+      return [];
+    }
+
+    const capturedApiData: any[] = [];
+
+    try {
+      // 拦截 API 响应
+      page.on('response', async (response) => {
+        const url = response.url().toLowerCase();
+        if (url.includes('nav') || url.includes('netvalue') || url.includes('jz') ||
+            url.includes('net') || url.includes('value') || url.includes('detail')) {
+          try {
+            const ct = response.headers()['content-type'] || '';
+            if (ct.includes('json')) {
+              const body = await response.json();
+              if (body) {
+                const dataArr = body.data || body.list || body.rows || body.result;
+                if (Array.isArray(dataArr) && dataArr.length > 0) {
+                  capturedApiData.push(...dataArr);
+                }
+              }
+            }
+          } catch { /* ignore */ }
+        }
+      });
+
+      const url = `${CW_DETAIL_URL}?prodRegCode=${encodeURIComponent(registerCode)}`;
+      console.log(`[chinawealth] Playwright 打开: ${url}`);
+      await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
+      await page.waitForTimeout(3000);
+
+      // 尝试点击"净值"相关标签
+      const navTabSelectors = [
+        'text=净值', 'text=历史净值', 'text=净值走势', 'text=产品净值',
+        'text=单位净值', 'text=每日净值', 'text=净值信息',
+      ];
+      for (const sel of navTabSelectors) {
+        try {
+          const el = await page.$(sel);
+          if (el) {
+            await el.click({ timeout: 3000 }).catch(() => {});
+            await page.waitForTimeout(2000);
+            break;
+          }
+        } catch { /* ignore */ }
+      }
+
+      // 解析页面表格中的净值数据
+      const tableNavData = await page.evaluate(() => {
+        const result: any[] = [];
+
+        const tables = document.querySelectorAll('table');
+        for (const table of tables) {
+          const rows = table.querySelectorAll('tr');
+          for (let i = 0; i < rows.length; i++) {
+            const cells = Array.from(rows[i].querySelectorAll('td, th'));
+            const cellTexts = cells.map(c => (c.textContent || '').trim());
+
+            const dateCell = cellTexts.find(t => /\d{4}[-/]\d{2}[-/]\d{2}/.test(t));
+            if (dateCell) {
+              const normalizedDate = dateCell.replace(/\//g, '-');
+              const numbers = cellTexts.filter(t => /^\d+\.\d+$/.test(t));
+              if (numbers.length >= 1) {
+                result.push({
+                  navDate: normalizedDate,
+                  unitNav: numbers[0] || null,
+                  accNav: numbers[1] || numbers[0] || null,
+                  dataSource: 'crawler',
+                });
+              }
+            }
+          }
+        }
+
+        // 文本正则匹配
+        if (result.length === 0) {
+          const bodyText = document.body.textContent || '';
+          const regex = /(\d{4}[-/]\d{2}[-/]\d{2})[\s\S]{0,30}?(\d+\.\d{2,6})[\s\S]{0,30}?(\d+\.\d{2,6})/g;
+          let match;
+          while ((match = regex.exec(bodyText)) !== null) {
+            result.push({
+              navDate: match[1].replace(/\//g, '-'),
+              unitNav: match[2],
+              accNav: match[3],
+              dataSource: 'crawler',
+            });
+          }
+        }
+
+        return result;
+      });
+
+      // 合并 API 拦截数据
+      const apiNavData: any[] = [];
+      for (const item of capturedApiData) {
+        const navDate = item.navDate || item.netDate || item.date || item.priceDate;
+        const unitNav = item.unitNav || item.netValue || item.unitNetValue || item.dwjz;
+        const accNav = item.accNav || item.accNetValue || item.totalNetValue || item.ljjz;
+        if (navDate) {
+          apiNavData.push({
+            navDate: typeof navDate === 'string' ? navDate.replace(/\//g, '-') : navDate,
+            unitNav: unitNav ? String(unitNav) : null,
+            accNav: accNav ? String(accNav) : (unitNav ? String(unitNav) : null),
+            dataSource: 'crawler',
+          });
+        }
+      }
+
+      // 去重合并
+      const allNavData = [...apiNavData];
+      const existingDates = new Set(allNavData.map(d => d.navDate));
+      for (const item of tableNavData) {
+        if (!existingDates.has(item.navDate)) {
+          allNavData.push(item);
+          existingDates.add(item.navDate);
+        }
+      }
+
+      allNavData.sort((a, b) => b.navDate.localeCompare(a.navDate));
+
+      console.log(`[chinawealth] 净值采集完成: registerCode=${registerCode}, API拦截=${apiNavData.length}条, 页面解析=${tableNavData.length}条, 合计=${allNavData.length}条`);
+
+      return allNavData;
+    } catch (error) {
+      console.error(`[chinawealth] 净值采集失败: ${error.message}`);
+      return [];
+    } finally {
+      await closePage(page);
+    }
   }
 
   private parseRiskLevel(text: string): string {

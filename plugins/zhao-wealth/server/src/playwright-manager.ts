@@ -16,7 +16,13 @@ const LINUX_CHROME_PATHS = [
 const WINDOWS_CHROME_PATHS = [
   'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
   'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
-  'C:\\Users\\Administrator\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe',
+  // 动态匹配当前用户（LOCALAPPDATA 在 Windows 上指向 %USERPROFILE%\AppData\Local）
+  ...(process.env.LOCALAPPDATA
+    ? [`${process.env.LOCALAPPDATA}\\Google\\Chrome\\Application\\chrome.exe`]
+    : ['C:\\Users\\Administrator\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe']),
+  // Edge 作为备选（Chromium 内核，Playwright 兼容）
+  'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+  'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
 ];
 
 /**
