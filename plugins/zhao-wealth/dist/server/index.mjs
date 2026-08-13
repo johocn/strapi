@@ -8698,9 +8698,9 @@ const adminApi$1 = ({ strapi }) => ({
       benchmark: sourceData.benchmark || "",
       issueDate: sourceData.issueDate || "",
       maturityDate: sourceData.maturityDate || "",
-      // 发行机构：以中国理财网为准，理财网无数据则留空
-      company: officialData?.companyName || "",
-      companyName: officialData?.companyName || "",
+      // 发行机构：优先中国理财网，回退采集规则名称，均无则空
+      company: officialData?.companyName || sourceData.company || "",
+      companyName: officialData?.companyName || sourceData.company || "",
       // 理财网净值（如有）
       unitNav: officialData.unitNav || null,
       navDate: officialData.navDate || null
