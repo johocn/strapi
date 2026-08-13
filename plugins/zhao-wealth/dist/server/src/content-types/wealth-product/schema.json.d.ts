@@ -13,6 +13,8 @@ declare const _default: {
   "attributes": {
     "productCode": { "type": "string", "unique": true, "required": true },
     "productName": { "type": "string", "required": true },
+    "productNameCw": { "type": "string" },
+    "saleCode": { "type": "string" },
     "productType": { "type": "enumeration", "enum": ["bank-wealth", "stock-fund", "bond-fund", "mixed-fund", "money-fund"], "required": true },
     "registerCode": { "type": "string", "unique": true },
     "riskLevel": { "type": "enumeration", "enum": ["R1", "R2", "R3", "R4", "R5"], "default": "R2" },

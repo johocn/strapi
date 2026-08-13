@@ -157,7 +157,7 @@ export default class CbhbCollector extends BaseCollector {
       }
 
       return {
-        productCode,
+        saleCode: productCode,
         productName: productInfo.name,
         registerCode: productInfo.registerCode,
         riskLevel: this.parseRiskLevel(productInfo.riskText),
@@ -250,7 +250,7 @@ export default class CbhbCollector extends BaseCollector {
       }
 
       return {
-        productCode,
+        saleCode: productCode,
         productName: found.name,
         registerCode: found.registerCode,
         riskLevel: this.parseRiskLevel(found.riskText),

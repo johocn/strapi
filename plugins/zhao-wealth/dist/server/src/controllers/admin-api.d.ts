@@ -44,7 +44,13 @@ declare const _default: ({ strapi }: {
      * 合并双源数据：以中国理财网数据为主，渤银数据补充缺失字段
      * 理财网字段：productName, registerCode, riskLevel, termType, productType,
      *            companyName, productStatus, operationMode, unitNav, navDate
-     * 渤银补充：productCode, saleCode, benchmark, issueDate, maturityDate, company
+     * 新策略：官网优先，理财网补充
+     * - productCode: 理财网登记编码（回退销售编码）
+     * - productName: 官网名称
+     * - productNameCw: 理财网名称
+     * - saleCode: 官网销售编码
+     * - registerCode: 理财网
+     * - 其他字段: 官网优先，回退理财网
      */
     mergeProductData(sourceData: any, officialData: any): any;
 };

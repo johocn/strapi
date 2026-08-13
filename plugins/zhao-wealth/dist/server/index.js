@@ -44,7 +44,7 @@ const kind$a = "collectionType";
 const collectionName$a = "wealth_products";
 const info$a = { "singularName": "wealth-product", "pluralName": "wealth-products", "displayName": "理财产品", "description": "理财/基金产品信息" };
 const options$a = { "draftAndPublish": false };
-const attributes$a = { "productCode": { "type": "string", "unique": true, "required": true }, "productName": { "type": "string", "required": true }, "productType": { "type": "enumeration", "enum": ["bank-wealth", "stock-fund", "bond-fund", "mixed-fund", "money-fund"], "required": true }, "registerCode": { "type": "string", "unique": true }, "riskLevel": { "type": "enumeration", "enum": ["R1", "R2", "R3", "R4", "R5"], "default": "R2" }, "termType": { "type": "enumeration", "enum": ["short", "medium", "long"] }, "issueDate": { "type": "date" }, "maturityDate": { "type": "date" }, "company": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-company", "inversedBy": "products" }, "navs": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-nav", "mappedBy": "product" }, "moneyIncomes": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-money-income", "mappedBy": "product" }, "annualSnapshots": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-annual-snapshot", "mappedBy": "product" }, "yearlyReturns": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-yearly-return", "mappedBy": "product" }, "riskMetrics": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-risk-metric", "mappedBy": "product" }, "recommendWeight": { "type": "integer", "default": 0 }, "recommendTags": { "type": "json" }, "recommendEnabled": { "type": "boolean", "default": false }, "recommendReason": { "type": "text" }, "status": { "type": "boolean", "default": true }, "benchmark": { "type": "string" }, "operationMode": { "type": "string" }, "productStatus": { "type": "string" }, "remark": { "type": "text" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const attributes$a = { "productCode": { "type": "string", "unique": true, "required": true }, "productName": { "type": "string", "required": true }, "productNameCw": { "type": "string" }, "saleCode": { "type": "string" }, "productType": { "type": "enumeration", "enum": ["bank-wealth", "stock-fund", "bond-fund", "mixed-fund", "money-fund"], "required": true }, "registerCode": { "type": "string", "unique": true }, "riskLevel": { "type": "enumeration", "enum": ["R1", "R2", "R3", "R4", "R5"], "default": "R2" }, "termType": { "type": "enumeration", "enum": ["short", "medium", "long"] }, "issueDate": { "type": "date" }, "maturityDate": { "type": "date" }, "company": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-company", "inversedBy": "products" }, "navs": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-nav", "mappedBy": "product" }, "moneyIncomes": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-money-income", "mappedBy": "product" }, "annualSnapshots": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-annual-snapshot", "mappedBy": "product" }, "yearlyReturns": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-yearly-return", "mappedBy": "product" }, "riskMetrics": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-risk-metric", "mappedBy": "product" }, "recommendWeight": { "type": "integer", "default": 0 }, "recommendTags": { "type": "json" }, "recommendEnabled": { "type": "boolean", "default": false }, "recommendReason": { "type": "text" }, "status": { "type": "boolean", "default": true }, "benchmark": { "type": "string" }, "operationMode": { "type": "string" }, "productStatus": { "type": "string" }, "remark": { "type": "text" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
 const wealthProduct = {
   kind: kind$a,
   collectionName: collectionName$a,
@@ -7458,7 +7458,7 @@ class CbhbCollector extends BaseCollector {
         return await this.collectFromListPage(productCode);
       }
       return {
-        productCode,
+        saleCode: productCode,
         productName: productInfo.name,
         registerCode: productInfo.registerCode,
         riskLevel: this.parseRiskLevel(productInfo.riskText),
@@ -7529,7 +7529,7 @@ class CbhbCollector extends BaseCollector {
         return null;
       }
       return {
-        productCode,
+        saleCode: productCode,
         productName: found.name,
         registerCode: found.registerCode,
         riskLevel: this.parseRiskLevel(found.riskText),
@@ -8333,6 +8333,8 @@ const adminApi$1 = ({ strapi }) => ({
         data: {
           productCode: data.productCode,
           productName: data.productName,
+          productNameCw: data.productNameCw || null,
+          saleCode: data.saleCode || null,
           productType: data.productType,
           registerCode: data.registerCode || null,
           riskLevel: data.riskLevel || "R2",
@@ -8429,32 +8431,46 @@ const adminApi$1 = ({ strapi }) => ({
    * 合并双源数据：以中国理财网数据为主，渤银数据补充缺失字段
    * 理财网字段：productName, registerCode, riskLevel, termType, productType,
    *            companyName, productStatus, operationMode, unitNav, navDate
-   * 渤银补充：productCode, saleCode, benchmark, issueDate, maturityDate, company
+   * 新策略：官网优先，理财网补充
+   * - productCode: 理财网登记编码（回退销售编码）
+   * - productName: 官网名称
+   * - productNameCw: 理财网名称
+   * - saleCode: 官网销售编码
+   * - registerCode: 理财网
+   * - 其他字段: 官网优先，回退理财网
    */
   mergeProductData(sourceData, officialData) {
     if (!officialData) return sourceData;
     if (!sourceData) return officialData;
+    const registerCode = officialData.registerCode || sourceData.registerCode || "";
+    const saleCode = sourceData.saleCode || sourceData.productCode || "";
     const merged = {
-      productName: officialData.productName || sourceData.productName || "",
-      registerCode: officialData.registerCode || sourceData.registerCode || "",
-      riskLevel: officialData.riskLevel || sourceData.riskLevel || "R2",
-      riskLevelRaw: officialData.riskLevelRaw || sourceData.riskLevelRaw || "",
-      termType: officialData.termType || sourceData.termType || null,
-      termTypeRaw: officialData.termTypeRaw || sourceData.termTypeRaw || "",
-      productType: officialData.productType || sourceData.productType || "bank-wealth",
-      productTypeRaw: officialData.productTypeRaw || sourceData.productTypeRaw || "",
-      companyName: officialData.companyName || sourceData.company || "",
-      productStatus: officialData.productStatus || "",
-      operationMode: officialData.operationMode || "",
+      // 编号类
+      productCode: registerCode || saleCode || "",
+      registerCode,
+      saleCode,
+      // 产品名称：官网 + 理财网各一个
+      productName: sourceData.productName || officialData.productName || "",
+      productNameCw: officialData.productName || "",
+      // 官网优先字段，理财网兜底
+      riskLevel: sourceData.riskLevel || officialData.riskLevel || "R2",
+      riskLevelRaw: sourceData.riskLevelRaw || officialData.riskLevelRaw || "",
+      termType: sourceData.termType || officialData.termType || null,
+      termTypeRaw: sourceData.termTypeRaw || officialData.termTypeRaw || "",
+      productType: sourceData.productType || officialData.productType || "bank-wealth",
+      productTypeRaw: sourceData.productTypeRaw || officialData.productTypeRaw || "",
+      operationMode: sourceData.operationMode || officialData.operationMode || "",
+      productStatus: sourceData.productStatus || officialData.productStatus || "",
+      // 官网独有字段
+      benchmark: sourceData.benchmark || "",
+      issueDate: sourceData.issueDate || "",
+      maturityDate: sourceData.maturityDate || "",
+      company: sourceData.company || officialData.companyName || "",
+      companyName: sourceData.company || officialData.companyName || "",
+      // 理财网净值（如有）
       unitNav: officialData.unitNav || null,
       navDate: officialData.navDate || null
     };
-    merged.productCode = sourceData.productCode || sourceData.saleCode || "";
-    merged.saleCode = sourceData.saleCode || "";
-    merged.benchmark = sourceData.benchmark || "";
-    merged.issueDate = sourceData.issueDate || "";
-    merged.maturityDate = sourceData.maturityDate || "";
-    merged.company = sourceData.company || merged.companyName || "";
     return merged;
   }
 });

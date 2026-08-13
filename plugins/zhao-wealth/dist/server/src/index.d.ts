@@ -71,6 +71,12 @@ declare const _default: {
                         type: string;
                         required: boolean;
                     };
+                    productNameCw: {
+                        type: string;
+                    };
+                    saleCode: {
+                        type: string;
+                    };
                     productType: {
                         type: string;
                         enum: string[];
