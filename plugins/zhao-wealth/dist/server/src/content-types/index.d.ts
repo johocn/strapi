@@ -64,7 +64,6 @@ declare const _default: {
                 productCode: {
                     type: string;
                     unique: boolean;
-                    required: boolean;
                 };
                 productName: {
                     type: string;
@@ -72,6 +71,7 @@ declare const _default: {
                 };
                 productNameCw: {
                     type: string;
+                    required: boolean;
                 };
                 saleCode: {
                     type: string;
@@ -79,11 +79,11 @@ declare const _default: {
                 productType: {
                     type: string;
                     enum: string[];
-                    required: boolean;
                 };
                 registerCode: {
                     type: string;
                     unique: boolean;
+                    required: boolean;
                 };
                 riskLevel: {
                     type: string;

@@ -566,11 +566,11 @@ export default ({ strapi }) => ({
       // 创建产品
       const product = await strapi.db.query('plugin::zhao-wealth.wealth-product').create({
         data: {
-          productCode: data.productCode,
+          productCode: data.productCode || null,
           productName: data.productName,
           productNameCw: data.productNameCw || null,
           saleCode: data.saleCode || null,
-          productType: data.productType,
+          productType: data.productType || null,
           registerCode: data.registerCode || null,
           riskLevel: data.riskLevel || 'R2',
           termType: data.termType || null,
@@ -690,24 +690,27 @@ export default ({ strapi }) => ({
    * 理财网字段：productName, registerCode, riskLevel, termType, productType,
    *            companyName, productStatus, operationMode, unitNav, navDate
    * 新策略：官网优先，理财网补充
-   * - productCode: 理财网登记编码（回退销售编码）
+   * - productCode: 销售编号（官网）
    * - productName: 官网名称
    * - productNameCw: 理财网名称
-   * - saleCode: 官网销售编码
-   * - registerCode: 理财网
+   * - saleCode: 官网销售编码（同 productCode）
+   * - registerCode: 理财网登记编码（Z开头）
    * - 其他字段: 官网优先，回退理财网
    */
   mergeProductData(sourceData: any, officialData: any) {
     if (!officialData) return sourceData;
     if (!sourceData) return officialData;
 
-    // 理财网登记编码作为 productCode（回退销售编码）
     const registerCode = officialData.registerCode || sourceData.registerCode || '';
     const saleCode = sourceData.saleCode || sourceData.productCode || '';
 
+    // 产品状态校验：如果值看起来像登记编码（Z开头+数字），说明解析有误，不采用
+    const rawStatus = sourceData.productStatus || officialData.productStatus || '';
+    const isValidStatus = rawStatus && !/^Z\d{10,}$/.test(rawStatus);
+
     const merged: any = {
-      // 编号类
-      productCode: registerCode || saleCode || '',
+      // 编号类：产品编号=销售编号
+      productCode: saleCode || registerCode || '',
       registerCode,
       saleCode,
       // 产品名称：官网 + 理财网各一个
@@ -721,7 +724,7 @@ export default ({ strapi }) => ({
       productType: sourceData.productType || officialData.productType || 'bank-wealth',
       productTypeRaw: sourceData.productTypeRaw || officialData.productTypeRaw || '',
       operationMode: sourceData.operationMode || officialData.operationMode || '',
-      productStatus: sourceData.productStatus || officialData.productStatus || '',
+      productStatus: isValidStatus ? rawStatus : '',
       // 官网独有字段
       benchmark: sourceData.benchmark || '',
       issueDate: sourceData.issueDate || '',

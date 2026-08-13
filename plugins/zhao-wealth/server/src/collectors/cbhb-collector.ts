@@ -110,9 +110,10 @@ export default class CbhbCollector extends BaseCollector {
           }
         }
 
-        // 提取业绩比较基准：页面显示"2.50%-3.00%"或"2.50%"
+        // 提取业绩比较基准：仅匹配明确的百分比格式（如 2.50%-3.00% 或 2.50%）
+        // 不确定的不填，留空
         let benchmark = '';
-        const benchMatch = bodyText.match(/(\d+\.?\d*%-?\d*\.?\d*%?)/);
+        const benchMatch = bodyText.match(/(\d+\.?\d+%[-~至]\d+\.?\d+%|\d+\.?\d+%)/);
         if (benchMatch) {
           benchmark = benchMatch[1];
         }
@@ -133,8 +134,8 @@ export default class CbhbCollector extends BaseCollector {
         const maturityDate = extractByLabel(['产品到期日', '到期日']);
         const establishDate = extractByLabel(['发行成立日', '成立日']);
 
-        // 提取销售商名称
-        const issuer = extractByLabel(['销售商名称', '发行机构', '管理机构']);
+        // 发行机构固定为渤银理财，不从页面提取（避免不确定的值）
+        const issuer = '渤银理财';
 
         return {
           name,

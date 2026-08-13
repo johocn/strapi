@@ -45,11 +45,11 @@ declare const _default: ({ strapi }: {
      * 理财网字段：productName, registerCode, riskLevel, termType, productType,
      *            companyName, productStatus, operationMode, unitNav, navDate
      * 新策略：官网优先，理财网补充
-     * - productCode: 理财网登记编码（回退销售编码）
+     * - productCode: 销售编号（官网）
      * - productName: 官网名称
      * - productNameCw: 理财网名称
-     * - saleCode: 官网销售编码
-     * - registerCode: 理财网
+     * - saleCode: 官网销售编码（同 productCode）
+     * - registerCode: 理财网登记编码（Z开头）
      * - 其他字段: 官网优先，回退理财网
      */
     mergeProductData(sourceData: any, officialData: any): any;

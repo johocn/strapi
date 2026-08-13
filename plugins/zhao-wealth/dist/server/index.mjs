@@ -20,7 +20,7 @@ const kind$a = "collectionType";
 const collectionName$a = "wealth_products";
 const info$a = { "singularName": "wealth-product", "pluralName": "wealth-products", "displayName": "理财产品", "description": "理财/基金产品信息" };
 const options$a = { "draftAndPublish": false };
-const attributes$a = { "productCode": { "type": "string", "unique": true, "required": true }, "productName": { "type": "string", "required": true }, "productNameCw": { "type": "string" }, "saleCode": { "type": "string" }, "productType": { "type": "enumeration", "enum": ["bank-wealth", "stock-fund", "bond-fund", "mixed-fund", "money-fund"], "required": true }, "registerCode": { "type": "string", "unique": true }, "riskLevel": { "type": "enumeration", "enum": ["R1", "R2", "R3", "R4", "R5"], "default": "R2" }, "termType": { "type": "enumeration", "enum": ["short", "medium", "long"] }, "issueDate": { "type": "date" }, "maturityDate": { "type": "date" }, "company": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-company", "inversedBy": "products" }, "navs": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-nav", "mappedBy": "product" }, "moneyIncomes": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-money-income", "mappedBy": "product" }, "annualSnapshots": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-annual-snapshot", "mappedBy": "product" }, "yearlyReturns": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-yearly-return", "mappedBy": "product" }, "riskMetrics": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-risk-metric", "mappedBy": "product" }, "recommendWeight": { "type": "integer", "default": 0 }, "recommendTags": { "type": "json" }, "recommendEnabled": { "type": "boolean", "default": false }, "recommendReason": { "type": "text" }, "status": { "type": "boolean", "default": true }, "benchmark": { "type": "string" }, "operationMode": { "type": "string" }, "productStatus": { "type": "string" }, "remark": { "type": "text" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const attributes$a = { "productCode": { "type": "string", "unique": true }, "productName": { "type": "string", "required": true }, "productNameCw": { "type": "string", "required": true }, "saleCode": { "type": "string" }, "productType": { "type": "enumeration", "enum": ["bank-wealth", "stock-fund", "bond-fund", "mixed-fund", "money-fund"] }, "registerCode": { "type": "string", "unique": true, "required": true }, "riskLevel": { "type": "enumeration", "enum": ["R1", "R2", "R3", "R4", "R5"], "default": "R2" }, "termType": { "type": "enumeration", "enum": ["short", "medium", "long"] }, "issueDate": { "type": "date" }, "maturityDate": { "type": "date" }, "company": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-company", "inversedBy": "products" }, "navs": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-nav", "mappedBy": "product" }, "moneyIncomes": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-money-income", "mappedBy": "product" }, "annualSnapshots": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-annual-snapshot", "mappedBy": "product" }, "yearlyReturns": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-yearly-return", "mappedBy": "product" }, "riskMetrics": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-risk-metric", "mappedBy": "product" }, "recommendWeight": { "type": "integer", "default": 0 }, "recommendTags": { "type": "json" }, "recommendEnabled": { "type": "boolean", "default": false }, "recommendReason": { "type": "text" }, "status": { "type": "boolean", "default": true }, "benchmark": { "type": "string" }, "operationMode": { "type": "string" }, "productStatus": { "type": "string" }, "remark": { "type": "text" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
 const wealthProduct = {
   kind: kind$a,
   collectionName: collectionName$a,
@@ -7399,7 +7399,7 @@ class CbhbCollector extends BaseCollector {
           }
         }
         let benchmark = "";
-        const benchMatch = bodyText.match(/(\d+\.?\d*%-?\d*\.?\d*%?)/);
+        const benchMatch = bodyText.match(/(\d+\.?\d+%[-~至]\d+\.?\d+%|\d+\.?\d+%)/);
         if (benchMatch) {
           benchmark = benchMatch[1];
         }
@@ -7415,7 +7415,7 @@ class CbhbCollector extends BaseCollector {
         const raiseEndDate = extractByLabel(["产品募集结束日", "募集结束日"]);
         const maturityDate = extractByLabel(["产品到期日", "到期日"]);
         const establishDate = extractByLabel(["发行成立日", "成立日"]);
-        const issuer = extractByLabel(["销售商名称", "发行机构", "管理机构"]);
+        const issuer = "渤银理财";
         return {
           name,
           registerCode,
@@ -8307,11 +8307,11 @@ const adminApi$1 = ({ strapi }) => ({
       }
       const product2 = await strapi.db.query("plugin::zhao-wealth.wealth-product").create({
         data: {
-          productCode: data.productCode,
+          productCode: data.productCode || null,
           productName: data.productName,
           productNameCw: data.productNameCw || null,
           saleCode: data.saleCode || null,
-          productType: data.productType,
+          productType: data.productType || null,
           registerCode: data.registerCode || null,
           riskLevel: data.riskLevel || "R2",
           termType: data.termType || null,
@@ -8408,11 +8408,11 @@ const adminApi$1 = ({ strapi }) => ({
    * 理财网字段：productName, registerCode, riskLevel, termType, productType,
    *            companyName, productStatus, operationMode, unitNav, navDate
    * 新策略：官网优先，理财网补充
-   * - productCode: 理财网登记编码（回退销售编码）
+   * - productCode: 销售编号（官网）
    * - productName: 官网名称
    * - productNameCw: 理财网名称
-   * - saleCode: 官网销售编码
-   * - registerCode: 理财网
+   * - saleCode: 官网销售编码（同 productCode）
+   * - registerCode: 理财网登记编码（Z开头）
    * - 其他字段: 官网优先，回退理财网
    */
   mergeProductData(sourceData, officialData) {
@@ -8420,9 +8420,11 @@ const adminApi$1 = ({ strapi }) => ({
     if (!sourceData) return officialData;
     const registerCode = officialData.registerCode || sourceData.registerCode || "";
     const saleCode = sourceData.saleCode || sourceData.productCode || "";
+    const rawStatus = sourceData.productStatus || officialData.productStatus || "";
+    const isValidStatus = rawStatus && !/^Z\d{10,}$/.test(rawStatus);
     const merged = {
-      // 编号类
-      productCode: registerCode || saleCode || "",
+      // 编号类：产品编号=销售编号
+      productCode: saleCode || registerCode || "",
       registerCode,
       saleCode,
       // 产品名称：官网 + 理财网各一个
@@ -8436,7 +8438,7 @@ const adminApi$1 = ({ strapi }) => ({
       productType: sourceData.productType || officialData.productType || "bank-wealth",
       productTypeRaw: sourceData.productTypeRaw || officialData.productTypeRaw || "",
       operationMode: sourceData.operationMode || officialData.operationMode || "",
-      productStatus: sourceData.productStatus || officialData.productStatus || "",
+      productStatus: isValidStatus ? rawStatus : "",
       // 官网独有字段
       benchmark: sourceData.benchmark || "",
       issueDate: sourceData.issueDate || "",
