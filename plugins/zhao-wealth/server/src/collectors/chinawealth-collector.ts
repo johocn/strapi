@@ -41,6 +41,7 @@ export default class ChinawealthCollector extends BaseCollector {
       const product = await this.collectViaPlaywright(url, registerCode);
       if (product) {
         console.log(`[chinawealth] 采集成功: ${product.productName}`);
+        console.log(`[chinawealth] 字段详情: registerCode=${product.registerCode}, companyName=${product.companyName}, risk=${product.riskLevel}, type=${product.productType}, opMode=${product.operationMode}, issueDate=${product.issueDate}`);
         return product;
       }
     } catch (error) {
@@ -52,7 +53,12 @@ export default class ChinawealthCollector extends BaseCollector {
   }
 
   /**
-   * Playwright 策略：打开详情页，从 .basic-info DOM 提取字段
+   * Playwright 策略：打开详情页，精确 DOM 定位提取字段
+   *
+   * .basic-info 中每个字段结构：
+   *   <div class="el-col el-col-10">标签</div>
+   *   <div class="el-col el-col-14">值</div>
+   * 通过精确匹配标签文本，取下一个兄弟元素的文本作为值
    */
   private async collectViaPlaywright(url: string, registerCode: string): Promise<any | null> {
     const page = await createPage();
@@ -67,82 +73,65 @@ export default class ChinawealthCollector extends BaseCollector {
       await page.waitForTimeout(3000); // 等待 Vue SPA 渲染完成
 
       const product = await page.evaluate((regCode) => {
-        const bodyText = document.body.textContent || '';
-
-        // 辅助：从文本中提取"标签：值"格式的值（顶部摘要区）
-        const extractByLabel = (labels: string[]): string => {
-          for (const label of labels) {
-            const regex1 = new RegExp(label + '[：:]\\s*([\\s\\S]*?)(?=\\n|[a-zA-Z\\u4e00-\\u9fa5]+[：:]|$)');
-            const match1 = bodyText.match(regex1);
-            if (match1 && match1[1]) {
-              const val = match1[1].trim();
-              if (val) return val;
-            }
-            const regex2 = new RegExp(label + '[：:]\\s*([^\\s\\n，,]+)');
-            const match2 = bodyText.match(regex2);
-            if (match2 && match2[1]) {
-              return match2[1].trim();
+        /**
+         * 从 .basic-info 精确提取字段
+         * 找到标签文本完全匹配的 .el-col，取其下一个兄弟 .el-col 的文本
+         */
+        const getFieldFromBasicInfo = (labelText: string): string => {
+          const allCols = document.querySelectorAll('.basic-info .el-col');
+          for (let i = 0; i < allCols.length; i++) {
+            const text = (allCols[i].textContent || '').trim();
+            if (text === labelText && i + 1 < allCols.length) {
+              const valueEl = allCols[i + 1];
+              const val = (valueEl.textContent || '').trim();
+              if (val && !val.includes('暂无数据')) {
+                return val;
+              }
             }
           }
           return '';
         };
 
-        // 从 .basic-info 容器提取 label-value 对
-        const fieldValueMap: Record<string, string> = {};
-        const basicInfo = document.querySelector('.basic-info');
-        if (basicInfo) {
-          const rows = basicInfo.querySelectorAll('.el-row');
-          for (const row of rows) {
-            const cols = row.querySelectorAll('.el-col');
-            for (let i = 0; i < cols.length - 1; i += 2) {
-              const label = cols[i]?.textContent?.trim() || '';
-              const value = cols[i + 1]?.textContent?.trim() || '';
-              // 排除"暂无数据"和空值
-              if (label && value && !value.includes('暂无数据') && !label.includes('业绩比较基准')) {
-                fieldValueMap[label] = value;
-              }
+        /**
+         * 从顶部摘要区提取（格式：标签：值）
+         * 搜索 .prodType-detail 下 .el-card__body 区域的文本
+         */
+        const bodyText = document.body.textContent || '';
+        const extractByColon = (labels: string[]): string => {
+          for (const label of labels) {
+            // 匹配 "标签：值" 到下一个换行或下一个"中文/英文标签："为止
+            const regex1 = new RegExp(label + '[：:]\\s*([\\s\\S]*?)(?=\\n|[a-zA-Z\\u4e00-\\u9fa5]+[：:]|$)');
+            const match1 = bodyText.match(regex1);
+            if (match1 && match1[1]) {
+              const val = match1[1].trim();
+              if (val && !val.includes('暂无数据')) return val;
+            }
+            // 简单兜底：匹配到下一个空格或逗号
+            const regex2 = new RegExp(label + '[：:]\\s*([^\\s\\n，,]+)');
+            const match2 = bodyText.match(regex2);
+            if (match2 && match2[1]) {
+              const val = match2[1].trim();
+              if (val && !val.includes('暂无数据')) return val;
             }
           }
-        }
+          return '';
+        };
 
-        // 产品名称：优先从顶部标题获取，其次从 basic-info
-        let productName = '';
-        const headerEl = document.querySelector('.el-card__header');
-        if (headerEl) {
-          const headerText = headerEl.textContent?.trim() || '';
-          // 排除导航文本
-          if (headerText.length > 4 && !headerText.includes('信息披露平台')) {
-            productName = headerText;
-          }
-        }
-        if (!productName) {
-          productName = fieldValueMap['产品名称'] || '';
-        }
+        // === 从 .basic-info 提取核心字段（精确 DOM 定位） ===
+        const productName = getFieldFromBasicInfo('产品名称');
+        const productCode = getFieldFromBasicInfo('产品代码');
+        const companyName = getFieldFromBasicInfo('发行机构');
+        const operationMode = getFieldFromBasicInfo('运作模式');
+        const riskLevelRaw = getFieldFromBasicInfo('风险等级');
+        const productTypeRaw = getFieldFromBasicInfo('投资性质');
 
-        // 登记编码：优先从顶部摘要区提取
-        const extractedRegCode = extractByLabel(['登记编码']) || regCode;
-
-        // 发行机构
-        const companyName = fieldValueMap['发行机构'] || extractByLabel(['发行机构']);
-
-        // 运作模式
-        const operationMode = fieldValueMap['运作模式'] || extractByLabel(['运作模式']);
-
-        // 风险等级：basic-info 中的值如 "二级(中低)"
-        const riskLevelRaw = fieldValueMap['风险等级'] || '';
-
-        // 投资性质
-        const productTypeRaw = fieldValueMap['投资性质'] || extractByLabel(['投资性质']);
-
-        // 产品代码（份额代码）
-        const productCode = fieldValueMap['产品代码'] || extractByLabel(['份额代码']);
-
-        // 起始/结束日期（顶部摘要区，格式 2026/08/20）
-        const issueDate = extractByLabel(['起始日期']);
-        const maturityDate = extractByLabel(['结束日期']);
+        // === 从顶部摘要区提取（冒号格式） ===
+        const extractedRegCode = extractByColon(['登记编码']) || regCode;
+        const issueDate = extractByColon(['起始日期']);
+        const maturityDate = extractByColon(['结束日期']);
 
         if (!productName) {
-          console.log('[chinawealth] 未找到产品名称');
+          console.log('[chinawealth] .basic-info 未找到产品名称');
           return null;
         }
 
@@ -172,8 +161,6 @@ export default class ChinawealthCollector extends BaseCollector {
       if (product.maturityDate) {
         product.maturityDate = product.maturityDate.replace(/\//g, '-');
       }
-
-      console.log(`[chinawealth] 字段: name=${product.productName}, company=${product.companyName}, risk=${product.riskLevel}, type=${product.productType}, opMode=${product.operationMode}`);
 
       return product;
     } catch (error) {

@@ -7399,10 +7399,7 @@ class CbhbCollector extends BaseCollector {
         let benchmark = "";
         const benchRaw = extractByLabel(["业绩比较基准", "业绩基准"]);
         if (benchRaw) {
-          const benchMatch = benchRaw.match(/(\d+\.?\d+%[-~至]\d+\.?\d+%|\d+\.?\d+%)/);
-          if (benchMatch) {
-            benchmark = benchMatch[1];
-          }
+          benchmark = benchRaw;
         }
         let productTypeText = "";
         const typeKeywords = ["封闭型", "定期开放型", "现金管理类", "每日开放申赎型", "客户周期开放型", "最短持有期型"];
@@ -7581,6 +7578,7 @@ class ChinawealthCollector extends BaseCollector {
       const product2 = await this.collectViaPlaywright(url, registerCode);
       if (product2) {
         console.log(`[chinawealth] 采集成功: ${product2.productName}`);
+        console.log(`[chinawealth] 字段详情: registerCode=${product2.registerCode}, companyName=${product2.companyName}, risk=${product2.riskLevel}, type=${product2.productType}, opMode=${product2.operationMode}, issueDate=${product2.issueDate}`);
         return product2;
       }
     } catch (error) {
@@ -7590,7 +7588,12 @@ class ChinawealthCollector extends BaseCollector {
     return null;
   }
   /**
-   * Playwright 策略：打开详情页，从 .basic-info DOM 提取字段
+   * Playwright 策略：打开详情页，精确 DOM 定位提取字段
+   *
+   * .basic-info 中每个字段结构：
+   *   <div class="el-col el-col-10">标签</div>
+   *   <div class="el-col el-col-14">值</div>
+   * 通过精确匹配标签文本，取下一个兄弟元素的文本作为值
    */
   async collectViaPlaywright(url, registerCode) {
     const page = await createPage();
@@ -7603,59 +7606,49 @@ class ChinawealthCollector extends BaseCollector {
       await page.goto(url, { waitUntil: "networkidle", timeout: 3e4 });
       await page.waitForTimeout(3e3);
       const product2 = await page.evaluate((regCode) => {
+        const getFieldFromBasicInfo = (labelText) => {
+          const allCols = document.querySelectorAll(".basic-info .el-col");
+          for (let i = 0; i < allCols.length; i++) {
+            const text = (allCols[i].textContent || "").trim();
+            if (text === labelText && i + 1 < allCols.length) {
+              const valueEl = allCols[i + 1];
+              const val = (valueEl.textContent || "").trim();
+              if (val && !val.includes("暂无数据")) {
+                return val;
+              }
+            }
+          }
+          return "";
+        };
         const bodyText = document.body.textContent || "";
-        const extractByLabel = (labels) => {
+        const extractByColon = (labels) => {
           for (const label of labels) {
             const regex1 = new RegExp(label + "[：:]\\s*([\\s\\S]*?)(?=\\n|[a-zA-Z\\u4e00-\\u9fa5]+[：:]|$)");
             const match1 = bodyText.match(regex1);
             if (match1 && match1[1]) {
               const val = match1[1].trim();
-              if (val) return val;
+              if (val && !val.includes("暂无数据")) return val;
             }
             const regex2 = new RegExp(label + "[：:]\\s*([^\\s\\n，,]+)");
             const match2 = bodyText.match(regex2);
             if (match2 && match2[1]) {
-              return match2[1].trim();
+              const val = match2[1].trim();
+              if (val && !val.includes("暂无数据")) return val;
             }
           }
           return "";
         };
-        const fieldValueMap = {};
-        const basicInfo = document.querySelector(".basic-info");
-        if (basicInfo) {
-          const rows = basicInfo.querySelectorAll(".el-row");
-          for (const row of rows) {
-            const cols = row.querySelectorAll(".el-col");
-            for (let i = 0; i < cols.length - 1; i += 2) {
-              const label = cols[i]?.textContent?.trim() || "";
-              const value = cols[i + 1]?.textContent?.trim() || "";
-              if (label && value && !value.includes("暂无数据") && !label.includes("业绩比较基准")) {
-                fieldValueMap[label] = value;
-              }
-            }
-          }
-        }
-        let productName = "";
-        const headerEl = document.querySelector(".el-card__header");
-        if (headerEl) {
-          const headerText = headerEl.textContent?.trim() || "";
-          if (headerText.length > 4 && !headerText.includes("信息披露平台")) {
-            productName = headerText;
-          }
-        }
+        const productName = getFieldFromBasicInfo("产品名称");
+        const productCode = getFieldFromBasicInfo("产品代码");
+        const companyName = getFieldFromBasicInfo("发行机构");
+        const operationMode = getFieldFromBasicInfo("运作模式");
+        const riskLevelRaw = getFieldFromBasicInfo("风险等级");
+        const productTypeRaw = getFieldFromBasicInfo("投资性质");
+        const extractedRegCode = extractByColon(["登记编码"]) || regCode;
+        const issueDate = extractByColon(["起始日期"]);
+        const maturityDate = extractByColon(["结束日期"]);
         if (!productName) {
-          productName = fieldValueMap["产品名称"] || "";
-        }
-        const extractedRegCode = extractByLabel(["登记编码"]) || regCode;
-        const companyName = fieldValueMap["发行机构"] || extractByLabel(["发行机构"]);
-        const operationMode = fieldValueMap["运作模式"] || extractByLabel(["运作模式"]);
-        const riskLevelRaw = fieldValueMap["风险等级"] || "";
-        const productTypeRaw = fieldValueMap["投资性质"] || extractByLabel(["投资性质"]);
-        const productCode = fieldValueMap["产品代码"] || extractByLabel(["份额代码"]);
-        const issueDate = extractByLabel(["起始日期"]);
-        const maturityDate = extractByLabel(["结束日期"]);
-        if (!productName) {
-          console.log("[chinawealth] 未找到产品名称");
+          console.log("[chinawealth] .basic-info 未找到产品名称");
           return null;
         }
         return {
@@ -7679,7 +7672,6 @@ class ChinawealthCollector extends BaseCollector {
       if (product2.maturityDate) {
         product2.maturityDate = product2.maturityDate.replace(/\//g, "-");
       }
-      console.log(`[chinawealth] 字段: name=${product2.productName}, company=${product2.companyName}, risk=${product2.riskLevel}, type=${product2.productType}, opMode=${product2.operationMode}`);
       return product2;
     } catch (error) {
       console.error(`[chinawealth] Playwright 采集失败: ${error.message}`);

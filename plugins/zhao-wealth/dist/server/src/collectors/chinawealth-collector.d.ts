@@ -8,7 +8,12 @@ export default class ChinawealthCollector extends BaseCollector {
      */
     collectByRegisterCode(registerCode: string): Promise<any>;
     /**
-     * Playwright 策略：打开详情页，从 .basic-info DOM 提取字段
+     * Playwright 策略：打开详情页，精确 DOM 定位提取字段
+     *
+     * .basic-info 中每个字段结构：
+     *   <div class="el-col el-col-10">标签</div>
+     *   <div class="el-col el-col-14">值</div>
+     * 通过精确匹配标签文本，取下一个兄弟元素的文本作为值
      */
     private collectViaPlaywright;
     /**
