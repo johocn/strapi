@@ -33,7 +33,7 @@
     "recommendReason": { "type": "text" },
     "status": { "type": "boolean", "default": true },
     "benchmark": { "type": "string" },
-    "operationMode": { "type": "string" },
+    "operationMode": { "type": "enumeration", "enum": ["daily-open", "fixed-term", "closed"] },
     "productStatus": { "type": "string" },
     "remark": { "type": "text" },
     "createdAt": { "type": "datetime" },

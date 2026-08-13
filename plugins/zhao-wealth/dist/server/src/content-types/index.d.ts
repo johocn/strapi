@@ -158,6 +158,7 @@ declare const _default: {
                 };
                 operationMode: {
                     type: string;
+                    enum: string[];
                 };
                 productStatus: {
                     type: string;
