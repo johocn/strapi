@@ -3,12 +3,48 @@ import axios from "axios";
 import Queue from "bull";
 import { chromium } from "playwright";
 import { existsSync } from "fs";
-const kind$b = "collectionType";
-const collectionName$b = "wealth_companies";
-const info$b = { "singularName": "wealth-company", "pluralName": "wealth-companies", "displayName": "理财公司", "description": "银行理财公司信息管理" };
-const options$b = { "draftAndPublish": false };
-const attributes$b = { "name": { "type": "string", "required": true }, "shortName": { "type": "string" }, "companyType": { "type": "enumeration", "enum": ["bank", "bank-subsidiary", "joint-venture"], "default": "bank-subsidiary" }, "website": { "type": "string" }, "products": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-product", "mappedBy": "company" }, "status": { "type": "boolean", "default": true }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const kind$e = "collectionType";
+const collectionName$e = "wealth_companies";
+const info$e = { "singularName": "wealth-company", "pluralName": "wealth-companies", "displayName": "理财公司", "description": "银行理财公司信息管理" };
+const options$e = { "draftAndPublish": false };
+const attributes$e = { "name": { "type": "string", "required": true }, "shortName": { "type": "string" }, "companyType": { "type": "enumeration", "enum": ["bank", "bank-subsidiary", "joint-venture"], "default": "bank-subsidiary" }, "website": { "type": "string" }, "products": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-product", "mappedBy": "company" }, "status": { "type": "boolean", "default": true }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
 const wealthCompany = {
+  kind: kind$e,
+  collectionName: collectionName$e,
+  info: info$e,
+  options: options$e,
+  attributes: attributes$e
+};
+const kind$d = "collectionType";
+const collectionName$d = "wealth_products";
+const info$d = { "singularName": "wealth-product", "pluralName": "wealth-products", "displayName": "理财产品", "description": "理财/基金产品信息" };
+const options$d = { "draftAndPublish": false };
+const attributes$d = { "productCode": { "type": "string", "unique": true }, "productName": { "type": "string", "required": true }, "productNameCw": { "type": "string" }, "saleCode": { "type": "string" }, "productType": { "type": "enumeration", "enum": ["bank-wealth", "stock-fund", "bond-fund", "mixed-fund", "money-fund"] }, "registerCode": { "type": "string", "unique": true, "required": true }, "riskLevel": { "type": "enumeration", "enum": ["R1", "R2", "R3", "R4", "R5"], "default": "R2" }, "termType": { "type": "enumeration", "enum": ["short", "medium", "long"] }, "issueDate": { "type": "date" }, "maturityDate": { "type": "date" }, "company": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-company", "inversedBy": "products" }, "navs": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-nav", "mappedBy": "product" }, "moneyIncomes": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-money-income", "mappedBy": "product" }, "annualSnapshots": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-annual-snapshot", "mappedBy": "product" }, "yearlyReturns": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-yearly-return", "mappedBy": "product" }, "riskMetrics": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-risk-metric", "mappedBy": "product" }, "scoreSnapshots": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-score-snapshot", "mappedBy": "product" }, "recommendWeight": { "type": "integer", "default": 0 }, "recommendTags": { "type": "json" }, "recommendEnabled": { "type": "boolean", "default": false }, "recommendReason": { "type": "text" }, "status": { "type": "boolean", "default": true }, "benchmark": { "type": "string" }, "operationMode": { "type": "enumeration", "enum": ["daily-open", "fixed-term", "closed"] }, "productStatus": { "type": "string" }, "remark": { "type": "text" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const wealthProduct = {
+  kind: kind$d,
+  collectionName: collectionName$d,
+  info: info$d,
+  options: options$d,
+  attributes: attributes$d
+};
+const kind$c = "collectionType";
+const collectionName$c = "wealth_collect_configs";
+const info$c = { "singularName": "wealth-collect-config", "pluralName": "wealth-collect-configs", "displayName": "采集配置", "description": "产品数据采集配置" };
+const options$c = { "draftAndPublish": false };
+const attributes$c = { "product": { "type": "relation", "relation": "oneToOne", "target": "plugin::zhao-wealth.wealth-product" }, "collectMethod": { "type": "enumeration", "enum": ["web-crawler", "zip-pdf", "manual", "api"], "default": "web-crawler" }, "collectUrl": { "type": "string" }, "collectRules": { "type": "json" }, "collectStatus": { "type": "enumeration", "enum": ["pending", "success", "failed"], "default": "pending" }, "lastCollectTime": { "type": "datetime" }, "failCount": { "type": "integer", "default": 0 }, "failReason": { "type": "text" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const wealthCollectConfig = {
+  kind: kind$c,
+  collectionName: collectionName$c,
+  info: info$c,
+  options: options$c,
+  attributes: attributes$c
+};
+const kind$b = "collectionType";
+const collectionName$b = "wealth_navs";
+const info$b = { "singularName": "wealth-nav", "pluralName": "wealth-navs", "displayName": "净值数据", "description": "理财/基金净值数据（不含货币基金）" };
+const options$b = { "draftAndPublish": false };
+const attributes$b = { "product": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-product", "inversedBy": "navs" }, "navDate": { "type": "date", "required": true }, "unitNav": { "type": "decimal", "precision": 10, "scale": 4 }, "accNav": { "type": "decimal", "precision": 10, "scale": 4 }, "dataSource": { "type": "enumeration", "enum": ["crawler", "manual"], "default": "crawler" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const wealthNav = {
   kind: kind$b,
   collectionName: collectionName$b,
   info: info$b,
@@ -16,11 +52,11 @@ const wealthCompany = {
   attributes: attributes$b
 };
 const kind$a = "collectionType";
-const collectionName$a = "wealth_products";
-const info$a = { "singularName": "wealth-product", "pluralName": "wealth-products", "displayName": "理财产品", "description": "理财/基金产品信息" };
+const collectionName$a = "wealth_money_incomes";
+const info$a = { "singularName": "wealth-money-income", "pluralName": "wealth-money-incomes", "displayName": "货币基金收益", "description": "货币基金万份收益数据" };
 const options$a = { "draftAndPublish": false };
-const attributes$a = { "productCode": { "type": "string", "unique": true }, "productName": { "type": "string", "required": true }, "productNameCw": { "type": "string" }, "saleCode": { "type": "string" }, "productType": { "type": "enumeration", "enum": ["bank-wealth", "stock-fund", "bond-fund", "mixed-fund", "money-fund"] }, "registerCode": { "type": "string", "unique": true, "required": true }, "riskLevel": { "type": "enumeration", "enum": ["R1", "R2", "R3", "R4", "R5"], "default": "R2" }, "termType": { "type": "enumeration", "enum": ["short", "medium", "long"] }, "issueDate": { "type": "date" }, "maturityDate": { "type": "date" }, "company": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-company", "inversedBy": "products" }, "navs": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-nav", "mappedBy": "product" }, "moneyIncomes": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-money-income", "mappedBy": "product" }, "annualSnapshots": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-annual-snapshot", "mappedBy": "product" }, "yearlyReturns": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-yearly-return", "mappedBy": "product" }, "riskMetrics": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-risk-metric", "mappedBy": "product" }, "recommendWeight": { "type": "integer", "default": 0 }, "recommendTags": { "type": "json" }, "recommendEnabled": { "type": "boolean", "default": false }, "recommendReason": { "type": "text" }, "status": { "type": "boolean", "default": true }, "benchmark": { "type": "string" }, "operationMode": { "type": "enumeration", "enum": ["daily-open", "fixed-term", "closed"] }, "productStatus": { "type": "string" }, "remark": { "type": "text" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
-const wealthProduct = {
+const attributes$a = { "product": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-product", "inversedBy": "moneyIncomes" }, "incomeDate": { "type": "date", "required": true }, "tenThousandIncome": { "type": "decimal", "precision": 10, "scale": 6 }, "sevenDayAnnual": { "type": "decimal", "precision": 10, "scale": 4 }, "dataSource": { "type": "enumeration", "enum": ["crawler", "manual"], "default": "crawler" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const wealthMoneyIncome = {
   kind: kind$a,
   collectionName: collectionName$a,
   info: info$a,
@@ -28,11 +64,11 @@ const wealthProduct = {
   attributes: attributes$a
 };
 const kind$9 = "collectionType";
-const collectionName$9 = "wealth_collect_configs";
-const info$9 = { "singularName": "wealth-collect-config", "pluralName": "wealth-collect-configs", "displayName": "采集配置", "description": "产品数据采集配置" };
+const collectionName$9 = "wealth_annual_snapshots";
+const info$9 = { "singularName": "wealth-annual-snapshot", "pluralName": "wealth-annual-snapshots", "displayName": "年化快照", "description": "各周期年化收益快照" };
 const options$9 = { "draftAndPublish": false };
-const attributes$9 = { "product": { "type": "relation", "relation": "oneToOne", "target": "plugin::zhao-wealth.wealth-product" }, "collectMethod": { "type": "enumeration", "enum": ["web-crawler", "zip-pdf", "manual", "api"], "default": "web-crawler" }, "collectUrl": { "type": "string" }, "collectRules": { "type": "json" }, "collectStatus": { "type": "enumeration", "enum": ["pending", "success", "failed"], "default": "pending" }, "lastCollectTime": { "type": "datetime" }, "failCount": { "type": "integer", "default": 0 }, "failReason": { "type": "text" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
-const wealthCollectConfig = {
+const attributes$9 = { "product": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-product", "inversedBy": "annualSnapshots" }, "snapshotDate": { "type": "date", "required": true }, "annual1d": { "type": "decimal", "precision": 10, "scale": 6 }, "annual3d": { "type": "decimal", "precision": 10, "scale": 6 }, "annual7d": { "type": "decimal", "precision": 10, "scale": 6 }, "annual2w": { "type": "decimal", "precision": 10, "scale": 6 }, "annual1m": { "type": "decimal", "precision": 10, "scale": 6 }, "annual3m": { "type": "decimal", "precision": 10, "scale": 6 }, "annual6m": { "type": "decimal", "precision": 10, "scale": 6 }, "annual1y": { "type": "decimal", "precision": 10, "scale": 6 }, "isEstimate": { "type": "boolean", "default": false }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const wealthAnnualSnapshot = {
   kind: kind$9,
   collectionName: collectionName$9,
   info: info$9,
@@ -40,11 +76,11 @@ const wealthCollectConfig = {
   attributes: attributes$9
 };
 const kind$8 = "collectionType";
-const collectionName$8 = "wealth_navs";
-const info$8 = { "singularName": "wealth-nav", "pluralName": "wealth-navs", "displayName": "净值数据", "description": "理财/基金净值数据（不含货币基金）" };
+const collectionName$8 = "wealth_yearly_returns";
+const info$8 = { "singularName": "wealth-yearly-return", "pluralName": "wealth-yearly-returns", "displayName": "年度收益", "description": "历年年度收益统计" };
 const options$8 = { "draftAndPublish": false };
-const attributes$8 = { "product": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-product", "inversedBy": "navs" }, "navDate": { "type": "date", "required": true }, "unitNav": { "type": "decimal", "precision": 10, "scale": 4 }, "accNav": { "type": "decimal", "precision": 10, "scale": 4 }, "dataSource": { "type": "enumeration", "enum": ["crawler", "manual"], "default": "crawler" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
-const wealthNav = {
+const attributes$8 = { "product": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-product", "inversedBy": "yearlyReturns" }, "year": { "type": "integer", "required": true }, "annualReturn": { "type": "decimal", "precision": 10, "scale": 6 }, "baseDays": { "type": "integer" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const wealthYearlyReturn = {
   kind: kind$8,
   collectionName: collectionName$8,
   info: info$8,
@@ -52,11 +88,11 @@ const wealthNav = {
   attributes: attributes$8
 };
 const kind$7 = "collectionType";
-const collectionName$7 = "wealth_money_incomes";
-const info$7 = { "singularName": "wealth-money-income", "pluralName": "wealth-money-incomes", "displayName": "货币基金收益", "description": "货币基金万份收益数据" };
+const collectionName$7 = "wealth_customer_products";
+const info$7 = { "singularName": "wealth-customer-product", "pluralName": "wealth-customer-products", "displayName": "客户自选产品", "description": "客户关注的产品列表" };
 const options$7 = { "draftAndPublish": false };
-const attributes$7 = { "product": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-product", "inversedBy": "moneyIncomes" }, "incomeDate": { "type": "date", "required": true }, "tenThousandIncome": { "type": "decimal", "precision": 10, "scale": 6 }, "sevenDayAnnual": { "type": "decimal", "precision": 10, "scale": 4 }, "dataSource": { "type": "enumeration", "enum": ["crawler", "manual"], "default": "crawler" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
-const wealthMoneyIncome = {
+const attributes$7 = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user" }, "product": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-product" }, "channel": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-channel.channel" }, "followTime": { "type": "datetime" }, "sortOrder": { "type": "integer", "default": 0 }, "remark": { "type": "string" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const wealthCustomerProduct = {
   kind: kind$7,
   collectionName: collectionName$7,
   info: info$7,
@@ -64,11 +100,11 @@ const wealthMoneyIncome = {
   attributes: attributes$7
 };
 const kind$6 = "collectionType";
-const collectionName$6 = "wealth_annual_snapshots";
-const info$6 = { "singularName": "wealth-annual-snapshot", "pluralName": "wealth-annual-snapshots", "displayName": "年化快照", "description": "各周期年化收益快照" };
+const collectionName$6 = "wealth_recommend_configs";
+const info$6 = { "singularName": "wealth-recommend-config", "pluralName": "wealth-recommend-configs", "displayName": "推荐配置", "description": "手动推荐产品配置" };
 const options$6 = { "draftAndPublish": false };
-const attributes$6 = { "product": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-product", "inversedBy": "annualSnapshots" }, "snapshotDate": { "type": "date", "required": true }, "annual1d": { "type": "decimal", "precision": 10, "scale": 6 }, "annual3d": { "type": "decimal", "precision": 10, "scale": 6 }, "annual7d": { "type": "decimal", "precision": 10, "scale": 6 }, "annual2w": { "type": "decimal", "precision": 10, "scale": 6 }, "annual1m": { "type": "decimal", "precision": 10, "scale": 6 }, "annual3m": { "type": "decimal", "precision": 10, "scale": 6 }, "annual6m": { "type": "decimal", "precision": 10, "scale": 6 }, "annual1y": { "type": "decimal", "precision": 10, "scale": 6 }, "isEstimate": { "type": "boolean", "default": false }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
-const wealthAnnualSnapshot = {
+const attributes$6 = { "product": { "type": "relation", "relation": "oneToOne", "target": "plugin::zhao-wealth.wealth-product" }, "channel": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-channel.channel" }, "recommendOrder": { "type": "integer", "default": 0 }, "recommendReason": { "type": "text" }, "status": { "type": "boolean", "default": true }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const wealthRecommendConfig = {
   kind: kind$6,
   collectionName: collectionName$6,
   info: info$6,
@@ -76,11 +112,11 @@ const wealthAnnualSnapshot = {
   attributes: attributes$6
 };
 const kind$5 = "collectionType";
-const collectionName$5 = "wealth_yearly_returns";
-const info$5 = { "singularName": "wealth-yearly-return", "pluralName": "wealth-yearly-returns", "displayName": "年度收益", "description": "历年年度收益统计" };
+const collectionName$5 = "wealth_risk_metrics";
+const info$5 = { "singularName": "wealth-risk-metric", "pluralName": "wealth-risk-metrics", "displayName": "风险指标", "description": "业绩归因指标（波动率/最大回撤/夏普/同类排名）" };
 const options$5 = { "draftAndPublish": false };
-const attributes$5 = { "product": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-product", "inversedBy": "yearlyReturns" }, "year": { "type": "integer", "required": true }, "annualReturn": { "type": "decimal", "precision": 10, "scale": 6 }, "baseDays": { "type": "integer" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
-const wealthYearlyReturn = {
+const attributes$5 = { "product": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-product", "inversedBy": "riskMetrics" }, "snapshotDate": { "type": "date", "required": true }, "period": { "type": "enumeration", "enum": ["m1", "m3", "m6", "y1"], "required": true }, "metricName": { "type": "enumeration", "enum": ["volatility", "maxDrawdown", "sharpe", "rankPercentile"], "required": true }, "metricValue": { "type": "decimal", "precision": 12, "scale": 6 }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const wealthRiskMetric = {
   kind: kind$5,
   collectionName: collectionName$5,
   info: info$5,
@@ -88,11 +124,11 @@ const wealthYearlyReturn = {
   attributes: attributes$5
 };
 const kind$4 = "collectionType";
-const collectionName$4 = "wealth_customer_products";
-const info$4 = { "singularName": "wealth-customer-product", "pluralName": "wealth-customer-products", "displayName": "客户自选产品", "description": "客户关注的产品列表" };
+const collectionName$4 = "wealth_disclosures";
+const info$4 = { "singularName": "wealth-disclosure", "pluralName": "wealth-disclosures", "displayName": "合规披露", "description": "按产品类型的合规披露文案" };
 const options$4 = { "draftAndPublish": false };
-const attributes$4 = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user" }, "product": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-product" }, "channel": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-channel.channel" }, "followTime": { "type": "datetime" }, "sortOrder": { "type": "integer", "default": 0 }, "remark": { "type": "string" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
-const wealthCustomerProduct = {
+const attributes$4 = { "productType": { "type": "enumeration", "enum": ["bank-wealth", "stock-fund", "bond-fund", "mixed-fund", "money-fund", "all"], "required": true }, "title": { "type": "string", "required": true }, "content": { "type": "text", "required": true }, "effectiveDate": { "type": "date", "required": true }, "status": { "type": "boolean", "default": true }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const wealthDisclosure = {
   kind: kind$4,
   collectionName: collectionName$4,
   info: info$4,
@@ -100,11 +136,11 @@ const wealthCustomerProduct = {
   attributes: attributes$4
 };
 const kind$3 = "collectionType";
-const collectionName$3 = "wealth_recommend_configs";
-const info$3 = { "singularName": "wealth-recommend-config", "pluralName": "wealth-recommend-configs", "displayName": "推荐配置", "description": "手动推荐产品配置" };
+const collectionName$3 = "wealth_customer_holdings";
+const info$3 = { "singularName": "wealth-customer-holding", "pluralName": "wealth-customer-holdings", "displayName": "客户持仓", "description": "客户实际持仓记录" };
 const options$3 = { "draftAndPublish": false };
-const attributes$3 = { "product": { "type": "relation", "relation": "oneToOne", "target": "plugin::zhao-wealth.wealth-product" }, "channel": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-channel.channel" }, "recommendOrder": { "type": "integer", "default": 0 }, "recommendReason": { "type": "text" }, "status": { "type": "boolean", "default": true }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
-const wealthRecommendConfig = {
+const attributes$3 = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user" }, "product": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-product" }, "channel": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-channel.channel" }, "buyDate": { "type": "date", "required": true }, "buyAmount": { "type": "decimal", "precision": 14, "scale": 2, "required": true }, "buyNav": { "type": "decimal", "precision": 10, "scale": 4 }, "remark": { "type": "string" }, "status": { "type": "enumeration", "enum": ["holding", "redeemed"], "default": "holding" }, "redeemDate": { "type": "date" }, "createdByManager": { "type": "relation", "relation": "manyToOne", "target": "admin::user" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const wealthCustomerHolding = {
   kind: kind$3,
   collectionName: collectionName$3,
   info: info$3,
@@ -112,11 +148,11 @@ const wealthRecommendConfig = {
   attributes: attributes$3
 };
 const kind$2 = "collectionType";
-const collectionName$2 = "wealth_risk_metrics";
-const info$2 = { "singularName": "wealth-risk-metric", "pluralName": "wealth-risk-metrics", "displayName": "风险指标", "description": "业绩归因指标（波动率/最大回撤/夏普/同类排名）" };
+const collectionName$2 = "wealth_score_snapshots";
+const info$2 = { "singularName": "wealth-score-snapshot", "pluralName": "wealth-score-snapshots", "displayName": "评分快照", "description": "产品综合评分快照（收益/波动/回撤/同类排名加权）" };
 const options$2 = { "draftAndPublish": false };
-const attributes$2 = { "product": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-product", "inversedBy": "riskMetrics" }, "snapshotDate": { "type": "date", "required": true }, "period": { "type": "enumeration", "enum": ["m1", "m3", "m6", "y1"], "required": true }, "metricName": { "type": "enumeration", "enum": ["volatility", "maxDrawdown", "sharpe", "rankPercentile"], "required": true }, "metricValue": { "type": "decimal", "precision": 12, "scale": 6 }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
-const wealthRiskMetric = {
+const attributes$2 = { "product": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-product", "inversedBy": "scoreSnapshots" }, "snapshotDate": { "type": "date", "required": true }, "period": { "type": "enumeration", "enum": ["m1", "m3", "m6", "y1"], "required": true }, "compositeScore": { "type": "decimal", "precision": 5, "scale": 2, "required": true }, "starRating": { "type": "integer", "default": 1 }, "returnScore": { "type": "decimal", "precision": 5, "scale": 2 }, "volatilityScore": { "type": "decimal", "precision": 5, "scale": 2 }, "drawdownScore": { "type": "decimal", "precision": 5, "scale": 2 }, "peerRankScore": { "type": "decimal", "precision": 5, "scale": 2 }, "weightProfile": { "type": "string" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const wealthScoreSnapshot = {
   kind: kind$2,
   collectionName: collectionName$2,
   info: info$2,
@@ -124,11 +160,11 @@ const wealthRiskMetric = {
   attributes: attributes$2
 };
 const kind$1 = "collectionType";
-const collectionName$1 = "wealth_disclosures";
-const info$1 = { "singularName": "wealth-disclosure", "pluralName": "wealth-disclosures", "displayName": "合规披露", "description": "按产品类型的合规披露文案" };
+const collectionName$1 = "wealth_portfolio_plans";
+const info$1 = { "singularName": "wealth-portfolio-plan", "pluralName": "wealth-portfolio-plans", "displayName": "组合方案", "description": "用户创建的产品组合方案（关注产品+配比+假设金额）" };
 const options$1 = { "draftAndPublish": false };
-const attributes$1 = { "productType": { "type": "enumeration", "enum": ["bank-wealth", "stock-fund", "bond-fund", "mixed-fund", "money-fund", "all"], "required": true }, "title": { "type": "string", "required": true }, "content": { "type": "text", "required": true }, "effectiveDate": { "type": "date", "required": true }, "status": { "type": "boolean", "default": true }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
-const wealthDisclosure = {
+const attributes$1 = { "userId": { "type": "string", "required": true }, "planName": { "type": "string", "required": true }, "planType": { "type": "enumeration", "enum": ["conservative", "balanced", "aggressive", "custom"], "default": "custom" }, "products": { "type": "json", "required": true }, "totalAmount": { "type": "decimal", "precision": 14, "scale": 2 }, "status": { "type": "enumeration", "enum": ["active", "archived"], "default": "active" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const wealthPortfolioPlan = {
   kind: kind$1,
   collectionName: collectionName$1,
   info: info$1,
@@ -136,11 +172,11 @@ const wealthDisclosure = {
   attributes: attributes$1
 };
 const kind = "collectionType";
-const collectionName = "wealth_customer_holdings";
-const info = { "singularName": "wealth-customer-holding", "pluralName": "wealth-customer-holdings", "displayName": "客户持仓", "description": "客户实际持仓记录" };
+const collectionName = "wealth_consultations";
+const info = { "singularName": "wealth-consultation", "pluralName": "wealth-consultations", "displayName": "预约咨询", "description": "客户预约理财咨询服务记录" };
 const options = { "draftAndPublish": false };
-const attributes = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user" }, "product": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-product" }, "channel": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-channel.channel" }, "buyDate": { "type": "date", "required": true }, "buyAmount": { "type": "decimal", "precision": 14, "scale": 2, "required": true }, "buyNav": { "type": "decimal", "precision": 10, "scale": 4 }, "remark": { "type": "string" }, "status": { "type": "enumeration", "enum": ["holding", "redeemed"], "default": "holding" }, "redeemDate": { "type": "date" }, "createdByManager": { "type": "relation", "relation": "manyToOne", "target": "admin::user" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
-const wealthCustomerHolding = {
+const attributes = { "userId": { "type": "string", "required": true }, "name": { "type": "string", "required": true }, "phone": { "type": "string", "required": true }, "productId": { "type": "integer" }, "portfolioPlanId": { "type": "integer" }, "preferredTime": { "type": "datetime" }, "preferredChannel": { "type": "enumeration", "enum": ["online", "branch", "phone"], "default": "branch" }, "message": { "type": "text" }, "status": { "type": "enumeration", "enum": ["pending", "confirmed", "completed", "cancelled"], "default": "pending" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const wealthConsultation = {
   kind,
   collectionName,
   info,
@@ -159,7 +195,10 @@ const contentTypes = {
   "wealth-recommend-config": { schema: wealthRecommendConfig },
   "wealth-risk-metric": { schema: wealthRiskMetric },
   "wealth-disclosure": { schema: wealthDisclosure },
-  "wealth-customer-holding": { schema: wealthCustomerHolding }
+  "wealth-customer-holding": { schema: wealthCustomerHolding },
+  "wealth-score-snapshot": { schema: wealthScoreSnapshot },
+  "wealth-portfolio-plan": { schema: wealthPortfolioPlan },
+  "wealth-consultation": { schema: wealthConsultation }
 };
 class LuxonError extends Error {
 }

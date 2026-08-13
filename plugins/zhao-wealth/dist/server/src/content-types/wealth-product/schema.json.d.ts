@@ -27,6 +27,7 @@ declare const _default: {
     "annualSnapshots": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-annual-snapshot", "mappedBy": "product" },
     "yearlyReturns": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-yearly-return", "mappedBy": "product" },
     "riskMetrics": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-risk-metric", "mappedBy": "product" },
+    "scoreSnapshots": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-score-snapshot", "mappedBy": "product" },
     "recommendWeight": { "type": "integer", "default": 0 },
     "recommendTags": { "type": "json" },
     "recommendEnabled": { "type": "boolean", "default": false },

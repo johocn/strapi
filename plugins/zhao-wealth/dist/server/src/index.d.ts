@@ -136,6 +136,12 @@ declare const _default: {
                         target: string;
                         mappedBy: string;
                     };
+                    scoreSnapshots: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
                     recommendWeight: {
                         type: string;
                         default: number;
@@ -687,6 +693,184 @@ declare const _default: {
                         type: string;
                         relation: string;
                         target: string;
+                    };
+                    createdAt: {
+                        type: string;
+                    };
+                    updatedAt: {
+                        type: string;
+                    };
+                };
+            };
+        };
+        'wealth-score-snapshot': {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                    description: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                attributes: {
+                    product: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        inversedBy: string;
+                    };
+                    snapshotDate: {
+                        type: string;
+                        required: boolean;
+                    };
+                    period: {
+                        type: string;
+                        enum: string[];
+                        required: boolean;
+                    };
+                    compositeScore: {
+                        type: string;
+                        precision: number;
+                        scale: number;
+                        required: boolean;
+                    };
+                    starRating: {
+                        type: string;
+                        default: number;
+                    };
+                    returnScore: {
+                        type: string;
+                        precision: number;
+                        scale: number;
+                    };
+                    volatilityScore: {
+                        type: string;
+                        precision: number;
+                        scale: number;
+                    };
+                    drawdownScore: {
+                        type: string;
+                        precision: number;
+                        scale: number;
+                    };
+                    peerRankScore: {
+                        type: string;
+                        precision: number;
+                        scale: number;
+                    };
+                    weightProfile: {
+                        type: string;
+                    };
+                    createdAt: {
+                        type: string;
+                    };
+                    updatedAt: {
+                        type: string;
+                    };
+                };
+            };
+        };
+        'wealth-portfolio-plan': {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                    description: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                attributes: {
+                    userId: {
+                        type: string;
+                        required: boolean;
+                    };
+                    planName: {
+                        type: string;
+                        required: boolean;
+                    };
+                    planType: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    products: {
+                        type: string;
+                        required: boolean;
+                    };
+                    totalAmount: {
+                        type: string;
+                        precision: number;
+                        scale: number;
+                    };
+                    status: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    createdAt: {
+                        type: string;
+                    };
+                    updatedAt: {
+                        type: string;
+                    };
+                };
+            };
+        };
+        'wealth-consultation': {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                    description: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                attributes: {
+                    userId: {
+                        type: string;
+                        required: boolean;
+                    };
+                    name: {
+                        type: string;
+                        required: boolean;
+                    };
+                    phone: {
+                        type: string;
+                        required: boolean;
+                    };
+                    productId: {
+                        type: string;
+                    };
+                    portfolioPlanId: {
+                        type: string;
+                    };
+                    preferredTime: {
+                        type: string;
+                    };
+                    preferredChannel: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    message: {
+                        type: string;
+                    };
+                    status: {
+                        type: string;
+                        enum: string[];
+                        default: string;
                     };
                     createdAt: {
                         type: string;

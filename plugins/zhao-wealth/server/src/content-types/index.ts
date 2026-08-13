@@ -12,6 +12,9 @@ import wealthRecommendConfig from './wealth-recommend-config/schema.json';
 import wealthRiskMetric from './wealth-risk-metric/schema.json';
 import wealthDisclosure from './wealth-disclosure/schema.json';
 import wealthCustomerHolding from './wealth-customer-holding/schema.json';
+import wealthScoreSnapshot from './wealth-score-snapshot/schema.json';
+import wealthPortfolioPlan from './wealth-portfolio-plan/schema.json';
+import wealthConsultation from './wealth-consultation/schema.json';
 
 export default {
   'wealth-company': { schema: wealthCompany },
@@ -26,4 +29,7 @@ export default {
   'wealth-risk-metric': { schema: wealthRiskMetric },
   'wealth-disclosure': { schema: wealthDisclosure },
   'wealth-customer-holding': { schema: wealthCustomerHolding },
+  'wealth-score-snapshot': { schema: wealthScoreSnapshot },
+  'wealth-portfolio-plan': { schema: wealthPortfolioPlan },
+  'wealth-consultation': { schema: wealthConsultation },
 };
