@@ -83,21 +83,31 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       ? JSON.parse(plan.products)
       : plan.products || [];
 
-    // 查询每个产品的最新信息
-    const productDetails = [];
-    for (const item of products) {
-      const product = await strapi.db.query('plugin::zhao-wealth.wealth-product').findOne({
-        where: { id: item.productId },
-        populate: ['company'],
-      });
-      if (product) {
-        productDetails.push({
-          ...product,
-          allocationRatio: item.allocationRatio,
-          addedDate: item.addedDate,
-        });
-      }
+    // 批量查询产品
+    const productIds = products.map(p => p.productId);
+    const productQuery = strapi.db.query('plugin::zhao-wealth.wealth-product');
+    const productRecords = await productQuery.findMany({
+      where: { id: { $in: productIds } },
+      populate: ['company'],
+      limit: productIds.length,
+    });
+
+    // 构建 id -> product 的映射
+    const productMap: Record<number, any> = {};
+    for (const p of productRecords) {
+      productMap[p.id] = p;
     }
+
+    // 组装结果
+    const productDetails = products.map(item => {
+      const product = productMap[item.productId];
+      if (!product) return null;
+      return {
+        ...product,
+        allocationRatio: item.allocationRatio,
+        addedDate: item.addedDate,
+      };
+    }).filter(Boolean);
 
     return {
       ...plan,
@@ -147,6 +157,37 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     const annualField = PERIOD_TO_ANNUAL_FIELD[period] || 'annual1m';
     const metricPeriod = period;
 
+    // 批量查询年化快照
+    const productIds = plan.productDetails.map((p: any) => p.id);
+    const snapshotQuery = strapi.db.query('plugin::zhao-wealth.wealth-annual-snapshot');
+    const allSnapshots = await snapshotQuery.findMany({
+      where: { product: { id: { $in: productIds } } },
+      orderBy: { snapshotDate: 'desc' },
+      limit: productIds.length * 2,
+    });
+    const snapshotMap: Record<number, any> = {};
+    for (const s of allSnapshots) {
+      const pid = s.product?.id || s.product;
+      if (!snapshotMap[pid]) snapshotMap[pid] = s;
+    }
+
+    // 批量查询风险指标
+    const metricQuery = strapi.db.query('plugin::zhao-wealth.wealth-risk-metric');
+    const allMetrics = await metricQuery.findMany({
+      where: { product: { id: { $in: productIds } }, period: metricPeriod },
+      orderBy: { snapshotDate: 'desc' },
+      limit: productIds.length * 4,
+    });
+    const metricMap: Record<number, Record<string, number | null>> = {};
+    for (const m of allMetrics) {
+      const pid = m.product?.id || m.product;
+      if (!metricMap[pid]) metricMap[pid] = {};
+      if (!metricMap[pid][m.metricName]) {
+        const numValue = m.metricValue !== null ? Number(m.metricValue) : null;
+        metricMap[pid][m.metricName] = (numValue !== null && !isNaN(numValue)) ? numValue : null;
+      }
+    }
+
     let totalWeight = 0;
     let weightedReturn = 0;
     let weightedVolatility = 0;
@@ -160,11 +201,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       if (ratio <= 0) continue;
       totalWeight += ratio;
 
-      // 查询年化收益
-      const snapshot = await strapi.db.query('plugin::zhao-wealth.wealth-annual-snapshot').findOne({
-        where: { product: product.id },
-        orderBy: { snapshotDate: 'desc' },
-      });
+      // 从内存中获取年化收益
+      const snapshot = snapshotMap[product.id];
       if (snapshot && snapshot[annualField] !== null) {
         const annualReturn = Number(snapshot[annualField]);
         if (!isNaN(annualReturn)) {
@@ -173,25 +211,18 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         }
       }
 
-      // 查询风险指标
-      const metrics = await strapi.db.query('plugin::zhao-wealth.wealth-risk-metric').findMany({
-        where: { product: product.id, period: metricPeriod },
-        orderBy: { snapshotDate: 'desc' },
-        limit: 4,
-      });
+      // 从内存中获取风险指标
+      const productMetrics = metricMap[product.id] || {};
+      const volatility = productMetrics['volatility'];
+      if (volatility !== null && volatility !== undefined) {
+        weightedVolatility += volatility * ratio;
+        hasVolatility = true;
+      }
 
-      for (const m of metrics) {
-        if (m.metricValue === null) continue;
-        const value = Number(m.metricValue);
-        if (isNaN(value)) continue;
-
-        if (m.metricName === 'volatility') {
-          weightedVolatility += value * ratio;
-          hasVolatility = true;
-        } else if (m.metricName === 'maxDrawdown') {
-          weightedDrawdown += value * ratio;
-          hasDrawdown = true;
-        }
+      const maxDrawdown = productMetrics['maxDrawdown'];
+      if (maxDrawdown !== null && maxDrawdown !== undefined) {
+        weightedDrawdown += maxDrawdown * ratio;
+        hasDrawdown = true;
       }
     }
 

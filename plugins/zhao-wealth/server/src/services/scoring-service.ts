@@ -119,53 +119,58 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
 
     const productIds = products.map((p: any) => p.id);
 
-    // 查询最新年化快照
+    // 批量查询所有产品的年化快照（按 product id IN [...] 查询）
     const snapshotQuery = strapi.db.query('plugin::zhao-wealth.wealth-annual-snapshot');
-    const snapshotWhere: any = { product: { id: { $in: productIds } } };
+    const allSnapshots = await snapshotQuery.findMany({
+      where: { product: { id: { $in: productIds } } },
+      orderBy: { snapshotDate: 'desc' },
+      limit: productIds.length * 4, // 每个产品最多4条记录
+    });
 
-    // 获取每个产品最新的年化快照
+    // 内存中取每个产品最新的
     const latestSnapshots: Record<number, any> = {};
-    for (const pid of productIds) {
-      const snapshot = await snapshotQuery.findOne({
-        where: { product: pid },
-        orderBy: { snapshotDate: 'desc' },
-      });
-      if (snapshot) {
-        latestSnapshots[pid] = snapshot;
+    for (const s of allSnapshots) {
+      const pid = s.product?.id || s.product;
+      if (!latestSnapshots[pid]) {
+        latestSnapshots[pid] = s;
       }
     }
 
-    // 查询风险指标
+    // 批量查询所有产品的风险指标
     const metricQuery = strapi.db.query('plugin::zhao-wealth.wealth-risk-metric');
-    const result: ProductWithMetrics[] = [];
+    const allMetrics = await metricQuery.findMany({
+      where: {
+        product: { id: { $in: productIds } },
+        period: metricPeriod,
+      },
+      orderBy: { snapshotDate: 'desc' },
+      limit: productIds.length * 4,
+    });
 
-    for (const pid of productIds) {
+    // 内存中按产品分组取最新
+    const metricMap: Record<number, Record<string, number | null>> = {};
+    for (const m of allMetrics) {
+      const pid = m.product?.id || m.product;
+      if (!metricMap[pid]) metricMap[pid] = {};
+      if (!metricMap[pid][m.metricName]) {
+        metricMap[pid][m.metricName] = m.metricValue !== null ? Number(m.metricValue) : null;
+      }
+    }
+
+    // 组装结果
+    const result: ProductWithMetrics[] = productIds.map((pid: number) => {
       const snapshot = latestSnapshots[pid];
       const annualReturn = snapshot ? Number(snapshot[annualField]) : null;
+      const productMetrics = metricMap[pid] || {};
 
-      // 查询4个指标
-      const metrics = await metricQuery.findMany({
-        where: {
-          product: pid,
-          period: metricPeriod,
-        },
-        orderBy: { snapshotDate: 'desc' },
-        limit: 4,
-      });
-
-      const metricMap: Record<string, number | null> = {};
-      for (const m of metrics) {
-        metricMap[m.metricName] = m.metricValue !== null ? Number(m.metricValue) : null;
-      }
-
-      result.push({
+      return {
         productId: pid,
         annualReturn: annualReturn !== null && !isNaN(annualReturn) ? annualReturn : null,
-        volatility: metricMap['volatility'] ?? null,
-        maxDrawdown: metricMap['maxDrawdown'] ?? null,
-        rankPercentile: metricMap['rankPercentile'] ?? null,
-      });
-    }
+        volatility: productMetrics['volatility'] ?? null,
+        maxDrawdown: productMetrics['maxDrawdown'] ?? null,
+        rankPercentile: productMetrics['rankPercentile'] ?? null,
+      };
+    });
 
     return result;
   }
@@ -293,20 +298,32 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
 
     const total = await productQuery.count({ where });
 
-    // 获取每个产品的最新评分
+    // 批量查询所有产品的评分
+    const productIds = products.map((p: any) => p.id);
     const scoreQuery = strapi.db.query('plugin::zhao-wealth.wealth-score-snapshot');
-    const records = [];
-    for (const product of products) {
-      const score = await scoreQuery.findOne({
-        where: { product: product.id, period },
-        orderBy: { snapshotDate: 'desc' },
-      });
+    const allScores = await scoreQuery.findMany({
+      where: {
+        product: { id: { $in: productIds } },
+        period,
+      },
+      orderBy: { snapshotDate: 'desc' },
+      limit: productIds.length * 2,
+    });
 
-      records.push({
-        ...product,
-        score: score || null,
-      });
+    // 内存中取每个产品最新的
+    const scoreMap: Record<number, any> = {};
+    for (const s of allScores) {
+      const pid = s.product?.id || s.product;
+      if (!scoreMap[pid]) {
+        scoreMap[pid] = s;
+      }
     }
+
+    // 组装结果
+    const records = products.map((product: any) => ({
+      ...product,
+      score: scoreMap[product.id] || null,
+    }));
 
     // 按评分降序排序
     records.sort((a, b) => {

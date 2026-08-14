@@ -6974,14 +6974,35 @@ const httpClient = {
 const product$1 = ({ strapi }) => ({
   /**
    * 获取产品列表（C端）
+   * 支持参数：
+   *   - page / pageSize 分页
+   *   - productType 产品类型
+   *   - riskLevel 风险等级
+   *   - operationMode 运作模式（daily-open/fixed-term/closed）
+   *   - productName 产品名称模糊搜索
+   *   - sortBy 排序（score/annual1m/volatility）
    */
   async list(ctx) {
     try {
-      const { page = 1, pageSize = 100, productType, riskLevel } = ctx.query;
+      const {
+        page = 1,
+        pageSize = 100,
+        productType,
+        riskLevel,
+        operationMode,
+        productName,
+        sortBy
+      } = ctx.query;
       const filters = { status: true };
       if (productType) filters.productType = productType;
       if (riskLevel) filters.riskLevel = riskLevel;
-      const result = await strapi.service("plugin::zhao-wealth.product").findList(filters, page, pageSize);
+      if (operationMode) filters.operationMode = operationMode;
+      if (productName) {
+        filters.productName = { $containsi: productName };
+      }
+      const options2 = {};
+      if (sortBy) options2.sortBy = sortBy;
+      const result = await strapi.service("plugin::zhao-wealth.product").findList(filters, Number(page), Number(pageSize), options2);
       ctx.body = paginatedResponse(result.list, result.page, result.pageSize, result.total);
     } catch (error) {
       strapi.log.error(`[zhao-wealth] 产品列表查询失败: ${error.message}`);
@@ -9561,11 +9582,16 @@ const routes = {
 };
 const product = ({ strapi }) => ({
   /**
-   * 获取产品列表
+   * 获取产品列表（含聚合数据）
+   * @param filters 查询条件
+   * @param page 页码
+   * @param pageSize 每页数量
+   * @param options 额外参数：sortBy、period、productName 模糊搜索
    */
-  async findList(filters, page = 1, pageSize = 100) {
+  async findList(filters, page = 1, pageSize = 100, options2 = {}) {
     const limit = Math.min(pageSize, 500);
     const offset2 = (page - 1) * limit;
+    const { sortBy, period = "m1" } = options2;
     const products = await strapi.db.query("plugin::zhao-wealth.wealth-product").findMany({
       where: filters,
       limit,
@@ -9575,16 +9601,32 @@ const product = ({ strapi }) => ({
     const total = await strapi.db.query("plugin::zhao-wealth.wealth-product").count({
       where: filters
     });
-    return { list: products, page, pageSize: limit, total };
+    if (products.length === 0) {
+      return { list: [], page, pageSize: limit, total };
+    }
+    const productIds = products.map((p) => p.id);
+    const enrichedMap = await this.enrichProducts(productIds, period);
+    let list = products.map((product2) => ({
+      ...product2,
+      latestNav: enrichedMap[product2.id]?.latestNav || null,
+      latestAnnual1m: enrichedMap[product2.id]?.latestAnnual1m ?? null,
+      score: enrichedMap[product2.id]?.score || null,
+      peerRankPercentile: enrichedMap[product2.id]?.peerRankPercentile ?? null
+    }));
+    if (sortBy) {
+      list = sortProducts(list, sortBy);
+    }
+    return { list, page, pageSize: limit, total };
   },
   /**
-   * 获取产品详情
+   * 获取产品详情（含最新净值）
    */
   async findOne(id) {
     const product2 = await strapi.db.query("plugin::zhao-wealth.wealth-product").findOne({
       where: { id },
       populate: ["company"]
     });
+    if (!product2) return null;
     const latestNav = await strapi.db.query("plugin::zhao-wealth.wealth-nav").findOne({
       where: { product: id },
       orderBy: { navDate: "desc" }
@@ -9593,6 +9635,40 @@ const product = ({ strapi }) => ({
       ...product2,
       latestNav
     };
+  },
+  /**
+   * 批量查询产品的聚合数据（latestNav / latestAnnual1m / score / peerRankPercentile）
+   * Strapi db.query 默认不返回关联外键，故按产品逐个查询最新一条
+   * 产品列表分页通常 ≤100 条，逐条查询可接受
+   */
+  async enrichProducts(productIds, period = "m1") {
+    const result = {};
+    if (!productIds.length) return result;
+    for (const pid of productIds) {
+      const latestNav = await strapi.db.query("plugin::zhao-wealth.wealth-nav").findOne({
+        where: { product: pid },
+        orderBy: { navDate: "desc" }
+      });
+      const snapshot = await strapi.db.query("plugin::zhao-wealth.wealth-annual-snapshot").findOne({
+        where: { product: pid },
+        orderBy: { snapshotDate: "desc" }
+      });
+      const score = await strapi.db.query("plugin::zhao-wealth.wealth-score-snapshot").findOne({
+        where: { product: pid, period },
+        orderBy: { snapshotDate: "desc" }
+      });
+      const rankMetric = await strapi.db.query("plugin::zhao-wealth.wealth-risk-metric").findOne({
+        where: { product: pid, period, metricName: "rankPercentile" },
+        orderBy: { snapshotDate: "desc" }
+      });
+      result[pid] = {
+        latestNav: latestNav || null,
+        latestAnnual1m: snapshot ? Number(snapshot.annual1m) : null,
+        score: score || null,
+        peerRankPercentile: rankMetric?.metricValue != null ? Number(rankMetric.metricValue) : null
+      };
+    }
+    return result;
   },
   /**
    * 创建产品
@@ -9618,6 +9694,33 @@ const product = ({ strapi }) => ({
     });
   }
 });
+function sortProducts(list, sortBy) {
+  const sorted = [...list];
+  switch (sortBy) {
+    case "score":
+      sorted.sort((a, b) => {
+        const sa = a.score?.compositeScore ?? -1;
+        const sb = b.score?.compositeScore ?? -1;
+        return sb - sa;
+      });
+      break;
+    case "annual1m":
+      sorted.sort((a, b) => {
+        const ra = a.latestAnnual1m ?? -Infinity;
+        const rb = b.latestAnnual1m ?? -Infinity;
+        return rb - ra;
+      });
+      break;
+    case "volatility":
+      sorted.sort((a, b) => {
+        const va = a.score?.volatilityScore ?? -1;
+        const vb = b.score?.volatilityScore ?? -1;
+        return vb - va;
+      });
+      break;
+  }
+  return sorted;
+}
 const navCalculator = ({ strapi }) => ({
   /**
    * 计算单个产品的年化快照
@@ -10523,41 +10626,48 @@ const scoringService = ({ strapi }) => {
     if (!products || products.length === 0) return [];
     const productIds = products.map((p) => p.id);
     const snapshotQuery = strapi.db.query("plugin::zhao-wealth.wealth-annual-snapshot");
+    const allSnapshots = await snapshotQuery.findMany({
+      where: { product: { id: { $in: productIds } } },
+      orderBy: { snapshotDate: "desc" },
+      limit: productIds.length * 4
+      // 每个产品最多4条记录
+    });
     const latestSnapshots = {};
-    for (const pid of productIds) {
-      const snapshot = await snapshotQuery.findOne({
-        where: { product: pid },
-        orderBy: { snapshotDate: "desc" }
-      });
-      if (snapshot) {
-        latestSnapshots[pid] = snapshot;
+    for (const s2 of allSnapshots) {
+      const pid = s2.product?.id || s2.product;
+      if (!latestSnapshots[pid]) {
+        latestSnapshots[pid] = s2;
       }
     }
     const metricQuery = strapi.db.query("plugin::zhao-wealth.wealth-risk-metric");
-    const result = [];
-    for (const pid of productIds) {
+    const allMetrics = await metricQuery.findMany({
+      where: {
+        product: { id: { $in: productIds } },
+        period: metricPeriod
+      },
+      orderBy: { snapshotDate: "desc" },
+      limit: productIds.length * 4
+    });
+    const metricMap = {};
+    for (const m of allMetrics) {
+      const pid = m.product?.id || m.product;
+      if (!metricMap[pid]) metricMap[pid] = {};
+      if (!metricMap[pid][m.metricName]) {
+        metricMap[pid][m.metricName] = m.metricValue !== null ? Number(m.metricValue) : null;
+      }
+    }
+    const result = productIds.map((pid) => {
       const snapshot = latestSnapshots[pid];
       const annualReturn = snapshot ? Number(snapshot[annualField]) : null;
-      const metrics = await metricQuery.findMany({
-        where: {
-          product: pid,
-          period: metricPeriod
-        },
-        orderBy: { snapshotDate: "desc" },
-        limit: 4
-      });
-      const metricMap = {};
-      for (const m of metrics) {
-        metricMap[m.metricName] = m.metricValue !== null ? Number(m.metricValue) : null;
-      }
-      result.push({
+      const productMetrics = metricMap[pid] || {};
+      return {
         productId: pid,
         annualReturn: annualReturn !== null && !isNaN(annualReturn) ? annualReturn : null,
-        volatility: metricMap["volatility"] ?? null,
-        maxDrawdown: metricMap["maxDrawdown"] ?? null,
-        rankPercentile: metricMap["rankPercentile"] ?? null
-      });
-    }
+        volatility: productMetrics["volatility"] ?? null,
+        maxDrawdown: productMetrics["maxDrawdown"] ?? null,
+        rankPercentile: productMetrics["rankPercentile"] ?? null
+      };
+    });
     return result;
   }
   async function calculateScore(productId, period) {
@@ -10639,18 +10749,27 @@ const scoringService = ({ strapi }) => {
       populate: ["company"]
     });
     const total = await productQuery.count({ where });
+    const productIds = products.map((p) => p.id);
     const scoreQuery = strapi.db.query("plugin::zhao-wealth.wealth-score-snapshot");
-    const records = [];
-    for (const product2 of products) {
-      const score = await scoreQuery.findOne({
-        where: { product: product2.id, period },
-        orderBy: { snapshotDate: "desc" }
-      });
-      records.push({
-        ...product2,
-        score: score || null
-      });
+    const allScores = await scoreQuery.findMany({
+      where: {
+        product: { id: { $in: productIds } },
+        period
+      },
+      orderBy: { snapshotDate: "desc" },
+      limit: productIds.length * 2
+    });
+    const scoreMap = {};
+    for (const s2 of allScores) {
+      const pid = s2.product?.id || s2.product;
+      if (!scoreMap[pid]) {
+        scoreMap[pid] = s2;
+      }
     }
+    const records = products.map((product2) => ({
+      ...product2,
+      score: scoreMap[product2.id] || null
+    }));
     records.sort((a, b) => {
       const sa = a.score?.compositeScore ?? 0;
       const sb = b.score?.compositeScore ?? 0;
@@ -10745,20 +10864,26 @@ const portfolioService = ({ strapi }) => {
     const plan = await query.findOne({ where: { id: planId } });
     if (!plan) return null;
     const products = typeof plan.products === "string" ? JSON.parse(plan.products) : plan.products || [];
-    const productDetails = [];
-    for (const item of products) {
-      const product2 = await strapi.db.query("plugin::zhao-wealth.wealth-product").findOne({
-        where: { id: item.productId },
-        populate: ["company"]
-      });
-      if (product2) {
-        productDetails.push({
-          ...product2,
-          allocationRatio: item.allocationRatio,
-          addedDate: item.addedDate
-        });
-      }
+    const productIds = products.map((p) => p.productId);
+    const productQuery = strapi.db.query("plugin::zhao-wealth.wealth-product");
+    const productRecords = await productQuery.findMany({
+      where: { id: { $in: productIds } },
+      populate: ["company"],
+      limit: productIds.length
+    });
+    const productMap = {};
+    for (const p of productRecords) {
+      productMap[p.id] = p;
     }
+    const productDetails = products.map((item) => {
+      const product2 = productMap[item.productId];
+      if (!product2) return null;
+      return {
+        ...product2,
+        allocationRatio: item.allocationRatio,
+        addedDate: item.addedDate
+      };
+    }).filter(Boolean);
     return {
       ...plan,
       productDetails
@@ -10787,6 +10912,33 @@ const portfolioService = ({ strapi }) => {
     if (!plan || !plan.productDetails || plan.productDetails.length === 0) return null;
     const annualField = PERIOD_TO_ANNUAL_FIELD2[period] || "annual1m";
     const metricPeriod = period;
+    const productIds = plan.productDetails.map((p) => p.id);
+    const snapshotQuery = strapi.db.query("plugin::zhao-wealth.wealth-annual-snapshot");
+    const allSnapshots = await snapshotQuery.findMany({
+      where: { product: { id: { $in: productIds } } },
+      orderBy: { snapshotDate: "desc" },
+      limit: productIds.length * 2
+    });
+    const snapshotMap = {};
+    for (const s2 of allSnapshots) {
+      const pid = s2.product?.id || s2.product;
+      if (!snapshotMap[pid]) snapshotMap[pid] = s2;
+    }
+    const metricQuery = strapi.db.query("plugin::zhao-wealth.wealth-risk-metric");
+    const allMetrics = await metricQuery.findMany({
+      where: { product: { id: { $in: productIds } }, period: metricPeriod },
+      orderBy: { snapshotDate: "desc" },
+      limit: productIds.length * 4
+    });
+    const metricMap = {};
+    for (const m of allMetrics) {
+      const pid = m.product?.id || m.product;
+      if (!metricMap[pid]) metricMap[pid] = {};
+      if (!metricMap[pid][m.metricName]) {
+        const numValue = m.metricValue !== null ? Number(m.metricValue) : null;
+        metricMap[pid][m.metricName] = numValue !== null && !isNaN(numValue) ? numValue : null;
+      }
+    }
     let totalWeight = 0;
     let weightedReturn = 0;
     let weightedVolatility = 0;
@@ -10798,10 +10950,7 @@ const portfolioService = ({ strapi }) => {
       const ratio = Number(product2.allocationRatio) || 0;
       if (ratio <= 0) continue;
       totalWeight += ratio;
-      const snapshot = await strapi.db.query("plugin::zhao-wealth.wealth-annual-snapshot").findOne({
-        where: { product: product2.id },
-        orderBy: { snapshotDate: "desc" }
-      });
+      const snapshot = snapshotMap[product2.id];
       if (snapshot && snapshot[annualField] !== null) {
         const annualReturn = Number(snapshot[annualField]);
         if (!isNaN(annualReturn)) {
@@ -10809,22 +10958,16 @@ const portfolioService = ({ strapi }) => {
           hasReturn = true;
         }
       }
-      const metrics = await strapi.db.query("plugin::zhao-wealth.wealth-risk-metric").findMany({
-        where: { product: product2.id, period: metricPeriod },
-        orderBy: { snapshotDate: "desc" },
-        limit: 4
-      });
-      for (const m of metrics) {
-        if (m.metricValue === null) continue;
-        const value = Number(m.metricValue);
-        if (isNaN(value)) continue;
-        if (m.metricName === "volatility") {
-          weightedVolatility += value * ratio;
-          hasVolatility = true;
-        } else if (m.metricName === "maxDrawdown") {
-          weightedDrawdown += value * ratio;
-          hasDrawdown = true;
-        }
+      const productMetrics = metricMap[product2.id] || {};
+      const volatility = productMetrics["volatility"];
+      if (volatility !== null && volatility !== void 0) {
+        weightedVolatility += volatility * ratio;
+        hasVolatility = true;
+      }
+      const maxDrawdown = productMetrics["maxDrawdown"];
+      if (maxDrawdown !== null && maxDrawdown !== void 0) {
+        weightedDrawdown += maxDrawdown * ratio;
+        hasDrawdown = true;
       }
     }
     if (totalWeight > 0) {
