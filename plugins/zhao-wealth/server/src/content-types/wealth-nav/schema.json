@@ -13,8 +13,8 @@
   "attributes": {
     "product": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-product", "inversedBy": "navs" },
     "navDate": { "type": "date", "required": true },
-    "unitNav": { "type": "decimal", "precision": 10, "scale": 4 },
-    "accNav": { "type": "decimal", "precision": 10, "scale": 4 },
+    "unitNav": { "type": "decimal", "precision": 20, "scale": 8 },
+    "accNav": { "type": "decimal", "precision": 20, "scale": 8 },
     "dataSource": { "type": "enumeration", "enum": ["crawler", "manual"], "default": "crawler" },
     "createdAt": { "type": "datetime" },
     "updatedAt": { "type": "datetime" }

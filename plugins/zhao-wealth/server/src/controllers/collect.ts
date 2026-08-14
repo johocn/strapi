@@ -93,16 +93,43 @@ export default ({ strapi }) => ({
 
     let savedCount = 0;
     for (const nav of navData) {
+      // 分离货币收益字段（杭银等货币型产品提供万份收益/七日年化，存入独立表）
+      const { tenThousandIncome, sevenDayAnnualized, ...navOnly } = nav;
+
       // 检查是否已存在（按 product + navDate 去重）
       const existing = await strapi.db.query('plugin::zhao-wealth.wealth-nav').findOne({
         where: { product: productId, navDate: nav.navDate },
       });
-      if (existing) continue;
+      if (!existing) {
+        await strapi.db.query('plugin::zhao-wealth.wealth-nav').create({
+          data: { product: productId, ...navOnly },
+        });
+        savedCount++;
+      }
 
-      await strapi.db.query('plugin::zhao-wealth.wealth-nav').create({
-        data: { product: productId, ...nav },
-      });
-      savedCount++;
+      // 货币收益写入 money_incomes（若该日有收益数据）
+      if (tenThousandIncome != null || sevenDayAnnualized != null) {
+        const existingIncome = await strapi.db.query('plugin::zhao-wealth.wealth-money-income').findOne({
+          where: { product: productId, incomeDate: nav.navDate },
+        });
+        const incomeData = {
+          product: productId,
+          incomeDate: nav.navDate,
+          tenThousandIncome: tenThousandIncome != null ? Number(tenThousandIncome) : null,
+          sevenDayAnnual: sevenDayAnnualized != null ? Number(sevenDayAnnualized) : null,
+          dataSource: 'crawler',
+        };
+        if (existingIncome) {
+          await strapi.db.query('plugin::zhao-wealth.wealth-money-income').update({
+            where: { id: existingIncome.id },
+            data: incomeData,
+          });
+        } else {
+          await strapi.db.query('plugin::zhao-wealth.wealth-money-income').create({
+            data: incomeData,
+          });
+        }
+      }
     }
 
     // 更新采集配置状态

@@ -44,6 +44,8 @@ export default ({ strapi }) => ({
       ...product,
       latestNav: enrichedMap[product.id]?.latestNav || null,
       latestAnnual1m: enrichedMap[product.id]?.latestAnnual1m ?? null,
+      latestSevenDayAnnual: enrichedMap[product.id]?.latestSevenDayAnnual ?? null,
+      latestTenThousandIncome: enrichedMap[product.id]?.latestTenThousandIncome ?? null,
       score: enrichedMap[product.id]?.score || null,
       peerRankPercentile: enrichedMap[product.id]?.peerRankPercentile ?? null,
     }));
@@ -114,9 +116,21 @@ export default ({ strapi }) => ({
         orderBy: { snapshotDate: 'desc' },
       });
 
+      // 最新货币收益（万份收益/七日年化，货币型/现金管理类产品）
+      const moneyIncome = await strapi.db.query('plugin::zhao-wealth.wealth-money-income').findOne({
+        where: { product: pid },
+        orderBy: { incomeDate: 'desc' },
+      });
+
       result[pid] = {
         latestNav: latestNav || null,
-        latestAnnual1m: snapshot ? Number(snapshot.annual1m) : null,
+        latestAnnual1m: snapshot?.annual1m != null ? Number(snapshot.annual1m) : null,
+        latestSevenDayAnnual: moneyIncome?.sevenDayAnnual != null
+          ? Number(moneyIncome.sevenDayAnnual)
+          : null,
+        latestTenThousandIncome: moneyIncome?.tenThousandIncome != null
+          ? Number(moneyIncome.tenThousandIncome)
+          : null,
         score: score || null,
         peerRankPercentile: rankMetric?.metricValue != null
           ? Number(rankMetric.metricValue)

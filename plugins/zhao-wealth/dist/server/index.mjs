@@ -43,7 +43,7 @@ const kind$b = "collectionType";
 const collectionName$b = "wealth_navs";
 const info$b = { "singularName": "wealth-nav", "pluralName": "wealth-navs", "displayName": "净值数据", "description": "理财/基金净值数据（不含货币基金）" };
 const options$b = { "draftAndPublish": false };
-const attributes$b = { "product": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-product", "inversedBy": "navs" }, "navDate": { "type": "date", "required": true }, "unitNav": { "type": "decimal", "precision": 10, "scale": 4 }, "accNav": { "type": "decimal", "precision": 10, "scale": 4 }, "dataSource": { "type": "enumeration", "enum": ["crawler", "manual"], "default": "crawler" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const attributes$b = { "product": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-product", "inversedBy": "navs" }, "navDate": { "type": "date", "required": true }, "unitNav": { "type": "decimal", "precision": 20, "scale": 8 }, "accNav": { "type": "decimal", "precision": 20, "scale": 8 }, "dataSource": { "type": "enumeration", "enum": ["crawler", "manual"], "default": "crawler" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
 const wealthNav = {
   kind: kind$b,
   collectionName: collectionName$b,
@@ -7995,14 +7995,38 @@ const collect = ({ strapi }) => ({
     }
     let savedCount = 0;
     for (const nav2 of navData) {
+      const { tenThousandIncome, sevenDayAnnualized, ...navOnly } = nav2;
       const existing = await strapi.db.query("plugin::zhao-wealth.wealth-nav").findOne({
         where: { product: productId, navDate: nav2.navDate }
       });
-      if (existing) continue;
-      await strapi.db.query("plugin::zhao-wealth.wealth-nav").create({
-        data: { product: productId, ...nav2 }
-      });
-      savedCount++;
+      if (!existing) {
+        await strapi.db.query("plugin::zhao-wealth.wealth-nav").create({
+          data: { product: productId, ...navOnly }
+        });
+        savedCount++;
+      }
+      if (tenThousandIncome != null || sevenDayAnnualized != null) {
+        const existingIncome = await strapi.db.query("plugin::zhao-wealth.wealth-money-income").findOne({
+          where: { product: productId, incomeDate: nav2.navDate }
+        });
+        const incomeData = {
+          product: productId,
+          incomeDate: nav2.navDate,
+          tenThousandIncome: tenThousandIncome != null ? Number(tenThousandIncome) : null,
+          sevenDayAnnual: sevenDayAnnualized != null ? Number(sevenDayAnnualized) : null,
+          dataSource: "crawler"
+        };
+        if (existingIncome) {
+          await strapi.db.query("plugin::zhao-wealth.wealth-money-income").update({
+            where: { id: existingIncome.id },
+            data: incomeData
+          });
+        } else {
+          await strapi.db.query("plugin::zhao-wealth.wealth-money-income").create({
+            data: incomeData
+          });
+        }
+      }
     }
     await strapi.db.query("plugin::zhao-wealth.wealth-collect-config").update({
       where: { id: config.id },
@@ -9610,6 +9634,8 @@ const product = ({ strapi }) => ({
       ...product2,
       latestNav: enrichedMap[product2.id]?.latestNav || null,
       latestAnnual1m: enrichedMap[product2.id]?.latestAnnual1m ?? null,
+      latestSevenDayAnnual: enrichedMap[product2.id]?.latestSevenDayAnnual ?? null,
+      latestTenThousandIncome: enrichedMap[product2.id]?.latestTenThousandIncome ?? null,
       score: enrichedMap[product2.id]?.score || null,
       peerRankPercentile: enrichedMap[product2.id]?.peerRankPercentile ?? null
     }));
@@ -9661,9 +9687,15 @@ const product = ({ strapi }) => ({
         where: { product: pid, period, metricName: "rankPercentile" },
         orderBy: { snapshotDate: "desc" }
       });
+      const moneyIncome = await strapi.db.query("plugin::zhao-wealth.wealth-money-income").findOne({
+        where: { product: pid },
+        orderBy: { incomeDate: "desc" }
+      });
       result[pid] = {
         latestNav: latestNav || null,
-        latestAnnual1m: snapshot ? Number(snapshot.annual1m) : null,
+        latestAnnual1m: snapshot?.annual1m != null ? Number(snapshot.annual1m) : null,
+        latestSevenDayAnnual: moneyIncome?.sevenDayAnnual != null ? Number(moneyIncome.sevenDayAnnual) : null,
+        latestTenThousandIncome: moneyIncome?.tenThousandIncome != null ? Number(moneyIncome.tenThousandIncome) : null,
         score: score || null,
         peerRankPercentile: rankMetric?.metricValue != null ? Number(rankMetric.metricValue) : null
       };
