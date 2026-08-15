@@ -24,6 +24,7 @@ export interface AdminAdjustParams {
     action?: string;
     remark?: string;
     operatorId: string | number;
+    channelId?: string | number;
 }
 export interface BatchAdjustItem {
     userId: string | number;

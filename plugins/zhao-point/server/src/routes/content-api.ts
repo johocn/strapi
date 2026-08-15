@@ -102,7 +102,7 @@ export default () => ({
     // 积分记录
     channelScopeRoute("GET", "/point-records", "point-admin.findRecords", "point-record.read"),
     channelScopeRoute("GET", "/point-records/:documentId", "point-admin.findOneRecord", "point-record.read"),
-    channelScopeRoute("POST", "/point-records/admin-adjust", "point-admin.adminAdjust", "point-record.create"),
+    channelScopeRoute("POST", "/point-records/admin-adjust", "point-admin.adminAdjust", "point.grant"),
     channelScopeRoute("POST", "/point-records/batch-adjust", "point-admin.batchAdjust", "point-record.create"),
     channelScopeRoute("GET", "/point-records/statistics", "point-admin.getRecordStats", "point-record.read"),
 

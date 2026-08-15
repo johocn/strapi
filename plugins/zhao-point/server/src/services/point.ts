@@ -36,6 +36,7 @@ export interface AdminAdjustParams {
   action?: string;
   remark?: string;
   operatorId: string | number;
+  channelId?: string | number; // 新增：积分归属渠道（documentId 或 id）
 }
 
 export interface BatchAdjustItem {
@@ -390,7 +391,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   };
 
   const adminAdjust = async (params: AdminAdjustParams) => {
-    const { userId, points, action, remark, operatorId } = params;
+    const { userId, points, action, remark, operatorId, channelId } = params;
     if (points === 0) {
       throwError("POINT_003", "积分操作失败", { message: "调整积分数不能为 0" });
     }
@@ -407,6 +408,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       method: "管理员手动调整",
       remark,
       operatorId,
+      channelId,
     });
 
     return record;

@@ -930,16 +930,20 @@ const pointAdmin = ({ strapi }) => {
       try {
         const operatorId = getUserId(ctx);
         const body = ctx.request.body?.data || ctx.request.body;
-        const { userId, points, action, remark } = body;
+        const { userId, points, action, remark, channelId } = body;
         if (userId) {
           await assertUserInScope(ctx, userId);
+        }
+        if (channelId) {
+          await assertChannelDocIdInScope(ctx, channelId);
         }
         const record = await strapi.plugin("zhao-point").service("point").adminAdjust({
           userId,
           points,
           action,
           remark,
-          operatorId
+          operatorId,
+          channelId
         });
         ctx.body = record;
       } catch (e) {
@@ -1849,7 +1853,7 @@ const point = ({ strapi }) => {
     };
   };
   const adminAdjust = async (params) => {
-    const { userId, points, action, remark, operatorId } = params;
+    const { userId, points, action, remark, operatorId, channelId } = params;
     if (points === 0) {
       throwError("POINT_003", "积分操作失败", { message: "调整积分数不能为 0" });
     }
@@ -1862,7 +1866,8 @@ const point = ({ strapi }) => {
     const record = await createRecord(userId, action || "manual_adjust", absPoints, balance, type, {
       method: "管理员手动调整",
       remark,
-      operatorId
+      operatorId,
+      channelId
     });
     return record;
   };
@@ -3510,7 +3515,7 @@ const contentApi = () => ({
     // 积分记录
     channelScopeRoute("GET", "/point-records", "point-admin.findRecords", "point-record.read"),
     channelScopeRoute("GET", "/point-records/:documentId", "point-admin.findOneRecord", "point-record.read"),
-    channelScopeRoute("POST", "/point-records/admin-adjust", "point-admin.adminAdjust", "point-record.create"),
+    channelScopeRoute("POST", "/point-records/admin-adjust", "point-admin.adminAdjust", "point.grant"),
     channelScopeRoute("POST", "/point-records/batch-adjust", "point-admin.batchAdjust", "point-record.create"),
     channelScopeRoute("GET", "/point-records/statistics", "point-admin.getRecordStats", "point-record.read"),
     // 积分兑换

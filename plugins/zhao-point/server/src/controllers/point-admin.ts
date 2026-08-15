@@ -284,13 +284,17 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     try {
       const operatorId = getUserId(ctx);
       const body = ctx.request.body?.data || ctx.request.body;
-      const { userId, points, action, remark } = body;
+      const { userId, points, action, remark, channelId } = body;
       // 校验目标用户所属 channel 是否在 scope 内
       if (userId) {
         await assertUserInScope(ctx, userId);
       }
+      // 校验所选渠道是否在操作者有权范围内
+      if (channelId) {
+        await assertChannelDocIdInScope(ctx, channelId);
+      }
       const record = await strapi.plugin("zhao-point").service("point").adminAdjust({
-        userId, points, action, remark, operatorId,
+        userId, points, action, remark, operatorId, channelId,
       });
       ctx.body = record;
     } catch (e: any) {
