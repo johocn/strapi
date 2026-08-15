@@ -40,7 +40,7 @@
     "createdBy": {
       "type": "relation",
       "relation": "oneToOne",
-      "target": "plugin::zhao-sso.sso-user"
+      "target": "plugin::users-permissions.user"
     },
     "batchNote": {
       "type": "string"
@@ -48,7 +48,7 @@
     "usedBy": {
       "type": "relation",
       "relation": "oneToOne",
-      "target": "plugin::zhao-sso.sso-user"
+      "target": "plugin::users-permissions.user"
     },
     "usedAt": {
       "type": "datetime"

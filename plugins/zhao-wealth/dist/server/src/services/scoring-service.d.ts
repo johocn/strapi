@@ -8,6 +8,17 @@ interface ScoreBreakdown {
     peerRankScore: number;
     weightProfile: string;
     period: string;
+    weights: {
+        returns: number;
+        volatility: number;
+        drawdown: number;
+        peerRank: number;
+    };
+    scales: {
+        returnScale: number;
+        volatilityScale: number;
+        drawdownScale: number;
+    };
 }
 declare const _default: ({ strapi }: {
     strapi: Core.Strapi;

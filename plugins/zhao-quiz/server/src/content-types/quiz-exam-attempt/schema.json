@@ -1,4 +1,4 @@
-﻿{
+{
   "kind": "collectionType",
   "collectionName": "zhao_quiz_exam_attempts",
   "info": {
@@ -13,7 +13,7 @@
     "user": {
       "type": "relation",
       "relation": "manyToOne",
-      "target": "plugin::zhao-sso.sso-user"
+      "target": "plugin::users-permissions.user"
     },
     "exam": {
       "type": "relation",

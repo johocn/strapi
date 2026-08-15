@@ -13,7 +13,7 @@
     "user": {
       "type": "relation",
       "relation": "manyToOne",
-      "target": "plugin::zhao-sso.sso-user"
+      "target": "plugin::users-permissions.user"
     },
     "course": {
       "type": "relation",
@@ -47,7 +47,7 @@
     "reviewer": {
       "type": "relation",
       "relation": "oneToOne",
-      "target": "plugin::zhao-sso.sso-user"
+      "target": "plugin::users-permissions.user"
     },
     "reviewedAt": {
       "type": "datetime"

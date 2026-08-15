@@ -9,7 +9,7 @@ function throwErr(code: string, status: number, message: string): never {
 
 const CHANNEL_UID = "plugin::zhao-channel.channel";
 const CHANNEL_MEMBER_UID = "plugin::zhao-channel.channel-member";
-const USER_UID = "plugin::zhao-sso.sso-user";
+const USER_UID = "plugin::users-permissions.user";
 const USER_INVITE_UID = "plugin::zhao-channel.user-invite";
 
 function formatChannel(channel: any) {
@@ -111,11 +111,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     const isNewUser = !user;
 
       if (!user) {
-      // 创建未注册用户
-      user = await strapi.plugin("zhao-sso").service("sso-user").createUser({
+      // 创建未注册用户（zhao-auth 创建，随机密码待邀请后自行设置）
+      user = await strapi.plugin("zhao-auth").service("auth").createUser({
         email: data.email,
         username: data.email.split("@")[0],
-        register_channel: "sso_local",
+        password: Math.random().toString(36).slice(2, 12),
       });
 
       // ── 新用户同时创建 channel-member，并标记为当前渠道 ──

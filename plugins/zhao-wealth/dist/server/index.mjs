@@ -91,7 +91,7 @@ const kind$7 = "collectionType";
 const collectionName$7 = "wealth_customer_products";
 const info$7 = { "singularName": "wealth-customer-product", "pluralName": "wealth-customer-products", "displayName": "客户自选产品", "description": "客户关注的产品列表" };
 const options$7 = { "draftAndPublish": false };
-const attributes$7 = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user" }, "product": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-product" }, "channel": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-channel.channel" }, "followTime": { "type": "datetime" }, "sortOrder": { "type": "integer", "default": 0 }, "remark": { "type": "string" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const attributes$7 = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::users-permissions.user" }, "product": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-product" }, "channel": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-channel.channel" }, "followTime": { "type": "datetime" }, "sortOrder": { "type": "integer", "default": 0 }, "remark": { "type": "string" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
 const wealthCustomerProduct = {
   kind: kind$7,
   collectionName: collectionName$7,
@@ -139,7 +139,7 @@ const kind$3 = "collectionType";
 const collectionName$3 = "wealth_customer_holdings";
 const info$3 = { "singularName": "wealth-customer-holding", "pluralName": "wealth-customer-holdings", "displayName": "客户持仓", "description": "客户实际持仓记录" };
 const options$3 = { "draftAndPublish": false };
-const attributes$3 = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user" }, "product": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-product" }, "channel": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-channel.channel" }, "buyDate": { "type": "date", "required": true }, "buyAmount": { "type": "decimal", "precision": 14, "scale": 2, "required": true }, "buyNav": { "type": "decimal", "precision": 10, "scale": 4 }, "remark": { "type": "string" }, "status": { "type": "enumeration", "enum": ["holding", "redeemed"], "default": "holding" }, "redeemDate": { "type": "date" }, "createdByManager": { "type": "relation", "relation": "manyToOne", "target": "admin::user" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const attributes$3 = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::users-permissions.user" }, "product": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-product" }, "channel": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-channel.channel" }, "buyDate": { "type": "date", "required": true }, "buyAmount": { "type": "decimal", "precision": 14, "scale": 2, "required": true }, "buyNav": { "type": "decimal", "precision": 10, "scale": 4 }, "remark": { "type": "string" }, "status": { "type": "enumeration", "enum": ["holding", "redeemed"], "default": "holding" }, "redeemDate": { "type": "date" }, "createdByManager": { "type": "relation", "relation": "manyToOne", "target": "admin::user" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
 const wealthCustomerHolding = {
   kind: kind$3,
   collectionName: collectionName$3,
@@ -10125,7 +10125,39 @@ const pluginConfig = {
   // 夏普比率的无风险利率（默认 2%，可通过环境变量覆盖）
   riskFreeRate: Number(process.env.WEALTH_RISK_FREE_RATE || 0.02),
   // 计算周期列表
-  riskMetricPeriods: ["m1", "m3", "m6", "y1"]
+  riskMetricPeriods: ["m1", "m3", "m6", "y1"],
+  // 批量计算并发数
+  riskMetricBatchConcurrency: 5,
+  // 自适应评分权重配置
+  // key 格式: productType 或 productType:operationMode
+  // 当 productType:operationMode 存在时优先使用，否则回退到 productType
+  // 注：同类排名样本过小时无统计意义，权重已归零（peerRank: 0）
+  scoreWeights: {
+    "bank-wealth:daily-open": { returns: 0.7, volatility: 0.2, drawdown: 0.1, peerRank: 0 },
+    "bank-wealth:fixed-term": { returns: 0.5, volatility: 0.25, drawdown: 0.25, peerRank: 0 },
+    "bank-wealth:closed": { returns: 0.5, volatility: 0.25, drawdown: 0.25, peerRank: 0 },
+    "bank-wealth": { returns: 0.5, volatility: 0.25, drawdown: 0.25, peerRank: 0 },
+    "money-fund": { returns: 0.7, volatility: 0.3, drawdown: 0, peerRank: 0 },
+    "stock-fund": { returns: 0.4, volatility: 0.3, drawdown: 0.3, peerRank: 0 },
+    "bond-fund": { returns: 0.5, volatility: 0.25, drawdown: 0.25, peerRank: 0 },
+    "mixed-fund": { returns: 0.4, volatility: 0.3, drawdown: 0.3, peerRank: 0 }
+  },
+  // 绝对评分标尺（不依赖同类样本量，用于将指标映射到 0-100 分）
+  // returnScale: 年化收益率达该值即满分（6% 年化 = 100 分）
+  // volatilityScale: 年化波动率达该值即 0 分（10% 波动 = 0 分）
+  // drawdownScale: 最大回撤达该值即 0 分（-5% 回撤 = 0 分）
+  scoreScales: {
+    returnScale: 0.06,
+    volatilityScale: 0.1,
+    drawdownScale: 0.05
+  },
+  // 星级阈值
+  starThresholds: {
+    five: 90,
+    four: 75,
+    three: 60,
+    two: 40
+  }
 };
 const PERIOD_DAYS = {
   "m1": 30,
@@ -10598,6 +10630,7 @@ const compareService = ({ strapi }) => ({
 const scoringService = ({ strapi }) => {
   const config = strapi.config.get("plugin::zhao-wealth");
   const scoreWeights = config?.scoreWeights || {};
+  const scoreScales = config?.scoreScales || { returnScale: 0.06, volatilityScale: 0.1, drawdownScale: 0.05 };
   const starThresholds = config?.starThresholds || { five: 90, four: 75, three: 60, two: 40 };
   const PERIOD_TO_ANNUAL_FIELD2 = {
     m1: "annual1m",
@@ -10623,18 +10656,47 @@ const scoringService = ({ strapi }) => {
   function getWeights(weightProfile) {
     return scoreWeights[weightProfile] || scoreWeights["bank-wealth"] || { returns: 0.3, volatility: 0.25, drawdown: 0.25, peerRank: 0.2 };
   }
-  function percentileScore(value, allValues, ascending) {
-    const validValues = allValues.filter((v) => v !== null && !isNaN(v) && isFinite(v));
-    if (validValues.length === 0 || value === null || isNaN(value) || !isFinite(value)) {
-      return 50;
+  function clampScore(n2) {
+    if (isNaN(n2) || !isFinite(n2)) return 50;
+    return Math.max(0, Math.min(100, Math.round(n2)));
+  }
+  function absoluteReturnScore(annualReturn) {
+    if (annualReturn === null || isNaN(Number(annualReturn))) return 50;
+    return clampScore(Number(annualReturn) / scoreScales.returnScale * 100);
+  }
+  function absoluteVolatilityScore(volatility) {
+    if (volatility === null || isNaN(Number(volatility))) return 50;
+    return clampScore((1 - Number(volatility) / scoreScales.volatilityScale) * 100);
+  }
+  function absoluteDrawdownScore(maxDrawdown) {
+    if (maxDrawdown === null || isNaN(Number(maxDrawdown))) return 50;
+    return clampScore((1 + Number(maxDrawdown) / scoreScales.drawdownScale) * 100);
+  }
+  async function getProductMetrics(productId, period) {
+    const annualField = PERIOD_TO_ANNUAL_FIELD2[period] || "annual1m";
+    const metricPeriod = PERIOD_TO_METRIC_PERIOD[period] || "m1";
+    const snapshot = await strapi.db.query("plugin::zhao-wealth.wealth-annual-snapshot").findOne({
+      where: { product: productId },
+      orderBy: { snapshotDate: "desc" }
+    });
+    const annualReturn = snapshot ? Number(snapshot[annualField]) : null;
+    const metricQuery = strapi.db.query("plugin::zhao-wealth.wealth-risk-metric");
+    const metricMap = { volatility: null, maxDrawdown: null, rankPercentile: null };
+    for (const name of Object.keys(metricMap)) {
+      const records = await metricQuery.findMany({
+        where: { product: productId, period: metricPeriod, metricName: name },
+        orderBy: { snapshotDate: "desc" },
+        limit: 1
+      });
+      metricMap[name] = records.length > 0 && records[0].metricValue !== null ? Number(records[0].metricValue) : null;
     }
-    if (ascending) {
-      const below = validValues.filter((v) => v < value).length;
-      return Math.round(below / validValues.length * 100);
-    } else {
-      const above = validValues.filter((v) => v > value).length;
-      return Math.round(above / validValues.length * 100);
-    }
+    return {
+      productId,
+      annualReturn: annualReturn !== null && !isNaN(annualReturn) ? annualReturn : null,
+      volatility: metricMap["volatility"],
+      maxDrawdown: metricMap["maxDrawdown"],
+      rankPercentile: metricMap["rankPercentile"]
+    };
   }
   function scoreToStars(score) {
     if (score >= starThresholds.five) return 5;
@@ -10643,65 +10705,6 @@ const scoringService = ({ strapi }) => {
     if (score >= starThresholds.two) return 2;
     return 1;
   }
-  async function getPeerMetrics(productType, operationMode, period, snapshotDate) {
-    const annualField = PERIOD_TO_ANNUAL_FIELD2[period] || "annual1m";
-    const metricPeriod = PERIOD_TO_METRIC_PERIOD[period] || "m1";
-    const productQuery = strapi.db.query("plugin::zhao-wealth.wealth-product");
-    const productWhere = { productType, status: true };
-    if (operationMode) {
-      productWhere.operationMode = operationMode;
-    }
-    const products = await productQuery.findMany({
-      where: productWhere,
-      limit: 500
-    });
-    if (!products || products.length === 0) return [];
-    const productIds = products.map((p) => p.id);
-    const snapshotQuery = strapi.db.query("plugin::zhao-wealth.wealth-annual-snapshot");
-    const allSnapshots = await snapshotQuery.findMany({
-      where: { product: { id: { $in: productIds } } },
-      orderBy: { snapshotDate: "desc" },
-      limit: productIds.length * 4
-      // 每个产品最多4条记录
-    });
-    const latestSnapshots = {};
-    for (const s2 of allSnapshots) {
-      const pid = s2.product?.id || s2.product;
-      if (!latestSnapshots[pid]) {
-        latestSnapshots[pid] = s2;
-      }
-    }
-    const metricQuery = strapi.db.query("plugin::zhao-wealth.wealth-risk-metric");
-    const allMetrics = await metricQuery.findMany({
-      where: {
-        product: { id: { $in: productIds } },
-        period: metricPeriod
-      },
-      orderBy: { snapshotDate: "desc" },
-      limit: productIds.length * 4
-    });
-    const metricMap = {};
-    for (const m of allMetrics) {
-      const pid = m.product?.id || m.product;
-      if (!metricMap[pid]) metricMap[pid] = {};
-      if (!metricMap[pid][m.metricName]) {
-        metricMap[pid][m.metricName] = m.metricValue !== null ? Number(m.metricValue) : null;
-      }
-    }
-    const result = productIds.map((pid) => {
-      const snapshot = latestSnapshots[pid];
-      const annualReturn = snapshot ? Number(snapshot[annualField]) : null;
-      const productMetrics = metricMap[pid] || {};
-      return {
-        productId: pid,
-        annualReturn: annualReturn !== null && !isNaN(annualReturn) ? annualReturn : null,
-        volatility: productMetrics["volatility"] ?? null,
-        maxDrawdown: productMetrics["maxDrawdown"] ?? null,
-        rankPercentile: productMetrics["rankPercentile"] ?? null
-      };
-    });
-    return result;
-  }
   async function calculateScore(productId, period) {
     const product2 = await strapi.db.query("plugin::zhao-wealth.wealth-product").findOne({
       where: { id: productId }
@@ -10709,18 +10712,11 @@ const scoringService = ({ strapi }) => {
     if (!product2) return null;
     const weightProfile = getWeightProfile(product2.productType, product2.operationMode);
     const weights = getWeights(weightProfile);
-    const peerMetrics = await getPeerMetrics(product2.productType, product2.operationMode, period);
-    if (peerMetrics.length === 0) return null;
-    const currentProduct = peerMetrics.find((p) => p.productId === productId);
-    if (!currentProduct) return null;
-    const allReturns = peerMetrics.map((p) => p.annualReturn);
-    const allVolatilities = peerMetrics.map((p) => p.volatility);
-    const allDrawdowns = peerMetrics.map((p) => p.maxDrawdown);
-    peerMetrics.map((p) => p.rankPercentile);
-    const returnScore = percentileScore(currentProduct.annualReturn, allReturns, false);
-    const volatilityScore = percentileScore(currentProduct.volatility, allVolatilities, true);
-    const drawdownScore = percentileScore(currentProduct.maxDrawdown, allDrawdowns, true);
-    const peerRankScore = currentProduct.rankPercentile !== null ? Math.round(Number(currentProduct.rankPercentile)) : 50;
+    const metrics = await getProductMetrics(productId, period);
+    const returnScore = absoluteReturnScore(metrics.annualReturn);
+    const volatilityScore = absoluteVolatilityScore(metrics.volatility);
+    const drawdownScore = absoluteDrawdownScore(metrics.maxDrawdown);
+    const peerRankScore = 50;
     const compositeScore = Math.round(
       returnScore * weights.returns + volatilityScore * weights.volatility + drawdownScore * weights.drawdown + peerRankScore * weights.peerRank
     );
@@ -10732,7 +10728,9 @@ const scoringService = ({ strapi }) => {
       drawdownScore,
       peerRankScore,
       weightProfile,
-      period
+      period,
+      weights,
+      scales: scoreScales
     };
   }
   async function calculateAndSaveScoreSnapshot(productId, snapshotDate, period) {
@@ -10816,6 +10814,7 @@ const scoringService = ({ strapi }) => {
       orderBy: { snapshotDate: "desc" }
     });
     if (score) {
+      const profile = score.weightProfile || "bank-wealth";
       return {
         compositeScore: Number(score.compositeScore),
         starRating: score.starRating,
@@ -10824,7 +10823,9 @@ const scoringService = ({ strapi }) => {
         drawdownScore: Number(score.drawdownScore),
         peerRankScore: Number(score.peerRankScore),
         weightProfile: score.weightProfile,
-        period: score.period
+        period: score.period,
+        weights: getWeights(profile),
+        scales: scoreScales
       };
     }
     return calculateScore(productId, period);
@@ -11133,7 +11134,7 @@ const riskDisclosureService = ({ strapi }) => ({
       if (score.starRating <= 2) {
         warnings.push("该产品综合评分较低，建议优先考虑同类评分更高的产品。");
       }
-      warnings.push(`综合评分基于近${period === "m1" ? "1月" : period === "m3" ? "3月" : period === "m6" ? "6月" : "1年"}收益、波动率、最大回撤、同类排名加权计算，评分仅反映历史数据，不代表未来表现。`);
+      warnings.push(`综合评分基于近${period === "m1" ? "1月" : period === "m3" ? "3月" : period === "m6" ? "6月" : "1年"}收益、波动率、最大回撤加权计算（同类排名样本不足时不纳入），评分仅反映历史数据，不代表未来表现。`);
     }
     return {
       warnings,
@@ -11145,11 +11146,11 @@ const riskDisclosureService = ({ strapi }) => ({
    * 获取评分方法论说明
    */
   getScoreDisclaimer(productType, operationMode) {
-    let text = "综合评分基于收益、波动率、最大回撤、同类排名加权计算，仅反映历史数据。";
+    let text = "综合评分基于收益、波动率、最大回撤加权计算（同类排名样本不足时不纳入），仅反映历史数据。";
     if (productType === "bank-wealth" && operationMode === "daily-open") {
-      text += "日开理财回撤指标已降权处理（权重5%），更侧重收益能力和同类排名。";
+      text += "日开理财回撤天然接近0（权重10%），更侧重收益能力与波动控制。";
     } else if (productType === "money-fund") {
-      text += "货币基金不使用回撤指标，更侧重万份收益同类排名。";
+      text += "货币基金不使用回撤指标，更侧重收益能力与波动控制。";
     }
     return text;
   }
@@ -11200,7 +11201,8 @@ const policies = {
   "has-product-permission": hasProductPermission
 };
 const register = ({ strapi }) => {
-  strapi.log.info("[zhao-wealth] 插件已注册");
+  strapi.config.set("plugin::zhao-wealth", pluginConfig);
+  strapi.log.info("[zhao-wealth] 插件已注册（config 已加载）");
 };
 async function getCollectorForConfig(strapi, config) {
   let source = null;

@@ -13,7 +13,7 @@ declare const _default: {
     "user": {
       "type": "relation",
       "relation": "manyToOne",
-      "target": "plugin::zhao-sso.sso-user"
+      "target": "plugin::users-permissions.user"
     },
     "exam": {
       "type": "relation",

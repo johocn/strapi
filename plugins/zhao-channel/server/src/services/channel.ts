@@ -505,7 +505,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       let user: any = null;
       if (data.email && data.username && data.password) {
         // 检查邮箱是否已被注册
-        const existingUserByEmail = await strapi.db.query("plugin::zhao-sso.sso-user").findOne({
+        const existingUserByEmail = await strapi.db.query("plugin::users-permissions.user").findOne({
           where: { email: data.email },
         });
         if (existingUserByEmail) {
@@ -513,7 +513,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         }
 
         // 检查用户名是否已被注册
-        const existingUserByUsername = await strapi.db.query("plugin::zhao-sso.sso-user").findOne({
+        const existingUserByUsername = await strapi.db.query("plugin::users-permissions.user").findOne({
           where: { username: data.username },
         });
         if (existingUserByUsername) {
@@ -545,12 +545,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
       // ─── 创建登录用户（若提供了完整凭证） ───
       if (data.email && data.username && data.password) {
-        // 创建用户（使用 sso-user 服务确保密码哈希）
-        user = await strapi.plugin("zhao-sso").service("sso-user").createUser({
+        // 创建用户（使用 zhao-auth 服务确保密码哈希）
+        user = await strapi.plugin("zhao-auth").service("auth").createUser({
           email: data.email,
           username: data.username,
           password: data.password,
-          register_channel: "sso_local",
         });
 
         // 创建 channel-member（注册者永远是渠道所有者，role 恒为 admin）

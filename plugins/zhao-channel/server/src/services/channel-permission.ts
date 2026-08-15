@@ -12,7 +12,7 @@ import { getDescendantIdsByPath } from "../utils/path";
 const USER_CHANNEL_UID = "plugin::zhao-channel.user-channel";
 const ROLE_CHANNEL_UID = "plugin::zhao-auth.role-channel";
 const CHANNEL_MEMBER_UID = "plugin::zhao-channel.channel-member";
-const USER_UID = "plugin::zhao-sso.sso-user";
+const USER_UID = "plugin::users-permissions.user";
 
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async grantChannelsToUser(userId: number, channelIds: number[], grantedBy: number) {

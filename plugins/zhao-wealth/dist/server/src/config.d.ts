@@ -8,6 +8,11 @@ declare const _default: {
         drawdown: number;
         peerRank: number;
     }>;
+    scoreScales: {
+        returnScale: number;
+        volatilityScale: number;
+        drawdownScale: number;
+    };
     starThresholds: Record<string, number>;
 };
 export default _default;

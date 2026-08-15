@@ -58,7 +58,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       if (score.starRating <= 2) {
         warnings.push('该产品综合评分较低，建议优先考虑同类评分更高的产品。');
       }
-      warnings.push(`综合评分基于近${period === 'm1' ? '1月' : period === 'm3' ? '3月' : period === 'm6' ? '6月' : '1年'}收益、波动率、最大回撤、同类排名加权计算，评分仅反映历史数据，不代表未来表现。`);
+      warnings.push(`综合评分基于近${period === 'm1' ? '1月' : period === 'm3' ? '3月' : period === 'm6' ? '6月' : '1年'}收益、波动率、最大回撤加权计算（同类排名样本不足时不纳入），评分仅反映历史数据，不代表未来表现。`);
     }
 
     return {
@@ -72,12 +72,12 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
    * 获取评分方法论说明
    */
   getScoreDisclaimer(productType: string, operationMode?: string): string {
-    let text = '综合评分基于收益、波动率、最大回撤、同类排名加权计算，仅反映历史数据。';
+    let text = '综合评分基于收益、波动率、最大回撤加权计算（同类排名样本不足时不纳入），仅反映历史数据。';
 
     if (productType === 'bank-wealth' && operationMode === 'daily-open') {
-      text += '日开理财回撤指标已降权处理（权重5%），更侧重收益能力和同类排名。';
+      text += '日开理财回撤天然接近0（权重10%），更侧重收益能力与波动控制。';
     } else if (productType === 'money-fund') {
-      text += '货币基金不使用回撤指标，更侧重万份收益同类排名。';
+      text += '货币基金不使用回撤指标，更侧重收益能力与波动控制。';
     }
 
     return text;

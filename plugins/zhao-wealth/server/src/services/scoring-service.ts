@@ -11,6 +11,9 @@ interface ScoreBreakdown {
   peerRankScore: number;
   weightProfile: string;
   period: string;
+  // 权重与标尺（用于前端公开计算公式）
+  weights: { returns: number; volatility: number; drawdown: number; peerRank: number };
+  scales: { returnScale: number; volatilityScale: number; drawdownScale: number };
 }
 
 interface ProductWithMetrics {
@@ -24,6 +27,7 @@ interface ProductWithMetrics {
 export default ({ strapi }: { strapi: Core.Strapi }) => {
   const config = strapi.config.get('plugin::zhao-wealth') as any;
   const scoreWeights = config?.scoreWeights || {};
+  const scoreScales = config?.scoreScales || { returnScale: 0.06, volatilityScale: 0.10, drawdownScale: 0.05 };
   const starThresholds = config?.starThresholds || { five: 90, four: 75, three: 60, two: 40 };
 
   // 周期到年化快照字段的映射
@@ -64,25 +68,73 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   }
 
   /**
-   * 将原始值按同类产品百分位归一化到 0-100
-   * ascending=false 表示值越大得分越高（如收益）
-   * ascending=true 表示值越小得分越高（如波动率、回撤）
+   * 将指标值按绝对标尺归一化到 0-100
+   * 收益：值越大分越高，达到 returnScale 即 100 分
+   * 波动率/回撤：值越小分越高
+   * 同类排名样本过小时不做百分位归一化，直接使用绝对标尺
    */
-  function percentileScore(value: number | null, allValues: (number | null)[], ascending: boolean): number {
-    const validValues = allValues.filter((v): v is number => v !== null && !isNaN(v) && isFinite(v));
-    if (validValues.length === 0 || value === null || isNaN(value) || !isFinite(value)) {
-      return 50; // 无数据时给中间分
+  function clampScore(n: number): number {
+    if (isNaN(n) || !isFinite(n)) return 50;
+    return Math.max(0, Math.min(100, Math.round(n)));
+  }
+
+  /**
+   * 收益得分（0-100）：年化收益 / returnScale，封顶 100
+   */
+  function absoluteReturnScore(annualReturn: number | null): number {
+    if (annualReturn === null || isNaN(Number(annualReturn))) return 50;
+    return clampScore((Number(annualReturn) / scoreScales.returnScale) * 100);
+  }
+
+  /**
+   * 波动得分（0-100）：波动率越低分越高，达到 volatilityScale 即 0 分
+   */
+  function absoluteVolatilityScore(volatility: number | null): number {
+    if (volatility === null || isNaN(Number(volatility))) return 50;
+    return clampScore((1 - Number(volatility) / scoreScales.volatilityScale) * 100);
+  }
+
+  /**
+   * 回撤得分（0-100）：最大回撤越小分越高，达到 drawdownScale 即 0 分（maxDrawdown 为负）
+   */
+  function absoluteDrawdownScore(maxDrawdown: number | null): number {
+    if (maxDrawdown === null || isNaN(Number(maxDrawdown))) return 50;
+    return clampScore((1 + Number(maxDrawdown) / scoreScales.drawdownScale) * 100);
+  }
+
+  /**
+   * 查询单个产品指定周期的指标（年化收益 + 风险指标），不依赖同类样本
+   */
+  async function getProductMetrics(productId: number, period: string): Promise<ProductWithMetrics> {
+    const annualField = PERIOD_TO_ANNUAL_FIELD[period] || 'annual1m';
+    const metricPeriod = PERIOD_TO_METRIC_PERIOD[period] || 'm1';
+
+    const snapshot = await strapi.db.query('plugin::zhao-wealth.wealth-annual-snapshot').findOne({
+      where: { product: productId },
+      orderBy: { snapshotDate: 'desc' },
+    });
+    const annualReturn = snapshot ? Number(snapshot[annualField]) : null;
+
+    const metricQuery = strapi.db.query('plugin::zhao-wealth.wealth-risk-metric');
+    const metricMap: Record<string, number | null> = { volatility: null, maxDrawdown: null, rankPercentile: null };
+    for (const name of Object.keys(metricMap)) {
+      const records = await metricQuery.findMany({
+        where: { product: productId, period: metricPeriod, metricName: name },
+        orderBy: { snapshotDate: 'desc' },
+        limit: 1,
+      });
+      metricMap[name] = records.length > 0 && records[0].metricValue !== null
+        ? Number(records[0].metricValue)
+        : null;
     }
 
-    if (ascending) {
-      // 值越小越好：比多少比例的产品小
-      const below = validValues.filter(v => v < value).length;
-      return Math.round((below / validValues.length) * 100);
-    } else {
-      // 值越大越好：比多少比例的产品大
-      const above = validValues.filter(v => v > value).length;
-      return Math.round((above / validValues.length) * 100);
-    }
+    return {
+      productId,
+      annualReturn: annualReturn !== null && !isNaN(annualReturn) ? annualReturn : null,
+      volatility: metricMap['volatility'],
+      maxDrawdown: metricMap['maxDrawdown'],
+      rankPercentile: metricMap['rankPercentile'],
+    };
   }
 
   /**
@@ -97,86 +149,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   }
 
   /**
-   * 查询同类产品在指定周期的所有指标值
-   */
-  async function getPeerMetrics(productType: string, operationMode: string | null, period: string, snapshotDate?: string): Promise<ProductWithMetrics[]> {
-    const annualField = PERIOD_TO_ANNUAL_FIELD[period] || 'annual1m';
-    const metricPeriod = PERIOD_TO_METRIC_PERIOD[period] || 'm1';
-
-    // 查询所有同类产品
-    const productQuery = strapi.db.query('plugin::zhao-wealth.wealth-product');
-    const productWhere: any = { productType, status: true };
-    if (operationMode) {
-      productWhere.operationMode = operationMode;
-    }
-
-    const products = await productQuery.findMany({
-      where: productWhere,
-      limit: 500,
-    });
-
-    if (!products || products.length === 0) return [];
-
-    const productIds = products.map((p: any) => p.id);
-
-    // 批量查询所有产品的年化快照（按 product id IN [...] 查询）
-    const snapshotQuery = strapi.db.query('plugin::zhao-wealth.wealth-annual-snapshot');
-    const allSnapshots = await snapshotQuery.findMany({
-      where: { product: { id: { $in: productIds } } },
-      orderBy: { snapshotDate: 'desc' },
-      limit: productIds.length * 4, // 每个产品最多4条记录
-    });
-
-    // 内存中取每个产品最新的
-    const latestSnapshots: Record<number, any> = {};
-    for (const s of allSnapshots) {
-      const pid = s.product?.id || s.product;
-      if (!latestSnapshots[pid]) {
-        latestSnapshots[pid] = s;
-      }
-    }
-
-    // 批量查询所有产品的风险指标
-    const metricQuery = strapi.db.query('plugin::zhao-wealth.wealth-risk-metric');
-    const allMetrics = await metricQuery.findMany({
-      where: {
-        product: { id: { $in: productIds } },
-        period: metricPeriod,
-      },
-      orderBy: { snapshotDate: 'desc' },
-      limit: productIds.length * 4,
-    });
-
-    // 内存中按产品分组取最新
-    const metricMap: Record<number, Record<string, number | null>> = {};
-    for (const m of allMetrics) {
-      const pid = m.product?.id || m.product;
-      if (!metricMap[pid]) metricMap[pid] = {};
-      if (!metricMap[pid][m.metricName]) {
-        metricMap[pid][m.metricName] = m.metricValue !== null ? Number(m.metricValue) : null;
-      }
-    }
-
-    // 组装结果
-    const result: ProductWithMetrics[] = productIds.map((pid: number) => {
-      const snapshot = latestSnapshots[pid];
-      const annualReturn = snapshot ? Number(snapshot[annualField]) : null;
-      const productMetrics = metricMap[pid] || {};
-
-      return {
-        productId: pid,
-        annualReturn: annualReturn !== null && !isNaN(annualReturn) ? annualReturn : null,
-        volatility: productMetrics['volatility'] ?? null,
-        maxDrawdown: productMetrics['maxDrawdown'] ?? null,
-        rankPercentile: productMetrics['rankPercentile'] ?? null,
-      };
-    });
-
-    return result;
-  }
-
-  /**
-   * 计算单个产品的评分
+   * 计算单个产品的评分（绝对标尺，不依赖同类样本量）
    */
   async function calculateScore(productId: number, period: string): Promise<ScoreBreakdown | null> {
     // 1. 获取产品信息
@@ -188,25 +161,15 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     const weightProfile = getWeightProfile(product.productType, product.operationMode);
     const weights = getWeights(weightProfile);
 
-    // 2. 获取同类产品的指标
-    const peerMetrics = await getPeerMetrics(product.productType, product.operationMode, period);
-    if (peerMetrics.length === 0) return null;
+    // 2. 获取当前产品指标
+    const metrics = await getProductMetrics(productId, period);
 
-    const currentProduct = peerMetrics.find(p => p.productId === productId);
-    if (!currentProduct) return null;
-
-    // 3. 各维度归一化
-    const allReturns = peerMetrics.map(p => p.annualReturn);
-    const allVolatilities = peerMetrics.map(p => p.volatility);
-    const allDrawdowns = peerMetrics.map(p => p.maxDrawdown);
-    const allRanks = peerMetrics.map(p => p.rankPercentile);
-
-    const returnScore = percentileScore(currentProduct.annualReturn, allReturns, false);
-    const volatilityScore = percentileScore(currentProduct.volatility, allVolatilities, true);
-    const drawdownScore = percentileScore(currentProduct.maxDrawdown, allDrawdowns, true);
-    const peerRankScore = currentProduct.rankPercentile !== null
-      ? Math.round(Number(currentProduct.rankPercentile))
-      : 50;
+    // 3. 各维度绝对评分（0-100）
+    const returnScore = absoluteReturnScore(metrics.annualReturn);
+    const volatilityScore = absoluteVolatilityScore(metrics.volatility);
+    const drawdownScore = absoluteDrawdownScore(metrics.maxDrawdown);
+    // 同类排名样本过少，无统计意义，统一给中性分且不参与加权（权重已为 0）
+    const peerRankScore = 50;
 
     // 4. 加权求和
     const compositeScore = Math.round(
@@ -225,6 +188,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       peerRankScore,
       weightProfile,
       period,
+      weights,
+      scales: scoreScales,
     };
   }
 
@@ -346,6 +311,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     });
 
     if (score) {
+      const profile = score.weightProfile || 'bank-wealth';
       return {
         compositeScore: Number(score.compositeScore),
         starRating: score.starRating,
@@ -355,6 +321,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         peerRankScore: Number(score.peerRankScore),
         weightProfile: score.weightProfile,
         period: score.period,
+        weights: getWeights(profile),
+        scales: scoreScales,
       };
     }
 

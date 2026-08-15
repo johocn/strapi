@@ -109,7 +109,7 @@ declare const _default: {
     "userId": {
       "type": "relation",
       "relation": "manyToOne",
-      "target": "plugin::zhao-sso.sso-user"
+      "target": "plugin::users-permissions.user"
     },
     "dwellTime": {
       "type": "integer"

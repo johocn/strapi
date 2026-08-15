@@ -94,7 +94,7 @@ function isAdminContext() {
 }
 const USER_CHANNEL_UID$2 = "plugin::zhao-channel.user-channel";
 const ROLE_CHANNEL_UID$2 = "plugin::zhao-channel.role-channel";
-const USER_UID$3 = "plugin::zhao-sso.sso-user";
+const USER_UID$3 = "plugin::users-permissions.user";
 const USER_INVITE_UID$2 = "plugin::zhao-channel.user-invite";
 const CHANNEL_MEMBER_UID$4 = "plugin::zhao-channel.channel-member";
 const CHANNEL_UID$3 = "plugin::zhao-channel.channel";
@@ -766,7 +766,7 @@ const contentTypes = {
         user: {
           type: "relation",
           relation: "manyToOne",
-          target: "plugin::zhao-sso.sso-user",
+          target: "plugin::users-permissions.user",
           required: true
         },
         role: {
@@ -778,7 +778,7 @@ const contentTypes = {
         invitedBy: {
           type: "relation",
           relation: "manyToOne",
-          target: "plugin::zhao-sso.sso-user"
+          target: "plugin::users-permissions.user"
         },
         "isCurrent": {
           "type": "boolean",
@@ -804,7 +804,7 @@ const contentTypes = {
         user: {
           type: "relation",
           relation: "manyToOne",
-          target: "plugin::zhao-sso.sso-user",
+          target: "plugin::users-permissions.user",
           required: true
         },
         channel: {
@@ -816,7 +816,7 @@ const contentTypes = {
         grantedBy: {
           type: "relation",
           relation: "manyToOne",
-          target: "plugin::zhao-sso.sso-user"
+          target: "plugin::users-permissions.user"
         },
         grantedAt: {
           type: "datetime"
@@ -841,7 +841,7 @@ const contentTypes = {
         user: {
           type: "relation",
           relation: "oneToOne",
-          target: "plugin::zhao-sso.sso-user",
+          target: "plugin::users-permissions.user",
           required: true,
           unique: true
         },
@@ -854,7 +854,7 @@ const contentTypes = {
         invitedBy: {
           type: "relation",
           relation: "manyToOne",
-          target: "plugin::zhao-sso.sso-user"
+          target: "plugin::users-permissions.user"
         },
         inviteChannel: {
           type: "relation",
@@ -6771,13 +6771,13 @@ const channel = ({ strapi }) => ({
     const result = await strapi.db.transaction(async () => {
       let user = null;
       if (data.email && data.username && data.password) {
-        const existingUserByEmail = await strapi.db.query("plugin::zhao-sso.sso-user").findOne({
+        const existingUserByEmail = await strapi.db.query("plugin::users-permissions.user").findOne({
           where: { email: data.email }
         });
         if (existingUserByEmail) {
           throwErr$1("030107", 409, "该邮箱已被注册");
         }
-        const existingUserByUsername = await strapi.db.query("plugin::zhao-sso.sso-user").findOne({
+        const existingUserByUsername = await strapi.db.query("plugin::users-permissions.user").findOne({
           where: { username: data.username }
         });
         if (existingUserByUsername) {
@@ -6804,11 +6804,10 @@ const channel = ({ strapi }) => ({
         data: { path: updatedPath }
       });
       if (data.email && data.username && data.password) {
-        user = await strapi.plugin("zhao-sso").service("sso-user").createUser({
+        user = await strapi.plugin("zhao-auth").service("auth").createUser({
           email: data.email,
           username: data.username,
-          password: data.password,
-          register_channel: "sso_local"
+          password: data.password
         });
         await strapi.db.query(CHANNEL_MEMBER_UID$3).create({
           data: {
@@ -7059,7 +7058,7 @@ function throwErr(code, status, message) {
 }
 const CHANNEL_UID$1 = "plugin::zhao-channel.channel";
 const CHANNEL_MEMBER_UID$2 = "plugin::zhao-channel.channel-member";
-const USER_UID$2 = "plugin::zhao-sso.sso-user";
+const USER_UID$2 = "plugin::users-permissions.user";
 const USER_INVITE_UID$1 = "plugin::zhao-channel.user-invite";
 function formatChannel(channel2) {
   if (!channel2) return null;
@@ -7140,10 +7139,10 @@ const channelMember = ({ strapi }) => ({
     });
     const isNewUser = !user;
     if (!user) {
-      user = await strapi.plugin("zhao-sso").service("sso-user").createUser({
+      user = await strapi.plugin("zhao-auth").service("auth").createUser({
         email: data.email,
         username: data.email.split("@")[0],
-        register_channel: "sso_local"
+        password: Math.random().toString(36).slice(2, 12)
       });
       await strapi.db.query(CHANNEL_MEMBER_UID$2).create({
         data: {
@@ -7348,7 +7347,7 @@ const channelMember = ({ strapi }) => ({
 const USER_CHANNEL_UID = "plugin::zhao-channel.user-channel";
 const ROLE_CHANNEL_UID = "plugin::zhao-auth.role-channel";
 const CHANNEL_MEMBER_UID$1 = "plugin::zhao-channel.channel-member";
-const USER_UID$1 = "plugin::zhao-sso.sso-user";
+const USER_UID$1 = "plugin::users-permissions.user";
 const channelPermission = ({ strapi }) => ({
   async grantChannelsToUser(userId, channelIds, grantedBy) {
     const results = [];
@@ -7717,7 +7716,7 @@ const channelPermission = ({ strapi }) => ({
   }
 });
 const USER_INVITE_UID = "plugin::zhao-channel.user-invite";
-const USER_UID = "plugin::zhao-sso.sso-user";
+const USER_UID = "plugin::users-permissions.user";
 const CHANNEL_UID = "plugin::zhao-channel.channel";
 const CHANNEL_MEMBER_UID = "plugin::zhao-channel.channel-member";
 const MAX_DISTRIBUTION_DEPTH = 2;

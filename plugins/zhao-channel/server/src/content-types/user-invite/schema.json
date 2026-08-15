@@ -14,7 +14,7 @@
     "user": {
       "type": "relation",
       "relation": "oneToOne",
-      "target": "plugin::zhao-sso.sso-user"
+      "target": "plugin::users-permissions.user"
     },
     "inviteCode": {
       "type": "string",
@@ -25,7 +25,7 @@
     "invitedBy": {
       "type": "relation",
       "relation": "manyToOne",
-      "target": "plugin::zhao-sso.sso-user"
+      "target": "plugin::users-permissions.user"
     },
     "inviteChannel": {
       "type": "relation",

@@ -895,7 +895,7 @@ const collectionName = "third_party_accounts";
 const info = { "singularName": "third-party-account", "pluralName": "third-party-accounts", "displayName": "三方账号绑定" };
 const options = { "draftAndPublish": false };
 const pluginOptions = { "content-manager": { "visible": false } };
-const attributes = { "platform": { "type": "enumeration", "enum": ["wechat", "alipay", "douyin"], "required": true }, "appType": { "type": "enumeration", "enum": ["official_account", "mini_program", "open_platform", "h5", "app"], "required": true }, "openId": { "type": "string", "required": true }, "unionId": { "type": "string" }, "nickname": { "type": "string" }, "avatar": { "type": "string" }, "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user" } };
+const attributes = { "platform": { "type": "enumeration", "enum": ["wechat", "alipay", "douyin"], "required": true }, "appType": { "type": "enumeration", "enum": ["official_account", "mini_program", "open_platform", "h5", "app"], "required": true }, "openId": { "type": "string", "required": true }, "unionId": { "type": "string" }, "nickname": { "type": "string" }, "avatar": { "type": "string" }, "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::users-permissions.user" } };
 const thirdPartyAccountSchema = {
   kind,
   collectionName,

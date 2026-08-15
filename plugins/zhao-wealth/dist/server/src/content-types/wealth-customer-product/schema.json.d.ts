@@ -11,7 +11,7 @@ declare const _default: {
     "draftAndPublish": false
   },
   "attributes": {
-    "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user" },
+    "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::users-permissions.user" },
     "product": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-product" },
     "channel": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-channel.channel" },
     "followTime": { "type": "datetime" },
