@@ -23,13 +23,13 @@
     "verifier": {
       "type": "relation",
       "relation": "manyToOne",
-      "target": "plugin::zhao-sso.sso-user",
+      "target": "plugin::users-permissions.user",
       "required": true
     },
     "verifiedUser": {
       "type": "relation",
       "relation": "manyToOne",
-      "target": "plugin::zhao-sso.sso-user",
+      "target": "plugin::users-permissions.user",
       "required": true
     },
     "channel": {

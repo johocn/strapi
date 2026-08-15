@@ -3,32 +3,6 @@ import type { Core } from "@strapi/strapi";
 export default ({ strapi }: { strapi: Core.Strapi }) => {
   const getUserId = (ctx: any) => ctx.state.user.id || ctx.state.user.documentId;
 
-  // 前端用户列表来自 up_users（users-permissions.user），而积分记录 user 字段关联 sso_users。
-  // 通过 username / email 将 up_users.id 解析为 sso_users.id；解析不到时抛 400，避免外键 500 报错。
-  const resolveSsoUserId = async (userId: string | number): Promise<number> => {
-    const upUser = await strapi.db.query("plugin::users-permissions.user").findOne({
-      where: { id: Number(userId) },
-      select: ["id", "username", "email"],
-    });
-    if (!upUser) {
-      const e: any = new Error("用户不存在");
-      e.status = 404;
-      throw e;
-    }
-    const ssoUser = await strapi.db.query("plugin::zhao-sso.sso-user").findOne({
-      where: {
-        $or: [{ username: upUser.username }, { email: upUser.email }],
-      },
-      select: ["id"],
-    });
-    if (!ssoUser) {
-      const e: any = new Error("该用户在积分系统中无关联账号，无法发放积分");
-      e.status = 400;
-      throw e;
-    }
-    return ssoUser.id;
-  };
-
   // 前端渠道选择器传的是 channel 的 documentId，而积分记录 channel 关系需要数字 id。
   // 将 channelId（documentId 或数字 id）解析为数字 id；解析不到时抛 400。
   const resolveChannelId = async (channelId: string | number): Promise<number> => {
@@ -335,12 +309,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       if (channelId) {
         await assertChannelDocIdInScope(ctx, channelId);
       }
-      // 前端传入 up_users.id，积分系统需要 sso_users.id，解析成本地用户身份
-      const ssoUserId = userId ? await resolveSsoUserId(userId) : userId;
-      // 前端渠道选择器传 documentId，解析为数字 id
+      // 前端传入 up_users.id（users-permissions.user），积分系统直接使用该 id
       const resolvedChannelId = channelId ? await resolveChannelId(channelId) : channelId;
       const record = await strapi.plugin("zhao-point").service("point").adminAdjust({
-        userId: ssoUserId, points, action, remark, operatorId, channelId: resolvedChannelId,
+        userId, points, action, remark, operatorId, channelId: resolvedChannelId,
       });
       ctx.body = record;
     } catch (e: any) {
@@ -366,12 +338,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
           await assertUserInScope(ctx, adj.userId);
         }
       }
-      // 前端传入 up_users.id，解析为 sso_users.id 后再批量发放
+      // 前端渠道传 documentId，解析为数字 id
       for (const adj of adjustments) {
-        if (adj.userId) {
-          adj.userId = await resolveSsoUserId(adj.userId);
-        }
-        // 前端渠道传 documentId，解析为数字 id
         if (adj.channelId) {
           adj.channelId = await resolveChannelId(adj.channelId);
         }
