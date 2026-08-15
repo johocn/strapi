@@ -237,6 +237,13 @@ export const PERMISSION_TREE: Record<string, PermissionItem> = {
           "point-record.read": { label: "查看记录", type: "button" },
         },
       },
+      "menu.point-grant": {
+        label: "发放积分",
+        type: "menu",
+        children: {
+          "point.grant": { label: "发放/扣减积分", type: "button" },
+        },
+      },
       "menu.product": {
         label: "积分产品",
         type: "menu",
