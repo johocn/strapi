@@ -2725,16 +2725,25 @@ const ssoAuth$1 = ({ strapi }) => {
     return { payload, user: sanitizeUser(user) };
   };
   const refreshToken = async (refreshToken2) => {
-    const payload = await jwtService().verifyToken(refreshToken2);
+    let payload;
+    try {
+      payload = await jwtService().verifyToken(refreshToken2);
+    } catch (e) {
+      strapi.log.warn(`[zhao-sso] refresh verify failed: ${e?.message || e}`);
+      throwErr("SSO_AUTH_009", 401, "无效的 refresh token");
+    }
     if (payload.type !== "refresh") throwErr("SSO_AUTH_009", 401, "无效的 refresh token");
+    if (!payload.sub) throwErr("SSO_AUTH_009", 401, "无效的 refresh token");
     const tokenRecord = await strapi.db.query(TOKEN_UID).findOne({
       where: { refresh_token: refreshToken2 }
     });
     if (!tokenRecord) throwErr("SSO_AUTH_010", 404, "Token 记录不存在");
     if (tokenRecord.revoked) throwErr("SSO_AUTH_011", 401, "Refresh token 已被撤销");
     if (new Date(tokenRecord.refresh_expires_at) < /* @__PURE__ */ new Date()) throwErr("SSO_AUTH_012", 401, "Refresh token 已过期");
+    const appCode = payload.app_code || tokenRecord.app_code;
+    if (!appCode) throwErr("SSO_AUTH_009", 401, "无效的 refresh token");
     const oauthService = strapi.plugin("zhao-sso").service("sso-oauth");
-    const app = await oauthService.findApp(payload.app_code);
+    const app = await oauthService.findApp(appCode);
     if (!app || !app.is_active) throwErr("SSO_OAUTH_001", 404, "应用不存在或已禁用");
     if (!oauthService.validateGrantType(app, "refresh_token")) throwErr("SSO_OAUTH_008", 400, "该应用未开启 refresh_token 授权");
     await strapi.db.query(TOKEN_UID).update({
@@ -2743,14 +2752,14 @@ const ssoAuth$1 = ({ strapi }) => {
     });
     const user = await userService().findByUuid(payload.sub);
     if (!user) throwErr("SSO_AUTH_008", 404, "用户不存在");
-    const roles = await getUserRoles(user.id, payload.app_code);
+    const roles = await getUserRoles(user.id, appCode);
     const newTokenPair = await jwtService().signTokenPair({
       sub: user.uuid,
-      app_code: payload.app_code,
+      app_code: appCode,
       roles,
       channel: payload.channel
     });
-    await saveTokenRecord(user.id, payload.app_code, newTokenPair, payload.channel);
+    await saveTokenRecord(user.id, appCode, newTokenPair, payload.channel);
     return newTokenPair;
   };
   const logout = async (accessToken) => {

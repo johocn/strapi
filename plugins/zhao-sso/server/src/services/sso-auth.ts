@@ -228,8 +228,16 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   };
 
   const refreshToken = async (refreshToken: string) => {
-    const payload = await jwtService().verifyToken(refreshToken);
+    let payload: any;
+    try {
+      payload = await jwtService().verifyToken(refreshToken);
+    } catch (e: any) {
+      // 过期/签名无效等 JWT 错误 → 统一 401，避免裸错误被 Strapi 转为 500
+      strapi.log.warn(`[zhao-sso] refresh verify failed: ${e?.message || e}`);
+      throwErr("SSO_AUTH_009", 401, "无效的 refresh token");
+    }
     if (payload.type !== "refresh") throwErr("SSO_AUTH_009", 401, "无效的 refresh token");
+    if (!payload.sub) throwErr("SSO_AUTH_009", 401, "无效的 refresh token");
 
     const tokenRecord = await strapi.db.query(TOKEN_UID).findOne({
       where: { refresh_token: refreshToken },
@@ -238,9 +246,13 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     if (tokenRecord.revoked) throwErr("SSO_AUTH_011", 401, "Refresh token 已被撤销");
     if (new Date(tokenRecord.refresh_expires_at) < new Date()) throwErr("SSO_AUTH_012", 401, "Refresh token 已过期");
 
+    // app_code 优先取 payload，缺失时回退 token 记录（兼容旧 token），避免 findApp(undefined) 触发 ORM 500
+    const appCode = payload.app_code || tokenRecord.app_code;
+    if (!appCode) throwErr("SSO_AUTH_009", 401, "无效的 refresh token");
+
     // 校验 app 是否允许 refresh_token 授权（payload.app_code 来自原 access token 签发时写入）
     const oauthService = strapi.plugin("zhao-sso").service("sso-oauth");
-    const app = await oauthService.findApp(payload.app_code);
+    const app = await oauthService.findApp(appCode);
     if (!app || !app.is_active) throwErr("SSO_OAUTH_001", 404, "应用不存在或已禁用");
     if (!oauthService.validateGrantType(app, "refresh_token")) throwErr("SSO_OAUTH_008", 400, "该应用未开启 refresh_token 授权");
 
@@ -252,15 +264,15 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     const user = await userService().findByUuid(payload.sub);
     if (!user) throwErr("SSO_AUTH_008", 404, "用户不存在");
 
-    const roles = await getUserRoles(user.id, payload.app_code);
+    const roles = await getUserRoles(user.id, appCode);
     const newTokenPair = await jwtService().signTokenPair({
       sub: user.uuid,
-      app_code: payload.app_code,
+      app_code: appCode,
       roles,
       channel: payload.channel,
     });
 
-    await saveTokenRecord(user.id, payload.app_code, newTokenPair, payload.channel);
+    await saveTokenRecord(user.id, appCode, newTokenPair, payload.channel);
 
     return newTokenPair;
   };
