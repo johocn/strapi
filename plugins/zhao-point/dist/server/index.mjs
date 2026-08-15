@@ -619,6 +619,42 @@ const point$1 = ({ strapi }) => {
 };
 const pointAdmin = ({ strapi }) => {
   const getUserId = (ctx) => ctx.state.user.id || ctx.state.user.documentId;
+  const resolveSsoUserId = async (userId) => {
+    const upUser = await strapi.db.query("plugin::users-permissions.user").findOne({
+      where: { id: Number(userId) },
+      select: ["id", "username", "email"]
+    });
+    if (!upUser) {
+      const e = new Error("用户不存在");
+      e.status = 404;
+      throw e;
+    }
+    const ssoUser = await strapi.db.query("plugin::zhao-sso.sso-user").findOne({
+      where: {
+        $or: [{ username: upUser.username }, { email: upUser.email }]
+      },
+      select: ["id"]
+    });
+    if (!ssoUser) {
+      const e = new Error("该用户在积分系统中无关联账号，无法发放积分");
+      e.status = 400;
+      throw e;
+    }
+    return ssoUser.id;
+  };
+  const resolveChannelId = async (channelId) => {
+    if (typeof channelId === "number") return channelId;
+    const ch = await strapi.db.query("plugin::zhao-channel.channel").findOne({
+      where: { $or: [{ documentId: String(channelId) }] },
+      select: ["id"]
+    });
+    if (!ch) {
+      const e = new Error("渠道不存在");
+      e.status = 400;
+      throw e;
+    }
+    return ch.id;
+  };
   const scopeSvc = () => strapi.plugin("zhao-auth")?.service("channel-scope");
   const getScope = (ctx) => ctx.state?.channelScope;
   const channelFilter = (ctx, field) => {
@@ -933,13 +969,15 @@ const pointAdmin = ({ strapi }) => {
         if (channelId) {
           await assertChannelDocIdInScope(ctx, channelId);
         }
+        const ssoUserId = userId ? await resolveSsoUserId(userId) : userId;
+        const resolvedChannelId = channelId ? await resolveChannelId(channelId) : channelId;
         const record = await strapi.plugin("zhao-point").service("point").adminAdjust({
-          userId,
+          userId: ssoUserId,
           points,
           action,
           remark,
           operatorId,
-          channelId
+          channelId: resolvedChannelId
         });
         ctx.body = record;
       } catch (e) {
@@ -967,6 +1005,14 @@ const pointAdmin = ({ strapi }) => {
         for (const adj of adjustments) {
           if (adj.userId) {
             await assertUserInScope(ctx, adj.userId);
+          }
+        }
+        for (const adj of adjustments) {
+          if (adj.userId) {
+            adj.userId = await resolveSsoUserId(adj.userId);
+          }
+          if (adj.channelId) {
+            adj.channelId = await resolveChannelId(adj.channelId);
           }
         }
         const result = await strapi.plugin("zhao-point").service("point").batchAdjust(adjustments, operatorId);
