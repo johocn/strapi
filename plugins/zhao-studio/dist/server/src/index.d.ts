@@ -574,14 +574,14 @@ declare const _default: {
         ad: ({ strapi }: {
             strapi: import('@strapi/types/dist/core').Strapi;
         }) => {
-            getZoneByPosition(position: string, siteDomain?: string): Promise<{
+            getZoneByPosition(position: string, siteDomain?: string, siteDocumentId?: string): Promise<{
                 zone: null;
                 contents: never[];
             } | {
                 zone: import('@strapi/types/dist/modules/documents').AnyDocument;
                 contents: any;
             }>;
-            getAllZones(siteDomain?: string): Promise<any[]>;
+            getAllZones(siteDomain?: string, siteDocumentId?: string): Promise<any[]>;
             listZones(filters?: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument[]>;
             createZone(data: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
             findOneZone(documentId: string): Promise<import('@strapi/types/dist/modules/documents').AnyDocument | null>;

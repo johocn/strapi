@@ -154,8 +154,8 @@ async function seedAdData(strapi2) {
       contentType: "slideshow",
       title: "精选好课 限时免费",
       images: [
-        { url: "/uploads/ads/banner-courses.jpg", title: "精选好课 限时免费", subtitle: "名师授课，品质保证" },
-        { url: "/uploads/ads/banner-points.jpg", title: "学习赚积分", subtitle: "积分兑换好礼" }
+        { url: "/static/ads/banner-courses.jpg", title: "精选好课 限时免费", subtitle: "名师授课，品质保证" },
+        { url: "/static/ads/banner-points.jpg", title: "学习赚积分", subtitle: "积分兑换好礼" }
       ],
       linkType: "internal",
       linkUrl: "/pages/index/index",
@@ -871,7 +871,11 @@ const ad$1 = ({ strapi: strapi2 }) => ({
       const { position } = ctx.params;
       const { site } = ctx.query;
       const adService = strapi2.plugin("zhao-studio").service("ad");
-      const result = await adService.getZoneByPosition(position, site);
+      const result = await adService.getZoneByPosition(
+        position,
+        site,
+        ctx.state?.siteDocumentId
+      );
       ctx.body = { data: result };
     } catch (err) {
       ctx.status = 500;
@@ -883,7 +887,7 @@ const ad$1 = ({ strapi: strapi2 }) => ({
     try {
       const { site } = ctx.query;
       const adService = strapi2.plugin("zhao-studio").service("ad");
-      const zones = await adService.getAllZones(site);
+      const zones = await adService.getAllZones(site, ctx.state?.siteDocumentId);
       ctx.body = { data: zones };
     } catch (err) {
       ctx.status = 500;
@@ -21394,9 +21398,11 @@ const channelReport = ({ strapi: strapi2 }) => {
 };
 const ad = ({ strapi: strapi2 }) => ({
   // Public: Get active ad zone by position with its active contents
-  async getZoneByPosition(position, siteDomain) {
+  async getZoneByPosition(position, siteDomain, siteDocumentId) {
     const filters2 = { position, isActive: true };
-    if (siteDomain) {
+    if (siteDocumentId) {
+      filters2.site = siteDocumentId;
+    } else if (siteDomain) {
       const siteConfig = await strapi2.db.query("plugin::zhao-common.site-config").findOne({
         where: { domain: siteDomain }
       });
@@ -21429,9 +21435,11 @@ const ad = ({ strapi: strapi2 }) => ({
     return { zone, contents: contents2 };
   },
   // Public: Get all active zones for a site (with filtered contents)
-  async getAllZones(siteDomain) {
+  async getAllZones(siteDomain, siteDocumentId) {
     const filters2 = { isActive: true };
-    if (siteDomain) {
+    if (siteDocumentId) {
+      filters2.site = siteDocumentId;
+    } else if (siteDomain) {
       const siteConfig = await strapi2.db.query("plugin::zhao-common.site-config").findOne({
         where: { domain: siteDomain }
       });

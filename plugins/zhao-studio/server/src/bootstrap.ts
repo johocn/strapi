@@ -95,8 +95,8 @@ async function seedAdData(strapi: any) {
       contentType: 'slideshow',
       title: '精选好课 限时免费',
       images: [
-        { url: '/uploads/ads/banner-courses.jpg', title: '精选好课 限时免费', subtitle: '名师授课，品质保证' },
-        { url: '/uploads/ads/banner-points.jpg', title: '学习赚积分', subtitle: '积分兑换好礼' },
+        { url: '/static/ads/banner-courses.jpg', title: '精选好课 限时免费', subtitle: '名师授课，品质保证' },
+        { url: '/static/ads/banner-points.jpg', title: '学习赚积分', subtitle: '积分兑换好礼' },
       ],
       linkType: 'internal',
       linkUrl: '/pages/index/index',
