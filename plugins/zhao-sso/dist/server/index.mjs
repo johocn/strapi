@@ -95,6 +95,45 @@ const bootstrap = async ({ strapi }) => {
     });
     strapi.log.info("[zhao-sso] Default app created (app_code=wealth)");
   }
+  const eJohoApp = await strapi.db.query("plugin::zhao-sso.sso-app").findOne({
+    where: { app_code: "e-joho-app" }
+  });
+  if (!eJohoApp) {
+    await strapi.db.query("plugin::zhao-sso.sso-app").create({
+      data: {
+        app_code: "e-joho-app",
+        app_name: "E-Joho 应用",
+        app_secret: hashedSecret,
+        redirect_uris: ["http://localhost:*"],
+        allowed_grant_types: ["authorization_code", "refresh_token"],
+        is_active: true
+      }
+    });
+    strapi.log.info("[zhao-sso] Default app created (app_code=e-joho-app)");
+  }
+  const vendureApps = [
+    { app_code: "vendure-default", app_name: "Vendure 商城默认租户", rawSecret: "default-app-secret" },
+    { app_code: "vendure-shop-a", app_name: "Vendure 商城 shop-a 租户", rawSecret: "shop-a-app-secret" }
+  ];
+  for (const { app_code, app_name, rawSecret: rawSecret2 } of vendureApps) {
+    const existing = await strapi.db.query("plugin::zhao-sso.sso-app").findOne({
+      where: { app_code }
+    });
+    if (!existing) {
+      const vendureSecret = await bcrypt.hash(rawSecret2, 10);
+      await strapi.db.query("plugin::zhao-sso.sso-app").create({
+        data: {
+          app_code,
+          app_name,
+          app_secret: vendureSecret,
+          redirect_uris: ["https://shop.joho.cn/*", "http://localhost:*"],
+          allowed_grant_types: ["authorization_code", "refresh_token"],
+          is_active: true
+        }
+      });
+      strapi.log.info(`[zhao-sso] Vendure app created (app_code=${app_code})`);
+    }
+  }
 };
 const config = {
   default: {
