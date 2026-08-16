@@ -45,13 +45,16 @@ declare const _default: {
             getFolders(ctx: any): Promise<void>;
             createFolder(ctx: any): Promise<void>;
             deleteMedia(ctx: any): Promise<void>;
+            getReferences(ctx: any): Promise<void>;
             repairFolders(ctx: any): Promise<void>;
+            issueStreamToken(ctx: any): Promise<void>;
+            streamMedia(ctx: any): Promise<void>;
         };
     };
     routes: {
         "content-api": {
             type: "content-api";
-            routes: {
+            routes: ({
                 method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
                 path: string;
                 handler: string;
@@ -64,7 +67,15 @@ declare const _default: {
                         };
                     })[];
                 };
-            }[];
+            } | {
+                method: string;
+                path: string;
+                handler: string;
+                config: {
+                    auth: boolean;
+                    policies: string[];
+                };
+            })[];
         };
     };
     services: {
@@ -83,8 +94,21 @@ declare const _default: {
             getNextPathId(): Promise<number>;
             ensureFolderByPath(humanPath: string): Promise<any>;
             buildHumanPath(folderId: number): Promise<string>;
+            resolveHumanPathToNumericPath(humanPath: string): Promise<string | null>;
             uploadFile(params: import('./services/media-service').UploadParams): Promise<import('./services/media-service').UploadResult>;
             canDeleteFile(fileId: number, user: any): Promise<boolean>;
+            checkReferences(fileId: number): Promise<Array<{
+                uid: string;
+                field: string;
+                label: string;
+                collection: boolean;
+                required: boolean;
+                items: Array<{
+                    id: number;
+                    documentId: string;
+                    title: string;
+                }>;
+            }>>;
             listFiles(params: {
                 page: number;
                 pageSize: number;
@@ -134,6 +158,9 @@ declare const _default: {
                 pagination: any;
             }>;
         };
+        "media-stream": ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => import('./services/media-stream').MediaStream;
     };
     contentTypes: {
         "sync-record": {

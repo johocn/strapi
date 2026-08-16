@@ -14,8 +14,21 @@ declare const _default: {
         getNextPathId(): Promise<number>;
         ensureFolderByPath(humanPath: string): Promise<any>;
         buildHumanPath(folderId: number): Promise<string>;
+        resolveHumanPathToNumericPath(humanPath: string): Promise<string | null>;
         uploadFile(params: import('./media-service').UploadParams): Promise<import('./media-service').UploadResult>;
         canDeleteFile(fileId: number, user: any): Promise<boolean>;
+        checkReferences(fileId: number): Promise<Array<{
+            uid: string;
+            field: string;
+            label: string;
+            collection: boolean;
+            required: boolean;
+            items: Array<{
+                id: number;
+                documentId: string;
+                title: string;
+            }>;
+        }>>;
         listFiles(params: {
             page: number;
             pageSize: number;
@@ -65,5 +78,8 @@ declare const _default: {
             pagination: any;
         }>;
     };
+    "media-stream": ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => import('./media-stream').MediaStream;
 };
 export default _default;

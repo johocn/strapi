@@ -25,7 +25,10 @@ declare const _default: {
         getFolders(ctx: any): Promise<void>;
         createFolder(ctx: any): Promise<void>;
         deleteMedia(ctx: any): Promise<void>;
+        getReferences(ctx: any): Promise<void>;
         repairFolders(ctx: any): Promise<void>;
+        issueStreamToken(ctx: any): Promise<void>;
+        streamMedia(ctx: any): Promise<void>;
     };
 };
 export default _default;

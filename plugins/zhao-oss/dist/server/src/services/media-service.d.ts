@@ -44,6 +44,11 @@ declare const _default: ({ strapi }: {
      */
     buildHumanPath(folderId: number): Promise<string>;
     /**
+     * 将人类可读路径（如 /course/covers）解析为数字路径（如 /3/4）
+     * 逐层按文件夹名查找，任一段找不到返回 null
+     */
+    resolveHumanPathToNumericPath(humanPath: string): Promise<string | null>;
+    /**
      * 上传文件：本地存储 + OSS 同步 + 数据库记录
      */
     uploadFile(params: UploadParams): Promise<UploadResult>;
@@ -52,6 +57,22 @@ declare const _default: ({ strapi }: {
      * 规则：admin / channel-admin 可删除任何文件，其他用户只能删除自己创建的文件
      */
     canDeleteFile(fileId: number, user: any): Promise<boolean>;
+    /**
+     * 检查文件被哪些业务表引用
+     * 读取 config/plugins.ts 中 zhao-oss.config.referenceMap 配置
+     */
+    checkReferences(fileId: number): Promise<Array<{
+        uid: string;
+        field: string;
+        label: string;
+        collection: boolean;
+        required: boolean;
+        items: Array<{
+            id: number;
+            documentId: string;
+            title: string;
+        }>;
+    }>>;
     /**
      * 文件列表查询（分页 + 过滤）
      * 管理员以上角色不过滤 createdBy，其他用户自动添加 createdBy 过滤

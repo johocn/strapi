@@ -1,10 +1,32 @@
 "use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
 Object.defineProperties(exports, { __esModule: { value: true }, [Symbol.toStringTag]: { value: "Module" } });
+const fs = require("fs/promises");
+const fs$1 = require("fs");
+const path = require("path");
 const OSS = require("ali-oss");
 const crypto = require("crypto");
-const fs = require("fs/promises");
-const fsSync = require("fs");
-const path = require("path");
 const sharp = require("sharp");
 const _interopDefault = (e) => e && e.__esModule ? e : { default: e };
 function _interopNamespace(e) {
@@ -24,10 +46,11 @@ function _interopNamespace(e) {
   n.default = e;
   return Object.freeze(n);
 }
+const fs__namespace = /* @__PURE__ */ _interopNamespace(fs);
+const fs__namespace$1 = /* @__PURE__ */ _interopNamespace(fs$1);
+const path__namespace = /* @__PURE__ */ _interopNamespace(path);
 const OSS__default = /* @__PURE__ */ _interopDefault(OSS);
 const crypto__namespace = /* @__PURE__ */ _interopNamespace(crypto);
-const fs__namespace = /* @__PURE__ */ _interopNamespace(fs);
-const path__namespace = /* @__PURE__ */ _interopNamespace(path);
 const sharp__default = /* @__PURE__ */ _interopDefault(sharp);
 const PERMISSIONS = {
   "oss.file.upload": ["admin", "channel-admin", "course-manager", "instructor", "user"],
@@ -103,8 +126,8 @@ const bootstrap = async ({ strapi }) => {
     }
   }
   try {
-    const FILE_UID_MIGRATE = "plugin::upload.file";
-    const staleFiles = await strapi.db.query(FILE_UID_MIGRATE).findMany({
+    const FILE_UID2 = "plugin::upload.file";
+    const staleFiles = await strapi.db.query(FILE_UID2).findMany({
       where: { provider: "zhao-oss-local" }
     });
     let migrated = 0;
@@ -118,7 +141,7 @@ const bootstrap = async ({ strapi }) => {
         updateData.provider_metadata = { ...meta, localUrl: `/static${meta.localUrl}` };
       }
       if (Object.keys(updateData).length === 0) continue;
-      await strapi.documents(FILE_UID_MIGRATE).update({
+      await strapi.documents(FILE_UID2).update({
         documentId: f.documentId,
         data: updateData
       });
@@ -278,7 +301,6 @@ const bootstrap = async ({ strapi }) => {
             const fileSize = stats.size;
             ctx.type = path__namespace.extname(filePath);
             ctx.set("Accept-Ranges", "bytes");
-
             const rangeHeader = ctx.headers.range;
             if (rangeHeader) {
               const match = /bytes=(\d+)-(\d*)/.exec(rangeHeader);
@@ -290,13 +312,12 @@ const bootstrap = async ({ strapi }) => {
                   ctx.set("Content-Range", `bytes ${start}-${end}/${fileSize}`);
                   ctx.set("Content-Length", String(end - start + 1));
                   if (ctx.method !== "HEAD") {
-                    ctx.body = fsSync.createReadStream(filePath, { start, end });
+                    ctx.body = fs$1.createReadStream(filePath, { start, end });
                   }
                   return;
                 }
               }
             }
-
             ctx.set("Content-Length", String(fileSize));
             if (ctx.method !== "HEAD") {
               ctx.body = await fs__namespace.readFile(filePath);
@@ -309,7 +330,7 @@ const bootstrap = async ({ strapi }) => {
     }
     await next();
   });
-  if (!isTest) logger.info("[zhao-oss] Static file middleware registered (/static/* \u2192 public/*)");
+  if (!isTest) logger.info("[zhao-oss] Static file middleware registered (/static/* → public/*)");
   strapi.server.use(async (ctx, next) => {
     await next();
     const enableUrlRewrite = strapi.config.get("plugin::zhao-oss.enableUrlRewrite") !== false;
@@ -877,15 +898,31 @@ const apiController = ({ strapi }) => ({
   async getReferences(ctx) {
     try {
       const { fileId } = ctx.params;
-      if (!fileId) { ctx.status = 400; ctx.body = { error: "fileId is required" }; return; }
+      if (!fileId) {
+        ctx.status = 400;
+        ctx.body = { error: "fileId is required" };
+        return;
+      }
       const parsedId = parseInt(fileId, 10);
-      if (isNaN(parsedId)) { ctx.status = 400; ctx.body = { error: "Invalid fileId" }; return; }
+      if (isNaN(parsedId)) {
+        ctx.status = 400;
+        ctx.body = { error: "Invalid fileId" };
+        return;
+      }
       const mediaService2 = strapi.plugin("zhao-oss").service("media-service");
       const file = await mediaService2.findFileById(parsedId);
-      if (!file) { ctx.status = 404; ctx.body = { error: "File not found" }; return; }
+      if (!file) {
+        ctx.status = 404;
+        ctx.body = { error: "File not found" };
+        return;
+      }
       const user = ctx.state?.user || ctx.user;
       const canAccess = await mediaService2.canDeleteFile(parsedId, user);
-      if (!canAccess) { ctx.status = 403; ctx.body = { error: "无权查看此文件的引用信息" }; return; }
+      if (!canAccess) {
+        ctx.status = 403;
+        ctx.body = { error: "无权查看此文件的引用信息" };
+        return;
+      }
       const references = await mediaService2.checkReferences(parsedId);
       ctx.body = {
         data: {
@@ -912,6 +949,92 @@ const apiController = ({ strapi }) => ({
       ctx.status = e.status || 400;
       ctx.body = { error: e.message };
     }
+  },
+  /**
+   * 为受保护媒体路径签发短期签名播放地址（is-authenticated 已校验登录）
+   * body: { path } → 原始视频/音频 URL（本地 /static 或 /uploads 路径）
+   * 返回: { data: { url } }，url 为相对 BASE_API 的流式地址
+   */
+  async issueStreamToken(ctx) {
+    try {
+      const body = ctx.request.body?.data || ctx.request.body || {};
+      const pathStr = typeof body.path === "string" ? body.path : "";
+      if (!pathStr) {
+        ctx.status = 400;
+        ctx.body = { error: "path is required" };
+        return;
+      }
+      const mediaStream2 = strapi.plugin("zhao-oss").service("media-stream");
+      const url = await mediaStream2.issueStreamUrl(pathStr);
+      ctx.body = wrap({ url });
+    } catch (e) {
+      ctx.status = e.status || 400;
+      ctx.body = { error: e.message };
+    }
+  },
+  /**
+   * 流式交付受保护媒体文件（支持 Range 断点续播/拖动进度条）
+   * query: path(URL路径) + exp(过期秒级时间戳) + sig(HMAC 签名)
+   */
+  async streamMedia(ctx) {
+    const mediaStream2 = strapi.plugin("zhao-oss").service("media-stream");
+    const target = mediaStream2.resolveStreamFile({
+      path: ctx.query.path,
+      exp: ctx.query.exp,
+      sig: ctx.query.sig
+    });
+    if (!target) {
+      ctx.status = 403;
+      ctx.body = { error: "鉴权失败或文件不存在" };
+      return;
+    }
+    const { filePath, mime } = target;
+    let total = 0;
+    try {
+      total = (await import("fs")).statSync(filePath).size;
+    } catch {
+      ctx.status = 404;
+      ctx.body = { error: "文件不存在" };
+      return;
+    }
+    if (total <= 0) {
+      ctx.status = 404;
+      ctx.body = { error: "文件为空" };
+      return;
+    }
+    const fs2 = require("fs");
+    const range = ctx.headers.range || "";
+    let start = 0;
+    let end = total - 1;
+    let status = 200;
+    const m = /^bytes=(\d*)-(\d*)$/i.exec(range.trim());
+    if (m) {
+      const s = m[1] ? parseInt(m[1], 10) : 0;
+      const e = m[2] ? parseInt(m[2], 10) : total - 1;
+      start = Number.isNaN(s) ? 0 : s;
+      end = Number.isNaN(e) ? total - 1 : e;
+      if (start > end) {
+        ctx.status = 416;
+        ctx.set("Content-Range", `bytes */${total}`);
+        ctx.body = "";
+        return;
+      }
+      if (end >= total) end = total - 1;
+      status = 206;
+    }
+    ctx.status = status;
+    ctx.set("Content-Type", mime);
+    ctx.set("Accept-Ranges", "bytes");
+    ctx.set("Content-Length", String(end - start + 1));
+    if (status === 206) {
+      ctx.set("Content-Range", `bytes ${start}-${end}/${total}`);
+    }
+    ctx.set("Cache-Control", "private, max-age=0, must-revalidate");
+    if (ctx.method === "HEAD") {
+      ctx.body = "";
+      return;
+    }
+    ctx.body = fs2.createReadStream(filePath, { start, end });
   }
 });
 const controllers = {
@@ -967,7 +1090,29 @@ const api = () => ({
     apiRoute("POST", "/media/folders", "api-controller.createFolder", "oss.upload"),
     apiRoute("GET", "/sync/status/:fileId", "api-controller.getSyncStatus", "oss.read"),
     apiRoute("GET", "/media/:fileId/references", "api-controller.getReferences", "oss.read"),
-    apiRoute("DELETE", "/media/:fileId", "api-controller.deleteMedia", "oss.delete")
+    apiRoute("DELETE", "/media/:fileId", "api-controller.deleteMedia", "oss.delete"),
+    // 媒体鉴权播放：签发需登录；流式交付由签名+过期时间校验（<video> 无法带 Authorization 头）
+    {
+      method: "POST",
+      path: "/v1/media/stream-token",
+      handler: "api-controller.issueStreamToken",
+      config: {
+        auth: false,
+        policies: ["plugin::zhao-auth.is-authenticated"]
+      }
+    },
+    {
+      method: "GET",
+      path: "/v1/media/stream",
+      handler: "api-controller.streamMedia",
+      config: { auth: false, policies: [] }
+    },
+    {
+      method: "HEAD",
+      path: "/v1/media/stream",
+      handler: "api-controller.streamMedia",
+      config: { auth: false, policies: [] }
+    }
   ]
 });
 const routes = {
@@ -1618,14 +1763,16 @@ const mediaService = ({ strapi }) => ({
     const isOwner = file.createdBy === user?.id || file.created_by === user?.id;
     return isAdmin || isChannelAdmin || isOwner;
   },
+  /**
+   * 检查文件被哪些业务表引用
+   * 读取 config/plugins.ts 中 zhao-oss.config.referenceMap 配置
+   */
   async checkReferences(fileId) {
     const pluginConfig = strapi.config.get("plugin::zhao-oss");
     const referenceMap = pluginConfig?.referenceMap || [];
     const references = [];
     for (const ref of referenceMap) {
-      const where = ref.collection
-        ? { [ref.field]: { $contains: fileId } }
-        : { [ref.field]: fileId };
+      const where = ref.collection ? { [ref.field]: { $contains: fileId } } : { [ref.field]: fileId };
       try {
         const hits = await strapi.db.query(ref.uid).findMany({ where });
         if (hits.length > 0) {
@@ -1895,11 +2042,109 @@ const mediaService = ({ strapi }) => ({
     };
   }
 });
+const STREAM_ROUTE = "/zhao-oss/v1/media/stream";
+const TTL_SEC = 30 * 60;
+const PROTECTED_PREFIXES = ["/static", "/uploads"];
+function getSecret() {
+  return process.env.ZHAO_MEDIA_SIGN_SECRET || "zhao-media-sign-v1";
+}
+function sign(pathStr, exp) {
+  return crypto__namespace.createHmac("sha256", getSecret()).update(`${pathStr}:${exp}`).digest("hex");
+}
+function verifySig(pathStr, exp, sig) {
+  const expected = sign(pathStr, exp);
+  const a = Buffer.from(expected);
+  const b = Buffer.from(sig || "");
+  if (a.length !== b.length) return false;
+  return crypto__namespace.timingSafeEqual(a, b);
+}
+function toUrlPath(input) {
+  if (!input) return "";
+  if (/^https?:\/\//i.test(input)) {
+    try {
+      return new URL(input).pathname;
+    } catch {
+      return "";
+    }
+  }
+  return input.split("?")[0] || "";
+}
+function resolvePhysical(publicDir, urlPath) {
+  if (!urlPath) return null;
+  if (!PROTECTED_PREFIXES.some((p) => urlPath.startsWith(p))) return null;
+  let rel = urlPath;
+  if (rel.startsWith("/static")) rel = rel.slice("/static".length);
+  const base = path__namespace.resolve(publicDir);
+  const physical = path__namespace.resolve(base, "." + rel);
+  if (physical !== base && !physical.startsWith(base + path__namespace.sep)) return null;
+  return physical;
+}
+const MIME_BY_EXT = {
+  mp4: "video/mp4",
+  webm: "video/webm",
+  mov: "video/quicktime",
+  mkv: "video/x-matroska",
+  m3u8: "application/vnd.apple.mpegurl",
+  ts: "video/mp2t",
+  mp3: "audio/mpeg",
+  m4a: "audio/mp4",
+  aac: "audio/aac",
+  wav: "audio/wav",
+  flac: "audio/flac",
+  ogg: "audio/ogg",
+  pdf: "application/pdf"
+};
+function mimeFromPath(filePath) {
+  const ext = path__namespace.extname(filePath).toLowerCase().replace(".", "");
+  return MIME_BY_EXT[ext] || "application/octet-stream";
+}
+const mediaStream = ({ strapi }) => {
+  const logger = strapi.plugin("zhao-common")?.service("logger") || strapi.log;
+  const mediaStream2 = {
+    async issueStreamUrl(input) {
+      try {
+        const publicDir = strapi.dirs.static.public;
+        const urlPath = toUrlPath(input);
+        const physical = resolvePhysical(publicDir, urlPath);
+        if (!physical || !fs__namespace$1.existsSync(physical)) {
+          return input;
+        }
+        const exp = Math.floor(Date.now() / 1e3) + TTL_SEC;
+        const sig = sign(urlPath, exp);
+        const q = `path=${encodeURIComponent(urlPath)}&exp=${exp}&sig=${sig}`;
+        return `${STREAM_ROUTE}?${q}`;
+      } catch (err) {
+        logger.debug(`[zhao-oss] issueStreamUrl failed for ${input}`, {
+          error: err.message
+        });
+        return input;
+      }
+    },
+    resolveStreamFile({ path: p, exp, sig }) {
+      try {
+        if (!p || !exp || !sig) return null;
+        const expNum = Number(exp);
+        if (!Number.isFinite(expNum)) return null;
+        if (Math.floor(Date.now() / 1e3) > expNum) return null;
+        if (!verifySig(p, expNum, String(sig).trim())) return null;
+        const publicDir = strapi.dirs.static.public;
+        const physical = resolvePhysical(publicDir, p);
+        if (!physical || !fs__namespace$1.existsSync(physical) || !fs__namespace$1.statSync(physical).isFile()) return null;
+        return { filePath: physical, mime: mimeFromPath(physical) };
+      } catch (err) {
+        logger.debug(`[zhao-oss] resolveStreamFile failed`, { error: err.message });
+        return null;
+      }
+    }
+  };
+  return mediaStream2;
+};
 const services = {
   "provider-registry": providerRegistry,
   "sync-service": syncService,
   "url-resolver": urlResolver,
-  "media-service": mediaService
+  "media-service": mediaService,
+  "media-stream": mediaStream
 };
 const policies = {};
 const index = {
