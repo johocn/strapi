@@ -1179,7 +1179,7 @@ export interface PluginZhaoChannelChannelMember
       Schema.Attribute.Private;
     invitedBy: Schema.Attribute.Relation<
       'manyToOne',
-      'plugin::zhao-sso.sso-user'
+      'plugin::users-permissions.user'
     >;
     isCurrent: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
@@ -1195,7 +1195,10 @@ export interface PluginZhaoChannelChannelMember
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    user: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-sso.sso-user'> &
+    user: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    > &
       Schema.Attribute.Required;
   };
 }
@@ -1224,7 +1227,7 @@ export interface PluginZhaoChannelUserChannel
     grantedAt: Schema.Attribute.DateTime;
     grantedBy: Schema.Attribute.Relation<
       'manyToOne',
-      'plugin::zhao-sso.sso-user'
+      'plugin::users-permissions.user'
     >;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
@@ -1236,7 +1239,10 @@ export interface PluginZhaoChannelUserChannel
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    user: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-sso.sso-user'> &
+    user: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    > &
       Schema.Attribute.Required;
   };
 }
@@ -1280,7 +1286,7 @@ export interface PluginZhaoChannelUserInvite
       }>;
     invitedBy: Schema.Attribute.Relation<
       'manyToOne',
-      'plugin::zhao-sso.sso-user'
+      'plugin::users-permissions.user'
     >;
     inviteMethod: Schema.Attribute.Enumeration<['invite_code', 'organic']> &
       Schema.Attribute.DefaultTo<'organic'>;
@@ -1295,7 +1301,10 @@ export interface PluginZhaoChannelUserInvite
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     used: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
-    user: Schema.Attribute.Relation<'oneToOne', 'plugin::zhao-sso.sso-user'> &
+    user: Schema.Attribute.Relation<
+      'oneToOne',
+      'plugin::users-permissions.user'
+    > &
       Schema.Attribute.Required &
       Schema.Attribute.Unique;
   };
@@ -1819,7 +1828,10 @@ export interface PluginZhaoCourseCourseAccessCode
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     usedAt: Schema.Attribute.DateTime;
-    usedBy: Schema.Attribute.Relation<'oneToOne', 'plugin::zhao-sso.sso-user'>;
+    usedBy: Schema.Attribute.Relation<
+      'oneToOne',
+      'plugin::users-permissions.user'
+    >;
     usedCount: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
   };
 }
@@ -1902,7 +1914,7 @@ export interface PluginZhaoCourseCourseEnrollment
     reviewedAt: Schema.Attribute.DateTime;
     reviewer: Schema.Attribute.Relation<
       'oneToOne',
-      'plugin::zhao-sso.sso-user'
+      'plugin::users-permissions.user'
     >;
     reviewNote: Schema.Attribute.Text;
     status: Schema.Attribute.Enumeration<
@@ -1912,7 +1924,10 @@ export interface PluginZhaoCourseCourseEnrollment
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    user: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-sso.sso-user'>;
+    user: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
     voucherNote: Schema.Attribute.Text;
     voucherUrl: Schema.Attribute.String;
   };
@@ -2023,7 +2038,10 @@ export interface PluginZhaoCourseCourseProgress
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    user: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-sso.sso-user'>;
+    user: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
   };
 }
 
@@ -2072,7 +2090,10 @@ export interface PluginZhaoCourseLessonProgress
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    user: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-sso.sso-user'>;
+    user: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
   };
 }
 
@@ -2114,7 +2135,10 @@ export interface PluginZhaoCourseUserCourseAuth
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    user: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-sso.sso-user'>;
+    user: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
   };
 }
 
@@ -2681,7 +2705,10 @@ export interface PluginZhaoLogisticsConversionEvent
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    user: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-sso.sso-user'>;
+    user: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
     userAgent: Schema.Attribute.String &
       Schema.Attribute.SetMinMaxLength<{
         maxLength: 500;
@@ -4100,12 +4127,12 @@ export interface PluginZhaoPointChannelVerification
     verifiedAt: Schema.Attribute.DateTime;
     verifiedUser: Schema.Attribute.Relation<
       'manyToOne',
-      'plugin::zhao-sso.sso-user'
+      'plugin::users-permissions.user'
     > &
       Schema.Attribute.Required;
     verifier: Schema.Attribute.Relation<
       'manyToOne',
-      'plugin::zhao-sso.sso-user'
+      'plugin::users-permissions.user'
     > &
       Schema.Attribute.Required;
   };
@@ -4375,7 +4402,10 @@ export interface PluginZhaoPointPointRecord
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    user: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-sso.sso-user'> &
+    user: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    > &
       Schema.Attribute.Required;
     userChannel: Schema.Attribute.Relation<
       'manyToOne',
@@ -4475,7 +4505,10 @@ export interface PluginZhaoPointPointRedemption
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    user: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-sso.sso-user'> &
+    user: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    > &
       Schema.Attribute.Required;
   };
 }
@@ -4695,7 +4728,10 @@ export interface PluginZhaoPointSignInRecord
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    user: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-sso.sso-user'> &
+    user: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    > &
       Schema.Attribute.Required;
   };
 }
@@ -4900,7 +4936,10 @@ export interface PluginZhaoQuizQuizExamAttempt
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    user: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-sso.sso-user'>;
+    user: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
   };
 }
 
@@ -4925,7 +4964,10 @@ export interface PluginZhaoQuizQuizRecord extends Struct.CollectionTypeSchema {
       Schema.Attribute.Private;
     duration: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
     gradedAt: Schema.Attribute.DateTime;
-    grader: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-sso.sso-user'>;
+    grader: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
     isCorrect: Schema.Attribute.Boolean;
     lesson: Schema.Attribute.Relation<
       'manyToOne',
@@ -4950,7 +4992,10 @@ export interface PluginZhaoQuizQuizRecord extends Struct.CollectionTypeSchema {
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    user: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-sso.sso-user'>;
+    user: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
   };
 }
 
@@ -7126,7 +7171,10 @@ export interface PluginZhaoThirdThirdPartyAccount
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    user: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-sso.sso-user'>;
+    user: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
   };
 }
 
@@ -7592,7 +7640,10 @@ export interface PluginZhaoWealthWealthCustomerHolding
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    user: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-sso.sso-user'>;
+    user: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
   };
 }
 
@@ -7633,7 +7684,10 @@ export interface PluginZhaoWealthWealthCustomerProduct
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
-    user: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-sso.sso-user'>;
+    user: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
   };
 }
 
@@ -8983,7 +9037,10 @@ export interface PluginZhaoWebsiteInteraction
       Schema.Attribute.SetMinMaxLength<{
         maxLength: 500;
       }>;
-    userId: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-sso.sso-user'>;
+    userId: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
     visitorId: Schema.Attribute.String &
       Schema.Attribute.Required &
       Schema.Attribute.SetMinMaxLength<{
@@ -9934,7 +9991,10 @@ export interface PluginZhaoWebsiteVisitLog extends Struct.CollectionTypeSchema {
       Schema.Attribute.SetMinMaxLength<{
         maxLength: 500;
       }>;
-    userId: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-sso.sso-user'>;
+    userId: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
     utmCampaign: Schema.Attribute.String &
       Schema.Attribute.SetMinMaxLength<{
         maxLength: 200;
