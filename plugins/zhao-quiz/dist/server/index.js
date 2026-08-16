@@ -236,7 +236,8 @@ const quiz$1 = ({ strapi }) => ({
         courseDocumentId,
         totalEarnedPoints,
         lessonDocumentId,
-        selectedChannelId
+        selectedChannelId,
+        ctx.state.siteDocumentId
       );
       ctx.body = wrap$4(result);
     } catch (err) {
@@ -952,7 +953,7 @@ const quiz = ({ strapi }) => {
     /**
      * C端领取答题积分
      */
-    async claimQuizPoints(userId, courseDocumentId, totalEarnedPoints, lessonDocumentId, selectedChannelId) {
+    async claimQuizPoints(userId, courseDocumentId, totalEarnedPoints, lessonDocumentId, selectedChannelId, siteDocumentId) {
       const RECORD_UID = "plugin::zhao-point.point-record";
       const dedupeSource = lessonDocumentId || courseDocumentId;
       const existing = await strapi.db.query(RECORD_UID).findOne({
@@ -974,6 +975,19 @@ const quiz = ({ strapi }) => {
       });
       const channelIds = Array.isArray(course?.channelIds) ? course.channelIds : [];
       const pointChannelId = course?.pointChannel?.id ?? course?.pointChannel ?? null;
+      let siteChannelId = null;
+      if (siteDocumentId) {
+        try {
+          const siteSvc = strapi.plugin("zhao-common")?.service("site-config");
+          if (siteSvc?.getAvailableChannels) {
+            const siteChannels = await siteSvc.getAvailableChannels(siteDocumentId);
+            if (Array.isArray(siteChannels) && siteChannels.length > 0) {
+              siteChannelId = siteChannels[0].id ?? null;
+            }
+          }
+        } catch {
+        }
+      }
       let userChannelId = null;
       try {
         const channelMemberService = strapi.plugin("zhao-channel")?.service("channel-member");
@@ -983,7 +997,7 @@ const quiz = ({ strapi }) => {
         }
       } catch {
       }
-      const finalChannelRaw = selectedChannelId ?? pointChannelId ?? userChannelId;
+      const finalChannelRaw = selectedChannelId ?? pointChannelId ?? siteChannelId ?? userChannelId;
       if (!finalChannelRaw) {
         const e = new Error("没有可用积分渠道，无法领取积分");
         e.code = "QUIZ_020";

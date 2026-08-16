@@ -214,7 +214,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   /**
    * C端领取答题积分
    */
-  async claimQuizPoints(userId: number, courseDocumentId: string, totalEarnedPoints: number, lessonDocumentId?: string, selectedChannelId?: number | string) {
+  async claimQuizPoints(userId: number, courseDocumentId: string, totalEarnedPoints: number, lessonDocumentId?: string, selectedChannelId?: number | string, siteDocumentId?: string) {
     const RECORD_UID = "plugin::zhao-point.point-record";
 
     // 检查是否已领取过该课时的答题积分（按课时维度去重）
@@ -243,6 +243,22 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     const channelIds: any[] = Array.isArray(course?.channelIds) ? course.channelIds : [];
     const pointChannelId = course?.pointChannel?.id ?? course?.pointChannel ?? null;
 
+    // 站点渠道（租户渠道兜底）：当前租户站点关联的渠道
+    let siteChannelId: number | null = null;
+    if (siteDocumentId) {
+      try {
+        const siteSvc = strapi.plugin("zhao-common")?.service("site-config");
+        if (siteSvc?.getAvailableChannels) {
+          const siteChannels = await siteSvc.getAvailableChannels(siteDocumentId);
+          if (Array.isArray(siteChannels) && siteChannels.length > 0) {
+            siteChannelId = siteChannels[0].id ?? null;
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+
     // 用户当前渠道（作为最终兜底：租户/课程无渠道时使用）
     let userChannelId: number | null = null;
     try {
@@ -255,10 +271,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       // ignore
     }
 
-    // 渠道解析优先级：前端选择 → 课程 pointChannel → 用户当前渠道兜底
-    const finalChannelRaw: number | string | null = selectedChannelId ?? pointChannelId ?? userChannelId;
+    // 渠道解析优先级：前端选择 → 课程 pointChannel → 站点渠道 → 用户当前渠道兜底
+    const finalChannelRaw: number | string | null = selectedChannelId ?? pointChannelId ?? siteChannelId ?? userChannelId;
 
-    // 必传校验：selectedChannelId / pointChannelId / userChannelId 都为空时报错
+    // 必传校验：所有渠道来源都为空时报错
     if (!finalChannelRaw) {
       const e: any = new Error("没有可用积分渠道，无法领取积分");
       e.code = "QUIZ_020";

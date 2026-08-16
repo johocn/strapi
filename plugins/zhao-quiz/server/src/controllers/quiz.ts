@@ -91,7 +91,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       const userId = ctx.state.user?.id;
       const { courseDocumentId, totalEarnedPoints, lessonDocumentId, selectedChannelId } = ctx.request.body;
       const result = await strapi.plugin("zhao-quiz").service("quiz").claimQuizPoints(
-        userId, courseDocumentId, totalEarnedPoints, lessonDocumentId, selectedChannelId
+        userId, courseDocumentId, totalEarnedPoints, lessonDocumentId, selectedChannelId, ctx.state.siteDocumentId
       );
       ctx.body = wrap(result);
     } catch (err: any) {
