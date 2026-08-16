@@ -172,6 +172,16 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         strapi.log.warn(`[zhao-auth] 登录时创建邀请码失败: ${(e as Error).message}`);
       }
 
+      // 登录时为用户补默认渠道（无渠道用户，覆盖老用户 / SSO 登录后首次进入 C 端）
+      try {
+        const memberService = strapi.plugin("zhao-channel")?.service("channel-member");
+        if (memberService && typeof memberService.ensureDefaultChannel === "function") {
+          await memberService.ensureDefaultChannel(user.id, ctx.state?.siteDocumentId);
+        }
+      } catch (e) {
+        strapi.log.warn(`[zhao-auth] 登录时分配默认渠道失败: ${(e as Error).message}`);
+      }
+
       ctx.body = {
         jwt,
         user: {
