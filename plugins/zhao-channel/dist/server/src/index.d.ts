@@ -425,6 +425,7 @@ declare const _default: {
             updateMember(id: number, data: any): Promise<any>;
             deleteMember(id: number): Promise<any>;
             setCurrentChannel(userId: number, channelId: number): Promise<any>;
+            ensureDefaultChannel(userId: number, siteDocumentId?: string): Promise<number | null>;
         };
         "channel-permission": ({ strapi }: {
             strapi: import('@strapi/types/dist/core').Strapi;

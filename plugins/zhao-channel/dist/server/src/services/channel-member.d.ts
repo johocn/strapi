@@ -102,5 +102,13 @@ declare const _default: ({ strapi }: {
     updateMember(id: number, data: any): Promise<any>;
     deleteMember(id: number): Promise<any>;
     setCurrentChannel(userId: number, channelId: number): Promise<any>;
+    /**
+     * 为新用户确保默认渠道（注册/SSO 首次登录后调用）
+     * 仅当用户无任何 channel-member 时创建，默认渠道取站点关联的第一个渠道
+     * @param userId users-permissions.user 的 id
+     * @param siteDocumentId 当前站点 documentId（为空则取不到渠道就不创建）
+     * @returns 分配的渠道 id，未分配返回 null
+     */
+    ensureDefaultChannel(userId: number, siteDocumentId?: string): Promise<number | null>;
 };
 export default _default;

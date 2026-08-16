@@ -3862,6 +3862,14 @@ const authController = ({ strapi: strapi2 }) => ({
       } catch (e) {
         strapi2.log.warn(`[zhao-auth] 创建邀请码失败: ${e.message}`);
       }
+      try {
+        const memberService = strapi2.plugin("zhao-channel")?.service("channel-member");
+        if (memberService && typeof memberService.ensureDefaultChannel === "function") {
+          await memberService.ensureDefaultChannel(user.id, ctx.state?.siteDocumentId);
+        }
+      } catch (e) {
+        strapi2.log.warn(`[zhao-auth] 分配默认渠道失败: ${e.message}`);
+      }
       const jwtService2 = strapi2.plugin("zhao-auth").service("jwt");
       const jwt2 = await jwtService2.sign({ id: user.id, email: user.email, username: user.username, zhaoRoles: ["user"] });
       ctx.status = 201;

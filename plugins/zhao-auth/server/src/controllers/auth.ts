@@ -35,6 +35,16 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         strapi.log.warn(`[zhao-auth] 创建邀请码失败: ${(e as Error).message}`);
       }
 
+      // 为新用户分配默认渠道（站点第一个渠道，无渠道则跳过）
+      try {
+        const memberService = strapi.plugin("zhao-channel")?.service("channel-member");
+        if (memberService && typeof memberService.ensureDefaultChannel === "function") {
+          await memberService.ensureDefaultChannel(user.id, ctx.state?.siteDocumentId);
+        }
+      } catch (e) {
+        strapi.log.warn(`[zhao-auth] 分配默认渠道失败: ${(e as Error).message}`);
+      }
+
       const jwtService = strapi.plugin("zhao-auth").service("jwt");
       const jwt = await jwtService.sign({ id: user.id, email: user.email, username: user.username, zhaoRoles: ["user"] });
 

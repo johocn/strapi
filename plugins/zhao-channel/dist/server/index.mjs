@@ -7342,6 +7342,44 @@ const channelMember = ({ strapi }) => ({
         data: { user: userId, channel: channelId, isCurrent: true }
       });
     }
+  },
+  /**
+   * 为新用户确保默认渠道（注册/SSO 首次登录后调用）
+   * 仅当用户无任何 channel-member 时创建，默认渠道取站点关联的第一个渠道
+   * @param userId users-permissions.user 的 id
+   * @param siteDocumentId 当前站点 documentId（为空则取不到渠道就不创建）
+   * @returns 分配的渠道 id，未分配返回 null
+   */
+  async ensureDefaultChannel(userId, siteDocumentId) {
+    try {
+      const existing = await strapi.db.query(CHANNEL_MEMBER_UID$2).findOne({
+        where: { user: userId }
+      });
+      if (existing) return null;
+      let channelId = null;
+      if (siteDocumentId) {
+        const siteSvc = strapi.plugin("zhao-common")?.service("site-config");
+        if (siteSvc?.getAvailableChannels) {
+          const siteChannels = await siteSvc.getAvailableChannels(siteDocumentId);
+          if (Array.isArray(siteChannels) && siteChannels.length > 0) {
+            channelId = siteChannels[0].id ?? null;
+          }
+        }
+      }
+      if (!channelId) return null;
+      await strapi.db.query(CHANNEL_MEMBER_UID$2).create({
+        data: {
+          channel: channelId,
+          user: userId,
+          role: "member",
+          isCurrent: true
+        }
+      });
+      return channelId;
+    } catch (err) {
+      strapi.log.error(`[zhao-channel] ensureDefaultChannel failed for user ${userId}: ${err.message}`);
+      return null;
+    }
   }
 });
 const USER_CHANNEL_UID = "plugin::zhao-channel.user-channel";
