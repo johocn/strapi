@@ -39,11 +39,7 @@ export default () => ({
       handler: "api-controller.streamMedia",
       config: { auth: false, policies: [] },
     },
-    {
-      method: "HEAD",
-      path: "/v1/media/stream",
-      handler: "api-controller.streamMedia",
-      config: { auth: false, policies: [] },
-    },
+    // 说明：Strapi 路由 method 仅支持 GET/POST/PUT/PATCH/DELETE/ALL，
+    // HEAD 请求由 Koa 自动匹配到 GET 路由（返回 200 无 body），无需单独注册
   ],
 });
