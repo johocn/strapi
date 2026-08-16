@@ -92,18 +92,31 @@ const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
     { app_code: "vendure-default", app_name: "Vendure 商城默认租户", rawSecret: "default-app-secret" },
     { app_code: "vendure-shop-a", app_name: "Vendure 商城 shop-a 租户", rawSecret: "shop-a-app-secret" },
   ];
+  // vshop 实际回调地址为 ${window.location.origin}/pages/login/index，生产域名为 e.joho.cn
+  const vendureRedirectUris = ["https://e.joho.cn/*", "http://localhost:*"];
   for (const { app_code, app_name, rawSecret } of vendureApps) {
     const existing = await strapi.db.query("plugin::zhao-sso.sso-app").findOne({
       where: { app_code },
     });
-    if (!existing) {
+    if (existing) {
+      // 存量记录：更新 redirect_uris（幂等，避免历史配置残留 shop.joho.cn）
+      const newUris = JSON.stringify(vendureRedirectUris);
+      const oldUris = JSON.stringify(existing.redirect_uris || []);
+      if (oldUris !== newUris) {
+        await strapi.db.query("plugin::zhao-sso.sso-app").update({
+          where: { id: existing.id },
+          data: { redirect_uris: vendureRedirectUris },
+        });
+        strapi.log.info(`[zhao-sso] Vendure app redirect_uris updated (app_code=${app_code})`);
+      }
+    } else {
       const vendureSecret = await bcrypt.hash(rawSecret, 10);
       await strapi.db.query("plugin::zhao-sso.sso-app").create({
         data: {
           app_code,
           app_name,
           app_secret: vendureSecret,
-          redirect_uris: ["https://shop.joho.cn/*", "http://localhost:*"],
+          redirect_uris: vendureRedirectUris,
           allowed_grant_types: ["authorization_code", "refresh_token"],
           is_active: true,
         },
