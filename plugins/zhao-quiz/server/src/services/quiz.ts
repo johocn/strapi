@@ -242,11 +242,25 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     });
     const channelIds: any[] = Array.isArray(course?.channelIds) ? course.channelIds : [];
     const pointChannelId = course?.pointChannel?.id ?? course?.pointChannel ?? null;
-    const finalChannelRaw: number | string | null = selectedChannelId ?? pointChannelId;
 
-    // 必传校验：selectedChannelId 与 pointChannelId 都为空时报错
+    // 用户当前渠道（作为最终兜底：租户/课程无渠道时使用）
+    let userChannelId: number | null = null;
+    try {
+      const channelMemberService = strapi.plugin("zhao-channel")?.service("channel-member");
+      if (channelMemberService?.getMyChannel) {
+        const myCh = await channelMemberService.getMyChannel(userId);
+        userChannelId = myCh?.channel?.id ?? null;
+      }
+    } catch {
+      // ignore
+    }
+
+    // 渠道解析优先级：前端选择 → 课程 pointChannel → 用户当前渠道兜底
+    const finalChannelRaw: number | string | null = selectedChannelId ?? pointChannelId ?? userChannelId;
+
+    // 必传校验：selectedChannelId / pointChannelId / userChannelId 都为空时报错
     if (!finalChannelRaw) {
-      const e: any = new Error("必须选择积分充值渠道");
+      const e: any = new Error("没有可用积分渠道，无法领取积分");
       e.code = "QUIZ_020";
       e.status = 400;
       throw e;
@@ -282,18 +296,6 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       e.code = "QUIZ_021";
       e.status = 400;
       throw e;
-    }
-
-    // 用户当前渠道
-    let userChannelId: number | null = null;
-    try {
-      const channelMemberService = strapi.plugin("zhao-channel")?.service("channel-member");
-      if (channelMemberService?.getMyChannel) {
-        const myCh = await channelMemberService.getMyChannel(userId);
-        userChannelId = myCh?.channel?.id ?? null;
-      }
-    } catch {
-      // ignore
     }
 
     // 使用 earnCustomPoints 发放用户自主领取的积分

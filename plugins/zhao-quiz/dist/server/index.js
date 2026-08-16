@@ -974,9 +974,18 @@ const quiz = ({ strapi }) => {
       });
       const channelIds = Array.isArray(course?.channelIds) ? course.channelIds : [];
       const pointChannelId = course?.pointChannel?.id ?? course?.pointChannel ?? null;
-      const finalChannelRaw = selectedChannelId ?? pointChannelId;
+      let userChannelId = null;
+      try {
+        const channelMemberService = strapi.plugin("zhao-channel")?.service("channel-member");
+        if (channelMemberService?.getMyChannel) {
+          const myCh = await channelMemberService.getMyChannel(userId);
+          userChannelId = myCh?.channel?.id ?? null;
+        }
+      } catch {
+      }
+      const finalChannelRaw = selectedChannelId ?? pointChannelId ?? userChannelId;
       if (!finalChannelRaw) {
-        const e = new Error("必须选择积分充值渠道");
+        const e = new Error("没有可用积分渠道，无法领取积分");
         e.code = "QUIZ_020";
         e.status = 400;
         throw e;
@@ -1008,15 +1017,6 @@ const quiz = ({ strapi }) => {
         e.code = "QUIZ_021";
         e.status = 400;
         throw e;
-      }
-      let userChannelId = null;
-      try {
-        const channelMemberService = strapi.plugin("zhao-channel")?.service("channel-member");
-        if (channelMemberService?.getMyChannel) {
-          const myCh = await channelMemberService.getMyChannel(userId);
-          userChannelId = myCh?.channel?.id ?? null;
-        }
-      } catch {
       }
       try {
         const pointService = strapi.plugin("zhao-point")?.service("point");
