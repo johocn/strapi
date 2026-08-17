@@ -8,13 +8,15 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
     // 优先使用 site-resolver 中间件识别的 siteDocumentId（基于 host 域名）
     // 兼容：显式传 siteDomain 时仍按 domain 查 site-config
+    // 注意：strapi.documents 对关系字段按被关联记录筛选时必须使用 documentId 子过滤
+    // （直接传整型 FK id 或 documentId 字符串都会导致 SQL 类型错误）
     if (siteDocumentId) {
-      filters.site = siteDocumentId;
+      filters.site = { documentId: { $eq: siteDocumentId } };
     } else if (siteDomain) {
       const siteConfig = await strapi.db.query('plugin::zhao-common.site-config').findOne({
         where: { domain: siteDomain }
       });
-      if (siteConfig) filters.site = siteConfig.documentId;
+      if (siteConfig) filters.site = { documentId: { $eq: siteConfig.documentId } };
     }
 
     const zones = await strapi.documents('plugin::zhao-studio.ad-zone').findMany({
@@ -59,12 +61,12 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     const filters: any = { isActive: true };
 
     if (siteDocumentId) {
-      filters.site = siteDocumentId;
+      filters.site = { documentId: { $eq: siteDocumentId } };
     } else if (siteDomain) {
       const siteConfig = await strapi.db.query('plugin::zhao-common.site-config').findOne({
         where: { domain: siteDomain }
       });
-      if (siteConfig) filters.site = siteConfig.documentId;
+      if (siteConfig) filters.site = { documentId: { $eq: siteConfig.documentId } };
     }
 
     const zones = await strapi.documents('plugin::zhao-studio.ad-zone').findMany({

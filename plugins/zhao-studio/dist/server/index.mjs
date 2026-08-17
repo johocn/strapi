@@ -876,8 +876,9 @@ const ad$1 = ({ strapi: strapi2 }) => ({
       );
       ctx.body = { data: result };
     } catch (err) {
+      console.error("[AD_DIAG]", err?.name, err?.message, err?.stack);
       ctx.status = 500;
-      ctx.body = { error: { code: "AD_500", message: "Internal error" } };
+      ctx.body = { error: { code: "AD_500", message: "Internal error: " + (err?.message || err) } };
     }
   },
   // Public: Get all active zones
@@ -21399,12 +21400,12 @@ const ad = ({ strapi: strapi2 }) => ({
   async getZoneByPosition(position, siteDomain, siteDocumentId) {
     const filters2 = { position, isActive: true };
     if (siteDocumentId) {
-      filters2.site = siteDocumentId;
+      filters2.site = { documentId: { $eq: siteDocumentId } };
     } else if (siteDomain) {
       const siteConfig = await strapi2.db.query("plugin::zhao-common.site-config").findOne({
         where: { domain: siteDomain }
       });
-      if (siteConfig) filters2.site = siteConfig.documentId;
+      if (siteConfig) filters2.site = { documentId: { $eq: siteConfig.documentId } };
     }
     const zones = await strapi2.documents("plugin::zhao-studio.ad-zone").findMany({
       filters: filters2,
@@ -21436,12 +21437,12 @@ const ad = ({ strapi: strapi2 }) => ({
   async getAllZones(siteDomain, siteDocumentId) {
     const filters2 = { isActive: true };
     if (siteDocumentId) {
-      filters2.site = siteDocumentId;
+      filters2.site = { documentId: { $eq: siteDocumentId } };
     } else if (siteDomain) {
       const siteConfig = await strapi2.db.query("plugin::zhao-common.site-config").findOne({
         where: { domain: siteDomain }
       });
-      if (siteConfig) filters2.site = siteConfig.documentId;
+      if (siteConfig) filters2.site = { documentId: { $eq: siteConfig.documentId } };
     }
     const zones = await strapi2.documents("plugin::zhao-studio.ad-zone").findMany({
       filters: filters2,

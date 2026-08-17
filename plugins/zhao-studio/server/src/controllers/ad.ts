@@ -18,8 +18,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
       ctx.body = { data: result };
     } catch (err: any) {
+      console.error('[AD_DIAG]', err?.name, err?.message, err?.stack);
       ctx.status = 500;
-      ctx.body = { error: { code: 'AD_500', message: 'Internal error' } };
+      ctx.body = { error: { code: 'AD_500', message: 'Internal error: ' + (err?.message || err) } };
     }
   },
 
