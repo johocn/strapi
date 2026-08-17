@@ -264,6 +264,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
             // 新增：海报兜底配置
             posterDefaultUserName: "", posterDefaultUserAvatar: "",
             posterDefaultRecommendReason: "",
+            // 倍速特权角色名单（默认 admin，可配 instructor 等）
+            speedPrivilegedRoles: ["admin"],
           },
           auth: {
             mode: "local",
@@ -304,12 +306,16 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         "customerServiceUrl", "domain",
         // 新增：海报兜底配置
         "posterDefaultUserName", "posterDefaultRecommendReason",
+        // 倍速特权角色名单
+        "speedPrivilegedRoles",
       ];
-      const DEFAULT_CONFIG: Record<string, string> = {
+      // 类型用 Record<string, any>：DEFAULT_CONFIG 含数组默认值（speedPrivilegedRoles）
+      const DEFAULT_CONFIG: Record<string, any> = {
         siteName: "", siteDescription: "", seoKeywords: "", seoDescription: "",
         tencentMapKey: "", shareTitle: "", shareDescription: "", icpNumber: "",
         customerServiceUrl: "", domain: "",
         posterDefaultUserName: "", posterDefaultRecommendReason: "",
+        speedPrivilegedRoles: ["admin"],
       };
       const sitePublic: Record<string, any> = {};
       for (const key of PUBLIC_FIELDS) {
