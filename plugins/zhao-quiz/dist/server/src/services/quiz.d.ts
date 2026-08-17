@@ -63,7 +63,7 @@ declare const _default: ({ strapi }: {
     /**
      * C端领取答题积分
      */
-    claimQuizPoints(userId: number, courseDocumentId: string, totalEarnedPoints: number, lessonDocumentId?: string, selectedChannelId?: number | string): Promise<{
+    claimQuizPoints(userId: number, courseDocumentId: string, totalEarnedPoints: number, lessonDocumentId?: string, selectedChannelId?: number | string, siteDocumentId?: string): Promise<{
         pointsEarned: number;
     }>;
 };

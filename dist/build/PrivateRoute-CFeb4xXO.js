@@ -1,0 +1,1 @@
+import{r6 as s,sf as r,n7 as u,e0 as i}from"./strapi-Brjxdcdt.js";const h=({children:t})=>{const o=s("PrivateRoute",a=>a.token),{pathname:e,search:n}=r();return o!==null?t:u.jsx(i,{to:{pathname:"/auth/login",search:e!=="/"?`?redirectTo=${encodeURIComponent(`${e}${n}`)}`:void 0}})};export{h as P};

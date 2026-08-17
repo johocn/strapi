@@ -1,0 +1,1 @@
+import{mD as h,iu as f}from"./strapi-Brjxdcdt.js";var i=h;function t(b,e){return function(a,s){if(a==null)return a;if(!i(a))return b(a,s);for(var n=a.length,r=e?n:-1,u=Object(a);(e?r--:++r<n)&&s(u[r],r,u)!==!1;);return a}}var v=t,E=f,_=v,k=_(E),B=k;export{B as _};

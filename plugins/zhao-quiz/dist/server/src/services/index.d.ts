@@ -53,7 +53,7 @@ declare const _default: {
             correctAnswer: any;
             explanation: any;
         }>;
-        claimQuizPoints(userId: number, courseDocumentId: string, totalEarnedPoints: number, lessonDocumentId?: string, selectedChannelId?: number | string): Promise<{
+        claimQuizPoints(userId: number, courseDocumentId: string, totalEarnedPoints: number, lessonDocumentId?: string, selectedChannelId?: number | string, siteDocumentId?: string): Promise<{
             pointsEarned: number;
         }>;
     };
