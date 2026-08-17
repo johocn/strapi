@@ -364,6 +364,11 @@ declare const _default: {
                     maxLength: number;
                     description: string;
                 };
+                speedPrivilegedRoles: {
+                    type: string;
+                    default: string[];
+                    description: string;
+                };
             };
         };
     };
