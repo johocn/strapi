@@ -32,8 +32,29 @@ const Initializer = ({ setPlugin }) => {
   return isLoading ? /* @__PURE__ */ jsxRuntime.jsx("p", { children: "Loading..." }) : null;
 };
 const PluginIcon = () => /* @__PURE__ */ jsxRuntime.jsx(icons.Lightbulb, {});
+const FEATURE_FLAGS_CUSTOM_FIELD = {
+  name: "featureFlags",
+  pluginId: PLUGIN_ID,
+  type: "json",
+  intlLabel: {
+    id: `${PLUGIN_ID}.featureFlags.label`,
+    defaultMessage: "播放功能开关"
+  },
+  intlDescription: {
+    id: `${PLUGIN_ID}.featureFlags.description`,
+    defaultMessage: "课程播放功能开关（倍速/横竖屏/锁定/画中画/自动连播/进度控制）"
+  },
+  icon: PluginIcon,
+  components: {
+    Input: async () => Promise.resolve().then(() => require("./FeatureFlagsInput-BQjwf9rw.js")).then((mod) => ({ default: mod.default }))
+  },
+  options: {}
+};
 const index = {
   register(app) {
+    if (app.customFields && typeof app.customFields.register === "function") {
+      app.customFields.register(FEATURE_FLAGS_CUSTOM_FIELD);
+    }
     app.addMenuLink({
       to: `plugins/${PLUGIN_ID}`,
       icon: PluginIcon,
@@ -41,7 +62,7 @@ const index = {
         id: `${PLUGIN_ID}.plugin.name`,
         defaultMessage: "课程管理"
       },
-      Component: () => Promise.resolve().then(() => require("./App-DI9Babgc.js")).then((mod) => ({ default: mod.App }))
+      Component: () => Promise.resolve().then(() => require("./App-mhsDDJg_.js")).then((mod) => ({ default: mod.App }))
     });
     app.registerPlugin({
       id: PLUGIN_ID,

@@ -7,7 +7,7 @@ const react = require("react");
 const reactIntl = require("react-intl");
 const designSystem = require("@strapi/design-system");
 const icons = require("@strapi/icons");
-const index = require("./index-CBHeC827.js");
+const index = require("./index-C7m1xlY2.js");
 const HomePage = () => {
   const { formatMessage } = reactIntl.useIntl();
   const navigate = reactRouterDom.useNavigate();

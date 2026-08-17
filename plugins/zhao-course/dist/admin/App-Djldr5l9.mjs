@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { useIntl } from "react-intl";
 import { Main, Box, Flex, Typography, Grid, Card, CardHeader, CardBody, Button, Badge, Loader, Table, Thead, Tr, Th, Tbody, Td, IconButton, Modal, Field, SingleSelect, SingleSelectOption } from "@strapi/design-system";
 import { Play, Book, Key, Star, ChevronLeft, ChevronRight, Plus, Trash } from "@strapi/icons";
-import { P as PLUGIN_ID } from "./index-7068y32O.mjs";
+import { P as PLUGIN_ID } from "./index-D6_Ej5VO.mjs";
 const HomePage = () => {
   const { formatMessage } = useIntl();
   const navigate = useNavigate();

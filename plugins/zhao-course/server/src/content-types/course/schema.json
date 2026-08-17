@@ -82,6 +82,7 @@
     },
     "featureFlags": {
       "type": "json",
+      "customField": "plugin::zhao-course.featureFlags",
       "default": null
     },
     "isFree": {

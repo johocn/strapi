@@ -1,6 +1,22 @@
 import type { Core } from "@strapi/strapi";
 
 const register = ({ strapi }: { strapi: Core.Strapi }) => {
+  // 注册自定义字段：课程播放功能开关（featureFlags），data type 为 json 以持久化复杂对象
+  try {
+    strapi.customFields.register({
+      name: "featureFlags",
+      plugin: "zhao-course",
+      type: "json",
+      inputSize: {
+        default: 12,
+        isResizable: true,
+      },
+    });
+    strapi.log.info("zhao-course: featureFlags 自定义字段已注册");
+  } catch (err) {
+    strapi.log.warn("zhao-course: featureFlags 自定义字段注册失败", err);
+  }
+
   try {
     const zhaoCommon = strapi.plugin("zhao-common");
     if (!zhaoCommon) {
