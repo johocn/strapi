@@ -84,4 +84,15 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       ctx.status = (err as any).status || 400; ctx.body = { error: (err as Error).message }; return;
     }
   },
+
+  async exportQuizzes(ctx: any) {
+    try {
+      const buffer = await strapi.plugin("zhao-quiz").service("quiz-batch").exportQuizzes(ctx.query);
+      ctx.set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+      ctx.set("Content-Disposition", "attachment; filename=quiz_export.xlsx");
+      ctx.body = buffer;
+    } catch (err: any) {
+      ctx.status = (err as any).status || 400; ctx.body = { error: (err as Error).message }; return;
+    }
+  },
 });

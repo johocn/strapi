@@ -87,5 +87,6 @@ export default () => ({
     channelScopeRoute("DELETE", "/quiz-batches/:documentId", "quiz-batch.delete", "quiz.delete"),
     channelScopeRoute("POST", "/quiz-batches/:documentId/import", "quiz-batch.importFile", "quiz.create"),
     channelScopeRoute("GET", "/quiz-batches/template/download", "quiz-batch.downloadTemplate", "quiz.read"),
+    channelScopeRoute("GET", "/quiz-batches/export", "quiz-batch.exportQuizzes", "quiz.read"),
   ],
 });

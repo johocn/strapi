@@ -86,7 +86,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       data: { status: "processing" } as any,
     });
 
-    const results = { total: 0, success: 0, errors: [] as string[] };
+    const results = { total: 0, success: 0, skipped: 0, errors: [] as string[] };
     const courseDocId = batch.course?.documentId;
     const lessonDocId = batch.lesson?.documentId;
 
@@ -135,9 +135,12 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
           let options = null;
           if (row.选项 || row.options) {
             const optStr = (row.选项 || row.options).toString();
-            try {
-              options = JSON.parse(optStr);
-            } catch {
+            if (optStr.trim().startsWith("[")) {
+              try { options = JSON.parse(optStr); } catch { options = optStr.includes("|") ? optStr.split("|").map((o: string) => o.trim()) : optStr; }
+            } else if (optStr.includes("|")) {
+              // 支持 "A.选项一|B.选项二" 或 "选项一|选项二"
+              options = optStr.split("|").map((o: string) => o.trim());
+            } else {
               options = optStr;
             }
           }
@@ -156,6 +159,16 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
           if (options) quizData.options = options;
           if (courseDocId) quizData.course = courseDocId;
           if (lessonDocId) quizData.lesson = lessonDocId;
+
+          // 幂等去重：同课程 + 同题干 视为重复
+          const dupFilters: any = { title };
+          if (courseDocId) dupFilters.course = { documentId: courseDocId };
+          const dup = await strapi.documents(QUIZ_UID).findMany({ filters: dupFilters, pagination: { page: 1, pageSize: 1 } });
+          if (dup.length > 0) {
+            results.skipped++;
+            results.errors.push(`第${rowNum}行: 已存在相同题目，跳过`);
+            continue;
+          }
 
           await strapi.documents(QUIZ_UID).create({ data: quizData });
           results.success++;
@@ -181,6 +194,31 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     });
 
     return results;
+  },
+
+  async exportQuizzes(filters: any = {}) {
+    const { course, lesson } = filters;
+    const qf: any = {};
+    if (course) qf.course = { documentId: course };
+    if (lesson) qf.lesson = { documentId: lesson };
+    const list = await strapi.documents(QUIZ_UID).findMany({
+      filters: qf,
+      sort: { sort: "asc" },
+      populate: { course: true, lesson: true },
+    });
+
+    const headers = ["题型", "题目", "选项", "答案", "分值", "难度", "解析", "排序", "quizId", "updatedAt", "发布状态"];
+    const rows = list.map((q: any) => [
+      q.type, q.title,
+      Array.isArray(q.options) ? q.options.join("|") : (q.options != null ? String(q.options) : ""),
+      q.answer, q.points, q.difficulty, q.explanation || "", q.sort,
+      q.documentId, q.updatedAt || "", q.isPublished ? "已发布" : "草稿",
+    ]);
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+    ws["!cols"] = headers.map(() => ({ wch: 20 }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "题库导出");
+    return XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
   },
 
   async generateTemplate(_courseDocId?: string, _lessonDocId?: string) {
