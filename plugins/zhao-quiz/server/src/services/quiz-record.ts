@@ -59,7 +59,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   /**
    * 提交回答 - 自动判题或标记 essay 待评分
    */
-  async submitAnswer(userId: number, quizDocumentId: string, answer: any, lessonDocId?: string) {
+  async submitAnswer(userId: number, quizDocumentId: string, answer: any, lessonDocId?: string, extra: { mode?: string; practiceType?: string } = {}) {
     const quiz = await strapi.documents(QUIZ_UID).findOne({
       documentId: quizDocumentId,
       populate: { course: true, lesson: true },
@@ -76,17 +76,22 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       ? quiz.lesson?.id || quiz.lesson
       : quiz.lesson?.id || quiz.lesson;
 
-    const isEssay = quiz.type === "essay";
+    const type = quiz.type;
+    const isObjective = !["essay", "short_answer"].includes(type);
+    const needsManual =
+      type === "essay" || (type === "short_answer" && !this._shortAutoPass(quiz, answer));
     let isCorrect = false;
     let score = 0;
     let scoringStatus = "auto_graded";
 
-    if (isEssay) {
-      // 问答题不自动判题
+    if (needsManual) {
+      // 简答/问答：关键词初判未通过则转入人工复核
       scoringStatus = "pending";
     } else {
-      // 自动判题：比较 answer
-      isCorrect = String(answer).trim().toLowerCase() === String(quiz.answer).trim().toLowerCase();
+      // 客观题或 short_answer 初判通过：自动判题
+      isCorrect = isObjective
+        ? String(answer).trim().toLowerCase() === String(quiz.answer).trim().toLowerCase()
+        : true;
       score = isCorrect ? (quiz.points || 0) : 0;
     }
 
@@ -95,7 +100,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         user: userId,
         quiz: quiz.id || quiz.documentId,
         answer: typeof answer === "object" ? answer : { text: answer },
-        isCorrect: isEssay ? undefined : isCorrect,
+        isCorrect: needsManual ? undefined : isCorrect,
         score,
         teacherScore: 0,
         scoringStatus,
@@ -103,10 +108,33 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         submittedAt: new Date(),
         course: courseId,
         lesson: lessonId,
+        mode: extra.mode || "practice",
+        practiceType: extra.practiceType || "knowledge",
       },
     });
 
+    if (!needsManual && !isCorrect) {
+      const wrongService = strapi.plugin("zhao-quiz").service("wrong-quiz");
+      await wrongService.onWrong({ userId, quizId: quiz.id || quiz.documentId, courseId, lessonId });
+    }
+
     return record;
+  },
+
+  /**
+   * short_answer 关键词初判：命中 60% 关键词视为通过（自动判定），否则转人工复核
+   */
+  _shortAutoPass(quiz: any, answer: any) {
+    if (!quiz.answer) return false;
+    const kws = String(quiz.answer)
+      .split(/[,，;；|]/)
+      .map((s: string) => s.trim())
+      .filter(Boolean);
+    if (!kws.length) return false;
+    const text = String(typeof answer === "object" ? answer.text || "" : answer).toLowerCase();
+    const kwsLower = kws.map((k: string) => k.toLowerCase());
+    const hit = kwsLower.filter((k: string) => k && text.includes(k)).length;
+    return hit / kws.length >= 0.6;
   },
 
   /**
@@ -141,6 +169,18 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         isCorrect: teacherScore > 0,
       } as any,
     });
+
+    const wrongService = strapi.plugin("zhao-quiz").service("wrong-quiz");
+    if (teacherScore > 0) {
+      await wrongService.onCorrect(record.user?.id || record.user, record.quiz?.id || record.quiz);
+    } else {
+      await wrongService.onWrong({
+        userId: record.user?.id || record.user,
+        quizId: record.quiz?.id || record.quiz,
+        courseId: record.course?.id || record.course,
+        lessonId: record.lesson?.id || record.lesson,
+      });
+    }
 
     return result;
   },

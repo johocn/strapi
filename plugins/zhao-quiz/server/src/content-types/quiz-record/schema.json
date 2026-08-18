@@ -71,6 +71,16 @@
       "type": "relation",
       "relation": "manyToOne",
       "target": "plugin::zhao-course.course-lesson"
+    },
+    "mode": {
+      "type": "enumeration",
+      "enum": ["practice", "exam"],
+      "default": "practice"
+    },
+    "practiceType": {
+      "type": "enumeration",
+      "enum": ["knowledge", "random", "simulate", "wrong"],
+      "default": "knowledge"
     }
   }
 }

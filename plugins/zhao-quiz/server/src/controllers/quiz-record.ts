@@ -99,8 +99,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async submitAnswer(ctx: any) {
     try {
       const userId = ctx.state.user?.id;
-      const { quizDocumentId, answer, lessonDocumentId } = ctx.request.body;
-      ctx.body = wrap(await strapi.plugin("zhao-quiz").service("quiz-record").submitAnswer(userId, quizDocumentId, answer, lessonDocumentId));
+      const { quizDocumentId, answer, lessonDocumentId, mode, practiceType } = ctx.request.body;
+      ctx.body = wrap(await strapi.plugin("zhao-quiz").service("quiz-record").submitAnswer(
+        userId, quizDocumentId, answer, lessonDocumentId, { mode, practiceType }
+      ));
     } catch (err: any) {
       ctx.status = err.status || 400; ctx.body = { error: err.message || err }; return;
     }
