@@ -1,0 +1,20 @@
+{
+  "kind": "collectionType",
+  "collectionName": "zhao_wrong_quizzes",
+  "info": { "singularName": "wrong-quiz", "pluralName": "wrong-quizzes", "displayName": "错题集" },
+  "options": { "draftAndPublish": false },
+  "attributes": {
+    "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::users-permissions.user" },
+    "quiz": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-quiz.quiz" },
+    "course": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-course.course" },
+    "lesson": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-course.course-lesson" },
+    "knowledgePointName": { "type": "string" },
+    "wrongCount": { "type": "integer", "default": 1 },
+    "status": { "type": "enumeration", "enum": ["active", "archived"], "default": "active" },
+    "reviewLevel": { "type": "integer", "default": 1 },
+    "dueAt": { "type": "datetime" },
+    "consecutiveCorrect": { "type": "integer", "default": 0 },
+    "lastWrongAt": { "type": "datetime" },
+    "lastCorrectAt": { "type": "datetime" }
+  }
+}
