@@ -113,9 +113,15 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       },
     });
 
-    if (!needsManual && !isCorrect) {
+    if (!needsManual) {
       const wrongService = strapi.plugin("zhao-quiz").service("wrong-quiz");
-      await wrongService.onWrong({ userId, quizId: quiz.id || quiz.documentId, courseId, lessonId });
+      const quizId = quiz.id || quiz.documentId;
+      if (!isCorrect) {
+        await wrongService.onWrong({ userId, quizId, courseId, lessonId });
+      } else {
+        // 判对回流：推进该题在错题集中的间隔重复升级/出集（无错题记录时 onCorrect 为空操作）
+        await wrongService.onCorrect(userId, quizId);
+      }
     }
 
     return record;

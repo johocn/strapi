@@ -125,19 +125,35 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
 
     // 计算总分
     const questionPoints = exam.questionPoints || {};
-    const questions = exam.questions || [];
+    // 判分依据：优先用考试固定题集；规则组卷时该集合为空，则按提交答案逐题拉取（兼容 group 卷）
+    const fixedMap = new Map(
+      (exam.questions || []).map((q: any) => [q.id, q]).concat((exam.questions || []).map((q: any) => [q.documentId, q]))
+    );
     let totalScore = 0;
-    const results: { quizId: number | string; isCorrect: boolean }[] = [];
+    const results: { quizId: number | string; courseId?: number | string; isCorrect: boolean }[] = [];
 
     for (const answer of answers) {
-      const question = questions.find(
-        (q: any) => q.documentId === answer.quizDocumentId || q.id === answer.quizId
-      );
+      const quizDocumentId = answer?.quizDocumentId;
+      if (!quizDocumentId) continue;
+      // 已在固定题集内 → 直接用缓存；否则（规则组卷）拉取题目实际答案参与判分
+      let question: any = fixedMap.get(quizDocumentId);
+      let fetchedCourse: any;
+      if (!question) {
+        question = await strapi.documents("plugin::zhao-quiz.quiz").findOne({
+          documentId: quizDocumentId,
+          populate: { course: { fields: ["id", "name"] } },
+        });
+        fetchedCourse = question?.course;
+      }
       if (question && question.type !== "essay") {
         const maxPoints = questionPoints[question.documentId] || question.points || 0;
         const isCorrect =
-          String(answer.answer).trim().toLowerCase() === String(question.answer).trim().toLowerCase();
-        results.push({ quizId: question.id || question.documentId, isCorrect });
+          String(answer?.answer ?? "").trim().toLowerCase() === String(question.answer).trim().toLowerCase();
+        results.push({
+          quizId: question.id || question.documentId,
+          courseId: question.course?.id || fetchedCourse?.id || undefined,
+          isCorrect,
+        });
         if (isCorrect) {
           totalScore += maxPoints;
         }
@@ -169,7 +185,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         if (r.isCorrect) {
           await wrongService.onCorrect(attempt.user as number, r.quizId);
         } else {
-          await wrongService.onWrong({ userId: attempt.user as number, quizId: r.quizId });
+          await wrongService.onWrong({
+            userId: attempt.user as number,
+            quizId: r.quizId,
+            courseId: r.courseId as any,
+          });
         }
       } catch {
         // 错题回流失败不阻断交卷主流程
