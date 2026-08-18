@@ -73,4 +73,13 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       ctx.status = err.status || 500; ctx.body = { error: err.message || err }; return;
     }
   },
+
+  async generatePaper(ctx: any) {
+    try {
+      const { documentId } = ctx.params;
+      ctx.body = wrap(await strapi.plugin("zhao-quiz").service("quiz-exam").generatePaper(documentId));
+    } catch (err: any) {
+      ctx.status = err.status || 500; ctx.body = { error: err.message || err }; return;
+    }
+  },
 });

@@ -57,6 +57,7 @@ export default () => ({
     userRoute("POST", "/my/quiz-exam-attempts/:documentId/submit", "quiz-exam-attempt.submitExam"),
     userRoute("GET", "/my/exam-attempts", "quiz-exam-attempt.getUserAttempts"),
     userRoute("GET", "/my/quiz-exams/:documentId/questions", "quiz-exam.getQuestions"),
+    userRoute("GET", "/my/quiz-exams/:documentId/paper", "quiz-exam.generatePaper"),
 
     channelScopeRoute("GET", "/quizzes", "quiz.find", "quiz.read"),
     channelScopeRoute("GET", "/quizzes/:documentId", "quiz.findOne", "quiz.read"),

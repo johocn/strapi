@@ -104,5 +104,61 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
 
     return total;
   },
+
+  /**
+   * 组卷：fixed 固定题 或 rule 规则抽题；返回隐藏答案的题目与缺额提示
+   */
+  async generatePaper(examDocumentId: string) {
+    const exam = await strapi.documents(UID).findOne({
+      documentId: examDocumentId,
+      populate: { questions: true },
+    });
+
+    if (!exam) {
+      const i18n = strapi.plugin("zhao-common")?.service("i18n");
+      throwErr("QUIZ_004", 404, i18n ? i18n.t("QUIZ_004") : "考试不存在");
+    }
+
+    if (exam.paperType !== "rule") {
+      return { documentId: examDocumentId, questions: this._hideAnswers(exam.questions || [], exam), shortages: [] };
+    }
+
+    const rules: any[] = Array.isArray(exam.paperRule) ? exam.paperRule : [];
+    const scope: any[] = Array.isArray(exam.knowledgeScope) ? exam.knowledgeScope : [];
+    const picked: any[] = [];
+    const shortages: string[] = [];
+
+    for (const rule of rules) {
+      const filters: any = { isPublished: true };
+      if (rule.type) filters.type = rule.type;
+      if (rule.difficulty) filters.difficulty = rule.difficulty;
+      if (scope.length) filters.course = { documentId: scope };
+
+      const pool = await strapi.documents("plugin::zhao-quiz.quiz").findMany({
+        filters,
+        pagination: { page: 1, pageSize: 300 },
+      });
+
+      const needed = Number(rule.count) || 0;
+      const sampled = [...pool].sort(() => Math.random() - 0.5).slice(0, needed);
+      if (sampled.length < needed) {
+        shortages.push(`[${rule.type || "任意"}] 缺 ${needed - sampled.length} 题`);
+      }
+      picked.push(...sampled.map((q: any) => ({ ...q, points: Number(rule.points) || q.points || 0 })));
+    }
+
+    return { documentId: examDocumentId, questions: this._hideAnswers(picked, exam), shortages };
+  },
+
+  /** 随机排序并隐藏答案/赋予分值 */
+  _hideAnswers(questions: any[], exam: any) {
+    const questionPoints = exam.questionPoints || {};
+    const qs = exam.shuffle === false ? questions : [...questions].sort(() => Math.random() - 0.5);
+    return qs.map((q: any) => ({
+      ...q,
+      answer: undefined,
+      points: questionPoints[q.documentId] || q.points || 0,
+    }));
+  },
   };
 };
