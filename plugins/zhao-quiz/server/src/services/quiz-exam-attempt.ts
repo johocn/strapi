@@ -127,6 +127,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     const questionPoints = exam.questionPoints || {};
     const questions = exam.questions || [];
     let totalScore = 0;
+    const results: { quizId: number | string; isCorrect: boolean }[] = [];
 
     for (const answer of answers) {
       const question = questions.find(
@@ -136,6 +137,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         const maxPoints = questionPoints[question.documentId] || question.points || 0;
         const isCorrect =
           String(answer.answer).trim().toLowerCase() === String(question.answer).trim().toLowerCase();
+        results.push({ quizId: question.id || question.documentId, isCorrect });
         if (isCorrect) {
           totalScore += maxPoints;
         }
@@ -159,6 +161,20 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         duration,
       },
     });
+
+    // 判完即回流错题集
+    const wrongService = strapi.plugin("zhao-quiz").service("wrong-quiz");
+    for (const r of results) {
+      try {
+        if (r.isCorrect) {
+          await wrongService.onCorrect(attempt.user as number, r.quizId);
+        } else {
+          await wrongService.onWrong({ userId: attempt.user as number, quizId: r.quizId });
+        }
+      } catch {
+        // 错题回流失败不阻断交卷主流程
+      }
+    }
 
     return result;
   },
