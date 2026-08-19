@@ -399,7 +399,8 @@ const course$1 = ({ strapi }) => ({
         channelScope,
         mergedChannelIds: ctx.state.mergedChannelIds || [],
         siteChannelIds: ctx.state.siteChannelIds || [],
-        crossChannelEnabled: ctx.state.crossChannelEnabled ?? true
+        crossChannelEnabled: ctx.state.crossChannelEnabled ?? true,
+        userId: ctx.state.user?.id
       }));
     } catch (err) {
       ctx.status = err.status || 400;
@@ -416,7 +417,11 @@ const course$1 = ({ strapi }) => ({
       }
       const isAdmin = ctx.path?.includes("/admin/") ?? false;
       const publicOnly = !isAdmin;
-      const result = await strapi.plugin("zhao-course").service("course").findOne(documentId, publicOnly);
+      const result = await strapi.plugin("zhao-course").service("course").findOne(documentId, publicOnly, {
+        userId: ctx.state.user?.id,
+        isAdmin,
+        channelScope: ctx.state.channelScope
+      });
       if (!result) {
         ctx.status = 404;
         ctx.body = { error: "课程不存在" };
@@ -714,7 +719,7 @@ const userCourseAuth$1 = ({ strapi }) => ({
       if (cf) {
         query.filters = { ...query.filters ?? {}, ...cf };
       }
-      ctx.body = wrapList$4(await strapi.plugin("zhao-course").service("user-course-auth").find(query));
+      ctx.body = wrapList$4(await strapi.plugin("zhao-course").service("user-course-auth").find(query, { userId: ctx.state.user?.id }));
     } catch (err) {
       ctx.status = err.status || 400;
       ctx.body = { error: err.message };
@@ -1748,6 +1753,32 @@ const courseCategory = ({ strapi }) => ({
     return strapi.documents(UID$7).delete({ documentId });
   }
 });
+async function resolveUserRoles(strapi, userId) {
+  if (!userId) return [];
+  const user = await strapi.db.query("plugin::users-permissions.user").findOne({ where: { id: userId } });
+  const raw = Array.isArray(user?.zhaoRoles) ? user.zhaoRoles : [];
+  return raw.filter((r) => typeof r === "string");
+}
+function hasGrantedRole(userRoles, whitelist) {
+  if (!Array.isArray(whitelist) || whitelist.length === 0) return true;
+  const roles = Array.isArray(userRoles) ? userRoles : [];
+  if (roles.includes("admin")) return true;
+  return roles.some((r) => whitelist.includes(r));
+}
+function parseLearnRoles(featureFlags) {
+  let ff = featureFlags;
+  if (typeof ff === "string") {
+    try {
+      ff = JSON.parse(ff);
+    } catch {
+      return [];
+    }
+  }
+  if (!ff || typeof ff !== "object" || Array.isArray(ff)) return [];
+  const learn = ff.learnRoles;
+  if (!Array.isArray(learn)) return [];
+  return learn.filter((x) => typeof x === "string");
+}
 const UID$6 = "plugin::zhao-course.course";
 const TARGET_TYPE$1 = "plugin::zhao-course.course";
 const DATE_FIELDS = ["enrollStartDate", "enrollEndDate", "courseStartDate", "courseEndDate", "publishDate"];
@@ -2026,6 +2057,13 @@ const course = ({ strapi }) => {
           return false;
         });
       }
+      const userRoles = await resolveUserRoles(strapi, channelScope && !channelScope.isGuest ? ctxState?.userId : void 0);
+      if (channelScope && !channelScope.isGuest && !channelScope.all) {
+        filteredList = filteredList.filter((course2) => {
+          const learn = parseLearnRoles(course2.featureFlags);
+          return hasGrantedRole(userRoles, learn);
+        });
+      }
       if (sort) {
         const sortField = typeof sort === "string" ? sort : Object.keys(sort)[0];
         const sortOrder = typeof sort === "string" ? "asc" : sort[sortField] === "desc" ? "desc" : "asc";
@@ -2052,7 +2090,7 @@ const course = ({ strapi }) => {
         }
       };
     },
-    async findOne(documentId, publicOnly = false) {
+    async findOne(documentId, publicOnly = false, options2) {
       const params = {
         documentId,
         populate: {
@@ -2062,13 +2100,25 @@ const course = ({ strapi }) => {
           thumbnail: true,
           lessons: true,
           pointChannel: true,
-          sequenceTag: true
+          sequenceTag: true,
+          quizzes: true,
+          exams: true
         }
       };
       if (publicOnly) {
         params.status = "published";
       }
       const result = await strapi.documents(UID$6).findOne(params);
+      const isAdmin = publicOnly === false || options2?.isAdmin === true || options2?.channelScope?.all === true;
+      if (result && !isAdmin) {
+        const learn = parseLearnRoles(result.featureFlags);
+        const userRoles = await resolveUserRoles(strapi, options2?.userId);
+        if (!hasGrantedRole(userRoles, learn)) {
+          const err = new Error("无权查看该课程");
+          err.status = 403;
+          throw err;
+        }
+      }
       return result;
     },
     async create(data, options2) {
@@ -2245,10 +2295,16 @@ const userCourseAuth = ({ strapi }) => {
     throw e;
   }
   return {
-    async find(query = {}) {
-      return strapi.documents(UID$4).findMany({
+    async find(query = {}, options2) {
+      const list = await strapi.documents(UID$4).findMany({
         ...query,
         populate: { user: true, course: true }
+      });
+      const userRoles = await resolveUserRoles(strapi, options2?.userId);
+      return list.filter((item) => {
+        const course2 = item?.course;
+        if (!course2) return true;
+        return hasGrantedRole(userRoles, parseLearnRoles(course2.featureFlags));
       });
     },
     async findOne(documentId) {

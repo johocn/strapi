@@ -1,4 +1,5 @@
 import type { Core } from "@strapi/strapi";
+import { resolveUserRoles, hasGrantedRole, parseLearnRoles } from "../utils/role-gate";
 
 const UID = "plugin::zhao-course.course";
 const TARGET_TYPE = "plugin::zhao-course.course";
@@ -209,6 +210,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     mergedChannelIds: number[];
     siteChannelIds: number[];
     crossChannelEnabled: boolean;
+    userId?: number;
   }) {
     const { filters, populate, sort, pagination, fields, locale } = query;
     const mergedFilters: any = { ...filters };
@@ -338,6 +340,15 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       });
     }
 
+    // 角色过滤：非游客、非 admin 登录用户按课程 learnRoles 白名单过滤（配置了才生效）
+    const userRoles = await resolveUserRoles(strapi, channelScope && !channelScope.isGuest ? ctxState?.userId : undefined);
+    if (channelScope && !channelScope.isGuest && !channelScope.all) {
+      filteredList = filteredList.filter((course: any) => {
+        const learn = parseLearnRoles(course.featureFlags);
+        return hasGrantedRole(userRoles, learn);
+      });
+    }
+
     // 排序
     if (sort) {
       const sortField = typeof sort === "string" ? sort : Object.keys(sort)[0];
@@ -368,7 +379,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     };
   },
 
-  async findOne(documentId: string, publicOnly: boolean = false) {
+  async findOne(documentId: string, publicOnly: boolean = false, options?: { userId?: number; isAdmin?: boolean; channelScope?: { all: boolean; isGuest?: boolean } }) {
     const params: any = {
       documentId,
       populate: {
@@ -379,12 +390,26 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         lessons: true,
         pointChannel: true,
         sequenceTag: true,
+        quizzes: true,
+        exams: true,
       },
     };
     if (publicOnly) {
       params.status = "published";
     }
     const result = await strapi.documents(UID).findOne(params);
+
+    // 角色门控：非 admin 且配置了 learnRoles 时，未授权角色抛 403
+    const isAdmin = publicOnly === false || options?.isAdmin === true || options?.channelScope?.all === true;
+    if (result && !isAdmin) {
+      const learn = parseLearnRoles(result.featureFlags);
+      const userRoles = await resolveUserRoles(strapi, options?.userId);
+      if (!hasGrantedRole(userRoles, learn)) {
+        const err: any = new Error("无权查看该课程");
+        err.status = 403;
+        throw err;
+      }
+    }
     return result;
   },
 

@@ -30,6 +30,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         mergedChannelIds: ctx.state.mergedChannelIds || [],
         siteChannelIds: ctx.state.siteChannelIds || [],
         crossChannelEnabled: ctx.state.crossChannelEnabled ?? true,
+        userId: ctx.state.user?.id,
       }));
     } catch (err) {
       ctx.status = (err as any).status || 400;
@@ -47,7 +48,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       }
       const isAdmin = ctx.path?.includes("/admin/") ?? false;
       const publicOnly = !isAdmin;
-      const result = await strapi.plugin("zhao-course").service("course").findOne(documentId, publicOnly);
+      const result = await strapi.plugin("zhao-course").service("course").findOne(documentId, publicOnly, {
+        userId: ctx.state.user?.id,
+        isAdmin,
+        channelScope: ctx.state.channelScope,
+      });
       if (!result) {
         ctx.status = 404;
         ctx.body = { error: "课程不存在" };

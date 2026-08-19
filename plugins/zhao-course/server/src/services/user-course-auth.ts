@@ -1,4 +1,5 @@
 import type { Core } from "@strapi/strapi";
+import { resolveUserRoles, hasGrantedRole, parseLearnRoles } from "../utils/role-gate";
 
 const UID = "plugin::zhao-course.user-course-auth";
 
@@ -11,10 +12,18 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   }
 
   return {
-  async find(query: any = {}) {
-    return strapi.documents(UID).findMany({
+  async find(query: any = {}, options?: { userId?: number }) {
+    const list: any[] = await strapi.documents(UID).findMany({
       ...query,
       populate: { user: true, course: true },
+    });
+
+    // 学习角色门控：请求者不可学习的课程授权记录不返回
+    const userRoles = await resolveUserRoles(strapi, options?.userId);
+    return list.filter((item: any) => {
+      const course = item?.course;
+      if (!course) return true;
+      return hasGrantedRole(userRoles, parseLearnRoles(course.featureFlags));
     });
   },
 

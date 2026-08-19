@@ -41,7 +41,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       if (cf) {
         query.filters = { ...(query.filters ?? {}), ...cf };
       }
-      ctx.body = wrapList(await strapi.plugin("zhao-course").service("user-course-auth").find(query));
+      ctx.body = wrapList(await strapi.plugin("zhao-course").service("user-course-auth").find(query, { userId: ctx.state.user?.id }));
     } catch (err) {
       ctx.status = (err as any).status || 400; ctx.body = { error: (err as Error).message }; return;
     }
