@@ -81,12 +81,24 @@ const config = {
     }
   }
 };
-const kind$4 = "collectionType";
-const collectionName$4 = "zhao_quizzes";
-const info$4 = { "singularName": "quiz", "pluralName": "quizzes", "displayName": "题目" };
-const options$4 = { "draftAndPublish": false };
-const attributes$4 = { "title": { "type": "richtext", "required": true }, "type": { "type": "enumeration", "enum": ["single_choice", "multiple_choice", "true_false", "fill_blank", "short_answer", "essay", "matching", "ordering"], "required": true }, "options": { "type": "json" }, "answer": { "type": "text" }, "explanation": { "type": "richtext" }, "difficulty": { "type": "enumeration", "enum": ["easy", "medium", "hard"], "default": "medium" }, "points": { "type": "integer", "default": 0 }, "sort": { "type": "integer", "default": 0 }, "isPublished": { "type": "boolean", "default": false }, "course": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-course.course", "inversedBy": "quizzes" }, "lesson": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-course.course-lesson", "inversedBy": "quizzes" }, "tags": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-tag.tag" }, "exams": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-quiz.quiz-exam", "mappedBy": "questions" }, "channelScope": { "type": "enumeration", "enum": ["all", "specific"], "default": "all" }, "channelIds": { "type": "json", "default": "[]" }, "deletedAt": { "type": "datetime", "default": null } };
+const kind$5 = "collectionType";
+const collectionName$5 = "zhao_quizzes";
+const info$5 = { "singularName": "quiz", "pluralName": "quizzes", "displayName": "题目" };
+const options$5 = { "draftAndPublish": false };
+const attributes$5 = { "title": { "type": "richtext", "required": true }, "type": { "type": "enumeration", "enum": ["single_choice", "multiple_choice", "true_false", "fill_blank", "short_answer", "essay", "matching", "ordering"], "required": true }, "options": { "type": "json" }, "answer": { "type": "text" }, "explanation": { "type": "richtext" }, "difficulty": { "type": "enumeration", "enum": ["easy", "medium", "hard"], "default": "medium" }, "points": { "type": "integer", "default": 0 }, "sort": { "type": "integer", "default": 0 }, "isPublished": { "type": "boolean", "default": false }, "course": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-course.course", "inversedBy": "quizzes" }, "lesson": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-course.course-lesson", "inversedBy": "quizzes" }, "tags": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-tag.tag" }, "exams": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-quiz.quiz-exam", "mappedBy": "questions" }, "channelScope": { "type": "enumeration", "enum": ["all", "specific"], "default": "all" }, "channelIds": { "type": "json", "default": "[]" }, "deletedAt": { "type": "datetime", "default": null } };
 const quiz$2 = {
+  kind: kind$5,
+  collectionName: collectionName$5,
+  info: info$5,
+  options: options$5,
+  attributes: attributes$5
+};
+const kind$4 = "collectionType";
+const collectionName$4 = "zhao_quiz_records";
+const info$4 = { "singularName": "quiz-record", "pluralName": "quiz-records", "displayName": "答题记录" };
+const options$4 = { "draftAndPublish": false };
+const attributes$4 = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::users-permissions.user" }, "quiz": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-quiz.quiz" }, "answer": { "type": "json" }, "isCorrect": { "type": "boolean" }, "score": { "type": "decimal", "precision": 5, "scale": 2, "default": 0 }, "teacherScore": { "type": "decimal", "precision": 5, "scale": 2, "default": 0 }, "scoringStatus": { "type": "enumeration", "enum": ["pending", "auto_graded", "manual_graded"], "default": "pending" }, "grader": { "type": "relation", "relation": "manyToOne", "target": "plugin::users-permissions.user" }, "gradedAt": { "type": "datetime" }, "totalPoints": { "type": "integer", "default": 0 }, "submittedAt": { "type": "datetime" }, "duration": { "type": "integer", "default": 0 }, "course": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-course.course" }, "lesson": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-course.course-lesson" }, "mode": { "type": "enumeration", "enum": ["practice", "exam"], "default": "practice" }, "practiceType": { "type": "enumeration", "enum": ["knowledge", "random", "simulate", "wrong"], "default": "knowledge" } };
+const quizRecord$2 = {
   kind: kind$4,
   collectionName: collectionName$4,
   info: info$4,
@@ -94,11 +106,11 @@ const quiz$2 = {
   attributes: attributes$4
 };
 const kind$3 = "collectionType";
-const collectionName$3 = "zhao_quiz_records";
-const info$3 = { "singularName": "quiz-record", "pluralName": "quiz-records", "displayName": "答题记录" };
+const collectionName$3 = "zhao_quiz_exams";
+const info$3 = { "singularName": "quiz-exam", "pluralName": "quiz-exams", "displayName": "考试配置" };
 const options$3 = { "draftAndPublish": false };
-const attributes$3 = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::users-permissions.user" }, "quiz": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-quiz.quiz" }, "answer": { "type": "json" }, "isCorrect": { "type": "boolean" }, "score": { "type": "decimal", "precision": 5, "scale": 2, "default": 0 }, "teacherScore": { "type": "decimal", "precision": 5, "scale": 2, "default": 0 }, "scoringStatus": { "type": "enumeration", "enum": ["pending", "auto_graded", "manual_graded"], "default": "pending" }, "grader": { "type": "relation", "relation": "manyToOne", "target": "plugin::users-permissions.user" }, "gradedAt": { "type": "datetime" }, "totalPoints": { "type": "integer", "default": 0 }, "submittedAt": { "type": "datetime" }, "duration": { "type": "integer", "default": 0 }, "course": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-course.course" }, "lesson": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-course.course-lesson" } };
-const quizRecord$2 = {
+const attributes$3 = { "title": { "type": "string", "required": true }, "description": { "type": "text" }, "timeLimit": { "type": "integer", "default": 0 }, "passScore": { "type": "decimal", "precision": 5, "scale": 2, "default": 60 }, "totalPoints": { "type": "integer", "default": 0 }, "questionCount": { "type": "integer", "default": 0 }, "randomOrder": { "type": "boolean", "default": false }, "allowRetry": { "type": "boolean", "default": true }, "maxAttempts": { "type": "integer", "default": 0 }, "showResult": { "type": "boolean", "default": true }, "questionPoints": { "type": "json" }, "course": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-course.course", "inversedBy": "exams" }, "lesson": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-course.course-lesson", "inversedBy": "exams" }, "questions": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-quiz.quiz", "inversedBy": "exams" }, "channelScope": { "type": "enumeration", "enum": ["all", "specific"], "default": "all" }, "channelIds": { "type": "json", "default": "[]" }, "deletedAt": { "type": "datetime", "default": null }, "paperType": { "type": "enumeration", "enum": ["fixed", "rule"], "default": "fixed" }, "paperRule": { "type": "json" }, "knowledgeScope": { "type": "json", "default": "[]" }, "shuffle": { "type": "boolean", "default": true } };
+const quizExam$2 = {
   kind: kind$3,
   collectionName: collectionName$3,
   info: info$3,
@@ -106,11 +118,11 @@ const quizRecord$2 = {
   attributes: attributes$3
 };
 const kind$2 = "collectionType";
-const collectionName$2 = "zhao_quiz_exams";
-const info$2 = { "singularName": "quiz-exam", "pluralName": "quiz-exams", "displayName": "考试配置" };
+const collectionName$2 = "zhao_quiz_exam_attempts";
+const info$2 = { "singularName": "quiz-exam-attempt", "pluralName": "quiz-exam-attempts", "displayName": "考试记录" };
 const options$2 = { "draftAndPublish": false };
-const attributes$2 = { "title": { "type": "string", "required": true }, "description": { "type": "text" }, "timeLimit": { "type": "integer", "default": 0 }, "passScore": { "type": "decimal", "precision": 5, "scale": 2, "default": 60 }, "totalPoints": { "type": "integer", "default": 0 }, "questionCount": { "type": "integer", "default": 0 }, "randomOrder": { "type": "boolean", "default": false }, "allowRetry": { "type": "boolean", "default": true }, "maxAttempts": { "type": "integer", "default": 0 }, "showResult": { "type": "boolean", "default": true }, "questionPoints": { "type": "json" }, "course": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-course.course", "inversedBy": "exams" }, "lesson": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-course.course-lesson", "inversedBy": "exams" }, "questions": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-quiz.quiz", "inversedBy": "exams" }, "channelScope": { "type": "enumeration", "enum": ["all", "specific"], "default": "all" }, "channelIds": { "type": "json", "default": "[]" }, "deletedAt": { "type": "datetime", "default": null } };
-const quizExam$2 = {
+const attributes$2 = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::users-permissions.user" }, "exam": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-quiz.quiz-exam" }, "answers": { "type": "json" }, "totalScore": { "type": "decimal", "precision": 5, "scale": 2, "default": 0 }, "isPassed": { "type": "boolean" }, "startedAt": { "type": "datetime" }, "submittedAt": { "type": "datetime" }, "duration": { "type": "integer", "default": 0 }, "attemptNumber": { "type": "integer", "default": 1 } };
+const quizExamAttempt$2 = {
   kind: kind$2,
   collectionName: collectionName$2,
   info: info$2,
@@ -118,11 +130,11 @@ const quizExam$2 = {
   attributes: attributes$2
 };
 const kind$1 = "collectionType";
-const collectionName$1 = "zhao_quiz_exam_attempts";
-const info$1 = { "singularName": "quiz-exam-attempt", "pluralName": "quiz-exam-attempts", "displayName": "考试记录" };
+const collectionName$1 = "zhao_quiz_batches";
+const info$1 = { "singularName": "quiz-batch", "pluralName": "quiz-batches", "displayName": "批量导入" };
 const options$1 = { "draftAndPublish": false };
-const attributes$1 = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::users-permissions.user" }, "exam": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-quiz.quiz-exam" }, "answers": { "type": "json" }, "totalScore": { "type": "decimal", "precision": 5, "scale": 2, "default": 0 }, "isPassed": { "type": "boolean" }, "startedAt": { "type": "datetime" }, "submittedAt": { "type": "datetime" }, "duration": { "type": "integer", "default": 0 }, "attemptNumber": { "type": "integer", "default": 1 } };
-const quizExamAttempt$2 = {
+const attributes$1 = { "name": { "type": "string", "required": true }, "file": { "type": "media", "multiple": false }, "templateFile": { "type": "media", "multiple": false }, "totalCount": { "type": "integer", "default": 0 }, "successCount": { "type": "integer", "default": 0 }, "errorCount": { "type": "integer", "default": 0 }, "errors": { "type": "json" }, "status": { "type": "enumeration", "enum": ["pending", "processing", "completed", "failed"], "default": "pending" }, "course": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-course.course" }, "lesson": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-course.course-lesson" }, "deletedAt": { "type": "datetime", "default": null } };
+const quizBatch$2 = {
   kind: kind$1,
   collectionName: collectionName$1,
   info: info$1,
@@ -130,11 +142,11 @@ const quizExamAttempt$2 = {
   attributes: attributes$1
 };
 const kind = "collectionType";
-const collectionName = "zhao_quiz_batches";
-const info = { "singularName": "quiz-batch", "pluralName": "quiz-batches", "displayName": "批量导入" };
+const collectionName = "zhao_wrong_quizzes";
+const info = { "singularName": "wrong-quiz", "pluralName": "wrong-quizzes", "displayName": "错题集" };
 const options = { "draftAndPublish": false };
-const attributes = { "name": { "type": "string", "required": true }, "file": { "type": "media", "multiple": false }, "templateFile": { "type": "media", "multiple": false }, "totalCount": { "type": "integer", "default": 0 }, "successCount": { "type": "integer", "default": 0 }, "errorCount": { "type": "integer", "default": 0 }, "errors": { "type": "json" }, "status": { "type": "enumeration", "enum": ["pending", "processing", "completed", "failed"], "default": "pending" }, "course": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-course.course" }, "lesson": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-course.course-lesson" }, "deletedAt": { "type": "datetime", "default": null } };
-const quizBatch$2 = {
+const attributes = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::users-permissions.user" }, "quiz": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-quiz.quiz" }, "course": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-course.course" }, "lesson": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-course.course-lesson" }, "knowledgePointName": { "type": "string" }, "wrongCount": { "type": "integer", "default": 1 }, "status": { "type": "enumeration", "enum": ["active", "archived"], "default": "active" }, "reviewLevel": { "type": "integer", "default": 1 }, "dueAt": { "type": "datetime" }, "consecutiveCorrect": { "type": "integer", "default": 0 }, "lastWrongAt": { "type": "datetime" }, "lastCorrectAt": { "type": "datetime" } };
+const wrongQuiz$2 = {
   kind,
   collectionName,
   info,
@@ -146,10 +158,11 @@ const contentTypes = {
   "quiz-record": { schema: quizRecord$2 },
   "quiz-exam": { schema: quizExam$2 },
   "quiz-exam-attempt": { schema: quizExamAttempt$2 },
-  "quiz-batch": { schema: quizBatch$2 }
+  "quiz-batch": { schema: quizBatch$2 },
+  "wrong-quiz": { schema: wrongQuiz$2 }
 };
 const wrap$4 = (data, meta = {}) => ({ data, meta });
-const wrapList$4 = (result) => {
+const wrapList$5 = (result) => {
   if (result && typeof result === "object" && !Array.isArray(result) && "results" in result) {
     return { data: result.results, meta: { pagination: result.pagination || {} } };
   }
@@ -167,7 +180,7 @@ const wrapList$4 = (result) => {
 const quiz$1 = ({ strapi }) => ({
   async find(ctx) {
     try {
-      ctx.body = wrapList$4(await strapi.plugin("zhao-quiz").service("quiz").find(ctx.query, ctx.state.channelScope));
+      ctx.body = wrapList$5(await strapi.plugin("zhao-quiz").service("quiz").find(ctx.query, ctx.state.channelScope));
     } catch (err) {
       ctx.status = err.status || 400;
       ctx.body = { error: err.message };
@@ -254,10 +267,20 @@ const quiz$1 = ({ strapi }) => ({
       ctx.status = err.status || 400;
       ctx.body = { error: err.message || err };
     }
+  },
+  async batchAssociate(ctx) {
+    try {
+      const body = ctx.request.body?.data || ctx.request.body;
+      const result = await strapi.plugin("zhao-quiz").service("quiz").batchAssociate(body, ctx.state.channelScope);
+      ctx.body = wrap$4(result);
+    } catch (err) {
+      ctx.status = err.status || 400;
+      ctx.body = { error: err.message || err };
+    }
   }
 });
 const wrap$3 = (data, meta = {}) => ({ data, meta });
-const wrapList$3 = (result) => {
+const wrapList$4 = (result) => {
   if (result && typeof result === "object" && !Array.isArray(result) && "results" in result) {
     return { data: result.results, meta: { pagination: result.pagination || {} } };
   }
@@ -290,7 +313,7 @@ const quizRecord$1 = ({ strapi }) => ({
       if (cf) {
         query.filters = { ...query.filters ?? {}, ...cf };
       }
-      ctx.body = wrapList$3(await strapi.plugin("zhao-quiz").service("quiz-record").find(query));
+      ctx.body = wrapList$4(await strapi.plugin("zhao-quiz").service("quiz-record").find(query));
     } catch (err) {
       ctx.status = err.status || 400;
       ctx.body = { error: err.message };
@@ -359,8 +382,14 @@ const quizRecord$1 = ({ strapi }) => ({
   async submitAnswer(ctx) {
     try {
       const userId = ctx.state.user?.id;
-      const { quizDocumentId, answer, lessonDocumentId } = ctx.request.body;
-      ctx.body = wrap$3(await strapi.plugin("zhao-quiz").service("quiz-record").submitAnswer(userId, quizDocumentId, answer, lessonDocumentId));
+      const { quizDocumentId, answer, lessonDocumentId, mode, practiceType } = ctx.request.body;
+      ctx.body = wrap$3(await strapi.plugin("zhao-quiz").service("quiz-record").submitAnswer(
+        userId,
+        quizDocumentId,
+        answer,
+        lessonDocumentId,
+        { mode, practiceType }
+      ));
     } catch (err) {
       ctx.status = err.status || 400;
       ctx.body = { error: err.message || err };
@@ -384,7 +413,7 @@ const quizRecord$1 = ({ strapi }) => ({
     try {
       const userId = ctx.state.user?.id;
       const { courseDocumentId } = ctx.query;
-      ctx.body = wrapList$3(await strapi.plugin("zhao-quiz").service("quiz-record").getUserRecords(userId, courseDocumentId));
+      ctx.body = wrapList$4(await strapi.plugin("zhao-quiz").service("quiz-record").getUserRecords(userId, courseDocumentId));
     } catch (err) {
       ctx.status = err.status || 400;
       ctx.body = { error: err.message };
@@ -394,7 +423,7 @@ const quizRecord$1 = ({ strapi }) => ({
   async getPendingGrading(ctx) {
     try {
       const { courseDocumentId } = ctx.query;
-      ctx.body = wrapList$3(await strapi.plugin("zhao-quiz").service("quiz-record").getPendingGrading(courseDocumentId));
+      ctx.body = wrapList$4(await strapi.plugin("zhao-quiz").service("quiz-record").getPendingGrading(courseDocumentId));
     } catch (err) {
       ctx.status = err.status || 400;
       ctx.body = { error: err.message };
@@ -403,7 +432,7 @@ const quizRecord$1 = ({ strapi }) => ({
   }
 });
 const wrap$2 = (data, meta = {}) => ({ data, meta });
-const wrapList$2 = (result) => {
+const wrapList$3 = (result) => {
   if (result && typeof result === "object" && !Array.isArray(result) && "results" in result) {
     return { data: result.results, meta: { pagination: result.pagination || {} } };
   }
@@ -419,9 +448,12 @@ const wrapList$2 = (result) => {
   return { data: result, meta: {} };
 };
 const quizExam$1 = ({ strapi }) => ({
+  _opts(ctx) {
+    return { userId: ctx.state.user?.id, isAdmin: ctx.path?.includes("/admin/") ?? false };
+  },
   async find(ctx) {
     try {
-      ctx.body = wrapList$2(await strapi.plugin("zhao-quiz").service("quiz-exam").find(ctx.query));
+      ctx.body = wrapList$3(await strapi.plugin("zhao-quiz").service("quiz-exam").find(ctx.query, this._opts(ctx)));
     } catch (err) {
       ctx.status = err.status || 400;
       ctx.body = { error: err.message };
@@ -431,7 +463,7 @@ const quizExam$1 = ({ strapi }) => ({
   async findOne(ctx) {
     try {
       const { documentId } = ctx.params;
-      const result = await strapi.plugin("zhao-quiz").service("quiz-exam").findOne(documentId);
+      const result = await strapi.plugin("zhao-quiz").service("quiz-exam").findOne(documentId, this._opts(ctx));
       if (!result) {
         ctx.status = 404;
         ctx.body = { error: "考试不存在" };
@@ -478,7 +510,17 @@ const quizExam$1 = ({ strapi }) => ({
   async getQuestions(ctx) {
     try {
       const { documentId } = ctx.params;
-      ctx.body = wrap$2(await strapi.plugin("zhao-quiz").service("quiz-exam").getQuestions(documentId));
+      ctx.body = wrap$2(await strapi.plugin("zhao-quiz").service("quiz-exam").getQuestions(documentId, this._opts(ctx)));
+    } catch (err) {
+      ctx.status = err.status || 500;
+      ctx.body = { error: err.message || err };
+      return;
+    }
+  },
+  async generatePaper(ctx) {
+    try {
+      const { documentId } = ctx.params;
+      ctx.body = wrap$2(await strapi.plugin("zhao-quiz").service("quiz-exam").generatePaper(documentId, this._opts(ctx)));
     } catch (err) {
       ctx.status = err.status || 500;
       ctx.body = { error: err.message || err };
@@ -487,7 +529,7 @@ const quizExam$1 = ({ strapi }) => ({
   }
 });
 const wrap$1 = (data, meta = {}) => ({ data, meta });
-const wrapList$1 = (result) => {
+const wrapList$2 = (result) => {
   if (result && typeof result === "object" && !Array.isArray(result) && "results" in result) {
     return { data: result.results, meta: { pagination: result.pagination || {} } };
   }
@@ -505,7 +547,7 @@ const wrapList$1 = (result) => {
 const quizExamAttempt$1 = ({ strapi }) => ({
   async find(ctx) {
     try {
-      ctx.body = wrapList$1(await strapi.plugin("zhao-quiz").service("quiz-exam-attempt").find(ctx.query));
+      ctx.body = wrapList$2(await strapi.plugin("zhao-quiz").service("quiz-exam-attempt").find(ctx.query));
     } catch (err) {
       ctx.status = err.status || 400;
       ctx.body = { error: err.message };
@@ -585,7 +627,7 @@ const quizExamAttempt$1 = ({ strapi }) => ({
     try {
       const userId = ctx.state.user?.id;
       const { examDocumentId } = ctx.query;
-      ctx.body = wrapList$1(await strapi.plugin("zhao-quiz").service("quiz-exam-attempt").getUserAttempts(userId, examDocumentId));
+      ctx.body = wrapList$2(await strapi.plugin("zhao-quiz").service("quiz-exam-attempt").getUserAttempts(userId, examDocumentId));
     } catch (err) {
       ctx.status = err.status || 400;
       ctx.body = { error: err.message };
@@ -594,7 +636,7 @@ const quizExamAttempt$1 = ({ strapi }) => ({
   }
 });
 const wrap = (data, meta = {}) => ({ data, meta });
-const wrapList = (result) => {
+const wrapList$1 = (result) => {
   if (result && typeof result === "object" && !Array.isArray(result) && "results" in result) {
     return { data: result.results, meta: { pagination: result.pagination || {} } };
   }
@@ -612,7 +654,7 @@ const wrapList = (result) => {
 const quizBatch$1 = ({ strapi }) => ({
   async find(ctx) {
     try {
-      ctx.body = wrapList(await strapi.plugin("zhao-quiz").service("quiz-batch").find(ctx.query));
+      ctx.body = wrapList$1(await strapi.plugin("zhao-quiz").service("quiz-batch").find(ctx.query));
     } catch (err) {
       ctx.status = err.status || 400;
       ctx.body = { error: err.message };
@@ -637,7 +679,8 @@ const quizBatch$1 = ({ strapi }) => ({
   },
   async create(ctx) {
     try {
-      ctx.body = wrap(await strapi.plugin("zhao-quiz").service("quiz-batch").create(ctx.request.body));
+      const body = ctx.request.body?.data || ctx.request.body;
+      ctx.body = wrap(await strapi.plugin("zhao-quiz").service("quiz-batch").create(body));
       ctx.status = 201;
     } catch (err) {
       ctx.status = err.status || 400;
@@ -678,10 +721,68 @@ const quizBatch$1 = ({ strapi }) => ({
   },
   async downloadTemplate(ctx) {
     try {
-      const buffer = await strapi.plugin("zhao-quiz").service("quiz-batch").downloadTemplate();
+      const buffer = await strapi.plugin("zhao-quiz").service("quiz-batch").downloadTemplate(ctx.query);
       ctx.set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
       ctx.set("Content-Disposition", "attachment; filename=quiz_import_template.xlsx");
       ctx.body = buffer;
+    } catch (err) {
+      ctx.status = err.status || 400;
+      ctx.body = { error: err.message };
+      return;
+    }
+  },
+  async exportQuizzes(ctx) {
+    try {
+      const buffer = await strapi.plugin("zhao-quiz").service("quiz-batch").exportQuizzes(ctx.query);
+      ctx.set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+      ctx.set("Content-Disposition", "attachment; filename=quiz_export.xlsx");
+      ctx.body = buffer;
+    } catch (err) {
+      ctx.status = err.status || 400;
+      ctx.body = { error: err.message };
+      return;
+    }
+  }
+});
+const wrapList = (result) => {
+  if (result && Array.isArray(result.list)) {
+    return { data: result.list, meta: { pagination: { total: result.total || 0 } } };
+  }
+  return { data: result, meta: {} };
+};
+const wrongQuiz$1 = ({ strapi }) => ({
+  /** 我的错题列表（默认 active） */
+  async listMy(ctx) {
+    try {
+      const userId = ctx.state.user?.id;
+      if (!userId) {
+        ctx.status = 401;
+        ctx.body = { error: "未登录" };
+        return;
+      }
+      const status = ctx.query?.status || "active";
+      const page = Number(ctx.query?.page) || 1;
+      const pageSize = Number(ctx.query?.pageSize) || 20;
+      const result = await strapi.plugin("zhao-quiz").service("wrong-quiz").listByUser(userId, status, { page, pageSize });
+      ctx.body = wrapList(result);
+    } catch (err) {
+      ctx.status = err.status || 400;
+      ctx.body = { error: err.message };
+      return;
+    }
+  },
+  /** 待复习错题（错题重练队列） */
+  async dueMine(ctx) {
+    try {
+      const userId = ctx.state.user?.id;
+      if (!userId) {
+        ctx.status = 401;
+        ctx.body = { error: "未登录" };
+        return;
+      }
+      const limit = Number(ctx.query?.limit) || 30;
+      const result = await strapi.plugin("zhao-quiz").service("wrong-quiz").dueList(userId, limit);
+      ctx.body = wrapList(result);
     } catch (err) {
       ctx.status = err.status || 400;
       ctx.body = { error: err.message };
@@ -694,7 +795,8 @@ const controllers = {
   "quiz-record": quizRecord$1,
   "quiz-exam": quizExam$1,
   "quiz-exam-attempt": quizExamAttempt$1,
-  "quiz-batch": quizBatch$1
+  "quiz-batch": quizBatch$1,
+  "wrong-quiz": wrongQuiz$1
 };
 const publicRoute = (method, path2, handler) => ({
   method,
@@ -744,10 +846,14 @@ const contentApi = () => ({
     userRoute("POST", "/my/quiz-exam-attempts/:documentId/submit", "quiz-exam-attempt.submitExam"),
     userRoute("GET", "/my/exam-attempts", "quiz-exam-attempt.getUserAttempts"),
     userRoute("GET", "/my/quiz-exams/:documentId/questions", "quiz-exam.getQuestions"),
+    userRoute("GET", "/my/quiz-exams/:documentId/paper", "quiz-exam.generatePaper"),
+    userRoute("GET", "/my/wrong-quizzes", "wrong-quiz.listMy"),
+    userRoute("GET", "/my/wrong-quizzes/due", "wrong-quiz.dueMine"),
     channelScopeRoute("GET", "/quizzes", "quiz.find", "quiz.read"),
     channelScopeRoute("GET", "/quizzes/:documentId", "quiz.findOne", "quiz.read"),
     channelScopeRoute("POST", "/quizzes", "quiz.create", "quiz.create"),
     channelScopeRoute("PUT", "/quizzes/:documentId", "quiz.update", "quiz.update"),
+    channelScopeRoute("POST", "/quizzes/batch-associate", "quiz.batchAssociate", "quiz.update"),
     channelScopeRoute("DELETE", "/quizzes/:documentId", "quiz.delete", "quiz.delete"),
     channelScopeRoute("GET", "/quiz-exams", "quiz-exam.find", "exam.read"),
     channelScopeRoute("GET", "/quiz-exams/:documentId", "quiz-exam.findOne", "exam.read"),
@@ -767,7 +873,8 @@ const contentApi = () => ({
     channelScopeRoute("PUT", "/quiz-batches/:documentId", "quiz-batch.update", "quiz.update"),
     channelScopeRoute("DELETE", "/quiz-batches/:documentId", "quiz-batch.delete", "quiz.delete"),
     channelScopeRoute("POST", "/quiz-batches/:documentId/import", "quiz-batch.importFile", "quiz.create"),
-    channelScopeRoute("GET", "/quiz-batches/template/download", "quiz-batch.downloadTemplate", "quiz.read")
+    channelScopeRoute("GET", "/quiz-batches/template/download", "quiz-batch.downloadTemplate", "quiz.read"),
+    channelScopeRoute("GET", "/quiz-batches/export", "quiz-batch.exportQuizzes", "quiz.read")
   ]
 });
 const routes = {
@@ -776,7 +883,7 @@ const routes = {
     routes: contentApi().routes
   }
 };
-const UID$4 = "plugin::zhao-quiz.quiz";
+const UID$5 = "plugin::zhao-quiz.quiz";
 const LESSON_UID = "plugin::zhao-course.course-lesson";
 const quiz = ({ strapi }) => {
   const getFeatureFlagsMap = async () => {
@@ -801,13 +908,13 @@ const quiz = ({ strapi }) => {
       const page = Number(query.pagination?.page) || 1;
       const pageSize = Number(query.pagination?.pageSize) || 25;
       const [list, total] = await Promise.all([
-        strapi.documents(UID$4).findMany({
+        strapi.documents(UID$5).findMany({
           ...query,
           filters: mergedFilters,
           populate: { course: true, lesson: true, ...query.populate || {} },
           pagination: { page, pageSize }
         }),
-        strapi.documents(UID$4).count({ filters: mergedFilters })
+        strapi.documents(UID$5).count({ filters: mergedFilters })
       ]);
       return {
         list,
@@ -820,46 +927,127 @@ const quiz = ({ strapi }) => {
       };
     },
     async findOne(documentId) {
-      return strapi.documents(UID$4).findOne({
+      return strapi.documents(UID$5).findOne({
         documentId,
         populate: { course: true, lesson: true }
       });
     },
     async create(data) {
-      return strapi.documents(UID$4).create({ data });
+      return strapi.documents(UID$5).create({ data });
     },
     async update(documentId, data) {
-      return strapi.documents(UID$4).update({ documentId, data });
+      return strapi.documents(UID$5).update({ documentId, data });
     },
     async delete(documentId) {
-      return strapi.documents(UID$4).delete({ documentId });
+      return strapi.documents(UID$5).delete({ documentId });
     },
     async findByType(type, query = {}) {
-      return strapi.documents(UID$4).findMany({
+      return strapi.documents(UID$5).findMany({
         ...query,
         filters: { type, ...query.filters || {} },
         populate: { course: true, lesson: true }
       });
     },
     async findByDifficulty(difficulty, query = {}) {
-      return strapi.documents(UID$4).findMany({
+      return strapi.documents(UID$5).findMany({
         ...query,
         filters: { difficulty, ...query.filters || {} }
       });
     },
     async findByCourse(courseDocumentId, query = {}) {
-      return strapi.documents(UID$4).findMany({
+      return strapi.documents(UID$5).findMany({
         ...query,
         filters: { course: { documentId: courseDocumentId }, ...query.filters || {} },
         populate: { course: true, lesson: true }
       });
     },
     async findByLesson(lessonDocumentId, query = {}) {
-      return strapi.documents(UID$4).findMany({
+      return strapi.documents(UID$5).findMany({
         ...query,
         filters: { lesson: { documentId: lessonDocumentId }, ...query.filters || {} },
         populate: { course: true, lesson: true }
       });
+    },
+    /**
+     * 批量关联题库：设置或清除 course/lesson/tags(知识点)
+     * input: { documentIds?, filters?, target: { course?, lesson?, knowledgePoints? } }
+     * target 每个字段: { action: 'set'|'clear', value: string|string[] }；未提供的字段不处理
+     * 知识点: set 时替换原有知识点(tagGroup.slug='knowledge-point')，保留其它普通标签
+     */
+    async batchAssociate(input = {}, channelScope) {
+      const target = input.target || {};
+      const courseTarget = target.course;
+      const lessonTarget = target.lesson;
+      const kpTarget = target.knowledgePoints;
+      let docIds = Array.isArray(input.documentIds) ? input.documentIds.filter(Boolean) : [];
+      if (docIds.length === 0) {
+        const filters = {};
+        const f = input.filters || {};
+        if (f.course) filters.course = { documentId: f.course };
+        if (f.lesson) filters.lesson = { documentId: f.lesson };
+        if (Array.isArray(f.knowledgePoints) && f.knowledgePoints.length > 0) {
+          filters.$and = f.knowledgePoints.map((kp) => ({
+            tags: { documentId: { $eq: kp } }
+          }));
+        }
+        if (f.keyword) filters.title = { $contains: f.keyword };
+        if (f.type) filters.type = { $eq: f.type };
+        if (f.difficulty) filters.difficulty = { $eq: f.difficulty };
+        if (channelScope && !channelScope.all && channelScope.channelIds.length > 0) {
+          const scope = [
+            { channelScope: "all" },
+            ...channelScope.channelIds.map((id) => ({ channelScope: "specific", channelIds: { $contains: id } }))
+          ];
+          filters.$or = filters.$or ? [...filters.$or, ...scope] : scope;
+        }
+        const questions = await strapi.documents(UID$5).findMany({
+          filters,
+          pagination: { page: 1, pageSize: 1e4 }
+        });
+        docIds = (Array.isArray(questions) ? questions : []).map((q) => q.documentId);
+      }
+      if (docIds.length === 0) {
+        return { total: 0, success: 0, errors: [], message: "没有匹配到任何题目" };
+      }
+      let success = 0;
+      const errors = [];
+      for (const documentId of docIds) {
+        try {
+          const patch = {};
+          if (courseTarget) {
+            if (courseTarget.action === "clear") patch.course = null;
+            else if (courseTarget.value) patch.course = courseTarget.value;
+          }
+          if (lessonTarget) {
+            if (lessonTarget.action === "clear") patch.lesson = null;
+            else if (lessonTarget.value) patch.lesson = lessonTarget.value;
+          }
+          if (kpTarget) {
+            const current = await strapi.documents(UID$5).findOne({
+              documentId,
+              populate: { tags: { populate: { tagGroup: true } } }
+            });
+            const normalTags = (current?.tags || []).filter(
+              (t) => t?.tagGroup?.slug !== "knowledge-point"
+            );
+            if (kpTarget.action === "clear") {
+              patch.tags = normalTags.map((t) => ({ documentId: t.documentId }));
+            } else if (Array.isArray(kpTarget.value) && kpTarget.value.length > 0) {
+              const newKp = kpTarget.value.map((d) => ({ documentId: d }));
+              patch.tags = [...normalTags.map((t) => ({ documentId: t.documentId })), ...newKp];
+            }
+          }
+          if (Object.keys(patch).length === 0) {
+            success += 1;
+            continue;
+          }
+          await strapi.documents(UID$5).update({ documentId, data: patch });
+          success += 1;
+        } catch (e) {
+          errors.push(`${documentId}: ${e.message || "更新失败"}`);
+        }
+      }
+      return { total: docIds.length, success, errors };
     },
     /**
      * C端开始答题：随机抽取题目 + 积分配置
@@ -888,7 +1076,7 @@ const quiz = ({ strapi }) => {
           throw e;
         }
       }
-      const allQuestions = await strapi.documents(UID$4).findMany({
+      const allQuestions = await strapi.documents(UID$5).findMany({
         filters: { lesson: { documentId: lessonDocumentId }, isPublished: true },
         populate: { course: true, lesson: true }
       });
@@ -934,7 +1122,7 @@ const quiz = ({ strapi }) => {
      * C端判题：验证答案是否正确
      */
     async checkAnswer(quizDocumentId, userAnswer) {
-      const quiz2 = await strapi.documents(UID$4).findOne({ documentId: quizDocumentId });
+      const quiz2 = await strapi.documents(UID$5).findOne({ documentId: quizDocumentId });
       if (!quiz2) {
         const e = new Error("题目不存在");
         e.code = "QUIZ_015";
@@ -1055,7 +1243,7 @@ const quiz = ({ strapi }) => {
     }
   };
 };
-const UID$3 = "plugin::zhao-quiz.quiz-record";
+const UID$4 = "plugin::zhao-quiz.quiz-record";
 const QUIZ_UID$1 = "plugin::zhao-quiz.quiz";
 const quizRecord = ({ strapi }) => {
   function throwErr(code, status, message) {
@@ -1070,12 +1258,12 @@ const quizRecord = ({ strapi }) => {
       const page = Number(pagination?.page) || 1;
       const pageSize = Number(pagination?.pageSize) || 25;
       const [list, total] = await Promise.all([
-        strapi.documents(UID$3).findMany({
+        strapi.documents(UID$4).findMany({
           ...query,
           populate: { user: true, quiz: true, course: true, lesson: true, grader: true, ...query.populate || {} },
           pagination: { page, pageSize }
         }),
-        strapi.documents(UID$3).count({ filters: filters || {} })
+        strapi.documents(UID$4).count({ filters: filters || {} })
       ]);
       return {
         list,
@@ -1088,24 +1276,24 @@ const quizRecord = ({ strapi }) => {
       };
     },
     async findOne(documentId) {
-      return strapi.documents(UID$3).findOne({
+      return strapi.documents(UID$4).findOne({
         documentId,
         populate: { user: true, quiz: true, course: true, lesson: true, grader: true }
       });
     },
     async create(data) {
-      return strapi.documents(UID$3).create({ data });
+      return strapi.documents(UID$4).create({ data });
     },
     async update(documentId, data) {
-      return strapi.documents(UID$3).update({ documentId, data });
+      return strapi.documents(UID$4).update({ documentId, data });
     },
     async delete(documentId) {
-      return strapi.documents(UID$3).delete({ documentId });
+      return strapi.documents(UID$4).delete({ documentId });
     },
     /**
      * 提交回答 - 自动判题或标记 essay 待评分
      */
-    async submitAnswer(userId, quizDocumentId, answer, lessonDocId) {
+    async submitAnswer(userId, quizDocumentId, answer, lessonDocId, extra = {}) {
       const quiz2 = await strapi.documents(QUIZ_UID$1).findOne({
         documentId: quizDocumentId,
         populate: { course: true, lesson: true }
@@ -1117,38 +1305,63 @@ const quizRecord = ({ strapi }) => {
       }
       const courseId = quiz2.course?.id || quiz2.course;
       const lessonId = lessonDocId ? quiz2.lesson?.id || quiz2.lesson : quiz2.lesson?.id || quiz2.lesson;
-      const isEssay = quiz2.type === "essay";
+      const type = quiz2.type;
+      const isObjective = !["essay", "short_answer"].includes(type);
+      const needsManual = type === "essay" || type === "short_answer" && !this._shortAutoPass(quiz2, answer);
       let isCorrect = false;
       let score = 0;
       let scoringStatus = "auto_graded";
-      if (isEssay) {
+      if (needsManual) {
         scoringStatus = "pending";
       } else {
-        isCorrect = String(answer).trim().toLowerCase() === String(quiz2.answer).trim().toLowerCase();
+        isCorrect = isObjective ? String(answer).trim().toLowerCase() === String(quiz2.answer).trim().toLowerCase() : true;
         score = isCorrect ? quiz2.points || 0 : 0;
       }
-      const record = await strapi.documents(UID$3).create({
+      const record = await strapi.documents(UID$4).create({
         data: {
           user: userId,
           quiz: quiz2.id || quiz2.documentId,
           answer: typeof answer === "object" ? answer : { text: answer },
-          isCorrect: isEssay ? void 0 : isCorrect,
+          isCorrect: needsManual ? void 0 : isCorrect,
           score,
           teacherScore: 0,
           scoringStatus,
           totalPoints: quiz2.points || 0,
           submittedAt: /* @__PURE__ */ new Date(),
           course: courseId,
-          lesson: lessonId
+          lesson: lessonId,
+          mode: extra.mode || "practice",
+          practiceType: extra.practiceType || "knowledge"
         }
       });
+      if (!needsManual) {
+        const wrongService = strapi.plugin("zhao-quiz").service("wrong-quiz");
+        const quizId = quiz2.id || quiz2.documentId;
+        if (!isCorrect) {
+          await wrongService.onWrong({ userId, quizId, courseId, lessonId });
+        } else {
+          await wrongService.onCorrect(userId, quizId);
+        }
+      }
       return record;
+    },
+    /**
+     * short_answer 关键词初判：命中 60% 关键词视为通过（自动判定），否则转人工复核
+     */
+    _shortAutoPass(quiz2, answer) {
+      if (!quiz2.answer) return false;
+      const kws = String(quiz2.answer).split(/[,，;；|]/).map((s) => s.trim()).filter(Boolean);
+      if (!kws.length) return false;
+      const text = String(typeof answer === "object" ? answer.text || "" : answer).toLowerCase();
+      const kwsLower = kws.map((k) => k.toLowerCase());
+      const hit = kwsLower.filter((k) => k && text.includes(k)).length;
+      return hit / kws.length >= 0.6;
     },
     /**
      * 教师人工评分（仅限 essay 问答题）
      */
     async teacherGrade(recordDocumentId, teacherScore, graderUserId) {
-      const record = await strapi.documents(UID$3).findOne({
+      const record = await strapi.documents(UID$4).findOne({
         documentId: recordDocumentId,
         populate: { quiz: true }
       });
@@ -1162,7 +1375,7 @@ const quizRecord = ({ strapi }) => {
         const msg = i18n ? i18n.t("QUIZ_012") : "该记录已完成评分";
         throwErr("QUIZ_012", 400, msg);
       }
-      const result = await strapi.documents(UID$3).update({
+      const result = await strapi.documents(UID$4).update({
         documentId: recordDocumentId,
         data: {
           teacherScore: Math.max(0, teacherScore),
@@ -1173,6 +1386,17 @@ const quizRecord = ({ strapi }) => {
           isCorrect: teacherScore > 0
         }
       });
+      const wrongService = strapi.plugin("zhao-quiz").service("wrong-quiz");
+      if (teacherScore > 0) {
+        await wrongService.onCorrect(record.user?.id || record.user, record.quiz?.id || record.quiz);
+      } else {
+        await wrongService.onWrong({
+          userId: record.user?.id || record.user,
+          quizId: record.quiz?.id || record.quiz,
+          courseId: record.course?.id || record.course,
+          lessonId: record.lesson?.id || record.lesson
+        });
+      }
       return result;
     },
     /**
@@ -1183,7 +1407,7 @@ const quizRecord = ({ strapi }) => {
       if (courseDocId) {
         filters.course = { documentId: courseDocId };
       }
-      return strapi.documents(UID$3).findMany({
+      return strapi.documents(UID$4).findMany({
         filters,
         populate: { quiz: true, course: true, lesson: true, grader: true },
         sort: { submittedAt: "desc" }
@@ -1197,7 +1421,7 @@ const quizRecord = ({ strapi }) => {
       if (courseDocId) {
         filters.course = { documentId: courseDocId };
       }
-      return strapi.documents(UID$3).findMany({
+      return strapi.documents(UID$4).findMany({
         filters,
         populate: { user: true, quiz: true, course: true, lesson: true },
         sort: { submittedAt: "asc" }
@@ -1205,8 +1429,191 @@ const quizRecord = ({ strapi }) => {
     }
   };
 };
-const UID$2 = "plugin::zhao-quiz.quiz-exam";
+async function resolveUserRoles(strapi, userId) {
+  if (!userId) return [];
+  const user = await strapi.db.query("plugin::users-permissions.user").findOne({ where: { id: userId } });
+  const raw = Array.isArray(user?.zhaoRoles) ? user.zhaoRoles : [];
+  return raw.filter((r) => typeof r === "string");
+}
+function hasGrantedRole(userRoles, whitelist) {
+  if (!Array.isArray(whitelist) || whitelist.length === 0) return true;
+  const roles = Array.isArray(userRoles) ? userRoles : [];
+  if (roles.includes("admin")) return true;
+  return roles.some((r) => whitelist.includes(r));
+}
+function parseQuizExamRoles(course) {
+  let ff = course?.featureFlags;
+  if (typeof ff === "string") {
+    try {
+      ff = JSON.parse(ff);
+    } catch {
+      return [];
+    }
+  }
+  if (!ff || typeof ff !== "object" || Array.isArray(ff)) return [];
+  const quiz2 = ff.quiz;
+  if (!quiz2 || typeof quiz2 !== "object" || Array.isArray(quiz2)) return [];
+  const er = quiz2.examRoles;
+  if (!Array.isArray(er)) return [];
+  return er.filter((x) => typeof x === "string");
+}
+const UID$3 = "plugin::zhao-quiz.quiz-exam";
 const quizExam = ({ strapi }) => {
+  function throwErr(code, status, message) {
+    const e = new Error(message);
+    e.code = code;
+    e.status = status;
+    throw e;
+  }
+  return {
+    async find(query = {}, options2) {
+      const { filters, pagination } = query;
+      const page = Number(pagination?.page) || 1;
+      const pageSize = Number(pagination?.pageSize) || 25;
+      const [list, total] = await Promise.all([
+        strapi.documents(UID$3).findMany({
+          ...query,
+          populate: { course: true, lesson: true, questions: true, ...query.populate || {} },
+          pagination: { page, pageSize }
+        }),
+        strapi.documents(UID$3).count({ filters: filters || {} })
+      ]);
+      let resultList = list;
+      if (!options2?.isAdmin) {
+        const userRoles = await resolveUserRoles(strapi, options2?.userId);
+        resultList = list.filter(
+          (exam) => hasGrantedRole(userRoles, parseQuizExamRoles(exam.course))
+        );
+      }
+      return {
+        list: resultList,
+        pagination: {
+          page,
+          pageSize,
+          total,
+          pageCount: Math.ceil(total / pageSize)
+        }
+      };
+    },
+    async findOne(documentId, options2) {
+      const exam = await strapi.documents(UID$3).findOne({
+        documentId,
+        populate: { course: true, lesson: true, questions: true }
+      });
+      await this._assertExamRole(exam, options2);
+      return exam;
+    },
+    async create(data) {
+      return strapi.documents(UID$3).create({ data });
+    },
+    async update(documentId, data) {
+      return strapi.documents(UID$3).update({ documentId, data });
+    },
+    async delete(documentId) {
+      return strapi.documents(UID$3).delete({ documentId });
+    },
+    /**
+     * 获取考试题目（支持随机排序）
+     */
+    async getQuestions(examDocumentId, options2) {
+      const exam = await strapi.documents(UID$3).findOne({
+        documentId: examDocumentId,
+        populate: { questions: true, course: true }
+      });
+      if (!exam) {
+        const i18n = strapi.plugin("zhao-common")?.service("i18n");
+        const msg = i18n ? i18n.t("QUIZ_004") : "考试不存在";
+        throwErr("QUIZ_004", 404, msg);
+      }
+      await this._assertExamRole(exam, options2);
+      let questions = exam.questions || [];
+      if (exam.randomOrder) {
+        questions = [...questions].sort(() => Math.random() - 0.5);
+      }
+      const questionPoints = exam.questionPoints || {};
+      return questions.map((q) => ({
+        ...q,
+        answer: void 0,
+        points: questionPoints[q.documentId] || q.points || 0
+      }));
+    },
+    /**
+     * 计算考试总分
+     */
+    async calculateTotalPoints(examDocumentId) {
+      const exam = await strapi.documents(UID$3).findOne({
+        documentId: examDocumentId,
+        populate: { questions: true }
+      });
+      if (!exam) return 0;
+      const questionPoints = exam.questionPoints || {};
+      const total = (exam.questions || []).reduce((sum, q) => {
+        return sum + (questionPoints[q.documentId] || q.points || 0);
+      }, 0);
+      return total;
+    },
+    /**
+     * 组卷：fixed 固定题 或 rule 规则抽题；返回隐藏答案的题目与缺额提示
+     */
+    async generatePaper(examDocumentId, options2) {
+      const exam = await strapi.documents(UID$3).findOne({
+        documentId: examDocumentId,
+        populate: { questions: true, course: true }
+      });
+      if (!exam) {
+        const i18n = strapi.plugin("zhao-common")?.service("i18n");
+        throwErr("QUIZ_004", 404, i18n ? i18n.t("QUIZ_004") : "考试不存在");
+      }
+      await this._assertExamRole(exam, options2);
+      if (exam.paperType !== "rule") {
+        return { documentId: examDocumentId, questions: this._hideAnswers(exam.questions || [], exam), shortages: [] };
+      }
+      const rules = Array.isArray(exam.paperRule) ? exam.paperRule : [];
+      const scope = Array.isArray(exam.knowledgeScope) ? exam.knowledgeScope : [];
+      const picked = [];
+      const shortages = [];
+      for (const rule of rules) {
+        const filters = { isPublished: true };
+        if (rule.type) filters.type = rule.type;
+        if (rule.difficulty) filters.difficulty = rule.difficulty;
+        if (scope.length) filters.course = { documentId: scope };
+        const pool = await strapi.documents("plugin::zhao-quiz.quiz").findMany({
+          filters,
+          pagination: { page: 1, pageSize: 300 }
+        });
+        const needed = Number(rule.count) || 0;
+        const sampled = [...pool].sort(() => Math.random() - 0.5).slice(0, needed);
+        if (sampled.length < needed) {
+          shortages.push(`[${rule.type || "任意"}] 缺 ${needed - sampled.length} 题`);
+        }
+        picked.push(...sampled.map((q) => ({ ...q, points: Number(rule.points) || q.points || 0 })));
+      }
+      return { documentId: examDocumentId, questions: this._hideAnswers(picked, exam), shortages };
+    },
+    /** 考试角色门控：非 admin 且课程配置了 quiz.examRoles 时，未授权角色抛 403 */
+    async _assertExamRole(exam, options2) {
+      if (!exam) return;
+      if (options2?.isAdmin) return;
+      const userRoles = await resolveUserRoles(strapi, options2?.userId);
+      if (!hasGrantedRole(userRoles, parseQuizExamRoles(exam.course))) {
+        throwErr("QUIZ_403", 403, "无权进行该考试");
+      }
+    },
+    /** 随机排序并隐藏答案/赋予分值 */
+    _hideAnswers(questions, exam) {
+      const questionPoints = exam.questionPoints || {};
+      const qs = exam.shuffle === false ? questions : [...questions].sort(() => Math.random() - 0.5);
+      return qs.map((q) => ({
+        ...q,
+        answer: void 0,
+        points: questionPoints[q.documentId] || q.points || 0
+      }));
+    }
+  };
+};
+const UID$2 = "plugin::zhao-quiz.quiz-exam-attempt";
+const EXAM_UID = "plugin::zhao-quiz.quiz-exam";
+const quizExamAttempt = ({ strapi }) => {
   function throwErr(code, status, message) {
     const e = new Error(message);
     e.code = code;
@@ -1221,7 +1628,7 @@ const quizExam = ({ strapi }) => {
       const [list, total] = await Promise.all([
         strapi.documents(UID$2).findMany({
           ...query,
-          populate: { course: true, lesson: true, questions: true, ...query.populate || {} },
+          populate: { user: true, exam: true, ...query.populate || {} },
           pagination: { page, pageSize }
         }),
         strapi.documents(UID$2).count({ filters: filters || {} })
@@ -1239,7 +1646,7 @@ const quizExam = ({ strapi }) => {
     async findOne(documentId) {
       return strapi.documents(UID$2).findOne({
         documentId,
-        populate: { course: true, lesson: true, questions: true }
+        populate: { user: true, exam: true }
       });
     },
     async create(data) {
@@ -1252,120 +1659,39 @@ const quizExam = ({ strapi }) => {
       return strapi.documents(UID$2).delete({ documentId });
     },
     /**
-     * 获取考试题目（支持随机排序）
-     */
-    async getQuestions(examDocumentId) {
-      const exam = await strapi.documents(UID$2).findOne({
-        documentId: examDocumentId,
-        populate: { questions: true }
-      });
-      if (!exam) {
-        const i18n = strapi.plugin("zhao-common")?.service("i18n");
-        const msg = i18n ? i18n.t("QUIZ_004") : "考试不存在";
-        throwErr("QUIZ_004", 404, msg);
-      }
-      let questions = exam.questions || [];
-      if (exam.randomOrder) {
-        questions = [...questions].sort(() => Math.random() - 0.5);
-      }
-      const questionPoints = exam.questionPoints || {};
-      return questions.map((q) => ({
-        ...q,
-        answer: void 0,
-        points: questionPoints[q.documentId] || q.points || 0
-      }));
-    },
-    /**
-     * 计算考试总分
-     */
-    async calculateTotalPoints(examDocumentId) {
-      const exam = await strapi.documents(UID$2).findOne({
-        documentId: examDocumentId,
-        populate: { questions: true }
-      });
-      if (!exam) return 0;
-      const questionPoints = exam.questionPoints || {};
-      const total = (exam.questions || []).reduce((sum, q) => {
-        return sum + (questionPoints[q.documentId] || q.points || 0);
-      }, 0);
-      return total;
-    }
-  };
-};
-const UID$1 = "plugin::zhao-quiz.quiz-exam-attempt";
-const EXAM_UID = "plugin::zhao-quiz.quiz-exam";
-const quizExamAttempt = ({ strapi }) => {
-  function throwErr(code, status, message) {
-    const e = new Error(message);
-    e.code = code;
-    e.status = status;
-    throw e;
-  }
-  return {
-    async find(query = {}) {
-      const { filters, pagination } = query;
-      const page = Number(pagination?.page) || 1;
-      const pageSize = Number(pagination?.pageSize) || 25;
-      const [list, total] = await Promise.all([
-        strapi.documents(UID$1).findMany({
-          ...query,
-          populate: { user: true, exam: true, ...query.populate || {} },
-          pagination: { page, pageSize }
-        }),
-        strapi.documents(UID$1).count({ filters: filters || {} })
-      ]);
-      return {
-        list,
-        pagination: {
-          page,
-          pageSize,
-          total,
-          pageCount: Math.ceil(total / pageSize)
-        }
-      };
-    },
-    async findOne(documentId) {
-      return strapi.documents(UID$1).findOne({
-        documentId,
-        populate: { user: true, exam: true }
-      });
-    },
-    async create(data) {
-      return strapi.documents(UID$1).create({ data });
-    },
-    async update(documentId, data) {
-      return strapi.documents(UID$1).update({ documentId, data });
-    },
-    async delete(documentId) {
-      return strapi.documents(UID$1).delete({ documentId });
-    },
-    /**
      * 开始考试
      */
     async startExam(userId, examDocumentId) {
-      const exam = await strapi.documents(EXAM_UID).findOne({ documentId: examDocumentId });
+      const exam = await strapi.documents(EXAM_UID).findOne({
+        documentId: examDocumentId,
+        populate: { course: true }
+      });
       if (!exam) {
         const i18n = strapi.plugin("zhao-common")?.service("i18n");
         const msg = i18n ? i18n.t("QUIZ_004") : "考试不存在";
         throwErr("QUIZ_004", 404, msg);
       }
+      const userRoles = await resolveUserRoles(strapi, userId);
+      if (!hasGrantedRole(userRoles, parseQuizExamRoles(exam.course))) {
+        throwErr("QUIZ_403", 403, "无权进行该考试");
+      }
       if (!exam.allowRetry) {
-        const existing2 = await strapi.db.query(UID$1).findMany({ where: { user: userId, exam: exam.id } });
+        const existing2 = await strapi.db.query(UID$2).findMany({ where: { user: userId, exam: exam.id } });
         if (existing2.length > 0) {
           const i18n = strapi.plugin("zhao-common")?.service("i18n");
           const msg = i18n ? i18n.t("QUIZ_005") : "该考试不允许重试";
           throwErr("QUIZ_005", 400, msg);
         }
       } else if (exam.maxAttempts > 0) {
-        const count = await strapi.db.query(UID$1).count({ where: { user: userId, exam: exam.id } });
+        const count = await strapi.db.query(UID$2).count({ where: { user: userId, exam: exam.id } });
         if (count >= exam.maxAttempts) {
           const i18n = strapi.plugin("zhao-common")?.service("i18n");
           const msg = i18n ? i18n.t("QUIZ_005") : "考试次数已达上限";
           throwErr("QUIZ_005", 400, msg);
         }
       }
-      const existing = await strapi.db.query(UID$1).findMany({ where: { user: userId, exam: exam.id } });
-      const attempt = await strapi.db.query(UID$1).create({
+      const existing = await strapi.db.query(UID$2).findMany({ where: { user: userId, exam: exam.id } });
+      const attempt = await strapi.db.query(UID$2).create({
         data: {
           user: userId,
           exam: exam.id,
@@ -1383,7 +1709,7 @@ const quizExamAttempt = ({ strapi }) => {
      * 提交答卷
      */
     async submitExam(attemptDocumentId, answers) {
-      const attempt = await strapi.documents(UID$1).findOne({
+      const attempt = await strapi.documents(UID$2).findOne({
         documentId: attemptDocumentId,
         populate: { exam: { populate: { questions: true } } }
       });
@@ -1395,15 +1721,31 @@ const quizExamAttempt = ({ strapi }) => {
       const exam = attempt.exam;
       if (!exam) throwErr("QUIZ_010", 404, "关联考试不存在");
       const questionPoints = exam.questionPoints || {};
-      const questions = exam.questions || [];
+      const fixedMap = new Map(
+        (exam.questions || []).map((q) => [q.id, q]).concat((exam.questions || []).map((q) => [q.documentId, q]))
+      );
       let totalScore = 0;
+      const results = [];
       for (const answer of answers) {
-        const question = questions.find(
-          (q) => q.documentId === answer.quizDocumentId || q.id === answer.quizId
-        );
+        const quizDocumentId = answer?.quizDocumentId;
+        if (!quizDocumentId) continue;
+        let question = fixedMap.get(quizDocumentId);
+        let fetchedCourse;
+        if (!question) {
+          question = await strapi.documents("plugin::zhao-quiz.quiz").findOne({
+            documentId: quizDocumentId,
+            populate: { course: { fields: ["id", "name"] } }
+          });
+          fetchedCourse = question?.course;
+        }
         if (question && question.type !== "essay") {
           const maxPoints = questionPoints[question.documentId] || question.points || 0;
-          const isCorrect = String(answer.answer).trim().toLowerCase() === String(question.answer).trim().toLowerCase();
+          const isCorrect = String(answer?.answer ?? "").trim().toLowerCase() === String(question.answer).trim().toLowerCase();
+          results.push({
+            quizId: question.id || question.documentId,
+            courseId: question.course?.id || fetchedCourse?.id || void 0,
+            isCorrect
+          });
           if (isCorrect) {
             totalScore += maxPoints;
           }
@@ -1412,7 +1754,7 @@ const quizExamAttempt = ({ strapi }) => {
       const duration = attempt.startedAt ? Math.floor((Date.now() - new Date(attempt.startedAt).getTime()) / 1e3) : 0;
       const passScore = Number(exam.passScore) || 60;
       const isPassed = totalScore >= passScore;
-      const result = await strapi.db.query(UID$1).update({
+      const result = await strapi.db.query(UID$2).update({
         where: { id: attempt.id },
         data: {
           answers,
@@ -1422,13 +1764,28 @@ const quizExamAttempt = ({ strapi }) => {
           duration
         }
       });
+      const wrongService = strapi.plugin("zhao-quiz").service("wrong-quiz");
+      for (const r of results) {
+        try {
+          if (r.isCorrect) {
+            await wrongService.onCorrect(attempt.user, r.quizId);
+          } else {
+            await wrongService.onWrong({
+              userId: attempt.user,
+              quizId: r.quizId,
+              courseId: r.courseId
+            });
+          }
+        } catch {
+        }
+      }
       return result;
     },
     /**
      * 查询用户的考试记录
      */
     async getUserAttempts(userId, examDocumentId) {
-      return strapi.documents(UID$1).findMany({
+      return strapi.documents(UID$2).findMany({
         filters: { user: { id: userId }, exam: { documentId: examDocumentId } },
         populate: { exam: true },
         sort: { startedAt: "desc" }
@@ -1436,7 +1793,7 @@ const quizExamAttempt = ({ strapi }) => {
     }
   };
 };
-const UID = "plugin::zhao-quiz.quiz-batch";
+const UID$1 = "plugin::zhao-quiz.quiz-batch";
 const QUIZ_UID = "plugin::zhao-quiz.quiz";
 const quizBatch = ({ strapi }) => {
   function throwErr(code, status, message) {
@@ -1451,12 +1808,12 @@ const quizBatch = ({ strapi }) => {
       const page = Number(pagination?.page) || 1;
       const pageSize = Number(pagination?.pageSize) || 25;
       const [list, total] = await Promise.all([
-        strapi.documents(UID).findMany({
+        strapi.documents(UID$1).findMany({
           ...query,
           populate: { course: true, lesson: true, file: true, templateFile: true, ...query.populate || {} },
           pagination: { page, pageSize }
         }),
-        strapi.documents(UID).count({ filters: filters || {} })
+        strapi.documents(UID$1).count({ filters: filters || {} })
       ]);
       return {
         list,
@@ -1469,44 +1826,52 @@ const quizBatch = ({ strapi }) => {
       };
     },
     async findOne(documentId) {
-      return strapi.documents(UID).findOne({
+      return strapi.documents(UID$1).findOne({
         documentId,
         populate: { course: true, lesson: true, file: true, templateFile: true }
       });
     },
     async create(data) {
-      return strapi.documents(UID).create({ data });
+      return strapi.documents(UID$1).create({ data });
     },
     async update(documentId, data) {
-      return strapi.documents(UID).update({ documentId, data });
+      return strapi.documents(UID$1).update({ documentId, data });
     },
     async delete(documentId) {
-      return strapi.documents(UID).delete({ documentId });
+      return strapi.documents(UID$1).delete({ documentId });
     },
     _getFilePath(fileInfo) {
       if (!fileInfo) return null;
       const uploadDir = strapi.dirs?.static?.public || path__namespace.join(process.cwd(), "public", "uploads");
-      const fileName = fileInfo.hash || fileInfo.name;
+      const fileName = fileInfo.hash || fileInfo.name || "";
       const ext = fileInfo.ext || "";
-      const filePath = path__namespace.join(uploadDir, fileName + ext);
-      if (fs__namespace.existsSync(filePath)) return filePath;
-      const altPath = path__namespace.join(uploadDir, fileInfo.url?.replace("/uploads/", "") || "");
+      const url = fileInfo.url || "";
+      if (url) {
+        const rel = url.startsWith("/static") ? url.slice("/static".length) : url;
+        const viaUrl = path__namespace.join(uploadDir, rel.replace(/^\//, ""));
+        if (fs__namespace.existsSync(viaUrl)) return viaUrl;
+      }
+      if (fileName) {
+        const hashPath = path__namespace.join(uploadDir, fileName + ext);
+        if (fs__namespace.existsSync(hashPath)) return hashPath;
+      }
+      const altPath = path__namespace.join(uploadDir, url.replace("/uploads/", "").replace(/^\//, ""));
       if (fs__namespace.existsSync(altPath)) return altPath;
       return null;
     },
     async importFromFile(batchDocumentId) {
-      const batch = await strapi.documents(UID).findOne({
+      const batch = await strapi.documents(UID$1).findOne({
         documentId: batchDocumentId,
         populate: { file: true, course: true, lesson: true }
       });
       if (!batch) {
         throwErr("QUIZ_007", 404, "批量导入记录不存在");
       }
-      await strapi.documents(UID).update({
+      await strapi.documents(UID$1).update({
         documentId: batchDocumentId,
         data: { status: "processing" }
       });
-      const results = { total: 0, success: 0, errors: [] };
+      const results = { total: 0, success: 0, skipped: 0, errors: [] };
       const courseDocId = batch.course?.documentId;
       const lessonDocId = batch.lesson?.documentId;
       try {
@@ -1543,12 +1908,53 @@ const quizBatch = ({ strapi }) => {
               results.errors.push(`第${rowNum}行: 答案不能为空（问答题除外）`);
               continue;
             }
+            const strVal = (x) => x === void 0 || x === null ? null : String(x).trim() || null;
+            let courseVal = strVal(row.课程 ?? row.course);
+            if (!courseVal) courseVal = courseDocId || null;
+            let lessonVal = strVal(row.课时 ?? row.lesson);
+            if (!lessonVal) lessonVal = lessonDocId || null;
+            const kpVal = strVal(row.知识点 ?? row.knowledgePoints ?? row.knowledge_point);
+            let courseId = null;
+            let lessonId = null;
+            const kpIds = [];
+            let assocFailed = false;
+            if (courseVal) {
+              courseId = await this._resolveCourse(courseVal);
+              if (!courseId) {
+                assocFailed = true;
+                results.errors.push(`第${rowNum}行: 课程 "${courseVal}" 未找到`);
+              }
+            }
+            if (lessonVal) {
+              lessonId = await this._resolveLesson(lessonVal);
+              if (!lessonId) {
+                assocFailed = true;
+                results.errors.push(`第${rowNum}行: 课时 "${lessonVal}" 未找到`);
+              }
+            }
+            const kpTokens = kpVal ? kpVal.split("|").map((s) => s.trim()).filter(Boolean) : [];
+            for (const kp of kpTokens) {
+              const kpId = await this._resolveKnowledgePoint(kp);
+              if (kpId) kpIds.push(kpId);
+              else {
+                assocFailed = true;
+                results.errors.push(`第${rowNum}行: 知识点 "${kp}" 未找到`);
+              }
+            }
+            if (assocFailed) continue;
             let options2 = null;
-            if (row.选项 || row.options) {
-              const optStr = (row.选项 || row.options).toString();
-              try {
-                options2 = JSON.parse(optStr);
-              } catch {
+            const optRaw = row.选项 ?? row.options ?? row["选项(JSON)"] ?? row["选项（JSON）"];
+            if (optRaw !== void 0 && optRaw !== null && optRaw !== "") {
+              const optStr = optRaw.toString();
+              if (optStr.trim().startsWith("[")) {
+                try {
+                  options2 = JSON.parse(optStr);
+                } catch {
+                  options2 = optStr.includes("|") ? optStr.split("|").map((o) => o.trim()) : optStr;
+                }
+              } else if (optStr.includes("|")) {
+                options2 = optStr.split("|").map((o) => o.trim());
+              } else {
                 options2 = optStr;
               }
             }
@@ -1562,9 +1968,18 @@ const quizBatch = ({ strapi }) => {
               sort,
               isPublished: true
             };
-            if (options2) quizData.options = options2;
-            if (courseDocId) quizData.course = courseDocId;
-            if (lessonDocId) quizData.lesson = lessonDocId;
+            if (options2) quizData.options = this._normalizeOptions(options2);
+            if (courseId) quizData.course = courseId;
+            if (lessonId) quizData.lesson = lessonId;
+            if (kpIds.length) quizData.tags = kpIds.map((documentId) => ({ documentId }));
+            const dupFilters = { title };
+            if (courseId) dupFilters.course = { documentId: courseId };
+            const dup = await strapi.documents(QUIZ_UID).findMany({ filters: dupFilters, pagination: { page: 1, pageSize: 1 } });
+            if (dup.length > 0) {
+              results.skipped++;
+              results.errors.push(`第${rowNum}行: 已存在相同题目，跳过`);
+              continue;
+            }
             await strapi.documents(QUIZ_UID).create({ data: quizData });
             results.success++;
           } catch (rowErr) {
@@ -1575,7 +1990,7 @@ const quizBatch = ({ strapi }) => {
         results.errors.push(err.message);
       }
       const status = results.errors.length === 0 ? "completed" : results.success > 0 ? "completed" : "failed";
-      await strapi.documents(UID).update({
+      await strapi.documents(UID$1).update({
         documentId: batchDocumentId,
         data: {
           status,
@@ -1587,34 +2002,248 @@ const quizBatch = ({ strapi }) => {
       });
       return results;
     },
-    async generateTemplate(_courseDocId, _lessonDocId) {
-      const headers = ["题型", "题目", "选项(JSON)", "答案", "分值", "难度", "解析", "排序"];
+    async exportQuizzes(filters = {}) {
+      const { course, lesson } = filters;
+      const qf = {};
+      if (course) qf.course = { documentId: course };
+      if (lesson) qf.lesson = { documentId: lesson };
+      const list = await strapi.documents(QUIZ_UID).findMany({
+        filters: qf,
+        sort: { sort: "asc" },
+        populate: { course: true, lesson: true }
+      });
+      const headers = ["题型", "题目", "选项", "答案", "分值", "难度", "解析", "排序", "quizId", "updatedAt", "发布状态"];
+      const rows = list.map((q) => {
+        let optStr = "";
+        if (Array.isArray(q.options)) {
+          optStr = q.options.length && typeof q.options[0] === "object" ? q.options.map((o) => `${o.key}.${o.text}`).join("|") : q.options.join("|");
+        } else if (q.options != null) {
+          optStr = String(q.options);
+        }
+        return [
+          q.type,
+          q.title,
+          optStr,
+          q.answer,
+          q.points,
+          q.difficulty,
+          q.explanation || "",
+          q.sort,
+          q.documentId,
+          q.updatedAt || "",
+          q.isPublished ? "已发布" : "草稿"
+        ];
+      });
+      const ws = XLSX__namespace.utils.aoa_to_sheet([headers, ...rows]);
+      ws["!cols"] = headers.map(() => ({ wch: 20 }));
+      const wb = XLSX__namespace.utils.book_new();
+      XLSX__namespace.utils.book_append_sheet(wb, ws, "题库导出");
+      return XLSX__namespace.write(wb, { type: "buffer", bookType: "xlsx" });
+    },
+    // 按 documentId 或唯一标识（课程/课时用 title，知识点用 name 且限知识分组）解析关联实体
+    async _resolveCourse(value) {
+      if (!value) return null;
+      const uid = "plugin::zhao-course.course";
+      let doc;
+      if (typeof value === "string" && /^[A-Za-z0-9_-]{16,}$/.test(value.trim())) {
+        doc = await strapi.documents(uid).findOne({ documentId: value.trim() }).catch(() => null);
+      }
+      if (doc) return doc.documentId;
+      const byTitle = await strapi.documents(uid).findMany({
+        filters: { title: { $eq: value.trim() } },
+        pagination: { page: 1, pageSize: 1 }
+      }).catch(() => []);
+      return byTitle?.[0]?.documentId || null;
+    },
+    async _resolveLesson(value) {
+      if (!value) return null;
+      const uid = "plugin::zhao-course.course-lesson";
+      let doc;
+      if (typeof value === "string" && /^[A-Za-z0-9_-]{16,}$/.test(value.trim())) {
+        doc = await strapi.documents(uid).findOne({ documentId: value.trim() }).catch(() => null);
+      }
+      if (doc) return doc.documentId;
+      const byTitle = await strapi.documents(uid).findMany({
+        filters: { title: { $eq: value.trim() } },
+        pagination: { page: 1, pageSize: 1 }
+      }).catch(() => []);
+      return byTitle?.[0]?.documentId || null;
+    },
+    // 知识点：zhao-tag 中归属 slug='knowledge-point' 分组的 tag，按 name 或 documentId 定位
+    async _resolveKnowledgePoint(value) {
+      if (!value) return null;
+      const key = value.trim();
+      const knex = strapi.db.connection;
+      try {
+        if (/^[A-Za-z0-9_-]{16,}$/.test(key)) {
+          const row2 = await knex("zhao_tags as t").join("zhao_tags_tag_group_lnk as l", "l.tag_id", "t.id").join("zhao_tag_groups as g", "g.id", "l.tag_group_id").select("t.document_id").where("g.slug", "knowledge-point").andWhere("t.document_id", key).first();
+          if (row2) return row2.document_id;
+        }
+        const row = await knex("zhao_tags as t").join("zhao_tags_tag_group_lnk as l", "l.tag_id", "t.id").join("zhao_tag_groups as g", "g.id", "l.tag_group_id").select("t.document_id").where("g.slug", "knowledge-point").andWhere("t.name", key).first();
+        return row?.document_id || null;
+      } catch {
+        return null;
+      }
+    },
+    // 将字符串选项规范化为 [{key,text}]（与前端 form.vue 渲染一致）；剥离 "A." 式前缀
+    _normalizeOptions(raw) {
+      if (raw == null) return null;
+      let arr = [];
+      if (Array.isArray(raw)) arr = raw.map((o) => o.trim());
+      else {
+        const s = raw.trim();
+        arr = s.startsWith("[") ? JSON.parse(s) : s.split("|").map((o) => o.trim());
+      }
+      const cleaned = arr.map((o) => o.replace(/^([A-H])\s*[.、．]\s*/, "").trim());
+      return cleaned.map((text, i) => ({ key: String.fromCharCode(65 + i), text }));
+    },
+    async generateTemplate(params = {}) {
+      const courseDocId = await this._resolveCourse(params.course);
+      const lessonDocId = await this._resolveLesson(params.lesson);
+      const kpRaw = params.knowledgePoints || params.knowledgePoint || params.knowledge_point || "";
+      const kpDocIds = [];
+      for (const kp of String(kpRaw).split("|").map((s) => s.trim()).filter(Boolean)) {
+        const id = await this._resolveKnowledgePoint(kp);
+        if (id) kpDocIds.push(id);
+      }
+      const headers = ["课程", "课时", "知识点", "题型", "题目", "选项(JSON)", "答案", "分值", "难度", "解析", "排序"];
+      const assoc = [courseDocId || "", lessonDocId || "", kpDocIds.join("|")];
       const example = [
-        ["single_choice", "中国的首都是哪里？", '["北京","上海","广州","深圳"]', "北京", 5, "easy", "这是地理常识题", 1],
-        ["multiple_choice", "以下哪些是编程语言？", '["JavaScript","HTML","Python","CSS"]', "JavaScript,Python", 10, "medium", "HTML和CSS不是编程语言", 2],
-        ["true_false", "地球是圆的", "", "true", 3, "easy", "", 3],
-        ["fill_blank", "1+1=___", "", "2", 3, "easy", "", 4],
-        ["short_answer", "请简述MVC模式", "", "MVC是模型-视图-控制器", 8, "hard", "", 5],
-        ["essay", "请论述AI的未来发展", "", "", 15, "hard", "参考答案：从技术进步角度论述", 6]
+        [...assoc, "single_choice", "中国的首都是哪里？", '["北京","上海","广州","深圳"]', "北京", 5, "easy", "这是地理常识题", 1],
+        [...assoc, "multiple_choice", "以下哪些是编程语言？", '["JavaScript","HTML","Python","CSS"]', "JavaScript,Python", 10, "medium", "HTML和CSS不是编程语言", 2],
+        [...assoc, "true_false", "地球是圆的", "", "true", 3, "easy", "", 3],
+        [...assoc, "fill_blank", "1+1=___", "", "2", 3, "easy", "", 4],
+        [...assoc, "short_answer", "请简述MVC模式", "", "MVC是模型-视图-控制器", 8, "hard", "", 5],
+        [...assoc, "essay", "请论述AI的未来发展", "", "", 15, "hard", "参考答案：从技术进步角度论述", 6]
       ];
       const ws = XLSX__namespace.utils.aoa_to_sheet([headers, ...example]);
       ws["!cols"] = headers.map(() => ({ wch: 20 }));
       const wb = XLSX__namespace.utils.book_new();
       XLSX__namespace.utils.book_append_sheet(wb, ws, "题目导入");
-      const buffer = XLSX__namespace.write(wb, { type: "buffer", bookType: "xlsx" });
-      return buffer;
+      return XLSX__namespace.write(wb, { type: "buffer", bookType: "xlsx" });
     },
-    async downloadTemplate() {
-      return this.generateTemplate();
+    async downloadTemplate(params = {}) {
+      return this.generateTemplate(params);
     }
   };
 };
+const UID = "plugin::zhao-quiz.wrong-quiz";
+const REVIEW_INTERVALS = [0, 1, 2, 4, 7, 15];
+const PASS_LEVEL = 5;
+const NEED_CONSECUTIVE = 3;
+const wrongQuiz = ({ strapi }) => ({
+  /** 判错时调用：入库或累加计数、等级归 1 */
+  async onWrong(input) {
+    const existing = await this.findActive(input.userId, input.quizId);
+    const base = {
+      user: input.userId,
+      quiz: input.quizId,
+      course: input.courseId,
+      lesson: input.lessonId,
+      knowledgePointName: input.knowledgePointName
+    };
+    if (existing) {
+      return strapi.documents(UID).update({
+        documentId: existing.documentId,
+        data: {
+          status: "active",
+          reviewLevel: 1,
+          consecutiveCorrect: 0,
+          wrongCount: (existing.wrongCount || 0) + 1,
+          dueAt: this._dueAt(1),
+          lastWrongAt: /* @__PURE__ */ new Date()
+        }
+      });
+    }
+    return strapi.documents(UID).create({
+      data: {
+        ...base,
+        status: "active",
+        wrongCount: 1,
+        reviewLevel: 1,
+        consecutiveCorrect: 0,
+        dueAt: this._dueAt(1),
+        lastWrongAt: /* @__PURE__ */ new Date()
+      }
+    });
+  },
+  /** 答对时调用：按间隔重复升级；达到 PASS_LEVEL 者出集 */
+  async onCorrect(userId, quizId) {
+    const item = await this.findActive(userId, quizId);
+    if (!item) return null;
+    const level = item.reviewLevel || 1;
+    if (level >= PASS_LEVEL) {
+      return strapi.documents(UID).update({
+        documentId: item.documentId,
+        data: { status: "archived", consecutiveCorrect: 0, lastCorrectAt: /* @__PURE__ */ new Date() }
+      });
+    }
+    const consec = (item.consecutiveCorrect || 0) + 1;
+    if (consec >= NEED_CONSECUTIVE) {
+      const nextLevel = Math.min(level + 1, PASS_LEVEL);
+      return strapi.documents(UID).update({
+        documentId: item.documentId,
+        data: {
+          reviewLevel: nextLevel,
+          consecutiveCorrect: 0,
+          dueAt: this._dueAt(nextLevel),
+          lastCorrectAt: /* @__PURE__ */ new Date()
+        }
+      });
+    }
+    return strapi.documents(UID).update({
+      documentId: item.documentId,
+      data: { consecutiveCorrect: consec, lastCorrectAt: /* @__PURE__ */ new Date() }
+    });
+  },
+  async findActive(userId, quizId) {
+    const [r] = await strapi.documents(UID).findMany({
+      filters: { user: { id: userId }, quiz: { id: quizId }, status: "active" },
+      populate: { quiz: true, course: true, lesson: true },
+      pagination: { page: 1, pageSize: 1 }
+    });
+    return r || null;
+  },
+  /** 待复习错题（dueAt <= now，用于错题重练） */
+  async dueList(userId, limit = 30) {
+    const today = /* @__PURE__ */ new Date();
+    const [list, total] = await Promise.all([
+      strapi.documents(UID).findMany({
+        filters: { user: { id: userId }, status: "active", dueAt: { $lte: today } },
+        populate: { quiz: { populate: { course: true, lesson: true } } },
+        sort: { dueAt: "asc" },
+        pagination: { page: 1, pageSize: limit }
+      }),
+      strapi.documents(UID).count({ filters: { user: { id: userId }, status: "active", dueAt: { $lte: today } } })
+    ]);
+    return { list, total };
+  },
+  async listByUser(userId, status = "active", pagination = { page: 1, pageSize: 20 }) {
+    const filters = { user: { id: userId } };
+    if (status) filters.status = status;
+    const [list, total] = await Promise.all([
+      strapi.documents(UID).findMany({
+        filters,
+        populate: { quiz: { populate: { course: true, lesson: true } } },
+        sort: { lastWrongAt: "desc" },
+        pagination
+      }),
+      strapi.documents(UID).count({ filters })
+    ]);
+    return { list, total };
+  },
+  _dueAt(level) {
+    const days = REVIEW_INTERVALS[Math.min(level, REVIEW_INTERVALS.length - 1)] || 1;
+    return new Date(Date.now() + days * 86400 * 1e3);
+  }
+});
 const services = {
   quiz,
   "quiz-record": quizRecord,
   "quiz-exam": quizExam,
   "quiz-exam-attempt": quizExamAttempt,
-  "quiz-batch": quizBatch
+  "quiz-batch": quizBatch,
+  "wrong-quiz": wrongQuiz
 };
 const policies = {};
 const index = {

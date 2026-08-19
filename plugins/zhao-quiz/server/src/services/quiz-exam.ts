@@ -1,4 +1,5 @@
 import type { Core } from "@strapi/strapi";
+import { resolveUserRoles, hasGrantedRole, parseQuizExamRoles } from "../utils/role-gate";
 
 const UID = "plugin::zhao-quiz.quiz-exam";
 
@@ -11,7 +12,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   }
 
   return {
-  async find(query: any = {}) {
+  async find(query: any = {}, options?: { userId?: number; isAdmin?: boolean }) {
     const { filters, pagination } = query;
     const page = Number(pagination?.page) || 1;
     const pageSize = Number(pagination?.pageSize) || 25;
@@ -25,8 +26,17 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       strapi.documents(UID).count({ filters: filters || {} }),
     ]);
 
+    // 考试角色门控：非 admin 列表只保留当前用户可考的考试
+    let resultList: any[] = list;
+    if (!options?.isAdmin) {
+      const userRoles = await resolveUserRoles(strapi, options?.userId);
+      resultList = list.filter((exam: any) =>
+        hasGrantedRole(userRoles, parseQuizExamRoles(exam.course))
+      );
+    }
+
     return {
-      list,
+      list: resultList,
       pagination: {
         page,
         pageSize,
@@ -36,11 +46,13 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     };
   },
 
-  async findOne(documentId: string) {
-    return strapi.documents(UID).findOne({
+  async findOne(documentId: string, options?: { userId?: number; isAdmin?: boolean }) {
+    const exam = await strapi.documents(UID).findOne({
       documentId,
       populate: { course: true, lesson: true, questions: true },
     });
+    await this._assertExamRole(exam, options);
+    return exam;
   },
 
   async create(data: any) {
@@ -58,10 +70,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   /**
    * 获取考试题目（支持随机排序）
    */
-  async getQuestions(examDocumentId: string) {
+  async getQuestions(examDocumentId: string, options?: { userId?: number; isAdmin?: boolean }) {
     const exam = await strapi.documents(UID).findOne({
       documentId: examDocumentId,
-      populate: { questions: true },
+      populate: { questions: true, course: true },
     });
 
     if (!exam) {
@@ -69,6 +81,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       const msg = i18n ? i18n.t("QUIZ_004") : "考试不存在";
       throwErr("QUIZ_004", 404, msg);
     }
+    await this._assertExamRole(exam, options);
 
     let questions = exam.questions || [];
 
@@ -108,16 +121,17 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   /**
    * 组卷：fixed 固定题 或 rule 规则抽题；返回隐藏答案的题目与缺额提示
    */
-  async generatePaper(examDocumentId: string) {
+  async generatePaper(examDocumentId: string, options?: { userId?: number; isAdmin?: boolean }) {
     const exam = await strapi.documents(UID).findOne({
       documentId: examDocumentId,
-      populate: { questions: true },
+      populate: { questions: true, course: true },
     });
 
     if (!exam) {
       const i18n = strapi.plugin("zhao-common")?.service("i18n");
       throwErr("QUIZ_004", 404, i18n ? i18n.t("QUIZ_004") : "考试不存在");
     }
+    await this._assertExamRole(exam, options);
 
     if (exam.paperType !== "rule") {
       return { documentId: examDocumentId, questions: this._hideAnswers(exam.questions || [], exam), shortages: [] };
@@ -148,6 +162,16 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     }
 
     return { documentId: examDocumentId, questions: this._hideAnswers(picked, exam), shortages };
+  },
+
+  /** 考试角色门控：非 admin 且课程配置了 quiz.examRoles 时，未授权角色抛 403 */
+  async _assertExamRole(exam: any, options?: { userId?: number; isAdmin?: boolean }) {
+    if (!exam) return;
+    if (options?.isAdmin) return;
+    const userRoles = await resolveUserRoles(strapi, options?.userId);
+    if (!hasGrantedRole(userRoles, parseQuizExamRoles(exam.course))) {
+      throwErr("QUIZ_403", 403, "无权进行该考试");
+    }
   },
 
   /** 随机排序并隐藏答案/赋予分值 */

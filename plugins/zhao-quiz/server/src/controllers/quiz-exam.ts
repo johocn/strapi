@@ -18,9 +18,13 @@ const wrapList = (result: any) => {
 };
 
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
+  _opts(ctx: any) {
+    return { userId: ctx.state.user?.id, isAdmin: ctx.path?.includes("/admin/") ?? false };
+  },
+
   async find(ctx: any) {
     try {
-      ctx.body = wrapList(await strapi.plugin("zhao-quiz").service("quiz-exam").find(ctx.query));
+      ctx.body = wrapList(await strapi.plugin("zhao-quiz").service("quiz-exam").find(ctx.query, this._opts(ctx)));
     } catch (err) {
       ctx.status = (err as any).status || 400; ctx.body = { error: (err as Error).message }; return;
     }
@@ -29,7 +33,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async findOne(ctx: any) {
     try {
       const { documentId } = ctx.params;
-      const result = await strapi.plugin("zhao-quiz").service("quiz-exam").findOne(documentId);
+      const result = await strapi.plugin("zhao-quiz").service("quiz-exam").findOne(documentId, this._opts(ctx));
       if (!result) { ctx.status = 404; ctx.body = { error: "考试不存在" }; return; }
       ctx.body = wrap(result);
     } catch (err) {
@@ -68,7 +72,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async getQuestions(ctx: any) {
     try {
       const { documentId } = ctx.params;
-      ctx.body = wrap(await strapi.plugin("zhao-quiz").service("quiz-exam").getQuestions(documentId));
+      ctx.body = wrap(await strapi.plugin("zhao-quiz").service("quiz-exam").getQuestions(documentId, this._opts(ctx)));
     } catch (err: any) {
       ctx.status = err.status || 500; ctx.body = { error: err.message || err }; return;
     }
@@ -77,7 +81,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async generatePaper(ctx: any) {
     try {
       const { documentId } = ctx.params;
-      ctx.body = wrap(await strapi.plugin("zhao-quiz").service("quiz-exam").generatePaper(documentId));
+      ctx.body = wrap(await strapi.plugin("zhao-quiz").service("quiz-exam").generatePaper(documentId, this._opts(ctx)));
     } catch (err: any) {
       ctx.status = err.status || 500; ctx.body = { error: err.message || err }; return;
     }

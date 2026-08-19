@@ -1,4 +1,5 @@
 import type { Core } from "@strapi/strapi";
+import { resolveUserRoles, hasGrantedRole, parseQuizExamRoles } from "../utils/role-gate";
 
 const UID = "plugin::zhao-quiz.quiz-exam-attempt";
 const EXAM_UID = "plugin::zhao-quiz.quiz-exam";
@@ -60,12 +61,21 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
    * 开始考试
    */
   async startExam(userId: number, examDocumentId: string) {
-    const exam = await strapi.documents(EXAM_UID).findOne({ documentId: examDocumentId });
+    const exam = await strapi.documents(EXAM_UID).findOne({
+      documentId: examDocumentId,
+      populate: { course: true },
+    });
 
     if (!exam) {
       const i18n = strapi.plugin("zhao-common")?.service("i18n");
       const msg = i18n ? i18n.t("QUIZ_004") : "考试不存在";
       throwErr("QUIZ_004", 404, msg);
+    }
+
+    // 考试角色门控：课程配置了 quiz.examRoles 时，未授权角色抛 403
+    const userRoles = await resolveUserRoles(strapi, userId);
+    if (!hasGrantedRole(userRoles, parseQuizExamRoles(exam.course))) {
+      throwErr("QUIZ_403", 403, "无权进行该考试");
     }
 
     // 检查剩余次数（使用 strapi.db.query 按 id 查询）
