@@ -15,6 +15,8 @@ import ssoSmsCode from "./sso-sms-code";
 import msgTemplate from "./msg-template";
 import msgJob from "./msg-job";
 import sopRule from "./sop-rule";
+import ssoUserProfile from "./sso-user-profile";
+import ssoFollowUp from "./sso-follow-up";
 
 export default {
   "sso-user": ssoUser,
@@ -34,4 +36,6 @@ export default {
   "msg-template": msgTemplate,
   "msg-job": msgJob,
   "sop-rule": sopRule,
+  "sso-user-profile": ssoUserProfile,
+  "sso-follow-up": ssoFollowUp,
 };
