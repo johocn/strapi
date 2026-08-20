@@ -117,10 +117,13 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       const ids = rows.map((r: any) => r.id);
       let attendances: any[] = [];
       if (ids.length) {
-        attendances = await strapi.db.query(ATT_UID).findMany({ where: { signup: { $in: ids } } });
+        attendances = await strapi.db.query(ATT_UID).findMany({
+          where: { signup: { $in: ids } },
+          populate: { signup: { select: ["id"] } },
+        });
       }
       for (const row of rows) {
-        row.attendance = attendances.find((a: any) => a.signup === row.id) || null;
+        row.attendance = attendances.find((a: any) => (a.signup?.id ?? a.signup) === row.id) || null;
       }
       ctx.body = wrapList(rows);
     } catch (e: any) {

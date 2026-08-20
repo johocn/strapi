@@ -14,10 +14,24 @@ function haversineM(lat1: number, lng1: number, lat2: number, lng2: number): num
 
 async function grantPoints(strapi, userId: number, action: string, remark: string) {
   try {
+    // 积分必须归属渠道：解析用户当前渠道（优先 channel-member 当前渠道，其次直接授权渠道）
+    const channelSvc = strapi.plugin("zhao-channel")?.service("channel-permission");
+    let userChannelId: number | undefined;
+    if (channelSvc) {
+      const member = await strapi.db.query("plugin::zhao-channel.channel-member")
+        .findOne({ where: { user: userId, isCurrent: true }, populate: ["channel"] });
+      userChannelId = member?.channel?.id || member?.channel;
+      if (!userChannelId) {
+        const dirs = await channelSvc.getUserDirectChannels(userId);
+        userChannelId = dirs?.[0];
+      }
+    }
     await strapi.plugin("zhao-point").service("point").earnPoints(
-      { userId, action, source: "activity", method: action, remark }
+      { userId, action, source: "activity", method: action, remark, userChannelId }
     );
-  } catch { /* 积分规则缺失/未启用时降级，不阻断业务流 */ }
+  } catch (e: any) {
+    console.error(`[zhao-point:activity] grantPoints(${action},user=${userId}) failed:`, e?.message);
+  }
 }
 
 async function grantCourseTrial(strapi, userId: number, courseId: number) {

@@ -20,6 +20,10 @@ const hasChannelScope = async (policyContext: any, config: any, { strapi }: { st
           fields: ["id", "username", "email", "zhaoRoles"],
         });
       }
+      // 将解析出的用户写回 state，供下游 role-gate / userId 判断使用（公开路由也识别登录用户）
+      if (user?.id) {
+        policyContext.state.user = user;
+      }
     } catch (err: any) {
       strapi.log.error(`[has-channel-scope] 解析 token 失败: ${err.message}`);
     }
