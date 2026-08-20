@@ -227,7 +227,7 @@ const kind$1 = "collectionType";
 const collectionName$1 = "activity_signups";
 const info$1 = { "singularName": "activity-signup", "pluralName": "activity-signups", "displayName": "Activity Signup" };
 const options$1 = { "draftAndPublish": false };
-const attributes$1 = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::users-permissions.user", "inversedBy": "activity_signups" }, "activity": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.activity", "inversedBy": "signups" }, "status": { "type": "enumeration", "enum": ["active", "cancelled"], "default": "active" }, "signupAt": { "type": "datetime" }, "attendedAt": { "type": "datetime" } };
+const attributes$1 = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::users-permissions.user" }, "activity": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.activity" }, "status": { "type": "enumeration", "enum": ["active", "cancelled"], "default": "active" }, "signupAt": { "type": "datetime" }, "attendedAt": { "type": "datetime" } };
 const activitySignup = {
   kind: kind$1,
   collectionName: collectionName$1,
@@ -1587,7 +1587,7 @@ const activity$1 = ({ strapi }) => {
         const result = await strapi.documents(ACTIVITY_UID).findMany({
           ...rest,
           filters: { status: { $ne: "draft" } },
-          populate: true,
+          populate: "*",
           sort: "startTime:desc",
           pagination: { page: parseInt(page), pageSize: parseInt(pageSize) }
         });
@@ -1699,7 +1699,7 @@ const activity$1 = ({ strapi }) => {
         const result = await strapi.documents(ACTIVITY_UID).findMany({
           ...rest,
           filters: Object.keys(filters).length ? filters : void 0,
-          populate: true,
+          populate: "*",
           sort: "startTime:desc",
           pagination: { page: parseInt(page), pageSize: parseInt(pageSize) }
         });

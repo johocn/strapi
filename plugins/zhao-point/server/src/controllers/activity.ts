@@ -32,7 +32,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       const result = await strapi.documents(ACTIVITY_UID).findMany({
         ...rest,
         filters: { status: { $ne: "draft" } },
-        populate: true,
+        populate: "*",
         sort: "startTime:desc",
         pagination: { page: parseInt(page), pageSize: parseInt(pageSize) },
       });
@@ -140,7 +140,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       const result = await strapi.documents(ACTIVITY_UID).findMany({
         ...rest,
         filters: Object.keys(filters).length ? filters : undefined,
-        populate: true,
+        populate: "*",
         sort: "startTime:desc",
         pagination: { page: parseInt(page), pageSize: parseInt(pageSize) },
       });

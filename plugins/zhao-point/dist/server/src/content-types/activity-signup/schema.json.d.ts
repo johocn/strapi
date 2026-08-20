@@ -4,8 +4,8 @@ declare const _default: {
   "info": { "singularName": "activity-signup", "pluralName": "activity-signups", "displayName": "Activity Signup" },
   "options": { "draftAndPublish": false },
   "attributes": {
-    "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::users-permissions.user", "inversedBy": "activity_signups" },
-    "activity": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.activity", "inversedBy": "signups" },
+    "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::users-permissions.user" },
+    "activity": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.activity" },
     "status": { "type": "enumeration", "enum": ["active", "cancelled"], "default": "active" },
     "signupAt": { "type": "datetime" },
     "attendedAt": { "type": "datetime" }

@@ -963,13 +963,11 @@ declare const _default: {
                     type: string;
                     relation: string;
                     target: string;
-                    inversedBy: string;
                 };
                 activity: {
                     type: string;
                     relation: string;
                     target: string;
-                    inversedBy: string;
                 };
                 status: {
                     type: string;
