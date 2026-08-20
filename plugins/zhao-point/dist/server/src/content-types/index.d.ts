@@ -841,5 +841,192 @@ declare const _default: {
             };
         };
     };
+    activity: {
+        schema: {
+            kind: string;
+            collectionName: string;
+            info: {
+                singularName: string;
+                pluralName: string;
+                displayName: string;
+                description: string;
+            };
+            options: {
+                draftAndPublish: boolean;
+            };
+            pluginOptions: {
+                i18n: {
+                    localized: boolean;
+                };
+            };
+            attributes: {
+                title: {
+                    type: string;
+                    required: boolean;
+                };
+                description: {
+                    type: string;
+                };
+                startTime: {
+                    type: string;
+                };
+                endTime: {
+                    type: string;
+                };
+                venueName: {
+                    type: string;
+                };
+                lat: {
+                    type: string;
+                };
+                lng: {
+                    type: string;
+                };
+                capacity: {
+                    type: string;
+                    required: boolean;
+                    default: number;
+                };
+                usedCapacity: {
+                    type: string;
+                    default: number;
+                };
+                signupStart: {
+                    type: string;
+                };
+                signupEnd: {
+                    type: string;
+                };
+                checkinMode: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
+                geoEnforced: {
+                    type: string;
+                    default: boolean;
+                };
+                geoRadiusM: {
+                    type: string;
+                    default: number;
+                };
+                status: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
+                channelScope: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
+                channelIds: {
+                    type: string;
+                };
+                preUnlockArticles: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                };
+                preUnlockLessons: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                };
+                learningPackageArticles: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                };
+                learningPackageLessons: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                };
+            };
+        };
+    };
+    "activity-signup": {
+        schema: {
+            kind: string;
+            collectionName: string;
+            info: {
+                singularName: string;
+                pluralName: string;
+                displayName: string;
+            };
+            options: {
+                draftAndPublish: boolean;
+            };
+            attributes: {
+                user: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    inversedBy: string;
+                };
+                activity: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    inversedBy: string;
+                };
+                status: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
+                signupAt: {
+                    type: string;
+                };
+                attendedAt: {
+                    type: string;
+                };
+            };
+        };
+    };
+    "activity-attendance": {
+        schema: {
+            kind: string;
+            collectionName: string;
+            info: {
+                singularName: string;
+                pluralName: string;
+                displayName: string;
+            };
+            options: {
+                draftAndPublish: boolean;
+            };
+            attributes: {
+                signup: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                };
+                method: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
+                checkinAt: {
+                    type: string;
+                };
+                lat: {
+                    type: string;
+                };
+                lng: {
+                    type: string;
+                };
+                geoPassed: {
+                    type: string;
+                    default: boolean;
+                };
+                pointsGranted: {
+                    type: string;
+                    default: boolean;
+                };
+            };
+        };
+    };
 };
 export default _default;

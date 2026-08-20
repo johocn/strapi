@@ -8,6 +8,9 @@ import ruleTemplate from "./rule-template/schema.json";
 import pointType from "./point-type/schema.json";
 import signInRecord from "./sign-in-record/schema.json";
 import pickupLocation from "./pickup-location/schema.json";
+import activity from "./activity/schema.json";
+import activitySignup from "./activity-signup/schema.json";
+import activityAttendance from "./activity-attendance/schema.json";
 
 export default {
   "point-record": { schema: pointRecord },
@@ -20,4 +23,7 @@ export default {
   "point-type": { schema: pointType },
   "sign-in-record": { schema: signInRecord },
   "pickup-location": { schema: pickupLocation },
+  activity: { schema: activity },
+  "activity-signup": { schema: activitySignup },
+  "activity-attendance": { schema: activityAttendance },
 };

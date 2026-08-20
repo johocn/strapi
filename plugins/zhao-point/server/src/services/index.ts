@@ -4,6 +4,7 @@ import ruleEngine from "./rule-engine";
 import verification from "./verification";
 import configService from "./config-service";
 import signIn from "./sign-in";
+import activity from "./activity";
 
 export default {
   point,
@@ -12,4 +13,5 @@ export default {
   verification,
   "config-service": configService,
   "sign-in": signIn,
+  activity,
 };

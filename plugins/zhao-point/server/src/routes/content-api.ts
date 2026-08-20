@@ -141,5 +141,25 @@ export default () => ({
 
     // 仪表盘
     channelScopeRoute("GET", "/dashboard", "point-admin.getDashboard", "point-dashboard.read"),
+
+    // ===== 活动（报名/到场签到） =====
+    // 公开路由
+    publicRoute("GET", "/activities", "activity.list"),
+    publicRoute("GET", "/activities/:documentId", "activity.detail"),
+
+    // 注册用户路由
+    userRoute("POST", "/my/activity/signup", "activity.signup"),
+    userRoute("POST", "/my/activity/:documentId/cancel", "activity.cancel"),
+    userRoute("POST", "/my/activity/:documentId/checkin", "activity.checkin"),
+    userRoute("GET", "/my/activities", "activity.mySignups"),
+
+    // 管理员路由（需渠道作用域）
+    channelScopeRoute("GET", "/adm/activities", "activity.adminList", "activity.read"),
+    channelScopeRoute("POST", "/adm/activities", "activity.adminCreate", "activity.create"),
+    channelScopeRoute("PUT", "/adm/activities/:documentId", "activity.adminUpdate", "activity.update"),
+    channelScopeRoute("DELETE", "/adm/activities/:documentId", "activity.adminDelete", "activity.delete"),
+    channelScopeRoute("GET", "/adm/activities/:documentId/signups", "activity.adminSignups", "activity.read"),
+    channelScopeRoute("POST", "/adm/activities/:documentId/scan-checkin", "activity.adminScanCheckin", "activity.update"),
+    channelScopeRoute("GET", "/adm/activities/:documentId/attendance", "activity.adminAttendance", "activity.read"),
   ],
 });
