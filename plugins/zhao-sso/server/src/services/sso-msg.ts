@@ -4,9 +4,30 @@ import { createWechatTemplateChannel } from "./channel/wechat-template";
 const MSG_TEMPLATE_UID = "plugin::zhao-sso.msg-template";
 const MSG_JOB_UID = "plugin::zhao-sso.msg-job";
 const BINDING_UID = "plugin::zhao-sso.sso-third-party-binding";
+const VERSION_UID = "plugin::zhao-sso.msg-template-version";
 
 const MAX_RETRY = 3;
 const RETRY_DELAY_MS = 5 * 60 * 1000; // 5 分钟后重试
+
+/** 按权重加权随机选版本；weight<=0 剔除 */
+function pickVersion(versions: any[]): any | null {
+  const pool = (versions || []).filter((v: any) => (v.weight || 0) > 0);
+  if (!pool.length) return null;
+  const total = pool.reduce((s: number, v: any) => s + (v.weight || 0), 0);
+  let r = Math.random() * total;
+  for (const v of pool) {
+    r -= v.weight || 0;
+    if (r <= 0) return v;
+  }
+  return pool[pool.length - 1];
+}
+
+/** link 追加 utm 归因参数（utm_source=msg&utm_campaign=code&utm_content=jobId） */
+function appendUtm(link: string | null, code: string, jobId: any): string | null {
+  if (!link) return link;
+  const sep = link.includes("?") ? "&" : "?";
+  return `${link}${sep}utm_source=msg&utm_campaign=${encodeURIComponent(code)}&utm_content=${jobId}`;
+}
 
 export default ({ strapi }: { strapi: Core.Strapi }) => {
   function throwErr(code: string, status: number, message: string): never {
@@ -74,6 +95,20 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       });
       if (!template) throwErr("SSO_MSG_TEMPLATE_404", 404, `消息模板未找到或未启用: ${templateCode}`);
 
+      // AB 版本选择：有 active 版本按权重随机选并固化；无则回退模板本体（link 兼容 opts.link）
+      const versions = await strapi.db.query(VERSION_UID).findMany({
+        where: { template: template.id, status: "active" },
+      });
+      const picked = pickVersion(versions);
+      let useWxTemplateId = template.wxTemplateId;
+      let useWxTemplateFields = template.wxTemplateFields;
+      let useLink = template.link || link;
+      if (picked) {
+        useWxTemplateId = picked.wxTemplateId || template.wxTemplateId;
+        useWxTemplateFields = picked.wxTemplateFields || template.wxTemplateFields;
+        useLink = picked.link || template.link || link;
+      }
+
       const provider = template.provider || "wechat";
       const key = dedupeKey || `${scene}:${user}`;
 
@@ -92,7 +127,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         scene,
         provider,
         params,
-        link: link || null,
+        link: null, // link 占位，创建后用 job.id 追加 utm 再更新
+        version: picked ? picked.id : null,
         status: "pending",
         retryCount: 0,
         dedupeKey: key,
@@ -102,6 +138,12 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       if (scheduledAt) jobData.scheduledAt = scheduledAt;
 
       const job = await strapi.db.query(MSG_JOB_UID).create({ data: jobData });
+      // utm 归因：用 job.id 回填 link（版本/模板/opts.link 任一存在即追加）
+      if (useLink && job?.id) {
+        const finalLink = appendUtm(useLink, picked ? picked.code : template.code, job.id);
+        await strapi.db.query(MSG_JOB_UID).update({ where: { id: job.id }, data: { link: finalLink } });
+        job.link = finalLink;
+      }
       return { job, skipped: false };
     },
 
@@ -127,7 +169,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     async sendJob(jobId: number) {
       const job = await strapi.db.query(MSG_JOB_UID).findOne({
         where: { id: jobId },
-        populate: { template: true },
+        populate: { template: true, version: true },
       });
       if (!job) throwErr("SSO_MSG_JOB_404", 404, "消息任务不存在");
       if (job.status === "sent") return job;
@@ -154,12 +196,16 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         return this.getJob(job.id);
       }
 
-      const data = renderData(job.params || {}, job.template.wxTemplateFields);
+      // 版本优先取内容，无版本（或字段为空）回退模板本体
+      const wxFields = job.version?.wxTemplateFields || job.template.wxTemplateFields;
+      const wxTemplateId = job.version?.wxTemplateId || job.template.wxTemplateId;
+      if (!wxTemplateId) throwErr("SSO_MSG_JOB_500", 500, "任务缺少模板ID");
+      const data = renderData(job.params || {}, wxFields);
 
       try {
         const res = await channel.send({
           openid: toTarget,
-          templateId: job.template.wxTemplateId,
+          templateId: wxTemplateId,
           url: job.link || undefined,
           data,
         });
@@ -167,6 +213,13 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
           where: { id: job.id },
           data: { status: "sent", wxMsgId: String(res.msgId), sentAt: new Date(), result: res.raw || null },
         });
+        // 发送成功 → 版本计数（失败/重试不累加）
+        if (job.version?.id) {
+          await strapi.db.query(VERSION_UID).update({
+            where: { id: job.version.id },
+            data: { sentCount: (job.version.sentCount || 0) + 1, successCount: (job.version.successCount || 0) + 1, lastUsedAt: new Date() },
+          });
+        }
       } catch (e: any) {
         const retryCount = (job.retryCount || 0) + 1;
         const retryable = retryCount <= MAX_RETRY && e?.code !== "SSO_MSG_NOT_SUBSCRIBE";
