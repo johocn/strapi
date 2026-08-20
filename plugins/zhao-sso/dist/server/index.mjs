@@ -172,11 +172,37 @@ const config = {
     }
   }
 };
+const kind$f = "collectionType";
+const collectionName$f = "sso_users";
+const info$f = { "singularName": "sso-user", "pluralName": "sso-users", "displayName": "SSO User" };
+const options$f = { "draftAndPublish": false };
+const attributes$f = { "uuid": { "type": "string", "unique": true, "required": true }, "username": { "type": "string", "unique": true }, "mobile": { "type": "string", "unique": true }, "email": { "type": "email", "unique": true }, "password_hash": { "type": "string" }, "avatar_url": { "type": "string" }, "nickname": { "type": "string" }, "status": { "type": "enumeration", "enum": ["active", "blocked", "inactive", "virtual"], "default": "active", "required": true }, "register_channel": { "type": "string" }, "last_login_channel": { "type": "string" }, "invite_code_used": { "type": "string" }, "invited_by": { "type": "integer" }, "utm_source": { "type": "string" }, "utm_medium": { "type": "string" }, "utm_campaign": { "type": "string" }, "last_login_at": { "type": "datetime" }, "login_count": { "type": "integer", "default": 0, "required": true }, "password_changed_at": { "type": "datetime" }, "third_party_bindings": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-sso.sso-third-party-binding", "mappedBy": "user" } };
+const schema$f = {
+  kind: kind$f,
+  collectionName: collectionName$f,
+  info: info$f,
+  options: options$f,
+  attributes: attributes$f
+};
+const ssoUser$1 = { schema: schema$f };
+const kind$e = "collectionType";
+const collectionName$e = "sso_third_party_bindings";
+const info$e = { "singularName": "sso-third-party-binding", "pluralName": "sso-third-party-bindings", "displayName": "SSO Third Party Binding" };
+const options$e = { "draftAndPublish": false };
+const attributes$e = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user", "inversedBy": "third_party_bindings" }, "provider": { "type": "string", "required": true }, "provider_user_id": { "type": "string", "required": true }, "provider_union_id": { "type": "string" }, "provider_nickname": { "type": "string" }, "provider_avatar": { "type": "string" }, "provider_data": { "type": "json" }, "bound_at": { "type": "datetime", "required": true }, "subscribe": { "type": "integer" }, "subscribe_at": { "type": "datetime" }, "subscribe_check_at": { "type": "datetime" } };
+const schema$e = {
+  kind: kind$e,
+  collectionName: collectionName$e,
+  info: info$e,
+  options: options$e,
+  attributes: attributes$e
+};
+const ssoThirdPartyBinding = { schema: schema$e };
 const kind$d = "collectionType";
-const collectionName$d = "sso_users";
-const info$d = { "singularName": "sso-user", "pluralName": "sso-users", "displayName": "SSO User" };
+const collectionName$d = "sso_apps";
+const info$d = { "singularName": "sso-app", "pluralName": "sso-apps", "displayName": "SSO App" };
 const options$d = { "draftAndPublish": false };
-const attributes$d = { "uuid": { "type": "string", "unique": true, "required": true }, "username": { "type": "string", "unique": true }, "mobile": { "type": "string", "unique": true }, "email": { "type": "email", "unique": true }, "password_hash": { "type": "string" }, "avatar_url": { "type": "string" }, "nickname": { "type": "string" }, "status": { "type": "enumeration", "enum": ["active", "blocked", "inactive", "virtual"], "default": "active", "required": true }, "register_channel": { "type": "string" }, "last_login_channel": { "type": "string" }, "invite_code_used": { "type": "string" }, "invited_by": { "type": "integer" }, "utm_source": { "type": "string" }, "utm_medium": { "type": "string" }, "utm_campaign": { "type": "string" }, "last_login_at": { "type": "datetime" }, "login_count": { "type": "integer", "default": 0, "required": true }, "password_changed_at": { "type": "datetime" }, "third_party_bindings": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-sso.sso-third-party-binding", "mappedBy": "user" } };
+const attributes$d = { "app_code": { "type": "string", "unique": true, "required": true }, "app_name": { "type": "string", "required": true }, "app_secret": { "type": "string", "required": true }, "redirect_uris": { "type": "json", "required": true }, "allowed_grant_types": { "type": "json", "required": true }, "is_active": { "type": "boolean", "default": true, "required": true }, "description": { "type": "string" } };
 const schema$d = {
   kind: kind$d,
   collectionName: collectionName$d,
@@ -184,12 +210,12 @@ const schema$d = {
   options: options$d,
   attributes: attributes$d
 };
-const ssoUser$1 = { schema: schema$d };
+const ssoApp$1 = { schema: schema$d };
 const kind$c = "collectionType";
-const collectionName$c = "sso_third_party_bindings";
-const info$c = { "singularName": "sso-third-party-binding", "pluralName": "sso-third-party-bindings", "displayName": "SSO Third Party Binding" };
+const collectionName$c = "sso_channels";
+const info$c = { "singularName": "sso-channel", "pluralName": "sso-channels", "displayName": "SSO Channel" };
 const options$c = { "draftAndPublish": false };
-const attributes$c = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user", "inversedBy": "third_party_bindings" }, "provider": { "type": "string", "required": true }, "provider_user_id": { "type": "string", "required": true }, "provider_union_id": { "type": "string" }, "provider_nickname": { "type": "string" }, "provider_avatar": { "type": "string" }, "provider_data": { "type": "json" }, "bound_at": { "type": "datetime", "required": true } };
+const attributes$c = { "channel_code": { "type": "string", "unique": true, "required": true }, "channel_name": { "type": "string", "required": true }, "channel_type": { "type": "string", "required": true }, "utm_template": { "type": "json" }, "is_active": { "type": "boolean", "default": true, "required": true }, "description": { "type": "string" } };
 const schema$c = {
   kind: kind$c,
   collectionName: collectionName$c,
@@ -197,12 +223,12 @@ const schema$c = {
   options: options$c,
   attributes: attributes$c
 };
-const ssoThirdPartyBinding = { schema: schema$c };
+const ssoChannel$1 = { schema: schema$c };
 const kind$b = "collectionType";
-const collectionName$b = "sso_apps";
-const info$b = { "singularName": "sso-app", "pluralName": "sso-apps", "displayName": "SSO App" };
+const collectionName$b = "sso_auth_codes";
+const info$b = { "singularName": "sso-auth-code", "pluralName": "sso-auth-codes", "displayName": "SSO Auth Code" };
 const options$b = { "draftAndPublish": false };
-const attributes$b = { "app_code": { "type": "string", "unique": true, "required": true }, "app_name": { "type": "string", "required": true }, "app_secret": { "type": "string", "required": true }, "redirect_uris": { "type": "json", "required": true }, "allowed_grant_types": { "type": "json", "required": true }, "is_active": { "type": "boolean", "default": true, "required": true }, "description": { "type": "string" } };
+const attributes$b = { "code": { "type": "string", "unique": true, "required": true }, "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user" }, "app_code": { "type": "string", "required": true }, "redirect_uri": { "type": "text", "required": true }, "channel_code": { "type": "string" }, "invite_code": { "type": "string" }, "scopes": { "type": "json" }, "is_new": { "type": "boolean", "default": false }, "expires_at": { "type": "datetime", "required": true }, "used": { "type": "boolean", "default": false, "required": true } };
 const schema$b = {
   kind: kind$b,
   collectionName: collectionName$b,
@@ -210,12 +236,12 @@ const schema$b = {
   options: options$b,
   attributes: attributes$b
 };
-const ssoApp$1 = { schema: schema$b };
+const ssoAuthCode = { schema: schema$b };
 const kind$a = "collectionType";
-const collectionName$a = "sso_channels";
-const info$a = { "singularName": "sso-channel", "pluralName": "sso-channels", "displayName": "SSO Channel" };
+const collectionName$a = "sso_tokens";
+const info$a = { "singularName": "sso-token", "pluralName": "sso-tokens", "displayName": "SSO Token" };
 const options$a = { "draftAndPublish": false };
-const attributes$a = { "channel_code": { "type": "string", "unique": true, "required": true }, "channel_name": { "type": "string", "required": true }, "channel_type": { "type": "string", "required": true }, "utm_template": { "type": "json" }, "is_active": { "type": "boolean", "default": true, "required": true }, "description": { "type": "string" } };
+const attributes$a = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user" }, "app_code": { "type": "string", "required": true }, "access_token_jti": { "type": "text", "unique": true, "required": true }, "refresh_token": { "type": "text", "unique": true, "required": true }, "refresh_expires_at": { "type": "datetime", "required": true }, "revoked": { "type": "boolean", "default": false, "required": true }, "revoked_at": { "type": "datetime" }, "channel_code": { "type": "string" } };
 const schema$a = {
   kind: kind$a,
   collectionName: collectionName$a,
@@ -223,12 +249,12 @@ const schema$a = {
   options: options$a,
   attributes: attributes$a
 };
-const ssoChannel$1 = { schema: schema$a };
+const ssoToken = { schema: schema$a };
 const kind$9 = "collectionType";
-const collectionName$9 = "sso_auth_codes";
-const info$9 = { "singularName": "sso-auth-code", "pluralName": "sso-auth-codes", "displayName": "SSO Auth Code" };
+const collectionName$9 = "sso_user_app_roles";
+const info$9 = { "singularName": "sso-user-app-role", "pluralName": "sso-user-app-roles", "displayName": "SSO User App Role" };
 const options$9 = { "draftAndPublish": false };
-const attributes$9 = { "code": { "type": "string", "unique": true, "required": true }, "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user" }, "app_code": { "type": "string", "required": true }, "redirect_uri": { "type": "text", "required": true }, "channel_code": { "type": "string" }, "invite_code": { "type": "string" }, "scopes": { "type": "json" }, "is_new": { "type": "boolean", "default": false }, "expires_at": { "type": "datetime", "required": true }, "used": { "type": "boolean", "default": false, "required": true } };
+const attributes$9 = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user" }, "app_code": { "type": "string", "required": true }, "role": { "type": "string", "required": true } };
 const schema$9 = {
   kind: kind$9,
   collectionName: collectionName$9,
@@ -236,12 +262,12 @@ const schema$9 = {
   options: options$9,
   attributes: attributes$9
 };
-const ssoAuthCode = { schema: schema$9 };
+const ssoUserAppRole = { schema: schema$9 };
 const kind$8 = "collectionType";
-const collectionName$8 = "sso_tokens";
-const info$8 = { "singularName": "sso-token", "pluralName": "sso-tokens", "displayName": "SSO Token" };
+const collectionName$8 = "sso_login_logs";
+const info$8 = { "singularName": "sso-login-log", "pluralName": "sso-login-logs", "displayName": "SSO Login Log" };
 const options$8 = { "draftAndPublish": false };
-const attributes$8 = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user" }, "app_code": { "type": "string", "required": true }, "access_token_jti": { "type": "text", "unique": true, "required": true }, "refresh_token": { "type": "text", "unique": true, "required": true }, "refresh_expires_at": { "type": "datetime", "required": true }, "revoked": { "type": "boolean", "default": false, "required": true }, "revoked_at": { "type": "datetime" }, "channel_code": { "type": "string" } };
+const attributes$8 = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user" }, "login_type": { "type": "string", "required": true }, "provider": { "type": "string" }, "channel_code": { "type": "string" }, "app_code": { "type": "string" }, "ip": { "type": "string" }, "user_agent": { "type": "string" }, "success": { "type": "boolean", "required": true }, "fail_reason": { "type": "string" } };
 const schema$8 = {
   kind: kind$8,
   collectionName: collectionName$8,
@@ -249,12 +275,12 @@ const schema$8 = {
   options: options$8,
   attributes: attributes$8
 };
-const ssoToken = { schema: schema$8 };
+const ssoLoginLog$1 = { schema: schema$8 };
 const kind$7 = "collectionType";
-const collectionName$7 = "sso_user_app_roles";
-const info$7 = { "singularName": "sso-user-app-role", "pluralName": "sso-user-app-roles", "displayName": "SSO User App Role" };
+const collectionName$7 = "sso_invite_codes";
+const info$7 = { "singularName": "sso-invite-code", "pluralName": "sso-invite-codes", "displayName": "SSO Invite Code" };
 const options$7 = { "draftAndPublish": false };
-const attributes$7 = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user" }, "app_code": { "type": "string", "required": true }, "role": { "type": "string", "required": true } };
+const attributes$7 = { "code": { "type": "string", "unique": true, "required": true }, "app_code": { "type": "string", "required": true }, "creator": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user" }, "invite_type": { "type": "enumeration", "enum": ["system", "user_campaign"], "required": true }, "max_uses": { "type": "integer" }, "use_count": { "type": "integer", "default": 0, "required": true }, "per_user_limit": { "type": "integer", "default": 1, "required": true }, "valid_from": { "type": "datetime" }, "valid_until": { "type": "datetime" }, "bonus_tags": { "type": "json" }, "is_active": { "type": "boolean", "default": true, "required": true } };
 const schema$7 = {
   kind: kind$7,
   collectionName: collectionName$7,
@@ -262,12 +288,12 @@ const schema$7 = {
   options: options$7,
   attributes: attributes$7
 };
-const ssoUserAppRole = { schema: schema$7 };
+const ssoInviteCode = { schema: schema$7 };
 const kind$6 = "collectionType";
-const collectionName$6 = "sso_login_logs";
-const info$6 = { "singularName": "sso-login-log", "pluralName": "sso-login-logs", "displayName": "SSO Login Log" };
+const collectionName$6 = "sso_invite_usages";
+const info$6 = { "singularName": "sso-invite-usage", "pluralName": "sso-invite-usages", "displayName": "SSO Invite Usage" };
 const options$6 = { "draftAndPublish": false };
-const attributes$6 = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user" }, "login_type": { "type": "string", "required": true }, "provider": { "type": "string" }, "channel_code": { "type": "string" }, "app_code": { "type": "string" }, "ip": { "type": "string" }, "user_agent": { "type": "string" }, "success": { "type": "boolean", "required": true }, "fail_reason": { "type": "string" } };
+const attributes$6 = { "invite_code": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-invite-code" }, "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user" }, "channel_code": { "type": "string" }, "app_code": { "type": "string" }, "used_at": { "type": "datetime", "required": true } };
 const schema$6 = {
   kind: kind$6,
   collectionName: collectionName$6,
@@ -275,12 +301,12 @@ const schema$6 = {
   options: options$6,
   attributes: attributes$6
 };
-const ssoLoginLog$1 = { schema: schema$6 };
+const ssoInviteUsage = { schema: schema$6 };
 const kind$5 = "collectionType";
-const collectionName$5 = "sso_invite_codes";
-const info$5 = { "singularName": "sso-invite-code", "pluralName": "sso-invite-codes", "displayName": "SSO Invite Code" };
+const collectionName$5 = "sso_referral_relations";
+const info$5 = { "singularName": "sso-referral-relation", "pluralName": "sso-referral-relations", "displayName": "SSO Referral Relation" };
 const options$5 = { "draftAndPublish": false };
-const attributes$5 = { "code": { "type": "string", "unique": true, "required": true }, "app_code": { "type": "string", "required": true }, "creator": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user" }, "invite_type": { "type": "enumeration", "enum": ["system", "user_campaign"], "required": true }, "max_uses": { "type": "integer" }, "use_count": { "type": "integer", "default": 0, "required": true }, "per_user_limit": { "type": "integer", "default": 1, "required": true }, "valid_from": { "type": "datetime" }, "valid_until": { "type": "datetime" }, "bonus_tags": { "type": "json" }, "is_active": { "type": "boolean", "default": true, "required": true } };
+const attributes$5 = { "inviter": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user" }, "invitee": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user" }, "invite_code": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-invite-code" }, "level": { "type": "integer", "required": true }, "channel_code": { "type": "string" } };
 const schema$5 = {
   kind: kind$5,
   collectionName: collectionName$5,
@@ -288,12 +314,12 @@ const schema$5 = {
   options: options$5,
   attributes: attributes$5
 };
-const ssoInviteCode = { schema: schema$5 };
+const ssoReferralRelation = { schema: schema$5 };
 const kind$4 = "collectionType";
-const collectionName$4 = "sso_invite_usages";
-const info$4 = { "singularName": "sso-invite-usage", "pluralName": "sso-invite-usages", "displayName": "SSO Invite Usage" };
+const collectionName$4 = "sso_invite_stats";
+const info$4 = { "singularName": "sso-invite-stats", "pluralName": "sso-invite-stats", "displayName": "SSO Invite Stats" };
 const options$4 = { "draftAndPublish": false };
-const attributes$4 = { "invite_code": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-invite-code" }, "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user" }, "channel_code": { "type": "string" }, "app_code": { "type": "string" }, "used_at": { "type": "datetime", "required": true } };
+const attributes$4 = { "invite_code": { "type": "relation", "relation": "oneToOne", "target": "plugin::zhao-sso.sso-invite-code" }, "total_invites": { "type": "integer", "required": true }, "active_invites": { "type": "integer", "required": true }, "last_invited_at": { "type": "datetime" } };
 const schema$4 = {
   kind: kind$4,
   collectionName: collectionName$4,
@@ -301,12 +327,12 @@ const schema$4 = {
   options: options$4,
   attributes: attributes$4
 };
-const ssoInviteUsage = { schema: schema$4 };
+const ssoInviteStats = { schema: schema$4 };
 const kind$3 = "collectionType";
-const collectionName$3 = "sso_referral_relations";
-const info$3 = { "singularName": "sso-referral-relation", "pluralName": "sso-referral-relations", "displayName": "SSO Referral Relation" };
+const collectionName$3 = "sso_oauth_configs";
+const info$3 = { "singularName": "sso-oauth-config", "pluralName": "sso-oauth-configs", "displayName": "SSO OAuth Config" };
 const options$3 = { "draftAndPublish": false };
-const attributes$3 = { "inviter": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user" }, "invitee": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user" }, "invite_code": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-invite-code" }, "level": { "type": "integer", "required": true }, "channel_code": { "type": "string" } };
+const attributes$3 = { "name": { "type": "string", "required": true }, "provider": { "type": "string", "required": true }, "app_type": { "type": "enumeration", "required": true, "enum": ["official_account", "open_platform", "mini_program", "app", "default"], "default": "default" }, "app_id": { "type": "string", "required": true }, "app_secret": { "type": "string", "required": true }, "scope": { "type": "string" }, "extra_config": { "type": "json" }, "redirect_uris": { "type": "json" }, "is_enabled": { "type": "boolean", "default": true, "required": true }, "description": { "type": "string" } };
 const schema$3 = {
   kind: kind$3,
   collectionName: collectionName$3,
@@ -314,12 +340,14 @@ const schema$3 = {
   options: options$3,
   attributes: attributes$3
 };
-const ssoReferralRelation = { schema: schema$3 };
+const ssoOauthConfig$1 = {
+  schema: schema$3
+};
 const kind$2 = "collectionType";
-const collectionName$2 = "sso_invite_stats";
-const info$2 = { "singularName": "sso-invite-stats", "pluralName": "sso-invite-stats", "displayName": "SSO Invite Stats" };
+const collectionName$2 = "sso_sms_codes";
+const info$2 = { "singularName": "sso-sms-code", "pluralName": "sso-sms-codes", "displayName": "SSO SMS Code" };
 const options$2 = { "draftAndPublish": false };
-const attributes$2 = { "invite_code": { "type": "relation", "relation": "oneToOne", "target": "plugin::zhao-sso.sso-invite-code" }, "total_invites": { "type": "integer", "required": true }, "active_invites": { "type": "integer", "required": true }, "last_invited_at": { "type": "datetime" } };
+const attributes$2 = { "mobile": { "type": "string", "required": true }, "code": { "type": "string", "required": true }, "scene": { "type": "string", "default": "login", "required": true }, "expires_at": { "type": "datetime", "required": true }, "used": { "type": "boolean", "default": false, "required": true }, "ip": { "type": "string" }, "provider": { "type": "string", "default": "mock" } };
 const schema$2 = {
   kind: kind$2,
   collectionName: collectionName$2,
@@ -327,12 +355,14 @@ const schema$2 = {
   options: options$2,
   attributes: attributes$2
 };
-const ssoInviteStats = { schema: schema$2 };
+const ssoSmsCode = {
+  schema: schema$2
+};
 const kind$1 = "collectionType";
-const collectionName$1 = "sso_oauth_configs";
-const info$1 = { "singularName": "sso-oauth-config", "pluralName": "sso-oauth-configs", "displayName": "SSO OAuth Config" };
+const collectionName$1 = "sso_msg_templates";
+const info$1 = { "singularName": "msg-template", "pluralName": "msg-templates", "displayName": "SSO Msg Template" };
 const options$1 = { "draftAndPublish": false };
-const attributes$1 = { "name": { "type": "string", "required": true }, "provider": { "type": "string", "required": true }, "app_type": { "type": "enumeration", "required": true, "enum": ["official_account", "open_platform", "mini_program", "app", "default"], "default": "default" }, "app_id": { "type": "string", "required": true }, "app_secret": { "type": "string", "required": true }, "scope": { "type": "string" }, "extra_config": { "type": "json" }, "redirect_uris": { "type": "json" }, "is_enabled": { "type": "boolean", "default": true, "required": true }, "description": { "type": "string" } };
+const attributes$1 = { "code": { "type": "string", "unique": true, "required": true }, "name": { "type": "string", "required": true }, "provider": { "type": "string", "default": "wechat", "required": true }, "wxTemplateId": { "type": "string" }, "wxTemplateFields": { "type": "json" }, "content": { "type": "text" }, "isEnabled": { "type": "boolean", "default": true, "required": true }, "description": { "type": "text" } };
 const schema$1 = {
   kind: kind$1,
   collectionName: collectionName$1,
@@ -340,14 +370,14 @@ const schema$1 = {
   options: options$1,
   attributes: attributes$1
 };
-const ssoOauthConfig$1 = {
+const msgTemplate = {
   schema: schema$1
 };
 const kind = "collectionType";
-const collectionName = "sso_sms_codes";
-const info = { "singularName": "sso-sms-code", "pluralName": "sso-sms-codes", "displayName": "SSO SMS Code" };
+const collectionName = "sso_msg_jobs";
+const info = { "singularName": "msg-job", "pluralName": "msg-jobs", "displayName": "SSO Msg Job" };
 const options = { "draftAndPublish": false };
-const attributes = { "mobile": { "type": "string", "required": true }, "code": { "type": "string", "required": true }, "scene": { "type": "string", "default": "login", "required": true }, "expires_at": { "type": "datetime", "required": true }, "used": { "type": "boolean", "default": false, "required": true }, "ip": { "type": "string" }, "provider": { "type": "string", "default": "mock" } };
+const attributes = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user" }, "scene": { "type": "string", "required": true }, "template": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.msg-template" }, "provider": { "type": "string", "default": "wechat", "required": true }, "toTarget": { "type": "string" }, "params": { "type": "json" }, "link": { "type": "string" }, "status": { "type": "enumeration", "enum": ["pending", "sending", "sent", "failed", "cancelled"], "default": "pending", "required": true }, "retryCount": { "type": "integer", "default": 0 }, "nextRetryAt": { "type": "datetime" }, "wxMsgId": { "type": "string" }, "result": { "type": "json" }, "scheduledAt": { "type": "datetime" }, "sentAt": { "type": "datetime" }, "dedupeKey": { "type": "string", "unique": true } };
 const schema = {
   kind,
   collectionName,
@@ -355,7 +385,7 @@ const schema = {
   options,
   attributes
 };
-const ssoSmsCode = {
+const msgJob = {
   schema
 };
 const contentTypes = {
@@ -372,7 +402,9 @@ const contentTypes = {
   "sso-referral-relation": ssoReferralRelation,
   "sso-invite-stats": ssoInviteStats,
   "sso-oauth-config": ssoOauthConfig$1,
-  "sso-sms-code": ssoSmsCode
+  "sso-sms-code": ssoSmsCode,
+  "msg-template": msgTemplate,
+  "msg-job": msgJob
 };
 const authController = ({ strapi }) => ({
   async login(ctx) {
@@ -1895,6 +1927,146 @@ const smsCodeController = ({ strapi }) => ({
     }
   }
 });
+const TEMPLATE_UID = "plugin::zhao-sso.msg-template";
+const JOB_UID = "plugin::zhao-sso.msg-job";
+const messageController = ({ strapi }) => {
+  const svc = () => strapi.plugin("zhao-sso").service("sso-msg");
+  async function wrap(ctx, fn) {
+    try {
+      ctx.body = await fn();
+    } catch (e) {
+      ctx.status = e.status || 400;
+      ctx.body = { error: e.message, code: e.code || null };
+    }
+  }
+  return {
+    // ===== 消息模板 CRUD =====
+    async listTemplates(ctx) {
+      await wrap(ctx, async () => {
+        const { page = 1, pageSize = 20, ...filters } = ctx.query;
+        const pageNum = Number(page);
+        const pageSizeNum = Number(pageSize);
+        const results = await strapi.documents(TEMPLATE_UID).findMany({
+          filters,
+          sort: { createdAt: "desc" },
+          limit: pageSizeNum,
+          start: (pageNum - 1) * pageSizeNum
+        });
+        const total = await strapi.db.query(TEMPLATE_UID).count({ where: filters });
+        return { data: results, meta: { pagination: { page: pageNum, pageSize: pageSizeNum, total } } };
+      });
+    },
+    async getTemplate(ctx) {
+      await wrap(ctx, async () => {
+        const result = await strapi.documents(TEMPLATE_UID).findOne({ documentId: ctx.params.id });
+        if (!result) throw { status: 404, message: "模板不存在" };
+        return { data: result };
+      });
+    },
+    async createTemplate(ctx) {
+      await wrap(ctx, async () => {
+        const result = await strapi.documents(TEMPLATE_UID).create({ data: ctx.request.body });
+        return { data: result };
+      });
+    },
+    async updateTemplate(ctx) {
+      await wrap(ctx, async () => {
+        const result = await strapi.documents(TEMPLATE_UID).update({
+          documentId: ctx.params.id,
+          data: ctx.request.body
+        });
+        return { data: result };
+      });
+    },
+    async deleteTemplate(ctx) {
+      await wrap(ctx, async () => {
+        const result = await strapi.documents(TEMPLATE_UID).delete({ documentId: ctx.params.id });
+        return { data: result };
+      });
+    },
+    // ===== 消息任务 =====
+    async listJobs(ctx) {
+      await wrap(ctx, async () => {
+        const { page = 1, pageSize = 20, ...rest } = ctx.query;
+        const pageNum = Number(page);
+        const pageSizeNum = Number(pageSize);
+        const filters = {};
+        for (const k of ["status", "scene", "provider"]) {
+          if (rest[k]) filters[k] = rest[k];
+        }
+        const results = await strapi.documents(JOB_UID).findMany({
+          filters,
+          populate: ["template", "user"],
+          sort: { createdAt: "desc" },
+          limit: pageSizeNum,
+          start: (pageNum - 1) * pageSizeNum
+        });
+        const total = await strapi.db.query(JOB_UID).count({ where: filters });
+        return { data: results, meta: { pagination: { page: pageNum, pageSize: pageSizeNum, total } } };
+      });
+    },
+    async getJob(ctx) {
+      await wrap(ctx, async () => {
+        const result = await strapi.documents(JOB_UID).findOne({
+          documentId: ctx.params.id,
+          populate: ["template", "user"]
+        });
+        if (!result) throw { status: 404, message: "任务不存在" };
+        return { data: result };
+      });
+    },
+    /** 手动单发：立即 buildJob + sendJob */
+    async sendNow(ctx) {
+      await wrap(ctx, async () => {
+        const { userId, templateCode, params, link, scene } = ctx.request.body;
+        const job = await svc().sendNow({
+          user: userId,
+          scene: scene || "manual",
+          templateCode,
+          params,
+          link
+        });
+        return { data: job };
+      });
+    },
+    /** 批量发送：按用户 id 列表 or 筛选，逐个 buildJob+sendJob */
+    async sendBatch(ctx) {
+      await wrap(ctx, async () => {
+        const { userIds = [], templateCode, params, link, scene, userId } = ctx.request.body;
+        const ids = Array.isArray(userIds) && userIds.length ? userIds : userId ? [userId] : [];
+        if (!ids.length) throw { status: 400, message: "未指定目标用户" };
+        const results = [];
+        for (const uid of ids) {
+          results.push(
+            await svc().sendNow({ user: uid, scene: scene || "batch", templateCode, params, link })
+          );
+        }
+        return { data: results };
+      });
+    },
+    /** 失败重试 */
+    async retryJob(ctx) {
+      await wrap(ctx, async () => {
+        const { retryCount } = await strapi.db.query(JOB_UID).findOne({
+          where: { id: ctx.params.id },
+          select: ["retryCount"]
+        });
+        if (retryCount !== void 0 && retryCount >= 3) {
+          throw { status: 400, message: "重试次数已达上限" };
+        }
+        const job = await svc().sendJob(ctx.params.id);
+        return { data: job };
+      });
+    },
+    /** 查询/刷新用户公众号关注状态 */
+    async refreshSubscribe(ctx) {
+      await wrap(ctx, async () => {
+        const subscribe = await svc().refreshSubscribe(Number(ctx.params.id));
+        return { data: { userId: Number(ctx.params.id), subscribe } };
+      });
+    }
+  };
+};
 const controllers = {
   "auth-controller": authController,
   "oauth-controller": oauthController,
@@ -1909,7 +2081,8 @@ const controllers = {
   "invite-code": inviteCodeController,
   "invite-usage": inviteUsageController,
   referral: referralController,
-  "sms-code": smsCodeController
+  "sms-code": smsCodeController,
+  message: messageController
 };
 const api = () => ({
   type: "content-api",
@@ -2153,7 +2326,19 @@ const admin = () => ({
     adminRoute("DELETE", "/referral-relations/:id", "referral.delete", "sso.referral-relation.delete"),
     // 短信验证码
     adminRoute("GET", "/sms-codes", "sms-code.list", "sso.sms-code.read"),
-    adminRoute("DELETE", "/sms-codes/:id", "sms-code.delete", "sso.sms-code.delete")
+    adminRoute("DELETE", "/sms-codes/:id", "sms-code.delete", "sso.sms-code.delete"),
+    // 消息中心
+    adminRoute("GET", "/msg-templates", "message.listTemplates", "sso.msg.read"),
+    adminRoute("GET", "/msg-templates/:id", "message.getTemplate", "sso.msg.read"),
+    adminRoute("POST", "/msg-templates", "message.createTemplate", "sso.msg.write"),
+    adminRoute("PUT", "/msg-templates/:id", "message.updateTemplate", "sso.msg.write"),
+    adminRoute("DELETE", "/msg-templates/:id", "message.deleteTemplate", "sso.msg.write"),
+    adminRoute("GET", "/msg-jobs", "message.listJobs", "sso.msg.read"),
+    adminRoute("GET", "/msg-jobs/:id", "message.getJob", "sso.msg.read"),
+    adminRoute("POST", "/msg-jobs/anonymous", "message.sendNow", "sso.msg.write"),
+    adminRoute("POST", "/msg-jobs/batch", "message.sendBatch", "sso.msg.write"),
+    adminRoute("POST", "/msg-jobs/:id/retry", "message.retryJob", "sso.msg.write"),
+    adminRoute("GET", "/users/:id/subscribe", "message.refreshSubscribe", "sso.user-read")
   ]
 });
 const routes = {
@@ -2851,7 +3036,7 @@ const ssoAuth$1 = ({ strapi }) => {
   };
   return { login, register: register2, verifyToken, refreshToken, logout, getUserRoles, saveTokenRecord, sanitizeUser };
 };
-const BINDING_UID$1 = "plugin::zhao-sso.sso-third-party-binding";
+const BINDING_UID$2 = "plugin::zhao-sso.sso-third-party-binding";
 const USER_UID$2 = "plugin::zhao-sso.sso-user";
 const ssoWechat = ({ strapi }) => {
   const tokenCache = /* @__PURE__ */ new Map();
@@ -2991,11 +3176,19 @@ const ssoWechat = ({ strapi }) => {
         }
         userInfo = userInfoRes.data;
       }
-      const binding = await strapi.db.query(BINDING_UID$1).findOne({
+      const binding = await strapi.db.query(BINDING_UID$2).findOne({
         where: { provider: "wechat", provider_user_id: openid },
         populate: { user: true }
       });
       if (binding) {
+        try {
+          const subscribe = await this.querySubscribe(openid, "wechat", appType);
+          await strapi.db.query(BINDING_UID$2).update({
+            where: { id: binding.id },
+            data: { subscribe, subscribe_at: /* @__PURE__ */ new Date(), subscribe_check_at: /* @__PURE__ */ new Date() }
+          });
+        } catch {
+        }
         return { userId: binding.user.id, isNew: false };
       }
       const rawNickname = (userInfo?.nickname || "wx_user").replace(/[^\w\u4e00-\u9fa5]/g, "").substring(0, 12) || "wx_user";
@@ -3012,7 +3205,7 @@ const ssoWechat = ({ strapi }) => {
           register_channel: `sso_wechat_${appType}`
         }
       });
-      await strapi.db.query(BINDING_UID$1).create({
+      await strapi.db.query(BINDING_UID$2).create({
         data: {
           user: { id: user.id },
           provider: "wechat",
@@ -3024,6 +3217,14 @@ const ssoWechat = ({ strapi }) => {
           bound_at: /* @__PURE__ */ new Date()
         }
       });
+      try {
+        const subscribe = await this.querySubscribe(openid, "wechat", appType);
+        await strapi.db.query(BINDING_UID$2).update({
+          where: { provider_user_id: openid },
+          data: { subscribe, subscribe_at: /* @__PURE__ */ new Date(), subscribe_check_at: /* @__PURE__ */ new Date() }
+        });
+      } catch {
+      }
       return { userId: user.id, isNew: true };
     },
     async getJssdkSignature(url, appType) {
@@ -3053,10 +3254,29 @@ const ssoWechat = ({ strapi }) => {
         oauthScopes: config2.extraConfig?.oauthScopes || ["snsapi_userinfo"],
         appId: config2.appId
       };
+    },
+    /**
+     * 查询用户是否关注公众号(subscribe)
+     * 调 cgi-bin/user/info + 全局 access_token，返回 subscribe(1关注/0未关注)
+     */
+    async querySubscribe(openid, provider = "wechat", appType = "official_account") {
+      if (provider !== "wechat") return 0;
+      if (process.env.MSG_WECHAT_PROVIDER === "mock") return 1;
+      const config2 = await getConfig(appType);
+      const accessToken = await getValidAccessToken(config2);
+      const res = await axios.get("https://api.weixin.qq.com/cgi-bin/user/info", {
+        params: { access_token: accessToken, openid },
+        timeout: 1e4
+      });
+      const data = res.data || {};
+      if (data.errcode) {
+        throwErr("SSO_WECHAT_012", 502, `WeChat user info error: ${data.errmsg}`);
+      }
+      return data.subscribe === 1 ? 1 : 0;
     }
   };
 };
-const BINDING_UID = "plugin::zhao-sso.sso-third-party-binding";
+const BINDING_UID$1 = "plugin::zhao-sso.sso-third-party-binding";
 const USER_UID$1 = "plugin::zhao-sso.sso-user";
 const ssoAlipay = ({ strapi }) => {
   function throwErr(code, status, message) {
@@ -3090,7 +3310,7 @@ const ssoAlipay = ({ strapi }) => {
       const config2 = await getConfig();
       const tokenRes = await this.requestToken(config2.appId, config2.privateKey, code);
       const userId = tokenRes.user_id;
-      const binding = await strapi.db.query(BINDING_UID).findOne({
+      const binding = await strapi.db.query(BINDING_UID$1).findOne({
         where: { provider: "alipay", provider_user_id: userId },
         populate: { user: true }
       });
@@ -3111,7 +3331,7 @@ const ssoAlipay = ({ strapi }) => {
           login_count: 0
         }
       });
-      await strapi.db.query(BINDING_UID).create({
+      await strapi.db.query(BINDING_UID$1).create({
         data: {
           user: { id: user.id },
           provider: "alipay",
@@ -3278,10 +3498,10 @@ const ssoApp = ({ strapi }) => ({
     return strapi.db.query(APP_UID).delete({ where: { id } });
   }
 });
-const CONFIG_UID = "plugin::zhao-sso.sso-oauth-config";
+const CONFIG_UID$1 = "plugin::zhao-sso.sso-oauth-config";
 const ssoOauthConfig = ({ strapi }) => ({
   async findByProvider(provider) {
-    const row = await strapi.db.query(CONFIG_UID).findOne({
+    const row = await strapi.db.query(CONFIG_UID$1).findOne({
       where: { provider, is_enabled: true }
     });
     if (!row) return null;
@@ -3300,7 +3520,7 @@ const ssoOauthConfig = ({ strapi }) => ({
     };
   },
   async findByProviderAndAppType(provider, appType) {
-    const row = await strapi.db.query(CONFIG_UID).findOne({
+    const row = await strapi.db.query(CONFIG_UID$1).findOne({
       where: { provider, app_type: appType, is_enabled: true }
     });
     if (!row) return null;
@@ -3319,13 +3539,13 @@ const ssoOauthConfig = ({ strapi }) => ({
     };
   },
   async list() {
-    const rows = await strapi.db.query(CONFIG_UID).findMany({
+    const rows = await strapi.db.query(CONFIG_UID$1).findMany({
       orderBy: { provider: "ASC" }
     });
     return rows;
   },
   async create(data) {
-    return strapi.db.query(CONFIG_UID).create({
+    return strapi.db.query(CONFIG_UID$1).create({
       data: {
         name: data.name,
         provider: data.provider,
@@ -3341,10 +3561,10 @@ const ssoOauthConfig = ({ strapi }) => ({
     });
   },
   async update(id, data) {
-    return strapi.db.query(CONFIG_UID).update({ where: { id }, data });
+    return strapi.db.query(CONFIG_UID$1).update({ where: { id }, data });
   },
   async delete(id) {
-    return strapi.db.query(CONFIG_UID).delete({ where: { id } });
+    return strapi.db.query(CONFIG_UID$1).delete({ where: { id } });
   }
 });
 const CODE_UID = "plugin::zhao-sso.sso-sms-code";
@@ -3657,6 +3877,248 @@ const ssoInvite = ({ strapi }) => {
     buildReferralRelation
   };
 };
+const CONFIG_UID = "plugin::zhao-sso.sso-oauth-config";
+function createWechatTemplateChannel({ strapi }) {
+  function throwErr(code, status, message) {
+    const e = new Error(message);
+    e.code = code;
+    e.status = status;
+    throw e;
+  }
+  async function getAccessToken() {
+    const provider = process.env.MSG_WECHAT_PROVIDER || "wechat";
+    if (provider === "mock") return "mock_access_token";
+    const config2 = await strapi.db.query(CONFIG_UID).findOne({
+      where: { provider: "wechat", app_type: "official_account", is_enabled: true }
+    });
+    if (!config2) {
+      throwErr("SSO_MSG_WECHAT_001", 500, "[zhao-sso] 未找到公众号(wechat/official_account)配置，请在后台配置");
+    }
+    const res = await axios.get("https://api.weixin.qq.com/cgi-bin/token", {
+      params: { grant_type: "client_credential", appid: config2.app_id.trim(), secret: config2.app_secret },
+      timeout: 1e4
+    });
+    const data = res.data || {};
+    if (data.errcode) {
+      throwErr("SSO_MSG_WECHAT_010", 502, `WeChat token error: ${data.errmsg}`);
+    }
+    return data.access_token;
+  }
+  return {
+    provider: "wechat",
+    /**
+     * 发送模板消息
+     * @param opts { openid, templateId, url, data }  data 为 {字段名:{value}}，调用方已按模板字段映射
+     * @returns { msgId, raw }  微信返回 msgid + 原始数据
+     */
+    async send(opts) {
+      const provider = process.env.MSG_WECHAT_PROVIDER || "wechat";
+      const accessToken = await getAccessToken();
+      if (provider === "mock") {
+        return { msgId: `mock_${Date.now()}`, raw: { errcode: 0, errmsg: "mock ok", msgid: Date.now() } };
+      }
+      const body = {
+        touser: opts.openid,
+        template_id: opts.templateId,
+        data: opts.data
+      };
+      if (opts.url) body.url = opts.url;
+      const res = await axios.post(
+        `https://api.weixin.qq.com/cgi-bin/message/template/send?access_token=${accessToken}`,
+        body,
+        { timeout: 1e4 }
+      );
+      const data = res.data || {};
+      if (data.errcode === 43101) {
+        throwErr("SSO_MSG_NOT_SUBSCRIBE", 420, "用户未关注公众号");
+      }
+      if (data.errcode) {
+        throwErr("SSO_MSG_WECHAT_020", 502, `WeChat template send error: ${data.errmsg}(${data.errcode})`);
+      }
+      return { msgId: data.msgid, raw: data };
+    }
+  };
+}
+const MSG_TEMPLATE_UID = "plugin::zhao-sso.msg-template";
+const MSG_JOB_UID = "plugin::zhao-sso.msg-job";
+const BINDING_UID = "plugin::zhao-sso.sso-third-party-binding";
+const MAX_RETRY = 3;
+const RETRY_DELAY_MS = 5 * 60 * 1e3;
+const ssoMsg = ({ strapi }) => {
+  function throwErr(code, status, message) {
+    const e = new Error(message);
+    e.code = code;
+    e.status = status;
+    throw e;
+  }
+  function resolveChannel(provider) {
+    const channels = {
+      wechat: createWechatTemplateChannel({ strapi })
+    };
+    const ch = channels[provider];
+    if (!ch) throwErr("SSO_MSG_400", 400, `不支持的通道 provider=${provider}`);
+    return ch;
+  }
+  function renderData(params, wxTemplateFields) {
+    const data = {};
+    const list = Array.isArray(wxTemplateFields) ? wxTemplateFields : [];
+    for (const f of list) {
+      const key = f.key;
+      const val = params?.[key];
+      if (val === null || val === void 0) continue;
+      data[f.name] = { value: String(val) };
+    }
+    return data;
+  }
+  async function resolveToTarget(userId, provider) {
+    if (provider === "wechat") {
+      const binding = await strapi.db.query(BINDING_UID).findOne({
+        where: { provider: "wechat", user: userId },
+        orderBy: { id: "DESC" }
+      });
+      return binding?.provider_user_id || null;
+    }
+    return null;
+  }
+  return {
+    /**
+     * 构建消息任务(pending)。幂等：同 dedupeKey 已有未终态任务则跳过。
+     * @param opts { user, scene, templateCode, params, link, scheduledAt?, dedupeKey? }
+     */
+    async buildJob(opts) {
+      const { user, scene, templateCode, params = {}, link, scheduledAt, dedupeKey } = opts;
+      const template = await strapi.db.query(MSG_TEMPLATE_UID).findOne({
+        where: { code: templateCode, is_enabled: true }
+      });
+      if (!template) throwErr("SSO_MSG_TEMPLATE_404", 404, `消息模板未找到或未启用: ${templateCode}`);
+      const provider = template.provider || "wechat";
+      const key = dedupeKey || `${scene}:${user}`;
+      const existing = await strapi.db.query(MSG_JOB_UID).findOne({
+        where: { dedupe_key: key }
+      });
+      if (existing && existing.status !== "sent" && existing.status !== "failed" && existing.status !== "cancelled") {
+        return { job: existing, skipped: true };
+      }
+      const toTarget = await resolveToTarget(user, provider);
+      const jobData = {
+        user,
+        scene,
+        provider,
+        params,
+        link: link || null,
+        status: "pending",
+        retryCount: 0,
+        dedupe_key: key,
+        template: template.id
+      };
+      if (toTarget) jobData.to_target = toTarget;
+      if (scheduledAt) jobData.scheduled_at = scheduledAt;
+      const job = await strapi.db.query(MSG_JOB_UID).create({ data: jobData });
+      return { job, skipped: false };
+    },
+    /**
+     * 立即构建并发送（手动/单发）——同步执行，返回发送结果。
+     */
+    async sendNow(opts) {
+      const { job } = await this.buildJob(opts);
+      if (!job) throwErr("SSO_MSG_500", 500, "创建任务失败");
+      return this.sendJob(job.id);
+    },
+    /**
+     * 发送指定 job（含重试上限），落库回执。
+     */
+    async sendJob(jobId) {
+      const job = await strapi.db.query(MSG_JOB_UID).findOne({
+        where: { id: jobId },
+        populate: { template: true }
+      });
+      if (!job) throwErr("SSO_MSG_JOB_404", 404, "消息任务不存在");
+      if (job.status === "sent") return job;
+      if (!job.template) throwErr("SSO_MSG_JOB_500", 500, "任务缺少模板");
+      if (job.status === "failed" && job.retryCount >= MAX_RETRY) return job;
+      await strapi.db.query(MSG_JOB_UID).update({ where: { id: job.id }, data: { status: "sending" } });
+      const channel = resolveChannel(job.provider);
+      let toTarget = job.to_target;
+      if (!toTarget) {
+        toTarget = await resolveToTarget(job.user, job.provider);
+        if (toTarget) {
+          await strapi.db.query(MSG_JOB_UID).update({ where: { id: job.id }, data: { to_target: toTarget } });
+        }
+      }
+      if (!toTarget) {
+        await strapi.db.query(MSG_JOB_UID).update({
+          where: { id: job.id },
+          data: { status: "failed", result: { reason: "no_target", message: "未解析到触达目标(openid)" } }
+        });
+        return this.getJob(job.id);
+      }
+      const data = renderData(job.params || {}, job.template.wxTemplateFields);
+      try {
+        const res = await channel.send({
+          openid: toTarget,
+          templateId: job.template.wxTemplateId,
+          url: job.link || void 0,
+          data
+        });
+        await strapi.db.query(MSG_JOB_UID).update({
+          where: { id: job.id },
+          data: { status: "sent", wx_msg_id: String(res.msgId), sent_at: /* @__PURE__ */ new Date(), result: res.raw || null }
+        });
+      } catch (e) {
+        const retryCount = (job.retryCount || 0) + 1;
+        const retryable = retryCount <= MAX_RETRY && e?.code !== "SSO_MSG_NOT_SUBSCRIBE";
+        await strapi.db.query(MSG_JOB_UID).update({
+          where: { id: job.id },
+          data: {
+            status: retryable ? "pending" : "failed",
+            retryCount,
+            next_retry_at: retryable ? new Date(Date.now() + RETRY_DELAY_MS) : null,
+            result: { error: e.message, code: e.code || null }
+          }
+        });
+      }
+      return this.getJob(job.id);
+    },
+    async getJob(jobId) {
+      const job = await strapi.db.query(MSG_JOB_UID).findOne({
+        where: { id: jobId },
+        populate: { template: true, user: true }
+      });
+      if (!job) throwErr("SSO_MSG_JOB_404", 404, "消息任务不存在");
+      return job;
+    },
+    /** 拉取待发送任务（供 cron 进程调度） */
+    async listPendingJobsForSend(limit = 50) {
+      return strapi.db.query(MSG_JOB_UID).findMany({
+        where: {
+          status: "pending"
+        },
+        populate: { template: true },
+        orderBy: { scheduled_at: "ASC" },
+        limit
+      });
+    },
+    /** 查询/刷新用户公众号关注状态，落库到 sso-third-party-binding.subscribe */
+    async refreshSubscribe(userId, appType = "official_account") {
+      const binding = await strapi.db.query(BINDING_UID).findOne({
+        where: { provider: "wechat", user: userId },
+        orderBy: { id: "DESC" }
+      });
+      if (!binding) throwErr("SSO_MSG_BINDING_404", 404, "该用户无微信绑定，无法查询关注状态");
+      const wechatSvc = strapi.plugin("zhao-sso").service("sso-wechat");
+      const subscribe = await wechatSvc.querySubscribe(binding.provider_user_id, binding.provider, appType) || 0;
+      await strapi.db.query(BINDING_UID).update({
+        where: { id: binding.id },
+        data: {
+          subscribe,
+          subscribe_at: /* @__PURE__ */ new Date(),
+          subscribe_check_at: /* @__PURE__ */ new Date()
+        }
+      });
+      return subscribe;
+    }
+  };
+};
 const services = {
   "sso-jwt": ssoJwt,
   "sso-user": ssoUser,
@@ -3670,7 +4132,8 @@ const services = {
   "sso-app": ssoApp,
   "sso-oauth-config": ssoOauthConfig,
   "sso-sms": ssoSms,
-  "sso-invite": ssoInvite
+  "sso-invite": ssoInvite,
+  "sso-msg": ssoMsg
 };
 const fallbackAuthenticated = async (policyContext, _config, { strapi }) => {
   try {

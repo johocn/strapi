@@ -1,0 +1,29 @@
+declare const _default: {
+  "kind": "collectionType",
+  "collectionName": "sso_msg_jobs",
+  "info": {
+    "singularName": "msg-job",
+    "pluralName": "msg-jobs",
+    "displayName": "SSO Msg Job"
+  },
+  "options": { "draftAndPublish": false },
+  "attributes": {
+    "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user" },
+    "scene": { "type": "string", "required": true },
+    "template": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.msg-template" },
+    "provider": { "type": "string", "default": "wechat", "required": true },
+    "toTarget": { "type": "string" },
+    "params": { "type": "json" },
+    "link": { "type": "string" },
+    "status": { "type": "enumeration", "enum": ["pending", "sending", "sent", "failed", "cancelled"], "default": "pending", "required": true },
+    "retryCount": { "type": "integer", "default": 0 },
+    "nextRetryAt": { "type": "datetime" },
+    "wxMsgId": { "type": "string" },
+    "result": { "type": "json" },
+    "scheduledAt": { "type": "datetime" },
+    "sentAt": { "type": "datetime" },
+    "dedupeKey": { "type": "string", "unique": true }
+  }
+};
+
+export default _default;

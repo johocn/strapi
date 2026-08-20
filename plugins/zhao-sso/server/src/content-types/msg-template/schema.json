@@ -1,0 +1,20 @@
+{
+  "kind": "collectionType",
+  "collectionName": "sso_msg_templates",
+  "info": {
+    "singularName": "msg-template",
+    "pluralName": "msg-templates",
+    "displayName": "SSO Msg Template"
+  },
+  "options": { "draftAndPublish": false },
+  "attributes": {
+    "code": { "type": "string", "unique": true, "required": true },
+    "name": { "type": "string", "required": true },
+    "provider": { "type": "string", "default": "wechat", "required": true },
+    "wxTemplateId": { "type": "string" },
+    "wxTemplateFields": { "type": "json" },
+    "content": { "type": "text" },
+    "isEnabled": { "type": "boolean", "default": true, "required": true },
+    "description": { "type": "text" }
+  }
+}

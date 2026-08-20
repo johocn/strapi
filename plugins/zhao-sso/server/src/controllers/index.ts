@@ -12,6 +12,7 @@ import inviteCodeController from "./invite-code-controller";
 import inviteUsageController from "./invite-usage-controller";
 import referralController from "./referral-controller";
 import smsCodeController from "./sms-code-controller";
+import messageController from "./message-controller";
 
 export default {
   "auth-controller": authController,
@@ -28,4 +29,5 @@ export default {
   "invite-usage": inviteUsageController,
   referral: referralController,
   "sms-code": smsCodeController,
+  message: messageController,
 };

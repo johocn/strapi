@@ -12,6 +12,8 @@ import ssoReferralRelation from "./sso-referral-relation";
 import ssoInviteStats from "./sso-invite-stats";
 import ssoOauthConfig from "./sso-oauth-config";
 import ssoSmsCode from "./sso-sms-code";
+import msgTemplate from "./msg-template";
+import msgJob from "./msg-job";
 
 export default {
   "sso-user": ssoUser,
@@ -28,4 +30,6 @@ export default {
   "sso-invite-stats": ssoInviteStats,
   "sso-oauth-config": ssoOauthConfig,
   "sso-sms-code": ssoSmsCode,
+  "msg-template": msgTemplate,
+  "msg-job": msgJob,
 };

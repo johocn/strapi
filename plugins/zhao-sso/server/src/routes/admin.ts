@@ -93,5 +93,18 @@ export default () => ({
     // 短信验证码
     adminRoute("GET", "/sms-codes", "sms-code.list", "sso.sms-code.read"),
     adminRoute("DELETE", "/sms-codes/:id", "sms-code.delete", "sso.sms-code.delete"),
+
+    // 消息中心
+    adminRoute("GET", "/msg-templates", "message.listTemplates", "sso.msg.read"),
+    adminRoute("GET", "/msg-templates/:id", "message.getTemplate", "sso.msg.read"),
+    adminRoute("POST", "/msg-templates", "message.createTemplate", "sso.msg.write"),
+    adminRoute("PUT", "/msg-templates/:id", "message.updateTemplate", "sso.msg.write"),
+    adminRoute("DELETE", "/msg-templates/:id", "message.deleteTemplate", "sso.msg.write"),
+    adminRoute("GET", "/msg-jobs", "message.listJobs", "sso.msg.read"),
+    adminRoute("GET", "/msg-jobs/:id", "message.getJob", "sso.msg.read"),
+    adminRoute("POST", "/msg-jobs/anonymous", "message.sendNow", "sso.msg.write"),
+    adminRoute("POST", "/msg-jobs/batch", "message.sendBatch", "sso.msg.write"),
+    adminRoute("POST", "/msg-jobs/:id/retry", "message.retryJob", "sso.msg.write"),
+    adminRoute("GET", "/users/:id/subscribe", "message.refreshSubscribe", "sso.user-read"),
   ],
 });

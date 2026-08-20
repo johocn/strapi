@@ -11,6 +11,7 @@ import ssoApp from "./sso-app";
 import ssoOauthConfig from "./sso-oauth-config";
 import ssoSms from "./sso-sms";
 import ssoInvite from "./sso-invite";
+import ssoMsg from "./sso-msg";
 
 export default {
   "sso-jwt": ssoJwt,
@@ -26,4 +27,5 @@ export default {
   "sso-oauth-config": ssoOauthConfig,
   "sso-sms": ssoSms,
   "sso-invite": ssoInvite,
+  "sso-msg": ssoMsg,
 };

@@ -173,6 +173,14 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     });
 
     if (binding) {
+      // 补充关注状态（非关键路径，失败静默）
+      try {
+        const subscribe = await this.querySubscribe(openid, "wechat", appType);
+        await strapi.db.query(BINDING_UID).update({
+          where: { id: binding.id },
+          data: { subscribe, subscribe_at: new Date(), subscribe_check_at: new Date() },
+        });
+      } catch { /* ignore */ }
       return { userId: binding.user.id, isNew: false };
     }
 
@@ -207,6 +215,15 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       },
     });
 
+    // 补充关注状态（非关键路径，失败静默）
+    try {
+      const subscribe = await this.querySubscribe(openid, "wechat", appType);
+      await strapi.db.query(BINDING_UID).update({
+        where: { provider_user_id: openid },
+        data: { subscribe, subscribe_at: new Date(), subscribe_check_at: new Date() },
+      });
+    } catch { /* ignore */ }
+
     return { userId: user.id, isNew: true };
   },
 
@@ -240,6 +257,26 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       oauthScopes: config.extraConfig?.oauthScopes || ["snsapi_userinfo"],
       appId: config.appId,
     };
+  },
+
+  /**
+   * 查询用户是否关注公众号(subscribe)
+   * 调 cgi-bin/user/info + 全局 access_token，返回 subscribe(1关注/0未关注)
+   */
+  async querySubscribe(openid: string, provider = "wechat", appType: WechatAppType = "official_account") {
+    if (provider !== "wechat") return 0;
+    if (process.env.MSG_WECHAT_PROVIDER === "mock") return 1; // mock 模式视为已关注，便于联调
+    const config = await getConfig(appType);
+    const accessToken = await getValidAccessToken(config);
+    const res = await axios.get("https://api.weixin.qq.com/cgi-bin/user/info", {
+      params: { access_token: accessToken, openid },
+      timeout: 10000,
+    });
+    const data = res.data || {};
+    if (data.errcode) {
+      throwErr("SSO_WECHAT_012", 502, `WeChat user info error: ${data.errmsg}`);
+    }
+    return data.subscribe === 1 ? 1 : 0;
   },
   };
 };
