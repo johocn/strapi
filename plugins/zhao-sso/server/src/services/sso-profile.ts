@@ -115,7 +115,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   /** 批量重算：遍历 up_users → sso-user → getProfile */
   async recalcAll(limit = 500) {
     const upUsers = await strapi.db.query(UP_USER_UID).findMany({
-      select: ["id", "username", "email", "mobile"],
+      select: ["id", "username", "email"],
       limit,
     });
     let n = 0;

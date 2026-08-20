@@ -4278,11 +4278,13 @@ const ssoMsg = ({ strapi }) => {
   }
   async function resolveToTarget(userId, provider) {
     if (provider === "wechat") {
-      const binding = await strapi.db.query(BINDING_UID).findOne({
-        where: { provider: "wechat", user: userId },
-        orderBy: { id: "DESC" }
+      const bindings = await strapi.db.query(BINDING_UID).findMany({
+        where: { provider: "wechat" },
+        orderBy: { id: "DESC" },
+        limit: 100
       });
-      return binding?.provider_user_id || null;
+      const b = bindings.find((x) => x.user === userId || x.user && x.user.id === userId);
+      return b?.provider_user_id || null;
     }
     return null;
   }
@@ -4631,7 +4633,7 @@ const ssoProfile = ({ strapi }) => ({
   /** 批量重算：遍历 up_users → sso-user → getProfile */
   async recalcAll(limit = 500) {
     const upUsers = await strapi.db.query(UP_USER_UID).findMany({
-      select: ["id", "username", "email", "mobile"],
+      select: ["id", "username", "email"],
       limit
     });
     let n = 0;

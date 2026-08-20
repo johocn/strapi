@@ -41,11 +41,14 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
 
   async function resolveToTarget(userId: number, provider: string): Promise<string | null> {
     if (provider === "wechat") {
-      const binding = await strapi.db.query(BINDING_UID).findOne({
-        where: { provider: "wechat", user: userId },
+      // 说明：按 provider 拉最近绑定后在内存过滤 userId，绕开 Strapi 对关系 where(user=数字id)+orderBy 的编译缺陷(Undefined binding t2.id)
+      const bindings = await strapi.db.query(BINDING_UID).findMany({
+        where: { provider: "wechat" },
         orderBy: { id: "DESC" },
+        limit: 100,
       });
-      return binding?.provider_user_id || null;
+      const b = bindings.find((x: any) => x.user === userId || (x.user && x.user.id === userId));
+      return b?.provider_user_id || null;
     }
     return null;
   }
