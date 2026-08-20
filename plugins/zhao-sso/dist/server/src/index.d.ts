@@ -753,6 +753,72 @@ declare const _default: {
                 };
             };
         };
+        "msg-template-version": {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                attributes: {
+                    template: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        required: boolean;
+                    };
+                    code: {
+                        type: string;
+                        required: boolean;
+                    };
+                    name: {
+                        type: string;
+                    };
+                    wxTemplateId: {
+                        type: string;
+                    };
+                    wxTemplateFields: {
+                        type: string;
+                    };
+                    content: {
+                        type: string;
+                    };
+                    link: {
+                        type: string;
+                    };
+                    weight: {
+                        type: string;
+                        default: number;
+                    };
+                    status: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                        required: boolean;
+                    };
+                    sentCount: {
+                        type: string;
+                        default: number;
+                    };
+                    successCount: {
+                        type: string;
+                        default: number;
+                    };
+                    clickCount: {
+                        type: string;
+                        default: number;
+                    };
+                    lastUsedAt: {
+                        type: string;
+                    };
+                };
+            };
+        };
         "msg-job": {
             schema: {
                 kind: string;
@@ -776,6 +842,11 @@ declare const _default: {
                         required: boolean;
                     };
                     template: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                    };
+                    version: {
                         type: string;
                         relation: string;
                         target: string;
@@ -1135,6 +1206,16 @@ declare const _default: {
             listFollowUps(ctx: any): Promise<void>;
             createFollowUp(ctx: any): Promise<void>;
             updateFollowUp(ctx: any): Promise<void>;
+        };
+        "msg-version": ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            list(ctx: any): Promise<void>;
+            create(ctx: any): Promise<void>;
+            update(ctx: any): Promise<void>;
+            delete(ctx: any): Promise<void>;
+            activate(ctx: any): Promise<void>;
+            abStats(ctx: any): Promise<void>;
         };
     };
     routes: {

@@ -11,38 +11,34 @@ declare const _default: {
             draftAndPublish: boolean;
         };
         attributes: {
-            user: {
-                type: string;
-                relation: string;
-                target: string;
-            };
-            scene: {
-                type: string;
-                required: boolean;
-            };
             template: {
                 type: string;
                 relation: string;
                 target: string;
-            };
-            version: {
-                type: string;
-                relation: string;
-                target: string;
-            };
-            provider: {
-                type: string;
-                default: string;
                 required: boolean;
             };
-            toTarget: {
+            code: {
+                type: string;
+                required: boolean;
+            };
+            name: {
                 type: string;
             };
-            params: {
+            wxTemplateId: {
+                type: string;
+            };
+            wxTemplateFields: {
+                type: string;
+            };
+            content: {
                 type: string;
             };
             link: {
                 type: string;
+            };
+            weight: {
+                type: string;
+                default: number;
             };
             status: {
                 type: string;
@@ -50,28 +46,20 @@ declare const _default: {
                 default: string;
                 required: boolean;
             };
-            retryCount: {
+            sentCount: {
                 type: string;
                 default: number;
             };
-            nextRetryAt: {
+            successCount: {
                 type: string;
+                default: number;
             };
-            wxMsgId: {
+            clickCount: {
                 type: string;
+                default: number;
             };
-            result: {
+            lastUsedAt: {
                 type: string;
-            };
-            scheduledAt: {
-                type: string;
-            };
-            sentAt: {
-                type: string;
-            };
-            dedupeKey: {
-                type: string;
-                unique: boolean;
             };
         };
     };

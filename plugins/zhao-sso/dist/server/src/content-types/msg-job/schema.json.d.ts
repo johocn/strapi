@@ -11,6 +11,7 @@ declare const _default: {
     "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user" },
     "scene": { "type": "string", "required": true },
     "template": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.msg-template" },
+    "version": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.msg-template-version" },
     "provider": { "type": "string", "default": "wechat", "required": true },
     "toTarget": { "type": "string" },
     "params": { "type": "json" },

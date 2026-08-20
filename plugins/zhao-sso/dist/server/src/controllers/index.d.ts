@@ -163,5 +163,15 @@ declare const _default: {
         createFollowUp(ctx: any): Promise<void>;
         updateFollowUp(ctx: any): Promise<void>;
     };
+    "msg-version": ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        list(ctx: any): Promise<void>;
+        create(ctx: any): Promise<void>;
+        update(ctx: any): Promise<void>;
+        delete(ctx: any): Promise<void>;
+        activate(ctx: any): Promise<void>;
+        abStats(ctx: any): Promise<void>;
+    };
 };
 export default _default;
