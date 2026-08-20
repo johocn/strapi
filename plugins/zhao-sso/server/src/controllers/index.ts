@@ -14,6 +14,8 @@ import referralController from "./referral-controller";
 import smsCodeController from "./sms-code-controller";
 import messageController from "./message-controller";
 import sopController from "./sop-controller";
+import profileController from "./profile-controller";
+import partnerController from "./partner-controller";
 
 export default {
   "auth-controller": authController,
@@ -32,4 +34,6 @@ export default {
   "sms-code": smsCodeController,
   message: messageController,
   sop: sopController,
+  profile: profileController,
+  partner: partnerController,
 };
