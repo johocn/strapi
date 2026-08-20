@@ -294,6 +294,22 @@ declare const _default: {
                     taskGroup: string;
                     extraConfig: {};
                 };
+                activity_signup: {
+                    points: number;
+                    limitPerDay: number;
+                    isOneTime: boolean;
+                    description: string;
+                    taskGroup: string;
+                    extraConfig: {};
+                };
+                activity_attend: {
+                    points: number;
+                    limitPerDay: number;
+                    isOneTime: boolean;
+                    description: string;
+                    taskGroup: string;
+                    extraConfig: {};
+                };
             };
             decreaseRules: {
                 redeem_gift: {
@@ -1861,6 +1877,22 @@ declare const _default: {
                         extraConfig: {};
                     };
                     qr_scan_verify: {
+                        points: number;
+                        limitPerDay: number;
+                        isOneTime: boolean;
+                        description: string;
+                        taskGroup: string;
+                        extraConfig: {};
+                    };
+                    activity_signup: {
+                        points: number;
+                        limitPerDay: number;
+                        isOneTime: boolean;
+                        description: string;
+                        taskGroup: string;
+                        extraConfig: {};
+                    };
+                    activity_attend: {
                         points: number;
                         limitPerDay: number;
                         isOneTime: boolean;

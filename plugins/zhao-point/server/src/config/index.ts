@@ -50,6 +50,10 @@ export default {
       browse_page:           { points: 2,    limitPerDay: 5,  isOneTime: false, description: "浏览特定页面",     taskGroup: "other", extraConfig: {} },
       task_complete:         { points: 10,   limitPerDay: 0,  isOneTime: false, description: "完成任务",         taskGroup: "other", extraConfig: {} },
       qr_scan_verify:        { points: 5,    limitPerDay: 3,  isOneTime: false, description: "扫码核销奖励",     taskGroup: "other", extraConfig: {} },
+
+      // 活动类 (taskGroup: other) —— 非一次性，幂等由"报名/签到唯一性"保证
+      activity_signup:       { points: 5,    limitPerDay: 0,  isOneTime: false, description: "活动报名",         taskGroup: "other", extraConfig: {} },
+      activity_attend:       { points: 20,   limitPerDay: 0,  isOneTime: false, description: "活动到场签到",     taskGroup: "other", extraConfig: {} },
     },
 
     // 扣除积分规则 (category: decrease)
