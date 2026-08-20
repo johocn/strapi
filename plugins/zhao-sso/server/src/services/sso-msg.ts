@@ -67,7 +67,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       const { user, scene, templateCode, params = {}, link, scheduledAt, dedupeKey } = opts;
 
       const template = await strapi.db.query(MSG_TEMPLATE_UID).findOne({
-        where: { code: templateCode, is_enabled: true },
+        where: { code: templateCode, isEnabled: true },
       });
       if (!template) throwErr("SSO_MSG_TEMPLATE_404", 404, `消息模板未找到或未启用: ${templateCode}`);
 
@@ -76,7 +76,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
 
       // 幂等：存在任意未终态 job 则跳过
       const existing = await strapi.db.query(MSG_JOB_UID).findOne({
-        where: { dedupe_key: key },
+        where: { dedupeKey: key },
       });
       if (existing && existing.status !== "sent" && existing.status !== "failed" && existing.status !== "cancelled") {
         return { job: existing, skipped: true };
@@ -92,11 +92,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         link: link || null,
         status: "pending",
         retryCount: 0,
-        dedupe_key: key,
+        dedupeKey: key,
         template: template.id,
       };
-      if (toTarget) jobData.to_target = toTarget;
-      if (scheduledAt) jobData.scheduled_at = scheduledAt;
+      if (toTarget) jobData.toTarget = toTarget;
+      if (scheduledAt) jobData.scheduledAt = scheduledAt;
 
       const job = await strapi.db.query(MSG_JOB_UID).create({ data: jobData });
       return { job, skipped: false };
@@ -135,11 +135,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
 
       const channel = resolveChannel(job.provider);
 
-      let toTarget = job.to_target;
+      let toTarget = job.toTarget;
       if (!toTarget) {
         toTarget = await resolveToTarget(job.user, job.provider);
         if (toTarget) {
-          await strapi.db.query(MSG_JOB_UID).update({ where: { id: job.id }, data: { to_target: toTarget } });
+          await strapi.db.query(MSG_JOB_UID).update({ where: { id: job.id }, data: { toTarget } });
         }
       }
 
@@ -162,7 +162,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         });
         await strapi.db.query(MSG_JOB_UID).update({
           where: { id: job.id },
-          data: { status: "sent", wx_msg_id: String(res.msgId), sent_at: new Date(), result: res.raw || null },
+          data: { status: "sent", wxMsgId: String(res.msgId), sentAt: new Date(), result: res.raw || null },
         });
       } catch (e: any) {
         const retryCount = (job.retryCount || 0) + 1;
@@ -172,7 +172,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
           data: {
             status: retryable ? "pending" : "failed",
             retryCount,
-            next_retry_at: retryable ? new Date(Date.now() + RETRY_DELAY_MS) : null,
+            nextRetryAt: retryable ? new Date(Date.now() + RETRY_DELAY_MS) : null,
             result: { error: (e as any).message, code: (e as any).code || null },
           },
         });
@@ -195,15 +195,15 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       const where: any = { status: "pending" };
       if (dueOnly) {
         where.$or = [
-          { scheduled_at: null },
-          { scheduled_at: { $lte: now } },
-          { next_retry_at: { $lte: now } },
+          { scheduledAt: null },
+          { scheduledAt: { $lte: now } },
+          { nextRetryAt: { $lte: now } },
         ];
       }
       return strapi.db.query(MSG_JOB_UID).findMany({
         where,
         populate: { template: true },
-        orderBy: { scheduled_at: "ASC" },
+        orderBy: { scheduledAt: "ASC" },
         limit,
       });
     },

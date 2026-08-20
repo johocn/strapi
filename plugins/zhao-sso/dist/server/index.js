@@ -4094,13 +4094,13 @@ const ssoMsg = ({ strapi }) => {
     async buildJob(opts) {
       const { user, scene, templateCode, params = {}, link, scheduledAt, dedupeKey } = opts;
       const template = await strapi.db.query(MSG_TEMPLATE_UID).findOne({
-        where: { code: templateCode, is_enabled: true }
+        where: { code: templateCode, isEnabled: true }
       });
       if (!template) throwErr("SSO_MSG_TEMPLATE_404", 404, `消息模板未找到或未启用: ${templateCode}`);
       const provider = template.provider || "wechat";
       const key = dedupeKey || `${scene}:${user}`;
       const existing = await strapi.db.query(MSG_JOB_UID).findOne({
-        where: { dedupe_key: key }
+        where: { dedupeKey: key }
       });
       if (existing && existing.status !== "sent" && existing.status !== "failed" && existing.status !== "cancelled") {
         return { job: existing, skipped: true };
@@ -4114,11 +4114,11 @@ const ssoMsg = ({ strapi }) => {
         link: link || null,
         status: "pending",
         retryCount: 0,
-        dedupe_key: key,
+        dedupeKey: key,
         template: template.id
       };
-      if (toTarget) jobData.to_target = toTarget;
-      if (scheduledAt) jobData.scheduled_at = scheduledAt;
+      if (toTarget) jobData.toTarget = toTarget;
+      if (scheduledAt) jobData.scheduledAt = scheduledAt;
       const job = await strapi.db.query(MSG_JOB_UID).create({ data: jobData });
       return { job, skipped: false };
     },
@@ -4144,11 +4144,11 @@ const ssoMsg = ({ strapi }) => {
       if (job.status === "failed" && job.retryCount >= MAX_RETRY) return job;
       await strapi.db.query(MSG_JOB_UID).update({ where: { id: job.id }, data: { status: "sending" } });
       const channel = resolveChannel(job.provider);
-      let toTarget = job.to_target;
+      let toTarget = job.toTarget;
       if (!toTarget) {
         toTarget = await resolveToTarget(job.user, job.provider);
         if (toTarget) {
-          await strapi.db.query(MSG_JOB_UID).update({ where: { id: job.id }, data: { to_target: toTarget } });
+          await strapi.db.query(MSG_JOB_UID).update({ where: { id: job.id }, data: { toTarget } });
         }
       }
       if (!toTarget) {
@@ -4168,7 +4168,7 @@ const ssoMsg = ({ strapi }) => {
         });
         await strapi.db.query(MSG_JOB_UID).update({
           where: { id: job.id },
-          data: { status: "sent", wx_msg_id: String(res.msgId), sent_at: /* @__PURE__ */ new Date(), result: res.raw || null }
+          data: { status: "sent", wxMsgId: String(res.msgId), sentAt: /* @__PURE__ */ new Date(), result: res.raw || null }
         });
       } catch (e) {
         const retryCount = (job.retryCount || 0) + 1;
@@ -4178,7 +4178,7 @@ const ssoMsg = ({ strapi }) => {
           data: {
             status: retryable ? "pending" : "failed",
             retryCount,
-            next_retry_at: retryable ? new Date(Date.now() + RETRY_DELAY_MS) : null,
+            nextRetryAt: retryable ? new Date(Date.now() + RETRY_DELAY_MS) : null,
             result: { error: e.message, code: e.code || null }
           }
         });
@@ -4199,15 +4199,15 @@ const ssoMsg = ({ strapi }) => {
       const where = { status: "pending" };
       if (dueOnly) {
         where.$or = [
-          { scheduled_at: null },
-          { scheduled_at: { $lte: now } },
-          { next_retry_at: { $lte: now } }
+          { scheduledAt: null },
+          { scheduledAt: { $lte: now } },
+          { nextRetryAt: { $lte: now } }
         ];
       }
       return strapi.db.query(MSG_JOB_UID).findMany({
         where,
         populate: { template: true },
-        orderBy: { scheduled_at: "ASC" },
+        orderBy: { scheduledAt: "ASC" },
         limit
       });
     },
