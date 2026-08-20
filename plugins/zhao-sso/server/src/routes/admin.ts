@@ -112,5 +112,10 @@ export default () => ({
     adminRoute("POST", "/sop-rules", "sop.create", "sso.msg.write"),
     adminRoute("PUT", "/sop-rules/:id", "sop.update", "sso.msg.write"),
     adminRoute("DELETE", "/sop-rules/:id", "sop.delete", "sso.msg.write"),
+
+    // 用户画像分层
+    adminRoute("GET", "/profiles", "profile.list", "sso.profile.read"),
+    adminRoute("GET", "/profiles/:id", "profile.detail", "sso.profile.read"),
+    adminRoute("POST", "/profiles/recalc-all", "profile.recalcAll", "sso.profile.write"),
   ],
 });
