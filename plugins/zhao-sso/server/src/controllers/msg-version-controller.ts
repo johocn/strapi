@@ -97,9 +97,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
           e.status = 404;
           throw e;
         }
-        await strapi.db
-          .query(VERSION_UID)
-          .updateMany({ where: { template: row.template }, data: { status: "draft" } });
+        // 多活语义：AB 测试需多版本并行参与加权分配，activate 仅启用目标版本；停用走 update(status=draft)
         await strapi.db.query(VERSION_UID).update({ where: { id }, data: { status: "active" } });
         return { data: await strapi.db.query(VERSION_UID).findOne({ where: { id } }) };
       });

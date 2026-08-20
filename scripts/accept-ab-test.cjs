@@ -243,22 +243,20 @@ async function activateVersion(token, docId, verId_, name, setStatus = 'active')
   ok('clickRate/successRate 计算字段正确(sent=0 → clickRate=0)', s1 && typeof s1.clickRate === 'number' && s1.clickRate === (s1.sentCount ? Math.round((s1.clickCountLive / s1.sentCount) * 1000) / 10 : 0) && typeof s1.successRate === 'number',
     `v1.clickRate=${s1 && s1.clickRate} sent=${s1 && s1.sentCount} click=${s1 && s1.clickCountLive} successRate=${s1 && s1.successRate}`);
 
-  // ---------- 9. activate 单活切换：激活 v2（真实 activate 会自动将同模板其他版本置 draft；若接口缺陷走 update 等价则显式置 v1=draft） ----------
-  const a3 = await activateVersion(token, docId, v2Id, 'v2(单活切换)');
-  if (a3.via === 'update') {
-    await req('PUT', `${ADMIN}/msg-templates/${docId}/versions/${v1Id}`, { status: 'draft' }, token);
-    WARN.push('activate 单活切换经 update 等价完成：v2=active 且 v1=draft');
-    console.log('WARN | activate 单活切换经 update 等价完成（显式置 v1=draft）');
-  }
+  // ---------- 9. 多活语义：activate v2 仅启用 v2（不清其他）；停用走 update(status=draft) ----------
+  const a3 = await activateVersion(token, docId, v2Id, 'v2(激活)');
+  ok('激活 v2（多活）', a3.r.status === 200 && (a3.r.data && a3.r.data.data || {}).status === 'active', `status=${a3.r.status} via=${a3.via}`);
+  // 显式停用 v1（AB 停用路径 = update status=draft），仅剩 v2 active
+  await req('PUT', `${ADMIN}/msg-templates/${docId}/versions/${v1Id}`, { status: 'draft' }, token);
   r = await req('GET', `${ADMIN}/msg-templates/${docId}/versions`, null, token);
   const rows2 = (r.data && r.data.data) || [];
   const v1a = rows2.find((x) => x.code === v1Code), v2a = rows2.find((x) => x.code === v2Code);
-  ok('单活切换后 v1=draft/v2=active', v1a && v2a && v1a.status === 'draft' && v2a.status === 'active', `v1=${v1a && v1a.status} v2=${v2a && v2a.status}`);
-  // 单活切换后新发送：用全新用户（userIds[SAMPLE_N] 未参与过采样，避免幂等 skipped 干扰）→ 新建 job 应命中唯一 active 的 v2
+  ok('停用 v1 后 v1=draft/v2=active', v1a && v2a && v1a.status === 'draft' && v2a.status === 'active', `v1=${v1a && v1a.status} v2=${v2a && v2a.status}`);
+  // 停用 v1 后新发送：用全新用户（userIds[SAMPLE_N] 未参与过采样，避免幂等 skipped 干扰）→ 新建 job 应命中唯一 active 的 v2
   r = await req('POST', ADMIN + '/msg-jobs/anonymous', { userId: userIds[SAMPLE_N], scene: 'ab_test', templateCode: code }, token);
   const jobS = r.data && r.data.data;
   const vS = await resolveVersion(jobS);
-  ok('激活 v2 后新 job 命中 v2(link 含 utm_campaign=v2)', r.status === 200 && jobS && vS === v2Id && jobS.link && jobS.link.includes('utm_campaign=' + v2Code),
+  ok('停用 v1 后新 job 命中 v2(link 含 utm_campaign=v2)', r.status === 200 && jobS && vS === v2Id && jobS.link && jobS.link.includes('utm_campaign=' + v2Code),
     `status=${r.status} version=${vS} link=${jobS && jobS.link}`);
 
   // ---------- 10. 删除引用校验：v2 已被 job 引用 → DELETE 期望 400 ----------

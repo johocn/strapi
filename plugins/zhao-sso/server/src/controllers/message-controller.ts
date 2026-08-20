@@ -78,7 +78,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         }
         const results = await strapi.documents(JOB_UID).findMany({
           filters,
-          populate: ["template", "user"],
+          populate: ["template", "user", "version"],
           sort: { createdAt: "desc" },
           limit: pageSizeNum,
           start: (pageNum - 1) * pageSizeNum,
@@ -92,7 +92,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       await wrap(ctx, async () => {
         const result = await strapi.documents(JOB_UID).findOne({
           documentId: ctx.params.id,
-          populate: ["template", "user"],
+          populate: ["template", "user", "version"],
         });
         if (!result) throw { status: 404, message: "任务不存在" };
         return { data: result };

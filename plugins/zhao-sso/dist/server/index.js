@@ -2097,7 +2097,7 @@ const messageController = ({ strapi }) => {
         }
         const results = await strapi.documents(JOB_UID$1).findMany({
           filters,
-          populate: ["template", "user"],
+          populate: ["template", "user", "version"],
           sort: { createdAt: "desc" },
           limit: pageSizeNum,
           start: (pageNum - 1) * pageSizeNum
@@ -2110,7 +2110,7 @@ const messageController = ({ strapi }) => {
       await wrap(ctx, async () => {
         const result = await strapi.documents(JOB_UID$1).findOne({
           documentId: ctx.params.id,
-          populate: ["template", "user"]
+          populate: ["template", "user", "version"]
         });
         if (!result) throw { status: 404, message: "任务不存在" };
         return { data: result };
@@ -2465,7 +2465,6 @@ const msgVersionController = ({ strapi }) => {
           e.status = 404;
           throw e;
         }
-        await strapi.db.query(VERSION_UID$1).updateMany({ where: { template: row.template }, data: { status: "draft" } });
         await strapi.db.query(VERSION_UID$1).update({ where: { id }, data: { status: "active" } });
         return { data: await strapi.db.query(VERSION_UID$1).findOne({ where: { id } }) };
       });
