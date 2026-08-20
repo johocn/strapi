@@ -555,6 +555,14 @@ export const PERMISSION_TREE: Record<string, PermissionItem> = {
               "sso.sms-code.delete": { label: "删除短信码", type: "button" },
             },
           },
+          "menu.sso-msg": {
+            label: "消息中心",
+            type: "menu",
+            children: {
+              "sso.msg.read": { label: "查看消息模板/任务/SOP规则", type: "button" },
+              "sso.msg.write": { label: "编辑消息模板/SOP规则", type: "button" },
+            },
+          },
         },
       },
       "menu.tenant": {
@@ -1537,6 +1545,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
     "menu.sso-user-role", "sso.user-app-role.read",
     "menu.sso-invite", "sso.invite-code.read", "sso.invite-stats.read",
     "menu.sso-sms", "sso.sms-code.read",
+    "menu.sso-msg", "sso.msg.read",
     // 零散补全
     "oss.media-meta.read",
     "auth.admin-login",

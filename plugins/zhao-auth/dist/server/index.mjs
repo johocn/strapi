@@ -844,6 +844,14 @@ const PERMISSION_TREE = {
               "sso.sms-code.read": { label: "查看短信码", type: "button" },
               "sso.sms-code.delete": { label: "删除短信码", type: "button" }
             }
+          },
+          "menu.sso-msg": {
+            label: "消息中心",
+            type: "menu",
+            children: {
+              "sso.msg.read": { label: "查看消息模板/任务/SOP规则", type: "button" },
+              "sso.msg.write": { label: "编辑消息模板/SOP规则", type: "button" }
+            }
           }
         }
       },
@@ -1886,6 +1894,8 @@ const DEFAULT_ROLE_PERMISSIONS = {
     "sso.invite-stats.read",
     "menu.sso-sms",
     "sso.sms-code.read",
+    "menu.sso-msg",
+    "sso.msg.read",
     // 零散补全
     "oss.media-meta.read",
     "auth.admin-login",
@@ -4756,6 +4766,9 @@ const hasChannelScope = async (policyContext, config2, { strapi: strapi2 }) => {
         user = await strapi2.entityService.findOne("plugin::users-permissions.user", decoded.id, {
           fields: ["id", "username", "email", "zhaoRoles"]
         });
+      }
+      if (user?.id) {
+        policyContext.state.user = user;
       }
     } catch (err) {
       strapi2.log.error(`[has-channel-scope] 解析 token 失败: ${err.message}`);
