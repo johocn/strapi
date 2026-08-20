@@ -855,7 +855,9 @@ const PERMISSION_TREE = {
             type: "menu",
             children: {
               "sso.msg.read": { label: "查看消息模板/任务/SOP规则", type: "button" },
-              "sso.msg.write": { label: "编辑消息模板/SOP规则", type: "button" }
+              "sso.msg.write": { label: "编辑消息模板/SOP规则", type: "button" },
+              "sso.profile.read": { label: "查看用户画像/分层", type: "button" },
+              "sso.profile.write": { label: "重算用户分层", type: "button" }
             }
           }
         }
@@ -1901,6 +1903,7 @@ const DEFAULT_ROLE_PERMISSIONS = {
     "sso.sms-code.read",
     "menu.sso-msg",
     "sso.msg.read",
+    "sso.profile.read",
     // 零散补全
     "oss.media-meta.read",
     "auth.admin-login",

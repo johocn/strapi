@@ -888,6 +888,88 @@ declare const _default: {
                 };
             };
         };
+        "sso-user-profile": {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                attributes: {
+                    user: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                    };
+                    segment: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                        required: boolean;
+                    };
+                    segmentScore: {
+                        type: string;
+                        default: number;
+                    };
+                    segmentReason: {
+                        type: string;
+                    };
+                    dimensions: {
+                        type: string;
+                        default: {};
+                    };
+                    lastCalculatedAt: {
+                        type: string;
+                    };
+                };
+            };
+        };
+        "sso-follow-up": {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                attributes: {
+                    partner: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        required: boolean;
+                    };
+                    customer: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        required: boolean;
+                    };
+                    content: {
+                        type: string;
+                        required: boolean;
+                    };
+                    status: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                        required: boolean;
+                    };
+                    nextFollowAt: {
+                        type: string;
+                    };
+                };
+            };
+        };
     };
     controllers: {
         "auth-controller": ({ strapi }: {
@@ -1036,6 +1118,23 @@ declare const _default: {
             create(ctx: any): Promise<void>;
             update(ctx: any): Promise<void>;
             delete(ctx: any): Promise<void>;
+        };
+        profile: ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            list(ctx: any): Promise<void>;
+            detail(ctx: any): Promise<void>;
+            recalcAll(ctx: any): Promise<void>;
+        };
+        partner: ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            myCustomers(ctx: any): Promise<void>;
+            customerDetail(ctx: any): Promise<void>;
+            touch(ctx: any): Promise<void>;
+            listFollowUps(ctx: any): Promise<void>;
+            createFollowUp(ctx: any): Promise<void>;
+            updateFollowUp(ctx: any): Promise<void>;
         };
     };
     routes: {
@@ -1436,6 +1535,69 @@ declare const _default: {
                 }>;
             }): Promise<any[]>;
             runDueJobs(limit?: number): Promise<number>;
+        };
+        "sso-profile": ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            resolveUpUserForSsoUser(ssoUserId: number): Promise<any>;
+            calculateProfile(ssoUserId: number): Promise<{
+                user: number;
+                upUser: any;
+                hasData: boolean;
+                activity: number;
+                reading: number;
+                completion: number;
+                attendance: number;
+                payment: number;
+                interests: any[];
+            } | {
+                activity: number;
+                reading: number;
+                completion: number;
+                attendance: number;
+                payment: number;
+                interests: string[];
+                user: number;
+                upUser: any;
+                hasData: boolean;
+            }>;
+            segmentOf(profile: any): {
+                segment: string;
+                segmentScore: number;
+                segmentReason: string;
+            };
+            getProfile(ssoUserId: number): Promise<{
+                segment: string;
+                segmentScore: number;
+                segmentReason: string;
+                user: number;
+                upUser: any;
+                hasData: boolean;
+                activity: number;
+                reading: number;
+                completion: number;
+                attendance: number;
+                payment: number;
+                interests: any[];
+            } | {
+                segment: string;
+                segmentScore: number;
+                segmentReason: string;
+                activity: number;
+                reading: number;
+                completion: number;
+                attendance: number;
+                payment: number;
+                interests: string[];
+                user: number;
+                upUser: any;
+                hasData: boolean;
+            }>;
+            recalcAll(limit?: number): Promise<{
+                scanned: number;
+                calculated: number;
+                matchedSso: number;
+            }>;
         };
     };
     policies: {

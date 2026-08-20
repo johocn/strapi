@@ -362,5 +362,68 @@ declare const _default: {
         }): Promise<any[]>;
         runDueJobs(limit?: number): Promise<number>;
     };
+    "sso-profile": ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        resolveUpUserForSsoUser(ssoUserId: number): Promise<any>;
+        calculateProfile(ssoUserId: number): Promise<{
+            user: number;
+            upUser: any;
+            hasData: boolean;
+            activity: number;
+            reading: number;
+            completion: number;
+            attendance: number;
+            payment: number;
+            interests: any[];
+        } | {
+            activity: number;
+            reading: number;
+            completion: number;
+            attendance: number;
+            payment: number;
+            interests: string[];
+            user: number;
+            upUser: any;
+            hasData: boolean;
+        }>;
+        segmentOf(profile: any): {
+            segment: string;
+            segmentScore: number;
+            segmentReason: string;
+        };
+        getProfile(ssoUserId: number): Promise<{
+            segment: string;
+            segmentScore: number;
+            segmentReason: string;
+            user: number;
+            upUser: any;
+            hasData: boolean;
+            activity: number;
+            reading: number;
+            completion: number;
+            attendance: number;
+            payment: number;
+            interests: any[];
+        } | {
+            segment: string;
+            segmentScore: number;
+            segmentReason: string;
+            activity: number;
+            reading: number;
+            completion: number;
+            attendance: number;
+            payment: number;
+            interests: string[];
+            user: number;
+            upUser: any;
+            hasData: boolean;
+        }>;
+        recalcAll(limit?: number): Promise<{
+            scanned: number;
+            calculated: number;
+            matchedSso: number;
+        }>;
+    };
 };
 export default _default;

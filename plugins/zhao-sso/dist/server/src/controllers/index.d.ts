@@ -146,5 +146,22 @@ declare const _default: {
         update(ctx: any): Promise<void>;
         delete(ctx: any): Promise<void>;
     };
+    profile: ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        list(ctx: any): Promise<void>;
+        detail(ctx: any): Promise<void>;
+        recalcAll(ctx: any): Promise<void>;
+    };
+    partner: ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        myCustomers(ctx: any): Promise<void>;
+        customerDetail(ctx: any): Promise<void>;
+        touch(ctx: any): Promise<void>;
+        listFollowUps(ctx: any): Promise<void>;
+        createFollowUp(ctx: any): Promise<void>;
+        updateFollowUp(ctx: any): Promise<void>;
+    };
 };
 export default _default;
