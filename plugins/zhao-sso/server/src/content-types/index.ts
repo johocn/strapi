@@ -13,6 +13,7 @@ import ssoInviteStats from "./sso-invite-stats";
 import ssoOauthConfig from "./sso-oauth-config";
 import ssoSmsCode from "./sso-sms-code";
 import msgTemplate from "./msg-template";
+import msgTemplateVersion from "./msg-template-version";
 import msgJob from "./msg-job";
 import sopRule from "./sop-rule";
 import ssoUserProfile from "./sso-user-profile";
@@ -34,6 +35,7 @@ export default {
   "sso-oauth-config": ssoOauthConfig,
   "sso-sms-code": ssoSmsCode,
   "msg-template": msgTemplate,
+  "msg-template-version": msgTemplateVersion,
   "msg-job": msgJob,
   "sop-rule": sopRule,
   "sso-user-profile": ssoUserProfile,
