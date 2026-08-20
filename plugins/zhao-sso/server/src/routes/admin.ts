@@ -107,6 +107,14 @@ export default () => ({
     adminRoute("POST", "/msg-jobs/:id/retry", "message.retryJob", "sso.msg.write"),
     adminRoute("GET", "/users/:id/subscribe", "message.refreshSubscribe", "sso.user-read"),
 
+    // 模板版本 / AB 测试
+    adminRoute("GET", "/msg-templates/:templateId/versions", "msg-version.list", "sso.msg.read"),
+    adminRoute("POST", "/msg-templates/:templateId/versions", "msg-version.create", "sso.msg.write"),
+    adminRoute("PUT", "/msg-templates/:templateId/versions/:id", "msg-version.update", "sso.msg.write"),
+    adminRoute("DELETE", "/msg-templates/:templateId/versions/:id", "msg-version.delete", "sso.msg.write"),
+    adminRoute("POST", "/msg-templates/:templateId/versions/:id/activate", "msg-version.activate", "sso.msg.write"),
+    adminRoute("GET", "/msg-templates/:templateId/ab-stats", "msg-version.abStats", "sso.msg.read"),
+
     // 自动化 SOP 规则
     adminRoute("GET", "/sop-rules", "sop.list", "sso.msg.read"),
     adminRoute("POST", "/sop-rules", "sop.create", "sso.msg.write"),

@@ -16,6 +16,7 @@ import messageController from "./message-controller";
 import sopController from "./sop-controller";
 import profileController from "./profile-controller";
 import partnerController from "./partner-controller";
+import msgVersionController from "./msg-version-controller";
 
 export default {
   "auth-controller": authController,
@@ -36,4 +37,5 @@ export default {
   sop: sopController,
   profile: profileController,
   partner: partnerController,
+  "msg-version": msgVersionController,
 };
