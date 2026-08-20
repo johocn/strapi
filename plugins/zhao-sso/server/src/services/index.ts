@@ -13,6 +13,7 @@ import ssoSms from "./sso-sms";
 import ssoInvite from "./sso-invite";
 import ssoMsg from "./sso-msg";
 import ssoSop from "./sso-sop";
+import ssoProfile from "./sso-profile";
 
 export default {
   "sso-jwt": ssoJwt,
@@ -30,4 +31,5 @@ export default {
   "sso-invite": ssoInvite,
   "sso-msg": ssoMsg,
   "sso-sop": ssoSop,
+  "sso-profile": ssoProfile,
 };
