@@ -2216,6 +2216,11 @@ declare const _default: {
                 ok: boolean;
                 reason?: undefined;
             }>;
+            closeActivity(activityId: string): Promise<{
+                ok: boolean;
+                closed: boolean;
+                revisitTriggered: number;
+            }>;
             cancel({ userId, activityId }: {
                 userId: number;
                 activityId: number;

@@ -62,7 +62,69 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     for (const lesson of act.preUnlockLessons || []) {
       if (lesson?.course?.id) await grantCourseTrial(strapi, userId, lesson.course.id);
     }
+    // SOP 埋点：报名确认立即通知 + 活动开始前 24h 提醒（跨插件调用 zhao-sso/sso-sop）
+    try {
+      const sop = strapi.plugin("zhao-sso")?.service("sso-sop");
+      if (sop) {
+        const sso = await sop.resolveSsoUserForUpUser(userId);
+        if (!sso) return { ok: true };
+        const startTime = act.startTime;
+        const schedules: any[] = [{ templateCode: "act_confirm", scene: "activity.confirm" }];
+        if (startTime) {
+          const beforeAt = new Date(new Date(startTime).getTime() - 24 * 3600 * 1000).toISOString();
+          // 活动开始前 24h 已过（早于 now）则跳过该条
+          if (new Date(beforeAt).getTime() > Date.now()) {
+            schedules.push({ templateCode: "act_before", scene: "activity.before", scheduledAt: beforeAt });
+          }
+        }
+        await sop.trigger("activity.signup", {
+          user: sso.id,
+          payload: { activity: { name: act.title, startTime } },
+          schedules,
+        });
+      }
+    } catch (e: any) {
+      strapi.log.warn(`[zhao-point:activity] sop activity.signup embed failed: ${e.message}`);
+    }
     return { ok: true };
+  },
+
+  /**
+   * 活动结束触点：本项目无可靠业务结束判定（无 cron、无专属关闭端点，adminUpdate 仅通用更新 status），
+   * 因此提供公开 service 方法 closeActivity(activityId) 兼做“activity.closed”未到场回访埋点，不引入 cron。
+   * 调用方在活动结束后自行调用；对活动期内未签到(attended_at 为空)且未取消的每个报名用户触发一次回访。
+   */
+  async closeActivity(activityId: string) {
+    const act = await strapi.documents("plugin::zhao-point.activity").findOne({ documentId: activityId });
+    if (!act) throw new Error("活动不存在");
+    await strapi.documents("plugin::zhao-point.activity").update({ documentId: activityId, data: { status: "ended" } });
+    const name = act.title;
+    const startTime = act.startTime;
+    // 未签到（attendedAt 为空）且未取消（status=active）的报名名单
+    const signs = await strapi.db.query(SIGNS_UID).findMany({
+      where: { activity: act.id, status: "active", attendedAt: { $null: true } },
+      populate: ["user"],
+    });
+    let triggered = 0;
+    for (const s of signs) {
+      const upUserId = s.user?.id ?? s.user;
+      if (!upUserId) continue;
+      try {
+        const sop = strapi.plugin("zhao-sso")?.service("sso-sop");
+        if (!sop) continue;
+        const sso = await sop.resolveSsoUserForUpUser(upUserId);
+        if (!sso) continue;
+        await sop.trigger("activity.closed", {
+          user: sso.id,
+          payload: { activity: { name, startTime } },
+          schedules: [{ templateCode: "act_revisit", scene: "activity.closed" }],
+        });
+        triggered++;
+      } catch (e: any) {
+        strapi.log.warn(`[zhao-point:activity] sop activity.closed embed failed (user=${upUserId}): ${e.message}`);
+      }
+    }
+    return { ok: true, closed: true, revisitTriggered: triggered };
   },
 
   async cancel({ userId, activityId }: { userId: number; activityId: number }) {

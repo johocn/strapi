@@ -189,12 +189,19 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       return job;
     },
 
-    /** 拉取待发送任务（供 cron 进程调度） */
-    async listPendingJobsForSend(limit = 50) {
+    /** 拉取待发送任务（供 cron 进程调度）。dueOnly=true 时只取已到发送时间的任务 */
+    async listPendingJobsForSend(limit = 50, dueOnly = false) {
+      const now = new Date();
+      const where: any = { status: "pending" };
+      if (dueOnly) {
+        where.$or = [
+          { scheduled_at: null },
+          { scheduled_at: { $lte: now } },
+          { next_retry_at: { $lte: now } },
+        ];
+      }
       return strapi.db.query(MSG_JOB_UID).findMany({
-        where: {
-          status: "pending",
-        },
+        where,
         populate: { template: true },
         orderBy: { scheduled_at: "ASC" },
         limit,

@@ -1511,6 +1511,8 @@ export interface PluginZhaoCommonSiteConfig
       Schema.Attribute.SetMinMaxLength<{
         maxLength: 100;
       }>;
+    speedPrivilegedRoles: Schema.Attribute.JSON &
+      Schema.Attribute.DefaultTo<['admin']>;
     studio_sync_events: Schema.Attribute.Relation<
       'oneToMany',
       'plugin::zhao-studio.sync-event'
@@ -1725,9 +1727,13 @@ export interface PluginZhaoCourseCourse extends Struct.CollectionTypeSchema {
       'oneToMany',
       'plugin::zhao-quiz.quiz-exam'
     >;
+    featureFlags: Schema.Attribute.JSON &
+      Schema.Attribute.CustomField<'plugin::zhao-course.featureFlags'>;
     isFeatured: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
     isFree: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
     isPaid: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    isRecommended: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    isTop: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
     keywords: Schema.Attribute.JSON;
     language: Schema.Attribute.Enumeration<
       ['zh-CN', 'zh-TW', 'en-US', 'ja-JP', 'ko-KR']
@@ -4068,6 +4074,158 @@ export interface PluginZhaoOssSyncRecord extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface PluginZhaoPointActivity extends Struct.CollectionTypeSchema {
+  collectionName: 'activities';
+  info: {
+    description: '\u7EBF\u4E0B\u6D3B\u52A8';
+    displayName: 'Activity';
+    pluralName: 'activities';
+    singularName: 'activity';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    i18n: {
+      localized: false;
+    };
+  };
+  attributes: {
+    capacity: Schema.Attribute.Integer &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<100>;
+    channelIds: Schema.Attribute.JSON;
+    channelScope: Schema.Attribute.Enumeration<['all', 'specific']> &
+      Schema.Attribute.DefaultTo<'all'>;
+    checkinMode: Schema.Attribute.Enumeration<['worker_scan', 'self', 'both']> &
+      Schema.Attribute.DefaultTo<'both'>;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    description: Schema.Attribute.Text;
+    endTime: Schema.Attribute.DateTime;
+    geoEnforced: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    geoRadiusM: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<500>;
+    lat: Schema.Attribute.Float;
+    learningPackageArticles: Schema.Attribute.Relation<
+      'manyToMany',
+      'plugin::zhao-website.article'
+    >;
+    learningPackageLessons: Schema.Attribute.Relation<
+      'manyToMany',
+      'plugin::zhao-course.course-lesson'
+    >;
+    lng: Schema.Attribute.Float;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-point.activity'
+    > &
+      Schema.Attribute.Private;
+    preUnlockArticles: Schema.Attribute.Relation<
+      'manyToMany',
+      'plugin::zhao-website.article'
+    >;
+    preUnlockLessons: Schema.Attribute.Relation<
+      'manyToMany',
+      'plugin::zhao-course.course-lesson'
+    >;
+    publishedAt: Schema.Attribute.DateTime;
+    signupEnd: Schema.Attribute.DateTime;
+    signupStart: Schema.Attribute.DateTime;
+    startTime: Schema.Attribute.DateTime;
+    status: Schema.Attribute.Enumeration<
+      ['draft', 'signup_open', 'ongoing', 'ended']
+    > &
+      Schema.Attribute.DefaultTo<'draft'>;
+    title: Schema.Attribute.String & Schema.Attribute.Required;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    usedCapacity: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    venueName: Schema.Attribute.String;
+  };
+}
+
+export interface PluginZhaoPointActivityAttendance
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'activity_attendances';
+  info: {
+    displayName: 'Activity Attendance';
+    pluralName: 'activity-attendances';
+    singularName: 'activity-attendance';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    checkinAt: Schema.Attribute.DateTime;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    geoPassed: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    lat: Schema.Attribute.Float;
+    lng: Schema.Attribute.Float;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-point.activity-attendance'
+    > &
+      Schema.Attribute.Private;
+    method: Schema.Attribute.Enumeration<['worker_scan', 'self']> &
+      Schema.Attribute.DefaultTo<'self'>;
+    pointsGranted: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    publishedAt: Schema.Attribute.DateTime;
+    signup: Schema.Attribute.Relation<
+      'oneToOne',
+      'plugin::zhao-point.activity-signup'
+    >;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface PluginZhaoPointActivitySignup
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'activity_signups';
+  info: {
+    displayName: 'Activity Signup';
+    pluralName: 'activity-signups';
+    singularName: 'activity-signup';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    activity: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-point.activity'
+    >;
+    attendedAt: Schema.Attribute.DateTime;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-point.activity-signup'
+    > &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    signupAt: Schema.Attribute.DateTime;
+    status: Schema.Attribute.Enumeration<['active', 'cancelled']> &
+      Schema.Attribute.DefaultTo<'active'>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    user: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
+  };
+}
+
 export interface PluginZhaoPointChannelVerification
   extends Struct.CollectionTypeSchema {
   collectionName: 'zhao_channel_verifications';
@@ -4873,6 +5031,7 @@ export interface PluginZhaoQuizQuizExam extends Struct.CollectionTypeSchema {
       Schema.Attribute.Private;
     deletedAt: Schema.Attribute.DateTime;
     description: Schema.Attribute.Text;
+    knowledgeScope: Schema.Attribute.JSON & Schema.Attribute.DefaultTo<'[]'>;
     lesson: Schema.Attribute.Relation<
       'manyToOne',
       'plugin::zhao-course.course-lesson'
@@ -4884,6 +5043,9 @@ export interface PluginZhaoQuizQuizExam extends Struct.CollectionTypeSchema {
     > &
       Schema.Attribute.Private;
     maxAttempts: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    paperRule: Schema.Attribute.JSON;
+    paperType: Schema.Attribute.Enumeration<['fixed', 'rule']> &
+      Schema.Attribute.DefaultTo<'fixed'>;
     passScore: Schema.Attribute.Decimal & Schema.Attribute.DefaultTo<60>;
     publishedAt: Schema.Attribute.DateTime;
     questionCount: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
@@ -4894,6 +5056,7 @@ export interface PluginZhaoQuizQuizExam extends Struct.CollectionTypeSchema {
     >;
     randomOrder: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
     showResult: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    shuffle: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
     timeLimit: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
     title: Schema.Attribute.String & Schema.Attribute.Required;
     totalPoints: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
@@ -4979,6 +5142,12 @@ export interface PluginZhaoQuizQuizRecord extends Struct.CollectionTypeSchema {
       'plugin::zhao-quiz.quiz-record'
     > &
       Schema.Attribute.Private;
+    mode: Schema.Attribute.Enumeration<['practice', 'exam']> &
+      Schema.Attribute.DefaultTo<'practice'>;
+    practiceType: Schema.Attribute.Enumeration<
+      ['knowledge', 'random', 'simulate', 'wrong', 'free']
+    > &
+      Schema.Attribute.DefaultTo<'knowledge'>;
     publishedAt: Schema.Attribute.DateTime;
     quiz: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-quiz.quiz'>;
     score: Schema.Attribute.Decimal & Schema.Attribute.DefaultTo<0>;
@@ -4996,6 +5165,193 @@ export interface PluginZhaoQuizQuizRecord extends Struct.CollectionTypeSchema {
       'manyToOne',
       'plugin::users-permissions.user'
     >;
+  };
+}
+
+export interface PluginZhaoQuizWrongQuiz extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_wrong_quizzes';
+  info: {
+    displayName: '\u9519\u9898\u96C6';
+    pluralName: 'wrong-quizzes';
+    singularName: 'wrong-quiz';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    consecutiveCorrect: Schema.Attribute.Integer &
+      Schema.Attribute.DefaultTo<0>;
+    course: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-course.course'
+    >;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    dueAt: Schema.Attribute.DateTime;
+    knowledgePointName: Schema.Attribute.String;
+    lastCorrectAt: Schema.Attribute.DateTime;
+    lastWrongAt: Schema.Attribute.DateTime;
+    lesson: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-course.course-lesson'
+    >;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-quiz.wrong-quiz'
+    > &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    quiz: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-quiz.quiz'>;
+    reviewLevel: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<1>;
+    status: Schema.Attribute.Enumeration<['active', 'archived']> &
+      Schema.Attribute.DefaultTo<'active'>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    user: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
+    wrongCount: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<1>;
+  };
+}
+
+export interface PluginZhaoSsoMsgJob extends Struct.CollectionTypeSchema {
+  collectionName: 'sso_msg_jobs';
+  info: {
+    displayName: 'SSO Msg Job';
+    pluralName: 'msg-jobs';
+    singularName: 'msg-job';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    dedupeKey: Schema.Attribute.String & Schema.Attribute.Unique;
+    link: Schema.Attribute.String;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-sso.msg-job'
+    > &
+      Schema.Attribute.Private;
+    nextRetryAt: Schema.Attribute.DateTime;
+    params: Schema.Attribute.JSON;
+    provider: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'wechat'>;
+    publishedAt: Schema.Attribute.DateTime;
+    result: Schema.Attribute.JSON;
+    retryCount: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    scene: Schema.Attribute.String & Schema.Attribute.Required;
+    scheduledAt: Schema.Attribute.DateTime;
+    sentAt: Schema.Attribute.DateTime;
+    status: Schema.Attribute.Enumeration<
+      ['pending', 'sending', 'sent', 'failed', 'cancelled']
+    > &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'pending'>;
+    template: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-sso.msg-template'
+    >;
+    toTarget: Schema.Attribute.String;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    user: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-sso.sso-user'>;
+    wxMsgId: Schema.Attribute.String;
+  };
+}
+
+export interface PluginZhaoSsoMsgTemplate extends Struct.CollectionTypeSchema {
+  collectionName: 'sso_msg_templates';
+  info: {
+    displayName: 'SSO Msg Template';
+    pluralName: 'msg-templates';
+    singularName: 'msg-template';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    code: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.Unique;
+    content: Schema.Attribute.Text;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    description: Schema.Attribute.Text;
+    isEnabled: Schema.Attribute.Boolean &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<true>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-sso.msg-template'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    provider: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'wechat'>;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    wxTemplateFields: Schema.Attribute.JSON;
+    wxTemplateId: Schema.Attribute.String;
+  };
+}
+
+export interface PluginZhaoSsoSopRule extends Struct.CollectionTypeSchema {
+  collectionName: 'sso_sop_rules';
+  info: {
+    displayName: 'SSO SOP Rule';
+    pluralName: 'sop-rules';
+    singularName: 'sop-rule';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    code: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.Unique;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    cronExpression: Schema.Attribute.String;
+    delayMinutes: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    description: Schema.Attribute.Text;
+    enabled: Schema.Attribute.Boolean &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<true>;
+    event: Schema.Attribute.String;
+    link: Schema.Attribute.Text;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-sso.sop-rule'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    paramsTemplate: Schema.Attribute.JSON;
+    publishedAt: Schema.Attribute.DateTime;
+    scene: Schema.Attribute.String & Schema.Attribute.Required;
+    source: Schema.Attribute.Enumeration<['event', 'cron']> &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'event'>;
+    templateCode: Schema.Attribute.String;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
   };
 }
 
@@ -5426,6 +5782,9 @@ export interface PluginZhaoSsoSsoThirdPartyBinding
     provider_union_id: Schema.Attribute.String;
     provider_user_id: Schema.Attribute.String & Schema.Attribute.Required;
     publishedAt: Schema.Attribute.DateTime;
+    subscribe: Schema.Attribute.Integer;
+    subscribe_at: Schema.Attribute.DateTime;
+    subscribe_check_at: Schema.Attribute.DateTime;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -10078,6 +10437,9 @@ declare module '@strapi/strapi' {
       'plugin::zhao-logistics.tracking-shipment': PluginZhaoLogisticsTrackingShipment;
       'plugin::zhao-oss.media-meta': PluginZhaoOssMediaMeta;
       'plugin::zhao-oss.sync-record': PluginZhaoOssSyncRecord;
+      'plugin::zhao-point.activity': PluginZhaoPointActivity;
+      'plugin::zhao-point.activity-attendance': PluginZhaoPointActivityAttendance;
+      'plugin::zhao-point.activity-signup': PluginZhaoPointActivitySignup;
       'plugin::zhao-point.channel-verification': PluginZhaoPointChannelVerification;
       'plugin::zhao-point.pickup-location': PluginZhaoPointPickupLocation;
       'plugin::zhao-point.point-config': PluginZhaoPointPointConfig;
@@ -10093,6 +10455,10 @@ declare module '@strapi/strapi' {
       'plugin::zhao-quiz.quiz-exam': PluginZhaoQuizQuizExam;
       'plugin::zhao-quiz.quiz-exam-attempt': PluginZhaoQuizQuizExamAttempt;
       'plugin::zhao-quiz.quiz-record': PluginZhaoQuizQuizRecord;
+      'plugin::zhao-quiz.wrong-quiz': PluginZhaoQuizWrongQuiz;
+      'plugin::zhao-sso.msg-job': PluginZhaoSsoMsgJob;
+      'plugin::zhao-sso.msg-template': PluginZhaoSsoMsgTemplate;
+      'plugin::zhao-sso.sop-rule': PluginZhaoSsoSopRule;
       'plugin::zhao-sso.sso-app': PluginZhaoSsoSsoApp;
       'plugin::zhao-sso.sso-auth-code': PluginZhaoSsoSsoAuthCode;
       'plugin::zhao-sso.sso-channel': PluginZhaoSsoSsoChannel;

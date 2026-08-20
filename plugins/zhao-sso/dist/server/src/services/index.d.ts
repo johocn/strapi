@@ -196,6 +196,7 @@ declare const _default: {
             oauthScopes: any;
             appId: any;
         }>;
+        querySubscribe(openid: string, provider?: string, appType?: "official_account" | "open_platform" | "mini_program" | "app"): Promise<0 | 1>;
     };
     "sso-alipay": ({ strapi }: {
         strapi: import('@strapi/types/dist/core').Strapi;
@@ -313,6 +314,53 @@ declare const _default: {
             message: string;
             skip?: boolean;
         }>;
+    };
+    "sso-msg": ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        buildJob(opts: {
+            user: number;
+            scene: string;
+            templateCode: string;
+            params?: Record<string, any>;
+            link?: string;
+            scheduledAt?: string;
+            dedupeKey?: string;
+        }): Promise<{
+            job: any;
+            skipped: boolean;
+        }>;
+        sendNow(opts: {
+            user: number;
+            scene: string;
+            templateCode: string;
+            params?: Record<string, any>;
+            link?: string;
+            dedupeKey?: string;
+        }): Promise<any>;
+        sendJob(jobId: number): Promise<any>;
+        getJob(jobId: number): Promise<any>;
+        listPendingJobsForSend(limit?: number, dueOnly?: boolean): Promise<any[]>;
+        refreshSubscribe(userId: number, appType?: string): Promise<any>;
+    };
+    "sso-sop": ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        resolveSsoUserForUpUser(upUserId: number): Promise<any>;
+        trigger(event: string, opts: {
+            user: number;
+            payload?: Record<string, any>;
+            schedules?: Array<{
+                templateCode: string;
+                scene?: string;
+                scheduledAt?: string;
+                delayMinutes?: number;
+                params?: Record<string, any>;
+                link?: string;
+                dedupeKey?: string;
+            }>;
+        }): Promise<any[]>;
+        runDueJobs(limit?: number): Promise<number>;
     };
 };
 export default _default;

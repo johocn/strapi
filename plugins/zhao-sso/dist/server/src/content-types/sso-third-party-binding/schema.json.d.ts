@@ -15,7 +15,10 @@ declare const _default: {
     "provider_nickname": { "type": "string" },
     "provider_avatar": { "type": "string" },
     "provider_data": { "type": "json" },
-    "bound_at": { "type": "datetime", "required": true }
+    "bound_at": { "type": "datetime", "required": true },
+    "subscribe": { "type": "integer" },
+    "subscribe_at": { "type": "datetime" },
+    "subscribe_check_at": { "type": "datetime" }
   }
 }
 ;

@@ -11,43 +11,50 @@ declare const _default: {
             draftAndPublish: boolean;
         };
         attributes: {
-            user: {
+            code: {
                 type: string;
-                relation: string;
-                target: string;
-                inversedBy: string;
+                unique: boolean;
+                required: boolean;
             };
-            provider: {
+            name: {
                 type: string;
                 required: boolean;
             };
-            provider_user_id: {
+            source: {
+                type: string;
+                enum: string[];
+                default: string;
+                required: boolean;
+            };
+            event: {
+                type: string;
+            };
+            cronExpression: {
+                type: string;
+            };
+            templateCode: {
+                type: string;
+            };
+            scene: {
                 type: string;
                 required: boolean;
             };
-            provider_union_id: {
+            delayMinutes: {
+                type: string;
+                default: number;
+            };
+            link: {
                 type: string;
             };
-            provider_nickname: {
+            paramsTemplate: {
                 type: string;
             };
-            provider_avatar: {
+            enabled: {
                 type: string;
-            };
-            provider_data: {
-                type: string;
-            };
-            bound_at: {
-                type: string;
+                default: boolean;
                 required: boolean;
             };
-            subscribe: {
-                type: string;
-            };
-            subscribe_at: {
-                type: string;
-            };
-            subscribe_check_at: {
+            description: {
                 type: string;
             };
         };

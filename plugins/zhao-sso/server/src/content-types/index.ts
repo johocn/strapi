@@ -14,6 +14,7 @@ import ssoOauthConfig from "./sso-oauth-config";
 import ssoSmsCode from "./sso-sms-code";
 import msgTemplate from "./msg-template";
 import msgJob from "./msg-job";
+import sopRule from "./sop-rule";
 
 export default {
   "sso-user": ssoUser,
@@ -32,4 +33,5 @@ export default {
   "sso-sms-code": ssoSmsCode,
   "msg-template": msgTemplate,
   "msg-job": msgJob,
+  "sop-rule": sopRule,
 };

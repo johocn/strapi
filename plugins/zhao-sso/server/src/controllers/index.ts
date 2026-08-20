@@ -13,6 +13,7 @@ import inviteUsageController from "./invite-usage-controller";
 import referralController from "./referral-controller";
 import smsCodeController from "./sms-code-controller";
 import messageController from "./message-controller";
+import sopController from "./sop-controller";
 
 export default {
   "auth-controller": authController,
@@ -30,4 +31,5 @@ export default {
   referral: referralController,
   "sms-code": smsCodeController,
   message: messageController,
+  sop: sopController,
 };

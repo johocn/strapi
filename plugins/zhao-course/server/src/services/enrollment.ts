@@ -77,6 +77,29 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         },
       });
     }
+
+    // 获课成功埋点 → 课后SOP（课程购课/报名成功）
+    try {
+      const course = await strapi.db.query(COURSE_UID).findOne({
+        where: { id: courseId },
+        select: ["title"],
+      });
+      const sop = strapi.plugin("zhao-sso").service("sso-sop");
+      const sso = await sop.resolveSsoUserForUpUser(userId); // 按标识匹配, 匹配不到返回 null
+      if (sso) {
+        await sop.trigger("course.enrolled", {
+          user: sso.id,
+          payload: { course: { title: course?.title || "" } },
+          schedules: [
+            { templateCode: "course_d7", scene: "course.d7", delayMinutes: 1 * 24 * 60 },
+            { templateCode: "course_d7", scene: "course.d7", delayMinutes: 3 * 24 * 60 },
+            { templateCode: "course_d7", scene: "course.d7", delayMinutes: 7 * 24 * 60 },
+          ],
+        });
+      }
+    } catch (err: any) {
+      strapi.log.warn(`[course] course.enrolled 埋点失败: ${err?.message || err}`);
+    }
   }
 
   return {

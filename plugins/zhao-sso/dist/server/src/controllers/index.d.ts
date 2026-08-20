@@ -123,5 +123,28 @@ declare const _default: {
         list(ctx: any): Promise<void>;
         delete(ctx: any): Promise<void>;
     };
+    message: ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        listTemplates(ctx: any): Promise<void>;
+        getTemplate(ctx: any): Promise<void>;
+        createTemplate(ctx: any): Promise<void>;
+        updateTemplate(ctx: any): Promise<void>;
+        deleteTemplate(ctx: any): Promise<void>;
+        listJobs(ctx: any): Promise<void>;
+        getJob(ctx: any): Promise<void>;
+        sendNow(ctx: any): Promise<void>;
+        sendBatch(ctx: any): Promise<void>;
+        retryJob(ctx: any): Promise<void>;
+        refreshSubscribe(ctx: any): Promise<void>;
+    };
+    sop: ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        list(ctx: any): Promise<void>;
+        create(ctx: any): Promise<void>;
+        update(ctx: any): Promise<void>;
+        delete(ctx: any): Promise<void>;
+    };
 };
 export default _default;

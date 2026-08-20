@@ -2921,6 +2921,27 @@ const enrollment = ({ strapi }) => {
         }
       });
     }
+    try {
+      const course2 = await strapi.db.query(COURSE_UID$1).findOne({
+        where: { id: courseId },
+        select: ["title"]
+      });
+      const sop = strapi.plugin("zhao-sso").service("sso-sop");
+      const sso = await sop.resolveSsoUserForUpUser(userId);
+      if (sso) {
+        await sop.trigger("course.enrolled", {
+          user: sso.id,
+          payload: { course: { title: course2?.title || "" } },
+          schedules: [
+            { templateCode: "course_d7", scene: "course.d7", delayMinutes: 1 * 24 * 60 },
+            { templateCode: "course_d7", scene: "course.d7", delayMinutes: 3 * 24 * 60 },
+            { templateCode: "course_d7", scene: "course.d7", delayMinutes: 7 * 24 * 60 }
+          ]
+        });
+      }
+    } catch (err) {
+      strapi.log.warn(`[course] course.enrolled 埋点失败: ${err?.message || err}`);
+    }
   }
   return {
     async find(query = {}) {

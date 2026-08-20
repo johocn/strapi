@@ -159,6 +159,15 @@ declare const _default: {
                         type: string;
                         required: boolean;
                     };
+                    subscribe: {
+                        type: string;
+                    };
+                    subscribe_at: {
+                        type: string;
+                    };
+                    subscribe_check_at: {
+                        type: string;
+                    };
                 };
             };
         };
@@ -697,6 +706,188 @@ declare const _default: {
                 };
             };
         };
+        "msg-template": {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                attributes: {
+                    code: {
+                        type: string;
+                        unique: boolean;
+                        required: boolean;
+                    };
+                    name: {
+                        type: string;
+                        required: boolean;
+                    };
+                    provider: {
+                        type: string;
+                        default: string;
+                        required: boolean;
+                    };
+                    wxTemplateId: {
+                        type: string;
+                    };
+                    wxTemplateFields: {
+                        type: string;
+                    };
+                    content: {
+                        type: string;
+                    };
+                    isEnabled: {
+                        type: string;
+                        default: boolean;
+                        required: boolean;
+                    };
+                    description: {
+                        type: string;
+                    };
+                };
+            };
+        };
+        "msg-job": {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                attributes: {
+                    user: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                    };
+                    scene: {
+                        type: string;
+                        required: boolean;
+                    };
+                    template: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                    };
+                    provider: {
+                        type: string;
+                        default: string;
+                        required: boolean;
+                    };
+                    toTarget: {
+                        type: string;
+                    };
+                    params: {
+                        type: string;
+                    };
+                    link: {
+                        type: string;
+                    };
+                    status: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                        required: boolean;
+                    };
+                    retryCount: {
+                        type: string;
+                        default: number;
+                    };
+                    nextRetryAt: {
+                        type: string;
+                    };
+                    wxMsgId: {
+                        type: string;
+                    };
+                    result: {
+                        type: string;
+                    };
+                    scheduledAt: {
+                        type: string;
+                    };
+                    sentAt: {
+                        type: string;
+                    };
+                    dedupeKey: {
+                        type: string;
+                        unique: boolean;
+                    };
+                };
+            };
+        };
+        "sop-rule": {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                attributes: {
+                    code: {
+                        type: string;
+                        unique: boolean;
+                        required: boolean;
+                    };
+                    name: {
+                        type: string;
+                        required: boolean;
+                    };
+                    source: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                        required: boolean;
+                    };
+                    event: {
+                        type: string;
+                    };
+                    cronExpression: {
+                        type: string;
+                    };
+                    templateCode: {
+                        type: string;
+                    };
+                    scene: {
+                        type: string;
+                        required: boolean;
+                    };
+                    delayMinutes: {
+                        type: string;
+                        default: number;
+                    };
+                    link: {
+                        type: string;
+                    };
+                    paramsTemplate: {
+                        type: string;
+                    };
+                    enabled: {
+                        type: string;
+                        default: boolean;
+                        required: boolean;
+                    };
+                    description: {
+                        type: string;
+                    };
+                };
+            };
+        };
     };
     controllers: {
         "auth-controller": ({ strapi }: {
@@ -821,6 +1012,29 @@ declare const _default: {
             strapi: import('@strapi/types/dist/core').Strapi;
         }) => {
             list(ctx: any): Promise<void>;
+            delete(ctx: any): Promise<void>;
+        };
+        message: ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            listTemplates(ctx: any): Promise<void>;
+            getTemplate(ctx: any): Promise<void>;
+            createTemplate(ctx: any): Promise<void>;
+            updateTemplate(ctx: any): Promise<void>;
+            deleteTemplate(ctx: any): Promise<void>;
+            listJobs(ctx: any): Promise<void>;
+            getJob(ctx: any): Promise<void>;
+            sendNow(ctx: any): Promise<void>;
+            sendBatch(ctx: any): Promise<void>;
+            retryJob(ctx: any): Promise<void>;
+            refreshSubscribe(ctx: any): Promise<void>;
+        };
+        sop: ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            list(ctx: any): Promise<void>;
+            create(ctx: any): Promise<void>;
+            update(ctx: any): Promise<void>;
             delete(ctx: any): Promise<void>;
         };
     };
@@ -1057,6 +1271,7 @@ declare const _default: {
                 oauthScopes: any;
                 appId: any;
             }>;
+            querySubscribe(openid: string, provider?: string, appType?: "official_account" | "open_platform" | "mini_program" | "app"): Promise<0 | 1>;
         };
         "sso-alipay": ({ strapi }: {
             strapi: import('@strapi/types/dist/core').Strapi;
@@ -1174,6 +1389,53 @@ declare const _default: {
                 message: string;
                 skip?: boolean;
             }>;
+        };
+        "sso-msg": ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            buildJob(opts: {
+                user: number;
+                scene: string;
+                templateCode: string;
+                params?: Record<string, any>;
+                link?: string;
+                scheduledAt?: string;
+                dedupeKey?: string;
+            }): Promise<{
+                job: any;
+                skipped: boolean;
+            }>;
+            sendNow(opts: {
+                user: number;
+                scene: string;
+                templateCode: string;
+                params?: Record<string, any>;
+                link?: string;
+                dedupeKey?: string;
+            }): Promise<any>;
+            sendJob(jobId: number): Promise<any>;
+            getJob(jobId: number): Promise<any>;
+            listPendingJobsForSend(limit?: number, dueOnly?: boolean): Promise<any[]>;
+            refreshSubscribe(userId: number, appType?: string): Promise<any>;
+        };
+        "sso-sop": ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            resolveSsoUserForUpUser(upUserId: number): Promise<any>;
+            trigger(event: string, opts: {
+                user: number;
+                payload?: Record<string, any>;
+                schedules?: Array<{
+                    templateCode: string;
+                    scene?: string;
+                    scheduledAt?: string;
+                    delayMinutes?: number;
+                    params?: Record<string, any>;
+                    link?: string;
+                    dedupeKey?: string;
+                }>;
+            }): Promise<any[]>;
+            runDueJobs(limit?: number): Promise<number>;
         };
     };
     policies: {

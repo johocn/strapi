@@ -128,6 +128,15 @@ declare const _default: {
                     type: string;
                     required: boolean;
                 };
+                subscribe: {
+                    type: string;
+                };
+                subscribe_at: {
+                    type: string;
+                };
+                subscribe_check_at: {
+                    type: string;
+                };
             };
         };
     };
@@ -662,6 +671,188 @@ declare const _default: {
                 provider: {
                     type: string;
                     default: string;
+                };
+            };
+        };
+    };
+    "msg-template": {
+        schema: {
+            kind: string;
+            collectionName: string;
+            info: {
+                singularName: string;
+                pluralName: string;
+                displayName: string;
+            };
+            options: {
+                draftAndPublish: boolean;
+            };
+            attributes: {
+                code: {
+                    type: string;
+                    unique: boolean;
+                    required: boolean;
+                };
+                name: {
+                    type: string;
+                    required: boolean;
+                };
+                provider: {
+                    type: string;
+                    default: string;
+                    required: boolean;
+                };
+                wxTemplateId: {
+                    type: string;
+                };
+                wxTemplateFields: {
+                    type: string;
+                };
+                content: {
+                    type: string;
+                };
+                isEnabled: {
+                    type: string;
+                    default: boolean;
+                    required: boolean;
+                };
+                description: {
+                    type: string;
+                };
+            };
+        };
+    };
+    "msg-job": {
+        schema: {
+            kind: string;
+            collectionName: string;
+            info: {
+                singularName: string;
+                pluralName: string;
+                displayName: string;
+            };
+            options: {
+                draftAndPublish: boolean;
+            };
+            attributes: {
+                user: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                };
+                scene: {
+                    type: string;
+                    required: boolean;
+                };
+                template: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                };
+                provider: {
+                    type: string;
+                    default: string;
+                    required: boolean;
+                };
+                toTarget: {
+                    type: string;
+                };
+                params: {
+                    type: string;
+                };
+                link: {
+                    type: string;
+                };
+                status: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                    required: boolean;
+                };
+                retryCount: {
+                    type: string;
+                    default: number;
+                };
+                nextRetryAt: {
+                    type: string;
+                };
+                wxMsgId: {
+                    type: string;
+                };
+                result: {
+                    type: string;
+                };
+                scheduledAt: {
+                    type: string;
+                };
+                sentAt: {
+                    type: string;
+                };
+                dedupeKey: {
+                    type: string;
+                    unique: boolean;
+                };
+            };
+        };
+    };
+    "sop-rule": {
+        schema: {
+            kind: string;
+            collectionName: string;
+            info: {
+                singularName: string;
+                pluralName: string;
+                displayName: string;
+            };
+            options: {
+                draftAndPublish: boolean;
+            };
+            attributes: {
+                code: {
+                    type: string;
+                    unique: boolean;
+                    required: boolean;
+                };
+                name: {
+                    type: string;
+                    required: boolean;
+                };
+                source: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                    required: boolean;
+                };
+                event: {
+                    type: string;
+                };
+                cronExpression: {
+                    type: string;
+                };
+                templateCode: {
+                    type: string;
+                };
+                scene: {
+                    type: string;
+                    required: boolean;
+                };
+                delayMinutes: {
+                    type: string;
+                    default: number;
+                };
+                link: {
+                    type: string;
+                };
+                paramsTemplate: {
+                    type: string;
+                };
+                enabled: {
+                    type: string;
+                    default: boolean;
+                    required: boolean;
+                };
+                description: {
+                    type: string;
                 };
             };
         };

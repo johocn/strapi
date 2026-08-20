@@ -34,8 +34,8 @@ declare const _default: ({ strapi }: {
      */
     sendJob(jobId: number): Promise<any>;
     getJob(jobId: number): Promise<any>;
-    /** 拉取待发送任务（供 cron 进程调度） */
-    listPendingJobsForSend(limit?: number): Promise<any[]>;
+    /** 拉取待发送任务（供 cron 进程调度）。dueOnly=true 时只取已到发送时间的任务 */
+    listPendingJobsForSend(limit?: number, dueOnly?: boolean): Promise<any[]>;
     /** 查询/刷新用户公众号关注状态，落库到 sso-third-party-binding.subscribe */
     refreshSubscribe(userId: number, appType?: string): Promise<any>;
 };

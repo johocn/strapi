@@ -107,6 +107,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
 
       return {
         ...tokenPair,
+        ssoUserId: user.id,
         user: sanitizeUser(user),
       };
     }
@@ -147,6 +148,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
 
       return {
         ...tokenPair,
+        ssoUserId: user.id,
         user: sanitizeUser(user),
       };
     }
@@ -207,6 +209,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
 
     return {
       ...tokenPair,
+      ssoUserId: user.id,
       user: sanitizeUser(user),
     };
   };

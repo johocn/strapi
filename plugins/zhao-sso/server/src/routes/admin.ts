@@ -106,5 +106,11 @@ export default () => ({
     adminRoute("POST", "/msg-jobs/batch", "message.sendBatch", "sso.msg.write"),
     adminRoute("POST", "/msg-jobs/:id/retry", "message.retryJob", "sso.msg.write"),
     adminRoute("GET", "/users/:id/subscribe", "message.refreshSubscribe", "sso.user-read"),
+
+    // 自动化 SOP 规则
+    adminRoute("GET", "/sop-rules", "sop.list", "sso.msg.read"),
+    adminRoute("POST", "/sop-rules", "sop.create", "sso.msg.write"),
+    adminRoute("PUT", "/sop-rules/:id", "sop.update", "sso.msg.write"),
+    adminRoute("DELETE", "/sop-rules/:id", "sop.delete", "sso.msg.write"),
   ],
 });

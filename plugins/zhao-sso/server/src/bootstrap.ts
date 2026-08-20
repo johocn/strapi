@@ -124,6 +124,22 @@ const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
       strapi.log.info(`[zhao-sso] Vendure app created (app_code=${app_code})`);
     }
   }
+
+  // Seed 默认自动化 SOP 规则（幂等按 code；运营可在后台改 templateCode/enabled/delay）
+  const RULE_UID = "plugin::zhao-sso.sop-rule";
+  const DEFAULT_SOP_RULES = [
+    { code: "act_confirm", name: "活动报名成功确认", source: "event", event: "activity.signup", templateCode: "act_confirm", scene: "activity.confirm", delayMinutes: 0, enabled: true, description: "报名成功立即发送" },
+    { code: "act_before", name: "活动开始前提醒", source: "event", event: "activity.signup", templateCode: "act_before", scene: "activity.before", delayMinutes: 0, enabled: true, description: "业务按活动开始时间排期覆盖定时" },
+    { code: "act_noshow_revisit", name: "未到场回访", source: "event", event: "activity.closed", templateCode: "act_noshow_revisit", scene: "activity.noshow", delayMinutes: 0, enabled: true, description: "活动结束后对未签到者回访" },
+    { code: "course_d7", name: "课后7天SOP", source: "event", event: "course.enrolled", templateCode: "course_d7", scene: "course.d7", delayMinutes: 0, enabled: true, description: "购课/报名后按 1/3/7 天排期发送" },
+  ];
+  for (const rule of DEFAULT_SOP_RULES) {
+    const existing = await strapi.db.query(RULE_UID).findOne({ where: { code: rule.code } });
+    if (!existing) {
+      await strapi.db.query(RULE_UID).create({ data: rule });
+      strapi.log.info(`[zhao-sso] SOP rule seeded: ${rule.code}`);
+    }
+  }
 };
 
 export default bootstrap;

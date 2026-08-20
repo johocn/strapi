@@ -1,0 +1,26 @@
+declare const _default: {
+  "kind": "collectionType",
+  "collectionName": "sso_sop_rules",
+  "info": {
+    "singularName": "sop-rule",
+    "pluralName": "sop-rules",
+    "displayName": "SSO SOP Rule"
+  },
+  "options": { "draftAndPublish": false },
+  "attributes": {
+    "code": { "type": "string", "unique": true, "required": true },
+    "name": { "type": "string", "required": true },
+    "source": { "type": "enumeration", "enum": ["event", "cron"], "default": "event", "required": true },
+    "event": { "type": "string" },
+    "cronExpression": { "type": "string" },
+    "templateCode": { "type": "string" },
+    "scene": { "type": "string", "required": true },
+    "delayMinutes": { "type": "integer", "default": 0 },
+    "link": { "type": "text" },
+    "paramsTemplate": { "type": "json" },
+    "enabled": { "type": "boolean", "default": true, "required": true },
+    "description": { "type": "text" }
+  }
+};
+
+export default _default;

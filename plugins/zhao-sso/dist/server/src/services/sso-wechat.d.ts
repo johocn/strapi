@@ -20,5 +20,10 @@ declare const _default: ({ strapi }: {
         oauthScopes: any;
         appId: any;
     }>;
+    /**
+     * 查询用户是否关注公众号(subscribe)
+     * 调 cgi-bin/user/info + 全局 access_token，返回 subscribe(1关注/0未关注)
+     */
+    querySubscribe(openid: string, provider?: string, appType?: WechatAppType): Promise<0 | 1>;
 };
 export default _default;
