@@ -59,6 +59,11 @@ declare const _default: ({ strapi }: {
         point: any;
     } | {
         ok: boolean;
+        reason: string;
+        attendanceId?: undefined;
+        point?: undefined;
+    } | {
+        ok: boolean;
         attendanceId: any;
         point: boolean;
         reason?: undefined;

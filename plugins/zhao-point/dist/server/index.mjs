@@ -4130,6 +4130,15 @@ const activity = ({ strapi }) => ({
     if (!signup) throw new Error("未报名");
     await strapi.db.query(SIGNS_UID).update({ where: { id: signup.id }, data: { status: "cancelled" } });
     if (signup.status === "active") {
+      const act = await strapi.db.query(ACTIVITY_UID$2).findOne({ where: { id: activityId } });
+      if ((act?.feeCollectAt || "signup") === "signup" && signup.pointsCharged > 0) {
+        const userChannelId = await resolveUserChannelId(strapi, userId);
+        try {
+          await strapi.plugin("zhao-point").service("point").refundPoints({ userId, action: "activity_fee_refund", points: signup.pointsCharged, source: "activity", method: "activity_cancel", remark: `取消退费:${act?.title ?? ""}`, userChannelId });
+        } catch (e) {
+          strapi.log.warn(`[zhao-point:activity] refund failed (user=${userId}): ${e?.message}`);
+        }
+      }
       await strapi.db.connection("activities").where("id", activityId).decrement("used_capacity", 1);
       await this.promoteWaiting(activityId);
     }
@@ -4207,6 +4216,14 @@ const activity = ({ strapi }) => ({
     if (method === "self" && act.geoEnforced && typeof lat === "number" && typeof lng === "number") {
       geoPassed = haversineM(lat, lng, act.lat, act.lng) <= act.geoRadiusM;
       if (!geoPassed) throw new Error("不在活动场地范围内");
+    }
+    if ((act.feeCollectAt || "signup") === "checkin" && (act.pointsCost || 0) > 0) {
+      const userChannelId = await resolveUserChannelId(strapi, userId);
+      try {
+        await strapi.plugin("zhao-point").service("point").deductPoints({ userId, action: "activity_fee", points: act.pointsCost, source: "activity", method: "activity_checkin", remark: `到场收费:${act.title}`, orderId: `act:${act.documentId}`, userChannelId });
+      } catch (e) {
+        return { ok: false, reason: "insufficient_points" };
+      }
     }
     const att = await strapi.db.query(ATT_UID).create({
       data: { signup: signup.id, method, checkinAt: /* @__PURE__ */ new Date(), lat, lng, geoPassed, pointsGranted: false }
