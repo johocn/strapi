@@ -169,12 +169,27 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     async sendJob(jobId: number) {
       const job = await strapi.db.query(MSG_JOB_UID).findOne({
         where: { id: jobId },
-        populate: { template: true, version: true },
+        populate: { template: true, version: true, user: true },
       });
       if (!job) throwErr("SSO_MSG_JOB_404", 404, "消息任务不存在");
       if (job.status === "sent") return job;
       if (!job.template) throwErr("SSO_MSG_JOB_500", 500, "任务缺少模板");
       if (job.status === "failed" && job.retryCount >= MAX_RETRY) return job;
+
+      // 触达频控：按用户每日上限 + 场景冷却在发送前拦截，超限置终态 quota_limited
+      const qUserId = typeof job.user === "number" ? job.user : job.user?.id;
+      const quota = await strapi
+        .plugin("zhao-sso")
+        .service("sso-quota")
+        .evaluate({ userId: qUserId, scene: job.scene, templateId: job.template?.id });
+      if (!quota.allowed) {
+        strapi.log.warn(`[zhao-sso:msg] sent blocked by quota (user=${qUserId}, scene=${job.scene}): ${quota.reason}`);
+        await strapi.db.query(MSG_JOB_UID).update({
+          where: { id: job.id },
+          data: { status: "quota_limited", result: { reason: quota.reason, scene: job.scene, detail: quota.detail || null } },
+        });
+        return this.getJob(job.id);
+      }
 
       await strapi.db.query(MSG_JOB_UID).update({ where: { id: job.id }, data: { status: "sending" } });
 

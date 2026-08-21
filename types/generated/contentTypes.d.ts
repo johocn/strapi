@@ -5371,7 +5371,7 @@ export interface PluginZhaoSsoMsgJob extends Struct.CollectionTypeSchema {
     scheduledAt: Schema.Attribute.DateTime;
     sentAt: Schema.Attribute.DateTime;
     status: Schema.Attribute.Enumeration<
-      ['pending', 'sending', 'sent', 'failed', 'cancelled']
+      ['pending', 'sending', 'sent', 'failed', 'cancelled', 'quota_limited']
     > &
       Schema.Attribute.Required &
       Schema.Attribute.DefaultTo<'pending'>;
@@ -5407,9 +5407,11 @@ export interface PluginZhaoSsoMsgTemplate extends Struct.CollectionTypeSchema {
       Schema.Attribute.Required &
       Schema.Attribute.Unique;
     content: Schema.Attribute.Text;
+    cooldownMinutes: Schema.Attribute.Integer;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+    dailyCap: Schema.Attribute.Integer;
     description: Schema.Attribute.Text;
     isEnabled: Schema.Attribute.Boolean &
       Schema.Attribute.Required &
@@ -5879,6 +5881,36 @@ export interface PluginZhaoSsoSsoOauthConfig
     publishedAt: Schema.Attribute.DateTime;
     redirect_uris: Schema.Attribute.JSON;
     scope: Schema.Attribute.String;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface PluginZhaoSsoSsoQuotaConfig
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'sso_quota_configs';
+  info: {
+    displayName: 'SSO Quota Config';
+    pluralName: 'sso-quota-configs';
+    singularName: 'sso-quota-config';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    cooldownMinutes: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<120>;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-sso.sso-quota-config'
+    > &
+      Schema.Attribute.Private;
+    maxDailyPerUser: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<10>;
+    publishedAt: Schema.Attribute.DateTime;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -10719,6 +10751,7 @@ declare module '@strapi/strapi' {
       'plugin::zhao-sso.sso-invite-usage': PluginZhaoSsoSsoInviteUsage;
       'plugin::zhao-sso.sso-login-log': PluginZhaoSsoSsoLoginLog;
       'plugin::zhao-sso.sso-oauth-config': PluginZhaoSsoSsoOauthConfig;
+      'plugin::zhao-sso.sso-quota-config': PluginZhaoSsoSsoQuotaConfig;
       'plugin::zhao-sso.sso-referral-relation': PluginZhaoSsoSsoReferralRelation;
       'plugin::zhao-sso.sso-sms-code': PluginZhaoSsoSsoSmsCode;
       'plugin::zhao-sso.sso-third-party-binding': PluginZhaoSsoSsoThirdPartyBinding;

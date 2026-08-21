@@ -42,6 +42,12 @@ declare const _default: {
             description: {
                 type: string;
             };
+            dailyCap: {
+                type: string;
+            };
+            cooldownMinutes: {
+                type: string;
+            };
         };
     };
 };

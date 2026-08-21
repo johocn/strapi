@@ -16,7 +16,7 @@ declare const _default: {
     "toTarget": { "type": "string" },
     "params": { "type": "json" },
     "link": { "type": "string" },
-    "status": { "type": "enumeration", "enum": ["pending", "sending", "sent", "failed", "cancelled"], "default": "pending", "required": true },
+    "status": { "type": "enumeration", "enum": ["pending", "sending", "sent", "failed", "cancelled", "quota_limited"], "default": "pending", "required": true },
     "retryCount": { "type": "integer", "default": 0 },
     "nextRetryAt": { "type": "datetime" },
     "wxMsgId": { "type": "string" },

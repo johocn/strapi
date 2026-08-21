@@ -497,5 +497,40 @@ declare const _default: {
             usedCapacity: any;
         }[]>;
     };
+    "sso-quota": ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        evaluate(opts: {
+            userId: number;
+            scene: string;
+            templateId?: number | null;
+        }): Promise<{
+            allowed: boolean;
+            reason?: undefined;
+            detail?: undefined;
+        } | {
+            allowed: boolean;
+            reason: string;
+            detail: {
+                sentCount: number;
+                dailyCap: any;
+                source: string;
+                gapMin?: undefined;
+                cooldownMinutes?: undefined;
+                lastSentAt?: undefined;
+            };
+        } | {
+            allowed: boolean;
+            reason: string;
+            detail: {
+                gapMin: number;
+                cooldownMinutes: any;
+                lastSentAt: any;
+                source: string;
+                sentCount?: undefined;
+                dailyCap?: undefined;
+            };
+        }>;
+    };
 };
 export default _default;

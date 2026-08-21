@@ -15,7 +15,9 @@ declare const _default: {
     "wxTemplateFields": { "type": "json" },
     "content": { "type": "text" },
     "isEnabled": { "type": "boolean", "default": true, "required": true },
-    "description": { "type": "text" }
+    "description": { "type": "text" },
+    "dailyCap": { "type": "integer" },
+    "cooldownMinutes": { "type": "integer" }
   }
 };
 

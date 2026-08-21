@@ -1,0 +1,16 @@
+declare const _default: {
+  "kind": "collectionType",
+  "collectionName": "sso_quota_configs",
+  "info": {
+    "singularName": "sso-quota-config",
+    "pluralName": "sso-quota-configs",
+    "displayName": "SSO Quota Config"
+  },
+  "options": { "draftAndPublish": false },
+  "attributes": {
+    "maxDailyPerUser": { "type": "integer", "default": 10 },
+    "cooldownMinutes": { "type": "integer", "default": 120 }
+  }
+};
+
+export default _default;

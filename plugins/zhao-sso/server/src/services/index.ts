@@ -15,6 +15,7 @@ import ssoMsg from "./sso-msg";
 import ssoSop from "./sso-sop";
 import ssoProfile from "./sso-profile";
 import ssoRecommend from "./sso-recommend";
+import ssoQuota from "./sso-quota";
 
 export default {
   "sso-jwt": ssoJwt,
@@ -34,4 +35,5 @@ export default {
   "sso-sop": ssoSop,
   "sso-profile": ssoProfile,
   "sso-recommend": ssoRecommend,
+  "sso-quota": ssoQuota,
 };

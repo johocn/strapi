@@ -719,6 +719,12 @@ declare const _default: {
                 description: {
                     type: string;
                 };
+                dailyCap: {
+                    type: string;
+                };
+                cooldownMinutes: {
+                    type: string;
+                };
             };
         };
     };
@@ -1006,6 +1012,30 @@ declare const _default: {
                 };
                 nextFollowAt: {
                     type: string;
+                };
+            };
+        };
+    };
+    "sso-quota-config": {
+        schema: {
+            kind: string;
+            collectionName: string;
+            info: {
+                singularName: string;
+                pluralName: string;
+                displayName: string;
+            };
+            options: {
+                draftAndPublish: boolean;
+            };
+            attributes: {
+                maxDailyPerUser: {
+                    type: string;
+                    default: number;
+                };
+                cooldownMinutes: {
+                    type: string;
+                    default: number;
                 };
             };
         };

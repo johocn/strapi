@@ -18,6 +18,7 @@ import msgJob from "./msg-job";
 import sopRule from "./sop-rule";
 import ssoUserProfile from "./sso-user-profile";
 import ssoFollowUp from "./sso-follow-up";
+import ssoQuotaConfig from "./sso-quota-config";
 
 export default {
   "sso-user": ssoUser,
@@ -40,4 +41,5 @@ export default {
   "sop-rule": sopRule,
   "sso-user-profile": ssoUserProfile,
   "sso-follow-up": ssoFollowUp,
+  "sso-quota-config": ssoQuotaConfig,
 };
