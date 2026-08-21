@@ -8,6 +8,7 @@
     "activity": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.activity" },
     "status": { "type": "enumeration", "enum": ["active", "cancelled", "waiting"], "default": "active" },
     "pointsCharged": { "type": "integer", "default": 0 },
+    "feeTierId": { "type": "string" },
     "signupAt": { "type": "datetime" },
     "attendedAt": { "type": "datetime" }
   }

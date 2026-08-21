@@ -931,6 +931,17 @@ declare const _default: {
                     type: string;
                     default: number;
                 };
+                pricingMode: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
+                feeTiers: {
+                    type: string;
+                };
+                feeFactors: {
+                    type: string;
+                };
                 feeCollectAt: {
                     type: string;
                     enum: string[];
@@ -996,6 +1007,9 @@ declare const _default: {
                 pointsCharged: {
                     type: string;
                     default: number;
+                };
+                feeTierId: {
+                    type: string;
                 };
                 signupAt: {
                     type: string;
