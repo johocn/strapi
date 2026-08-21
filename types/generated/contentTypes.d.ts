@@ -4310,8 +4310,26 @@ export interface PluginZhaoPointActivitySignup
       'plugin::zhao-point.activity-signup'
     > &
       Schema.Attribute.Private;
+    nps: Schema.Attribute.Integer &
+      Schema.Attribute.SetMinMax<
+        {
+          max: 10;
+          min: 0;
+        },
+        number
+      >;
     pointsCharged: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
     publishedAt: Schema.Attribute.DateTime;
+    rating: Schema.Attribute.Integer &
+      Schema.Attribute.SetMinMax<
+        {
+          max: 5;
+          min: 1;
+        },
+        number
+      >;
+    review: Schema.Attribute.Text;
+    reviewedAt: Schema.Attribute.DateTime;
     signupAt: Schema.Attribute.DateTime;
     status: Schema.Attribute.Enumeration<['active', 'cancelled', 'waiting']> &
       Schema.Attribute.DefaultTo<'active'>;
