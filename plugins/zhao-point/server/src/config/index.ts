@@ -54,6 +54,7 @@ export default {
       // 活动类 (taskGroup: other) —— 非一次性，幂等由"报名/签到唯一性"保证
       activity_signup:       { points: 5,    limitPerDay: 0,  isOneTime: false, description: "活动报名",         taskGroup: "other", extraConfig: {} },
       activity_attend:       { points: 20,   limitPerDay: 0,  isOneTime: false, description: "活动到场签到",     taskGroup: "other", extraConfig: {} },
+      activity_share_reward: { points: 0,    limitPerDay: 0,  isOneTime: false, description: "活动分享裂变奖励(动态积分)", taskGroup: "other", extraConfig: {} },
     },
 
     // 扣除积分规则 (category: decrease)

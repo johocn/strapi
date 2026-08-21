@@ -18,6 +18,7 @@ export interface EarnPointsParams {
   orderId?: string;
   channelId?: string | number;
   userChannelId?: string | number;
+  points?: string | number; // 发放积分覆盖值(缺省用规则 points)，用于活动分享裂变奖励等动态积分
 }
 
 export interface DeductPointsParams {
@@ -170,7 +171,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   // ===== 核心业务方法 =====
 
   const earnPoints = async (params: EarnPointsParams) => {
-    const { userId, action, source, method, remark, orderId, channelId, userChannelId } = params;
+    const { userId, action, source, method, remark, orderId, channelId, userChannelId, points: pointsOverride } = params;
 
     // channel 决策：channelId 优先（调用方负责 selected → pointChannel 选择），空时降级到 userChannelId 兜底
     // 仅 channelScope="all" + pointChannel 空的场景会走到兜底
@@ -217,7 +218,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       // config-service not available
     }
 
-    const record = await createRecord(userId, action, rule.points, balance, "increase", {
+    const earnAmount = pointsOverride ?? rule.points;
+
+    const record = await createRecord(userId, action, earnAmount, balance, "increase", {
       source, method, remark, orderId, channelId: finalChannelId, userChannelId, expiresAt,
     });
 

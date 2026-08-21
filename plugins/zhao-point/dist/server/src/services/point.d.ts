@@ -8,6 +8,7 @@ export interface EarnPointsParams {
     orderId?: string;
     channelId?: string | number;
     userChannelId?: string | number;
+    points?: string | number;
 }
 export interface DeductPointsParams {
     userId: string | number;
@@ -438,6 +439,14 @@ declare const _default: ({ strapi }: {
                 extraConfig: {};
             };
             activity_attend: {
+                points: number;
+                limitPerDay: number;
+                isOneTime: boolean;
+                description: string;
+                taskGroup: string;
+                extraConfig: {};
+            };
+            activity_share_reward: {
                 points: number;
                 limitPerDay: number;
                 isOneTime: boolean;

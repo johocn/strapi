@@ -4142,6 +4142,7 @@ export interface PluginZhaoPointActivity extends Struct.CollectionTypeSchema {
     pricingMode: Schema.Attribute.Enumeration<['flat', 'tier', 'factor']> &
       Schema.Attribute.DefaultTo<'flat'>;
     publishedAt: Schema.Attribute.DateTime;
+    shareRewardPoints: Schema.Attribute.Integer;
     signupEnd: Schema.Attribute.DateTime;
     signupStart: Schema.Attribute.DateTime;
     startTime: Schema.Attribute.DateTime;
@@ -4192,6 +4193,50 @@ export interface PluginZhaoPointActivityAttendance
       'oneToOne',
       'plugin::zhao-point.activity-signup'
     >;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface PluginZhaoPointActivityReferralReward
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'activity_referral_rewards';
+  info: {
+    displayName: 'Activity Referral Reward';
+    pluralName: 'activity-referral-rewards';
+    singularName: 'activity-referral-reward';
+  };
+  options: {
+    comment: '\u5206\u4EAB\u88C2\u53D8\u5956\u52B1\u53D1\u653E\u8BB0\u5F55\uFF08\u5E42\u7B49\uFF09';
+    draftAndPublish: false;
+  };
+  attributes: {
+    activity: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-point.activity'
+    >;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    invitee: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
+    inviter: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
+    issuedAt: Schema.Attribute.DateTime;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-point.activity-referral-reward'
+    > &
+      Schema.Attribute.Private;
+    points: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    publishedAt: Schema.Attribute.DateTime;
+    sourceInviteCode: Schema.Attribute.String;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -4442,6 +4487,8 @@ export interface PluginZhaoPointPointConfig
       Schema.Attribute.Private;
     defaultExchangeRate: Schema.Attribute.Decimal &
       Schema.Attribute.DefaultTo<1>;
+    defaultShareRewardPoints: Schema.Attribute.Integer &
+      Schema.Attribute.DefaultTo<0>;
     earnEnabled: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
     expiryDays: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<365>;
     expiryEnabled: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
@@ -10622,6 +10669,7 @@ declare module '@strapi/strapi' {
       'plugin::zhao-oss.sync-record': PluginZhaoOssSyncRecord;
       'plugin::zhao-point.activity': PluginZhaoPointActivity;
       'plugin::zhao-point.activity-attendance': PluginZhaoPointActivityAttendance;
+      'plugin::zhao-point.activity-referral-reward': PluginZhaoPointActivityReferralReward;
       'plugin::zhao-point.activity-series': PluginZhaoPointActivitySeries;
       'plugin::zhao-point.activity-signup': PluginZhaoPointActivitySignup;
       'plugin::zhao-point.channel-verification': PluginZhaoPointChannelVerification;

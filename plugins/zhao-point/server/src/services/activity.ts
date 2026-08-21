@@ -100,6 +100,7 @@ async function grantShareReward(strapi, userId: number, act: any) {
       action: "activity_share_reward",
       source: "activity",
       method: "activity_share_reward",
+      points: reward,
       remark: `分享活动:${act.title}`,
       userChannelId,
     });

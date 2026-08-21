@@ -72,7 +72,8 @@ const config$1 = {
       qr_scan_verify: { points: 5, limitPerDay: 3, isOneTime: false, description: "扫码核销奖励", taskGroup: "other", extraConfig: {} },
       // 活动类 (taskGroup: other) —— 非一次性，幂等由"报名/签到唯一性"保证
       activity_signup: { points: 5, limitPerDay: 0, isOneTime: false, description: "活动报名", taskGroup: "other", extraConfig: {} },
-      activity_attend: { points: 20, limitPerDay: 0, isOneTime: false, description: "活动到场签到", taskGroup: "other", extraConfig: {} }
+      activity_attend: { points: 20, limitPerDay: 0, isOneTime: false, description: "活动到场签到", taskGroup: "other", extraConfig: {} },
+      activity_share_reward: { points: 0, limitPerDay: 0, isOneTime: false, description: "活动分享裂变奖励(动态积分)", taskGroup: "other", extraConfig: {} }
     },
     // 扣除积分规则 (category: decrease)
     decreaseRules: {
@@ -32834,7 +32835,7 @@ const point = ({ strapi: strapi2 }) => {
     throw err;
   };
   const earnPoints = async (params) => {
-    const { userId, action, source, method, remark, orderId, channelId, userChannelId } = params;
+    const { userId, action, source, method, remark, orderId, channelId, userChannelId, points: pointsOverride } = params;
     const finalChannelId = channelId ?? userChannelId;
     const rule = await getMergedRule(action);
     if (!rule || rule.category === "decrease") {
@@ -32870,7 +32871,8 @@ const point = ({ strapi: strapi2 }) => {
       }
     } catch {
     }
-    const record2 = await createRecord(userId, action, rule.points, balance, "increase", {
+    const earnAmount = pointsOverride ?? rule.points;
+    const record2 = await createRecord(userId, action, earnAmount, balance, "increase", {
       source,
       method,
       remark,
@@ -34696,6 +34698,7 @@ async function grantShareReward(strapi2, userId, act) {
       action: "activity_share_reward",
       source: "activity",
       method: "activity_share_reward",
+      points: reward,
       remark: `分享活动:${act.title}`,
       userChannelId
     });

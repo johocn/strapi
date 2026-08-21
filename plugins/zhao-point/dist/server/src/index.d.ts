@@ -310,6 +310,14 @@ declare const _default: {
                     taskGroup: string;
                     extraConfig: {};
                 };
+                activity_share_reward: {
+                    points: number;
+                    limitPerDay: number;
+                    isOneTime: boolean;
+                    description: string;
+                    taskGroup: string;
+                    extraConfig: {};
+                };
             };
             decreaseRules: {
                 redeem_gift: {
@@ -2062,6 +2070,14 @@ declare const _default: {
                         extraConfig: {};
                     };
                     activity_attend: {
+                        points: number;
+                        limitPerDay: number;
+                        isOneTime: boolean;
+                        description: string;
+                        taskGroup: string;
+                        extraConfig: {};
+                    };
+                    activity_share_reward: {
                         points: number;
                         limitPerDay: number;
                         isOneTime: boolean;
