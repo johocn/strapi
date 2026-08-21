@@ -1007,6 +1007,10 @@ declare const _default: {
                     tencentMapKey: {
                         type: string;
                     };
+                    defaultShareRewardPoints: {
+                        type: string;
+                        default: number;
+                    };
                 };
             };
         };
@@ -1443,6 +1447,9 @@ declare const _default: {
                         enum: string[];
                         default: string;
                     };
+                    shareRewardPoints: {
+                        type: string;
+                    };
                     preUnlockArticles: {
                         type: string;
                         relation: string;
@@ -1601,6 +1608,48 @@ declare const _default: {
                         mappedBy: string;
                     };
                     defaultRules: {
+                        type: string;
+                    };
+                };
+            };
+        };
+        "activity-referral-reward": {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                    comment: string;
+                };
+                attributes: {
+                    inviter: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                    };
+                    invitee: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                    };
+                    activity: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                    };
+                    points: {
+                        type: string;
+                        default: number;
+                    };
+                    sourceInviteCode: {
+                        type: string;
+                    };
+                    issuedAt: {
                         type: string;
                     };
                 };

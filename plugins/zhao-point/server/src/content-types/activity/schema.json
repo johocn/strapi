@@ -28,6 +28,7 @@
     "feeTiers": { "type": "json" },
     "feeFactors": { "type": "json" },
     "feeCollectAt": { "type": "enumeration", "enum": ["signup", "checkin"], "default": "signup" },
+    "shareRewardPoints": { "type": "integer" },
     "preUnlockArticles": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.article" },
     "preUnlockLessons": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-course.course-lesson" },
     "learningPackageArticles": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.article" },

@@ -12,6 +12,7 @@ import activity from "./activity/schema.json";
 import activitySignup from "./activity-signup/schema.json";
 import activityAttendance from "./activity-attendance/schema.json";
 import activitySeries from "./activity-series/schema.json";
+import activityReferralReward from "./activity-referral-reward/schema.json";
 
 export default {
   "point-record": { schema: pointRecord },
@@ -28,4 +29,5 @@ export default {
   "activity-signup": { schema: activitySignup },
   "activity-attendance": { schema: activityAttendance },
   "activity-series": { schema: activitySeries },
+  "activity-referral-reward": { schema: activityReferralReward },
 };

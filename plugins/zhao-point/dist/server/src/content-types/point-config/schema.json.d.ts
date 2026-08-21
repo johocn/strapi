@@ -83,6 +83,10 @@ declare const _default: {
     },
     "tencentMapKey": {
       "type": "string"
+    },
+    "defaultShareRewardPoints": {
+      "type": "integer",
+      "default": 0
     }
   }
 }
