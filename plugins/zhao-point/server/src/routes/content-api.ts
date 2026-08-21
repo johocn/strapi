@@ -169,6 +169,7 @@ export default () => ({
     channelScopeRoute("GET", "/adm/activity-share/leaderboard", "activity.fissionLeaderboard", "activity.read"),
     channelScopeRoute("POST", "/adm/activities/:documentId/close", "activity.adminClose", "activity.update"),
     channelScopeRoute("GET", "/adm/activity-reviews", "activity.adminReviews", "activity.read"),
+    channelScopeRoute("GET", "/adm/activity-overview", "activity-stats.overview", "activity.read"),
 
     // ===== 活动系列 + 排期管理 =====
     publicRoute("GET", "/series", "series.list"),
