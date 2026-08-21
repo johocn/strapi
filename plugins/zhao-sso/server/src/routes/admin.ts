@@ -123,6 +123,7 @@ export default () => ({
     adminRoute("GET", "/msg/sop-stats", "msg-stats.sopStats", "sso.msg.read"),
     adminRoute("GET", "/msg/repurchase-stats", "msg-stats.repurchaseStats", "sso.msg.read"),
     adminRoute("GET", "/msg/course-d7-stats", "msg-stats.courseD7Stats", "sso.msg.read"),
+    adminRoute("GET", "/msg/course-completion-stats", "msg-stats.courseCompletionStats", "sso.msg.read"),
 
     // 用户画像分层
     adminRoute("GET", "/profiles", "profile.list", "sso.profile.read"),
