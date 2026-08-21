@@ -188,11 +188,11 @@ const courseLifecycles = ({ strapi }) => {
   const syncTagIndex2 = async (event) => {
     const { result } = event;
     if (!result?.documentId) return;
-    const tagIds = (result.tags || []).map((t) => t?.documentId).filter(Boolean);
+    const tagIds2 = (result.tags || []).map((t) => t?.documentId).filter(Boolean);
     try {
       const service = strapi.plugin("zhao-tag")?.service("tag-index");
       if (service) {
-        await service.sync("course", result.documentId, tagIds);
+        await service.sync("course", result.documentId, tagIds2);
       }
     } catch (err) {
       strapi.log.error(`[zhao-course] Failed to sync tag-index for course ${result.documentId}: ${err}`);
@@ -226,11 +226,11 @@ const courseLessonLifecycles = ({ strapi }) => {
   const syncTagIndex2 = async (event) => {
     const { result } = event;
     if (!result?.documentId) return;
-    const tagIds = (result.tags || []).map((t) => t?.documentId).filter(Boolean);
+    const tagIds2 = (result.tags || []).map((t) => t?.documentId).filter(Boolean);
     try {
       const service = strapi.plugin("zhao-tag")?.service("tag-index");
       if (service) {
-        await service.sync("lesson", result.documentId, tagIds);
+        await service.sync("lesson", result.documentId, tagIds2);
       }
     } catch (err) {
       strapi.log.error(`[zhao-course] Failed to sync tag-index for lesson ${result.documentId}: ${err}`);
@@ -1540,6 +1540,40 @@ const accessCode$1 = ({ strapi }) => ({
     }
   }
 });
+const recommend$1 = ({ strapi }) => ({
+  async related(ctx) {
+    try {
+      const { documentId } = ctx.params;
+      if (!documentId) {
+        ctx.status = 400;
+        ctx.body = { error: "缺少课程 ID" };
+        return;
+      }
+      const limit = Math.min(Math.max(Number(ctx.query?.limit) || 6, 1), 20);
+      const data = await strapi.plugin("zhao-course").service("recommend").relatedFor(documentId, limit);
+      ctx.body = { data };
+    } catch (err) {
+      ctx.status = err.status || 400;
+      ctx.body = { error: err.message };
+    }
+  },
+  async suggestions(ctx) {
+    try {
+      const userId = ctx.state.user?.id;
+      if (!userId) {
+        ctx.status = 401;
+        ctx.body = { error: "用户未登录" };
+        return;
+      }
+      const limit = Math.min(Math.max(Number(ctx.query?.limit) || 6, 1), 20);
+      const data = await strapi.plugin("zhao-course").service("recommend").suggestionsFor(userId, limit);
+      ctx.body = { data };
+    } catch (err) {
+      ctx.status = err.status || 400;
+      ctx.body = { error: err.message };
+    }
+  }
+});
 const controllers = {
   "course-category": courseCategory$1,
   course: course$1,
@@ -1548,7 +1582,8 @@ const controllers = {
   "course-progress": courseProgress$1,
   "lesson-progress": lessonProgress$1,
   enrollment: enrollment$1,
-  "access-code": accessCode$1
+  "access-code": accessCode$1,
+  recommend: recommend$1
 };
 const publicRoute = (method, path, handler) => ({
   method,
@@ -1600,6 +1635,7 @@ const contentApi = () => ({
     // ===== 公开路由 =====
     publicChannelScopeRoute("GET", "/courses", "course.find"),
     publicChannelScopeRoute("GET", "/courses/:documentId", "course.findOne"),
+    publicChannelScopeRoute("GET", "/courses/:documentId/related", "recommend.related"),
     publicChannelScopeRoute("GET", "/course-categories", "course-category.find"),
     publicChannelScopeRoute("GET", "/course-categories/:documentId", "course-category.findOne"),
     publicRoute("GET", "/course-lessons", "course-lesson.find"),
@@ -1615,6 +1651,7 @@ const contentApi = () => ({
     userRoute("POST", "/my/claim-lesson-points/:documentId", "lesson-progress.claimPoints"),
     userRoute("POST", "/my/claim-course-points/:documentId", "course-progress.claimPoints"),
     userRoute("GET", "/my/course-auth/:courseDocumentId", "user-course-auth.checkAuth"),
+    userRoute("GET", "/my/course-suggestions", "recommend.suggestions"),
     // ===== 报名相关（C 端用户） =====
     userRoute("GET", "/enrollments/me", "enrollment.myEnrollment"),
     userRoute("GET", "/enrollments", "enrollment.myEnrollments"),
@@ -1856,9 +1893,9 @@ function extractTagIds$1(result) {
   if (!result?.tags) return [];
   return result.tags.map((t) => t.documentId).filter(Boolean);
 }
-async function syncTagIndex$1(strapi, targetType, targetId, tagIds) {
+async function syncTagIndex$1(strapi, targetType, targetId, tagIds2) {
   try {
-    await strapi.plugin("zhao-tag").service("tag-index").sync(targetType, targetId, tagIds);
+    await strapi.plugin("zhao-tag").service("tag-index").sync(targetType, targetId, tagIds2);
   } catch (e) {
     strapi.log.error(`[tag-index sync] ${targetType}/${targetId} failed: ${e}`);
   }
@@ -2153,13 +2190,13 @@ const course = ({ strapi }) => {
         data.pointChannel = { id: data.pointChannel };
       }
       if (Array.isArray(data.tags) && data.tags.length > 0) {
-        const tagIds = data.tags.map((t) => t.documentId || t.id).filter(Boolean);
+        const tagIds2 = data.tags.map((t) => t.documentId || t.id).filter(Boolean);
         const existingTags = await strapi.documents("plugin::zhao-tag.tag").findMany({
-          filters: { documentId: { $in: tagIds } },
+          filters: { documentId: { $in: tagIds2 } },
           fields: ["documentId"]
         });
         const existingTagIds = new Set(existingTags.map((t) => t.documentId));
-        const missingIds = tagIds.filter((id) => !existingTagIds.has(id));
+        const missingIds = tagIds2.filter((id) => !existingTagIds.has(id));
         if (missingIds.length > 0) {
           const err = new Error(`标签不存在: ${missingIds.join(", ")}`);
           err.code = "COURSE_002";
@@ -2208,9 +2245,9 @@ function extractTagIds(result) {
   if (!result?.tags) return [];
   return result.tags.map((t) => t.documentId).filter(Boolean);
 }
-async function syncTagIndex(strapi, targetType, targetId, tagIds) {
+async function syncTagIndex(strapi, targetType, targetId, tagIds2) {
   try {
-    await strapi.plugin("zhao-tag").service("tag-index").sync(targetType, targetId, tagIds);
+    await strapi.plugin("zhao-tag").service("tag-index").sync(targetType, targetId, tagIds2);
   } catch (e) {
     strapi.log.error(`[tag-index sync] ${targetType}/${targetId} failed: ${e}`);
   }
@@ -2620,7 +2657,7 @@ const courseProgress = ({ strapi }) => {
       });
     },
     async runActivationReminderScan() {
-      const ENROLL_UID = "plugin::zhao-course.course-enrollment";
+      const ENROLL_UID2 = "plugin::zhao-course.course-enrollment";
       const SOP_RULE_UID = "plugin::zhao-sso.sop-rule";
       const remindGap = Date.now() - 7 * 864e5;
       const enrolledSince = new Date(Date.now() - 3 * 864e5);
@@ -2631,7 +2668,7 @@ const courseProgress = ({ strapi }) => {
         strapi.log.warn("[zhao-course] activation reminder: no enabled sop rule, skip");
         return { scanned: 0, reminded: 0 };
       }
-      const enrollments = await strapi.db.query(ENROLL_UID).findMany({
+      const enrollments = await strapi.db.query(ENROLL_UID2).findMany({
         where: { status: "enrolled", enrolledAt: { $lte: enrolledSince } },
         populate: { user: { select: ["id"] }, course: { select: ["title"] } }
       });
@@ -2916,7 +2953,7 @@ const lessonProgress = ({ strapi }) => {
   };
 };
 const UID$1 = "plugin::zhao-course.course-enrollment";
-const COURSE_UID$1 = "plugin::zhao-course.course";
+const COURSE_UID$2 = "plugin::zhao-course.course";
 const ACCESS_CODE_UID = "plugin::zhao-course.course-access-code";
 const USER_AUTH_UID = "plugin::zhao-course.user-course-auth";
 const enrollment = ({ strapi }) => {
@@ -2978,7 +3015,7 @@ const enrollment = ({ strapi }) => {
       });
     }
     try {
-      const course2 = await strapi.db.query(COURSE_UID$1).findOne({
+      const course2 = await strapi.db.query(COURSE_UID$2).findOne({
         where: { id: courseId },
         select: ["title"]
       });
@@ -3016,7 +3053,7 @@ const enrollment = ({ strapi }) => {
      * 查询当前用户对某课程的报名记录（仅返回最新一条有效记录）
      */
     async findMyEnrollment(userId, courseDocumentId) {
-      const course2 = await strapi.db.query(COURSE_UID$1).findOne({
+      const course2 = await strapi.db.query(COURSE_UID$2).findOne({
         where: { document_id: courseDocumentId },
         select: ["id"]
       });
@@ -3056,7 +3093,7 @@ const enrollment = ({ strapi }) => {
      */
     async createEnrollment(userId, data) {
       const { courseDocumentId, enrollType, voucherUrl, voucherNote, accessCode: accessCode2 } = data;
-      const course2 = await strapi.db.query(COURSE_UID$1).findOne({
+      const course2 = await strapi.db.query(COURSE_UID$2).findOne({
         where: { document_id: courseDocumentId }
       });
       if (!course2) {
@@ -3227,7 +3264,7 @@ const enrollment = ({ strapi }) => {
   };
 };
 const UID = "plugin::zhao-course.course-access-code";
-const COURSE_UID = "plugin::zhao-course.course";
+const COURSE_UID$1 = "plugin::zhao-course.course";
 const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const CODE_LENGTH = 8;
 const accessCode = ({ strapi }) => {
@@ -3285,7 +3322,7 @@ const accessCode = ({ strapi }) => {
       }
       const safeCount = Math.min(Math.max(1, Number(count) || 1), 100);
       const quota = totalQuota === void 0 || totalQuota === null ? -1 : Math.max(-1, Number(totalQuota));
-      const course2 = await strapi.db.query(COURSE_UID).findOne({
+      const course2 = await strapi.db.query(COURSE_UID$1).findOne({
         where: { document_id: courseDocumentId },
         select: ["id", "title"]
       });
@@ -3339,6 +3376,147 @@ const accessCode = ({ strapi }) => {
     }
   };
 };
+const COURSE_UID = "plugin::zhao-course.course";
+const ENROLL_UID = "plugin::zhao-course.course-enrollment";
+const PROGRESS_UID = "plugin::zhao-course.course-progress";
+const LEVEL_ORDER = {
+  introductory: 1,
+  foundation: 2,
+  advanced: 3,
+  professional: 4
+};
+const tagIds = (c) => Array.isArray(c?.tags) ? c.tags.map((t) => t?.id?.toString?.() ?? String(t)).filter(Boolean) : [];
+const kwSet = (c) => {
+  const kws = Array.isArray(c?.keywords) ? c.keywords : typeof c?.keywords === "object" && c.keywords ? Object.values(c.keywords) : [];
+  return new Set(kws.map((k) => String(k).toLowerCase()).filter(Boolean));
+};
+const recommend = ({ strapi }) => ({
+  /** 课程详情续学：seed=当前课程 */
+  async relatedFor(courseDocumentId, limit = 6) {
+    const seed = await this.findOneCourse(courseDocumentId);
+    if (!seed) return [];
+    return this.buildSuggestions([seed], /* @__PURE__ */ new Set(), limit);
+  },
+  /** 学习中心个人续学清单：seed=在学课程（progress<100），否则回退最近报名课程 */
+  async suggestionsFor(userId, limit = 6) {
+    const [enrollments, progresses] = await Promise.all([
+      strapi.db.query(ENROLL_UID).findMany({ where: { user: userId, status: "enrolled" }, populate: { course: { select: ["documentId"] } }, limit: 300 }),
+      strapi.db.query(PROGRESS_UID).findMany({ where: { user: userId }, populate: { course: { select: ["documentId"] } }, limit: 300 })
+    ]);
+    const enrolledDocIds = new Set(enrollments.map((e) => e.course?.documentId).filter(Boolean));
+    const inProgressDocIds = progresses.filter((p) => Number(p.progress ?? 0) < 100 && p.course?.documentId).map((p) => p.course?.documentId);
+    const seedDocIds = inProgressDocIds.slice(0, 20);
+    if (!seedDocIds.length) {
+      seedDocIds.push(...enrollments.map((e) => e.course?.documentId).filter(Boolean).slice(0, 20));
+    }
+    if (!seedDocIds.length) return this.fallbackCourses(limit, enrolledDocIds);
+    const seeds = (await this.findCoursesByIds(seedDocIds)).filter(Boolean);
+    if (!seeds.length) return this.fallbackCourses(limit, enrolledDocIds);
+    return this.buildSuggestions(seeds, enrolledDocIds, limit);
+  },
+  /***** 引擎核心 *****/
+  async buildSuggestions(seeds, excludeDocIds, limit) {
+    const candidates = await this.candidatePool(excludeDocIds);
+    const best = /* @__PURE__ */ new Map();
+    for (const cand of candidates) {
+      let bestScore = 0;
+      let bestSeed = null;
+      let bestNext = false;
+      for (const seed of seeds) {
+        if (String(seed.documentId) === String(cand.documentId)) continue;
+        const { score, sequenceNext } = this.scoreCandidate(seed, cand);
+        if (score > bestScore) {
+          bestScore = score;
+          bestSeed = seed;
+          bestNext = sequenceNext;
+        }
+      }
+      if (bestScore > 0) best.set(String(cand.documentId), { cand, score: bestScore, seedId: bestSeed?.id, sequenceNext: bestNext });
+    }
+    let rows = [...best.values()].sort((a, b) => b.score - a.score).slice(0, limit).map((r) => this.toRow(r.cand, r.score, r.sequenceNext, r.seedId));
+    if (!rows.length) rows = this.fallbackCourses(limit, excludeDocIds);
+    return rows;
+  },
+  scoreCandidate(seed, cand) {
+    let score = 0;
+    let sequenceNext = false;
+    const st = seed.sequenceTag;
+    const ct = cand.sequenceTag;
+    if (st && ct && String(st.id) === String(ct.id)) {
+      const gap = (cand.sequenceNumber || 0) - (seed.sequenceNumber || 0);
+      if (seed.enforceSequence && cand.enforceSequence && gap === 1) {
+        score += 300;
+        sequenceNext = true;
+      } else if (gap > 0) score += 150;
+    }
+    const sc = seed.category?.id;
+    const cc = cand.category?.id;
+    if (sc && cc && String(sc) === String(cc)) {
+      const sg = LEVEL_ORDER[seed.level] ?? 2;
+      const cg = LEVEL_ORDER[cand.level] ?? 0;
+      if (cg > sg) score += 100;
+      else if (cg === sg) score += 40;
+    }
+    const sTags = tagIds(seed);
+    const cTags = tagIds(cand);
+    score += sTags.filter((t) => cTags.includes(t)).length * 10;
+    const sKw = kwSet(seed);
+    const cKw = kwSet(cand);
+    cKw.forEach((k) => {
+      if (sKw.has(k)) score += 5;
+    });
+    return { score, sequenceNext };
+  },
+  async candidatePool(excludeDocIds) {
+    const all = await strapi.db.query(COURSE_UID).findMany({
+      where: { status: "published" },
+      populate: { category: true, sequenceTag: true, tags: true },
+      limit: 500
+    });
+    return all.filter((c) => !excludeDocIds.has(String(c.documentId)));
+  },
+  async findOneCourse(documentId) {
+    return strapi.db.query(COURSE_UID).findOne({
+      where: { documentId, status: "published" },
+      populate: { category: true, sequenceTag: true, tags: true }
+    });
+  },
+  async findCoursesByIds(docIds) {
+    if (!docIds.length) return [];
+    return strapi.db.query(COURSE_UID).findMany({
+      where: { documentId: { $in: docIds }, status: "published" },
+      populate: { category: true, sequenceTag: true, tags: true }
+    });
+  },
+  async fallbackCourses(limit, excludeDocIds) {
+    const all = await strapi.db.query(COURSE_UID).findMany({
+      where: { status: "published" },
+      populate: { category: true, sequenceTag: true, tags: true },
+      orderBy: { studentCount: "DESC" },
+      limit: 100
+    });
+    return all.filter((c) => !excludeDocIds.has(String(c.documentId))).slice(0, limit).map((c) => this.toRow(c, 0, false, null));
+  },
+  toRow(cand, score, sequenceNext, seedId) {
+    return {
+      documentId: cand.documentId,
+      id: cand.id,
+      title: cand.title,
+      category: cand.category?.name ?? null,
+      cover: cand.cover ?? null,
+      price: cand.price ?? 0,
+      isFree: cand.isFree ?? true,
+      isPaid: cand.isPaid,
+      courseType: cand.courseType,
+      level: cand.level,
+      difficulty: cand.difficulty,
+      studentCount: cand.studentCount ?? 0,
+      sequenceNext,
+      score,
+      seedId
+    };
+  }
+});
 const services = {
   "course-category": courseCategory,
   course,
@@ -3347,7 +3525,8 @@ const services = {
   "course-progress": courseProgress,
   "lesson-progress": lessonProgress,
   enrollment,
-  "access-code": accessCode
+  "access-code": accessCode,
+  recommend
 };
 const index = {
   register,

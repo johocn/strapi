@@ -54,6 +54,7 @@ export default () => ({
     // ===== 公开路由 =====
     publicChannelScopeRoute("GET", "/courses", "course.find"),
     publicChannelScopeRoute("GET", "/courses/:documentId", "course.findOne"),
+    publicChannelScopeRoute("GET", "/courses/:documentId/related", "recommend.related"),
     publicChannelScopeRoute("GET", "/course-categories", "course-category.find"),
     publicChannelScopeRoute("GET", "/course-categories/:documentId", "course-category.findOne"),
     publicRoute("GET", "/course-lessons", "course-lesson.find"),
@@ -70,6 +71,7 @@ export default () => ({
     userRoute("POST", "/my/claim-lesson-points/:documentId", "lesson-progress.claimPoints"),
     userRoute("POST", "/my/claim-course-points/:documentId", "course-progress.claimPoints"),
     userRoute("GET", "/my/course-auth/:courseDocumentId", "user-course-auth.checkAuth"),
+    userRoute("GET", "/my/course-suggestions", "recommend.suggestions"),
 
     // ===== 报名相关（C 端用户） =====
     userRoute("GET", "/enrollments/me", "enrollment.myEnrollment"),
