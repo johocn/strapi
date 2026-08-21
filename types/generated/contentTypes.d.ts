@@ -5496,6 +5496,7 @@ export interface PluginZhaoSsoSopRule extends Struct.CollectionTypeSchema {
     code: Schema.Attribute.String &
       Schema.Attribute.Required &
       Schema.Attribute.Unique;
+    conversionWindowDays: Schema.Attribute.Integer;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
