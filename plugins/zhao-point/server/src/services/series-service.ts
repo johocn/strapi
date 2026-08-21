@@ -63,6 +63,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       checkinMode: src.checkinMode,
       geoEnforced: src.geoEnforced,
       geoRadiusM: src.geoRadiusM,
+      pointsCost: src.pointsCost ?? 0,
+      feeCollectAt: src.feeCollectAt ?? "signup",
       channelScope: src.channelScope,
       channelIds: src.channelIds,
       belongsToSeries: src.belongsToSeries?.id ?? src.belongsToSeries ?? null,
@@ -159,6 +161,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         });
         if (exists > 0) continue;
 
+        const dr = series.defaultRules || {};
+        const pointsCost = Number(dr.pointsCost ?? 0);
+        const feeCollectAt = dr.feeCollectAt === "checkin" ? "checkin" : "signup";
+
         await strapi.documents(ACTIVITY_UID).create({
           data: {
             title: series.title,
@@ -168,7 +174,13 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
             endTime: endDate.toISOString(),
             status: "draft",
             usedCapacity: 0,
-            capacity: 100,
+            capacity: Number(dr.capacity ?? 100),
+            checkinMode: dr.checkinMode || "both",
+            geoEnforced: !!dr.geoEnforced,
+            geoRadiusM: Number(dr.geoRadiusM ?? 500),
+            pointsCost,
+            feeCollectAt,
+            signupStart: dr.signupOpenDays ? new Date(startDate.getTime() - Number(dr.signupOpenDays) * 24 * 3600 * 1000).toISOString() : null,
             belongsToSeries: series.id,
           },
         });
