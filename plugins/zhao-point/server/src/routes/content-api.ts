@@ -162,5 +162,17 @@ export default () => ({
     channelScopeRoute("POST", "/adm/activities/:documentId/signups/:signupId/cancel", "activity.adminCancelSignup", "activity.update"),
     channelScopeRoute("POST", "/adm/activities/:documentId/scan-checkin", "activity.adminScanCheckin", "activity.update"),
     channelScopeRoute("GET", "/adm/activities/:documentId/attendance", "activity.adminAttendance", "activity.read"),
+
+    // ===== 活动系列 + 排期管理 =====
+    publicRoute("GET", "/series", "series.list"),
+    publicRoute("GET", "/series/:documentId", "series.detail"),
+    channelScopeRoute("GET", "/adm/series", "series.adminList", "series.read"),
+    channelScopeRoute("GET", "/adm/series/:documentId", "series.adminFindOne", "series.read"),
+    channelScopeRoute("POST", "/adm/series", "series.adminCreate", "series.create"),
+    channelScopeRoute("PUT", "/adm/series/:documentId", "series.adminUpdate", "series.update"),
+    channelScopeRoute("DELETE", "/adm/series/:documentId", "series.adminDelete", "series.delete"),
+    channelScopeRoute("GET", "/adm/series/:documentId/activities", "series.adminActivities", "series.read"),
+    channelScopeRoute("POST", "/adm/activities/:activityDocumentId/duplicate", "series.adminDuplicateActivity", "activity.create"),
+    channelScopeRoute("POST", "/adm/series/:documentId/generate", "series.adminGenerate", "series.update"),
   ],
 });
