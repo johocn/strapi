@@ -426,5 +426,76 @@ declare const _default: {
             matchedSso: number;
         }>;
     };
+    "sso-recommend": ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        recommendFor(ssoUserId: number, limit?: number): Promise<{
+            interests: any;
+            courses: {
+                documentId: any;
+                id: any;
+                title: any;
+                category: any;
+                cover: any;
+                price: any;
+                isFree: any;
+                isPaid: any;
+                courseType: any;
+                pointsPrice: any;
+                studentCount: any;
+            }[];
+            articles: {
+                documentId: any;
+                id: any;
+                title: any;
+                excerpt: any;
+                category: any;
+                publishedAt: any;
+            }[];
+            activities: {
+                documentId: any;
+                id: any;
+                title: any;
+                type: any;
+                startTime: any;
+                endTime: any;
+                venueName: any;
+                capacity: any;
+                usedCapacity: any;
+            }[];
+        }>;
+        recCourses(interests: string[], upUserId: number | null, limit: number): Promise<{
+            documentId: any;
+            id: any;
+            title: any;
+            category: any;
+            cover: any;
+            price: any;
+            isFree: any;
+            isPaid: any;
+            courseType: any;
+            pointsPrice: any;
+            studentCount: any;
+        }[]>;
+        recArticles(interests: string[], limit: number): Promise<{
+            documentId: any;
+            id: any;
+            title: any;
+            excerpt: any;
+            category: any;
+            publishedAt: any;
+        }[]>;
+        recActivities(interests: string[], upUserId: number | null, limit: number): Promise<{
+            documentId: any;
+            id: any;
+            title: any;
+            type: any;
+            startTime: any;
+            endTime: any;
+            venueName: any;
+            capacity: any;
+            usedCapacity: any;
+        }[]>;
+    };
 };
 export default _default;

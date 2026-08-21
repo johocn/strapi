@@ -173,5 +173,12 @@ declare const _default: {
         activate(ctx: any): Promise<void>;
         abStats(ctx: any): Promise<void>;
     };
+    "recommend-controller": ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        my(ctx: any): Promise<{
+            error: string;
+        }>;
+    };
 };
 export default _default;

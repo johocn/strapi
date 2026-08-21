@@ -4139,6 +4139,7 @@ export interface PluginZhaoPointActivity extends Struct.CollectionTypeSchema {
     > &
       Schema.Attribute.DefaultTo<'draft'>;
     title: Schema.Attribute.String & Schema.Attribute.Required;
+    type: Schema.Attribute.String & Schema.Attribute.DefaultTo<'\u5176\u4ED6'>;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -5145,7 +5146,7 @@ export interface PluginZhaoQuizQuizRecord extends Struct.CollectionTypeSchema {
     mode: Schema.Attribute.Enumeration<['practice', 'exam']> &
       Schema.Attribute.DefaultTo<'practice'>;
     practiceType: Schema.Attribute.Enumeration<
-      ['knowledge', 'random', 'simulate', 'wrong']
+      ['knowledge', 'random', 'simulate', 'wrong', 'free']
     > &
       Schema.Attribute.DefaultTo<'knowledge'>;
     publishedAt: Schema.Attribute.DateTime;

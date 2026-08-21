@@ -17,6 +17,7 @@ import sopController from "./sop-controller";
 import profileController from "./profile-controller";
 import partnerController from "./partner-controller";
 import msgVersionController from "./msg-version-controller";
+import recommendController from "./recommend-controller";
 
 export default {
   "auth-controller": authController,
@@ -38,4 +39,5 @@ export default {
   profile: profileController,
   partner: partnerController,
   "msg-version": msgVersionController,
+  "recommend-controller": recommendController,
 };

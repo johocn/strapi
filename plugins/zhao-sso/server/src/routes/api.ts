@@ -160,5 +160,14 @@ export default () => ({
         policies: ["plugin::zhao-sso.sso-authenticated"],
       },
     },
+    {
+      method: "GET",
+      path: "/v1/recommend",
+      handler: "recommend-controller.my",
+      config: {
+        auth: false,
+        policies: ["plugin::zhao-sso.sso-authenticated"],
+      },
+    },
   ],
 });

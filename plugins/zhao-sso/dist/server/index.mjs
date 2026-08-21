@@ -2469,6 +2469,29 @@ const msgVersionController = ({ strapi }) => {
     }
   };
 };
+const recommendController = ({ strapi }) => ({
+  /** C 端"猜你喜欢"：基于 sso-user 画像兴趣标签推荐 课程/文章/活动 */
+  async my(ctx) {
+    try {
+      const ssoUser2 = ctx.state?.ssoUser;
+      if (!ssoUser2?.sub) {
+        ctx.status = 401;
+        return { error: "未登录" };
+      }
+      const user = await strapi.plugin("zhao-sso").service("sso-user").findByUuid(ssoUser2.sub);
+      if (!user?.id) {
+        ctx.status = 401;
+        return { error: "未登录" };
+      }
+      const limit = Math.min(Number(ctx.query?.limit) || 5, 10);
+      const svc = strapi.plugin("zhao-sso").service("sso-recommend");
+      ctx.body = { data: await svc.recommendFor(user.id, limit) };
+    } catch (e) {
+      ctx.status = e.status || 400;
+      ctx.body = { error: e.message, code: e.code || null };
+    }
+  }
+});
 const controllers = {
   "auth-controller": authController,
   "oauth-controller": oauthController,
@@ -2488,7 +2511,8 @@ const controllers = {
   sop: sopController,
   profile: profileController,
   partner: partnerController,
-  "msg-version": msgVersionController
+  "msg-version": msgVersionController,
+  "recommend-controller": recommendController
 };
 const api = () => ({
   type: "content-api",
@@ -2646,6 +2670,15 @@ const api = () => ({
       method: "POST",
       path: "/v1/user/change-password",
       handler: "user-controller.changePassword",
+      config: {
+        auth: false,
+        policies: ["plugin::zhao-sso.sso-authenticated"]
+      }
+    },
+    {
+      method: "GET",
+      path: "/v1/recommend",
+      handler: "recommend-controller.my",
       config: {
         auth: false,
         policies: ["plugin::zhao-sso.sso-authenticated"]
@@ -4723,10 +4756,10 @@ const PROFILE_UID = "plugin::zhao-sso.sso-user-profile";
 const UP_USER_UID = "plugin::users-permissions.user";
 const SSO_USER_UID = "plugin::zhao-sso.sso-user";
 const LESSON_PROGRESS_UID = "plugin::zhao-course.lesson-progress";
-const ENROLL_UID = "plugin::zhao-course.course-enrollment";
+const ENROLL_UID$1 = "plugin::zhao-course.course-enrollment";
 const VISIT_LOG_UID = "plugin::zhao-website.visit-log";
-const ARTICLE_UID = "plugin::zhao-website.article";
-const SIGNS_UID = "plugin::zhao-point.activity-signup";
+const ARTICLE_UID$1 = "plugin::zhao-website.article";
+const SIGNS_UID$1 = "plugin::zhao-point.activity-signup";
 const REDEMPTION_UID = "plugin::zhao-point.point-redemption";
 const clamp = (n) => Math.max(0, Math.min(100, Math.round(n)));
 const ssoProfile = ({ strapi }) => ({
@@ -4771,7 +4804,7 @@ const ssoProfile = ({ strapi }) => ({
     const done = allLp.filter((r) => r.isCompleted).length;
     const correct = allLp.filter((r) => r.isCorrect === true).length;
     const completion = clamp((allLp.length ? done / allLp.length : 0) * 60 + (correct ? correct / Math.max(allLp.length, 1) : 0) * 40);
-    const signs = await strapi.db.query(SIGNS_UID).findMany({
+    const signs = await strapi.db.query(SIGNS_UID$1).findMany({
       where: { user: userId },
       select: ["attendedAt", "status"],
       limit: 100
@@ -4780,7 +4813,7 @@ const ssoProfile = ({ strapi }) => ({
     const attended = activeSigns.filter((s) => s.attendedAt).length;
     const attendance = clamp(activeSigns.length * 10 + (activeSigns.length ? attended / activeSigns.length * 50 : 0));
     const [paid, points] = await Promise.all([
-      strapi.db.query(ENROLL_UID).count({ where: { user: userId, enrollType: { $in: ["paid", "points"] } } }),
+      strapi.db.query(ENROLL_UID$1).count({ where: { user: userId, enrollType: { $in: ["paid", "points"] } } }),
       strapi.db.query(REDEMPTION_UID).count({ where: { user: userId } }).catch(() => 0)
     ]);
     const payment = clamp(paid * 30 + points * 15);
@@ -4809,7 +4842,7 @@ const ssoProfile = ({ strapi }) => ({
     });
     const docIds = [...new Set(reads.map((r) => r.targetId).filter(Boolean))].slice(0, 200);
     if (docIds.length) {
-      const articles = await strapi.db.query(ARTICLE_UID).findMany({
+      const articles = await strapi.db.query(ARTICLE_UID$1).findMany({
         where: { documentId: { $in: docIds } },
         populate: { category: { select: ["name"] } },
         limit: 200
@@ -4823,7 +4856,7 @@ const ssoProfile = ({ strapi }) => ({
         }
       }
     }
-    const signs = await strapi.db.query(SIGNS_UID).findMany({
+    const signs = await strapi.db.query(SIGNS_UID$1).findMany({
       where: { user: userId, signupAt: { $gte: days30 } },
       populate: { activity: { select: ["id", "type"] } },
       limit: 200
@@ -4887,6 +4920,134 @@ const ssoProfile = ({ strapi }) => ({
     return { scanned: upUsers.length, calculated: n, matchedSso: sso };
   }
 });
+const COURSE_UID = "plugin::zhao-course.course";
+const COURSE_CAT_UID = "plugin::zhao-course.course-category";
+const ENROLL_UID = "plugin::zhao-course.course-enrollment";
+const ARTICLE_UID = "plugin::zhao-website.article";
+const ARTICLE_CAT_UID = "plugin::zhao-website.article-category";
+const ACTIVITY_UID = "plugin::zhao-point.activity";
+const SIGNS_UID = "plugin::zhao-point.activity-signup";
+const ssoRecommend = ({ strapi }) => ({
+  async recommendFor(ssoUserId, limit = 5) {
+    const profile = await strapi.plugin("zhao-sso").service("sso-profile").getProfile(ssoUserId);
+    const interests = Array.isArray(profile.interests) ? profile.interests : [];
+    const upUserId = profile.upUser?.id ?? null;
+    const [courses, articles, activities] = await Promise.all([
+      this.recCourses(interests, upUserId, limit),
+      this.recArticles(interests, limit),
+      this.recActivities(interests, upUserId, limit)
+    ]);
+    return { interests, courses, articles, activities };
+  },
+  /** 推荐课程：兴趣分类内，排除已购/已报名，按学员数排序；无兴趣 → 最新课程兜底 */
+  async recCourses(interests, upUserId, limit) {
+    let enrolled = /* @__PURE__ */ new Set();
+    if (upUserId) {
+      const ens = await strapi.db.query(ENROLL_UID).findMany({
+        where: { user: upUserId },
+        populate: { course: { select: ["id"] } },
+        limit: 500
+      });
+      enrolled = new Set(ens.map((e) => e.course?.id).filter(Boolean));
+    }
+    let rows = [];
+    if (interests.length) {
+      const cats = await strapi.db.query(COURSE_CAT_UID).findMany({ where: { name: { $in: interests } }, select: ["id"] });
+      const catIds = cats.map((c) => c.id);
+      if (catIds.length) {
+        rows = await strapi.db.query(COURSE_UID).findMany({
+          where: { category: catIds },
+          populate: { category: { select: ["name"] }, cover: true },
+          limit: 100
+        });
+      }
+    }
+    if (!rows.length) {
+      rows = await strapi.db.query(COURSE_UID).findMany({
+        populate: { category: { select: ["name"] }, cover: true },
+        orderBy: { createdAt: "DESC" },
+        limit: 100
+      });
+    }
+    return rows.filter((c) => !enrolled.has(c.id)).sort((a, b) => (b.studentCount || 0) - (a.studentCount || 0)).slice(0, limit).map((c) => ({
+      documentId: c.documentId,
+      id: c.id,
+      title: c.title,
+      category: c.category?.name ?? null,
+      cover: c.cover ?? null,
+      price: c.price,
+      isFree: c.isFree ?? true,
+      isPaid: c.isPaid,
+      courseType: c.courseType,
+      pointsPrice: c.pointsPrice,
+      studentCount: c.studentCount
+    }));
+  },
+  /** 推荐文章：兴趣分类内已发布文章，按发布时间排序；无兴趣 → 最新兜底 */
+  async recArticles(interests, limit) {
+    let rows = [];
+    if (interests.length) {
+      const cats = await strapi.db.query(ARTICLE_CAT_UID).findMany({ where: { name: { $in: interests } }, select: ["id"] });
+      const catIds = cats.map((c) => c.id);
+      if (catIds.length) {
+        rows = await strapi.db.query(ARTICLE_UID).findMany({
+          where: { category: catIds, status: "published" },
+          populate: { category: { select: ["name"] } },
+          limit: 100
+        });
+      }
+    }
+    if (!rows.length) {
+      rows = await strapi.db.query(ARTICLE_UID).findMany({
+        where: { status: "published" },
+        populate: { category: { select: ["name"] } },
+        orderBy: { publishedAt: "DESC" },
+        limit: 100
+      });
+    }
+    return rows.sort((a, b) => new Date(b.publishedAt || b.createdAt).getTime() - new Date(a.publishedAt || a.createdAt).getTime()).slice(0, limit).map((a) => ({
+      documentId: a.documentId,
+      id: a.id,
+      title: a.seoTitle || a.title,
+      excerpt: a.excerpt,
+      category: a.category?.name ?? null,
+      publishedAt: a.publishedAt || a.createdAt
+    }));
+  },
+  /** 推荐活动：兴趣类型内报名中的活动，排除已报名，按开始时间排序；无匹配 → 报名中兜底 */
+  async recActivities(interests, upUserId, limit) {
+    let signed = /* @__PURE__ */ new Set();
+    if (upUserId) {
+      const signs = await strapi.db.query(SIGNS_UID).findMany({
+        where: { user: upUserId },
+        populate: { activity: { select: ["id"] } },
+        limit: 500
+      });
+      signed = new Set(signs.map((s) => s.activity?.id).filter(Boolean));
+    }
+    let rows = [];
+    if (interests.length) {
+      rows = await strapi.db.query(ACTIVITY_UID).findMany({
+        where: { status: "signup_open", type: { $in: interests } },
+        limit: 100
+      });
+    }
+    if (!rows.length) {
+      rows = await strapi.db.query(ACTIVITY_UID).findMany({ where: { status: "signup_open" }, limit: 100 });
+    }
+    return rows.filter((a) => !signed.has(a.id)).sort((a, b) => new Date(b.startTime || b.createdAt).getTime() - new Date(a.startTime || a.createdAt).getTime()).slice(0, limit).map((a) => ({
+      documentId: a.documentId,
+      id: a.id,
+      title: a.title,
+      type: a.type,
+      startTime: a.startTime,
+      endTime: a.endTime,
+      venueName: a.venueName,
+      capacity: a.capacity,
+      usedCapacity: a.usedCapacity
+    }));
+  }
+});
 const services = {
   "sso-jwt": ssoJwt,
   "sso-user": ssoUser,
@@ -4903,7 +5064,8 @@ const services = {
   "sso-invite": ssoInvite,
   "sso-msg": ssoMsg,
   "sso-sop": ssoSop,
-  "sso-profile": ssoProfile
+  "sso-profile": ssoProfile,
+  "sso-recommend": ssoRecommend
 };
 const fallbackAuthenticated = async (policyContext, _config, { strapi }) => {
   try {
