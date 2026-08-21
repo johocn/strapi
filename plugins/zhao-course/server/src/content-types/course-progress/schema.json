@@ -52,6 +52,12 @@
     },
     "lastStudyAt": {
       "type": "datetime"
+    },
+    "completedAt": {
+      "type": "datetime"
+    },
+    "lastReminderAt": {
+      "type": "datetime"
     }
   }
 }
