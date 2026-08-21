@@ -4150,17 +4150,29 @@ const activity = ({ strapi }) => ({
       populate: ["user"]
     });
     const knex = strapi.db.connection;
+    const act = await strapi.db.query(ACTIVITY_UID$2).findOne({ where: { id: activityId } });
+    const feeCollectAt = act?.feeCollectAt || "signup";
+    const cost = act?.pointsCost || 0;
     let promoted = 0;
     for (const p of pending) {
       if (promoted >= 1) break;
       const claimed = await knex("activities").where("id", activityId).andWhere("used_capacity", "<", knex.raw("capacity")).increment("used_capacity", 1);
       if (claimed === 0) break;
+      const upUserId = p.user?.id ?? p.user;
+      if (feeCollectAt === "signup" && cost > 0) {
+        const userChannelId = await resolveUserChannelId(strapi, upUserId);
+        try {
+          await strapi.plugin("zhao-point").service("point").deductPoints({ userId: upUserId, action: "activity_fee", points: cost, source: "activity", method: "activity_promote", remark: `候补转正:${act?.title ?? ""}`, orderId: `act:${act?.id ?? activityId}`, userChannelId });
+        } catch {
+          await knex("activities").where("id", activityId).decrement("used_capacity", 1);
+          continue;
+        }
+      }
       await strapi.db.query(SIGNS_UID).update({
         where: { id: p.id },
-        data: { status: "active", signupAt: /* @__PURE__ */ new Date() }
+        data: { status: "active", signupAt: /* @__PURE__ */ new Date(), pointsCharged: feeCollectAt === "signup" ? cost : 0 }
       });
       promoted++;
-      const upUserId = p.user?.id ?? p.user;
       if (upUserId) await this.notifyPromoted(upUserId, activityId);
     }
     return { promoted };
