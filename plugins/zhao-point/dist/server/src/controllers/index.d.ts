@@ -110,5 +110,10 @@ declare const _default: {
         month(ctx: any): Promise<void>;
         adminMonth(ctx: any): Promise<void>;
     };
+    fee: ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        preview(ctx: any): Promise<void>;
+    };
 };
 export default _default;

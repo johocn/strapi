@@ -4110,6 +4110,8 @@ export interface PluginZhaoPointActivity extends Struct.CollectionTypeSchema {
     endTime: Schema.Attribute.DateTime;
     feeCollectAt: Schema.Attribute.Enumeration<['signup', 'checkin']> &
       Schema.Attribute.DefaultTo<'signup'>;
+    feeFactors: Schema.Attribute.JSON;
+    feeTiers: Schema.Attribute.JSON;
     geoEnforced: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
     geoRadiusM: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<500>;
     lat: Schema.Attribute.Float;
@@ -4137,6 +4139,8 @@ export interface PluginZhaoPointActivity extends Struct.CollectionTypeSchema {
       'manyToMany',
       'plugin::zhao-course.course-lesson'
     >;
+    pricingMode: Schema.Attribute.Enumeration<['flat', 'tier', 'factor']> &
+      Schema.Attribute.DefaultTo<'flat'>;
     publishedAt: Schema.Attribute.DateTime;
     signupEnd: Schema.Attribute.DateTime;
     signupStart: Schema.Attribute.DateTime;
@@ -4254,6 +4258,7 @@ export interface PluginZhaoPointActivitySignup
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+    feeTierId: Schema.Attribute.String;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
