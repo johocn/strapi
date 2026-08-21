@@ -257,6 +257,96 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     }
   },
 
+  // POST /activities/:documentId/review （注册用户评价：评分1-5/NPS 0-10/文字）
+  async review(ctx: any) {
+    const userId = getUserId(ctx);
+    const act = await strapi.documents(ACTIVITY_UID).findOne({ documentId: ctx.params.documentId });
+    if (!act) { ctx.status = 404; ctx.body = { error: "活动不存在" }; return; }
+    const signup = await strapi.db.query(SIGNS_UID).findOne({
+      where: { user: userId, activity: act.id, status: "active" },
+    });
+    if (!signup) { ctx.status = 403; ctx.body = { error: "尚未报名，无法评价" }; return; }
+    const { rating, nps, review } = ctx.request.body || {};
+    if (rating != null && (Number(rating) < 1 || Number(rating) > 5)) {
+      ctx.status = 400; ctx.body = { error: "评分须在1-5之间" }; return;
+    }
+    if (nps != null && (Number(nps) < 0 || Number(nps) > 10)) {
+      ctx.status = 400; ctx.body = { error: "NPS须在0-10之间" }; return;
+    }
+    await strapi.db.query(SIGNS_UID).update({
+      where: { id: signup.id },
+      data: {
+        rating: rating != null ? Number(rating) : signup.rating,
+        nps: nps != null ? Number(nps) : signup.nps,
+        review: review != null ? String(review) : signup.review,
+        reviewedAt: new Date(),
+      },
+    });
+    ctx.body = wrap({ ok: true });
+  },
+
+  // POST /adm/activities/:documentId/close （管理员关闭活动并触发活动后 SOP）
+  async adminClose(ctx: any) {
+    try {
+      const result = await activitySvc().closeActivity(ctx.params.documentId);
+      ctx.body = wrap(result);
+    } catch (e: any) {
+      ctx.status = (e as any).status || 400;
+      ctx.body = { error: e.message };
+    }
+  },
+
+  // GET /adm/activity-reviews （评价看板：列表 + 汇总；?activityDId= 可过滤）
+  async adminReviews(ctx: any) {
+    try {
+      const { page = "1", pageSize = "20", activityDId } = ctx.query;
+      const filter: any = {
+        $or: [{ rating: { $notNull: true } }, { review: { $notNull: true } }],
+      };
+      if (activityDId) {
+        const act = await strapi.documents(ACTIVITY_UID).findOne({ documentId: activityDId });
+        if (!act) { ctx.status = 404; ctx.body = { error: "活动不存在" }; return; }
+        filter.activity = act.id;
+      }
+      const result = await strapi.db.query(SIGNS_UID).findPage({
+        where: filter,
+        populate: { user: true, activity: true },
+        orderBy: { reviewedAt: "desc" },
+        page: parseInt(page), pageSize: parseInt(pageSize),
+      });
+      const rows = result?.results ?? [];
+      // 汇总
+      const all = await strapi.db.query(SIGNS_UID).findMany({ where: filter });
+      const count = all.length;
+      const withRating = all.filter((r: any) => r.rating != null);
+      const withNps = all.filter((r: any) => r.nps != null);
+      const avgRating = withRating.length ? withRating.reduce((a: number, r: any) => a + r.rating, 0) / withRating.length : 0;
+      const avgNps = withNps.length ? withNps.reduce((a: number, r: any) => a + r.nps, 0) / withNps.length : 0;
+      const ratingDist = [0, 0, 0, 0, 0, 0];
+      for (const r of withRating) ratingDist[Math.max(0, Math.min(5, r.rating))]++;
+      const detractor = withNps.filter((r: any) => r.nps <= 6).length;
+      const passive = withNps.filter((r: any) => r.nps >= 7 && r.nps <= 8).length;
+      const promoter = withNps.filter((r: any) => r.nps >= 9).length;
+      const npsScore = withNps.length ? Math.round(((promoter - detractor) / withNps.length) * 100) : 0;
+      ctx.body = {
+        rows: rows.map((r: any) => ({
+          id: r.id,
+          user: r.user ? { id: r.user.id, username: r.user.username } : null,
+          rating: r.rating ?? null,
+          nps: r.nps ?? null,
+          review: r.review ?? null,
+          reviewedAt: r.reviewedAt,
+          activity: r.activity ? { id: r.activity.id, title: r.activity.title } : null,
+        })),
+        summary: { count, avgRating: Number(avgRating.toFixed(2)), avgNps: Number(avgNps.toFixed(2)), npsScore, ratingDist, detractor, passive, promoter },
+        pagination: result?.pagination ?? {},
+      };
+    } catch (e: any) {
+      ctx.status = (e as any).status || 400;
+      ctx.body = { error: e.message };
+    }
+  },
+
   /** 裂变榜：按 inviter 聚合奖励记录，可筛时间；返回带来报名数/发放积分/明细 */
   async fissionLeaderboard(ctx: any) {
     const { start, end } = ctx.query;

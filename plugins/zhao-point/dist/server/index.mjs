@@ -1864,6 +1864,109 @@ const activity$1 = ({ strapi: strapi2 }) => {
         ctx.body = { error: e.message };
       }
     },
+    // POST /activities/:documentId/review （注册用户评价：评分1-5/NPS 0-10/文字）
+    async review(ctx) {
+      const userId = getUserId(ctx);
+      const act = await strapi2.documents(ACTIVITY_UID$4).findOne({ documentId: ctx.params.documentId });
+      if (!act) {
+        ctx.status = 404;
+        ctx.body = { error: "活动不存在" };
+        return;
+      }
+      const signup = await strapi2.db.query(SIGNS_UID$2).findOne({
+        where: { user: userId, activity: act.id, status: "active" }
+      });
+      if (!signup) {
+        ctx.status = 403;
+        ctx.body = { error: "尚未报名，无法评价" };
+        return;
+      }
+      const { rating, nps, review } = ctx.request.body || {};
+      if (rating != null && (Number(rating) < 1 || Number(rating) > 5)) {
+        ctx.status = 400;
+        ctx.body = { error: "评分须在1-5之间" };
+        return;
+      }
+      if (nps != null && (Number(nps) < 0 || Number(nps) > 10)) {
+        ctx.status = 400;
+        ctx.body = { error: "NPS须在0-10之间" };
+        return;
+      }
+      await strapi2.db.query(SIGNS_UID$2).update({
+        where: { id: signup.id },
+        data: {
+          rating: rating != null ? Number(rating) : signup.rating,
+          nps: nps != null ? Number(nps) : signup.nps,
+          review: review != null ? String(review) : signup.review,
+          reviewedAt: /* @__PURE__ */ new Date()
+        }
+      });
+      ctx.body = wrap$2({ ok: true });
+    },
+    // POST /adm/activities/:documentId/close （管理员关闭活动并触发活动后 SOP）
+    async adminClose(ctx) {
+      try {
+        const result = await activitySvc().closeActivity(ctx.params.documentId);
+        ctx.body = wrap$2(result);
+      } catch (e) {
+        ctx.status = e.status || 400;
+        ctx.body = { error: e.message };
+      }
+    },
+    // GET /adm/activity-reviews （评价看板：列表 + 汇总；?activityDId= 可过滤）
+    async adminReviews(ctx) {
+      try {
+        const { page = "1", pageSize = "20", activityDId } = ctx.query;
+        const filter = {
+          $or: [{ rating: { $notNull: true } }, { review: { $notNull: true } }]
+        };
+        if (activityDId) {
+          const act = await strapi2.documents(ACTIVITY_UID$4).findOne({ documentId: activityDId });
+          if (!act) {
+            ctx.status = 404;
+            ctx.body = { error: "活动不存在" };
+            return;
+          }
+          filter.activity = act.id;
+        }
+        const result = await strapi2.db.query(SIGNS_UID$2).findPage({
+          where: filter,
+          populate: { user: true, activity: true },
+          orderBy: { reviewedAt: "desc" },
+          page: parseInt(page),
+          pageSize: parseInt(pageSize)
+        });
+        const rows = result?.results ?? [];
+        const all = await strapi2.db.query(SIGNS_UID$2).findMany({ where: filter });
+        const count = all.length;
+        const withRating = all.filter((r) => r.rating != null);
+        const withNps = all.filter((r) => r.nps != null);
+        const avgRating = withRating.length ? withRating.reduce((a, r) => a + r.rating, 0) / withRating.length : 0;
+        const avgNps = withNps.length ? withNps.reduce((a, r) => a + r.nps, 0) / withNps.length : 0;
+        const ratingDist = [0, 0, 0, 0, 0, 0];
+        for (const r of withRating) ratingDist[Math.max(0, Math.min(5, r.rating))]++;
+        const detractor = withNps.filter((r) => r.nps <= 6).length;
+        const passive = withNps.filter((r) => r.nps >= 7 && r.nps <= 8).length;
+        const promoter = withNps.filter((r) => r.nps >= 9).length;
+        const npsScore = withNps.length ? Math.round((promoter - detractor) / withNps.length * 100) : 0;
+        ctx.body = {
+          rows: rows.map((r) => ({
+            id: r.id,
+            user: r.user ? { id: r.user.id, username: r.user.username } : null,
+            rating: r.rating ?? null,
+            nps: r.nps ?? null,
+            review: r.review ?? null,
+            reviewedAt: r.reviewedAt,
+            activity: r.activity ? { id: r.activity.id, title: r.activity.title } : null
+          })),
+          summary: { count, avgRating: Number(avgRating.toFixed(2)), avgNps: Number(avgNps.toFixed(2)), npsScore, ratingDist, detractor, passive, promoter },
+          pagination: result?.pagination ?? {}
+        };
+      } catch (e) {
+        ctx.status = e.status || 400;
+        ctx.body = { error: e.message };
+      }
+    },
     /** 裂变榜：按 inviter 聚合奖励记录，可筛时间；返回带来报名数/发放积分/明细 */
     async fissionLeaderboard(ctx) {
       const { start, end } = ctx.query;
@@ -35384,6 +35487,7 @@ const contentApi = () => ({
     userRoute("POST", "/my/activity/:documentId/cancel", "activity.cancel"),
     userRoute("POST", "/my/activity/:documentId/checkin", "activity.checkin"),
     userRoute("GET", "/my/activities", "activity.mySignups"),
+    userRoute("POST", "/activities/:documentId/review", "activity.review"),
     // 管理员路由（需渠道作用域）
     channelScopeRoute("GET", "/adm/activities", "activity.adminList", "activity.read"),
     channelScopeRoute("GET", "/adm/activities/calendar", "calendar.adminMonth", "activity.read"),
@@ -35395,6 +35499,8 @@ const contentApi = () => ({
     channelScopeRoute("POST", "/adm/activities/:documentId/scan-checkin", "activity.adminScanCheckin", "activity.update"),
     channelScopeRoute("GET", "/adm/activities/:documentId/attendance", "activity.adminAttendance", "activity.read"),
     channelScopeRoute("GET", "/adm/activity-share/leaderboard", "activity.fissionLeaderboard", "activity.read"),
+    channelScopeRoute("POST", "/adm/activities/:documentId/close", "activity.adminClose", "activity.update"),
+    channelScopeRoute("GET", "/adm/activity-reviews", "activity.adminReviews", "activity.read"),
     // ===== 活动系列 + 排期管理 =====
     publicRoute("GET", "/series", "series.list"),
     publicRoute("GET", "/series/:documentId", "series.detail"),

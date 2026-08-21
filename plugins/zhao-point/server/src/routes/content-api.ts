@@ -154,6 +154,7 @@ export default () => ({
     userRoute("POST", "/my/activity/:documentId/cancel", "activity.cancel"),
     userRoute("POST", "/my/activity/:documentId/checkin", "activity.checkin"),
     userRoute("GET", "/my/activities", "activity.mySignups"),
+    userRoute("POST", "/activities/:documentId/review", "activity.review"),
 
     // 管理员路由（需渠道作用域）
     channelScopeRoute("GET", "/adm/activities", "activity.adminList", "activity.read"),
@@ -166,6 +167,8 @@ export default () => ({
     channelScopeRoute("POST", "/adm/activities/:documentId/scan-checkin", "activity.adminScanCheckin", "activity.update"),
     channelScopeRoute("GET", "/adm/activities/:documentId/attendance", "activity.adminAttendance", "activity.read"),
     channelScopeRoute("GET", "/adm/activity-share/leaderboard", "activity.fissionLeaderboard", "activity.read"),
+    channelScopeRoute("POST", "/adm/activities/:documentId/close", "activity.adminClose", "activity.update"),
+    channelScopeRoute("GET", "/adm/activity-reviews", "activity.adminReviews", "activity.read"),
 
     // ===== 活动系列 + 排期管理 =====
     publicRoute("GET", "/series", "series.list"),

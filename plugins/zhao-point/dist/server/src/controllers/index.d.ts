@@ -89,6 +89,9 @@ declare const _default: {
         adminCancelSignup(ctx: any): Promise<void>;
         adminScanCheckin(ctx: any): Promise<void>;
         adminAttendance(ctx: any): Promise<void>;
+        review(ctx: any): Promise<void>;
+        adminClose(ctx: any): Promise<void>;
+        adminReviews(ctx: any): Promise<void>;
         fissionLeaderboard(ctx: any): Promise<void>;
     };
     series: ({ strapi }: {

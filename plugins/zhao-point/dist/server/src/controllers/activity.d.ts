@@ -16,6 +16,9 @@ declare const _default: ({ strapi }: {
     adminCancelSignup(ctx: any): Promise<void>;
     adminScanCheckin(ctx: any): Promise<void>;
     adminAttendance(ctx: any): Promise<void>;
+    review(ctx: any): Promise<void>;
+    adminClose(ctx: any): Promise<void>;
+    adminReviews(ctx: any): Promise<void>;
     /** 裂变榜：按 inviter 聚合奖励记录，可筛时间；返回带来报名数/发放积分/明细 */
     fissionLeaderboard(ctx: any): Promise<void>;
 };
