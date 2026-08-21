@@ -64,6 +64,27 @@ const register = ({ strapi }) => {
 };
 const bootstrap = async ({ strapi }) => {
   strapi.log.info("[zhao-sso] Plugin bootstrapped");
+  const TEMPLATE_UID_ACT = "plugin::zhao-sso.msg-template";
+  const VERSION_UID_ACT = "plugin::zhao-sso.msg-template-version";
+  const DEFAULT_SOP_TEMPLATES = [
+    { code: "act_confirm", name: "活动报名成功确认", desc: "报名成功立即发送" },
+    { code: "act_before", name: "活动开始前提醒", desc: "活动开始前 24h 提醒" },
+    { code: "act_receipt", name: "活动结束回执（感谢+评价邀请）", desc: "活动结束到场用户回执" },
+    { code: "act_repurchase", name: "复购/转介邀请", desc: "活动结束到场用户次日复购/转介触达" },
+    { code: "act_noshow_revisit", name: "未到场挽回", desc: "活动结束未到场用户次日挽回" }
+  ];
+  for (const t of DEFAULT_SOP_TEMPLATES) {
+    let tpl = await strapi.db.query(TEMPLATE_UID_ACT).findOne({ where: { code: t.code } });
+    if (!tpl) {
+      tpl = await strapi.db.query(TEMPLATE_UID_ACT).create({ data: { code: t.code, name: t.name, provider: "wechat", content: "（shenglin SOP 模板）", isEnabled: true, description: t.desc } });
+      strapi.log.info(`[zhao-sso] SOP template seeded: ${t.code}`);
+    }
+    let ver = await strapi.db.query(VERSION_UID_ACT).findOne({ where: { code: `${t.code}_v1` } });
+    if (!ver) {
+      await strapi.db.query(VERSION_UID_ACT).create({ data: { template: tpl.id, code: `${t.code}_v1`, name: `${t.name} v1`, status: "active", weight: 1, clickCount: 0, sentCount: 0, successCount: 0 } });
+      strapi.log.info(`[zhao-sso] SOP template version seeded: ${t.code}_v1`);
+    }
+  }
   const rawSecret = process.env.SSO_DEFAULT_APP_SECRET;
   if (!rawSecret) {
     strapi.log.warn("[zhao-sso] SSO_DEFAULT_APP_SECRET 未配置,跳过默认应用创建(请在 .env 中设置)");
@@ -444,7 +465,7 @@ const kind$3 = "collectionType";
 const collectionName$3 = "sso_sop_rules";
 const info$3 = { "singularName": "sop-rule", "pluralName": "sop-rules", "displayName": "SSO SOP Rule" };
 const options$3 = { "draftAndPublish": false };
-const attributes$3 = { "code": { "type": "string", "unique": true, "required": true }, "name": { "type": "string", "required": true }, "source": { "type": "enumeration", "enum": ["event", "cron"], "default": "event", "required": true }, "event": { "type": "string" }, "cronExpression": { "type": "string" }, "templateCode": { "type": "string" }, "scene": { "type": "string", "required": true }, "delayMinutes": { "type": "integer", "default": 0 }, "link": { "type": "text" }, "paramsTemplate": { "type": "json" }, "enabled": { "type": "boolean", "default": true, "required": true }, "description": { "type": "text" } };
+const attributes$3 = { "code": { "type": "string", "unique": true, "required": true }, "name": { "type": "string", "required": true }, "source": { "type": "enumeration", "enum": ["event", "cron"], "default": "event", "required": true }, "event": { "type": "string" }, "cronExpression": { "type": "string" }, "templateCode": { "type": "string" }, "scene": { "type": "string", "required": true }, "delayMinutes": { "type": "integer", "default": 0 }, "link": { "type": "text" }, "paramsTemplate": { "type": "json" }, "enabled": { "type": "boolean", "default": true, "required": true }, "description": { "type": "text" }, "conversionWindowDays": { "type": "integer" } };
 const schema$3 = {
   kind: kind$3,
   collectionName: collectionName$3,

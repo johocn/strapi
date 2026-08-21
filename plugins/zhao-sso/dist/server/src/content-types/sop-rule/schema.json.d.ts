@@ -19,7 +19,8 @@ declare const _default: {
     "link": { "type": "text" },
     "paramsTemplate": { "type": "json" },
     "enabled": { "type": "boolean", "default": true, "required": true },
-    "description": { "type": "text" }
+    "description": { "type": "text" },
+    "conversionWindowDays": { "type": "integer" }
   }
 };
 

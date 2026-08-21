@@ -4,6 +4,29 @@ import type { Core } from "@strapi/strapi";
 const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
   strapi.log.info("[zhao-sso] Plugin bootstrapped");
 
+  // Seed 活动 SOP 消息模板 + active 版本（幂等按 code；模板不存落地页 link，link 由 sop-rule.link 或触发 payload 提供）
+  const TEMPLATE_UID_ACT = "plugin::zhao-sso.msg-template";
+  const VERSION_UID_ACT = "plugin::zhao-sso.msg-template-version";
+  const DEFAULT_SOP_TEMPLATES = [
+    { code: "act_confirm", name: "活动报名成功确认", desc: "报名成功立即发送" },
+    { code: "act_before", name: "活动开始前提醒", desc: "活动开始前 24h 提醒" },
+    { code: "act_receipt", name: "活动结束回执（感谢+评价邀请）", desc: "活动结束到场用户回执" },
+    { code: "act_repurchase", name: "复购/转介邀请", desc: "活动结束到场用户次日复购/转介触达" },
+    { code: "act_noshow_revisit", name: "未到场挽回", desc: "活动结束未到场用户次日挽回" },
+  ];
+  for (const t of DEFAULT_SOP_TEMPLATES) {
+    let tpl = await strapi.db.query(TEMPLATE_UID_ACT).findOne({ where: { code: t.code } });
+    if (!tpl) {
+      tpl = await strapi.db.query(TEMPLATE_UID_ACT).create({ data: { code: t.code, name: t.name, provider: "wechat", content: "（shenglin SOP 模板）", isEnabled: true, description: t.desc } });
+      strapi.log.info(`[zhao-sso] SOP template seeded: ${t.code}`);
+    }
+    let ver = await strapi.db.query(VERSION_UID_ACT).findOne({ where: { code: `${t.code}_v1` } });
+    if (!ver) {
+      await strapi.db.query(VERSION_UID_ACT).create({ data: { template: tpl.id, code: `${t.code}_v1`, name: `${t.name} v1`, status: "active", weight: 1, clickCount: 0, sentCount: 0, successCount: 0 } });
+      strapi.log.info(`[zhao-sso] SOP template version seeded: ${t.code}_v1`);
+    }
+  }
+
   // 从环境变量读取默认密钥,未配置时跳过创建(避免硬编码密钥上生产)
   const rawSecret = process.env.SSO_DEFAULT_APP_SECRET;
   if (!rawSecret) {

@@ -57,6 +57,9 @@ declare const _default: {
             description: {
                 type: string;
             };
+            conversionWindowDays: {
+                type: string;
+            };
         };
     };
 };
