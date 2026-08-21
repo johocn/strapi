@@ -1259,6 +1259,7 @@ declare const _default: {
         };
         "msg-stats": ({ strapi }: any) => {
             sopStats(ctx: any): Promise<void>;
+            repurchaseStats(ctx: any): Promise<void>;
         };
     };
     routes: {

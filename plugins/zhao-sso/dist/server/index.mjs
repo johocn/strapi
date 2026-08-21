@@ -2539,6 +2539,16 @@ const msgStats = ({ strapi }) => ({
       ctx.status = e.status || e.cause?.status || 400;
       ctx.body = { error: e.message };
     }
+  },
+  async repurchaseStats(ctx) {
+    const { from, to } = ctx.query || {};
+    try {
+      const data = await strapi.plugin("zhao-sso").service("sso-stats").getRepurchaseStats({ from, to });
+      ctx.body = { data };
+    } catch (e) {
+      ctx.status = e.status || e.cause?.status || 400;
+      ctx.body = { error: e.message };
+    }
   }
 });
 const controllers = {
@@ -2841,6 +2851,7 @@ const admin = () => ({
     adminRoute("PUT", "/sop-rules/:id", "sop.update", "sso.msg.write"),
     adminRoute("DELETE", "/sop-rules/:id", "sop.delete", "sso.msg.write"),
     adminRoute("GET", "/msg/sop-stats", "msg-stats.sopStats", "sso.msg.read"),
+    adminRoute("GET", "/msg/repurchase-stats", "msg-stats.repurchaseStats", "sso.msg.read"),
     // 用户画像分层
     adminRoute("GET", "/profiles", "profile.list", "sso.profile.read"),
     adminRoute("GET", "/profiles/:id", "profile.detail", "sso.profile.read"),

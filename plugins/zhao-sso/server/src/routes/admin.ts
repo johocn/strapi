@@ -121,6 +121,7 @@ export default () => ({
     adminRoute("PUT", "/sop-rules/:id", "sop.update", "sso.msg.write"),
     adminRoute("DELETE", "/sop-rules/:id", "sop.delete", "sso.msg.write"),
     adminRoute("GET", "/msg/sop-stats", "msg-stats.sopStats", "sso.msg.read"),
+    adminRoute("GET", "/msg/repurchase-stats", "msg-stats.repurchaseStats", "sso.msg.read"),
 
     // 用户画像分层
     adminRoute("GET", "/profiles", "profile.list", "sso.profile.read"),
