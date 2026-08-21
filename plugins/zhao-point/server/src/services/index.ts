@@ -5,6 +5,7 @@ import verification from "./verification";
 import configService from "./config-service";
 import signIn from "./sign-in";
 import activity from "./activity";
+import seriesService from "./series-service";
 
 export default {
   point,
@@ -14,4 +15,5 @@ export default {
   "config-service": configService,
   "sign-in": signIn,
   activity,
+  "series-service": seriesService,
 };
