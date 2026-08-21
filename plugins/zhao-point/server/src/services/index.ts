@@ -6,6 +6,7 @@ import configService from "./config-service";
 import signIn from "./sign-in";
 import activity from "./activity";
 import seriesService from "./series-service";
+import calendarService from "./calendar-service";
 
 export default {
   point,
@@ -16,4 +17,5 @@ export default {
   "sign-in": signIn,
   activity,
   "series-service": seriesService,
+  "calendar-service": calendarService,
 };

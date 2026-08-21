@@ -145,6 +145,7 @@ export default () => ({
     // ===== 活动（报名/到场签到） =====
     // 公开路由
     publicRoute("GET", "/activities", "activity.list"),
+    publicRoute("GET", "/activities/calendar", "calendar.month"),
     publicRoute("GET", "/activities/:documentId", "activity.detail"),
 
     // 注册用户路由
@@ -155,6 +156,7 @@ export default () => ({
 
     // 管理员路由（需渠道作用域）
     channelScopeRoute("GET", "/adm/activities", "activity.adminList", "activity.read"),
+    channelScopeRoute("GET", "/adm/activities/calendar", "calendar.adminMonth", "activity.read"),
     channelScopeRoute("POST", "/adm/activities", "activity.adminCreate", "activity.create"),
     channelScopeRoute("PUT", "/adm/activities/:documentId", "activity.adminUpdate", "activity.update"),
     channelScopeRoute("DELETE", "/adm/activities/:documentId", "activity.adminDelete", "activity.delete"),

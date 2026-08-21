@@ -782,5 +782,18 @@ declare const _default: {
             reason?: undefined;
         }>;
     };
+    "calendar-service": ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        getCalendarMonth({ month, includeAllStatus }?: {
+            month?: string;
+            includeAllStatus?: boolean;
+        }): Promise<{
+            days: {
+                date: string;
+                activities: any[];
+            }[];
+        }>;
+    };
 };
 export default _default;

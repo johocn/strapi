@@ -482,6 +482,12 @@ declare const _default: {
             adminDuplicateActivity(ctx: any): Promise<void>;
             adminGenerate(ctx: any): Promise<void>;
         };
+        calendar: ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            month(ctx: any): Promise<void>;
+            adminMonth(ctx: any): Promise<void>;
+        };
     };
     contentTypes: {
         "point-record": {
@@ -2348,6 +2354,19 @@ declare const _default: {
             } | {
                 generated: number;
                 reason?: undefined;
+            }>;
+        };
+        "calendar-service": ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            getCalendarMonth({ month, includeAllStatus }?: {
+                month?: string;
+                includeAllStatus?: boolean;
+            }): Promise<{
+                days: {
+                    date: string;
+                    activities: any[];
+                }[];
             }>;
         };
     };

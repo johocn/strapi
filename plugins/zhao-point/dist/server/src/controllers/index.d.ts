@@ -104,5 +104,11 @@ declare const _default: {
         adminDuplicateActivity(ctx: any): Promise<void>;
         adminGenerate(ctx: any): Promise<void>;
     };
+    calendar: ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        month(ctx: any): Promise<void>;
+        adminMonth(ctx: any): Promise<void>;
+    };
 };
 export default _default;
