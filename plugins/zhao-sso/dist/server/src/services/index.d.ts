@@ -387,6 +387,7 @@ declare const _default: {
             upUser: any;
             hasData: boolean;
         }>;
+        collectInterests(userId: number): Promise<string[]>;
         segmentOf(profile: any): {
             segment: string;
             segmentScore: number;

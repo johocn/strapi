@@ -864,6 +864,10 @@ declare const _default: {
                     type: string;
                     required: boolean;
                 };
+                type: {
+                    type: string;
+                    default: string;
+                };
                 description: {
                     type: string;
                 };

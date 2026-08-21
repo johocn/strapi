@@ -4725,6 +4725,7 @@ const SSO_USER_UID = "plugin::zhao-sso.sso-user";
 const LESSON_PROGRESS_UID = "plugin::zhao-course.lesson-progress";
 const ENROLL_UID = "plugin::zhao-course.course-enrollment";
 const VISIT_LOG_UID = "plugin::zhao-website.visit-log";
+const ARTICLE_UID = "plugin::zhao-website.article";
 const SIGNS_UID = "plugin::zhao-point.activity-signup";
 const REDEMPTION_UID = "plugin::zhao-point.point-redemption";
 const clamp = (n) => Math.max(0, Math.min(100, Math.round(n)));
@@ -4783,8 +4784,57 @@ const ssoProfile = ({ strapi }) => ({
       strapi.db.query(REDEMPTION_UID).count({ where: { user: userId } }).catch(() => 0)
     ]);
     const payment = clamp(paid * 30 + points * 15);
-    const interests = [];
+    const interests = await this.collectInterests(userId);
     return { activity, reading, completion, attendance, payment, interests, user: ssoUserId, upUser: up, hasData: true };
+  },
+  /** 兴趣标签：近30天 课程分类/文章分类/活动类型 频次 top3（跨来源同名合并） */
+  async collectInterests(userId) {
+    const days30 = new Date(Date.now() - 30 * 24 * 3600 * 1e3);
+    const counts = {};
+    const lps = await strapi.db.query(LESSON_PROGRESS_UID).findMany({
+      where: { user: userId, lastStudyAt: { $gte: days30 } },
+      populate: { course: { select: ["id"], populate: { category: { select: ["name"] } } } },
+      limit: 500
+    });
+    const courseCats = /* @__PURE__ */ new Map();
+    for (const lp of lps) {
+      const c = lp.course;
+      if (c?.id && c.category?.name) courseCats.set(c.id, c.category.name);
+    }
+    for (const name of courseCats.values()) counts[name] = (counts[name] || 0) + 1;
+    const reads = await strapi.db.query(VISIT_LOG_UID).findMany({
+      where: { userId, type: "article_view", createdAt: { $gte: days30 } },
+      select: ["targetId"],
+      limit: 300
+    });
+    const docIds = [...new Set(reads.map((r) => r.targetId).filter(Boolean))].slice(0, 200);
+    if (docIds.length) {
+      const articles = await strapi.db.query(ARTICLE_UID).findMany({
+        where: { documentId: { $in: docIds } },
+        populate: { category: { select: ["name"] } },
+        limit: 200
+      });
+      console.log("[debug-interests] articles", articles.map((a) => ({ id: a.id, doc: a.documentId, cat: a.category?.name })));
+      const seenCats = /* @__PURE__ */ new Set();
+      for (const a of articles) {
+        if (a.category?.name && !seenCats.has(a.category.name)) {
+          seenCats.add(a.category.name);
+          counts[a.category.name] = (counts[a.category.name] || 0) + 1;
+        }
+      }
+    }
+    const signs = await strapi.db.query(SIGNS_UID).findMany({
+      where: { user: userId, signupAt: { $gte: days30 } },
+      populate: { activity: { select: ["id", "type"] } },
+      limit: 200
+    });
+    const actTypes = /* @__PURE__ */ new Map();
+    for (const s of signs) {
+      const a = s.activity;
+      if (a?.id && a.type && a.type !== "其他") actTypes.set(a.id, a.type);
+    }
+    for (const t of actTypes.values()) counts[t] = (counts[t] || 0) + 1;
+    return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([tag]) => tag);
   },
   /** 加权打分 + 分层 */
   segmentOf(profile) {

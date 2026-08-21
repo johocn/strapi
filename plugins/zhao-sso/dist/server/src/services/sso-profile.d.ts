@@ -26,6 +26,8 @@ declare const _default: ({ strapi }: {
         upUser: any;
         hasData: boolean;
     }>;
+    /** 兴趣标签：近30天 课程分类/文章分类/活动类型 频次 top3（跨来源同名合并） */
+    collectInterests(userId: number): Promise<string[]>;
     /** 加权打分 + 分层 */
     segmentOf(profile: any): {
         segment: string;

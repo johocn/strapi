@@ -6,6 +6,7 @@
   "pluginOptions": { "i18n": { "localized": false } },
   "attributes": {
     "title": { "type": "string", "required": true },
+    "type": { "type": "string", "default": "其他" },
     "description": { "type": "text" },
     "startTime": { "type": "datetime" },
     "endTime": { "type": "datetime" },
