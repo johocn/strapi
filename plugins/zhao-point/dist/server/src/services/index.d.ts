@@ -713,9 +713,18 @@ declare const _default: {
         }): Promise<{
             ok: boolean;
             reason: string;
+            waitlisted?: undefined;
+            position?: undefined;
+        } | {
+            ok: boolean;
+            waitlisted: boolean;
+            position: number;
+            reason?: undefined;
         } | {
             ok: boolean;
             reason?: undefined;
+            waitlisted?: undefined;
+            position?: undefined;
         }>;
         closeActivity(activityId: string): Promise<{
             ok: boolean;
@@ -728,6 +737,10 @@ declare const _default: {
         }): Promise<{
             ok: boolean;
         }>;
+        promoteWaiting(activityId: number): Promise<{
+            promoted: number;
+        }>;
+        notifyPromoted(upUserId: number, activityId: number): Promise<void>;
         checkin({ userId, activityId, method, lat, lng }: {
             userId: number;
             activityId: string;

@@ -209,6 +209,23 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     }
   },
 
+  // POST /adm/activities/:documentId/signups/:signupId/cancel  仅可移出候补(waiting)
+  async adminCancelSignup(ctx: any) {
+    try {
+      const act = await strapi.documents(ACTIVITY_UID).findOne({ documentId: ctx.params.documentId });
+      if (!act) { ctx.status = 404; ctx.body = { error: "活动不存在" }; return; }
+      const signupId = parseInt(ctx.params.signupId, 10);
+      const signup = await strapi.db.query(SIGNS_UID).findOne({ where: { id: signupId, activity: act.id } });
+      if (!signup) { ctx.status = 404; ctx.body = { error: "报名记录不存在" }; return; }
+      if (signup.status !== "waiting") { ctx.status = 400; ctx.body = { error: "仅可移出候补名单" }; return; }
+      await strapi.db.query(SIGNS_UID).update({ where: { id: signupId }, data: { status: "cancelled" } });
+      ctx.body = wrap({ ok: true });
+    } catch (e: any) {
+      ctx.status = (e as any).status || 400;
+      ctx.body = { error: e.message };
+    }
+  },
+
   // POST /adm/activities/:documentId/scan-checkin
   async adminScanCheckin(ctx: any) {
     try {

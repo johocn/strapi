@@ -50,11 +50,29 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     const now = Date.now();
     if (act.signupStart && now < new Date(act.signupStart).getTime()) throw new Error("报名未开始");
     if (act.signupEnd && now > new Date(act.signupEnd).getTime()) throw new Error("报名已截止");
-    const dup = await strapi.db.query(SIGNS_UID).findOne({ where: { user: userId, activity: act.id, status: "active" } });
+    const dup = await strapi.db.query(SIGNS_UID).findOne({
+      where: { user: userId, activity: act.id, status: { $in: ["active", "waiting"] } },
+    });
     if (dup) return { ok: false, reason: "already_signed_up" };
     const knex = strapi.db.connection;
     const reserved = await knex("activities").where("id", act.id).andWhere("used_capacity", "<", knex.raw("capacity")).increment("used_capacity", 1);
-    if (reserved === 0) throw new Error("名额已满");
+    if (reserved === 0) {
+      // 名额已满 → 进入候补队列（不占用名额）
+      const sig = await strapi.db.query(SIGNS_UID).create({
+        data: { user: userId, activity: act.id, status: "waiting", signupAt: new Date() },
+      });
+      const waitCount = await strapi.db.query(SIGNS_UID).count({
+        where: {
+          activity: act.id,
+          status: "waiting",
+          $or: [
+            { signupAt: { $lt: sig.signupAt } },
+            { signupAt: sig.signupAt, id: { $lt: sig.id } },
+          ],
+        },
+      });
+      return { ok: true, waitlisted: true, position: waitCount + 1 };
+    }
     await strapi.db.query(SIGNS_UID).create({ data: { user: userId, activity: act.id, status: "active", signupAt: new Date() } });
     // 报名积分
     await grantPoints(strapi, userId, "activity_signup", "活动报名");
@@ -128,11 +146,72 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   },
 
   async cancel({ userId, activityId }: { userId: number; activityId: number }) {
-    const signup = await strapi.db.query(SIGNS_UID).findOne({ where: { user: userId, activity: activityId, status: "active" } });
+    const signup = await strapi.db.query(SIGNS_UID).findOne({
+      where: { user: userId, activity: activityId, status: { $in: ["active", "waiting"] } },
+    });
     if (!signup) throw new Error("未报名");
     await strapi.db.query(SIGNS_UID).update({ where: { id: signup.id }, data: { status: "cancelled" } });
-    await strapi.db.connection("activities").where("id", activityId).decrement("used_capacity", 1);
+    if (signup.status === "active") {
+      // 释放名额并递补候补（释放一席只转正一人）
+      await strapi.db.connection("activities").where("id", activityId).decrement("used_capacity", 1);
+      await this.promoteWaiting(activityId);
+    }
+    // waiting 取消：仅移出队列，不减名额、不递补
     return { ok: true };
+  },
+
+  /**
+   * 递补：从候补队列取最旧的一个 waiting 转正为 active（复用"used_capacity<capacity 原子占位"法，
+   * cancel 释放一席后调用，故每次至多转正一人），并对转正用户即时通知。
+   */
+  async promoteWaiting(activityId: number) {
+    const pending = await strapi.db.query(SIGNS_UID).findMany({
+      where: { activity: activityId, status: "waiting" },
+      orderBy: [{ signupAt: "asc" }, { id: "asc" }],
+      populate: ["user"],
+    });
+    const knex = strapi.db.connection;
+    let promoted = 0;
+    for (const p of pending) {
+      if (promoted >= 1) break; // 本次调用对应释放的一席，只转正一人
+      const claimed = await knex("activities")
+        .where("id", activityId)
+        .andWhere("used_capacity", "<", knex.raw("capacity"))
+        .increment("used_capacity", 1);
+      if (claimed === 0) break; // 无空位（并发已吃满），停止
+      await strapi.db.query(SIGNS_UID).update({
+        where: { id: p.id },
+        data: { status: "active", signupAt: new Date() },
+      });
+      promoted++;
+      const upUserId = p.user?.id ?? p.user;
+      if (upUserId) await this.notifyPromoted(upUserId, activityId);
+    }
+    return { promoted };
+  },
+
+  /** 递补转正即时通知：resolve sso 用户 → sso-msg.sendNow(act_promoted)，幂等；匹配不到/模板缺失降级不断链 */
+  async notifyPromoted(upUserId: number, activityId: number) {
+    try {
+      const sop = strapi.plugin("zhao-sso")?.service("sso-sop");
+      const msg = strapi.plugin("zhao-sso")?.service("sso-msg");
+      const act = await strapi.db.query("plugin::zhao-point.activity").findOne({ where: { id: activityId } });
+      if (!sop || !msg || !act) return;
+      const sso = await sop.resolveSsoUserForUpUser(upUserId);
+      if (!sso) {
+        strapi.log.warn(`[zhao-point:activity] promote notify skip: no sso for upUser=${upUserId}`);
+        return;
+      }
+      await msg.sendNow({
+        user: sso.id,
+        scene: "activity.promoted",
+        templateCode: "act_promoted",
+        params: { name: act.title, time: act.startTime },
+        dedupeKey: `activity:promote:${upUserId}:${activityId}`,
+      });
+    } catch (e: any) {
+      strapi.log.warn(`[zhao-point:activity] promote notify failed (user=${upUserId}): ${e.message}`);
+    }
   },
 
   async checkin({ userId, activityId, method, lat, lng }: {

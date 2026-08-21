@@ -6,7 +6,7 @@ declare const _default: {
   "attributes": {
     "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::users-permissions.user" },
     "activity": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.activity" },
-    "status": { "type": "enumeration", "enum": ["active", "cancelled"], "default": "active" },
+    "status": { "type": "enumeration", "enum": ["active", "cancelled", "waiting"], "default": "active" },
     "signupAt": { "type": "datetime" },
     "attendedAt": { "type": "datetime" }
   }

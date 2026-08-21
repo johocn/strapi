@@ -227,7 +227,7 @@ const kind$1 = "collectionType";
 const collectionName$1 = "activity_signups";
 const info$1 = { "singularName": "activity-signup", "pluralName": "activity-signups", "displayName": "Activity Signup" };
 const options$1 = { "draftAndPublish": false };
-const attributes$1 = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::users-permissions.user" }, "activity": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.activity" }, "status": { "type": "enumeration", "enum": ["active", "cancelled"], "default": "active" }, "signupAt": { "type": "datetime" }, "attendedAt": { "type": "datetime" } };
+const attributes$1 = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::users-permissions.user" }, "activity": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.activity" }, "status": { "type": "enumeration", "enum": ["active", "cancelled", "waiting"], "default": "active" }, "signupAt": { "type": "datetime" }, "attendedAt": { "type": "datetime" } };
 const activitySignup = {
   kind: kind$1,
   collectionName: collectionName$1,
@@ -1762,6 +1762,34 @@ const activity$1 = ({ strapi }) => {
           orderBy: { signupAt: "desc" }
         });
         ctx.body = wrapList(rows);
+      } catch (e) {
+        ctx.status = e.status || 400;
+        ctx.body = { error: e.message };
+      }
+    },
+    // POST /adm/activities/:documentId/signups/:signupId/cancel  仅可移出候补(waiting)
+    async adminCancelSignup(ctx) {
+      try {
+        const act = await strapi.documents(ACTIVITY_UID).findOne({ documentId: ctx.params.documentId });
+        if (!act) {
+          ctx.status = 404;
+          ctx.body = { error: "活动不存在" };
+          return;
+        }
+        const signupId = parseInt(ctx.params.signupId, 10);
+        const signup = await strapi.db.query(SIGNS_UID$1).findOne({ where: { id: signupId, activity: act.id } });
+        if (!signup) {
+          ctx.status = 404;
+          ctx.body = { error: "报名记录不存在" };
+          return;
+        }
+        if (signup.status !== "waiting") {
+          ctx.status = 400;
+          ctx.body = { error: "仅可移出候补名单" };
+          return;
+        }
+        await strapi.db.query(SIGNS_UID$1).update({ where: { id: signupId }, data: { status: "cancelled" } });
+        ctx.body = wrap({ ok: true });
       } catch (e) {
         ctx.status = e.status || 400;
         ctx.body = { error: e.message };
@@ -3782,11 +3810,28 @@ const activity = ({ strapi }) => ({
     const now = Date.now();
     if (act.signupStart && now < new Date(act.signupStart).getTime()) throw new Error("报名未开始");
     if (act.signupEnd && now > new Date(act.signupEnd).getTime()) throw new Error("报名已截止");
-    const dup = await strapi.db.query(SIGNS_UID).findOne({ where: { user: userId, activity: act.id, status: "active" } });
+    const dup = await strapi.db.query(SIGNS_UID).findOne({
+      where: { user: userId, activity: act.id, status: { $in: ["active", "waiting"] } }
+    });
     if (dup) return { ok: false, reason: "already_signed_up" };
     const knex = strapi.db.connection;
     const reserved = await knex("activities").where("id", act.id).andWhere("used_capacity", "<", knex.raw("capacity")).increment("used_capacity", 1);
-    if (reserved === 0) throw new Error("名额已满");
+    if (reserved === 0) {
+      const sig = await strapi.db.query(SIGNS_UID).create({
+        data: { user: userId, activity: act.id, status: "waiting", signupAt: /* @__PURE__ */ new Date() }
+      });
+      const waitCount = await strapi.db.query(SIGNS_UID).count({
+        where: {
+          activity: act.id,
+          status: "waiting",
+          $or: [
+            { signupAt: { $lt: sig.signupAt } },
+            { signupAt: sig.signupAt, id: { $lt: sig.id } }
+          ]
+        }
+      });
+      return { ok: true, waitlisted: true, position: waitCount + 1 };
+    }
     await strapi.db.query(SIGNS_UID).create({ data: { user: userId, activity: act.id, status: "active", signupAt: /* @__PURE__ */ new Date() } });
     await grantPoints(strapi, userId, "activity_signup", "活动报名");
     for (const lesson of act.preUnlockLessons || []) {
@@ -3853,11 +3898,65 @@ const activity = ({ strapi }) => ({
     return { ok: true, closed: true, revisitTriggered: triggered };
   },
   async cancel({ userId, activityId }) {
-    const signup = await strapi.db.query(SIGNS_UID).findOne({ where: { user: userId, activity: activityId, status: "active" } });
+    const signup = await strapi.db.query(SIGNS_UID).findOne({
+      where: { user: userId, activity: activityId, status: { $in: ["active", "waiting"] } }
+    });
     if (!signup) throw new Error("未报名");
     await strapi.db.query(SIGNS_UID).update({ where: { id: signup.id }, data: { status: "cancelled" } });
-    await strapi.db.connection("activities").where("id", activityId).decrement("used_capacity", 1);
+    if (signup.status === "active") {
+      await strapi.db.connection("activities").where("id", activityId).decrement("used_capacity", 1);
+      await this.promoteWaiting(activityId);
+    }
     return { ok: true };
+  },
+  /**
+   * 递补：从候补队列取最旧的一个 waiting 转正为 active（复用"used_capacity<capacity 原子占位"法，
+   * cancel 释放一席后调用，故每次至多转正一人），并对转正用户即时通知。
+   */
+  async promoteWaiting(activityId) {
+    const pending = await strapi.db.query(SIGNS_UID).findMany({
+      where: { activity: activityId, status: "waiting" },
+      orderBy: [{ signupAt: "asc" }, { id: "asc" }],
+      populate: ["user"]
+    });
+    const knex = strapi.db.connection;
+    let promoted = 0;
+    for (const p of pending) {
+      if (promoted >= 1) break;
+      const claimed = await knex("activities").where("id", activityId).andWhere("used_capacity", "<", knex.raw("capacity")).increment("used_capacity", 1);
+      if (claimed === 0) break;
+      await strapi.db.query(SIGNS_UID).update({
+        where: { id: p.id },
+        data: { status: "active", signupAt: /* @__PURE__ */ new Date() }
+      });
+      promoted++;
+      const upUserId = p.user?.id ?? p.user;
+      if (upUserId) await this.notifyPromoted(upUserId, activityId);
+    }
+    return { promoted };
+  },
+  /** 递补转正即时通知：resolve sso 用户 → sso-msg.sendNow(act_promoted)，幂等；匹配不到/模板缺失降级不断链 */
+  async notifyPromoted(upUserId, activityId) {
+    try {
+      const sop = strapi.plugin("zhao-sso")?.service("sso-sop");
+      const msg = strapi.plugin("zhao-sso")?.service("sso-msg");
+      const act = await strapi.db.query("plugin::zhao-point.activity").findOne({ where: { id: activityId } });
+      if (!sop || !msg || !act) return;
+      const sso = await sop.resolveSsoUserForUpUser(upUserId);
+      if (!sso) {
+        strapi.log.warn(`[zhao-point:activity] promote notify skip: no sso for upUser=${upUserId}`);
+        return;
+      }
+      await msg.sendNow({
+        user: sso.id,
+        scene: "activity.promoted",
+        templateCode: "act_promoted",
+        params: { name: act.title, time: act.startTime },
+        dedupeKey: `activity:promote:${upUserId}:${activityId}`
+      });
+    } catch (e) {
+      strapi.log.warn(`[zhao-point:activity] promote notify failed (user=${upUserId}): ${e.message}`);
+    }
   },
   async checkin({ userId, activityId, method, lat, lng }) {
     const act = await strapi.documents("plugin::zhao-point.activity").findOne({ documentId: activityId, populate: { learningPackageLessons: { populate: { course: true } } } });
@@ -4018,6 +4117,7 @@ const contentApi = () => ({
     channelScopeRoute("PUT", "/adm/activities/:documentId", "activity.adminUpdate", "activity.update"),
     channelScopeRoute("DELETE", "/adm/activities/:documentId", "activity.adminDelete", "activity.delete"),
     channelScopeRoute("GET", "/adm/activities/:documentId/signups", "activity.adminSignups", "activity.read"),
+    channelScopeRoute("POST", "/adm/activities/:documentId/signups/:signupId/cancel", "activity.adminCancelSignup", "activity.update"),
     channelScopeRoute("POST", "/adm/activities/:documentId/scan-checkin", "activity.adminScanCheckin", "activity.update"),
     channelScopeRoute("GET", "/adm/activities/:documentId/attendance", "activity.adminAttendance", "activity.read")
   ]
