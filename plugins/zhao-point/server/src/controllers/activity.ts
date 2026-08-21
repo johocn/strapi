@@ -256,5 +256,35 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       ctx.body = { error: e.message };
     }
   },
+
+  /** 裂变榜：按 inviter 聚合奖励记录，可筛时间；返回带来报名数/发放积分/明细 */
+  async fissionLeaderboard(ctx: any) {
+    const { start, end } = ctx.query;
+    const where: any = {};
+    if (start) where.issuedAt = { $gte: new Date(start).toISOString() };
+    if (end) where.issuedAt = { ...(where.issuedAt || {}), $lte: new Date(end).toISOString() };
+
+    const rows = await strapi.db.query("plugin::zhao-point.activity-referral-reward").findMany({
+      where,
+      populate: { inviter: true, activity: true },
+    });
+
+    const map = new Map<number, any>();
+    for (const r of rows) {
+      const uid = r.inviter?.id ?? r.inviter;
+      if (!map.has(uid)) {
+        map.set(uid, { inviterId: uid, username: r.inviter?.username ?? `#${uid}`, inviteeCount: 0, totalPoints: 0, details: [] });
+      }
+      const agg = map.get(uid);
+      agg.inviteeCount++;
+      agg.totalPoints += r.points || 0;
+      agg.details.push({ activity: r.activity?.title ?? `#${r.activity}`, points: r.points || 0, issuedAt: r.issuedAt });
+    }
+
+    ctx.body = {
+      rows: Array.from(map.values()).sort((a, b) => b.inviteeCount - a.inviteeCount),
+      total: rows.length,
+    };
+  },
   });
 };

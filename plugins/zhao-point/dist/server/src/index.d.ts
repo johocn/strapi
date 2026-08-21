@@ -467,6 +467,7 @@ declare const _default: {
             adminCancelSignup(ctx: any): Promise<void>;
             adminScanCheckin(ctx: any): Promise<void>;
             adminAttendance(ctx: any): Promise<void>;
+            fissionLeaderboard(ctx: any): Promise<void>;
         };
         series: ({ strapi }: {
             strapi: import('@strapi/types/dist/core').Strapi;

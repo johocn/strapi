@@ -1876,6 +1876,32 @@ const activity$1 = ({ strapi: strapi2 }) => {
         ctx.status = e.status || 400;
         ctx.body = { error: e.message };
       }
+    },
+    /** 裂变榜：按 inviter 聚合奖励记录，可筛时间；返回带来报名数/发放积分/明细 */
+    async fissionLeaderboard(ctx) {
+      const { start, end } = ctx.query;
+      const where = {};
+      if (start) where.issuedAt = { $gte: new Date(start).toISOString() };
+      if (end) where.issuedAt = { ...where.issuedAt || {}, $lte: new Date(end).toISOString() };
+      const rows = await strapi2.db.query("plugin::zhao-point.activity-referral-reward").findMany({
+        where,
+        populate: { inviter: true, activity: true }
+      });
+      const map2 = /* @__PURE__ */ new Map();
+      for (const r of rows) {
+        const uid = r.inviter?.id ?? r.inviter;
+        if (!map2.has(uid)) {
+          map2.set(uid, { inviterId: uid, username: r.inviter?.username ?? `#${uid}`, inviteeCount: 0, totalPoints: 0, details: [] });
+        }
+        const agg = map2.get(uid);
+        agg.inviteeCount++;
+        agg.totalPoints += r.points || 0;
+        agg.details.push({ activity: r.activity?.title ?? `#${r.activity}`, points: r.points || 0, issuedAt: r.issuedAt });
+      }
+      ctx.body = {
+        rows: Array.from(map2.values()).sort((a, b) => b.inviteeCount - a.inviteeCount),
+        total: rows.length
+      };
     }
   };
 };
@@ -35369,6 +35395,7 @@ const contentApi = () => ({
     channelScopeRoute("POST", "/adm/activities/:documentId/signups/:signupId/cancel", "activity.adminCancelSignup", "activity.update"),
     channelScopeRoute("POST", "/adm/activities/:documentId/scan-checkin", "activity.adminScanCheckin", "activity.update"),
     channelScopeRoute("GET", "/adm/activities/:documentId/attendance", "activity.adminAttendance", "activity.read"),
+    channelScopeRoute("GET", "/adm/activity-share/leaderboard", "activity.fissionLeaderboard", "activity.read"),
     // ===== 活动系列 + 排期管理 =====
     publicRoute("GET", "/series", "series.list"),
     publicRoute("GET", "/series/:documentId", "series.detail"),

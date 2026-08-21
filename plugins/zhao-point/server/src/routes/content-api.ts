@@ -165,6 +165,7 @@ export default () => ({
     channelScopeRoute("POST", "/adm/activities/:documentId/signups/:signupId/cancel", "activity.adminCancelSignup", "activity.update"),
     channelScopeRoute("POST", "/adm/activities/:documentId/scan-checkin", "activity.adminScanCheckin", "activity.update"),
     channelScopeRoute("GET", "/adm/activities/:documentId/attendance", "activity.adminAttendance", "activity.read"),
+    channelScopeRoute("GET", "/adm/activity-share/leaderboard", "activity.fissionLeaderboard", "activity.read"),
 
     // ===== 活动系列 + 排期管理 =====
     publicRoute("GET", "/series", "series.list"),
