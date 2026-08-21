@@ -10,6 +10,7 @@ declare const _default: {
         startQuiz(ctx: any): Promise<void>;
         claimQuizPoints(ctx: any): Promise<void>;
         checkAnswer(ctx: any): Promise<void>;
+        batchAssociate(ctx: any): Promise<void>;
     };
     "quiz-record": ({ strapi }: {
         strapi: import('@strapi/types/dist/core').Strapi;
@@ -30,12 +31,17 @@ declare const _default: {
     "quiz-exam": ({ strapi }: {
         strapi: import('@strapi/types/dist/core').Strapi;
     }) => {
+        _opts(ctx: any): {
+            userId: any;
+            isAdmin: any;
+        };
         find(ctx: any): Promise<void>;
         findOne(ctx: any): Promise<void>;
         create(ctx: any): Promise<void>;
         update(ctx: any): Promise<void>;
         delete(ctx: any): Promise<void>;
         getQuestions(ctx: any): Promise<void>;
+        generatePaper(ctx: any): Promise<void>;
     };
     "quiz-exam-attempt": ({ strapi }: {
         strapi: import('@strapi/types/dist/core').Strapi;
@@ -59,6 +65,13 @@ declare const _default: {
         delete(ctx: any): Promise<void>;
         importFile(ctx: any): Promise<void>;
         downloadTemplate(ctx: any): Promise<void>;
+        exportQuizzes(ctx: any): Promise<void>;
+    };
+    "wrong-quiz": ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        listMy(ctx: any): Promise<void>;
+        dueMine(ctx: any): Promise<void>;
     };
 };
 export default _default;

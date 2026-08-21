@@ -79,7 +79,7 @@
     },
     "practiceType": {
       "type": "enumeration",
-      "enum": ["knowledge", "random", "simulate", "wrong"],
+      "enum": ["knowledge", "random", "simulate", "wrong", "free"],
       "default": "knowledge"
     }
   }

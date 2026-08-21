@@ -9,5 +9,6 @@ declare const _default: ({ strapi }: {
     delete(ctx: any): Promise<void>;
     importFile(ctx: any): Promise<void>;
     downloadTemplate(ctx: any): Promise<void>;
+    exportQuizzes(ctx: any): Promise<void>;
 };
 export default _default;

@@ -161,6 +161,16 @@ declare const _default: {
                     relation: string;
                     target: string;
                 };
+                mode: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
+                practiceType: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
             };
         };
     };
@@ -251,6 +261,22 @@ declare const _default: {
                 deletedAt: {
                     type: string;
                     default: any;
+                };
+                paperType: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
+                paperRule: {
+                    type: string;
+                };
+                knowledgeScope: {
+                    type: string;
+                    default: string;
+                };
+                shuffle: {
+                    type: string;
+                    default: boolean;
                 };
             };
         };
@@ -365,6 +391,71 @@ declare const _default: {
                 deletedAt: {
                     type: string;
                     default: any;
+                };
+            };
+        };
+    };
+    "wrong-quiz": {
+        schema: {
+            kind: string;
+            collectionName: string;
+            info: {
+                singularName: string;
+                pluralName: string;
+                displayName: string;
+            };
+            options: {
+                draftAndPublish: boolean;
+            };
+            attributes: {
+                user: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                };
+                quiz: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                };
+                course: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                };
+                lesson: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                };
+                knowledgePointName: {
+                    type: string;
+                };
+                wrongCount: {
+                    type: string;
+                    default: number;
+                };
+                status: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
+                reviewLevel: {
+                    type: string;
+                    default: number;
+                };
+                dueAt: {
+                    type: string;
+                };
+                consecutiveCorrect: {
+                    type: string;
+                    default: number;
+                };
+                lastWrongAt: {
+                    type: string;
+                };
+                lastCorrectAt: {
+                    type: string;
                 };
             };
         };

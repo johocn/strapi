@@ -22,9 +22,18 @@ declare const _default: ({ strapi }: {
     importFromFile(batchDocumentId: string): Promise<{
         total: number;
         success: number;
+        skipped: number;
         errors: string[];
     }>;
-    generateTemplate(_courseDocId?: string, _lessonDocId?: string): Promise<any>;
-    downloadTemplate(): Promise<any>;
+    exportQuizzes(filters?: any): Promise<any>;
+    _resolveCourse(value: string): Promise<string | null>;
+    _resolveLesson(value: string): Promise<string | null>;
+    _resolveKnowledgePoint(value: string): Promise<string | null>;
+    _normalizeOptions(raw: string | string[] | null): {
+        key: string;
+        text: string;
+    }[] | null;
+    generateTemplate(params?: any): Promise<any>;
+    downloadTemplate(params?: any): Promise<any>;
 };
 export default _default;

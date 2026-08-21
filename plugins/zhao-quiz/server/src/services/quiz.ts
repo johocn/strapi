@@ -54,7 +54,12 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   async findOne(documentId: string) {
     return strapi.documents(UID).findOne({
       documentId,
-      populate: { course: true, lesson: true },
+      populate: {
+        course: true,
+        lesson: true,
+        // 知识点混在 tags 中，需带上 tagGroup 以便前端按 slug === 'knowledge-points' 过滤
+        tags: { populate: { tagGroup: true } },
+      },
     });
   },
 
@@ -99,6 +104,96 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       filters: { lesson: { documentId: lessonDocumentId }, ...(query.filters || {}) },
       populate: { course: true, lesson: true },
     });
+  },
+
+  /**
+   * 批量关联题库：设置或清除 course/lesson/tags(知识点)
+   * input: { documentIds?, filters?, target: { course?, lesson?, knowledgePoints? } }
+   * target 每个字段: { action: 'set'|'clear', value: string|string[] }；未提供的字段不处理
+   * 知识点: set 时替换原有知识点(tagGroup.slug='knowledge-points')，保留其它普通标签
+   */
+  async batchAssociate(input: any = {}, channelScope?: { all: boolean; channelIds: number[] }) {
+    const target = input.target || {};
+    const courseTarget = target.course;
+    const lessonTarget = target.lesson;
+    const kpTarget = target.knowledgePoints;
+
+    // 1. 确定目标题目集合
+    let docIds: string[] = Array.isArray(input.documentIds) ? input.documentIds.filter(Boolean) : [];
+    if (docIds.length === 0) {
+      const filters: any = {};
+      const f = input.filters || {};
+      if (f.course) filters.course = { documentId: f.course };
+      if (f.lesson) filters.lesson = { documentId: f.lesson };
+      if (Array.isArray(f.knowledgePoints) && f.knowledgePoints.length > 0) {
+        filters.$and = f.knowledgePoints.map((kp: string) => ({
+          tags: { documentId: { $eq: kp } },
+        }));
+      }
+      if (f.keyword) filters.title = { $contains: f.keyword };
+      if (f.type) filters.type = { $eq: f.type };
+      if (f.difficulty) filters.difficulty = { $eq: f.difficulty };
+
+      if (channelScope && !channelScope.all && channelScope.channelIds.length > 0) {
+        const scope = [
+          { channelScope: "all" },
+          ...channelScope.channelIds.map((id: any) => ({ channelScope: "specific", channelIds: { $contains: id } })),
+        ];
+        filters.$or = filters.$or ? [...filters.$or, ...scope] : scope;
+      }
+
+      const questions = await strapi.documents(UID).findMany({
+        filters,
+        pagination: { page: 1, pageSize: 10000 },
+      });
+      docIds = (Array.isArray(questions) ? questions : []).map((q: any) => q.documentId);
+    }
+
+    if (docIds.length === 0) {
+      return { total: 0, success: 0, errors: [], message: "没有匹配到任何题目" };
+    }
+
+    // 2. 逐题应用目标
+    let success = 0;
+    const errors: string[] = [];
+    for (const documentId of docIds) {
+      try {
+        const patch: any = {};
+        if (courseTarget) {
+          if (courseTarget.action === "clear") patch.course = null;
+          else if (courseTarget.value) patch.course = courseTarget.value;
+        }
+        if (lessonTarget) {
+          if (lessonTarget.action === "clear") patch.lesson = null;
+          else if (lessonTarget.value) patch.lesson = lessonTarget.value;
+        }
+        if (kpTarget) {
+          const current = await strapi.documents(UID).findOne({
+            documentId,
+            populate: { tags: { populate: { tagGroup: true } } },
+          });
+          const normalTags = (current?.tags || []).filter(
+            (t: any) => t?.tagGroup?.slug !== "knowledge-points",
+          );
+          if (kpTarget.action === "clear") {
+            patch.tags = normalTags.map((t: any) => ({ documentId: t.documentId }));
+          } else if (Array.isArray(kpTarget.value) && kpTarget.value.length > 0) {
+            const newKp = kpTarget.value.map((d: string) => ({ documentId: d }));
+            patch.tags = [...normalTags.map((t: any) => ({ documentId: t.documentId })), ...newKp];
+          }
+        }
+        if (Object.keys(patch).length === 0) {
+          success += 1;
+          continue;
+        }
+        await strapi.documents(UID).update({ documentId, data: patch });
+        success += 1;
+      } catch (e: any) {
+        errors.push(`${documentId}: ${e.message || "更新失败"}`);
+      }
+    }
+
+    return { total: docIds.length, success, errors };
   },
 
   /**

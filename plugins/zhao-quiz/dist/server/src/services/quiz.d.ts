@@ -26,6 +26,26 @@ declare const _default: ({ strapi }: {
     findByCourse(courseDocumentId: string, query?: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument[]>;
     findByLesson(lessonDocumentId: string, query?: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument[]>;
     /**
+     * 批量关联题库：设置或清除 course/lesson/tags(知识点)
+     * input: { documentIds?, filters?, target: { course?, lesson?, knowledgePoints? } }
+     * target 每个字段: { action: 'set'|'clear', value: string|string[] }；未提供的字段不处理
+     * 知识点: set 时替换原有知识点(tagGroup.slug='knowledge-points')，保留其它普通标签
+     */
+    batchAssociate(input?: any, channelScope?: {
+        all: boolean;
+        channelIds: number[];
+    }): Promise<{
+        total: number;
+        success: number;
+        errors: any[];
+        message: string;
+    } | {
+        total: number;
+        success: number;
+        errors: string[];
+        message?: undefined;
+    }>;
+    /**
      * C端开始答题：随机抽取题目 + 积分配置
      * 前置校验：课时内容必须完成才能答题
      */

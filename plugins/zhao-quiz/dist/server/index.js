@@ -97,7 +97,7 @@ const kind$4 = "collectionType";
 const collectionName$4 = "zhao_quiz_records";
 const info$4 = { "singularName": "quiz-record", "pluralName": "quiz-records", "displayName": "答题记录" };
 const options$4 = { "draftAndPublish": false };
-const attributes$4 = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::users-permissions.user" }, "quiz": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-quiz.quiz" }, "answer": { "type": "json" }, "isCorrect": { "type": "boolean" }, "score": { "type": "decimal", "precision": 5, "scale": 2, "default": 0 }, "teacherScore": { "type": "decimal", "precision": 5, "scale": 2, "default": 0 }, "scoringStatus": { "type": "enumeration", "enum": ["pending", "auto_graded", "manual_graded"], "default": "pending" }, "grader": { "type": "relation", "relation": "manyToOne", "target": "plugin::users-permissions.user" }, "gradedAt": { "type": "datetime" }, "totalPoints": { "type": "integer", "default": 0 }, "submittedAt": { "type": "datetime" }, "duration": { "type": "integer", "default": 0 }, "course": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-course.course" }, "lesson": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-course.course-lesson" }, "mode": { "type": "enumeration", "enum": ["practice", "exam"], "default": "practice" }, "practiceType": { "type": "enumeration", "enum": ["knowledge", "random", "simulate", "wrong"], "default": "knowledge" } };
+const attributes$4 = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::users-permissions.user" }, "quiz": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-quiz.quiz" }, "answer": { "type": "json" }, "isCorrect": { "type": "boolean" }, "score": { "type": "decimal", "precision": 5, "scale": 2, "default": 0 }, "teacherScore": { "type": "decimal", "precision": 5, "scale": 2, "default": 0 }, "scoringStatus": { "type": "enumeration", "enum": ["pending", "auto_graded", "manual_graded"], "default": "pending" }, "grader": { "type": "relation", "relation": "manyToOne", "target": "plugin::users-permissions.user" }, "gradedAt": { "type": "datetime" }, "totalPoints": { "type": "integer", "default": 0 }, "submittedAt": { "type": "datetime" }, "duration": { "type": "integer", "default": 0 }, "course": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-course.course" }, "lesson": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-course.course-lesson" }, "mode": { "type": "enumeration", "enum": ["practice", "exam"], "default": "practice" }, "practiceType": { "type": "enumeration", "enum": ["knowledge", "random", "simulate", "wrong", "free"], "default": "knowledge" } };
 const quizRecord$2 = {
   kind: kind$4,
   collectionName: collectionName$4,
@@ -929,7 +929,12 @@ const quiz = ({ strapi }) => {
     async findOne(documentId) {
       return strapi.documents(UID$5).findOne({
         documentId,
-        populate: { course: true, lesson: true }
+        populate: {
+          course: true,
+          lesson: true,
+          // 知识点混在 tags 中，需带上 tagGroup 以便前端按 slug === 'knowledge-points' 过滤
+          tags: { populate: { tagGroup: true } }
+        }
       });
     },
     async create(data) {
@@ -972,7 +977,7 @@ const quiz = ({ strapi }) => {
      * 批量关联题库：设置或清除 course/lesson/tags(知识点)
      * input: { documentIds?, filters?, target: { course?, lesson?, knowledgePoints? } }
      * target 每个字段: { action: 'set'|'clear', value: string|string[] }；未提供的字段不处理
-     * 知识点: set 时替换原有知识点(tagGroup.slug='knowledge-point')，保留其它普通标签
+     * 知识点: set 时替换原有知识点(tagGroup.slug='knowledge-points')，保留其它普通标签
      */
     async batchAssociate(input = {}, channelScope) {
       const target = input.target || {};
@@ -1028,7 +1033,7 @@ const quiz = ({ strapi }) => {
               populate: { tags: { populate: { tagGroup: true } } }
             });
             const normalTags = (current?.tags || []).filter(
-              (t) => t?.tagGroup?.slug !== "knowledge-point"
+              (t) => t?.tagGroup?.slug !== "knowledge-points"
             );
             if (kpTarget.action === "clear") {
               patch.tags = normalTags.map((t) => ({ documentId: t.documentId }));
@@ -2069,17 +2074,17 @@ const quizBatch = ({ strapi }) => {
       }).catch(() => []);
       return byTitle?.[0]?.documentId || null;
     },
-    // 知识点：zhao-tag 中归属 slug='knowledge-point' 分组的 tag，按 name 或 documentId 定位
+    // 知识点：zhao-tag 中归属 slug='knowledge-points' 分组的 tag，按 name 或 documentId 定位
     async _resolveKnowledgePoint(value) {
       if (!value) return null;
       const key = value.trim();
       const knex = strapi.db.connection;
       try {
         if (/^[A-Za-z0-9_-]{16,}$/.test(key)) {
-          const row2 = await knex("zhao_tags as t").join("zhao_tags_tag_group_lnk as l", "l.tag_id", "t.id").join("zhao_tag_groups as g", "g.id", "l.tag_group_id").select("t.document_id").where("g.slug", "knowledge-point").andWhere("t.document_id", key).first();
+          const row2 = await knex("zhao_tags as t").join("zhao_tags_tag_group_lnk as l", "l.tag_id", "t.id").join("zhao_tag_groups as g", "g.id", "l.tag_group_id").select("t.document_id").where("g.slug", "knowledge-points").andWhere("t.document_id", key).first();
           if (row2) return row2.document_id;
         }
-        const row = await knex("zhao_tags as t").join("zhao_tags_tag_group_lnk as l", "l.tag_id", "t.id").join("zhao_tag_groups as g", "g.id", "l.tag_group_id").select("t.document_id").where("g.slug", "knowledge-point").andWhere("t.name", key).first();
+        const row = await knex("zhao_tags as t").join("zhao_tags_tag_group_lnk as l", "l.tag_id", "t.id").join("zhao_tag_groups as g", "g.id", "l.tag_group_id").select("t.document_id").where("g.slug", "knowledge-points").andWhere("t.name", key).first();
         return row?.document_id || null;
       } catch {
         return null;
@@ -2109,8 +2114,8 @@ const quizBatch = ({ strapi }) => {
       const headers = ["课程", "课时", "知识点", "题型", "题目", "选项(JSON)", "答案", "分值", "难度", "解析", "排序"];
       const assoc = [courseDocId || "", lessonDocId || "", kpDocIds.join("|")];
       const example = [
-        [...assoc, "single_choice", "中国的首都是哪里？", '["北京","上海","广州","深圳"]', "北京", 5, "easy", "这是地理常识题", 1],
-        [...assoc, "multiple_choice", "以下哪些是编程语言？", '["JavaScript","HTML","Python","CSS"]', "JavaScript,Python", 10, "medium", "HTML和CSS不是编程语言", 2],
+        [...assoc, "single_choice", "中国的首都是哪里？", '["北京","上海","广州","深圳","重庆","成都"]', "北京", 5, "easy", "这是地理常识题", 1],
+        [...assoc, "multiple_choice", "以下哪些是编程语言？", '["JavaScript","HTML","Python","CSS","Ruby","Go"]', "JavaScript,Python", 10, "medium", "HTML和CSS不是编程语言", 2],
         [...assoc, "true_false", "地球是圆的", "", "true", 3, "easy", "", 3],
         [...assoc, "fill_blank", "1+1=___", "", "2", 3, "easy", "", 4],
         [...assoc, "short_answer", "请简述MVC模式", "", "MVC是模型-视图-控制器", 8, "hard", "", 5],

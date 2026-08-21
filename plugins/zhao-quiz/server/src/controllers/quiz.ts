@@ -110,4 +110,15 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       ctx.body = { error: err.message || err };
     }
   },
+
+  async batchAssociate(ctx: any) {
+    try {
+      const body = ctx.request.body?.data || ctx.request.body;
+      const result = await strapi.plugin("zhao-quiz").service("quiz").batchAssociate(body, ctx.state.channelScope);
+      ctx.body = wrap(result);
+    } catch (err: any) {
+      ctx.status = err.status || 400;
+      ctx.body = { error: err.message || err };
+    }
+  },
 });

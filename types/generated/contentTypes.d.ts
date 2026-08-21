@@ -5145,7 +5145,7 @@ export interface PluginZhaoQuizQuizRecord extends Struct.CollectionTypeSchema {
     mode: Schema.Attribute.Enumeration<['practice', 'exam']> &
       Schema.Attribute.DefaultTo<'practice'>;
     practiceType: Schema.Attribute.Enumeration<
-      ['knowledge', 'random', 'simulate', 'wrong', 'free']
+      ['knowledge', 'random', 'simulate', 'wrong']
     > &
       Schema.Attribute.DefaultTo<'knowledge'>;
     publishedAt: Schema.Attribute.DateTime;
@@ -5265,6 +5265,10 @@ export interface PluginZhaoSsoMsgJob extends Struct.CollectionTypeSchema {
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     user: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-sso.sso-user'>;
+    version: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-sso.msg-template-version'
+    >;
     wxMsgId: Schema.Attribute.String;
   };
 }
@@ -5305,6 +5309,53 @@ export interface PluginZhaoSsoMsgTemplate extends Struct.CollectionTypeSchema {
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+    wxTemplateFields: Schema.Attribute.JSON;
+    wxTemplateId: Schema.Attribute.String;
+  };
+}
+
+export interface PluginZhaoSsoMsgTemplateVersion
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'sso_msg_template_versions';
+  info: {
+    displayName: 'SSO Msg Template Version';
+    pluralName: 'msg-template-versions';
+    singularName: 'msg-template-version';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    clickCount: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    code: Schema.Attribute.String & Schema.Attribute.Required;
+    content: Schema.Attribute.Text;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    lastUsedAt: Schema.Attribute.DateTime;
+    link: Schema.Attribute.String;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-sso.msg-template-version'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String;
+    publishedAt: Schema.Attribute.DateTime;
+    sentCount: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    status: Schema.Attribute.Enumeration<['draft', 'active']> &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'draft'>;
+    successCount: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    template: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-sso.msg-template'
+    > &
+      Schema.Attribute.Required;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    weight: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<1>;
     wxTemplateFields: Schema.Attribute.JSON;
     wxTemplateId: Schema.Attribute.String;
   };
@@ -5468,6 +5519,48 @@ export interface PluginZhaoSsoSsoChannel extends Struct.CollectionTypeSchema {
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     utm_template: Schema.Attribute.JSON;
+  };
+}
+
+export interface PluginZhaoSsoSsoFollowUp extends Struct.CollectionTypeSchema {
+  collectionName: 'sso_follow_ups';
+  info: {
+    displayName: 'SSO Follow Up';
+    pluralName: 'sso-follow-ups';
+    singularName: 'sso-follow-up';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    content: Schema.Attribute.Text & Schema.Attribute.Required;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    customer: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-sso.sso-user'
+    > &
+      Schema.Attribute.Required;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-sso.sso-follow-up'
+    > &
+      Schema.Attribute.Private;
+    nextFollowAt: Schema.Attribute.DateTime;
+    partner: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-sso.sso-user'
+    > &
+      Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    status: Schema.Attribute.Enumeration<['todo', 'done', 'cancelled']> &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'todo'>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
   };
 }
 
@@ -5914,6 +6007,42 @@ export interface PluginZhaoSsoSsoUserAppRole
       Schema.Attribute.Private;
     publishedAt: Schema.Attribute.DateTime;
     role: Schema.Attribute.String & Schema.Attribute.Required;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    user: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-sso.sso-user'>;
+  };
+}
+
+export interface PluginZhaoSsoSsoUserProfile
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'sso_user_profiles';
+  info: {
+    displayName: 'SSO User Profile';
+    pluralName: 'sso-user-profiles';
+    singularName: 'sso-user-profile';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    dimensions: Schema.Attribute.JSON & Schema.Attribute.DefaultTo<{}>;
+    lastCalculatedAt: Schema.Attribute.DateTime;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-sso.sso-user-profile'
+    > &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    segment: Schema.Attribute.Enumeration<['S', 'A', 'B', 'C']> &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'C'>;
+    segmentReason: Schema.Attribute.Text;
+    segmentScore: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -10458,10 +10587,12 @@ declare module '@strapi/strapi' {
       'plugin::zhao-quiz.wrong-quiz': PluginZhaoQuizWrongQuiz;
       'plugin::zhao-sso.msg-job': PluginZhaoSsoMsgJob;
       'plugin::zhao-sso.msg-template': PluginZhaoSsoMsgTemplate;
+      'plugin::zhao-sso.msg-template-version': PluginZhaoSsoMsgTemplateVersion;
       'plugin::zhao-sso.sop-rule': PluginZhaoSsoSopRule;
       'plugin::zhao-sso.sso-app': PluginZhaoSsoSsoApp;
       'plugin::zhao-sso.sso-auth-code': PluginZhaoSsoSsoAuthCode;
       'plugin::zhao-sso.sso-channel': PluginZhaoSsoSsoChannel;
+      'plugin::zhao-sso.sso-follow-up': PluginZhaoSsoSsoFollowUp;
       'plugin::zhao-sso.sso-invite-code': PluginZhaoSsoSsoInviteCode;
       'plugin::zhao-sso.sso-invite-stats': PluginZhaoSsoSsoInviteStats;
       'plugin::zhao-sso.sso-invite-usage': PluginZhaoSsoSsoInviteUsage;
@@ -10473,6 +10604,7 @@ declare module '@strapi/strapi' {
       'plugin::zhao-sso.sso-token': PluginZhaoSsoSsoToken;
       'plugin::zhao-sso.sso-user': PluginZhaoSsoSsoUser;
       'plugin::zhao-sso.sso-user-app-role': PluginZhaoSsoSsoUserAppRole;
+      'plugin::zhao-sso.sso-user-profile': PluginZhaoSsoSsoUserProfile;
       'plugin::zhao-studio.ab-experiment': PluginZhaoStudioAbExperiment;
       'plugin::zhao-studio.ab-variant': PluginZhaoStudioAbVariant;
       'plugin::zhao-studio.ad-content': PluginZhaoStudioAdContent;

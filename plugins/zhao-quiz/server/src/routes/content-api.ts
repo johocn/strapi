@@ -65,6 +65,7 @@ export default () => ({
     channelScopeRoute("GET", "/quizzes/:documentId", "quiz.findOne", "quiz.read"),
     channelScopeRoute("POST", "/quizzes", "quiz.create", "quiz.create"),
     channelScopeRoute("PUT", "/quizzes/:documentId", "quiz.update", "quiz.update"),
+    channelScopeRoute("POST", "/quizzes/batch-associate", "quiz.batchAssociate", "quiz.update"),
     channelScopeRoute("DELETE", "/quizzes/:documentId", "quiz.delete", "quiz.delete"),
 
     channelScopeRoute("GET", "/quiz-exams", "quiz-exam.find", "exam.read"),

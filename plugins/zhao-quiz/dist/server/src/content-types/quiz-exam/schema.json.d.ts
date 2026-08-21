@@ -84,7 +84,11 @@ declare const _default: {
     "deletedAt": {
       "type": "datetime",
       "default": null
-    }
+    },
+    "paperType": { "type": "enumeration", "enum": ["fixed", "rule"], "default": "fixed" },
+    "paperRule": { "type": "json" },
+    "knowledgeScope": { "type": "json", "default": "[]" },
+    "shuffle": { "type": "boolean", "default": true }
   }
 }
 ;

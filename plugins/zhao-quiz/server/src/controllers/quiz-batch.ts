@@ -39,7 +39,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
   async create(ctx: any) {
     try {
-      ctx.body = wrap(await strapi.plugin("zhao-quiz").service("quiz-batch").create(ctx.request.body));
+      const body = ctx.request.body?.data || ctx.request.body;
+      ctx.body = wrap(await strapi.plugin("zhao-quiz").service("quiz-batch").create(body));
       ctx.status = 201;
     } catch (err) {
       ctx.status = (err as any).status || 400; ctx.body = { error: (err as Error).message }; return;
@@ -76,7 +77,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
   async downloadTemplate(ctx: any) {
     try {
-      const buffer = await strapi.plugin("zhao-quiz").service("quiz-batch").downloadTemplate();
+      const buffer = await strapi.plugin("zhao-quiz").service("quiz-batch").downloadTemplate(ctx.query);
       ctx.set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
       ctx.set("Content-Disposition", "attachment; filename=quiz_import_template.xlsx");
       ctx.body = buffer;

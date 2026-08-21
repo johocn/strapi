@@ -25,6 +25,20 @@ declare const _default: {
         findByDifficulty(difficulty: string, query?: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument[]>;
         findByCourse(courseDocumentId: string, query?: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument[]>;
         findByLesson(lessonDocumentId: string, query?: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument[]>;
+        batchAssociate(input?: any, channelScope?: {
+            all: boolean;
+            channelIds: number[];
+        }): Promise<{
+            total: number;
+            success: number;
+            errors: any[];
+            message: string;
+        } | {
+            total: number;
+            success: number;
+            errors: string[];
+            message?: undefined;
+        }>;
         startQuiz(userId: number, lessonDocumentId: string, count?: number): Promise<{
             questions: {
                 documentId: any;
@@ -76,7 +90,11 @@ declare const _default: {
             documentId: import('@strapi/types/dist/modules/documents').ID;
             entries: import('@strapi/types/dist/modules/documents').Result<TContentTypeUID, TParams>[];
         }>;
-        submitAnswer(userId: number, quizDocumentId: string, answer: any, lessonDocId?: string): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
+        submitAnswer(userId: number, quizDocumentId: string, answer: any, lessonDocId?: string, extra?: {
+            mode?: string;
+            practiceType?: string;
+        }): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
+        _shortAutoPass(quiz: any, answer: any): boolean;
         teacherGrade(recordDocumentId: string, teacherScore: number, graderUserId: number): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
         getUserRecords(userId: number, courseDocId?: string): Promise<import('@strapi/types/dist/modules/documents').AnyDocument[]>;
         getPendingGrading(courseDocId?: string): Promise<import('@strapi/types/dist/modules/documents').AnyDocument[]>;
@@ -84,8 +102,11 @@ declare const _default: {
     "quiz-exam": ({ strapi }: {
         strapi: import('@strapi/types/dist/core').Strapi;
     }) => {
-        find(query?: any): Promise<{
-            list: import('@strapi/types/dist/modules/documents').AnyDocument[];
+        find(query?: any, options?: {
+            userId?: number;
+            isAdmin?: boolean;
+        }): Promise<{
+            list: any[];
             pagination: {
                 page: number;
                 pageSize: number;
@@ -93,15 +114,34 @@ declare const _default: {
                 pageCount: number;
             };
         }>;
-        findOne(documentId: string): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
+        findOne(documentId: string, options?: {
+            userId?: number;
+            isAdmin?: boolean;
+        }): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
         create(data: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
         update(documentId: string, data: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
         delete(documentId: string): Promise<{
             documentId: import('@strapi/types/dist/modules/documents').ID;
             entries: import('@strapi/types/dist/modules/documents').Result<TContentTypeUID, TParams>[];
         }>;
-        getQuestions(examDocumentId: string): Promise<any>;
+        getQuestions(examDocumentId: string, options?: {
+            userId?: number;
+            isAdmin?: boolean;
+        }): Promise<any>;
         calculateTotalPoints(examDocumentId: string): Promise<any>;
+        generatePaper(examDocumentId: string, options?: {
+            userId?: number;
+            isAdmin?: boolean;
+        }): Promise<{
+            documentId: string;
+            questions: any[];
+            shortages: string[];
+        }>;
+        _assertExamRole(exam: any, options?: {
+            userId?: number;
+            isAdmin?: boolean;
+        }): Promise<void>;
+        _hideAnswers(questions: any[], exam: any): any[];
     };
     "quiz-exam-attempt": ({ strapi }: {
         strapi: import('@strapi/types/dist/core').Strapi;
@@ -149,10 +189,44 @@ declare const _default: {
         importFromFile(batchDocumentId: string): Promise<{
             total: number;
             success: number;
+            skipped: number;
             errors: string[];
         }>;
-        generateTemplate(_courseDocId?: string, _lessonDocId?: string): Promise<any>;
-        downloadTemplate(): Promise<any>;
+        exportQuizzes(filters?: any): Promise<any>;
+        _resolveCourse(value: string): Promise<string | null>;
+        _resolveLesson(value: string): Promise<string | null>;
+        _resolveKnowledgePoint(value: string): Promise<string | null>;
+        _normalizeOptions(raw: string | string[] | null): {
+            key: string;
+            text: string;
+        }[] | null;
+        generateTemplate(params?: any): Promise<any>;
+        downloadTemplate(params?: any): Promise<any>;
+    };
+    "wrong-quiz": ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        onWrong(input: {
+            userId: number;
+            quizId: number;
+            courseId?: number | string;
+            lessonId?: number | string;
+            knowledgePointName?: string;
+        }): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
+        onCorrect(userId: number, quizId: number): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
+        findActive(userId: number, quizId: number): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
+        dueList(userId: number, limit?: number): Promise<{
+            list: import('@strapi/types/dist/modules/documents').AnyDocument[];
+            total: number;
+        }>;
+        listByUser(userId: number, status?: string, pagination?: {
+            page: number;
+            pageSize: number;
+        }): Promise<{
+            list: import('@strapi/types/dist/modules/documents').AnyDocument[];
+            total: number;
+        }>;
+        _dueAt(level: number): Date;
     };
 };
 export default _default;

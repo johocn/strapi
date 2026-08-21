@@ -10,5 +10,6 @@ declare const _default: ({ strapi }: {
     startQuiz(ctx: any): Promise<void>;
     claimQuizPoints(ctx: any): Promise<void>;
     checkAnswer(ctx: any): Promise<void>;
+    batchAssociate(ctx: any): Promise<void>;
 };
 export default _default;

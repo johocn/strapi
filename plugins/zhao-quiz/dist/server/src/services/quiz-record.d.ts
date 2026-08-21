@@ -21,7 +21,14 @@ declare const _default: ({ strapi }: {
     /**
      * 提交回答 - 自动判题或标记 essay 待评分
      */
-    submitAnswer(userId: number, quizDocumentId: string, answer: any, lessonDocId?: string): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
+    submitAnswer(userId: number, quizDocumentId: string, answer: any, lessonDocId?: string, extra?: {
+        mode?: string;
+        practiceType?: string;
+    }): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
+    /**
+     * short_answer 关键词初判：命中 60% 关键词视为通过（自动判定），否则转人工复核
+     */
+    _shortAutoPass(quiz: any, answer: any): boolean;
     /**
      * 教师人工评分（仅限 essay 问答题）
      */
