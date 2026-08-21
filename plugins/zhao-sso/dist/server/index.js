@@ -5185,7 +5185,12 @@ const ssoStats = ({ strapi }) => ({
       ruleByScene.get(r.scene).push(r);
     }
     const sceneSet = /* @__PURE__ */ new Set([...ruleByScene.keys()]);
-    if (opts.scene) sceneSet.add(opts.scene);
+    if (opts.scene) {
+      sceneSet.add(opts.scene);
+    } else {
+      const jobScenes = await strapi.db.query(MSG_JOB_UID).findMany({ select: ["scene"] });
+      for (const s of jobScenes) sceneSet.add(s.scene);
+    }
     const scenes = Array.from(sceneSet).filter((s) => opts.scene ? s === opts.scene : true);
     const countBy = (scene, status) => status ? strapi.db.query(MSG_JOB_UID).count({ where: { scene, status, ...range } }) : strapi.db.query(MSG_JOB_UID).count({ where: { scene, ...range } });
     const rows = [];

@@ -25,7 +25,13 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     }
 
     const sceneSet = new Set<string>([...ruleByScene.keys()]);
-    if (opts.scene) sceneSet.add(opts.scene);
+    if (opts.scene) {
+      sceneSet.add(opts.scene);
+    } else {
+      // 无 scene 筛选时，补齐仅存在 job 的 scene（无对应 sop-rule 的独立场景也要进漏斗）
+      const jobScenes = await strapi.db.query(MSG_JOB_UID).findMany({ select: ["scene"] });
+      for (const s of jobScenes) sceneSet.add(s.scene);
+    }
     const scenes = Array.from(sceneSet).filter((s) => (opts.scene ? s === opts.scene : true));
 
     const countBy = (scene: string, status?: string) =>
