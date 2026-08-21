@@ -114,6 +114,11 @@ declare const _default: {
         month(ctx: any): Promise<void>;
         adminMonth(ctx: any): Promise<void>;
     };
+    "activity-stats": ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        overview(ctx: any): Promise<void>;
+    };
     fee: ({ strapi }: {
         strapi: import('@strapi/types/dist/core').Strapi;
     }) => {

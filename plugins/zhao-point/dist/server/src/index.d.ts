@@ -500,6 +500,11 @@ declare const _default: {
             month(ctx: any): Promise<void>;
             adminMonth(ctx: any): Promise<void>;
         };
+        "activity-stats": ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            overview(ctx: any): Promise<void>;
+        };
         fee: ({ strapi }: {
             strapi: import('@strapi/types/dist/core').Strapi;
         }) => {
@@ -2532,6 +2537,28 @@ declare const _default: {
                 tierId: any;
                 tier: any;
                 base: any;
+            }>;
+        };
+        "activity-stats": ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            getOverview({ status }?: {
+                status?: string;
+            }): Promise<{
+                summary: {
+                    activityCount: number;
+                    signupCount: number;
+                    attendedCount: number;
+                    attendanceRate: number;
+                    reviewCount: number;
+                    avgRating: number;
+                    avgNps: number;
+                    pointsChargedSum: any;
+                    referralPoints: any;
+                    referralCount: number;
+                    attendPointsGlobal: any;
+                };
+                rows: any[];
             }>;
         };
     };

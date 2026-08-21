@@ -848,5 +848,27 @@ declare const _default: {
             base: any;
         }>;
     };
+    "activity-stats": ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        getOverview({ status }?: {
+            status?: string;
+        }): Promise<{
+            summary: {
+                activityCount: number;
+                signupCount: number;
+                attendedCount: number;
+                attendanceRate: number;
+                reviewCount: number;
+                avgRating: number;
+                avgNps: number;
+                pointsChargedSum: any;
+                referralPoints: any;
+                referralCount: number;
+                attendPointsGlobal: any;
+            };
+            rows: any[];
+        }>;
+    };
 };
 export default _default;
