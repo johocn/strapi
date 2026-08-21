@@ -7,6 +7,7 @@ import signIn from "./sign-in";
 import activity from "./activity";
 import seriesService from "./series-service";
 import calendarService from "./calendar-service";
+import feeService from "./fee-service";
 
 export default {
   point,
@@ -18,4 +19,5 @@ export default {
   activity,
   "series-service": seriesService,
   "calendar-service": calendarService,
+  "fee-service": feeService,
 };
