@@ -83,7 +83,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   /**
    * 按系列排期(eachWeek: weekdays + time)批量生成日程草稿。
    * - 无排期或 weekdays 为空：返回 { generated: 0, reason: "no_schedule" }
-   * - count 提供时：锚定"今天所在周的周一"往前逐周生成满 count 场即停止
+   * - count 提供时：锚定"今天所在周的周一"往后逐周生成满 count 场即停止
    * - count 为空：滚动补齐到 generateWeeks 周
    * - 跳过过去场次、重复场次(查重 belongsToSeries+startTime 区间)
    */
@@ -132,9 +132,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
     for (let shift = 0; shift < maxShiftedWeeks; shift++) {
       if (targetCount !== null && generated >= targetCount) break;
-      // 每 shift 为一周：wStart = anchor - shift*7天
+      // 每 shift 为一周：wStart = anchor + shift*7天（向后扫描未来周）
       const wStart = new Date(anchor);
-      wStart.setDate(anchor.getDate() - shift * 7);
+      wStart.setDate(anchor.getDate() + shift * 7);
 
       for (const wd of weekdays) {
         if (targetCount !== null && generated >= targetCount) break;
