@@ -10,7 +10,8 @@ declare const _default: {
     "sortOrder": { "type": "integer", "default": 0 },
     "status": { "type": "enumeration", "enum": ["active", "hidden"], "default": "active" },
     "schedule": { "type": "json" },
-    "activities": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-point.activity", "mappedBy": "belongsToSeries" }
+    "activities": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-point.activity", "mappedBy": "belongsToSeries" },
+    "defaultRules": { "type": "json" }
   }
 };
 

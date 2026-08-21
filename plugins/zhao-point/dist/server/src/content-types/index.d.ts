@@ -927,6 +927,15 @@ declare const _default: {
                 channelIds: {
                     type: string;
                 };
+                pointsCost: {
+                    type: string;
+                    default: number;
+                };
+                feeCollectAt: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
                 preUnlockArticles: {
                     type: string;
                     relation: string;
@@ -983,6 +992,10 @@ declare const _default: {
                     type: string;
                     enum: string[];
                     default: string;
+                };
+                pointsCharged: {
+                    type: string;
+                    default: number;
                 };
                 signupAt: {
                     type: string;
@@ -1076,6 +1089,9 @@ declare const _default: {
                     relation: string;
                     target: string;
                     mappedBy: string;
+                };
+                defaultRules: {
+                    type: string;
                 };
             };
         };

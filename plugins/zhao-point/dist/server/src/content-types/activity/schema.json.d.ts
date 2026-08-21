@@ -23,6 +23,8 @@ declare const _default: {
     "status": { "type": "enumeration", "enum": ["draft", "signup_open", "ongoing", "ended"], "default": "draft" },
     "channelScope": { "type": "enumeration", "enum": ["all", "specific"], "default": "all" },
     "channelIds": { "type": "json" },
+    "pointsCost": { "type": "integer", "default": 0 },
+    "feeCollectAt": { "type": "enumeration", "enum": ["signup", "checkin"], "default": "signup" },
     "preUnlockArticles": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.article" },
     "preUnlockLessons": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-course.course-lesson" },
     "learningPackageArticles": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.article" },
