@@ -28,6 +28,8 @@ export interface DeductPointsParams {
   method?: string;
   remark?: string;
   orderId?: string;
+  channelId?: string | number;
+  userChannelId?: string | number;
 }
 
 export interface AdminAdjustParams {
@@ -223,7 +225,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   };
 
   const deductPoints = async (params: DeductPointsParams) => {
-    const { userId, action, points: customPoints, source, method, remark, orderId } = params;
+    const { userId, action, points: customPoints, source, method, remark, orderId, channelId, userChannelId } = params;
 
     const rule = await getMergedRule(action);
     const deductAmount = customPoints || rule?.points || 0;
@@ -237,7 +239,32 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     }
 
     const record = await createRecord(userId, action, deductAmount, balance, "decrease", {
-      source, method, remark, orderId,
+      source, method, remark, orderId, channelId, userChannelId,
+    });
+
+    return record;
+  };
+
+  const refundPoints = async (params: {
+    userId: string | number;
+    action: string;
+    points: number;
+    source?: string;
+    method?: string;
+    remark?: string;
+    orderId?: string;
+    channelId?: string | number;
+    userChannelId?: string | number;
+  }) => {
+    const { userId, action, points, source, method, remark, orderId, channelId, userChannelId } = params;
+
+    if (points <= 0) {
+      throwError("POINT_021", "无效退款金额", { action });
+    }
+
+    const balance = await getLatestBalance(userId);
+    const record = await createRecord(userId, action, points, balance, "increase", {
+      source, method, remark, orderId, channelId, userChannelId,
     });
 
     return record;
@@ -809,6 +836,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     earnPoints,
     earnCustomPoints,
     deductPoints,
+    refundPoints,
     getBalance,
     getRecords,
     getStatistics,

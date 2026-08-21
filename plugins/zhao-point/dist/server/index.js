@@ -2239,7 +2239,7 @@ const point = ({ strapi }) => {
     return record;
   };
   const deductPoints = async (params) => {
-    const { userId, action, points: customPoints, source, method, remark, orderId } = params;
+    const { userId, action, points: customPoints, source, method, remark, orderId, channelId, userChannelId } = params;
     const rule = await getMergedRule(action);
     const deductAmount = customPoints || rule?.points || 0;
     if (deductAmount <= 0) {
@@ -2253,7 +2253,25 @@ const point = ({ strapi }) => {
       source,
       method,
       remark,
-      orderId
+      orderId,
+      channelId,
+      userChannelId
+    });
+    return record;
+  };
+  const refundPoints = async (params) => {
+    const { userId, action, points, source, method, remark, orderId, channelId, userChannelId } = params;
+    if (points <= 0) {
+      throwError("POINT_021", "无效退款金额", { action });
+    }
+    const balance = await getLatestBalance(userId);
+    const record = await createRecord(userId, action, points, balance, "increase", {
+      source,
+      method,
+      remark,
+      orderId,
+      channelId,
+      userChannelId
     });
     return record;
   };
@@ -2704,6 +2722,7 @@ const point = ({ strapi }) => {
     earnPoints,
     earnCustomPoints,
     deductPoints,
+    refundPoints,
     getBalance,
     getRecords,
     getStatistics,
@@ -4223,6 +4242,8 @@ const seriesService = ({ strapi }) => ({
       checkinMode: src.checkinMode,
       geoEnforced: src.geoEnforced,
       geoRadiusM: src.geoRadiusM,
+      pointsCost: src.pointsCost ?? 0,
+      feeCollectAt: src.feeCollectAt ?? "signup",
       channelScope: src.channelScope,
       channelIds: src.channelIds,
       belongsToSeries: src.belongsToSeries?.id ?? src.belongsToSeries ?? null,
@@ -4298,6 +4319,9 @@ const seriesService = ({ strapi }) => ({
           }
         });
         if (exists > 0) continue;
+        const dr = series2.defaultRules || {};
+        const pointsCost = Number(dr.pointsCost ?? 0);
+        const feeCollectAt = dr.feeCollectAt === "checkin" ? "checkin" : "signup";
         await strapi.documents(ACTIVITY_UID$1).create({
           data: {
             title: series2.title,
@@ -4307,7 +4331,13 @@ const seriesService = ({ strapi }) => ({
             endTime: endDate.toISOString(),
             status: "draft",
             usedCapacity: 0,
-            capacity: 100,
+            capacity: Number(dr.capacity ?? 100),
+            checkinMode: dr.checkinMode || "both",
+            geoEnforced: !!dr.geoEnforced,
+            geoRadiusM: Number(dr.geoRadiusM ?? 500),
+            pointsCost,
+            feeCollectAt,
+            signupStart: dr.signupOpenDays ? new Date(startDate.getTime() - Number(dr.signupOpenDays) * 24 * 3600 * 1e3).toISOString() : null,
             belongsToSeries: series2.id
           }
         });

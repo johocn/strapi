@@ -4108,6 +4108,8 @@ export interface PluginZhaoPointActivity extends Struct.CollectionTypeSchema {
       Schema.Attribute.Private;
     description: Schema.Attribute.Text;
     endTime: Schema.Attribute.DateTime;
+    feeCollectAt: Schema.Attribute.Enumeration<['signup', 'checkin']> &
+      Schema.Attribute.DefaultTo<'signup'>;
     geoEnforced: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
     geoRadiusM: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<500>;
     lat: Schema.Attribute.Float;
@@ -4126,6 +4128,7 @@ export interface PluginZhaoPointActivity extends Struct.CollectionTypeSchema {
       'plugin::zhao-point.activity'
     > &
       Schema.Attribute.Private;
+    pointsCost: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
     preUnlockArticles: Schema.Attribute.Relation<
       'manyToMany',
       'plugin::zhao-website.article'
@@ -4211,6 +4214,7 @@ export interface PluginZhaoPointActivitySeries
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+    defaultRules: Schema.Attribute.JSON;
     description: Schema.Attribute.Text;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
@@ -4256,6 +4260,7 @@ export interface PluginZhaoPointActivitySignup
       'plugin::zhao-point.activity-signup'
     > &
       Schema.Attribute.Private;
+    pointsCharged: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
     publishedAt: Schema.Attribute.DateTime;
     signupAt: Schema.Attribute.DateTime;
     status: Schema.Attribute.Enumeration<['active', 'cancelled', 'waiting']> &

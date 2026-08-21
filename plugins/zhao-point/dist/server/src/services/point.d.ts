@@ -17,6 +17,8 @@ export interface DeductPointsParams {
     method?: string;
     remark?: string;
     orderId?: string;
+    channelId?: string | number;
+    userChannelId?: string | number;
 }
 export interface AdminAdjustParams {
     userId: string | number;
@@ -46,6 +48,17 @@ declare const _default: ({ strapi }: {
         userChannelId?: string | number;
     }) => Promise<any>;
     deductPoints: (params: DeductPointsParams) => Promise<any>;
+    refundPoints: (params: {
+        userId: string | number;
+        action: string;
+        points: number;
+        source?: string;
+        method?: string;
+        remark?: string;
+        orderId?: string;
+        channelId?: string | number;
+        userChannelId?: string | number;
+    }) => Promise<any>;
     getBalance: (userId: string | number) => Promise<{
         balance: number;
         channelBalances: {
