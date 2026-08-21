@@ -2018,6 +2018,7 @@ export interface PluginZhaoCourseCourseProgress
     draftAndPublish: false;
   };
   attributes: {
+    completedAt: Schema.Attribute.DateTime;
     completedLessons: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
     course: Schema.Attribute.Relation<
       'manyToOne',
@@ -2029,6 +2030,7 @@ export interface PluginZhaoCourseCourseProgress
     isCompleted: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
     isPointsClaimed: Schema.Attribute.Boolean &
       Schema.Attribute.DefaultTo<false>;
+    lastReminderAt: Schema.Attribute.DateTime;
     lastStudyAt: Schema.Attribute.DateTime;
     lessonPointsSummary: Schema.Attribute.JSON & Schema.Attribute.DefaultTo<{}>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
