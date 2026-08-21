@@ -219,12 +219,14 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     await strapi.documents("plugin::zhao-point.activity").update({ documentId: activityId, data: { status: "ended" } });
     const name = act.title;
     const startTime = act.startTime;
-    // 未签到（attendedAt 为空）且未取消（status=active）的报名名单
+    // 全部有效报名按到场分队列：到场 → 回执(立即)+复购(次日)；未到场 → 挽回(次日)
     const signs = await strapi.db.query(SIGNS_UID).findMany({
-      where: { activity: act.id, status: "active", attendedAt: { $null: true } },
+      where: { activity: act.id, status: "active" },
       populate: ["user"],
     });
-    let triggered = 0;
+    let reviewTriggered = 0;
+    let revisitTriggered = 0;
+    let repurchaseTriggered = 0;
     for (const s of signs) {
       const upUserId = s.user?.id ?? s.user;
       if (!upUserId) continue;
@@ -233,17 +235,25 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         if (!sop) continue;
         const sso = await sop.resolveSsoUserForUpUser(upUserId);
         if (!sso) continue;
+        const attended = !!s.attendedAt;
+        const schedules: any[] = attended
+          ? [
+              { templateCode: "act_receipt", scene: "activity.receipt" },
+              { templateCode: "act_repurchase", scene: "activity.repurchase", delayMinutes: 1440 },
+            ]
+          : [{ templateCode: "act_revisit", scene: "activity.closed", delayMinutes: 1440 }];
         await sop.trigger("activity.closed", {
           user: sso.id,
           payload: { activity: { name, startTime } },
-          schedules: [{ templateCode: "act_revisit", scene: "activity.closed" }],
+          schedules,
         });
-        triggered++;
+        if (attended) { reviewTriggered++; repurchaseTriggered++; }
+        else revisitTriggered++;
       } catch (e: any) {
-        strapi.log.warn(`[zhao-point:activity] sop activity.closed embed failed (user=${upUserId}): ${e.message}`);
+        strapi.log.warn(`[zhao-point:activity] closeActivity embed failed (user=${upUserId}): ${e.message}`);
       }
     }
-    return { ok: true, closed: true, revisitTriggered: triggered };
+    return { ok: true, closed: true, reviewTriggered, revisitTriggered, repurchaseTriggered };
   },
 
   async cancel({ userId, activityId }: { userId: number; activityId: number }) {

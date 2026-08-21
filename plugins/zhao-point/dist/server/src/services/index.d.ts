@@ -748,7 +748,9 @@ declare const _default: {
         closeActivity(activityId: string): Promise<{
             ok: boolean;
             closed: boolean;
+            reviewTriggered: number;
             revisitTriggered: number;
+            repurchaseTriggered: number;
         }>;
         cancel({ userId, activityId }: {
             userId: number;

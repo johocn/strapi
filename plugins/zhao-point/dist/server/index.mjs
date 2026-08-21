@@ -34795,10 +34795,12 @@ const activity = ({ strapi: strapi2 }) => ({
     const name = act.title;
     const startTime = act.startTime;
     const signs = await strapi2.db.query(SIGNS_UID$1).findMany({
-      where: { activity: act.id, status: "active", attendedAt: { $null: true } },
+      where: { activity: act.id, status: "active" },
       populate: ["user"]
     });
-    let triggered = 0;
+    let reviewTriggered = 0;
+    let revisitTriggered = 0;
+    let repurchaseTriggered = 0;
     for (const s of signs) {
       const upUserId = s.user?.id ?? s.user;
       if (!upUserId) continue;
@@ -34807,17 +34809,25 @@ const activity = ({ strapi: strapi2 }) => ({
         if (!sop) continue;
         const sso = await sop.resolveSsoUserForUpUser(upUserId);
         if (!sso) continue;
+        const attended = !!s.attendedAt;
+        const schedules = attended ? [
+          { templateCode: "act_receipt", scene: "activity.receipt" },
+          { templateCode: "act_repurchase", scene: "activity.repurchase", delayMinutes: 1440 }
+        ] : [{ templateCode: "act_revisit", scene: "activity.closed", delayMinutes: 1440 }];
         await sop.trigger("activity.closed", {
           user: sso.id,
           payload: { activity: { name, startTime } },
-          schedules: [{ templateCode: "act_revisit", scene: "activity.closed" }]
+          schedules
         });
-        triggered++;
+        if (attended) {
+          reviewTriggered++;
+          repurchaseTriggered++;
+        } else revisitTriggered++;
       } catch (e) {
-        strapi2.log.warn(`[zhao-point:activity] sop activity.closed embed failed (user=${upUserId}): ${e.message}`);
+        strapi2.log.warn(`[zhao-point:activity] closeActivity embed failed (user=${upUserId}): ${e.message}`);
       }
     }
-    return { ok: true, closed: true, revisitTriggered: triggered };
+    return { ok: true, closed: true, reviewTriggered, revisitTriggered, repurchaseTriggered };
   },
   async cancel({ userId, activityId }) {
     const signup = await strapi2.db.query(SIGNS_UID$1).findOne({
