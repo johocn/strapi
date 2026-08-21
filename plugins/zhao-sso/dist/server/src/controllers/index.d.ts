@@ -184,6 +184,7 @@ declare const _default: {
         sopStats(ctx: any): Promise<void>;
         repurchaseStats(ctx: any): Promise<void>;
         courseD7Stats(ctx: any): Promise<void>;
+        courseCompletionStats(ctx: any): Promise<void>;
     };
 };
 export default _default;

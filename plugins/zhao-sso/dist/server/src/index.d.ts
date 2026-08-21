@@ -1261,6 +1261,7 @@ declare const _default: {
             sopStats(ctx: any): Promise<void>;
             repurchaseStats(ctx: any): Promise<void>;
             courseD7Stats(ctx: any): Promise<void>;
+            courseCompletionStats(ctx: any): Promise<void>;
         };
     };
     routes: {
@@ -1868,6 +1869,20 @@ declare const _default: {
                 };
             }>;
             getCourseD7Stats(opts: {
+                from?: string;
+                to?: string;
+            }): Promise<{
+                from: string;
+                to: string;
+                windowDays: number;
+                summary: {
+                    sent: number;
+                    convertedUsers: number;
+                    conversions: number;
+                    conversionRate: number;
+                };
+            }>;
+            getCourseCompletionStats(opts: {
                 from?: string;
                 to?: string;
             }): Promise<{

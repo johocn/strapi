@@ -142,7 +142,7 @@ const kind$3 = "collectionType";
 const collectionName$3 = "zhao_course_progresses";
 const info$3 = { "singularName": "course-progress", "pluralName": "course-progresses", "displayName": "课程学习记录" };
 const options$3 = { "draftAndPublish": false };
-const attributes$3 = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::users-permissions.user" }, "course": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-course.course" }, "completedLessons": { "type": "integer", "default": 0 }, "totalLessons": { "type": "integer", "default": 0 }, "progress": { "type": "decimal", "precision": 5, "scale": 2, "default": 0 }, "isCompleted": { "type": "boolean", "default": false }, "pointsEarned": { "type": "integer", "default": 0 }, "isPointsClaimed": { "type": "boolean", "default": false }, "lessonPointsSummary": { "type": "json", "default": {} }, "lastStudyAt": { "type": "datetime" } };
+const attributes$3 = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::users-permissions.user" }, "course": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-course.course" }, "completedLessons": { "type": "integer", "default": 0 }, "totalLessons": { "type": "integer", "default": 0 }, "progress": { "type": "decimal", "precision": 5, "scale": 2, "default": 0 }, "isCompleted": { "type": "boolean", "default": false }, "pointsEarned": { "type": "integer", "default": 0 }, "isPointsClaimed": { "type": "boolean", "default": false }, "lessonPointsSummary": { "type": "json", "default": {} }, "lastStudyAt": { "type": "datetime" }, "completedAt": { "type": "datetime" }, "lastReminderAt": { "type": "datetime" } };
 const courseProgress$2 = {
   kind: kind$3,
   collectionName: collectionName$3,
@@ -2539,16 +2539,20 @@ const courseProgress = ({ strapi }) => {
       const totalLessons = progress.totalLessons || 0;
       const percent = totalLessons > 0 ? Math.min(Math.round(completedCount / totalLessons * 1e4) / 100, 100) : 0;
       const isCompleted = completedCount >= totalLessons && totalLessons > 0;
+      const data = {
+        completedLessons: completedCount,
+        progress: percent,
+        isCompleted,
+        lastStudyAt: /* @__PURE__ */ new Date()
+      };
+      if (isCompleted && !progress.completedAt) {
+        data.completedAt = /* @__PURE__ */ new Date();
+      }
       await strapi.db.query(UID$3).update({
         where: { id: progress.id },
-        data: {
-          completedLessons: completedCount,
-          progress: percent,
-          isCompleted,
-          lastStudyAt: /* @__PURE__ */ new Date()
-        }
+        data
       });
-      return { ...progress, completedLessons: completedCount, progress: percent, isCompleted };
+      return { ...progress, completedLessons: completedCount, progress: percent, isCompleted, completedAt: data.completedAt };
     },
     async claimPoints(userId, progressRecordId) {
       const progress = await strapi.db.query(UID$3).findOne({
@@ -2616,6 +2620,58 @@ const courseProgress = ({ strapi }) => {
         where: { user: userId },
         populate: { course: true }
       });
+    },
+    async runActivationReminderScan() {
+      const ENROLL_UID = "plugin::zhao-course.course-enrollment";
+      const SOP_RULE_UID = "plugin::zhao-sso.sop-rule";
+      const remindGap = Date.now() - 7 * 864e5;
+      const enrolledSince = new Date(Date.now() - 3 * 864e5);
+      const ruleCount = await strapi.db.query(SOP_RULE_UID).count({
+        where: { scene: "course.activate", enabled: true }
+      });
+      if (ruleCount === 0) {
+        strapi.log.warn("[zhao-course] activation reminder: no enabled sop rule, skip");
+        return { scanned: 0, reminded: 0 };
+      }
+      const enrollments = await strapi.db.query(ENROLL_UID).findMany({
+        where: { status: "enrolled", enrolledAt: { $lte: enrolledSince } },
+        populate: { user: { select: ["id"] }, course: { select: ["title"] } }
+      });
+      let scanned = 0;
+      let reminded = 0;
+      for (const enrollment2 of enrollments) {
+        const userId = enrollment2.user?.id ?? enrollment2.user;
+        const courseId = enrollment2.course?.id ?? enrollment2.course;
+        if (!userId || !courseId) continue;
+        const prog = await strapi.db.query(UID$3).findOne({
+          where: { user: userId, course: courseId }
+        });
+        if (prog?.isCompleted) continue;
+        const progress = prog ? Number(prog.progress) || 0 : 0;
+        if (prog && progress >= 30) continue;
+        const lastStudyOk = !prog?.lastStudyAt || new Date(prog.lastStudyAt).getTime() <= remindGap;
+        const lastRemindOk = !prog?.lastReminderAt || new Date(prog.lastReminderAt).getTime() <= remindGap;
+        if (!lastStudyOk || !lastRemindOk) continue;
+        const sop = strapi.plugin("zhao-sso").service("sso-sop");
+        const sso = await sop.resolveSsoUserForUpUser(userId);
+        if (!sso) continue;
+        const title = enrollment2.course?.title || "";
+        const results = await sop.trigger("course.activate", {
+          user: sso.id,
+          payload: { course: { title } }
+        });
+        const built = results.some((r) => r && r.job && !r.skipped);
+        if (built && prog) {
+          await strapi.db.query(UID$3).update({
+            where: { id: prog.id },
+            data: { lastReminderAt: /* @__PURE__ */ new Date() }
+          });
+        }
+        scanned++;
+        if (built) reminded++;
+      }
+      strapi.log.info(`[zhao-course] activation scan done: scanned=${scanned}, reminded=${reminded}`);
+      return { scanned, reminded };
     }
   };
 };
