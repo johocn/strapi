@@ -85,9 +85,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     const windowDays = Number(rule?.conversionWindowDays ?? 7) || 7;
     const windowMs = windowDays * DATE_MS;
 
-    // 区间内送达的复购触达 job
+    // 区间内送达的复购触达 job（user 为 manyToOne，需 populate 才能拿到关联 id）
     const jobs = await strapi.db.query(MSG_JOB_UID).findMany({
       where: { scene: "activity.repurchase", status: "sent", sentAt: { $gte: from, $lte: to } },
+      populate: { user: { select: ["id"] } },
     });
 
     const ssoSvc = strapi.plugin("zhao-sso").service("sso-profile");
@@ -95,7 +96,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     let conversions = 0;
 
     for (const j of jobs) {
-      const up = await ssoSvc.resolveUpUserForSsoUser(j.user);
+      // user 可能为 populate 返回的对象 {id}，或未被 populate 时的裸 id
+      const ssoUserId = j.user && typeof j.user === "object" ? j.user.id : j.user;
+      if (!ssoUserId) continue;
+      const up = await ssoSvc.resolveUpUserForSsoUser(ssoUserId);
       if (!up) continue;
       const userId = up.id;
       const from2 = new Date(j.sentAt);

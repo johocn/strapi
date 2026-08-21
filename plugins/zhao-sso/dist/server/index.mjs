@@ -5258,13 +5258,16 @@ const ssoStats = ({ strapi }) => ({
     const windowDays = Number(rule?.conversionWindowDays ?? 7) || 7;
     const windowMs = windowDays * DATE_MS;
     const jobs = await strapi.db.query(MSG_JOB_UID).findMany({
-      where: { scene: "activity.repurchase", status: "sent", sentAt: { $gte: from, $lte: to } }
+      where: { scene: "activity.repurchase", status: "sent", sentAt: { $gte: from, $lte: to } },
+      populate: { user: { select: ["id"] } }
     });
     const ssoSvc = strapi.plugin("zhao-sso").service("sso-profile");
     const convertedUserSet = /* @__PURE__ */ new Set();
     let conversions = 0;
     for (const j of jobs) {
-      const up = await ssoSvc.resolveUpUserForSsoUser(j.user);
+      const ssoUserId = j.user && typeof j.user === "object" ? j.user.id : j.user;
+      if (!ssoUserId) continue;
+      const up = await ssoSvc.resolveUpUserForSsoUser(ssoUserId);
       if (!up) continue;
       const userId = up.id;
       const from2 = new Date(j.sentAt);
