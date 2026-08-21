@@ -58,13 +58,14 @@ async function resolveUserChannelId(strapi, userId: number): Promise<number | un
   return userChannelId;
 }
 
+const feeSvc = () => strapi.plugin("zhao-point").service("fee-service");
+
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async signup({ userId, activityId }: { userId: number; activityId: string }) {
     const act = await strapi.documents(ACTIVITY_UID).findOne({ documentId: activityId, populate: { preUnlockLessons: { populate: { course: true } } } });
     if (!act) throw new Error("活动不存在");
     if (act.status !== "signup_open") throw new Error("活动未开放报名");
     const now = Date.now();
-    const feeCollectAt = act.feeCollectAt || "signup";
     if (act.signupStart && now < new Date(act.signupStart).getTime()) throw new Error("报名未开始");
     if (act.signupEnd && now > new Date(act.signupEnd).getTime()) throw new Error("报名已截止");
     const dup = await strapi.db.query(SIGNS_UID).findOne({
@@ -90,7 +91,17 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       });
       return { ok: true, waitlisted: true, position: waitCount + 1 };
     }
-    const cost = act.pointsCost || 0;
+    let resolved = await feeSvc().resolveFee(act, userId);
+    if (resolved.mode === "tier" && resolved.tierId && Number(resolved.tier?.quota || 0) > 0) {
+      let attempts = (Array.isArray(act.feeTiers) ? act.feeTiers.length : 0) + 1;
+      while (attempts-- > 0 && resolved.tierId) {
+        const usage = await feeSvc().tierUsage(act.id, resolved.tierId);
+        if (usage < Number(resolved.tier?.quota || 0)) break;
+        resolved = await feeSvc().resolveFee(act, userId, { excludeTierId: resolved.tierId });
+      }
+    }
+    const feeCollectAt = resolved.feeCollectAt || "signup";
+    const cost = resolved.cost || 0;
     if (feeCollectAt === "signup" && cost > 0) {
       const userChannelId = await resolveUserChannelId(strapi, userId);
       try {
@@ -100,7 +111,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         return { ok: false, reason: "insufficient_points" };
       }
     }
-    await strapi.db.query(SIGNS_UID).create({ data: { user: userId, activity: act.id, status: "active", signupAt: new Date(), pointsCharged: feeCollectAt === "signup" ? cost : 0 } });
+    await strapi.db.query(SIGNS_UID).create({ data: { user: userId, activity: act.id, status: "active", signupAt: new Date(), pointsCharged: feeCollectAt === "signup" ? cost : 0, feeTierId: resolved.tierId ?? null } });
     // 报名积分
     await grantPoints(strapi, userId, "activity_signup", "活动报名");
     // 预留存：试看课时所属课程授权
@@ -181,7 +192,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     if (signup.status === "active") {
       // 报名时收费（signup 模式）且已扣积分 → 取消退款
       const act = await strapi.db.query(ACTIVITY_UID).findOne({ where: { id: activityId } });
-      if ((act?.feeCollectAt || "signup") === "signup" && signup.pointsCharged > 0) {
+      if (signup.pointsCharged > 0) {
         const userChannelId = await resolveUserChannelId(strapi, userId);
         try {
           await strapi.plugin("zhao-point").service("point").refundPoints({ userId, action: "activity_fee_refund", points: signup.pointsCharged, source: "activity", method: "activity_cancel", remark: `取消退费:${act?.title ?? ''}`, userChannelId });
@@ -209,8 +220,6 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     });
     const knex = strapi.db.connection;
     const act = await strapi.db.query(ACTIVITY_UID).findOne({ where: { id: activityId } });
-    const feeCollectAt = act?.feeCollectAt || "signup";
-    const cost = act?.pointsCost || 0;
     let promoted = 0;
     for (const p of pending) {
       if (promoted >= 1) break; // 本次调用对应释放的一席，只转正一人
@@ -220,6 +229,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         .increment("used_capacity", 1);
       if (claimed === 0) break; // 无空位（并发已吃满），停止
       const upUserId = p.user?.id ?? p.user;
+      const resolved = await feeSvc().resolveFee(act ?? { id: activityId, pointsCost: 0, feeCollectAt: "signup", pricingMode: "flat" }, upUserId);
+      const feeCollectAt = resolved.feeCollectAt || "signup";
+      const cost = resolved.cost || 0;
       if (feeCollectAt === "signup" && cost > 0) {
         const userChannelId = await resolveUserChannelId(strapi, upUserId);
         try {
@@ -231,7 +243,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       }
       await strapi.db.query(SIGNS_UID).update({
         where: { id: p.id },
-        data: { status: "active", signupAt: new Date(), pointsCharged: feeCollectAt === "signup" ? cost : 0 },
+        data: { status: "active", signupAt: new Date(), pointsCharged: feeCollectAt === "signup" ? cost : 0, feeTierId: resolved.tierId ?? null },
       });
       promoted++;
       if (upUserId) await this.notifyPromoted(upUserId, activityId);
@@ -280,10 +292,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       if (!geoPassed) throw new Error("不在活动场地范围内");
     }
     // 到场收费（checkin 模式）
-    if ((act.feeCollectAt || "signup") === "checkin" && (act.pointsCost || 0) > 0) {
+    const resolved = await feeSvc().resolveFee(act, userId);
+    if (resolved.feeCollectAt === "checkin" && (resolved.cost || 0) > 0) {
       const userChannelId = await resolveUserChannelId(strapi, userId);
       try {
-        await strapi.plugin("zhao-point").service("point").deductPoints({ userId, action: "activity_fee", points: act.pointsCost, source: "activity", method: "activity_checkin", remark: `到场收费:${act.title}`, orderId: `act:${act.documentId}`, userChannelId });
+        await strapi.plugin("zhao-point").service("point").deductPoints({ userId, action: "activity_fee", points: resolved.cost, source: "activity", method: "activity_checkin", remark: `到场收费:${act.title}`, orderId: `act:${act.documentId}`, userChannelId });
       } catch (e) {
         return { ok: false, reason: "insufficient_points" };
       }
