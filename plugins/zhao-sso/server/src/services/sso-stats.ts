@@ -5,6 +5,7 @@ const MSG_JOB_UID = "plugin::zhao-sso.msg-job";
 const MSG_TEMPLATE_UID = "plugin::zhao-sso.msg-template";
 const MSG_VERSION_UID = "plugin::zhao-sso.msg-template-version";
 const REPURCHASE_SIGNS_UID = "plugin::zhao-point.activity-signup";
+const COURSE_ENROLL_UID = "plugin::zhao-course.course-enrollment";
 const DATE_MS = 86400000;
 
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
@@ -106,6 +107,52 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       const to2 = new Date(from2.getTime() + windowMs);
       const cnt = await strapi.db.query(REPURCHASE_SIGNS_UID).count({
         where: { user: userId, status: "active", signupAt: { $gt: from2, $lte: to2 } },
+      });
+      if (cnt > 0) {
+        conversions += cnt;
+        convertedUserSet.add(userId);
+      }
+    }
+    const sent = jobs.length;
+    const convertedUsers = convertedUserSet.size;
+    const conversionRate = sent ? Math.round((convertedUsers / sent) * 100) : 0;
+    return { from: from.toISOString(), to: to.toISOString(), windowDays, summary: { sent, convertedUsers, conversions, conversionRate } };
+  },
+
+  async getCourseD7Stats(opts: { from?: string; to?: string }) {
+    const from = opts.from ? new Date(opts.from) : new Date(Date.now() - 30 * DATE_MS);
+    const to = opts.to ? new Date(opts.to) : new Date();
+    if (from.getTime() > to.getTime()) {
+      const err: any = new Error("from 不能晚于 to");
+      err.status = 400;
+      throw err;
+    }
+    // 窗口天数：scene=course.d7 的 rule.conversionWindowDays ?? 7（D7）
+    const rule = await strapi.db.query(SOP_RULE_UID).findOne({ where: { scene: "course.d7" } });
+    const windowDays = Number(rule?.conversionWindowDays ?? 7) || 7;
+    const windowMs = windowDays * DATE_MS;
+
+    // 区间内送达的课后 D7 触达 job（user 为 manyToOne，需 populate 才能拿到关联 id）
+    const jobs = await strapi.db.query(MSG_JOB_UID).findMany({
+      where: { scene: "course.d7", status: "sent", sentAt: { $gte: from, $lte: to } },
+      populate: { user: { select: ["id"] } },
+    });
+
+    const ssoSvc = strapi.plugin("zhao-sso").service("sso-profile");
+    const convertedUserSet = new Set<number>();
+    let conversions = 0;
+
+    for (const j of jobs) {
+      const ssoUserId = j.user && typeof j.user === "object" ? j.user.id : j.user;
+      if (!ssoUserId) continue;
+      const up = await ssoSvc.resolveUpUserForSsoUser(ssoUserId);
+      if (!up) continue;
+      const userId = up.id;
+      const from2 = new Date(j.sentAt);
+      const to2 = new Date(from2.getTime() + windowMs);
+      // 窗口内再报新课（status=enrolled）计为转化
+      const cnt = await strapi.db.query(COURSE_ENROLL_UID).count({
+        where: { user: userId, status: "enrolled", enrolledAt: { $gt: from2, $lte: to2 } },
       });
       if (cnt > 0) {
         conversions += cnt;

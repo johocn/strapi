@@ -567,6 +567,20 @@ declare const _default: {
                 conversionRate: number;
             };
         }>;
+        getCourseD7Stats(opts: {
+            from?: string;
+            to?: string;
+        }): Promise<{
+            from: string;
+            to: string;
+            windowDays: number;
+            summary: {
+                sent: number;
+                convertedUsers: number;
+                conversions: number;
+                conversionRate: number;
+            };
+        }>;
     };
 };
 export default _default;

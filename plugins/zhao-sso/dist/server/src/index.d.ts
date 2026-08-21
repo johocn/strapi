@@ -1260,6 +1260,7 @@ declare const _default: {
         "msg-stats": ({ strapi }: any) => {
             sopStats(ctx: any): Promise<void>;
             repurchaseStats(ctx: any): Promise<void>;
+            courseD7Stats(ctx: any): Promise<void>;
         };
     };
     routes: {
@@ -1853,6 +1854,20 @@ declare const _default: {
                 rows: any[];
             }>;
             getRepurchaseStats(opts: {
+                from?: string;
+                to?: string;
+            }): Promise<{
+                from: string;
+                to: string;
+                windowDays: number;
+                summary: {
+                    sent: number;
+                    convertedUsers: number;
+                    conversions: number;
+                    conversionRate: number;
+                };
+            }>;
+            getCourseD7Stats(opts: {
                 from?: string;
                 to?: string;
             }): Promise<{
