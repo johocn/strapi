@@ -2531,6 +2531,18 @@ const recommendController = ({ strapi }) => ({
     }
   }
 });
+const msgStats = ({ strapi }) => ({
+  async sopStats(ctx) {
+    const { from, to, scene } = ctx.query || {};
+    try {
+      const data = await strapi.plugin("zhao-sso").service("sso-stats").getSopStats({ from, to, scene });
+      ctx.body = { data };
+    } catch (e) {
+      ctx.status = e.status || e.cause?.status || 400;
+      ctx.body = { error: e.message };
+    }
+  }
+});
 const controllers = {
   "auth-controller": authController,
   "oauth-controller": oauthController,
@@ -2551,7 +2563,8 @@ const controllers = {
   profile: profileController,
   partner: partnerController,
   "msg-version": msgVersionController,
-  "recommend-controller": recommendController
+  "recommend-controller": recommendController,
+  "msg-stats": msgStats
 };
 const api = () => ({
   type: "content-api",
@@ -2829,6 +2842,7 @@ const admin = () => ({
     adminRoute("POST", "/sop-rules", "sop.create", "sso.msg.write"),
     adminRoute("PUT", "/sop-rules/:id", "sop.update", "sso.msg.write"),
     adminRoute("DELETE", "/sop-rules/:id", "sop.delete", "sso.msg.write"),
+    adminRoute("GET", "/msg/sop-stats", "msg-stats.sopStats", "sso.msg.read"),
     // 用户画像分层
     adminRoute("GET", "/profiles", "profile.list", "sso.profile.read"),
     adminRoute("GET", "/profiles/:id", "profile.detail", "sso.profile.read"),
@@ -4453,8 +4467,8 @@ function createWechatTemplateChannel({ strapi }) {
     }
   };
 }
-const MSG_TEMPLATE_UID$1 = "plugin::zhao-sso.msg-template";
-const MSG_JOB_UID$1 = "plugin::zhao-sso.msg-job";
+const MSG_TEMPLATE_UID$2 = "plugin::zhao-sso.msg-template";
+const MSG_JOB_UID$2 = "plugin::zhao-sso.msg-job";
 const BINDING_UID = "plugin::zhao-sso.sso-third-party-binding";
 const VERSION_UID = "plugin::zhao-sso.msg-template-version";
 const MAX_RETRY = 3;
@@ -4520,7 +4534,7 @@ const ssoMsg = ({ strapi }) => {
      */
     async buildJob(opts) {
       const { user, scene, templateCode, params = {}, link, scheduledAt, dedupeKey } = opts;
-      const template = await strapi.db.query(MSG_TEMPLATE_UID$1).findOne({
+      const template = await strapi.db.query(MSG_TEMPLATE_UID$2).findOne({
         where: { code: templateCode, isEnabled: true }
       });
       if (!template) throwErr("SSO_MSG_TEMPLATE_404", 404, `消息模板未找到或未启用: ${templateCode}`);
@@ -4538,7 +4552,7 @@ const ssoMsg = ({ strapi }) => {
       }
       const provider = template.provider || "wechat";
       const key = dedupeKey || `${scene}:${user}`;
-      const existing = await strapi.db.query(MSG_JOB_UID$1).findOne({
+      const existing = await strapi.db.query(MSG_JOB_UID$2).findOne({
         where: { dedupeKey: key }
       });
       if (existing && existing.status !== "sent" && existing.status !== "failed" && existing.status !== "cancelled") {
@@ -4560,10 +4574,10 @@ const ssoMsg = ({ strapi }) => {
       };
       if (toTarget) jobData.toTarget = toTarget;
       if (scheduledAt) jobData.scheduledAt = scheduledAt;
-      const job = await strapi.db.query(MSG_JOB_UID$1).create({ data: jobData });
+      const job = await strapi.db.query(MSG_JOB_UID$2).create({ data: jobData });
       if (useLink && job?.id) {
         const finalLink = appendUtm(useLink, picked ? picked.code : template.code, job.id);
-        await strapi.db.query(MSG_JOB_UID$1).update({ where: { id: job.id }, data: { link: finalLink } });
+        await strapi.db.query(MSG_JOB_UID$2).update({ where: { id: job.id }, data: { link: finalLink } });
         job.link = finalLink;
       }
       return { job, skipped: false };
@@ -4580,7 +4594,7 @@ const ssoMsg = ({ strapi }) => {
      * 发送指定 job（含重试上限），落库回执。
      */
     async sendJob(jobId) {
-      const job = await strapi.db.query(MSG_JOB_UID$1).findOne({
+      const job = await strapi.db.query(MSG_JOB_UID$2).findOne({
         where: { id: jobId },
         populate: { template: true, version: true, user: true }
       });
@@ -4592,23 +4606,23 @@ const ssoMsg = ({ strapi }) => {
       const quota = await strapi.plugin("zhao-sso").service("sso-quota").evaluate({ userId: qUserId, scene: job.scene, templateId: job.template?.id });
       if (!quota.allowed) {
         strapi.log.warn(`[zhao-sso:msg] sent blocked by quota (user=${qUserId}, scene=${job.scene}): ${quota.reason}`);
-        await strapi.db.query(MSG_JOB_UID$1).update({
+        await strapi.db.query(MSG_JOB_UID$2).update({
           where: { id: job.id },
           data: { status: "quota_limited", result: { reason: quota.reason, scene: job.scene, detail: quota.detail || null } }
         });
         return this.getJob(job.id);
       }
-      await strapi.db.query(MSG_JOB_UID$1).update({ where: { id: job.id }, data: { status: "sending" } });
+      await strapi.db.query(MSG_JOB_UID$2).update({ where: { id: job.id }, data: { status: "sending" } });
       const channel = resolveChannel(job.provider);
       let toTarget = job.toTarget;
       if (!toTarget) {
         toTarget = await resolveToTarget(job.user, job.provider);
         if (toTarget) {
-          await strapi.db.query(MSG_JOB_UID$1).update({ where: { id: job.id }, data: { toTarget } });
+          await strapi.db.query(MSG_JOB_UID$2).update({ where: { id: job.id }, data: { toTarget } });
         }
       }
       if (!toTarget) {
-        await strapi.db.query(MSG_JOB_UID$1).update({
+        await strapi.db.query(MSG_JOB_UID$2).update({
           where: { id: job.id },
           data: { status: "failed", result: { reason: "no_target", message: "未解析到触达目标(openid)" } }
         });
@@ -4625,7 +4639,7 @@ const ssoMsg = ({ strapi }) => {
           url: job.link || void 0,
           data
         });
-        await strapi.db.query(MSG_JOB_UID$1).update({
+        await strapi.db.query(MSG_JOB_UID$2).update({
           where: { id: job.id },
           data: { status: "sent", wxMsgId: String(res.msgId), sentAt: /* @__PURE__ */ new Date(), result: res.raw || null }
         });
@@ -4638,7 +4652,7 @@ const ssoMsg = ({ strapi }) => {
       } catch (e) {
         const retryCount = (job.retryCount || 0) + 1;
         const retryable = retryCount <= MAX_RETRY && e?.code !== "SSO_MSG_NOT_SUBSCRIBE";
-        await strapi.db.query(MSG_JOB_UID$1).update({
+        await strapi.db.query(MSG_JOB_UID$2).update({
           where: { id: job.id },
           data: {
             status: retryable ? "pending" : "failed",
@@ -4651,7 +4665,7 @@ const ssoMsg = ({ strapi }) => {
       return this.getJob(job.id);
     },
     async getJob(jobId) {
-      const job = await strapi.db.query(MSG_JOB_UID$1).findOne({
+      const job = await strapi.db.query(MSG_JOB_UID$2).findOne({
         where: { id: jobId },
         populate: { template: true, user: true }
       });
@@ -4669,7 +4683,7 @@ const ssoMsg = ({ strapi }) => {
           { nextRetryAt: { $lte: now } }
         ];
       }
-      return strapi.db.query(MSG_JOB_UID$1).findMany({
+      return strapi.db.query(MSG_JOB_UID$2).findMany({
         where,
         populate: { template: true },
         orderBy: { scheduledAt: "ASC" },
@@ -4697,7 +4711,7 @@ const ssoMsg = ({ strapi }) => {
     }
   };
 };
-const SOP_RULE_UID = "plugin::zhao-sso.sop-rule";
+const SOP_RULE_UID$1 = "plugin::zhao-sso.sop-rule";
 const SSO_USER_UID$1 = "plugin::zhao-sso.sso-user";
 function pick(obj, path) {
   if (!path) return void 0;
@@ -4744,7 +4758,7 @@ const ssoSop = ({ strapi }) => ({
     const results = [];
     let jobs = schedules || [];
     if (!schedules || schedules.length === 0) {
-      const rules = await strapi.db.query(SOP_RULE_UID).findMany({
+      const rules = await strapi.db.query(SOP_RULE_UID$1).findMany({
         where: { source: "event", event, enabled: true }
       });
       jobs = rules.map((r) => ({
@@ -5097,8 +5111,8 @@ const ssoRecommend = ({ strapi }) => ({
     }));
   }
 });
-const MSG_JOB_UID = "plugin::zhao-sso.msg-job";
-const MSG_TEMPLATE_UID = "plugin::zhao-sso.msg-template";
+const MSG_JOB_UID$1 = "plugin::zhao-sso.msg-job";
+const MSG_TEMPLATE_UID$1 = "plugin::zhao-sso.msg-template";
 const QUOTA_CONFIG_UID = "plugin::zhao-sso.sso-quota-config";
 const ssoQuota = ({ strapi }) => {
   async function resolveConfig(templateId) {
@@ -5108,7 +5122,7 @@ const ssoQuota = ({ strapi }) => {
     let dailyCap = defDaily;
     let cooldownMinutes = defCool;
     if (templateId) {
-      const t = await strapi.db.query(MSG_TEMPLATE_UID).findOne({ where: { id: templateId } });
+      const t = await strapi.db.query(MSG_TEMPLATE_UID$1).findOne({ where: { id: templateId } });
       if (t && typeof t.dailyCap === "number") dailyCap = t.dailyCap;
       if (t && typeof t.cooldownMinutes === "number") cooldownMinutes = t.cooldownMinutes;
     }
@@ -5126,13 +5140,13 @@ const ssoQuota = ({ strapi }) => {
       const cfg = await resolveConfig(templateId || null);
       const dayStart = /* @__PURE__ */ new Date();
       dayStart.setHours(0, 0, 0, 0);
-      const sentCount = await strapi.db.query(MSG_JOB_UID).count({
+      const sentCount = await strapi.db.query(MSG_JOB_UID$1).count({
         where: { user: { id: userId }, status: "sent", sentAt: { $gte: dayStart } }
       });
       if (sentCount >= cfg.dailyCap) {
         return { allowed: false, reason: "daily_cap", detail: { sentCount, dailyCap: cfg.dailyCap, source: cfg.source } };
       }
-      const recents = await strapi.db.query(MSG_JOB_UID).findMany({
+      const recents = await strapi.db.query(MSG_JOB_UID$1).findMany({
         where: { scene, status: "sent" },
         orderBy: { sentAt: "DESC" },
         limit: 50,
@@ -5149,6 +5163,75 @@ const ssoQuota = ({ strapi }) => {
     }
   };
 };
+const SOP_RULE_UID = "plugin::zhao-sso.sop-rule";
+const MSG_JOB_UID = "plugin::zhao-sso.msg-job";
+const MSG_TEMPLATE_UID = "plugin::zhao-sso.msg-template";
+const MSG_VERSION_UID = "plugin::zhao-sso.msg-template-version";
+const DATE_MS = 864e5;
+const ssoStats = ({ strapi }) => ({
+  async getSopStats(opts) {
+    const from = opts.from ? new Date(opts.from) : new Date(Date.now() - 30 * DATE_MS);
+    const to = opts.to ? new Date(opts.to) : /* @__PURE__ */ new Date();
+    if (from.getTime() > to.getTime()) {
+      const err = new Error("from 不能晚于 to");
+      err.status = 400;
+      throw err;
+    }
+    const range = { createdAt: { $gte: from, $lte: to } };
+    const rules = await strapi.db.query(SOP_RULE_UID).findMany({});
+    const ruleByScene = /* @__PURE__ */ new Map();
+    for (const r of rules) {
+      if (!ruleByScene.has(r.scene)) ruleByScene.set(r.scene, []);
+      ruleByScene.get(r.scene).push(r);
+    }
+    const sceneSet = /* @__PURE__ */ new Set([...ruleByScene.keys()]);
+    if (opts.scene) sceneSet.add(opts.scene);
+    const scenes = Array.from(sceneSet).filter((s) => opts.scene ? s === opts.scene : true);
+    const countBy = (scene, status) => status ? strapi.db.query(MSG_JOB_UID).count({ where: { scene, status, ...range } }) : strapi.db.query(MSG_JOB_UID).count({ where: { scene, ...range } });
+    const rows = [];
+    const summary = { sceneCount: 0, total: 0, sent: 0, failed: 0, quotaLimited: 0, pending: 0, sentRate: 0 };
+    for (const s of scenes) {
+      const [total, sent, failed, quota, pending, cancelled] = await Promise.all([
+        countBy(s),
+        countBy(s, "sent"),
+        countBy(s, "failed"),
+        countBy(s, "quota_limited"),
+        countBy(s, "pending"),
+        countBy(s, "cancelled")
+      ]);
+      let clicks = 0;
+      const ruleList = ruleByScene.get(s) || [];
+      for (const r of ruleList) {
+        if (!r.templateCode) continue;
+        const tpl = await strapi.db.query(MSG_TEMPLATE_UID).findOne({ where: { code: r.templateCode } });
+        if (!tpl) continue;
+        const vers = await strapi.db.query(MSG_VERSION_UID).findMany({ where: { template: tpl.id } });
+        for (const v of vers) clicks += v.clickCount || 0;
+      }
+      const sentRate = total ? Math.round(sent / total * 100) : 0;
+      rows.push({
+        scene: s,
+        rules: ruleList.map((r) => ({ code: r.code, name: r.name ?? null, templateCode: r.templateCode ?? null, source: r.source ?? null })),
+        total,
+        sent,
+        failed,
+        quotaLimited: quota,
+        pending,
+        cancelled,
+        sentRate,
+        clicks
+      });
+      summary.sceneCount += 1;
+      summary.total += total;
+      summary.sent += sent;
+      summary.failed += failed;
+      summary.quotaLimited += quota;
+      summary.pending += pending;
+    }
+    summary.sentRate = summary.total ? Math.round(summary.sent / summary.total * 100) : 0;
+    return { from: from.toISOString(), to: to.toISOString(), summary, rows };
+  }
+});
 const services = {
   "sso-jwt": ssoJwt,
   "sso-user": ssoUser,
@@ -5167,7 +5250,8 @@ const services = {
   "sso-sop": ssoSop,
   "sso-profile": ssoProfile,
   "sso-recommend": ssoRecommend,
-  "sso-quota": ssoQuota
+  "sso-quota": ssoQuota,
+  "sso-stats": ssoStats
 };
 const fallbackAuthenticated = async (policyContext, _config, { strapi }) => {
   try {

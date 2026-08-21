@@ -180,5 +180,8 @@ declare const _default: {
             error: string;
         }>;
     };
+    "msg-stats": ({ strapi }: any) => {
+        sopStats(ctx: any): Promise<void>;
+    };
 };
 export default _default;

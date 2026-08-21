@@ -1254,6 +1254,9 @@ declare const _default: {
                 error: string;
             }>;
         };
+        "msg-stats": ({ strapi }: any) => {
+            sopStats(ctx: any): Promise<void>;
+        };
     };
     routes: {
         "content-api": {
@@ -1822,6 +1825,28 @@ declare const _default: {
                     sentCount?: undefined;
                     dailyCap?: undefined;
                 };
+            }>;
+        };
+        "sso-stats": ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            getSopStats(opts: {
+                from?: string;
+                to?: string;
+                scene?: string;
+            }): Promise<{
+                from: string;
+                to: string;
+                summary: {
+                    sceneCount: number;
+                    total: number;
+                    sent: number;
+                    failed: number;
+                    quotaLimited: number;
+                    pending: number;
+                    sentRate: number;
+                };
+                rows: any[];
             }>;
         };
     };

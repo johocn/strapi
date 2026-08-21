@@ -18,6 +18,7 @@ import profileController from "./profile-controller";
 import partnerController from "./partner-controller";
 import msgVersionController from "./msg-version-controller";
 import recommendController from "./recommend-controller";
+import msgStats from "./msg-stats";
 
 export default {
   "auth-controller": authController,
@@ -40,4 +41,5 @@ export default {
   partner: partnerController,
   "msg-version": msgVersionController,
   "recommend-controller": recommendController,
+  "msg-stats": msgStats,
 };
