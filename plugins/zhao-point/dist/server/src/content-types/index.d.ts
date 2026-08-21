@@ -947,6 +947,12 @@ declare const _default: {
                     relation: string;
                     target: string;
                 };
+                belongsToSeries: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    inversedBy: string;
+                };
             };
         };
     };
@@ -1026,6 +1032,50 @@ declare const _default: {
                 pointsGranted: {
                     type: string;
                     default: boolean;
+                };
+            };
+        };
+    };
+    "activity-series": {
+        schema: {
+            kind: string;
+            collectionName: string;
+            info: {
+                singularName: string;
+                pluralName: string;
+                displayName: string;
+            };
+            options: {
+                draftAndPublish: boolean;
+            };
+            attributes: {
+                title: {
+                    type: string;
+                    required: boolean;
+                };
+                description: {
+                    type: string;
+                };
+                cover: {
+                    type: string;
+                };
+                sortOrder: {
+                    type: string;
+                    default: number;
+                };
+                status: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
+                schedule: {
+                    type: string;
+                };
+                activities: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    mappedBy: string;
                 };
             };
         };

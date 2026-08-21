@@ -468,6 +468,20 @@ declare const _default: {
             adminScanCheckin(ctx: any): Promise<void>;
             adminAttendance(ctx: any): Promise<void>;
         };
+        series: ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            list(ctx: any): Promise<void>;
+            detail(ctx: any): Promise<void>;
+            adminList(ctx: any): Promise<void>;
+            adminFindOne(ctx: any): Promise<void>;
+            adminCreate(ctx: any): Promise<void>;
+            adminUpdate(ctx: any): Promise<void>;
+            adminDelete(ctx: any): Promise<void>;
+            adminActivities(ctx: any): Promise<void>;
+            adminDuplicateActivity(ctx: any): Promise<void>;
+            adminGenerate(ctx: any): Promise<void>;
+        };
     };
     contentTypes: {
         "point-record": {
@@ -1418,6 +1432,12 @@ declare const _default: {
                         relation: string;
                         target: string;
                     };
+                    belongsToSeries: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        inversedBy: string;
+                    };
                 };
             };
         };
@@ -1497,6 +1517,50 @@ declare const _default: {
                     pointsGranted: {
                         type: string;
                         default: boolean;
+                    };
+                };
+            };
+        };
+        "activity-series": {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                attributes: {
+                    title: {
+                        type: string;
+                        required: boolean;
+                    };
+                    description: {
+                        type: string;
+                    };
+                    cover: {
+                        type: string;
+                    };
+                    sortOrder: {
+                        type: string;
+                        default: number;
+                    };
+                    status: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    schedule: {
+                        type: string;
+                    };
+                    activities: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
                     };
                 };
             };
@@ -2260,6 +2324,29 @@ declare const _default: {
                 ok: boolean;
                 attendanceId: any;
                 point: boolean;
+                reason?: undefined;
+            }>;
+        };
+        "series-service": ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            find(params: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument[]>;
+            findOne(documentId: string): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
+            create(data: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
+            update(documentId: string, data: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
+            delete(documentId: string): Promise<{
+                documentId: import('@strapi/types/dist/modules/documents').ID;
+                entries: import('@strapi/types/dist/modules/documents').Result<TContentTypeUID, TParams>[];
+            }>;
+            listActivities(seriesDocumentId: string): Promise<any[]>;
+            duplicate(activityDocumentId: string): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
+            generateSchedule(seriesDocumentId: string, { count }?: {
+                count?: number;
+            }): Promise<{
+                generated: number;
+                reason: string;
+            } | {
+                generated: number;
                 reason?: undefined;
             }>;
         };

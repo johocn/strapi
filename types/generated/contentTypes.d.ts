@@ -4091,6 +4091,10 @@ export interface PluginZhaoPointActivity extends Struct.CollectionTypeSchema {
     };
   };
   attributes: {
+    belongsToSeries: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-point.activity-series'
+    >;
     capacity: Schema.Attribute.Integer &
       Schema.Attribute.Required &
       Schema.Attribute.DefaultTo<100>;
@@ -4181,6 +4185,45 @@ export interface PluginZhaoPointActivityAttendance
       'oneToOne',
       'plugin::zhao-point.activity-signup'
     >;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface PluginZhaoPointActivitySeries
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'activity_series';
+  info: {
+    displayName: 'Activity Series';
+    pluralName: 'activity-series';
+    singularName: 'activity-series';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    activities: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-point.activity'
+    >;
+    cover: Schema.Attribute.String;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    description: Schema.Attribute.Text;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-point.activity-series'
+    > &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    schedule: Schema.Attribute.JSON;
+    sortOrder: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    status: Schema.Attribute.Enumeration<['active', 'hidden']> &
+      Schema.Attribute.DefaultTo<'active'>;
+    title: Schema.Attribute.String & Schema.Attribute.Required;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -10569,6 +10612,7 @@ declare module '@strapi/strapi' {
       'plugin::zhao-oss.sync-record': PluginZhaoOssSyncRecord;
       'plugin::zhao-point.activity': PluginZhaoPointActivity;
       'plugin::zhao-point.activity-attendance': PluginZhaoPointActivityAttendance;
+      'plugin::zhao-point.activity-series': PluginZhaoPointActivitySeries;
       'plugin::zhao-point.activity-signup': PluginZhaoPointActivitySignup;
       'plugin::zhao-point.channel-verification': PluginZhaoPointChannelVerification;
       'plugin::zhao-point.pickup-location': PluginZhaoPointPickupLocation;

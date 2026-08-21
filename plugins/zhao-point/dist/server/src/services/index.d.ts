@@ -759,5 +759,28 @@ declare const _default: {
             reason?: undefined;
         }>;
     };
+    "series-service": ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        find(params: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument[]>;
+        findOne(documentId: string): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
+        create(data: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
+        update(documentId: string, data: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
+        delete(documentId: string): Promise<{
+            documentId: import('@strapi/types/dist/modules/documents').ID;
+            entries: import('@strapi/types/dist/modules/documents').Result<TContentTypeUID, TParams>[];
+        }>;
+        listActivities(seriesDocumentId: string): Promise<any[]>;
+        duplicate(activityDocumentId: string): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
+        generateSchedule(seriesDocumentId: string, { count }?: {
+            count?: number;
+        }): Promise<{
+            generated: number;
+            reason: string;
+        } | {
+            generated: number;
+            reason?: undefined;
+        }>;
+    };
 };
 export default _default;
