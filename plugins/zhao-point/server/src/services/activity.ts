@@ -3,6 +3,7 @@ import type { Core } from "@strapi/strapi";
 const SIGNS_UID = "plugin::zhao-point.activity-signup";
 const ATT_UID = "plugin::zhao-point.activity-attendance";
 const AUTH_UID = "plugin::zhao-course.user-course-auth";
+const ACTIVITY_UID = "plugin::zhao-point.activity";
 
 function haversineM(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 6371000;
@@ -42,12 +43,28 @@ async function grantCourseTrial(strapi, userId: number, courseId: number) {
   } catch { /* 幂等授权，失败忽略 */ }
 }
 
+async function resolveUserChannelId(strapi, userId: number): Promise<number | undefined> {
+  const channelSvc = strapi.plugin("zhao-channel")?.service("channel-permission");
+  let userChannelId: number | undefined;
+  if (channelSvc) {
+    const member = await strapi.db.query("plugin::zhao-channel.channel-member")
+      .findOne({ where: { user: userId, isCurrent: true }, populate: ["channel"] });
+    userChannelId = member?.channel?.id || member?.channel;
+    if (!userChannelId) {
+      const dirs = await channelSvc.getUserDirectChannels(userId);
+      userChannelId = dirs?.[0];
+    }
+  }
+  return userChannelId;
+}
+
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async signup({ userId, activityId }: { userId: number; activityId: string }) {
-    const act = await strapi.documents("plugin::zhao-point.activity").findOne({ documentId: activityId, populate: { preUnlockLessons: { populate: { course: true } } } });
+    const act = await strapi.documents(ACTIVITY_UID).findOne({ documentId: activityId, populate: { preUnlockLessons: { populate: { course: true } } } });
     if (!act) throw new Error("活动不存在");
     if (act.status !== "signup_open") throw new Error("活动未开放报名");
     const now = Date.now();
+    const feeCollectAt = act.feeCollectAt || "signup";
     if (act.signupStart && now < new Date(act.signupStart).getTime()) throw new Error("报名未开始");
     if (act.signupEnd && now > new Date(act.signupEnd).getTime()) throw new Error("报名已截止");
     const dup = await strapi.db.query(SIGNS_UID).findOne({
@@ -73,7 +90,17 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       });
       return { ok: true, waitlisted: true, position: waitCount + 1 };
     }
-    await strapi.db.query(SIGNS_UID).create({ data: { user: userId, activity: act.id, status: "active", signupAt: new Date() } });
+    const cost = act.pointsCost || 0;
+    if (feeCollectAt === "signup" && cost > 0) {
+      const userChannelId = await resolveUserChannelId(strapi, userId);
+      try {
+        await strapi.plugin("zhao-point").service("point").deductPoints({ userId, action: "activity_fee", points: cost, source: "activity", method: "activity_signup", remark: `报名活动:${act.title}`, orderId: `act:${act.documentId}`, userChannelId });
+      } catch (e) {
+        await strapi.db.connection("activities").where("id", act.id).decrement("used_capacity", 1);
+        return { ok: false, reason: "insufficient_points" };
+      }
+    }
+    await strapi.db.query(SIGNS_UID).create({ data: { user: userId, activity: act.id, status: "active", signupAt: new Date(), pointsCharged: feeCollectAt === "signup" ? cost : 0 } });
     // 报名积分
     await grantPoints(strapi, userId, "activity_signup", "活动报名");
     // 预留存：试看课时所属课程授权
