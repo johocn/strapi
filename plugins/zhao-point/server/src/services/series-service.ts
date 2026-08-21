@@ -46,7 +46,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async duplicate(activityDocumentId: string) {
     const src = await strapi.documents(ACTIVITY_UID).findOne({
       documentId: activityDocumentId,
-      populate: { preUnlockArticles: { select: ["id"] }, preUnlockLessons: { select: ["id"] } },
+      populate: { preUnlockArticles: true, preUnlockLessons: true },
     } as any);
     if (!src) throw new Error("活动不存在");
 
