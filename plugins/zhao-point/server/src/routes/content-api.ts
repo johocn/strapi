@@ -146,6 +146,7 @@ export default () => ({
     // 公开路由
     publicRoute("GET", "/activities", "activity.list"),
     publicRoute("GET", "/activities/calendar", "calendar.month"),
+    userRoute("GET", "/activities/:documentId/fee", "fee.preview"),
     publicRoute("GET", "/activities/:documentId", "activity.detail"),
 
     // 注册用户路由
