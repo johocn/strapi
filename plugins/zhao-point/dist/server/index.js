@@ -4298,6 +4298,9 @@ const seriesService = ({ strapi }) => ({
       geoRadiusM: src.geoRadiusM,
       pointsCost: src.pointsCost ?? 0,
       feeCollectAt: src.feeCollectAt ?? "signup",
+      pricingMode: src.pricingMode || "flat",
+      feeTiers: src.feeTiers ?? null,
+      feeFactors: src.feeFactors ?? null,
       channelScope: src.channelScope,
       channelIds: src.channelIds,
       belongsToSeries: src.belongsToSeries?.id ?? src.belongsToSeries ?? null,
@@ -4391,6 +4394,9 @@ const seriesService = ({ strapi }) => ({
             geoRadiusM: Number(dr.geoRadiusM ?? 500),
             pointsCost,
             feeCollectAt,
+            pricingMode: dr.pricingMode || "flat",
+            feeTiers: dr.feeTiers ?? null,
+            feeFactors: dr.feeFactors ?? null,
             signupStart: dr.signupOpenDays ? new Date(startDate.getTime() - Number(dr.signupOpenDays) * 24 * 3600 * 1e3).toISOString() : null,
             belongsToSeries: series2.id
           }
