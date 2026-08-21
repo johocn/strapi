@@ -35430,11 +35430,11 @@ const activityStats = ({ strapi: strapi2 }) => ({
     const actIds = acts.map((a) => a.id);
     const signs = await strapi2.db.query(SIGNS_UID).findMany({
       where: { activity: { $in: actIds } },
-      populate: { user: true }
+      populate: { user: true, activity: true }
     });
     const rewards = await strapi2.db.query(REWARD_UID).findMany({
       where: { activity: { $in: actIds } },
-      populate: { inviter: true }
+      populate: { inviter: true, activity: true }
     });
     const signByAct = indexBy(signs, "activity");
     const rewardByAct = indexBy(rewards, "activity");
@@ -35473,8 +35473,8 @@ const activityStats = ({ strapi: strapi2 }) => ({
     const seriesRows = [];
     for (const { series: series2, items } of seriesMap.values()) {
       const itemIds = new Set(items.map((i) => i.id));
-      const signsList = signs.filter((s) => itemIds.has(s.activity));
-      const rewardList = rewards.filter((r) => itemIds.has(r.activity));
+      const signsList = signs.filter((s) => itemIds.has(s.activity?.id ?? s.activity));
+      const rewardList = rewards.filter((r) => itemIds.has(r.activity?.id ?? r.activity));
       seriesRows.push({
         type: "series",
         documentId: series2.documentId,

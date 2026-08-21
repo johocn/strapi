@@ -48,11 +48,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     const actIds = acts.map((a: any) => a.id);
     const signs = await strapi.db.query(SIGNS_UID).findMany({
       where: { activity: { $in: actIds } },
-      populate: { user: true },
+      populate: { user: true, activity: true },
     });
     const rewards = await strapi.db.query(REWARD_UID).findMany({
       where: { activity: { $in: actIds } },
-      populate: { inviter: true },
+      populate: { inviter: true, activity: true },
     });
     const signByAct = indexBy(signs, "activity");
     const rewardByAct = indexBy(rewards, "activity");
@@ -97,8 +97,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     const seriesRows: any[] = [];
     for (const { series, items } of seriesMap.values()) {
       const itemIds = new Set(items.map((i) => i.id));
-      const signsList = signs.filter((s) => itemIds.has(s.activity));
-      const rewardList = rewards.filter((r) => itemIds.has(r.activity));
+      const signsList = signs.filter((s) => itemIds.has(s.activity?.id ?? s.activity));
+      const rewardList = rewards.filter((r) => itemIds.has(r.activity?.id ?? r.activity));
       seriesRows.push({
         type: "series",
         documentId: series.documentId,
