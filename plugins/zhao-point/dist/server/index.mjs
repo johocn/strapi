@@ -34966,6 +34966,7 @@ const seriesService = ({ strapi: strapi2 }) => ({
       pricingMode: src.pricingMode || "flat",
       feeTiers: src.feeTiers ?? null,
       feeFactors: src.feeFactors ?? null,
+      shareRewardPoints: src.shareRewardPoints ?? null,
       channelScope: src.channelScope,
       channelIds: src.channelIds,
       belongsToSeries: src.belongsToSeries?.id ?? src.belongsToSeries ?? null,
@@ -35062,6 +35063,7 @@ const seriesService = ({ strapi: strapi2 }) => ({
             pricingMode: dr.pricingMode || "flat",
             feeTiers: dr.feeTiers ?? null,
             feeFactors: dr.feeFactors ?? null,
+            shareRewardPoints: dr.shareRewardPoints ?? null,
             signupStart: dr.signupOpenDays ? new Date(startDate.getTime() - Number(dr.signupOpenDays) * 24 * 3600 * 1e3).toISOString() : null,
             belongsToSeries: series2.id
           }
