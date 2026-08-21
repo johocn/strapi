@@ -8,6 +8,7 @@ import activity from "./activity";
 import seriesService from "./series-service";
 import calendarService from "./calendar-service";
 import feeService from "./fee-service";
+import activityStats from "./activity-stats";
 
 export default {
   point,
@@ -20,4 +21,5 @@ export default {
   "series-service": seriesService,
   "calendar-service": calendarService,
   "fee-service": feeService,
+  "activity-stats": activityStats,
 };
