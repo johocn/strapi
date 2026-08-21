@@ -11,6 +11,7 @@ import pickupLocation from "./pickup-location/schema.json";
 import activity from "./activity/schema.json";
 import activitySignup from "./activity-signup/schema.json";
 import activityAttendance from "./activity-attendance/schema.json";
+import activitySeries from "./activity-series/schema.json";
 
 export default {
   "point-record": { schema: pointRecord },
@@ -26,4 +27,5 @@ export default {
   activity: { schema: activity },
   "activity-signup": { schema: activitySignup },
   "activity-attendance": { schema: activityAttendance },
+  "activity-series": { schema: activitySeries },
 };

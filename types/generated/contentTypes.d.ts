@@ -4215,7 +4215,7 @@ export interface PluginZhaoPointActivitySignup
       Schema.Attribute.Private;
     publishedAt: Schema.Attribute.DateTime;
     signupAt: Schema.Attribute.DateTime;
-    status: Schema.Attribute.Enumeration<['active', 'cancelled']> &
+    status: Schema.Attribute.Enumeration<['active', 'cancelled', 'waiting']> &
       Schema.Attribute.DefaultTo<'active'>;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
