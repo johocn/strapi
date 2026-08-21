@@ -1024,6 +1024,22 @@ declare const _default: {
                 attendedAt: {
                     type: string;
                 };
+                rating: {
+                    type: string;
+                    min: number;
+                    max: number;
+                };
+                nps: {
+                    type: string;
+                    min: number;
+                    max: number;
+                };
+                review: {
+                    type: string;
+                };
+                reviewedAt: {
+                    type: string;
+                };
             };
         };
     };
