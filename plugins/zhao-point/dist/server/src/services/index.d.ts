@@ -726,9 +726,10 @@ declare const _default: {
     activity: ({ strapi }: {
         strapi: import('@strapi/types/dist/core').Strapi;
     }) => {
-        signup({ userId, activityId }: {
+        signup({ userId, activityId, formData }: {
             userId: number;
             activityId: string;
+            formData?: any;
         }): Promise<{
             ok: boolean;
             reason: string;

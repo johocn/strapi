@@ -1,4 +1,5 @@
 import type { Core } from "@strapi/strapi";
+import { FormValidationError } from "../services/form";
 
 const ACTIVITY_UID = "plugin::zhao-point.activity";
 const SIGNS_UID = "plugin::zhao-point.activity-signup";
@@ -64,14 +65,18 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   async signup(ctx: any) {
     try {
       const userId = getUserId(ctx);
-      const activityId = ctx.request.body.activityId;
-      const result = await activitySvc().signup({ userId, activityId });
+      const { activityId, formData } = ctx.request.body || {};
+      const result = await activitySvc().signup({ userId, activityId, formData });
       if (result?.ok === false && result.reason === "already_signed_up") {
         ctx.status = 200;
       }
       ctx.body = wrap(result);
     } catch (e: any) {
       ctx.status = 400;
+      if (e instanceof FormValidationError) {
+        ctx.body = { error: e.message, errors: e.errors };
+        return;
+      }
       ctx.body = { error: e.message };
     }
   },

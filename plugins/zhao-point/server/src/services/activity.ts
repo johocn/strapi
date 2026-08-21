@@ -1,4 +1,5 @@
 import type { Core } from "@strapi/strapi";
+import { FormValidationError, validateFormData, collectFormData } from "./form";
 
 const SIGNS_UID = "plugin::zhao-point.activity-signup";
 const ATT_UID = "plugin::zhao-point.activity-attendance";
@@ -122,13 +123,20 @@ async function grantShareReward(strapi, userId: number, act: any) {
 const feeSvc = () => strapi.plugin("zhao-point").service("fee-service");
 
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
-  async signup({ userId, activityId }: { userId: number; activityId: string }) {
+  async signup({ userId, activityId, formData }: { userId: number; activityId: string; formData?: any }) {
     const act = await strapi.documents(ACTIVITY_UID).findOne({ documentId: activityId, populate: { preUnlockLessons: { populate: { course: true } } } });
     if (!act) throw new Error("活动不存在");
     if (act.status !== "signup_open") throw new Error("活动未开放报名");
     const now = Date.now();
     if (act.signupStart && now < new Date(act.signupStart).getTime()) throw new Error("报名未开始");
     if (act.signupEnd && now > new Date(act.signupEnd).getTime()) throw new Error("报名已截止");
+    // 报名表单校验（活动配置了 formConfig 才校验；无配置兼容不校验）
+    const formConfig = act.formConfig;
+    if (Array.isArray(formConfig) && formConfig.length) {
+      const v = validateFormData(formConfig, formData);
+      if (!v.ok) throw new FormValidationError(v.errors);
+    }
+    const storedFormData = Array.isArray(formConfig) && formConfig.length ? collectFormData(formConfig, formData) : undefined;
     const dup = await strapi.db.query(SIGNS_UID).findOne({
       where: { user: userId, activity: act.id, status: { $in: ["active", "waiting"] } },
     });
@@ -138,7 +146,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     if (reserved === 0) {
       // 名额已满 → 进入候补队列（不占用名额）
       const sig = await strapi.db.query(SIGNS_UID).create({
-        data: { user: userId, activity: act.id, status: "waiting", signupAt: new Date() },
+        data: { user: userId, activity: act.id, status: "waiting", signupAt: new Date(), ...(storedFormData ? { formData: storedFormData } : {}) },
       });
       const waitCount = await strapi.db.query(SIGNS_UID).count({
         where: {
@@ -172,7 +180,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         return { ok: false, reason: "insufficient_points" };
       }
     }
-    await strapi.db.query(SIGNS_UID).create({ data: { user: userId, activity: act.id, status: "active", signupAt: new Date(), pointsCharged: feeCollectAt === "signup" ? cost : 0, feeTierId: resolved.tierId ?? null } });
+    await strapi.db.query(SIGNS_UID).create({ data: { user: userId, activity: act.id, status: "active", signupAt: new Date(), pointsCharged: feeCollectAt === "signup" ? cost : 0, feeTierId: resolved.tierId ?? null, ...(storedFormData ? { formData: storedFormData } : {}) } });
     // 报名积分
     await grantPoints(strapi, userId, "activity_signup", "活动报名");
     // 分享裂变奖励

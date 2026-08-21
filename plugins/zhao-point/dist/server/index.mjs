@@ -1593,6 +1593,83 @@ const pointAdmin = ({ strapi: strapi2 }) => {
     }
   };
 };
+const PHONE_RE = /^1[3-9]\d{9}$/;
+class FormValidationError extends Error {
+  constructor(errors) {
+    super("报名信息填写有误");
+    this.name = "FormValidationError";
+    this.errors = errors;
+  }
+}
+function isEmpty(v) {
+  return v === void 0 || v === null || typeof v === "string" && v.trim() === "";
+}
+function isPlainArray(v) {
+  return Array.isArray(v) && v.every((x) => typeof x === "string" || typeof x === "number");
+}
+function normalizeOptions(field) {
+  const opts = Array.isArray(field.options) ? field.options : [];
+  return opts.map((o) => String(o));
+}
+function validateField(field, value) {
+  const label = field.label || field.key || "该字段";
+  const options2 = normalizeOptions(field);
+  if (field.required && isEmpty(value)) return `请填写${label}`;
+  if (isEmpty(value)) return null;
+  switch (field.type) {
+    case "phone":
+      return PHONE_RE.test(String(value)) ? null : `请填写正确的${label}`;
+    case "number": {
+      const n = Number(value);
+      if (!Number.isFinite(n)) return `请填写正确的${label}`;
+      if (field.min != null && n < Number(field.min)) return `${label}不能小于${field.min}`;
+      if (field.max != null && n > Number(field.max)) return `${label}不能大于${field.max}`;
+      return null;
+    }
+    case "radio":
+    case "select":
+      return options2.includes(String(value)) ? null : `请选择正确的${label}`;
+    case "multi":
+      if (!isPlainArray(value)) return `请选择${label}`;
+      return value.every((v) => options2.includes(String(v))) ? null : `请选择正确的${label}`;
+    default:
+      return null;
+  }
+}
+function validateFormData(formConfig, formData) {
+  const fields2 = Array.isArray(formConfig) ? formConfig : [];
+  const data = formData && typeof formData === "object" && !Array.isArray(formData) ? formData : {};
+  const errors = [];
+  for (const f of fields2) {
+    if (!f || typeof f !== "object" || !f.key) continue;
+    const msg = validateField(f, data[f.key]);
+    if (msg) errors.push({ key: f.key, label: f.label || f.key, message: msg });
+  }
+  return errors.length ? { ok: false, errors } : { ok: true, errors: [] };
+}
+function collectFormData(formConfig, formData) {
+  const fields2 = Array.isArray(formConfig) ? formConfig : [];
+  const data = formData && typeof formData === "object" && !Array.isArray(formData) ? formData : {};
+  const out = {};
+  for (const f of fields2) {
+    if (!f || typeof f !== "object" || !f.key) continue;
+    const raw = data[f.key];
+    if (isEmpty(raw)) continue;
+    if (f.type === "number") {
+      const n = Number(raw);
+      out[f.key] = Number.isFinite(n) ? n : raw;
+    } else if (f.type === "multi") {
+      out[f.key] = isPlainArray(raw) ? raw.map((x) => String(x)) : raw;
+    } else {
+      out[f.key] = String(raw);
+    }
+  }
+  return out;
+}
+const form = ({ strapi: strapi2 }) => ({
+  validateFormData,
+  collectFormData
+});
 const ACTIVITY_UID$5 = "plugin::zhao-point.activity";
 const SIGNS_UID$3 = "plugin::zhao-point.activity-signup";
 const ATT_UID$1 = "plugin::zhao-point.activity-attendance";
@@ -1654,14 +1731,18 @@ const activity$1 = ({ strapi: strapi2 }) => {
     async signup(ctx) {
       try {
         const userId = getUserId(ctx);
-        const activityId = ctx.request.body.activityId;
-        const result = await activitySvc().signup({ userId, activityId });
+        const { activityId, formData } = ctx.request.body || {};
+        const result = await activitySvc().signup({ userId, activityId, formData });
         if (result?.ok === false && result.reason === "already_signed_up") {
           ctx.status = 200;
         }
         ctx.body = wrap$3(result);
       } catch (e) {
         ctx.status = 400;
+        if (e instanceof FormValidationError) {
+          ctx.body = { error: e.message, errors: e.errors };
+          return;
+        }
         ctx.body = { error: e.message };
       }
     },
@@ -34822,13 +34903,19 @@ async function grantShareReward(strapi2, userId, act) {
 }
 const feeSvc = () => strapi.plugin("zhao-point").service("fee-service");
 const activity = ({ strapi: strapi2 }) => ({
-  async signup({ userId, activityId }) {
+  async signup({ userId, activityId, formData }) {
     const act = await strapi2.documents(ACTIVITY_UID$3).findOne({ documentId: activityId, populate: { preUnlockLessons: { populate: { course: true } } } });
     if (!act) throw new Error("活动不存在");
     if (act.status !== "signup_open") throw new Error("活动未开放报名");
     const now = Date.now();
     if (act.signupStart && now < new Date(act.signupStart).getTime()) throw new Error("报名未开始");
     if (act.signupEnd && now > new Date(act.signupEnd).getTime()) throw new Error("报名已截止");
+    const formConfig = act.formConfig;
+    if (Array.isArray(formConfig) && formConfig.length) {
+      const v = validateFormData(formConfig, formData);
+      if (!v.ok) throw new FormValidationError(v.errors);
+    }
+    const storedFormData = Array.isArray(formConfig) && formConfig.length ? collectFormData(formConfig, formData) : void 0;
     const dup = await strapi2.db.query(SIGNS_UID$2).findOne({
       where: { user: userId, activity: act.id, status: { $in: ["active", "waiting"] } }
     });
@@ -34837,7 +34924,7 @@ const activity = ({ strapi: strapi2 }) => ({
     const reserved = await knex("activities").where("id", act.id).andWhere("used_capacity", "<", knex.raw("capacity")).increment("used_capacity", 1);
     if (reserved === 0) {
       const sig = await strapi2.db.query(SIGNS_UID$2).create({
-        data: { user: userId, activity: act.id, status: "waiting", signupAt: /* @__PURE__ */ new Date() }
+        data: { user: userId, activity: act.id, status: "waiting", signupAt: /* @__PURE__ */ new Date(), ...storedFormData ? { formData: storedFormData } : {} }
       });
       const waitCount = await strapi2.db.query(SIGNS_UID$2).count({
         where: {
@@ -34871,7 +34958,7 @@ const activity = ({ strapi: strapi2 }) => ({
         return { ok: false, reason: "insufficient_points" };
       }
     }
-    await strapi2.db.query(SIGNS_UID$2).create({ data: { user: userId, activity: act.id, status: "active", signupAt: /* @__PURE__ */ new Date(), pointsCharged: feeCollectAt === "signup" ? cost : 0, feeTierId: resolved.tierId ?? null } });
+    await strapi2.db.query(SIGNS_UID$2).create({ data: { user: userId, activity: act.id, status: "active", signupAt: /* @__PURE__ */ new Date(), pointsCharged: feeCollectAt === "signup" ? cost : 0, feeTierId: resolved.tierId ?? null, ...storedFormData ? { formData: storedFormData } : {} } });
     await grantPoints(strapi2, userId, "activity_signup", "活动报名");
     await grantShareReward(strapi2, userId, act);
     for (const lesson of act.preUnlockLessons || []) {
@@ -35549,76 +35636,6 @@ const activityStats = ({ strapi: strapi2 }) => ({
       rows: [...seriesRows, ...actRows]
     };
   }
-});
-const PHONE_RE = /^1[3-9]\d{9}$/;
-function isEmpty(v) {
-  return v === void 0 || v === null || typeof v === "string" && v.trim() === "";
-}
-function isPlainArray(v) {
-  return Array.isArray(v) && v.every((x) => typeof x === "string" || typeof x === "number");
-}
-function normalizeOptions(field) {
-  const opts = Array.isArray(field.options) ? field.options : [];
-  return opts.map((o) => String(o));
-}
-function validateField(field, value) {
-  const label = field.label || field.key || "该字段";
-  const options2 = normalizeOptions(field);
-  if (field.required && isEmpty(value)) return `请填写${label}`;
-  if (isEmpty(value)) return null;
-  switch (field.type) {
-    case "phone":
-      return PHONE_RE.test(String(value)) ? null : `请填写正确的${label}`;
-    case "number": {
-      const n = Number(value);
-      if (!Number.isFinite(n)) return `请填写正确的${label}`;
-      if (field.min != null && n < Number(field.min)) return `${label}不能小于${field.min}`;
-      if (field.max != null && n > Number(field.max)) return `${label}不能大于${field.max}`;
-      return null;
-    }
-    case "radio":
-    case "select":
-      return options2.includes(String(value)) ? null : `请选择正确的${label}`;
-    case "multi":
-      if (!isPlainArray(value)) return `请选择${label}`;
-      return value.every((v) => options2.includes(String(v))) ? null : `请选择正确的${label}`;
-    default:
-      return null;
-  }
-}
-function validateFormData(formConfig, formData) {
-  const fields2 = Array.isArray(formConfig) ? formConfig : [];
-  const data = formData && typeof formData === "object" && !Array.isArray(formData) ? formData : {};
-  const errors = [];
-  for (const f of fields2) {
-    if (!f || typeof f !== "object" || !f.key) continue;
-    const msg = validateField(f, data[f.key]);
-    if (msg) errors.push({ key: f.key, label: f.label || f.key, message: msg });
-  }
-  return errors.length ? { ok: false, errors } : { ok: true, errors: [] };
-}
-function collectFormData(formConfig, formData) {
-  const fields2 = Array.isArray(formConfig) ? formConfig : [];
-  const data = formData && typeof formData === "object" && !Array.isArray(formData) ? formData : {};
-  const out = {};
-  for (const f of fields2) {
-    if (!f || typeof f !== "object" || !f.key) continue;
-    const raw = data[f.key];
-    if (isEmpty(raw)) continue;
-    if (f.type === "number") {
-      const n = Number(raw);
-      out[f.key] = Number.isFinite(n) ? n : raw;
-    } else if (f.type === "multi") {
-      out[f.key] = isPlainArray(raw) ? raw.map((x) => String(x)) : raw;
-    } else {
-      out[f.key] = String(raw);
-    }
-  }
-  return out;
-}
-const form = ({ strapi: strapi2 }) => ({
-  validateFormData,
-  collectFormData
 });
 const services = {
   point,
