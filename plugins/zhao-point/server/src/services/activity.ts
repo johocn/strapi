@@ -58,6 +58,66 @@ async function resolveUserChannelId(strapi, userId: number): Promise<number | un
   return userChannelId;
 }
 
+/**
+ * 分享裂变奖励：下线 B(userId, upUser) 成功报名活动 act → 给其邀请人 A 发积分。
+ * 幂等键：(invitee, activity)；虚拟分享者/无码/奖励<=0/桥接不到 A 均跳过；失败仅日志，绝不阻断报名主流程。
+ */
+async function grantShareReward(strapi, userId: number, act: any) {
+  try {
+    if (!act?.id) return;
+    const configSvc = strapi.plugin("zhao-point").service("config-service");
+    const config = configSvc ? await configSvc.getConfig() : null;
+    const reward = Number(act.shareRewardPoints ?? config?.defaultShareRewardPoints ?? 0) || 0;
+    if (reward <= 0) return;
+
+    const sop = strapi.plugin("zhao-sso")?.service("sso-sop");
+    const profileSvc = strapi.plugin("zhao-sso")?.service("sso-profile");
+    if (!sop || !profileSvc) return;
+
+    const inviteeSso = await sop.resolveSsoUserForUpUser(userId);
+    const inviteCodeStr = inviteeSso?.invite_code_used;
+    if (!inviteCodeStr) return;
+
+    const code = await strapi.db.query("plugin::zhao-sso.sso-invite-code").findOne({
+      where: { code: inviteCodeStr, is_active: true },
+      populate: ["creator"],
+    });
+    const inviter = code?.creator;
+    if (!inviter || inviter.status === "virtual") return;
+
+    const inviterUp = await profileSvc.resolveUpUserForSsoUser(inviter.id);
+    if (!inviterUp?.id) return;
+
+    const REWARD_UID = "plugin::zhao-point.activity-referral-reward";
+    const exists = await strapi.db.query(REWARD_UID).findOne({
+      where: { invitee: userId, activity: act.id },
+    });
+    if (exists) return;
+
+    const userChannelId = await resolveUserChannelId(strapi, inviterUp.id);
+    await strapi.plugin("zhao-point").service("point").earnPoints({
+      userId: inviterUp.id,
+      action: "activity_share_reward",
+      source: "activity",
+      method: "activity_share_reward",
+      remark: `分享活动:${act.title}`,
+      userChannelId,
+    });
+    await strapi.db.query(REWARD_UID).create({
+      data: {
+        inviter: inviterUp.id,
+        invitee: userId,
+        activity: act.id,
+        points: reward,
+        sourceInviteCode: inviteCodeStr,
+        issuedAt: new Date(),
+      },
+    });
+  } catch (e: any) {
+    strapi.log.warn(`[zhao-point:activity] grantShareReward failed: ${e.message}`);
+  }
+}
+
 const feeSvc = () => strapi.plugin("zhao-point").service("fee-service");
 
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
@@ -114,6 +174,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     await strapi.db.query(SIGNS_UID).create({ data: { user: userId, activity: act.id, status: "active", signupAt: new Date(), pointsCharged: feeCollectAt === "signup" ? cost : 0, feeTierId: resolved.tierId ?? null } });
     // 报名积分
     await grantPoints(strapi, userId, "activity_signup", "活动报名");
+    // 分享裂变奖励
+    await grantShareReward(strapi, userId, act);
     // 预留存：试看课时所属课程授权
     for (const lesson of act.preUnlockLessons || []) {
       if (lesson?.course?.id) await grantCourseTrial(strapi, userId, lesson.course.id);
