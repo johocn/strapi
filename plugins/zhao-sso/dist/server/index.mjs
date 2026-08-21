@@ -4919,7 +4919,6 @@ const ssoProfile = ({ strapi }) => ({
         populate: { category: { select: ["name"] } },
         limit: 200
       });
-      console.log("[debug-interests] articles", articles.map((a) => ({ id: a.id, doc: a.documentId, cat: a.category?.name })));
       const seenCats = /* @__PURE__ */ new Set();
       for (const a of articles) {
         if (a.category?.name && !seenCats.has(a.category.name)) {

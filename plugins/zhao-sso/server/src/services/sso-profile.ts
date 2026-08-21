@@ -116,7 +116,6 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         populate: { category: { select: ["name"] } },
         limit: 200,
       });
-      console.log("[debug-interests] articles", articles.map((a: any) => ({ id: a.id, doc: a.documentId, cat: a.category?.name })));
       const seenCats = new Set<string>();
       for (const a of articles) {
         if (a.category?.name && !seenCats.has(a.category.name)) {
