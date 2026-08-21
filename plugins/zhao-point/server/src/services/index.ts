@@ -9,6 +9,7 @@ import seriesService from "./series-service";
 import calendarService from "./calendar-service";
 import feeService from "./fee-service";
 import activityStats from "./activity-stats";
+import form from "./form";
 
 export default {
   point,
@@ -22,4 +23,5 @@ export default {
   "calendar-service": calendarService,
   "fee-service": feeService,
   "activity-stats": activityStats,
+  form,
 };

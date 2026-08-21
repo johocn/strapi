@@ -980,6 +980,9 @@ declare const _default: {
                     target: string;
                     inversedBy: string;
                 };
+                formConfig: {
+                    type: string;
+                };
             };
         };
     };
@@ -1038,6 +1041,9 @@ declare const _default: {
                     type: string;
                 };
                 reviewedAt: {
+                    type: string;
+                };
+                formData: {
                     type: string;
                 };
             };

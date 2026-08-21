@@ -33,7 +33,8 @@ declare const _default: {
     "preUnlockLessons": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-course.course-lesson" },
     "learningPackageArticles": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.article" },
     "learningPackageLessons": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-course.course-lesson" },
-    "belongsToSeries": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.activity-series", "inversedBy": "activities" }
+    "belongsToSeries": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.activity-series", "inversedBy": "activities" },
+    "formConfig": { "type": "json" }
   }
 };
 

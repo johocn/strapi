@@ -236,7 +236,7 @@ const collectionName$4 = "activities";
 const info$4 = { "singularName": "activity", "pluralName": "activities", "displayName": "Activity", "description": "线下活动" };
 const options$4 = { "draftAndPublish": false };
 const pluginOptions = { "i18n": { "localized": false } };
-const attributes$4 = { "title": { "type": "string", "required": true }, "type": { "type": "string", "default": "其他" }, "description": { "type": "text" }, "startTime": { "type": "datetime" }, "endTime": { "type": "datetime" }, "venueName": { "type": "string" }, "lat": { "type": "float" }, "lng": { "type": "float" }, "capacity": { "type": "integer", "required": true, "default": 100 }, "usedCapacity": { "type": "integer", "default": 0 }, "signupStart": { "type": "datetime" }, "signupEnd": { "type": "datetime" }, "checkinMode": { "type": "enumeration", "enum": ["worker_scan", "self", "both"], "default": "both" }, "geoEnforced": { "type": "boolean", "default": false }, "geoRadiusM": { "type": "integer", "default": 500 }, "status": { "type": "enumeration", "enum": ["draft", "signup_open", "ongoing", "ended"], "default": "draft" }, "channelScope": { "type": "enumeration", "enum": ["all", "specific"], "default": "all" }, "channelIds": { "type": "json" }, "pointsCost": { "type": "integer", "default": 0 }, "pricingMode": { "type": "enumeration", "enum": ["flat", "tier", "factor"], "default": "flat" }, "feeTiers": { "type": "json" }, "feeFactors": { "type": "json" }, "feeCollectAt": { "type": "enumeration", "enum": ["signup", "checkin"], "default": "signup" }, "shareRewardPoints": { "type": "integer" }, "preUnlockArticles": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.article" }, "preUnlockLessons": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-course.course-lesson" }, "learningPackageArticles": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.article" }, "learningPackageLessons": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-course.course-lesson" }, "belongsToSeries": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.activity-series", "inversedBy": "activities" } };
+const attributes$4 = { "title": { "type": "string", "required": true }, "type": { "type": "string", "default": "其他" }, "description": { "type": "text" }, "startTime": { "type": "datetime" }, "endTime": { "type": "datetime" }, "venueName": { "type": "string" }, "lat": { "type": "float" }, "lng": { "type": "float" }, "capacity": { "type": "integer", "required": true, "default": 100 }, "usedCapacity": { "type": "integer", "default": 0 }, "signupStart": { "type": "datetime" }, "signupEnd": { "type": "datetime" }, "checkinMode": { "type": "enumeration", "enum": ["worker_scan", "self", "both"], "default": "both" }, "geoEnforced": { "type": "boolean", "default": false }, "geoRadiusM": { "type": "integer", "default": 500 }, "status": { "type": "enumeration", "enum": ["draft", "signup_open", "ongoing", "ended"], "default": "draft" }, "channelScope": { "type": "enumeration", "enum": ["all", "specific"], "default": "all" }, "channelIds": { "type": "json" }, "pointsCost": { "type": "integer", "default": 0 }, "pricingMode": { "type": "enumeration", "enum": ["flat", "tier", "factor"], "default": "flat" }, "feeTiers": { "type": "json" }, "feeFactors": { "type": "json" }, "feeCollectAt": { "type": "enumeration", "enum": ["signup", "checkin"], "default": "signup" }, "shareRewardPoints": { "type": "integer" }, "preUnlockArticles": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.article" }, "preUnlockLessons": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-course.course-lesson" }, "learningPackageArticles": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.article" }, "learningPackageLessons": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-course.course-lesson" }, "belongsToSeries": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.activity-series", "inversedBy": "activities" }, "formConfig": { "type": "json" } };
 const activity$2 = {
   kind: kind$4,
   collectionName: collectionName$4,
@@ -249,7 +249,7 @@ const kind$3 = "collectionType";
 const collectionName$3 = "activity_signups";
 const info$3 = { "singularName": "activity-signup", "pluralName": "activity-signups", "displayName": "Activity Signup" };
 const options$3 = { "draftAndPublish": false };
-const attributes$3 = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::users-permissions.user" }, "activity": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.activity" }, "status": { "type": "enumeration", "enum": ["active", "cancelled", "waiting"], "default": "active" }, "pointsCharged": { "type": "integer", "default": 0 }, "feeTierId": { "type": "string" }, "signupAt": { "type": "datetime" }, "attendedAt": { "type": "datetime" }, "rating": { "type": "integer", "min": 1, "max": 5 }, "nps": { "type": "integer", "min": 0, "max": 10 }, "review": { "type": "text" }, "reviewedAt": { "type": "datetime" } };
+const attributes$3 = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::users-permissions.user" }, "activity": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.activity" }, "status": { "type": "enumeration", "enum": ["active", "cancelled", "waiting"], "default": "active" }, "pointsCharged": { "type": "integer", "default": 0 }, "feeTierId": { "type": "string" }, "signupAt": { "type": "datetime" }, "attendedAt": { "type": "datetime" }, "rating": { "type": "integer", "min": 1, "max": 5 }, "nps": { "type": "integer", "min": 0, "max": 10 }, "review": { "type": "text" }, "reviewedAt": { "type": "datetime" }, "formData": { "type": "json" } };
 const activitySignup = {
   kind: kind$3,
   collectionName: collectionName$3,
@@ -6285,7 +6285,7 @@ function requireLodash() {
         function isElement(value) {
           return isObjectLike(value) && value.nodeType === 1 && !isPlainObject2(value);
         }
-        function isEmpty(value) {
+        function isEmpty2(value) {
           if (value == null) {
             return true;
           }
@@ -7423,7 +7423,7 @@ function requireLodash() {
         lodash2.isBuffer = isBuffer2;
         lodash2.isDate = isDate2;
         lodash2.isElement = isElement;
-        lodash2.isEmpty = isEmpty;
+        lodash2.isEmpty = isEmpty2;
         lodash2.isEqual = isEqual;
         lodash2.isEqualWith = isEqualWith;
         lodash2.isError = isError;
@@ -20315,7 +20315,7 @@ function requireMergeStream() {
     var output = new PassThrough({ objectMode: true });
     output.setMaxListeners(0);
     output.add = add;
-    output.isEmpty = isEmpty;
+    output.isEmpty = isEmpty2;
     output.on("unpipe", remove);
     Array.prototype.slice.call(arguments).forEach(add);
     return output;
@@ -20330,7 +20330,7 @@ function requireMergeStream() {
       source.pipe(output, { end: false });
       return this;
     }
-    function isEmpty() {
+    function isEmpty2() {
       return sources.length == 0;
     }
     function remove(source) {
@@ -32049,8 +32049,8 @@ function _overwrite(tx) {
     tx
   });
 }
-function _normalize(form) {
-  return _overwrite((input) => input.normalize(form));
+function _normalize(form2) {
+  return _overwrite((input) => input.normalize(form2));
 }
 function _trim() {
   return _overwrite((input) => input.trim());
@@ -35564,6 +35564,76 @@ const activityStats = ({ strapi: strapi2 }) => ({
     };
   }
 });
+const PHONE_RE = /^1[3-9]\d{9}$/;
+function isEmpty(v) {
+  return v === void 0 || v === null || typeof v === "string" && v.trim() === "";
+}
+function isPlainArray(v) {
+  return Array.isArray(v) && v.every((x) => typeof x === "string" || typeof x === "number");
+}
+function normalizeOptions(field) {
+  const opts = Array.isArray(field.options) ? field.options : [];
+  return opts.map((o) => String(o));
+}
+function validateField(field, value) {
+  const label = field.label || field.key || "该字段";
+  const options2 = normalizeOptions(field);
+  if (field.required && isEmpty(value)) return `请填写${label}`;
+  if (isEmpty(value)) return null;
+  switch (field.type) {
+    case "phone":
+      return PHONE_RE.test(String(value)) ? null : `请填写正确的${label}`;
+    case "number": {
+      const n = Number(value);
+      if (!Number.isFinite(n)) return `请填写正确的${label}`;
+      if (field.min != null && n < Number(field.min)) return `${label}不能小于${field.min}`;
+      if (field.max != null && n > Number(field.max)) return `${label}不能大于${field.max}`;
+      return null;
+    }
+    case "radio":
+    case "select":
+      return options2.includes(String(value)) ? null : `请选择正确的${label}`;
+    case "multi":
+      if (!isPlainArray(value)) return `请选择${label}`;
+      return value.every((v) => options2.includes(String(v))) ? null : `请选择正确的${label}`;
+    default:
+      return null;
+  }
+}
+function validateFormData(formConfig, formData) {
+  const fields2 = Array.isArray(formConfig) ? formConfig : [];
+  const data = formData && typeof formData === "object" && !Array.isArray(formData) ? formData : {};
+  const errors = [];
+  for (const f of fields2) {
+    if (!f || typeof f !== "object" || !f.key) continue;
+    const msg = validateField(f, data[f.key]);
+    if (msg) errors.push({ key: f.key, label: f.label || f.key, message: msg });
+  }
+  return errors.length ? { ok: false, errors } : { ok: true, errors: [] };
+}
+function collectFormData(formConfig, formData) {
+  const fields2 = Array.isArray(formConfig) ? formConfig : [];
+  const data = formData && typeof formData === "object" && !Array.isArray(formData) ? formData : {};
+  const out = {};
+  for (const f of fields2) {
+    if (!f || typeof f !== "object" || !f.key) continue;
+    const raw = data[f.key];
+    if (isEmpty(raw)) continue;
+    if (f.type === "number") {
+      const n = Number(raw);
+      out[f.key] = Number.isFinite(n) ? n : raw;
+    } else if (f.type === "multi") {
+      out[f.key] = isPlainArray(raw) ? raw.map((x) => String(x)) : raw;
+    } else {
+      out[f.key] = String(raw);
+    }
+  }
+  return out;
+}
+const form = ({ strapi: strapi2 }) => ({
+  validateFormData,
+  collectFormData
+});
 const services = {
   point,
   redemption,
@@ -35575,7 +35645,8 @@ const services = {
   "series-service": seriesService,
   "calendar-service": calendarService,
   "fee-service": feeService,
-  "activity-stats": activityStats
+  "activity-stats": activityStats,
+  form
 };
 const publicRoute = (method, path, handler) => ({
   method,

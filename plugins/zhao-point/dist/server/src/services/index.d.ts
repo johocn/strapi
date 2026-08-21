@@ -870,5 +870,11 @@ declare const _default: {
             rows: any[];
         }>;
     };
+    form: ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        validateFormData: typeof import('./form').validateFormData;
+        collectFormData: typeof import('./form').collectFormData;
+    };
 };
 export default _default;

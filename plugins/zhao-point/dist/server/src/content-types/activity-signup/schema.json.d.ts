@@ -14,7 +14,8 @@ declare const _default: {
     "rating": { "type": "integer", "min": 1, "max": 5 },
     "nps": { "type": "integer", "min": 0, "max": 10 },
     "review": { "type": "text" },
-    "reviewedAt": { "type": "datetime" }
+    "reviewedAt": { "type": "datetime" },
+    "formData": { "type": "json" }
   }
 };
 
