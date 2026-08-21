@@ -104,17 +104,22 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     const percent = totalLessons > 0 ? Math.min(Math.round((completedCount / totalLessons) * 10000) / 100, 100) : 0;
     const isCompleted = completedCount >= totalLessons && totalLessons > 0;
 
+    const data: any = {
+      completedLessons: completedCount,
+      progress: percent,
+      isCompleted,
+      lastStudyAt: new Date(),
+    };
+    if (isCompleted && !progress.completedAt) {
+      data.completedAt = new Date();
+    }
+
     await strapi.db.query(UID).update({
       where: { id: progress.id },
-      data: {
-        completedLessons: completedCount,
-        progress: percent,
-        isCompleted,
-        lastStudyAt: new Date(),
-      },
+      data,
     });
 
-    return { ...progress, completedLessons: completedCount, progress: percent, isCompleted };
+    return { ...progress, completedLessons: completedCount, progress: percent, isCompleted, completedAt: data.completedAt };
   },
 
   async claimPoints(userId: number, progressRecordId: string) {
