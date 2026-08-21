@@ -4114,6 +4114,7 @@ export interface PluginZhaoPointActivity extends Struct.CollectionTypeSchema {
       Schema.Attribute.DefaultTo<'signup'>;
     feeFactors: Schema.Attribute.JSON;
     feeTiers: Schema.Attribute.JSON;
+    formConfig: Schema.Attribute.JSON;
     geoEnforced: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
     geoRadiusM: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<500>;
     lat: Schema.Attribute.Float;
@@ -4306,6 +4307,7 @@ export interface PluginZhaoPointActivitySignup
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     feeTierId: Schema.Attribute.String;
+    formData: Schema.Attribute.JSON;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
