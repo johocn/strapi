@@ -169,5 +169,23 @@ export default () => ({
         policies: ["plugin::zhao-sso.sso-authenticated"],
       },
     },
+    {
+      method: "GET",
+      path: "/v1/my/notices",
+      handler: "notice-controller.myNotices",
+      config: {
+        auth: false,
+        policies: ["plugin::zhao-sso.sso-authenticated"],
+      },
+    },
+    {
+      method: "POST",
+      path: "/v1/my/notices/:id/read",
+      handler: "notice-controller.read",
+      config: {
+        auth: false,
+        policies: ["plugin::zhao-sso.sso-authenticated"],
+      },
+    },
   ],
 });

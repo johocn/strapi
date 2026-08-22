@@ -18,6 +18,7 @@ import profileController from "./profile-controller";
 import partnerController from "./partner-controller";
 import msgVersionController from "./msg-version-controller";
 import recommendController from "./recommend-controller";
+import noticeController from "./notice-controller";
 import msgStats from "./msg-stats";
 
 export default {
@@ -41,5 +42,6 @@ export default {
   partner: partnerController,
   "msg-version": msgVersionController,
   "recommend-controller": recommendController,
+  "notice-controller": noticeController,
   "msg-stats": msgStats,
 };
