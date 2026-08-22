@@ -158,6 +158,23 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
           ],
         },
       });
+      // 候补提醒：站内信 + 微信
+      try {
+        await this.notifyInApp(userId, act.id, "activity.waitlisted", { name: act.title, startTime: act.startTime, position: waitCount + 1 }, `activity:waitlisted:${userId}:${act.id}`);
+        const sop = strapi.plugin("zhao-sso")?.service("sso-sop");
+        if (sop) {
+          const sso = await sop.resolveSsoUserForUpUser(userId);
+          if (sso) {
+            await sop.trigger("activity.waitlisted", {
+              user: sso.id,
+              payload: { activity: { name: act.title, startTime: act.startTime }, position: waitCount + 1 },
+              schedules: [{ templateCode: "act_waitlisted", scene: "activity.waitlisted", dedupeKey: `activity:waitlisted:${userId}:${act.id}` }],
+            });
+          }
+        }
+      } catch (e: any) {
+        strapi.log.warn(`[zhao-point:activity] waitlisted notify failed (user=${userId}): ${e.message}`);
+      }
       return { ok: true, waitlisted: true, position: waitCount + 1 };
     }
     let resolved = await feeSvc().resolveFee(act, userId);
@@ -185,6 +202,12 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     await grantPoints(strapi, userId, "activity_signup", "活动报名");
     // 分享裂变奖励
     await grantShareReward(strapi, userId, act);
+    // 站内信：报名成功确认（双通道之站内部分）
+    await this.notifyInApp(userId, act.id, "activity.confirm", { name: act.title, startTime: act.startTime }, `activity:confirm:${userId}:${act.id}`);
+    // 开场前提醒站内信（即时示"已预约提醒"，实际提醒由微信定时触发）
+    if (act.startTime && (Number(act.remindLeadMinutes ?? 1440) >= 0)) {
+      await this.notifyInApp(userId, act.id, "activity.before", { name: act.title, startTime: act.startTime }, `activity:before:${userId}:${act.id}`);
+    }
     // 预留存：试看课时所属课程授权
     for (const lesson of act.preUnlockLessons || []) {
       if (lesson?.course?.id) await grantCourseTrial(strapi, userId, lesson.course.id);
@@ -197,9 +220,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         if (!sso) return { ok: true };
         const startTime = act.startTime;
         const schedules: any[] = [{ templateCode: "act_confirm", scene: "activity.confirm" }];
-        if (startTime) {
-          const beforeAt = new Date(new Date(startTime).getTime() - 24 * 3600 * 1000).toISOString();
-          // 活动开始前 24h 已过（早于 now）则跳过该条
+        const leadMin = Number(act.remindLeadMinutes ?? 1440);
+        if (startTime && leadMin >= 0) {
+          const beforeAt = new Date(new Date(startTime).getTime() - Math.max(leadMin, 0) * 60000).toISOString();
+          // 开场前提醒时点已过（早于 now）则跳过该条
           if (new Date(beforeAt).getTime() > Date.now()) {
             schedules.push({ templateCode: "act_before", scene: "activity.before", scheduledAt: beforeAt });
           }
@@ -270,6 +294,25 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     });
     if (!signup) throw new Error("未报名");
     await strapi.db.query(SIGNS_UID).update({ where: { id: signup.id }, data: { status: "cancelled" } });
+    // 取消确认：站内信 + 微信
+    try {
+      const act = await strapi.db.query(ACTIVITY_UID).findOne({ where: { id: activityId } });
+      const params = { name: act?.title ?? "", startTime: act?.startTime ?? null };
+      await this.notifyInApp(userId, activityId, "activity.cancelled", params, `activity:cancelled:${userId}:${activityId}`);
+      const sop = strapi.plugin("zhao-sso")?.service("sso-sop");
+      if (sop) {
+        const sso = await sop.resolveSsoUserForUpUser(userId);
+        if (sso) {
+          await sop.trigger("activity.cancelled", {
+            user: sso.id,
+            payload: { activity: params },
+            schedules: [{ templateCode: "act_cancelled", scene: "activity.cancelled", dedupeKey: `activity:cancelled:${userId}:${activityId}` }],
+          });
+        }
+      }
+    } catch (e: any) {
+      strapi.log.warn(`[zhao-point:activity] cancel notify failed (user=${userId}): ${e.message}`);
+    }
     if (signup.status === "active") {
       // 报名时收费（signup 模式）且已扣积分 → 取消退款
       const act = await strapi.db.query(ACTIVITY_UID).findOne({ where: { id: activityId } });
@@ -351,8 +394,23 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         params: { name: act.title, time: act.startTime },
         dedupeKey: `activity:promote:${upUserId}:${activityId}`,
       });
+      await this.notifyInApp(upUserId, activityId, "activity.promoted", { name: act.title, startTime: act.startTime }, `activity:promoted:${upUserId}:${activityId}`);
     } catch (e: any) {
       strapi.log.warn(`[zhao-point:activity] promote notify failed (user=${upUserId}): ${e.message}`);
+    }
+  },
+
+  /** 站内信发送助手：resolve sso-user → sso-msg.sendInApp；无 sso/失败降级不断链 */
+  async notifyInApp(upUserId: number, activityId: number, scene: string, params: Record<string, any>, dedupeKey: string) {
+    try {
+      const sop = strapi.plugin("zhao-sso")?.service("sso-sop");
+      const msg = strapi.plugin("zhao-sso")?.service("sso-msg");
+      if (!sop || !msg) return;
+      const sso = await sop.resolveSsoUserForUpUser(upUserId);
+      if (!sso) return;
+      await msg.sendInApp({ user: sso.id, scene, params, dedupeKey });
+    } catch (e: any) {
+      strapi.log.warn(`[zhao-point:activity] sendInApp failed (${scene}, user=${upUserId}): ${e.message}`);
     }
   },
 
