@@ -23,6 +23,20 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   const getUserId = (ctx: any) => ctx.state.user.id || ctx.state.user.documentId;
   const activitySvc = () => strapi.plugin("zhao-point").service("activity");
 
+  // 关系归一：{connect:[N]}|N|{id:N}+documentId → number | undefined
+  function relId(v: any): number | undefined {
+    if (!v) return undefined;
+    if (typeof v === "number") return v;
+    if (Array.isArray(v)) return relId(v[0]);
+    if (typeof v === "string" && /^\d+$/.test(v)) return parseInt(v, 10);
+    if (typeof v === "object") {
+      if (Array.isArray(v.connect) && v.connect.length) return relId(v.connect[0]);
+      if (v.id != null) return Number(v.id);
+      if (v.documentId) return relId(v.documentId);
+    }
+    return undefined;
+  }
+
   return ({
   // ===== 公开 =====
 
@@ -163,6 +177,20 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   async adminCreate(ctx: any) {
     try {
       const body = ctx.request.body?.data || ctx.request.body;
+      // 排期冲突校验（仅当给定时间与资源时）
+      const lecturerId = relId(body.lecturer);
+      const venueId = relId(body.venue);
+      if (body.startTime && body.endTime && (lecturerId || venueId)) {
+        const chk = await strapi.plugin("zhao-point").service("resource-schedule").check({
+          start: body.startTime, end: body.endTime, lecturerId, venueId,
+        });
+        if (!chk.ok) {
+          const c = chk.conflicts[0];
+          ctx.status = 400;
+          ctx.body = { error: `排期冲突：与活动「${c.conflictActivityTitle ?? c.conflictActivityId}」时间重叠`, conflicts: chk.conflicts };
+          return;
+        }
+      }
       const activity = await strapi.documents(ACTIVITY_UID).create({ data: body });
       ctx.body = wrap(activity);
     } catch (e: any) {
@@ -175,6 +203,23 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   async adminUpdate(ctx: any) {
     try {
       const body = ctx.request.body?.data || ctx.request.body;
+      const existing = await strapi.documents(ACTIVITY_UID).findOne({ documentId: ctx.params.documentId, populate: { lecturer: true, venue: true } });
+      if (!existing) { ctx.status = 404; ctx.body = { error: "活动不存在" }; return; }
+      const startTime = body.startTime ?? existing.startTime;
+      const endTime = body.endTime ?? existing.endTime;
+      const lecturerId = relId(body.lecturer) ?? relId(existing.lecturer);
+      const venueId = relId(body.venue) ?? relId(existing.venue);
+      if (startTime && endTime && (lecturerId || venueId)) {
+        const chk = await strapi.plugin("zhao-point").service("resource-schedule").check({
+          start: startTime, end: endTime, excludeActivityId: existing.id, lecturerId, venueId,
+        });
+        if (!chk.ok) {
+          const c = chk.conflicts[0];
+          ctx.status = 400;
+          ctx.body = { error: `排期冲突：与活动「${c.conflictActivityTitle ?? c.conflictActivityId}」时间重叠`, conflicts: chk.conflicts };
+          return;
+        }
+      }
       const activity = await strapi.documents(ACTIVITY_UID).update({
         documentId: ctx.params.documentId,
         data: body,

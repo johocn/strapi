@@ -878,5 +878,32 @@ declare const _default: {
         validateFormData: typeof import('./form').validateFormData;
         collectFormData: typeof import('./form').collectFormData;
     };
+    "resource-schedule": ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        LECTURER_UID: string;
+        VENUE_UID: string;
+        check(opts: {
+            start: Date | string;
+            end: Date | string;
+            excludeActivityId?: number;
+            lecturerId?: number;
+            venueId?: number;
+        }): Promise<{
+            ok: boolean;
+            conflicts: any[];
+        } | {
+            ok: boolean;
+            conflicts?: undefined;
+        }>;
+        suggest(opts: {
+            type: "lecturer" | "venue";
+            resourceId: number;
+            start: Date | string;
+            end: Date | string;
+            n?: number;
+            excludeActivityId?: number;
+        }): Promise<any[]>;
+    };
 };
 export default _default;

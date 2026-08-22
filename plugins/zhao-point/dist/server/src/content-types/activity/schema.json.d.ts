@@ -35,7 +35,9 @@ declare const _default: {
     "learningPackageLessons": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-course.course-lesson" },
     "belongsToSeries": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.activity-series", "inversedBy": "activities" },
     "formConfig": { "type": "json" },
-    "remindLeadMinutes": { "type": "integer", "default": 1440, "min": -1 }
+    "remindLeadMinutes": { "type": "integer", "default": 1440, "min": -1 },
+    "lecturer": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.lecturer", "inversedBy": "activities" },
+    "venue": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.venue", "inversedBy": "activities" }
   }
 };
 

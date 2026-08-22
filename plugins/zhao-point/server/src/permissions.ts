@@ -43,6 +43,8 @@ export const PERMISSIONS: Record<string, PermissionEntry> = {
   "point-template.delete": { allowRoles: [ROLES.ADMIN, ROLES.CHANNEL_ADMIN] },
   "point-verification.read": { allowRoles: [ROLES.ADMIN, ROLES.CHANNEL_ADMIN, ROLES.PLUGIN_MANAGER] },
   "point-dashboard.read": { allowRoles: [ROLES.ADMIN, ROLES.CHANNEL_ADMIN, ROLES.PLUGIN_MANAGER] },
+  "resource.read": { allowRoles: [ROLES.ADMIN, ROLES.CHANNEL_ADMIN, ROLES.PLUGIN_MANAGER] },
+  "resource.write": { allowRoles: [ROLES.ADMIN, ROLES.CHANNEL_ADMIN] },
 };
 
 export default PERMISSIONS;

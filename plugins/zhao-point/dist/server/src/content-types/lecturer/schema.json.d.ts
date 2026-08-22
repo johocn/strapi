@@ -1,0 +1,16 @@
+declare const _default: {
+  "kind": "collectionType",
+  "collectionName": "lecturers",
+  "info": { "singularName": "lecturer", "pluralName": "lecturers", "displayName": "Lecturer", "description": "讲师资源主档" },
+  "options": { "draftAndPublish": false },
+  "pluginOptions": { "i18n": { "localized": false } },
+  "attributes": {
+    "name": { "type": "string", "required": true },
+    "desc": { "type": "text" },
+    "defaultBufferMin": { "type": "integer", "default": 30 },
+    "disabled": { "type": "boolean", "default": false },
+    "activities": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-point.activity", "mappedBy": "lecturer" }
+  }
+};
+
+export default _default;

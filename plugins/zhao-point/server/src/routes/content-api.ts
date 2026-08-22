@@ -171,6 +171,20 @@ export default () => ({
     channelScopeRoute("GET", "/adm/activity-reviews", "activity.adminReviews", "activity.read"),
     channelScopeRoute("GET", "/adm/activity-overview", "activity-stats.overview", "activity.read"),
 
+    // ===== 讲师/场地资源排期 =====
+    channelScopeRoute("GET", "/adm/lecturers", "resource.lecturers.list", "resource.read"),
+    channelScopeRoute("GET", "/adm/lecturers/:documentId", "resource.lecturers.findOne", "resource.read"),
+    channelScopeRoute("POST", "/adm/lecturers", "resource.lecturers.create", "resource.write"),
+    channelScopeRoute("PUT", "/adm/lecturers/:documentId", "resource.lecturers.update", "resource.write"),
+    channelScopeRoute("DELETE", "/adm/lecturers/:documentId", "resource.lecturers.del", "resource.write"),
+    channelScopeRoute("GET", "/adm/venues", "resource.venues.list", "resource.read"),
+    channelScopeRoute("GET", "/adm/venues/:documentId", "resource.venues.findOne", "resource.read"),
+    channelScopeRoute("POST", "/adm/venues", "resource.venues.create", "resource.write"),
+    channelScopeRoute("PUT", "/adm/venues/:documentId", "resource.venues.update", "resource.write"),
+    channelScopeRoute("DELETE", "/adm/venues/:documentId", "resource.venues.del", "resource.write"),
+    channelScopeRoute("GET", "/adm/schedules", "resource.schedules", "resource.read"),
+    channelScopeRoute("POST", "/adm/schedules/check", "resource.check", "resource.read"),
+
     // ===== 活动系列 + 排期管理 =====
     publicRoute("GET", "/series", "series.list"),
     publicRoute("GET", "/series/:documentId", "series.detail"),

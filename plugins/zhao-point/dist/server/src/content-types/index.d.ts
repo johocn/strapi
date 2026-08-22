@@ -988,6 +988,18 @@ declare const _default: {
                     default: number;
                     min: number;
                 };
+                lecturer: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    inversedBy: string;
+                };
+                venue: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    inversedBy: string;
+                };
             };
         };
     };
@@ -1182,6 +1194,98 @@ declare const _default: {
                 };
                 issuedAt: {
                     type: string;
+                };
+            };
+        };
+    };
+    lecturer: {
+        schema: {
+            kind: string;
+            collectionName: string;
+            info: {
+                singularName: string;
+                pluralName: string;
+                displayName: string;
+                description: string;
+            };
+            options: {
+                draftAndPublish: boolean;
+            };
+            pluginOptions: {
+                i18n: {
+                    localized: boolean;
+                };
+            };
+            attributes: {
+                name: {
+                    type: string;
+                    required: boolean;
+                };
+                desc: {
+                    type: string;
+                };
+                defaultBufferMin: {
+                    type: string;
+                    default: number;
+                };
+                disabled: {
+                    type: string;
+                    default: boolean;
+                };
+                activities: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    mappedBy: string;
+                };
+            };
+        };
+    };
+    venue: {
+        schema: {
+            kind: string;
+            collectionName: string;
+            info: {
+                singularName: string;
+                pluralName: string;
+                displayName: string;
+                description: string;
+            };
+            options: {
+                draftAndPublish: boolean;
+            };
+            pluginOptions: {
+                i18n: {
+                    localized: boolean;
+                };
+            };
+            attributes: {
+                name: {
+                    type: string;
+                    required: boolean;
+                };
+                desc: {
+                    type: string;
+                };
+                defaultBufferMin: {
+                    type: string;
+                    default: number;
+                };
+                lat: {
+                    type: string;
+                };
+                lng: {
+                    type: string;
+                };
+                disabled: {
+                    type: string;
+                    default: boolean;
+                };
+                activities: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    mappedBy: string;
                 };
             };
         };

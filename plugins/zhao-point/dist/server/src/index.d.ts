@@ -510,6 +510,40 @@ declare const _default: {
         }) => {
             preview(ctx: any): Promise<void>;
         };
+        resource: ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            lecturers: {
+                list: (ctx: any) => Promise<void>;
+                create: (ctx: any) => Promise<void>;
+                findOne: (ctx: any) => Promise<void>;
+                update: (ctx: any) => Promise<void>;
+                del: (ctx: any) => Promise<void>;
+            };
+            venues: {
+                list: (ctx: any) => Promise<void>;
+                create: (ctx: any) => Promise<void>;
+                findOne: (ctx: any) => Promise<void>;
+                update: (ctx: any) => Promise<void>;
+                del: (ctx: any) => Promise<void>;
+            };
+            schedules(ctx: any): Promise<void>;
+            check(ctx: any): Promise<void>;
+        };
+        "resource.lecturers": (args: any) => {
+            list: (ctx: any) => Promise<void>;
+            create: (ctx: any) => Promise<void>;
+            findOne: (ctx: any) => Promise<void>;
+            update: (ctx: any) => Promise<void>;
+            del: (ctx: any) => Promise<void>;
+        };
+        "resource.venues": (args: any) => {
+            list: (ctx: any) => Promise<void>;
+            create: (ctx: any) => Promise<void>;
+            findOne: (ctx: any) => Promise<void>;
+            update: (ctx: any) => Promise<void>;
+            del: (ctx: any) => Promise<void>;
+        };
     };
     contentTypes: {
         "point-record": {
@@ -1501,6 +1535,18 @@ declare const _default: {
                         default: number;
                         min: number;
                     };
+                    lecturer: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        inversedBy: string;
+                    };
+                    venue: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        inversedBy: string;
+                    };
                 };
             };
         };
@@ -1695,6 +1741,98 @@ declare const _default: {
                     };
                     issuedAt: {
                         type: string;
+                    };
+                };
+            };
+        };
+        lecturer: {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                    description: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                pluginOptions: {
+                    i18n: {
+                        localized: boolean;
+                    };
+                };
+                attributes: {
+                    name: {
+                        type: string;
+                        required: boolean;
+                    };
+                    desc: {
+                        type: string;
+                    };
+                    defaultBufferMin: {
+                        type: string;
+                        default: number;
+                    };
+                    disabled: {
+                        type: string;
+                        default: boolean;
+                    };
+                    activities: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                };
+            };
+        };
+        venue: {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                    description: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                pluginOptions: {
+                    i18n: {
+                        localized: boolean;
+                    };
+                };
+                attributes: {
+                    name: {
+                        type: string;
+                        required: boolean;
+                    };
+                    desc: {
+                        type: string;
+                    };
+                    defaultBufferMin: {
+                        type: string;
+                        default: number;
+                    };
+                    lat: {
+                        type: string;
+                    };
+                    lng: {
+                        type: string;
+                    };
+                    disabled: {
+                        type: string;
+                        default: boolean;
+                    };
+                    activities: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
                     };
                 };
             };
@@ -2579,6 +2717,33 @@ declare const _default: {
         }) => {
             validateFormData: typeof import('./services/form').validateFormData;
             collectFormData: typeof import('./services/form').collectFormData;
+        };
+        "resource-schedule": ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            LECTURER_UID: string;
+            VENUE_UID: string;
+            check(opts: {
+                start: Date | string;
+                end: Date | string;
+                excludeActivityId?: number;
+                lecturerId?: number;
+                venueId?: number;
+            }): Promise<{
+                ok: boolean;
+                conflicts: any[];
+            } | {
+                ok: boolean;
+                conflicts?: undefined;
+            }>;
+            suggest(opts: {
+                type: "lecturer" | "venue";
+                resourceId: number;
+                start: Date | string;
+                end: Date | string;
+                n?: number;
+                excludeActivityId?: number;
+            }): Promise<any[]>;
         };
     };
     routes: {

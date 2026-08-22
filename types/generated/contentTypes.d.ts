@@ -4126,6 +4126,10 @@ export interface PluginZhaoPointActivity extends Struct.CollectionTypeSchema {
       'manyToMany',
       'plugin::zhao-course.course-lesson'
     >;
+    lecturer: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-point.lecturer'
+    >;
     lng: Schema.Attribute.Float;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
@@ -4167,6 +4171,7 @@ export interface PluginZhaoPointActivity extends Struct.CollectionTypeSchema {
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     usedCapacity: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    venue: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-point.venue'>;
     venueName: Schema.Attribute.String;
   };
 }
@@ -4422,6 +4427,47 @@ export interface PluginZhaoPointChannelVerification
       'plugin::users-permissions.user'
     > &
       Schema.Attribute.Required;
+  };
+}
+
+export interface PluginZhaoPointLecturer extends Struct.CollectionTypeSchema {
+  collectionName: 'lecturers';
+  info: {
+    description: '\u8BB2\u5E08\u8D44\u6E90\u4E3B\u6863';
+    displayName: 'Lecturer';
+    pluralName: 'lecturers';
+    singularName: 'lecturer';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    i18n: {
+      localized: false;
+    };
+  };
+  attributes: {
+    activities: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-point.activity'
+    >;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    defaultBufferMin: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<30>;
+    desc: Schema.Attribute.Text;
+    disabled: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-point.lecturer'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
   };
 }
 
@@ -5022,6 +5068,49 @@ export interface PluginZhaoPointSignInRecord
       'plugin::users-permissions.user'
     > &
       Schema.Attribute.Required;
+  };
+}
+
+export interface PluginZhaoPointVenue extends Struct.CollectionTypeSchema {
+  collectionName: 'venues';
+  info: {
+    description: '\u573A\u5730\u8D44\u6E90\u4E3B\u6863';
+    displayName: 'Venue';
+    pluralName: 'venues';
+    singularName: 'venue';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    i18n: {
+      localized: false;
+    };
+  };
+  attributes: {
+    activities: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-point.activity'
+    >;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    defaultBufferMin: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<15>;
+    desc: Schema.Attribute.Text;
+    disabled: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    lat: Schema.Attribute.Float;
+    lng: Schema.Attribute.Float;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-point.venue'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
   };
 }
 
@@ -10737,6 +10826,7 @@ declare module '@strapi/strapi' {
       'plugin::zhao-point.activity-series': PluginZhaoPointActivitySeries;
       'plugin::zhao-point.activity-signup': PluginZhaoPointActivitySignup;
       'plugin::zhao-point.channel-verification': PluginZhaoPointChannelVerification;
+      'plugin::zhao-point.lecturer': PluginZhaoPointLecturer;
       'plugin::zhao-point.pickup-location': PluginZhaoPointPickupLocation;
       'plugin::zhao-point.point-config': PluginZhaoPointPointConfig;
       'plugin::zhao-point.point-product': PluginZhaoPointPointProduct;
@@ -10746,6 +10836,7 @@ declare module '@strapi/strapi' {
       'plugin::zhao-point.point-type': PluginZhaoPointPointType;
       'plugin::zhao-point.rule-template': PluginZhaoPointRuleTemplate;
       'plugin::zhao-point.sign-in-record': PluginZhaoPointSignInRecord;
+      'plugin::zhao-point.venue': PluginZhaoPointVenue;
       'plugin::zhao-quiz.quiz': PluginZhaoQuizQuiz;
       'plugin::zhao-quiz.quiz-batch': PluginZhaoQuizQuizBatch;
       'plugin::zhao-quiz.quiz-exam': PluginZhaoQuizQuizExam;
