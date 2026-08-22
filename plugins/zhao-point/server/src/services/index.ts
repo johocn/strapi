@@ -11,6 +11,7 @@ import feeService from "./fee-service";
 import activityStats from "./activity-stats";
 import form from "./form";
 import resourceSchedule from "./resource-schedule";
+import activityLedger from "./activity-ledger";
 
 export default {
   point,
@@ -26,4 +27,5 @@ export default {
   "activity-stats": activityStats,
   form,
   "resource-schedule": resourceSchedule,
+  "activity-ledger": activityLedger,
 };
