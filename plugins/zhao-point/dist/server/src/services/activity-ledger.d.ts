@@ -26,5 +26,9 @@ declare const _default: ({ strapi }: {
     regenerate(activityId: string): Promise<any>;
     /** 自动生成：活动无 auto 快照才生成（幂等），供 closeActivity 调用 */
     generateAutoIfAbsent(activityId: string): Promise<any>;
+    /** 管理端标记快照已结算/回退未结（幂等） */
+    settle(ledgerDocumentId: string, body?: {
+        settleStatus?: string;
+    }): Promise<any>;
 };
 export default _default;

@@ -36168,8 +36168,14 @@ const activityLedger = ({ strapi: strapi2 }) => ({
    * @param source 'auto' | 'manual'
    */
   async generate(activityId, source = "manual") {
-    const act = await strapi2.documents(ACTIVITY_UID).findOne({ documentId: activityId });
+    const act = await strapi2.documents(ACTIVITY_UID).findOne({
+      documentId: activityId,
+      populate: { lecturer: true, venue: true }
+    });
     if (!act) throw new Error("活动不存在");
+    const lecturer2 = act.lecturer;
+    const venue2 = act.venue;
+    const cashPrice = Number(act.cashPrice) || 0;
     const activeSigns = await strapi2.db.query(SIGNS_UID).findMany({
       where: { activity: act.id, status: "active" },
       populate: { user: true }
@@ -36191,6 +36197,11 @@ const activityLedger = ({ strapi: strapi2 }) => ({
     })();
     const signinCostPoints = (atts || []).length * attendeePoints;
     const netPoints = revenuePoints - signinCostPoints - referralCostPoints;
+    const cashRevenue = (activeSigns || []).length * cashPrice;
+    const lecturerCost = Number(act.settleLecturer) > 0 ? Number(act.settleLecturer) : lecturer2?.cashMode === "flat" ? Number(lecturer2.cashFee) || 0 : 0;
+    const venueCost = Number(act.settleVenue) > 0 ? Number(act.settleVenue) : venue2?.cashMode === "flat" ? Number(venue2.cashFee) || 0 : 0;
+    const cashExpense = lecturerCost + venueCost;
+    const cashNet = cashRevenue - cashExpense;
     const canceledCount = await strapi2.db.query(SIGNS_UID).count({ where: { activity: act.id, status: "cancelled" } });
     const waitingCount = await strapi2.db.query(SIGNS_UID).count({ where: { activity: act.id, status: "waiting" } });
     const detail = {
@@ -36207,7 +36218,12 @@ const activityLedger = ({ strapi: strapi2 }) => ({
         inviterId: r.inviter?.id ?? r.inviter,
         inviteeId: r.invitee?.id ?? r.invitee,
         points: Number(r.points) || 0
-      }))
+      })),
+      cash: {
+        revenuePer: { cashPrice, activeCount: (activeSigns || []).length },
+        lecturer: { cost: lecturerCost, source: Number(act.settleLecturer) > 0 ? "activity" : lecturer2?.cashMode === "flat" ? "lecturer" : "none" },
+        venue: { cost: venueCost, source: Number(act.settleVenue) > 0 ? "activity" : venue2?.cashMode === "flat" ? "venue" : "none" }
+      }
     };
     const summary = {
       signupCount: (activeSigns || []).length,
@@ -36228,6 +36244,9 @@ const activityLedger = ({ strapi: strapi2 }) => ({
         signinCostPoints,
         referralCostPoints,
         netPoints,
+        cashRevenue,
+        cashExpense,
+        cashNet,
         summary,
         detail
       }
@@ -36258,6 +36277,16 @@ const activityLedger = ({ strapi: strapi2 }) => ({
     const hasAuto = await strapi2.db.query(LEDGER_UID).count({ where: { activity: act.id, source: "auto" } });
     if (hasAuto > 0) return null;
     return this.generate(activityId, "auto");
+  },
+  /** 管理端标记快照已结算/回退未结（幂等） */
+  async settle(ledgerDocumentId, body = {}) {
+    const found = await strapi2.documents(LEDGER_UID).findOne({ documentId: ledgerDocumentId });
+    if (!found) throw new Error("快照不存在");
+    const target = body?.settleStatus === "settled" ? "settled" : "pending";
+    if (target === "settled") {
+      return strapi2.db.query(LEDGER_UID).update({ where: { id: found.id }, data: { settleStatus: "settled", settledAt: /* @__PURE__ */ new Date() } });
+    }
+    return strapi2.db.query(LEDGER_UID).update({ where: { id: found.id }, data: { settleStatus: "pending", settledAt: null } });
   }
 });
 const services = {

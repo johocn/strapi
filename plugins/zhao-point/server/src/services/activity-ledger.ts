@@ -17,8 +17,14 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
    * @param source 'auto' | 'manual'
    */
   async generate(activityId: string, source: "auto" | "manual" = "manual") {
-    const act = await strapi.documents(ACTIVITY_UID).findOne({ documentId: activityId });
+    const act = await strapi.documents(ACTIVITY_UID).findOne({
+      documentId: activityId,
+      populate: { lecturer: true, venue: true },
+    });
     if (!act) throw new Error("活动不存在");
+    const lecturer = act.lecturer;
+    const venue = act.venue;
+    const cashPrice = Number(act.cashPrice) || 0;
 
     // 四项口径
     // 1) 应收报名积分：active 报名 pointsCharged 求和
@@ -50,6 +56,17 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
     const netPoints = revenuePoints - signinCostPoints - referralCostPoints;
 
+    // 现金口径（记账不收款，线下自收）
+    const cashRevenue = (activeSigns || []).length * cashPrice;
+    const lecturerCost = Number(act.settleLecturer) > 0
+      ? Number(act.settleLecturer)
+      : (lecturer?.cashMode === "flat" ? (Number(lecturer.cashFee) || 0) : 0);
+    const venueCost = Number(act.settleVenue) > 0
+      ? Number(act.settleVenue)
+      : (venue?.cashMode === "flat" ? (Number(venue.cashFee) || 0) : 0);
+    const cashExpense = lecturerCost + venueCost;
+    const cashNet = cashRevenue - cashExpense;
+
     // summary 快照冗余
     const canceledCount = await strapi.db.query(SIGNS_UID).count({ where: { activity: act.id, status: "cancelled" } });
     const waitingCount = await strapi.db.query(SIGNS_UID).count({ where: { activity: act.id, status: "waiting" } });
@@ -69,6 +86,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         inviteeId: r.invitee?.id ?? r.invitee,
         points: Number(r.points) || 0,
       })),
+      cash: {
+        revenuePer: { cashPrice, activeCount: (activeSigns || []).length },
+        lecturer: { cost: lecturerCost, source: Number(act.settleLecturer) > 0 ? "activity" : (lecturer?.cashMode === "flat" ? "lecturer" : "none") },
+        venue: { cost: venueCost, source: Number(act.settleVenue) > 0 ? "activity" : (venue?.cashMode === "flat" ? "venue" : "none") },
+      },
     };
 
     const summary = {
@@ -93,6 +115,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         signinCostPoints,
         referralCostPoints,
         netPoints,
+        cashRevenue,
+        cashExpense,
+        cashNet,
         summary,
         detail,
       },
@@ -126,5 +151,16 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     const hasAuto = await strapi.db.query(LEDGER_UID).count({ where: { activity: act.id, source: "auto" } });
     if (hasAuto > 0) return null;
     return this.generate(activityId, "auto");
+  },
+
+  /** 管理端标记快照已结算/回退未结（幂等） */
+  async settle(ledgerDocumentId: string, body: { settleStatus?: string } = {}) {
+    const found = await strapi.documents(LEDGER_UID).findOne({ documentId: ledgerDocumentId });
+    if (!found) throw new Error("快照不存在");
+    const target = body?.settleStatus === "settled" ? "settled" : "pending";
+    if (target === "settled") {
+      return strapi.db.query(LEDGER_UID).update({ where: { id: found.id }, data: { settleStatus: "settled", settledAt: new Date() } });
+    }
+    return strapi.db.query(LEDGER_UID).update({ where: { id: found.id }, data: { settleStatus: "pending", settledAt: null } });
   },
 });

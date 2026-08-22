@@ -924,6 +924,9 @@ declare const _default: {
         }>;
         regenerate(activityId: string): Promise<any>;
         generateAutoIfAbsent(activityId: string): Promise<any>;
+        settle(ledgerDocumentId: string, body?: {
+            settleStatus?: string;
+        }): Promise<any>;
     };
 };
 export default _default;
