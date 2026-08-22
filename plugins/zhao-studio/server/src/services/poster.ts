@@ -33,7 +33,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
           // Invite code is optional, use default
           resolved.resolvedContent = element.defaultValue || '';
         } else {
-          resolved.resolvedContent = element.defaultValue || variables[element.variableName] || '';
+          // 传入变量值优先，defaultValue 兜底（避免活动标题/时间被模板默认文案覆盖）
+          resolved.resolvedContent = variables[element.variableName] || element.defaultValue || '';
         }
       } else {
         resolved.resolvedContent = element.content || '';

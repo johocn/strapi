@@ -21543,7 +21543,7 @@ const poster = ({ strapi: strapi2 }) => ({
         if (element.variableName === "invite_code" && !variables.invite_code) {
           resolved.resolvedContent = element.defaultValue || "";
         } else {
-          resolved.resolvedContent = element.defaultValue || variables[element.variableName] || "";
+          resolved.resolvedContent = variables[element.variableName] || element.defaultValue || "";
         }
       } else {
         resolved.resolvedContent = element.content || "";
