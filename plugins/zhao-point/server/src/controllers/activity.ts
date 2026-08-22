@@ -418,6 +418,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       const passive = withNps.filter((r: any) => r.nps >= 7 && r.nps <= 8).length;
       const promoter = withNps.filter((r: any) => r.nps >= 9).length;
       const npsScore = withNps.length ? Math.round(((promoter - detractor) / withNps.length) * 100) : 0;
+      // 评分均值趋势：按 ISO 周聚合（最近 TREND_WEEKS 周，升序）；周一为一周起点
+      const trend = withReviewedTrend(all);
+      // 评价文本关键词：无新依赖的轻量词频（连续汉字/英文词切分 + 停用词过滤，取 TopN）
+      const keywords = extractReviewKeywords(rows, 10);
       ctx.body = {
         rows: rows.map((r: any) => ({
           id: r.id,
@@ -428,7 +432,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
           reviewedAt: r.reviewedAt,
           activity: r.activity ? { id: r.activity.id, title: r.activity.title } : null,
         })),
-        summary: { count, avgRating: Number(avgRating.toFixed(2)), avgNps: Number(avgNps.toFixed(2)), npsScore, ratingDist, detractor, passive, promoter },
+        summary: { count, avgRating: Number(avgRating.toFixed(2)), avgNps: Number(avgNps.toFixed(2)), npsScore, ratingDist, detractor, passive, promoter, trend, keywords },
         pagination: result?.pagination ?? {},
       };
     } catch (e: any) {
@@ -468,3 +472,90 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   },
   });
 };
+
+// ===== 评价看板辅助：评分趋势 + 文本关键词（无新依赖）=====
+
+/** ISO 周号所在周的起始日期（周一） */
+function mondayOfWeek(year: number, week: number): Date {
+  // ISO 周1 的第一天是 1 月 4 日所在的周一
+  const jan4 = new Date(`${year}-01-04T00:00:00`);
+  const day = jan4.getDay() || 7; // Sun=0 -> 7
+  const monday = new Date(jan4);
+  monday.setDate(jan4.getDate() - day + 1 + (week - 1) * 7);
+  return monday;
+}
+
+/** reviewedAt -> { year, isoWeek }（ISO 8601 周号） */
+function isoWeekOf(d: Date): { year: number; week: number } {
+  const date = new Date(d.getTime());
+  const dayNum = date.getDay() || 7;
+  date.setHours(0, 0, 0, 0);
+  date.setDate(date.getDate() + 4 - dayNum); // 定位到该周周四
+  const yearStart = new Date(date.getFullYear(), 0, 1);
+  const week = Math.ceil((((date.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  return { year: date.getFullYear(), week };
+}
+
+const TREND_WEEKS = 12;
+
+/** 按 ISO 周聚合评分均值/NPS/评价数，返回最近 TREND_WEEKS 周升序（空周补 0），label 为周一起始日期 YYYY-MM-DD */
+function withReviewedTrend(all: any[]): { weekLabel: string; count: number; avgRating: number | null; avgNps: number | null }[] {
+  const map = new Map<number, { count: number; ratingSum: number; ratingN: number; npsSum: number; npsN: number }>();
+  let maxMonday = -Infinity;
+  for (const r of all) {
+    if (!r.reviewedAt) continue;
+    const d = new Date(r.reviewedAt);
+    if (isNaN(d.getTime())) continue;
+    const { year, week } = isoWeekOf(d);
+    const monday = mondayOfWeek(year, week).getTime();
+    let agg = map.get(monday);
+    if (!agg) { agg = { count: 0, ratingSum: 0, ratingN: 0, npsSum: 0, npsN: 0 }; map.set(monday, agg); }
+    agg.count++;
+    if (r.rating != null) { agg.ratingSum += r.rating; agg.ratingN++; }
+    if (r.nps != null) { agg.npsSum += r.nps; agg.npsN++; }
+    if (monday > maxMonday) maxMonday = monday;
+  }
+  if (map.size === 0) return [];
+
+  const WEEK_MS = 7 * 86400000;
+  const start = maxMonday - (TREND_WEEKS - 1) * WEEK_MS;
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const out: { weekLabel: string; count: number; avgRating: number | null; avgNps: number | null }[] = [];
+  for (let cur = start; cur <= maxMonday; cur += WEEK_MS) {
+    const agg = map.get(cur);
+    const d = new Date(cur);
+    out.push({
+      weekLabel: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
+      count: agg?.count || 0,
+      avgRating: agg && agg.ratingN ? Number((agg.ratingSum / agg.ratingN).toFixed(2)) : null,
+      avgNps: agg && agg.npsN ? Number((agg.npsSum / agg.npsN).toFixed(2)) : null,
+    });
+  }
+  return out;
+}
+
+/** 常用中文停用词（精简表，覆盖高频虚词/指代/程度词） */
+const REVIEW_STOP_WORDS = new Set([
+  "的", "了", "和", "是", "在", "有", "我", "你", "他", "她", "它", "这", "那", "就", "都", "也",
+  "很", "还", "会", "能", "被", "把", "给", "一个", "这个", "那个", "我们", "自己", "你们", "他们",
+  "但是", "因为", "所以", "然后", "觉得", "感觉", "比较", "特别", "非常", "真的", "还是", "一下",
+  "方面", "情况", "可以", "应该", "进行", "开始", "这些", "那些", "下", "中", "上", "为", "与", "及",
+  "或", "不", "没", "对", "从", "到", "了也", "的了",
+]);
+
+/** 从评价文本提取关键词（连续中文片段 + 英文词，过滤停用词，按词频降序取 TopN） */
+function extractReviewKeywords(rows: any[], top: number): { text: string; value: number }[] {
+  const counts = new Map<string, number>();
+  const add = (w: string) => { if (w && !REVIEW_STOP_WORDS.has(w)) counts.set(w, (counts.get(w) || 0) + 1); };
+  for (const r of rows) {
+    const t = r?.review;
+    if (!t || typeof t !== "string") continue;
+    for (const raw of t.match(/[a-zA-Z]{2,}/g) || []) add(raw.toLowerCase());
+    // 连续中文片段整体作为候选（评价文本通常为短语，整段提取噪声可控）
+    for (const seg of t.match(/[\u4e00-\u9fff]{2,12}/g) || []) add(seg);
+  }
+  return Array.from(counts.entries())
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "zh"))
+    .slice(0, top)
+    .map(([text, value]) => ({ text, value }));
+}

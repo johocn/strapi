@@ -2164,6 +2164,8 @@ const activity$1 = ({ strapi: strapi2 }) => {
         const passive = withNps.filter((r) => r.nps >= 7 && r.nps <= 8).length;
         const promoter = withNps.filter((r) => r.nps >= 9).length;
         const npsScore = withNps.length ? Math.round((promoter - detractor) / withNps.length * 100) : 0;
+        const trend = withReviewedTrend(all);
+        const keywords = extractReviewKeywords(rows, 10);
         ctx.body = {
           rows: rows.map((r) => ({
             id: r.id,
@@ -2174,7 +2176,7 @@ const activity$1 = ({ strapi: strapi2 }) => {
             reviewedAt: r.reviewedAt,
             activity: r.activity ? { id: r.activity.id, title: r.activity.title } : null
           })),
-          summary: { count, avgRating: Number(avgRating.toFixed(2)), avgNps: Number(avgNps.toFixed(2)), npsScore, ratingDist, detractor, passive, promoter },
+          summary: { count, avgRating: Number(avgRating.toFixed(2)), avgNps: Number(avgNps.toFixed(2)), npsScore, ratingDist, detractor, passive, promoter, trend, keywords },
           pagination: result?.pagination ?? {}
         };
       } catch (e) {
@@ -2210,6 +2212,144 @@ const activity$1 = ({ strapi: strapi2 }) => {
     }
   };
 };
+function mondayOfWeek(year, week) {
+  const jan4 = /* @__PURE__ */ new Date(`${year}-01-04T00:00:00`);
+  const day = jan4.getDay() || 7;
+  const monday = new Date(jan4);
+  monday.setDate(jan4.getDate() - day + 1 + (week - 1) * 7);
+  return monday;
+}
+function isoWeekOf(d) {
+  const date2 = new Date(d.getTime());
+  const dayNum = date2.getDay() || 7;
+  date2.setHours(0, 0, 0, 0);
+  date2.setDate(date2.getDate() + 4 - dayNum);
+  const yearStart = new Date(date2.getFullYear(), 0, 1);
+  const week = Math.ceil(((date2.getTime() - yearStart.getTime()) / 864e5 + 1) / 7);
+  return { year: date2.getFullYear(), week };
+}
+const TREND_WEEKS = 12;
+function withReviewedTrend(all) {
+  const map2 = /* @__PURE__ */ new Map();
+  let maxMonday = -Infinity;
+  for (const r of all) {
+    if (!r.reviewedAt) continue;
+    const d = new Date(r.reviewedAt);
+    if (isNaN(d.getTime())) continue;
+    const { year, week } = isoWeekOf(d);
+    const monday = mondayOfWeek(year, week).getTime();
+    let agg = map2.get(monday);
+    if (!agg) {
+      agg = { count: 0, ratingSum: 0, ratingN: 0, npsSum: 0, npsN: 0 };
+      map2.set(monday, agg);
+    }
+    agg.count++;
+    if (r.rating != null) {
+      agg.ratingSum += r.rating;
+      agg.ratingN++;
+    }
+    if (r.nps != null) {
+      agg.npsSum += r.nps;
+      agg.npsN++;
+    }
+    if (monday > maxMonday) maxMonday = monday;
+  }
+  if (map2.size === 0) return [];
+  const WEEK_MS = 7 * 864e5;
+  const start = maxMonday - (TREND_WEEKS - 1) * WEEK_MS;
+  const pad = (n) => String(n).padStart(2, "0");
+  const out = [];
+  for (let cur = start; cur <= maxMonday; cur += WEEK_MS) {
+    const agg = map2.get(cur);
+    const d = new Date(cur);
+    out.push({
+      weekLabel: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
+      count: agg?.count || 0,
+      avgRating: agg && agg.ratingN ? Number((agg.ratingSum / agg.ratingN).toFixed(2)) : null,
+      avgNps: agg && agg.npsN ? Number((agg.npsSum / agg.npsN).toFixed(2)) : null
+    });
+  }
+  return out;
+}
+const REVIEW_STOP_WORDS = /* @__PURE__ */ new Set([
+  "的",
+  "了",
+  "和",
+  "是",
+  "在",
+  "有",
+  "我",
+  "你",
+  "他",
+  "她",
+  "它",
+  "这",
+  "那",
+  "就",
+  "都",
+  "也",
+  "很",
+  "还",
+  "会",
+  "能",
+  "被",
+  "把",
+  "给",
+  "一个",
+  "这个",
+  "那个",
+  "我们",
+  "自己",
+  "你们",
+  "他们",
+  "但是",
+  "因为",
+  "所以",
+  "然后",
+  "觉得",
+  "感觉",
+  "比较",
+  "特别",
+  "非常",
+  "真的",
+  "还是",
+  "一下",
+  "方面",
+  "情况",
+  "可以",
+  "应该",
+  "进行",
+  "开始",
+  "这些",
+  "那些",
+  "下",
+  "中",
+  "上",
+  "为",
+  "与",
+  "及",
+  "或",
+  "不",
+  "没",
+  "对",
+  "从",
+  "到",
+  "了也",
+  "的了"
+]);
+function extractReviewKeywords(rows, top) {
+  const counts = /* @__PURE__ */ new Map();
+  const add = (w) => {
+    if (w && !REVIEW_STOP_WORDS.has(w)) counts.set(w, (counts.get(w) || 0) + 1);
+  };
+  for (const r of rows) {
+    const t = r?.review;
+    if (!t || typeof t !== "string") continue;
+    for (const raw of t.match(/[a-zA-Z]{2,}/g) || []) add(raw.toLowerCase());
+    for (const seg of t.match(/[\u4e00-\u9fff]{2,12}/g) || []) add(seg);
+  }
+  return Array.from(counts.entries()).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "zh")).slice(0, top).map(([text, value]) => ({ text, value }));
+}
 const SERIES_UID$2 = "plugin::zhao-point.activity-series";
 const ACTIVITY_UID$7 = "plugin::zhao-point.activity";
 const wrap$4 = (data, meta = {}) => ({ data, meta });
