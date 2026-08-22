@@ -21709,6 +21709,22 @@ const poster = ({ strapi: strapi2 }) => ({
         ]
       },
       {
+        name: "活动分享海报",
+        code: "activity_share",
+        isDefault: false,
+        requiredVariables: ["title", "qr_code"],
+        optionalVariables: ["activity_time", "activity_venue", "invite_code"],
+        elements: [
+          { elementKey: "gradient_bar", elementType: "shape", elementName: "顶部渐变条", isVariable: false, shapeType: "rect", x: 0, y: 0, width: 600, height: 6, elementBgColor: gradientColor, zIndex: 1, sortOrder: 1 },
+          { elementKey: "title", elementType: "text", elementName: "活动标题", isVariable: true, variableName: "title", defaultValue: "精品线下活动", x: 30, y: 150, width: 540, height: 60, fontSize: 36, fontColor: "#333333", fontWeight: "bold", textAlign: "left", lineHeight: 1.4, zIndex: 10, sortOrder: 3 },
+          { elementKey: "activity_time", elementType: "text", elementName: "活动时间", isVariable: true, variableName: "activity_time", defaultValue: "活动时间 · 待定", x: 30, y: 240, width: 540, height: 40, fontSize: 26, fontColor: "#666666", textAlign: "left", zIndex: 10, sortOrder: 4 },
+          { elementKey: "activity_venue", elementType: "text", elementName: "活动场所", isVariable: true, variableName: "activity_venue", defaultValue: "活动场所 · 待定", x: 30, y: 295, width: 540, height: 40, fontSize: 26, fontColor: "#666666", textAlign: "left", zIndex: 10, sortOrder: 5 },
+          { elementKey: "main_info_badge", elementType: "text", elementName: "扫码报名标签", isVariable: false, content: "扫码报名", x: 225, y: 390, width: 150, height: 44, fontSize: 24, fontColor: "#FFFFFF", fontWeight: "bold", textAlign: "center", elementBgColor: "#667eea", borderRadius: 8, zIndex: 10, sortOrder: 6 },
+          { elementKey: "qr_code", elementType: "qrcode", elementName: "分享二维码", isVariable: false, qrContentMode: "url_with_invite", qrBaseUrl: "https://v.joho.cn/share", qrInviteParam: "inviteCode", qrInviteSeparator: "?", qrFallbackMode: "base_url_only", x: 200, y: 480, width: 200, height: 200, qrSize: 200, qrColor: "#000000", qrBgColor: "#FFFFFF", zIndex: 10, sortOrder: 7 },
+          { elementKey: "footer_text", elementType: "text", elementName: "底部提示", isVariable: false, content: "名额有限 · 扫码报名参加", x: 30, y: 720, width: 540, height: 30, fontSize: 24, fontColor: "#999999", textAlign: "center", zIndex: 10, sortOrder: 8 }
+        ]
+      },
+      {
         name: "积分兑换海报",
         code: "product_share",
         isDefault: false,
