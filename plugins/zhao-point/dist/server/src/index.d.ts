@@ -2824,6 +2824,26 @@ declare const _default: {
                 excludeActivityId?: number;
             }): Promise<any[]>;
         };
+        "activity-ledger": ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            generate(activityId: string, source?: "auto" | "manual"): Promise<any>;
+            list(params?: {
+                activityDocumentId?: string;
+                page?: number;
+                pageSize?: number;
+            }): Promise<{
+                list: any[];
+                pagination: {
+                    page: number;
+                    pageSize: number;
+                    pageCount: number;
+                    total: number;
+                };
+            }>;
+            regenerate(activityId: string): Promise<any>;
+            generateAutoIfAbsent(activityId: string): Promise<any>;
+        };
     };
     routes: {
         "content-api": {

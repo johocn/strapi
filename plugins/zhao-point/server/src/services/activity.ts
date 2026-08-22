@@ -285,6 +285,12 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         strapi.log.warn(`[zhao-point:activity] closeActivity embed failed (user=${upUserId}): ${e.message}`);
       }
     }
+    // 自动归档：活动结束即生成首张 auto 快照（幂等，仅当无 auto 快照）
+    try {
+      await strapi.plugin("zhao-point").service("activity-ledger").generateAutoIfAbsent(activityId);
+    } catch (e: any) {
+      strapi.log.warn(`[zhao-point:activity] ledger auto-generate failed: ${e.message}`);
+    }
     return { ok: true, closed: true, reviewTriggered, revisitTriggered, repurchaseTriggered };
   },
 
