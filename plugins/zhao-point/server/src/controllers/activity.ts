@@ -43,15 +43,34 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   // GET /activities
   async list(ctx: any) {
     try {
-      const { page = "1", pageSize = "20", ...rest } = ctx.query;
+      const { page = "1", pageSize = "20", category, search, ...rest } = ctx.query;
+      const filters: any = { status: { $notIn: ["draft", "archived"] } };
+      if (category) filters.category = { $eq: category };
+      if (search) filters.title = { $contains: search };
       const result = await strapi.documents(ACTIVITY_UID).findMany({
         ...rest,
-        filters: { status: { $ne: "draft" } },
+        filters,
         populate: "*",
         sort: "startTime:desc",
         pagination: { page: parseInt(page), pageSize: parseInt(pageSize) },
       });
       ctx.body = wrapList(result);
+    } catch (e: any) {
+      ctx.status = (e as any).status || 400;
+      ctx.body = { error: e.message };
+    }
+  },
+
+  // GET /activities/categories
+  async categories(ctx: any) {
+    try {
+      const rows = await strapi.db.query(ACTIVITY_UID).findMany({
+        select: ["category"],
+        where: { status: { $notIn: ["draft", "archived"] } },
+      });
+      const set = new Set<string>();
+      for (const r of rows) if (r.category) set.add(r.category);
+      ctx.body = wrap(Array.from(set).sort((a, b) => a.localeCompare(b, "zh")));
     } catch (e: any) {
       ctx.status = (e as any).status || 400;
       ctx.body = { error: e.message };
