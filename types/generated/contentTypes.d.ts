@@ -4145,6 +4145,14 @@ export interface PluginZhaoPointActivity extends Struct.CollectionTypeSchema {
     pricingMode: Schema.Attribute.Enumeration<['flat', 'tier', 'factor']> &
       Schema.Attribute.DefaultTo<'flat'>;
     publishedAt: Schema.Attribute.DateTime;
+    remindLeadMinutes: Schema.Attribute.Integer &
+      Schema.Attribute.SetMinMax<
+        {
+          min: -1;
+        },
+        number
+      > &
+      Schema.Attribute.DefaultTo<1440>;
     shareRewardPoints: Schema.Attribute.Integer;
     signupEnd: Schema.Attribute.DateTime;
     signupStart: Schema.Attribute.DateTime;
@@ -5369,6 +5377,7 @@ export interface PluginZhaoSsoMsgJob extends Struct.CollectionTypeSchema {
       Schema.Attribute.Required &
       Schema.Attribute.DefaultTo<'wechat'>;
     publishedAt: Schema.Attribute.DateTime;
+    readAt: Schema.Attribute.DateTime;
     result: Schema.Attribute.JSON;
     retryCount: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
     scene: Schema.Attribute.String & Schema.Attribute.Required;
