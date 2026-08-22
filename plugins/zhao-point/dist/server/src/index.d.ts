@@ -531,6 +531,12 @@ declare const _default: {
             schedules(ctx: any): Promise<void>;
             check(ctx: any): Promise<void>;
         };
+        ledger: ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            list(ctx: any): Promise<void>;
+            regenerate(ctx: any): Promise<void>;
+        };
         "resource.lecturers": (args: any) => {
             list: (ctx: any) => Promise<void>;
             create: (ctx: any) => Promise<void>;

@@ -171,6 +171,8 @@ export default () => ({
     channelScopeRoute("POST", "/adm/activities/:documentId/close", "activity.adminClose", "activity.update"),
     channelScopeRoute("GET", "/adm/activity-reviews", "activity.adminReviews", "activity.read"),
     channelScopeRoute("GET", "/adm/activity-overview", "activity-stats.overview", "activity.read"),
+    channelScopeRoute("GET", "/adm/ledgers", "ledger.list", "activity.read"),
+    channelScopeRoute("POST", "/adm/activities/:documentId/ledger", "ledger.regenerate", "activity.update"),
 
     // ===== 讲师/场地资源排期 =====
     channelScopeRoute("GET", "/adm/lecturers", "resource.lecturers.list", "resource.read"),
