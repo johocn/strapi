@@ -148,6 +148,41 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     },
 
     /**
+     * 站内信：直接落一条 provider=inapp、status=sent、sentAt=now 的 msg-job，
+     * 即时可见、幂等（同 dedupeKey 已存在且非 failed/cancelled 则跳过），不经过 cron 待发队列。
+     * @param opts { user, scene, params, link?, dedupeKey? }
+     */
+    async sendInApp(opts: {
+      user: number;
+      scene: string;
+      params?: Record<string, any>;
+      link?: string;
+      dedupeKey?: string;
+    }) {
+      const { user, scene, params = {}, link, dedupeKey } = opts;
+      const key = dedupeKey || `inapp:${scene}:${user}`;
+      const existing = await strapi.db.query(MSG_JOB_UID).findOne({
+        where: { dedupeKey: key },
+      });
+      if (existing && existing.status !== "failed" && existing.status !== "cancelled") {
+        return { job: existing, skipped: true };
+      }
+      const job = await strapi.db.query(MSG_JOB_UID).create({
+        data: {
+          user,
+          scene,
+          provider: "inapp",
+          params,
+          link: link || null,
+          status: "sent",
+          sentAt: new Date(),
+          dedupeKey: key,
+        },
+      });
+      return { job, skipped: false };
+    },
+
+    /**
      * 立即构建并发送（手动/单发）——同步执行，返回发送结果。
      */
     async sendNow(opts: {
