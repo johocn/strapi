@@ -536,6 +536,7 @@ declare const _default: {
         }) => {
             list(ctx: any): Promise<void>;
             regenerate(ctx: any): Promise<void>;
+            settle(ctx: any): Promise<void>;
         };
         "resource.lecturers": (args: any) => {
             list: (ctx: any) => Promise<void>;

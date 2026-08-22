@@ -30,4 +30,15 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       ctx.body = { error: e.message };
     }
   },
+
+  // PUT /adm/ledgers/:documentId/settle    标记快照已结算/回退未结（body:{settleStatus:'settled'|'pending'}）
+  async settle(ctx: any) {
+    try {
+      const upd = await ledSvc(strapi).settle(ctx.params.documentId, ctx.request.body || {});
+      ctx.body = wrap(upd);
+    } catch (e: any) {
+      ctx.status = (e as any).status || 400;
+      ctx.body = { error: e.message };
+    }
+  },
 });

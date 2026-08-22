@@ -33168,6 +33168,16 @@ const ledger = ({ strapi: strapi2 }) => ({
       ctx.status = e.status || 400;
       ctx.body = { error: e.message };
     }
+  },
+  // PUT /adm/ledgers/:documentId/settle    标记快照已结算/回退未结（body:{settleStatus:'settled'|'pending'}）
+  async settle(ctx) {
+    try {
+      const upd = await ledSvc(strapi2).settle(ctx.params.documentId, ctx.request.body || {});
+      ctx.body = wrap(upd);
+    } catch (e) {
+      ctx.status = e.status || 400;
+      ctx.body = { error: e.message };
+    }
   }
 });
 const resourceFactory = (args) => resource(args);
@@ -36445,6 +36455,7 @@ const contentApi = () => ({
     channelScopeRoute("GET", "/adm/activity-overview", "activity-stats.overview", "activity.read"),
     channelScopeRoute("GET", "/adm/ledgers", "ledger.list", "activity.read"),
     channelScopeRoute("POST", "/adm/activities/:documentId/ledger", "ledger.regenerate", "activity.update"),
+    channelScopeRoute("PUT", "/adm/ledgers/:documentId/settle", "ledger.settle", "activity.update"),
     // ===== 讲师/场地资源排期 =====
     channelScopeRoute("GET", "/adm/lecturers", "resource.lecturers.list", "resource.read"),
     channelScopeRoute("GET", "/adm/lecturers/:documentId", "resource.lecturers.findOne", "resource.read"),

@@ -4,5 +4,6 @@ declare const _default: ({ strapi }: {
 }) => {
     list(ctx: any): Promise<void>;
     regenerate(ctx: any): Promise<void>;
+    settle(ctx: any): Promise<void>;
 };
 export default _default;
