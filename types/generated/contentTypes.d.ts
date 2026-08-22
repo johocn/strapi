@@ -4167,7 +4167,7 @@ export interface PluginZhaoPointActivity extends Struct.CollectionTypeSchema {
     signupStart: Schema.Attribute.DateTime;
     startTime: Schema.Attribute.DateTime;
     status: Schema.Attribute.Enumeration<
-      ['draft', 'signup_open', 'ongoing', 'ended']
+      ['draft', 'signup_open', 'ongoing', 'ended', 'archived']
     > &
       Schema.Attribute.DefaultTo<'draft'>;
     tags: Schema.Attribute.JSON;
