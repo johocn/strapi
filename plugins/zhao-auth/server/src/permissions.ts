@@ -565,6 +565,15 @@ export const PERMISSION_TREE: Record<string, PermissionItem> = {
               "sso.profile.write": { label: "重算用户分层", type: "button" },
             },
           },
+          "menu.sso-wx": {
+            label: "公众号运营",
+            type: "menu",
+            children: {
+              "sso.wx.read": { label: "查看二维码/菜单/事件日志", type: "button" },
+              "sso.wx.write": { label: "创建二维码/下发菜单", type: "button" },
+              "sso.wx.config": { label: "配置公众号接入(服务器URL/Token)", type: "button" },
+            },
+          },
         },
       },
       "menu.tenant": {

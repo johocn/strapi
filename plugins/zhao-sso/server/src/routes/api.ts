@@ -105,6 +105,20 @@ export default () => ({
       config: { auth: false },
     },
 
+    // ===== 公众号接入验证 + 消息/事件回调（微信服务器直连，公开） =====
+    {
+      method: "GET",
+      path: "/v1/wechat/callback",
+      handler: "wx-callback.verify",
+      config: { auth: false },
+    },
+    {
+      method: "POST",
+      path: "/v1/wechat/callback",
+      handler: "wx-callback.callback",
+      config: { auth: false },
+    },
+
     // ===== SSO 认证路由 =====
     {
       method: "POST",

@@ -1054,5 +1054,128 @@ declare const _default: {
             };
         };
     };
+    "sso-wx-event": {
+        schema: {
+            kind: string;
+            collectionName: string;
+            info: {
+                singularName: string;
+                pluralName: string;
+                displayName: string;
+            };
+            options: {
+                draftAndPublish: boolean;
+            };
+            attributes: {
+                openid: {
+                    type: string;
+                    required: boolean;
+                };
+                event: {
+                    type: string;
+                    required: boolean;
+                    enum: string[];
+                };
+                event_key: {
+                    type: string;
+                };
+                scene_key: {
+                    type: string;
+                };
+                payload: {
+                    type: string;
+                };
+                openid_bound: {
+                    type: string;
+                    default: boolean;
+                };
+            };
+        };
+    };
+    "sso-wx-qrcode": {
+        schema: {
+            kind: string;
+            collectionName: string;
+            info: {
+                singularName: string;
+                pluralName: string;
+                displayName: string;
+            };
+            options: {
+                draftAndPublish: boolean;
+            };
+            attributes: {
+                scene_key: {
+                    type: string;
+                    required: boolean;
+                    unique: boolean;
+                };
+                title: {
+                    type: string;
+                };
+                kind: {
+                    type: string;
+                    required: boolean;
+                    enum: string[];
+                    default: string;
+                };
+                expire_seconds: {
+                    type: string;
+                    default: number;
+                };
+                ticket: {
+                    type: string;
+                };
+                wx_url: {
+                    type: string;
+                };
+                qrcode_url: {
+                    type: string;
+                };
+                remark: {
+                    type: string;
+                };
+            };
+        };
+    };
+    "sso-wx-menu": {
+        schema: {
+            kind: string;
+            collectionName: string;
+            info: {
+                singularName: string;
+                pluralName: string;
+                displayName: string;
+            };
+            options: {
+                draftAndPublish: boolean;
+            };
+            attributes: {
+                name: {
+                    type: string;
+                    required: boolean;
+                };
+                menu_json: {
+                    type: string;
+                    required: boolean;
+                };
+                enabled: {
+                    type: string;
+                    default: boolean;
+                };
+                publish_state: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
+                last_publish_at: {
+                    type: string;
+                };
+                last_error: {
+                    type: string;
+                };
+            };
+        };
+    };
 };
 export default _default;

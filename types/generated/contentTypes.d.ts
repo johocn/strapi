@@ -6373,6 +6373,118 @@ export interface PluginZhaoSsoSsoUserProfile
   };
 }
 
+export interface PluginZhaoSsoSsoWxEvent extends Struct.CollectionTypeSchema {
+  collectionName: 'sso_wx_events';
+  info: {
+    displayName: 'SSO WeChat Event';
+    pluralName: 'sso-wx-events';
+    singularName: 'sso-wx-event';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    event: Schema.Attribute.Enumeration<
+      ['subscribe', 'unsubscribe', 'SCAN', 'CLICK', 'text', 'other']
+    > &
+      Schema.Attribute.Required;
+    event_key: Schema.Attribute.String;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-sso.sso-wx-event'
+    > &
+      Schema.Attribute.Private;
+    openid: Schema.Attribute.String & Schema.Attribute.Required;
+    openid_bound: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    payload: Schema.Attribute.JSON;
+    publishedAt: Schema.Attribute.DateTime;
+    scene_key: Schema.Attribute.String;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface PluginZhaoSsoSsoWxMenu extends Struct.CollectionTypeSchema {
+  collectionName: 'sso_wx_menus';
+  info: {
+    displayName: 'SSO WeChat Menu';
+    pluralName: 'sso-wx-menus';
+    singularName: 'sso-wx-menu';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    enabled: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    last_error: Schema.Attribute.Text;
+    last_publish_at: Schema.Attribute.DateTime;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-sso.sso-wx-menu'
+    > &
+      Schema.Attribute.Private;
+    menu_json: Schema.Attribute.JSON & Schema.Attribute.Required;
+    name: Schema.Attribute.String & Schema.Attribute.Required;
+    publish_state: Schema.Attribute.Enumeration<
+      ['local', 'published', 'failed']
+    > &
+      Schema.Attribute.DefaultTo<'local'>;
+    publishedAt: Schema.Attribute.DateTime;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
+export interface PluginZhaoSsoSsoWxQrcode extends Struct.CollectionTypeSchema {
+  collectionName: 'sso_wx_qrcodes';
+  info: {
+    displayName: 'SSO WeChat QRCode';
+    pluralName: 'sso-wx-qrcodes';
+    singularName: 'sso-wx-qrcode';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    expire_seconds: Schema.Attribute.Integer &
+      Schema.Attribute.DefaultTo<2592000>;
+    kind: Schema.Attribute.Enumeration<['temporary', 'permanent']> &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'temporary'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-sso.sso-wx-qrcode'
+    > &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    qrcode_url: Schema.Attribute.Text;
+    remark: Schema.Attribute.Text;
+    scene_key: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.Unique;
+    ticket: Schema.Attribute.Text;
+    title: Schema.Attribute.String;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    wx_url: Schema.Attribute.Text;
+  };
+}
+
 export interface PluginZhaoStudioAbExperiment
   extends Struct.CollectionTypeSchema {
   collectionName: 'zhao_ab_experiments';
@@ -10934,6 +11046,9 @@ declare module '@strapi/strapi' {
       'plugin::zhao-sso.sso-user': PluginZhaoSsoSsoUser;
       'plugin::zhao-sso.sso-user-app-role': PluginZhaoSsoSsoUserAppRole;
       'plugin::zhao-sso.sso-user-profile': PluginZhaoSsoSsoUserProfile;
+      'plugin::zhao-sso.sso-wx-event': PluginZhaoSsoSsoWxEvent;
+      'plugin::zhao-sso.sso-wx-menu': PluginZhaoSsoSsoWxMenu;
+      'plugin::zhao-sso.sso-wx-qrcode': PluginZhaoSsoSsoWxQrcode;
       'plugin::zhao-studio.ab-experiment': PluginZhaoStudioAbExperiment;
       'plugin::zhao-studio.ab-variant': PluginZhaoStudioAbVariant;
       'plugin::zhao-studio.ad-content': PluginZhaoStudioAdContent;

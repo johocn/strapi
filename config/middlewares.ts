@@ -12,7 +12,14 @@ const config: Core.Config.Middlewares = [
   },
   'strapi::poweredBy',
   'strapi::query',
-  'strapi::body',
+  {
+    name: 'strapi::body',
+    config: {
+      // 微信回调以 text/xml 推送，需开启 text 解析使 koa-body 将请求体写入 ctx.request.body(字符串)
+      text: true,
+      textLimit: '5mb',
+    },
+  },
   'strapi::session',
   'strapi::favicon',
   'strapi::public',

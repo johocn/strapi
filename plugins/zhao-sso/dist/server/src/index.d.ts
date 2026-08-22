@@ -1085,6 +1085,129 @@ declare const _default: {
                 };
             };
         };
+        "sso-wx-event": {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                attributes: {
+                    openid: {
+                        type: string;
+                        required: boolean;
+                    };
+                    event: {
+                        type: string;
+                        required: boolean;
+                        enum: string[];
+                    };
+                    event_key: {
+                        type: string;
+                    };
+                    scene_key: {
+                        type: string;
+                    };
+                    payload: {
+                        type: string;
+                    };
+                    openid_bound: {
+                        type: string;
+                        default: boolean;
+                    };
+                };
+            };
+        };
+        "sso-wx-qrcode": {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                attributes: {
+                    scene_key: {
+                        type: string;
+                        required: boolean;
+                        unique: boolean;
+                    };
+                    title: {
+                        type: string;
+                    };
+                    kind: {
+                        type: string;
+                        required: boolean;
+                        enum: string[];
+                        default: string;
+                    };
+                    expire_seconds: {
+                        type: string;
+                        default: number;
+                    };
+                    ticket: {
+                        type: string;
+                    };
+                    wx_url: {
+                        type: string;
+                    };
+                    qrcode_url: {
+                        type: string;
+                    };
+                    remark: {
+                        type: string;
+                    };
+                };
+            };
+        };
+        "sso-wx-menu": {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                attributes: {
+                    name: {
+                        type: string;
+                        required: boolean;
+                    };
+                    menu_json: {
+                        type: string;
+                        required: boolean;
+                    };
+                    enabled: {
+                        type: string;
+                        default: boolean;
+                    };
+                    publish_state: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    last_publish_at: {
+                        type: string;
+                    };
+                    last_error: {
+                        type: string;
+                    };
+                };
+            };
+        };
     };
     controllers: {
         "auth-controller": ({ strapi }: {
@@ -1281,6 +1404,34 @@ declare const _default: {
             courseCompletionStats(ctx: any): Promise<void>;
             repurchaseLeads(ctx: any): Promise<void>;
             updateRepurchaseFollow(ctx: any): Promise<void>;
+        };
+        "wx-callback": ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            verify(ctx: any): Promise<void>;
+            callback(ctx: any): Promise<void>;
+            serverConfig(ctx: any): Promise<void>;
+        };
+        "wx-qrcode": ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            create(ctx: any): Promise<void>;
+            list(ctx: any): Promise<void>;
+            findOne(ctx: any): Promise<void>;
+            delete(ctx: any): Promise<void>;
+            events(ctx: any): Promise<void>;
+        };
+        "wx-menu": ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            list(ctx: any): Promise<void>;
+            create(ctx: any): Promise<void>;
+            update(ctx: any): Promise<void>;
+            delete(ctx: any): Promise<void>;
+            publish(ctx: any): Promise<void>;
+            deleteRemote(ctx: any): Promise<void>;
+            getRemote(ctx: any): Promise<void>;
+            listTemplates(ctx: any): Promise<void>;
         };
     };
     routes: {
@@ -1499,6 +1650,7 @@ declare const _default: {
         "sso-wechat": ({ strapi }: {
             strapi: import('@strapi/types/dist/core').Strapi;
         }) => {
+            getAccessToken(appType?: "official_account" | "open_platform" | "mini_program" | "app"): Promise<string>;
             getAuthorizeUrl(state: string, appType: "official_account" | "open_platform" | "mini_program" | "app", scope?: string, callbackUrl?: string): Promise<string>;
             handleCallback(code: string, appType: "official_account" | "open_platform" | "mini_program" | "app"): Promise<{
                 userId: any;
@@ -1948,6 +2100,98 @@ declare const _default: {
                 status: string;
                 remark?: string;
             }): Promise<any>;
+        };
+        "sso-wx-callback": ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            getServerConfig(): Promise<{
+                url: string;
+                token: any;
+                welcomeReply: any;
+                encMode: string;
+            }>;
+            verifySignature: (params: {
+                timestamp?: string | number;
+                nonce?: string | number;
+                signature?: string;
+            }) => Promise<boolean>;
+            handleXml(xml: string): Promise<string>;
+        };
+        "sso-wx-qrcode": ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            create(data: {
+                scene_key: string;
+                title?: string;
+                kind?: "temporary" | "permanent";
+                expire_seconds?: number;
+                qrcode_url?: string;
+                remark?: string;
+            }): Promise<any>;
+            list(filters?: {
+                page?: number;
+                pageSize?: number;
+                scene_key?: string;
+            }): Promise<{
+                data: any[];
+                meta: {
+                    pagination: {
+                        page: number;
+                        pageSize: number;
+                        total: number;
+                    };
+                };
+            }>;
+            findOne(id: number): Promise<any>;
+            remove(id: number): Promise<any>;
+            events(filters?: {
+                page?: number;
+                pageSize?: number;
+                openid?: string;
+            }): Promise<{
+                data: any[];
+                meta: {
+                    pagination: {
+                        page: number;
+                        pageSize: number;
+                        total: number;
+                    };
+                };
+            }>;
+        };
+        "sso-wx-menu": ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            list(filters?: {
+                page?: number;
+                pageSize?: number;
+                name?: string;
+            }): Promise<{
+                data: any[];
+                meta: {
+                    pagination: {
+                        page: number;
+                        pageSize: number;
+                        total: number;
+                    };
+                };
+            }>;
+            findOne(id: number): Promise<any>;
+            create(data: {
+                name: string;
+                menu_json: any;
+                enabled?: boolean;
+            }): Promise<any>;
+            update(id: number, data: {
+                name?: string;
+                menu_json?: any;
+                enabled?: boolean;
+            }): Promise<any>;
+            remove(id: number): Promise<any>;
+            publish(id: number): Promise<any>;
+            deleteRemote(): Promise<any>;
+            getRemote(): Promise<any>;
+            listTemplates(): Promise<any>;
         };
     };
     policies: {

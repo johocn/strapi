@@ -3,6 +3,10 @@ type WechatAppType = "official_account" | "open_platform" | "mini_program" | "ap
 declare const _default: ({ strapi }: {
     strapi: Core.Strapi;
 }) => {
+    /**
+     * 公开获取已缓存/刷新后的全局 access_token（复用闭包 tokenCache），供二维码/菜单等调用
+     */
+    getAccessToken(appType?: WechatAppType): Promise<string>;
     getAuthorizeUrl(state: string, appType: WechatAppType, scope?: string, callbackUrl?: string): Promise<string>;
     handleCallback(code: string, appType: WechatAppType): Promise<{
         userId: any;

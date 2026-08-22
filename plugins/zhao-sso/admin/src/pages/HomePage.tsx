@@ -8,6 +8,7 @@ import { ChannelsTab } from "./ChannelsTab";
 import { LoginLogsTab } from "./LoginLogsTab";
 import { OauthConfigsTab } from "./OauthConfigsTab";
 import { BindingsTab } from "./BindingsTab";
+import { WebchatTab } from "./WebchatTab";
 
 export const API_PREFIX = "/api/zhao-sso/v1/admin";
 
@@ -19,6 +20,7 @@ const tabs = [
   { value: "logs", label: "登录日志" },
   { value: "oauth-configs", label: "OAuth配置" },
   { value: "bindings", label: "三方绑定" },
+  { value: "webchat", label: "公众号" },
 ];
 
 export const HomePage = () => {
@@ -64,6 +66,7 @@ export const HomePage = () => {
         {activeTab === "logs" && <LoginLogsTab />}
         {activeTab === "oauth-configs" && <OauthConfigsTab />}
         {activeTab === "bindings" && <BindingsTab />}
+        {activeTab === "webchat" && <WebchatTab />}
       </Box>
     </Main>
   );

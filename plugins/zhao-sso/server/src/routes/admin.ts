@@ -131,5 +131,27 @@ export default () => ({
     adminRoute("GET", "/profiles", "profile.list", "sso.profile.read"),
     adminRoute("GET", "/profiles/:id", "profile.detail", "sso.profile.read"),
     adminRoute("POST", "/profiles/recalc-all", "profile.recalcAll", "sso.profile.write"),
+
+    // 公众号接入配置（读 extra_config / 服务器配置）
+    adminRoute("GET", "/wx/server-config", "wx-callback.serverConfig", "sso.wx.config"),
+
+    // 带参二维码
+    adminRoute("GET", "/wx/qrcodes", "wx-qrcode.list", "sso.wx.read"),
+    adminRoute("POST", "/wx/qrcodes", "wx-qrcode.create", "sso.wx.write"),
+    adminRoute("GET", "/wx/qrcodes/:id", "wx-qrcode.findOne", "sso.wx.read"),
+    adminRoute("DELETE", "/wx/qrcodes/:id", "wx-qrcode.delete", "sso.wx.write"),
+    adminRoute("GET", "/wx/events", "wx-qrcode.events", "sso.wx.read"),
+
+    // 自定义菜单
+    adminRoute("GET", "/wx/menus", "wx-menu.list", "sso.wx.read"),
+    adminRoute("POST", "/wx/menus", "wx-menu.create", "sso.wx.write"),
+    adminRoute("PUT", "/wx/menus/:id", "wx-menu.update", "sso.wx.write"),
+    adminRoute("DELETE", "/wx/menus/:id", "wx-menu.delete", "sso.wx.write"),
+    adminRoute("POST", "/wx/menus/:id/publish", "wx-menu.publish", "sso.wx.write"),
+    adminRoute("GET", "/wx/menu/remote", "wx-menu.getRemote", "sso.wx.read"),
+    adminRoute("DELETE", "/wx/menu/remote", "wx-menu.deleteRemote", "sso.wx.write"),
+
+    // 模板消息终端列表（只读，复用 sso.msg.read）
+    adminRoute("GET", "/wx/templates", "wx-menu.listTemplates", "sso.msg.read"),
   ],
 });

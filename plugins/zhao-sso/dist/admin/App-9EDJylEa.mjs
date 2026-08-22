@@ -1,9 +1,9 @@
 import { jsx, jsxs, Fragment } from "react/jsx-runtime";
 import { useFetchClient, Page } from "@strapi/strapi/admin";
 import { Routes, Route } from "react-router-dom";
-import { Loader, Box, Flex, Typography, Button, Grid, Card, CardHeader, CardBody, Table, Thead, Tr, Th, Tbody, Td, TextInput, SingleSelect, SingleSelectOption, EmptyStateLayout, Status, Modal, Field, Textarea, Main } from "@strapi/design-system";
+import { Loader, Box, Flex, Typography, Button, Grid, Card, CardHeader, CardBody, Table, Thead, Tr, Th, Tbody, Td, TextInput, SingleSelect, SingleSelectOption, EmptyStateLayout, Status, Modal, Field, Textarea, Divider, Main } from "@strapi/design-system";
 import { useState, useEffect, useCallback } from "react";
-import { ArrowClockwise, Pencil, Plus, Trash } from "@strapi/icons";
+import { ArrowClockwise, Pencil, Plus, Trash, Lightning } from "@strapi/icons";
 const DashboardTab = () => {
   const { get } = useFetchClient();
   const [loading, setLoading] = useState(true);
@@ -1494,6 +1494,575 @@ const BindingsTab = () => {
     )
   ] });
 };
+const toArray = (payload) => {
+  if (Array.isArray(payload)) return payload;
+  if (payload && typeof payload === "object") {
+    const obj = payload;
+    if ("data" in obj) return Array.isArray(obj.data) ? obj.data : toArray(obj.data);
+    for (const key of ["list", "templates", "items", "records"]) {
+      if (Array.isArray(obj[key])) return obj[key];
+    }
+  }
+  return [];
+};
+const CallbackConfig = () => {
+  const { get, put } = useFetchClient();
+  const [loading, setLoading] = useState(true);
+  const [config, setConfig] = useState(null);
+  const [serverToken, setServerToken] = useState("");
+  const [welcomeReply, setWelcomeReply] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const load = async () => {
+    setLoading(true);
+    try {
+      const { data } = await get(`${API_PREFIX}/oauth-configs`);
+      const list = toArray(data?.data ?? data);
+      const cfg = list.find(
+        (c) => c.provider === "wechat" && c.app_type === "official_account"
+      ) || list.find((c) => c.provider === "wechat") || null;
+      setConfig(cfg);
+      const extra = cfg?.extra_config && typeof cfg.extra_config === "object" ? cfg.extra_config : {};
+      setServerToken(extra.serverToken ?? "");
+      setWelcomeReply(extra.welcomeReply ?? "");
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
+    load();
+  }, []);
+  const handleSave = async () => {
+    if (!config?.id) return;
+    setSaving(true);
+    try {
+      const extra = {
+        ...config.extra_config && typeof config.extra_config === "object" ? config.extra_config : {},
+        serverToken,
+        welcomeReply
+      };
+      const payload = {
+        name: config.name,
+        provider: config.provider,
+        app_type: config.app_type,
+        app_id: config.app_id,
+        scope: config.scope || void 0,
+        is_enabled: !!config.is_enabled,
+        description: config.description || void 0,
+        extra_config: extra
+      };
+      await put(`${API_PREFIX}/oauth-configs/${config.id}`, payload);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2e3);
+      load();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSaving(false);
+    }
+  };
+  return /* @__PURE__ */ jsxs(Box, { children: [
+    /* @__PURE__ */ jsx(Typography, { variant: "delta", paddingBottom: 3, children: "接入配置" }),
+    loading ? /* @__PURE__ */ jsx(Loader, { children: "加载中..." }) : !config ? /* @__PURE__ */ jsx(EmptyStateLayout, { content: "未找到公众号 OAuth 配置，请先在“OAuth配置”创建 provider=wechat / app_type=official_account 的配置" }) : /* @__PURE__ */ jsxs(Flex, { direction: "column", gap: 4, alignItems: "stretch", children: [
+      /* @__PURE__ */ jsxs(Field.Root, { name: "server_url", children: [
+        /* @__PURE__ */ jsx(Field.Label, { children: "服务器 URL(GET/POST)" }),
+        /* @__PURE__ */ jsx(TextInput, { disabled: true, value: "/api/zhao-sso/v1/wechat/callback" }),
+        /* @__PURE__ */ jsx(Typography, { variant: "pi", textColor: "neutral600", children: "请在微信公众平台「服务器配置」中填写该地址为 URL，并填入下方 Token。" })
+      ] }),
+      /* @__PURE__ */ jsxs(Flex, { direction: "column", gap: 4, alignItems: "stretch", children: [
+        /* @__PURE__ */ jsxs(Field.Root, { name: "serverToken", children: [
+          /* @__PURE__ */ jsx(Field.Label, { children: "剩余Token(serverToken)" }),
+          /* @__PURE__ */ jsx(
+            TextInput,
+            {
+              value: serverToken,
+              onChange: (e) => setServerToken(e.target.value),
+              placeholder: "微信公众号「服务器配置」中自定义的 Token"
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsxs(Field.Root, { name: "welcomeReply", children: [
+          /* @__PURE__ */ jsx(Field.Label, { children: "欢迎语(welcomeReply)" }),
+          /* @__PURE__ */ jsx(
+            Textarea,
+            {
+              value: welcomeReply,
+              onChange: (e) => setWelcomeReply(e.target.value),
+              placeholder: "关注公众号后被动回复的欢迎语"
+            }
+          )
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxs(Flex, { gap: 2, alignItems: "center", children: [
+        /* @__PURE__ */ jsx(Button, { onClick: handleSave, loading: saving, children: "保存配置" }),
+        saved && /* @__PURE__ */ jsx(Typography, { textColor: "success600", children: "已保存" })
+      ] })
+    ] })
+  ] });
+};
+const QrCodeSection = () => {
+  const { get, post, del } = useFetchClient();
+  const [loading, setLoading] = useState(true);
+  const [items, setItems] = useState([]);
+  const [open, setOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [form, setForm] = useState({
+    scene_key: "",
+    title: "",
+    kind: "temporary",
+    expire_seconds: "2592000",
+    remark: ""
+  });
+  const load = async () => {
+    setLoading(true);
+    try {
+      const { data } = await get(`${API_PREFIX}/wx/qrcodes`);
+      setItems(toArray(data?.data ?? data));
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
+    load();
+  }, []);
+  const handleCreate = async () => {
+    try {
+      await post(`${API_PREFIX}/wx/qrcodes`, {
+        scene_key: form.scene_key,
+        title: form.title || void 0,
+        kind: form.kind,
+        expire_seconds: form.expire_seconds ? Number(form.expire_seconds) : void 0,
+        remark: form.remark || void 0
+      });
+      setOpen(false);
+      setForm({ scene_key: "", title: "", kind: "temporary", expire_seconds: "2592000", remark: "" });
+      load();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      await del(`${API_PREFIX}/wx/qrcodes/${deleteTarget.id}`);
+      setDeleteOpen(false);
+      setDeleteTarget(null);
+      load();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+  const kindLabel = (v) => v === "permanent" ? "永久" : "临时";
+  const formFields = () => /* @__PURE__ */ jsxs(Flex, { direction: "column", gap: 4, alignItems: "stretch", children: [
+    /* @__PURE__ */ jsxs(Field.Root, { name: "scene_key", required: true, children: [
+      /* @__PURE__ */ jsx(Field.Label, { children: "场景值(scene_key)" }),
+      /* @__PURE__ */ jsx(
+        TextInput,
+        {
+          value: form.scene_key,
+          onChange: (e) => setForm({ ...form, scene_key: e.target.value }),
+          placeholder: "如 activity:12 / invite:ABC"
+        }
+      ),
+      /* @__PURE__ */ jsx(Typography, { variant: "pi", textColor: "neutral600", children: "微信扫码场景标识，用于来源归因" })
+    ] }),
+    /* @__PURE__ */ jsxs(Field.Root, { name: "title", children: [
+      /* @__PURE__ */ jsx(Field.Label, { children: "标题" }),
+      /* @__PURE__ */ jsx(
+        TextInput,
+        {
+          value: form.title,
+          onChange: (e) => setForm({ ...form, title: e.target.value }),
+          placeholder: "后台备注名"
+        }
+      )
+    ] }),
+    /* @__PURE__ */ jsxs(Field.Root, { name: "kind", required: true, children: [
+      /* @__PURE__ */ jsx(Field.Label, { children: "类型" }),
+      /* @__PURE__ */ jsxs(
+        SingleSelect,
+        {
+          value: form.kind,
+          onValueChange: (v) => setForm({ ...form, kind: v }),
+          children: [
+            /* @__PURE__ */ jsx(SingleSelectOption, { value: "temporary", children: "临时" }),
+            /* @__PURE__ */ jsx(SingleSelectOption, { value: "permanent", children: "永久" })
+          ]
+        }
+      )
+    ] }),
+    /* @__PURE__ */ jsxs(Field.Root, { name: "expire_seconds", children: [
+      /* @__PURE__ */ jsx(Field.Label, { children: "有效期(秒)" }),
+      /* @__PURE__ */ jsx(
+        TextInput,
+        {
+          type: "number",
+          value: form.expire_seconds,
+          onChange: (e) => setForm({ ...form, expire_seconds: e.target.value }),
+          placeholder: "默认 2592000，永久二维码忽略"
+        }
+      )
+    ] }),
+    /* @__PURE__ */ jsxs(Field.Root, { name: "remark", children: [
+      /* @__PURE__ */ jsx(Field.Label, { children: "备注" }),
+      /* @__PURE__ */ jsx(
+        Textarea,
+        {
+          value: form.remark,
+          onChange: (e) => setForm({ ...form, remark: e.target.value })
+        }
+      )
+    ] })
+  ] });
+  return /* @__PURE__ */ jsxs(Box, { children: [
+    /* @__PURE__ */ jsxs(Flex, { paddingBottom: 4, justifyContent: "space-between", alignItems: "center", children: [
+      /* @__PURE__ */ jsx(Typography, { variant: "delta", children: "带参二维码" }),
+      /* @__PURE__ */ jsx(
+        Button,
+        {
+          startIcon: /* @__PURE__ */ jsx(Plus, {}),
+          onClick: () => {
+            setForm({ scene_key: "", title: "", kind: "temporary", expire_seconds: "2592000", remark: "" });
+            setOpen(true);
+          },
+          children: "新建二维码"
+        }
+      )
+    ] }),
+    loading ? /* @__PURE__ */ jsx(Loader, { children: "加载中..." }) : items.length === 0 ? /* @__PURE__ */ jsx(EmptyStateLayout, { content: "暂无带参二维码" }) : /* @__PURE__ */ jsx(Box, { background: "neutral0", borderRadius: 4, shadow: "filterShadow", children: /* @__PURE__ */ jsxs(Table, { colCount: 7, rowCount: items.length, children: [
+      /* @__PURE__ */ jsx(Thead, { children: /* @__PURE__ */ jsxs(Tr, { children: [
+        /* @__PURE__ */ jsx(Th, { children: /* @__PURE__ */ jsx(Typography, { variant: "sigma", children: "ID" }) }),
+        /* @__PURE__ */ jsx(Th, { children: /* @__PURE__ */ jsx(Typography, { variant: "sigma", children: "场景值" }) }),
+        /* @__PURE__ */ jsx(Th, { children: /* @__PURE__ */ jsx(Typography, { variant: "sigma", children: "标题" }) }),
+        /* @__PURE__ */ jsx(Th, { children: /* @__PURE__ */ jsx(Typography, { variant: "sigma", children: "类型" }) }),
+        /* @__PURE__ */ jsx(Th, { children: /* @__PURE__ */ jsx(Typography, { variant: "sigma", children: "有效期(秒)" }) }),
+        /* @__PURE__ */ jsx(Th, { children: /* @__PURE__ */ jsx(Typography, { variant: "sigma", children: "二维码" }) }),
+        /* @__PURE__ */ jsx(Th, { children: /* @__PURE__ */ jsx(Typography, { variant: "sigma", children: "操作" }) })
+      ] }) }),
+      /* @__PURE__ */ jsx(Tbody, { children: items.map((q) => /* @__PURE__ */ jsxs(Tr, { children: [
+        /* @__PURE__ */ jsx(Td, { children: /* @__PURE__ */ jsx(Typography, { children: q.id }) }),
+        /* @__PURE__ */ jsx(Td, { children: /* @__PURE__ */ jsx(Typography, { children: q.scene_key }) }),
+        /* @__PURE__ */ jsx(Td, { children: /* @__PURE__ */ jsx(Typography, { children: q.title || "-" }) }),
+        /* @__PURE__ */ jsx(Td, { children: /* @__PURE__ */ jsx(Status, { variant: "neutral", children: /* @__PURE__ */ jsx(Typography, { children: kindLabel(q.kind) }) }) }),
+        /* @__PURE__ */ jsx(Td, { children: /* @__PURE__ */ jsx(Typography, { textColor: "neutral600", children: q.expire_seconds ?? "-" }) }),
+        /* @__PURE__ */ jsx(Td, { children: q.qrcode_url ? /* @__PURE__ */ jsx("a", { href: q.qrcode_url, target: "_blank", rel: "noreferrer", children: /* @__PURE__ */ jsx(Typography, { textColor: "primary600", children: "查看图片" }) }) : q.wx_url ? /* @__PURE__ */ jsx("a", { href: q.wx_url, target: "_blank", rel: "noreferrer", children: /* @__PURE__ */ jsx(Typography, { textColor: "primary600", children: "微信链接" }) }) : /* @__PURE__ */ jsx(Typography, { textColor: "neutral600", children: "-" }) }),
+        /* @__PURE__ */ jsx(Td, { children: /* @__PURE__ */ jsx(
+          Button,
+          {
+            size: "S",
+            variant: "danger-light",
+            startIcon: /* @__PURE__ */ jsx(Trash, {}),
+            onClick: () => {
+              setDeleteTarget(q);
+              setDeleteOpen(true);
+            },
+            children: "删除"
+          }
+        ) })
+      ] }, q.id)) })
+    ] }) }),
+    /* @__PURE__ */ jsx(Modal.Root, { open, onOpenChange: (o) => {
+      if (!o) setOpen(false);
+    }, children: /* @__PURE__ */ jsxs(Modal.Content, { children: [
+      /* @__PURE__ */ jsx(Modal.Header, { closeLabel: "关闭", children: /* @__PURE__ */ jsx(Modal.Title, { children: "新建带参二维码" }) }),
+      /* @__PURE__ */ jsx(Modal.Body, { children: formFields() }),
+      /* @__PURE__ */ jsx(Modal.Footer, { children: /* @__PURE__ */ jsxs(Flex, { justifyContent: "space-between", width: "100%", children: [
+        /* @__PURE__ */ jsx(Button, { variant: "tertiary", onClick: () => setOpen(false), children: "取消" }),
+        /* @__PURE__ */ jsx(Button, { onClick: handleCreate, children: "创建" })
+      ] }) })
+    ] }) }),
+    /* @__PURE__ */ jsx(Modal.Root, { open: deleteOpen, onOpenChange: (o) => {
+      if (!o) setDeleteOpen(false);
+    }, children: /* @__PURE__ */ jsxs(Modal.Content, { children: [
+      /* @__PURE__ */ jsx(Modal.Header, { closeLabel: "关闭", children: /* @__PURE__ */ jsx(Modal.Title, { children: "确认删除" }) }),
+      /* @__PURE__ */ jsx(Modal.Body, { children: /* @__PURE__ */ jsxs(Typography, { children: [
+        "确定要删除二维码 “",
+        deleteTarget?.scene_key,
+        "” 吗?此操作不可撤销。"
+      ] }) }),
+      /* @__PURE__ */ jsx(Modal.Footer, { children: /* @__PURE__ */ jsxs(Flex, { justifyContent: "space-between", width: "100%", children: [
+        /* @__PURE__ */ jsx(Button, { variant: "tertiary", onClick: () => setDeleteOpen(false), children: "取消" }),
+        /* @__PURE__ */ jsx(Button, { variant: "danger", onClick: handleDelete, children: "删除" })
+      ] }) })
+    ] }) })
+  ] });
+};
+const MenuSection = () => {
+  const { get, post, put, del } = useFetchClient();
+  const [loading, setLoading] = useState(true);
+  const [items, setItems] = useState([]);
+  const [open, setOpen] = useState(false);
+  const [editId, setEditId] = useState(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [form, setForm] = useState({ name: "", menu_json: '{\n  "button": []\n}' });
+  const load = async () => {
+    setLoading(true);
+    try {
+      const { data } = await get(`${API_PREFIX}/wx/menus`);
+      setItems(toArray(data?.data ?? data));
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
+    load();
+  }, []);
+  const buildPayload = () => {
+    let menuJson;
+    try {
+      menuJson = JSON.parse(form.menu_json);
+    } catch (e) {
+      console.error(e);
+      return null;
+    }
+    return { name: form.name, menu_json: menuJson };
+  };
+  const handleSave = async () => {
+    const payload = buildPayload();
+    if (!payload) return;
+    try {
+      if (editId) {
+        await put(`${API_PREFIX}/wx/menus/${editId}`, payload);
+      } else {
+        await post(`${API_PREFIX}/wx/menus`, payload);
+      }
+      setOpen(false);
+      setEditId(null);
+      setForm({ name: "", menu_json: '{\n  "button": []\n}' });
+      load();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+  const handlePublish = async (id) => {
+    try {
+      await post(`${API_PREFIX}/wx/menus/${id}/publish`);
+      load();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      await del(`${API_PREFIX}/wx/menus/${deleteTarget.id}`);
+      setDeleteOpen(false);
+      setDeleteTarget(null);
+      load();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+  const openEdit = (m) => {
+    setEditId(m.id);
+    setForm({
+      name: m.name || "",
+      menu_json: m.menu_json ? typeof m.menu_json === "string" ? m.menu_json : JSON.stringify(m.menu_json, null, 2) : "{}"
+    });
+    setOpen(true);
+  };
+  const stateLabel = (s) => {
+    if (s === "published") return "已下发";
+    if (s === "failed") return "失败";
+    return "本地";
+  };
+  return /* @__PURE__ */ jsxs(Box, { children: [
+    /* @__PURE__ */ jsxs(Flex, { paddingBottom: 4, justifyContent: "space-between", alignItems: "center", children: [
+      /* @__PURE__ */ jsx(Typography, { variant: "delta", children: "自定义菜单" }),
+      /* @__PURE__ */ jsx(
+        Button,
+        {
+          startIcon: /* @__PURE__ */ jsx(Plus, {}),
+          onClick: () => {
+            setEditId(null);
+            setForm({ name: "", menu_json: '{\n  "button": []\n}' });
+            setOpen(true);
+          },
+          children: "新建菜单"
+        }
+      )
+    ] }),
+    loading ? /* @__PURE__ */ jsx(Loader, { children: "加载中..." }) : items.length === 0 ? /* @__PURE__ */ jsx(EmptyStateLayout, { content: "暂无自定义菜单" }) : /* @__PURE__ */ jsx(Box, { background: "neutral0", borderRadius: 4, shadow: "filterShadow", children: /* @__PURE__ */ jsxs(Table, { colCount: 6, rowCount: items.length, children: [
+      /* @__PURE__ */ jsx(Thead, { children: /* @__PURE__ */ jsxs(Tr, { children: [
+        /* @__PURE__ */ jsx(Th, { children: /* @__PURE__ */ jsx(Typography, { variant: "sigma", children: "ID" }) }),
+        /* @__PURE__ */ jsx(Th, { children: /* @__PURE__ */ jsx(Typography, { variant: "sigma", children: "名称" }) }),
+        /* @__PURE__ */ jsx(Th, { children: /* @__PURE__ */ jsx(Typography, { variant: "sigma", children: "按钮数" }) }),
+        /* @__PURE__ */ jsx(Th, { children: /* @__PURE__ */ jsx(Typography, { variant: "sigma", children: "下发状态" }) }),
+        /* @__PURE__ */ jsx(Th, { children: /* @__PURE__ */ jsx(Typography, { variant: "sigma", children: "下发时间" }) }),
+        /* @__PURE__ */ jsx(Th, { children: /* @__PURE__ */ jsx(Typography, { variant: "sigma", children: "操作" }) })
+      ] }) }),
+      /* @__PURE__ */ jsx(Tbody, { children: items.map((m) => {
+        const btnCount = m.menu_json?.button?.length ?? 0;
+        return /* @__PURE__ */ jsxs(Tr, { children: [
+          /* @__PURE__ */ jsx(Td, { children: /* @__PURE__ */ jsx(Typography, { children: m.id }) }),
+          /* @__PURE__ */ jsx(Td, { children: /* @__PURE__ */ jsx(Typography, { children: m.name }) }),
+          /* @__PURE__ */ jsx(Td, { children: /* @__PURE__ */ jsx(Typography, { textColor: "neutral600", children: btnCount }) }),
+          /* @__PURE__ */ jsx(Td, { children: /* @__PURE__ */ jsx(
+            Status,
+            {
+              variant: m.publish_state === "published" ? "success" : m.publish_state === "failed" ? "danger" : "neutral",
+              children: /* @__PURE__ */ jsx(Typography, { children: stateLabel(m.publish_state) })
+            }
+          ) }),
+          /* @__PURE__ */ jsx(Td, { children: /* @__PURE__ */ jsx(Typography, { textColor: "neutral600", children: m.last_publish_at ? new Date(m.last_publish_at).toLocaleString() : "-" }) }),
+          /* @__PURE__ */ jsx(Td, { children: /* @__PURE__ */ jsxs(Flex, { gap: 1, children: [
+            /* @__PURE__ */ jsx(
+              Button,
+              {
+                size: "S",
+                variant: "tertiary",
+                startIcon: /* @__PURE__ */ jsx(Lightning, {}),
+                onClick: () => handlePublish(m.id),
+                children: "下发"
+              }
+            ),
+            /* @__PURE__ */ jsx(
+              Button,
+              {
+                size: "S",
+                variant: "tertiary",
+                startIcon: /* @__PURE__ */ jsx(Pencil, {}),
+                onClick: () => openEdit(m),
+                children: "编辑"
+              }
+            ),
+            /* @__PURE__ */ jsx(
+              Button,
+              {
+                size: "S",
+                variant: "danger-light",
+                startIcon: /* @__PURE__ */ jsx(Trash, {}),
+                onClick: () => {
+                  setDeleteTarget(m);
+                  setDeleteOpen(true);
+                },
+                children: "删除"
+              }
+            )
+          ] }) })
+        ] }, m.id);
+      }) })
+    ] }) }),
+    /* @__PURE__ */ jsx(Modal.Root, { open, onOpenChange: (o) => {
+      if (!o) setOpen(false);
+    }, children: /* @__PURE__ */ jsxs(Modal.Content, { children: [
+      /* @__PURE__ */ jsx(Modal.Header, { closeLabel: "关闭", children: /* @__PURE__ */ jsx(Modal.Title, { children: editId ? "编辑菜单" : "新建菜单" }) }),
+      /* @__PURE__ */ jsx(Modal.Body, { children: /* @__PURE__ */ jsxs(Flex, { direction: "column", gap: 4, alignItems: "stretch", children: [
+        /* @__PURE__ */ jsxs(Field.Root, { name: "name", required: true, children: [
+          /* @__PURE__ */ jsx(Field.Label, { children: "菜单名称" }),
+          /* @__PURE__ */ jsx(
+            TextInput,
+            {
+              value: form.name,
+              onChange: (e) => setForm({ ...form, name: e.target.value })
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsxs(Field.Root, { name: "menu_json", required: true, children: [
+          /* @__PURE__ */ jsx(Field.Label, { children: "菜单结构 (JSON)" }),
+          /* @__PURE__ */ jsx(
+            Textarea,
+            {
+              value: form.menu_json,
+              onChange: (e) => setForm({ ...form, menu_json: e.target.value }),
+              placeholder: '{"button":[...]}'
+            }
+          ),
+          /* @__PURE__ */ jsxs(Typography, { variant: "pi", textColor: "neutral600", children: [
+            "微信菜单按钮结构，参考菜单创建接口 ",
+            '{ "button": [...] }'
+          ] })
+        ] })
+      ] }) }),
+      /* @__PURE__ */ jsx(Modal.Footer, { children: /* @__PURE__ */ jsxs(Flex, { justifyContent: "space-between", width: "100%", children: [
+        /* @__PURE__ */ jsx(Button, { variant: "tertiary", onClick: () => setOpen(false), children: "取消" }),
+        /* @__PURE__ */ jsx(Button, { onClick: handleSave, children: "保存" })
+      ] }) })
+    ] }) }),
+    /* @__PURE__ */ jsx(Modal.Root, { open: deleteOpen, onOpenChange: (o) => {
+      if (!o) setDeleteOpen(false);
+    }, children: /* @__PURE__ */ jsxs(Modal.Content, { children: [
+      /* @__PURE__ */ jsx(Modal.Header, { closeLabel: "关闭", children: /* @__PURE__ */ jsx(Modal.Title, { children: "确认删除" }) }),
+      /* @__PURE__ */ jsx(Modal.Body, { children: /* @__PURE__ */ jsxs(Typography, { children: [
+        "确定要删除菜单 “",
+        deleteTarget?.name,
+        "” 吗?此操作不可撤销。"
+      ] }) }),
+      /* @__PURE__ */ jsx(Modal.Footer, { children: /* @__PURE__ */ jsxs(Flex, { justifyContent: "space-between", width: "100%", children: [
+        /* @__PURE__ */ jsx(Button, { variant: "tertiary", onClick: () => setDeleteOpen(false), children: "取消" }),
+        /* @__PURE__ */ jsx(Button, { variant: "danger", onClick: handleDelete, children: "删除" })
+      ] }) })
+    ] }) })
+  ] });
+};
+const TemplateSection = () => {
+  const { get } = useFetchClient();
+  const [loading, setLoading] = useState(true);
+  const [items, setItems] = useState([]);
+  const load = async () => {
+    setLoading(true);
+    try {
+      const { data } = await get(`${API_PREFIX}/wx/templates`);
+      setItems(toArray(data?.data ?? data));
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
+    load();
+  }, []);
+  const templateId = (t) => t.template_id ?? t.templateId ?? t.object_id ?? t.type ?? t.title ?? "";
+  return /* @__PURE__ */ jsxs(Box, { children: [
+    /* @__PURE__ */ jsx(Typography, { variant: "delta", paddingBottom: 3, children: "模板消息配置" }),
+    /* @__PURE__ */ jsx(Box, { paddingBottom: 4, children: /* @__PURE__ */ jsxs(Typography, { textColor: "neutral600", variant: "pi", children: [
+      "以下为公众号已添加的模板列表(来自 /v1/admin/wx/templates)。请在「消息中心 / OAuth 相关 msg-template 配置」中，把模板的 ",
+      /* @__PURE__ */ jsx("code", { children: "wxTemplateId" }),
+      " 填为列表中的模板 ID，并在 ",
+      /* @__PURE__ */ jsx("code", { children: "wxTemplateFields" }),
+      "中配置字段映射后，即可用于发送微信模板消息。"
+    ] }) }),
+    loading ? /* @__PURE__ */ jsx(Loader, { children: "加载中..." }) : items.length === 0 ? /* @__PURE__ */ jsx(EmptyStateLayout, { content: "暂无模板数据，或公众号未添加模板" }) : /* @__PURE__ */ jsx(Box, { background: "neutral0", borderRadius: 4, shadow: "filterShadow", children: /* @__PURE__ */ jsxs(Table, { colCount: 5, rowCount: items.length, children: [
+      /* @__PURE__ */ jsx(Thead, { children: /* @__PURE__ */ jsxs(Tr, { children: [
+        /* @__PURE__ */ jsx(Th, { children: /* @__PURE__ */ jsx(Typography, { variant: "sigma", children: "模板 ID" }) }),
+        /* @__PURE__ */ jsx(Th, { children: /* @__PURE__ */ jsx(Typography, { variant: "sigma", children: "标题" }) }),
+        /* @__PURE__ */ jsx(Th, { children: /* @__PURE__ */ jsx(Typography, { variant: "sigma", children: "一级行业" }) }),
+        /* @__PURE__ */ jsx(Th, { children: /* @__PURE__ */ jsx(Typography, { variant: "sigma", children: "二级行业" }) }),
+        /* @__PURE__ */ jsx(Th, { children: /* @__PURE__ */ jsx(Typography, { variant: "sigma", children: "内容" }) })
+      ] }) }),
+      /* @__PURE__ */ jsx(Tbody, { children: items.map((t, idx) => /* @__PURE__ */ jsxs(Tr, { children: [
+        /* @__PURE__ */ jsx(Td, { children: /* @__PURE__ */ jsx(Typography, { children: templateId(t) }) }),
+        /* @__PURE__ */ jsx(Td, { children: /* @__PURE__ */ jsx(Typography, { children: t.title || "-" }) }),
+        /* @__PURE__ */ jsx(Td, { children: /* @__PURE__ */ jsx(Typography, { textColor: "neutral600", children: t.primary_industry || "-" }) }),
+        /* @__PURE__ */ jsx(Td, { children: /* @__PURE__ */ jsx(Typography, { textColor: "neutral600", children: t.deputy_industry || "-" }) }),
+        /* @__PURE__ */ jsx(Td, { children: /* @__PURE__ */ jsxs(Typography, { textColor: "neutral600", variant: "pi", children: [
+          (t.content || "").slice(0, 120),
+          (t.content || "").length > 120 ? "..." : ""
+        ] }) })
+      ] }, t.template_id ?? t.object_id ?? idx)) })
+    ] }) })
+  ] });
+};
+const WebchatTab = () => {
+  return /* @__PURE__ */ jsx(Box, { padding: 4, children: /* @__PURE__ */ jsxs(Flex, { direction: "column", gap: 6, alignItems: "stretch", children: [
+    /* @__PURE__ */ jsx(CallbackConfig, {}),
+    /* @__PURE__ */ jsx(Divider, {}),
+    /* @__PURE__ */ jsx(QrCodeSection, {}),
+    /* @__PURE__ */ jsx(Divider, {}),
+    /* @__PURE__ */ jsx(MenuSection, {}),
+    /* @__PURE__ */ jsx(Divider, {}),
+    /* @__PURE__ */ jsx(TemplateSection, {})
+  ] }) });
+};
 const API_PREFIX = "/api/zhao-sso/v1/admin";
 const tabs = [
   { value: "dashboard", label: "仪表盘" },
@@ -1502,7 +2071,8 @@ const tabs = [
   { value: "channels", label: "渠道管理" },
   { value: "logs", label: "登录日志" },
   { value: "oauth-configs", label: "OAuth配置" },
-  { value: "bindings", label: "三方绑定" }
+  { value: "bindings", label: "三方绑定" },
+  { value: "webchat", label: "公众号" }
 ];
 const HomePage = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -1534,7 +2104,8 @@ const HomePage = () => {
       activeTab === "channels" && /* @__PURE__ */ jsx(ChannelsTab, {}),
       activeTab === "logs" && /* @__PURE__ */ jsx(LoginLogsTab, {}),
       activeTab === "oauth-configs" && /* @__PURE__ */ jsx(OauthConfigsTab, {}),
-      activeTab === "bindings" && /* @__PURE__ */ jsx(BindingsTab, {})
+      activeTab === "bindings" && /* @__PURE__ */ jsx(BindingsTab, {}),
+      activeTab === "webchat" && /* @__PURE__ */ jsx(WebchatTab, {})
     ] })
   ] });
 };

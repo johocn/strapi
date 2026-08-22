@@ -194,5 +194,33 @@ declare const _default: {
         repurchaseLeads(ctx: any): Promise<void>;
         updateRepurchaseFollow(ctx: any): Promise<void>;
     };
+    "wx-callback": ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        verify(ctx: any): Promise<void>;
+        callback(ctx: any): Promise<void>;
+        serverConfig(ctx: any): Promise<void>;
+    };
+    "wx-qrcode": ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        create(ctx: any): Promise<void>;
+        list(ctx: any): Promise<void>;
+        findOne(ctx: any): Promise<void>;
+        delete(ctx: any): Promise<void>;
+        events(ctx: any): Promise<void>;
+    };
+    "wx-menu": ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        list(ctx: any): Promise<void>;
+        create(ctx: any): Promise<void>;
+        update(ctx: any): Promise<void>;
+        delete(ctx: any): Promise<void>;
+        publish(ctx: any): Promise<void>;
+        deleteRemote(ctx: any): Promise<void>;
+        getRemote(ctx: any): Promise<void>;
+        listTemplates(ctx: any): Promise<void>;
+    };
 };
 export default _default;

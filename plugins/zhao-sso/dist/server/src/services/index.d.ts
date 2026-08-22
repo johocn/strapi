@@ -179,6 +179,7 @@ declare const _default: {
     "sso-wechat": ({ strapi }: {
         strapi: import('@strapi/types/dist/core').Strapi;
     }) => {
+        getAccessToken(appType?: "official_account" | "open_platform" | "mini_program" | "app"): Promise<string>;
         getAuthorizeUrl(state: string, appType: "official_account" | "open_platform" | "mini_program" | "app", scope?: string, callbackUrl?: string): Promise<string>;
         handleCallback(code: string, appType: "official_account" | "open_platform" | "mini_program" | "app"): Promise<{
             userId: any;
@@ -628,6 +629,98 @@ declare const _default: {
             status: string;
             remark?: string;
         }): Promise<any>;
+    };
+    "sso-wx-callback": ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        getServerConfig(): Promise<{
+            url: string;
+            token: any;
+            welcomeReply: any;
+            encMode: string;
+        }>;
+        verifySignature: (params: {
+            timestamp?: string | number;
+            nonce?: string | number;
+            signature?: string;
+        }) => Promise<boolean>;
+        handleXml(xml: string): Promise<string>;
+    };
+    "sso-wx-qrcode": ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        create(data: {
+            scene_key: string;
+            title?: string;
+            kind?: "temporary" | "permanent";
+            expire_seconds?: number;
+            qrcode_url?: string;
+            remark?: string;
+        }): Promise<any>;
+        list(filters?: {
+            page?: number;
+            pageSize?: number;
+            scene_key?: string;
+        }): Promise<{
+            data: any[];
+            meta: {
+                pagination: {
+                    page: number;
+                    pageSize: number;
+                    total: number;
+                };
+            };
+        }>;
+        findOne(id: number): Promise<any>;
+        remove(id: number): Promise<any>;
+        events(filters?: {
+            page?: number;
+            pageSize?: number;
+            openid?: string;
+        }): Promise<{
+            data: any[];
+            meta: {
+                pagination: {
+                    page: number;
+                    pageSize: number;
+                    total: number;
+                };
+            };
+        }>;
+    };
+    "sso-wx-menu": ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        list(filters?: {
+            page?: number;
+            pageSize?: number;
+            name?: string;
+        }): Promise<{
+            data: any[];
+            meta: {
+                pagination: {
+                    page: number;
+                    pageSize: number;
+                    total: number;
+                };
+            };
+        }>;
+        findOne(id: number): Promise<any>;
+        create(data: {
+            name: string;
+            menu_json: any;
+            enabled?: boolean;
+        }): Promise<any>;
+        update(id: number, data: {
+            name?: string;
+            menu_json?: any;
+            enabled?: boolean;
+        }): Promise<any>;
+        remove(id: number): Promise<any>;
+        publish(id: number): Promise<any>;
+        deleteRemote(): Promise<any>;
+        getRemote(): Promise<any>;
+        listTemplates(): Promise<any>;
     };
 };
 export default _default;

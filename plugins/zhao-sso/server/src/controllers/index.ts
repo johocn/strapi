@@ -20,6 +20,9 @@ import msgVersionController from "./msg-version-controller";
 import recommendController from "./recommend-controller";
 import noticeController from "./notice-controller";
 import msgStats from "./msg-stats";
+import wxCallbackController from "./wx-callback-controller";
+import wxQrcodeController from "./wx-qrcode-controller";
+import wxMenuController from "./wx-menu-controller";
 
 export default {
   "auth-controller": authController,
@@ -44,4 +47,7 @@ export default {
   "recommend-controller": recommendController,
   "notice-controller": noticeController,
   "msg-stats": msgStats,
+  "wx-callback": wxCallbackController,
+  "wx-qrcode": wxQrcodeController,
+  "wx-menu": wxMenuController,
 };

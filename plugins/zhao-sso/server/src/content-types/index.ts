@@ -19,6 +19,9 @@ import sopRule from "./sop-rule";
 import ssoUserProfile from "./sso-user-profile";
 import ssoFollowUp from "./sso-follow-up";
 import ssoQuotaConfig from "./sso-quota-config";
+import ssoWxEvent from "./sso-wx-event";
+import ssoWxQrcode from "./sso-wx-qrcode";
+import ssoWxMenu from "./sso-wx-menu";
 
 export default {
   "sso-user": ssoUser,
@@ -42,4 +45,7 @@ export default {
   "sso-user-profile": ssoUserProfile,
   "sso-follow-up": ssoFollowUp,
   "sso-quota-config": ssoQuotaConfig,
+  "sso-wx-event": ssoWxEvent,
+  "sso-wx-qrcode": ssoWxQrcode,
+  "sso-wx-menu": ssoWxMenu,
 };

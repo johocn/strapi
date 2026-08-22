@@ -17,6 +17,9 @@ import ssoProfile from "./sso-profile";
 import ssoRecommend from "./sso-recommend";
 import ssoQuota from "./sso-quota";
 import ssoStats from "./sso-stats";
+import ssoWxCallback from "./sso-wx-callback";
+import ssoWxQrcode from "./sso-wx-qrcode";
+import ssoWxMenu from "./sso-wx-menu";
 
 export default {
   "sso-jwt": ssoJwt,
@@ -38,4 +41,7 @@ export default {
   "sso-recommend": ssoRecommend,
   "sso-quota": ssoQuota,
   "sso-stats": ssoStats,
+  "sso-wx-callback": ssoWxCallback,
+  "sso-wx-qrcode": ssoWxQrcode,
+  "sso-wx-menu": ssoWxMenu,
 };

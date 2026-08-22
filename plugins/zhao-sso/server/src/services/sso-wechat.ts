@@ -84,6 +84,14 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   }
 
   return {
+  /**
+   * 公开获取已缓存/刷新后的全局 access_token（复用闭包 tokenCache），供二维码/菜单等调用
+   */
+  async getAccessToken(appType: WechatAppType = "official_account"): Promise<string> {
+    const config = await getConfig(appType);
+    return getValidAccessToken(config);
+  },
+
   async getAuthorizeUrl(state: string, appType: WechatAppType, scope?: string, callbackUrl?: string): Promise<string> {
     const config = await getConfig(appType);
     const cleanAppId = config.appId.trim();
