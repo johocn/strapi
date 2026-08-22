@@ -4101,6 +4101,7 @@ export interface PluginZhaoPointActivity extends Struct.CollectionTypeSchema {
     capacity: Schema.Attribute.Integer &
       Schema.Attribute.Required &
       Schema.Attribute.DefaultTo<100>;
+    cashPrice: Schema.Attribute.Decimal & Schema.Attribute.DefaultTo<0>;
     category: Schema.Attribute.String & Schema.Attribute.DefaultTo<''>;
     channelIds: Schema.Attribute.JSON;
     channelScope: Schema.Attribute.Enumeration<['all', 'specific']> &
@@ -4159,6 +4160,8 @@ export interface PluginZhaoPointActivity extends Struct.CollectionTypeSchema {
         number
       > &
       Schema.Attribute.DefaultTo<1440>;
+    settleLecturer: Schema.Attribute.Decimal & Schema.Attribute.DefaultTo<0>;
+    settleVenue: Schema.Attribute.Decimal & Schema.Attribute.DefaultTo<0>;
     shareRewardPoints: Schema.Attribute.Integer;
     signupEnd: Schema.Attribute.DateTime;
     signupStart: Schema.Attribute.DateTime;
@@ -4238,6 +4241,9 @@ export interface PluginZhaoPointActivityLedger
     >;
     activityDocumentId: Schema.Attribute.String;
     activityTitle: Schema.Attribute.String;
+    cashExpense: Schema.Attribute.Decimal & Schema.Attribute.DefaultTo<0>;
+    cashNet: Schema.Attribute.Decimal & Schema.Attribute.DefaultTo<0>;
+    cashRevenue: Schema.Attribute.Decimal & Schema.Attribute.DefaultTo<0>;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -4255,6 +4261,9 @@ export interface PluginZhaoPointActivityLedger
     referralCostPoints: Schema.Attribute.Integer &
       Schema.Attribute.DefaultTo<0>;
     revenuePoints: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    settledAt: Schema.Attribute.DateTime;
+    settleStatus: Schema.Attribute.Enumeration<['pending', 'settled']> &
+      Schema.Attribute.DefaultTo<'pending'>;
     signinCostPoints: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
     snapshotNo: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<1>;
     source: Schema.Attribute.Enumeration<['auto', 'manual']> &
@@ -4502,6 +4511,9 @@ export interface PluginZhaoPointLecturer extends Struct.CollectionTypeSchema {
       'oneToMany',
       'plugin::zhao-point.activity'
     >;
+    cashFee: Schema.Attribute.Decimal & Schema.Attribute.DefaultTo<0>;
+    cashMode: Schema.Attribute.Enumeration<['none', 'flat']> &
+      Schema.Attribute.DefaultTo<'none'>;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -5143,6 +5155,9 @@ export interface PluginZhaoPointVenue extends Struct.CollectionTypeSchema {
       'oneToMany',
       'plugin::zhao-point.activity'
     >;
+    cashFee: Schema.Attribute.Decimal & Schema.Attribute.DefaultTo<0>;
+    cashMode: Schema.Attribute.Enumeration<['none', 'flat']> &
+      Schema.Attribute.DefaultTo<'none'>;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
