@@ -4093,6 +4093,7 @@ export interface PluginZhaoPointActivity extends Struct.CollectionTypeSchema {
     };
   };
   attributes: {
+    assets: Schema.Attribute.JSON;
     belongsToSeries: Schema.Attribute.Relation<
       'manyToOne',
       'plugin::zhao-point.activity-series'
@@ -4100,6 +4101,7 @@ export interface PluginZhaoPointActivity extends Struct.CollectionTypeSchema {
     capacity: Schema.Attribute.Integer &
       Schema.Attribute.Required &
       Schema.Attribute.DefaultTo<100>;
+    category: Schema.Attribute.String & Schema.Attribute.DefaultTo<''>;
     channelIds: Schema.Attribute.JSON;
     channelScope: Schema.Attribute.Enumeration<['all', 'specific']> &
       Schema.Attribute.DefaultTo<'all'>;
@@ -4165,6 +4167,7 @@ export interface PluginZhaoPointActivity extends Struct.CollectionTypeSchema {
       ['draft', 'signup_open', 'ongoing', 'ended']
     > &
       Schema.Attribute.DefaultTo<'draft'>;
+    tags: Schema.Attribute.JSON;
     title: Schema.Attribute.String & Schema.Attribute.Required;
     type: Schema.Attribute.String & Schema.Attribute.DefaultTo<'\u5176\u4ED6'>;
     updatedAt: Schema.Attribute.DateTime;
