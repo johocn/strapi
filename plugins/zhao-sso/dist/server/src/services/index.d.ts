@@ -180,6 +180,10 @@ declare const _default: {
         strapi: import('@strapi/types/dist/core').Strapi;
     }) => {
         getAccessToken(appType?: "official_account" | "open_platform" | "mini_program" | "app"): Promise<string>;
+        getAccessTokenByConfig(config: {
+            appId: string;
+            appSecret: string;
+        }): Promise<string>;
         getAuthorizeUrl(state: string, appType: "official_account" | "open_platform" | "mini_program" | "app", scope?: string, callbackUrl?: string): Promise<string>;
         handleCallback(code: string, appType: "official_account" | "open_platform" | "mini_program" | "app"): Promise<{
             userId: any;

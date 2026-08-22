@@ -92,6 +92,15 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     return getValidAccessToken(config);
   },
 
+  /**
+   * 使用调用方提供的 appId/appSecret 换取全局 access_token（复用 tokenCache）。
+   * 供公众号动作从外部账号体系（如 zhao-studio publish-account.config）拿凭据时使用。
+   */
+  async getAccessTokenByConfig(config: { appId: string; appSecret: string }): Promise<string> {
+    if (!config?.appId) throwErr("SSO_WECHAT_002", 400, "[zhao-sso] 缺少公众号 appId");
+    return getValidAccessToken(config);
+  },
+
   async getAuthorizeUrl(state: string, appType: WechatAppType, scope?: string, callbackUrl?: string): Promise<string> {
     const config = await getConfig(appType);
     const cleanAppId = config.appId.trim();

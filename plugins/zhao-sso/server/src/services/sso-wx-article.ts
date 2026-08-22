@@ -2,11 +2,55 @@ import axios from "axios";
 import type { Core } from "@strapi/strapi";
 
 const ARTICLE_UID = "plugin::zhao-sso.sso-wx-article";
+const WECHAT_ACCOUNT_UID = "plugin::zhao-studio.publish-account";
 
 const isMock = () => process.env.MSG_WECHAT_PROVIDER === "mock";
 
 export default ({ strapi }: { strapi: Core.Strapi }) => {
   const wechat = () => strapi.plugin("zhao-sso").service("sso-wechat");
+
+  // 公众号发文上下文短缓存（60s），避免每次接口调用重复查账号 + 换 token
+  let ctxCache: { ts: number; token?: string; accountId?: string } | null = null;
+
+  /** 从 zhao-studio 选取激活的 wechat 发布账号，返回其 documentId 与凭据(仅DB查询，不走外部接口) */
+  async function pickWechatAccount(): Promise<{ accountId?: string; cfg?: { appId: string; appSecret: string } }> {
+    try {
+      const studio = strapi.plugin("zhao-studio");
+      if (!studio) return {};
+      const acc = await strapi.documents(WECHAT_ACCOUNT_UID).findFirst({
+        filters: { isActive: true, platform: { type: "wechat" } },
+        populate: { platform: true },
+      });
+      if (!acc) return {};
+      const appId = String(acc.config?.appId || acc.config?.appid || "");
+      const appSecret = String(acc.config?.appSecret || acc.config?.appsecret || "");
+      return appId ? { accountId: acc.documentId, cfg: { appId, appSecret } } : { accountId: acc.documentId };
+    } catch { return {}; }
+  }
+
+  /**
+   * 解析公众号发文上下文：优先取 zhao-studio wechat 发布账号凭据换取 token；
+   * 无账号/无凭据/换取失败时回退 oauth-config(provider=wechat, appType=official_account) 保持兼容。
+   * mock 模式仍解析账号用于台账关联，但 token 走占位、不调微信接口。
+   */
+  async function resolveArticleContext(): Promise<{ token?: string; accountId?: string }> {
+    if (isMock()) {
+      const picked = await pickWechatAccount();
+      return { token: "mock_token", accountId: picked.accountId };
+    }
+    if (ctxCache && Date.now() - ctxCache.ts < 60_000) return ctxCache;
+    const picked = await pickWechatAccount();
+    if (picked.cfg) {
+      try {
+        const token = await wechat().getAccessTokenByConfig(picked.cfg);
+        ctxCache = { ts: Date.now(), token, accountId: picked.accountId };
+        return ctxCache;
+      } catch { /* 账号凭据换取失败 → 回退 oauth-config */ }
+    }
+    const token = await wechat().getAccessToken("official_account");
+    ctxCache = { ts: Date.now(), token, accountId: undefined };
+    return ctxCache;
+  }
 
   function throwErr(code: string, status: number, message: string): never {
     const e: any = new Error(message);
@@ -30,9 +74,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
 
   /** 调微信 cgi-bin JSON 接口（POST）；非 mock 模式下调用 */
   async function postApi(path: string, body: any): Promise<any> {
-    const accessToken = await wechat().getAccessToken("official_account");
+    const ctx = await resolveArticleContext();
     const res = await axios.post(`https://api.weixin.qq.com/cgi-bin/${path}`, body, {
-      params: { access_token: accessToken },
+      params: { access_token: ctx.token },
       timeout: 15000,
     });
     const d = res.data || {};
@@ -41,22 +85,22 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   }
 
   /**
-   * 旁路登记 zhao-studio 发布台账（platform=wechat）。
-   * zhao-studio 的 publish-record 无 platform 独立字段（article/account 为可选关联），
-   * 以 JSON 元信息写入 error 字段记平台来源；判空 + try/catch，失败不影响发布主流程。
+   * 登记 zhao-studio 发布台账（platform=wechat）。publish-record 无 platform 独立字段，
+   * platform 元信息写入 error 字段；account 关联 zhao-studio 激活的 wechat 发布账号。
+   * 判空 + try/catch，失败不影响发布主流程。
    */
-  async function registerPublishRecord(article: any) {
+  async function registerPublishRecord(article: any, accountId?: string) {
     try {
       const studio = strapi.plugin("zhao-studio");
       if (!studio) return;
-      await strapi.documents("plugin::zhao-studio.publish-record").create({
-        data: {
-          externalId: article.publish_id,
-          status: "success",
-          error: JSON.stringify({ platform: "wechat", title: article.title, draftId: article.draft_id }),
-          publishedAt: new Date(),
-        },
-      });
+      const data: Record<string, any> = {
+        externalId: article.publish_id,
+        status: "success",
+        error: JSON.stringify({ platform: "wechat", title: article.title, draftId: article.draft_id }),
+        publishedAt: new Date(),
+      };
+      if (accountId) data.account = accountId;
+      await strapi.documents("plugin::zhao-studio.publish-record").create({ data });
     } catch { /* 旁路登记失败静默，不影响公众号发布主流程 */ }
   }
 
@@ -155,7 +199,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         where: { id },
         data: { publish_id: publishId, publish_state: "publishing", last_error: null },
       });
-      await registerPublishRecord(updated);
+      const ctx = await resolveArticleContext();
+      await registerPublishRecord(updated, ctx.accountId);
       return updated;
     },
 

@@ -7,6 +7,14 @@ declare const _default: ({ strapi }: {
      * 公开获取已缓存/刷新后的全局 access_token（复用闭包 tokenCache），供二维码/菜单等调用
      */
     getAccessToken(appType?: WechatAppType): Promise<string>;
+    /**
+     * 使用调用方提供的 appId/appSecret 换取全局 access_token（复用 tokenCache）。
+     * 供公众号动作从外部账号体系（如 zhao-studio publish-account.config）拿凭据时使用。
+     */
+    getAccessTokenByConfig(config: {
+        appId: string;
+        appSecret: string;
+    }): Promise<string>;
     getAuthorizeUrl(state: string, appType: WechatAppType, scope?: string, callbackUrl?: string): Promise<string>;
     handleCallback(code: string, appType: WechatAppType): Promise<{
         userId: any;

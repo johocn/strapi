@@ -8,8 +8,10 @@
  *     POST :id/publish(publish_state=publishing / publish_id 前缀 mock_publish_) →
  *     GET :id/status(mock 一次即 published / wx_published_at 非空) →
  *     PUT 已发布返回 400 → DELETE 清理
+ *  3a.账号体系打通: 直插 zhao-studio wechat 平台+账号 → 发布后断言 zhao_publish_records
+ *      外键(record_account_lnk)关联该账号 document_id → 清理台账+平台+账号
  *  4. 回调分流: 不调微信, 仅验证 admin 权限(不带 token 401/403, 带 token 200)
- *  5. 清理零残留(三条新表 wops_% 标识)
+ *  5. 清理零残留(四条表 wops_% 标识 + zhao 台账/平台/账号)
  */
 const { Client } = require('pg');
 
@@ -85,11 +87,30 @@ async function main() {
   const RTX_KW = nm('replyKw');        // 关键字规则文本标识
   const MAT_NAME = nm('mat');
   const ART_TITLE = nm('art');
+  // 账号体系打通: 直插 zhao-studio wechat 平台 + 账号(充当发布账号凭据来源)
+  const WX_DOC = `wxc_${Date.now()}_${RND}`;       // 账号 document_id
+  const WX_PL_DOC = `wxp_${Date.now()}_${RND}`;    // 平台 document_id
+  const WX_ACCT_NAME = nm('acct');
+  const WX_PL_NAME = nm('plat');
 
   // ---- 清场(开头) ----
   await client.query(`DELETE FROM sso_wx_replies WHERE text LIKE '${PF}%' OR match LIKE '${PF}%'`);
   await client.query(`DELETE FROM sso_wx_materials WHERE name LIKE '${PF}%'`);
   await client.query(`DELETE FROM sso_wx_articles WHERE title LIKE '${PF}%'`);
+
+  // ---- 账号体系打通: 插入 zhao-studio wechat 平台 + 账号 ----
+  let wxPlId = null, wxAccId = null;
+  {
+    const pl = await q(`INSERT INTO zhao_publish_platforms(document_id, name, type, category, is_active, created_at, updated_at)
+        VALUES ($1,$2,'wechat','content',true,NOW(),NOW()) RETURNING id, document_id`, [WX_PL_DOC, WX_PL_NAME]);
+    wxPlId = pl[0] && pl[0].id;
+    const acc = await q(`INSERT INTO zhao_publish_accounts(document_id, name, config, is_active, created_at, updated_at)
+        VALUES ($1,$2,$3,true,NOW(),NOW()) RETURNING id, document_id`,
+      [WX_DOC, WX_ACCT_NAME, JSON.stringify({ appId: 'mock_appid', appSecret: 'mock_appsecret' })]);
+    wxAccId = acc[0] && acc[0].id;
+    await client.query(`INSERT INTO zhao_publish_accounts_platform_lnk(publish_account_id, publish_platform_id) VALUES ($1,$2)`, [wxAccId, wxPlId]);
+    check('账号体系打通: 直插 zhao-studio wechat 平台+账号成功', !!wxPlId && !!wxAccId && acc[0].document_id === WX_DOC, `acc=${WX_DOC} doc=${acc[0] && acc[0].document_id}`);
+  }
 
   // ---- admin 登录(1117) ----
   const adminLogin = await waitForServer();
@@ -175,8 +196,26 @@ async function main() {
 
     const rp = await api('POST', `/zhao-sso/v1/admin/wx/articles/${artId}/publish`, { token: adminToken });
     const pd = rp.json && rp.json.data;
+    const PUB_ID = pd && pd.publish_id;
     check('POST /wx/articles/:id/publish 置 publishing', rp.status === 200 && pd && pd.publish_state === 'publishing', `st=${pd && pd.publish_state}`);
-    check('publish 返回 publish_id 前缀 mock_publish_', rp.status === 200 && pd && String(pd.publish_id).startsWith('mock_publish_'), `pid=${pd && pd.publish_id}`);
+    check('publish 返回 publish_id 前缀 mock_publish_', rp.status === 200 && pd && String(pd.publish_id).startsWith('mock_publish_'), `pid=${PUB_ID}`);
+
+    // 账号体系打通: 发布应登记 zhao-studio 发布台账且 account 关联直插的 wechat 账号
+    {
+      const rec = (await q(`SELECT r.id, r.external_id, r.account_lnk, r.acc_doc FROM (
+          SELECT r.id, r.external_id,
+                 (SELECT count(*) FROM zhao_publish_records_account_lnk x WHERE x.publish_record_id = r.id)::int AS account_lnk,
+                 NULL AS acc_doc
+          FROM zhao_publish_records r
+          WHERE r.external_id = $1 ) r`, [PUB_ID]))[0];
+      const linkRow = (await q(`SELECT a.document_id AS acc_doc
+          FROM zhao_publish_records_account_lnk rl
+          JOIN zhao_publish_accounts a ON a.id = rl.publish_account_id
+          JOIN zhao_publish_records r ON r.id = rl.publish_record_id
+          WHERE r.external_id = $1`, [PUB_ID]))[0];
+      check('账号体系打通: 发布登记 zhao_publish_records 台账(external_id=publish_id)', !!rec && rec.external_id === PUB_ID, `ext=${rec && rec.external_id} lnk=${rec && rec.account_lnk}`);
+      check('账号体系打通: 发布台账 account 关联直插的 wechat 账号', !!linkRow && linkRow.acc_doc === WX_DOC, `acc_doc=${linkRow && linkRow.acc_doc} expect=${WX_DOC}`);
+    }
 
     const rs = await api('GET', `/zhao-sso/v1/admin/wx/articles/${artId}/status`, { token: adminToken });
     const sd = rs.json && rs.json.data;
@@ -194,13 +233,21 @@ async function main() {
   await client.query(`DELETE FROM sso_wx_replies WHERE text LIKE '${PF}%' OR match LIKE '${PF}%'`);
   await client.query(`DELETE FROM sso_wx_materials WHERE name LIKE '${PF}%'`);
   await client.query(`DELETE FROM sso_wx_articles WHERE title LIKE '${PF}%'`);
+  // 账号体系打通: 清理注册的发布台账(按 external_id mock_publish_ 匹配本脚本产生) + 直插的平台/账号
+  await client.query(`DELETE FROM zhao_publish_records_account_lnk WHERE publish_account_id=$1`, [wxAccId]);
+  await client.query(`DELETE FROM zhao_publish_records WHERE external_id LIKE 'mock_publish_%'`);
+  await client.query(`DELETE FROM zhao_publish_accounts_platform_lnk WHERE publish_account_id=$1 OR publish_platform_id=$1`, [wxPlId]);
+  await client.query(`DELETE FROM zhao_publish_accounts WHERE document_id=$1`, [WX_DOC]);
+  await client.query(`DELETE FROM zhao_publish_platforms WHERE document_id=$1`, [WX_PL_DOC]);
 
   const residue = (await q(`SELECT
       (SELECT count(*)::int FROM sso_wx_replies WHERE text LIKE '${PF}%' OR match LIKE '${PF}%') rp,
       (SELECT count(*)::int FROM sso_wx_materials WHERE name LIKE '${PF}%') mt,
-      (SELECT count(*)::int FROM sso_wx_articles WHERE title LIKE '${PF}%') ar`))[0];
-  check(`清理完成零残留(reply=${residue.rp} material=${residue.mt} article=${residue.ar})`,
-    residue.rp === 0 && residue.mt === 0 && residue.ar === 0);
+      (SELECT count(*)::int FROM sso_wx_articles WHERE title LIKE '${PF}%') ar,
+      (SELECT count(*)::int FROM zhao_publish_accounts WHERE document_id='${WX_DOC}') ac,
+      (SELECT count(*)::int FROM zhao_publish_platforms WHERE document_id='${WX_PL_DOC}') pl`))[0];
+  check(`清理完成零残留(reply=${residue.rp} material=${residue.mt} article=${residue.ar} account=${residue.ac} platform=${residue.pl})`,
+    residue.rp === 0 && residue.mt === 0 && residue.ar === 0 && residue.ac === 0 && residue.pl === 0);
 
   await client.end();
   console.log('\n===== 验收结果 =====');

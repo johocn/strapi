@@ -4154,6 +4154,14 @@ const ssoWechat = ({ strapi }) => {
       const config2 = await getConfig(appType);
       return getValidAccessToken(config2);
     },
+    /**
+     * 使用调用方提供的 appId/appSecret 换取全局 access_token（复用 tokenCache）。
+     * 供公众号动作从外部账号体系（如 zhao-studio publish-account.config）拿凭据时使用。
+     */
+    async getAccessTokenByConfig(config2) {
+      if (!config2?.appId) throwErr("SSO_WECHAT_002", 400, "[zhao-sso] 缺少公众号 appId");
+      return getValidAccessToken(config2);
+    },
     async getAuthorizeUrl(state, appType, scope, callbackUrl) {
       const config2 = await getConfig(appType);
       const cleanAppId = config2.appId.trim();
@@ -6558,9 +6566,46 @@ const ssoWxMaterial = ({ strapi }) => {
   };
 };
 const ARTICLE_UID = "plugin::zhao-sso.sso-wx-article";
+const WECHAT_ACCOUNT_UID = "plugin::zhao-studio.publish-account";
 const isMock = () => process.env.MSG_WECHAT_PROVIDER === "mock";
 const ssoWxArticle = ({ strapi }) => {
   const wechat = () => strapi.plugin("zhao-sso").service("sso-wechat");
+  let ctxCache = null;
+  async function pickWechatAccount() {
+    try {
+      const studio = strapi.plugin("zhao-studio");
+      if (!studio) return {};
+      const acc = await strapi.documents(WECHAT_ACCOUNT_UID).findFirst({
+        filters: { isActive: true, platform: { type: "wechat" } },
+        populate: { platform: true }
+      });
+      if (!acc) return {};
+      const appId = String(acc.config?.appId || acc.config?.appid || "");
+      const appSecret = String(acc.config?.appSecret || acc.config?.appsecret || "");
+      return appId ? { accountId: acc.documentId, cfg: { appId, appSecret } } : { accountId: acc.documentId };
+    } catch {
+      return {};
+    }
+  }
+  async function resolveArticleContext() {
+    if (isMock()) {
+      const picked2 = await pickWechatAccount();
+      return { token: "mock_token", accountId: picked2.accountId };
+    }
+    if (ctxCache && Date.now() - ctxCache.ts < 6e4) return ctxCache;
+    const picked = await pickWechatAccount();
+    if (picked.cfg) {
+      try {
+        const token2 = await wechat().getAccessTokenByConfig(picked.cfg);
+        ctxCache = { ts: Date.now(), token: token2, accountId: picked.accountId };
+        return ctxCache;
+      } catch {
+      }
+    }
+    const token = await wechat().getAccessToken("official_account");
+    ctxCache = { ts: Date.now(), token, accountId: void 0 };
+    return ctxCache;
+  }
   function throwErr(code, status, message) {
     const e = new Error(message);
     e.code = code;
@@ -6579,27 +6624,27 @@ const ssoWxArticle = ({ strapi }) => {
     };
   }
   async function postApi(path, body) {
-    const accessToken = await wechat().getAccessToken("official_account");
+    const ctx = await resolveArticleContext();
     const res = await axios.post(`https://api.weixin.qq.com/cgi-bin/${path}`, body, {
-      params: { access_token: accessToken },
+      params: { access_token: ctx.token },
       timeout: 15e3
     });
     const d = res.data || {};
     if (d.errcode) throwErr("SSO_WX_ARTICLE_010", 502, `WeChat ${path} error: ${d.errmsg}`);
     return d;
   }
-  async function registerPublishRecord(article) {
+  async function registerPublishRecord(article, accountId) {
     try {
       const studio = strapi.plugin("zhao-studio");
       if (!studio) return;
-      await strapi.documents("plugin::zhao-studio.publish-record").create({
-        data: {
-          externalId: article.publish_id,
-          status: "success",
-          error: JSON.stringify({ platform: "wechat", title: article.title, draftId: article.draft_id }),
-          publishedAt: /* @__PURE__ */ new Date()
-        }
-      });
+      const data = {
+        externalId: article.publish_id,
+        status: "success",
+        error: JSON.stringify({ platform: "wechat", title: article.title, draftId: article.draft_id }),
+        publishedAt: /* @__PURE__ */ new Date()
+      };
+      if (accountId) data.account = accountId;
+      await strapi.documents("plugin::zhao-studio.publish-record").create({ data });
     } catch {
     }
   }
@@ -6682,7 +6727,8 @@ const ssoWxArticle = ({ strapi }) => {
         where: { id },
         data: { publish_id: publishId, publish_state: "publishing", last_error: null }
       });
-      await registerPublishRecord(updated);
+      const ctx = await resolveArticleContext();
+      await registerPublishRecord(updated, ctx.accountId);
       return updated;
     },
     /** 状态刷新：若 publishing 调 freepublish/get 刷新 publish_state */
