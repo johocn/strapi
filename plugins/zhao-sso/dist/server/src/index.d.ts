@@ -1208,6 +1208,152 @@ declare const _default: {
                 };
             };
         };
+        "sso-wx-reply": {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                attributes: {
+                    trigger: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                        required: boolean;
+                    };
+                    match: {
+                        type: string;
+                        unique: boolean;
+                    };
+                    reply_type: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    text: {
+                        type: string;
+                    };
+                    title: {
+                        type: string;
+                    };
+                    desc: {
+                        type: string;
+                    };
+                    pic_url: {
+                        type: string;
+                    };
+                    link_url: {
+                        type: string;
+                    };
+                    sort: {
+                        type: string;
+                        default: number;
+                    };
+                    enabled: {
+                        type: string;
+                        default: boolean;
+                    };
+                };
+            };
+        };
+        "sso-wx-material": {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                attributes: {
+                    type: {
+                        type: string;
+                        enum: string[];
+                        required: boolean;
+                    };
+                    name: {
+                        type: string;
+                    };
+                    media_id: {
+                        type: string;
+                    };
+                    wx_url: {
+                        type: string;
+                    };
+                    remark: {
+                        type: string;
+                    };
+                };
+            };
+        };
+        "sso-wx-article": {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                attributes: {
+                    draft_id: {
+                        type: string;
+                    };
+                    title: {
+                        type: string;
+                        required: boolean;
+                    };
+                    author: {
+                        type: string;
+                    };
+                    digest: {
+                        type: string;
+                    };
+                    content: {
+                        type: string;
+                    };
+                    thumb_media_id: {
+                        type: string;
+                    };
+                    pic_url: {
+                        type: string;
+                    };
+                    content_source_url: {
+                        type: string;
+                    };
+                    show_cover_pic: {
+                        type: string;
+                        default: boolean;
+                    };
+                    publish_state: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    publish_id: {
+                        type: string;
+                    };
+                    wx_published_at: {
+                        type: string;
+                    };
+                    last_error: {
+                        type: string;
+                    };
+                };
+            };
+        };
     };
     controllers: {
         "auth-controller": ({ strapi }: {
@@ -1432,6 +1578,32 @@ declare const _default: {
             deleteRemote(ctx: any): Promise<void>;
             getRemote(ctx: any): Promise<void>;
             listTemplates(ctx: any): Promise<void>;
+        };
+        "wx-reply": ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            list(ctx: any): Promise<void>;
+            create(ctx: any): Promise<void>;
+            update(ctx: any): Promise<void>;
+            delete(ctx: any): Promise<void>;
+        };
+        "wx-material": ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            create(ctx: any): Promise<void>;
+            list(ctx: any): Promise<void>;
+            delete(ctx: any): Promise<void>;
+        };
+        "wx-article": ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            create(ctx: any): Promise<void>;
+            list(ctx: any): Promise<void>;
+            findOne(ctx: any): Promise<void>;
+            update(ctx: any): Promise<void>;
+            publish(ctx: any): Promise<void>;
+            status(ctx: any): Promise<void>;
+            delete(ctx: any): Promise<void>;
         };
     };
     routes: {
@@ -2192,6 +2364,103 @@ declare const _default: {
             deleteRemote(): Promise<any>;
             getRemote(): Promise<any>;
             listTemplates(): Promise<any>;
+        };
+        "sso-wx-reply": ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            list: (filters?: {
+                page?: number;
+                pageSize?: number;
+                trigger?: string;
+                match?: string;
+            }) => Promise<{
+                data: any[];
+                meta: {
+                    pagination: {
+                        page: number;
+                        pageSize: number;
+                        total: number;
+                    };
+                };
+            }>;
+            findOne: (id: number) => Promise<any>;
+            create: (data: {
+                trigger?: string;
+                match?: string;
+                reply_type?: string;
+                text?: string;
+                title?: string;
+                desc?: string;
+                pic_url?: string;
+                link_url?: string;
+                sort?: number;
+                enabled?: boolean;
+            }) => Promise<any>;
+            update: (id: number, data: Record<string, any>) => Promise<any>;
+            remove: (id: number) => Promise<any>;
+            matchText(content: string): Promise<any>;
+            findWelcome(): Promise<any>;
+        };
+        "sso-wx-material": ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            list(filters?: {
+                page?: number;
+                pageSize?: number;
+                type?: string;
+                name?: string;
+            }): Promise<{
+                data: any[];
+                meta: {
+                    pagination: {
+                        page: number;
+                        pageSize: number;
+                        total: number;
+                    };
+                };
+            }>;
+            findOne(id: number): Promise<any>;
+            create(data: {
+                type?: string;
+                name?: string;
+                remark?: string;
+                file?: import('./services/sso-wx-material').UploadFile;
+            }): Promise<any>;
+            remove(id: number): Promise<any>;
+        };
+        "sso-wx-article": ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            list(filters?: {
+                page?: number;
+                pageSize?: number;
+                title?: string;
+                publish_state?: string;
+            }): Promise<{
+                data: any[];
+                meta: {
+                    pagination: {
+                        page: number;
+                        pageSize: number;
+                        total: number;
+                    };
+                };
+            }>;
+            findOne(id: number): Promise<any>;
+            create(data: {
+                title: string;
+                author?: string;
+                digest?: string;
+                content?: string;
+                thumb_media_id?: string;
+                pic_url?: string;
+                content_source_url?: string;
+                show_cover_pic?: boolean;
+            }): Promise<any>;
+            update(id: number, data: Record<string, any>): Promise<any>;
+            publish(id: number): Promise<any>;
+            status(id: number): Promise<any>;
+            remove(id: number): Promise<any>;
         };
     };
     policies: {

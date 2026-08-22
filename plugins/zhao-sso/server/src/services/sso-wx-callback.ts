@@ -31,6 +31,27 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     return hash === signature;
   }
 
+  /**
+   * 组装被动文本回复 XML（text 事件命中关键字/fallback，subscribe 命中 welcome）
+   * article 类型规则被动回复不支持图文，仅回提示文本
+   */
+  function buildTextReply(openid: string, toUser: string, content: string): string {
+    return buildXml({
+      ToUserName: openid,
+      FromUserName: toUser,
+      CreateTime: Math.floor(Date.now() / 1000),
+      MsgType: "text",
+      Content: content,
+    });
+  }
+
+  function replyContent(rule: { reply_type?: string; text?: string; title?: string }): string {
+    if (rule.reply_type === "article") {
+      return rule.text || rule.title || "已收到您的消息";
+    }
+    return rule.text || "";
+  }
+
   return {
     /** 读取服务器配置（供后台展示 / server-url） */
     async getServerConfig() {
@@ -115,17 +136,25 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         }
       }
 
-      // 被动回复：仅关注事件且配置了欢迎语时返回文本回复，其余返回 success
+      // 被动回复：text 关键字/fallback 命中文案，subscribe 命中 welcome 规则（优先于 welcomeReply 兜底）
+      const replySvc = strapi.plugin("zhao-sso").service("sso-wx-reply");
+
+      if (event === "text") {
+        const rule = await replySvc.matchText(msg.Content || "");
+        if (rule && replyContent(rule)) {
+          return buildTextReply(openid, toUser, replyContent(rule));
+        }
+        return "success";
+      }
+
       if (event === "subscribe") {
+        const welcomeRule = await replySvc.findWelcome();
+        if (welcomeRule && replyContent(welcomeRule)) {
+          return buildTextReply(openid, toUser, replyContent(welcomeRule));
+        }
         const { welcomeReply } = await getExtraConfig();
         if (welcomeReply) {
-          return buildXml({
-            ToUserName: openid,
-            FromUserName: toUser,
-            CreateTime: Math.floor(Date.now() / 1000),
-            MsgType: "text",
-            Content: welcomeReply,
-          });
+          return buildTextReply(openid, toUser, welcomeReply);
         }
       }
       return "success";

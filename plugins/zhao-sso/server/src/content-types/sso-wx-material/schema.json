@@ -1,0 +1,21 @@
+{
+  "kind": "collectionType",
+  "collectionName": "sso_wx_materials",
+  "info": {
+    "singularName": "sso-wx-material",
+    "pluralName": "sso-wx-materials",
+    "displayName": "SSO WeChat Material"
+  },
+  "options": { "draftAndPublish": false },
+  "attributes": {
+    "type": {
+      "type": "enumeration",
+      "enum": ["image", "voice", "video", "thumb"],
+      "required": true
+    },
+    "name": { "type": "string" },
+    "media_id": { "type": "string" },
+    "wx_url": { "type": "string" },
+    "remark": { "type": "text" }
+  }
+}

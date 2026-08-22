@@ -22,6 +22,9 @@ import ssoQuotaConfig from "./sso-quota-config";
 import ssoWxEvent from "./sso-wx-event";
 import ssoWxQrcode from "./sso-wx-qrcode";
 import ssoWxMenu from "./sso-wx-menu";
+import ssoWxReply from "./sso-wx-reply";
+import ssoWxMaterial from "./sso-wx-material";
+import ssoWxArticle from "./sso-wx-article";
 
 export default {
   "sso-user": ssoUser,
@@ -48,4 +51,7 @@ export default {
   "sso-wx-event": ssoWxEvent,
   "sso-wx-qrcode": ssoWxQrcode,
   "sso-wx-menu": ssoWxMenu,
+  "sso-wx-reply": ssoWxReply,
+  "sso-wx-material": ssoWxMaterial,
+  "sso-wx-article": ssoWxArticle,
 };

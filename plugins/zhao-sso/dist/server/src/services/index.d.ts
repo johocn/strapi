@@ -722,5 +722,102 @@ declare const _default: {
         getRemote(): Promise<any>;
         listTemplates(): Promise<any>;
     };
+    "sso-wx-reply": ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        list: (filters?: {
+            page?: number;
+            pageSize?: number;
+            trigger?: string;
+            match?: string;
+        }) => Promise<{
+            data: any[];
+            meta: {
+                pagination: {
+                    page: number;
+                    pageSize: number;
+                    total: number;
+                };
+            };
+        }>;
+        findOne: (id: number) => Promise<any>;
+        create: (data: {
+            trigger?: string;
+            match?: string;
+            reply_type?: string;
+            text?: string;
+            title?: string;
+            desc?: string;
+            pic_url?: string;
+            link_url?: string;
+            sort?: number;
+            enabled?: boolean;
+        }) => Promise<any>;
+        update: (id: number, data: Record<string, any>) => Promise<any>;
+        remove: (id: number) => Promise<any>;
+        matchText(content: string): Promise<any>;
+        findWelcome(): Promise<any>;
+    };
+    "sso-wx-material": ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        list(filters?: {
+            page?: number;
+            pageSize?: number;
+            type?: string;
+            name?: string;
+        }): Promise<{
+            data: any[];
+            meta: {
+                pagination: {
+                    page: number;
+                    pageSize: number;
+                    total: number;
+                };
+            };
+        }>;
+        findOne(id: number): Promise<any>;
+        create(data: {
+            type?: string;
+            name?: string;
+            remark?: string;
+            file?: import('./sso-wx-material').UploadFile;
+        }): Promise<any>;
+        remove(id: number): Promise<any>;
+    };
+    "sso-wx-article": ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        list(filters?: {
+            page?: number;
+            pageSize?: number;
+            title?: string;
+            publish_state?: string;
+        }): Promise<{
+            data: any[];
+            meta: {
+                pagination: {
+                    page: number;
+                    pageSize: number;
+                    total: number;
+                };
+            };
+        }>;
+        findOne(id: number): Promise<any>;
+        create(data: {
+            title: string;
+            author?: string;
+            digest?: string;
+            content?: string;
+            thumb_media_id?: string;
+            pic_url?: string;
+            content_source_url?: string;
+            show_cover_pic?: boolean;
+        }): Promise<any>;
+        update(id: number, data: Record<string, any>): Promise<any>;
+        publish(id: number): Promise<any>;
+        status(id: number): Promise<any>;
+        remove(id: number): Promise<any>;
+    };
 };
 export default _default;

@@ -6373,6 +6373,49 @@ export interface PluginZhaoSsoSsoUserProfile
   };
 }
 
+export interface PluginZhaoSsoSsoWxArticle extends Struct.CollectionTypeSchema {
+  collectionName: 'sso_wx_articles';
+  info: {
+    displayName: 'SSO WeChat Article';
+    pluralName: 'sso-wx-articles';
+    singularName: 'sso-wx-article';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    author: Schema.Attribute.String;
+    content: Schema.Attribute.Text;
+    content_source_url: Schema.Attribute.String;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    digest: Schema.Attribute.String;
+    draft_id: Schema.Attribute.String;
+    last_error: Schema.Attribute.Text;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-sso.sso-wx-article'
+    > &
+      Schema.Attribute.Private;
+    pic_url: Schema.Attribute.String;
+    publish_id: Schema.Attribute.String;
+    publish_state: Schema.Attribute.Enumeration<
+      ['draft', 'publishing', 'published', 'failed']
+    > &
+      Schema.Attribute.DefaultTo<'draft'>;
+    publishedAt: Schema.Attribute.DateTime;
+    show_cover_pic: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    thumb_media_id: Schema.Attribute.String;
+    title: Schema.Attribute.String & Schema.Attribute.Required;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    wx_published_at: Schema.Attribute.DateTime;
+  };
+}
+
 export interface PluginZhaoSsoSsoWxEvent extends Struct.CollectionTypeSchema {
   collectionName: 'sso_wx_events';
   info: {
@@ -6406,6 +6449,40 @@ export interface PluginZhaoSsoSsoWxEvent extends Struct.CollectionTypeSchema {
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+  };
+}
+
+export interface PluginZhaoSsoSsoWxMaterial
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'sso_wx_materials';
+  info: {
+    displayName: 'SSO WeChat Material';
+    pluralName: 'sso-wx-materials';
+    singularName: 'sso-wx-material';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-sso.sso-wx-material'
+    > &
+      Schema.Attribute.Private;
+    media_id: Schema.Attribute.String;
+    name: Schema.Attribute.String;
+    publishedAt: Schema.Attribute.DateTime;
+    remark: Schema.Attribute.Text;
+    type: Schema.Attribute.Enumeration<['image', 'voice', 'video', 'thumb']> &
+      Schema.Attribute.Required;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    wx_url: Schema.Attribute.String;
   };
 }
 
@@ -6482,6 +6559,46 @@ export interface PluginZhaoSsoSsoWxQrcode extends Struct.CollectionTypeSchema {
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     wx_url: Schema.Attribute.Text;
+  };
+}
+
+export interface PluginZhaoSsoSsoWxReply extends Struct.CollectionTypeSchema {
+  collectionName: 'sso_wx_replies';
+  info: {
+    displayName: 'SSO WeChat Reply';
+    pluralName: 'sso-wx-replies';
+    singularName: 'sso-wx-reply';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    desc: Schema.Attribute.String;
+    enabled: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    link_url: Schema.Attribute.String;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-sso.sso-wx-reply'
+    > &
+      Schema.Attribute.Private;
+    match: Schema.Attribute.String & Schema.Attribute.Unique;
+    pic_url: Schema.Attribute.String;
+    publishedAt: Schema.Attribute.DateTime;
+    reply_type: Schema.Attribute.Enumeration<['text', 'article']> &
+      Schema.Attribute.DefaultTo<'text'>;
+    sort: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    text: Schema.Attribute.Text;
+    title: Schema.Attribute.String;
+    trigger: Schema.Attribute.Enumeration<['welcome', 'fallback', 'keyword']> &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'keyword'>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
   };
 }
 
@@ -11046,9 +11163,12 @@ declare module '@strapi/strapi' {
       'plugin::zhao-sso.sso-user': PluginZhaoSsoSsoUser;
       'plugin::zhao-sso.sso-user-app-role': PluginZhaoSsoSsoUserAppRole;
       'plugin::zhao-sso.sso-user-profile': PluginZhaoSsoSsoUserProfile;
+      'plugin::zhao-sso.sso-wx-article': PluginZhaoSsoSsoWxArticle;
       'plugin::zhao-sso.sso-wx-event': PluginZhaoSsoSsoWxEvent;
+      'plugin::zhao-sso.sso-wx-material': PluginZhaoSsoSsoWxMaterial;
       'plugin::zhao-sso.sso-wx-menu': PluginZhaoSsoSsoWxMenu;
       'plugin::zhao-sso.sso-wx-qrcode': PluginZhaoSsoSsoWxQrcode;
+      'plugin::zhao-sso.sso-wx-reply': PluginZhaoSsoSsoWxReply;
       'plugin::zhao-studio.ab-experiment': PluginZhaoStudioAbExperiment;
       'plugin::zhao-studio.ab-variant': PluginZhaoStudioAbVariant;
       'plugin::zhao-studio.ad-content': PluginZhaoStudioAdContent;

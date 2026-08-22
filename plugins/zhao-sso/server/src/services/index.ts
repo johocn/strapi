@@ -20,6 +20,9 @@ import ssoStats from "./sso-stats";
 import ssoWxCallback from "./sso-wx-callback";
 import ssoWxQrcode from "./sso-wx-qrcode";
 import ssoWxMenu from "./sso-wx-menu";
+import ssoWxReply from "./sso-wx-reply";
+import ssoWxMaterial from "./sso-wx-material";
+import ssoWxArticle from "./sso-wx-article";
 
 export default {
   "sso-jwt": ssoJwt,
@@ -44,4 +47,7 @@ export default {
   "sso-wx-callback": ssoWxCallback,
   "sso-wx-qrcode": ssoWxQrcode,
   "sso-wx-menu": ssoWxMenu,
+  "sso-wx-reply": ssoWxReply,
+  "sso-wx-material": ssoWxMaterial,
+  "sso-wx-article": ssoWxArticle,
 };

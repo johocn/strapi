@@ -1177,5 +1177,151 @@ declare const _default: {
             };
         };
     };
+    "sso-wx-reply": {
+        schema: {
+            kind: string;
+            collectionName: string;
+            info: {
+                singularName: string;
+                pluralName: string;
+                displayName: string;
+            };
+            options: {
+                draftAndPublish: boolean;
+            };
+            attributes: {
+                trigger: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                    required: boolean;
+                };
+                match: {
+                    type: string;
+                    unique: boolean;
+                };
+                reply_type: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
+                text: {
+                    type: string;
+                };
+                title: {
+                    type: string;
+                };
+                desc: {
+                    type: string;
+                };
+                pic_url: {
+                    type: string;
+                };
+                link_url: {
+                    type: string;
+                };
+                sort: {
+                    type: string;
+                    default: number;
+                };
+                enabled: {
+                    type: string;
+                    default: boolean;
+                };
+            };
+        };
+    };
+    "sso-wx-material": {
+        schema: {
+            kind: string;
+            collectionName: string;
+            info: {
+                singularName: string;
+                pluralName: string;
+                displayName: string;
+            };
+            options: {
+                draftAndPublish: boolean;
+            };
+            attributes: {
+                type: {
+                    type: string;
+                    enum: string[];
+                    required: boolean;
+                };
+                name: {
+                    type: string;
+                };
+                media_id: {
+                    type: string;
+                };
+                wx_url: {
+                    type: string;
+                };
+                remark: {
+                    type: string;
+                };
+            };
+        };
+    };
+    "sso-wx-article": {
+        schema: {
+            kind: string;
+            collectionName: string;
+            info: {
+                singularName: string;
+                pluralName: string;
+                displayName: string;
+            };
+            options: {
+                draftAndPublish: boolean;
+            };
+            attributes: {
+                draft_id: {
+                    type: string;
+                };
+                title: {
+                    type: string;
+                    required: boolean;
+                };
+                author: {
+                    type: string;
+                };
+                digest: {
+                    type: string;
+                };
+                content: {
+                    type: string;
+                };
+                thumb_media_id: {
+                    type: string;
+                };
+                pic_url: {
+                    type: string;
+                };
+                content_source_url: {
+                    type: string;
+                };
+                show_cover_pic: {
+                    type: string;
+                    default: boolean;
+                };
+                publish_state: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
+                publish_id: {
+                    type: string;
+                };
+                wx_published_at: {
+                    type: string;
+                };
+                last_error: {
+                    type: string;
+                };
+            };
+        };
+    };
 };
 export default _default;

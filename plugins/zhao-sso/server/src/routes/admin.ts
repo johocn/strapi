@@ -151,6 +151,26 @@ export default () => ({
     adminRoute("GET", "/wx/menu/remote", "wx-menu.getRemote", "sso.wx.read"),
     adminRoute("DELETE", "/wx/menu/remote", "wx-menu.deleteRemote", "sso.wx.write"),
 
+    // 关键字回复
+    adminRoute("GET", "/wx/replies", "wx-reply.list", "sso.wx.read"),
+    adminRoute("POST", "/wx/replies", "wx-reply.create", "sso.wx.write"),
+    adminRoute("PUT", "/wx/replies/:id", "wx-reply.update", "sso.wx.write"),
+    adminRoute("DELETE", "/wx/replies/:id", "wx-reply.delete", "sso.wx.write"),
+
+    // 永久素材
+    adminRoute("POST", "/wx/materials", "wx-material.create", "sso.wx.write"),
+    adminRoute("GET", "/wx/materials", "wx-material.list", "sso.wx.read"),
+    adminRoute("DELETE", "/wx/materials/:id", "wx-material.delete", "sso.wx.write"),
+
+    // 图文草稿 + 发布
+    adminRoute("POST", "/wx/articles", "wx-article.create", "sso.wx.write"),
+    adminRoute("GET", "/wx/articles", "wx-article.list", "sso.wx.read"),
+    adminRoute("GET", "/wx/articles/:id", "wx-article.findOne", "sso.wx.read"),
+    adminRoute("PUT", "/wx/articles/:id", "wx-article.update", "sso.wx.write"),
+    adminRoute("POST", "/wx/articles/:id/publish", "wx-article.publish", "sso.wx.write"),
+    adminRoute("GET", "/wx/articles/:id/status", "wx-article.status", "sso.wx.read"),
+    adminRoute("DELETE", "/wx/articles/:id", "wx-article.delete", "sso.wx.write"),
+
     // 模板消息终端列表（只读，复用 sso.msg.read）
     adminRoute("GET", "/wx/templates", "wx-menu.listTemplates", "sso.msg.read"),
   ],

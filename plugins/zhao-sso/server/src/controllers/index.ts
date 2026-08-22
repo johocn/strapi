@@ -23,6 +23,9 @@ import msgStats from "./msg-stats";
 import wxCallbackController from "./wx-callback-controller";
 import wxQrcodeController from "./wx-qrcode-controller";
 import wxMenuController from "./wx-menu-controller";
+import wxReplyController from "./wx-reply-controller";
+import wxMaterialController from "./wx-material-controller";
+import wxArticleController from "./wx-article-controller";
 
 export default {
   "auth-controller": authController,
@@ -50,4 +53,7 @@ export default {
   "wx-callback": wxCallbackController,
   "wx-qrcode": wxQrcodeController,
   "wx-menu": wxMenuController,
+  "wx-reply": wxReplyController,
+  "wx-material": wxMaterialController,
+  "wx-article": wxArticleController,
 };
