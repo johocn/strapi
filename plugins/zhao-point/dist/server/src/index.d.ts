@@ -478,6 +478,8 @@ declare const _default: {
             adminAttendance(ctx: any): Promise<void>;
             review(ctx: any): Promise<void>;
             adminClose(ctx: any): Promise<void>;
+            adminArchive(ctx: any): Promise<void>;
+            adminUnarchive(ctx: any): Promise<void>;
             adminReviews(ctx: any): Promise<void>;
             fissionLeaderboard(ctx: any): Promise<void>;
         };
@@ -2729,6 +2731,8 @@ declare const _default: {
                 revisitTriggered: number;
                 repurchaseTriggered: number;
             }>;
+            adminArchive(activityDocumentId: string): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
+            adminUnarchive(activityDocumentId: string): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
             cancel({ userId, activityId }: {
                 userId: number;
                 activityId: number;

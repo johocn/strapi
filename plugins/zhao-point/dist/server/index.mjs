@@ -222,7 +222,7 @@ const collectionName$7 = "activities";
 const info$7 = { "singularName": "activity", "pluralName": "activities", "displayName": "Activity", "description": "线下活动" };
 const options$7 = { "draftAndPublish": false };
 const pluginOptions$2 = { "i18n": { "localized": false } };
-const attributes$7 = { "title": { "type": "string", "required": true }, "type": { "type": "string", "default": "其他" }, "category": { "type": "string", "default": "" }, "tags": { "type": "json" }, "assets": { "type": "json" }, "description": { "type": "text" }, "startTime": { "type": "datetime" }, "endTime": { "type": "datetime" }, "venueName": { "type": "string" }, "lat": { "type": "float" }, "lng": { "type": "float" }, "capacity": { "type": "integer", "required": true, "default": 100 }, "usedCapacity": { "type": "integer", "default": 0 }, "signupStart": { "type": "datetime" }, "signupEnd": { "type": "datetime" }, "checkinMode": { "type": "enumeration", "enum": ["worker_scan", "self", "both"], "default": "both" }, "geoEnforced": { "type": "boolean", "default": false }, "geoRadiusM": { "type": "integer", "default": 500 }, "status": { "type": "enumeration", "enum": ["draft", "signup_open", "ongoing", "ended"], "default": "draft" }, "channelScope": { "type": "enumeration", "enum": ["all", "specific"], "default": "all" }, "channelIds": { "type": "json" }, "pointsCost": { "type": "integer", "default": 0 }, "pricingMode": { "type": "enumeration", "enum": ["flat", "tier", "factor"], "default": "flat" }, "feeTiers": { "type": "json" }, "feeFactors": { "type": "json" }, "feeCollectAt": { "type": "enumeration", "enum": ["signup", "checkin"], "default": "signup" }, "shareRewardPoints": { "type": "integer" }, "preUnlockArticles": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.article" }, "preUnlockLessons": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-course.course-lesson" }, "learningPackageArticles": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.article" }, "learningPackageLessons": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-course.course-lesson" }, "belongsToSeries": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.activity-series", "inversedBy": "activities" }, "formConfig": { "type": "json" }, "remindLeadMinutes": { "type": "integer", "default": 1440, "min": -1 }, "lecturer": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.lecturer", "inversedBy": "activities" }, "venue": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.venue", "inversedBy": "activities" }, "cashPrice": { "type": "decimal", "default": 0 }, "settleLecturer": { "type": "decimal", "default": 0 }, "settleVenue": { "type": "decimal", "default": 0 } };
+const attributes$7 = { "title": { "type": "string", "required": true }, "type": { "type": "string", "default": "其他" }, "category": { "type": "string", "default": "" }, "tags": { "type": "json" }, "assets": { "type": "json" }, "description": { "type": "text" }, "startTime": { "type": "datetime" }, "endTime": { "type": "datetime" }, "venueName": { "type": "string" }, "lat": { "type": "float" }, "lng": { "type": "float" }, "capacity": { "type": "integer", "required": true, "default": 100 }, "usedCapacity": { "type": "integer", "default": 0 }, "signupStart": { "type": "datetime" }, "signupEnd": { "type": "datetime" }, "checkinMode": { "type": "enumeration", "enum": ["worker_scan", "self", "both"], "default": "both" }, "geoEnforced": { "type": "boolean", "default": false }, "geoRadiusM": { "type": "integer", "default": 500 }, "status": { "type": "enumeration", "enum": ["draft", "signup_open", "ongoing", "ended", "archived"], "default": "draft" }, "channelScope": { "type": "enumeration", "enum": ["all", "specific"], "default": "all" }, "channelIds": { "type": "json" }, "pointsCost": { "type": "integer", "default": 0 }, "pricingMode": { "type": "enumeration", "enum": ["flat", "tier", "factor"], "default": "flat" }, "feeTiers": { "type": "json" }, "feeFactors": { "type": "json" }, "feeCollectAt": { "type": "enumeration", "enum": ["signup", "checkin"], "default": "signup" }, "shareRewardPoints": { "type": "integer" }, "preUnlockArticles": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.article" }, "preUnlockLessons": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-course.course-lesson" }, "learningPackageArticles": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.article" }, "learningPackageLessons": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-course.course-lesson" }, "belongsToSeries": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.activity-series", "inversedBy": "activities" }, "formConfig": { "type": "json" }, "remindLeadMinutes": { "type": "integer", "default": 1440, "min": -1 }, "lecturer": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.lecturer", "inversedBy": "activities" }, "venue": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.venue", "inversedBy": "activities" }, "cashPrice": { "type": "decimal", "default": 0 }, "settleLecturer": { "type": "decimal", "default": 0 }, "settleVenue": { "type": "decimal", "default": 0 } };
 const activity$2 = {
   kind: kind$7,
   collectionName: collectionName$7,
@@ -2103,6 +2103,26 @@ const activity$1 = ({ strapi: strapi2 }) => {
       try {
         const result = await activitySvc().closeActivity(ctx.params.documentId);
         ctx.body = wrap$5(result);
+      } catch (e) {
+        ctx.status = e.status || 400;
+        ctx.body = { error: e.message };
+      }
+    },
+    // POST /adm/activities/:documentId/archive      归档 ended 活动(幂等)
+    async adminArchive(ctx) {
+      try {
+        const updated = await activitySvc().adminArchive(ctx.params.documentId);
+        ctx.body = wrap$5(updated);
+      } catch (e) {
+        ctx.status = e.status || 400;
+        ctx.body = { error: e.message };
+      }
+    },
+    // POST /adm/activities/:documentId/unarchive    恢复 archived 活动(幂等)
+    async adminUnarchive(ctx) {
+      try {
+        const updated = await activitySvc().adminUnarchive(ctx.params.documentId);
+        ctx.body = wrap$5(updated);
       } catch (e) {
         ctx.status = e.status || 400;
         ctx.body = { error: e.message };
@@ -35388,6 +35408,27 @@ const activity = ({ strapi: strapi2 }) => ({
     }
     return { ok: true, closed: true, reviewTriggered, revisitTriggered, repurchaseTriggered };
   },
+  /** 管理端归档: 仅 ended -> archived; 幂等(已是 archived 直接返回) */
+  async adminArchive(activityDocumentId) {
+    const act = await strapi2.documents(ACTIVITY_UID$5).findOne({ documentId: activityDocumentId });
+    if (!act) throw new Error("活动不存在");
+    if (act.status === "archived") return act;
+    if (act.status !== "ended") throw new Error("仅已结束活动可归档");
+    return strapi2.documents(ACTIVITY_UID$5).update({
+      documentId: activityDocumentId,
+      data: { status: "archived" }
+    });
+  },
+  /** 管理端恢复: archived -> ended; 幂等(非 archived 抛错) */
+  async adminUnarchive(activityDocumentId) {
+    const act = await strapi2.documents(ACTIVITY_UID$5).findOne({ documentId: activityDocumentId });
+    if (!act) throw new Error("活动不存在");
+    if (act.status !== "archived") throw new Error("仅已归档活动可恢复");
+    return strapi2.documents(ACTIVITY_UID$5).update({
+      documentId: activityDocumentId,
+      data: { status: "ended" }
+    });
+  },
   async cancel({ userId, activityId }) {
     const signup = await strapi2.db.query(SIGNS_UID$3).findOne({
       where: { user: userId, activity: activityId, status: { $in: ["active", "waiting"] } }
@@ -36437,6 +36478,8 @@ const contentApi = () => ({
     channelScopeRoute("GET", "/adm/activities/:documentId/attendance", "activity.adminAttendance", "activity.read"),
     channelScopeRoute("GET", "/adm/activity-share/leaderboard", "activity.fissionLeaderboard", "activity.read"),
     channelScopeRoute("POST", "/adm/activities/:documentId/close", "activity.adminClose", "activity.update"),
+    channelScopeRoute("POST", "/adm/activities/:documentId/archive", "activity.adminArchive", "activity.update"),
+    channelScopeRoute("POST", "/adm/activities/:documentId/unarchive", "activity.adminUnarchive", "activity.update"),
     channelScopeRoute("GET", "/adm/activity-reviews", "activity.adminReviews", "activity.read"),
     channelScopeRoute("GET", "/adm/activity-overview", "activity-stats.overview", "activity.read"),
     channelScopeRoute("GET", "/adm/ledgers", "ledger.list", "activity.read"),

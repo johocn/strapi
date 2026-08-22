@@ -34,6 +34,10 @@ declare const _default: ({ strapi }: {
         revisitTriggered: number;
         repurchaseTriggered: number;
     }>;
+    /** 管理端归档: 仅 ended -> archived; 幂等(已是 archived 直接返回) */
+    adminArchive(activityDocumentId: string): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
+    /** 管理端恢复: archived -> ended; 幂等(非 archived 抛错) */
+    adminUnarchive(activityDocumentId: string): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
     cancel({ userId, activityId }: {
         userId: number;
         activityId: number;

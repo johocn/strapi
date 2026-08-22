@@ -92,6 +92,8 @@ declare const _default: {
         adminAttendance(ctx: any): Promise<void>;
         review(ctx: any): Promise<void>;
         adminClose(ctx: any): Promise<void>;
+        adminArchive(ctx: any): Promise<void>;
+        adminUnarchive(ctx: any): Promise<void>;
         adminReviews(ctx: any): Promise<void>;
         fissionLeaderboard(ctx: any): Promise<void>;
     };

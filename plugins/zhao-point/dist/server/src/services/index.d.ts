@@ -753,6 +753,8 @@ declare const _default: {
             revisitTriggered: number;
             repurchaseTriggered: number;
         }>;
+        adminArchive(activityDocumentId: string): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
+        adminUnarchive(activityDocumentId: string): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
         cancel({ userId, activityId }: {
             userId: number;
             activityId: number;

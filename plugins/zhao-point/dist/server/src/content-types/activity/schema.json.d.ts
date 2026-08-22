@@ -23,7 +23,7 @@ declare const _default: {
     "checkinMode": { "type": "enumeration", "enum": ["worker_scan", "self", "both"], "default": "both" },
     "geoEnforced": { "type": "boolean", "default": false },
     "geoRadiusM": { "type": "integer", "default": 500 },
-    "status": { "type": "enumeration", "enum": ["draft", "signup_open", "ongoing", "ended"], "default": "draft" },
+    "status": { "type": "enumeration", "enum": ["draft", "signup_open", "ongoing", "ended", "archived"], "default": "draft" },
     "channelScope": { "type": "enumeration", "enum": ["all", "specific"], "default": "all" },
     "channelIds": { "type": "json" },
     "pointsCost": { "type": "integer", "default": 0 },

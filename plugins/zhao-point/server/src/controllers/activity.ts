@@ -365,6 +365,27 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     }
   },
 
+  // POST /adm/activities/:documentId/archive      归档 ended 活动(幂等)
+  async adminArchive(ctx: any) {
+    try {
+      const updated = await activitySvc().adminArchive(ctx.params.documentId);
+      ctx.body = wrap(updated);
+    } catch (e: any) {
+      ctx.status = (e as any).status || 400;
+      ctx.body = { error: e.message };
+    }
+  },
+  // POST /adm/activities/:documentId/unarchive    恢复 archived 活动(幂等)
+  async adminUnarchive(ctx: any) {
+    try {
+      const updated = await activitySvc().adminUnarchive(ctx.params.documentId);
+      ctx.body = wrap(updated);
+    } catch (e: any) {
+      ctx.status = (e as any).status || 400;
+      ctx.body = { error: e.message };
+    }
+  },
+
   // GET /adm/activity-reviews （评价看板：列表 + 汇总；?activityDId= 可过滤）
   async adminReviews(ctx: any) {
     try {

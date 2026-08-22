@@ -294,6 +294,28 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     return { ok: true, closed: true, reviewTriggered, revisitTriggered, repurchaseTriggered };
   },
 
+  /** 管理端归档: 仅 ended -> archived; 幂等(已是 archived 直接返回) */
+  async adminArchive(activityDocumentId: string) {
+    const act = await strapi.documents(ACTIVITY_UID).findOne({ documentId: activityDocumentId });
+    if (!act) throw new Error("活动不存在");
+    if (act.status === "archived") return act;
+    if (act.status !== "ended") throw new Error("仅已结束活动可归档");
+    return strapi.documents(ACTIVITY_UID).update({
+      documentId: activityDocumentId,
+      data: { status: "archived" },
+    });
+  },
+  /** 管理端恢复: archived -> ended; 幂等(非 archived 抛错) */
+  async adminUnarchive(activityDocumentId: string) {
+    const act = await strapi.documents(ACTIVITY_UID).findOne({ documentId: activityDocumentId });
+    if (!act) throw new Error("活动不存在");
+    if (act.status !== "archived") throw new Error("仅已归档活动可恢复");
+    return strapi.documents(ACTIVITY_UID).update({
+      documentId: activityDocumentId,
+      data: { status: "ended" },
+    });
+  },
+
   async cancel({ userId, activityId }: { userId: number; activityId: number }) {
     const signup = await strapi.db.query(SIGNS_UID).findOne({
       where: { user: userId, activity: activityId, status: { $in: ["active", "waiting"] } },

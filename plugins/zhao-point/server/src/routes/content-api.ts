@@ -169,6 +169,8 @@ export default () => ({
     channelScopeRoute("GET", "/adm/activities/:documentId/attendance", "activity.adminAttendance", "activity.read"),
     channelScopeRoute("GET", "/adm/activity-share/leaderboard", "activity.fissionLeaderboard", "activity.read"),
     channelScopeRoute("POST", "/adm/activities/:documentId/close", "activity.adminClose", "activity.update"),
+    channelScopeRoute("POST", "/adm/activities/:documentId/archive", "activity.adminArchive", "activity.update"),
+    channelScopeRoute("POST", "/adm/activities/:documentId/unarchive", "activity.adminUnarchive", "activity.update"),
     channelScopeRoute("GET", "/adm/activity-reviews", "activity.adminReviews", "activity.read"),
     channelScopeRoute("GET", "/adm/activity-overview", "activity-stats.overview", "activity.read"),
     channelScopeRoute("GET", "/adm/ledgers", "ledger.list", "activity.read"),
