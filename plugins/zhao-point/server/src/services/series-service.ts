@@ -46,7 +46,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async duplicate(activityDocumentId: string) {
     const src = await strapi.documents(ACTIVITY_UID).findOne({
       documentId: activityDocumentId,
-      populate: { preUnlockArticles: true, preUnlockLessons: true },
+      populate: { preUnlockArticles: true, preUnlockLessons: true, lecturer: true, venue: true },
     } as any);
     if (!src) throw new Error("活动不存在");
 
@@ -72,6 +72,14 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       channelScope: src.channelScope,
       channelIds: src.channelIds,
       belongsToSeries: src.belongsToSeries?.id ?? src.belongsToSeries ?? null,
+      formConfig: src.formConfig ?? null,
+      category: src.category ?? "",
+      tags: src.tags ?? [],
+      assets: src.assets ?? null,
+      cashPrice: src.cashPrice ?? 0,
+      settleLecturer: src.settleLecturer ?? 0,
+      settleVenue: src.settleVenue ?? 0,
+      remindLeadMinutes: src.remindLeadMinutes ?? 1440,
       startTime: null,
       endTime: null,
       usedCapacity: 0,
@@ -83,6 +91,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     if ((src.preUnlockLessons || []).length) {
       copy.preUnlockLessons = src.preUnlockLessons.map((a: any) => a.id ?? a);
     }
+    if (src.lecturer) copy.lecturer = { connect: [{ id: src.lecturer?.id ?? src.lecturer }] };
+    if (src.venue) copy.venue = { connect: [{ id: src.venue?.id ?? src.venue }] };
     return strapi.documents(ACTIVITY_UID).create({ data: copy });
   },
 
