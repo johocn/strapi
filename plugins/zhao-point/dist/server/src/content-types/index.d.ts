@@ -1010,6 +1010,18 @@ declare const _default: {
                     target: string;
                     inversedBy: string;
                 };
+                cashPrice: {
+                    type: string;
+                    default: number;
+                };
+                settleLecturer: {
+                    type: string;
+                    default: number;
+                };
+                settleVenue: {
+                    type: string;
+                    default: number;
+                };
             };
         };
     };
@@ -1267,6 +1279,26 @@ declare const _default: {
                     type: string;
                     default: number;
                 };
+                cashRevenue: {
+                    type: string;
+                    default: number;
+                };
+                cashExpense: {
+                    type: string;
+                    default: number;
+                };
+                cashNet: {
+                    type: string;
+                    default: number;
+                };
+                settleStatus: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
+                settledAt: {
+                    type: string;
+                };
                 summary: {
                     type: string;
                 };
@@ -1316,6 +1348,15 @@ declare const _default: {
                     target: string;
                     mappedBy: string;
                 };
+                cashMode: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
+                cashFee: {
+                    type: string;
+                    default: number;
+                };
             };
         };
     };
@@ -1364,6 +1405,15 @@ declare const _default: {
                     relation: string;
                     target: string;
                     mappedBy: string;
+                };
+                cashMode: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
+                cashFee: {
+                    type: string;
+                    default: number;
                 };
             };
         };

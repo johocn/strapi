@@ -15,6 +15,11 @@ declare const _default: {
     "signinCostPoints": { "type": "integer", "default": 0 },
     "referralCostPoints": { "type": "integer", "default": 0 },
     "netPoints": { "type": "integer", "default": 0 },
+    "cashRevenue": { "type": "decimal", "default": 0 },
+    "cashExpense": { "type": "decimal", "default": 0 },
+    "cashNet": { "type": "decimal", "default": 0 },
+    "settleStatus": { "type": "enumeration", "enum": ["pending", "settled"], "default": "pending" },
+    "settledAt": { "type": "datetime" },
     "summary": { "type": "json" },
     "detail": { "type": "json" }
   }

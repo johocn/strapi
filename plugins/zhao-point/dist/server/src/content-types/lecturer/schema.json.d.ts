@@ -9,7 +9,9 @@ declare const _default: {
     "desc": { "type": "text" },
     "defaultBufferMin": { "type": "integer", "default": 30 },
     "disabled": { "type": "boolean", "default": false },
-    "activities": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-point.activity", "mappedBy": "lecturer" }
+    "activities": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-point.activity", "mappedBy": "lecturer" },
+    "cashMode": { "type": "enumeration", "enum": ["none", "flat"], "default": "none" },
+    "cashFee": { "type": "decimal", "default": 0 }
   }
 };
 

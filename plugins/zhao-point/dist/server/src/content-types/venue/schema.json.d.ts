@@ -11,7 +11,9 @@ declare const _default: {
     "lat": { "type": "float" },
     "lng": { "type": "float" },
     "disabled": { "type": "boolean", "default": false },
-    "activities": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-point.activity", "mappedBy": "venue" }
+    "activities": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-point.activity", "mappedBy": "venue" },
+    "cashMode": { "type": "enumeration", "enum": ["none", "flat"], "default": "none" },
+    "cashFee": { "type": "decimal", "default": 0 }
   }
 };
 
