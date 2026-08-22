@@ -236,7 +236,7 @@ const collectionName$4 = "activities";
 const info$4 = { "singularName": "activity", "pluralName": "activities", "displayName": "Activity", "description": "线下活动" };
 const options$4 = { "draftAndPublish": false };
 const pluginOptions = { "i18n": { "localized": false } };
-const attributes$4 = { "title": { "type": "string", "required": true }, "type": { "type": "string", "default": "其他" }, "description": { "type": "text" }, "startTime": { "type": "datetime" }, "endTime": { "type": "datetime" }, "venueName": { "type": "string" }, "lat": { "type": "float" }, "lng": { "type": "float" }, "capacity": { "type": "integer", "required": true, "default": 100 }, "usedCapacity": { "type": "integer", "default": 0 }, "signupStart": { "type": "datetime" }, "signupEnd": { "type": "datetime" }, "checkinMode": { "type": "enumeration", "enum": ["worker_scan", "self", "both"], "default": "both" }, "geoEnforced": { "type": "boolean", "default": false }, "geoRadiusM": { "type": "integer", "default": 500 }, "status": { "type": "enumeration", "enum": ["draft", "signup_open", "ongoing", "ended"], "default": "draft" }, "channelScope": { "type": "enumeration", "enum": ["all", "specific"], "default": "all" }, "channelIds": { "type": "json" }, "pointsCost": { "type": "integer", "default": 0 }, "pricingMode": { "type": "enumeration", "enum": ["flat", "tier", "factor"], "default": "flat" }, "feeTiers": { "type": "json" }, "feeFactors": { "type": "json" }, "feeCollectAt": { "type": "enumeration", "enum": ["signup", "checkin"], "default": "signup" }, "shareRewardPoints": { "type": "integer" }, "preUnlockArticles": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.article" }, "preUnlockLessons": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-course.course-lesson" }, "learningPackageArticles": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.article" }, "learningPackageLessons": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-course.course-lesson" }, "belongsToSeries": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.activity-series", "inversedBy": "activities" }, "formConfig": { "type": "json" } };
+const attributes$4 = { "title": { "type": "string", "required": true }, "type": { "type": "string", "default": "其他" }, "description": { "type": "text" }, "startTime": { "type": "datetime" }, "endTime": { "type": "datetime" }, "venueName": { "type": "string" }, "lat": { "type": "float" }, "lng": { "type": "float" }, "capacity": { "type": "integer", "required": true, "default": 100 }, "usedCapacity": { "type": "integer", "default": 0 }, "signupStart": { "type": "datetime" }, "signupEnd": { "type": "datetime" }, "checkinMode": { "type": "enumeration", "enum": ["worker_scan", "self", "both"], "default": "both" }, "geoEnforced": { "type": "boolean", "default": false }, "geoRadiusM": { "type": "integer", "default": 500 }, "status": { "type": "enumeration", "enum": ["draft", "signup_open", "ongoing", "ended"], "default": "draft" }, "channelScope": { "type": "enumeration", "enum": ["all", "specific"], "default": "all" }, "channelIds": { "type": "json" }, "pointsCost": { "type": "integer", "default": 0 }, "pricingMode": { "type": "enumeration", "enum": ["flat", "tier", "factor"], "default": "flat" }, "feeTiers": { "type": "json" }, "feeFactors": { "type": "json" }, "feeCollectAt": { "type": "enumeration", "enum": ["signup", "checkin"], "default": "signup" }, "shareRewardPoints": { "type": "integer" }, "preUnlockArticles": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.article" }, "preUnlockLessons": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-course.course-lesson" }, "learningPackageArticles": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.article" }, "learningPackageLessons": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-course.course-lesson" }, "belongsToSeries": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.activity-series", "inversedBy": "activities" }, "formConfig": { "type": "json" }, "remindLeadMinutes": { "type": "integer", "default": 1440, "min": -1 } };
 const activity$2 = {
   kind: kind$4,
   collectionName: collectionName$4,
@@ -34950,6 +34950,22 @@ const activity = ({ strapi: strapi2 }) => ({
           ]
         }
       });
+      try {
+        await this.notifyInApp(userId, act.id, "activity.waitlisted", { name: act.title, startTime: act.startTime, position: waitCount + 1 }, `activity:waitlisted:${userId}:${act.id}`);
+        const sop = strapi2.plugin("zhao-sso")?.service("sso-sop");
+        if (sop) {
+          const sso = await sop.resolveSsoUserForUpUser(userId);
+          if (sso) {
+            await sop.trigger("activity.waitlisted", {
+              user: sso.id,
+              payload: { activity: { name: act.title, startTime: act.startTime }, position: waitCount + 1 },
+              schedules: [{ templateCode: "act_waitlisted", scene: "activity.waitlisted", dedupeKey: `activity:waitlisted:${userId}:${act.id}` }]
+            });
+          }
+        }
+      } catch (e) {
+        strapi2.log.warn(`[zhao-point:activity] waitlisted notify failed (user=${userId}): ${e.message}`);
+      }
       return { ok: true, waitlisted: true, position: waitCount + 1 };
     }
     let resolved = await feeSvc().resolveFee(act, userId);
@@ -34975,6 +34991,10 @@ const activity = ({ strapi: strapi2 }) => ({
     await strapi2.db.query(SIGNS_UID$2).create({ data: { user: userId, activity: act.id, status: "active", signupAt: /* @__PURE__ */ new Date(), pointsCharged: feeCollectAt === "signup" ? cost : 0, feeTierId: resolved.tierId ?? null, ...storedFormData ? { formData: storedFormData } : {} } });
     await grantPoints(strapi2, userId, "activity_signup", "活动报名");
     await grantShareReward(strapi2, userId, act);
+    await this.notifyInApp(userId, act.id, "activity.confirm", { name: act.title, startTime: act.startTime }, `activity:confirm:${userId}:${act.id}`);
+    if (act.startTime && Number(act.remindLeadMinutes ?? 1440) >= 0) {
+      await this.notifyInApp(userId, act.id, "activity.before", { name: act.title, startTime: act.startTime }, `activity:before:${userId}:${act.id}`);
+    }
     for (const lesson of act.preUnlockLessons || []) {
       if (lesson?.course?.id) await grantCourseTrial(strapi2, userId, lesson.course.id);
     }
@@ -34985,8 +35005,9 @@ const activity = ({ strapi: strapi2 }) => ({
         if (!sso) return { ok: true };
         const startTime = act.startTime;
         const schedules = [{ templateCode: "act_confirm", scene: "activity.confirm" }];
-        if (startTime) {
-          const beforeAt = new Date(new Date(startTime).getTime() - 24 * 3600 * 1e3).toISOString();
+        const leadMin = Number(act.remindLeadMinutes ?? 1440);
+        if (startTime && leadMin >= 0) {
+          const beforeAt = new Date(new Date(startTime).getTime() - Math.max(leadMin, 0) * 6e4).toISOString();
           if (new Date(beforeAt).getTime() > Date.now()) {
             schedules.push({ templateCode: "act_before", scene: "activity.before", scheduledAt: beforeAt });
           }
@@ -35054,6 +35075,24 @@ const activity = ({ strapi: strapi2 }) => ({
     });
     if (!signup) throw new Error("未报名");
     await strapi2.db.query(SIGNS_UID$2).update({ where: { id: signup.id }, data: { status: "cancelled" } });
+    try {
+      const act = await strapi2.db.query(ACTIVITY_UID$3).findOne({ where: { id: activityId } });
+      const params = { name: act?.title ?? "", startTime: act?.startTime ?? null };
+      await this.notifyInApp(userId, activityId, "activity.cancelled", params, `activity:cancelled:${userId}:${activityId}`);
+      const sop = strapi2.plugin("zhao-sso")?.service("sso-sop");
+      if (sop) {
+        const sso = await sop.resolveSsoUserForUpUser(userId);
+        if (sso) {
+          await sop.trigger("activity.cancelled", {
+            user: sso.id,
+            payload: { activity: params },
+            schedules: [{ templateCode: "act_cancelled", scene: "activity.cancelled", dedupeKey: `activity:cancelled:${userId}:${activityId}` }]
+          });
+        }
+      }
+    } catch (e) {
+      strapi2.log.warn(`[zhao-point:activity] cancel notify failed (user=${userId}): ${e.message}`);
+    }
     if (signup.status === "active") {
       const act = await strapi2.db.query(ACTIVITY_UID$3).findOne({ where: { id: activityId } });
       if (signup.pointsCharged > 0) {
@@ -35127,8 +35166,22 @@ const activity = ({ strapi: strapi2 }) => ({
         params: { name: act.title, time: act.startTime },
         dedupeKey: `activity:promote:${upUserId}:${activityId}`
       });
+      await this.notifyInApp(upUserId, activityId, "activity.promoted", { name: act.title, startTime: act.startTime }, `activity:promoted:${upUserId}:${activityId}`);
     } catch (e) {
       strapi2.log.warn(`[zhao-point:activity] promote notify failed (user=${upUserId}): ${e.message}`);
+    }
+  },
+  /** 站内信发送助手：resolve sso-user → sso-msg.sendInApp；无 sso/失败降级不断链 */
+  async notifyInApp(upUserId, activityId, scene, params, dedupeKey) {
+    try {
+      const sop = strapi2.plugin("zhao-sso")?.service("sso-sop");
+      const msg = strapi2.plugin("zhao-sso")?.service("sso-msg");
+      if (!sop || !msg) return;
+      const sso = await sop.resolveSsoUserForUpUser(upUserId);
+      if (!sso) return;
+      await msg.sendInApp({ user: sso.id, scene, params, dedupeKey });
+    } catch (e) {
+      strapi2.log.warn(`[zhao-point:activity] sendInApp failed (${scene}, user=${upUserId}): ${e.message}`);
     }
   },
   async checkin({ userId, activityId, method, lat, lng }) {

@@ -983,6 +983,11 @@ declare const _default: {
                 formConfig: {
                     type: string;
                 };
+                remindLeadMinutes: {
+                    type: string;
+                    default: number;
+                    min: number;
+                };
             };
         };
     };

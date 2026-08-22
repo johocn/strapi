@@ -34,6 +34,7 @@
     "learningPackageArticles": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.article" },
     "learningPackageLessons": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-course.course-lesson" },
     "belongsToSeries": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.activity-series", "inversedBy": "activities" },
-    "formConfig": { "type": "json" }
+    "formConfig": { "type": "json" },
+    "remindLeadMinutes": { "type": "integer", "default": 1440, "min": -1 }
   }
 }

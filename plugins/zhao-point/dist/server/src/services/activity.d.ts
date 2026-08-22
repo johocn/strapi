@@ -49,6 +49,8 @@ declare const _default: ({ strapi }: {
     }>;
     /** 递补转正即时通知：resolve sso 用户 → sso-msg.sendNow(act_promoted)，幂等；匹配不到/模板缺失降级不断链 */
     notifyPromoted(upUserId: number, activityId: number): Promise<void>;
+    /** 站内信发送助手：resolve sso-user → sso-msg.sendInApp；无 sso/失败降级不断链 */
+    notifyInApp(upUserId: number, activityId: number, scene: string, params: Record<string, any>, dedupeKey: string): Promise<void>;
     checkin({ userId, activityId, method, lat, lng }: {
         userId: number;
         activityId: string;

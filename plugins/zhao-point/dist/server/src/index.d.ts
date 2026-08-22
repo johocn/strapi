@@ -1496,6 +1496,11 @@ declare const _default: {
                     formConfig: {
                         type: string;
                     };
+                    remindLeadMinutes: {
+                        type: string;
+                        default: number;
+                        min: number;
+                    };
                 };
             };
         };
@@ -2460,6 +2465,7 @@ declare const _default: {
                 promoted: number;
             }>;
             notifyPromoted(upUserId: number, activityId: number): Promise<void>;
+            notifyInApp(upUserId: number, activityId: number, scene: string, params: Record<string, any>, dedupeKey: string): Promise<void>;
             checkin({ userId, activityId, method, lat, lng }: {
                 userId: number;
                 activityId: string;
