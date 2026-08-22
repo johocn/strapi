@@ -4218,6 +4218,54 @@ export interface PluginZhaoPointActivityAttendance
   };
 }
 
+export interface PluginZhaoPointActivityLedger
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'activity_ledgers';
+  info: {
+    description: '\u6D3B\u52A8\u7ECF\u8425\u53F0\u8D26/\u5F52\u6863\u5FEB\u7167';
+    displayName: 'Activity Ledger';
+    pluralName: 'activity-ledgers';
+    singularName: 'activity-ledger';
+  };
+  options: {
+    comment: '\u6D3B\u52A8\u7ED3\u675F\u65F6\u751F\u6210\u7684\u4E0D\u53EF\u53D8\u5BF9\u8D26\u5FEB\u7167\uFF0CsnapshotNo \u81EA\u589E';
+    draftAndPublish: false;
+  };
+  attributes: {
+    activity: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-point.activity'
+    >;
+    activityDocumentId: Schema.Attribute.String;
+    activityTitle: Schema.Attribute.String;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    detail: Schema.Attribute.JSON;
+    generatedAt: Schema.Attribute.DateTime;
+    generatedBy: Schema.Attribute.Relation<'manyToOne', 'admin::user'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-point.activity-ledger'
+    > &
+      Schema.Attribute.Private;
+    netPoints: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    publishedAt: Schema.Attribute.DateTime;
+    referralCostPoints: Schema.Attribute.Integer &
+      Schema.Attribute.DefaultTo<0>;
+    revenuePoints: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    signinCostPoints: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    snapshotNo: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<1>;
+    source: Schema.Attribute.Enumeration<['auto', 'manual']> &
+      Schema.Attribute.DefaultTo<'auto'>;
+    summary: Schema.Attribute.JSON;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
 export interface PluginZhaoPointActivityReferralReward
   extends Struct.CollectionTypeSchema {
   collectionName: 'activity_referral_rewards';
@@ -10828,6 +10876,7 @@ declare module '@strapi/strapi' {
       'plugin::zhao-oss.sync-record': PluginZhaoOssSyncRecord;
       'plugin::zhao-point.activity': PluginZhaoPointActivity;
       'plugin::zhao-point.activity-attendance': PluginZhaoPointActivityAttendance;
+      'plugin::zhao-point.activity-ledger': PluginZhaoPointActivityLedger;
       'plugin::zhao-point.activity-referral-reward': PluginZhaoPointActivityReferralReward;
       'plugin::zhao-point.activity-series': PluginZhaoPointActivitySeries;
       'plugin::zhao-point.activity-signup': PluginZhaoPointActivitySignup;
