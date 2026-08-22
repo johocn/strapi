@@ -872,6 +872,13 @@ declare const _default: {
                     type: string;
                     default: string;
                 };
+                category: {
+                    type: string;
+                    default: string;
+                };
+                tags: {
+                    type: string;
+                };
                 description: {
                     type: string;
                 };

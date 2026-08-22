@@ -3,6 +3,7 @@ declare const _default: ({ strapi }: {
     strapi: Core.Strapi;
 }) => {
     list(ctx: any): Promise<void>;
+    categories(ctx: any): Promise<void>;
     detail(ctx: any): Promise<void>;
     signup(ctx: any): Promise<void>;
     cancel(ctx: any): Promise<void>;

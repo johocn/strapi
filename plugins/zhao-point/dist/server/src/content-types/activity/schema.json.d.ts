@@ -7,6 +7,8 @@ declare const _default: {
   "attributes": {
     "title": { "type": "string", "required": true },
     "type": { "type": "string", "default": "其他" },
+    "category": { "type": "string", "default": "" },
+    "tags": { "type": "json" },
     "description": { "type": "text" },
     "startTime": { "type": "datetime" },
     "endTime": { "type": "datetime" },

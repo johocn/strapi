@@ -462,6 +462,7 @@ declare const _default: {
             strapi: import('@strapi/types/dist/core').Strapi;
         }) => {
             list(ctx: any): Promise<void>;
+            categories(ctx: any): Promise<void>;
             detail(ctx: any): Promise<void>;
             signup(ctx: any): Promise<void>;
             cancel(ctx: any): Promise<void>;
@@ -1418,6 +1419,13 @@ declare const _default: {
                     type: {
                         type: string;
                         default: string;
+                    };
+                    category: {
+                        type: string;
+                        default: string;
+                    };
+                    tags: {
+                        type: string;
                     };
                     description: {
                         type: string;

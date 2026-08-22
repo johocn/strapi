@@ -236,7 +236,7 @@ const collectionName$6 = "activities";
 const info$6 = { "singularName": "activity", "pluralName": "activities", "displayName": "Activity", "description": "线下活动" };
 const options$6 = { "draftAndPublish": false };
 const pluginOptions$2 = { "i18n": { "localized": false } };
-const attributes$6 = { "title": { "type": "string", "required": true }, "type": { "type": "string", "default": "其他" }, "description": { "type": "text" }, "startTime": { "type": "datetime" }, "endTime": { "type": "datetime" }, "venueName": { "type": "string" }, "lat": { "type": "float" }, "lng": { "type": "float" }, "capacity": { "type": "integer", "required": true, "default": 100 }, "usedCapacity": { "type": "integer", "default": 0 }, "signupStart": { "type": "datetime" }, "signupEnd": { "type": "datetime" }, "checkinMode": { "type": "enumeration", "enum": ["worker_scan", "self", "both"], "default": "both" }, "geoEnforced": { "type": "boolean", "default": false }, "geoRadiusM": { "type": "integer", "default": 500 }, "status": { "type": "enumeration", "enum": ["draft", "signup_open", "ongoing", "ended"], "default": "draft" }, "channelScope": { "type": "enumeration", "enum": ["all", "specific"], "default": "all" }, "channelIds": { "type": "json" }, "pointsCost": { "type": "integer", "default": 0 }, "pricingMode": { "type": "enumeration", "enum": ["flat", "tier", "factor"], "default": "flat" }, "feeTiers": { "type": "json" }, "feeFactors": { "type": "json" }, "feeCollectAt": { "type": "enumeration", "enum": ["signup", "checkin"], "default": "signup" }, "shareRewardPoints": { "type": "integer" }, "preUnlockArticles": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.article" }, "preUnlockLessons": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-course.course-lesson" }, "learningPackageArticles": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.article" }, "learningPackageLessons": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-course.course-lesson" }, "belongsToSeries": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.activity-series", "inversedBy": "activities" }, "formConfig": { "type": "json" }, "remindLeadMinutes": { "type": "integer", "default": 1440, "min": -1 }, "lecturer": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.lecturer", "inversedBy": "activities" }, "venue": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.venue", "inversedBy": "activities" } };
+const attributes$6 = { "title": { "type": "string", "required": true }, "type": { "type": "string", "default": "其他" }, "category": { "type": "string", "default": "" }, "tags": { "type": "json" }, "description": { "type": "text" }, "startTime": { "type": "datetime" }, "endTime": { "type": "datetime" }, "venueName": { "type": "string" }, "lat": { "type": "float" }, "lng": { "type": "float" }, "capacity": { "type": "integer", "required": true, "default": 100 }, "usedCapacity": { "type": "integer", "default": 0 }, "signupStart": { "type": "datetime" }, "signupEnd": { "type": "datetime" }, "checkinMode": { "type": "enumeration", "enum": ["worker_scan", "self", "both"], "default": "both" }, "geoEnforced": { "type": "boolean", "default": false }, "geoRadiusM": { "type": "integer", "default": 500 }, "status": { "type": "enumeration", "enum": ["draft", "signup_open", "ongoing", "ended"], "default": "draft" }, "channelScope": { "type": "enumeration", "enum": ["all", "specific"], "default": "all" }, "channelIds": { "type": "json" }, "pointsCost": { "type": "integer", "default": 0 }, "pricingMode": { "type": "enumeration", "enum": ["flat", "tier", "factor"], "default": "flat" }, "feeTiers": { "type": "json" }, "feeFactors": { "type": "json" }, "feeCollectAt": { "type": "enumeration", "enum": ["signup", "checkin"], "default": "signup" }, "shareRewardPoints": { "type": "integer" }, "preUnlockArticles": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.article" }, "preUnlockLessons": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-course.course-lesson" }, "learningPackageArticles": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.article" }, "learningPackageLessons": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-course.course-lesson" }, "belongsToSeries": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.activity-series", "inversedBy": "activities" }, "formConfig": { "type": "json" }, "remindLeadMinutes": { "type": "integer", "default": 1440, "min": -1 }, "lecturer": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.lecturer", "inversedBy": "activities" }, "venue": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.venue", "inversedBy": "activities" } };
 const activity$2 = {
   kind: kind$6,
   collectionName: collectionName$6,
@@ -1750,15 +1750,33 @@ const activity$1 = ({ strapi: strapi2 }) => {
     // GET /activities
     async list(ctx) {
       try {
-        const { page = "1", pageSize = "20", ...rest } = ctx.query;
+        const { page = "1", pageSize = "20", category, search, ...rest } = ctx.query;
+        const filters2 = { status: { $notIn: ["draft", "archived"] } };
+        if (category) filters2.category = { $eq: category };
+        if (search) filters2.title = { $contains: search };
         const result = await strapi2.documents(ACTIVITY_UID$7).findMany({
           ...rest,
-          filters: { status: { $ne: "draft" } },
+          filters: filters2,
           populate: "*",
           sort: "startTime:desc",
           pagination: { page: parseInt(page), pageSize: parseInt(pageSize) }
         });
         ctx.body = wrapList$1(result);
+      } catch (e) {
+        ctx.status = e.status || 400;
+        ctx.body = { error: e.message };
+      }
+    },
+    // GET /activities/categories
+    async categories(ctx) {
+      try {
+        const rows = await strapi2.db.query(ACTIVITY_UID$7).findMany({
+          select: ["category"],
+          where: { status: { $notIn: ["draft", "archived"] } }
+        });
+        const set2 = /* @__PURE__ */ new Set();
+        for (const r of rows) if (r.category) set2.add(r.category);
+        ctx.body = wrap$4(Array.from(set2).sort((a, b) => a.localeCompare(b, "zh")));
       } catch (e) {
         ctx.status = e.status || 400;
         ctx.body = { error: e.message };
@@ -36214,6 +36232,7 @@ const contentApi = () => ({
     // ===== 活动（报名/到场签到） =====
     // 公开路由
     publicRoute("GET", "/activities", "activity.list"),
+    publicRoute("GET", "/activities/categories", "activity.categories"),
     publicRoute("GET", "/activities/calendar", "calendar.month"),
     userRoute("GET", "/activities/:documentId/fee", "fee.preview"),
     publicRoute("GET", "/activities/:documentId", "activity.detail"),
