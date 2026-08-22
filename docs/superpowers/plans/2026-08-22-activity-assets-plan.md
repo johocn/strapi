@@ -178,7 +178,7 @@ function openUrl(url: string) {
   window.open(url, '_blank')
   // #endif
   // #ifndef H5
-  uni.navigateTo({ url: `/pages/webview/webview?url=${encodeURIComponent(url)}` })
+  uni.showToast({ title: '请在网页端打开', icon: 'none' })
   // #endif
 }
 
@@ -191,7 +191,7 @@ function openMaterial(m: { name: string; url: string }) {
 }
 ```
 
-> 注：H5 用 `window.open` 外链打开；非 H5 借助项目既有 webview 承载页（`/pages/webview/webview`）打开。若该 webview 路由不存在，改为仅 H5 处理并在非 H5 showToast 提示（实现时先 Grep 确认 `pages/webview/webview` 是否注册，未注册则用回退方案）。
+> 注：H5 用 `window.open` 外链打开；非 H5（小程序/App）端因无 webview 承载页，直接 showToast「请在网页端打开」，不新增 webview 页面依赖（遵循最小依赖约定）。已确认 `pages.json` 未注册 `pages/webview/webview`，故采用回退方案。
 
 - [ ] **Step 3: 追加样式**
 
