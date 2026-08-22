@@ -1427,6 +1427,9 @@ declare const _default: {
                     tags: {
                         type: string;
                     };
+                    assets: {
+                        type: string;
+                    };
                     description: {
                         type: string;
                     };

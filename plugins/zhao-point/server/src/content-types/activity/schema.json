@@ -9,6 +9,7 @@
     "type": { "type": "string", "default": "其他" },
     "category": { "type": "string", "default": "" },
     "tags": { "type": "json" },
+    "assets": { "type": "json" },
     "description": { "type": "text" },
     "startTime": { "type": "datetime" },
     "endTime": { "type": "datetime" },
