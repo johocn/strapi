@@ -900,6 +900,9 @@ declare const _default: {
                         type: string;
                         unique: boolean;
                     };
+                    readAt: {
+                        type: string;
+                    };
                 };
             };
         };
@@ -1256,6 +1259,12 @@ declare const _default: {
             my(ctx: any): Promise<{
                 error: string;
             }>;
+        };
+        "notice-controller": ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            myNotices(ctx: any): Promise<void>;
+            read(ctx: any): Promise<void>;
         };
         "msg-stats": ({ strapi }: any) => {
             sopStats(ctx: any): Promise<void>;
@@ -1626,6 +1635,16 @@ declare const _default: {
                 params?: Record<string, any>;
                 link?: string;
                 scheduledAt?: string;
+                dedupeKey?: string;
+            }): Promise<{
+                job: any;
+                skipped: boolean;
+            }>;
+            sendInApp(opts: {
+                user: number;
+                scene: string;
+                params?: Record<string, any>;
+                link?: string;
                 dedupeKey?: string;
             }): Promise<{
                 job: any;

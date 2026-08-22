@@ -869,6 +869,9 @@ declare const _default: {
                     type: string;
                     unique: boolean;
                 };
+                readAt: {
+                    type: string;
+                };
             };
         };
     };

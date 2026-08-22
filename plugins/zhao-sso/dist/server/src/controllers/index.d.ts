@@ -180,6 +180,12 @@ declare const _default: {
             error: string;
         }>;
     };
+    "notice-controller": ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        myNotices(ctx: any): Promise<void>;
+        read(ctx: any): Promise<void>;
+    };
     "msg-stats": ({ strapi }: any) => {
         sopStats(ctx: any): Promise<void>;
         repurchaseStats(ctx: any): Promise<void>;

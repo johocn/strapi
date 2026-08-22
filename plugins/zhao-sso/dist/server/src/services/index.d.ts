@@ -330,6 +330,16 @@ declare const _default: {
             job: any;
             skipped: boolean;
         }>;
+        sendInApp(opts: {
+            user: number;
+            scene: string;
+            params?: Record<string, any>;
+            link?: string;
+            dedupeKey?: string;
+        }): Promise<{
+            job: any;
+            skipped: boolean;
+        }>;
         sendNow(opts: {
             user: number;
             scene: string;

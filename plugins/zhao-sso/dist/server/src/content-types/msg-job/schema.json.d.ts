@@ -23,7 +23,8 @@ declare const _default: {
     "result": { "type": "json" },
     "scheduledAt": { "type": "datetime" },
     "sentAt": { "type": "datetime" },
-    "dedupeKey": { "type": "string", "unique": true }
+    "dedupeKey": { "type": "string", "unique": true },
+    "readAt": { "type": "datetime" }
   }
 };
 

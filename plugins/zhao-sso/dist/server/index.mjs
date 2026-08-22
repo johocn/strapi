@@ -427,7 +427,7 @@ const kind$4 = "collectionType";
 const collectionName$4 = "sso_msg_jobs";
 const info$4 = { "singularName": "msg-job", "pluralName": "msg-jobs", "displayName": "SSO Msg Job" };
 const options$4 = { "draftAndPublish": false };
-const attributes$4 = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user" }, "scene": { "type": "string", "required": true }, "template": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.msg-template" }, "version": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.msg-template-version" }, "provider": { "type": "string", "default": "wechat", "required": true }, "toTarget": { "type": "string" }, "params": { "type": "json" }, "link": { "type": "string" }, "status": { "type": "enumeration", "enum": ["pending", "sending", "sent", "failed", "cancelled", "quota_limited"], "default": "pending", "required": true }, "retryCount": { "type": "integer", "default": 0 }, "nextRetryAt": { "type": "datetime" }, "wxMsgId": { "type": "string" }, "result": { "type": "json" }, "scheduledAt": { "type": "datetime" }, "sentAt": { "type": "datetime" }, "dedupeKey": { "type": "string", "unique": true } };
+const attributes$4 = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user" }, "scene": { "type": "string", "required": true }, "template": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.msg-template" }, "version": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.msg-template-version" }, "provider": { "type": "string", "default": "wechat", "required": true }, "toTarget": { "type": "string" }, "params": { "type": "json" }, "link": { "type": "string" }, "status": { "type": "enumeration", "enum": ["pending", "sending", "sent", "failed", "cancelled", "quota_limited"], "default": "pending", "required": true }, "retryCount": { "type": "integer", "default": 0 }, "nextRetryAt": { "type": "datetime" }, "wxMsgId": { "type": "string" }, "result": { "type": "json" }, "scheduledAt": { "type": "datetime" }, "sentAt": { "type": "datetime" }, "dedupeKey": { "type": "string", "unique": true }, "readAt": { "type": "datetime" } };
 const schema$4 = {
   kind: kind$4,
   collectionName: collectionName$4,
@@ -2043,7 +2043,7 @@ const smsCodeController = ({ strapi }) => ({
   }
 });
 const TEMPLATE_UID$1 = "plugin::zhao-sso.msg-template";
-const JOB_UID$1 = "plugin::zhao-sso.msg-job";
+const JOB_UID$2 = "plugin::zhao-sso.msg-job";
 const messageController = ({ strapi }) => {
   const svc = () => strapi.plugin("zhao-sso").service("sso-msg");
   async function wrap(ctx, fn) {
@@ -2109,20 +2109,20 @@ const messageController = ({ strapi }) => {
         for (const k of ["status", "scene", "provider"]) {
           if (rest[k]) filters[k] = rest[k];
         }
-        const results = await strapi.documents(JOB_UID$1).findMany({
+        const results = await strapi.documents(JOB_UID$2).findMany({
           filters,
           populate: ["template", "user", "version"],
           sort: { createdAt: "desc" },
           limit: pageSizeNum,
           start: (pageNum - 1) * pageSizeNum
         });
-        const total = await strapi.db.query(JOB_UID$1).count({ where: filters });
+        const total = await strapi.db.query(JOB_UID$2).count({ where: filters });
         return { data: results, meta: { pagination: { page: pageNum, pageSize: pageSizeNum, total } } };
       });
     },
     async getJob(ctx) {
       await wrap(ctx, async () => {
-        const result = await strapi.documents(JOB_UID$1).findOne({
+        const result = await strapi.documents(JOB_UID$2).findOne({
           documentId: ctx.params.id,
           populate: ["template", "user", "version"]
         });
@@ -2162,7 +2162,7 @@ const messageController = ({ strapi }) => {
     /** 失败重试 */
     async retryJob(ctx) {
       await wrap(ctx, async () => {
-        const { retryCount } = await strapi.db.query(JOB_UID$1).findOne({
+        const { retryCount } = await strapi.db.query(JOB_UID$2).findOne({
           where: { id: ctx.params.id },
           select: ["retryCount"]
         });
@@ -2396,7 +2396,7 @@ const partnerController = ({ strapi }) => {
 };
 const VERSION_UID$1 = "plugin::zhao-sso.msg-template-version";
 const TEMPLATE_UID = "plugin::zhao-sso.msg-template";
-const JOB_UID = "plugin::zhao-sso.msg-job";
+const JOB_UID$1 = "plugin::zhao-sso.msg-job";
 const VISIT_LOG_UID$1 = "plugin::zhao-website.visit-log";
 const msgVersionController = ({ strapi }) => {
   async function wrap(ctx, fn) {
@@ -2460,7 +2460,7 @@ const msgVersionController = ({ strapi }) => {
     async delete(ctx) {
       await wrap(ctx, async () => {
         const id = Number(ctx.params.id);
-        const used = await strapi.db.query(JOB_UID).count({ where: { version: id } });
+        const used = await strapi.db.query(JOB_UID$1).count({ where: { version: id } });
         if (used > 0) {
           const e = new Error(`该版本已被 ${used} 个消息任务引用，无法删除`);
           e.status = 400;
@@ -2529,6 +2529,74 @@ const recommendController = ({ strapi }) => ({
     }
   }
 });
+const JOB_UID = "plugin::zhao-sso.msg-job";
+const noticeController = ({ strapi }) => {
+  return {
+    /**
+     * 我的站内信：读 provider=inapp && status=sent 的消息（按 sso-user 归属）
+     * ?page&pageSize&unreadOnly  => { data: { list, unreadCount }, meta }
+     */
+    async myNotices(ctx) {
+      try {
+        const ssoUserId = Number(ctx.state.user?.id || ctx.state.user?.documentId);
+        const { page = "1", pageSize = "20", unreadOnly } = ctx.query;
+        const pageNum = parseInt(page, 10);
+        const pageSizeNum = parseInt(pageSize, 10);
+        const where = {
+          provider: "inapp",
+          status: "sent",
+          user: ssoUserId
+        };
+        if (unreadOnly === "true" || unreadOnly === "1") where.readAt = { $null: true };
+        const [total, unreadCount] = await Promise.all([
+          strapi.db.query(JOB_UID).count({ where }),
+          strapi.db.query(JOB_UID).count({ where: { ...where, readAt: { $null: true } } })
+        ]);
+        const rows = await strapi.db.query(JOB_UID).findMany({
+          where,
+          orderBy: { sentAt: "desc" },
+          offset: (pageNum - 1) * pageSizeNum,
+          limit: pageSizeNum
+        });
+        ctx.body = {
+          data: {
+            list: rows,
+            unreadCount
+          },
+          meta: { pagination: { page: pageNum, pageSize: pageSizeNum, total } }
+        };
+      } catch (e) {
+        ctx.status = e.status || 400;
+        ctx.body = { error: e.message };
+      }
+    },
+    /** 标记站内信已读（幂等，仅属主可操作） */
+    async read(ctx) {
+      try {
+        const ssoUserId = Number(ctx.state.user?.id || ctx.state.user?.documentId);
+        const jobId = parseInt(ctx.params.id, 10);
+        const job = await strapi.db.query(JOB_UID).findOne({ where: { id: jobId } });
+        if (!job) {
+          ctx.status = 404;
+          ctx.body = { error: "消息不存在" };
+          return;
+        }
+        if ((job.user?.id ?? job.user) !== ssoUserId) {
+          ctx.status = 403;
+          ctx.body = { error: "无权操作" };
+          return;
+        }
+        if (!job.readAt) {
+          await strapi.db.query(JOB_UID).update({ where: { id: jobId }, data: { readAt: /* @__PURE__ */ new Date() } });
+        }
+        ctx.body = { data: { ok: true } };
+      } catch (e) {
+        ctx.status = e.status || 400;
+        ctx.body = { error: e.message };
+      }
+    }
+  };
+};
 const msgStats = ({ strapi }) => ({
   async sopStats(ctx) {
     const { from, to, scene } = ctx.query || {};
@@ -2592,6 +2660,7 @@ const controllers = {
   partner: partnerController,
   "msg-version": msgVersionController,
   "recommend-controller": recommendController,
+  "notice-controller": noticeController,
   "msg-stats": msgStats
 };
 const api = () => ({
@@ -2759,6 +2828,24 @@ const api = () => ({
       method: "GET",
       path: "/v1/recommend",
       handler: "recommend-controller.my",
+      config: {
+        auth: false,
+        policies: ["plugin::zhao-sso.sso-authenticated"]
+      }
+    },
+    {
+      method: "GET",
+      path: "/v1/my/notices",
+      handler: "notice-controller.myNotices",
+      config: {
+        auth: false,
+        policies: ["plugin::zhao-sso.sso-authenticated"]
+      }
+    },
+    {
+      method: "POST",
+      path: "/v1/my/notices/:id/read",
+      handler: "notice-controller.read",
       config: {
         auth: false,
         policies: ["plugin::zhao-sso.sso-authenticated"]
@@ -4611,6 +4698,34 @@ const ssoMsg = ({ strapi }) => {
         await strapi.db.query(MSG_JOB_UID$2).update({ where: { id: job.id }, data: { link: finalLink } });
         job.link = finalLink;
       }
+      return { job, skipped: false };
+    },
+    /**
+     * 站内信：直接落一条 provider=inapp、status=sent、sentAt=now 的 msg-job，
+     * 即时可见、幂等（同 dedupeKey 已存在且非 failed/cancelled 则跳过），不经过 cron 待发队列。
+     * @param opts { user, scene, params, link?, dedupeKey? }
+     */
+    async sendInApp(opts) {
+      const { user, scene, params = {}, link, dedupeKey } = opts;
+      const key = dedupeKey || `inapp:${scene}:${user}`;
+      const existing = await strapi.db.query(MSG_JOB_UID$2).findOne({
+        where: { dedupeKey: key }
+      });
+      if (existing && existing.status !== "failed" && existing.status !== "cancelled") {
+        return { job: existing, skipped: true };
+      }
+      const job = await strapi.db.query(MSG_JOB_UID$2).create({
+        data: {
+          user,
+          scene,
+          provider: "inapp",
+          params,
+          link: link || null,
+          status: "sent",
+          sentAt: /* @__PURE__ */ new Date(),
+          dedupeKey: key
+        }
+      });
       return { job, skipped: false };
     },
     /**
