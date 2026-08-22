@@ -1208,6 +1208,74 @@ declare const _default: {
             };
         };
     };
+    "activity-ledger": {
+        schema: {
+            kind: string;
+            collectionName: string;
+            info: {
+                singularName: string;
+                pluralName: string;
+                displayName: string;
+                description: string;
+            };
+            options: {
+                draftAndPublish: boolean;
+                comment: string;
+            };
+            attributes: {
+                activity: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                };
+                activityDocumentId: {
+                    type: string;
+                };
+                activityTitle: {
+                    type: string;
+                };
+                snapshotNo: {
+                    type: string;
+                    default: number;
+                };
+                source: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
+                generatedAt: {
+                    type: string;
+                };
+                generatedBy: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                };
+                revenuePoints: {
+                    type: string;
+                    default: number;
+                };
+                signinCostPoints: {
+                    type: string;
+                    default: number;
+                };
+                referralCostPoints: {
+                    type: string;
+                    default: number;
+                };
+                netPoints: {
+                    type: string;
+                    default: number;
+                };
+                summary: {
+                    type: string;
+                };
+                detail: {
+                    type: string;
+                };
+            };
+        };
+    };
     lecturer: {
         schema: {
             kind: string;

@@ -1,0 +1,21 @@
+{
+  "kind": "collectionType",
+  "collectionName": "activity_ledgers",
+  "info": { "singularName": "activity-ledger", "pluralName": "activity-ledgers", "displayName": "Activity Ledger", "description": "活动经营台账/归档快照" },
+  "options": { "draftAndPublish": false, "comment": "活动结束时生成的不可变对账快照，snapshotNo 自增" },
+  "attributes": {
+    "activity": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.activity" },
+    "activityDocumentId": { "type": "string" },
+    "activityTitle": { "type": "string" },
+    "snapshotNo": { "type": "integer", "default": 1 },
+    "source": { "type": "enumeration", "enum": ["auto", "manual"], "default": "auto" },
+    "generatedAt": { "type": "datetime" },
+    "generatedBy": { "type": "relation", "relation": "manyToOne", "target": "admin::user" },
+    "revenuePoints": { "type": "integer", "default": 0 },
+    "signinCostPoints": { "type": "integer", "default": 0 },
+    "referralCostPoints": { "type": "integer", "default": 0 },
+    "netPoints": { "type": "integer", "default": 0 },
+    "summary": { "type": "json" },
+    "detail": { "type": "json" }
+  }
+}
