@@ -211,4 +211,112 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     const conversionRate = sent ? Math.round((convertedUsers / sent) * 100) : 0;
     return { from: from.toISOString(), to: to.toISOString(), windowDays, summary: { sent, convertedUsers, conversions, conversionRate } };
   },
+
+  async getRepurchaseLeads(opts: { from?: string; to?: string; page?: number; pageSize?: number; status?: string }) {
+    const from = opts.from ? new Date(opts.from) : new Date(Date.now() - 30 * DATE_MS);
+    const to = opts.to ? new Date(opts.to) : new Date();
+    if (from.getTime() > to.getTime()) {
+      const err: any = new Error("from 不能晚于 to");
+      err.status = 400;
+      throw err;
+    }
+    const page = Number(opts.page) || 1;
+    const pageSize = Number(opts.pageSize) || 20;
+    // 窗口天数：scene=activity.repurchase 的 rule.conversionWindowDays ?? 7
+    const rule = await strapi.db.query(SOP_RULE_UID).findOne({ where: { scene: "activity.repurchase" } });
+    const windowDays = Number(rule?.conversionWindowDays ?? 7) || 7;
+    const windowMs = windowDays * DATE_MS;
+
+    const base: any = { sentAt: { $gte: from, $lte: to } };
+    let where: any = { scene: "activity.repurchase", ...base };
+    if (opts.status) {
+      if (opts.status === "none") {
+        // none=未跟进: 本轮语境下指未标记 followed/deal 的记录(默认为 NULL 或 'none'), 用顶层 $or 兼容空值
+        where = {
+          $and: [{ scene: "activity.repurchase" }, base, { $or: [{ followStatus: "none" }, { followStatus: { $null: true } }] }],
+        };
+      } else {
+        where.followStatus = opts.status;
+      }
+    }
+
+    const result = await strapi.db.query(MSG_JOB_UID).findPage({
+      where,
+      populate: { user: true },
+      orderBy: { sentAt: "desc" },
+      page,
+      pageSize,
+    });
+
+    const ssoSvc = strapi.plugin("zhao-sso").service("sso-profile");
+    const summary = { total: 0, followed: 0, deal: 0 };
+
+    const rows: any[] = [];
+    for (const j of result?.results ?? []) {
+      summary.total += 1;
+      if (j.followStatus === "followed") summary.followed += 1;
+      if (j.followStatus === "deal") summary.deal += 1;
+
+      const userObj = typeof j.user === "object" && j.user ? j.user : null;
+      const ssoUserId = userObj ? userObj.id : j.user;
+      let upId: number | null = null;
+      if (ssoUserId) {
+        const up = await ssoSvc.resolveUpUserForSsoUser(ssoUserId);
+        upId = up?.id ?? null;
+      }
+      let reorderedCount = 0;
+      if (upId) {
+        const touchTime = j.sentAt || j.scheduledAt || j.createdAt;
+        if (touchTime) {
+          reorderedCount = await strapi.db.query(REPURCHASE_SIGNS_UID).count({
+            where: { user: upId, status: "active", signupAt: { $gte: new Date(touchTime), $lte: new Date(new Date(touchTime).getTime() + windowMs) } },
+          });
+        }
+      }
+      rows.push({
+        id: j.id,
+        status: j.status,
+        followStatus: j.followStatus ?? "none",
+        followRemark: j.followRemark ?? null,
+        touchTime: j.sentAt || j.scheduledAt || j.createdAt || null,
+        windowDays,
+        reorderedCount,
+        user: {
+          id: userObj?.id ?? ssoUserId,
+          upId,
+          username: userObj?.username ?? null,
+          mobile: userObj?.mobile ?? null,
+          email: userObj?.email ?? null,
+        },
+      });
+    }
+
+    return {
+      from: from.toISOString(),
+      to: to.toISOString(),
+      windowDays,
+      summary,
+      pagination: result?.pagination ?? {},
+      rows,
+    };
+  },
+
+  async updateRepurchaseFollow({ jobId, status, remark }: { jobId: number; status: string; remark?: string }) {
+    if (!["none", "followed", "deal"].includes(status)) {
+      const err: any = new Error("status 必须是 none/followed/deal 之一");
+      err.status = 400;
+      throw err;
+    }
+    const existing: any = await strapi.db.query(MSG_JOB_UID).findOne({ where: { id: jobId } });
+    if (!existing) {
+      const err: any = new Error("msg-job 不存在");
+      err.status = 404;
+      throw err;
+    }
+    const updated = await strapi.db.query(MSG_JOB_UID).update({
+      where: { id: jobId },
+      data: { followStatus: status, ...(remark !== undefined ? { followRemark: remark } : {}) },
+    });
+    return updated;
+  },
 });

@@ -450,7 +450,7 @@ const kind$4 = "collectionType";
 const collectionName$4 = "sso_msg_jobs";
 const info$4 = { "singularName": "msg-job", "pluralName": "msg-jobs", "displayName": "SSO Msg Job" };
 const options$4 = { "draftAndPublish": false };
-const attributes$4 = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user" }, "scene": { "type": "string", "required": true }, "template": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.msg-template" }, "version": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.msg-template-version" }, "provider": { "type": "string", "default": "wechat", "required": true }, "toTarget": { "type": "string" }, "params": { "type": "json" }, "link": { "type": "string" }, "status": { "type": "enumeration", "enum": ["pending", "sending", "sent", "failed", "cancelled", "quota_limited"], "default": "pending", "required": true }, "retryCount": { "type": "integer", "default": 0 }, "nextRetryAt": { "type": "datetime" }, "wxMsgId": { "type": "string" }, "result": { "type": "json" }, "scheduledAt": { "type": "datetime" }, "sentAt": { "type": "datetime" }, "dedupeKey": { "type": "string", "unique": true }, "readAt": { "type": "datetime" } };
+const attributes$4 = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user" }, "scene": { "type": "string", "required": true }, "template": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.msg-template" }, "version": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.msg-template-version" }, "provider": { "type": "string", "default": "wechat", "required": true }, "toTarget": { "type": "string" }, "params": { "type": "json" }, "link": { "type": "string" }, "status": { "type": "enumeration", "enum": ["pending", "sending", "sent", "failed", "cancelled", "quota_limited"], "default": "pending", "required": true }, "retryCount": { "type": "integer", "default": 0 }, "nextRetryAt": { "type": "datetime" }, "wxMsgId": { "type": "string" }, "result": { "type": "json" }, "scheduledAt": { "type": "datetime" }, "sentAt": { "type": "datetime" }, "dedupeKey": { "type": "string", "unique": true }, "readAt": { "type": "datetime" }, "followStatus": { "type": "enumeration", "enum": ["none", "followed", "deal"], "default": "none" }, "followRemark": { "type": "text" } };
 const schema$4 = {
   kind: kind$4,
   collectionName: collectionName$4,
@@ -2660,6 +2660,26 @@ const msgStats = ({ strapi }) => ({
       ctx.status = e.status || e.cause?.status || 400;
       ctx.body = { error: e.message };
     }
+  },
+  async repurchaseLeads(ctx) {
+    try {
+      const { from, to, page, pageSize, status } = ctx.query || {};
+      const data = await strapi.plugin("zhao-sso").service("sso-stats").getRepurchaseLeads({ from, to, page, pageSize, status });
+      ctx.body = { data };
+    } catch (e) {
+      ctx.status = e.status || e.cause?.status || 400;
+      ctx.body = { error: e.message };
+    }
+  },
+  async updateRepurchaseFollow(ctx) {
+    try {
+      const { status, remark } = ctx.request?.body || {};
+      const data = await strapi.plugin("zhao-sso").service("sso-stats").updateRepurchaseFollow({ jobId: ctx.params.id, status, remark });
+      ctx.body = { data };
+    } catch (e) {
+      ctx.status = e.status || e.cause?.status || 400;
+      ctx.body = { error: e.message };
+    }
   }
 });
 const controllers = {
@@ -2982,6 +3002,8 @@ const admin = () => ({
     adminRoute("DELETE", "/sop-rules/:id", "sop.delete", "sso.msg.write"),
     adminRoute("GET", "/msg/sop-stats", "msg-stats.sopStats", "sso.msg.read"),
     adminRoute("GET", "/msg/repurchase-stats", "msg-stats.repurchaseStats", "sso.msg.read"),
+    adminRoute("GET", "/msg/repurchase-leads", "msg-stats.repurchaseLeads", "sso.msg.read"),
+    adminRoute("POST", "/msg/repurchase-leads/:id/follow", "msg-stats.updateRepurchaseFollow", "sso.msg.write"),
     adminRoute("GET", "/msg/course-d7-stats", "msg-stats.courseD7Stats", "sso.msg.read"),
     adminRoute("GET", "/msg/course-completion-stats", "msg-stats.courseCompletionStats", "sso.msg.read"),
     // 用户画像分层
@@ -5523,6 +5545,104 @@ const ssoStats = ({ strapi }) => ({
     const convertedUsers = convertedUserSet.size;
     const conversionRate = sent ? Math.round(convertedUsers / sent * 100) : 0;
     return { from: from.toISOString(), to: to.toISOString(), windowDays, summary: { sent, convertedUsers, conversions, conversionRate } };
+  },
+  async getRepurchaseLeads(opts) {
+    const from = opts.from ? new Date(opts.from) : new Date(Date.now() - 30 * DATE_MS);
+    const to = opts.to ? new Date(opts.to) : /* @__PURE__ */ new Date();
+    if (from.getTime() > to.getTime()) {
+      const err = new Error("from 不能晚于 to");
+      err.status = 400;
+      throw err;
+    }
+    const page = Number(opts.page) || 1;
+    const pageSize = Number(opts.pageSize) || 20;
+    const rule = await strapi.db.query(SOP_RULE_UID).findOne({ where: { scene: "activity.repurchase" } });
+    const windowDays = Number(rule?.conversionWindowDays ?? 7) || 7;
+    const windowMs = windowDays * DATE_MS;
+    const base = { sentAt: { $gte: from, $lte: to } };
+    let where = { scene: "activity.repurchase", ...base };
+    if (opts.status) {
+      if (opts.status === "none") {
+        where = {
+          $and: [{ scene: "activity.repurchase" }, base, { $or: [{ followStatus: "none" }, { followStatus: { $null: true } }] }]
+        };
+      } else {
+        where.followStatus = opts.status;
+      }
+    }
+    const result = await strapi.db.query(MSG_JOB_UID).findPage({
+      where,
+      populate: { user: true },
+      orderBy: { sentAt: "desc" },
+      page,
+      pageSize
+    });
+    const ssoSvc = strapi.plugin("zhao-sso").service("sso-profile");
+    const summary = { total: 0, followed: 0, deal: 0 };
+    const rows = [];
+    for (const j of result?.results ?? []) {
+      summary.total += 1;
+      if (j.followStatus === "followed") summary.followed += 1;
+      if (j.followStatus === "deal") summary.deal += 1;
+      const userObj = typeof j.user === "object" && j.user ? j.user : null;
+      const ssoUserId = userObj ? userObj.id : j.user;
+      let upId = null;
+      if (ssoUserId) {
+        const up = await ssoSvc.resolveUpUserForSsoUser(ssoUserId);
+        upId = up?.id ?? null;
+      }
+      let reorderedCount = 0;
+      if (upId) {
+        const touchTime = j.sentAt || j.scheduledAt || j.createdAt;
+        if (touchTime) {
+          reorderedCount = await strapi.db.query(REPURCHASE_SIGNS_UID).count({
+            where: { user: upId, status: "active", signupAt: { $gte: new Date(touchTime), $lte: new Date(new Date(touchTime).getTime() + windowMs) } }
+          });
+        }
+      }
+      rows.push({
+        id: j.id,
+        status: j.status,
+        followStatus: j.followStatus ?? "none",
+        followRemark: j.followRemark ?? null,
+        touchTime: j.sentAt || j.scheduledAt || j.createdAt || null,
+        windowDays,
+        reorderedCount,
+        user: {
+          id: userObj?.id ?? ssoUserId,
+          upId,
+          username: userObj?.username ?? null,
+          mobile: userObj?.mobile ?? null,
+          email: userObj?.email ?? null
+        }
+      });
+    }
+    return {
+      from: from.toISOString(),
+      to: to.toISOString(),
+      windowDays,
+      summary,
+      pagination: result?.pagination ?? {},
+      rows
+    };
+  },
+  async updateRepurchaseFollow({ jobId, status, remark }) {
+    if (!["none", "followed", "deal"].includes(status)) {
+      const err = new Error("status 必须是 none/followed/deal 之一");
+      err.status = 400;
+      throw err;
+    }
+    const existing = await strapi.db.query(MSG_JOB_UID).findOne({ where: { id: jobId } });
+    if (!existing) {
+      const err = new Error("msg-job 不存在");
+      err.status = 404;
+      throw err;
+    }
+    const updated = await strapi.db.query(MSG_JOB_UID).update({
+      where: { id: jobId },
+      data: { followStatus: status, ...remark !== void 0 ? { followRemark: remark } : {} }
+    });
+    return updated;
   }
 });
 const services = {

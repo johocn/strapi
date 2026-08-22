@@ -5453,6 +5453,9 @@ export interface PluginZhaoSsoMsgJob extends Struct.CollectionTypeSchema {
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     dedupeKey: Schema.Attribute.String & Schema.Attribute.Unique;
+    followRemark: Schema.Attribute.Text;
+    followStatus: Schema.Attribute.Enumeration<['none', 'followed', 'deal']> &
+      Schema.Attribute.DefaultTo<'none'>;
     link: Schema.Attribute.String;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<

@@ -903,6 +903,14 @@ declare const _default: {
                     readAt: {
                         type: string;
                     };
+                    followStatus: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    followRemark: {
+                        type: string;
+                    };
                 };
             };
         };
@@ -1271,6 +1279,8 @@ declare const _default: {
             repurchaseStats(ctx: any): Promise<void>;
             courseD7Stats(ctx: any): Promise<void>;
             courseCompletionStats(ctx: any): Promise<void>;
+            repurchaseLeads(ctx: any): Promise<void>;
+            updateRepurchaseFollow(ctx: any): Promise<void>;
         };
     };
     routes: {
@@ -1915,6 +1925,29 @@ declare const _default: {
                     conversionRate: number;
                 };
             }>;
+            getRepurchaseLeads(opts: {
+                from?: string;
+                to?: string;
+                page?: number;
+                pageSize?: number;
+                status?: string;
+            }): Promise<{
+                from: string;
+                to: string;
+                windowDays: number;
+                summary: {
+                    total: number;
+                    followed: number;
+                    deal: number;
+                };
+                pagination: {};
+                rows: any[];
+            }>;
+            updateRepurchaseFollow({ jobId, status, remark }: {
+                jobId: number;
+                status: string;
+                remark?: string;
+            }): Promise<any>;
         };
     };
     policies: {

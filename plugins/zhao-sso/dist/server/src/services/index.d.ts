@@ -605,6 +605,29 @@ declare const _default: {
                 conversionRate: number;
             };
         }>;
+        getRepurchaseLeads(opts: {
+            from?: string;
+            to?: string;
+            page?: number;
+            pageSize?: number;
+            status?: string;
+        }): Promise<{
+            from: string;
+            to: string;
+            windowDays: number;
+            summary: {
+                total: number;
+                followed: number;
+                deal: number;
+            };
+            pagination: {};
+            rows: any[];
+        }>;
+        updateRepurchaseFollow({ jobId, status, remark }: {
+            jobId: number;
+            status: string;
+            remark?: string;
+        }): Promise<any>;
     };
 };
 export default _default;

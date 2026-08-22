@@ -872,6 +872,14 @@ declare const _default: {
                 readAt: {
                     type: string;
                 };
+                followStatus: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
+                followRemark: {
+                    type: string;
+                };
             };
         };
     };

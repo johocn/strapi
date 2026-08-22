@@ -122,6 +122,8 @@ export default () => ({
     adminRoute("DELETE", "/sop-rules/:id", "sop.delete", "sso.msg.write"),
     adminRoute("GET", "/msg/sop-stats", "msg-stats.sopStats", "sso.msg.read"),
     adminRoute("GET", "/msg/repurchase-stats", "msg-stats.repurchaseStats", "sso.msg.read"),
+    adminRoute("GET", "/msg/repurchase-leads", "msg-stats.repurchaseLeads", "sso.msg.read"),
+    adminRoute("POST", "/msg/repurchase-leads/:id/follow", "msg-stats.updateRepurchaseFollow", "sso.msg.write"),
     adminRoute("GET", "/msg/course-d7-stats", "msg-stats.courseD7Stats", "sso.msg.read"),
     adminRoute("GET", "/msg/course-completion-stats", "msg-stats.courseCompletionStats", "sso.msg.read"),
 

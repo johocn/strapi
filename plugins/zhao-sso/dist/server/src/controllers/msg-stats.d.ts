@@ -3,5 +3,7 @@ declare const _default: ({ strapi }: any) => {
     repurchaseStats(ctx: any): Promise<void>;
     courseD7Stats(ctx: any): Promise<void>;
     courseCompletionStats(ctx: any): Promise<void>;
+    repurchaseLeads(ctx: any): Promise<void>;
+    updateRepurchaseFollow(ctx: any): Promise<void>;
 };
 export default _default;

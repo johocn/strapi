@@ -24,7 +24,9 @@ declare const _default: {
     "scheduledAt": { "type": "datetime" },
     "sentAt": { "type": "datetime" },
     "dedupeKey": { "type": "string", "unique": true },
-    "readAt": { "type": "datetime" }
+    "readAt": { "type": "datetime" },
+    "followStatus": { "type": "enumeration", "enum": ["none", "followed", "deal"], "default": "none" },
+    "followRemark": { "type": "text" }
   }
 };
 
