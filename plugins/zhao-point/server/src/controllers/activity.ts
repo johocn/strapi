@@ -98,8 +98,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   async signup(ctx: any) {
     try {
       const userId = getUserId(ctx);
-      const { activityId, formData } = ctx.request.body || {};
-      const result = await activitySvc().signup({ userId, activityId, formData });
+      const { activityId, formData, chosenRewards } = ctx.request.body || {};
+      const result = await activitySvc().signup({ userId, activityId, formData, chosenRewards });
       if (result?.ok === false && result.reason === "already_signed_up") {
         ctx.status = 200;
       }

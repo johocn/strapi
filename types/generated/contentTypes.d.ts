@@ -4160,6 +4160,7 @@ export interface PluginZhaoPointActivity extends Struct.CollectionTypeSchema {
         number
       > &
       Schema.Attribute.DefaultTo<1440>;
+    rewardConfig: Schema.Attribute.JSON;
     settleLecturer: Schema.Attribute.Decimal & Schema.Attribute.DefaultTo<0>;
     settleVenue: Schema.Attribute.Decimal & Schema.Attribute.DefaultTo<0>;
     shareRewardPoints: Schema.Attribute.Integer;
@@ -4410,6 +4411,7 @@ export interface PluginZhaoPointActivitySignup
     signupAt: Schema.Attribute.DateTime;
     status: Schema.Attribute.Enumeration<['active', 'cancelled', 'waiting']> &
       Schema.Attribute.DefaultTo<'active'>;
+    unlockInfo: Schema.Attribute.JSON;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;

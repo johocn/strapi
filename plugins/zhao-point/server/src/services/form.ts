@@ -92,7 +92,17 @@ export function collectFormData(formConfig: any, formData: any): Record<string, 
   return out;
 }
 
+/** 供解锁判定：判断某通道(contact/survey)在 formData 中是否已填(至少一个该通道字段非空) */
+export function channelFilled(formConfig: any, formData: any, channel: string): boolean {
+  const fields = Array.isArray(formConfig) ? formConfig : [];
+  const data = formData && typeof formData === "object" && !Array.isArray(formData) ? formData : {};
+  const hit = fields.filter((f: any) => f?.channel === channel && f?.key);
+  if (!hit.length) return false; // 该通道未配置字段 → 视为不可解锁
+  return hit.some((f: any) => !isEmpty(data[f.key]));
+}
+
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
   validateFormData,
   collectFormData,
+  channelFilled,
 });

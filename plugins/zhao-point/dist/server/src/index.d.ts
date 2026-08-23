@@ -1550,6 +1550,9 @@ declare const _default: {
                     formConfig: {
                         type: string;
                     };
+                    rewardConfig: {
+                        type: string;
+                    };
                     remindLeadMinutes: {
                         type: string;
                         default: number;
@@ -1640,6 +1643,9 @@ declare const _default: {
                         type: string;
                     };
                     formData: {
+                        type: string;
+                    };
+                    unlockInfo: {
                         type: string;
                     };
                 };
@@ -2704,10 +2710,11 @@ declare const _default: {
         activity: ({ strapi }: {
             strapi: import('@strapi/types/dist/core').Strapi;
         }) => {
-            signup({ userId, activityId, formData }: {
+            signup({ userId, activityId, formData, chosenRewards }: {
                 userId: number;
                 activityId: string;
                 formData?: any;
+                chosenRewards?: string[];
             }): Promise<{
                 ok: boolean;
                 reason: string;
@@ -2719,7 +2726,19 @@ declare const _default: {
                 position: number;
                 reason?: undefined;
             } | {
+                unlockInfo?: {
+                    loginAuth: boolean;
+                    channels: Record<string, boolean>;
+                    chosenRewards: any[];
+                };
                 ok: boolean;
+                granted: {
+                    id: string;
+                    type: string;
+                    name: string;
+                    message: string;
+                    link?: string;
+                }[];
                 reason?: undefined;
                 waitlisted?: undefined;
                 position?: undefined;
@@ -2857,6 +2876,7 @@ declare const _default: {
         }) => {
             validateFormData: typeof import('./services/form').validateFormData;
             collectFormData: typeof import('./services/form').collectFormData;
+            channelFilled: typeof import('./services/form').channelFilled;
         };
         "resource-schedule": ({ strapi }: {
             strapi: import('@strapi/types/dist/core').Strapi;

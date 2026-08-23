@@ -236,7 +236,7 @@ const collectionName$7 = "activities";
 const info$7 = { "singularName": "activity", "pluralName": "activities", "displayName": "Activity", "description": "线下活动" };
 const options$7 = { "draftAndPublish": false };
 const pluginOptions$2 = { "i18n": { "localized": false } };
-const attributes$7 = { "title": { "type": "string", "required": true }, "type": { "type": "string", "default": "其他" }, "category": { "type": "string", "default": "" }, "tags": { "type": "json" }, "assets": { "type": "json" }, "description": { "type": "text" }, "startTime": { "type": "datetime" }, "endTime": { "type": "datetime" }, "venueName": { "type": "string" }, "lat": { "type": "float" }, "lng": { "type": "float" }, "capacity": { "type": "integer", "required": true, "default": 100 }, "usedCapacity": { "type": "integer", "default": 0 }, "signupStart": { "type": "datetime" }, "signupEnd": { "type": "datetime" }, "checkinMode": { "type": "enumeration", "enum": ["worker_scan", "self", "both"], "default": "both" }, "geoEnforced": { "type": "boolean", "default": false }, "geoRadiusM": { "type": "integer", "default": 500 }, "status": { "type": "enumeration", "enum": ["draft", "signup_open", "ongoing", "ended", "archived"], "default": "draft" }, "channelScope": { "type": "enumeration", "enum": ["all", "specific"], "default": "all" }, "channelIds": { "type": "json" }, "pointsCost": { "type": "integer", "default": 0 }, "pricingMode": { "type": "enumeration", "enum": ["flat", "tier", "factor"], "default": "flat" }, "feeTiers": { "type": "json" }, "feeFactors": { "type": "json" }, "feeCollectAt": { "type": "enumeration", "enum": ["signup", "checkin"], "default": "signup" }, "shareRewardPoints": { "type": "integer" }, "preUnlockArticles": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.article" }, "preUnlockLessons": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-course.course-lesson" }, "learningPackageArticles": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.article" }, "learningPackageLessons": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-course.course-lesson" }, "belongsToSeries": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.activity-series", "inversedBy": "activities" }, "formConfig": { "type": "json" }, "remindLeadMinutes": { "type": "integer", "default": 1440, "min": -1 }, "lecturer": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.lecturer", "inversedBy": "activities" }, "venue": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.venue", "inversedBy": "activities" }, "cashPrice": { "type": "decimal", "default": 0 }, "settleLecturer": { "type": "decimal", "default": 0 }, "settleVenue": { "type": "decimal", "default": 0 } };
+const attributes$7 = { "title": { "type": "string", "required": true }, "type": { "type": "string", "default": "其他" }, "category": { "type": "string", "default": "" }, "tags": { "type": "json" }, "assets": { "type": "json" }, "description": { "type": "text" }, "startTime": { "type": "datetime" }, "endTime": { "type": "datetime" }, "venueName": { "type": "string" }, "lat": { "type": "float" }, "lng": { "type": "float" }, "capacity": { "type": "integer", "required": true, "default": 100 }, "usedCapacity": { "type": "integer", "default": 0 }, "signupStart": { "type": "datetime" }, "signupEnd": { "type": "datetime" }, "checkinMode": { "type": "enumeration", "enum": ["worker_scan", "self", "both"], "default": "both" }, "geoEnforced": { "type": "boolean", "default": false }, "geoRadiusM": { "type": "integer", "default": 500 }, "status": { "type": "enumeration", "enum": ["draft", "signup_open", "ongoing", "ended", "archived"], "default": "draft" }, "channelScope": { "type": "enumeration", "enum": ["all", "specific"], "default": "all" }, "channelIds": { "type": "json" }, "pointsCost": { "type": "integer", "default": 0 }, "pricingMode": { "type": "enumeration", "enum": ["flat", "tier", "factor"], "default": "flat" }, "feeTiers": { "type": "json" }, "feeFactors": { "type": "json" }, "feeCollectAt": { "type": "enumeration", "enum": ["signup", "checkin"], "default": "signup" }, "shareRewardPoints": { "type": "integer" }, "preUnlockArticles": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.article" }, "preUnlockLessons": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-course.course-lesson" }, "learningPackageArticles": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.article" }, "learningPackageLessons": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-course.course-lesson" }, "belongsToSeries": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.activity-series", "inversedBy": "activities" }, "formConfig": { "type": "json" }, "rewardConfig": { "type": "json" }, "remindLeadMinutes": { "type": "integer", "default": 1440, "min": -1 }, "lecturer": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.lecturer", "inversedBy": "activities" }, "venue": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.venue", "inversedBy": "activities" }, "cashPrice": { "type": "decimal", "default": 0 }, "settleLecturer": { "type": "decimal", "default": 0 }, "settleVenue": { "type": "decimal", "default": 0 } };
 const activity$2 = {
   kind: kind$7,
   collectionName: collectionName$7,
@@ -249,7 +249,7 @@ const kind$6 = "collectionType";
 const collectionName$6 = "activity_signups";
 const info$6 = { "singularName": "activity-signup", "pluralName": "activity-signups", "displayName": "Activity Signup" };
 const options$6 = { "draftAndPublish": false };
-const attributes$6 = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::users-permissions.user" }, "activity": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.activity" }, "status": { "type": "enumeration", "enum": ["active", "cancelled", "waiting"], "default": "active" }, "pointsCharged": { "type": "integer", "default": 0 }, "feeTierId": { "type": "string" }, "signupAt": { "type": "datetime" }, "attendedAt": { "type": "datetime" }, "rating": { "type": "integer", "min": 1, "max": 5 }, "nps": { "type": "integer", "min": 0, "max": 10 }, "review": { "type": "text" }, "reviewedAt": { "type": "datetime" }, "formData": { "type": "json" } };
+const attributes$6 = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::users-permissions.user" }, "activity": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.activity" }, "status": { "type": "enumeration", "enum": ["active", "cancelled", "waiting"], "default": "active" }, "pointsCharged": { "type": "integer", "default": 0 }, "feeTierId": { "type": "string" }, "signupAt": { "type": "datetime" }, "attendedAt": { "type": "datetime" }, "rating": { "type": "integer", "min": 1, "max": 5 }, "nps": { "type": "integer", "min": 0, "max": 10 }, "review": { "type": "text" }, "reviewedAt": { "type": "datetime" }, "formData": { "type": "json" }, "unlockInfo": { "type": "json" } };
 const activitySignup = {
   kind: kind$6,
   collectionName: collectionName$6,
@@ -1723,9 +1723,17 @@ function collectFormData(formConfig, formData) {
   }
   return out;
 }
+function channelFilled(formConfig, formData, channel) {
+  const fields2 = Array.isArray(formConfig) ? formConfig : [];
+  const data = formData && typeof formData === "object" && !Array.isArray(formData) ? formData : {};
+  const hit = fields2.filter((f) => f?.channel === channel && f?.key);
+  if (!hit.length) return false;
+  return hit.some((f) => !isEmpty(data[f.key]));
+}
 const form = ({ strapi: strapi2 }) => ({
   validateFormData,
-  collectFormData
+  collectFormData,
+  channelFilled
 });
 const ACTIVITY_UID$8 = "plugin::zhao-point.activity";
 const SIGNS_UID$4 = "plugin::zhao-point.activity-signup";
@@ -1818,8 +1826,8 @@ const activity$1 = ({ strapi: strapi2 }) => {
     async signup(ctx) {
       try {
         const userId = getUserId(ctx);
-        const { activityId, formData } = ctx.request.body || {};
-        const result = await activitySvc().signup({ userId, activityId, formData });
+        const { activityId, formData, chosenRewards } = ctx.request.body || {};
+        const result = await activitySvc().signup({ userId, activityId, formData, chosenRewards });
         if (result?.ok === false && result.reason === "already_signed_up") {
           ctx.status = 200;
         }
@@ -35313,6 +35321,12 @@ function haversineM(lat1, lng1, lat2, lng2) {
   const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
+function isRewardUnlocked(r, loginAuth, channels) {
+  if (!r || typeof r !== "object") return false;
+  if (r.loginRequired && !loginAuth) return false;
+  if (r.channel && !channels[r.channel]) return false;
+  return true;
+}
 async function grantPoints(strapi2, userId, action, remark) {
   try {
     const channelSvc = strapi2.plugin("zhao-channel")?.service("channel-permission");
@@ -35352,6 +35366,73 @@ async function resolveUserChannelId(strapi2, userId) {
     }
   }
   return userChannelId;
+}
+async function hasWechatAuth(strapi2, upUserId) {
+  try {
+    const sop = strapi2.plugin("zhao-sso")?.service("sso-sop");
+    if (!sop) return false;
+    const sso = await sop.resolveSsoUserForUpUser(upUserId);
+    if (!sso?.id) return false;
+    const bound = await strapi2.db.query("plugin::zhao-sso.sso-third-party-binding").findOne({
+      where: { user: sso.id, provider: "wechat" }
+    });
+    return !!bound;
+  } catch {
+    return false;
+  }
+}
+async function grantOutline(strapi2, opts) {
+  if (opts.reward.kind === "lesson" && opts.reward.courseId) {
+    await grantCourseTrial(strapi2, opts.userId, Number(opts.reward.courseId));
+    return true;
+  }
+  return true;
+}
+async function grantReward(strapi2, opts) {
+  const { userId, reward } = opts;
+  if (!reward?.id || !reward?.type) return null;
+  const base = { id: reward.id, type: reward.type, name: reward.name || "" };
+  try {
+    switch (reward.type) {
+      case "points": {
+        const amount = Math.max(0, Number(reward.amount) || 0);
+        if (amount <= 0) return null;
+        await strapi2.plugin("zhao-point").service("point").earnPoints({
+          userId,
+          action: "activity_reward",
+          points: amount,
+          source: "activity",
+          method: "activity_reward",
+          remark: `活动奖励:${reward.name ?? "奖励"}`,
+          userChannelId: opts.channelId
+        });
+        return { ...base, message: `积分 +${amount}` };
+      }
+      case "course_trial": {
+        const courseId = Number(reward.courseId);
+        if (!courseId) return null;
+        await grantCourseTrial(strapi2, userId, courseId);
+        return { ...base, message: "已开通试听课程" };
+      }
+      case "course_outline": {
+        if (!await grantOutline(strapi2, { userId, reward })) return null;
+        if (reward.kind === "lesson") return { ...base, message: "已开通试听课时" };
+        return { ...base, message: "已解锁课前培训大纲", link: reward.link };
+      }
+      case "coupon": {
+        const c = await strapi2.db.query("plugin::zhao-deal.coupon").findOne({
+          where: { id: Number(reward.couponId) || 0 }
+        });
+        if (!c) return null;
+        return { ...base, message: `已领取优惠券：${c.amountDesc ?? ""}`.trim(), link: c.promoLink };
+      }
+      default:
+        return null;
+    }
+  } catch (e) {
+    strapi2.log.warn(`[zhao-point:activity] grantReward ${reward.id} failed: ${e.message}`);
+    return null;
+  }
 }
 async function grantShareReward(strapi2, userId, act) {
   try {
@@ -35405,7 +35486,7 @@ async function grantShareReward(strapi2, userId, act) {
 }
 const feeSvc = () => strapi.plugin("zhao-point").service("fee-service");
 const activity = ({ strapi: strapi2 }) => ({
-  async signup({ userId, activityId, formData }) {
+  async signup({ userId, activityId, formData, chosenRewards }) {
     const act = await strapi2.documents(ACTIVITY_UID$5).findOne({ documentId: activityId, populate: { preUnlockLessons: { populate: { course: true } } } });
     if (!act) throw new Error("活动不存在");
     if (act.status !== "signup_open") throw new Error("活动未开放报名");
@@ -35413,11 +35494,33 @@ const activity = ({ strapi: strapi2 }) => ({
     if (act.signupStart && now < new Date(act.signupStart).getTime()) throw new Error("报名未开始");
     if (act.signupEnd && now > new Date(act.signupEnd).getTime()) throw new Error("报名已截止");
     const formConfig = act.formConfig;
-    if (Array.isArray(formConfig) && formConfig.length) {
+    const rewardConfig = act.rewardConfig;
+    const hasReward = !!rewardConfig && typeof rewardConfig === "object";
+    if (Array.isArray(formConfig) && formConfig.length && !hasReward) {
       const v = validateFormData(formConfig, formData);
       if (!v.ok) throw new FormValidationError(v.errors);
     }
     const storedFormData = Array.isArray(formConfig) && formConfig.length ? collectFormData(formConfig, formData) : void 0;
+    let loginAuth = false;
+    const channels = {};
+    let rewardList = [];
+    if (hasReward) {
+      loginAuth = await hasWechatAuth(strapi2, userId);
+      const infoChannels = Array.isArray(rewardConfig?.infoChannels) ? rewardConfig.infoChannels : [];
+      for (const ic of infoChannels) {
+        if (!ic?.channel) continue;
+        channels[ic.channel] = channelFilled(formConfig, formData, ic.channel);
+      }
+      rewardList = Array.isArray(rewardConfig?.rewards) ? rewardConfig.rewards : [];
+    }
+    const visibleRewards = rewardList.filter((r) => isRewardUnlocked(r, loginAuth, channels));
+    const autoChosen = visibleRewards.filter((r) => r.mode !== "multi").map((r) => r.id);
+    const multiIds = visibleRewards.filter((r) => r.mode === "multi").map((r) => r.id);
+    const chosenRewardsIds = [
+      ...autoChosen,
+      ...(Array.isArray(chosenRewards) ? chosenRewards : []).filter((id) => multiIds.indexOf(id) >= 0)
+    ];
+    const unlockInfo = hasReward ? { loginAuth, channels, chosenRewards: chosenRewardsIds } : void 0;
     const dup = await strapi2.db.query(SIGNS_UID$3).findOne({
       where: { user: userId, activity: act.id, status: { $in: ["active", "waiting"] } }
     });
@@ -35426,7 +35529,7 @@ const activity = ({ strapi: strapi2 }) => ({
     const reserved = await knex("activities").where("id", act.id).andWhere("used_capacity", "<", knex.raw("capacity")).increment("used_capacity", 1);
     if (reserved === 0) {
       const sig = await strapi2.db.query(SIGNS_UID$3).create({
-        data: { user: userId, activity: act.id, status: "waiting", signupAt: /* @__PURE__ */ new Date(), ...storedFormData ? { formData: storedFormData } : {} }
+        data: { user: userId, activity: act.id, status: "waiting", signupAt: /* @__PURE__ */ new Date(), ...storedFormData ? { formData: storedFormData } : {}, ...unlockInfo ? { unlockInfo: { ...unlockInfo, chosenRewards: [] } } : {} }
       });
       const waitCount = await strapi2.db.query(SIGNS_UID$3).count({
         where: {
@@ -35476,7 +35579,16 @@ const activity = ({ strapi: strapi2 }) => ({
         return { ok: false, reason: "insufficient_points" };
       }
     }
-    await strapi2.db.query(SIGNS_UID$3).create({ data: { user: userId, activity: act.id, status: "active", signupAt: /* @__PURE__ */ new Date(), pointsCharged: feeCollectAt === "signup" ? cost : 0, feeTierId: resolved.tierId ?? null, ...storedFormData ? { formData: storedFormData } : {} } });
+    await strapi2.db.query(SIGNS_UID$3).create({ data: { user: userId, activity: act.id, status: "active", signupAt: /* @__PURE__ */ new Date(), pointsCharged: feeCollectAt === "signup" ? cost : 0, feeTierId: resolved.tierId ?? null, ...storedFormData ? { formData: storedFormData } : {}, ...unlockInfo ? { unlockInfo } : {} } });
+    const granted = [];
+    if (hasReward && chosenRewardsIds.length) {
+      const userChannelId = await resolveUserChannelId(strapi2, userId);
+      for (const r of rewardList) {
+        if (chosenRewardsIds.indexOf(r.id) < 0) continue;
+        const g = await grantReward(strapi2, { userId, reward: r, channelId: userChannelId });
+        if (g) granted.push(g);
+      }
+    }
     await grantPoints(strapi2, userId, "activity_signup", "活动报名");
     await grantShareReward(strapi2, userId, act);
     await this.notifyInApp(userId, act.id, "activity.confirm", { name: act.title, startTime: act.startTime }, `activity:confirm:${userId}:${act.id}`);
@@ -35490,7 +35602,7 @@ const activity = ({ strapi: strapi2 }) => ({
       const sop = strapi2.plugin("zhao-sso")?.service("sso-sop");
       if (sop) {
         const sso = await sop.resolveSsoUserForUpUser(userId);
-        if (!sso) return { ok: true };
+        if (!sso) return { ok: true, granted, ...unlockInfo ? { unlockInfo } : {} };
         const startTime = act.startTime;
         const schedules = [{ templateCode: "act_confirm", scene: "activity.confirm" }];
         const leadMin = Number(act.remindLeadMinutes ?? 1440);
@@ -35509,7 +35621,7 @@ const activity = ({ strapi: strapi2 }) => ({
     } catch (e) {
       strapi2.log.warn(`[zhao-point:activity] sop activity.signup embed failed: ${e.message}`);
     }
-    return { ok: true };
+    return { ok: true, granted, ...unlockInfo ? { unlockInfo } : {} };
   },
   /**
    * 活动结束触点：本项目无可靠业务结束判定（无 cron、无专属关闭端点，adminUpdate 仅通用更新 status），

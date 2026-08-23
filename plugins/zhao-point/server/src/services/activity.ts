@@ -1,5 +1,5 @@
 import type { Core } from "@strapi/strapi";
-import { FormValidationError, validateFormData, collectFormData } from "./form";
+import { FormValidationError, validateFormData, collectFormData, channelFilled } from "./form";
 
 const SIGNS_UID = "plugin::zhao-point.activity-signup";
 const ATT_UID = "plugin::zhao-point.activity-attendance";
@@ -12,6 +12,14 @@ function haversineM(lat1: number, lng1: number, lat2: number, lng2: number): num
   const dLat = toRad(lat2 - lat1), dLng = toRad(lng2 - lng1);
   const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+/** 奖励解锁判定：奖励若声明 loginRequired/channel，未满足则该奖励不解锁；未声明则视为解锁 */
+function isRewardUnlocked(r: any, loginAuth: boolean, channels: Record<string, boolean>): boolean {
+  if (!r || typeof r !== "object") return false;
+  if (r.loginRequired && !loginAuth) return false;
+  if (r.channel && !channels[r.channel]) return false;
+  return true;
 }
 
 async function grantPoints(strapi, userId: number, action: string, remark: string) {
@@ -57,6 +65,78 @@ async function resolveUserChannelId(strapi, userId: number): Promise<number | un
     }
   }
   return userChannelId;
+}
+
+/** 是否已微信授权登录：解析 sso 用户并探测是否绑定过公众号(provider=wechat)第三方授权 */
+async function hasWechatAuth(strapi: any, upUserId: number): Promise<boolean> {
+  try {
+    const sop = strapi.plugin("zhao-sso")?.service("sso-sop");
+    if (!sop) return false;
+    const sso = await sop.resolveSsoUserForUpUser(upUserId);
+    if (!sso?.id) return false;
+    const bound = await strapi.db.query("plugin::zhao-sso.sso-third-party-binding").findOne({
+      where: { user: sso.id, provider: "wechat" },
+    });
+    return !!bound;
+  } catch {
+    return false;
+  }
+}
+
+/** 大纲奖励按 kind 分发：lesson→课时课程授权；article/file→无用户级授权，返回信息供前端展示/领取 */
+async function grantOutline(strapi: any, opts: { userId: number; reward: any }): Promise<boolean> {
+  if (opts.reward.kind === "lesson" && opts.reward.courseId) {
+    await grantCourseTrial(strapi, opts.userId, Number(opts.reward.courseId));
+    return true;
+  }
+  return true;
+}
+
+/** 逐项发放奖励；按类型分发，重入由调用方靠 unlockInfo 幂等保证 */
+async function grantReward(strapi: any, opts: {
+  userId: number; reward: any; channelId?: number;
+}): Promise<{ id: string; type: string; name: string; message: string; link?: string } | null> {
+  const { userId, reward } = opts;
+  if (!reward?.id || !reward?.type) return null;
+  const base = { id: reward.id, type: reward.type, name: reward.name || "" };
+  try {
+    switch (reward.type) {
+      case "points": {
+        const amount = Math.max(0, Number(reward.amount) || 0);
+        if (amount <= 0) return null;
+        await strapi.plugin("zhao-point").service("point").earnPoints({
+          userId, action: "activity_reward", points: amount,
+          source: "activity", method: "activity_reward",
+          remark: `活动奖励:${reward.name ?? "奖励"}`,
+          userChannelId: opts.channelId,
+        });
+        return { ...base, message: `积分 +${amount}` };
+      }
+      case "course_trial": {
+        const courseId = Number(reward.courseId);
+        if (!courseId) return null;
+        await grantCourseTrial(strapi, userId, courseId);
+        return { ...base, message: "已开通试听课程" };
+      }
+      case "course_outline": {
+        if (!(await grantOutline(strapi, { userId, reward }))) return null;
+        if (reward.kind === "lesson") return { ...base, message: "已开通试听课时" };
+        return { ...base, message: "已解锁课前培训大纲", link: reward.link };
+      }
+      case "coupon": {
+        const c = await strapi.db.query("plugin::zhao-deal.coupon").findOne({
+          where: { id: Number(reward.couponId) || 0 },
+        });
+        if (!c) return null;
+        return { ...base, message: `已领取优惠券：${c.amountDesc ?? ""}`.trim(), link: c.promoLink };
+      }
+      default:
+        return null;
+    }
+  } catch (e: any) {
+    strapi.log.warn(`[zhao-point:activity] grantReward ${reward.id} failed: ${e.message}`);
+    return null;
+  }
 }
 
 /**
@@ -123,7 +203,7 @@ async function grantShareReward(strapi, userId: number, act: any) {
 const feeSvc = () => strapi.plugin("zhao-point").service("fee-service");
 
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
-  async signup({ userId, activityId, formData }: { userId: number; activityId: string; formData?: any }) {
+  async signup({ userId, activityId, formData, chosenRewards }: { userId: number; activityId: string; formData?: any; chosenRewards?: string[] }) {
     const act = await strapi.documents(ACTIVITY_UID).findOne({ documentId: activityId, populate: { preUnlockLessons: { populate: { course: true } } } });
     if (!act) throw new Error("活动不存在");
     if (act.status !== "signup_open") throw new Error("活动未开放报名");
@@ -131,12 +211,37 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     if (act.signupStart && now < new Date(act.signupStart).getTime()) throw new Error("报名未开始");
     if (act.signupEnd && now > new Date(act.signupEnd).getTime()) throw new Error("报名已截止");
     // 报名表单校验（活动配置了 formConfig 才校验；无配置兼容不校验）
+    // rewardConfig 存在时：必填宽放为选填，仅作为解锁依据，不再拦截报名
     const formConfig = act.formConfig;
-    if (Array.isArray(formConfig) && formConfig.length) {
+    const rewardConfig = act.rewardConfig;
+    const hasReward = !!rewardConfig && typeof rewardConfig === "object";
+    if (Array.isArray(formConfig) && formConfig.length && !hasReward) {
       const v = validateFormData(formConfig, formData);
       if (!v.ok) throw new FormValidationError(v.errors);
     }
     const storedFormData = Array.isArray(formConfig) && formConfig.length ? collectFormData(formConfig, formData) : undefined;
+
+    // 解锁判定：Group1 授权登录 + Group2 信息通道
+    let loginAuth = false;
+    const channels: Record<string, boolean> = {};
+    let rewardList: any[] = [];
+    if (hasReward) {
+      loginAuth = await hasWechatAuth(strapi, userId);
+      const infoChannels = Array.isArray(rewardConfig?.infoChannels) ? rewardConfig.infoChannels : [];
+      for (const ic of infoChannels) {
+        if (!ic?.channel) continue;
+        channels[ic.channel] = channelFilled(formConfig, formData, ic.channel);
+      }
+      rewardList = Array.isArray(rewardConfig?.rewards) ? rewardConfig.rewards : [];
+    }
+    const visibleRewards = rewardList.filter((r: any) => isRewardUnlocked(r, loginAuth, channels));
+    const autoChosen = visibleRewards.filter((r: any) => r.mode !== "multi").map((r: any) => r.id);
+    const multiIds = visibleRewards.filter((r: any) => r.mode === "multi").map((r: any) => r.id);
+    const chosenRewardsIds = [
+      ...autoChosen,
+      ...(Array.isArray(chosenRewards) ? chosenRewards : []).filter((id) => multiIds.indexOf(id) >= 0),
+    ];
+    const unlockInfo = hasReward ? { loginAuth, channels, chosenRewards: chosenRewardsIds } : undefined;
     const dup = await strapi.db.query(SIGNS_UID).findOne({
       where: { user: userId, activity: act.id, status: { $in: ["active", "waiting"] } },
     });
@@ -146,7 +251,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     if (reserved === 0) {
       // 名额已满 → 进入候补队列（不占用名额）
       const sig = await strapi.db.query(SIGNS_UID).create({
-        data: { user: userId, activity: act.id, status: "waiting", signupAt: new Date(), ...(storedFormData ? { formData: storedFormData } : {}) },
+        data: { user: userId, activity: act.id, status: "waiting", signupAt: new Date(), ...(storedFormData ? { formData: storedFormData } : {}), ...(unlockInfo ? { unlockInfo: { ...unlockInfo, chosenRewards: [] } } : {}) },
       });
       const waitCount = await strapi.db.query(SIGNS_UID).count({
         where: {
@@ -197,7 +302,17 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         return { ok: false, reason: "insufficient_points" };
       }
     }
-    await strapi.db.query(SIGNS_UID).create({ data: { user: userId, activity: act.id, status: "active", signupAt: new Date(), pointsCharged: feeCollectAt === "signup" ? cost : 0, feeTierId: resolved.tierId ?? null, ...(storedFormData ? { formData: storedFormData } : {}) } });
+    await strapi.db.query(SIGNS_UID).create({ data: { user: userId, activity: act.id, status: "active", signupAt: new Date(), pointsCharged: feeCollectAt === "signup" ? cost : 0, feeTierId: resolved.tierId ?? null, ...(storedFormData ? { formData: storedFormData } : {}), ...(unlockInfo ? { unlockInfo } : {}) } });
+    // 报名奖励发放：仅已选定(解锁)项，逐项独立幂等
+    const granted: Array<{ id: string; type: string; name: string; message: string; link?: string }> = [];
+    if (hasReward && chosenRewardsIds.length) {
+      const userChannelId = await resolveUserChannelId(strapi, userId);
+      for (const r of rewardList) {
+        if (chosenRewardsIds.indexOf(r.id) < 0) continue;
+        const g = await grantReward(strapi, { userId, reward: r, channelId: userChannelId });
+        if (g) granted.push(g);
+      }
+    }
     // 报名积分
     await grantPoints(strapi, userId, "activity_signup", "活动报名");
     // 分享裂变奖励
@@ -217,7 +332,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       const sop = strapi.plugin("zhao-sso")?.service("sso-sop");
       if (sop) {
         const sso = await sop.resolveSsoUserForUpUser(userId);
-        if (!sso) return { ok: true };
+        if (!sso) return { ok: true, granted, ...(unlockInfo ? { unlockInfo } : {}) };
         const startTime = act.startTime;
         const schedules: any[] = [{ templateCode: "act_confirm", scene: "activity.confirm" }];
         const leadMin = Number(act.remindLeadMinutes ?? 1440);
@@ -237,7 +352,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     } catch (e: any) {
       strapi.log.warn(`[zhao-point:activity] sop activity.signup embed failed: ${e.message}`);
     }
-    return { ok: true };
+    return { ok: true, granted, ...(unlockInfo ? { unlockInfo } : {}) };
   },
 
   /**

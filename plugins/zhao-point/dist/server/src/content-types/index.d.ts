@@ -993,6 +993,9 @@ declare const _default: {
                 formConfig: {
                     type: string;
                 };
+                rewardConfig: {
+                    type: string;
+                };
                 remindLeadMinutes: {
                     type: string;
                     default: number;
@@ -1083,6 +1086,9 @@ declare const _default: {
                     type: string;
                 };
                 formData: {
+                    type: string;
+                };
+                unlockInfo: {
                     type: string;
                 };
             };

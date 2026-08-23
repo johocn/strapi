@@ -27,10 +27,13 @@ export declare function validateFormData(formConfig: any, formData: any): {
 };
 /** 仅收集 formConfig 定义的 key，并规范化 number/multi；忽略未定义字段 */
 export declare function collectFormData(formConfig: any, formData: any): Record<string, any>;
+/** 供解锁判定：判断某通道(contact/survey)在 formData 中是否已填(至少一个该通道字段非空) */
+export declare function channelFilled(formConfig: any, formData: any, channel: string): boolean;
 declare const _default: ({ strapi }: {
     strapi: Core.Strapi;
 }) => {
     validateFormData: typeof validateFormData;
     collectFormData: typeof collectFormData;
+    channelFilled: typeof channelFilled;
 };
 export default _default;

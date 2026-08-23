@@ -15,7 +15,8 @@ declare const _default: {
     "nps": { "type": "integer", "min": 0, "max": 10 },
     "review": { "type": "text" },
     "reviewedAt": { "type": "datetime" },
-    "formData": { "type": "json" }
+    "formData": { "type": "json" },
+    "unlockInfo": { "type": "json" }
   }
 };
 
