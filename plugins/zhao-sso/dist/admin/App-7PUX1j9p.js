@@ -2026,13 +2026,40 @@ const TemplateSection = () => {
   const templateId = (t) => t.template_id ?? t.templateId ?? t.object_id ?? t.type ?? t.title ?? "";
   return /* @__PURE__ */ jsxRuntime.jsxs(designSystem.Box, { children: [
     /* @__PURE__ */ jsxRuntime.jsx(designSystem.Typography, { variant: "delta", paddingBottom: 3, children: "模板消息配置" }),
-    /* @__PURE__ */ jsxRuntime.jsx(designSystem.Box, { paddingBottom: 4, children: /* @__PURE__ */ jsxRuntime.jsxs(designSystem.Typography, { textColor: "neutral600", variant: "pi", children: [
-      "以下为公众号已添加的模板列表(来自 /v1/admin/wx/templates)。请在「消息中心 / OAuth 相关 msg-template 配置」中，把模板的 ",
-      /* @__PURE__ */ jsxRuntime.jsx("code", { children: "wxTemplateId" }),
-      " 填为列表中的模板 ID，并在 ",
-      /* @__PURE__ */ jsxRuntime.jsx("code", { children: "wxTemplateFields" }),
-      "中配置字段映射后，即可用于发送微信模板消息。"
-    ] }) }),
+    /* @__PURE__ */ jsxRuntime.jsxs(designSystem.Box, { background: "neutral100", borderColor: "neutral200", borderRadius: 4, padding: 4, marginBottom: 5, children: [
+      /* @__PURE__ */ jsxRuntime.jsxs(designSystem.Typography, { textColor: "neutral600", variant: "pi", paddingBottom: 2, children: [
+        "零基础配置指引（完整步骤请在 ",
+        /* @__PURE__ */ jsxRuntime.jsx("strong", { children: "web 运营端 → 消息中心 → 消息模板" }),
+        " 查看并完成）："
+      ] }),
+      /* @__PURE__ */ jsxRuntime.jsxs("ol", { style: { margin: 0, paddingLeft: 20, color: "#666", fontSize: 12, lineHeight: 1.9 }, children: [
+        /* @__PURE__ */ jsxRuntime.jsxs("li", { children: [
+          "公众号须为",
+          /* @__PURE__ */ jsxRuntime.jsx("strong", { children: "认证服务号" }),
+          "，接收人需已关注。"
+        ] }),
+        /* @__PURE__ */ jsxRuntime.jsxs("li", { children: [
+          "登录 ",
+          /* @__PURE__ */ jsxRuntime.jsx("strong", { children: "mp.weixin.qq.com" }),
+          " → 广告与服务 → 增值服务 → 模板消息，选取模板并复制",
+          /* @__PURE__ */ jsxRuntime.jsx("strong", { children: "模板 ID" }),
+          "。"
+        ] }),
+        /* @__PURE__ */ jsxRuntime.jsxs("li", { children: [
+          "在 OAuth 配置填公众号 ",
+          /* @__PURE__ */ jsxRuntime.jsx("strong", { children: "AppID / AppSecret" }),
+          "（见本页上方公众号配置）。"
+        ] }),
+        /* @__PURE__ */ jsxRuntime.jsxs("li", { children: [
+          "在 web 运营端「消息模板」新增模板，把 ",
+          /* @__PURE__ */ jsxRuntime.jsx("code", { children: "wxTemplateId" }),
+          " 填为下方列表中的模板 ID，并在 ",
+          /* @__PURE__ */ jsxRuntime.jsx("code", { children: "wxTemplateFields" }),
+          " 配置字段映射后，点「发送测试」验证。"
+        ] })
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxRuntime.jsx(designSystem.Typography, { textColor: "neutral600", variant: "pi", paddingBottom: 4, children: "以下为公众号已添加的模板列表（来自 /v1/admin/wx/templates）。" }),
     loading ? /* @__PURE__ */ jsxRuntime.jsx(designSystem.Loader, { children: "加载中..." }) : items.length === 0 ? /* @__PURE__ */ jsxRuntime.jsx(designSystem.EmptyStateLayout, { content: "暂无模板数据，或公众号未添加模板" }) : /* @__PURE__ */ jsxRuntime.jsx(designSystem.Box, { background: "neutral0", borderRadius: 4, shadow: "filterShadow", children: /* @__PURE__ */ jsxRuntime.jsxs(designSystem.Table, { colCount: 5, rowCount: items.length, children: [
       /* @__PURE__ */ jsxRuntime.jsx(designSystem.Thead, { children: /* @__PURE__ */ jsxRuntime.jsxs(designSystem.Tr, { children: [
         /* @__PURE__ */ jsxRuntime.jsx(designSystem.Th, { children: /* @__PURE__ */ jsxRuntime.jsx(designSystem.Typography, { variant: "sigma", children: "模板 ID" }) }),

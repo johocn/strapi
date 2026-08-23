@@ -669,13 +669,20 @@ const TemplateSection = () => {
       <Typography variant="delta" paddingBottom={3}>
         模板消息配置
       </Typography>
-      <Box paddingBottom={4}>
-        <Typography textColor="neutral600" variant="pi">
-          以下为公众号已添加的模板列表(来自 /v1/admin/wx/templates)。请在「消息中心 / OAuth 相关 msg-template
-          配置」中，把模板的 <code>wxTemplateId</code> 填为列表中的模板 ID，并在 <code>wxTemplateFields</code>
-          中配置字段映射后，即可用于发送微信模板消息。
+      <Box background="neutral100" borderColor="neutral200" borderRadius={4} padding={4} marginBottom={5}>
+        <Typography textColor="neutral600" variant="pi" paddingBottom={2}>
+          零基础配置指引（完整步骤请在 <strong>web 运营端 → 消息中心 → 消息模板</strong> 查看并完成）：
         </Typography>
+        <ol style={{ margin: 0, paddingLeft: 20, color: "#666", fontSize: 12, lineHeight: 1.9 }}>
+          <li>公众号须为<strong>认证服务号</strong>，接收人需已关注。</li>
+          <li>登录 <strong>mp.weixin.qq.com</strong> → 广告与服务 → 增值服务 → 模板消息，选取模板并复制<strong>模板 ID</strong>。</li>
+          <li>在 OAuth 配置填公众号 <strong>AppID / AppSecret</strong>（见本页上方公众号配置）。</li>
+          <li>在 web 运营端「消息模板」新增模板，把 <code>wxTemplateId</code> 填为下方列表中的模板 ID，并在 <code>wxTemplateFields</code> 配置字段映射后，点「发送测试」验证。</li>
+        </ol>
       </Box>
+      <Typography textColor="neutral600" variant="pi" paddingBottom={4}>
+        以下为公众号已添加的模板列表（来自 /v1/admin/wx/templates）。
+      </Typography>
 
       {loading ? (
         <Loader>加载中...</Loader>

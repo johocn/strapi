@@ -37,7 +37,7 @@ const index = {
         id: `${PLUGIN_ID}.plugin.name`,
         defaultMessage: "SSO 统一登录"
       },
-      Component: () => Promise.resolve().then(() => require("./App-DGKJmACY.js")).then((mod) => ({ default: mod.App }))
+      Component: () => Promise.resolve().then(() => require("./App-7PUX1j9p.js")).then((mod) => ({ default: mod.App }))
     });
     app.registerPlugin({
       id: PLUGIN_ID,
