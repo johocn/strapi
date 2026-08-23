@@ -105,6 +105,7 @@ declare const _default: {
         find(query?: any, options?: {
             userId?: number;
             isAdmin?: boolean;
+            siteDocId?: string;
         }): Promise<{
             list: any[];
             pagination: {
@@ -117,6 +118,7 @@ declare const _default: {
         findOne(documentId: string, options?: {
             userId?: number;
             isAdmin?: boolean;
+            siteDocId?: string;
         }): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
         create(data: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
         update(documentId: string, data: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
@@ -127,11 +129,13 @@ declare const _default: {
         getQuestions(examDocumentId: string, options?: {
             userId?: number;
             isAdmin?: boolean;
+            siteDocId?: string;
         }): Promise<any>;
         calculateTotalPoints(examDocumentId: string): Promise<any>;
         generatePaper(examDocumentId: string, options?: {
             userId?: number;
             isAdmin?: boolean;
+            siteDocId?: string;
         }): Promise<{
             documentId: string;
             questions: any[];
@@ -140,6 +144,7 @@ declare const _default: {
         _assertExamRole(exam: any, options?: {
             userId?: number;
             isAdmin?: boolean;
+            siteDocId?: string;
         }): Promise<void>;
         _hideAnswers(questions: any[], exam: any): any[];
     };

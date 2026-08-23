@@ -1,5 +1,7 @@
 import type { Core } from "@strapi/strapi";
 import { FormValidationError } from "../services/form";
+import { isRoleGateEnabled, mayAccessVisibleToRoles } from "../../../../zhao-common/server/src/utils/role-gate";
+import { resolveUserRoles } from "../../../../zhao-course/server/src/utils/role-gate";
 
 const ACTIVITY_UID = "plugin::zhao-point.activity";
 const SIGNS_UID = "plugin::zhao-point.activity-signup";
@@ -47,14 +49,22 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       const filters: any = { status: { $notIn: ["draft", "archived"] } };
       if (category) filters.category = { $eq: category };
       if (search) filters.title = { $contains: search };
-      const result = await strapi.documents(ACTIVITY_UID).findMany({
+      const rows = await strapi.documents(ACTIVITY_UID).findMany({
         ...rest,
         filters,
         populate: "*",
         sort: "startTime:desc",
         pagination: { page: parseInt(page), pageSize: parseInt(pageSize) },
       });
-      ctx.body = wrapList(result);
+
+      // 强角色门控：租户开启 roleGate 时，仅授权角色可见配置了 visibleToRoles 的活动（游客 userRoles 为空 → 受限活动不可见）
+      let data: any = rows;
+      const roleGateEnabled = await isRoleGateEnabled(strapi, ctx.state?.siteDocumentId);
+      if (roleGateEnabled) {
+        const userRoles = await resolveUserRoles(strapi, ctx.state.user?.id);
+        data = rows.filter((a: any) => mayAccessVisibleToRoles(userRoles, a.visibleToRoles));
+      }
+      ctx.body = wrapList(data);
     } catch (e: any) {
       ctx.status = (e as any).status || 400;
       ctx.body = { error: e.message };
@@ -85,6 +95,14 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         populate: "*",
       });
       if (!activity) { ctx.status = 404; ctx.body = { error: "活动不存在" }; return; }
+      // 强角色门控：租户开启 roleGate 且活动配置了 visibleToRoles 时，未授权角色不可见
+      const roleGateEnabled = await isRoleGateEnabled(strapi, ctx.state?.siteDocumentId);
+      if (roleGateEnabled) {
+        const userRoles = await resolveUserRoles(strapi, ctx.state.user?.id);
+        if (!mayAccessVisibleToRoles(userRoles, activity.visibleToRoles)) {
+          ctx.status = 403; ctx.body = { error: "无权查看该活动" }; return;
+        }
+      }
       ctx.body = wrap(activity);
     } catch (e: any) {
       ctx.status = (e as any).status || 400;

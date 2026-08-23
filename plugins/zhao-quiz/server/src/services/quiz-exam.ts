@@ -1,7 +1,10 @@
 import type { Core } from "@strapi/strapi";
 import { resolveUserRoles, hasGrantedRole, parseQuizExamRoles } from "../utils/role-gate";
+import { isRoleGateEnabled, mayAccessVisibleToRoles } from "../../../../zhao-common/server/src/utils/role-gate";
 
 const UID = "plugin::zhao-quiz.quiz-exam";
+
+type RoleGateOpts = { userId?: number; isAdmin?: boolean; siteDocId?: string };
 
 export default ({ strapi }: { strapi: Core.Strapi }) => {
   function throwErr(code: string, status: number, message: string): never {
@@ -12,7 +15,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   }
 
   return {
-  async find(query: any = {}, options?: { userId?: number; isAdmin?: boolean }) {
+  async find(query: any = {}, options?: RoleGateOpts) {
     const { filters, pagination } = query;
     const page = Number(pagination?.page) || 1;
     const pageSize = Number(pagination?.pageSize) || 25;
@@ -33,6 +36,13 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       resultList = list.filter((exam: any) =>
         hasGrantedRole(userRoles, parseQuizExamRoles(exam.course))
       );
+      // 强角色门控：租户开启 roleGate 且考试配置了 visibleToRoles 时，仅授权角色可见
+      const roleGateEnabled = await isRoleGateEnabled(strapi, options?.siteDocId);
+      if (roleGateEnabled) {
+        resultList = resultList.filter((exam: any) =>
+          mayAccessVisibleToRoles(userRoles, exam.visibleToRoles)
+        );
+      }
     }
 
     return {
@@ -46,7 +56,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     };
   },
 
-  async findOne(documentId: string, options?: { userId?: number; isAdmin?: boolean }) {
+  async findOne(documentId: string, options?: RoleGateOpts) {
     const exam = await strapi.documents(UID).findOne({
       documentId,
       populate: { course: true, lesson: true, questions: true },
@@ -70,7 +80,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   /**
    * 获取考试题目（支持随机排序）
    */
-  async getQuestions(examDocumentId: string, options?: { userId?: number; isAdmin?: boolean }) {
+  async getQuestions(examDocumentId: string, options?: RoleGateOpts) {
     const exam = await strapi.documents(UID).findOne({
       documentId: examDocumentId,
       populate: { questions: true, course: true },
@@ -121,7 +131,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   /**
    * 组卷：fixed 固定题 或 rule 规则抽题；返回隐藏答案的题目与缺额提示
    */
-  async generatePaper(examDocumentId: string, options?: { userId?: number; isAdmin?: boolean }) {
+  async generatePaper(examDocumentId: string, options?: RoleGateOpts) {
     const exam = await strapi.documents(UID).findOne({
       documentId: examDocumentId,
       populate: { questions: true, course: true },
@@ -165,11 +175,16 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   },
 
   /** 考试角色门控：非 admin 且课程配置了 quiz.examRoles 时，未授权角色抛 403 */
-  async _assertExamRole(exam: any, options?: { userId?: number; isAdmin?: boolean }) {
+  async _assertExamRole(exam: any, options?: RoleGateOpts) {
     if (!exam) return;
     if (options?.isAdmin) return;
     const userRoles = await resolveUserRoles(strapi, options?.userId);
     if (!hasGrantedRole(userRoles, parseQuizExamRoles(exam.course))) {
+      throwErr("QUIZ_403", 403, "无权进行该考试");
+    }
+    // 强角色门控：租户开启 roleGate 且考试配置了 visibleToRoles 时，未授权角色抛 403
+    const roleGateEnabled = await isRoleGateEnabled(strapi, options?.siteDocId);
+    if (roleGateEnabled && !mayAccessVisibleToRoles(userRoles, exam.visibleToRoles)) {
       throwErr("QUIZ_403", 403, "无权进行该考试");
     }
   },

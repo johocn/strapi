@@ -449,7 +449,7 @@ const wrapList$3 = (result) => {
 };
 const quizExam$1 = ({ strapi }) => ({
   _opts(ctx) {
-    return { userId: ctx.state.user?.id, isAdmin: ctx.path?.includes("/admin/") ?? false };
+    return { userId: ctx.state.user?.id, isAdmin: ctx.path?.includes("/admin/") ?? false, siteDocId: ctx.state?.siteDocumentId };
   },
   async find(ctx) {
     try {
@@ -1462,6 +1462,20 @@ function parseQuizExamRoles(course) {
   if (!Array.isArray(er)) return [];
   return er.filter((x) => typeof x === "string");
 }
+async function isRoleGateEnabled(strapi, siteDocId) {
+  try {
+    const s = strapi.plugin("zhao-common")?.service("site-config");
+    const full = siteDocId ? await strapi.documents("plugin::zhao-common.site-config").findOne({ documentId: siteDocId }) : await s?.getConfig(siteDocId);
+    return full?.featureFlags?.roleGate === true;
+  } catch {
+    return false;
+  }
+}
+function mayAccessVisibleToRoles(userRoles, visibleToRoles) {
+  if (!Array.isArray(visibleToRoles) || visibleToRoles.length === 0) return true;
+  if (!Array.isArray(userRoles) || userRoles.length === 0) return false;
+  return visibleToRoles.some((r) => userRoles.includes(r));
+}
 const UID$3 = "plugin::zhao-quiz.quiz-exam";
 const quizExam = ({ strapi }) => {
   function throwErr(code, status, message) {
@@ -1489,6 +1503,12 @@ const quizExam = ({ strapi }) => {
         resultList = list.filter(
           (exam) => hasGrantedRole(userRoles, parseQuizExamRoles(exam.course))
         );
+        const roleGateEnabled = await isRoleGateEnabled(strapi, options2?.siteDocId);
+        if (roleGateEnabled) {
+          resultList = resultList.filter(
+            (exam) => mayAccessVisibleToRoles(userRoles, exam.visibleToRoles)
+          );
+        }
       }
       return {
         list: resultList,
@@ -1601,6 +1621,10 @@ const quizExam = ({ strapi }) => {
       if (options2?.isAdmin) return;
       const userRoles = await resolveUserRoles(strapi, options2?.userId);
       if (!hasGrantedRole(userRoles, parseQuizExamRoles(exam.course))) {
+        throwErr("QUIZ_403", 403, "无权进行该考试");
+      }
+      const roleGateEnabled = await isRoleGateEnabled(strapi, options2?.siteDocId);
+      if (roleGateEnabled && !mayAccessVisibleToRoles(userRoles, exam.visibleToRoles)) {
         throwErr("QUIZ_403", 403, "无权进行该考试");
       }
     },

@@ -31,6 +31,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         siteChannelIds: ctx.state.siteChannelIds || [],
         crossChannelEnabled: ctx.state.crossChannelEnabled ?? true,
         userId: ctx.state.user?.id,
+        siteDocId: ctx.state?.siteDocumentId,
       }));
     } catch (err) {
       ctx.status = (err as any).status || 400;
@@ -52,6 +53,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         userId: ctx.state.user?.id,
         isAdmin,
         channelScope: ctx.state.channelScope,
+        siteDocId: ctx.state?.siteDocumentId,
       });
       if (!result) {
         ctx.status = 404;

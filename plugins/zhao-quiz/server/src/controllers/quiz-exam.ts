@@ -19,7 +19,7 @@ const wrapList = (result: any) => {
 
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
   _opts(ctx: any) {
-    return { userId: ctx.state.user?.id, isAdmin: ctx.path?.includes("/admin/") ?? false };
+    return { userId: ctx.state.user?.id, isAdmin: ctx.path?.includes("/admin/") ?? false, siteDocId: ctx.state?.siteDocumentId };
   },
 
   async find(ctx: any) {

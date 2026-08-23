@@ -400,7 +400,8 @@ const course$1 = ({ strapi }) => ({
         mergedChannelIds: ctx.state.mergedChannelIds || [],
         siteChannelIds: ctx.state.siteChannelIds || [],
         crossChannelEnabled: ctx.state.crossChannelEnabled ?? true,
-        userId: ctx.state.user?.id
+        userId: ctx.state.user?.id,
+        siteDocId: ctx.state?.siteDocumentId
       }));
     } catch (err) {
       ctx.status = err.status || 400;
@@ -420,7 +421,8 @@ const course$1 = ({ strapi }) => ({
       const result = await strapi.plugin("zhao-course").service("course").findOne(documentId, publicOnly, {
         userId: ctx.state.user?.id,
         isAdmin,
-        channelScope: ctx.state.channelScope
+        channelScope: ctx.state.channelScope,
+        siteDocId: ctx.state?.siteDocumentId
       });
       if (!result) {
         ctx.status = 404;
@@ -1816,6 +1818,20 @@ function parseLearnRoles(featureFlags) {
   if (!Array.isArray(learn)) return [];
   return learn.filter((x) => typeof x === "string");
 }
+async function isRoleGateEnabled(strapi, siteDocId) {
+  try {
+    const s = strapi.plugin("zhao-common")?.service("site-config");
+    const full = siteDocId ? await strapi.documents("plugin::zhao-common.site-config").findOne({ documentId: siteDocId }) : await s?.getConfig(siteDocId);
+    return full?.featureFlags?.roleGate === true;
+  } catch {
+    return false;
+  }
+}
+function mayAccessVisibleToRoles(userRoles, visibleToRoles) {
+  if (!Array.isArray(visibleToRoles) || visibleToRoles.length === 0) return true;
+  if (!Array.isArray(userRoles) || userRoles.length === 0) return false;
+  return visibleToRoles.some((r) => userRoles.includes(r));
+}
 const UID$6 = "plugin::zhao-course.course";
 const TARGET_TYPE$1 = "plugin::zhao-course.course";
 const DATE_FIELDS = ["enrollStartDate", "enrollEndDate", "courseStartDate", "courseEndDate", "publishDate"];
@@ -2101,6 +2117,14 @@ const course = ({ strapi }) => {
           return hasGrantedRole(userRoles, learn);
         });
       }
+      if (channelScope && !channelScope.all) {
+        const roleGateEnabled = await isRoleGateEnabled(strapi, ctxState?.siteDocId);
+        if (roleGateEnabled) {
+          filteredList = filteredList.filter(
+            (course2) => mayAccessVisibleToRoles(userRoles, course2.visibleToRoles)
+          );
+        }
+      }
       if (sort) {
         const sortField = typeof sort === "string" ? sort : Object.keys(sort)[0];
         const sortOrder = typeof sort === "string" ? "asc" : sort[sortField] === "desc" ? "desc" : "asc";
@@ -2151,6 +2175,12 @@ const course = ({ strapi }) => {
         const learn = parseLearnRoles(result.featureFlags);
         const userRoles = await resolveUserRoles(strapi, options2?.userId);
         if (!hasGrantedRole(userRoles, learn)) {
+          const err = new Error("无权查看该课程");
+          err.status = 403;
+          throw err;
+        }
+        const roleGateEnabled = await isRoleGateEnabled(strapi, options2?.siteDocId);
+        if (roleGateEnabled && !mayAccessVisibleToRoles(userRoles, result.visibleToRoles)) {
           const err = new Error("无权查看该课程");
           err.status = 403;
           throw err;

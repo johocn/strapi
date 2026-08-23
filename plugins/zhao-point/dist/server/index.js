@@ -1735,6 +1735,26 @@ const form = ({ strapi: strapi2 }) => ({
   collectFormData,
   channelFilled
 });
+async function isRoleGateEnabled(strapi2, siteDocId) {
+  try {
+    const s = strapi2.plugin("zhao-common")?.service("site-config");
+    const full = siteDocId ? await strapi2.documents("plugin::zhao-common.site-config").findOne({ documentId: siteDocId }) : await s?.getConfig(siteDocId);
+    return full?.featureFlags?.roleGate === true;
+  } catch {
+    return false;
+  }
+}
+function mayAccessVisibleToRoles(userRoles, visibleToRoles) {
+  if (!Array.isArray(visibleToRoles) || visibleToRoles.length === 0) return true;
+  if (!Array.isArray(userRoles) || userRoles.length === 0) return false;
+  return visibleToRoles.some((r) => userRoles.includes(r));
+}
+async function resolveUserRoles(strapi2, userId) {
+  if (!userId) return [];
+  const user = await strapi2.db.query("plugin::users-permissions.user").findOne({ where: { id: userId } });
+  const raw = Array.isArray(user?.zhaoRoles) ? user.zhaoRoles : [];
+  return raw.filter((r) => typeof r === "string");
+}
 const ACTIVITY_UID$8 = "plugin::zhao-point.activity";
 const SIGNS_UID$4 = "plugin::zhao-point.activity-signup";
 const ATT_UID$2 = "plugin::zhao-point.activity-attendance";
@@ -1775,14 +1795,20 @@ const activity$1 = ({ strapi: strapi2 }) => {
         const filters2 = { status: { $notIn: ["draft", "archived"] } };
         if (category) filters2.category = { $eq: category };
         if (search) filters2.title = { $contains: search };
-        const result = await strapi2.documents(ACTIVITY_UID$8).findMany({
+        const rows = await strapi2.documents(ACTIVITY_UID$8).findMany({
           ...rest,
           filters: filters2,
           populate: "*",
           sort: "startTime:desc",
           pagination: { page: parseInt(page), pageSize: parseInt(pageSize) }
         });
-        ctx.body = wrapList$1(result);
+        let data = rows;
+        const roleGateEnabled = await isRoleGateEnabled(strapi2, ctx.state?.siteDocumentId);
+        if (roleGateEnabled) {
+          const userRoles = await resolveUserRoles(strapi2, ctx.state.user?.id);
+          data = rows.filter((a) => mayAccessVisibleToRoles(userRoles, a.visibleToRoles));
+        }
+        ctx.body = wrapList$1(data);
       } catch (e) {
         ctx.status = e.status || 400;
         ctx.body = { error: e.message };
@@ -1814,6 +1840,15 @@ const activity$1 = ({ strapi: strapi2 }) => {
           ctx.status = 404;
           ctx.body = { error: "活动不存在" };
           return;
+        }
+        const roleGateEnabled = await isRoleGateEnabled(strapi2, ctx.state?.siteDocumentId);
+        if (roleGateEnabled) {
+          const userRoles = await resolveUserRoles(strapi2, ctx.state.user?.id);
+          if (!mayAccessVisibleToRoles(userRoles, activity2.visibleToRoles)) {
+            ctx.status = 403;
+            ctx.body = { error: "无权查看该活动" };
+            return;
+          }
         }
         ctx.body = wrap$5(activity2);
       } catch (e) {

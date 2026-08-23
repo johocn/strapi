@@ -1,5 +1,6 @@
 import type { Core } from "@strapi/strapi";
 import { resolveUserRoles, hasGrantedRole, parseLearnRoles } from "../utils/role-gate";
+import { isRoleGateEnabled, mayAccessVisibleToRoles } from "../../../../zhao-common/server/src/utils/role-gate";
 
 const UID = "plugin::zhao-course.course";
 const TARGET_TYPE = "plugin::zhao-course.course";
@@ -211,6 +212,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     siteChannelIds: number[];
     crossChannelEnabled: boolean;
     userId?: number;
+    siteDocId?: string;
   }) {
     const { filters, populate, sort, pagination, fields, locale } = query;
     const mergedFilters: any = { ...filters };
@@ -349,6 +351,16 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       });
     }
 
+    // 强角色门控：租户开启 roleGate 且课程配置了 visibleToRoles 时，仅授权角色可见（游客 userRoles 为空 → 受限课程不可见）
+    if (channelScope && !channelScope.all) {
+      const roleGateEnabled = await isRoleGateEnabled(strapi, ctxState?.siteDocId);
+      if (roleGateEnabled) {
+        filteredList = filteredList.filter((course: any) =>
+          mayAccessVisibleToRoles(userRoles, course.visibleToRoles)
+        );
+      }
+    }
+
     // 排序
     if (sort) {
       const sortField = typeof sort === "string" ? sort : Object.keys(sort)[0];
@@ -379,7 +391,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     };
   },
 
-  async findOne(documentId: string, publicOnly: boolean = false, options?: { userId?: number; isAdmin?: boolean; channelScope?: { all: boolean; isGuest?: boolean } }) {
+  async findOne(documentId: string, publicOnly: boolean = false, options?: { userId?: number; isAdmin?: boolean; channelScope?: { all: boolean; isGuest?: boolean }; siteDocId?: string }) {
     const params: any = {
       documentId,
       populate: {
@@ -405,6 +417,13 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       const learn = parseLearnRoles(result.featureFlags);
       const userRoles = await resolveUserRoles(strapi, options?.userId);
       if (!hasGrantedRole(userRoles, learn)) {
+        const err: any = new Error("无权查看该课程");
+        err.status = 403;
+        throw err;
+      }
+      // 强角色门控：租户开启 roleGate 且配置了 visibleToRoles 时，未授权角色抛 403
+      const roleGateEnabled = await isRoleGateEnabled(strapi, options?.siteDocId);
+      if (roleGateEnabled && !mayAccessVisibleToRoles(userRoles, result.visibleToRoles)) {
         const err: any = new Error("无权查看该课程");
         err.status = 403;
         throw err;

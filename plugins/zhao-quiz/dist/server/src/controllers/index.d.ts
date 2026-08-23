@@ -34,6 +34,7 @@ declare const _default: {
         _opts(ctx: any): {
             userId: any;
             isAdmin: any;
+            siteDocId: any;
         };
         find(ctx: any): Promise<void>;
         findOne(ctx: any): Promise<void>;
