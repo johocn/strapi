@@ -320,15 +320,18 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
    * 创建用户（三方登录自动注册）
    */
   async createUserFromThirdParty(platform: string, tokenResult: any, inviteCode?: string) {
+    // 业务用户统一走 up_users（plugin::users-permissions.user），
+    // 其 id 既是 account.user 关联目标也是 zhao-auth jwt 的签发主体。
+    // 之前误用 zhao-sso sso-user 建 sso_user 表，导致 account.user 关联的 up_users 不存在而报错。
     const prefix = platform === "wechat" ? "wx" : platform === "alipay" ? "alipay" : "dy";
     const username = `${prefix}_${tokenResult.openId.substring(0, 16)}`;
     const email = `${username}@third.placeholder`;
 
-    const user = await strapi.plugin("zhao-sso").service("sso-user").createUser({
+    const authService = strapi.plugin("zhao-auth").service("auth");
+    const user = await authService.createUser({
       username,
       email,
       password: Math.random().toString(36).substring(2, 18),
-      register_channel: `sso_${platform}`,
     });
 
     // 尝试处理邀请码
