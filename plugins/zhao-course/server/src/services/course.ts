@@ -352,7 +352,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     }
 
     // 强角色门控：租户开启 roleGate 且课程配置了 visibleToRoles 时，仅授权角色可见（游客 userRoles 为空 → 受限课程不可见）
-    if (channelScope && !channelScope.all) {
+    // 条件与非 admin 等价（游客 channelScope.all=true + isGuest=true 也必须过滤），故用 !isAdmin 判定
+    if (!isAdmin) {
       const roleGateEnabled = await isRoleGateEnabled(strapi, ctxState?.siteDocId);
       if (roleGateEnabled) {
         filteredList = filteredList.filter((course: any) =>

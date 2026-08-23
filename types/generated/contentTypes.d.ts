@@ -1792,6 +1792,7 @@ export interface PluginZhaoCourseCourse extends Struct.CollectionTypeSchema {
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     viewCount: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    visibleToRoles: Schema.Attribute.JSON;
   };
 }
 
@@ -4180,6 +4181,7 @@ export interface PluginZhaoPointActivity extends Struct.CollectionTypeSchema {
     usedCapacity: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
     venue: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-point.venue'>;
     venueName: Schema.Attribute.String;
+    visibleToRoles: Schema.Attribute.JSON;
   };
 }
 
@@ -5351,6 +5353,7 @@ export interface PluginZhaoQuizQuizExam extends Struct.CollectionTypeSchema {
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+    visibleToRoles: Schema.Attribute.JSON;
   };
 }
 

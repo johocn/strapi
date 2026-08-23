@@ -148,36 +148,35 @@ function ids(list) { return Array.isArray(list) ? list.map((x) => x && x.documen
     `keys=${Object.keys(mGrant || {}).length}`);
 
   // ---------- 3. 造受限/开放 课程、活动、考试 ----------
-  const body = (data) => JSON.stringify(data);
   // 课程(admin create + 自动 publish)
   // 注: course.admin create 直接返回对象(非包裹), documentId 在顶层
-  let rc = await req('POST', '/api/zhao-course/v1/admin/courses', body({
+  let rc = await req('POST', '/api/zhao-course/v1/admin/courses', {
     title: PREFIX + 'course_restricted_' + Date.now(), channelScope: 'all', status: 'published', visibleToRoles: [AUTHED_ROLE],
-  }), adminToken);
+  }, adminToken);
   const courseRDoc = (rc.data && rc.data.documentId) || null;
-  rc = await req('POST', '/api/zhao-course/v1/admin/courses', body({
+  rc = await req('POST', '/api/zhao-course/v1/admin/courses', {
     title: PREFIX + 'course_open_' + Date.now(), channelScope: 'all', status: 'published', visibleToRoles: null,
-  }), adminToken);
+  }, adminToken);
   const courseODoc = (rc.data && rc.data.documentId) || null;
 
   // 活动
-  let ra = await req('POST', '/api/zhao-point/v1/admin/adm/activities', body({
+  let ra = await req('POST', '/api/zhao-point/v1/admin/adm/activities', {
     title: PREFIX + 'act_restricted_' + Date.now(), channelScope: 'all', status: 'signup_open', visibleToRoles: [AUTHED_ROLE],
-  }), adminToken);
+  }, adminToken);
   const actRDoc = (ra.data && ra.data.data && ra.data.data.documentId) || null;
-  ra = await req('POST', '/api/zhao-point/v1/admin/adm/activities', body({
+  ra = await req('POST', '/api/zhao-point/v1/admin/adm/activities', {
     title: PREFIX + 'act_open_' + Date.now(), channelScope: 'all', status: 'signup_open', visibleToRoles: null,
-  }), adminToken);
+  }, adminToken);
   const actODoc = (ra.data && ra.data.data && ra.data.data.documentId) || null;
 
   // 考试(无 D&P, 提交即可)
-  let re = await req('POST', '/api/zhao-quiz/v1/admin/quiz-exams', body({
+  let re = await req('POST', '/api/zhao-quiz/v1/admin/quiz-exams', {
     title: PREFIX + 'exam_restricted_' + Date.now(), visibleToRoles: [AUTHED_ROLE],
-  }), adminToken);
+  }, adminToken);
   const examRDoc = (re.data && re.data.data && re.data.data.documentId) || null;
-  re = await req('POST', '/api/zhao-quiz/v1/admin/quiz-exams', body({
+  re = await req('POST', '/api/zhao-quiz/v1/admin/quiz-exams', {
     title: PREFIX + 'exam_open_' + Date.now(), visibleToRoles: null,
-  }), adminToken);
+  }, adminToken);
   const examODoc = (re.data && re.data.data && re.data.data.documentId) || null;
 
   ok('造受限课程(R)/开放课程(O) + 受限活动(R)/开放活动(O) + 受限考试(R)/开放考试(O)',

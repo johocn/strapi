@@ -2119,7 +2119,7 @@ const course = ({ strapi }) => {
           return hasGrantedRole(userRoles, learn);
         });
       }
-      if (channelScope && !channelScope.all) {
+      if (!isAdmin) {
         const roleGateEnabled = await isRoleGateEnabled(strapi, ctxState?.siteDocId);
         if (roleGateEnabled) {
           filteredList = filteredList.filter(
