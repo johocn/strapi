@@ -24,4 +24,6 @@ export const DEFAULT_MODULE_VISIBILITY: Record<string, string[]> = {
   payment: ["plugin-manager", "wealth-manager"],
   community: ["channel-admin", "plugin-manager", "marketing-manager"],
   forum: ["channel-admin", "plugin-manager", "marketing-manager"],
+  exam: ["channel-admin", "plugin-manager", "quiz-manager", "quiz-editor", "course-manager", "course-editor", "tag-manager", "tag-editor"],
+  activity: ["channel-admin", "plugin-manager", "point-manager", "point-editor"],
 };

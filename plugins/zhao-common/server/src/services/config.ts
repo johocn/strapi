@@ -432,6 +432,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         website: siteFeatureFlags.website ?? true,
         logistics: siteFeatureFlags.logistics ?? true,
         studio: siteFeatureFlags.studio ?? true,
+        exam: siteFeatureFlags.exam ?? true,
+        activity: siteFeatureFlags.activity ?? true,
+        roleGate: siteFeatureFlags.roleGate ?? false,
         // 细粒度开关（从 extraConfig 合并后的 ec 读取）
         pointsEnabled: siteFeatureFlags.points ?? true,
         coursePreviewEnabled: ec.coursePreviewEnabled ?? true,
