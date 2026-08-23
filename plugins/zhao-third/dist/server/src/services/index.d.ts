@@ -118,8 +118,8 @@ declare const _default: {
     "third-party-account": ({ strapi }: {
         strapi: import('@strapi/types/dist/core').Strapi;
     }) => {
-        findByOpenId(platform: string, appType: string, openId: string): Promise<import('@strapi/types/dist/modules/documents').AnyDocument | null>;
-        findByUnionId(platform: string, unionId: string): Promise<import('@strapi/types/dist/modules/documents').AnyDocument | null>;
+        findByOpenId(platform: string, appType: string, openId: string): Promise<any>;
+        findByUnionId(platform: string, unionId: string): Promise<any>;
         findByUser(userId: number | string): Promise<import('@strapi/types/dist/modules/documents').AnyDocument[]>;
         createAccount(data: Record<string, any>): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
         updateAccount(documentId: string, data: Record<string, any>): Promise<import('@strapi/types/dist/modules/documents').AnyDocument | null>;
