@@ -81,6 +81,10 @@ declare const _default: {
       "type": "json",
       "default": "[]"
     },
+    "visibleToRoles": {
+      "type": "json",
+      "default": null
+    },
     "deletedAt": {
       "type": "datetime",
       "default": null

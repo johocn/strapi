@@ -26,6 +26,7 @@
     "status": { "type": "enumeration", "enum": ["draft", "signup_open", "ongoing", "ended", "archived"], "default": "draft" },
     "channelScope": { "type": "enumeration", "enum": ["all", "specific"], "default": "all" },
     "channelIds": { "type": "json" },
+    "visibleToRoles": { "type": "json", "default": null },
     "pointsCost": { "type": "integer", "default": 0 },
     "pricingMode": { "type": "enumeration", "enum": ["flat", "tier", "factor"], "default": "flat" },
     "feeTiers": { "type": "json" },

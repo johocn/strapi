@@ -941,6 +941,10 @@ declare const _default: {
                 channelIds: {
                     type: string;
                 };
+                visibleToRoles: {
+                    type: string;
+                    default: any;
+                };
                 pointsCost: {
                     type: string;
                     default: number;

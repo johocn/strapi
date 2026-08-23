@@ -219,6 +219,10 @@
       "type": "json",
       "default": "[]"
     },
+    "visibleToRoles": {
+      "type": "json",
+      "default": null
+    },
     "allowCrossChannel": {
       "type": "boolean",
       "default": true

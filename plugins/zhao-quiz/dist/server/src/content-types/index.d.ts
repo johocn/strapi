@@ -258,6 +258,10 @@ declare const _default: {
                     type: string;
                     default: string;
                 };
+                visibleToRoles: {
+                    type: string;
+                    default: any;
+                };
                 deletedAt: {
                     type: string;
                     default: any;
