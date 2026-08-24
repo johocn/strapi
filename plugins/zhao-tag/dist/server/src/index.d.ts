@@ -1,6 +1,9 @@
+import { Core } from '../../../../node_modules/@strapi/strapi';
 declare const _default: {
     register(): void;
-    bootstrap(): void;
+    bootstrap({ strapi }: {
+        strapi: Core.Strapi;
+    }): Promise<void>;
     destroy(): void;
     contentTypes: {
         tag: {
@@ -317,7 +320,7 @@ declare const _default: {
     };
     controllers: {
         tag: ({ strapi }: {
-            strapi: import('@strapi/types/dist/core').Strapi;
+            strapi: Core.Strapi;
         }) => {
             find(ctx: any): Promise<void>;
             findOne(ctx: any): Promise<void>;
@@ -326,13 +329,13 @@ declare const _default: {
             delete(ctx: any): Promise<void>;
         };
         "tag-index": ({ strapi }: {
-            strapi: import('@strapi/types/dist/core').Strapi;
+            strapi: Core.Strapi;
         }) => {
             find(ctx: any): Promise<void>;
             search(ctx: any): Promise<void>;
         };
         "tag-group": ({ strapi }: {
-            strapi: import('@strapi/types/dist/core').Strapi;
+            strapi: Core.Strapi;
         }) => {
             find(ctx: any): Promise<void>;
             findOne(ctx: any): Promise<void>;
@@ -343,7 +346,7 @@ declare const _default: {
     };
     services: {
         tag: ({ strapi }: {
-            strapi: import('@strapi/types/dist/core').Strapi;
+            strapi: Core.Strapi;
         }) => {
             find(query?: any): Promise<{
                 list: import('@strapi/types/dist/modules/documents').AnyDocument[];
@@ -361,9 +364,13 @@ declare const _default: {
                 documentId: import('@strapi/types/dist/modules/documents').ID;
                 entries: import('@strapi/types/dist/modules/documents').Result<TContentTypeUID, TParams>[];
             }>;
+            findOrCreate({ groupSlug, name }: {
+                groupSlug: string;
+                name: string;
+            }): Promise<string | null>;
         };
         "tag-index": ({ strapi }: {
-            strapi: import('@strapi/types/dist/core').Strapi;
+            strapi: Core.Strapi;
         }) => {
             sync(targetType: string, targetId: string, tagIds: string[]): Promise<void>;
             remove(targetType: string, targetId: string): Promise<void>;
@@ -371,7 +378,7 @@ declare const _default: {
             countByTag(tagDocumentId: string): Promise<number>;
         };
         "tag-group": ({ strapi }: {
-            strapi: import('@strapi/types/dist/core').Strapi;
+            strapi: Core.Strapi;
         }) => {
             find(query?: any): Promise<{
                 list: import('@strapi/types/dist/modules/documents').AnyDocument[];

@@ -135,4 +135,38 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async delete(documentId: string) {
     return strapi.documents(UID).delete({ documentId });
   },
+
+  async findOrCreate({ groupSlug, name }: { groupSlug: string; name: string }) {
+    if (!groupSlug || !name) return null;
+    const GROUPS = "plugin::zhao-tag.tag-group";
+    const groups = await strapi.documents(GROUPS).findMany({
+      filters: { slug: groupSlug },
+      fields: ["documentId", "slug"],
+    });
+    const group = groups?.[0];
+    if (!group) throw new Error(`标签分组不存在: ${groupSlug}`);
+
+    const knex = strapi.db.connection;
+    const grp = await knex("zhao_tag_groups").where("document_id", group.documentId).first();
+    let found = null;
+    if (grp) {
+      const rows = await knex("zhao_tags_tag_group_lnk")
+        .where("tag_group_id", grp.id)
+        .select("tag_id");
+      const tagIds = rows.map((r: any) => r.tag_id);
+      if (tagIds.length) {
+        const tags = await strapi.documents(UID).findMany({
+          filters: { id: { $in: tagIds }, name },
+          fields: ["documentId"],
+        });
+        found = tags?.[0] ?? null;
+      }
+    }
+    if (found) return found.documentId;
+
+    const created = await strapi.documents(UID).create({
+      data: { name, tagGroup: group.documentId },
+    });
+    return created.documentId;
+  },
 });

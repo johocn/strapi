@@ -1031,6 +1031,11 @@ declare const _default: {
                 };
             };
         };
+        lifecycles: {
+            afterCreate(event: any): Promise<void>;
+            afterUpdate(event: any): Promise<void>;
+            afterDelete(event: any): Promise<void>;
+        };
     };
     "activity-signup": {
         schema: {
@@ -1185,7 +1190,16 @@ declare const _default: {
                 defaultRules: {
                     type: string;
                 };
+                tag: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                };
             };
+        };
+        lifecycles: {
+            afterCreate(event: any): Promise<void>;
+            afterUpdate(event: any): Promise<void>;
         };
     };
     "activity-referral-reward": {
@@ -1367,7 +1381,16 @@ declare const _default: {
                     type: string;
                     default: number;
                 };
+                tag: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                };
             };
+        };
+        lifecycles: {
+            afterCreate(event: any): Promise<void>;
+            afterUpdate(event: any): Promise<void>;
         };
     };
     venue: {
@@ -1425,7 +1448,16 @@ declare const _default: {
                     type: string;
                     default: number;
                 };
+                tag: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                };
             };
+        };
+        lifecycles: {
+            afterCreate(event: any): Promise<void>;
+            afterUpdate(event: any): Promise<void>;
         };
     };
 };

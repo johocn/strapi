@@ -49,6 +49,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       const filters: any = { status: { $notIn: ["draft", "archived"] } };
       if (category) filters.category = { $eq: category };
       if (search) filters.title = { $contains: search };
+      const docIds = parseDocumentIds(ctx.query.documentIds);
+      if (docIds.length) filters.documentId = { $in: docIds };
       const rows = await strapi.documents(ACTIVITY_UID).findMany({
         ...rest,
         filters,
@@ -196,6 +198,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       const { page = "1", pageSize = "20", status, ...rest } = ctx.query;
       const filters: any = {};
       if (status) filters.status = status;
+      const docIds = parseDocumentIds(ctx.query.documentIds);
+      if (docIds.length) filters.documentId = { $in: docIds };
       const result = await strapi.documents(ACTIVITY_UID).findMany({
         ...rest,
         filters: Object.keys(filters).length ? filters : undefined,
@@ -576,4 +580,11 @@ function extractReviewKeywords(rows: any[], top: number): { text: string; value:
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "zh"))
     .slice(0, top)
     .map(([text, value]) => ({ text, value }));
+}
+
+function parseDocumentIds(v: any): string[] {
+  if (!v) return [];
+  if (Array.isArray(v)) return v.flatMap((x) => parseDocumentIds(x));
+  if (typeof v === "string") return v.split(",").map((s) => s.trim()).filter(Boolean);
+  return [];
 }

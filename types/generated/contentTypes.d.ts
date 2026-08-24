@@ -4355,6 +4355,7 @@ export interface PluginZhaoPointActivitySeries
     sortOrder: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
     status: Schema.Attribute.Enumeration<['active', 'hidden']> &
       Schema.Attribute.DefaultTo<'active'>;
+    tag: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-tag.tag'>;
     title: Schema.Attribute.String & Schema.Attribute.Required;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
@@ -4532,6 +4533,7 @@ export interface PluginZhaoPointLecturer extends Struct.CollectionTypeSchema {
       Schema.Attribute.Private;
     name: Schema.Attribute.String & Schema.Attribute.Required;
     publishedAt: Schema.Attribute.DateTime;
+    tag: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-tag.tag'>;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -5178,6 +5180,7 @@ export interface PluginZhaoPointVenue extends Struct.CollectionTypeSchema {
       Schema.Attribute.Private;
     name: Schema.Attribute.String & Schema.Attribute.Required;
     publishedAt: Schema.Attribute.DateTime;
+    tag: Schema.Attribute.Relation<'manyToOne', 'plugin::zhao-tag.tag'>;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;

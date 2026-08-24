@@ -11,7 +11,12 @@ declare const _default: {
     "status": { "type": "enumeration", "enum": ["active", "hidden"], "default": "active" },
     "schedule": { "type": "json" },
     "activities": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-point.activity", "mappedBy": "belongsToSeries" },
-    "defaultRules": { "type": "json" }
+    "defaultRules": { "type": "json" },
+    "tag": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-tag.tag"
+    }
   }
 };
 

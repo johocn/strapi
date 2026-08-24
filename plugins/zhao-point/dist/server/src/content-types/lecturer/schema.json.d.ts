@@ -11,7 +11,12 @@ declare const _default: {
     "disabled": { "type": "boolean", "default": false },
     "activities": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-point.activity", "mappedBy": "lecturer" },
     "cashMode": { "type": "enumeration", "enum": ["none", "flat"], "default": "none" },
-    "cashFee": { "type": "decimal", "default": 0 }
+    "cashFee": { "type": "decimal", "default": 0 },
+    "tag": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-tag.tag"
+    }
   }
 };
 

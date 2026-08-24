@@ -16,6 +16,10 @@ import activityReferralReward from "./activity-referral-reward/schema.json";
 import activityLedger from "./activity-ledger/schema.json";
 import lecturer from "./lecturer/schema.json";
 import venue from "./venue/schema.json";
+import lecturerLifecycles from "./lecturer/lifecycles";
+import venueLifecycles from "./venue/lifecycles";
+import activityLifecycles from "./activity/lifecycles";
+import activitySeriesLifecycles from "./activity-series/lifecycles";
 
 export default {
   "point-record": { schema: pointRecord },
@@ -28,12 +32,12 @@ export default {
   "point-type": { schema: pointType },
   "sign-in-record": { schema: signInRecord },
   "pickup-location": { schema: pickupLocation },
-  activity: { schema: activity },
+  activity: { schema: activity, lifecycles: activityLifecycles },
   "activity-signup": { schema: activitySignup },
   "activity-attendance": { schema: activityAttendance },
-  "activity-series": { schema: activitySeries },
+  "activity-series": { schema: activitySeries, lifecycles: activitySeriesLifecycles },
   "activity-referral-reward": { schema: activityReferralReward },
   "activity-ledger": { schema: activityLedger },
-  lecturer: { schema: lecturer },
-  venue: { schema: venue },
+  lecturer: { schema: lecturer, lifecycles: lecturerLifecycles },
+  venue: { schema: venue, lifecycles: venueLifecycles },
 };

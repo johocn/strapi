@@ -18,6 +18,10 @@ declare const _default: {
             documentId: import('@strapi/types/dist/modules/documents').ID;
             entries: import('@strapi/types/dist/modules/documents').Result<TContentTypeUID, TParams>[];
         }>;
+        findOrCreate({ groupSlug, name }: {
+            groupSlug: string;
+            name: string;
+        }): Promise<string | null>;
     };
     "tag-index": ({ strapi }: {
         strapi: import('@strapi/types/dist/core').Strapi;

@@ -273,7 +273,7 @@ const kind$4 = "collectionType";
 const collectionName$4 = "activity_series";
 const info$4 = { "singularName": "activity-series", "pluralName": "activity-series", "displayName": "Activity Series" };
 const options$4 = { "draftAndPublish": false };
-const attributes$4 = { "title": { "type": "string", "required": true }, "description": { "type": "text" }, "cover": { "type": "string" }, "sortOrder": { "type": "integer", "default": 0 }, "status": { "type": "enumeration", "enum": ["active", "hidden"], "default": "active" }, "schedule": { "type": "json" }, "activities": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-point.activity", "mappedBy": "belongsToSeries" }, "defaultRules": { "type": "json" } };
+const attributes$4 = { "title": { "type": "string", "required": true }, "description": { "type": "text" }, "cover": { "type": "string" }, "sortOrder": { "type": "integer", "default": 0 }, "status": { "type": "enumeration", "enum": ["active", "hidden"], "default": "active" }, "schedule": { "type": "json" }, "activities": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-point.activity", "mappedBy": "belongsToSeries" }, "defaultRules": { "type": "json" }, "tag": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-tag.tag" } };
 const activitySeries = {
   kind: kind$4,
   collectionName: collectionName$4,
@@ -310,7 +310,7 @@ const collectionName$1 = "lecturers";
 const info$1 = { "singularName": "lecturer", "pluralName": "lecturers", "displayName": "Lecturer", "description": "讲师资源主档" };
 const options$1 = { "draftAndPublish": false };
 const pluginOptions$1 = { "i18n": { "localized": false } };
-const attributes$1 = { "name": { "type": "string", "required": true }, "desc": { "type": "text" }, "defaultBufferMin": { "type": "integer", "default": 30 }, "disabled": { "type": "boolean", "default": false }, "activities": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-point.activity", "mappedBy": "lecturer" }, "cashMode": { "type": "enumeration", "enum": ["none", "flat"], "default": "none" }, "cashFee": { "type": "decimal", "default": 0 } };
+const attributes$1 = { "name": { "type": "string", "required": true }, "desc": { "type": "text" }, "defaultBufferMin": { "type": "integer", "default": 30 }, "disabled": { "type": "boolean", "default": false }, "activities": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-point.activity", "mappedBy": "lecturer" }, "cashMode": { "type": "enumeration", "enum": ["none", "flat"], "default": "none" }, "cashFee": { "type": "decimal", "default": 0 }, "tag": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-tag.tag" } };
 const lecturer = {
   kind: kind$1,
   collectionName: collectionName$1,
@@ -324,7 +324,7 @@ const collectionName = "venues";
 const info = { "singularName": "venue", "pluralName": "venues", "displayName": "Venue", "description": "场地资源主档" };
 const options = { "draftAndPublish": false };
 const pluginOptions = { "i18n": { "localized": false } };
-const attributes = { "name": { "type": "string", "required": true }, "desc": { "type": "text" }, "defaultBufferMin": { "type": "integer", "default": 15 }, "lat": { "type": "float" }, "lng": { "type": "float" }, "disabled": { "type": "boolean", "default": false }, "activities": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-point.activity", "mappedBy": "venue" }, "cashMode": { "type": "enumeration", "enum": ["none", "flat"], "default": "none" }, "cashFee": { "type": "decimal", "default": 0 } };
+const attributes = { "name": { "type": "string", "required": true }, "desc": { "type": "text" }, "defaultBufferMin": { "type": "integer", "default": 15 }, "lat": { "type": "float" }, "lng": { "type": "float" }, "disabled": { "type": "boolean", "default": false }, "activities": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-point.activity", "mappedBy": "venue" }, "cashMode": { "type": "enumeration", "enum": ["none", "flat"], "default": "none" }, "cashFee": { "type": "decimal", "default": 0 }, "tag": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-tag.tag" } };
 const venue = {
   kind,
   collectionName,
@@ -332,6 +332,200 @@ const venue = {
   options,
   pluginOptions,
   attributes
+};
+const UID$3 = "plugin::zhao-point.lecturer";
+const GROUP_SLUG$2 = "activity-lecturer";
+const NAME_FIELD$2 = "name";
+const TAG_UID$2 = "plugin::zhao-tag.tag";
+const gStrapi$3 = () => globalThis?.strapi;
+async function syncShadowTag$2(documentId, alias) {
+  const strapi2 = gStrapi$3();
+  const tagSvc = strapi2?.plugin("zhao-tag")?.service("tag");
+  if (!tagSvc) return;
+  const cur = await strapi2.documents(UID$3).findOne({
+    documentId,
+    populate: { tag: { fields: ["documentId", "name"] } }
+  });
+  const curTag = cur?.tag;
+  if (curTag?.documentId) {
+    if (curTag.name !== alias) {
+      await strapi2.documents(TAG_UID$2).update({ documentId: curTag.documentId, data: { name: alias } });
+    }
+    return;
+  }
+  const tagId = await tagSvc.findOrCreate({ groupSlug: GROUP_SLUG$2, name: alias });
+  if (!tagId) return;
+  await strapi2.documents(UID$3).update({ documentId, data: { tag: tagId } });
+}
+const run$2 = async (event) => {
+  const { result } = event;
+  if (!result?.documentId) return;
+  const alias = result?.[NAME_FIELD$2];
+  if (!alias) return;
+  const strapi2 = gStrapi$3();
+  try {
+    await syncShadowTag$2(result.documentId, alias);
+  } catch (e) {
+    strapi2?.log.error(`[zhao-point] ${GROUP_SLUG$2} shadow tag sync failed ${result.documentId}: ${e.message}`);
+  }
+};
+const lecturerLifecycles = {
+  async afterCreate(event) {
+    await run$2(event);
+  },
+  async afterUpdate(event) {
+    await run$2(event);
+  }
+};
+const UID$2 = "plugin::zhao-point.venue";
+const GROUP_SLUG$1 = "activity-venue";
+const NAME_FIELD$1 = "name";
+const TAG_UID$1 = "plugin::zhao-tag.tag";
+const gStrapi$2 = () => globalThis?.strapi;
+async function syncShadowTag$1(documentId, alias) {
+  const strapi2 = gStrapi$2();
+  const tagSvc = strapi2?.plugin("zhao-tag")?.service("tag");
+  if (!tagSvc) return;
+  const cur = await strapi2.documents(UID$2).findOne({
+    documentId,
+    populate: { tag: { fields: ["documentId", "name"] } }
+  });
+  const curTag = cur?.tag;
+  if (curTag?.documentId) {
+    if (curTag.name !== alias) {
+      await strapi2.documents(TAG_UID$1).update({ documentId: curTag.documentId, data: { name: alias } });
+    }
+    return;
+  }
+  const tagId = await tagSvc.findOrCreate({ groupSlug: GROUP_SLUG$1, name: alias });
+  if (!tagId) return;
+  await strapi2.documents(UID$2).update({ documentId, data: { tag: tagId } });
+}
+async function run$1(event) {
+  const { result } = event;
+  if (!result?.documentId) return;
+  const alias = result?.[NAME_FIELD$1];
+  if (!alias) return;
+  const strapi2 = gStrapi$2();
+  try {
+    await syncShadowTag$1(result.documentId, alias);
+  } catch (e) {
+    strapi2?.log.error(`[zhao-point] ${GROUP_SLUG$1} shadow tag sync failed ${result.documentId}: ${e.message}`);
+  }
+}
+const venueLifecycles = {
+  async afterCreate(event) {
+    await run$1(event);
+  },
+  async afterUpdate(event) {
+    await run$1(event);
+  }
+};
+const ACTIVITY_UID$9 = "plugin::zhao-point.activity";
+const CATEGORY_GROUP = "activity-category";
+const gStrapi$1 = () => globalThis?.strapi;
+function tagIdOf(rel) {
+  if (!rel) return void 0;
+  const t = rel.tag;
+  if (typeof t === "string") return t;
+  return t?.documentId ?? t?.id ?? void 0;
+}
+async function syncActivityIndex(documentId) {
+  const strapi2 = gStrapi$1();
+  const tagSvc = strapi2?.plugin("zhao-tag")?.service("tag");
+  const indexSvc = strapi2?.plugin("zhao-tag")?.service("tag-index");
+  if (!tagSvc || !indexSvc) return;
+  const act = await strapi2.documents(ACTIVITY_UID$9).findOne({
+    documentId,
+    populate: {
+      lecturer: { populate: ["tag"] },
+      venue: { populate: ["tag"] },
+      belongsToSeries: { populate: ["tag"] }
+    }
+  });
+  const tagIds = /* @__PURE__ */ new Set();
+  for (const d of [tagIdOf(act?.lecturer), tagIdOf(act?.venue), tagIdOf(act?.belongsToSeries)]) {
+    if (d) tagIds.add(d);
+  }
+  if (act?.category) {
+    const catDocId = await tagSvc.findOrCreate({ groupSlug: CATEGORY_GROUP, name: String(act.category) });
+    if (catDocId) tagIds.add(catDocId);
+  }
+  await indexSvc.sync("activity", documentId, Array.from(tagIds));
+}
+async function sync(documentId) {
+  const strapi2 = gStrapi$1();
+  if (!documentId) return;
+  try {
+    await syncActivityIndex(documentId);
+  } catch (e) {
+    strapi2?.log.error(`[zhao-point] activity tag-index sync failed ${documentId}: ${e.message}`);
+  }
+}
+async function remove(documentId) {
+  const strapi2 = gStrapi$1();
+  if (!documentId) return;
+  try {
+    const indexSvc = strapi2?.plugin("zhao-tag")?.service("tag-index");
+    if (indexSvc) await indexSvc.remove("activity", documentId);
+  } catch (e) {
+    strapi2?.log.error(`[zhao-point] activity tag-index remove failed ${documentId}: ${e.message}`);
+  }
+}
+const activityLifecycles = {
+  async afterCreate(event) {
+    await sync(event?.result?.documentId);
+  },
+  async afterUpdate(event) {
+    await sync(event?.result?.documentId);
+  },
+  async afterDelete(event) {
+    await remove(event?.result?.documentId);
+  }
+};
+const UID$1 = "plugin::zhao-point.activity-series";
+const GROUP_SLUG = "activity-series";
+const NAME_FIELD = "title";
+const TAG_UID = "plugin::zhao-tag.tag";
+const gStrapi = () => globalThis?.strapi;
+async function syncShadowTag(documentId, alias) {
+  const strapi2 = gStrapi();
+  const tagSvc = strapi2?.plugin("zhao-tag")?.service("tag");
+  if (!tagSvc) return;
+  const cur = await strapi2.documents(UID$1).findOne({
+    documentId,
+    populate: { tag: { fields: ["documentId", "name"] } }
+  });
+  const curTag = cur?.tag;
+  if (curTag?.documentId) {
+    if (curTag.name !== alias) {
+      await strapi2.documents(TAG_UID).update({ documentId: curTag.documentId, data: { name: alias } });
+    }
+    return;
+  }
+  const tagId = await tagSvc.findOrCreate({ groupSlug: GROUP_SLUG, name: alias });
+  if (!tagId) return;
+  await strapi2.documents(UID$1).update({ documentId, data: { tag: tagId } });
+}
+async function run(event) {
+  const { result } = event;
+  if (!result?.documentId) return;
+  const alias = result?.[NAME_FIELD];
+  if (!alias) return;
+  const strapi2 = gStrapi();
+  try {
+    await syncShadowTag(result.documentId, alias);
+  } catch (e) {
+    strapi2?.log.error(`[zhao-point] ${GROUP_SLUG} shadow tag sync failed ${result.documentId}: ${e.message}`);
+  }
+}
+const activitySeriesLifecycles = {
+  async afterCreate(event) {
+    await run(event);
+  },
+  async afterUpdate(event) {
+    await run(event);
+  }
 };
 const contentTypes = {
   "point-record": { schema: pointRecord },
@@ -344,14 +538,14 @@ const contentTypes = {
   "point-type": { schema: pointType },
   "sign-in-record": { schema: signInRecord },
   "pickup-location": { schema: pickupLocation },
-  activity: { schema: activity$2 },
+  activity: { schema: activity$2, lifecycles: activityLifecycles },
   "activity-signup": { schema: activitySignup },
   "activity-attendance": { schema: activityAttendance },
-  "activity-series": { schema: activitySeries },
+  "activity-series": { schema: activitySeries, lifecycles: activitySeriesLifecycles },
   "activity-referral-reward": { schema: activityReferralReward },
   "activity-ledger": { schema: activityLedger$1 },
-  lecturer: { schema: lecturer },
-  venue: { schema: venue }
+  lecturer: { schema: lecturer, lifecycles: lecturerLifecycles },
+  venue: { schema: venue, lifecycles: venueLifecycles }
 };
 const wrap$6 = (data, meta = {}) => ({ data, meta });
 const wrapList$2 = (result) => {
@@ -1795,6 +1989,8 @@ const activity$1 = ({ strapi: strapi2 }) => {
         const filters2 = { status: { $notIn: ["draft", "archived"] } };
         if (category) filters2.category = { $eq: category };
         if (search) filters2.title = { $contains: search };
+        const docIds = parseDocumentIds(ctx.query.documentIds);
+        if (docIds.length) filters2.documentId = { $in: docIds };
         const rows = await strapi2.documents(ACTIVITY_UID$8).findMany({
           ...rest,
           filters: filters2,
@@ -1944,6 +2140,8 @@ const activity$1 = ({ strapi: strapi2 }) => {
         const { page = "1", pageSize = "20", status, ...rest } = ctx.query;
         const filters2 = {};
         if (status) filters2.status = status;
+        const docIds = parseDocumentIds(ctx.query.documentIds);
+        if (docIds.length) filters2.documentId = { $in: docIds };
         const result = await strapi2.documents(ACTIVITY_UID$8).findMany({
           ...rest,
           filters: Object.keys(filters2).length ? filters2 : void 0,
@@ -2406,6 +2604,12 @@ function extractReviewKeywords(rows, top) {
     for (const seg of t.match(/[\u4e00-\u9fff]{2,12}/g) || []) add(seg);
   }
   return Array.from(counts.entries()).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "zh")).slice(0, top).map(([text, value]) => ({ text, value }));
+}
+function parseDocumentIds(v) {
+  if (!v) return [];
+  if (Array.isArray(v)) return v.flatMap((x) => parseDocumentIds(x));
+  if (typeof v === "string") return v.split(",").map((s) => s.trim()).filter(Boolean);
+  return [];
 }
 const SERIES_UID$2 = "plugin::zhao-point.activity-series";
 const ACTIVITY_UID$7 = "plugin::zhao-point.activity";
@@ -5964,7 +6168,7 @@ function requireLodash() {
           }).sort(compareAscending));
           return result2;
         });
-        function remove(array2, predicate) {
+        function remove2(array2, predicate) {
           var result2 = [];
           if (!(array2 && array2.length)) {
             return result2;
@@ -7713,7 +7917,7 @@ function requireLodash() {
         lodash2.rangeRight = rangeRight;
         lodash2.rearg = rearg;
         lodash2.reject = reject;
-        lodash2.remove = remove;
+        lodash2.remove = remove2;
         lodash2.rest = rest;
         lodash2.reverse = reverse;
         lodash2.sampleSize = sampleSize;
@@ -15633,7 +15837,7 @@ function createValidation(config2) {
       label,
       options: options2,
       originalValue,
-      sync
+      sync: sync2
     } = _ref, rest = _objectWithoutPropertiesLoose(_ref, ["value", "path", "label", "options", "originalValue", "sync"]);
     const {
       name,
@@ -15668,7 +15872,7 @@ function createValidation(config2) {
       options: options2,
       originalValue
     }, rest);
-    if (!sync) {
+    if (!sync2) {
       try {
         Promise.resolve(test.call(ctx, value, ctx)).then((validOrError) => {
           if (ValidationError.isError(validOrError)) cb(validOrError);
@@ -15936,7 +16140,7 @@ attempted value: ${formattedValue}
   }
   _validate(_value, options2 = {}, cb) {
     let {
-      sync,
+      sync: sync2,
       path,
       from = [],
       originalValue = _value,
@@ -15956,7 +16160,7 @@ attempted value: ${formattedValue}
       originalValue,
       schema: this,
       label: this.spec.label,
-      sync,
+      sync: sync2,
       from
     };
     let initialTests = [];
@@ -15975,7 +16179,7 @@ attempted value: ${formattedValue}
         tests: this.tests,
         args,
         path,
-        sync,
+        sync: sync2,
         value,
         endEarly: abortEarly
       }, cb);
@@ -17200,7 +17404,7 @@ class ObjectSchema extends BaseSchema {
   _validate(_value, opts = {}, callback) {
     let errors = [];
     let {
-      sync,
+      sync: sync2,
       from = [],
       originalValue = _value,
       abortEarly = this.spec.abortEarly,
@@ -18296,28 +18500,28 @@ function pipe$1(...fns) {
   };
 }
 fpExports.curry(pMap);
-const visitor$4 = ({ key, attribute }, { remove }) => {
+const visitor$4 = ({ key, attribute }, { remove: remove2 }) => {
   if (attribute?.type === "password") {
-    remove(key);
+    remove2(key);
   }
 };
-const visitor$3 = ({ schema: schema2, key, attribute }, { remove }) => {
+const visitor$3 = ({ schema: schema2, key, attribute }, { remove: remove2 }) => {
   if (!attribute) {
     return;
   }
   const isPrivate = attribute.private === true || isPrivateAttribute(schema2, key);
   if (isPrivate) {
-    remove(key);
+    remove2(key);
   }
 };
-const visitor$2 = ({ key, attribute }, { remove }) => {
+const visitor$2 = ({ key, attribute }, { remove: remove2 }) => {
   if (isMorphToRelationalAttribute(attribute)) {
-    remove(key);
+    remove2(key);
   }
 };
-const visitor$1 = ({ key, attribute }, { remove }) => {
+const visitor$1 = ({ key, attribute }, { remove: remove2 }) => {
   if (isDynamicZoneAttribute(attribute)) {
-    remove(key);
+    remove2(key);
   }
 };
 const visitor = ({ schema: schema2, key, value }, { set: set2 }) => {
@@ -19035,7 +19239,7 @@ const defaultSanitizeFilters = fpExports.curry((ctx, filters2) => {
   }
   return pipe$1(
     // Remove keys that are not attributes or valid operators
-    traverseQueryFilters(({ key, attribute }, { remove }) => {
+    traverseQueryFilters(({ key, attribute }, { remove: remove2 }) => {
       const isAttribute = !!attribute;
       if ([
         ID_ATTRIBUTE,
@@ -19044,7 +19248,7 @@ const defaultSanitizeFilters = fpExports.curry((ctx, filters2) => {
         return;
       }
       if (!isAttribute && !isOperator(key)) {
-        remove(key);
+        remove2(key);
       }
     }, ctx),
     // Remove dynamic zones from filters
@@ -19057,11 +19261,11 @@ const defaultSanitizeFilters = fpExports.curry((ctx, filters2) => {
     traverseQueryFilters(visitor$3, ctx),
     // Remove empty plain objects and empty arrays. Do not use lodash isObject+isEmpty: built-ins with no
     // enumerable keys (Date, RegExp, boxed primitives, etc.) are "empty" and would wrongly drop valid operands.
-    traverseQueryFilters(({ key, value }, { remove }) => {
+    traverseQueryFilters(({ key, value }, { remove: remove2 }) => {
       const isEmptyPlainObject = fpExports.isPlainObject(value) && fpExports.isEmpty(value);
       const isEmptyArrayOperand = fpExports.isArray(value) && fpExports.isEmpty(value);
       if (isEmptyPlainObject || isEmptyArrayOperand) {
-        remove(key);
+        remove2(key);
       }
     }, ctx)
   )(filters2);
@@ -19072,7 +19276,7 @@ const defaultSanitizeSort = fpExports.curry((ctx, sort2) => {
   }
   return pipe$1(
     // Remove non attribute keys
-    traverseQuerySort(({ key, attribute }, { remove }) => {
+    traverseQuerySort(({ key, attribute }, { remove: remove2 }) => {
       if ([
         ID_ATTRIBUTE,
         DOC_ID_ATTRIBUTE
@@ -19080,7 +19284,7 @@ const defaultSanitizeSort = fpExports.curry((ctx, sort2) => {
         return;
       }
       if (!attribute) {
-        remove(key);
+        remove2(key);
       }
     }, ctx),
     // Remove dynamic zones from sort
@@ -19092,7 +19296,7 @@ const defaultSanitizeSort = fpExports.curry((ctx, sort2) => {
     // Remove passwords from filters
     traverseQuerySort(visitor$4, ctx),
     // Remove keys for empty non-scalar values
-    traverseQuerySort(({ key, attribute, value }, { remove }) => {
+    traverseQuerySort(({ key, attribute, value }, { remove: remove2 }) => {
       if ([
         ID_ATTRIBUTE,
         DOC_ID_ATTRIBUTE
@@ -19100,7 +19304,7 @@ const defaultSanitizeSort = fpExports.curry((ctx, sort2) => {
         return;
       }
       if (!isScalarAttribute(attribute) && fpExports.isEmpty(value)) {
-        remove(key);
+        remove2(key);
       }
     }, ctx)
   )(sort2);
@@ -19111,7 +19315,7 @@ const defaultSanitizeFields = fpExports.curry((ctx, fields2) => {
   }
   return pipe$1(
     // Only keep scalar attributes
-    traverseQueryFields(({ key, attribute }, { remove }) => {
+    traverseQueryFields(({ key, attribute }, { remove: remove2 }) => {
       if ([
         ID_ATTRIBUTE,
         DOC_ID_ATTRIBUTE
@@ -19119,7 +19323,7 @@ const defaultSanitizeFields = fpExports.curry((ctx, fields2) => {
         return;
       }
       if (fpExports.isNil(attribute) || !isScalarAttribute(attribute)) {
-        remove(key);
+        remove2(key);
       }
     }, ctx),
     // Remove private fields
@@ -19187,7 +19391,7 @@ function requireWindows() {
   if (hasRequiredWindows) return windows;
   hasRequiredWindows = 1;
   windows = isexe;
-  isexe.sync = sync;
+  isexe.sync = sync2;
   var fs = require$$0__default$2.default;
   function checkPathExt(path, options2) {
     var pathext = options2.pathExt !== void 0 ? options2.pathExt : process.env.PATHEXT;
@@ -19217,7 +19421,7 @@ function requireWindows() {
       cb(er, er ? false : checkStat(stat, path, options2));
     });
   }
-  function sync(path, options2) {
+  function sync2(path, options2) {
     return checkStat(fs.statSync(path), path, options2);
   }
   return windows;
@@ -19228,14 +19432,14 @@ function requireMode() {
   if (hasRequiredMode) return mode;
   hasRequiredMode = 1;
   mode = isexe;
-  isexe.sync = sync;
+  isexe.sync = sync2;
   var fs = require$$0__default$2.default;
   function isexe(path, options2, cb) {
     fs.stat(path, function(er, stat) {
       cb(er, er ? false : checkStat(stat, options2));
     });
   }
-  function sync(path, options2) {
+  function sync2(path, options2) {
     return checkStat(fs.statSync(path), options2);
   }
   function checkStat(stat, options2) {
@@ -19268,7 +19472,7 @@ function requireIsexe() {
     core2 = requireMode();
   }
   isexe_1 = isexe;
-  isexe.sync = sync;
+  isexe.sync = sync2;
   function isexe(path, options2, cb) {
     if (typeof options2 === "function") {
       cb = options2;
@@ -19298,7 +19502,7 @@ function requireIsexe() {
       cb(er, is);
     });
   }
-  function sync(path, options2) {
+  function sync2(path, options2) {
     try {
       return core2.sync(path, options2 || {});
     } catch (er) {
@@ -20399,14 +20603,14 @@ function requireSignalExit() {
       if (opts && opts.alwaysLast) {
         ev = "afterexit";
       }
-      var remove = function() {
+      var remove2 = function() {
         emitter.removeListener(ev, cb);
         if (emitter.listeners("exit").length === 0 && emitter.listeners("afterexit").length === 0) {
           unload();
         }
       };
       emitter.on(ev, cb);
-      return remove;
+      return remove2;
     };
     var unload = function unload2() {
       if (!loaded || !processOk(commonjsGlobal.process)) {
@@ -20714,7 +20918,7 @@ function requireMergeStream() {
     output.setMaxListeners(0);
     output.add = add;
     output.isEmpty = isEmpty2;
-    output.on("unpipe", remove);
+    output.on("unpipe", remove2);
     Array.prototype.slice.call(arguments).forEach(add);
     return output;
     function add(source) {
@@ -20723,7 +20927,7 @@ function requireMergeStream() {
         return this;
       }
       sources.push(source);
-      source.once("end", remove.bind(null, source));
+      source.once("end", remove2.bind(null, source));
       source.once("error", output.emit.bind(output, "error"));
       source.pipe(output, { end: false });
       return this;
@@ -20731,7 +20935,7 @@ function requireMergeStream() {
     function isEmpty2() {
       return sources.length == 0;
     }
-    function remove(source) {
+    function remove2(source) {
       sources = sources.filter(function(it) {
         return it !== source;
       });
@@ -21168,7 +21372,7 @@ function requirePLimit$1() {
         queue.shift()();
       }
     };
-    const run = (fn, resolve, ...args) => {
+    const run2 = (fn, resolve, ...args) => {
       activeCount++;
       const result = pTry2(fn, ...args);
       resolve(result);
@@ -21176,9 +21380,9 @@ function requirePLimit$1() {
     };
     const enqueue = (fn, resolve, ...args) => {
       if (activeCount < concurrency) {
-        run(fn, resolve, ...args);
+        run2(fn, resolve, ...args);
       } else {
-        queue.push(run.bind(null, fn, resolve, ...args));
+        queue.push(run2.bind(null, fn, resolve, ...args));
       }
     };
     const generator = (fn, ...args) => new Promise((resolve) => enqueue(fn, resolve, ...args));
@@ -24599,7 +24803,7 @@ function requirePLimit() {
         queue.dequeue()();
       }
     };
-    const run = async (fn, resolve, ...args) => {
+    const run2 = async (fn, resolve, ...args) => {
       activeCount++;
       const result = (async () => fn(...args))();
       resolve(result);
@@ -24610,7 +24814,7 @@ function requirePLimit() {
       next();
     };
     const enqueue = (fn, resolve, ...args) => {
-      queue.enqueue(run.bind(null, fn, resolve, ...args));
+      queue.enqueue(run2.bind(null, fn, resolve, ...args));
       (async () => {
         await Promise.resolve();
         if (activeCount < concurrency && queue.size > 0) {

@@ -341,6 +341,35 @@ const tag = ({ strapi }) => ({
   },
   async delete(documentId) {
     return strapi.documents(UID$2).delete({ documentId });
+  },
+  async findOrCreate({ groupSlug, name }) {
+    if (!groupSlug || !name) return null;
+    const GROUPS = "plugin::zhao-tag.tag-group";
+    const groups = await strapi.documents(GROUPS).findMany({
+      filters: { slug: groupSlug },
+      fields: ["documentId", "slug"]
+    });
+    const group = groups?.[0];
+    if (!group) throw new Error(`标签分组不存在: ${groupSlug}`);
+    const knex = strapi.db.connection;
+    const grp = await knex("zhao_tag_groups").where("document_id", group.documentId).first();
+    let found = null;
+    if (grp) {
+      const rows = await knex("zhao_tags_tag_group_lnk").where("tag_group_id", grp.id).select("tag_id");
+      const tagIds = rows.map((r) => r.tag_id);
+      if (tagIds.length) {
+        const tags = await strapi.documents(UID$2).findMany({
+          filters: { id: { $in: tagIds }, name },
+          fields: ["documentId"]
+        });
+        found = tags?.[0] ?? null;
+      }
+    }
+    if (found) return found.documentId;
+    const created = await strapi.documents(UID$2).create({
+      data: { name, tagGroup: group.documentId }
+    });
+    return created.documentId;
   }
 });
 const UID$1 = "plugin::zhao-tag.tag-index";
@@ -549,10 +578,29 @@ const routes = {
     routes: contentApi().routes
   }
 };
+const SEED_GROUPS = [
+  { slug: "activity-category", name: "活动分类" },
+  { slug: "activity-venue", name: "活动场地" },
+  { slug: "activity-lecturer", name: "活动讲师" },
+  { slug: "activity-series", name: "活动系列" }
+];
 const index = {
   register() {
   },
-  bootstrap() {
+  async bootstrap({ strapi }) {
+    const UID2 = "plugin::zhao-tag.tag-group";
+    for (const g of SEED_GROUPS) {
+      try {
+        const exists = await strapi.documents(UID2).findMany({
+          filters: { slug: g.slug },
+          fields: ["documentId"]
+        });
+        if (exists?.length) continue;
+        await strapi.documents(UID2).create({ data: g });
+      } catch (e) {
+        strapi.log.warn(`[zhao-tag] 种子分组 ${g.slug} 失败: ${e.message}`);
+      }
+    }
   },
   destroy() {
   },
