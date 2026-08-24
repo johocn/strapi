@@ -35546,10 +35546,17 @@ function haversineM(lat1, lng1, lat2, lng2) {
   const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
+function resolveCondition(r) {
+  if (r?.condition) return r.condition;
+  if (r?.loginRequired) return "wechat_auth";
+  if (r?.channel) return r.channel;
+  return "none";
+}
 function isRewardUnlocked(r, loginAuth, channels) {
   if (!r || typeof r !== "object") return false;
-  if (r.loginRequired && !loginAuth) return false;
-  if (r.channel && !channels[r.channel]) return false;
+  const c = resolveCondition(r);
+  if (c === "wechat_auth") return loginAuth;
+  if (c === "contact" || c === "survey") return !!channels[c];
   return true;
 }
 async function grantPoints(strapi2, userId, action, remark) {

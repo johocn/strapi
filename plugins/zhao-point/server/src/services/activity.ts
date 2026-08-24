@@ -14,12 +14,21 @@ function haversineM(lat1: number, lng1: number, lat2: number, lng2: number): num
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-/** 奖励解锁判定：奖励若声明 loginRequired/channel，未满足则该奖励不解锁；未声明则视为解锁 */
+/** 归一化奖励附加条件：优先 condition；兼容旧 loginRequired/channel */
+function resolveCondition(r: any): string {
+  if (r?.condition) return r.condition;
+  if (r?.loginRequired) return "wechat_auth";
+  if (r?.channel) return r.channel; // contact | survey
+  return "none";
+}
+
+/** 奖励解锁判定：按附加条件 condition 判定；none=恒真, wechat_auth=loginAuth, contact/survey=对应通道已填 */
 function isRewardUnlocked(r: any, loginAuth: boolean, channels: Record<string, boolean>): boolean {
   if (!r || typeof r !== "object") return false;
-  if (r.loginRequired && !loginAuth) return false;
-  if (r.channel && !channels[r.channel]) return false;
-  return true;
+  const c = resolveCondition(r);
+  if (c === "wechat_auth") return loginAuth;
+  if (c === "contact" || c === "survey") return !!channels[c];
+  return true; // none / 未识别视为无条件
 }
 
 async function grantPoints(strapi, userId: number, action: string, remark: string) {
