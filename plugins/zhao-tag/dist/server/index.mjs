@@ -582,6 +582,16 @@ const SEED_GROUPS = [
   { slug: "activity-lecturer", name: "活动讲师" },
   { slug: "activity-series", name: "活动系列" }
 ];
+const SEED_CATEGORIES = [
+  "社会公益",
+  "讲座",
+  "沙龙",
+  "工作坊",
+  "培训",
+  "读书会",
+  "交流会",
+  "其他"
+];
 const index = {
   register() {
   },
@@ -597,6 +607,14 @@ const index = {
         await strapi.documents(UID2).create({ data: g });
       } catch (e) {
         strapi.log.warn(`[zhao-tag] 种子分组 ${g.slug} 失败: ${e.message}`);
+      }
+    }
+    const tagSvc = strapi.plugin("zhao-tag").service("tag");
+    for (const name of SEED_CATEGORIES) {
+      try {
+        await tagSvc.findOrCreate({ groupSlug: "activity-category", name });
+      } catch (e) {
+        strapi.log.warn(`[zhao-tag] 种子分类标签 ${name} 失败: ${e.message}`);
       }
     }
   },

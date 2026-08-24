@@ -11,6 +11,18 @@ const SEED_GROUPS: { slug: string; name: string }[] = [
   { slug: "activity-series", name: "活动系列" },
 ];
 
+// 默认活动分类（活动分类下拉选项，幂等 findOrCreate）
+const SEED_CATEGORIES: string[] = [
+  "社会公益",
+  "讲座",
+  "沙龙",
+  "工作坊",
+  "培训",
+  "读书会",
+  "交流会",
+  "其他",
+];
+
 export default {
   register() {},
   async bootstrap({ strapi }: { strapi: Core.Strapi }) {
@@ -25,6 +37,16 @@ export default {
         await strapi.documents(UID).create({ data: g });
       } catch (e: any) {
         strapi.log.warn(`[zhao-tag] 种子分组 ${g.slug} 失败: ${e.message}`);
+      }
+    }
+
+    // 种默认活动分类标签（依赖 activity-category 分组已存在）
+    const tagSvc = strapi.plugin("zhao-tag").service("tag");
+    for (const name of SEED_CATEGORIES) {
+      try {
+        await tagSvc.findOrCreate({ groupSlug: "activity-category", name });
+      } catch (e: any) {
+        strapi.log.warn(`[zhao-tag] 种子分类标签 ${name} 失败: ${e.message}`);
       }
     }
   },

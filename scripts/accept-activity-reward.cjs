@@ -143,18 +143,24 @@ async function main() {
   const cpnId = cpnRow[0]?.id;
 
   // ---- 建活动 ----
-  // act1: rewardConfig(contact 通道 + points单发 + outline多选 + loginRequired单发) ; formConfig 含 channel:contact 的 phone
+  // act1: rewardConfig(condition 四值 + contact/survey 双通道 + 旧 loginRequired 兼容) ; formConfig 含 channel:contact/survey 字段
   const formConfig = [
     { key: 'name', label: '姓名', type: 'text' },
     { key: 'phone', label: '手机号', type: 'phone', channel: 'contact', required: true },
+    { key: 'exp', label: '期望收获', type: 'textarea', channel: 'survey' },
   ];
   const rewardConfig = {
     loginEnabled: true,
-    infoChannels: [{ channel: 'contact', label: '留联系方式' }],
+    infoChannels: [
+      { channel: 'contact', label: '留联系方式' },
+      { channel: 'survey',  label: '回答调查问卷' },
+    ],
     rewards: [
-      { id: 'r1', type: 'points', name: '报名积分', amount: 50, mode: 'single' },
-      { id: 'r3', type: 'course_outline', name: '课前培训大纲', kind: 'article', mode: 'multi', link: 'https://example.com/outline' },
-      { id: 'r5', type: 'points', name: '授权专属积分', amount: 99, mode: 'single', loginRequired: true },
+      { id: 'r1', type: 'points', name: '报名积分', amount: 50, mode: 'single', condition: 'none' },
+      { id: 'r2', type: 'points', name: '问卷奖励积分', amount: 30, mode: 'single', condition: 'survey' },
+      { id: 'r3', type: 'course_outline', name: '课前培训大纲', kind: 'article', mode: 'multi', condition: 'contact', link: 'https://example.com/outline' },
+      { id: 'r5', type: 'points', name: '授权专属积分', amount: 99, mode: 'single', condition: 'wechat_auth' },
+      { id: 'r6', type: 'points', name: '旧格式积分', amount: 7, mode: 'single', loginRequired: true },
     ],
   };
   const mkAct = (title, cfg) => api('POST', '/zhao-point/v1/admin/adm/activities', {
@@ -172,7 +178,8 @@ async function main() {
   // ---- 测试用户 ----
   const u1 = await register(nm('u1next'));
   const u2 = await register(nm('u2auth'));
-  check('注册用户 u1/u2 拿到 token', !!u1.id && !!u1.token && !!u2.id && !!u2.token, `u1=${u1.id} u2=${u2.id}`);
+  const u1s = await register(nm('u1silent'));
+  check('注册用户 u1/u2/u1s 拿到 token', !!u1.id && !!u1.token && !!u2.id && !!u2.token && !!u1s.id && !!u1s.token, `u1=${u1.id} u2=${u2.id} u1s=${u1s.id}`);
 
   // u2: 预插 sso 用户 + provider=wechat 绑定 → loginAuth=true
   let ssoId = null;
@@ -195,35 +202,50 @@ async function main() {
     token, body: { activityId, formData, chosenRewards },
   });
 
-  // ---------- u1 静默路径(loginAuth=false) ----------
+  // ---------- u1 静默路径(loginAuth=false, 仅填 contact) ----------
   const r1 = await signupAs(u1.token, act1.documentId, { name: '张三', phone: '13800138000' }, ['r3']);
   const d1 = r1.json?.data || {};
   check('u1 signup ok', r1.status === 200 && d1.ok === true, `${r1.status} ${JSON.stringify(r1.json)}`);
   check('u1 loginAuth=false(无绑定)', d1.unlockInfo?.loginAuth === false, JSON.stringify(d1.unlockInfo));
   check('u1 channels.contact=true', d1.unlockInfo?.channels?.contact === true, JSON.stringify(d1.unlockInfo?.channels));
-  check('u1 chosenRewards 含 r1(单选自动)与 r3(多选自选)', d1.unlockInfo?.chosenRewards?.includes('r1') && d1.unlockInfo?.chosenRewards?.includes('r3'), JSON.stringify(d1.unlockInfo?.chosenRewards));
-  check('u1 不含 r5(loginRequired 未解锁)', !d1.unlockInfo?.chosenRewards?.includes('r5'), JSON.stringify(d1.unlockInfo?.chosenRewards));
+  check('u1 channels.survey=false(未填问卷)', d1.unlockInfo?.channels?.survey === false, JSON.stringify(d1.unlockInfo?.channels));
+  check('u1 chosenRewards 含 r1(none自动)与 r3(contact多选)', d1.unlockInfo?.chosenRewards?.includes('r1') && d1.unlockInfo?.chosenRewards?.includes('r3'), JSON.stringify(d1.unlockInfo?.chosenRewards));
+  check('u1 不含 r2(survey未解锁)', !d1.unlockInfo?.chosenRewards?.includes('r2'), JSON.stringify(d1.unlockInfo?.chosenRewards));
+  check('u1 不含 r5(wechat_auth未解锁)', !d1.unlockInfo?.chosenRewards?.includes('r5'), JSON.stringify(d1.unlockInfo?.chosenRewards));
+  check('u1 不含 r6(旧loginRequired未解锁)', !d1.unlockInfo?.chosenRewards?.includes('r6'), JSON.stringify(d1.unlockInfo?.chosenRewards));
   const g1 = d1.granted || [];
   check('u1 granted 含 r1(积分+50)', g1.some((x) => x.id === 'r1' && /积分 \+50/.test(x.message || '')), JSON.stringify(g1));
   check('u1 granted 含 r3(大纲+link)', g1.some((x) => x.id === 'r3' && x.link === 'https://example.com/outline'), JSON.stringify(g1));
+  check('u1 granted 不含 r2', !g1.some((x) => x.id === 'r2'), JSON.stringify(g1));
   check('u1 granted 不含 r5', !g1.some((x) => x.id === 'r5'), JSON.stringify(g1));
+  check('u1 granted 不含 r6', !g1.some((x) => x.id === 'r6'), JSON.stringify(g1));
   check('u1 activity_reward 积分=50', (await userRewardPoints(u1.id)) === 50, `sum=${await userRewardPoints(u1.id)}`);
+
+  // ---------- u1s 静默且不填任何信息：仅 condition=none 奖励解锁 ----------
+  const rs = await signupAs(u1s.token, act1.documentId, { name: '孙七' }, []);
+  const ds = rs.json?.data || {};
+  check('u1s signup ok', rs.status === 200 && ds.ok === true, `${rs.status} ${JSON.stringify(rs.json)}`);
+  check('u1s 仅 r1 解锁', ds.unlockInfo?.chosenRewards?.length === 1 && ds.unlockInfo?.chosenRewards?.[0] === 'r1', JSON.stringify(ds.unlockInfo?.chosenRewards));
+  const gs = ds.granted || [];
+  check('u1s granted 仅含 r1', gs.length === 1 && gs[0].id === 'r1', JSON.stringify(gs));
+  check('u1s activity_reward 积分=50', (await userRewardPoints(u1s.id)) === 50, `sum=${await userRewardPoints(u1s.id)}`);
 
   // ---------- 幂等: 重复报名 ----------
   const r1b = await signupAs(u1.token, act1.documentId, { name: '张三', phone: '13800138000' }, ['r3']);
   check('u1 重复报名 already_signed_up', r1b.json?.data?.reason === 'already_signed_up', JSON.stringify(r1b.json));
   check('u1 重复后积分仍=50(不重复发)', (await userRewardPoints(u1.id)) === 50, `sum=${await userRewardPoints(u1.id)}`);
 
-  // ---------- u2 授权路径(loginAuth=true) ----------
-  const r2 = await signupAs(u2.token, act1.documentId, { name: '李四', phone: '13900139000' }, []);
+  // ---------- u2 授权路径(loginAuth=true, 填 contact+survey, 全选多选) ----------
+  const r2 = await signupAs(u2.token, act1.documentId, { name: '李四', phone: '13900139000', exp: '想学习' }, ['r3']);
   const d2 = r2.json?.data || {};
   check('u2 signup ok', r2.status === 200 && d2.ok === true, `${r2.status} ${JSON.stringify(r2.json)}`);
   check('u2 loginAuth=true(wechat 绑定)', d2.unlockInfo?.loginAuth === true, JSON.stringify(d2.unlockInfo));
-  check('u2 chosenRewards 含 r1 与 r5(普通单发+授权单发均自动)', d2.unlockInfo?.chosenRewards?.includes('r1') && d2.unlockInfo?.chosenRewards?.includes('r5'), JSON.stringify(d2.unlockInfo?.chosenRewards));
-  check('u2 chosenRewards 不含 r3(未选 multi)', !d2.unlockInfo?.chosenRewards?.includes('r3'), JSON.stringify(d2.unlockInfo?.chosenRewards));
+  check('u2 channels.contact/survey=true', d2.unlockInfo?.channels?.contact === true && d2.unlockInfo?.channels?.survey === true, JSON.stringify(d2.unlockInfo?.channels));
+  check('u2 chosenRewards 含 r1/r2/r3/r5/r6', ['r1','r2','r3','r5','r6'].every((x) => d2.unlockInfo?.chosenRewards?.includes(x)), JSON.stringify(d2.unlockInfo?.chosenRewards));
   const g2 = d2.granted || [];
-  check('u2 granted 含 r1 与 r5', g2.some((x) => x.id === 'r1') && g2.some((x) => x.id === 'r5'), JSON.stringify(g2));
-  check('u2 activity_reward 积分=149(50+99)', (await userRewardPoints(u2.id)) === 149, `sum=${await userRewardPoints(u2.id)}`);
+  check('u2 granted 含 r1/r2/r5/r6(全自动)', ['r1','r2','r5','r6'].every((x) => g2.some((y) => y.id === x)), JSON.stringify(g2));
+  check('u2 granted 含 r3(多选已选)', g2.some((x) => x.id === 'r3'), JSON.stringify(g2));
+  check('u2 activity_reward 积分=186(50+30+99+7)', (await userRewardPoints(u2.id)) === 186, `sum=${await userRewardPoints(u2.id)}`);
 
   // ---------- coupon 发放在 act3 ----------
   const r3 = await signupAs(u1.token, act3.documentId, { name: '王五' }, []);
@@ -256,7 +278,7 @@ async function main() {
     await client.query(`DELETE FROM activities WHERE id = $1`, [a.id]);
   }
   await client.query(`DELETE FROM zhao_deal_coupons WHERE coupon_id LIKE 'accept_cpn_%'`);
-  for (const u of [u1, u2]) {
+  for (const u of [u1, u2, u1s]) {
     await purgeSsoOf(u.username);
     await purgeUserPoints(u.id);
     await client.query(`DELETE FROM up_users WHERE id = $1`, [u.id]);
