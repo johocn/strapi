@@ -1427,7 +1427,7 @@ const adminController = ({ strapi }) => ({
       const blockedUsers = await userService.count({ status: "blocked" });
       const todayLogins = await loginLogService.count({
         success: true,
-        created_at: { $gte: new Date((/* @__PURE__ */ new Date()).setHours(0, 0, 0, 0)) }
+        createdAt: { $gte: new Date((/* @__PURE__ */ new Date()).setHours(0, 0, 0, 0)) }
       });
       const totalApps = await appService.count();
       const totalChannels = await channelService.count();
@@ -1454,7 +1454,7 @@ const adminController = ({ strapi }) => ({
       }
       const users = await userService.findMany({
         where,
-        orderBy: { created_at: "desc" },
+        orderBy: { createdAt: "desc" },
         limit: parseInt(pageSize),
         offset: (parseInt(page) - 1) * parseInt(pageSize)
       });
@@ -1616,7 +1616,7 @@ const adminController = ({ strapi }) => ({
       if (success !== void 0) where.success = success === "true";
       const logs = await loginLogService.findManyPaginated({
         where,
-        orderBy: { created_at: "desc" },
+        orderBy: { createdAt: "desc" },
         limit: parseInt(pageSize),
         offset: (parseInt(page) - 1) * parseInt(pageSize),
         populate: { user: { select: ["id", "uuid", "email", "username", "nickname"] } }
@@ -3588,7 +3588,7 @@ const ssoUser = ({ strapi }) => {
     async findMany(params) {
       const users = await strapi.db.query(USER_UID$3).findMany({
         where: params.where || {},
-        orderBy: params.orderBy || { created_at: "desc" },
+        orderBy: params.orderBy || { createdAt: "desc" },
         limit: params.limit,
         offset: params.offset
       });
@@ -3635,7 +3635,7 @@ const ssoLoginLog = ({ strapi }) => ({
       where: {
         $or: [{ ip: identifier }],
         success: false,
-        created_at: { $gte: since }
+        createdAt: { $gte: since }
       }
     });
     return logs.length;
@@ -3643,7 +3643,7 @@ const ssoLoginLog = ({ strapi }) => ({
   async getUserLogs(userId, limit = 20) {
     return strapi.db.query(LOG_UID).findMany({
       where: { user: { id: userId } },
-      orderBy: { created_at: "desc" },
+      orderBy: { createdAt: "desc" },
       limit
     });
   },
@@ -3653,7 +3653,7 @@ const ssoLoginLog = ({ strapi }) => ({
   async findManyPaginated(params) {
     return strapi.db.query(LOG_UID).findMany({
       where: params.where || {},
-      orderBy: params.orderBy || { created_at: "desc" },
+      orderBy: params.orderBy || { createdAt: "desc" },
       limit: params.limit,
       offset: params.offset,
       populate: params.populate
@@ -5050,7 +5050,9 @@ const ssoMsg = ({ strapi }) => {
       const bindings = await strapi.db.query(BINDING_UID$1).findMany({
         where: { provider: "wechat" },
         orderBy: { id: "DESC" },
-        limit: 100
+        limit: 100,
+        populate: { user: true }
+        // 填充 user 关系，供下方内存过滤 userId 使用
       });
       const b = bindings.find((x) => x.user === userId || x.user && x.user.id === userId);
       return b?.provider_user_id || null;

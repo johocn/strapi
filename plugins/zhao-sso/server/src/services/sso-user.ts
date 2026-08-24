@@ -149,7 +149,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   async findMany(params: { where?: any; orderBy?: any; limit?: number; offset?: number }) {
     const users = await strapi.db.query(USER_UID).findMany({
       where: params.where || {},
-      orderBy: params.orderBy || { created_at: "desc" },
+      orderBy: params.orderBy || { createdAt: "desc" },
       limit: params.limit,
       offset: params.offset,
     });

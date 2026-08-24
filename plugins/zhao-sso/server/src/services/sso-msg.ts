@@ -67,6 +67,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         where: { provider: "wechat" },
         orderBy: { id: "DESC" },
         limit: 100,
+        populate: { user: true }, // 填充 user 关系，供下方内存过滤 userId 使用
       });
       const b = bindings.find((x: any) => x.user === userId || (x.user && x.user.id === userId));
       return b?.provider_user_id || null;

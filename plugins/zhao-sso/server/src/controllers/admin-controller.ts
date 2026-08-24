@@ -13,7 +13,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       const blockedUsers = await userService.count({ status: "blocked" });
       const todayLogins = await loginLogService.count({
         success: true,
-        created_at: { $gte: new Date(new Date().setHours(0, 0, 0, 0)) },
+        createdAt: { $gte: new Date(new Date().setHours(0, 0, 0, 0)) },
       });
       const totalApps = await appService.count();
       const totalChannels = await channelService.count();
@@ -43,7 +43,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
       const users = await userService.findMany({
         where,
-        orderBy: { created_at: "desc" },
+        orderBy: { createdAt: "desc" },
         limit: parseInt(pageSize),
         offset: (parseInt(page) - 1) * parseInt(pageSize),
       });
@@ -210,7 +210,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
       const logs = await loginLogService.findManyPaginated({
         where,
-        orderBy: { created_at: "desc" },
+        orderBy: { createdAt: "desc" },
         limit: parseInt(pageSize),
         offset: (parseInt(page) - 1) * parseInt(pageSize),
         populate: { user: { select: ["id", "uuid", "email", "username", "nickname"] } },

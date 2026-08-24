@@ -35,7 +35,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       where: {
         $or: [{ ip: identifier }],
         success: false,
-        created_at: { $gte: since },
+        createdAt: { $gte: since },
       },
     });
     return logs.length;
@@ -44,7 +44,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async getUserLogs(userId: number, limit: number = 20) {
     return strapi.db.query(LOG_UID).findMany({
       where: { user: { id: userId } },
-      orderBy: { created_at: "desc" },
+      orderBy: { createdAt: "desc" },
       limit,
     });
   },
@@ -56,7 +56,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async findManyPaginated(params: { where?: any; orderBy?: any; limit?: number; offset?: number; populate?: any }) {
     return strapi.db.query(LOG_UID).findMany({
       where: params.where || {},
-      orderBy: params.orderBy || { created_at: "desc" },
+      orderBy: params.orderBy || { createdAt: "desc" },
       limit: params.limit,
       offset: params.offset,
       populate: params.populate,
