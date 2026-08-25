@@ -16,6 +16,7 @@
     "review": { "type": "text" },
     "reviewedAt": { "type": "datetime" },
     "formData": { "type": "json" },
-    "unlockInfo": { "type": "json" }
+    "unlockInfo": { "type": "json" },
+    "questionnaireData": { "type": "json" }
   }
 }
