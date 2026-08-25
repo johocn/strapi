@@ -101,8 +101,35 @@ export function channelFilled(formConfig: any, formData: any, channel: string): 
   return hit.some((f: any) => !isEmpty(data[f.key]));
 }
 
+/** 问卷字段宽松收集：空值忽略；radio/select/multi 校验选项，非法值丢弃；number 规范化 */
+export function collectQuestionnaire(fields: any, data: any): Record<string, any> {
+  const fArr = Array.isArray(fields) ? fields : [];
+  const d = data && typeof data === "object" && !Array.isArray(data) ? data : {};
+  const out: Record<string, any> = {};
+  for (const f of fArr) {
+    if (!f || typeof f !== "object" || !f.key) continue;
+    const raw = d[f.key];
+    if (isEmpty(raw)) continue;
+    if (f.type === "number") {
+      const n = Number(raw);
+      out[f.key] = Number.isFinite(n) ? n : raw;
+    } else if (f.type === "multi") {
+      if (!isPlainArray(raw)) continue;
+      const opts = normalizeOptions(f);
+      out[f.key] = raw.map((x: any) => String(x)).filter((x: string) => opts.includes(x));
+    } else if (f.type === "radio" || f.type === "select") {
+      if (!normalizeOptions(f).includes(String(raw))) continue;
+      out[f.key] = String(raw);
+    } else {
+      out[f.key] = String(raw);
+    }
+  }
+  return out;
+}
+
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
   validateFormData,
   collectFormData,
   channelFilled,
+  collectQuestionnaire,
 });
