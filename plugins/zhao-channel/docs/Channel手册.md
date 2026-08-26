@@ -426,6 +426,16 @@ POST /api/zhao-channel/channel/register
 }
 ```
 
+### 开关：是否为新用户单建渠道
+
+环境变量 `CHANNEL_AUTO_CREATE_CHANNEL`（zhao-channel 后端 .env）：
+
+- 未设置 / `false`（默认）：携带渠道邀请码注册新用户时，**不新建渠道**，新用户直接成为邀请人渠道的成员（role=member），分销关系照常绑定
+- `true`：恢复原行为，为每个新用户单独创建子渠道
+
+再次开启方法：`.env` 设置 `CHANNEL_AUTO_CREATE_CHANNEL=true` → `pm2 restart`，无需重建部署。
+仅影响 `POST /zhao-channel/v1/channel/register/public`（新用户注册）；`/my/channel/register`（登录用户注册子渠道）不受影响。
+
 ---
 
 #### 验证邀请码
