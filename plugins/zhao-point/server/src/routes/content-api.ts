@@ -149,13 +149,21 @@ export default () => ({
     publicRoute("GET", "/activities/calendar", "calendar.month"),
     userRoute("GET", "/activities/:documentId/fee", "fee.preview"),
     publicRoute("GET", "/activities/:documentId", "activity.detail"),
+    // 宣传落地页（模块化积木 × 风格 × 报名分流）
+    publicRoute("GET", "/promo/activity/:documentId", "activity.promoDetail"),
 
     // 注册用户路由
     userRoute("POST", "/my/activity/signup", "activity.signup"),
+    userRoute("POST", "/my/activity/:documentId/unlock-check", "activity.unlockCheck"),
+    userRoute("PUT", "/my/activity/signup/:signupId/questionnaire", "activity.questionnaire"),
     userRoute("POST", "/my/activity/:documentId/cancel", "activity.cancel"),
     userRoute("POST", "/my/activity/:documentId/checkin", "activity.checkin"),
     userRoute("GET", "/my/activities", "activity.mySignups"),
+    userRoute("POST", "/my/activity/:documentId/message", "activity.sendMessage"),
+    userRoute("GET", "/my/activity/:documentId/messages", "activity.listMessages"),
     userRoute("POST", "/activities/:documentId/review", "activity.review"),
+    publicRoute("GET", "/activities/:documentId/reviews", "activity.listReviews"),
+    userRoute("GET", "/my/activity/:documentId/learning", "activity.learningContent"),
 
     // 管理员路由（需渠道作用域）
     channelScopeRoute("GET", "/adm/activities", "activity.adminList", "activity.read"),
@@ -172,10 +180,15 @@ export default () => ({
     channelScopeRoute("POST", "/adm/activities/:documentId/archive", "activity.adminArchive", "activity.update"),
     channelScopeRoute("POST", "/adm/activities/:documentId/unarchive", "activity.adminUnarchive", "activity.update"),
     channelScopeRoute("GET", "/adm/activity-reviews", "activity.adminReviews", "activity.read"),
+    channelScopeRoute("PUT", "/adm/activity-reviews/:signupId/hidden", "activity.adminToggleReviewHidden", "activity.update"),
     channelScopeRoute("GET", "/adm/activity-overview", "activity-stats.overview", "activity.read"),
     channelScopeRoute("GET", "/adm/ledgers", "ledger.list", "activity.read"),
     channelScopeRoute("POST", "/adm/activities/:documentId/ledger", "ledger.regenerate", "activity.update"),
     channelScopeRoute("PUT", "/adm/ledgers/:documentId/settle", "ledger.settle", "activity.update"),
+
+    // 活动宣传页客服留言管理（复用活动 read/update 权限点）
+    channelScopeRoute("GET", "/adm/activity-messages", "activity.adminListMessages", "activity.read"),
+    channelScopeRoute("PUT", "/adm/activity-messages/:documentId/reply", "activity.adminReplyMessage", "activity.update"),
 
     // ===== 讲师/场地资源排期 =====
     channelScopeRoute("GET", "/adm/lecturers", "resource.lecturers.list", "resource.read"),

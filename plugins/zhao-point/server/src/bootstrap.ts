@@ -56,6 +56,14 @@ const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
   } catch (err: any) {
     strapi.log.warn(`[zhao-point] 种子数据失败: ${err.message}`);
   }
+
+  // 启动兜底：推进已到期但未流转的活动（懒加载流转的历史积压）
+  try {
+    const actSvc = strapi.plugin("zhao-point").service("activity");
+    if (actSvc?.drainDueActivities) await actSvc.drainDueActivities();
+  } catch (err: any) {
+    strapi.log.warn(`[zhao-point] 启动 drain 失败: ${err.message}`);
+  }
 };
 
 export default bootstrap;

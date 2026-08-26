@@ -1,5 +1,6 @@
 import type { Core } from "@strapi/strapi";
 import { FormValidationError } from "../services/form";
+import { PROMO_MODULE_TYPES, PROMO_TEMPLATES } from "../services/activity";
 import { isRoleGateEnabled, mayAccessVisibleToRoles } from "../../../../zhao-common/server/src/utils/role-gate";
 import { resolveUserRoles } from "../../../../zhao-course/server/src/utils/role-gate";
 
@@ -38,6 +39,27 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     }
     return undefined;
   }
+
+/** 宣传页模块归一化（复用 service 同名单逻辑，controller 内独立实现避免循环依赖） */
+function normalizePromoModules(promoModules: any): any[] | undefined {
+  if (promoModules === undefined || promoModules === null) return undefined;
+  if (!Array.isArray(promoModules)) throw new Error("promoModules 必须为数组");
+  const seen = new Set<number>();
+  const out: any[] = [];
+  for (const m of promoModules) {
+    if (!m || typeof m !== "object") continue;
+    if (!PROMO_MODULE_TYPES.includes(m.type)) continue;
+    const sort = Number.isFinite(Number(m.sort)) ? Number(m.sort) : out.length;
+    if (seen.has(sort)) continue;
+    seen.add(sort);
+    out.push({
+      type: m.type,
+      config: m.config && typeof m.config === "object" && !Array.isArray(m.config) ? m.config : {},
+      sort,
+    });
+  }
+  return out.sort((a, b) => a.sort - b.sort);
+}
 
   return ({
   // ===== 公开 =====
@@ -92,6 +114,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   // GET /activities/:documentId
   async detail(ctx: any) {
     try {
+      await activitySvc().ensureTransitions(ctx.params.documentId);
       const activity = await strapi.documents(ACTIVITY_UID).findOne({
         documentId: ctx.params.documentId,
         populate: "*",
@@ -105,6 +128,18 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
           ctx.status = 403; ctx.body = { error: "无权查看该活动" }; return;
         }
       }
+      // 口碑聚合（仅公开评价）
+      const reviews = await strapi.db.query(SIGNS_UID).findMany({
+        where: { activity: activity.id, status: "active", rating: { $notNull: true }, reviewHidden: { $ne: true } },
+        select: ["rating", "review"],
+      });
+      const withText = reviews.filter((r: any) => r.review && String(r.review).trim());
+      activity.ratingSummary = {
+        count: reviews.length,
+        avgRating: reviews.length ? Number((reviews.reduce((a: number, r: any) => a + r.rating, 0) / reviews.length).toFixed(2)) : 0,
+        reviewCount: withText.length,
+      };
+      activity.archived = activity.status === "archived";
       ctx.body = wrap(activity);
     } catch (e: any) {
       ctx.status = (e as any).status || 400;
@@ -118,8 +153,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   async signup(ctx: any) {
     try {
       const userId = getUserId(ctx);
-      const { activityId, formData, chosenRewards } = ctx.request.body || {};
-      const result = await activitySvc().signup({ userId, activityId, formData, chosenRewards });
+      const { activityId, formData, questionnaireData, chosenRewards } = ctx.request.body || {};
+      const result = await activitySvc().signup({ userId, activityId, formData, questionnaireData, chosenRewards });
       if (result?.ok === false && result.reason === "already_signed_up") {
         ctx.status = 200;
       }
@@ -130,6 +165,108 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         ctx.body = { error: e.message, errors: e.errors };
         return;
       }
+      ctx.body = { error: e.message };
+    }
+  },
+
+  // PUT /my/activity/signup/:signupId/questionnaire  补填问卷（解锁 survey 条件后可二次领取）
+  async questionnaire(ctx: any) {
+    try {
+      const userId = getUserId(ctx);
+      const signupId = parseInt(ctx.params.signupId, 10);
+      const { answers } = ctx.request.body || {};
+      const result = await activitySvc().fillQuestionnaire({ userId, signupId, answers });
+      ctx.body = wrap(result);
+    } catch (e: any) {
+      ctx.status = (e as any).status || 400;
+      ctx.body = { error: e.message };
+    }
+  },
+
+  // POST /my/activity/:documentId/unlock-check  解锁状态探测（报名前/关注后刷新）
+  async unlockCheck(ctx: any) {
+    try {
+      const userId = getUserId(ctx);
+      const { formData, questionnaireData } = ctx.request.body || {};
+      const result = await activitySvc().unlockCheck({
+        userId, activityDocumentId: ctx.params.documentId, formData, questionnaireData,
+      });
+      ctx.body = wrap(result);
+    } catch (e: any) {
+      ctx.status = (e as any).status || 400;
+      ctx.body = { error: e.message };
+    }
+  },
+
+  // GET /promo/activity/:documentId  宣传页聚合（公开，可匿名；登录则带上报名状态）
+  async promoDetail(ctx: any) {
+    try {
+      await activitySvc().ensureTransitions(ctx.params.documentId);
+      const result = await activitySvc().promoDetail({
+        activityDocumentId: ctx.params.documentId,
+        userId: ctx.state.user?.id,
+        siteDocumentId: ctx.state?.siteDocumentId,
+      });
+      ctx.body = wrap(result);
+    } catch (e: any) {
+      ctx.status = (e as any).status || 400;
+      ctx.body = { error: e.message };
+    }
+  },
+
+  // POST /my/activity/:documentId/message  用户留言
+  async sendMessage(ctx: any) {
+    try {
+      const userId = getUserId(ctx);
+      const { content } = ctx.request.body || {};
+      const result = await activitySvc().sendMessage({ userId, activityDocumentId: ctx.params.documentId, content });
+      ctx.body = wrap(result);
+    } catch (e: any) {
+      ctx.status = (e as any).status || 400;
+      ctx.body = { error: e.message };
+    }
+  },
+
+  // GET /my/activity/:documentId/messages  我的留言+回复
+  async listMessages(ctx: any) {
+    try {
+      const userId = getUserId(ctx);
+      const result = await activitySvc().listMyMessages({ userId, activityDocumentId: ctx.params.documentId });
+      ctx.body = wrap(result);
+    } catch (e: any) {
+      ctx.status = (e as any).status || 400;
+      ctx.body = { error: e.message };
+    }
+  },
+
+  // GET /adm/activity-messages  运营端留言列表（?activity=&status=&page=&pageSize=）
+  async adminListMessages(ctx: any) {
+    try {
+      const { activity, status, page = "1", pageSize = "20" } = ctx.query;
+      const result = await activitySvc().adminListMessages({
+        activity: activity as string | undefined,
+        status: status as string | undefined,
+        page: parseInt(page, 10),
+        pageSize: parseInt(pageSize, 10),
+      });
+      ctx.body = wrapList(result);
+    } catch (e: any) {
+      ctx.status = (e as any).status || 400;
+      ctx.body = { error: e.message };
+    }
+  },
+
+  // PUT /adm/activity-messages/:documentId/reply  运营回复
+  async adminReplyMessage(ctx: any) {
+    try {
+      const { reply } = ctx.request.body || {};
+      const result = await activitySvc().adminReplyMessage({
+        messageDocumentId: ctx.params.documentId,
+        reply: reply as string | undefined,
+      });
+      ctx.body = wrap(result);
+    } catch (e: any) {
+      ctx.status = (e as any).status || 400;
       ctx.body = { error: e.message };
     }
   },
@@ -195,6 +332,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   // GET /adm/activities
   async adminList(ctx: any) {
     try {
+      await activitySvc().drainDueActivities();
       const { page = "1", pageSize = "20", status, ...rest } = ctx.query;
       const filters: any = {};
       if (status) filters.status = status;
@@ -218,6 +356,16 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   async adminCreate(ctx: any) {
     try {
       const body = ctx.request.body?.data || ctx.request.body;
+      // 宣传页配置校验与归一化（非法 type / sort 冲突自动过滤，不阻断合法字段保存）
+      if (body.promoModules !== undefined) body.promoModules = normalizePromoModules(body.promoModules);
+      if (body.promoTemplate !== undefined && !PROMO_TEMPLATES.includes(body.promoTemplate)) {
+        throw new Error("promoTemplate 非法");
+      }
+      if (body.promoContact !== undefined && body.promoContact !== null) {
+        if (typeof body.promoContact !== "object" || Array.isArray(body.promoContact)) {
+          throw new Error("promoContact 必须为对象或 null");
+        }
+      }
       // 排期冲突校验（仅当给定时间与资源时）
       const lecturerId = relId(body.lecturer);
       const venueId = relId(body.venue);
@@ -232,6 +380,13 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
           return;
         }
       }
+      // 时间关系校验（报名结束晚于报名开始、活动结束晚于活动开始）
+      if (body.signupStart && body.signupEnd && new Date(body.signupEnd) <= new Date(body.signupStart)) {
+        ctx.status = 400; ctx.body = { error: "报名结束时间必须晚于报名开始时间" }; return;
+      }
+      if (body.startTime && body.endTime && new Date(body.endTime) <= new Date(body.startTime)) {
+        ctx.status = 400; ctx.body = { error: "活动结束时间必须晚于活动开始时间" }; return;
+      }
       const activity = await strapi.documents(ACTIVITY_UID).create({ data: body });
       ctx.body = wrap(activity);
     } catch (e: any) {
@@ -244,12 +399,31 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   async adminUpdate(ctx: any) {
     try {
       const body = ctx.request.body?.data || ctx.request.body;
+      // 宣传页配置校验与归一化（非法 type / sort 冲突自动过滤，不阻断合法字段保存）
+      if (body.promoModules !== undefined) body.promoModules = normalizePromoModules(body.promoModules);
+      if (body.promoTemplate !== undefined && !PROMO_TEMPLATES.includes(body.promoTemplate)) {
+        throw new Error("promoTemplate 非法");
+      }
+      if (body.promoContact !== undefined && body.promoContact !== null) {
+        if (typeof body.promoContact !== "object" || Array.isArray(body.promoContact)) {
+          throw new Error("promoContact 必须为对象或 null");
+        }
+      }
       const existing = await strapi.documents(ACTIVITY_UID).findOne({ documentId: ctx.params.documentId, populate: { lecturer: true, venue: true } });
       if (!existing) { ctx.status = 404; ctx.body = { error: "活动不存在" }; return; }
       const startTime = body.startTime ?? existing.startTime;
       const endTime = body.endTime ?? existing.endTime;
       const lecturerId = relId(body.lecturer) ?? relId(existing.lecturer);
       const venueId = relId(body.venue) ?? relId(existing.venue);
+      // 时间关系校验（含 existing 兜底）
+      const signupStart = body.signupStart ?? existing.signupStart;
+      const signupEnd = body.signupEnd ?? existing.signupEnd;
+      if (signupStart && signupEnd && new Date(signupEnd) <= new Date(signupStart)) {
+        ctx.status = 400; ctx.body = { error: "报名结束时间必须晚于报名开始时间" }; return;
+      }
+      if (startTime && endTime && new Date(endTime) <= new Date(startTime)) {
+        ctx.status = 400; ctx.body = { error: "活动结束时间必须晚于活动开始时间" }; return;
+      }
       if (startTime && endTime && (lecturerId || venueId)) {
         const chk = await strapi.plugin("zhao-point").service("resource-schedule").check({
           start: startTime, end: endTime, excludeActivityId: existing.id, lecturerId, venueId,
@@ -408,6 +582,52 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     }
   },
 
+  // GET /activities/:documentId/reviews  C 端公开评价列表+聚合
+  async listReviews(ctx: any) {
+    try {
+      const result = await activitySvc().listPublicReviews({
+        activityDocumentId: ctx.params.documentId,
+        page: parseInt(ctx.query.page || "1"),
+        pageSize: parseInt(ctx.query.pageSize || "20"),
+      });
+      ctx.body = wrap(result);
+    } catch (e: any) {
+      ctx.status = (e as any).status || 400;
+      ctx.body = { error: e.message };
+    }
+  },
+
+  // GET /my/activity/:documentId/learning  已解锁学习内容
+  async learningContent(ctx: any) {
+    try {
+      const userId = getUserId(ctx);
+      const result = await activitySvc().getLearningContent({
+        userId,
+        activityDocumentId: ctx.params.documentId,
+      });
+      ctx.body = wrap(result);
+    } catch (e: any) {
+      ctx.status = (e as any).status || 400;
+      ctx.body = { error: e.message };
+    }
+  },
+
+  // PUT /adm/activity-reviews/:signupId/hidden  body:{hidden:boolean}  评价隐藏/恢复
+  async adminToggleReviewHidden(ctx: any) {
+    try {
+      const { signupId } = ctx.params;
+      const { hidden } = ctx.request.body || {};
+      await strapi.db.query(SIGNS_UID).update({
+        where: { id: Number(signupId) },
+        data: { reviewHidden: !!hidden },
+      });
+      ctx.body = wrap({ ok: true, hidden: !!hidden });
+    } catch (e: any) {
+      ctx.status = (e as any).status || 400;
+      ctx.body = { error: e.message };
+    }
+  },
+
   // GET /adm/activity-reviews （评价看板：列表 + 汇总；?activityDId= 可过滤）
   async adminReviews(ctx: any) {
     try {
@@ -453,6 +673,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
           review: r.review ?? null,
           reviewedAt: r.reviewedAt,
           activity: r.activity ? { id: r.activity.id, title: r.activity.title } : null,
+          reviewHidden: r.reviewHidden ?? false,
         })),
         summary: { count, avgRating: Number(avgRating.toFixed(2)), avgNps: Number(avgNps.toFixed(2)), npsScore, ratingDist, detractor, passive, promoter, trend, keywords },
         pagination: result?.pagination ?? {},
