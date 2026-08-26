@@ -303,6 +303,7 @@ function normalizePromoModules(promoModules: any): any[] | undefined {
   // GET /my/activities
   async mySignups(ctx: any) {
     try {
+      await activitySvc().drainDueActivities();
       const userId = getUserId(ctx);
       const rows = await strapi.db.query(SIGNS_UID).findMany({
         where: { user: userId },
