@@ -13,7 +13,7 @@ export async function seedTestData(strapi: Core.Strapi): Promise<TestFixtures> {
   const { db } = strapi;
 
   const tables = [
-    "plugin::zhao-channel.role-channel",
+    "plugin::zhao-auth.role-channel",
     "plugin::zhao-channel.user-channel",
     "plugin::zhao-channel.channel-member",
     "plugin::zhao-channel.user-invite",
@@ -239,7 +239,7 @@ export async function seedTestData(strapi: Core.Strapi): Promise<TestFixtures> {
 export async function cleanupTestData(strapi: Core.Strapi): Promise<void> {
   const { db } = strapi;
   const tables = [
-    "plugin::zhao-channel.role-channel",
+    "plugin::zhao-auth.role-channel",
     "plugin::zhao-channel.user-channel",
     "plugin::zhao-channel.channel-member",
     "plugin::zhao-channel.user-invite",

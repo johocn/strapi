@@ -234,6 +234,50 @@ describe("渠道网络与操作 (Service层)", () => {
     });
   });
 
+  describe("register(...,{newUser:true}) — 关闭模式：加入上级渠道（开关未开启）", () => {
+    test("应加入上级渠道成为成员，且不新建渠道", async () => {
+      delete process.env.CHANNEL_AUTO_CREATE_CHANNEL;
+      const strapi = getStrapi();
+      const channelService = strapi.plugin("zhao-channel").service("channel");
+      const parentCode = fixtures.channels[0].code; // AGENT001
+      const parentId = fixtures.channels[0].id;
+      const beforeCount = await strapi.db.query("plugin::zhao-channel.channel").count({});
+      const stamp = Date.now();
+      const result = await channelService.register(
+        {
+          code: parentCode,
+          name: "加入渠道用户",
+          email: `join${stamp}@channel-test.com`,
+          username: `joinuser${stamp}`,
+          password: "Test@12345",
+        },
+        { newUser: true }
+      );
+      expect(result.user).toBeTruthy();
+      expect(result.user.id).toBeGreaterThan(0);
+      expect(result.joinedChannel).toBeTruthy();
+      expect(result.joinedChannel.id).toBe(parentId);
+      // 未新建渠道
+      const afterCount = await strapi.db.query("plugin::zhao-channel.channel").count({});
+      expect(afterCount).toBe(beforeCount);
+      // 已作为 member 加入上级渠道
+      const member = await strapi.db.query("plugin::zhao-channel.channel-member").findOne({
+        where: { channel: parentId, user: result.user.id },
+      });
+      expect(member).toBeTruthy();
+      expect(member.role).toBe("member");
+    });
+
+    test("关闭模式下缺省 email/username/password 应报错", async () => {
+      delete process.env.CHANNEL_AUTO_CREATE_CHANNEL;
+      const strapi = getStrapi();
+      const channelService = strapi.plugin("zhao-channel").service("channel");
+      await expect(
+        channelService.register({ code: fixtures.channels[0].code, name: "无凭证" }, { newUser: true })
+      ).rejects.toThrow("新用户注册必须提供 email/username/password");
+    });
+  });
+
   describe("validateCode(code) — 验证邀请码", () => {
     test("有效渠道码应返回 valid=true 和渠道信息", async () => {
       const strapi = getStrapi();

@@ -13,6 +13,7 @@ import {
   MAX_CHANNEL_DEPTH,
   validateTier,
 } from "../config/tiers";
+import { runWithContext } from "../utils/registration-context";
 
 const XSS_PATTERN = /<\s*script|<\s*\/\s*script|javascript\s*:|on\w+\s*=/i;
 
@@ -452,15 +453,18 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   /**
    * 通过邀请码注册子渠道，并创建登录用户
    */
-  async register(data: {
-    code: string;
-    name: string;
-    description?: string;
-    channelTier?: string;
-    email?: string;
-    username?: string;
-    password?: string;
-  }) {
+  async register(
+    data: {
+      code: string;
+      name: string;
+      description?: string;
+      channelTier?: string;
+      email?: string;
+      username?: string;
+      password?: string;
+    },
+    opts?: { newUser?: boolean }
+  ) {
     const parentChannel = await strapi.db.query(CHANNEL_UID).findOne({
       where: { code: data.code },
     });
@@ -471,7 +475,13 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       throwErr("030104", 403, "渠道已被禁用");
     }
 
-    // 校验父渠道是否为叶子节点
+    // ─── 加入上级渠道模式（关闭"每用户单建渠道"，可经 CHANNEL_AUTO_CREATE_CHANNEL=true 恢复原行为） ───
+    const autoCreateChannel = process.env.CHANNEL_AUTO_CREATE_CHANNEL === "true";
+    if (opts?.newUser === true && !autoCreateChannel) {
+      return this.registerAsMember(parentChannel, data);
+    }
+
+    // 原逻辑：校验父渠道是否为叶子节点
     if (isLeafTier(parentChannel.channelTier)) {
       throwErr("030105", 400, "渠道层级深度超限");
     }
@@ -643,6 +653,65 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     });
 
     return result;
+  },
+
+  /**
+   * 加入上级渠道模式：关闭"每用户单建渠道"后，新用户注册改为加入上级渠道成为成员
+   * 复用 channel-member.joinByInvite（channel-member role=member + user-invite 分销绑定 + 幂等）
+   */
+  async registerAsMember(
+    parentChannel: any,
+    data: { code: string; email?: string; username?: string; password?: string }
+  ) {
+    if (!data.email || !data.username || !data.password) {
+      throwErr("030111", 400, "新用户注册必须提供 email/username/password");
+    }
+
+    return strapi.db.transaction(async () => {
+      // 用户唯一性预检（与原逻辑一致）
+      const existingByEmail = await strapi.db.query("plugin::users-permissions.user").findOne({
+        where: { email: data.email },
+      });
+      if (existingByEmail) {
+        throwErr("030107", 409, "该邮箱已被注册");
+      }
+      const existingByUsername = await strapi.db.query("plugin::users-permissions.user").findOne({
+        where: { username: data.username },
+      });
+      if (existingByUsername) {
+        throwErr("030108", 409, "该用户名已被注册");
+      }
+
+      // 创建用户（zhao-auth 保证密码哈希）
+      // 加入上级渠道模式下，新用户不应自动创建个人渠道：
+      // 以 admin 上下文调用 createUser，使 bootstrap afterCreate hook 的
+      // isAdminContext() 判定为 true，从而跳过「自动创建个人渠道」分支
+      // （若不抑制，hook 的 setTimeout 会在本事务提交前查询不到 isCurrent 成员而误建个人渠道）
+      const user = (await runWithContext("/admin/channel/register-as-member", () =>
+        strapi.plugin("zhao-auth").service("auth").createUser({
+          email: data.email,
+          username: data.username,
+          password: data.password,
+        })
+      )) as any;
+
+      // 加入上级渠道为成员（幂等：已是成员则直接返回）
+      const joined = await strapi
+        .plugin("zhao-channel")
+        .service("channel-member")
+        .joinByInvite(user.id, data.code);
+
+      return {
+        user: { id: user.id, email: user.email, username: user.username },
+        joinedChannel: {
+          id: parentChannel.id,
+          name: parentChannel.name,
+          code: parentChannel.code,
+          channelTier: parentChannel.channelTier,
+        },
+        member: joined,
+      };
+    });
   },
 
   /**
