@@ -711,6 +711,102 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     return { documentId: updated.documentId, status: updated.status, repliedAt: updated.repliedAt };
   },
 
+  /** C 端公开评价列表 + 聚合（仅展示已公开：rating!=null && reviewHidden!=true） */
+  async listPublicReviews({ activityDocumentId, page = 1, pageSize = 20 }: {
+    activityDocumentId: string; page?: number; pageSize?: number;
+  }) {
+    const act = await strapi.documents(ACTIVITY_UID).findOne({ documentId: activityDocumentId });
+    if (!act) throw new Error("活动不存在");
+    const visible: any = {
+      activity: act.id,
+      status: "active",
+      rating: { $notNull: true },
+      reviewHidden: { $ne: true },
+    };
+    const result = await strapi.db.query(SIGNS_UID).findPage({
+      where: visible,
+      populate: { user: true },
+      orderBy: { reviewedAt: "desc" },
+      page, pageSize,
+    });
+    const rows = (result?.results ?? []).map((r: any) => ({
+      id: r.id,
+      rating: r.rating,
+      nps: r.nps,
+      review: r.review,
+      reviewedAt: r.reviewedAt,
+      user: r.user ? {
+        id: r.user.id, username: r.user.username,
+        nickname: r.user.nickname, avatar: r.user.avatar,
+      } : null,
+    }));
+    const all = await strapi.db.query(SIGNS_UID).findMany({
+      where: visible, select: ["rating", "nps", "review"],
+    });
+    const withRating = all.filter((r: any) => r.rating != null);
+    const withNps = all.filter((r: any) => r.nps != null);
+    const withText = all.filter((r: any) => r.review && String(r.review).trim());
+    const avgRating = withRating.length ? withRating.reduce((a: number, r: any) => a + r.rating, 0) / withRating.length : 0;
+    const avgNps = withNps.length ? withNps.reduce((a: number, r: any) => a + r.nps, 0) / withNps.length : 0;
+    return {
+      rows,
+      summary: {
+        count: all.length,
+        avgRating: Number(avgRating.toFixed(2)),
+        avgNps: Number(avgNps.toFixed(2)),
+        reviewCount: withText.length,
+      },
+      pagination: result?.pagination ?? { page, pageSize, pageCount: 1, total: rows.length },
+    };
+  },
+
+  /** 本活动本人已解锁学习内容：报名解锁(preUnlock*) + 签到解锁(learningPackage*) */
+  async getLearningContent({ userId, activityDocumentId }: {
+    userId: number; activityDocumentId: string;
+  }) {
+    const act = await strapi.documents(ACTIVITY_UID).findOne({
+      documentId: activityDocumentId,
+      populate: {
+        preUnlockArticles: true,
+        preUnlockLessons: { populate: { course: true } },
+        learningPackageArticles: true,
+        learningPackageLessons: { populate: { course: true } },
+      },
+    });
+    if (!act) throw new Error("活动不存在");
+    const signup = await strapi.db.query(SIGNS_UID).findOne({
+      where: { activity: act.id, user: userId },
+    });
+    const checkedIn = !!signup?.attendedAt;
+    const dedupeByDocId = (arr: any[]) => {
+      const seen = new Set<string>();
+      const out: any[] = [];
+      for (const x of arr) {
+        if (!x) continue;
+        const k = x.documentId || String(x.id);
+        if (seen.has(k)) continue;
+        seen.add(k);
+        out.push(x);
+      }
+      return out;
+    };
+    const articles = dedupeByDocId(
+      checkedIn
+        ? [...(act.learningPackageArticles || []), ...(act.preUnlockArticles || [])]
+        : [...(act.preUnlockArticles || [])]
+    ).map((a: any) => ({ documentId: a.documentId, title: a.title, url: a.url || null }));
+    const lessons = dedupeByDocId(
+      checkedIn
+        ? [...(act.learningPackageLessons || []), ...(act.preUnlockLessons || [])]
+        : [...(act.preUnlockLessons || [])]
+    ).map((l: any) => ({
+      documentId: l.documentId, title: l.title,
+      course: l.course ? { documentId: l.course.documentId, title: l.course.title } : null,
+    }));
+    const courses = dedupeByDocId(lessons.map((l: any) => l.course).filter(Boolean));
+    return { checkedIn, articles, lessons, courses };
+  },
+
   /**
    * 活动结束触点：本项目无可靠业务结束判定（无 cron、无专属关闭端点，adminUpdate 仅通用更新 status），
    * 因此提供公开 service 方法 closeActivity(activityId) 兼做“activity.closed”未到场回访埋点，不引入 cron。
