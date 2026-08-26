@@ -160,7 +160,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       const parsed = validateOrThrow(registerSchema, ctx.request.body, ctx);
       if (!parsed) return;
       const service = strapi.plugin("zhao-channel").service("channel");
-      const result = await service.register(parsed);
+      // 新用户注册走「加入上级渠道」分支（受 CHANNEL_AUTO_CREATE_CHANNEL 开关控制）
+      const result = await service.register(parsed, { newUser: true });
 
       let token = null;
       if (result.user) {
