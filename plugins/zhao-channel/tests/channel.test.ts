@@ -278,6 +278,52 @@ describe("渠道网络与操作 (Service层)", () => {
     });
   });
 
+  describe("register(...,{newUser:true}) — 开启模式：CHANNEL_AUTO_CREATE_CHANNEL=true 恢复单建渠道", () => {
+    test("应新建子渠道（原行为）", async () => {
+      process.env.CHANNEL_AUTO_CREATE_CHANNEL = "true";
+      try {
+        const strapi = getStrapi();
+        const channelService = strapi.plugin("zhao-channel").service("channel");
+        const stamp = Date.now();
+        const result = await channelService.register(
+          {
+            code: fixtures.channels[0].code,
+            name: "开启模式新建渠道",
+            channelTier: "agent",
+            email: `open${stamp}@channel-test.com`,
+            username: `openuser${stamp}`,
+            password: "Test@12345",
+          },
+          { newUser: true }
+        );
+        expect(result.id).toBeGreaterThan(0); // 返回新建渠道 id
+        // 定向校验新建渠道已落库（不用全表精确计数，避免 bootstrap afterCreate 钩子
+        // 自动创建个人渠道的竞态导致计数不稳定）
+        const created = await strapi.db.query("plugin::zhao-channel.channel").findOne({
+          where: { id: result.id },
+        });
+        expect(created).toBeTruthy();
+        expect(created.code).toBe(result.code);
+      } finally {
+        delete process.env.CHANNEL_AUTO_CREATE_CHANNEL;
+      }
+    });
+  });
+
+  describe("register(data) — 不传 opts（my/channel/register）不受开关影响", () => {
+    test("即使开关关闭，不传 opts 仍按原逻辑新建渠道", async () => {
+      delete process.env.CHANNEL_AUTO_CREATE_CHANNEL;
+      const strapi = getStrapi();
+      const channelService = strapi.plugin("zhao-channel").service("channel");
+      const result = await channelService.register({
+        code: fixtures.channels[0].code,
+        name: "登录用户建子渠道",
+        channelTier: "agent",
+      });
+      expect(result.id).toBeGreaterThan(0);
+    });
+  });
+
   describe("validateCode(code) — 验证邀请码", () => {
     test("有效渠道码应返回 valid=true 和渠道信息", async () => {
       const strapi = getStrapi();
