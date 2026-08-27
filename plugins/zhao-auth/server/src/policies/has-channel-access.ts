@@ -10,11 +10,15 @@ const hasChannelAccess = async (policyContext: any, config: any, { strapi }: { s
     return false;
   }
 
+  // 注意：Strapi v5 的 createPolicyContext 用 Object.assign 复制 koa ctx，
+  // ctx.query 是原型链 getter，不会复制为自有属性，故 policyContext.query 为 undefined；
+  // 需经 policyContext.request.query（getter 访问）取查询参数。
   const rawId =
     config?.channelId ??
     policyContext.params?.channelId ??
     policyContext.params?.id ??
     policyContext.request?.body?.channelId ??
+    policyContext.request?.query?.channel ??
     policyContext.query?.channel;
 
   const channelId = typeof rawId === "string" ? parseInt(rawId, 10) : Number(rawId);

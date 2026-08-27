@@ -140,6 +140,8 @@ export async function seedTestData(strapi: Core.Strapi): Promise<TestFixtures> {
         provider: "local",
         confirmed: true,
         blocked: false,
+        // 仅 owner 用户（users[0]）具备 admin 角色，用于内容 API 管理端端点权限验证
+        zhaoRoles: i === 1 ? ["admin"] : [],
       },
     });
     users.push(user);

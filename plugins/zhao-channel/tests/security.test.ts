@@ -203,7 +203,7 @@ describe("安全与异常处理", () => {
         const hasUserChannel = await strapi.db.query("plugin::zhao-channel.user-channel").findOne({
           where: { user: fixtures.users[6].id, channel: cid },
         });
-        const hasRoleChannel = await strapi.db.query("plugin::zhao-channel.role-channel").findOne({
+        const hasRoleChannel = await strapi.db.query("plugin::zhao-auth.role-channel").findOne({
           where: { channel: cid },
         });
         const hasMember = await strapi.db.query("plugin::zhao-channel.channel-member").findOne({

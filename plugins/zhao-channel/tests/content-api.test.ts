@@ -48,7 +48,8 @@ describe("Content API — 公开层端点", () => {
       .send({ code: fixtures.channels[0].code })
       .set("Content-Type", "application/json");
     expect(res.status).toBe(200);
-    expect(res.body.valid).toBe(true);
+    // validatePublic 控制器通过 wrap() 包装为 { data, meta }
+    expect(res.body.data.valid).toBe(true);
   });
 
   test("POST /v1/channel/register/public — 公开注册", async () => {

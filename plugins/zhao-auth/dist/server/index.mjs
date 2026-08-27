@@ -4754,7 +4754,7 @@ const hasChannelAccess = async (policyContext, config2, { strapi: strapi2 }) => 
   if (!user?.id) {
     return false;
   }
-  const rawId = config2?.channelId ?? policyContext.params?.channelId ?? policyContext.params?.id ?? policyContext.request?.body?.channelId ?? policyContext.query?.channel;
+  const rawId = config2?.channelId ?? policyContext.params?.channelId ?? policyContext.params?.id ?? policyContext.request?.body?.channelId ?? policyContext.request?.query?.channel ?? policyContext.query?.channel;
   const channelId = typeof rawId === "string" ? parseInt(rawId, 10) : Number(rawId);
   if (isNaN(channelId) || channelId <= 0) {
     return false;

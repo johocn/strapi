@@ -44,7 +44,7 @@ describe("渠道管理 CRUD (Service层)", () => {
       const channelService = strapi.plugin("zhao-channel").service("channel");
       const result = await channelService.find({});
       expect(result).toBeTruthy();
-      expect(Array.isArray(result.data)).toBe(true);
+      expect(Array.isArray(result.list)).toBe(true);
       expect(result.pagination).toBeDefined();
       expect(result.pagination.page).toBe(1);
       expect(result.pagination.pageSize).toBe(20);
@@ -54,7 +54,7 @@ describe("渠道管理 CRUD (Service层)", () => {
       const strapi = getStrapi();
       const channelService = strapi.plugin("zhao-channel").service("channel");
       const result = await channelService.find({ page: 1, pageSize: 2 });
-      expect(result.data.length).toBeLessThanOrEqual(2);
+      expect(result.list.length).toBeLessThanOrEqual(2);
       expect(result.pagination.pageSize).toBe(2);
     });
 
@@ -62,14 +62,14 @@ describe("渠道管理 CRUD (Service层)", () => {
       const strapi = getStrapi();
       const channelService = strapi.plugin("zhao-channel").service("channel");
       const result = await channelService.find({ status: true });
-      expect(result.data.every((c: any) => c.attributes.status === true)).toBe(true);
+      expect(result.list.every((c: any) => c.attributes.status === true)).toBe(true);
     });
 
     test("应支持按 channelTier 过滤", async () => {
       const strapi = getStrapi();
       const channelService = strapi.plugin("zhao-channel").service("channel");
       const result = await channelService.find({ channelTier: "agent" });
-      expect(result.data.every((c: any) => c.attributes.channelTier === "agent")).toBe(true);
+      expect(result.list.every((c: any) => c.attributes.channelTier === "agent")).toBe(true);
     });
   });
 
@@ -79,8 +79,7 @@ describe("渠道管理 CRUD (Service层)", () => {
       const channelService = strapi.plugin("zhao-channel").service("channel");
       const result = await channelService.findOne(fixtures.channels[0].id);
       expect(result).toBeTruthy();
-      expect(result.data).toBeDefined();
-      expect(result.data.id).toBe(fixtures.channels[0].id);
+      expect(result.id).toBe(fixtures.channels[0].id);
     });
 
     test("不存在的 ID 应返回 null", async () => {
@@ -101,9 +100,9 @@ describe("渠道管理 CRUD (Service层)", () => {
         channelTier: "regional",
       });
       expect(result).toBeTruthy();
-      expect(result.data.attributes.name).toBe("测试区域代理");
-      expect(result.data.attributes.depth).toBe(0);
-      expect(result.data.attributes.channelTier).toBe("regional");
+      expect(result.attributes.name).toBe("测试区域代理");
+      expect(result.attributes.depth).toBe(0);
+      expect(result.attributes.channelTier).toBe("regional");
     });
 
     test("应在父渠道下创建子渠道（store）", async () => {
@@ -116,7 +115,7 @@ describe("渠道管理 CRUD (Service层)", () => {
         parentChannel: fixtures.channels[0].id, // 总代 → 子渠道
       });
       expect(result).toBeTruthy();
-      expect(result.data.attributes.parentChannelId).toEqual(
+      expect(result.attributes.parentChannelId).toEqual(
         expect.objectContaining({ id: fixtures.channels[0].id })
       );
     });
@@ -142,7 +141,7 @@ describe("渠道管理 CRUD (Service层)", () => {
       const result = await channelService.update(fixtures.channels[3].id, {
         name: "已更新渠道名",
       });
-      expect(result.data.attributes.name).toBe("已更新渠道名");
+      expect(result.attributes.name).toBe("已更新渠道名");
     });
 
     // ---- 新增：更新不存在的渠道应抛出错误 ----
@@ -161,7 +160,7 @@ describe("渠道管理 CRUD (Service层)", () => {
       const channelService = strapi.plugin("zhao-channel").service("channel");
       const result = await channelService.delete(fixtures.channels[3].id);
       expect(result).toBeTruthy();
-      expect(result.data.deletedChannels).toBeGreaterThanOrEqual(1);
+      expect(result.deletedChannels).toBeGreaterThanOrEqual(1);
     });
 
     test("删除不存在的渠道应抛出错误", async () => {

@@ -171,12 +171,11 @@ describe("渠道成员管理 (Service层)", () => {
         fixtures.users[0].id,
         { email: fixtures.users[3].email }
       );
-      // 移除
-      const removeResult = await memberService.removeMember(
+      // 移除（removeMember 成功返回 null，v5 语义）
+      await memberService.removeMember(
         fixtures.channels[0].id,
         fixtures.users[3].id
       );
-      expect(removeResult).toBeTruthy();
       // 验证已移除
       const members = await memberService.getMembers(fixtures.channels[0].id);
       const stillExists = members.members.some(
@@ -201,7 +200,12 @@ describe("渠道成员管理 (Service层)", () => {
         fixtures.users[1].id,
         "admin"
       );
-      expect(result).toBeTruthy();
+      // updateMemberRole 成功返回 null（v5 语义），改为验证角色已更新
+      expect(result).toBeNull();
+      const member = await strapi.db.query("plugin::zhao-channel.channel-member").findOne({
+        where: { channel: fixtures.channels[0].id, user: fixtures.users[1].id },
+      });
+      expect(member.role).toBe("admin");
     });
 
     // ---- 新增：更新不存在成员的权限应抛出错误 ----

@@ -31,17 +31,22 @@ export async function setupStrapi(): Promise<Core.Strapi> {
 
   const { createStrapi } = require("@strapi/strapi");
 
-  const projectDir = path.resolve(__dirname, "..", "..", "..", "..", "basic");
+  const projectDir = path.resolve(__dirname, "..", "..", "..", "..");
 
+  console.log("[setup] creating strapi...");
   strapiInstance = await createStrapi({
     appDir: projectDir,
     distDir: projectDir + "/dist",
     autoReload: false,
     serveAdminPanel: false,
-  }).load();
+  });
+  console.log("[setup] created, calling load()...");
+  strapiInstance = await strapiInstance.load();
+  console.log("[setup] load() done");
 
   const server = (strapiInstance as any).server;
   server.mount();
+  console.log("[setup] mount done");
 
   return strapiInstance;
 }
