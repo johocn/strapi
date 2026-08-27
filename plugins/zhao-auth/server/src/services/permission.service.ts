@@ -404,7 +404,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     let userRoles: string[] = [];
     if (Array.isArray((user as any).zhaoRoles) && (user as any).zhaoRoles.length > 0) {
       userRoles = (user as any).zhaoRoles
-        .map((r: any) => (typeof r === "string" ? r : String(r)))
+        .map((r: any) => (typeof r === "string" ? r : r?.role || r?.name || r?.type))
         .filter((r: string) => r && r.trim());
     } else if ((user as any).role) {
       // 回退：从 Strapi 内置 role 表读取 type 字段

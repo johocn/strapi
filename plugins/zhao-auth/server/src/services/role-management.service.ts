@@ -190,7 +190,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     });
     const operatorRoles: string[] = Array.isArray((operator as any)?.zhaoRoles)
       ? (operator as any).zhaoRoles
-          .map((r: any) => (typeof r === "string" ? r : String(r)))
+          .map((r: any) => (typeof r === "string" ? r : r?.role || r?.name || r?.type))
           .filter((r: string) => r && r.trim())
       : [];
 
@@ -286,7 +286,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     let directRoles: string[] = [];
     if (Array.isArray(user.zhaoRoles) && user.zhaoRoles.length > 0) {
       directRoles = user.zhaoRoles
-        .map((r: any) => (typeof r === "string" ? r : String(r)))
+        .map((r: any) => (typeof r === "string" ? r : r?.role || r?.name || r?.type))
         .filter((name: string) => name && name.trim());
     } else if (user.role?.type) {
       directRoles = [user.role.type];
@@ -365,7 +365,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       });
       const operatorRoles: string[] = Array.isArray((operator as any)?.zhaoRoles)
         ? (operator as any).zhaoRoles
-            .map((r: any) => (typeof r === "string" ? r : String(r)))
+            .map((r: any) => (typeof r === "string" ? r : r?.role || r?.name || r?.type))
             .filter((r: string) => r && r.trim())
         : [];
 
@@ -816,7 +816,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     });
     const operatorRoles: string[] = Array.isArray((operator as any)?.zhaoRoles)
       ? (operator as any).zhaoRoles
-          .map((r: any) => (typeof r === "string" ? r : String(r)))
+          .map((r: any) => (typeof r === "string" ? r : r?.role || r?.name || r?.type))
           .filter((r: string) => r && r.trim())
       : [];
     const isAdmin = operatorRoles.includes("admin");

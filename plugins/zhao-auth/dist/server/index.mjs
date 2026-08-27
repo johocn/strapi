@@ -52,7 +52,7 @@ const authService = ({ strapi: strapi2 }) => {
             });
             if (dbUser) {
               if (Array.isArray(dbUser.zhaoRoles) && dbUser.zhaoRoles.length > 0) {
-                user.roles = dbUser.zhaoRoles.map((r) => typeof r === "string" ? r : String(r)).filter((r) => r && r.trim());
+                user.roles = dbUser.zhaoRoles.map((r) => typeof r === "string" ? r : r?.role || r?.name || r?.type).filter((r) => r && r.trim());
               } else if (dbUser.role) {
                 if (Array.isArray(dbUser.role)) {
                   user.roles = dbUser.role.map((r) => r?.type).filter((type) => type && type.trim());
@@ -210,7 +210,7 @@ const authService = ({ strapi: strapi2 }) => {
       let roles = [];
       let formattedRole = null;
       if (Array.isArray(user.zhaoRoles) && user.zhaoRoles.length > 0) {
-        roles = user.zhaoRoles.map((r) => typeof r === "string" ? r : String(r)).filter((r) => r && r.trim());
+        roles = user.zhaoRoles.map((r) => typeof r === "string" ? r : r?.role || r?.name || r?.type).filter((r) => r && r.trim());
         formattedRole = roles.map((r) => ({ name: r, type: r }));
       } else if (user.role) {
         if (Array.isArray(user.role)) {
@@ -2180,7 +2180,7 @@ const roleManagementService = ({ strapi: strapi2 }) => {
       where: { id: operatorId },
       select: ["zhaoRoles"]
     });
-    const operatorRoles = Array.isArray(operator?.zhaoRoles) ? operator.zhaoRoles.map((r) => typeof r === "string" ? r : String(r)).filter((r) => r && r.trim()) : [];
+    const operatorRoles = Array.isArray(operator?.zhaoRoles) ? operator.zhaoRoles.map((r) => typeof r === "string" ? r : r?.role || r?.name || r?.type).filter((r) => r && r.trim()) : [];
     if (operatorRoles.includes("admin")) {
       const { ROLES: ROLES2 } = await Promise.resolve().then(() => permissions);
       return Object.values(ROLES2);
@@ -2233,7 +2233,7 @@ const roleManagementService = ({ strapi: strapi2 }) => {
     }
     let directRoles = [];
     if (Array.isArray(user.zhaoRoles) && user.zhaoRoles.length > 0) {
-      directRoles = user.zhaoRoles.map((r) => typeof r === "string" ? r : String(r)).filter((name) => name && name.trim());
+      directRoles = user.zhaoRoles.map((r) => typeof r === "string" ? r : r?.role || r?.name || r?.type).filter((name) => name && name.trim());
     } else if (user.role?.type) {
       directRoles = [user.role.type];
     } else if (user.role?.name) {
@@ -2290,7 +2290,7 @@ const roleManagementService = ({ strapi: strapi2 }) => {
           where: { id: operatorId },
           select: ["zhaoRoles"]
         });
-        const operatorRoles = Array.isArray(operator?.zhaoRoles) ? operator.zhaoRoles.map((r) => typeof r === "string" ? r : String(r)).filter((r) => r && r.trim()) : [];
+        const operatorRoles = Array.isArray(operator?.zhaoRoles) ? operator.zhaoRoles.map((r) => typeof r === "string" ? r : r?.role || r?.name || r?.type).filter((r) => r && r.trim()) : [];
         const isAdmin = operatorRoles.includes("admin");
         if (!isAdmin) {
           tenantUserIds = await resolveTenantUserIds(operatorId);
@@ -2638,7 +2638,7 @@ const roleManagementService = ({ strapi: strapi2 }) => {
         where: { id: operatorId },
         select: ["zhaoRoles"]
       });
-      const operatorRoles = Array.isArray(operator?.zhaoRoles) ? operator.zhaoRoles.map((r) => typeof r === "string" ? r : String(r)).filter((r) => r && r.trim()) : [];
+      const operatorRoles = Array.isArray(operator?.zhaoRoles) ? operator.zhaoRoles.map((r) => typeof r === "string" ? r : r?.role || r?.name || r?.type).filter((r) => r && r.trim()) : [];
       const isAdmin = operatorRoles.includes("admin");
       const result = [];
       for (const role of allRoleNames) {
@@ -3173,7 +3173,7 @@ const permissionService = ({ strapi: strapi2 }) => ({
     if (!user) return { permissions: [] };
     let userRoles = [];
     if (Array.isArray(user.zhaoRoles) && user.zhaoRoles.length > 0) {
-      userRoles = user.zhaoRoles.map((r) => typeof r === "string" ? r : String(r)).filter((r) => r && r.trim());
+      userRoles = user.zhaoRoles.map((r) => typeof r === "string" ? r : r?.role || r?.name || r?.type).filter((r) => r && r.trim());
     } else if (user.role) {
       const roleObj = user.role;
       if (Array.isArray(roleObj)) {

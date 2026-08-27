@@ -78,7 +78,7 @@ export default ({ strapi }: { strapi: Core.Strapi }): AuthService & Record<strin
               // 优先从 zhaoRoles JSON 字段读取
               if (Array.isArray(dbUser.zhaoRoles) && dbUser.zhaoRoles.length > 0) {
                 user.roles = dbUser.zhaoRoles
-                  .map((r: any) => (typeof r === "string" ? r : String(r)))
+                  .map((r: any) => (typeof r === "string" ? r : r?.role || r?.name || r?.type))
                   .filter((r: string) => r && r.trim());
               } else if (dbUser.role) {
                 // 回退：从 Strapi 内置 role 表读取 type 字段
@@ -266,7 +266,7 @@ export default ({ strapi }: { strapi: Core.Strapi }): AuthService & Record<strin
     let formattedRole: any = null;
     if (Array.isArray(user.zhaoRoles) && user.zhaoRoles.length > 0) {
       roles = user.zhaoRoles
-        .map((r: any) => (typeof r === "string" ? r : String(r)))
+        .map((r: any) => (typeof r === "string" ? r : r?.role || r?.name || r?.type))
         .filter((r: string) => r && r.trim());
       formattedRole = roles.map((r: string) => ({ name: r, type: r }));
     } else if (user.role) {
