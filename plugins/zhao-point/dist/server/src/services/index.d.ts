@@ -402,6 +402,30 @@ declare const _default: {
                     taskGroup: string;
                     extraConfig: {};
                 };
+                activity_signup_auth: {
+                    points: number;
+                    limitPerDay: number;
+                    isOneTime: boolean;
+                    description: string;
+                    taskGroup: string;
+                    extraConfig: {};
+                };
+                activity_signup_contact: {
+                    points: number;
+                    limitPerDay: number;
+                    isOneTime: boolean;
+                    description: string;
+                    taskGroup: string;
+                    extraConfig: {};
+                };
+                activity_signup_survey: {
+                    points: number;
+                    limitPerDay: number;
+                    isOneTime: boolean;
+                    description: string;
+                    taskGroup: string;
+                    extraConfig: {};
+                };
                 activity_attend: {
                     points: number;
                     limitPerDay: number;
@@ -726,25 +750,38 @@ declare const _default: {
     activity: ({ strapi }: {
         strapi: import('@strapi/types/dist/core').Strapi;
     }) => {
-        signup({ userId, activityId, formData, chosenRewards }: {
+        signup({ userId, activityId, formData, questionnaireData, chosenRewards }: {
             userId: number;
             activityId: string;
             formData?: any;
+            questionnaireData?: any;
             chosenRewards?: string[];
         }): Promise<{
             ok: boolean;
             reason: string;
             waitlisted?: undefined;
             position?: undefined;
+            signupId?: undefined;
         } | {
             ok: boolean;
             waitlisted: boolean;
             position: number;
+            signupId: any;
             reason?: undefined;
         } | {
             unlockInfo?: {
+                pointsPreview: {
+                    base: number;
+                    auth: number;
+                    contact: number;
+                    survey: number;
+                    subscribe: number;
+                    total: number;
+                };
                 loginAuth: boolean;
-                channels: Record<string, boolean>;
+                subscribed: boolean;
+                channelDone: boolean;
+                conditions: Record<string, boolean>;
                 chosenRewards: any[];
             };
             ok: boolean;
@@ -755,16 +792,223 @@ declare const _default: {
                 message: string;
                 link?: string;
             }[];
+            signupId: any;
+            pointsPreview: {
+                base: number;
+                auth: number;
+                contact: number;
+                survey: number;
+                subscribe: number;
+                total: number;
+            };
             reason?: undefined;
             waitlisted?: undefined;
             position?: undefined;
         }>;
+        fillQuestionnaire({ userId, signupId, answers }: {
+            userId: number;
+            signupId: number;
+            answers?: any;
+        }): Promise<{
+            ok: boolean;
+            unlockInfo: any;
+            newlyUnlocked: any[];
+        }>;
+        unlockCheck({ userId, activityDocumentId, formData, questionnaireData }: {
+            userId: number;
+            activityDocumentId: string;
+            formData?: any;
+            questionnaireData?: any;
+        }): Promise<{
+            ok: boolean;
+            hasReward: boolean;
+            loginAuth: boolean;
+            subscribed: boolean;
+            conditions: {
+                contact: boolean;
+                survey: boolean;
+            };
+            pointsPreview: {
+                base: number;
+                auth: number;
+                contact: number;
+                survey: number;
+                subscribe: number;
+                total: number;
+            };
+            channel?: undefined;
+            channelDone?: undefined;
+            selectMode?: undefined;
+            selectN?: undefined;
+            rewards?: undefined;
+        } | {
+            ok: boolean;
+            hasReward: boolean;
+            loginAuth: boolean;
+            subscribed: boolean;
+            channel: {
+                type: string;
+                label?: string;
+            };
+            conditions: {
+                contact: boolean;
+                survey: boolean;
+            };
+            channelDone: boolean;
+            selectMode: any;
+            selectN: number;
+            rewards: any;
+            pointsPreview: {
+                base: number;
+                auth: number;
+                contact: number;
+                survey: number;
+                subscribe: number;
+                total: number;
+            };
+        }>;
+        promoDetail({ activityDocumentId, userId, siteDocumentId }: {
+            activityDocumentId: string;
+            userId?: number;
+            siteDocumentId?: string;
+        }): Promise<{
+            activity: import('@strapi/types/dist/modules/documents').AnyDocument;
+            modules: any[];
+            contact: any;
+            rewards: any;
+            signupStatus: any;
+        }>;
+        sendMessage({ userId, activityDocumentId, content }: {
+            userId: number;
+            activityDocumentId: string;
+            content?: string;
+        }): Promise<{
+            documentId: string;
+            status: any;
+            createdAt: any;
+        }>;
+        listMyMessages({ userId, activityDocumentId }: {
+            userId: number;
+            activityDocumentId: string;
+        }): Promise<{
+            documentId: any;
+            content: any;
+            reply: any;
+            status: any;
+            repliedAt: any;
+            createdAt: any;
+        }[]>;
+        adminListMessages({ activity, status, page, pageSize }: {
+            activity?: string;
+            status?: string;
+            page: number;
+            pageSize: number;
+        }): Promise<{
+            list: {
+                documentId: any;
+                content: any;
+                reply: any;
+                status: any;
+                repliedAt: any;
+                createdAt: any;
+                user: {
+                    id: any;
+                    documentId: any;
+                    username: any;
+                    nickname: any;
+                    avatar: any;
+                    phone: any;
+                };
+                activity: {
+                    documentId: any;
+                    title: any;
+                };
+            }[];
+            pagination: {
+                page: number;
+                pageSize: number;
+                pageCount: number;
+                total: number;
+            };
+        }>;
+        adminReplyMessage({ messageDocumentId, reply }: {
+            messageDocumentId: string;
+            reply?: string;
+        }): Promise<{
+            documentId: string;
+            status: any;
+            repliedAt: any;
+        }>;
+        listPublicReviews({ activityDocumentId, page, pageSize }: {
+            activityDocumentId: string;
+            page?: number;
+            pageSize?: number;
+        }): Promise<{
+            rows: {
+                id: any;
+                rating: any;
+                nps: any;
+                review: any;
+                reviewedAt: any;
+                user: {
+                    id: any;
+                    username: any;
+                    nickname: any;
+                    avatar: any;
+                };
+            }[];
+            summary: {
+                count: number;
+                avgRating: number;
+                avgNps: number;
+                reviewCount: number;
+            };
+            pagination: {
+                page: number;
+                pageSize: number;
+                pageCount: number;
+                total: number;
+            };
+        }>;
+        getLearningContent({ userId, activityDocumentId }: {
+            userId: number;
+            activityDocumentId: string;
+        }): Promise<{
+            checkedIn: boolean;
+            articles: {
+                documentId: any;
+                title: any;
+                url: any;
+            }[];
+            lessons: {
+                documentId: any;
+                title: any;
+                course: {
+                    documentId: any;
+                    title: any;
+                };
+            }[];
+            courses: any[];
+        }>;
         closeActivity(activityId: string): Promise<{
+            ok: boolean;
+            closed: boolean;
+            already: boolean;
+            reviewTriggered: number;
+            revisitTriggered: number;
+            repurchaseTriggered: number;
+        } | {
             ok: boolean;
             closed: boolean;
             reviewTriggered: number;
             revisitTriggered: number;
             repurchaseTriggered: number;
+            already?: undefined;
+        }>;
+        ensureTransitions(activityDocumentId: string): Promise<boolean>;
+        drainDueActivities(): Promise<{
+            scanned: number;
+            moved: number;
         }>;
         adminArchive(activityDocumentId: string): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
         adminUnarchive(activityDocumentId: string): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
@@ -777,6 +1021,10 @@ declare const _default: {
         promoteWaiting(activityId: number): Promise<{
             promoted: number;
         }>;
+        waitlistPositionOf(activityId: number, signup: {
+            id: number;
+            signupAt: Date | string;
+        }): Promise<number>;
         notifyPromoted(upUserId: number, activityId: number): Promise<void>;
         notifyInApp(upUserId: number, activityId: number, scene: string, params: Record<string, any>, dedupeKey: string): Promise<void>;
         checkin({ userId, activityId, method, lat, lng }: {
@@ -893,6 +1141,7 @@ declare const _default: {
         validateFormData: typeof import('./form').validateFormData;
         collectFormData: typeof import('./form').collectFormData;
         channelFilled: typeof import('./form').channelFilled;
+        collectQuestionnaire: typeof import('./form').collectQuestionnaire;
     };
     "resource-schedule": ({ strapi }: {
         strapi: import('@strapi/types/dist/core').Strapi;

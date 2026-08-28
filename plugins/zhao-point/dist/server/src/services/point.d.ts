@@ -438,6 +438,30 @@ declare const _default: ({ strapi }: {
                 taskGroup: string;
                 extraConfig: {};
             };
+            activity_signup_auth: {
+                points: number;
+                limitPerDay: number;
+                isOneTime: boolean;
+                description: string;
+                taskGroup: string;
+                extraConfig: {};
+            };
+            activity_signup_contact: {
+                points: number;
+                limitPerDay: number;
+                isOneTime: boolean;
+                description: string;
+                taskGroup: string;
+                extraConfig: {};
+            };
+            activity_signup_survey: {
+                points: number;
+                limitPerDay: number;
+                isOneTime: boolean;
+                description: string;
+                taskGroup: string;
+                extraConfig: {};
+            };
             activity_attend: {
                 points: number;
                 limitPerDay: number;

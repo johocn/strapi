@@ -20,6 +20,7 @@ declare const _default: {
     "usedCapacity": { "type": "integer", "default": 0 },
     "signupStart": { "type": "datetime" },
     "signupEnd": { "type": "datetime" },
+    "signupAdvanceHours": { "type": "integer", "default": 0 },
     "checkinMode": { "type": "enumeration", "enum": ["worker_scan", "self", "both"], "default": "both" },
     "geoEnforced": { "type": "boolean", "default": false },
     "geoRadiusM": { "type": "integer", "default": 500 },
@@ -40,12 +41,18 @@ declare const _default: {
     "belongsToSeries": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.activity-series", "inversedBy": "activities" },
     "formConfig": { "type": "json" },
     "rewardConfig": { "type": "json" },
+    "questionnaire": { "type": "json" },
     "remindLeadMinutes": { "type": "integer", "default": 1440, "min": -1 },
     "lecturer": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.lecturer", "inversedBy": "activities" },
     "venue": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.venue", "inversedBy": "activities" },
     "cashPrice": { "type": "decimal", "default": 0 },
     "settleLecturer": { "type": "decimal", "default": 0 },
-    "settleVenue": { "type": "decimal", "default": 0 }
+    "settleVenue": { "type": "decimal", "default": 0 },
+    "promoTemplate": { "type": "string", "default": "summit" },
+    "promoModules": { "type": "json" },
+    "promoContact": { "type": "json" },
+    "promoColors": { "type": "json" },
+    "promoAssets": { "type": "json" }
   }
 };
 

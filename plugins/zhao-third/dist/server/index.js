@@ -143,6 +143,16 @@ const thirdPartyAuthService = ({ strapi }) => ({
       };
       await accountService.createAccount(accountData);
     }
+    try {
+      if (tokenResult.nickname || tokenResult.avatar) {
+        await this.updateProfile(user.id, {
+          ...tokenResult.nickname ? { nickname: tokenResult.nickname } : {},
+          ...tokenResult.avatar ? { avatar: tokenResult.avatar } : {}
+        });
+      }
+    } catch (e) {
+      strapi.log.warn(`[zhao-third] 补全三方资料失败(user=${user.id}): ${e?.message}`);
+    }
     const jwtService = strapi.plugin("zhao-auth").service("jwt");
     const jwt = await jwtService.sign({
       id: user.id,

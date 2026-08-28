@@ -1564,6 +1564,7 @@ declare const _default: {
             create(ctx: any): Promise<void>;
             list(ctx: any): Promise<void>;
             findOne(ctx: any): Promise<void>;
+            getQrcode(ctx: any): Promise<void>;
             delete(ctx: any): Promise<void>;
             events(ctx: any): Promise<void>;
         };
@@ -2319,6 +2320,7 @@ declare const _default: {
                 };
             }>;
             findOne(id: number): Promise<any>;
+            findBySceneKey(scene_key: string): Promise<any>;
             remove(id: number): Promise<any>;
             events(filters?: {
                 page?: number;

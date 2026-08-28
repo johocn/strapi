@@ -29,11 +29,14 @@ export declare function validateFormData(formConfig: any, formData: any): {
 export declare function collectFormData(formConfig: any, formData: any): Record<string, any>;
 /** 供解锁判定：判断某通道(contact/survey)在 formData 中是否已填(至少一个该通道字段非空) */
 export declare function channelFilled(formConfig: any, formData: any, channel: string): boolean;
+/** 问卷字段宽松收集：空值忽略；radio/select/multi 校验选项，非法值丢弃；number 规范化 */
+export declare function collectQuestionnaire(fields: any, data: any): Record<string, any>;
 declare const _default: ({ strapi }: {
     strapi: Core.Strapi;
 }) => {
     validateFormData: typeof validateFormData;
     collectFormData: typeof collectFormData;
     channelFilled: typeof channelFilled;
+    collectQuestionnaire: typeof collectQuestionnaire;
 };
 export default _default;

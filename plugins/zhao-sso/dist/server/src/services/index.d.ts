@@ -676,6 +676,7 @@ declare const _default: {
             };
         }>;
         findOne(id: number): Promise<any>;
+        findBySceneKey(scene_key: string): Promise<any>;
         remove(id: number): Promise<any>;
         events(filters?: {
             page?: number;

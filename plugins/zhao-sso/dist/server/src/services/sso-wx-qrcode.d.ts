@@ -26,6 +26,8 @@ declare const _default: ({ strapi }: {
         };
     }>;
     findOne(id: number): Promise<any>;
+    /** 按 scene_key 精确查最近一条（带参二维码复用场景） */
+    findBySceneKey(scene_key: string): Promise<any>;
     remove(id: number): Promise<any>;
     /** 事件日志查询（可按 openid 筛选，倒序分页） */
     events(filters?: {

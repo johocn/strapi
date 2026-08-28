@@ -2831,6 +2831,28 @@ const wxQrcodeController = ({ strapi }) => {
     async findOne(ctx) {
       await wrap(ctx, () => svc().findOne(Number(ctx.params.id)).then((row) => ({ data: row })));
     },
+    /**
+     * C 端公开：按 scene 取或建带参二维码，返回 { wx_url }。
+     * 未配置公众号/接口异常时返回 { wx_url: null }，前端据此跳过关注引导步，不阻塞报名。
+     */
+    async getQrcode(ctx) {
+      const scene = String(ctx.query.scene || "").trim();
+      if (!scene) {
+        ctx.status = 400;
+        ctx.body = { error: "scene 参数必填" };
+        return;
+      }
+      try {
+        let row = await svc().findBySceneKey(scene);
+        if (!row) {
+          row = await svc().create({ scene_key: scene, title: scene, kind: "temporary" });
+        }
+        ctx.body = { data: { wx_url: row?.wx_url || null } };
+      } catch (e) {
+        strapi.log.warn(`[zhao-sso] getQrcode(${scene}) failed: ${e?.message}`);
+        ctx.body = { data: { wx_url: null } };
+      }
+    },
     async delete(ctx) {
       await wrap(ctx, () => svc().remove(Number(ctx.params.id)).then((row) => ({ data: row })));
     },
@@ -3127,6 +3149,13 @@ const api = () => ({
       method: "POST",
       path: "/v1/wechat/callback",
       handler: "wx-callback.callback",
+      config: { auth: false }
+    },
+    // ===== C 端公众号带参二维码（公开，供关注引导） =====
+    {
+      method: "GET",
+      path: "/v1/wx/qrcode",
+      handler: "wx-qrcode.getQrcode",
       config: { auth: false }
     },
     // ===== SSO 认证路由 =====
@@ -6247,6 +6276,15 @@ const ssoWxQrcode = ({ strapi }) => {
       const row = await strapi.db.query(QRCODE_UID).findOne({ where: { id } });
       if (!row) throwErr("SSO_WX_QRCODE_404", 404, "二维码记录不存在");
       return row;
+    },
+    /** 按 scene_key 精确查最近一条（带参二维码复用场景） */
+    async findBySceneKey(scene_key) {
+      const rows = await strapi.db.query(QRCODE_UID).findMany({
+        where: { scene_key },
+        orderBy: { createdAt: "desc" },
+        limit: 1
+      });
+      return rows?.[0] || null;
     },
     async remove(id) {
       return strapi.db.query(QRCODE_UID).delete({ where: { id } });

@@ -79,6 +79,13 @@ declare const _default: {
         categories(ctx: any): Promise<void>;
         detail(ctx: any): Promise<void>;
         signup(ctx: any): Promise<void>;
+        questionnaire(ctx: any): Promise<void>;
+        unlockCheck(ctx: any): Promise<void>;
+        promoDetail(ctx: any): Promise<void>;
+        sendMessage(ctx: any): Promise<void>;
+        listMessages(ctx: any): Promise<void>;
+        adminListMessages(ctx: any): Promise<void>;
+        adminReplyMessage(ctx: any): Promise<void>;
         cancel(ctx: any): Promise<void>;
         checkin(ctx: any): Promise<void>;
         mySignups(ctx: any): Promise<void>;
@@ -94,6 +101,9 @@ declare const _default: {
         adminClose(ctx: any): Promise<void>;
         adminArchive(ctx: any): Promise<void>;
         adminUnarchive(ctx: any): Promise<void>;
+        listReviews(ctx: any): Promise<void>;
+        learningContent(ctx: any): Promise<void>;
+        adminToggleReviewHidden(ctx: any): Promise<void>;
         adminReviews(ctx: any): Promise<void>;
         fissionLeaderboard(ctx: any): Promise<void>;
     };

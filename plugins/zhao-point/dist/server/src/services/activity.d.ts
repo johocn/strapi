@@ -1,26 +1,66 @@
 import { Core } from '@strapi/strapi';
+/** 宣传页允许的模块类型（与 C端渲染组件一一对应） */
+export declare const PROMO_MODULE_TYPES: readonly ["cover", "info", "rich", "highlights", "speakers", "agenda", "images", "rewards", "contact", "message", "faq", "custom"];
+/** 宣传页风格枚举 */
+export declare const PROMO_TEMPLATES: readonly ["summit", "salon", "training", "action", "life"];
+/** 按达成项累加发放分级积分：基础5 + 授权+5 + 联系方式+20 + 问卷+50 + 关注+50（关注奖励 isOneTime 防重） */
+export declare function grantActivityPoints(strapi: any, userId: number, { loginAuth, subscribed, conditions }: {
+    loginAuth: boolean;
+    subscribed: boolean;
+    conditions: Record<string, boolean>;
+}): Promise<void>;
+/**
+ * 分级积分预览（单一来源）：base 基础报名 5；auth 微信授权登录额外 5（累计 10）；
+ * contact 完善联系方式 20；survey 回答问卷 50；subscribe 关注公众号 50。
+ * 预览与实际发放（grantActivityPoints）共用此配置，避免两处漂移。
+ */
+export declare function computePointsPreview({ loginAuth, subscribed, conditions }: {
+    loginAuth: boolean;
+    subscribed: boolean;
+    conditions: Record<string, boolean>;
+}): {
+    base: number;
+    auth: number;
+    contact: number;
+    survey: number;
+    subscribe: number;
+    total: number;
+};
 declare const _default: ({ strapi }: {
     strapi: Core.Strapi;
 }) => {
-    signup({ userId, activityId, formData, chosenRewards }: {
+    signup({ userId, activityId, formData, questionnaireData, chosenRewards }: {
         userId: number;
         activityId: string;
         formData?: any;
+        questionnaireData?: any;
         chosenRewards?: string[];
     }): Promise<{
         ok: boolean;
         reason: string;
         waitlisted?: undefined;
         position?: undefined;
+        signupId?: undefined;
     } | {
         ok: boolean;
         waitlisted: boolean;
         position: number;
+        signupId: any;
         reason?: undefined;
     } | {
         unlockInfo?: {
+            pointsPreview: {
+                base: number;
+                auth: number;
+                contact: number;
+                survey: number;
+                subscribe: number;
+                total: number;
+            };
             loginAuth: boolean;
-            channels: Record<string, boolean>;
+            subscribed: boolean;
+            channelDone: boolean;
+            conditions: Record<string, boolean>;
             chosenRewards: any[];
         };
         ok: boolean;
@@ -31,9 +71,212 @@ declare const _default: ({ strapi }: {
             message: string;
             link?: string;
         }[];
+        signupId: any;
+        pointsPreview: {
+            base: number;
+            auth: number;
+            contact: number;
+            survey: number;
+            subscribe: number;
+            total: number;
+        };
         reason?: undefined;
         waitlisted?: undefined;
         position?: undefined;
+    }>;
+    /** 补填问卷：更新 questionnaireData → 重算解锁 → 幂等发放新增解锁的 multi 权益 */
+    fillQuestionnaire({ userId, signupId, answers }: {
+        userId: number;
+        signupId: number;
+        answers?: any;
+    }): Promise<{
+        ok: boolean;
+        unlockInfo: any;
+        newlyUnlocked: any[];
+    }>;
+    /** 解锁状态探测：C 端报名前或关注/授权后调用，返回通道/条件/可领权益（不入库） */
+    unlockCheck({ userId, activityDocumentId, formData, questionnaireData }: {
+        userId: number;
+        activityDocumentId: string;
+        formData?: any;
+        questionnaireData?: any;
+    }): Promise<{
+        ok: boolean;
+        hasReward: boolean;
+        loginAuth: boolean;
+        subscribed: boolean;
+        conditions: {
+            contact: boolean;
+            survey: boolean;
+        };
+        pointsPreview: {
+            base: number;
+            auth: number;
+            contact: number;
+            survey: number;
+            subscribe: number;
+            total: number;
+        };
+        channel?: undefined;
+        channelDone?: undefined;
+        selectMode?: undefined;
+        selectN?: undefined;
+        rewards?: undefined;
+    } | {
+        ok: boolean;
+        hasReward: boolean;
+        loginAuth: boolean;
+        subscribed: boolean;
+        channel: {
+            type: string;
+            label?: string;
+        };
+        conditions: {
+            contact: boolean;
+            survey: boolean;
+        };
+        channelDone: boolean;
+        selectMode: any;
+        selectN: number;
+        rewards: any;
+        pointsPreview: {
+            base: number;
+            auth: number;
+            contact: number;
+            survey: number;
+            subscribe: number;
+            total: number;
+        };
+    }>;
+    /** 宣传页聚合：活动 + 模块 + 合并联系方式 + 奖励摘要 + 本人报名状态 */
+    promoDetail({ activityDocumentId, userId, siteDocumentId }: {
+        activityDocumentId: string;
+        userId?: number;
+        siteDocumentId?: string;
+    }): Promise<{
+        activity: import('@strapi/types/dist/modules/documents').AnyDocument;
+        modules: any[];
+        contact: any;
+        rewards: any;
+        signupStatus: any;
+    }>;
+    /** 用户留言（异步客服） */
+    sendMessage({ userId, activityDocumentId, content }: {
+        userId: number;
+        activityDocumentId: string;
+        content?: string;
+    }): Promise<{
+        documentId: string;
+        status: any;
+        createdAt: any;
+    }>;
+    /** 我的留言 + 运营回复列表（按活动） */
+    listMyMessages({ userId, activityDocumentId }: {
+        userId: number;
+        activityDocumentId: string;
+    }): Promise<{
+        documentId: any;
+        content: any;
+        reply: any;
+        status: any;
+        repliedAt: any;
+        createdAt: any;
+    }[]>;
+    /** 运营端留言列表（可按活动/状态过滤） */
+    adminListMessages({ activity, status, page, pageSize }: {
+        activity?: string;
+        status?: string;
+        page: number;
+        pageSize: number;
+    }): Promise<{
+        list: {
+            documentId: any;
+            content: any;
+            reply: any;
+            status: any;
+            repliedAt: any;
+            createdAt: any;
+            user: {
+                id: any;
+                documentId: any;
+                username: any;
+                nickname: any;
+                avatar: any;
+                phone: any;
+            };
+            activity: {
+                documentId: any;
+                title: any;
+            };
+        }[];
+        pagination: {
+            page: number;
+            pageSize: number;
+            pageCount: number;
+            total: number;
+        };
+    }>;
+    /** 运营端回复留言：status→replied，记录 repliedAt */
+    adminReplyMessage({ messageDocumentId, reply }: {
+        messageDocumentId: string;
+        reply?: string;
+    }): Promise<{
+        documentId: string;
+        status: any;
+        repliedAt: any;
+    }>;
+    /** C 端公开评价列表 + 聚合（仅展示已公开：rating!=null && reviewHidden!=true） */
+    listPublicReviews({ activityDocumentId, page, pageSize }: {
+        activityDocumentId: string;
+        page?: number;
+        pageSize?: number;
+    }): Promise<{
+        rows: {
+            id: any;
+            rating: any;
+            nps: any;
+            review: any;
+            reviewedAt: any;
+            user: {
+                id: any;
+                username: any;
+                nickname: any;
+                avatar: any;
+            };
+        }[];
+        summary: {
+            count: number;
+            avgRating: number;
+            avgNps: number;
+            reviewCount: number;
+        };
+        pagination: {
+            page: number;
+            pageSize: number;
+            pageCount: number;
+            total: number;
+        };
+    }>;
+    /** 本活动本人已解锁学习内容：报名解锁(preUnlock*) + 签到解锁(learningPackage*) */
+    getLearningContent({ userId, activityDocumentId }: {
+        userId: number;
+        activityDocumentId: string;
+    }): Promise<{
+        checkedIn: boolean;
+        articles: {
+            documentId: any;
+            title: any;
+            url: any;
+        }[];
+        lessons: {
+            documentId: any;
+            title: any;
+            course: {
+                documentId: any;
+                title: any;
+            };
+        }[];
+        courses: any[];
     }>;
     /**
      * 活动结束触点：本项目无可靠业务结束判定（无 cron、无专属关闭端点，adminUpdate 仅通用更新 status），
@@ -43,9 +286,29 @@ declare const _default: ({ strapi }: {
     closeActivity(activityId: string): Promise<{
         ok: boolean;
         closed: boolean;
+        already: boolean;
         reviewTriggered: number;
         revisitTriggered: number;
         repurchaseTriggered: number;
+    } | {
+        ok: boolean;
+        closed: boolean;
+        reviewTriggered: number;
+        revisitTriggered: number;
+        repurchaseTriggered: number;
+        already?: undefined;
+    }>;
+    /**
+     * 懒加载状态流转：读活动时按时间推进状态
+     *  - signup_open && now>=startTime → ongoing
+     *  - ongoing && now>=endTime → ended（走 closeActivity 收尾：评价引导/复购/回访/快照）
+     * 返回是否发生流转；不引入 cron。
+     */
+    ensureTransitions(activityDocumentId: string): Promise<boolean>;
+    /** 批量兜底：扫描到期的 signup_open/ongoing 活动统一推进（管理端聚合/启动时调用） */
+    drainDueActivities(): Promise<{
+        scanned: number;
+        moved: number;
     }>;
     /** 管理端归档: 仅 ended -> archived; 幂等(已是 archived 直接返回) */
     adminArchive(activityDocumentId: string): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
@@ -64,6 +327,11 @@ declare const _default: ({ strapi }: {
     promoteWaiting(activityId: number): Promise<{
         promoted: number;
     }>;
+    /** 候补序号（1-based）：按 signupAt 升序、同时间按 id 升序，统计排在该候补记录之前的 waiting 数 + 1 */
+    waitlistPositionOf(activityId: number, signup: {
+        id: number;
+        signupAt: Date | string;
+    }): Promise<number>;
     /** 递补转正即时通知：resolve sso 用户 → sso-msg.sendNow(act_promoted)，幂等；匹配不到/模板缺失降级不断链 */
     notifyPromoted(upUserId: number, activityId: number): Promise<void>;
     /** 站内信发送助手：resolve sso-user → sso-msg.sendInApp；无 sso/失败降级不断链 */

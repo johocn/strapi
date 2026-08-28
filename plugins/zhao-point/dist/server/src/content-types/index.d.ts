@@ -915,6 +915,10 @@ declare const _default: {
                 signupEnd: {
                     type: string;
                 };
+                signupAdvanceHours: {
+                    type: string;
+                    default: number;
+                };
                 checkinMode: {
                     type: string;
                     enum: string[];
@@ -1000,6 +1004,9 @@ declare const _default: {
                 rewardConfig: {
                     type: string;
                 };
+                questionnaire: {
+                    type: string;
+                };
                 remindLeadMinutes: {
                     type: string;
                     default: number;
@@ -1028,6 +1035,22 @@ declare const _default: {
                 settleVenue: {
                     type: string;
                     default: number;
+                };
+                promoTemplate: {
+                    type: string;
+                    default: string;
+                };
+                promoModules: {
+                    type: string;
+                };
+                promoContact: {
+                    type: string;
+                };
+                promoColors: {
+                    type: string;
+                };
+                promoAssets: {
+                    type: string;
                 };
             };
         };
@@ -1094,10 +1117,17 @@ declare const _default: {
                 reviewedAt: {
                     type: string;
                 };
+                reviewHidden: {
+                    type: string;
+                    default: boolean;
+                };
                 formData: {
                     type: string;
                 };
                 unlockInfo: {
+                    type: string;
+                };
+                questionnaireData: {
                     type: string;
                 };
             };
@@ -1200,6 +1230,47 @@ declare const _default: {
         lifecycles: {
             afterCreate(event: any): Promise<void>;
             afterUpdate(event: any): Promise<void>;
+        };
+    };
+    "activity-message": {
+        schema: {
+            kind: string;
+            collectionName: string;
+            info: {
+                singularName: string;
+                pluralName: string;
+                displayName: string;
+            };
+            options: {
+                draftAndPublish: boolean;
+                comment: string;
+            };
+            attributes: {
+                activity: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                };
+                user: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                };
+                content: {
+                    type: string;
+                };
+                reply: {
+                    type: string;
+                };
+                status: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
+                repliedAt: {
+                    type: string;
+                };
+            };
         };
     };
     "activity-referral-reward": {
