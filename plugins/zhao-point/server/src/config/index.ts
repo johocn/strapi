@@ -33,7 +33,7 @@ export default {
       // 社交类 (taskGroup: social)
       invite_register:       { points: 100,  limitPerDay: 0,  isOneTime: false, description: "邀请好友注册",     taskGroup: "social", extraConfig: {} },
       invite_purchase:       { points: 200,  limitPerDay: 0,  isOneTime: false, description: "邀请好友消费",     taskGroup: "social", extraConfig: {} },
-      follow_official_account: { points: 10, limitPerDay: 0,  isOneTime: true,  description: "关注公众号",     taskGroup: "social", extraConfig: {} },
+      follow_official_account: { points: 50, limitPerDay: 0,  isOneTime: true,  description: "关注公众号",     taskGroup: "social", extraConfig: {} },
       join_community:        { points: 20,   limitPerDay: 0,  isOneTime: true,  description: "加入社群",         taskGroup: "social", extraConfig: {} },
 
       // 用户类 (taskGroup: onetime)
@@ -53,6 +53,9 @@ export default {
 
       // 活动类 (taskGroup: other) —— 非一次性，幂等由"报名/签到唯一性"保证
       activity_signup:       { points: 5,    limitPerDay: 0,  isOneTime: false, description: "活动报名",         taskGroup: "other", extraConfig: {} },
+      activity_signup_auth:  { points: 5,    limitPerDay: 0,  isOneTime: false, description: "微信授权登录报名", taskGroup: "other", extraConfig: {} },
+      activity_signup_contact: { points: 20, limitPerDay: 0,  isOneTime: false, description: "完善联系方式报名", taskGroup: "other", extraConfig: {} },
+      activity_signup_survey: { points: 50,  limitPerDay: 0,  isOneTime: false, description: "回答问卷报名",     taskGroup: "other", extraConfig: {} },
       activity_attend:       { points: 20,   limitPerDay: 0,  isOneTime: false, description: "活动到场签到",     taskGroup: "other", extraConfig: {} },
       activity_share_reward: { points: 0,    limitPerDay: 0,  isOneTime: false, description: "活动分享裂变奖励(动态积分)", taskGroup: "other", extraConfig: {} },
     },
