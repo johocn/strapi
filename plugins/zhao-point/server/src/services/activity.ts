@@ -216,6 +216,34 @@ async function grantPoints(strapi, userId: number, action: string, remark: strin
   }
 }
 
+/** 单次积分发放：失败仅 warn，绝不抛错阻断 */
+async function earnPointsSafe(strapi: any, userId: number, action: string, points: number, remark: string, userChannelId?: number) {
+  try {
+    await strapi.plugin("zhao-point").service("point").earnPoints({
+      userId, action, points, source: "activity", method: "activity_signup", remark, userChannelId,
+    });
+  } catch (e: any) {
+    strapi.log.warn(`[zhao-point:activity] earnPointsSafe(${action},user=${userId}) failed: ${e?.message}`);
+  }
+}
+
+/** 按达成项累加发放分级积分：基础5 + 授权+5 + 联系方式+20 + 问卷+50 + 关注+50（关注奖励 isOneTime 防重） */
+export async function grantActivityPoints(strapi: any, userId: number, { loginAuth, subscribed, conditions }: {
+  loginAuth: boolean;
+  subscribed: boolean;
+  conditions: Record<string, boolean>;
+}) {
+  const userChannelId = await resolveUserChannelId(strapi, userId);
+  await earnPointsSafe(strapi, userId, "activity_signup", 5, "活动报名", userChannelId);
+  if (loginAuth) await earnPointsSafe(strapi, userId, "activity_signup_auth", 5, "微信授权登录报名", userChannelId);
+  if (conditions.contact) await earnPointsSafe(strapi, userId, "activity_signup_contact", 20, "完善联系方式报名", userChannelId);
+  if (conditions.survey) await earnPointsSafe(strapi, userId, "activity_signup_survey", 50, "回答问卷报名", userChannelId);
+  if (subscribed) {
+    // 关注奖励：不传 points 用规则默认 50；isOneTime=true 由 earnPoints 内部防重（已领抛 POINT_011，被 earnPointsSafe 吞掉）
+    await earnPointsSafe(strapi, userId, "follow_official_account", 50, "关注公众号报名奖励", userChannelId);
+  }
+}
+
 async function grantCourseTrial(strapi, userId: number, courseId: number) {
   try {
     const existing = await strapi.db.query(AUTH_UID).findOne({ where: { user: userId, course: courseId } });
@@ -412,18 +440,23 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     const storedFormData = Array.isArray(formConfig) && formConfig.length ? collectFormData(formConfig, formData) : undefined;
 
     // 递进式判定：通道门槛(channelDone) + 各权益独立 condition
+    // 注意：loginAuth/subscribed/conditions 在 hasReward 之外计算，供无 rewardConfig 时仍做分级积分预览与发放
     let loginAuth = false;
     let subscribed = false;
     const conditions: Record<string, boolean> = { contact: false, survey: false };
     let channelType: string | undefined;
     let rewardList: any[] = [];
+    loginAuth = await hasWechatAuth(strapi, userId);
+    subscribed = await hasSubscribe(strapi, userId); // 非关键路径，失败静默 false
     if (hasReward) {
-      loginAuth = await hasWechatAuth(strapi, userId);
-      subscribed = await hasSubscribe(strapi, userId); // 非关键路径，失败静默 false
       channelType = resolveChannel(rewardConfig)?.type;
       conditions.contact = contactFilled(formConfig, formData);
       conditions.survey = surveyFilled(questionnaireData);
       rewardList = Array.isArray(rewardConfig?.rewards) ? rewardConfig.rewards : [];
+    } else {
+      // 无 rewardConfig 也计算达成项，供分级积分预览/发放（contact/survey 仅依赖表单数据）
+      conditions.contact = contactFilled(formConfig, formData);
+      conditions.survey = surveyFilled(questionnaireData);
     }
     const channelDone = channelDoneOf(channelType, conditions, loginAuth, subscribed);
     const visibleRewards = rewardList.filter((r: any) => channelDone && isRewardUnlocked(r, loginAuth, subscribed, conditions));
@@ -509,8 +542,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         if (g) granted.push(g);
       }
     }
-    // 报名积分
-    await grantPoints(strapi, userId, "activity_signup", "活动报名");
+    // 分级积分发放：按达成项累加（基础5 + 授权 + 联系方式 + 问卷 + 关注）
+    await grantActivityPoints(strapi, userId, { loginAuth, subscribed, conditions });
+    // 积分预览（供前端展示/校验，与发放共用 computePointsPreview）
+    const pointsPreview = computePointsPreview({ loginAuth, subscribed, conditions });
     // 分享裂变奖励
     await grantShareReward(strapi, userId, act);
     // 站内信：报名成功确认（双通道之站内部分）
@@ -528,7 +563,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       const sop = strapi.plugin("zhao-sso")?.service("sso-sop");
       if (sop) {
         const sso = await sop.resolveSsoUserForUpUser(userId);
-        if (!sso) return { ok: true, granted, signupId: sig.id, ...(unlockInfo ? { unlockInfo } : {}) };
+        if (!sso) return { ok: true, granted, signupId: sig.id, pointsPreview, ...(unlockInfo ? { unlockInfo: { ...unlockInfo, pointsPreview } } : {}) };
         const startTime = act.startTime;
         const schedules: any[] = [{ templateCode: "act_confirm", scene: "activity.confirm" }];
         const leadMin = Number(act.remindLeadMinutes ?? 1440);
@@ -548,7 +583,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     } catch (e: any) {
       strapi.log.warn(`[zhao-point:activity] sop activity.signup embed failed: ${e.message}`);
     }
-    return { ok: true, granted, signupId: sig.id, ...(unlockInfo ? { unlockInfo } : {}) };
+    return { ok: true, granted, signupId: sig.id, pointsPreview, ...(unlockInfo ? { unlockInfo: { ...unlockInfo, pointsPreview } } : {}) };
   },
 
   /** 补填问卷：更新 questionnaireData → 重算解锁 → 幂等发放新增解锁的 multi 权益 */
@@ -579,14 +614,18 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     const act = await strapi.documents(ACTIVITY_UID).findOne({ documentId: activityDocumentId });
     if (!act) throw new Error("活动不存在");
     const rewardConfig = act.rewardConfig;
-    if (!rewardConfig || typeof rewardConfig !== "object") return { ok: true, hasReward: false };
+    const hasReward = !!rewardConfig && typeof rewardConfig === "object";
     const loginAuth = await hasWechatAuth(strapi, userId);
     const subscribed = await hasSubscribe(strapi, userId);
-    const ch = resolveChannel(rewardConfig);
     const conditions = {
       contact: contactFilled(act.formConfig, formData),
       survey: surveyFilled(questionnaireData),
     };
+    const pointsPreview = computePointsPreview({ loginAuth, subscribed, conditions });
+    if (!hasReward) {
+      return { ok: true, hasReward: false, loginAuth, subscribed, conditions, pointsPreview };
+    }
+    const ch = resolveChannel(rewardConfig);
     const channelDone = channelDoneOf(ch?.type, conditions, loginAuth, subscribed);
     const rewardList = Array.isArray(rewardConfig?.rewards) ? rewardConfig.rewards : [];
     return {
@@ -604,6 +643,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         condition: resolveCondition(r),
         unlocked: !!r?.id && channelDone && isRewardUnlocked(r, loginAuth, subscribed, conditions),
       })),
+      pointsPreview,
     };
   },
 
