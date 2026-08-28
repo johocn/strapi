@@ -2935,6 +2935,17 @@ const activity$1 = ({ strapi: strapi2 }) => ({
         where: { id: p.id },
         data: { status: "active", signupAt: /* @__PURE__ */ new Date(), pointsCharged: feeCollectAt === "signup" ? cost : 0, feeTierId: resolved.tierId ?? null }
       });
+      try {
+        const loginAuth = await hasWechatAuth(strapi2, upUserId);
+        const subscribed = await hasSubscribe(strapi2, upUserId);
+        const conditions = {
+          contact: contactFilled(act?.formConfig, p.formData),
+          survey: surveyFilled(p.questionnaireData)
+        };
+        await grantActivityPoints(strapi2, upUserId, { loginAuth, subscribed, conditions });
+      } catch (e) {
+        strapi2.log.warn(`[zhao-point:activity] promote grantActivityPoints failed (user=${upUserId}): ${e.message}`);
+      }
       promoted++;
       if (upUserId) await this.notifyPromoted(upUserId, activityId);
     }
