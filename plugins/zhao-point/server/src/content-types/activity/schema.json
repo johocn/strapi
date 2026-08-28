@@ -20,6 +20,7 @@
     "usedCapacity": { "type": "integer", "default": 0 },
     "signupStart": { "type": "datetime" },
     "signupEnd": { "type": "datetime" },
+    "signupAdvanceHours": { "type": "integer", "default": 0 },
     "checkinMode": { "type": "enumeration", "enum": ["worker_scan", "self", "both"], "default": "both" },
     "geoEnforced": { "type": "boolean", "default": false },
     "geoRadiusM": { "type": "integer", "default": 500 },
@@ -46,6 +47,12 @@
     "venue": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.venue", "inversedBy": "activities" },
     "cashPrice": { "type": "decimal", "default": 0 },
     "settleLecturer": { "type": "decimal", "default": 0 },
-    "settleVenue": { "type": "decimal", "default": 0 }
+    "settleVenue": { "type": "decimal", "default": 0 },
+    "promoTemplate": { "type": "string", "default": "summit" },
+    "promoModules": { "type": "json" },
+    "promoContact": { "type": "json" },
+    "promoColors": { "type": "json" },
+    "promoAssets": { "type": "json" },
+    "customPromoHtml": { "type": "text" }
   }
 }
