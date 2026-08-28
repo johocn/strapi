@@ -1070,6 +1070,18 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         where: { id: p.id },
         data: { status: "active", signupAt: new Date(), pointsCharged: feeCollectAt === "signup" ? cost : 0, feeTierId: resolved.tierId ?? null },
       });
+      // 候补转正补发分级积分：按转正当下达成项（表单/问卷取报名时存储值，登录/关注状态实时判定），与直接报名路径保持一致
+      try {
+        const loginAuth = await hasWechatAuth(strapi, upUserId);
+        const subscribed = await hasSubscribe(strapi, upUserId);
+        const conditions = {
+          contact: contactFilled(act?.formConfig, p.formData),
+          survey: surveyFilled(p.questionnaireData),
+        };
+        await grantActivityPoints(strapi, upUserId, { loginAuth, subscribed, conditions });
+      } catch (e: any) {
+        strapi.log.warn(`[zhao-point:activity] promote grantActivityPoints failed (user=${upUserId}): ${e.message}`);
+      }
       promoted++;
       if (upUserId) await this.notifyPromoted(upUserId, activityId);
     }
