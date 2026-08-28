@@ -107,6 +107,16 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       return row;
     },
 
+    /** 按 scene_key 精确查最近一条（带参二维码复用场景） */
+    async findBySceneKey(scene_key: string) {
+      const rows = await strapi.db.query(QRCODE_UID).findMany({
+        where: { scene_key },
+        orderBy: { createdAt: "desc" },
+        limit: 1,
+      });
+      return rows?.[0] || null;
+    },
+
     async remove(id: number) {
       return strapi.db.query(QRCODE_UID).delete({ where: { id } });
     },

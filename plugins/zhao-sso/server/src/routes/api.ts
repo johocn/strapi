@@ -119,6 +119,14 @@ export default () => ({
       config: { auth: false },
     },
 
+    // ===== C 端公众号带参二维码（公开，供关注引导） =====
+    {
+      method: "GET",
+      path: "/v1/wx/qrcode",
+      handler: "wx-qrcode.getQrcode",
+      config: { auth: false },
+    },
+
     // ===== SSO 认证路由 =====
     {
       method: "POST",
