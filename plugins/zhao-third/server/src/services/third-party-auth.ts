@@ -146,6 +146,19 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       await accountService.createAccount(accountData);
     }
 
+    // 补全三方资料：新老用户均调用，仅当 third-party-account 缺 nickname/avatar 时写入
+    // （新用户 createAccount 已带 nickname/avatar；此处主要回填已绑定老用户）
+    try {
+      if (tokenResult.nickname || tokenResult.avatar) {
+        await this.updateProfile(user.id, {
+          ...(tokenResult.nickname ? { nickname: tokenResult.nickname } : {}),
+          ...(tokenResult.avatar ? { avatar: tokenResult.avatar } : {}),
+        });
+      }
+    } catch (e: any) {
+      strapi.log.warn(`[zhao-third] 补全三方资料失败(user=${user.id}): ${e?.message}`);
+    }
+
     // 签发 JWT
     const jwtService = strapi.plugin("zhao-auth").service("jwt");
     const jwt = await jwtService.sign({
