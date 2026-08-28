@@ -372,6 +372,24 @@ async function grantShareReward(strapi, userId: number, act: any) {
   }
 }
 
+/**
+ * 分级积分预览（单一来源）：base 基础报名 5；auth 微信授权登录额外 5（累计 10）；
+ * contact 完善联系方式 20；survey 回答问卷 50；subscribe 关注公众号 50。
+ * 预览与实际发放（grantActivityPoints）共用此配置，避免两处漂移。
+ */
+export function computePointsPreview({ loginAuth, subscribed, conditions }: {
+  loginAuth: boolean;
+  subscribed: boolean;
+  conditions: Record<string, boolean>;
+}): { base: number; auth: number; contact: number; survey: number; subscribe: number; total: number } {
+  const base = 5; // activity_signup
+  const auth = loginAuth ? 5 : 0; // activity_signup_auth
+  const contact = conditions.contact ? 20 : 0; // activity_signup_contact
+  const survey = conditions.survey ? 50 : 0; // activity_signup_survey
+  const subscribe = subscribed ? 50 : 0; // follow_official_account
+  return { base, auth, contact, survey, subscribe, total: base + auth + contact + survey + subscribe };
+}
+
 const feeSvc = () => strapi.plugin("zhao-point").service("fee-service");
 
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
@@ -1016,6 +1034,21 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       if (upUserId) await this.notifyPromoted(upUserId, activityId);
     }
     return { promoted };
+  },
+
+  /** 候补序号（1-based）：按 signupAt 升序、同时间按 id 升序，统计排在该候补记录之前的 waiting 数 + 1 */
+  async waitlistPositionOf(activityId: number, signup: { id: number; signupAt: Date | string }) {
+    const waitCount = await strapi.db.query(SIGNS_UID).count({
+      where: {
+        activity: activityId,
+        status: "waiting",
+        $or: [
+          { signupAt: { $lt: signup.signupAt } },
+          { signupAt: signup.signupAt, id: { $lt: signup.id } },
+        ],
+      },
+    });
+    return waitCount + 1;
   },
 
   /** 递补转正即时通知：resolve sso 用户 → sso-msg.sendNow(act_promoted)，幂等；匹配不到/模板缺失降级不断链 */
