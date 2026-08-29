@@ -132,8 +132,24 @@ build/
 .strapi-cloud.json
 
 # 服务器内存不足，无法在服务器上执行 npm run build
-# 构建策略：本地构建成功后上传仓库，服务器直接 git pull 拉取构建产物
-# 因此放行以下构建产物（dist/、build/、plugins/*/dist/）提交到仓库
-!dist/
-!build/
+# 构建策略：本地构建成功后上传，服务器直接 git pull 拉取插件构建产物（plugins/*/dist/）用于部署
+# 根目录 dist/ 为后端/管理端整包构建物，由上传流程单独部署，不在仓库维护
+dist/
 !plugins/*/dist/
+
+############################
+# 本地工具/临时探针，不入库
+############################
+
+.superpowers/
+scripts/_shots/
+scripts/_ai-payload.json
+scripts/_db_query.cjs
+scripts/_e2e_custom_promo.cjs
+scripts/_fill-activity.cjs
+scripts/_migrate-custom-promo-active.cjs
+scripts/_probe-activities.cjs
+scripts/_recon_login.py
+scripts/_verify_promo_page.py
+scripts/tmp-browser-cend.py
+scripts/tmp-check-config.cjs
