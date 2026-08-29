@@ -23,6 +23,15 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     }
   }
 
+  /** 排除自身：兼容 numeric id 与 documentId 字符串 → numeric id（parseInt 无法解析 documentId 会得 NaN） */
+  async function resolveExcludeActivityId(v: any): Promise<number | undefined> {
+    if (v === undefined || v === null || v === "") return undefined;
+    if (typeof v === "number") return v;
+    if (/^\d+$/.test(String(v))) return parseInt(String(v), 10);
+    const row = await strapi.db.query(ACTIVITY_UID).findOne({ where: { documentId: String(v) }, select: ["id"] });
+    return row?.id;
+  }
+
   async function listType(type: string, ctx: any) {
     try {
       const { page = "1", pageSize = "50", includeDisabled } = ctx.query;
@@ -119,10 +128,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       try {
         const body = ctx.request.body?.data || ctx.request.body;
         const svc = resService();
+        const excludeActivityId = await resolveExcludeActivityId(body.excludeActivityId);
         const result = await svc.check({
           start: body.startTime,
           end: body.endTime,
-          excludeActivityId: body.excludeActivityId ? parseInt(body.excludeActivityId, 10) : undefined,
+          excludeActivityId,
           lecturerId: body.lecturerId ? parseInt(body.lecturerId, 10) : undefined,
           venueId: body.venueId ? parseInt(body.venueId, 10) : undefined,
         });
@@ -135,7 +145,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
             resourceId: c.resourceId,
             start: body.startTime,
             end: body.endTime,
-            excludeActivityId: body.excludeActivityId ? parseInt(body.excludeActivityId, 10) : undefined,
+            excludeActivityId,
           });
           suggestions.push({ resourceType: c.resourceType, resourceId: c.resourceId, candidates: sugg });
         }

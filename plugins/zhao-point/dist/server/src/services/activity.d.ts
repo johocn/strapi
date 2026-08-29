@@ -94,6 +94,88 @@ declare const _default: ({ strapi }: {
         unlockInfo: any;
         newlyUnlocked: any[];
     }>;
+    /** 补填联系方式：更新 signup.formData → 重算解锁 → 本轮新达成联系方式补发 +20 */
+    fillContact({ userId, signupId, formData }: {
+        userId: number;
+        signupId: number;
+        formData?: any;
+    }): Promise<{
+        ok: boolean;
+        unlockInfo: any;
+        newlyUnlocked: any[];
+        newlyContact: boolean;
+    }>;
+    /** 用户关注公众号领积分的临时带参二维码（按用户缓存复用，有效期内不重复建码 → 临时码不限数量） */
+    getFollowQrcode({ userId, activityId }: {
+        userId: number;
+        activityId: string;
+    }): Promise<{
+        ok: boolean;
+        wx_url: any;
+    }>;
+    /** 补领关注公众号：已关注则补发关注积分(幂等)，并重算解锁新增权益 */
+    claimSubscribe({ userId, signupId }: {
+        userId: number;
+        signupId: number;
+    }): Promise<{
+        ok: boolean;
+        subscribed: boolean;
+        newlyUnlocked: any[];
+        unlockInfo?: undefined;
+    } | {
+        ok: boolean;
+        subscribed: boolean;
+        unlockInfo: any;
+        newlyUnlocked: any[];
+    }>;
+    /** 报名后权益状态：已报名用户回访时卡片区读取真实已领/可领/未达成（不入库） */
+    signupUnlockStatus({ userId, signupId }: {
+        userId: number;
+        signupId: number;
+    }): Promise<{
+        ok: boolean;
+        hasReward: boolean;
+        loginAuth: boolean;
+        subscribed: boolean;
+        contactDone: boolean;
+        surveyDone: boolean;
+        formData: any;
+        questionnaireData: any;
+        pointsPreview: {
+            base: number;
+            auth: number;
+            contact: number;
+            survey: number;
+            subscribe: number;
+            total: number;
+        };
+        channel?: undefined;
+        channelDone?: undefined;
+        rewards?: undefined;
+    } | {
+        ok: boolean;
+        hasReward: boolean;
+        loginAuth: boolean;
+        subscribed: boolean;
+        channel: {
+            type: string;
+            label?: string;
+        };
+        channelDone: boolean;
+        contactDone: boolean;
+        surveyDone: boolean;
+        formData: any;
+        questionnaireData: any;
+        rewards: any;
+        pointsPreview: {
+            base: number;
+            auth: number;
+            contact: number;
+            survey: number;
+            subscribe: number;
+            total: number;
+        };
+    }>;
     /** 解锁状态探测：C 端报名前或关注/授权后调用，返回通道/条件/可领权益（不入库） */
     unlockCheck({ userId, activityDocumentId, formData, questionnaireData }: {
         userId: number;

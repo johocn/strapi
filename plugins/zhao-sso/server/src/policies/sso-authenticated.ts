@@ -1,17 +1,25 @@
 /**
  * SSO 认证策略（Strapi v5 原生签名）
  * 验证 SSO Bearer token，注入 ssoUser 到 policyContext.state
- * 返回 true/undefined 放行，返回 false 拒绝（403 PolicyError）
+ * 鉴权失败（缺失/格式错误/过期/无效/已注销 access token）抛 401；
+ * 真 403 由控制器内权限校验（e.status=403）负责，本策略只判"是否已认证"不判权限。
  */
 const ssoAuthenticated = async (policyContext: any, config: any, { strapi }: { strapi: any }) => {
   const authHeader = policyContext.request?.headers?.authorization;
+
+  const reject401 = () => {
+    const err: any = new Error("未登录或登录已过期");
+    err.status = 401;
+    throw err;
+  };
+
   if (!authHeader || typeof authHeader !== "string") {
-    return false;
+    reject401();
   }
 
   const parts = authHeader.split(" ");
   if (parts.length !== 2 || parts[0] !== "Bearer") {
-    return false;
+    reject401();
   }
 
   try {
@@ -19,21 +27,23 @@ const ssoAuthenticated = async (policyContext: any, config: any, { strapi }: { s
     const payload = await jwtService.verifyToken(parts[1]);
 
     if (payload.type !== "access") {
-      return false;
+      reject401();
     }
 
     const tokenRecord = await strapi.db.query("plugin::zhao-sso.sso-token").findOne({
       where: { access_token_jti: payload.jti },
     });
     if (tokenRecord?.revoked) {
-      return false;
+      reject401();
     }
 
     policyContext.state.ssoUser = payload;
     policyContext.state.ssoToken = parts[1];
     return true;
-  } catch {
-    return false;
+  } catch (e: any) {
+    // verifyToken 抛错（过期/签名不符）同样视为未认证 → 401
+    if (e && e.status === 401) throw e;
+    reject401();
   }
 };
 

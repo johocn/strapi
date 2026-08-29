@@ -48,8 +48,20 @@ async function sync(documentId: string) {
   try {
     await syncActivityIndex(documentId);
   } catch (e: any) {
-    strapi?.log.error(`[zhao-point] activity tag-index sync failed ${documentId}: ${e.message}`);
+    strapi?.log.error(`[zhao-point] activity tag-index sync failed ${documentId}: ${e?.stack || e?.message}`);
   }
+}
+
+/** 延迟到主事务提交后（新 task）执行索引同步。
+ * afterCreate/afterUpdate 内调用 documents API 会共享外层事务，
+ * 一旦同步中的 entity-validator 因 relations 校验抛错（Invalid relations），
+ * 会污染外层事务导致活动本身被回滚（接口返回 200 但数据未落库）。
+ * 用 setImmediate 把同步放到独立事件循环任务，索引失败仅打日志，绝不影响活动保存。 */
+function syncDeferred(documentId: string) {
+  if (!documentId) return;
+  setImmediate(async () => {
+    await sync(documentId);
+  });
 }
 
 async function remove(documentId: string) {
@@ -65,10 +77,10 @@ async function remove(documentId: string) {
 
 export default {
   async afterCreate(event: any) {
-    await sync(event?.result?.documentId);
+    syncDeferred(event?.result?.documentId);
   },
   async afterUpdate(event: any) {
-    await sync(event?.result?.documentId);
+    syncDeferred(event?.result?.documentId);
   },
   async afterDelete(event: any) {
     await remove(event?.result?.documentId);

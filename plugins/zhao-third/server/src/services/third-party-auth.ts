@@ -130,8 +130,14 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       // 已绑定用户，直接登录
       user = account.user;
     } else {
-      // 未绑定，创建用户并绑定
-      user = await this.createUserFromThirdParty(platform, tokenResult, inviteCode);
+      // 未绑定：先按 openId 派生的用户名幂等复用已有 up_user，
+      // 避免同一 openId 反复授权重复建号（up_users.username 无唯一约束，历史脏数据会堆号）。
+      const thirdUsername = this.buildThirdUsername(platform, tokenResult.openId);
+      const thirdEmail = `${thirdUsername}@third.placeholder`;
+      const authService = strapi.plugin("zhao-auth").service("auth");
+      user =
+        (await authService.findUserByIdentifier(thirdUsername, thirdEmail)) ||
+        (await this.createUserFromThirdParty(platform, tokenResult, inviteCode));
 
       const accountData: Record<string, any> = {
         platform,
@@ -330,14 +336,22 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   },
 
   /**
+   * 三方登录派生用户名：与 createUserFromThirdParty 保持同一派生规则，
+   * 供「按 openId 幂等复用已有用户」使用。
+   */
+  buildThirdUsername(platform: string, openId: string) {
+    const prefix = platform === "wechat" ? "wx" : platform === "alipay" ? "alipay" : "dy";
+    return `${prefix}_${openId.substring(0, 16)}`;
+  },
+
+  /**
    * 创建用户（三方登录自动注册）
    */
   async createUserFromThirdParty(platform: string, tokenResult: any, inviteCode?: string) {
     // 业务用户统一走 up_users（plugin::users-permissions.user），
     // 其 id 既是 account.user 关联目标也是 zhao-auth jwt 的签发主体。
     // 之前误用 zhao-sso sso-user 建 sso_user 表，导致 account.user 关联的 up_users 不存在而报错。
-    const prefix = platform === "wechat" ? "wx" : platform === "alipay" ? "alipay" : "dy";
-    const username = `${prefix}_${tokenResult.openId.substring(0, 16)}`;
+    const username = this.buildThirdUsername(platform, tokenResult.openId);
     const email = `${username}@third.placeholder`;
 
     const authService = strapi.plugin("zhao-auth").service("auth");

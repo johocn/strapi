@@ -239,7 +239,7 @@ const collectionName$8 = "activities";
 const info$8 = { "singularName": "activity", "pluralName": "activities", "displayName": "Activity", "description": "线下活动" };
 const options$8 = { "draftAndPublish": false };
 const pluginOptions$2 = { "i18n": { "localized": false } };
-const attributes$8 = { "title": { "type": "string", "required": true }, "type": { "type": "string", "default": "其他" }, "category": { "type": "string", "default": "" }, "tags": { "type": "json" }, "assets": { "type": "json" }, "description": { "type": "text" }, "startTime": { "type": "datetime" }, "endTime": { "type": "datetime" }, "venueName": { "type": "string" }, "lat": { "type": "float" }, "lng": { "type": "float" }, "capacity": { "type": "integer", "required": true, "default": 100 }, "usedCapacity": { "type": "integer", "default": 0 }, "signupStart": { "type": "datetime" }, "signupEnd": { "type": "datetime" }, "signupAdvanceHours": { "type": "integer", "default": 0 }, "checkinMode": { "type": "enumeration", "enum": ["worker_scan", "self", "both"], "default": "both" }, "geoEnforced": { "type": "boolean", "default": false }, "geoRadiusM": { "type": "integer", "default": 500 }, "status": { "type": "enumeration", "enum": ["draft", "signup_open", "ongoing", "ended", "archived"], "default": "draft" }, "channelScope": { "type": "enumeration", "enum": ["all", "specific"], "default": "all" }, "channelIds": { "type": "json" }, "visibleToRoles": { "type": "json", "default": null }, "pointsCost": { "type": "integer", "default": 0 }, "pricingMode": { "type": "enumeration", "enum": ["flat", "tier", "factor"], "default": "flat" }, "feeTiers": { "type": "json" }, "feeFactors": { "type": "json" }, "feeCollectAt": { "type": "enumeration", "enum": ["signup", "checkin"], "default": "signup" }, "shareRewardPoints": { "type": "integer" }, "preUnlockArticles": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.article" }, "preUnlockLessons": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-course.course-lesson" }, "learningPackageArticles": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.article" }, "learningPackageLessons": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-course.course-lesson" }, "belongsToSeries": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.activity-series", "inversedBy": "activities" }, "formConfig": { "type": "json" }, "rewardConfig": { "type": "json" }, "questionnaire": { "type": "json" }, "remindLeadMinutes": { "type": "integer", "default": 1440, "min": -1 }, "lecturer": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.lecturer", "inversedBy": "activities" }, "venue": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.venue", "inversedBy": "activities" }, "cashPrice": { "type": "decimal", "default": 0 }, "settleLecturer": { "type": "decimal", "default": 0 }, "settleVenue": { "type": "decimal", "default": 0 }, "promoTemplate": { "type": "string", "default": "summit" }, "promoModules": { "type": "json" }, "promoContact": { "type": "json" }, "promoColors": { "type": "json" }, "promoAssets": { "type": "json" } };
+const attributes$8 = { "title": { "type": "string", "required": true }, "type": { "type": "string", "default": "其他" }, "category": { "type": "string", "default": "" }, "tags": { "type": "json" }, "assets": { "type": "json" }, "description": { "type": "text" }, "startTime": { "type": "datetime" }, "endTime": { "type": "datetime" }, "venueName": { "type": "string" }, "lat": { "type": "float" }, "lng": { "type": "float" }, "capacity": { "type": "integer", "required": true, "default": 100 }, "usedCapacity": { "type": "integer", "default": 0 }, "signupStart": { "type": "datetime" }, "signupEnd": { "type": "datetime" }, "signupAdvanceHours": { "type": "integer", "default": 0 }, "checkinMode": { "type": "enumeration", "enum": ["worker_scan", "self", "both"], "default": "both" }, "geoEnforced": { "type": "boolean", "default": false }, "geoRadiusM": { "type": "integer", "default": 500 }, "status": { "type": "enumeration", "enum": ["draft", "signup_open", "ongoing", "ended", "archived"], "default": "draft" }, "channelScope": { "type": "enumeration", "enum": ["all", "specific"], "default": "all" }, "channelIds": { "type": "json" }, "visibleToRoles": { "type": "json", "default": null }, "pointsCost": { "type": "integer", "default": 0 }, "pricingMode": { "type": "enumeration", "enum": ["flat", "tier", "factor"], "default": "flat" }, "feeTiers": { "type": "json" }, "feeFactors": { "type": "json" }, "feeCollectAt": { "type": "enumeration", "enum": ["signup", "checkin"], "default": "signup" }, "shareRewardPoints": { "type": "integer" }, "preUnlockArticles": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.article" }, "preUnlockLessons": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-course.course-lesson" }, "learningPackageArticles": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.article" }, "learningPackageLessons": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-course.course-lesson" }, "belongsToSeries": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.activity-series", "inversedBy": "activities" }, "formConfig": { "type": "json" }, "rewardConfig": { "type": "json" }, "questionnaire": { "type": "json" }, "remindLeadMinutes": { "type": "integer", "default": 1440, "min": -1 }, "lecturer": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.lecturer", "inversedBy": "activities" }, "venue": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.venue", "inversedBy": "activities" }, "cashPrice": { "type": "decimal", "default": 0 }, "settleLecturer": { "type": "decimal", "default": 0 }, "settleVenue": { "type": "decimal", "default": 0 }, "promoTemplate": { "type": "string", "default": "summit" }, "promoModules": { "type": "json" }, "promoContact": { "type": "json" }, "promoColors": { "type": "json" }, "promoAssets": { "type": "json" }, "customPromoHtml": { "type": "text" }, "customPromoActive": { "type": "boolean", "default": true } };
 const activity$2 = {
   kind: kind$8,
   collectionName: collectionName$8,
@@ -474,8 +474,14 @@ async function sync(documentId) {
   try {
     await syncActivityIndex(documentId);
   } catch (e) {
-    strapi2?.log.error(`[zhao-point] activity tag-index sync failed ${documentId}: ${e.message}`);
+    strapi2?.log.error(`[zhao-point] activity tag-index sync failed ${documentId}: ${e?.stack || e?.message}`);
   }
+}
+function syncDeferred(documentId) {
+  if (!documentId) return;
+  setImmediate(async () => {
+    await sync(documentId);
+  });
 }
 async function remove(documentId) {
   const strapi2 = gStrapi$1();
@@ -489,10 +495,10 @@ async function remove(documentId) {
 }
 const activityLifecycles = {
   async afterCreate(event) {
-    await sync(event?.result?.documentId);
+    syncDeferred(event?.result?.documentId);
   },
   async afterUpdate(event) {
-    await sync(event?.result?.documentId);
+    syncDeferred(event?.result?.documentId);
   },
   async afterDelete(event) {
     await remove(event?.result?.documentId);
@@ -2223,17 +2229,25 @@ async function resolveUserChannelId(strapi2, userId) {
 }
 async function hasWechatAuth(strapi2, upUserId) {
   try {
-    const sop = strapi2.plugin("zhao-sso")?.service("sso-sop");
-    if (!sop) return false;
-    const sso = await sop.resolveSsoUserForUpUser(upUserId);
-    if (!sso?.id) return false;
-    const bound = await strapi2.db.query("plugin::zhao-sso.sso-third-party-binding").findOne({
-      where: { user: sso.id, provider: "wechat" }
-    });
-    return !!bound;
+    const thirdAccountSvc = strapi2.plugin("zhao-third")?.service("third-party-account");
+    if (thirdAccountSvc) {
+      const accounts = await thirdAccountSvc.findByUser(upUserId);
+      if (Array.isArray(accounts) && accounts.some((a) => a.platform === "wechat" || a.provider === "wechat")) return true;
+    }
   } catch {
-    return false;
   }
+  try {
+    const sop = strapi2.plugin("zhao-sso")?.service("sso-sop");
+    const sso = sop && await sop.resolveSsoUserForUpUser(upUserId);
+    if (sso?.id) {
+      const bound = await strapi2.db.query("plugin::zhao-sso.sso-third-party-binding").findOne({
+        where: { user: sso.id, provider: "wechat" }
+      });
+      if (bound) return true;
+    }
+  } catch {
+  }
+  return false;
 }
 async function grantOutline(strapi2, opts) {
   if (opts.reward.kind === "lesson" && opts.reward.courseId) {
@@ -2506,11 +2520,128 @@ const activity$1 = ({ strapi: strapi2 }) => ({
     if (!act) throw new Error("活动不存在");
     const q = act.questionnaire;
     if (!q || q.enabled !== true || !Array.isArray(q.fields) || !q.fields.length) throw new Error("该活动未开启问卷");
+    const prevSurvey = surveyFilled(signup.questionnaireData || {});
     const collected = collectQuestionnaire(q.fields, answers);
     await strapi2.db.query(SIGNS_UID$4).update({ where: { id: signup.id }, data: { questionnaireData: collected } });
     const fresh = await strapi2.db.query(SIGNS_UID$4).findOne({ where: { id: signup.id } });
     const { unlockInfo, newlyGranted } = await recomputeUnlock(strapi2, fresh, act, userId);
+    const currentSurvey = surveyFilled(fresh.questionnaireData || {});
+    if (!prevSurvey && currentSurvey) {
+      const userChannelId = await resolveUserChannelId(strapi2, userId);
+      await earnPointsSafe(strapi2, userId, "activity_signup_survey", 50, "回答问卷报名", userChannelId);
+    }
     return { ok: true, unlockInfo, newlyUnlocked: newlyGranted };
+  },
+  /** 补填联系方式：更新 signup.formData → 重算解锁 → 本轮新达成联系方式补发 +20 */
+  async fillContact({ userId, signupId, formData }) {
+    const signup = await strapi2.db.query(SIGNS_UID$4).findOne({
+      where: { id: signupId, user: userId },
+      populate: { activity: true }
+    });
+    if (!signup) throw new Error("报名记录不存在");
+    if (signup.status !== "active" && signup.status !== "waiting") throw new Error("报名已失效");
+    const act = signup.activity;
+    if (!act) throw new Error("活动不存在");
+    const formConfig = Array.isArray(act.formConfig) ? act.formConfig : [];
+    if (!formConfig.length) throw new Error("该活动未开启报名表单");
+    const prevContact = contactFilled(formConfig, signup.formData);
+    const collected = collectFormData(formConfig, formData);
+    await strapi2.db.query(SIGNS_UID$4).update({ where: { id: signup.id }, data: { formData: collected } });
+    const fresh = await strapi2.db.query(SIGNS_UID$4).findOne({ where: { id: signup.id } });
+    const { unlockInfo, newlyGranted } = await recomputeUnlock(strapi2, fresh, act, userId);
+    const currentContact = contactFilled(formConfig, fresh.formData);
+    if (!prevContact && currentContact) {
+      const userChannelId = await resolveUserChannelId(strapi2, userId);
+      await earnPointsSafe(strapi2, userId, "activity_signup_contact", 20, "完善联系方式报名", userChannelId);
+    }
+    return { ok: true, unlockInfo, newlyUnlocked: newlyGranted, newlyContact: !prevContact && currentContact };
+  },
+  /** 用户关注公众号领积分的临时带参二维码（按用户缓存复用，有效期内不重复建码 → 临时码不限数量） */
+  async getFollowQrcode({ userId, activityId }) {
+    const sceneKey = `follow:act:${activityId}:${userId}`;
+    const qrcodeSvc = strapi2.plugin("zhao-sso").service("sso-wx-qrcode");
+    const existing = await qrcodeSvc.findBySceneKey(sceneKey).catch(() => null);
+    if (existing?.wx_url) return { ok: true, wx_url: existing.wx_url };
+    const created = await qrcodeSvc.create({
+      scene_key: sceneKey,
+      kind: "temporary",
+      expire_seconds: 2592e3,
+      title: `活动关注领积分 ${activityId} u${userId}`
+    });
+    return { ok: true, wx_url: created.wx_url };
+  },
+  /** 补领关注公众号：已关注则补发关注积分(幂等)，并重算解锁新增权益 */
+  async claimSubscribe({ userId, signupId }) {
+    const signup = await strapi2.db.query(SIGNS_UID$4).findOne({
+      where: { id: signupId, user: userId },
+      populate: { activity: true }
+    });
+    if (!signup) throw new Error("报名记录不存在");
+    if (signup.status !== "active" && signup.status !== "waiting") throw new Error("报名已失效");
+    const act = signup.activity;
+    if (!act) throw new Error("活动不存在");
+    const subscribed = await hasSubscribe(strapi2, userId);
+    if (!subscribed) return { ok: true, subscribed: false, newlyUnlocked: [] };
+    const userChannelId = await resolveUserChannelId(strapi2, userId);
+    await earnPointsSafe(strapi2, userId, "follow_official_account", 50, "关注公众号报名奖励", userChannelId);
+    const { unlockInfo, newlyGranted } = await recomputeUnlock(strapi2, signup, act, userId);
+    return { ok: true, subscribed: true, unlockInfo, newlyUnlocked: newlyGranted };
+  },
+  /** 报名后权益状态：已报名用户回访时卡片区读取真实已领/可领/未达成（不入库） */
+  async signupUnlockStatus({ userId, signupId }) {
+    const signup = await strapi2.db.query(SIGNS_UID$4).findOne({
+      where: { id: signupId, user: userId },
+      populate: { activity: true }
+    });
+    if (!signup) throw new Error("报名记录不存在");
+    if (signup.status !== "active" && signup.status !== "waiting") throw new Error("报名已失效");
+    const act = signup.activity;
+    if (!act) throw new Error("活动不存在");
+    const rewardConfig = act.rewardConfig;
+    const hasReward = !!rewardConfig && typeof rewardConfig === "object";
+    const loginAuth = await hasWechatAuth(strapi2, userId);
+    const subscribed = await hasSubscribe(strapi2, userId);
+    const conditions = {
+      contact: contactFilled(act.formConfig, signup.formData),
+      survey: surveyFilled(signup.questionnaireData)
+    };
+    if (!hasReward) {
+      return {
+        ok: true,
+        hasReward: false,
+        loginAuth,
+        subscribed,
+        contactDone: conditions.contact,
+        surveyDone: conditions.survey,
+        formData: signup.formData || {},
+        questionnaireData: signup.questionnaireData || {},
+        pointsPreview: computePointsPreview({ loginAuth, subscribed, conditions })
+      };
+    }
+    const ch = resolveChannel(rewardConfig);
+    const channelDone = channelDoneOf(ch?.type, conditions, loginAuth, subscribed);
+    const rewardList = Array.isArray(rewardConfig?.rewards) ? rewardConfig.rewards : [];
+    return {
+      ok: true,
+      hasReward: true,
+      loginAuth,
+      subscribed,
+      channel: ch,
+      channelDone,
+      contactDone: conditions.contact,
+      surveyDone: conditions.survey,
+      formData: signup.formData || {},
+      questionnaireData: signup.questionnaireData || {},
+      rewards: rewardList.map((r) => ({
+        id: r.id,
+        name: r.name,
+        type: r.type,
+        mode: r.mode,
+        condition: resolveCondition(r),
+        unlocked: isRewardUnlocked(r, loginAuth, subscribed, conditions)
+      })),
+      pointsPreview: computePointsPreview({ loginAuth, subscribed, conditions })
+    };
   },
   /** 解锁状态探测：C 端报名前或关注/授权后调用，返回通道/条件/可领权益（不入库） */
   async unlockCheck({ userId, activityDocumentId, formData, questionnaireData }) {
@@ -3086,7 +3217,20 @@ const wrapList$1 = (result) => {
   return { data: result, meta: {} };
 };
 const activity = ({ strapi: strapi2 }) => {
-  const getUserId = (ctx) => ctx.state.user.id || ctx.state.user.documentId;
+  const getUserId = async (ctx) => {
+    const u = ctx.state.user;
+    if (u?.uuid) {
+      const ssoProfile = strapi2.plugin("zhao-sso")?.service("sso-profile");
+      const up = ssoProfile && await ssoProfile.resolveUpUserForSsoUser(u.id);
+      if (!up?.id) {
+        const e = new Error("未绑定业务账号，请先完善资料");
+        e.status = 400;
+        throw e;
+      }
+      return up.id;
+    }
+    return u.id || u.documentId;
+  };
   const activitySvc = () => strapi2.plugin("zhao-point").service("activity");
   function relId(v) {
     if (!v) return void 0;
@@ -3207,11 +3351,18 @@ const activity = ({ strapi: strapi2 }) => {
     // POST /my/activity/signup
     async signup(ctx) {
       try {
-        const userId = getUserId(ctx);
+        const userId = await getUserId(ctx);
         const { activityId, formData, questionnaireData, chosenRewards } = ctx.request.body || {};
         const result = await activitySvc().signup({ userId, activityId, formData, questionnaireData, chosenRewards });
         if (result?.ok === false && result.reason === "already_signed_up") {
           ctx.status = 200;
+          if (result.signupId == null) {
+            const existing = await strapi2.db.query(SIGNS_UID$3).findOne({
+              where: { user: userId, activity: { documentId: activityId }, status: "active" },
+              select: ["id"]
+            });
+            if (existing?.id) result.signupId = existing.id;
+          }
         }
         ctx.body = wrap$5(result);
       } catch (e) {
@@ -3226,7 +3377,7 @@ const activity = ({ strapi: strapi2 }) => {
     // PUT /my/activity/signup/:signupId/questionnaire  补填问卷（解锁 survey 条件后可二次领取）
     async questionnaire(ctx) {
       try {
-        const userId = getUserId(ctx);
+        const userId = await getUserId(ctx);
         const signupId = parseInt(ctx.params.signupId, 10);
         const { answers } = ctx.request.body || {};
         const result = await activitySvc().fillQuestionnaire({ userId, signupId, answers });
@@ -3236,10 +3387,68 @@ const activity = ({ strapi: strapi2 }) => {
         ctx.body = { error: e.message };
       }
     },
+    // PUT /my/activity/signup/:signupId/contact  补填联系方式（解锁 contact 条件 + 补发 +20）
+    async contact(ctx) {
+      try {
+        const userId = await getUserId(ctx);
+        const signupId = parseInt(ctx.params.signupId, 10);
+        const { formData } = ctx.request.body || {};
+        const result = await activitySvc().fillContact({ userId, signupId, formData });
+        ctx.body = wrap$5(result);
+      } catch (e) {
+        ctx.status = 400;
+        if (e instanceof FormValidationError) {
+          ctx.body = { error: e.message, errors: e.errors };
+          return;
+        }
+        ctx.body = { error: e.message };
+      }
+    },
+    // PUT /my/activity/signup/:signupId/subscribe  补领关注（补发 +50，幂等）
+    async subscribe(ctx) {
+      try {
+        const userId = await getUserId(ctx);
+        const signupId = parseInt(ctx.params.signupId, 10);
+        const result = await activitySvc().claimSubscribe({ userId, signupId });
+        ctx.body = wrap$5(result);
+      } catch (e) {
+        ctx.status = e.status || 400;
+        ctx.body = { error: e.message };
+      }
+    },
+    // GET /my/activity/:documentId/follow-qrcode  用户关注公众号临时带参二维码
+    async getFollowQrcode(ctx) {
+      try {
+        const userId = await getUserId(ctx);
+        const documentId = ctx.params.documentId;
+        if (!documentId) {
+          ctx.status = 400;
+          ctx.body = wrap$5({ ok: false, reason: "missing_documentId" });
+          return;
+        }
+        const result = await activitySvc().getFollowQrcode({ userId, activityId: documentId });
+        ctx.body = wrap$5(result);
+      } catch (e) {
+        ctx.status = e.status || 500;
+        ctx.body = { error: e.message || "生成关注二维码失败" };
+      }
+    },
+    // GET /my/activity/signup/:signupId/unlock-status  报名后权益状态（卡片区三态）
+    async signupUnlockStatus(ctx) {
+      try {
+        const userId = await getUserId(ctx);
+        const signupId = parseInt(ctx.params.signupId, 10);
+        const result = await activitySvc().signupUnlockStatus({ userId, signupId });
+        ctx.body = wrap$5(result);
+      } catch (e) {
+        ctx.status = e.status || 400;
+        ctx.body = { error: e.message };
+      }
+    },
     // POST /my/activity/:documentId/unlock-check  解锁状态探测（报名前/关注后刷新）
     async unlockCheck(ctx) {
       try {
-        const userId = getUserId(ctx);
+        const userId = await getUserId(ctx);
         const { formData, questionnaireData } = ctx.request.body || {};
         const result = await activitySvc().unlockCheck({
           userId,
@@ -3271,7 +3480,7 @@ const activity = ({ strapi: strapi2 }) => {
     // POST /my/activity/:documentId/message  用户留言
     async sendMessage(ctx) {
       try {
-        const userId = getUserId(ctx);
+        const userId = await getUserId(ctx);
         const { content } = ctx.request.body || {};
         const result = await activitySvc().sendMessage({ userId, activityDocumentId: ctx.params.documentId, content });
         ctx.body = wrap$5(result);
@@ -3283,7 +3492,7 @@ const activity = ({ strapi: strapi2 }) => {
     // GET /my/activity/:documentId/messages  我的留言+回复
     async listMessages(ctx) {
       try {
-        const userId = getUserId(ctx);
+        const userId = await getUserId(ctx);
         const result = await activitySvc().listMyMessages({ userId, activityDocumentId: ctx.params.documentId });
         ctx.body = wrap$5(result);
       } catch (e) {
@@ -3324,7 +3533,7 @@ const activity = ({ strapi: strapi2 }) => {
     // POST /my/activity/:documentId/cancel
     async cancel(ctx) {
       try {
-        const userId = getUserId(ctx);
+        const userId = await getUserId(ctx);
         const act = await strapi2.documents(ACTIVITY_UID$7).findOne({ documentId: ctx.params.documentId });
         if (!act) {
           ctx.status = 404;
@@ -3341,7 +3550,7 @@ const activity = ({ strapi: strapi2 }) => {
     // POST /my/activity/:documentId/checkin
     async checkin(ctx) {
       try {
-        const userId = getUserId(ctx);
+        const userId = await getUserId(ctx);
         const { method, lat, lng } = ctx.request.body;
         const result = await activitySvc().checkin({
           userId,
@@ -3360,7 +3569,7 @@ const activity = ({ strapi: strapi2 }) => {
     async mySignups(ctx) {
       try {
         await activitySvc().drainDueActivities();
-        const userId = getUserId(ctx);
+        const userId = await getUserId(ctx);
         const rows = await strapi2.db.query(SIGNS_UID$3).findMany({
           where: { user: userId },
           populate: { activity: true },
@@ -3610,7 +3819,7 @@ const activity = ({ strapi: strapi2 }) => {
     },
     // POST /activities/:documentId/review （注册用户评价：评分1-5/NPS 0-10/文字）
     async review(ctx) {
-      const userId = getUserId(ctx);
+      const userId = await getUserId(ctx);
       const act = await strapi2.documents(ACTIVITY_UID$7).findOne({ documentId: ctx.params.documentId });
       if (!act) {
         ctx.status = 404;
@@ -3694,7 +3903,7 @@ const activity = ({ strapi: strapi2 }) => {
     // GET /my/activity/:documentId/learning  已解锁学习内容
     async learningContent(ctx) {
       try {
-        const userId = getUserId(ctx);
+        const userId = await getUserId(ctx);
         const result = await activitySvc().getLearningContent({
           userId,
           activityDocumentId: ctx.params.documentId
@@ -35065,12 +35274,12 @@ const point = ({ strapi: strapi2 }) => {
     }
     return null;
   };
-  const getLatestBalance = async (userId) => {
-    const lastRecord = await strapi2.db.query(RECORD_UID$1).findOne({
-      where: { user: userId },
-      orderBy: { createdAt: "desc" }
-    });
-    return lastRecord ? lastRecord.balance : 0;
+  const getLatestBalance = async (userId, trx) => {
+    const conn = trx || strapi2.db.connection;
+    const REC_TABLE = "zhao_point_records";
+    const LNK_TABLE = "zhao_point_records_user_lnk";
+    const result = await conn(REC_TABLE).join(LNK_TABLE, `${REC_TABLE}.id`, "=", `${LNK_TABLE}.point_record_id`).where(`${LNK_TABLE}.user_id`, userId).select(conn.raw(`COALESCE(SUM(${REC_TABLE}.points), 0) AS total_balance`));
+    return parseInt(String(result[0]?.total_balance ?? 0), 10) || 0;
   };
   const countTodayAction = async (userId, action) => {
     const today = /* @__PURE__ */ new Date();
@@ -35122,52 +35331,55 @@ const point = ({ strapi: strapi2 }) => {
   };
   const earnPoints = async (params) => {
     const { userId, action, source, method, remark, orderId, channelId, userChannelId, points: pointsOverride } = params;
-    const finalChannelId = channelId ?? userChannelId;
-    const rule = await getMergedRule(action);
-    if (!rule || rule.category === "decrease") {
-      throwError("POINT_001", `积分规则不存在 (action=${action})`, { action });
-    }
-    if (!rule.enabled) {
-      throwError("POINT_019", `积分规则未启用 (action=${action})`, { action });
-    }
-    if (rule.isOneTime) {
-      const claimed = await checkOneTimeClaimed(userId, action);
-      if (claimed) {
-        throwError("POINT_011", `一次性奖励已领取过 (action=${action})`, { action });
+    return strapi2.db.transaction(async ({ trx }) => {
+      const finalChannelId = channelId ?? userChannelId;
+      await trx("up_users").where({ id: userId }).forUpdate();
+      const rule = await getMergedRule(action);
+      if (!rule || rule.category === "decrease") {
+        throwError("POINT_001", `积分规则不存在 (action=${action})`, { action });
       }
-    }
-    if (rule.limitPerDay > 0) {
-      const todayCount = await countTodayAction(userId, action);
-      if (todayCount >= rule.limitPerDay) {
-        throwError("POINT_004", `已达每日积分上限 (action=${action})`, { action, limit: rule.limitPerDay });
+      if (!rule.enabled) {
+        throwError("POINT_019", `积分规则未启用 (action=${action})`, { action });
       }
-    }
-    const balance = await getLatestBalance(userId);
-    const now = /* @__PURE__ */ new Date();
-    let expiresAt;
-    try {
-      const configService2 = strapi2.plugin("zhao-point").service("config-service");
-      if (configService2) {
-        const config2 = await configService2.getConfig();
-        if (config2?.expiryEnabled && config2?.expiryDays > 0) {
-          const expiryDate = new Date(now);
-          expiryDate.setDate(expiryDate.getDate() + config2.expiryDays);
-          expiresAt = expiryDate.toISOString();
+      if (rule.isOneTime) {
+        const claimed = await checkOneTimeClaimed(userId, action);
+        if (claimed) {
+          throwError("POINT_011", `一次性奖励已领取过 (action=${action})`, { action });
         }
       }
-    } catch {
-    }
-    const earnAmount = pointsOverride ?? rule.points;
-    const record2 = await createRecord(userId, action, earnAmount, balance, "increase", {
-      source,
-      method,
-      remark,
-      orderId,
-      channelId: finalChannelId,
-      userChannelId,
-      expiresAt
+      if (rule.limitPerDay > 0) {
+        const todayCount = await countTodayAction(userId, action);
+        if (todayCount >= rule.limitPerDay) {
+          throwError("POINT_004", `已达每日积分上限 (action=${action})`, { action, limit: rule.limitPerDay });
+        }
+      }
+      const balance = await getLatestBalance(userId, trx);
+      const now = /* @__PURE__ */ new Date();
+      let expiresAt;
+      try {
+        const configService2 = strapi2.plugin("zhao-point").service("config-service");
+        if (configService2) {
+          const config2 = await configService2.getConfig();
+          if (config2?.expiryEnabled && config2?.expiryDays > 0) {
+            const expiryDate = new Date(now);
+            expiryDate.setDate(expiryDate.getDate() + config2.expiryDays);
+            expiresAt = expiryDate.toISOString();
+          }
+        }
+      } catch {
+      }
+      const earnAmount = pointsOverride ?? rule.points;
+      const record2 = await createRecord(userId, action, earnAmount, balance, "increase", {
+        source,
+        method,
+        remark,
+        orderId,
+        channelId: finalChannelId,
+        userChannelId,
+        expiresAt
+      });
+      return record2;
     });
-    return record2;
   };
   const deductPoints = async (params) => {
     const { userId, action, points: customPoints, source, method, remark, orderId, channelId, userChannelId } = params;
@@ -37800,6 +38012,10 @@ const contentApi = () => ({
     userRoute("POST", "/my/activity/signup", "activity.signup"),
     userRoute("POST", "/my/activity/:documentId/unlock-check", "activity.unlockCheck"),
     userRoute("PUT", "/my/activity/signup/:signupId/questionnaire", "activity.questionnaire"),
+    userRoute("PUT", "/my/activity/signup/:signupId/contact", "activity.contact"),
+    userRoute("PUT", "/my/activity/signup/:signupId/subscribe", "activity.subscribe"),
+    userRoute("GET", "/my/activity/signup/:signupId/unlock-status", "activity.signupUnlockStatus"),
+    userRoute("GET", "/my/activity/:documentId/follow-qrcode", "activity.getFollowQrcode"),
     userRoute("POST", "/my/activity/:documentId/cancel", "activity.cancel"),
     userRoute("POST", "/my/activity/:documentId/checkin", "activity.checkin"),
     userRoute("GET", "/my/activities", "activity.mySignups"),

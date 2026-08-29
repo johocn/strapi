@@ -105,7 +105,10 @@ const thirdPartyAuthService = ({ strapi }) => ({
     if (account?.user) {
       user = account.user;
     } else {
-      user = await this.createUserFromThirdParty(platform, tokenResult, inviteCode);
+      const thirdUsername = this.buildThirdUsername(platform, tokenResult.openId);
+      const thirdEmail = `${thirdUsername}@third.placeholder`;
+      const authService = strapi.plugin("zhao-auth").service("auth");
+      user = await authService.findUserByIdentifier(thirdUsername, thirdEmail) || await this.createUserFromThirdParty(platform, tokenResult, inviteCode);
       const accountData = {
         platform,
         appType,
@@ -269,11 +272,18 @@ const thirdPartyAuthService = ({ strapi }) => ({
     };
   },
   /**
+   * 三方登录派生用户名：与 createUserFromThirdParty 保持同一派生规则，
+   * 供「按 openId 幂等复用已有用户」使用。
+   */
+  buildThirdUsername(platform, openId) {
+    const prefix = platform === "wechat" ? "wx" : platform === "alipay" ? "alipay" : "dy";
+    return `${prefix}_${openId.substring(0, 16)}`;
+  },
+  /**
    * 创建用户（三方登录自动注册）
    */
   async createUserFromThirdParty(platform, tokenResult, inviteCode) {
-    const prefix = platform === "wechat" ? "wx" : platform === "alipay" ? "alipay" : "dy";
-    const username = `${prefix}_${tokenResult.openId.substring(0, 16)}`;
+    const username = this.buildThirdUsername(platform, tokenResult.openId);
     const email = `${username}@third.placeholder`;
     const authService = strapi.plugin("zhao-auth").service("auth");
     const user = await authService.createUser({

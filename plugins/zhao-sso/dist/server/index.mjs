@@ -7,30 +7,36 @@ import axios from "axios";
 import fs from "fs/promises";
 const ssoAuthenticated = async (policyContext, config2, { strapi }) => {
   const authHeader = policyContext.request?.headers?.authorization;
+  const reject401 = () => {
+    const err = new Error("未登录或登录已过期");
+    err.status = 401;
+    throw err;
+  };
   if (!authHeader || typeof authHeader !== "string") {
-    return false;
+    reject401();
   }
   const parts = authHeader.split(" ");
   if (parts.length !== 2 || parts[0] !== "Bearer") {
-    return false;
+    reject401();
   }
   try {
     const jwtService = strapi.plugin("zhao-sso").service("sso-jwt");
     const payload = await jwtService.verifyToken(parts[1]);
     if (payload.type !== "access") {
-      return false;
+      reject401();
     }
     const tokenRecord = await strapi.db.query("plugin::zhao-sso.sso-token").findOne({
       where: { access_token_jti: payload.jti }
     });
     if (tokenRecord?.revoked) {
-      return false;
+      reject401();
     }
     policyContext.state.ssoUser = payload;
     policyContext.state.ssoToken = parts[1];
     return true;
-  } catch {
-    return false;
+  } catch (e) {
+    if (e && e.status === 401) throw e;
+    reject401();
   }
 };
 const register = ({ strapi }) => {

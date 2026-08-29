@@ -269,18 +269,26 @@ async function resolveUserChannelId(strapi, userId: number): Promise<number | un
 
 /** 是否已微信授权登录：解析 sso 用户并探测是否绑定过公众号(provider=wechat)第三方授权 */
 async function hasWechatAuth(strapi: any, upUserId: number): Promise<boolean> {
+  // 来源1（三方登录，C端公众号 OAuth）：third_party_accounts.user 关联 up_user，直接用 upUserId 查询
+  try {
+    const thirdAccountSvc = strapi.plugin("zhao-third")?.service("third-party-account");
+    if (thirdAccountSvc) {
+      const accounts = await thirdAccountSvc.findByUser(upUserId);
+      if (Array.isArray(accounts) && accounts.some((a: any) => a.platform === "wechat" || a.provider === "wechat")) return true;
+    }
+  } catch { /* 忽略来源1异常 */ }
+  // 来源2（SSO 登录）：sso_third_party_bindings.user 关联 sso_user，需先映射
   try {
     const sop = strapi.plugin("zhao-sso")?.service("sso-sop");
-    if (!sop) return false;
-    const sso = await sop.resolveSsoUserForUpUser(upUserId);
-    if (!sso?.id) return false;
-    const bound = await strapi.db.query("plugin::zhao-sso.sso-third-party-binding").findOne({
-      where: { user: sso.id, provider: "wechat" },
-    });
-    return !!bound;
-  } catch {
-    return false;
-  }
+    const sso = sop && (await sop.resolveSsoUserForUpUser(upUserId));
+    if (sso?.id) {
+      const bound = await strapi.db.query("plugin::zhao-sso.sso-third-party-binding").findOne({
+        where: { user: sso.id, provider: "wechat" },
+      });
+      if (bound) return true;
+    }
+  } catch { /* 忽略来源2异常 */ }
+  return false;
 }
 
 /** 大纲奖励按 kind 分发：lesson→课时课程授权；article/file→无用户级授权，返回信息供前端展示/领取 */
@@ -599,12 +607,122 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     if (!act) throw new Error("活动不存在");
     const q = act.questionnaire;
     if (!q || q.enabled !== true || !Array.isArray(q.fields) || !q.fields.length) throw new Error("该活动未开启问卷");
+    // 补填前问卷达成状态，用于判定是否本次新达成以补发积分
+    const prevSurvey = surveyFilled(signup.questionnaireData || {});
     const collected = collectQuestionnaire(q.fields, answers);
     await strapi.db.query(SIGNS_UID).update({ where: { id: signup.id }, data: { questionnaireData: collected } });
     // 重算必须读取更新后的 questionnaireData，不能沿用更新前快照
     const fresh = await strapi.db.query(SIGNS_UID).findOne({ where: { id: signup.id } });
     const { unlockInfo, newlyGranted } = await recomputeUnlock(strapi, fresh, act, userId);
+    // 补填问卷后若问卷条件新达成（报名时未达成），补发问卷积分，与直接报名路径保持一致
+    const currentSurvey = surveyFilled(fresh.questionnaireData || {});
+    if (!prevSurvey && currentSurvey) {
+      const userChannelId = await resolveUserChannelId(strapi, userId);
+      await earnPointsSafe(strapi, userId, "activity_signup_survey", 50, "回答问卷报名", userChannelId);
+    }
     return { ok: true, unlockInfo, newlyUnlocked: newlyGranted };
+  },
+
+  /** 补填联系方式：更新 signup.formData → 重算解锁 → 本轮新达成联系方式补发 +20 */
+  async fillContact({ userId, signupId, formData }: { userId: number; signupId: number; formData?: any }) {
+    const signup = await strapi.db.query(SIGNS_UID).findOne({
+      where: { id: signupId, user: userId },
+      populate: { activity: true },
+    });
+    if (!signup) throw new Error("报名记录不存在");
+    if (signup.status !== "active" && signup.status !== "waiting") throw new Error("报名已失效");
+    const act = signup.activity;
+    if (!act) throw new Error("活动不存在");
+    const formConfig = Array.isArray(act.formConfig) ? act.formConfig : [];
+    if (!formConfig.length) throw new Error("该活动未开启报名表单");
+    const prevContact = contactFilled(formConfig, signup.formData);
+    const collected = collectFormData(formConfig, formData);
+    await strapi.db.query(SIGNS_UID).update({ where: { id: signup.id }, data: { formData: collected } });
+    const fresh = await strapi.db.query(SIGNS_UID).findOne({ where: { id: signup.id } });
+    const { unlockInfo, newlyGranted } = await recomputeUnlock(strapi, fresh, act, userId);
+    // 补填后若联系方式本轮新达成，补发联系方式积分（与直接报名路径一致，已领幂等）
+    const currentContact = contactFilled(formConfig, fresh.formData);
+    if (!prevContact && currentContact) {
+      const userChannelId = await resolveUserChannelId(strapi, userId);
+      await earnPointsSafe(strapi, userId, "activity_signup_contact", 20, "完善联系方式报名", userChannelId);
+    }
+    return { ok: true, unlockInfo, newlyUnlocked: newlyGranted, newlyContact: !prevContact && currentContact };
+  },
+
+  /** 用户关注公众号领积分的临时带参二维码（按用户缓存复用，有效期内不重复建码 → 临时码不限数量） */
+  async getFollowQrcode({ userId, activityId }: { userId: number; activityId: string }) {
+    const sceneKey = `follow:act:${activityId}:${userId}`;
+    const qrcodeSvc = strapi.plugin("zhao-sso").service("sso-wx-qrcode");
+    const existing = await qrcodeSvc.findBySceneKey(sceneKey).catch(() => null);
+    if (existing?.wx_url) return { ok: true, wx_url: existing.wx_url };
+    const created = await qrcodeSvc.create({
+      scene_key: sceneKey,
+      kind: "temporary",
+      expire_seconds: 2592000,
+      title: `活动关注领积分 ${activityId} u${userId}`,
+    });
+    return { ok: true, wx_url: created.wx_url };
+  },
+
+  /** 补领关注公众号：已关注则补发关注积分(幂等)，并重算解锁新增权益 */
+  async claimSubscribe({ userId, signupId }: { userId: number; signupId: number }) {
+    const signup = await strapi.db.query(SIGNS_UID).findOne({
+      where: { id: signupId, user: userId },
+      populate: { activity: true },
+    });
+    if (!signup) throw new Error("报名记录不存在");
+    if (signup.status !== "active" && signup.status !== "waiting") throw new Error("报名已失效");
+    const act = signup.activity;
+    if (!act) throw new Error("活动不存在");
+    const subscribed = await hasSubscribe(strapi, userId);
+    if (!subscribed) return { ok: true, subscribed: false, newlyUnlocked: [] };
+    const userChannelId = await resolveUserChannelId(strapi, userId);
+    // 不传 points，由规则默认；isOneTime 已领抛 POINT_011 被 earnPointsSafe 吞掉（幂等）
+    await earnPointsSafe(strapi, userId, "follow_official_account", 50, "关注公众号报名奖励", userChannelId);
+    const { unlockInfo, newlyGranted } = await recomputeUnlock(strapi, signup, act, userId);
+    return { ok: true, subscribed: true, unlockInfo, newlyUnlocked: newlyGranted };
+  },
+
+  /** 报名后权益状态：已报名用户回访时卡片区读取真实已领/可领/未达成（不入库） */
+  async signupUnlockStatus({ userId, signupId }: { userId: number; signupId: number }) {
+    const signup = await strapi.db.query(SIGNS_UID).findOne({
+      where: { id: signupId, user: userId },
+      populate: { activity: true },
+    });
+    if (!signup) throw new Error("报名记录不存在");
+    if (signup.status !== "active" && signup.status !== "waiting") throw new Error("报名已失效");
+    const act = signup.activity;
+    if (!act) throw new Error("活动不存在");
+    const rewardConfig = act.rewardConfig;
+    const hasReward = !!rewardConfig && typeof rewardConfig === "object";
+    const loginAuth = await hasWechatAuth(strapi, userId);
+    const subscribed = await hasSubscribe(strapi, userId);
+    const conditions = {
+      contact: contactFilled(act.formConfig, signup.formData),
+      survey: surveyFilled(signup.questionnaireData),
+    };
+    if (!hasReward) {
+      return {
+        ok: true, hasReward: false, loginAuth, subscribed,
+        contactDone: conditions.contact, surveyDone: conditions.survey,
+        formData: signup.formData || {}, questionnaireData: signup.questionnaireData || {},
+        pointsPreview: computePointsPreview({ loginAuth, subscribed, conditions }),
+      };
+    }
+    const ch = resolveChannel(rewardConfig);
+    const channelDone = channelDoneOf(ch?.type, conditions, loginAuth, subscribed);
+    const rewardList = Array.isArray(rewardConfig?.rewards) ? rewardConfig.rewards : [];
+    return {
+      ok: true, hasReward: true, loginAuth, subscribed,
+      channel: ch, channelDone,
+      contactDone: conditions.contact, surveyDone: conditions.survey,
+      formData: signup.formData || {}, questionnaireData: signup.questionnaireData || {},
+      rewards: rewardList.map((r: any) => ({
+        id: r.id, name: r.name, type: r.type, mode: r.mode,
+        condition: resolveCondition(r), unlocked: isRewardUnlocked(r, loginAuth, subscribed, conditions),
+      })),
+      pointsPreview: computePointsPreview({ loginAuth, subscribed, conditions }),
+    };
   },
 
   /** 解锁状态探测：C 端报名前或关注/授权后调用，返回通道/条件/可领权益（不入库） */

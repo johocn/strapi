@@ -55,6 +55,7 @@ declare const _default: {
             nickname: null;
             avatar: null;
         }>;
+        buildThirdUsername(platform: string, openId: string): string;
         createUserFromThirdParty(platform: string, tokenResult: any, inviteCode?: string): Promise<any>;
         getPublicConfig(platform: string, appType: string, siteId?: string): Promise<{
             platform: any;

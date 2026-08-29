@@ -68,6 +68,11 @@ declare const _default: ({ strapi }: {
         avatar: null;
     }>;
     /**
+     * 三方登录派生用户名：与 createUserFromThirdParty 保持同一派生规则，
+     * 供「按 openId 幂等复用已有用户」使用。
+     */
+    buildThirdUsername(platform: string, openId: string): string;
+    /**
      * 创建用户（三方登录自动注册）
      */
     createUserFromThirdParty(platform: string, tokenResult: any, inviteCode?: string): Promise<any>;

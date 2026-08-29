@@ -85,12 +85,17 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     return null;
   };
 
-  const getLatestBalance = async (userId: string | number): Promise<number> => {
-    const lastRecord = await strapi.db.query(RECORD_UID).findOne({
-      where: { user: userId },
-      orderBy: { createdAt: "desc" },
-    });
-    return lastRecord ? lastRecord.balance : 0;
+  // 并发加固：改用 SUM(points) 计算余额，彻底消除 createdAt 排序快照竞态。
+  // 传入可选 trx：earnPoints/deductPoints 事务内复用同一连接，保证读到本事务已写余额。
+  const getLatestBalance = async (userId: string | number, trx?: any): Promise<number> => {
+    const conn = trx || strapi.db.connection;
+    const REC_TABLE = "zhao_point_records";
+    const LNK_TABLE = "zhao_point_records_user_lnk";
+    const result: { total_balance: string | number }[] = await conn(REC_TABLE)
+      .join(LNK_TABLE, `${REC_TABLE}.id`, "=", `${LNK_TABLE}.point_record_id`)
+      .where(`${LNK_TABLE}.user_id`, userId)
+      .select(conn.raw(`COALESCE(SUM(${REC_TABLE}.points), 0) AS total_balance`));
+    return parseInt(String(result[0]?.total_balance ?? 0), 10) || 0;
   };
 
   const countTodayAction = async (
@@ -173,58 +178,68 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   const earnPoints = async (params: EarnPointsParams) => {
     const { userId, action, source, method, remark, orderId, channelId, userChannelId, points: pointsOverride } = params;
 
-    // channel 决策：channelId 优先（调用方负责 selected → pointChannel 选择），空时降级到 userChannelId 兜底
-    // 仅 channelScope="all" + pointChannel 空的场景会走到兜底
-    const finalChannelId = channelId ?? userChannelId;
+    // 并发加固：防重校验(isOneTime/limitPerDay)与积分写入同处一个数据库事务，
+    // 依赖 Strapi5 事务 AsyncLocalStorage，事务内 strapi.db.query 自动绑定同一 trx。
+    // 同一用户的积分操作串行化，杜绝「先查后写」造成的重复发放 / 余额快照竞态。
+    return strapi.db.transaction(async ({ trx }) => {
+      // channel 决策：channelId 优先（调用方负责 selected → pointChannel 选择），空时降级到 userChannelId 兜底
+      // 仅 channelScope="all" + pointChannel 空的场景会走到兜底
+      const finalChannelId = channelId ?? userChannelId;
 
-    const rule = await getMergedRule(action);
-    if (!rule || rule.category === "decrease") {
-      throwError("POINT_001", `积分规则不存在 (action=${action})`, { action });
-    }
+      // 并发防重核心：对用户主行加排他锁(SELECT FOR UPDATE)。
+      // 同一用户并发积分操作在此串行，后到者等先到者提交后再读防重，杜绝重复发放。
+      await trx("up_users").where({ id: userId }).forUpdate();
 
-    if (!rule.enabled) {
-      throwError("POINT_019", `积分规则未启用 (action=${action})`, { action });
-    }
-
-    if (rule.isOneTime) {
-      const claimed = await checkOneTimeClaimed(userId, action);
-      if (claimed) {
-        throwError("POINT_011", `一次性奖励已领取过 (action=${action})`, { action });
+      const rule = await getMergedRule(action);
+      if (!rule || rule.category === "decrease") {
+        throwError("POINT_001", `积分规则不存在 (action=${action})`, { action });
       }
-    }
 
-    if (rule.limitPerDay > 0) {
-      const todayCount = await countTodayAction(userId, action);
-      if (todayCount >= rule.limitPerDay) {
-        throwError("POINT_004", `已达每日积分上限 (action=${action})`, { action, limit: rule.limitPerDay });
+      if (!rule.enabled) {
+        throwError("POINT_019", `积分规则未启用 (action=${action})`, { action });
       }
-    }
 
-    const balance = await getLatestBalance(userId);
-
-    const now = new Date();
-    let expiresAt: string | undefined;
-    try {
-      const configService = strapi.plugin("zhao-point").service("config-service");
-      if (configService) {
-        const config = await configService.getConfig();
-        if (config?.expiryEnabled && config?.expiryDays > 0) {
-          const expiryDate = new Date(now);
-          expiryDate.setDate(expiryDate.getDate() + config.expiryDays);
-          expiresAt = expiryDate.toISOString();
+      if (rule.isOneTime) {
+        const claimed = await checkOneTimeClaimed(userId, action);
+        if (claimed) {
+          throwError("POINT_011", `一次性奖励已领取过 (action=${action})`, { action });
         }
       }
-    } catch {
-      // config-service not available
-    }
 
-    const earnAmount = pointsOverride ?? rule.points;
+      if (rule.limitPerDay > 0) {
+        const todayCount = await countTodayAction(userId, action);
+        if (todayCount >= rule.limitPerDay) {
+          throwError("POINT_004", `已达每日积分上限 (action=${action})`, { action, limit: rule.limitPerDay });
+        }
+      }
 
-    const record = await createRecord(userId, action, earnAmount, balance, "increase", {
-      source, method, remark, orderId, channelId: finalChannelId, userChannelId, expiresAt,
+      // SUM(points) 实时计算，复用事务连接(trx)，保证读到本事务已写部分，余额正确
+      const balance = await getLatestBalance(userId, trx);
+
+      const now = new Date();
+      let expiresAt: string | undefined;
+      try {
+        const configService = strapi.plugin("zhao-point").service("config-service");
+        if (configService) {
+          const config = await configService.getConfig();
+          if (config?.expiryEnabled && config?.expiryDays > 0) {
+            const expiryDate = new Date(now);
+            expiryDate.setDate(expiryDate.getDate() + config.expiryDays);
+            expiresAt = expiryDate.toISOString();
+          }
+        }
+      } catch {
+        // config-service not available
+      }
+
+      const earnAmount = pointsOverride ?? rule.points;
+
+      const record = await createRecord(userId, action, earnAmount, balance, "increase", {
+        source, method, remark, orderId, channelId: finalChannelId, userChannelId, expiresAt,
+      });
+
+      return record;
     });
-
-    return record;
   };
 
   const deductPoints = async (params: DeductPointsParams) => {

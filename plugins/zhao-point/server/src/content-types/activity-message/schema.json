@@ -1,0 +1,14 @@
+{
+  "kind": "collectionType",
+  "collectionName": "activity_messages",
+  "info": { "singularName": "activity-message", "pluralName": "activity-messages", "displayName": "Activity Message" },
+  "options": { "draftAndPublish": false, "comment": "活动宣传页客服留言（异步回复）" },
+  "attributes": {
+    "activity": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.activity" },
+    "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::users-permissions.user" },
+    "content": { "type": "text" },
+    "reply": { "type": "text" },
+    "status": { "type": "enumeration", "enum": ["open", "replied"], "default": "open" },
+    "repliedAt": { "type": "datetime" }
+  }
+}

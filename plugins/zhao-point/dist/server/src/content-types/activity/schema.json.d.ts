@@ -52,7 +52,9 @@ declare const _default: {
     "promoModules": { "type": "json" },
     "promoContact": { "type": "json" },
     "promoColors": { "type": "json" },
-    "promoAssets": { "type": "json" }
+    "promoAssets": { "type": "json" },
+    "customPromoHtml": { "type": "text" },
+    "customPromoActive": { "type": "boolean", "default": true }
   }
 };
 

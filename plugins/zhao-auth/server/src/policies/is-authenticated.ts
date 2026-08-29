@@ -10,6 +10,14 @@
  * 这里先尝试 zhao-auth 的 secret 验证，失败后再尝试 SSO 的 secret。
  */
 const isAuthenticated = async (policyContext: any, config: any, { strapi }: { strapi: any }) => {
+  // 鉴权失败（缺失/格式错误/过期/无效 token）抛 401，便于前端按"未登录"自动刷新/登出；
+  // 真正的权限拒绝 403 由 has-permission 等策略/控制器负责，本策略只判"是否已认证"。
+  const reject401 = () => {
+    const err: any = new Error("未登录或登录已过期");
+    err.status = 401;
+    throw err;
+  };
+
   try {
     // Strapi v5: policyContext 就是 Koa ctx
     const ctx = policyContext;
@@ -17,10 +25,10 @@ const isAuthenticated = async (policyContext: any, config: any, { strapi }: { st
       ctx?.request?.headers?.authorization ||
       ctx?.headers?.authorization ||
       ctx?.request?.headers?.get?.("authorization");
-    if (!authHeader || typeof authHeader !== "string") return false;
+    if (!authHeader || typeof authHeader !== "string") reject401();
 
     const parts = authHeader.split(" ");
-    if (parts.length !== 2 || parts[0] !== "Bearer") return false;
+    if (parts.length !== 2 || parts[0] !== "Bearer") reject401();
     const token = parts[1];
 
     // 先用 zhao-auth 的 JWT service 验证（本地登录 token）
@@ -60,13 +68,14 @@ const isAuthenticated = async (policyContext: any, config: any, { strapi }: { st
           }
         }
       } catch (ssoErr) {
-        // SSO 验证也失败
+        // SSO 验证也失败 → 视为未认证
       }
-      return false;
+      reject401();
     }
   } catch (e: any) {
+    if (e && e.status === 401) throw e;
     strapi.log.error("[is-authenticated] policy error:", e?.message || e);
-    return false;
+    reject401();
   }
 };
 

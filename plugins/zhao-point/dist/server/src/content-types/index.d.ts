@@ -1052,6 +1052,13 @@ declare const _default: {
                 promoAssets: {
                     type: string;
                 };
+                customPromoHtml: {
+                    type: string;
+                };
+                customPromoActive: {
+                    type: string;
+                    default: boolean;
+                };
             };
         };
         lifecycles: {

@@ -4671,12 +4671,17 @@ const contentTypes = {
   }
 };
 const isAuthenticated = async (policyContext, config2, { strapi: strapi2 }) => {
+  const reject401 = () => {
+    const err = new Error("未登录或登录已过期");
+    err.status = 401;
+    throw err;
+  };
   try {
     const ctx = policyContext;
     const authHeader = ctx?.request?.headers?.authorization || ctx?.headers?.authorization || ctx?.request?.headers?.get?.("authorization");
-    if (!authHeader || typeof authHeader !== "string") return false;
+    if (!authHeader || typeof authHeader !== "string") reject401();
     const parts = authHeader.split(" ");
-    if (parts.length !== 2 || parts[0] !== "Bearer") return false;
+    if (parts.length !== 2 || parts[0] !== "Bearer") reject401();
     const token = parts[1];
     try {
       const jwtService2 = strapi2.plugin("zhao-auth").service("jwt");
@@ -4713,20 +4718,19 @@ const isAuthenticated = async (policyContext, config2, { strapi: strapi2 }) => {
         }
       } catch (ssoErr) {
       }
-      return false;
+      reject401();
     }
   } catch (e) {
+    if (e && e.status === 401) throw e;
     strapi2.log.error("[is-authenticated] policy error:", e?.message || e);
-    return false;
+    reject401();
   }
 };
 const tenantContextInjector = async (policyContext, config2, { strapi: strapi2 }) => {
-  if (!policyContext.state?.siteDocumentId) {
-    const user = policyContext.state?.user;
-    const currentTenantId = user?.currentTenantId;
-    if (currentTenantId) {
-      policyContext.state.siteDocumentId = currentTenantId;
-    }
+  const user = policyContext.state?.user;
+  const currentTenantId = user?.currentTenantId;
+  if (currentTenantId) {
+    policyContext.state.siteDocumentId = currentTenantId;
   }
   return true;
 };

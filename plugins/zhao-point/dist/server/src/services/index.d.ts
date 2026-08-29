@@ -814,6 +814,84 @@ declare const _default: {
             unlockInfo: any;
             newlyUnlocked: any[];
         }>;
+        fillContact({ userId, signupId, formData }: {
+            userId: number;
+            signupId: number;
+            formData?: any;
+        }): Promise<{
+            ok: boolean;
+            unlockInfo: any;
+            newlyUnlocked: any[];
+            newlyContact: boolean;
+        }>;
+        getFollowQrcode({ userId, activityId }: {
+            userId: number;
+            activityId: string;
+        }): Promise<{
+            ok: boolean;
+            wx_url: any;
+        }>;
+        claimSubscribe({ userId, signupId }: {
+            userId: number;
+            signupId: number;
+        }): Promise<{
+            ok: boolean;
+            subscribed: boolean;
+            newlyUnlocked: any[];
+            unlockInfo?: undefined;
+        } | {
+            ok: boolean;
+            subscribed: boolean;
+            unlockInfo: any;
+            newlyUnlocked: any[];
+        }>;
+        signupUnlockStatus({ userId, signupId }: {
+            userId: number;
+            signupId: number;
+        }): Promise<{
+            ok: boolean;
+            hasReward: boolean;
+            loginAuth: boolean;
+            subscribed: boolean;
+            contactDone: boolean;
+            surveyDone: boolean;
+            formData: any;
+            questionnaireData: any;
+            pointsPreview: {
+                base: number;
+                auth: number;
+                contact: number;
+                survey: number;
+                subscribe: number;
+                total: number;
+            };
+            channel?: undefined;
+            channelDone?: undefined;
+            rewards?: undefined;
+        } | {
+            ok: boolean;
+            hasReward: boolean;
+            loginAuth: boolean;
+            subscribed: boolean;
+            channel: {
+                type: string;
+                label?: string;
+            };
+            channelDone: boolean;
+            contactDone: boolean;
+            surveyDone: boolean;
+            formData: any;
+            questionnaireData: any;
+            rewards: any;
+            pointsPreview: {
+                base: number;
+                auth: number;
+                contact: number;
+                survey: number;
+                subscribe: number;
+                total: number;
+            };
+        }>;
         unlockCheck({ userId, activityDocumentId, formData, questionnaireData }: {
             userId: number;
             activityDocumentId: string;

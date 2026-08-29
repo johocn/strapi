@@ -23,7 +23,24 @@ const wrapList = (result: any) => {
 };
 
 export default ({ strapi }: { strapi: Core.Strapi }) => {
-  const getUserId = (ctx: any) => ctx.state.user.id || ctx.state.user.documentId;
+  // 解析当前请求的真实 up_user id。
+  // SSO 登录时 ctx.state.user 是 sso_user（含 uuid），需先桥接为业务 up_user 再用作落库
+  // （activity_signups.user 关联 plugin::users-permissions.user）。本地登录则直接用 up_user。
+  // 解析不到 up_user 时抛 400，避免写入错误 id / 外键失败。
+  const getUserId = async (ctx: any) => {
+    const u: any = ctx.state.user;
+    if (u?.uuid) {
+      const ssoProfile = strapi.plugin("zhao-sso")?.service("sso-profile");
+      const up = ssoProfile && (await ssoProfile.resolveUpUserForSsoUser(u.id));
+      if (!up?.id) {
+        const e: any = new Error("未绑定业务账号，请先完善资料");
+        e.status = 400;
+        throw e;
+      }
+      return up.id;
+    }
+    return u.id || u.documentId;
+  };
   const activitySvc = () => strapi.plugin("zhao-point").service("activity");
 
   // 关系归一：{connect:[N]}|N|{id:N}+documentId → number | undefined
@@ -69,8 +86,9 @@ function normalizePromoModules(promoModules: any): any[] | undefined {
     try {
       const { page = "1", pageSize = "20", category, search, ...rest } = ctx.query;
       const filters: any = { status: { $notIn: ["draft", "archived"] } };
-      if (category) filters.category = { $eq: category };
-      if (search) filters.title = { $contains: search };
+      // 前端 URLSearchParams 会把 undefined 序列化为字符串 "undefined"，此处防御避免误按该分类过滤
+      if (category && category !== "undefined") filters.category = { $eq: category };
+      if (search && search !== "undefined") filters.title = { $contains: search };
       const docIds = parseDocumentIds(ctx.query.documentIds);
       if (docIds.length) filters.documentId = { $in: docIds };
       const rows = await strapi.documents(ACTIVITY_UID).findMany({
@@ -152,11 +170,19 @@ function normalizePromoModules(promoModules: any): any[] | undefined {
   // POST /my/activity/signup
   async signup(ctx: any) {
     try {
-      const userId = getUserId(ctx);
+      const userId = await getUserId(ctx);
       const { activityId, formData, questionnaireData, chosenRewards } = ctx.request.body || {};
       const result = await activitySvc().signup({ userId, activityId, formData, questionnaireData, chosenRewards });
       if (result?.ok === false && result.reason === "already_signed_up") {
         ctx.status = 200;
+        // 已报名：回传既有报名记录 signupId，前端据此渲染「领取更多权益」卡片区（v-if="signedUp && signupId"）
+        if (result.signupId == null) {
+          const existing = await strapi.db.query(SIGNS_UID).findOne({
+            where: { user: userId, activity: { documentId: activityId }, status: "active" },
+            select: ["id"],
+          });
+          if (existing?.id) result.signupId = existing.id;
+        }
       }
       ctx.body = wrap(result);
     } catch (e: any) {
@@ -172,7 +198,7 @@ function normalizePromoModules(promoModules: any): any[] | undefined {
   // PUT /my/activity/signup/:signupId/questionnaire  补填问卷（解锁 survey 条件后可二次领取）
   async questionnaire(ctx: any) {
     try {
-      const userId = getUserId(ctx);
+      const userId = await getUserId(ctx);
       const signupId = parseInt(ctx.params.signupId, 10);
       const { answers } = ctx.request.body || {};
       const result = await activitySvc().fillQuestionnaire({ userId, signupId, answers });
@@ -183,10 +209,72 @@ function normalizePromoModules(promoModules: any): any[] | undefined {
     }
   },
 
+  // PUT /my/activity/signup/:signupId/contact  补填联系方式（解锁 contact 条件 + 补发 +20）
+  async contact(ctx: any) {
+    try {
+      const userId = await getUserId(ctx);
+      const signupId = parseInt(ctx.params.signupId, 10);
+      const { formData } = ctx.request.body || {};
+      const result = await activitySvc().fillContact({ userId, signupId, formData });
+      ctx.body = wrap(result);
+    } catch (e: any) {
+      ctx.status = 400;
+      if (e instanceof FormValidationError) {
+        ctx.body = { error: e.message, errors: e.errors };
+        return;
+      }
+      ctx.body = { error: e.message };
+    }
+  },
+
+  // PUT /my/activity/signup/:signupId/subscribe  补领关注（补发 +50，幂等）
+  async subscribe(ctx: any) {
+    try {
+      const userId = await getUserId(ctx);
+      const signupId = parseInt(ctx.params.signupId, 10);
+      const result = await activitySvc().claimSubscribe({ userId, signupId });
+      ctx.body = wrap(result);
+    } catch (e: any) {
+      ctx.status = (e as any).status || 400;
+      ctx.body = { error: e.message };
+    }
+  },
+
+  // GET /my/activity/:documentId/follow-qrcode  用户关注公众号临时带参二维码
+  async getFollowQrcode(ctx: any) {
+    try {
+      const userId = await getUserId(ctx);
+      const documentId = ctx.params.documentId;
+      if (!documentId) {
+        ctx.status = 400;
+        ctx.body = wrap({ ok: false, reason: "missing_documentId" });
+        return;
+      }
+      const result = await activitySvc().getFollowQrcode({ userId, activityId: documentId });
+      ctx.body = wrap(result);
+    } catch (e: any) {
+      ctx.status = (e as any).status || 500;
+      ctx.body = { error: e.message || "生成关注二维码失败" };
+    }
+  },
+
+  // GET /my/activity/signup/:signupId/unlock-status  报名后权益状态（卡片区三态）
+  async signupUnlockStatus(ctx: any) {
+    try {
+      const userId = await getUserId(ctx);
+      const signupId = parseInt(ctx.params.signupId, 10);
+      const result = await activitySvc().signupUnlockStatus({ userId, signupId });
+      ctx.body = wrap(result);
+    } catch (e: any) {
+      ctx.status = (e as any).status || 400;
+      ctx.body = { error: e.message };
+    }
+  },
+
   // POST /my/activity/:documentId/unlock-check  解锁状态探测（报名前/关注后刷新）
   async unlockCheck(ctx: any) {
     try {
-      const userId = getUserId(ctx);
+      const userId = await getUserId(ctx);
       const { formData, questionnaireData } = ctx.request.body || {};
       const result = await activitySvc().unlockCheck({
         userId, activityDocumentId: ctx.params.documentId, formData, questionnaireData,
@@ -217,7 +305,7 @@ function normalizePromoModules(promoModules: any): any[] | undefined {
   // POST /my/activity/:documentId/message  用户留言
   async sendMessage(ctx: any) {
     try {
-      const userId = getUserId(ctx);
+      const userId = await getUserId(ctx);
       const { content } = ctx.request.body || {};
       const result = await activitySvc().sendMessage({ userId, activityDocumentId: ctx.params.documentId, content });
       ctx.body = wrap(result);
@@ -230,7 +318,7 @@ function normalizePromoModules(promoModules: any): any[] | undefined {
   // GET /my/activity/:documentId/messages  我的留言+回复
   async listMessages(ctx: any) {
     try {
-      const userId = getUserId(ctx);
+      const userId = await getUserId(ctx);
       const result = await activitySvc().listMyMessages({ userId, activityDocumentId: ctx.params.documentId });
       ctx.body = wrap(result);
     } catch (e: any) {
@@ -274,7 +362,7 @@ function normalizePromoModules(promoModules: any): any[] | undefined {
   // POST /my/activity/:documentId/cancel
   async cancel(ctx: any) {
     try {
-      const userId = getUserId(ctx);
+      const userId = await getUserId(ctx);
       const act = await strapi.documents(ACTIVITY_UID).findOne({ documentId: ctx.params.documentId });
       if (!act) { ctx.status = 404; ctx.body = { error: "活动不存在" }; return; }
       const result = await activitySvc().cancel({ userId, activityId: act.id });
@@ -288,7 +376,7 @@ function normalizePromoModules(promoModules: any): any[] | undefined {
   // POST /my/activity/:documentId/checkin
   async checkin(ctx: any) {
     try {
-      const userId = getUserId(ctx);
+      const userId = await getUserId(ctx);
       const { method, lat, lng } = ctx.request.body;
       const result = await activitySvc().checkin({
         userId, activityId: ctx.params.documentId, method, lat, lng,
@@ -304,7 +392,7 @@ function normalizePromoModules(promoModules: any): any[] | undefined {
   async mySignups(ctx: any) {
     try {
       await activitySvc().drainDueActivities();
-      const userId = getUserId(ctx);
+      const userId = await getUserId(ctx);
       const rows = await strapi.db.query(SIGNS_UID).findMany({
         where: { user: userId },
         populate: { activity: true },
@@ -320,6 +408,9 @@ function normalizePromoModules(promoModules: any): any[] | undefined {
       }
       for (const row of rows) {
         row.attendance = attendances.find((a: any) => (a.signup?.id ?? a.signup) === row.id) || null;
+        if (row.status === "waiting") {
+          row.position = await activitySvc().waitlistPositionOf(row.activity?.id ?? row.activity, row);
+        }
       }
       ctx.body = wrapList(rows);
     } catch (e: any) {
@@ -525,7 +616,7 @@ function normalizePromoModules(promoModules: any): any[] | undefined {
 
   // POST /activities/:documentId/review （注册用户评价：评分1-5/NPS 0-10/文字）
   async review(ctx: any) {
-    const userId = getUserId(ctx);
+    const userId = await getUserId(ctx);
     const act = await strapi.documents(ACTIVITY_UID).findOne({ documentId: ctx.params.documentId });
     if (!act) { ctx.status = 404; ctx.body = { error: "活动不存在" }; return; }
     const signup = await strapi.db.query(SIGNS_UID).findOne({
@@ -601,7 +692,7 @@ function normalizePromoModules(promoModules: any): any[] | undefined {
   // GET /my/activity/:documentId/learning  已解锁学习内容
   async learningContent(ctx: any) {
     try {
-      const userId = getUserId(ctx);
+      const userId = await getUserId(ctx);
       const result = await activitySvc().getLearningContent({
         userId,
         activityDocumentId: ctx.params.documentId,

@@ -7,6 +7,10 @@ declare const _default: ({ strapi }: {
     detail(ctx: any): Promise<void>;
     signup(ctx: any): Promise<void>;
     questionnaire(ctx: any): Promise<void>;
+    contact(ctx: any): Promise<void>;
+    subscribe(ctx: any): Promise<void>;
+    getFollowQrcode(ctx: any): Promise<void>;
+    signupUnlockStatus(ctx: any): Promise<void>;
     unlockCheck(ctx: any): Promise<void>;
     promoDetail(ctx: any): Promise<void>;
     sendMessage(ctx: any): Promise<void>;

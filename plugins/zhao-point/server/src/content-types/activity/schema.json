@@ -53,6 +53,7 @@
     "promoContact": { "type": "json" },
     "promoColors": { "type": "json" },
     "promoAssets": { "type": "json" },
-    "customPromoHtml": { "type": "text" }
+    "customPromoHtml": { "type": "text" },
+    "customPromoActive": { "type": "boolean", "default": true }
   }
 }
