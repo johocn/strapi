@@ -332,6 +332,27 @@ async function grantOutline(strapi: any, opts: { userId: number; reward: any }):
   return true;
 }
 
+/** 权益专属信息标题（meta），按奖励类型解析展示标题 */
+async function rewardMetaLabel(strapi: any, reward: any): Promise<string> {
+  if (!reward || !reward.type) return "";
+  switch (reward.type) {
+    case "course_outline":
+      if (reward.kind === "lesson") return reward.lessonTitle || "";
+      return reward.title || "";
+    case "course_trial":
+      return reward.title || "";
+    case "coupon": {
+      if (reward.couponTitle) return reward.couponTitle;
+      const c = await strapi.db.query("plugin::zhao-deal.coupon").findOne({
+        where: { id: Number(reward.couponId) || 0 },
+      });
+      return c?.title || c?.amountDesc || "";
+    }
+    default:
+      return "";
+  }
+}
+
 /** 逐项发放奖励；按类型分发，重入由调用方靠 unlockInfo 幂等保证 */
 async function grantReward(strapi: any, opts: {
   userId: number; reward: any; channelId?: number;
@@ -806,21 +827,22 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     // selectMode 池化计算：与 signup 发分路径口径一致——仅多选(mode==="multi")且有条件的权益参与 N 选池；
     // 独选(mode!=="multi")与无条件(condition==="none")权益按 base 如实展示、不占池
     let poolUsed = 0;
-    const rewards = rewardList.map((r: any) => {
+    const rewards = await Promise.all(rewardList.map(async (r: any) => {
       const base = !!r?.id && channelDone && isRewardUnlocked(r, loginAuth, subscribed, conditions);
       const condition = resolveCondition(r);
       // points 仅用于前端弹层展示，非发分依据
       const points = r?.type === "points" ? Number(r?.amount) || 0 : 0;
+      const meta = await rewardMetaLabel(strapi, r);
       const poolable = r?.mode === "multi" && condition !== "none";
-      if (!base || !poolable) return { id: r.id, name: r.name, type: r.type, mode: r.mode, condition, points, unlocked: base };
+      if (!base || !poolable) return { id: r.id, name: r.name, type: r.type, mode: r.mode, condition, points, unlocked: base, meta };
       let unlocked: boolean;
       if (selectMode === "all") unlocked = true;
       else if (selectMode === "one") unlocked = poolUsed < 1;
       else if (selectMode === "any") unlocked = poolUsed < selectN;
       else unlocked = true;
       if (unlocked) poolUsed += 1;
-      return { id: r.id, name: r.name, type: r.type, mode: r.mode, condition, points, unlocked };
-    });
+      return { id: r.id, name: r.name, type: r.type, mode: r.mode, condition, points, unlocked, meta };
+    }));
     return {
       ok: true,
       hasReward: true,
