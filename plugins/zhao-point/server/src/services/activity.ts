@@ -468,6 +468,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     const now = Date.now();
     if (act.signupStart && now < new Date(act.signupStart).getTime()) throw new Error("报名未开始");
     if (act.signupEnd && now > new Date(act.signupEnd).getTime()) throw new Error("报名已截止");
+    // 活动开始后 30 分钟内仍可报名，超过则关闭（活动时间须晚于「当前时间-30分钟」）
+    if (act.startTime && now > new Date(act.startTime).getTime() + 30 * 60000) {
+      throw new Error("活动已开始，报名关闭");
+    }
     // 报名表单校验（活动配置了 formConfig 才校验；无配置兼容不校验）
     // rewardConfig 存在时：必填宽放为选填，仅作为解锁依据，不再拦截报名
     const formConfig = act.formConfig;
