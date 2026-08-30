@@ -1391,6 +1391,35 @@ const userController = ({ strapi }) => ({
       ctx.status = e.status || 400;
       ctx.body = { error: e.message };
     }
+  },
+  /** 自助修改本人昵称（个人中心入口） */
+  async updateProfile(ctx) {
+    try {
+      const ssoUser2 = ctx.state.ssoUser;
+      if (!ssoUser2) {
+        ctx.status = 401;
+        ctx.body = { error: "未认证" };
+        return;
+      }
+      const body = ctx.request.body?.data || ctx.request.body;
+      const nickname = typeof body.nickname === "string" ? body.nickname.trim() : "";
+      if (!nickname) {
+        ctx.status = 400;
+        ctx.body = { error: "昵称不能为空" };
+        return;
+      }
+      const userService = strapi.plugin("zhao-sso").service("sso-user");
+      const user = await userService.findByUuid(ssoUser2.sub);
+      if (!user) {
+        ctx.status = 404;
+        ctx.body = { error: "用户不存在" };
+        return;
+      }
+      ctx.body = await userService.updateNickname(user.id, nickname);
+    } catch (e) {
+      ctx.status = e.status || 400;
+      ctx.body = { error: e.message };
+    }
   }
 });
 const channelController = ({ strapi }) => ({
@@ -3220,6 +3249,15 @@ const api = () => ({
       }
     },
     {
+      method: "POST",
+      path: "/v1/user/profile",
+      handler: "user-controller.updateProfile",
+      config: {
+        auth: false,
+        policies: ["plugin::zhao-sso.sso-authenticated"]
+      }
+    },
+    {
       method: "GET",
       path: "/v1/recommend",
       handler: "recommend-controller.my",
@@ -3644,6 +3682,13 @@ const ssoUser = ({ strapi }) => {
       }
       const user = await strapi.db.query(USER_UID$3).update({ where: { id }, data });
       return sanitize(user);
+    },
+    /** 自助修改本人昵称（C 端个人中心用，白名单仅昵称） */
+    async updateNickname(userId, nickname) {
+      const name = String(nickname || "").trim().substring(0, 50);
+      if (!name) throwErr("SSO_NICKNAME_001", 400, "昵称不能为空");
+      await strapi.db.query(USER_UID$3).update({ where: { id: userId }, data: { nickname: name } });
+      return this.findById(userId);
     }
   };
 };
@@ -4274,15 +4319,39 @@ const ssoWechat = ({ strapi }) => {
         populate: { user: true }
       });
       if (binding) {
-        try {
-          const subscribe = await this.querySubscribe(openid, "wechat", appType);
-          await strapi.db.query(BINDING_UID$4).update({
-            where: { id: binding.id },
-            data: { subscribe, subscribe_at: /* @__PURE__ */ new Date(), subscribe_check_at: /* @__PURE__ */ new Date() }
-          });
-        } catch {
+        if (!binding.user) {
+          await strapi.db.query(BINDING_UID$4).delete({ where: { id: binding.id } });
+        } else {
+          const hasWxNick = !!userInfo?.nickname;
+          const hasWxAvatar = !!userInfo?.headimgurl;
+          const backingUpdates = {};
+          if (hasWxNick) backingUpdates.provider_nickname = userInfo.nickname;
+          if (hasWxAvatar) backingUpdates.provider_avatar = userInfo.headimgurl;
+          if (Object.keys(backingUpdates).length) {
+            await strapi.db.query(BINDING_UID$4).update({ where: { id: binding.id }, data: backingUpdates });
+          }
+          if (hasWxNick && !binding.user.nickname) {
+            await strapi.db.query(USER_UID$2).update({
+              where: { id: binding.user.id },
+              data: { nickname: userInfo.nickname }
+            });
+          }
+          if (hasWxAvatar && !binding.user.avatar_url) {
+            await strapi.db.query(USER_UID$2).update({
+              where: { id: binding.user.id },
+              data: { avatar_url: userInfo.headimgurl }
+            });
+          }
+          try {
+            const subscribe = await this.querySubscribe(openid, "wechat", appType);
+            await strapi.db.query(BINDING_UID$4).update({
+              where: { id: binding.id },
+              data: { subscribe, subscribe_at: /* @__PURE__ */ new Date(), subscribe_check_at: /* @__PURE__ */ new Date() }
+            });
+          } catch {
+          }
+          return { userId: binding.user.id, isNew: false };
         }
-        return { userId: binding.user.id, isNew: false };
       }
       const rawNickname = (userInfo?.nickname || "wx_user").replace(/[^\w\u4e00-\u9fa5]/g, "").substring(0, 12) || "wx_user";
       const shortId = v4().replace(/-/g, "").substring(0, 8);
@@ -4408,7 +4477,11 @@ const ssoAlipay = ({ strapi }) => {
         populate: { user: true }
       });
       if (binding) {
-        return { userId: binding.user.id, isNew: false };
+        if (!binding.user) {
+          await strapi.db.query(BINDING_UID$3).delete({ where: { id: binding.id } });
+        } else {
+          return { userId: binding.user.id, isNew: false };
+        }
       }
       let userInfo = {};
       try {

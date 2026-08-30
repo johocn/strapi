@@ -38,5 +38,7 @@ declare const _default: ({ strapi }: {
     }): Promise<any[]>;
     findOneWithBindings(id: number): Promise<any>;
     updateAdmin(id: number, body: any): Promise<any>;
+    /** 自助修改本人昵称（C 端个人中心用，白名单仅昵称） */
+    updateNickname(userId: number, nickname: string): Promise<any>;
 };
 export default _default;

@@ -32,6 +32,7 @@ declare const _default: {
         bind(ctx: any): Promise<void>;
         unbind(ctx: any): Promise<void>;
         changePassword(ctx: any): Promise<void>;
+        updateProfile(ctx: any): Promise<void>;
     };
     "channel-controller": ({ strapi }: {
         strapi: import('@strapi/types/dist/core').Strapi;

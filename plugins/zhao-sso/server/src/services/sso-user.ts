@@ -173,5 +173,13 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     const user = await strapi.db.query(USER_UID).update({ where: { id }, data });
     return sanitize(user);
   },
+
+  /** 自助修改本人昵称（C 端个人中心用，白名单仅昵称） */
+  async updateNickname(userId: number, nickname: string) {
+    const name = String(nickname || "").trim().substring(0, 50);
+    if (!name) throwErr("SSO_NICKNAME_001", 400, "昵称不能为空");
+    await strapi.db.query(USER_UID).update({ where: { id: userId }, data: { nickname: name } });
+    return this.findById(userId);
+  },
   };
 };

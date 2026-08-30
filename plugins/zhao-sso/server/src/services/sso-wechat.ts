@@ -194,6 +194,27 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       if (!binding.user) {
         await strapi.db.query(BINDING_UID).delete({ where: { id: binding.id } });
       } else {
+        // 同步最新微信资料：绑定表始终更新为最新；sso_user 仅回填缺昵称/头像（不覆盖用户手动设置过的昵称）
+        const hasWxNick = !!userInfo?.nickname;
+        const hasWxAvatar = !!userInfo?.headimgurl;
+        const backingUpdates: Record<string, any> = {};
+        if (hasWxNick) backingUpdates.provider_nickname = userInfo.nickname;
+        if (hasWxAvatar) backingUpdates.provider_avatar = userInfo.headimgurl;
+        if (Object.keys(backingUpdates).length) {
+          await strapi.db.query(BINDING_UID).update({ where: { id: binding.id }, data: backingUpdates });
+        }
+        if (hasWxNick && !binding.user.nickname) {
+          await strapi.db.query(USER_UID).update({
+            where: { id: binding.user.id },
+            data: { nickname: userInfo.nickname },
+          });
+        }
+        if (hasWxAvatar && !binding.user.avatar_url) {
+          await strapi.db.query(USER_UID).update({
+            where: { id: binding.user.id },
+            data: { avatar_url: userInfo.headimgurl },
+          });
+        }
         // 补充关注状态（非关键路径，失败静默）
         try {
           const subscribe = await this.querySubscribe(openid, "wechat", appType);

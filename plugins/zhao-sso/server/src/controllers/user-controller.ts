@@ -119,4 +119,32 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       ctx.status = (e as any).status || 400; ctx.body = { error: e.message };
     }
   },
+
+  /** 自助修改本人昵称（个人中心入口） */
+  async updateProfile(ctx: any) {
+    try {
+      const ssoUser = ctx.state.ssoUser;
+      if (!ssoUser) {
+        ctx.status = 401;
+        ctx.body = { error: "未认证" };
+        return;
+      }
+
+      const body = ctx.request.body?.data || ctx.request.body;
+      const nickname = typeof body.nickname === "string" ? body.nickname.trim() : "";
+      if (!nickname) { ctx.status = 400; ctx.body = { error: "昵称不能为空" }; return; }
+
+      const userService = strapi.plugin("zhao-sso").service("sso-user");
+      const user = await userService.findByUuid(ssoUser.sub);
+      if (!user) {
+        ctx.status = 404;
+        ctx.body = { error: "用户不存在" };
+        return;
+      }
+
+      ctx.body = await userService.updateNickname(user.id, nickname);
+    } catch (e: any) {
+      ctx.status = (e as any).status || 400; ctx.body = { error: e.message };
+    }
+  },
 });

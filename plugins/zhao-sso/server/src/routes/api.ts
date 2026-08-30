@@ -183,6 +183,15 @@ export default () => ({
       },
     },
     {
+      method: "POST",
+      path: "/v1/user/profile",
+      handler: "user-controller.updateProfile",
+      config: {
+        auth: false,
+        policies: ["plugin::zhao-sso.sso-authenticated"],
+      },
+    },
+    {
       method: "GET",
       path: "/v1/recommend",
       handler: "recommend-controller.my",

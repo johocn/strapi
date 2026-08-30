@@ -48,6 +48,7 @@ declare const _default: {
         }): Promise<any[]>;
         findOneWithBindings(id: number): Promise<any>;
         updateAdmin(id: number, body: any): Promise<any>;
+        updateNickname(userId: number, nickname: string): Promise<any>;
     };
     "sso-login-log": ({ strapi }: {
         strapi: import('@strapi/types/dist/core').Strapi;
