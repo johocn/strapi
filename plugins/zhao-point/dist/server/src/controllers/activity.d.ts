@@ -5,6 +5,7 @@ declare const _default: ({ strapi }: {
     list(ctx: any): Promise<void>;
     categories(ctx: any): Promise<void>;
     detail(ctx: any): Promise<void>;
+    myInvitation(ctx: any): Promise<void>;
     signup(ctx: any): Promise<void>;
     questionnaire(ctx: any): Promise<void>;
     contact(ctx: any): Promise<void>;

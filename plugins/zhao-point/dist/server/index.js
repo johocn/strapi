@@ -57,6 +57,7 @@ const config$1 = {
       invite_purchase: { points: 200, limitPerDay: 0, isOneTime: false, description: "邀请好友消费", taskGroup: "social", extraConfig: {} },
       follow_official_account: { points: 50, limitPerDay: 0, isOneTime: true, description: "关注公众号", taskGroup: "social", extraConfig: {} },
       join_community: { points: 20, limitPerDay: 0, isOneTime: true, description: "加入社群", taskGroup: "social", extraConfig: {} },
+      activity_share: { points: 5, limitPerDay: 4, isOneTime: false, description: "分享活动", taskGroup: "social", extraConfig: { intervalMinutes: 30 } },
       // 用户类 (taskGroup: onetime)
       new_user_reward: { points: 100, limitPerDay: 0, isOneTime: true, description: "新用户注册奖励", taskGroup: "onetime", extraConfig: {} },
       complete_profile: { points: 20, limitPerDay: 0, isOneTime: true, description: "完善个人资料", taskGroup: "onetime", extraConfig: {} },
@@ -605,6 +606,33 @@ const point$1 = ({ strapi: strapi2 }) => {
         ctx.body = wrap$6(record2);
       } catch (e) {
         const status = e.code === "POINT_001" || e.code === "POINT_004" || e.code === "POINT_011" || e.code === "POINT_019" ? 400 : 500;
+        ctx.status = status;
+        ctx.body = { error: e.message, code: e.code };
+      }
+    },
+    // 用户侧领取分享积分（白名单 action；积分值取规则，不信任客户端）
+    async earnShare(ctx) {
+      try {
+        const userId = getUserId(ctx);
+        const body = ctx.request.body?.data || ctx.request.body || {};
+        const { action } = body;
+        if (action !== "activity_share") {
+          ctx.status = 400;
+          ctx.body = { error: "不允许领取该类型积分", code: "POINT_021" };
+          return;
+        }
+        const record2 = await strapi2.plugin("zhao-point").service("point").earnPoints({
+          userId,
+          action,
+          source: "activity",
+          method: "用户分享领取",
+          remark: "分享活动",
+          channelId: body.channelId,
+          userChannelId: body.channelId
+        });
+        ctx.body = wrap$6(record2);
+      } catch (e) {
+        const status = ["POINT_001", "POINT_004", "POINT_011", "POINT_019", "POINT_020"].includes(e.code) ? 400 : 500;
         ctx.status = status;
         ctx.body = { error: e.message, code: e.code };
       }
@@ -3274,6 +3302,7 @@ async function resolveUserRoles(strapi2, userId) {
 const ACTIVITY_UID$7 = "plugin::zhao-point.activity";
 const SIGNS_UID$3 = "plugin::zhao-point.activity-signup";
 const ATT_UID$1 = "plugin::zhao-point.activity-attendance";
+const REWARD_UID$1 = "plugin::zhao-point.activity-referral-reward";
 const UP_USER_UID = "plugin::users-permissions.user";
 const wrap$5 = (data, meta = {}) => ({ data, meta });
 const wrapList$1 = (result) => {
@@ -3436,7 +3465,39 @@ const activity = ({ strapi: strapi2 }) => {
         ctx.body = { error: e.message };
       }
     },
-    // ===== 注册用户 =====
+    // GET /v1/my/invitation  我的裂变：当前用户的邀请人数 / 累计积分 / 明细（便于 C 端展示"一次邀请 X 积分 × 次数"）
+    async myInvitation(ctx) {
+      try {
+        const userId = await getUserId(ctx);
+        const rows = await strapi2.db.query(REWARD_UID$1).findMany({
+          where: { inviter: userId },
+          populate: { activity: true },
+          orderBy: { issuedAt: "desc" }
+        });
+        const details = rows.map((r) => ({
+          activity: r.activity?.title ?? `#${r.activity}`,
+          points: r.points ?? 0,
+          issuedAt: r.issuedAt
+        }));
+        const byActivity = /* @__PURE__ */ new Map();
+        for (const r of rows) {
+          const id = r.activity?.id ?? 0;
+          const cur = byActivity.get(id) || { activity: r.activity?.title ?? `#${r.activity}`, inviteeCount: 0, totalPoints: 0 };
+          cur.inviteeCount++;
+          cur.totalPoints += r.points ?? 0;
+          byActivity.set(id, cur);
+        }
+        ctx.body = wrap$5({
+          inviteeCount: rows.length,
+          totalPoints: details.reduce((a, d) => a + d.points, 0),
+          activities: Array.from(byActivity.values()),
+          details
+        });
+      } catch (e) {
+        ctx.status = e.status || 400;
+        ctx.body = { error: e.message };
+      }
+    },
     // POST /my/activity/signup
     async signup(ctx) {
       try {
@@ -35388,6 +35449,16 @@ const point = ({ strapi: strapi2 }) => {
     });
     return !!existing;
   };
+  const cooldownRemainingMs = async (userId, action, intervalMinutes) => {
+    const last = await strapi2.db.query(RECORD_UID$1).findOne({
+      where: { user: userId, action, type: "increase" },
+      orderBy: { createdAt: "desc" },
+      select: ["createdAt"]
+    });
+    if (!last?.createdAt) return 0;
+    const elapsed = Date.now() - new Date(last.createdAt).getTime();
+    return Math.max(0, intervalMinutes * 60 * 1e3 - elapsed);
+  };
   const createRecord = async (userId, action, points, currentBalance, type2, extra) => {
     if (!extra.channelId && !extra.userChannelId) {
       throwError("POINT_020", "积分记录必须归属渠道（业务渠道或用户渠道）", { action });
@@ -35440,6 +35511,14 @@ const point = ({ strapi: strapi2 }) => {
         const todayCount = await countTodayAction(userId, action);
         if (todayCount >= rule.limitPerDay) {
           throwError("POINT_004", `已达每日积分上限 (action=${action})`, { action, limit: rule.limitPerDay });
+        }
+      }
+      const interval = Number(rule.extraConfig?.intervalMinutes) || 0;
+      if (interval > 0) {
+        const remainMs = await cooldownRemainingMs(userId, action, interval);
+        if (remainMs > 0) {
+          const min = Math.ceil(remainMs / 6e4);
+          throwError("POINT_020", `请${Math.max(1, min)}分钟后重试`, { action, intervalMinutes: interval });
         }
       }
       const balance = await getLatestBalance(userId, trx);
@@ -38030,6 +38109,7 @@ const contentApi = () => ({
     userRoute("GET", "/my/point/verify/log", "point.getMyVerifications"),
     userRoute("GET", "/my/point/eligible-actions", "point.getEligibleActions"),
     userRoute("POST", "/my/point/sign-in", "point.signIn"),
+    userRoute("POST", "/my/point/earn/share", "point.earnShare"),
     userRoute("GET", "/my/point/sign-in/status", "point.getSignInStatus"),
     userRoute("GET", "/my/point/tasks", "point.getTasks"),
     // ===== 管理员路由（需渠道作用域） =====
@@ -38109,6 +38189,7 @@ const contentApi = () => ({
     userRoute("POST", "/my/activity/:documentId/cancel", "activity.cancel"),
     userRoute("POST", "/my/activity/:documentId/checkin", "activity.checkin"),
     userRoute("GET", "/my/activities", "activity.mySignups"),
+    userRoute("GET", "/my/invitation", "activity.myInvitation"),
     userRoute("POST", "/my/activity/:documentId/message", "activity.sendMessage"),
     userRoute("GET", "/my/activity/:documentId/messages", "activity.listMessages"),
     userRoute("POST", "/activities/:documentId/review", "activity.review"),

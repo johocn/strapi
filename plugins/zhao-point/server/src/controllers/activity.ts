@@ -8,6 +8,7 @@ import { resolveUserRoles } from "../../../../zhao-course/server/src/utils/role-
 const ACTIVITY_UID = "plugin::zhao-point.activity";
 const SIGNS_UID = "plugin::zhao-point.activity-signup";
 const ATT_UID = "plugin::zhao-point.activity-attendance";
+const REWARD_UID = "plugin::zhao-point.activity-referral-reward";
 const UP_USER_UID = "plugin::users-permissions.user";
 
 const wrap = (data: any, meta: any = {}) => ({ data, meta });
@@ -190,7 +191,40 @@ function normalizePromoModules(promoModules: any): any[] | undefined {
     }
   },
 
-  // ===== 注册用户 =====
+  // GET /v1/my/invitation  我的裂变：当前用户的邀请人数 / 累计积分 / 明细（便于 C 端展示"一次邀请 X 积分 × 次数"）
+  async myInvitation(ctx: any) {
+    try {
+      const userId = await getUserId(ctx);
+      const rows = await strapi.db.query(REWARD_UID).findMany({
+        where: { inviter: userId },
+        populate: { activity: true },
+        orderBy: { issuedAt: "desc" },
+      });
+      const details = rows.map((r: any) => ({
+        activity: r.activity?.title ?? `#${r.activity}`,
+        points: r.points ?? 0,
+        issuedAt: r.issuedAt,
+      }));
+      // 按活动聚合
+      const byActivity = new Map<number, any>();
+      for (const r of rows) {
+        const id = r.activity?.id ?? 0;
+        const cur = byActivity.get(id) || { activity: r.activity?.title ?? `#${r.activity}`, inviteeCount: 0, totalPoints: 0 };
+        cur.inviteeCount++;
+        cur.totalPoints += r.points ?? 0;
+        byActivity.set(id, cur);
+      }
+      ctx.body = wrap({
+        inviteeCount: rows.length,
+        totalPoints: details.reduce((a: number, d: any) => a + d.points, 0),
+        activities: Array.from(byActivity.values()),
+        details,
+      });
+    } catch (e: any) {
+      ctx.status = (e as any).status || 400;
+      ctx.body = { error: e.message };
+    }
+  },
 
   // POST /my/activity/signup
   async signup(ctx: any) {

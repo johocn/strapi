@@ -3,6 +3,7 @@ declare const _default: ({ strapi }: {
     strapi: Core.Strapi;
 }) => {
     earn(ctx: any): Promise<void>;
+    earnShare(ctx: any): Promise<void>;
     deduct(ctx: any): Promise<void>;
     balance(ctx: any): Promise<void>;
     records(ctx: any): Promise<void>;

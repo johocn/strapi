@@ -206,6 +206,16 @@ declare const _default: {
                     taskGroup: string;
                     extraConfig: {};
                 };
+                activity_share: {
+                    points: number;
+                    limitPerDay: number;
+                    isOneTime: boolean;
+                    description: string;
+                    taskGroup: string;
+                    extraConfig: {
+                        intervalMinutes: number;
+                    };
+                };
                 new_user_reward: {
                     points: number;
                     limitPerDay: number;
@@ -413,6 +423,7 @@ declare const _default: {
             strapi: import('@strapi/types/dist/core').Strapi;
         }) => {
             earn(ctx: any): Promise<void>;
+            earnShare(ctx: any): Promise<void>;
             deduct(ctx: any): Promise<void>;
             balance(ctx: any): Promise<void>;
             records(ctx: any): Promise<void>;
@@ -488,6 +499,7 @@ declare const _default: {
             list(ctx: any): Promise<void>;
             categories(ctx: any): Promise<void>;
             detail(ctx: any): Promise<void>;
+            myInvitation(ctx: any): Promise<void>;
             signup(ctx: any): Promise<void>;
             questionnaire(ctx: any): Promise<void>;
             contact(ctx: any): Promise<void>;
@@ -2447,6 +2459,16 @@ declare const _default: {
                         description: string;
                         taskGroup: string;
                         extraConfig: {};
+                    };
+                    activity_share: {
+                        points: number;
+                        limitPerDay: number;
+                        isOneTime: boolean;
+                        description: string;
+                        taskGroup: string;
+                        extraConfig: {
+                            intervalMinutes: number;
+                        };
                     };
                     new_user_reward: {
                         points: number;

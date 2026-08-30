@@ -196,6 +196,16 @@ declare const _default: {
                 taskGroup: string;
                 extraConfig: {};
             };
+            activity_share: {
+                points: number;
+                limitPerDay: number;
+                isOneTime: boolean;
+                description: string;
+                taskGroup: string;
+                extraConfig: {
+                    intervalMinutes: number;
+                };
+            };
             new_user_reward: {
                 points: number;
                 limitPerDay: number;
