@@ -809,15 +809,17 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     const rewards = rewardList.map((r: any) => {
       const base = !!r?.id && channelDone && isRewardUnlocked(r, loginAuth, subscribed, conditions);
       const condition = resolveCondition(r);
+      // points 仅用于前端弹层展示，非发分依据
+      const points = r?.type === "points" ? Number(r?.amount) || 0 : 0;
       const poolable = r?.mode === "multi" && condition !== "none";
-      if (!base || !poolable) return { id: r.id, name: r.name, type: r.type, mode: r.mode, condition, unlocked: base };
+      if (!base || !poolable) return { id: r.id, name: r.name, type: r.type, mode: r.mode, condition, points, unlocked: base };
       let unlocked: boolean;
       if (selectMode === "all") unlocked = true;
       else if (selectMode === "one") unlocked = poolUsed < 1;
       else if (selectMode === "any") unlocked = poolUsed < selectN;
       else unlocked = true;
       if (unlocked) poolUsed += 1;
-      return { id: r.id, name: r.name, type: r.type, mode: r.mode, condition, unlocked };
+      return { id: r.id, name: r.name, type: r.type, mode: r.mode, condition, points, unlocked };
     });
     return {
       ok: true,
