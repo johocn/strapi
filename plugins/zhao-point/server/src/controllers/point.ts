@@ -1,6 +1,7 @@
 import type { Core } from "@strapi/strapi";
 
 const wrap = (data: any, meta: any = {}) => ({ data, meta });
+const ACTIVITY_UID = "plugin::zhao-point.activity";
 const wrapList = (result: any) => {
   if (result && typeof result === "object" && !Array.isArray(result) && "results" in result) {
     return { data: result.results, meta: { pagination: result.pagination || {} } };
@@ -68,9 +69,23 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         ctx.body = { error: "不允许领取该类型积分", code: "POINT_021" };
         return;
       }
+      // 转发积分复用现有邀请积分机制（shareRewardPoints）定价：传 activityId 则按该活动值发分；未配回退规则分
+      let points: number | undefined;
+      let remark = "分享活动";
+      if (body.activityId != null) {
+        const idNum = Number(body.activityId);
+        const act = await strapi.db.query(ACTIVITY_UID).findOne({
+          where: Number.isNaN(idNum) ? { documentId: String(body.activityId) } : { id: idNum },
+          select: ["documentId", "title", "shareRewardPoints"],
+        });
+        if (act?.shareRewardPoints) {
+          points = Number(act.shareRewardPoints);
+          remark = `分享活动:${act.title}`;
+        }
+      }
       const record = await strapi.plugin("zhao-point").service("point").earnPoints({
         userId, action, source: "activity", method: "用户分享领取",
-        remark: "分享活动", channelId: body.channelId, userChannelId: body.channelId,
+        remark, points, channelId: body.channelId, userChannelId: body.channelId,
       });
       ctx.body = wrap(record);
     } catch (e: any) {

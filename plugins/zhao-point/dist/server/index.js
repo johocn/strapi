@@ -449,7 +449,7 @@ const venueLifecycles = {
     await run$1(event);
   }
 };
-const ACTIVITY_UID$9 = "plugin::zhao-point.activity";
+const ACTIVITY_UID$a = "plugin::zhao-point.activity";
 const CATEGORY_GROUP = "activity-category";
 const gStrapi$1 = () => globalThis?.strapi;
 function tagIdOf(rel) {
@@ -463,7 +463,7 @@ async function syncActivityIndex(documentId) {
   const tagSvc = strapi2?.plugin("zhao-tag")?.service("tag");
   const indexSvc = strapi2?.plugin("zhao-tag")?.service("tag-index");
   if (!tagSvc || !indexSvc) return;
-  const act = await strapi2.documents(ACTIVITY_UID$9).findOne({
+  const act = await strapi2.documents(ACTIVITY_UID$a).findOne({
     documentId,
     populate: {
       lecturer: { populate: ["tag"] },
@@ -584,6 +584,7 @@ const contentTypes = {
   venue: { schema: venue, lifecycles: venueLifecycles }
 };
 const wrap$6 = (data, meta = {}) => ({ data, meta });
+const ACTIVITY_UID$9 = "plugin::zhao-point.activity";
 const wrapList$2 = (result) => {
   if (result && typeof result === "object" && !Array.isArray(result) && "results" in result) {
     return { data: result.results, meta: { pagination: result.pagination || {} } };
@@ -652,12 +653,26 @@ const point$1 = ({ strapi: strapi2 }) => {
           ctx.body = { error: "不允许领取该类型积分", code: "POINT_021" };
           return;
         }
+        let points;
+        let remark = "分享活动";
+        if (body.activityId != null) {
+          const idNum = Number(body.activityId);
+          const act = await strapi2.db.query(ACTIVITY_UID$9).findOne({
+            where: Number.isNaN(idNum) ? { documentId: String(body.activityId) } : { id: idNum },
+            select: ["documentId", "title", "shareRewardPoints"]
+          });
+          if (act?.shareRewardPoints) {
+            points = Number(act.shareRewardPoints);
+            remark = `分享活动:${act.title}`;
+          }
+        }
         const record2 = await strapi2.plugin("zhao-point").service("point").earnPoints({
           userId,
           action,
           source: "activity",
           method: "用户分享领取",
-          remark: "分享活动",
+          remark,
+          points,
           channelId: body.channelId,
           userChannelId: body.channelId
         });
