@@ -1602,6 +1602,9 @@ declare const _default: {
                     questionnaire: {
                         type: string;
                     };
+                    preQuestionnaire: {
+                        type: string;
+                    };
                     remindLeadMinutes: {
                         type: string;
                         default: number;
@@ -1730,6 +1733,9 @@ declare const _default: {
                         type: string;
                     };
                     questionnaireData: {
+                        type: string;
+                    };
+                    preQuestionnaireData: {
                         type: string;
                     };
                 };
@@ -2886,11 +2892,11 @@ declare const _default: {
         activity: ({ strapi }: {
             strapi: import('@strapi/types/dist/core').Strapi;
         }) => {
-            signup({ userId, activityId, formData, questionnaireData, chosenRewards }: {
+            signup({ userId, activityId, formData, preQuestionnaireData, chosenRewards }: {
                 userId: number;
                 activityId: string;
                 formData?: any;
-                questionnaireData?: any;
+                preQuestionnaireData?: any;
                 chosenRewards?: string[];
             }): Promise<{
                 ok: boolean;
@@ -2941,14 +2947,23 @@ declare const _default: {
                 waitlisted?: undefined;
                 position?: undefined;
             }>;
-            fillQuestionnaire({ userId, signupId, answers }: {
+            fillQuestionnaire({ userId, signupId, answers, type }: {
                 userId: number;
                 signupId: number;
                 answers?: any;
+                type?: "pre" | "post";
             }): Promise<{
+                ok: boolean;
+                type: string;
+                postDone: boolean;
+                unlockInfo?: undefined;
+                newlyUnlocked?: undefined;
+            } | {
                 ok: boolean;
                 unlockInfo: any;
                 newlyUnlocked: any[];
+                type?: undefined;
+                postDone?: undefined;
             }>;
             fillContact({ userId, signupId, formData }: {
                 userId: number;
@@ -2993,6 +3008,8 @@ declare const _default: {
                 surveyDone: boolean;
                 formData: any;
                 questionnaireData: any;
+                preQuestionnaireData: any;
+                postSurveyAllowed: boolean;
                 pointsPreview: {
                     base: number;
                     auth: number;
@@ -3018,6 +3035,8 @@ declare const _default: {
                 surveyDone: boolean;
                 formData: any;
                 questionnaireData: any;
+                preQuestionnaireData: any;
+                postSurveyAllowed: boolean;
                 rewards: any;
                 pointsPreview: {
                     base: number;
@@ -3028,11 +3047,11 @@ declare const _default: {
                     total: number;
                 };
             }>;
-            unlockCheck({ userId, activityDocumentId, formData, questionnaireData }: {
+            unlockCheck({ userId, activityDocumentId, formData, preQuestionnaireData }: {
                 userId: number;
                 activityDocumentId: string;
                 formData?: any;
-                questionnaireData?: any;
+                preQuestionnaireData?: any;
             }): Promise<{
                 ok: boolean;
                 hasReward: boolean;
@@ -3041,6 +3060,7 @@ declare const _default: {
                 conditions: {
                     contact: boolean;
                     survey: boolean;
+                    post_survey: boolean;
                 };
                 pointsPreview: {
                     base: number;
@@ -3067,6 +3087,7 @@ declare const _default: {
                 conditions: {
                     contact: boolean;
                     survey: boolean;
+                    post_survey: boolean;
                 };
                 channelDone: boolean;
                 selectMode: any;

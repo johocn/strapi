@@ -9,6 +9,8 @@ const VISIT_LOG_UID = "plugin::zhao-website.visit-log";
 const ARTICLE_UID = "plugin::zhao-website.article";
 const SIGNS_UID = "plugin::zhao-point.activity-signup";
 const REDEMPTION_UID = "plugin::zhao-point.point-redemption";
+const BINDING_UID = "plugin::zhao-sso.sso-third-party-binding";
+const THIRD_PARTY_ACCOUNT_UID = "plugin::zhao-third.third-party-account";
 
 const clamp = (n: number) => Math.max(0, Math.min(100, Math.round(n)));
 
@@ -24,8 +26,30 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     if (sso.username) or.push({ username: sso.username });
     if (sso.email) or.push({ email: String(sso.email).toLowerCase() });
     if (sso.mobile) or.push({ mobile: sso.mobile });
-    if (!or.length) return null;
-    return strapi.db.query(UP_USER_UID).findOne({ where: { $or: or } });
+    if (or.length) {
+      const hit = await strapi.db.query(UP_USER_UID).findOne({ where: { $or: or } });
+      if (hit) return hit;
+    }
+    // 兜底：SSO 生成的 username（wx_昵称_uuid）与三方登录 username 不一致，
+    // 同一微信走 SSO/三方两条路径易被拆成多个 up_user。
+    // 用微信 openid/union_id 反查三方登录账号，命中同一人即返回其 up_user。
+    const bindings = await strapi.db.query(BINDING_UID).findMany({
+      where: { user: ssoUserId },
+      select: ["provider_user_id", "provider_union_id"],
+    });
+    for (const b of bindings) {
+      const conds = [
+        b.provider_user_id ? { openId: b.provider_user_id } : null,
+        b.provider_union_id ? { unionId: b.provider_union_id } : null,
+      ].filter(Boolean);
+      if (!conds.length) continue;
+      const acct = await strapi.db.query(THIRD_PARTY_ACCOUNT_UID).findOne({
+        where: { $or: conds },
+        populate: { user: true },
+      });
+      if (acct?.user?.id) return acct.user;
+    }
+    return null;
   },
 
   /** 实时聚合六维画像（不落库） */

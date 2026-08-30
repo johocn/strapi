@@ -190,15 +190,20 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     });
 
     if (binding) {
-      // 补充关注状态（非关键路径，失败静默）
-      try {
-        const subscribe = await this.querySubscribe(openid, "wechat", appType);
-        await strapi.db.query(BINDING_UID).update({
-          where: { id: binding.id },
-          data: { subscribe, subscribe_at: new Date(), subscribe_check_at: new Date() },
-        });
-      } catch { /* ignore */ }
-      return { userId: binding.user.id, isNew: false };
+      // 孤儿绑定（关联的 sso_user 已被清理/删除）：删除绑定，走新用户注册流程，避免空引用
+      if (!binding.user) {
+        await strapi.db.query(BINDING_UID).delete({ where: { id: binding.id } });
+      } else {
+        // 补充关注状态（非关键路径，失败静默）
+        try {
+          const subscribe = await this.querySubscribe(openid, "wechat", appType);
+          await strapi.db.query(BINDING_UID).update({
+            where: { id: binding.id },
+            data: { subscribe, subscribe_at: new Date(), subscribe_check_at: new Date() },
+          });
+        } catch { /* ignore */ }
+        return { userId: binding.user.id, isNew: false };
+      }
     }
 
     // 生成用户名：wx_昵称前12位_8位uuid短码，保证唯一性且可读

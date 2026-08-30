@@ -1007,6 +1007,9 @@ declare const _default: {
                 questionnaire: {
                     type: string;
                 };
+                preQuestionnaire: {
+                    type: string;
+                };
                 remindLeadMinutes: {
                     type: string;
                     default: number;
@@ -1135,6 +1138,9 @@ declare const _default: {
                     type: string;
                 };
                 questionnaireData: {
+                    type: string;
+                };
+                preQuestionnaireData: {
                     type: string;
                 };
             };

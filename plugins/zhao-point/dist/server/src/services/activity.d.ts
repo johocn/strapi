@@ -29,11 +29,11 @@ export declare function computePointsPreview({ loginAuth, subscribed, conditions
 declare const _default: ({ strapi }: {
     strapi: Core.Strapi;
 }) => {
-    signup({ userId, activityId, formData, questionnaireData, chosenRewards }: {
+    signup({ userId, activityId, formData, preQuestionnaireData, chosenRewards }: {
         userId: number;
         activityId: string;
         formData?: any;
-        questionnaireData?: any;
+        preQuestionnaireData?: any;
         chosenRewards?: string[];
     }): Promise<{
         ok: boolean;
@@ -84,15 +84,24 @@ declare const _default: ({ strapi }: {
         waitlisted?: undefined;
         position?: undefined;
     }>;
-    /** 补填问卷：更新 questionnaireData → 重算解锁 → 幂等发放新增解锁的 multi 权益 */
-    fillQuestionnaire({ userId, signupId, answers }: {
+    /** 补填问卷：type=pre(活动前，报名后即可填，驱动 survey 解锁/积分) | post(活动后，需已签到且活动已结束，仅记录反馈) */
+    fillQuestionnaire({ userId, signupId, answers, type }: {
         userId: number;
         signupId: number;
         answers?: any;
+        type?: "pre" | "post";
     }): Promise<{
+        ok: boolean;
+        type: string;
+        postDone: boolean;
+        unlockInfo?: undefined;
+        newlyUnlocked?: undefined;
+    } | {
         ok: boolean;
         unlockInfo: any;
         newlyUnlocked: any[];
+        type?: undefined;
+        postDone?: undefined;
     }>;
     /** 补填联系方式：更新 signup.formData → 重算解锁 → 本轮新达成联系方式补发 +20 */
     fillContact({ userId, signupId, formData }: {
@@ -141,6 +150,8 @@ declare const _default: ({ strapi }: {
         surveyDone: boolean;
         formData: any;
         questionnaireData: any;
+        preQuestionnaireData: any;
+        postSurveyAllowed: boolean;
         pointsPreview: {
             base: number;
             auth: number;
@@ -166,6 +177,8 @@ declare const _default: ({ strapi }: {
         surveyDone: boolean;
         formData: any;
         questionnaireData: any;
+        preQuestionnaireData: any;
+        postSurveyAllowed: boolean;
         rewards: any;
         pointsPreview: {
             base: number;
@@ -177,11 +190,11 @@ declare const _default: ({ strapi }: {
         };
     }>;
     /** 解锁状态探测：C 端报名前或关注/授权后调用，返回通道/条件/可领权益（不入库） */
-    unlockCheck({ userId, activityDocumentId, formData, questionnaireData }: {
+    unlockCheck({ userId, activityDocumentId, formData, preQuestionnaireData }: {
         userId: number;
         activityDocumentId: string;
         formData?: any;
-        questionnaireData?: any;
+        preQuestionnaireData?: any;
     }): Promise<{
         ok: boolean;
         hasReward: boolean;
@@ -190,6 +203,7 @@ declare const _default: ({ strapi }: {
         conditions: {
             contact: boolean;
             survey: boolean;
+            post_survey: boolean;
         };
         pointsPreview: {
             base: number;
@@ -216,6 +230,7 @@ declare const _default: ({ strapi }: {
         conditions: {
             contact: boolean;
             survey: boolean;
+            post_survey: boolean;
         };
         channelDone: boolean;
         selectMode: any;

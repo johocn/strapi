@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import type { Core } from "@strapi/strapi";
 import { FormValidationError } from "../services/form";
 import { PROMO_MODULE_TYPES, PROMO_TEMPLATES } from "../services/activity";
@@ -7,6 +8,7 @@ import { resolveUserRoles } from "../../../../zhao-course/server/src/utils/role-
 const ACTIVITY_UID = "plugin::zhao-point.activity";
 const SIGNS_UID = "plugin::zhao-point.activity-signup";
 const ATT_UID = "plugin::zhao-point.activity-attendance";
+const UP_USER_UID = "plugin::users-permissions.user";
 
 const wrap = (data: any, meta: any = {}) => ({ data, meta });
 const wrapList = (result: any) => {
@@ -26,16 +28,39 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   // 解析当前请求的真实 up_user id。
   // SSO 登录时 ctx.state.user 是 sso_user（含 uuid），需先桥接为业务 up_user 再用作落库
   // （activity_signups.user 关联 plugin::users-permissions.user）。本地登录则直接用 up_user。
-  // 解析不到 up_user 时抛 400，避免写入错误 id / 外键失败。
+  // 桥接失败时自动创建业务账号，再返回 up_user id 用于落库。
   const getUserId = async (ctx: any) => {
     const u: any = ctx.state.user;
     if (u?.uuid) {
       const ssoProfile = strapi.plugin("zhao-sso")?.service("sso-profile");
-      const up = ssoProfile && (await ssoProfile.resolveUpUserForSsoUser(u.id));
+      let up = ssoProfile && (await ssoProfile.resolveUpUserForSsoUser(u.id));
       if (!up?.id) {
-        const e: any = new Error("未绑定业务账号，请先完善资料");
-        e.status = 400;
-        throw e;
+        // 桥接失败时自动创建业务账号，并用 sso username 落库，
+        // 保证下次 resolveUpUserForSsoUser 可按 username 匹配回同一账号。
+        const ssoUser = await strapi.db
+          .query("plugin::zhao-sso.sso-user")
+          .findOne({ where: { id: u.id }, select: ["username", "email", "mobile"] });
+        const username = ssoUser?.username || `wx_${u.id}`;
+        up = await strapi.db.query(UP_USER_UID).create({
+          data: {
+            username,
+            email: ssoUser?.email || `${username}@autobridge.local`,
+            password: crypto.randomBytes(16).toString("hex"),
+            provider: "local",
+            confirmed: true,
+            blocked: false,
+          },
+        });
+      }
+      // SSO 桥接新建的业务账号无渠道归属，补建默认渠道；
+      // 否则后续 earnPoints 触发"积分必须归属渠道"(POINT_020) 失败被静默丢弃 → 余额始终为 0。
+      try {
+        const memberSvc = strapi.plugin("zhao-channel")?.service("channel-member");
+        if (memberSvc && typeof memberSvc.ensureDefaultChannel === "function") {
+          await memberSvc.ensureDefaultChannel(up.id, ctx.state?.siteDocumentId);
+        }
+      } catch (e: any) {
+        strapi.log.warn(`[zhao-point:activity] ensureDefaultChannel failed (user=${up.id}): ${e.message}`);
       }
       return up.id;
     }
@@ -171,8 +196,8 @@ function normalizePromoModules(promoModules: any): any[] | undefined {
   async signup(ctx: any) {
     try {
       const userId = await getUserId(ctx);
-      const { activityId, formData, questionnaireData, chosenRewards } = ctx.request.body || {};
-      const result = await activitySvc().signup({ userId, activityId, formData, questionnaireData, chosenRewards });
+      const { activityId, formData, preQuestionnaireData, chosenRewards } = ctx.request.body || {};
+      const result = await activitySvc().signup({ userId, activityId, formData, preQuestionnaireData, chosenRewards });
       if (result?.ok === false && result.reason === "already_signed_up") {
         ctx.status = 200;
         // 已报名：回传既有报名记录 signupId，前端据此渲染「领取更多权益」卡片区（v-if="signedUp && signupId"）
@@ -200,8 +225,8 @@ function normalizePromoModules(promoModules: any): any[] | undefined {
     try {
       const userId = await getUserId(ctx);
       const signupId = parseInt(ctx.params.signupId, 10);
-      const { answers } = ctx.request.body || {};
-      const result = await activitySvc().fillQuestionnaire({ userId, signupId, answers });
+      const { answers, type = "pre" } = ctx.request.body || {};
+      const result = await activitySvc().fillQuestionnaire({ userId, signupId, answers, type });
       ctx.body = wrap(result);
     } catch (e: any) {
       ctx.status = (e as any).status || 400;
@@ -275,9 +300,9 @@ function normalizePromoModules(promoModules: any): any[] | undefined {
   async unlockCheck(ctx: any) {
     try {
       const userId = await getUserId(ctx);
-      const { formData, questionnaireData } = ctx.request.body || {};
+      const { formData, preQuestionnaireData } = ctx.request.body || {};
       const result = await activitySvc().unlockCheck({
-        userId, activityDocumentId: ctx.params.documentId, formData, questionnaireData,
+        userId, activityDocumentId: ctx.params.documentId, formData, preQuestionnaireData,
       });
       ctx.body = wrap(result);
     } catch (e: any) {

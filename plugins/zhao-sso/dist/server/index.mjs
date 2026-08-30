@@ -4114,7 +4114,7 @@ const ssoAuth$1 = ({ strapi }) => {
   };
   return { login, register: register2, verifyToken, refreshToken, logout, getUserRoles, saveTokenRecord, sanitizeUser };
 };
-const BINDING_UID$3 = "plugin::zhao-sso.sso-third-party-binding";
+const BINDING_UID$4 = "plugin::zhao-sso.sso-third-party-binding";
 const USER_UID$2 = "plugin::zhao-sso.sso-user";
 const ssoWechat = ({ strapi }) => {
   const tokenCache = /* @__PURE__ */ new Map();
@@ -4269,14 +4269,14 @@ const ssoWechat = ({ strapi }) => {
         }
         userInfo = userInfoRes.data;
       }
-      const binding = await strapi.db.query(BINDING_UID$3).findOne({
+      const binding = await strapi.db.query(BINDING_UID$4).findOne({
         where: { provider: "wechat", provider_user_id: openid },
         populate: { user: true }
       });
       if (binding) {
         try {
           const subscribe = await this.querySubscribe(openid, "wechat", appType);
-          await strapi.db.query(BINDING_UID$3).update({
+          await strapi.db.query(BINDING_UID$4).update({
             where: { id: binding.id },
             data: { subscribe, subscribe_at: /* @__PURE__ */ new Date(), subscribe_check_at: /* @__PURE__ */ new Date() }
           });
@@ -4298,7 +4298,7 @@ const ssoWechat = ({ strapi }) => {
           register_channel: `sso_wechat_${appType}`
         }
       });
-      await strapi.db.query(BINDING_UID$3).create({
+      await strapi.db.query(BINDING_UID$4).create({
         data: {
           user: { id: user.id },
           provider: "wechat",
@@ -4312,7 +4312,7 @@ const ssoWechat = ({ strapi }) => {
       });
       try {
         const subscribe = await this.querySubscribe(openid, "wechat", appType);
-        await strapi.db.query(BINDING_UID$3).update({
+        await strapi.db.query(BINDING_UID$4).update({
           where: { provider_user_id: openid },
           data: { subscribe, subscribe_at: /* @__PURE__ */ new Date(), subscribe_check_at: /* @__PURE__ */ new Date() }
         });
@@ -4369,7 +4369,7 @@ const ssoWechat = ({ strapi }) => {
     }
   };
 };
-const BINDING_UID$2 = "plugin::zhao-sso.sso-third-party-binding";
+const BINDING_UID$3 = "plugin::zhao-sso.sso-third-party-binding";
 const USER_UID$1 = "plugin::zhao-sso.sso-user";
 const ssoAlipay = ({ strapi }) => {
   function throwErr(code, status, message) {
@@ -4403,7 +4403,7 @@ const ssoAlipay = ({ strapi }) => {
       const config2 = await getConfig();
       const tokenRes = await this.requestToken(config2.appId, config2.privateKey, code);
       const userId = tokenRes.user_id;
-      const binding = await strapi.db.query(BINDING_UID$2).findOne({
+      const binding = await strapi.db.query(BINDING_UID$3).findOne({
         where: { provider: "alipay", provider_user_id: userId },
         populate: { user: true }
       });
@@ -4424,7 +4424,7 @@ const ssoAlipay = ({ strapi }) => {
           login_count: 0
         }
       });
-      await strapi.db.query(BINDING_UID$2).create({
+      await strapi.db.query(BINDING_UID$3).create({
         data: {
           user: { id: user.id },
           provider: "alipay",
@@ -5034,7 +5034,7 @@ function createWechatTemplateChannel({ strapi }) {
 }
 const MSG_TEMPLATE_UID$2 = "plugin::zhao-sso.msg-template";
 const MSG_JOB_UID$2 = "plugin::zhao-sso.msg-job";
-const BINDING_UID$1 = "plugin::zhao-sso.sso-third-party-binding";
+const BINDING_UID$2 = "plugin::zhao-sso.sso-third-party-binding";
 const VERSION_UID = "plugin::zhao-sso.msg-template-version";
 const MAX_RETRY = 3;
 const RETRY_DELAY_MS = 5 * 60 * 1e3;
@@ -5082,7 +5082,7 @@ const ssoMsg = ({ strapi }) => {
   }
   async function resolveToTarget(userId, provider) {
     if (provider === "wechat") {
-      const bindings = await strapi.db.query(BINDING_UID$1).findMany({
+      const bindings = await strapi.db.query(BINDING_UID$2).findMany({
         where: { provider: "wechat" },
         orderBy: { id: "DESC" },
         limit: 100,
@@ -5287,14 +5287,14 @@ const ssoMsg = ({ strapi }) => {
     },
     /** 查询/刷新用户公众号关注状态，落库到 sso-third-party-binding.subscribe */
     async refreshSubscribe(userId, appType = "official_account") {
-      const binding = await strapi.db.query(BINDING_UID$1).findOne({
+      const binding = await strapi.db.query(BINDING_UID$2).findOne({
         where: { provider: "wechat", user: userId },
         orderBy: { id: "DESC" }
       });
       if (!binding) throwErr("SSO_MSG_BINDING_404", 404, "该用户无微信绑定，无法查询关注状态");
       const wechatSvc = strapi.plugin("zhao-sso").service("sso-wechat");
       const subscribe = await wechatSvc.querySubscribe(binding.provider_user_id, binding.provider, appType) || 0;
-      await strapi.db.query(BINDING_UID$1).update({
+      await strapi.db.query(BINDING_UID$2).update({
         where: { id: binding.id },
         data: {
           subscribe,
@@ -5419,6 +5419,8 @@ const VISIT_LOG_UID = "plugin::zhao-website.visit-log";
 const ARTICLE_UID$2 = "plugin::zhao-website.article";
 const SIGNS_UID$1 = "plugin::zhao-point.activity-signup";
 const REDEMPTION_UID = "plugin::zhao-point.point-redemption";
+const BINDING_UID$1 = "plugin::zhao-sso.sso-third-party-binding";
+const THIRD_PARTY_ACCOUNT_UID = "plugin::zhao-third.third-party-account";
 const clamp = (n) => Math.max(0, Math.min(100, Math.round(n)));
 const ssoProfile = ({ strapi }) => ({
   /** sso-user → up_user 反向桥接（按标识匹配；匹配不到返回 null） */
@@ -5432,8 +5434,27 @@ const ssoProfile = ({ strapi }) => ({
     if (sso.username) or.push({ username: sso.username });
     if (sso.email) or.push({ email: String(sso.email).toLowerCase() });
     if (sso.mobile) or.push({ mobile: sso.mobile });
-    if (!or.length) return null;
-    return strapi.db.query(UP_USER_UID).findOne({ where: { $or: or } });
+    if (or.length) {
+      const hit = await strapi.db.query(UP_USER_UID).findOne({ where: { $or: or } });
+      if (hit) return hit;
+    }
+    const bindings = await strapi.db.query(BINDING_UID$1).findMany({
+      where: { user: ssoUserId },
+      select: ["provider_user_id", "provider_union_id"]
+    });
+    for (const b of bindings) {
+      const conds = [
+        b.provider_user_id ? { openId: b.provider_user_id } : null,
+        b.provider_union_id ? { unionId: b.provider_union_id } : null
+      ].filter(Boolean);
+      if (!conds.length) continue;
+      const acct = await strapi.db.query(THIRD_PARTY_ACCOUNT_UID).findOne({
+        where: { $or: conds },
+        populate: { user: true }
+      });
+      if (acct?.user?.id) return acct.user;
+    }
+    return null;
   },
   /** 实时聚合六维画像（不落库） */
   async calculateProfile(ssoUserId) {

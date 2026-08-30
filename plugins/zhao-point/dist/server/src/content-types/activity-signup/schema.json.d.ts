@@ -18,7 +18,8 @@ declare const _default: {
     "reviewHidden": { "type": "boolean", "default": false },
     "formData": { "type": "json" },
     "unlockInfo": { "type": "json" },
-    "questionnaireData": { "type": "json" }
+    "questionnaireData": { "type": "json" },
+    "preQuestionnaireData": { "type": "json" }
   }
 };
 

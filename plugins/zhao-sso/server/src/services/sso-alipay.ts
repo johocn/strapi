@@ -50,7 +50,12 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     });
 
     if (binding) {
-      return { userId: binding.user.id, isNew: false };
+      // 孤儿绑定（关联的 sso_user 已被清理/删除）：删除绑定，走新用户注册流程，避免空引用
+      if (!binding.user) {
+        await strapi.db.query(BINDING_UID).delete({ where: { id: binding.id } });
+      } else {
+        return { userId: binding.user.id, isNew: false };
+      }
     }
 
     let userInfo: any = {};

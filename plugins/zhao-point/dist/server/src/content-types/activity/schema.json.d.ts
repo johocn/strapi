@@ -42,6 +42,7 @@ declare const _default: {
     "formConfig": { "type": "json" },
     "rewardConfig": { "type": "json" },
     "questionnaire": { "type": "json" },
+    "preQuestionnaire": { "type": "json" },
     "remindLeadMinutes": { "type": "integer", "default": 1440, "min": -1 },
     "lecturer": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.lecturer", "inversedBy": "activities" },
     "venue": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.venue", "inversedBy": "activities" },

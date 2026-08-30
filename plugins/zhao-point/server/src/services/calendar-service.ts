@@ -50,6 +50,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         ...(includeAllStatus ? {} : { status: { $in: ["signup_open", "ongoing"] } }),
         startTime: { $gte: range.start.toISOString(), $lt: range.end.toISOString() },
       },
+      populate: { venue: true },
       orderBy: { startTime: "asc" },
     });
 

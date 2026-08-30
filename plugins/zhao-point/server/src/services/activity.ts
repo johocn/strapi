@@ -131,7 +131,8 @@ async function recomputeUnlock(strapi: any, signup: any, act: any, userId: numbe
   const channelType = resolveChannel(rewardConfig)?.type;
   const conditions = {
     contact: contactFilled(act.formConfig, signup.formData),
-    survey: surveyFilled(signup.questionnaireData),
+    survey: surveyFilled(signup.preQuestionnaireData, preQuestionnaireFields(act)),
+    post_survey: postSurveyDone(act, signup.questionnaireData, signup.attendedAt),
   };
   const channelDone = channelDoneOf(channelType, conditions, loginAuth, subscribed);
   const rewardList = Array.isArray(rewardConfig?.rewards) ? rewardConfig.rewards : [];
@@ -161,9 +162,25 @@ function contactFilled(formConfig: any, formData: any): boolean {
   return fields.some((f: any) => f?.type === "phone" && f?.key && !isEmpty(data[f.key]));
 }
 
-/** survey 条件：questionnaireData 至少一个字段有值 */
-function surveyFilled(questionnaireData: any): boolean {
+/**
+ * survey 条件：问卷是否完成。
+ * fields 提供时要求全部 required===true 字段均有值（数组非空 / 字符串 trim 非空 / 其他非 undefined 非 null）；
+ * fields 未提供时退化为"至少一字段有值"，兼容历史调用点。
+ */
+function surveyFilled(questionnaireData: any, fields?: any): boolean {
   if (!questionnaireData || typeof questionnaireData !== "object" || Array.isArray(questionnaireData)) return false;
+  if (fields !== undefined && fields !== null) {
+    const fieldArr = Array.isArray(fields) ? fields : [];
+    return fieldArr
+      .filter((f: any) => f && f.required === true)
+      .every((f: any) => {
+        const v = questionnaireData[f?.key];
+        if (v === undefined || v === null) return false;
+        if (Array.isArray(v)) return v.length > 0;
+        if (typeof v === "string") return v.trim() !== "";
+        return true; // 其他类型：非 undefined 非 null 视为已填
+      });
+  }
   return Object.keys(questionnaireData).some((k) => {
     const v = questionnaireData[k];
     if (v === undefined || v === null) return false;
@@ -172,25 +189,40 @@ function surveyFilled(questionnaireData: any): boolean {
   });
 }
 
+/** 活动前问卷需求字段（兼容旧配置：仅 questionnaire 的老活动回退以 questionnaire 作为活动前问卷） */
+function preQuestionnaireFields(act: any): any {
+  return act?.preQuestionnaire?.fields || act?.questionnaire?.fields;
+}
+
+/** post_survey 达成口径：活动后问卷已启用 且 必填全答 且 已签到 且 活动已结束（与现有 postSurveyAllowed 判定一致） */
+function postSurveyDone(act: any, questionnaireData: any, attendedAt: any): boolean {
+  const q = act?.questionnaire;
+  if (!q || q.enabled !== true || !Array.isArray(q.fields)) return false;
+  if (!attendedAt) return false;
+  if (!act.endTime || Date.now() < new Date(act.endTime).getTime()) return false;
+  return surveyFilled(questionnaireData, q.fields);
+}
+
 /** channelDone：单选通道门槛是否达成（无通道视为恒真） */
 function channelDoneOf(channelType: string, conditions: Record<string, boolean>, loginAuth: boolean, subscribed: boolean): boolean {
   if (!channelType) return true;
   switch (channelType) {
     case "contact": return conditions.contact;
     case "survey": return conditions.survey;
+    case "post_survey": return !!conditions.post_survey;
     case "wechat_auth": return loginAuth;
     case "subscribe": return subscribed;
     default: return true;
   }
 }
 
-/** 奖励解锁判定：按附加条件 condition 判定；none=恒真, wechat_auth=loginAuth, subscribe=subscribed, contact/survey=对应条件已达成 */
+/** 奖励解锁判定：按附加条件 condition 判定；none=无条件(恒真), wechat_auth=loginAuth, subscribe=subscribed, contact/survey/post_survey=对应条件已达成 */
 function isRewardUnlocked(r: any, loginAuth: boolean, subscribed: boolean, conditions: Record<string, boolean>): boolean {
   if (!r || typeof r !== "object") return false;
   const c = resolveCondition(r);
   if (c === "wechat_auth") return loginAuth;
   if (c === "subscribe") return subscribed;
-  if (c === "contact" || c === "survey") return !!conditions[c];
+  if (c === "contact" || c === "survey" || c === "post_survey") return !!conditions[c];
   return true; // none / 未识别视为无条件
 }
 
@@ -429,7 +461,7 @@ export function computePointsPreview({ loginAuth, subscribed, conditions }: {
 const feeSvc = () => strapi.plugin("zhao-point").service("fee-service");
 
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
-  async signup({ userId, activityId, formData, questionnaireData, chosenRewards }: { userId: number; activityId: string; formData?: any; questionnaireData?: any; chosenRewards?: string[] }) {
+  async signup({ userId, activityId, formData, preQuestionnaireData, chosenRewards }: { userId: number; activityId: string; formData?: any; preQuestionnaireData?: any; chosenRewards?: string[] }) {
     const act = await strapi.documents(ACTIVITY_UID).findOne({ documentId: activityId, populate: { preUnlockLessons: { populate: { course: true } } } });
     if (!act) throw new Error("活动不存在");
     if (act.status !== "signup_open") throw new Error("活动未开放报名");
@@ -451,7 +483,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     // 注意：loginAuth/subscribed/conditions 在 hasReward 之外计算，供无 rewardConfig 时仍做分级积分预览与发放
     let loginAuth = false;
     let subscribed = false;
-    const conditions: Record<string, boolean> = { contact: false, survey: false };
+    const conditions: Record<string, boolean> = { contact: false, survey: false, post_survey: false };
     let channelType: string | undefined;
     let rewardList: any[] = [];
     loginAuth = await hasWechatAuth(strapi, userId);
@@ -459,12 +491,12 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     if (hasReward) {
       channelType = resolveChannel(rewardConfig)?.type;
       conditions.contact = contactFilled(formConfig, formData);
-      conditions.survey = surveyFilled(questionnaireData);
+      conditions.survey = surveyFilled(preQuestionnaireData, preQuestionnaireFields(act));
       rewardList = Array.isArray(rewardConfig?.rewards) ? rewardConfig.rewards : [];
     } else {
       // 无 rewardConfig 也计算达成项，供分级积分预览/发放（contact/survey 仅依赖表单数据）
       conditions.contact = contactFilled(formConfig, formData);
-      conditions.survey = surveyFilled(questionnaireData);
+      conditions.survey = surveyFilled(preQuestionnaireData, preQuestionnaireFields(act));
     }
     const channelDone = channelDoneOf(channelType, conditions, loginAuth, subscribed);
     const visibleRewards = rewardList.filter((r: any) => channelDone && isRewardUnlocked(r, loginAuth, subscribed, conditions));
@@ -488,7 +520,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     if (reserved === 0) {
       // 名额已满 → 进入候补队列（不占用名额）
       const sig = await strapi.db.query(SIGNS_UID).create({
-        data: { user: userId, activity: act.id, status: "waiting", signupAt: new Date(), ...(storedFormData ? { formData: storedFormData } : {}), ...(questionnaireData && Object.keys(questionnaireData).length ? { questionnaireData } : {}), ...(unlockInfo ? { unlockInfo: { ...unlockInfo, chosenRewards: [] } } : {}) },
+        data: { user: userId, activity: act.id, status: "waiting", signupAt: new Date(), ...(storedFormData ? { formData: storedFormData } : {}), ...(preQuestionnaireData && Object.keys(preQuestionnaireData).length ? { preQuestionnaireData } : {}), ...(unlockInfo ? { unlockInfo: { ...unlockInfo, chosenRewards: [] } } : {}) },
       });
       const waitCount = await strapi.db.query(SIGNS_UID).count({
         where: {
@@ -539,7 +571,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         return { ok: false, reason: "insufficient_points" };
       }
     }
-    const sig = await strapi.db.query(SIGNS_UID).create({ data: { user: userId, activity: act.id, status: "active", signupAt: new Date(), pointsCharged: feeCollectAt === "signup" ? cost : 0, feeTierId: resolved.tierId ?? null, ...(storedFormData ? { formData: storedFormData } : {}), ...(questionnaireData && Object.keys(questionnaireData).length ? { questionnaireData } : {}), ...(unlockInfo ? { unlockInfo } : {}) } });
+    const sig = await strapi.db.query(SIGNS_UID).create({ data: { user: userId, activity: act.id, status: "active", signupAt: new Date(), pointsCharged: feeCollectAt === "signup" ? cost : 0, feeTierId: resolved.tierId ?? null, ...(storedFormData ? { formData: storedFormData } : {}), ...(preQuestionnaireData && Object.keys(preQuestionnaireData).length ? { preQuestionnaireData } : {}), ...(unlockInfo ? { unlockInfo } : {}) } });
     // 报名奖励发放：仅已选定(解锁)项，逐项独立幂等
     const granted: Array<{ id: string; type: string; name: string; message: string; link?: string }> = [];
     if (hasReward && chosenRewardsIds.length) {
@@ -594,9 +626,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     return { ok: true, granted, signupId: sig.id, pointsPreview, ...(unlockInfo ? { unlockInfo: { ...unlockInfo, pointsPreview } } : {}) };
   },
 
-  /** 补填问卷：更新 questionnaireData → 重算解锁 → 幂等发放新增解锁的 multi 权益 */
-  async fillQuestionnaire({ userId, signupId, answers }: { userId: number; signupId: number; answers?: any }) {
-    // populate 活动关联：避免 findOne 未填充时 activity 非纯数字，导致 where:{id} 绑定 undefined
+  /** 补填问卷：type=pre(活动前，报名后即可填，驱动 survey 解锁/积分) | post(活动后，需已签到且活动已结束，仅记录反馈) */
+  async fillQuestionnaire({ userId, signupId, answers, type = "pre" }: { userId: number; signupId: number; answers?: any; type?: "pre" | "post" }) {
     const signup = await strapi.db.query(SIGNS_UID).findOne({
       where: { id: signupId, user: userId },
       populate: { activity: true },
@@ -605,17 +636,31 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     if (signup.status !== "active" && signup.status !== "waiting") throw new Error("报名已失效");
     const act = signup.activity;
     if (!act) throw new Error("活动不存在");
-    const q = act.questionnaire;
+
+    // 活动后问卷：必须已签到且活动时间已结束，仅记录反馈、不触发解锁/积分
+    if (type === "post") {
+      const q = act.questionnaire;
+      if (!q || q.enabled !== true || !Array.isArray(q.fields) || !q.fields.length) throw new Error("该活动未开启活动后问卷");
+      if (!signup.attendedAt) throw new Error("需到场签到后才能填写活动后问卷");
+      if (!act.endTime || Date.now() < new Date(act.endTime).getTime()) throw new Error("活动结束后才能填写活动后问卷");
+      const collected = collectQuestionnaire(q.fields, answers);
+      await strapi.db.query(SIGNS_UID).update({ where: { id: signup.id }, data: { questionnaireData: collected } });
+      return { ok: true, type: "post", postDone: surveyFilled(collected, q.fields) };
+    }
+
+    // 活动前问卷：更新 preQuestionnaireData → 重算解锁 → 幂等发放新增解锁的 multi 权益
+    // 兼容旧配置：仅配置了 questionnaire 的老活动回退以 questionnaire 作为活动前问卷，survey 通道不失效
+    const q = act.preQuestionnaire || act.questionnaire;
     if (!q || q.enabled !== true || !Array.isArray(q.fields) || !q.fields.length) throw new Error("该活动未开启问卷");
     // 补填前问卷达成状态，用于判定是否本次新达成以补发积分
-    const prevSurvey = surveyFilled(signup.questionnaireData || {});
+    const prevSurvey = surveyFilled(signup.preQuestionnaireData || {}, q.fields);
     const collected = collectQuestionnaire(q.fields, answers);
-    await strapi.db.query(SIGNS_UID).update({ where: { id: signup.id }, data: { questionnaireData: collected } });
-    // 重算必须读取更新后的 questionnaireData，不能沿用更新前快照
+    await strapi.db.query(SIGNS_UID).update({ where: { id: signup.id }, data: { preQuestionnaireData: collected } });
+    // 重算必须读取更新后的 preQuestionnaireData，不能沿用更新前快照
     const fresh = await strapi.db.query(SIGNS_UID).findOne({ where: { id: signup.id } });
     const { unlockInfo, newlyGranted } = await recomputeUnlock(strapi, fresh, act, userId);
     // 补填问卷后若问卷条件新达成（报名时未达成），补发问卷积分，与直接报名路径保持一致
-    const currentSurvey = surveyFilled(fresh.questionnaireData || {});
+    const currentSurvey = surveyFilled(fresh.preQuestionnaireData || {}, q.fields);
     if (!prevSurvey && currentSurvey) {
       const userChannelId = await resolveUserChannelId(strapi, userId);
       await earnPointsSafe(strapi, userId, "activity_signup_survey", 50, "回答问卷报名", userChannelId);
@@ -699,13 +744,17 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     const subscribed = await hasSubscribe(strapi, userId);
     const conditions = {
       contact: contactFilled(act.formConfig, signup.formData),
-      survey: surveyFilled(signup.questionnaireData),
+      survey: surveyFilled(signup.preQuestionnaireData, preQuestionnaireFields(act)),
+      post_survey: postSurveyDone(act, signup.questionnaireData, signup.attendedAt),
     };
+    // 活动后问卷可填：已签到 且 活动时间已结束（活动前问卷报名后即可填）
+    const postSurveyAllowed = !!(act.questionnaire?.enabled === true && signup.attendedAt && act.endTime && Date.now() >= new Date(act.endTime).getTime());
     if (!hasReward) {
       return {
         ok: true, hasReward: false, loginAuth, subscribed,
         contactDone: conditions.contact, surveyDone: conditions.survey,
-        formData: signup.formData || {}, questionnaireData: signup.questionnaireData || {},
+        formData: signup.formData || {}, questionnaireData: signup.questionnaireData || {}, preQuestionnaireData: signup.preQuestionnaireData || {},
+        postSurveyAllowed,
         pointsPreview: computePointsPreview({ loginAuth, subscribed, conditions }),
       };
     }
@@ -716,7 +765,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       ok: true, hasReward: true, loginAuth, subscribed,
       channel: ch, channelDone,
       contactDone: conditions.contact, surveyDone: conditions.survey,
-      formData: signup.formData || {}, questionnaireData: signup.questionnaireData || {},
+      formData: signup.formData || {}, questionnaireData: signup.questionnaireData || {}, preQuestionnaireData: signup.preQuestionnaireData || {},
+      postSurveyAllowed,
       rewards: rewardList.map((r: any) => ({
         id: r.id, name: r.name, type: r.type, mode: r.mode,
         condition: resolveCondition(r), unlocked: isRewardUnlocked(r, loginAuth, subscribed, conditions),
@@ -726,8 +776,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   },
 
   /** 解锁状态探测：C 端报名前或关注/授权后调用，返回通道/条件/可领权益（不入库） */
-  async unlockCheck({ userId, activityDocumentId, formData, questionnaireData }: {
-    userId: number; activityDocumentId: string; formData?: any; questionnaireData?: any;
+  async unlockCheck({ userId, activityDocumentId, formData, preQuestionnaireData }: {
+    userId: number; activityDocumentId: string; formData?: any; preQuestionnaireData?: any;
   }) {
     const act = await strapi.documents(ACTIVITY_UID).findOne({ documentId: activityDocumentId });
     if (!act) throw new Error("活动不存在");
@@ -737,7 +787,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     const subscribed = await hasSubscribe(strapi, userId);
     const conditions = {
       contact: contactFilled(act.formConfig, formData),
-      survey: surveyFilled(questionnaireData),
+      survey: surveyFilled(preQuestionnaireData, preQuestionnaireFields(act)),
+      post_survey: postSurveyDone(act, undefined, undefined),
     };
     const pointsPreview = computePointsPreview({ loginAuth, subscribed, conditions });
     if (!hasReward) {
@@ -746,6 +797,24 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     const ch = resolveChannel(rewardConfig);
     const channelDone = channelDoneOf(ch?.type, conditions, loginAuth, subscribed);
     const rewardList = Array.isArray(rewardConfig?.rewards) ? rewardConfig.rewards : [];
+    const selectMode = rewardConfig.selectMode || "all";
+    const selectN = Math.max(1, Number(rewardConfig.selectN) || 1);
+    // selectMode 池化计算：与 signup 发分路径口径一致——仅多选(mode==="multi")且有条件的权益参与 N 选池；
+    // 独选(mode!=="multi")与无条件(condition==="none")权益按 base 如实展示、不占池
+    let poolUsed = 0;
+    const rewards = rewardList.map((r: any) => {
+      const base = !!r?.id && channelDone && isRewardUnlocked(r, loginAuth, subscribed, conditions);
+      const condition = resolveCondition(r);
+      const poolable = r?.mode === "multi" && condition !== "none";
+      if (!base || !poolable) return { id: r.id, name: r.name, type: r.type, mode: r.mode, condition, unlocked: base };
+      let unlocked: boolean;
+      if (selectMode === "all") unlocked = true;
+      else if (selectMode === "one") unlocked = poolUsed < 1;
+      else if (selectMode === "any") unlocked = poolUsed < selectN;
+      else unlocked = true;
+      if (unlocked) poolUsed += 1;
+      return { id: r.id, name: r.name, type: r.type, mode: r.mode, condition, unlocked };
+    });
     return {
       ok: true,
       hasReward: true,
@@ -754,13 +823,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       channel: ch,
       conditions,
       channelDone,
-      selectMode: rewardConfig.selectMode || "all",
-      selectN: Math.max(1, Number(rewardConfig.selectN) || 1),
-      rewards: rewardList.map((r: any) => ({
-        id: r.id, name: r.name, type: r.type, mode: r.mode,
-        condition: resolveCondition(r),
-        unlocked: !!r?.id && channelDone && isRewardUnlocked(r, loginAuth, subscribed, conditions),
-      })),
+      selectMode,
+      selectN,
+      rewards,
       pointsPreview,
     };
   },
@@ -1194,7 +1259,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         const subscribed = await hasSubscribe(strapi, upUserId);
         const conditions = {
           contact: contactFilled(act?.formConfig, p.formData),
-          survey: surveyFilled(p.questionnaireData),
+          survey: surveyFilled(p.preQuestionnaireData, preQuestionnaireFields(act)),
         };
         await grantActivityPoints(strapi, upUserId, { loginAuth, subscribed, conditions });
       } catch (e: any) {
