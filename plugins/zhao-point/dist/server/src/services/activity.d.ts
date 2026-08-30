@@ -235,7 +235,7 @@ declare const _default: ({ strapi }: {
         channelDone: boolean;
         selectMode: any;
         selectN: number;
-        rewards: any;
+        rewards: any[];
         pointsPreview: {
             base: number;
             auth: number;

@@ -2279,6 +2279,25 @@ async function grantOutline(strapi2, opts) {
   }
   return true;
 }
+async function rewardMetaLabel(strapi2, reward) {
+  if (!reward || !reward.type) return "";
+  switch (reward.type) {
+    case "course_outline":
+      if (reward.kind === "lesson") return reward.lessonTitle || "";
+      return reward.title || "";
+    case "course_trial":
+      return reward.title || "";
+    case "coupon": {
+      if (reward.couponTitle) return reward.couponTitle;
+      const c = await strapi2.db.query("plugin::zhao-deal.coupon").findOne({
+        where: { id: Number(reward.couponId) || 0 }
+      });
+      return c?.title || c?.amountDesc || "";
+    }
+    default:
+      return "";
+  }
+}
 async function grantReward(strapi2, opts) {
   const { userId, reward } = opts;
   if (!reward?.id || !reward?.type) return null;
@@ -2706,20 +2725,21 @@ const activity$1 = ({ strapi: strapi2 }) => ({
     const selectMode = rewardConfig.selectMode || "all";
     const selectN = Math.max(1, Number(rewardConfig.selectN) || 1);
     let poolUsed = 0;
-    const rewards = rewardList.map((r) => {
+    const rewards = await Promise.all(rewardList.map(async (r) => {
       const base = !!r?.id && channelDone && isRewardUnlocked(r, loginAuth, subscribed, conditions);
       const condition = resolveCondition(r);
       const points = r?.type === "points" ? Number(r?.amount) || 0 : 0;
+      const meta = await rewardMetaLabel(strapi2, r);
       const poolable = r?.mode === "multi" && condition !== "none";
-      if (!base || !poolable) return { id: r.id, name: r.name, type: r.type, mode: r.mode, condition, points, unlocked: base };
+      if (!base || !poolable) return { id: r.id, name: r.name, type: r.type, mode: r.mode, condition, points, unlocked: base, meta };
       let unlocked;
       if (selectMode === "all") unlocked = true;
       else if (selectMode === "one") unlocked = poolUsed < 1;
       else if (selectMode === "any") unlocked = poolUsed < selectN;
       else unlocked = true;
       if (unlocked) poolUsed += 1;
-      return { id: r.id, name: r.name, type: r.type, mode: r.mode, condition, points, unlocked };
-    });
+      return { id: r.id, name: r.name, type: r.type, mode: r.mode, condition, points, unlocked, meta };
+    }));
     return {
       ok: true,
       hasReward: true,

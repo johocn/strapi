@@ -3092,7 +3092,7 @@ declare const _default: {
                 channelDone: boolean;
                 selectMode: any;
                 selectN: number;
-                rewards: any;
+                rewards: any[];
                 pointsPreview: {
                     base: number;
                     auth: number;
