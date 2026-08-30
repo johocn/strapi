@@ -70,6 +70,7 @@ export default () => ({
     userRoute("GET", "/my/point/verify/log", "point.getMyVerifications"),
     userRoute("GET", "/my/point/eligible-actions", "point.getEligibleActions"),
     userRoute("POST", "/my/point/sign-in", "point.signIn"),
+    userRoute("POST", "/my/point/earn/share", "point.earnShare"),
     userRoute("GET", "/my/point/sign-in/status", "point.getSignInStatus"),
     userRoute("GET", "/my/point/tasks", "point.getTasks"),
 
@@ -163,6 +164,7 @@ export default () => ({
     userRoute("POST", "/my/activity/:documentId/cancel", "activity.cancel"),
     userRoute("POST", "/my/activity/:documentId/checkin", "activity.checkin"),
     userRoute("GET", "/my/activities", "activity.mySignups"),
+    userRoute("GET", "/my/invitation", "activity.myInvitation"),
     userRoute("POST", "/my/activity/:documentId/message", "activity.sendMessage"),
     userRoute("GET", "/my/activity/:documentId/messages", "activity.listMessages"),
     userRoute("POST", "/activities/:documentId/review", "activity.review"),

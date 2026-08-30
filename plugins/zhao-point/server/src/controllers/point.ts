@@ -37,6 +37,29 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     }
   },
 
+  // 用户侧领取分享积分（白名单 action；积分值取规则，不信任客户端）
+  async earnShare(ctx: any) {
+    try {
+      const userId = getUserId(ctx);
+      const body = ctx.request.body?.data || ctx.request.body || {};
+      const { action } = body;
+      if (action !== "activity_share") {
+        ctx.status = 400;
+        ctx.body = { error: "不允许领取该类型积分", code: "POINT_021" };
+        return;
+      }
+      const record = await strapi.plugin("zhao-point").service("point").earnPoints({
+        userId, action, source: "activity", method: "用户分享领取",
+        remark: "分享活动", channelId: body.channelId, userChannelId: body.channelId,
+      });
+      ctx.body = wrap(record);
+    } catch (e: any) {
+      const status = ["POINT_001","POINT_004","POINT_011","POINT_019","POINT_020"].includes(e.code) ? 400 : 500;
+      ctx.status = status;
+      ctx.body = { error: e.message, code: e.code };
+    }
+  },
+
   async deduct(ctx: any) {
     try {
       const userId = getUserId(ctx);

@@ -124,6 +124,18 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     return !!existing;
   };
 
+  /** 冷却校验：返回距上次成功记录还剩多少毫秒（<=0 表示可通过） */
+  const cooldownRemainingMs = async (userId: number, action: string, intervalMinutes: number): Promise<number> => {
+    const last = await strapi.db.query(RECORD_UID).findOne({
+      where: { user: userId, action, type: "increase" },
+      orderBy: { createdAt: "desc" },
+      select: ["createdAt"],
+    });
+    if (!last?.createdAt) return 0;
+    const elapsed = Date.now() - new Date(last.createdAt).getTime();
+    return Math.max(0, intervalMinutes * 60 * 1000 - elapsed);
+  };
+
   const createRecord = async (
     userId: string | number,
     action: string,
@@ -210,6 +222,16 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         const todayCount = await countTodayAction(userId, action);
         if (todayCount >= rule.limitPerDay) {
           throwError("POINT_004", `已达每日积分上限 (action=${action})`, { action, limit: rule.limitPerDay });
+        }
+      }
+
+      // 冷却校验：每次成功分享后重置计时（以最后一次成功记录为准）
+      const interval = Number((rule.extraConfig as any)?.intervalMinutes) || 0;
+      if (interval > 0) {
+        const remainMs = await cooldownRemainingMs(userId, action, interval);
+        if (remainMs > 0) {
+          const min = Math.ceil(remainMs / 60000);
+          throwError("POINT_020", `请${Math.max(1, min)}分钟后重试`, { action, intervalMinutes: interval });
         }
       }
 
