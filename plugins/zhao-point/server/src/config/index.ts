@@ -35,6 +35,7 @@ export default {
       invite_purchase:       { points: 200,  limitPerDay: 0,  isOneTime: false, description: "邀请好友消费",     taskGroup: "social", extraConfig: {} },
       follow_official_account: { points: 50, limitPerDay: 0,  isOneTime: true,  description: "关注公众号",     taskGroup: "social", extraConfig: {} },
       join_community:        { points: 20,   limitPerDay: 0,  isOneTime: true,  description: "加入社群",         taskGroup: "social", extraConfig: {} },
+      activity_share:       { points: 5,    limitPerDay: 4,  isOneTime: false, description: "分享活动",         taskGroup: "social", extraConfig: { intervalMinutes: 30 } },
 
       // 用户类 (taskGroup: onetime)
       new_user_reward:       { points: 100,  limitPerDay: 0,  isOneTime: true,  description: "新用户注册奖励",   taskGroup: "onetime", extraConfig: {} },
