@@ -446,6 +446,7 @@ declare const _default: {
             signIn(ctx: any): Promise<void>;
             getSignInStatus(ctx: any): Promise<void>;
             getTasks(ctx: any): Promise<void>;
+            reportShareVisit(ctx: any): Promise<void>;
         };
         "point-admin": ({ strapi }: {
             strapi: import('@strapi/types/dist/core').Strapi;
@@ -771,6 +772,26 @@ declare const _default: {
                         default: string;
                     };
                     extraConfig: {
+                        type: string;
+                    };
+                    name: {
+                        type: string;
+                    };
+                    icon: {
+                        type: string;
+                    };
+                    linkType: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    linkTargetId: {
+                        type: string;
+                    };
+                    linkTitle: {
+                        type: string;
+                    };
+                    linkThumb: {
                         type: string;
                     };
                     deletedAt: {
@@ -2023,6 +2044,41 @@ declare const _default: {
                 };
             };
         };
+        "activity-share-visit": {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                    comment: string;
+                };
+                attributes: {
+                    inviter: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                    };
+                    targetType: {
+                        type: string;
+                        enum: string[];
+                    };
+                    targetId: {
+                        type: string;
+                    };
+                    attemptId: {
+                        type: string;
+                    };
+                    createdAt: {
+                        type: string;
+                    };
+                };
+            };
+        };
         lecturer: {
             schema: {
                 kind: string;
@@ -2246,6 +2302,12 @@ declare const _default: {
                 priority?: number;
                 taskGroup?: string;
                 extraConfig?: any;
+                name?: string;
+                icon?: string;
+                linkType?: string;
+                linkTargetId?: string;
+                linkTitle?: string;
+                linkThumb?: string;
             }) => Promise<{
                 action: string;
                 category: string;
@@ -2259,6 +2321,12 @@ declare const _default: {
                 priority?: number;
                 taskGroup?: string;
                 extraConfig?: any;
+                name?: string;
+                icon?: string;
+                linkType?: string;
+                linkTargetId?: string;
+                linkTitle?: string;
+                linkThumb?: string;
             }>;
             deleteRule: (action: string) => Promise<{
                 success: boolean;
@@ -2690,6 +2758,7 @@ declare const _default: {
             findVerificationByDocumentId: (documentId: string) => Promise<any>;
             getMergedRule: (action: string) => Promise<any | null>;
             getTasks: (userId: number) => Promise<Record<string, any[]>>;
+            hasShareVisitSince: (userId: number, since: Date) => Promise<boolean>;
         };
         redemption: ({ strapi }: {
             strapi: import('@strapi/types/dist/core').Strapi;

@@ -166,6 +166,26 @@ declare const _default: {
                 extraConfig: {
                     type: string;
                 };
+                name: {
+                    type: string;
+                };
+                icon: {
+                    type: string;
+                };
+                linkType: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
+                linkTargetId: {
+                    type: string;
+                };
+                linkTitle: {
+                    type: string;
+                };
+                linkThumb: {
+                    type: string;
+                };
                 deletedAt: {
                     type: string;
                     default: any;
@@ -1411,6 +1431,41 @@ declare const _default: {
                     type: string;
                 };
                 detail: {
+                    type: string;
+                };
+            };
+        };
+    };
+    "activity-share-visit": {
+        schema: {
+            kind: string;
+            collectionName: string;
+            info: {
+                singularName: string;
+                pluralName: string;
+                displayName: string;
+            };
+            options: {
+                draftAndPublish: boolean;
+                comment: string;
+            };
+            attributes: {
+                inviter: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                };
+                targetType: {
+                    type: string;
+                    enum: string[];
+                };
+                targetId: {
+                    type: string;
+                };
+                attemptId: {
+                    type: string;
+                };
+                createdAt: {
                     type: string;
                 };
             };

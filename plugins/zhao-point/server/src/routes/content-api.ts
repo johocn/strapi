@@ -57,6 +57,7 @@ export default () => ({
     publicRoute("GET", "/point/pickup-locations/:id", "point.getPickupLocation"),
     publicRoute("GET", "/point/exchange-rate", "point.getExchangeRate"),
     publicRoute("GET", "/point/feature-flags", "point.getFeatureFlags"),
+    publicRoute("POST", "/my/point/share/visit", "point.reportShareVisit"),
 
     // ===== 注册用户路由 =====
     userRoute("GET", "/my/point/balance", "point.balance"),

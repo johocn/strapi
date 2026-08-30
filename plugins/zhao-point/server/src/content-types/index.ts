@@ -15,6 +15,7 @@ import activitySeries from "./activity-series/schema.json";
 import activityMessage from "./activity-message/schema.json";
 import activityReferralReward from "./activity-referral-reward/schema.json";
 import activityLedger from "./activity-ledger/schema.json";
+import activityShareVisit from "./activity-share-visit/schema.json";
 import lecturer from "./lecturer/schema.json";
 import venue from "./venue/schema.json";
 import lecturerLifecycles from "./lecturer/lifecycles";
@@ -40,6 +41,7 @@ export default {
   "activity-message": { schema: activityMessage },
   "activity-referral-reward": { schema: activityReferralReward },
   "activity-ledger": { schema: activityLedger },
+  "activity-share-visit": { schema: activityShareVisit },
   lecturer: { schema: lecturer, lifecycles: lecturerLifecycles },
   venue: { schema: venue, lifecycles: venueLifecycles },
 };

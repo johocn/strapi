@@ -26,5 +26,6 @@ declare const _default: ({ strapi }: {
     signIn(ctx: any): Promise<void>;
     getSignInStatus(ctx: any): Promise<void>;
     getTasks(ctx: any): Promise<void>;
+    reportShareVisit(ctx: any): Promise<void>;
 };
 export default _default;

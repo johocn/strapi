@@ -20,6 +20,26 @@ const wrapList = (result: any) => {
 export default ({ strapi }: { strapi: Core.Strapi }) => {
   const getUserId = (ctx: any) => ctx.state.user.id || ctx.state.user.documentId;
 
+  // 通过邀请码反查邀请人 up_user id；查不到返回 null。优先 zhao-sso 邀请码表（与活动裂变同一数据源）
+  const resolveInviterByCode = async (inviteCode: string): Promise<number | null> => {
+    try {
+      const code = await strapi.db.query("plugin::zhao-sso.sso-invite-code").findOne({
+        where: { code: inviteCode, is_active: true },
+        populate: ["creator"],
+      });
+      const inviter = code?.creator;
+      if (!inviter || inviter.status === "virtual") return null;
+      const profileSvc = strapi.plugin("zhao-sso")?.service("sso-profile");
+      if (profileSvc?.resolveUpUserForSsoUser) {
+        const up = await profileSvc.resolveUpUserForSsoUser(inviter.id);
+        if (up?.id) return up.id;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  };
+
   return ({
   async earn(ctx: any) {
     try {
@@ -410,6 +430,53 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       const userId = getUserId(ctx);
       const result = await strapi.plugin("zhao-point").service("point").getTasks(userId);
       ctx.body = wrap(result);
+    } catch (e: any) {
+      ctx.status = (e as any).status || 400;
+      ctx.body = { error: e.message };
+    }
+  },
+
+  // 分享裂变好友点击埋点（公开，无需登录）；inviteCode 反查失败时 inviter=null 仍记录（仅坐标，不影响去重）
+  async reportShareVisit(ctx: any) {
+    try {
+      const body = ctx.request.body?.data || ctx.request.body || {};
+      const { inviterId, inviteCode, targetType, targetId, attemptId } = body;
+
+      let inviter: number | null = null;
+      if (inviterId !== undefined && inviterId !== null && inviterId !== "") {
+        const uid = Number(inviterId);
+        if (!isNaN(uid) && uid > 0) inviter = uid;
+      } else if (inviteCode) {
+        inviter = await resolveInviterByCode(String(inviteCode));
+      }
+
+      const VISIT_UID = "plugin::zhao-point.activity-share-visit";
+      let recorded = false;
+      if (attemptId) {
+        const exists = await strapi.db.query(VISIT_UID).findOne({ where: { attemptId: String(attemptId) } });
+        if (!exists) {
+          await strapi.db.query(VISIT_UID).create({
+            data: {
+              inviter: inviter ?? undefined,
+              targetType: targetType || undefined,
+              targetId: targetId || undefined,
+              attemptId: String(attemptId),
+            },
+          });
+          recorded = true;
+        }
+      } else {
+        await strapi.db.query(VISIT_UID).create({
+          data: {
+            inviter: inviter ?? undefined,
+            targetType: targetType || undefined,
+            targetId: targetId || undefined,
+          },
+        });
+        recorded = true;
+      }
+
+      ctx.body = wrap({ ok: true, recorded });
     } catch (e: any) {
       ctx.status = (e as any).status || 400;
       ctx.body = { error: e.message };

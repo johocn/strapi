@@ -128,6 +128,12 @@ declare const _default: ({ strapi }: {
         priority?: number;
         taskGroup?: string;
         extraConfig?: any;
+        name?: string;
+        icon?: string;
+        linkType?: string;
+        linkTargetId?: string;
+        linkTitle?: string;
+        linkThumb?: string;
     }) => Promise<{
         action: string;
         category: string;
@@ -141,6 +147,12 @@ declare const _default: ({ strapi }: {
         priority?: number;
         taskGroup?: string;
         extraConfig?: any;
+        name?: string;
+        icon?: string;
+        linkType?: string;
+        linkTargetId?: string;
+        linkTitle?: string;
+        linkThumb?: string;
     }>;
     deleteRule: (action: string) => Promise<{
         success: boolean;
@@ -572,5 +584,6 @@ declare const _default: ({ strapi }: {
     findVerificationByDocumentId: (documentId: string) => Promise<any>;
     getMergedRule: (action: string) => Promise<any | null>;
     getTasks: (userId: number) => Promise<Record<string, any[]>>;
+    hasShareVisitSince: (userId: number, since: Date) => Promise<boolean>;
 };
 export default _default;

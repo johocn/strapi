@@ -79,6 +79,26 @@
     "extraConfig": {
       "type": "json"
     },
+    "name": {
+      "type": "string"
+    },
+    "icon": {
+      "type": "string"
+    },
+    "linkType": {
+      "type": "enumeration",
+      "enum": ["none", "article", "course", "activity"],
+      "default": "none"
+    },
+    "linkTargetId": {
+      "type": "string"
+    },
+    "linkTitle": {
+      "type": "string"
+    },
+    "linkThumb": {
+      "type": "string"
+    },
     "deletedAt": {
       "type": "datetime",
       "default": null

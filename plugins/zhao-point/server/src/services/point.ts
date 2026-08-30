@@ -71,6 +71,12 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         isOneTime: dbRule.isOneTime,
         description: dbRule.description,
         extraConfig: dbRule.extraConfig,
+        name: dbRule.name,
+        icon: dbRule.icon,
+        linkType: dbRule.linkType,
+        linkTargetId: dbRule.linkTargetId,
+        linkTitle: dbRule.linkTitle,
+        linkThumb: dbRule.linkThumb,
       };
     }
 
@@ -96,6 +102,18 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       .where(`${LNK_TABLE}.user_id`, userId)
       .select(conn.raw(`COALESCE(SUM(${REC_TABLE}.points), 0) AS total_balance`));
     return parseInt(String(result[0]?.total_balance ?? 0), 10) || 0;
+  };
+
+  /** 是否存在 inviter=userId 且 createdAt>since 的好友点击埋点（标量布尔，供活动分享冷却判定用） */
+  const hasShareVisitSince = async (userId: number, since: Date): Promise<boolean> => {
+    const SHARE_VISIT_TABLE = "zhao_point_share_visits";
+    const SHARE_VISIT_LNK_TABLE = "zhao_point_share_visits_user_lnk";
+    const result: any[] = await strapi.db.connection(SHARE_VISIT_TABLE)
+      .join(SHARE_VISIT_LNK_TABLE, `${SHARE_VISIT_TABLE}.id`, "=", `${SHARE_VISIT_LNK_TABLE}.activity_share_visit_id`)
+      .where(`${SHARE_VISIT_LNK_TABLE}.user_id`, userId)
+      .where(`${SHARE_VISIT_TABLE}.created_at`, ">", since)
+      .limit(1);
+    return result.length > 0;
   };
 
   const countTodayAction = async (
@@ -228,10 +246,38 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       // 冷却校验：每次成功分享后重置计时（以最后一次成功记录为准）
       const interval = Number((rule.extraConfig as any)?.intervalMinutes) || 0;
       if (interval > 0) {
-        const remainMs = await cooldownRemainingMs(userId, action, interval);
-        if (remainMs > 0) {
-          const min = Math.ceil(remainMs / 60000);
-          throwError("POINT_020", `请${Math.max(1, min)}分钟后重试`, { action, intervalMinutes: interval });
+        if (action === "activity_share") {
+          // 分享裂变 v2 冷却：仅 activity_share 走「好友点击 + 距上次>=interval」特判；跨自然日即自动解锁
+          const last = await strapi.db.query(RECORD_UID).findOne({
+            where: { user: userId, action, type: "increase" },
+            orderBy: { createdAt: "desc" },
+            select: ["createdAt"],
+          });
+          if (last?.createdAt) {
+            const lastAt = new Date(last.createdAt);
+            const now = new Date();
+            const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+            // 未跨自然日才需要冷却；已跨日（次日）自动解锁
+            if (lastAt.getTime() >= startOfToday) {
+              const hasVisit = await hasShareVisitSince(userId, lastAt);
+              const elapsed = Date.now() - lastAt.getTime();
+              if (!hasVisit) {
+                throwError("POINT_020", "暂无朋友点击，请先邀请好友点击分享链接后再来领取", {
+                  action, needFriendVisit: true,
+                });
+              }
+              if (elapsed < interval * 60 * 1000) {
+                const min = Math.ceil((interval * 60 * 1000 - elapsed) / 60000);
+                throwError("POINT_020", `请${Math.max(1, min)}分钟后重试`, { action, intervalMinutes: interval });
+              }
+            }
+          }
+        } else {
+          const remainMs = await cooldownRemainingMs(userId, action, interval);
+          if (remainMs > 0) {
+            const min = Math.ceil(remainMs / 60000);
+            throwError("POINT_020", `请${Math.max(1, min)}分钟后重试`, { action, intervalMinutes: interval });
+          }
         }
       }
 
@@ -640,6 +686,12 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     priority?: number;
     taskGroup?: string;
     extraConfig?: any;
+    name?: string;
+    icon?: string;
+    linkType?: string;
+    linkTargetId?: string;
+    linkTitle?: string;
+    linkThumb?: string;
   }) => {
     const existing = await strapi.db.query(RULE_UID).findOne({
       where: { action: data.action, deletedAt: null },
@@ -660,6 +712,12 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
           priority: data.priority ?? existing.priority,
           taskGroup: data.taskGroup ?? existing.taskGroup,
           extraConfig: data.extraConfig ? JSON.stringify(data.extraConfig) : existing.extraConfig,
+          name: data.name ?? existing.name,
+          icon: data.icon ?? existing.icon,
+          linkType: data.linkType ?? existing.linkType,
+          linkTargetId: data.linkTargetId ?? existing.linkTargetId,
+          linkTitle: data.linkTitle ?? existing.linkTitle,
+          linkThumb: data.linkThumb ?? existing.linkThumb,
         },
       });
     } else {
@@ -677,6 +735,12 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
           priority: data.priority ?? 0,
           taskGroup: data.taskGroup ?? "other",
           extraConfig: data.extraConfig ? JSON.stringify(data.extraConfig) : "{}",
+          name: data.name ?? undefined,
+          icon: data.icon ?? undefined,
+          linkType: data.linkType ?? "none",
+          linkTargetId: data.linkTargetId ?? undefined,
+          linkTitle: data.linkTitle ?? undefined,
+          linkThumb: data.linkThumb ?? undefined,
         },
       });
     }
@@ -826,6 +890,13 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     const RULE_UID = "plugin::zhao-point.point-rule";
     const RECORD_UID = "plugin::zhao-point.point-record";
 
+    // 无自定义 name 时，用可读化 action 兜底（如 daily_checkin -> Daily Checkin）
+    const readableAction = (action: string) =>
+      action
+        .split(/[_-]/)
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(" ");
+
     // 查询所有启用的 increase 规则
     const rules = await strapi.db.query(RULE_UID).findMany({
       where: { category: "increase", enabled: true, deletedAt: null },
@@ -860,6 +931,12 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
 
       groups[group].push({
         action: rule.action,
+        name: rule.name || readableAction(rule.action),
+        icon: rule.icon,
+        linkType: rule.linkType || "none",
+        linkTargetId: rule.linkTargetId,
+        linkTitle: rule.linkTitle,
+        linkThumb: rule.linkThumb,
         description: rule.description,
         points: rule.points,
         limitPerDay: rule.limitPerDay,
@@ -894,5 +971,6 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     findVerificationByDocumentId,
     getMergedRule,
     getTasks,
+    hasShareVisitSince,
   };
 };
