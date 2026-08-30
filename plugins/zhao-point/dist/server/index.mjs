@@ -2376,10 +2376,9 @@ const activity$1 = ({ strapi: strapi2 }) => ({
     if (!act) throw new Error("活动不存在");
     if (act.status !== "signup_open") throw new Error("活动未开放报名");
     const now = Date.now();
-    if (act.signupStart && now < new Date(act.signupStart).getTime()) throw new Error("报名未开始");
-    if (act.signupEnd && now > new Date(act.signupEnd).getTime()) throw new Error("报名已截止");
-    if (act.startTime && now > new Date(act.startTime).getTime() + 30 * 6e4) {
-      throw new Error("活动已开始，报名关闭");
+    if (act.signupStart && now < new Date(act.signupStart).getTime() - 30 * 6e4) throw new Error("报名未开始");
+    if (act.signupEnd && now > new Date(act.signupEnd).getTime() + 30 * 6e4) {
+      throw new Error("报名已截止");
     }
     const formConfig = act.formConfig;
     const rewardConfig = act.rewardConfig;
