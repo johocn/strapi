@@ -152,6 +152,20 @@ async function recomputeUnlock(strapi: any, signup: any, act: any, userId: numbe
     chosenRewards: [...prevChosen, ...granted.map((g) => g.id)],
   };
   await strapi.db.query(SIGNS_UID).update({ where: { id: signup.id }, data: { unlockInfo } });
+  // 达标达成补发：活动临时开放单课时播放权（幂等，锚定活动结束，source=milestone）
+  const tempLessons = act.preUnlockLessons || [];
+  if (tempLessons.length) {
+    for (const lesson of tempLessons) {
+      if (!lesson?.course?.id) continue;
+      await grantTempLessonLesson(strapi, {
+        userId, courseId: lesson.course.id,
+        activityDocumentId: act.documentId,
+        lessonDocumentId: lesson.documentId || String(lesson.id),
+        source: "milestone",
+        expiresAt: act.endTime || null,
+      });
+    }
+  }
   return { unlockInfo, newlyGranted: granted };
 }
 
