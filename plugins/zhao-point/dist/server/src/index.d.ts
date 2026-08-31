@@ -531,6 +531,9 @@ declare const _default: {
             adminUnarchive(ctx: any): Promise<void>;
             listReviews(ctx: any): Promise<void>;
             learningContent(ctx: any): Promise<void>;
+            tempLessonAuthStatus(ctx: any): Promise<void>;
+            adminGrantTempLessonAuth(ctx: any): Promise<void>;
+            adminListTempAuth(ctx: any): Promise<void>;
             adminToggleReviewHidden(ctx: any): Promise<void>;
             adminReviews(ctx: any): Promise<void>;
             fissionLeaderboard(ctx: any): Promise<void>;
@@ -1610,6 +1613,11 @@ declare const _default: {
                         type: string;
                         relation: string;
                         target: string;
+                    };
+                    tempLessonMode: {
+                        type: string;
+                        enum: string[];
+                        default: string;
                     };
                     learningPackageArticles: {
                         type: string;
@@ -3307,6 +3315,28 @@ declare const _default: {
                     pageCount: number;
                     total: number;
                 };
+            }>;
+            isLessonTempAuthorized({ userId, lessonDocumentId }: {
+                userId: number;
+                lessonDocumentId: string;
+            }): Promise<{
+                authorized: boolean;
+                reason: string;
+                auth?: undefined;
+            } | {
+                authorized: boolean;
+                auth: any;
+                reason?: undefined;
+            }>;
+            adminGrantTempLesson(opts: {
+                activityId: string;
+                userId: number;
+                lessonDocumentId: string;
+                source?: "signup" | "milestone" | "manual";
+                expiresAt?: string | Date | null;
+            }): Promise<{
+                ok: boolean;
+                expiresAt: any;
             }>;
             getLearningContent({ userId, activityDocumentId }: {
                 userId: number;

@@ -35,6 +35,9 @@ declare const _default: ({ strapi }: {
     adminUnarchive(ctx: any): Promise<void>;
     listReviews(ctx: any): Promise<void>;
     learningContent(ctx: any): Promise<void>;
+    tempLessonAuthStatus(ctx: any): Promise<void>;
+    adminGrantTempLessonAuth(ctx: any): Promise<void>;
+    adminListTempAuth(ctx: any): Promise<void>;
     adminToggleReviewHidden(ctx: any): Promise<void>;
     adminReviews(ctx: any): Promise<void>;
     /** 裂变榜：按 inviter 聚合奖励记录，可筛时间；返回带来报名数/发放积分/明细 */

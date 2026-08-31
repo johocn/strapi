@@ -36,6 +36,7 @@ declare const _default: {
     "shareRewardPoints": { "type": "integer" },
     "preUnlockArticles": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.article" },
     "preUnlockLessons": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-course.course-lesson" },
+    "tempLessonMode": { "type": "enumeration", "enum": ["none", "signup", "milestone", "manual", "mixed"], "default": "none" },
     "learningPackageArticles": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.article" },
     "learningPackageLessons": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-course.course-lesson" },
     "belongsToSeries": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.activity-series", "inversedBy": "activities" },

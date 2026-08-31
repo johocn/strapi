@@ -240,7 +240,7 @@ const collectionName$9 = "activities";
 const info$9 = { "singularName": "activity", "pluralName": "activities", "displayName": "Activity", "description": "线下活动" };
 const options$9 = { "draftAndPublish": false };
 const pluginOptions$2 = { "i18n": { "localized": false } };
-const attributes$9 = { "title": { "type": "string", "required": true }, "type": { "type": "string", "default": "其他" }, "category": { "type": "string", "default": "" }, "tags": { "type": "json" }, "assets": { "type": "json" }, "description": { "type": "text" }, "startTime": { "type": "datetime" }, "endTime": { "type": "datetime" }, "venueName": { "type": "string" }, "lat": { "type": "float" }, "lng": { "type": "float" }, "capacity": { "type": "integer", "required": true, "default": 100 }, "usedCapacity": { "type": "integer", "default": 0 }, "signupStart": { "type": "datetime" }, "signupEnd": { "type": "datetime" }, "signupAdvanceHours": { "type": "integer", "default": 0 }, "checkinMode": { "type": "enumeration", "enum": ["worker_scan", "self", "both"], "default": "both" }, "geoEnforced": { "type": "boolean", "default": false }, "geoRadiusM": { "type": "integer", "default": 500 }, "status": { "type": "enumeration", "enum": ["draft", "signup_open", "ongoing", "ended", "archived"], "default": "draft" }, "channelScope": { "type": "enumeration", "enum": ["all", "specific"], "default": "all" }, "channelIds": { "type": "json" }, "visibleToRoles": { "type": "json", "default": null }, "pointsCost": { "type": "integer", "default": 0 }, "pricingMode": { "type": "enumeration", "enum": ["flat", "tier", "factor"], "default": "flat" }, "feeTiers": { "type": "json" }, "feeFactors": { "type": "json" }, "feeCollectAt": { "type": "enumeration", "enum": ["signup", "checkin"], "default": "signup" }, "shareRewardPoints": { "type": "integer" }, "preUnlockArticles": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.article" }, "preUnlockLessons": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-course.course-lesson" }, "learningPackageArticles": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.article" }, "learningPackageLessons": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-course.course-lesson" }, "belongsToSeries": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.activity-series", "inversedBy": "activities" }, "formConfig": { "type": "json" }, "rewardConfig": { "type": "json" }, "questionnaire": { "type": "json" }, "preQuestionnaire": { "type": "json" }, "remindLeadMinutes": { "type": "integer", "default": 1440, "min": -1 }, "lecturer": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.lecturer", "inversedBy": "activities" }, "venue": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.venue", "inversedBy": "activities" }, "cashPrice": { "type": "decimal", "default": 0 }, "settleLecturer": { "type": "decimal", "default": 0 }, "settleVenue": { "type": "decimal", "default": 0 }, "promoTemplate": { "type": "string", "default": "summit" }, "promoModules": { "type": "json" }, "promoContact": { "type": "json" }, "promoColors": { "type": "json" }, "promoAssets": { "type": "json" }, "customPromoHtml": { "type": "text" }, "customPromoActive": { "type": "boolean", "default": true } };
+const attributes$9 = { "title": { "type": "string", "required": true }, "type": { "type": "string", "default": "其他" }, "category": { "type": "string", "default": "" }, "tags": { "type": "json" }, "assets": { "type": "json" }, "description": { "type": "text" }, "startTime": { "type": "datetime" }, "endTime": { "type": "datetime" }, "venueName": { "type": "string" }, "lat": { "type": "float" }, "lng": { "type": "float" }, "capacity": { "type": "integer", "required": true, "default": 100 }, "usedCapacity": { "type": "integer", "default": 0 }, "signupStart": { "type": "datetime" }, "signupEnd": { "type": "datetime" }, "signupAdvanceHours": { "type": "integer", "default": 0 }, "checkinMode": { "type": "enumeration", "enum": ["worker_scan", "self", "both"], "default": "both" }, "geoEnforced": { "type": "boolean", "default": false }, "geoRadiusM": { "type": "integer", "default": 500 }, "status": { "type": "enumeration", "enum": ["draft", "signup_open", "ongoing", "ended", "archived"], "default": "draft" }, "channelScope": { "type": "enumeration", "enum": ["all", "specific"], "default": "all" }, "channelIds": { "type": "json" }, "visibleToRoles": { "type": "json", "default": null }, "pointsCost": { "type": "integer", "default": 0 }, "pricingMode": { "type": "enumeration", "enum": ["flat", "tier", "factor"], "default": "flat" }, "feeTiers": { "type": "json" }, "feeFactors": { "type": "json" }, "feeCollectAt": { "type": "enumeration", "enum": ["signup", "checkin"], "default": "signup" }, "shareRewardPoints": { "type": "integer" }, "preUnlockArticles": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.article" }, "preUnlockLessons": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-course.course-lesson" }, "tempLessonMode": { "type": "enumeration", "enum": ["none", "signup", "milestone", "manual", "mixed"], "default": "none" }, "learningPackageArticles": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.article" }, "learningPackageLessons": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-course.course-lesson" }, "belongsToSeries": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.activity-series", "inversedBy": "activities" }, "formConfig": { "type": "json" }, "rewardConfig": { "type": "json" }, "questionnaire": { "type": "json" }, "preQuestionnaire": { "type": "json" }, "remindLeadMinutes": { "type": "integer", "default": 1440, "min": -1 }, "lecturer": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.lecturer", "inversedBy": "activities" }, "venue": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.venue", "inversedBy": "activities" }, "cashPrice": { "type": "decimal", "default": 0 }, "settleLecturer": { "type": "decimal", "default": 0 }, "settleVenue": { "type": "decimal", "default": 0 }, "promoTemplate": { "type": "string", "default": "summit" }, "promoModules": { "type": "json" }, "promoContact": { "type": "json" }, "promoColors": { "type": "json" }, "promoAssets": { "type": "json" }, "customPromoHtml": { "type": "text" }, "customPromoActive": { "type": "boolean", "default": true } };
 const activity$2 = {
   kind: kind$9,
   collectionName: collectionName$9,
@@ -2123,7 +2123,7 @@ const form = ({ strapi: strapi2 }) => ({
 });
 const SIGNS_UID$4 = "plugin::zhao-point.activity-signup";
 const ATT_UID$2 = "plugin::zhao-point.activity-attendance";
-const AUTH_UID = "plugin::zhao-course.user-course-auth";
+const AUTH_UID$1 = "plugin::zhao-course.user-course-auth";
 const ACTIVITY_UID$9 = "plugin::zhao-point.activity";
 const MSG_UID = "plugin::zhao-point.activity-message";
 const PROMO_MODULE_TYPES = [
@@ -2269,6 +2269,20 @@ async function recomputeUnlock(strapi2, signup, act, userId) {
     chosenRewards: [...prevChosen, ...granted.map((g) => g.id)]
   };
   await strapi2.db.query(SIGNS_UID$4).update({ where: { id: signup.id }, data: { unlockInfo } });
+  const tempLessons = act.preUnlockLessons || [];
+  if (tempLessons.length) {
+    for (const lesson of tempLessons) {
+      if (!lesson?.course?.id) continue;
+      await grantTempLessonLesson(strapi2, {
+        userId,
+        courseId: lesson.course.id,
+        activityDocumentId: act.documentId,
+        lessonDocumentId: lesson.documentId || String(lesson.id),
+        source: "milestone",
+        expiresAt: act.endTime || null
+      });
+    }
+  }
   return { unlockInfo, newlyGranted: granted };
 }
 function contactFilled(formConfig, formData) {
@@ -2376,9 +2390,45 @@ async function grantActivityPoints(strapi2, userId, { loginAuth, subscribed, con
 }
 async function grantCourseTrial(strapi2, userId, courseId) {
   try {
-    const existing = await strapi2.db.query(AUTH_UID).findOne({ where: { user: userId, course: courseId } });
+    const existing = await strapi2.db.query(AUTH_UID$1).findOne({ where: { user: userId, course: courseId } });
     if (existing) return;
-    await strapi2.documents(AUTH_UID).create({ data: { user: userId, course: courseId, authType: "trial", isExpired: false } });
+    await strapi2.documents(AUTH_UID$1).create({ data: { user: userId, course: courseId, authType: "trial", isExpired: false } });
+  } catch {
+  }
+}
+async function grantTempLessonLesson(strapi2, opts) {
+  try {
+    const expires = opts.expiresAt ? new Date(opts.expiresAt) : null;
+    const existing = await strapi2.db.query(AUTH_UID$1).findOne({
+      where: {
+        user: opts.userId,
+        course: opts.courseId,
+        authType: "temp_lesson",
+        lessonDocumentId: opts.lessonDocumentId
+      }
+    });
+    if (existing) {
+      if (expires && (!existing.expiresAt || new Date(existing.expiresAt) < expires)) {
+        await strapi2.db.query(AUTH_UID$1).update({
+          where: { id: existing.id },
+          data: { expiresAt: expires, isExpired: false }
+        });
+      }
+      return existing;
+    }
+    await strapi2.db.query(AUTH_UID$1).create({
+      data: {
+        user: opts.userId,
+        course: opts.courseId,
+        activityDocumentId: opts.activityDocumentId,
+        lessonDocumentId: opts.lessonDocumentId,
+        authType: "temp_lesson",
+        source: opts.source,
+        expiresAt: expires,
+        grantedAt: /* @__PURE__ */ new Date(),
+        isExpired: false
+      }
+    });
   } catch {
   }
 }
@@ -2669,8 +2719,18 @@ const activity$1 = ({ strapi: strapi2 }) => ({
     if (act.startTime && Number(act.remindLeadMinutes ?? 1440) >= 0) {
       await this.notifyInApp(userId, act.id, "activity.before", { name: act.title, startTime: act.startTime }, `activity:before:${userId}:${act.id}`);
     }
+    const tempExpiry = act.endTime || null;
     for (const lesson of act.preUnlockLessons || []) {
-      if (lesson?.course?.id) await grantCourseTrial(strapi2, userId, lesson.course.id);
+      if (!lesson?.course?.id) continue;
+      await grantCourseTrial(strapi2, userId, lesson.course.id);
+      await grantTempLessonLesson(strapi2, {
+        userId,
+        courseId: lesson.course.id,
+        activityDocumentId: act.documentId,
+        lessonDocumentId: lesson.documentId || String(lesson.id),
+        source: "signup",
+        expiresAt: tempExpiry
+      });
     }
     try {
       const sop = strapi2.plugin("zhao-sso")?.service("sso-sop");
@@ -3064,6 +3124,48 @@ const activity$1 = ({ strapi: strapi2 }) => ({
       pagination: result?.pagination ?? { page, pageSize, pageCount: 1, total: rows.length }
     };
   },
+  /** 单课时临时授权判定：是否仍有效（活动期内、未过期） */
+  async isLessonTempAuthorized({ userId, lessonDocumentId }) {
+    const auth = await strapi2.db.query(AUTH_UID$1).findOne({
+      where: {
+        user: userId,
+        authType: "temp_lesson",
+        lessonDocumentId,
+        isExpired: false,
+        $or: [{ expiresAt: null }, { expiresAt: { $gt: (/* @__PURE__ */ new Date()).toISOString() } }]
+      }
+    });
+    if (!auth) return { authorized: false, reason: "no_auth" };
+    return { authorized: true, auth };
+  },
+  /** 运营手动授权单课时临时播放权（幂等复用 grantTempLessonLesson，source=manual） */
+  async adminGrantTempLesson(opts) {
+    const act = await strapi2.db.query(ACTIVITY_UID$9).findOne({
+      where: { documentId: opts.activityId },
+      populate: { preUnlockLessons: { select: ["documentId", "course"] } }
+    });
+    if (!act) {
+      const e = new Error("活动不存在");
+      e.status = 404;
+      throw e;
+    }
+    const lesson = act.preUnlockLessons?.find((l) => l.documentId === opts.lessonDocumentId || l.id === opts.lessonDocumentId);
+    if (!lesson) {
+      const e = new Error("该课时不在活动的临时开放列表");
+      e.status = 400;
+      throw e;
+    }
+    const exp = opts.expiresAt || act.endTime || null;
+    await grantTempLessonLesson(strapi2, {
+      userId: Number(opts.userId),
+      courseId: Number(lesson.course?.id) || Number(lesson.course),
+      activityDocumentId: opts.activityId,
+      lessonDocumentId: opts.lessonDocumentId,
+      source: opts.source || "manual",
+      expiresAt: exp
+    });
+    return { ok: true, expiresAt: exp };
+  },
   /** 本活动本人已解锁学习内容：报名解锁(preUnlock*) + 签到解锁(learningPackage*) */
   async getLearningContent({ userId, activityDocumentId }) {
     const act = await strapi2.documents(ACTIVITY_UID$9).findOne({
@@ -3417,6 +3519,7 @@ async function resolveUserRoles(strapi2, userId) {
   return raw.filter((r) => typeof r === "string");
 }
 const ACTIVITY_UID$8 = "plugin::zhao-point.activity";
+const AUTH_UID = "plugin::zhao-course.user-course-auth";
 const SIGNS_UID$3 = "plugin::zhao-point.activity-signup";
 const ATT_UID$1 = "plugin::zhao-point.activity-attendance";
 const REWARD_UID$1 = "plugin::zhao-point.activity-referral-reward";
@@ -4176,6 +4279,72 @@ const activity = ({ strapi: strapi2 }) => {
           activityDocumentId: ctx.params.documentId
         });
         ctx.body = wrap$5(result);
+      } catch (e) {
+        ctx.status = e.status || 400;
+        ctx.body = { error: e.message };
+      }
+    },
+    // GET /my/lesson/temp-auth/status  单课时临时播放权状态
+    async tempLessonAuthStatus(ctx) {
+      try {
+        const userId = await getUserId(ctx);
+        const { lessonDocumentId } = ctx.query;
+        if (!lessonDocumentId) {
+          ctx.status = 400;
+          ctx.body = { error: "缺少 lessonDocumentId" };
+          return;
+        }
+        const result = await activitySvc().isLessonTempAuthorized({ userId, lessonDocumentId });
+        ctx.body = wrap$5(result);
+      } catch (e) {
+        ctx.status = e.status || 400;
+        ctx.body = { error: e.message };
+      }
+    },
+    // POST /adm/lessons/temp-auth  运营手动授权单课时临时播放权
+    async adminGrantTempLessonAuth(ctx) {
+      try {
+        const { activityId, userId, lessonDocumentId, expiresAt, source = "manual" } = ctx.request.body?.data || ctx.request.body || {};
+        if (!activityId || !userId || !lessonDocumentId) {
+          ctx.status = 400;
+          ctx.body = { error: "缺少 activityId/userId/lessonDocumentId" };
+          return;
+        }
+        const result = await activitySvc().adminGrantTempLesson({
+          activityId,
+          userId: Number(userId),
+          lessonDocumentId,
+          source,
+          expiresAt: expiresAt || void 0
+        });
+        ctx.body = wrap$5(result);
+      } catch (e) {
+        ctx.status = e.status || 400;
+        ctx.body = { error: e.message };
+      }
+    },
+    // GET /adm/lessons/temp-auth/list  运营端临时授权列表（可按活动过滤）
+    async adminListTempAuth(ctx) {
+      try {
+        const { activityDocumentId } = ctx.query;
+        const where = { authType: "temp_lesson" };
+        if (activityDocumentId) where.activityDocumentId = activityDocumentId;
+        const rows = await strapi2.db.query(AUTH_UID).findMany({
+          where,
+          populate: { user: { select: ["id", "username"] }, course: { select: ["documentId", "title"] } },
+          orderBy: { grantedAt: "desc" }
+        });
+        ctx.body = wrapList$1(rows.map((r) => ({
+          id: r.id,
+          user: r.user ? { id: r.user.id, username: r.user.username } : null,
+          course: r.course ? { documentId: r.course.documentId, title: r.course.title } : null,
+          lessonDocumentId: r.lessonDocumentId,
+          activityDocumentId: r.activityDocumentId,
+          source: r.source,
+          expiresAt: r.expiresAt,
+          grantedAt: r.grantedAt,
+          isExpired: r.isExpired
+        })));
       } catch (e) {
         ctx.status = e.status || 400;
         ctx.body = { error: e.message };
@@ -38396,6 +38565,7 @@ const contentApi = () => ({
     userRoute("POST", "/activities/:documentId/review", "activity.review"),
     publicRoute("GET", "/activities/:documentId/reviews", "activity.listReviews"),
     userRoute("GET", "/my/activity/:documentId/learning", "activity.learningContent"),
+    userRoute("GET", "/my/lesson/temp-auth/status", "activity.tempLessonAuthStatus"),
     // 管理员路由（需渠道作用域）
     channelScopeRoute("GET", "/adm/activities", "activity.adminList", "activity.read"),
     channelScopeRoute("GET", "/adm/activities/calendar", "calendar.adminMonth", "activity.read"),
@@ -38419,6 +38589,9 @@ const contentApi = () => ({
     // 活动宣传页客服留言管理（复用活动 read/update 权限点）
     channelScopeRoute("GET", "/adm/activity-messages", "activity.adminListMessages", "activity.read"),
     channelScopeRoute("PUT", "/adm/activity-messages/:documentId/reply", "activity.adminReplyMessage", "activity.update"),
+    // 活动临时课时授权（单课时播放权）
+    channelScopeRoute("GET", "/adm/lessons/temp-auth/list", "activity.adminListTempAuth", "activity.read"),
+    channelScopeRoute("POST", "/adm/lessons/temp-auth", "activity.adminGrantTempLessonAuth", "activity.update"),
     // ===== 讲师/场地资源排期 =====
     channelScopeRoute("GET", "/adm/lecturers", "resource.lecturers.list", "resource.read"),
     channelScopeRoute("GET", "/adm/lecturers/:documentId", "resource.lecturers.findOne", "resource.read"),

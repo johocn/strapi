@@ -1002,6 +1002,11 @@ declare const _default: {
                     relation: string;
                     target: string;
                 };
+                tempLessonMode: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
                 learningPackageArticles: {
                     type: string;
                     relation: string;

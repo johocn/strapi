@@ -1097,6 +1097,28 @@ declare const _default: {
                 total: number;
             };
         }>;
+        isLessonTempAuthorized({ userId, lessonDocumentId }: {
+            userId: number;
+            lessonDocumentId: string;
+        }): Promise<{
+            authorized: boolean;
+            reason: string;
+            auth?: undefined;
+        } | {
+            authorized: boolean;
+            auth: any;
+            reason?: undefined;
+        }>;
+        adminGrantTempLesson(opts: {
+            activityId: string;
+            userId: number;
+            lessonDocumentId: string;
+            source?: "signup" | "milestone" | "manual";
+            expiresAt?: string | Date | null;
+        }): Promise<{
+            ok: boolean;
+            expiresAt: any;
+        }>;
         getLearningContent({ userId, activityDocumentId }: {
             userId: number;
             activityDocumentId: string;

@@ -354,6 +354,30 @@ declare const _default: ({ strapi }: {
             total: number;
         };
     }>;
+    /** 单课时临时授权判定：是否仍有效（活动期内、未过期） */
+    isLessonTempAuthorized({ userId, lessonDocumentId }: {
+        userId: number;
+        lessonDocumentId: string;
+    }): Promise<{
+        authorized: boolean;
+        reason: string;
+        auth?: undefined;
+    } | {
+        authorized: boolean;
+        auth: any;
+        reason?: undefined;
+    }>;
+    /** 运营手动授权单课时临时播放权（幂等复用 grantTempLessonLesson，source=manual） */
+    adminGrantTempLesson(opts: {
+        activityId: string;
+        userId: number;
+        lessonDocumentId: string;
+        source?: "signup" | "milestone" | "manual";
+        expiresAt?: string | Date | null;
+    }): Promise<{
+        ok: boolean;
+        expiresAt: any;
+    }>;
     /** 本活动本人已解锁学习内容：报名解锁(preUnlock*) + 签到解锁(learningPackage*) */
     getLearningContent({ userId, activityDocumentId }: {
         userId: number;

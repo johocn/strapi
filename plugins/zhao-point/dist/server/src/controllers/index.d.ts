@@ -111,6 +111,9 @@ declare const _default: {
         adminUnarchive(ctx: any): Promise<void>;
         listReviews(ctx: any): Promise<void>;
         learningContent(ctx: any): Promise<void>;
+        tempLessonAuthStatus(ctx: any): Promise<void>;
+        adminGrantTempLessonAuth(ctx: any): Promise<void>;
+        adminListTempAuth(ctx: any): Promise<void>;
         adminToggleReviewHidden(ctx: any): Promise<void>;
         adminReviews(ctx: any): Promise<void>;
         fissionLeaderboard(ctx: any): Promise<void>;
