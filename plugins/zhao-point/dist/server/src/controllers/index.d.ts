@@ -26,6 +26,7 @@ declare const _default: {
         signIn(ctx: any): Promise<void>;
         getSignInStatus(ctx: any): Promise<void>;
         getTasks(ctx: any): Promise<void>;
+        shareStatus(ctx: any): Promise<void>;
         reportShareVisit(ctx: any): Promise<void>;
     };
     "point-admin": ({ strapi }: {

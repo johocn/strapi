@@ -548,7 +548,18 @@ declare const _default: {
         findVerificationByDocumentId: (documentId: string) => Promise<any>;
         getMergedRule: (action: string) => Promise<any | null>;
         getTasks: (userId: number) => Promise<Record<string, any[]>>;
-        hasShareVisitSince: (userId: number, since: Date) => Promise<boolean>;
+        getShareStatus: (params: {
+            userId: number | string;
+            activityId?: string | number | null;
+        }) => Promise<{
+            action: string;
+            canClaim: boolean;
+            points: number;
+            remainingMs: number;
+            dailyCount: number;
+            dailyLimit: number;
+            intervalMinutes: number;
+        }>;
     };
     redemption: ({ strapi }: {
         strapi: import('@strapi/types/dist/core').Strapi;
