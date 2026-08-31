@@ -2753,8 +2753,10 @@ const activity$1 = ({ strapi: strapi2 }) => ({
           }
         }
         if (sso) {
-          const d = act.startTime ? String(act.startTime).slice(0, 10) : "";
-          const t = act.endTime ? String(act.endTime).slice(0, 16).slice(11, 16) : act.startTime ? String(act.startTime).slice(0, 16).slice(11, 16) : "";
+          const day = act.startTime ? String(act.startTime).slice(0, 10) : "";
+          const sHm = act.startTime ? String(act.startTime).slice(11, 16) : "";
+          const eHm = act.endTime ? String(act.endTime).slice(11, 16) : "";
+          const timeRange = `${day || "待定"}${sHm ? " " + sHm : ""}${eHm ? "~" + eHm : ""}`;
           try {
             await strapi2.plugin("zhao-sso").service("sso-msg").sendNow({
               user: sso.id,
@@ -2763,8 +2765,7 @@ const activity$1 = ({ strapi: strapi2 }) => ({
               params: {
                 activityName: act.title ? String(act.title).slice(0, 20) : "",
                 activityLocation: act.venueName ? String(act.venueName).slice(0, 20) : "待定",
-                startTime: d || "待定",
-                endTime: t || "待定",
+                timeRange,
                 remark: "感谢您报名成功，请准时到场参加"
               },
               dedupeKey: `act_confirm:${sso.id}:${act.documentId}`

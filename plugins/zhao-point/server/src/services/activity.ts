@@ -710,8 +710,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         }
         // 报名确认立即发送（sendNow，不依赖 cron；参数按 act_confirm 微信模板字段映射预格式化）
         if (sso) {
-          const d = act.startTime ? String(act.startTime).slice(0, 10) : "";
-          const t = act.endTime ? String(act.endTime).slice(0, 16).slice(11, 16) : (act.startTime ? String(act.startTime).slice(0, 16).slice(11, 16) : "");
+          // 合成 timeRange 给 act_confirm 模板 time6 字段（如 "2026-08-31 14:00~16:00"）
+          const day = act.startTime ? String(act.startTime).slice(0, 10) : "";
+          const sHm = act.startTime ? String(act.startTime).slice(11, 16) : "";
+          const eHm = act.endTime ? String(act.endTime).slice(11, 16) : "";
+          const timeRange = `${day || "待定"}${sHm ? " " + sHm : ""}${eHm ? "~" + eHm : ""}`;
           try {
             await strapi
               .plugin("zhao-sso")
@@ -723,8 +726,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
                 params: {
                   activityName: act.title ? String(act.title).slice(0, 20) : "",
                   activityLocation: act.venueName ? String(act.venueName).slice(0, 20) : "待定",
-                  startTime: d || "待定",
-                  endTime: t || "待定",
+                  timeRange,
                   remark: "感谢您报名成功，请准时到场参加",
                 },
                 dedupeKey: `act_confirm:${sso.id}:${act.documentId}`,
