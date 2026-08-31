@@ -284,6 +284,43 @@ async function grantCourseTrial(strapi, userId: number, courseId: number) {
   } catch { /* 幂等授权，失败忽略 */ }
 }
 
+/** 幂等写入单课时临时授权(temp_lesson)：活动期间临时开放单课时播放权 */
+async function grantTempLessonLesson(strapi: any, opts: {
+  userId: number; courseId: number;
+  activityDocumentId: string; lessonDocumentId: string;
+  source: "signup" | "milestone" | "manual";
+  expiresAt?: string | Date | null;
+}) {
+  try {
+    const expires = opts.expiresAt ? new Date(opts.expiresAt) : null;
+    const existing = await strapi.db.query(AUTH_UID).findOne({
+      where: {
+        user: opts.userId, course: opts.courseId,
+        authType: "temp_lesson", lessonDocumentId: opts.lessonDocumentId,
+      },
+    });
+    if (existing) {
+      if (expires && (!existing.expiresAt || new Date(existing.expiresAt) < expires)) {
+        await strapi.db.query(AUTH_UID).update({
+          where: { id: existing.id },
+          data: { expiresAt: expires, isExpired: false },
+        });
+      }
+      return existing;
+    }
+    await strapi.db.query(AUTH_UID).create({
+      data: {
+        user: opts.userId, course: opts.courseId,
+        activityDocumentId: opts.activityDocumentId,
+        lessonDocumentId: opts.lessonDocumentId,
+        authType: "temp_lesson", source: opts.source,
+        expiresAt: expires, grantedAt: new Date(),
+        isExpired: false,
+      },
+    });
+  } catch { /* 幂等授权，失败忽略 */ }
+}
+
 async function resolveUserChannelId(strapi, userId: number): Promise<number | undefined> {
   const channelSvc = strapi.plugin("zhao-channel")?.service("channel-permission");
   let userChannelId: number | undefined;
@@ -1027,6 +1064,19 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       },
       pagination: result?.pagination ?? { page, pageSize, pageCount: 1, total: rows.length },
     };
+  },
+
+  /** 单课时临时授权判定：是否仍有效（活动期内、未过期） */
+  async isLessonTempAuthorized({ userId, lessonDocumentId }: { userId: number; lessonDocumentId: string }) {
+    const auth = await strapi.db.query(AUTH_UID).findOne({
+      where: {
+        user: userId, authType: "temp_lesson", lessonDocumentId,
+        isExpired: false,
+        $or: [{ expiresAt: null }, { expiresAt: { $gt: new Date().toISOString() } }],
+      },
+    });
+    if (!auth) return { authorized: false, reason: "no_auth" };
+    return { authorized: true, auth };
   },
 
   /** 本活动本人已解锁学习内容：报名解锁(preUnlock*) + 签到解锁(learningPackage*) */
