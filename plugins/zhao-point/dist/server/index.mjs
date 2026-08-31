@@ -2741,23 +2741,23 @@ const activity$1 = ({ strapi: strapi2 }) => ({
         if (sso) {
           const d = act.startTime ? String(act.startTime).slice(0, 10) : "";
           const t = act.endTime ? String(act.endTime).slice(0, 16).slice(11, 16) : act.startTime ? String(act.startTime).slice(0, 16).slice(11, 16) : "";
-          await sop.trigger("activity.signup", {
-            user: sso.id,
-            payload: { activity: { name: act.title, startTime: act.startTime } },
-            schedules: [
-              {
-                templateCode: "act_confirm",
-                scene: "activity.confirm",
-                params: {
-                  activityName: act.title ? String(act.title).slice(0, 20) : "",
-                  activityLocation: act.venueName ? String(act.venueName).slice(0, 20) : "待定",
-                  startTime: d || "待定",
-                  endTime: t || "待定",
-                  remark: "感谢您报名成功，请准时到场参加"
-                }
-              }
-            ]
-          });
+          try {
+            await strapi2.plugin("zhao-sso").service("sso-msg").sendNow({
+              user: sso.id,
+              scene: "activity.confirm",
+              templateCode: "act_confirm",
+              params: {
+                activityName: act.title ? String(act.title).slice(0, 20) : "",
+                activityLocation: act.venueName ? String(act.venueName).slice(0, 20) : "待定",
+                startTime: d || "待定",
+                endTime: t || "待定",
+                remark: "感谢您报名成功，请准时到场参加"
+              },
+              dedupeKey: `act_confirm:${sso.id}:${act.documentId}`
+            });
+          } catch (e) {
+            strapi2.log.warn(`[zhao-point:activity] sendNow act_confirm failed (user=${sso.id}): ${e.message}`);
+          }
         }
       }
     } catch (e) {

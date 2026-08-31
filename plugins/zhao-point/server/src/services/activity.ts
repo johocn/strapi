@@ -708,17 +708,18 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
             });
           }
         }
-        // 报名确认仍自动发（需已绑定 sso），参数按 act_confirm 微信模板字段映射预格式化
+        // 报名确认立即发送（sendNow，不依赖 cron；参数按 act_confirm 微信模板字段映射预格式化）
         if (sso) {
           const d = act.startTime ? String(act.startTime).slice(0, 10) : "";
           const t = act.endTime ? String(act.endTime).slice(0, 16).slice(11, 16) : (act.startTime ? String(act.startTime).slice(0, 16).slice(11, 16) : "");
-          await sop.trigger("activity.signup", {
-            user: sso.id,
-            payload: { activity: { name: act.title, startTime: act.startTime } },
-            schedules: [
-              {
-                templateCode: "act_confirm",
+          try {
+            await strapi
+              .plugin("zhao-sso")
+              .service("sso-msg")
+              .sendNow({
+                user: sso.id,
                 scene: "activity.confirm",
+                templateCode: "act_confirm",
                 params: {
                   activityName: act.title ? String(act.title).slice(0, 20) : "",
                   activityLocation: act.venueName ? String(act.venueName).slice(0, 20) : "待定",
@@ -726,9 +727,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
                   endTime: t || "待定",
                   remark: "感谢您报名成功，请准时到场参加",
                 },
-              },
-            ],
-          });
+                dedupeKey: `act_confirm:${sso.id}:${act.documentId}`,
+              });
+          } catch (e: any) {
+            strapi.log.warn(`[zhao-point:activity] sendNow act_confirm failed (user=${sso.id}): ${e.message}`);
+          }
         }
       }
     } catch (e: any) {
