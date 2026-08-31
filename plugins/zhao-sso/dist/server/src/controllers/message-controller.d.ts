@@ -7,6 +7,8 @@ declare const _default: ({ strapi }: {
     createTemplate(ctx: any): Promise<void>;
     updateTemplate(ctx: any): Promise<void>;
     deleteTemplate(ctx: any): Promise<void>;
+    /** 从模板库添加公共模板到公众号，并解析字段名返回给前端回填 */
+    addFromLibrary(ctx: any): Promise<void>;
     listJobs(ctx: any): Promise<void>;
     getJob(ctx: any): Promise<void>;
     /** 手动单发：立即 buildJob + sendJob */

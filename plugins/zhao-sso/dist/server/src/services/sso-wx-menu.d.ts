@@ -36,5 +36,13 @@ declare const _default: ({ strapi }: {
     getRemote(): Promise<any>;
     /** 公众号已添加模板只读列表（模板消息配置用） */
     listTemplates(): Promise<any>;
+    /** 从模板库添加公共模板到公众号，返回新 template_id（透传微信 errcode/errmsg） */
+    addFromLibrary(data: {
+        templateIdShort: string;
+        keywordNameList?: string[];
+    }): Promise<{
+        template_id: any;
+        errcode: number;
+    }>;
 };
 export default _default;

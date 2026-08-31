@@ -1548,6 +1548,7 @@ declare const _default: {
             createTemplate(ctx: any): Promise<void>;
             updateTemplate(ctx: any): Promise<void>;
             deleteTemplate(ctx: any): Promise<void>;
+            addFromLibrary(ctx: any): Promise<void>;
             listJobs(ctx: any): Promise<void>;
             getJob(ctx: any): Promise<void>;
             sendNow(ctx: any): Promise<void>;
@@ -2466,6 +2467,13 @@ declare const _default: {
             deleteRemote(): Promise<any>;
             getRemote(): Promise<any>;
             listTemplates(): Promise<any>;
+            addFromLibrary(data: {
+                templateIdShort: string;
+                keywordNameList?: string[];
+            }): Promise<{
+                template_id: any;
+                errcode: number;
+            }>;
         };
         "sso-wx-reply": ({ strapi }: {
             strapi: import('@strapi/types/dist/core').Strapi;

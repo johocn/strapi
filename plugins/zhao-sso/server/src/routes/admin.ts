@@ -98,6 +98,7 @@ export default () => ({
     adminRoute("GET", "/msg-templates", "message.listTemplates", "sso.msg.read"),
     adminRoute("GET", "/msg-templates/:id", "message.getTemplate", "sso.msg.read"),
     adminRoute("POST", "/msg-templates", "message.createTemplate", "sso.msg.write"),
+    adminRoute("POST", "/msg-templates/from-library", "message.addFromLibrary", "sso.msg.write"),
     adminRoute("PUT", "/msg-templates/:id", "message.updateTemplate", "sso.msg.write"),
     adminRoute("DELETE", "/msg-templates/:id", "message.deleteTemplate", "sso.msg.write"),
     adminRoute("GET", "/msg-jobs", "message.listJobs", "sso.msg.read"),

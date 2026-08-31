@@ -130,5 +130,30 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       }
       return fetchApi("GET", "template/get_all_private_template");
     },
+
+    /** 从模板库添加公共模板到公众号，返回新 template_id（透传微信 errcode/errmsg） */
+    async addFromLibrary(data: { templateIdShort: string; keywordNameList?: string[] }) {
+      const { templateIdShort, keywordNameList } = data || {};
+      if (!templateIdShort || !String(templateIdShort).trim()) {
+        throwErr("SSO_WX_MENU_400", 400, "缺少模板库编号 template_id_short");
+      }
+      const body: any = { template_id_short: String(templateIdShort).trim() };
+      const kws = (Array.isArray(keywordNameList) ? keywordNameList : [])
+        .map((s: any) => String(s).trim())
+        .filter(Boolean);
+      if (kws.length) body.keyword_name_list = kws;
+      if (isMock()) return { template_id: "mock_" + Date.now(), errcode: 0 };
+      const accessToken = await wechat().getAccessToken("official_account");
+      const res = await axios({
+        method: "POST",
+        url: "https://api.weixin.qq.com/cgi-bin/template/api_add_template",
+        params: { access_token: accessToken },
+        data: body,
+        timeout: 10000,
+      });
+      const w = res.data || {};
+      if (w.errcode) throwErr("SSO_WX_TPL_ADD", 400, `微信添加模板失败(errcode=${w.errcode}): ${w.errmsg}`);
+      return { template_id: w.template_id, errcode: 0 };
+    },
   };
 };

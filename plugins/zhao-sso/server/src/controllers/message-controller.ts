@@ -65,6 +65,23 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       });
     },
 
+    /** 从模板库添加公共模板到公众号，并解析字段名返回给前端回填 */
+    async addFromLibrary(ctx: any) {
+      await wrap(ctx, async () => {
+        const wx = strapi.plugin("zhao-sso").service("sso-wx-menu");
+        const { templateIdShort, keywordNameList } = ctx.request.body || {};
+        const added = await wx.addFromLibrary({ templateIdShort, keywordNameList });
+        const list: any = await wx.listTemplates();
+        const found = (list.template_list || []).find((t: any) => t.template_id === added.template_id);
+        const content = (found && found.content) || "";
+        const re = /\{\{(\w+)\.DATA\}\}/g;
+        const fields: string[] = [];
+        let mm: RegExpExecArray | null;
+        while ((mm = re.exec(content))) fields.push(mm[1]);
+        return { data: { templateId: added.template_id, title: (found && found.title) || "", content, fields: Array.from(new Set(fields)) } };
+      });
+    },
+
     // ===== 消息任务 =====
     async listJobs(ctx: any) {
       await wrap(ctx, async () => {

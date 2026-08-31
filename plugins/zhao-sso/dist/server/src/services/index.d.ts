@@ -755,6 +755,13 @@ declare const _default: {
         deleteRemote(): Promise<any>;
         getRemote(): Promise<any>;
         listTemplates(): Promise<any>;
+        addFromLibrary(data: {
+            templateIdShort: string;
+            keywordNameList?: string[];
+        }): Promise<{
+            template_id: any;
+            errcode: number;
+        }>;
     };
     "sso-wx-reply": ({ strapi }: {
         strapi: import('@strapi/types/dist/core').Strapi;

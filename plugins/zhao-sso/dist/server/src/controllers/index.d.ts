@@ -132,6 +132,7 @@ declare const _default: {
         createTemplate(ctx: any): Promise<void>;
         updateTemplate(ctx: any): Promise<void>;
         deleteTemplate(ctx: any): Promise<void>;
+        addFromLibrary(ctx: any): Promise<void>;
         listJobs(ctx: any): Promise<void>;
         getJob(ctx: any): Promise<void>;
         sendNow(ctx: any): Promise<void>;

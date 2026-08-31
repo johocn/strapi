@@ -2267,6 +2267,22 @@ const messageController = ({ strapi }) => {
         return { data: result };
       });
     },
+    /** 从模板库添加公共模板到公众号，并解析字段名返回给前端回填 */
+    async addFromLibrary(ctx) {
+      await wrap(ctx, async () => {
+        const wx = strapi.plugin("zhao-sso").service("sso-wx-menu");
+        const { templateIdShort, keywordNameList } = ctx.request.body || {};
+        const added = await wx.addFromLibrary({ templateIdShort, keywordNameList });
+        const list = await wx.listTemplates();
+        const found = (list.template_list || []).find((t) => t.template_id === added.template_id);
+        const content = found && found.content || "";
+        const re = /\{\{(\w+)\.DATA\}\}/g;
+        const fields = [];
+        let mm;
+        while (mm = re.exec(content)) fields.push(mm[1]);
+        return { data: { templateId: added.template_id, title: found && found.title || "", content, fields: Array.from(new Set(fields)) } };
+      });
+    },
     // ===== 消息任务 =====
     async listJobs(ctx) {
       await wrap(ctx, async () => {
@@ -3449,6 +3465,7 @@ const admin = () => ({
     adminRoute("GET", "/msg-templates", "message.listTemplates", "sso.msg.read"),
     adminRoute("GET", "/msg-templates/:id", "message.getTemplate", "sso.msg.read"),
     adminRoute("POST", "/msg-templates", "message.createTemplate", "sso.msg.write"),
+    adminRoute("POST", "/msg-templates/from-library", "message.addFromLibrary", "sso.msg.write"),
     adminRoute("PUT", "/msg-templates/:id", "message.updateTemplate", "sso.msg.write"),
     adminRoute("DELETE", "/msg-templates/:id", "message.deleteTemplate", "sso.msg.write"),
     adminRoute("GET", "/msg-jobs", "message.listJobs", "sso.msg.read"),
@@ -6696,6 +6713,28 @@ const ssoWxMenu = ({ strapi }) => {
         };
       }
       return fetchApi("GET", "template/get_all_private_template");
+    },
+    /** 从模板库添加公共模板到公众号，返回新 template_id（透传微信 errcode/errmsg） */
+    async addFromLibrary(data) {
+      const { templateIdShort, keywordNameList } = data || {};
+      if (!templateIdShort || !String(templateIdShort).trim()) {
+        throwErr("SSO_WX_MENU_400", 400, "缺少模板库编号 template_id_short");
+      }
+      const body = { template_id_short: String(templateIdShort).trim() };
+      const kws = (Array.isArray(keywordNameList) ? keywordNameList : []).map((s) => String(s).trim()).filter(Boolean);
+      if (kws.length) body.keyword_name_list = kws;
+      if (isMock$2()) return { template_id: "mock_" + Date.now(), errcode: 0 };
+      const accessToken = await wechat().getAccessToken("official_account");
+      const res = await axios({
+        method: "POST",
+        url: "https://api.weixin.qq.com/cgi-bin/template/api_add_template",
+        params: { access_token: accessToken },
+        data: body,
+        timeout: 1e4
+      });
+      const w = res.data || {};
+      if (w.errcode) throwErr("SSO_WX_TPL_ADD", 400, `微信添加模板失败(errcode=${w.errcode}): ${w.errmsg}`);
+      return { template_id: w.template_id, errcode: 0 };
     }
   };
 };
