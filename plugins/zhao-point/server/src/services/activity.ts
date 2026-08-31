@@ -657,8 +657,18 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       await this.notifyInApp(userId, act.id, "activity.before", { name: act.title, startTime: act.startTime }, `activity:before:${userId}:${act.id}`);
     }
     // 预留存：试看课时所属课程授权
+    const tempExpiry = act.endTime || null;
     for (const lesson of act.preUnlockLessons || []) {
-      if (lesson?.course?.id) await grantCourseTrial(strapi, userId, lesson.course.id);
+      if (!lesson?.course?.id) continue;
+      await grantCourseTrial(strapi, userId, lesson.course.id);
+      await grantTempLessonLesson(strapi, {
+        userId,
+        courseId: lesson.course.id,
+        activityDocumentId: act.documentId,
+        lessonDocumentId: lesson.documentId || String(lesson.id),
+        source: "signup",
+        expiresAt: tempExpiry,
+      });
     }
     // SOP 埋点：报名确认立即通知 + 活动开始前 24h 提醒（跨插件调用 zhao-sso/sso-sop）
     try {
