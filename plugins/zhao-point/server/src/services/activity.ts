@@ -1103,6 +1103,30 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     return { authorized: true, auth };
   },
 
+  /** 运营手动授权单课时临时播放权（幂等复用 grantTempLessonLesson，source=manual） */
+  async adminGrantTempLesson(opts: {
+    activityId: string; userId: number; lessonDocumentId: string;
+    source?: "signup" | "milestone" | "manual"; expiresAt?: string | Date | null;
+  }) {
+    const act = await strapi.db.query(ACTIVITY_UID).findOne({
+      where: { documentId: opts.activityId },
+      populate: { preUnlockLessons: { select: ["documentId", "course"] } },
+    });
+    if (!act) { const e: any = new Error("活动不存在"); e.status = 404; throw e; }
+    const lesson = act.preUnlockLessons?.find((l: any) => l.documentId === opts.lessonDocumentId || l.id === opts.lessonDocumentId);
+    if (!lesson) { const e: any = new Error("该课时不在活动的临时开放列表"); e.status = 400; throw e; }
+    const exp = opts.expiresAt || act.endTime || null;
+    await grantTempLessonLesson(strapi, {
+      userId: Number(opts.userId),
+      courseId: Number(lesson.course?.id) || Number(lesson.course),
+      activityDocumentId: opts.activityId,
+      lessonDocumentId: opts.lessonDocumentId,
+      source: opts.source || "manual",
+      expiresAt: exp,
+    });
+    return { ok: true, expiresAt: exp };
+  },
+
   /** 本活动本人已解锁学习内容：报名解锁(preUnlock*) + 签到解锁(learningPackage*) */
   async getLearningContent({ userId, activityDocumentId }: {
     userId: number; activityDocumentId: string;

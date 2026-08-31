@@ -6,6 +6,7 @@ import { isRoleGateEnabled, mayAccessVisibleToRoles } from "../../../../zhao-com
 import { resolveUserRoles } from "../../../../zhao-course/server/src/utils/role-gate";
 
 const ACTIVITY_UID = "plugin::zhao-point.activity";
+const AUTH_UID = "plugin::zhao-course.user-course-auth";
 const SIGNS_UID = "plugin::zhao-point.activity-signup";
 const ATT_UID = "plugin::zhao-point.activity-attendance";
 const REWARD_UID = "plugin::zhao-point.activity-referral-reward";
@@ -757,6 +758,64 @@ function normalizePromoModules(promoModules: any): any[] | undefined {
         activityDocumentId: ctx.params.documentId,
       });
       ctx.body = wrap(result);
+    } catch (e: any) {
+      ctx.status = (e as any).status || 400;
+      ctx.body = { error: e.message };
+    }
+  },
+
+  // GET /my/lesson/temp-auth/status  单课时临时播放权状态
+  async tempLessonAuthStatus(ctx: any) {
+    try {
+      const userId = await getUserId(ctx);
+      const { lessonDocumentId } = ctx.query;
+      if (!lessonDocumentId) { ctx.status = 400; ctx.body = { error: "缺少 lessonDocumentId" }; return; }
+      const result = await activitySvc().isLessonTempAuthorized({ userId, lessonDocumentId });
+      ctx.body = wrap(result);
+    } catch (e: any) {
+      ctx.status = (e as any).status || 400;
+      ctx.body = { error: e.message };
+    }
+  },
+
+  // POST /adm/lessons/temp-auth  运营手动授权单课时临时播放权
+  async adminGrantTempLessonAuth(ctx: any) {
+    try {
+      const { activityId, userId, lessonDocumentId, expiresAt, source = "manual" } = ctx.request.body?.data || ctx.request.body || {};
+      if (!activityId || !userId || !lessonDocumentId) { ctx.status = 400; ctx.body = { error: "缺少 activityId/userId/lessonDocumentId" }; return; }
+      const result = await activitySvc().adminGrantTempLesson({
+        activityId,
+        userId: Number(userId),
+        lessonDocumentId,
+        source,
+        expiresAt: expiresAt || undefined,
+      });
+      ctx.body = wrap(result);
+    } catch (e: any) {
+      ctx.status = (e as any).status || 400;
+      ctx.body = { error: e.message };
+    }
+  },
+
+  // GET /adm/lessons/temp-auth/list  运营端临时授权列表（可按活动过滤）
+  async adminListTempAuth(ctx: any) {
+    try {
+      const { activityDocumentId } = ctx.query;
+      const where: any = { authType: "temp_lesson" };
+      if (activityDocumentId) where.activityDocumentId = activityDocumentId;
+      const rows = await strapi.db.query(AUTH_UID).findMany({
+        where,
+        populate: { user: { select: ["id", "username"] }, course: { select: ["documentId", "title"] } },
+        orderBy: { grantedAt: "desc" },
+      });
+      ctx.body = wrapList(rows.map((r: any) => ({
+        id: r.id,
+        user: r.user ? { id: r.user.id, username: r.user.username } : null,
+        course: r.course ? { documentId: r.course.documentId, title: r.course.title } : null,
+        lessonDocumentId: r.lessonDocumentId,
+        activityDocumentId: r.activityDocumentId,
+        source: r.source, expiresAt: r.expiresAt, grantedAt: r.grantedAt, isExpired: r.isExpired,
+      })));
     } catch (e: any) {
       ctx.status = (e as any).status || 400;
       ctx.body = { error: e.message };
