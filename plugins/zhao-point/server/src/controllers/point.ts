@@ -83,9 +83,35 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
           remark = `分享活动:${act.title}`;
         }
       }
+      // 解析用户归属渠道（客户渠道兜底）：
+      // 1) 用户当前渠道(channel-member isCurrent) 2) 直接授权渠道第一个 3) 当前站点关联渠道第一个
+      let resolvedChannel: number | undefined = undefined;
+      const channelSvc = strapi.plugin("zhao-channel")?.service("channel-permission");
+      if (channelSvc) {
+        const member = await strapi.db.query("plugin::zhao-channel.channel-member")
+          .findOne({ where: { user: userId, isCurrent: true }, populate: ["channel"] });
+        resolvedChannel = member?.channel?.id || member?.channel;
+        if (!resolvedChannel) {
+          const dirs = await channelSvc.getUserDirectChannels(userId);
+          resolvedChannel = dirs?.[0];
+        }
+      }
+      if (!resolvedChannel) {
+        // 兜底：当前站点关联的第一个渠道（复用 ensureDefaultChannel 同一套 getAvailableChannels）
+        const siteDocId = (ctx as any).state?.siteDocumentId;
+        if (siteDocId) {
+          const siteSvc = strapi.plugin("zhao-common")?.service("site-config");
+          const siteChannels = siteSvc?.getAvailableChannels
+            ? await siteSvc.getAvailableChannels(siteDocId)
+            : null;
+          resolvedChannel = Array.isArray(siteChannels) && siteChannels.length > 0
+            ? (siteChannels[0].id ?? undefined)
+            : undefined;
+        }
+      }
       const record = await strapi.plugin("zhao-point").service("point").earnPoints({
         userId, action, source: "activity", method: "用户分享领取",
-        remark, points, channelId: body.channelId, userChannelId: body.channelId,
+        remark, points, userChannelId: resolvedChannel,
       });
       ctx.body = wrap(record);
     } catch (e: any) {
@@ -447,6 +473,18 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       ctx.body = wrap(result);
     } catch (e: any) {
       ctx.status = (e as any).status || 400;
+      ctx.body = { error: e.message };
+    }
+  },
+
+  async shareStatus(ctx: any) {
+    try {
+      const userId = getUserId(ctx);
+      const { activityId } = ctx.query || {};
+      const result = await strapi.plugin("zhao-point").service("point").getShareStatus({ userId, activityId });
+      ctx.body = wrap(result);
+    } catch (e: any) {
+      ctx.status = (e as any).status || 500;
       ctx.body = { error: e.message };
     }
   },

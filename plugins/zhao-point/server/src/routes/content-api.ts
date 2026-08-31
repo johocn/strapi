@@ -72,6 +72,7 @@ export default () => ({
     userRoute("GET", "/my/point/eligible-actions", "point.getEligibleActions"),
     userRoute("POST", "/my/point/sign-in", "point.signIn"),
     userRoute("POST", "/my/point/earn/share", "point.earnShare"),
+    userRoute("GET", "/my/point/share/status", "point.shareStatus"),
     userRoute("GET", "/my/point/sign-in/status", "point.getSignInStatus"),
     userRoute("GET", "/my/point/tasks", "point.getTasks"),
 
