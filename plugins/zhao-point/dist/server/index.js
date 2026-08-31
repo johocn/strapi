@@ -3124,7 +3124,7 @@ const activity$1 = ({ strapi: strapi2 }) => ({
       pagination: result?.pagination ?? { page, pageSize, pageCount: 1, total: rows.length }
     };
   },
-  /** 单课时临时授权判定：是否仍有效（活动期内、未过期） */
+  /** 单课时临时授权判定：是否仍有效（活动期内、未过期、且活动仍开放该课时） */
   async isLessonTempAuthorized({ userId, lessonDocumentId }) {
     const auth = await strapi2.db.query(AUTH_UID$1).findOne({
       where: {
@@ -3136,6 +3136,17 @@ const activity$1 = ({ strapi: strapi2 }) => ({
       }
     });
     if (!auth) return { authorized: false, reason: "no_auth" };
+    const actId = auth.activityDocumentId;
+    if (actId) {
+      const act = await strapi2.db.query(ACTIVITY_UID$9).findOne({
+        where: { documentId: actId },
+        populate: { preUnlockLessons: { select: ["documentId"] } }
+      });
+      const stillOpen = !!act && act.tempLessonMode !== "none" && (act.preUnlockLessons || []).some(
+        (l) => l.documentId === lessonDocumentId || l.id === lessonDocumentId
+      );
+      if (!stillOpen) return { authorized: false, reason: "removed_from_activity" };
+    }
     return { authorized: true, auth };
   },
   /** 运营手动授权单课时临时播放权（幂等复用 grantTempLessonLesson，source=manual） */

@@ -1090,7 +1090,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     };
   },
 
-  /** 单课时临时授权判定：是否仍有效（活动期内、未过期） */
+  /** 单课时临时授权判定：是否仍有效（活动期内、未过期、且活动仍开放该课时） */
   async isLessonTempAuthorized({ userId, lessonDocumentId }: { userId: number; lessonDocumentId: string }) {
     const auth = await strapi.db.query(AUTH_UID).findOne({
       where: {
@@ -1100,6 +1100,24 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       },
     });
     if (!auth) return { authorized: false, reason: "no_auth" };
+
+    // 堵越权：回查授权关联活动是否仍开放此课时。
+    // 存量授权无 activityDocumentId 时跳过回查，维持兼容放行，不误伤老数据。
+    const actId = auth.activityDocumentId;
+    if (actId) {
+      const act = await strapi.db.query(ACTIVITY_UID).findOne({
+        where: { documentId: actId },
+        populate: { preUnlockLessons: { select: ["documentId"] } },
+      });
+      const stillOpen =
+        !!act &&
+        act.tempLessonMode !== "none" &&
+        (act.preUnlockLessons || []).some(
+          (l: any) => l.documentId === lessonDocumentId || l.id === lessonDocumentId
+        );
+      if (!stillOpen) return { authorized: false, reason: "removed_from_activity" };
+    }
+
     return { authorized: true, auth };
   },
 

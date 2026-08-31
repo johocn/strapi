@@ -354,7 +354,7 @@ declare const _default: ({ strapi }: {
             total: number;
         };
     }>;
-    /** 单课时临时授权判定：是否仍有效（活动期内、未过期） */
+    /** 单课时临时授权判定：是否仍有效（活动期内、未过期、且活动仍开放该课时） */
     isLessonTempAuthorized({ userId, lessonDocumentId }: {
         userId: number;
         lessonDocumentId: string;
