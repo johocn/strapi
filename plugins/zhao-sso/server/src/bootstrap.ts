@@ -8,7 +8,14 @@ const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
   const TEMPLATE_UID_ACT = "plugin::zhao-sso.msg-template";
   const VERSION_UID_ACT = "plugin::zhao-sso.msg-template-version";
   const DEFAULT_SOP_TEMPLATES = [
-    { code: "act_confirm", name: "活动报名成功确认", desc: "报名成功立即发送" },
+    // act_confirm 已绑定真实微信模板（活动报名通知），字段映射与活动埋点 params 对应
+    { code: "act_confirm", name: "活动报名成功确认", desc: "报名成功立即发送", wxTemplateId: "uX1Wabj6wAc9tQzf9uQRgWZuDzci3mPdENrci48F8y8", wxTemplateFields: [
+      { name: "thing1", key: "activityName" },
+      { name: "thing3", key: "activityLocation" },
+      { name: "date5", key: "startTime" },
+      { name: "time13", key: "endTime" },
+      { name: "thing6", key: "remark" },
+    ]},
     { code: "act_before", name: "活动开始前提醒", desc: "活动开始前 24h 提醒" },
     { code: "act_receipt", name: "活动结束回执（感谢+评价邀请）", desc: "活动结束到场用户回执" },
     { code: "act_repurchase", name: "复购/转介邀请", desc: "活动结束到场用户次日复购/转介触达" },
@@ -18,8 +25,17 @@ const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
   for (const t of DEFAULT_SOP_TEMPLATES) {
     let tpl = await strapi.db.query(TEMPLATE_UID_ACT).findOne({ where: { code: t.code } });
     if (!tpl) {
-      tpl = await strapi.db.query(TEMPLATE_UID_ACT).create({ data: { code: t.code, name: t.name, provider: "wechat", content: "（shenglin SOP 模板）", isEnabled: true, description: t.desc } });
+      tpl = await strapi.db.query(TEMPLATE_UID_ACT).create({ data: { code: t.code, name: t.name, provider: "wechat", content: "（shenglin SOP 模板）", isEnabled: true, description: t.desc, wxTemplateId: t.wxTemplateId || null, wxTemplateFields: t.wxTemplateFields || null } });
       strapi.log.info(`[zhao-sso] SOP template seeded: ${t.code}`);
+    } else if (t.wxTemplateId) {
+      // 幂等补配微信模板配置（存量模板在重启时自动更新，无需重建 dist 后手动改库）
+      const patch: any = {};
+      if (t.wxTemplateId && tpl.wxTemplateId !== t.wxTemplateId) patch.wxTemplateId = t.wxTemplateId;
+      if (t.wxTemplateFields && JSON.stringify(tpl.wxTemplateFields) !== JSON.stringify(t.wxTemplateFields)) patch.wxTemplateFields = t.wxTemplateFields;
+      if (Object.keys(patch).length) {
+        await strapi.db.query(TEMPLATE_UID_ACT).update({ where: { id: tpl.id }, data: patch });
+        strapi.log.info(`[zhao-sso] SOP template wx config updated: ${t.code}`);
+      }
     }
     let ver = await strapi.db.query(VERSION_UID_ACT).findOne({ where: { code: `${t.code}_v1` } });
     if (!ver) {

@@ -2739,10 +2739,24 @@ const activity$1 = ({ strapi: strapi2 }) => ({
           }
         }
         if (sso) {
+          const d = act.startTime ? String(act.startTime).slice(0, 10) : "";
+          const t = act.endTime ? String(act.endTime).slice(0, 16).slice(11, 16) : act.startTime ? String(act.startTime).slice(0, 16).slice(11, 16) : "";
           await sop.trigger("activity.signup", {
             user: sso.id,
             payload: { activity: { name: act.title, startTime: act.startTime } },
-            schedules: [{ templateCode: "act_confirm", scene: "activity.confirm" }]
+            schedules: [
+              {
+                templateCode: "act_confirm",
+                scene: "activity.confirm",
+                params: {
+                  activityName: act.title ? String(act.title).slice(0, 20) : "",
+                  activityLocation: act.venueName ? String(act.venueName).slice(0, 20) : "待定",
+                  startTime: d || "待定",
+                  endTime: t || "待定",
+                  remark: "感谢您报名成功，请准时到场参加"
+                }
+              }
+            ]
           });
         }
       }
