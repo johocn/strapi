@@ -68,21 +68,38 @@ git commit -m "feat(course-auth): 扩展 temp_lesson 授权模型，关联 activ
 
 ---
 
+### Task 1A: 活动内容类型增加临时开放模式字段
+
+**Files:**
+- Modify: `plugins/zhao-point/server/src/content-types/activity/schema.json`
+
+- [ ] **Step 1: 增加 tempLessonMode 字段**
+
+在 `schema.json` 的 `attributes` 中，`preUnlockLessons`（L38）之后新增：
+
+```json
+"tempLessonMode": { "type": "enumeration", "enum": ["none", "signup", "milestone", "manual", "mixed"], "default": "none" },
+```
+
+- [ ] **Step 2: 校验并提交**
+
+Run: `cd e:\code\basic && npm run build`（期望无 schema 解析错误）
+
+```bash
+git add plugins/zhao-point/server/src/content-types/activity/schema.json
+git commit -m "feat(activity): 活动内容类型增加 tempLessonMode 临时开放模式字段"
+```
+
+---
+
 ### Task 2: zhao-point 新增临时课时授权 service 方法
 
 **Files:**
 - Modify: `plugins/zhao-point/server/src/services/activity.ts`
-- NOTE: 若 `user-course-auth` 的 `activity`/`lesson` 关联在实务中难解析（跨插件 relation），此处用 `activityDocumentId`（string）与 `lessonDocumentId`（string）授权落库。本计划采用 string 方式，最稳、无跨插件 relation 成本。
 
-- [ ] **Step 1: 常量与辅助函数**
+- [ ] **Step 1: 辅助函数**
 
-在 `activity.ts` 顶部常量区新增（AUTH_UID 已存在）一个常量 `LESSON_UID`：
-
-```ts
-const NODE_TEMP_UID = "plugin::zhao-course.course-lesson";
-```
-
-并在 `grantCourseTrial` 之后新增一个 `grantTempLessonLesson` 辅助函数（按课时授权到课程，记录 lessonDocumentId 供前端判定放行）：
+在模块级 `grantCourseTrial`（L279）之后新增一个 `grantTempLessonLesson` 辅助函数（按课时授权到课程，记录 lessonDocumentId 供前端判定放行）：
 
 ```ts
 /** 按课时写入 temp_lesson 授权（幂等 per user+course+activityDocumentId+lessonDocumentId+source） */
@@ -201,18 +218,15 @@ async adminGrantTempLessonAuth(ctx: any) {
     const lesson = act.preUnlockLessons?.find((l: any) => l.documentId === lessonDocumentId || l.id === lessonDocumentId);
     if (!lesson) { ctx.status = 400; ctx.body = { error: "该课时不在活动的临时开放列表" }; return; }
     const exp = expiresAt || act.endTime || null;
-    await strapi.plugin("zhao-point").service("activity").isLessonTempAuthorized // 仅作引用占位
-    const svc = strapi.plugin("zhao-point").service("activity");
-    // 复用发送：仅当 service 暴露 grant helper；否则直接写 auth
-    const AUTH_UID = "plugin::zhao-course.user-course-auth";
-    await strapi.db.query(AUTH_UID).create({
-      data: {
-        user: Number(userId), course: lesson.course?.id || lesson.course,
-        activityDocumentId: activityId, lessonDocumentId,
-        authType: "temp_lesson", source, expiresAt: exp ? new Date(exp) : null,
-        grantedAt: new Date(), isExpired: false,
-      },
-    }).catch(() => {});
+    // 复用幂等发送 helper（避免重复 create）
+    await grantTempLessonLesson(strapi, {
+      userId: Number(userId),
+      courseId: Number(lesson.course?.id) || Number(lesson.course),
+      activityDocumentId: activityId,
+      lessonDocumentId,
+      source: source as any,
+      expiresAt: exp,
+    });
     ctx.body = wrap({ ok: true, expiresAt: exp });
   } catch (e: any) {
     ctx.status = (e as any).status || 400;
@@ -221,7 +235,7 @@ async adminGrantTempLessonAuth(ctx: any) {
 },
 ```
 
-（注：`lesson.course` 可能为对象或 id，`lesson.course?.id || lesson.course` 兼容两种形态。）
+（注：`lesson.course` 可能为对象或 id，`lesson.course?.id || lesson.course` 兼容两种形态。`grantTempLessonLesson` 须为模块级函数，controller 内可访问。）
 
 - [ ] **Step 3: 路由注册**
 
@@ -519,6 +533,6 @@ v.joho.cn 硬刷新后：报名临时开放活动的客户进入该课程，被�
 
 ## Self-Review 检查
 
-- **Spec 覆盖**：三类来源——signup（Task 4）、milestone（Task 5）、manual（Task 3/8）✓；到期收回（expiresAt 校验 Task 2 + 过期场景 Task 9）✓；前端放行顺序锁（Task 6）✓；后端不设媒体拦截（未改 checkAuth/api-controller）✓；每活动仅 1 课时（admin form 约束 Task 7）✓。
-- **占位扫描**：无 TBD；`adminListTempAuth` 在 Task 8 补齐，路由在 Task 3 注册，二者对象一致（`activity.adminListTempAuth`）✓。Task 3 Step2 留了一行仅注释的占位 `isLessonTempAuthorized` 调用——执行时应删除该行（self-review 已标）。Task 2 判定方法内有过度查询 `act`——已用备注说明以 `auth` 查询为准，执行时删除 act 查询。
-- **类型一致性**：`grantTempLessonLesson(userId, courseId, activityDocumentId, source, expiresAt)` 在 Task 2 定义、Task 4/5 复用，签名一致 ✓。controller 用 `getUserId`、`activitySvc()`、`wrap`、`wrapList` 均为既有已定义函数 ✓。
+- **Spec 覆盖**：三类来源——signup（Task 4）、milestone（Task 5）、manual（Task 3/8）✓；到期收回（expiresAt 校验 Task 2 + 过期场景 Task 9）✓；前端放行顺序锁（Task 6）✓；后端不设媒体拦截（未改 checkAuth/api-controller）✓；每活动仅 1 课时（admin form 约束 Task 7）✓；tempLessonMode 字段（Task 1A）✓。
+- **占位/死代码扫描**：无 TBD；`NODE_TEMP_UID` 死常量已删（Task 2 Step 1 仅保留一个后置 helper）；Task 3 Step2 的注释占位与重复 create 已改为复用 `grantTempLessonLesson`（幂等）✓。
+- **类型一致性**：`grantTempLessonLesson(strapi, { userId, courseId, activityDocumentId, source, expiresAt })` 在 Task 2 定义（模块级）、Task 3/4/5 复用，签名一致 ✓（Task 3 另带 `lessonDocumentId`，与 Task 2 create 所需一致）。controller 用 `getUserId`、`activitySvc()`、`wrap`、`wrapList`、`grantTempLessonLesson`（模块级）均为既有/已定义 ✓。
