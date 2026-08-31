@@ -20,10 +20,24 @@
       "relation": "manyToOne",
       "target": "plugin::zhao-course.course"
     },
+    "activityDocumentId": {
+      "type": "string"
+    },
+    "lessonDocumentId": {
+      "type": "string"
+    },
     "authType": {
       "type": "enumeration",
-      "enum": ["free", "paid", "admin_grant"],
+      "enum": ["free", "paid", "admin_grant", "temp_lesson"],
       "default": "free"
+    },
+    "source": {
+      "type": "enumeration",
+      "enum": ["signup", "milestone", "manual"],
+      "default": "manual"
+    },
+    "grantedAt": {
+      "type": "datetime"
     },
     "expiresAt": {
       "type": "datetime"
