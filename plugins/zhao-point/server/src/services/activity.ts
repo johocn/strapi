@@ -729,6 +729,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
                   timeRange,
                   remark: "感谢您报名成功，请准时到场参加",
                 },
+                // 点击消息跳转活动宣传页（C 端），不跳后台
+                link: act.documentId ? `https://v.joho.cn/#/pages/activity/promo?act=${act.documentId}` : undefined,
                 dedupeKey: `act_confirm:${sso.id}:${act.documentId}`,
               });
           } catch (e: any) {
