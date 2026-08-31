@@ -1,0 +1,21 @@
+declare const _default: {
+  "kind": "collectionType",
+  "collectionName": "sso_sop_manual_todos",
+  "info": { "singularName": "manual-sop-todo", "pluralName": "manual-sop-todos", "displayName": "SSO Manual SOP Todo" },
+  "options": { "draftAndPublish": false },
+  "attributes": {
+    "code": { "type": "string", "required": true },
+    "title": { "type": "string", "required": true },
+    "scene": { "type": "string", "required": true },
+    "templateCode": { "type": "string" },
+    "link": { "type": "text" },
+    "audience": { "type": "json" },
+    "paramsTemplate": { "type": "json" },
+    "status": { "type": "enumeration", "enum": ["open", "done", "skipped"], "default": "open", "required": true },
+    "doneAt": { "type": "datetime" },
+    "sentCount": { "type": "integer", "default": 0 },
+    "description": { "type": "text" }
+  }
+};
+
+export default _default;

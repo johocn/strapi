@@ -127,6 +127,11 @@ export default () => ({
     adminRoute("GET", "/msg/course-d7-stats", "msg-stats.courseD7Stats", "sso.msg.read"),
     adminRoute("GET", "/msg/course-completion-stats", "msg-stats.courseCompletionStats", "sso.msg.read"),
 
+    // 手动 SOP 待办列表
+    adminRoute("GET", "/sop-manual-todos", "sop-manual.list", "sso.msg.read"),
+    adminRoute("POST", "/sop-manual-todos/:id/dispatch", "sop-manual.dispatch", "sso.msg.write"),
+    adminRoute("POST", "/sop-manual-todos/:id/skip", "sop-manual.skip", "sso.msg.write"),
+
     // 用户画像分层
     adminRoute("GET", "/profiles", "profile.list", "sso.profile.read"),
     adminRoute("GET", "/profiles/:id", "profile.detail", "sso.profile.read"),

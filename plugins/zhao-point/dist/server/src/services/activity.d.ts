@@ -401,22 +401,19 @@ declare const _default: ({ strapi }: {
     }>;
     /**
      * 活动结束触点：本项目无可靠业务结束判定（无 cron、无专属关闭端点，adminUpdate 仅通用更新 status），
-     * 因此提供公开 service 方法 closeActivity(activityId) 兼做“activity.closed”未到场回访埋点，不引入 cron。
-     * 调用方在活动结束后自行调用；对活动期内未签到(attended_at 为空)且未取消的每个报名用户触发一次回访。
+     * 因此提供公开 service 方法 closeActivity(activityId) 兼做活动结束埋点（生成手动 SOP 待办），不引入 cron。
+     * 调用方在活动结束后自行调用；不再逐人自动下发，改生成回放/复购/未到场回访三条待办给管理员手动发送，
+     * 名单由 activity-sop-audience.resolveAudience 在点发时实时解析。
      */
     closeActivity(activityId: string): Promise<{
         ok: boolean;
         closed: boolean;
         already: boolean;
-        reviewTriggered: number;
-        revisitTriggered: number;
-        repurchaseTriggered: number;
+        todosGenerated: number;
     } | {
         ok: boolean;
         closed: boolean;
-        reviewTriggered: number;
-        revisitTriggered: number;
-        repurchaseTriggered: number;
+        todosGenerated: number;
         already?: undefined;
     }>;
     /**

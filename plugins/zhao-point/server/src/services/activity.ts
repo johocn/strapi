@@ -684,27 +684,38 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         expiresAt: tempExpiry,
       });
     }
-    // SOP 埋点：报名确认立即通知 + 活动开始前 24h 提醒（跨插件调用 zhao-sso/sso-sop）
+    // SOP 埋点：报名确认需 sso 自动下发；活动前提醒改为生成待办（管理员手动发，省轮询开销）
     try {
       const sop = strapi.plugin("zhao-sso")?.service("sso-sop");
       if (sop) {
         const sso = await sop.resolveSsoUserForUpUser(userId);
-        if (!sso) return { ok: true, granted, signupId: sig.id, pointsPreview, ...(unlockInfo ? { unlockInfo: { ...unlockInfo, pointsPreview } } : {}) };
-        const startTime = act.startTime;
-        const schedules: any[] = [{ templateCode: "act_confirm", scene: "activity.confirm" }];
+        // 活动前提醒待办（幂等：同活动同场景仅保留一条 open 待办；remindLeadMinutes<0 表示关闭提醒则不生成）
         const leadMin = Number(act.remindLeadMinutes ?? 1440);
-        if (startTime && leadMin >= 0) {
-          const beforeAt = new Date(new Date(startTime).getTime() - Math.max(leadMin, 0) * 60000).toISOString();
-          // 开场前提醒时点已过（早于 now）则跳过该条
-          if (new Date(beforeAt).getTime() > Date.now()) {
-            schedules.push({ templateCode: "act_before", scene: "activity.before", scheduledAt: beforeAt });
+        if (act.startTime && leadMin >= 0) {
+          const todoKey = `act_before:${act.documentId}`;
+          const existingTodo = await strapi.db
+            .query("plugin::zhao-sso.manual-sop-todo")
+            .findOne({ where: { code: todoKey, status: "open" } });
+          if (!existingTodo) {
+            await sop.enqueueManualSop({
+              code: todoKey,
+              title: `活动前提醒待办：${act.title}`,
+              scene: "activity.before",
+              templateCode: "act_before",
+              audience: { activityDocumentId: act.documentId, filter: "registered" },
+              paramsTemplate: { activityName: act.title },
+              link: null,
+            });
           }
         }
-        await sop.trigger("activity.signup", {
-          user: sso.id,
-          payload: { activity: { name: act.title, startTime } },
-          schedules,
-        });
+        // 报名确认仍自动发（需已绑定 sso）
+        if (sso) {
+          await sop.trigger("activity.signup", {
+            user: sso.id,
+            payload: { activity: { name: act.title, startTime: act.startTime } },
+            schedules: [{ templateCode: "act_confirm", scene: "activity.confirm" }],
+          });
+        }
       }
     } catch (e: any) {
       strapi.log.warn(`[zhao-point:activity] sop activity.signup embed failed: ${e.message}`);
@@ -1194,50 +1205,42 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
   /**
    * 活动结束触点：本项目无可靠业务结束判定（无 cron、无专属关闭端点，adminUpdate 仅通用更新 status），
-   * 因此提供公开 service 方法 closeActivity(activityId) 兼做“activity.closed”未到场回访埋点，不引入 cron。
-   * 调用方在活动结束后自行调用；对活动期内未签到(attended_at 为空)且未取消的每个报名用户触发一次回访。
+   * 因此提供公开 service 方法 closeActivity(activityId) 兼做活动结束埋点（生成手动 SOP 待办），不引入 cron。
+   * 调用方在活动结束后自行调用；不再逐人自动下发，改生成回放/复购/未到场回访三条待办给管理员手动发送，
+   * 名单由 activity-sop-audience.resolveAudience 在点发时实时解析。
    */
   async closeActivity(activityId: string) {
     const act = await strapi.documents("plugin::zhao-point.activity").findOne({ documentId: activityId });
     if (!act) throw new Error("活动不存在");
     if (act.status === "ended" || act.status === "archived") {
-      return { ok: true, closed: false, already: true, reviewTriggered: 0, revisitTriggered: 0, repurchaseTriggered: 0 };
+      return { ok: true, closed: false, already: true, todosGenerated: 0 };
     }
     await strapi.documents("plugin::zhao-point.activity").update({ documentId: activityId, data: { status: "ended" } });
-    const name = act.title;
-    const startTime = act.startTime;
-    // 全部有效报名按到场分队列：到场 → 回执(立即)+复购(次日)；未到场 → 挽回(次日)
-    const signs = await strapi.db.query(SIGNS_UID).findMany({
-      where: { activity: act.id, status: "active" },
-      populate: ["user"],
-    });
-    let reviewTriggered = 0;
-    let revisitTriggered = 0;
-    let repurchaseTriggered = 0;
-    for (const s of signs) {
-      const upUserId = s.user?.id ?? s.user;
-      if (!upUserId) continue;
-      try {
-        const sop = strapi.plugin("zhao-sso")?.service("sso-sop");
-        if (!sop) continue;
-        const sso = await sop.resolveSsoUserForUpUser(upUserId);
-        if (!sso) continue;
-        const attended = !!s.attendedAt;
-        const schedules: any[] = attended
-          ? [
-              { templateCode: "act_receipt", scene: "activity.receipt" },
-              { templateCode: "act_repurchase", scene: "activity.repurchase", delayMinutes: 1440 },
-            ]
-          : [{ templateCode: "act_revisit", scene: "activity.closed", delayMinutes: 1440 }];
-        await sop.trigger("activity.closed", {
-          user: sso.id,
-          payload: { activity: { name, startTime } },
-          schedules,
+    const actDocId = act.documentId;
+    // 不再逐人自动下发回执/复购/回访：改为生成手动 SOP 待办（管理员点发时按 audience 实时查名单）
+    const sop = strapi.plugin("zhao-sso")?.service("sso-sop");
+    let todosGenerated = 0;
+    if (sop) {
+      for (const [code, scene, template, title, filter] of [
+        ["act_recap", "activity.recap", "act_receipt", `活动回放触达待办：${act.title}`, "recap"],
+        ["act_repurchase", "activity.repurchase", "act_repurchase", `复购跟进待办：${act.title}`, "repurchase"],
+        ["act_noshow", "activity.noshow", "act_revisit", `未到场回访待办：${act.title}`, "noshow"],
+      ] as [string, string, string, string, string][]) {
+        const key = `${code}:${actDocId}`;
+        const existing = await strapi.db
+          .query("plugin::zhao-sso.manual-sop-todo")
+          .findOne({ where: { code: key, status: "open" } });
+        if (existing) continue;
+        await sop.enqueueManualSop({
+          code: key,
+          title,
+          scene,
+          templateCode: template,
+          audience: { activityDocumentId: actDocId, filter },
+          paramsTemplate: { activityName: act.title },
+          link: null,
         });
-        if (attended) { reviewTriggered++; repurchaseTriggered++; }
-        else revisitTriggered++;
-      } catch (e: any) {
-        strapi.log.warn(`[zhao-point:activity] closeActivity embed failed (user=${upUserId}): ${e.message}`);
+        todosGenerated++;
       }
     }
     // 自动归档：活动结束即生成首张 auto 快照（幂等，仅当无 auto 快照）
@@ -1246,7 +1249,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     } catch (e: any) {
       strapi.log.warn(`[zhao-point:activity] ledger auto-generate failed: ${e.message}`);
     }
-    return { ok: true, closed: true, reviewTriggered, revisitTriggered, repurchaseTriggered };
+    return { ok: true, closed: true, todosGenerated };
   },
 
   /**

@@ -26,6 +26,7 @@ import wxMenuController from "./wx-menu-controller";
 import wxReplyController from "./wx-reply-controller";
 import wxMaterialController from "./wx-material-controller";
 import wxArticleController from "./wx-article-controller";
+import sopManual from "./sop-manual";
 
 export default {
   "auth-controller": authController,
@@ -56,4 +57,5 @@ export default {
   "wx-reply": wxReplyController,
   "wx-material": wxMaterialController,
   "wx-article": wxArticleController,
+  "sop-manual": sopManual,
 };

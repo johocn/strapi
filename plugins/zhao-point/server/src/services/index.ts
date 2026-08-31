@@ -12,6 +12,7 @@ import activityStats from "./activity-stats";
 import form from "./form";
 import resourceSchedule from "./resource-schedule";
 import activityLedger from "./activity-ledger";
+import activitySopAudience from "./activity-sop-audience";
 
 export default {
   point,
@@ -28,4 +29,5 @@ export default {
   form,
   "resource-schedule": resourceSchedule,
   "activity-ledger": activityLedger,
+  "activity-sop-audience": activitySopAudience,
 };

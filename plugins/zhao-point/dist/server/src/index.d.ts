@@ -3362,15 +3362,11 @@ declare const _default: {
                 ok: boolean;
                 closed: boolean;
                 already: boolean;
-                reviewTriggered: number;
-                revisitTriggered: number;
-                repurchaseTriggered: number;
+                todosGenerated: number;
             } | {
                 ok: boolean;
                 closed: boolean;
-                reviewTriggered: number;
-                revisitTriggered: number;
-                repurchaseTriggered: number;
+                todosGenerated: number;
                 already?: undefined;
             }>;
             ensureTransitions(activityDocumentId: string): Promise<boolean>;
@@ -3560,6 +3556,11 @@ declare const _default: {
             settle(ledgerDocumentId: string, body?: {
                 settleStatus?: string;
             }): Promise<any>;
+        };
+        "activity-sop-audience": ({ strapi }: {
+            strapi: any;
+        }) => {
+            resolveAudience(audience: any): Promise<any>;
         };
     };
     routes: {

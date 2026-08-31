@@ -27,6 +27,9 @@ declare const _default: {
                 appCode: string;
                 appSecret: string;
             };
+            manualSop: {
+                adminNotifyUsers: any[];
+            };
         };
     };
     contentTypes: {
@@ -979,6 +982,62 @@ declare const _default: {
                 };
             };
         };
+        "manual-sop-todo": {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                attributes: {
+                    code: {
+                        type: string;
+                        required: boolean;
+                    };
+                    title: {
+                        type: string;
+                        required: boolean;
+                    };
+                    scene: {
+                        type: string;
+                        required: boolean;
+                    };
+                    templateCode: {
+                        type: string;
+                    };
+                    link: {
+                        type: string;
+                    };
+                    audience: {
+                        type: string;
+                    };
+                    paramsTemplate: {
+                        type: string;
+                    };
+                    status: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                        required: boolean;
+                    };
+                    doneAt: {
+                        type: string;
+                    };
+                    sentCount: {
+                        type: string;
+                        default: number;
+                    };
+                    description: {
+                        type: string;
+                    };
+                };
+            };
+        };
         "sso-user-profile": {
             schema: {
                 kind: string;
@@ -1607,6 +1666,13 @@ declare const _default: {
             status(ctx: any): Promise<void>;
             delete(ctx: any): Promise<void>;
         };
+        "sop-manual": ({ strapi }: {
+            strapi: any;
+        }) => {
+            list(ctx: any): Promise<void>;
+            dispatch(ctx: any): Promise<void>;
+            skip(ctx: any): Promise<void>;
+        };
     };
     routes: {
         "content-api": {
@@ -2022,6 +2088,34 @@ declare const _default: {
                 }>;
             }): Promise<any[]>;
             runDueJobs(limit?: number): Promise<number>;
+            adminNotifyUsers(): number[];
+            enqueueManualSop(entry: {
+                code: string;
+                title: string;
+                scene: string;
+                templateCode?: string;
+                link?: string;
+                audience: Record<string, any>;
+                paramsTemplate?: Record<string, any>;
+                description?: string;
+            }): Promise<{
+                todo: any;
+                notified: number;
+            }>;
+            notifyAdmins({ todoId, scene, title }: {
+                todoId: number;
+                scene: string;
+                title: string;
+            }): Promise<number>;
+            dispatchManualTodo(todoId: number, resolveTargetUsers: (audience: any) => Promise<number[]>): Promise<{
+                sent: number;
+                skipped: number;
+                reason: string;
+            } | {
+                sent: number;
+                skipped: number;
+                reason?: undefined;
+            }>;
         };
         "sso-profile": ({ strapi }: {
             strapi: import('@strapi/types/dist/core').Strapi;

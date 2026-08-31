@@ -377,6 +377,34 @@ declare const _default: {
             }>;
         }): Promise<any[]>;
         runDueJobs(limit?: number): Promise<number>;
+        adminNotifyUsers(): number[];
+        enqueueManualSop(entry: {
+            code: string;
+            title: string;
+            scene: string;
+            templateCode?: string;
+            link?: string;
+            audience: Record<string, any>;
+            paramsTemplate?: Record<string, any>;
+            description?: string;
+        }): Promise<{
+            todo: any;
+            notified: number;
+        }>;
+        notifyAdmins({ todoId, scene, title }: {
+            todoId: number;
+            scene: string;
+            title: string;
+        }): Promise<number>;
+        dispatchManualTodo(todoId: number, resolveTargetUsers: (audience: any) => Promise<number[]>): Promise<{
+            sent: number;
+            skipped: number;
+            reason: string;
+        } | {
+            sent: number;
+            skipped: number;
+            reason?: undefined;
+        }>;
     };
     "sso-profile": ({ strapi }: {
         strapi: import('@strapi/types/dist/core').Strapi;

@@ -16,6 +16,7 @@ import msgTemplate from "./msg-template";
 import msgTemplateVersion from "./msg-template-version";
 import msgJob from "./msg-job";
 import sopRule from "./sop-rule";
+import manualSopTodo from "./manual-sop-todo";
 import ssoUserProfile from "./sso-user-profile";
 import ssoFollowUp from "./sso-follow-up";
 import ssoQuotaConfig from "./sso-quota-config";
@@ -45,6 +46,7 @@ export default {
   "msg-template-version": msgTemplateVersion,
   "msg-job": msgJob,
   "sop-rule": sopRule,
+  "manual-sop-todo": manualSopTodo,
   "sso-user-profile": ssoUserProfile,
   "sso-follow-up": ssoFollowUp,
   "sso-quota-config": ssoQuotaConfig,

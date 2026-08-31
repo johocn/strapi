@@ -20,6 +20,9 @@ declare const _default: {
             appCode: string;
             appSecret: string;
         };
+        manualSop: {
+            adminNotifyUsers: any[];
+        };
     };
 };
 export default _default;

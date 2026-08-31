@@ -13,6 +13,7 @@ const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
     { code: "act_receipt", name: "活动结束回执（感谢+评价邀请）", desc: "活动结束到场用户回执" },
     { code: "act_repurchase", name: "复购/转介邀请", desc: "活动结束到场用户次日复购/转介触达" },
     { code: "act_noshow_revisit", name: "未到场挽回", desc: "活动结束未到场用户次日挽回" },
+    { code: "admin_notify", name: "手动SOP待办管理员微信提醒", desc: "生成手动SOP待办时推送给管理员" },
   ];
   for (const t of DEFAULT_SOP_TEMPLATES) {
     let tpl = await strapi.db.query(TEMPLATE_UID_ACT).findOne({ where: { code: t.code } });

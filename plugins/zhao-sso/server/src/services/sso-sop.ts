@@ -2,6 +2,7 @@ import type { Core } from "@strapi/strapi";
 
 const SOP_RULE_UID = "plugin::zhao-sso.sop-rule";
 const SSO_USER_UID = "plugin::zhao-sso.sso-user";
+const MANUAL_TODO_UID = "plugin::zhao-sso.manual-sop-todo";
 
 /** 从 payload 按路径取字段，支持 "a.b.c" 点路径 */
 function pick(obj: any, path: string): any {
@@ -127,5 +128,107 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       }
     }
     return sent;
+  },
+
+  /** 管理员接收手动 SOP 待办提醒的 sso-user 列表（来自插件配置，未配则跳过推送，保留后台待办列表）。 */
+  adminNotifyUsers(): number[] {
+    try {
+      const cfg = (strapi.config.get("plugin::zhao-sso") as any)?.manualSop || {};
+      const v = cfg.adminNotifyUsers;
+      return Array.isArray(v) ? v.map((x: any) => Number(x)).filter((n: number) => Number.isFinite(n)) : [];
+    } catch {
+      return [];
+    }
+  },
+
+  /**
+   * 事件埋点：为「手动 SOP」环节生成一条待办 + 微信提醒管理员。
+   * 不在此刻发送任何 C 端消息；真正的发送在 dispatchManualTodo（管理员点发）时发生。
+   */
+  async enqueueManualSop(entry: {
+    code: string;
+    title: string;
+    scene: string;
+    templateCode?: string;
+    link?: string;
+    audience: Record<string, any>;
+    paramsTemplate?: Record<string, any>;
+    description?: string;
+  }) {
+    const doc = await strapi.db.query(MANUAL_TODO_UID).create({
+      data: {
+        code: entry.code,
+        title: entry.title,
+        scene: entry.scene,
+        templateCode: entry.templateCode || null,
+        link: entry.link || null,
+        audience: entry.audience || {},
+        paramsTemplate: entry.paramsTemplate || {},
+        status: "open",
+        description: entry.description || null,
+      },
+    });
+    const notified = await this.notifyAdmins({ todoId: doc.id, scene: entry.scene, title: entry.title });
+    return { todo: doc, notified };
+  },
+
+  /** 微信模板推送给管理员（sso-user），未配置名单则跳过（仅留后台待办列表）。 */
+  async notifyAdmins({ todoId, scene, title }: { todoId: number; scene: string; title: string }) {
+    const msg = strapi.plugin("zhao-sso").service("sso-msg");
+    const admins = this.adminNotifyUsers();
+    let notified = 0;
+    for (const adminSsoUserId of admins) {
+      try {
+        await msg.buildJob({
+          user: adminSsoUserId,
+          scene: "admin.sop",
+          templateCode: "admin_notify",
+          params: { todoTitle: title, todoId },
+          link: `/admin/sso/sop-manual-todo/list`,
+          dedupeKey: `sopManualNotify:${todoId}:${adminSsoUserId}`,
+        });
+        notified++;
+      } catch (e: any) {
+        strapi.log.warn(`[sso-sop] notifyAdmins failed (admin=${adminSsoUserId}): ${e.message}`);
+      }
+    }
+    return notified;
+  },
+
+  /**
+   * 管理员点发：按待办 audience 实时查目标 up_user 名单，逐条建 job。
+   * audience 形态由调用方(zhao-point)按需约定；此处以通用「query object」委托给回调解释。
+   */
+  async dispatchManualTodo(todoId: number, resolveTargetUsers: (audience: any) => Promise<number[]>) {
+    const todo = await strapi.db.query(MANUAL_TODO_UID).findOne({ where: { id: Number(todoId) } });
+    if (!todo) throw new Error("待办不存在");
+    if (todo.status !== "open") return { sent: 0, skipped: 1, reason: `status=${todo.status}` };
+    const msg = strapi.plugin("zhao-sso").service("sso-msg");
+    const upUserIds = await resolveTargetUsers(todo.audience || {});
+    let sent = 0;
+    let skipped = 0;
+    for (const upUserId of upUserIds) {
+      const sso = await this.resolveSsoUserForUpUser(upUserId);
+      if (!sso) { skipped++; continue; }
+      try {
+        await msg.buildJob({
+          user: sso.id,
+          scene: todo.scene,
+          templateCode: todo.templateCode,
+          params: todo.paramsTemplate || {},
+          link: todo.link || undefined,
+          dedupeKey: `sopManual:${todo.id}:${sso.id}`,
+        });
+        sent++;
+      } catch (e: any) {
+        skipped++;
+        strapi.log.warn(`[sso-sop] dispatchManualTodo buildJob failed (user=${upUserId}): ${e.message}`);
+      }
+    }
+    await strapi.db.query(MANUAL_TODO_UID).update({
+      where: { id: todo.id },
+      data: { status: "done", doneAt: new Date().toISOString(), sentCount: sent },
+    });
+    return { sent, skipped };
   },
 });
