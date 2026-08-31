@@ -172,6 +172,7 @@ export default () => ({
     userRoute("POST", "/activities/:documentId/review", "activity.review"),
     publicRoute("GET", "/activities/:documentId/reviews", "activity.listReviews"),
     userRoute("GET", "/my/activity/:documentId/learning", "activity.learningContent"),
+    userRoute("GET", "/my/lesson/temp-auth/status", "activity.tempLessonAuthStatus"),
 
     // 管理员路由（需渠道作用域）
     channelScopeRoute("GET", "/adm/activities", "activity.adminList", "activity.read"),
@@ -197,6 +198,10 @@ export default () => ({
     // 活动宣传页客服留言管理（复用活动 read/update 权限点）
     channelScopeRoute("GET", "/adm/activity-messages", "activity.adminListMessages", "activity.read"),
     channelScopeRoute("PUT", "/adm/activity-messages/:documentId/reply", "activity.adminReplyMessage", "activity.update"),
+
+    // 活动临时课时授权（单课时播放权）
+    channelScopeRoute("GET", "/adm/lessons/temp-auth/list", "activity.adminListTempAuth", "activity.read"),
+    channelScopeRoute("POST", "/adm/lessons/temp-auth", "activity.adminGrantTempLessonAuth", "activity.update"),
 
     // ===== 讲师/场地资源排期 =====
     channelScopeRoute("GET", "/adm/lecturers", "resource.lecturers.list", "resource.read"),
