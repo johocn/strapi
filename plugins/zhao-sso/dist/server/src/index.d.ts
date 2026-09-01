@@ -2389,6 +2389,7 @@ declare const _default: {
                 nonce?: string | number;
                 signature?: string;
             }) => Promise<boolean>;
+            handleAdminMessageReply(openid: string, messageId: number, reply: string): Promise<string>;
             handleXml(xml: string): Promise<string>;
         };
         "sso-wx-qrcode": ({ strapi }: {

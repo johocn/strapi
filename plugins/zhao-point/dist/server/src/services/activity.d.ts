@@ -324,7 +324,21 @@ declare const _default: ({ strapi }: {
         status: any;
         repliedAt: any;
     }>;
-    /** C 端公开评价列表 + 聚合（仅展示已公开：rating!=null && reviewHidden!=true） */
+    /** 管理员通过公众号回复留言（供 zhao-sso 微信回调调用）：按消息 id 更新 reply，幂等 */
+    replyMessageByWechat({ messageId, reply }: {
+        messageId: number;
+        reply: string;
+    }): Promise<{
+        documentId: any;
+        status: any;
+        repliedAt: any;
+        skipped: boolean;
+    } | {
+        documentId: any;
+        status: any;
+        repliedAt: any;
+        skipped?: undefined;
+    }>;
     listPublicReviews({ activityDocumentId, page, pageSize }: {
         activityDocumentId: string;
         page?: number;

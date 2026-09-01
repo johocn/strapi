@@ -3286,6 +3286,20 @@ declare const _default: {
                 status: any;
                 repliedAt: any;
             }>;
+            replyMessageByWechat({ messageId, reply }: {
+                messageId: number;
+                reply: string;
+            }): Promise<{
+                documentId: any;
+                status: any;
+                repliedAt: any;
+                skipped: boolean;
+            } | {
+                documentId: any;
+                status: any;
+                repliedAt: any;
+                skipped?: undefined;
+            }>;
             listPublicReviews({ activityDocumentId, page, pageSize }: {
                 activityDocumentId: string;
                 page?: number;

@@ -67,6 +67,32 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     verifySignature,
 
     /**
+     * 管理员在公众号回复留言：校验 openid 归属 manualSop.adminNotifyUsers 名单后，
+     * 调用 zhao-point 落库回复。返回 'ok' | 'unauthorized' | 'notfound'。
+     */
+    async handleAdminMessageReply(openid: string, messageId: number, reply: string): Promise<string> {
+      try {
+        const ssoPlug = strapi.plugin("zhao-sso");
+        const sop = ssoPlug?.service("sso-sop");
+        const admins = sop && typeof sop.adminNotifyUsers === "function" ? sop.adminNotifyUsers() : [];
+        if (!admins || admins.length === 0) return "unauthorized";
+        const binding = await strapi.db.query(BINDING_UID).findOne({
+          where: { provider: "wechat", provider_user_id: openid },
+          populate: { user: true },
+        });
+        const ssoUserId = binding?.user?.id ?? binding?.user;
+        if (!ssoUserId || !admins.includes(Number(ssoUserId))) return "unauthorized";
+        const zpSvc = strapi.plugin("zhao-point")?.service("activity");
+        if (!zpSvc || typeof zpSvc.replyMessageByWechat !== "function") return "unauthorized";
+        await zpSvc.replyMessageByWechat({ messageId, reply });
+        return "ok";
+      } catch (e: any) {
+        strapi.log.warn(`[zhao-sso:wx-callback] handleAdminMessageReply failed: ${e.message}`);
+        throw e;
+      }
+    },
+
+    /**
      * 处理微信推送消息/事件（验签由 controller 层完成，此处只做业务分发与落库）
      * 返回被动回复内容（关注+配置了欢迎语返回文本 XML，否则返回微信认可的 success）
      */
@@ -140,7 +166,21 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       const replySvc = strapi.plugin("zhao-sso").service("sso-wx-reply");
 
       if (event === "text") {
-        const rule = await replySvc.matchText(msg.Content || "");
+        const text = String(msg.Content || "").trim();
+        // 管理员回复留言：公众号里回复 “回复 {留言编号} 内容”
+        const replyMatch = text.match(/^回复\s*(\d{1,8})\s+([\s\S]+)$/);
+        if (replyMatch) {
+          try {
+            const status = await this.handleAdminMessageReply(openid, Number(replyMatch[1]), replyMatch[2].trim());
+            if (status === "ok") return buildTextReply(openid, toUser, "已提交回复");
+            if (status === "unauthorized") return buildTextReply(openid, toUser, "无回复权限");
+            return buildTextReply(openid, toUser, "留言不存在或已回复");
+          } catch (e: any) {
+            strapi.log.warn(`[zhao-sso:wx-callback] message reply parse failed: ${e.message}`);
+            return "success";
+          }
+        }
+        const rule = await replySvc.matchText(text);
         if (rule && replyContent(rule)) {
           return buildTextReply(openid, toUser, replyContent(rule));
         }

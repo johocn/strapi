@@ -16,6 +16,43 @@ export const PROMO_MODULE_TYPES = [
 /** 宣传页风格枚举 */
 export const PROMO_TEMPLATES = ["summit", "salon", "training", "action", "life"] as const;
 
+/** 新留言微信通知管理员（复用 zhao-sso 的 manualSop.adminNotifyUsers 名单）。
+ *  复用已绑定真实模板 act_confirm 发送；未配置名单/无 openid 时静默跳过，不影响留言落库。 */
+async function notifyAdminsOfMessage(strapi: any, act: any, created: any) {
+  try {
+    const ssoPlug = strapi.plugin("zhao-sso");
+    const sop = ssoPlug?.service("sso-sop");
+    const msgSvc = ssoPlug?.service("sso-msg");
+    const admins = sop && typeof sop.adminNotifyUsers === "function" ? sop.adminNotifyUsers() : [];
+    if (!msgSvc || typeof msgSvc.sendNow !== "function" || admins.length === 0) return;
+    const content = String(created.content || "").replace(/\s+/g, " ").slice(0, 20);
+    const title = String(act?.title || "活动").replace(/\s+/g, " ").slice(0, 12);
+    const d = new Date(created.created_at || created.createdAt || Date.now());
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const ts = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    for (const adminSsoUserId of admins) {
+      try {
+        await msgSvc.sendNow({
+          user: adminSsoUserId,
+          scene: "activity.message",
+          templateCode: "act_confirm",
+          params: {
+            activityName: `留言#${created.id} ${title}`.slice(0, 20),
+            activityLocation: `回复：回复 ${created.id} 留言内容`,
+            meetingTime: ts,
+          },
+          link: "https://h.joho.cn/#/pages/activity/messages",
+          dedupeKey: `actMsgNotify:${created.id}:${adminSsoUserId}`,
+        });
+      } catch (e: any) {
+        strapi.log.warn(`[zhao-point] admin msg notify failed (${adminSsoUserId}): ${e.message}`);
+      }
+    }
+  } catch (e: any) {
+    strapi.log.warn(`[zhao-point] notifyAdminsOfMessage failed: ${e.message}`);
+  }
+}
+
 function isEmpty(v: any): boolean {
   return v === undefined || v === null || (typeof v === "string" && v.trim() === "");
 }
@@ -1025,6 +1062,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         status: "open",
       },
     });
+    // 新留言微信通知管理员（可配置名单），管理员按“回复 {编号} {内容}”在公众号回复
+    await notifyAdminsOfMessage(strapi, act, created);
     return { documentId: created.documentId, status: created.status, createdAt: created.createdAt };
   },
 
@@ -1096,7 +1135,20 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     return { documentId: updated.documentId, status: updated.status, repliedAt: updated.repliedAt };
   },
 
-  /** C 端公开评价列表 + 聚合（仅展示已公开：rating!=null && reviewHidden!=true） */
+  /** 管理员通过公众号回复留言（供 zhao-sso 微信回调调用）：按消息 id 更新 reply，幂等 */
+  async replyMessageByWechat({ messageId, reply }: { messageId: number; reply: string }) {
+    if (!reply || typeof reply !== "string" || !reply.trim()) throw new Error("回复内容不能为空");
+    const msg = await strapi.db.query(MSG_UID).findOne({ where: { id: Number(messageId) } });
+    if (!msg) throw new Error("留言不存在");
+    if (msg.status === "replied" && msg.reply === reply.trim()) {
+      return { documentId: msg.documentId, status: msg.status, repliedAt: msg.repliedAt, skipped: true };
+    }
+    const updated = await strapi.db.query(MSG_UID).update({
+      where: { id: msg.id },
+      data: { reply: reply.trim(), status: "replied", repliedAt: new Date().toISOString() },
+    });
+    return { documentId: updated.documentId, status: updated.status, repliedAt: updated.repliedAt };
+  },
   async listPublicReviews({ activityDocumentId, page = 1, pageSize = 20 }: {
     activityDocumentId: string; page?: number; pageSize?: number;
   }) {

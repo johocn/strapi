@@ -2142,6 +2142,40 @@ const PROMO_MODULE_TYPES = [
   "floatContact"
 ];
 const PROMO_TEMPLATES = ["summit", "salon", "training", "action", "life"];
+async function notifyAdminsOfMessage(strapi2, act, created) {
+  try {
+    const ssoPlug = strapi2.plugin("zhao-sso");
+    const sop = ssoPlug?.service("sso-sop");
+    const msgSvc = ssoPlug?.service("sso-msg");
+    const admins = sop && typeof sop.adminNotifyUsers === "function" ? sop.adminNotifyUsers() : [];
+    if (!msgSvc || typeof msgSvc.sendNow !== "function" || admins.length === 0) return;
+    const content = String(created.content || "").replace(/\s+/g, " ").slice(0, 20);
+    const title = String(act?.title || "活动").replace(/\s+/g, " ").slice(0, 12);
+    const d = new Date(created.created_at || created.createdAt || Date.now());
+    const pad = (n) => String(n).padStart(2, "0");
+    const ts = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    for (const adminSsoUserId of admins) {
+      try {
+        await msgSvc.sendNow({
+          user: adminSsoUserId,
+          scene: "activity.message",
+          templateCode: "act_confirm",
+          params: {
+            activityName: `留言#${created.id} ${title}`.slice(0, 20),
+            activityLocation: `回复：回复 ${created.id} 留言内容`,
+            meetingTime: ts
+          },
+          link: "https://h.joho.cn/#/pages/activity/messages",
+          dedupeKey: `actMsgNotify:${created.id}:${adminSsoUserId}`
+        });
+      } catch (e) {
+        strapi2.log.warn(`[zhao-point] admin msg notify failed (${adminSsoUserId}): ${e.message}`);
+      }
+    }
+  } catch (e) {
+    strapi2.log.warn(`[zhao-point] notifyAdminsOfMessage failed: ${e.message}`);
+  }
+}
 function isEmpty(v) {
   return v === void 0 || v === null || typeof v === "string" && v.trim() === "";
 }
@@ -3048,6 +3082,7 @@ const activity$1 = ({ strapi: strapi2 }) => ({
         status: "open"
       }
     });
+    await notifyAdminsOfMessage(strapi2, act, created);
     return { documentId: created.documentId, status: created.status, createdAt: created.createdAt };
   },
   /** 我的留言 + 运营回复列表（按活动） */
@@ -3117,7 +3152,20 @@ const activity$1 = ({ strapi: strapi2 }) => ({
     });
     return { documentId: updated.documentId, status: updated.status, repliedAt: updated.repliedAt };
   },
-  /** C 端公开评价列表 + 聚合（仅展示已公开：rating!=null && reviewHidden!=true） */
+  /** 管理员通过公众号回复留言（供 zhao-sso 微信回调调用）：按消息 id 更新 reply，幂等 */
+  async replyMessageByWechat({ messageId, reply }) {
+    if (!reply || typeof reply !== "string" || !reply.trim()) throw new Error("回复内容不能为空");
+    const msg = await strapi2.db.query(MSG_UID).findOne({ where: { id: Number(messageId) } });
+    if (!msg) throw new Error("留言不存在");
+    if (msg.status === "replied" && msg.reply === reply.trim()) {
+      return { documentId: msg.documentId, status: msg.status, repliedAt: msg.repliedAt, skipped: true };
+    }
+    const updated = await strapi2.db.query(MSG_UID).update({
+      where: { id: msg.id },
+      data: { reply: reply.trim(), status: "replied", repliedAt: (/* @__PURE__ */ new Date()).toISOString() }
+    });
+    return { documentId: updated.documentId, status: updated.status, repliedAt: updated.repliedAt };
+  },
   async listPublicReviews({ activityDocumentId, page = 1, pageSize = 20 }) {
     const act = await strapi2.documents(ACTIVITY_UID$9).findOne({ documentId: activityDocumentId });
     if (!act) throw new Error("活动不存在");
