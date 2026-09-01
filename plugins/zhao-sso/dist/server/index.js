@@ -75,13 +75,11 @@ const bootstrap = async ({ strapi }) => {
   const TEMPLATE_UID_ACT = "plugin::zhao-sso.msg-template";
   const VERSION_UID_ACT = "plugin::zhao-sso.msg-template-version";
   const DEFAULT_SOP_TEMPLATES = [
-    // act_confirm 已绑定真实微信模板（活动报名通知），字段映射与活动埋点 params 对应
-    { code: "act_confirm", name: "活动报名成功确认", desc: "报名成功立即发送", wxTemplateId: "uX1Wabj6wAc9tQzf9uQRgWZuDzci3mPdENrci48F8y8", wxTemplateFields: [
-      { name: "thing1", key: "activityName" },
-      { name: "thing3", key: "activityLocation" },
-      { name: "date5", key: "startTime" },
-      { name: "time13", key: "endTime" },
-      { name: "thing6", key: "remark" }
+    // act_confirm 绑定「会议报名成功通知」模板；字段映射与 signup 埋点 params 对应（const12 会议资料为常量不填）
+    { code: "act_confirm", name: "活动报名成功确认", desc: "报名成功立即发送", wxTemplateId: "EBB10k3Lpl-u8su8dFeK5Y_E8F88hn93FTzhtXeAsgQ", wxTemplateFields: [
+      { name: "thing2", key: "activityName" },
+      { name: "thing4", key: "activityLocation" },
+      { name: "time6", key: "meetingTime" }
     ] },
     { code: "act_before", name: "活动开始前提醒", desc: "活动开始前 24h 提醒" },
     { code: "act_receipt", name: "活动结束回执（感谢+评价邀请）", desc: "活动结束到场用户回执" },
