@@ -2587,7 +2587,7 @@ function computePointsPreview({ loginAuth, subscribed, conditions }) {
 const feeSvc = () => strapi.plugin("zhao-point").service("fee-service");
 const activity$1 = ({ strapi: strapi2 }) => ({
   async signup({ userId, activityId, formData, preQuestionnaireData, chosenRewards }) {
-    const act = await strapi2.documents(ACTIVITY_UID$9).findOne({ documentId: activityId, populate: { preUnlockLessons: { populate: { course: true } } } });
+    const act = await strapi2.documents(ACTIVITY_UID$9).findOne({ documentId: activityId, populate: { preUnlockLessons: { populate: { course: true } }, venue: true } });
     if (!act) throw new Error("活动不存在");
     if (act.status !== "signup_open") throw new Error("活动未开放报名");
     const now = Date.now();
@@ -2740,9 +2740,23 @@ const activity$1 = ({ strapi: strapi2 }) => ({
           }
         }
         if (sso) {
-          const day = act.startTime ? String(act.startTime).slice(0, 10) : "待定";
-          const sHm = act.startTime ? String(act.startTime).slice(11, 16) : "00:00";
-          const eHm = act.endTime ? String(act.endTime).slice(11, 16) : "23:59";
+          const fmtTime = (v) => {
+            if (!v) return "";
+            const d = new Date(v);
+            if (isNaN(d.getTime())) return String(v);
+            const pad = (n) => String(n).padStart(2, "0");
+            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+          };
+          const meetingStart = fmtTime(act.startTime);
+          const meetingEnd = act.endTime ? fmtTime(act.endTime).slice(11, 16) : "";
+          const meetingTime = meetingStart ? meetingEnd ? `${meetingStart}~${meetingEnd}` : meetingStart : "待定";
+          const actLocation = act.venue?.name || act.venueName || "待定";
+          let invCode;
+          try {
+            const invRecord = await strapi2.db.query("plugin::zhao-sso.sso-invite-code").findOne({ where: { creator: sso.id, is_active: true } });
+            if (invRecord?.code) invCode = String(invRecord.code);
+          } catch {
+          }
           try {
             await strapi2.plugin("zhao-sso").service("sso-msg").sendNow({
               user: sso.id,
@@ -2750,12 +2764,12 @@ const activity$1 = ({ strapi: strapi2 }) => ({
               templateCode: "act_confirm",
               params: {
                 activityName: act.title ? String(act.title).slice(0, 20) : "",
-                activityLocation: act.venueName ? String(act.venueName).slice(0, 20) : "待定",
-                meetingTime: `${day} ${sHm}~${eHm}`,
+                activityLocation: actLocation ? String(actLocation).slice(0, 20) : "待定",
+                meetingTime,
                 remark: "感谢您报名成功，请准时到场参加"
               },
-              // 点击消息跳转活动宣传页（C 端），不跳后台
-              link: act.documentId ? `https://v.joho.cn/#/pages/activity/promo?act=${act.documentId}` : void 0,
+              // 点击消息跳转活动宣传页（C 端），携带报名者自身可传播邀请码，供接收者登录时建立分销归因
+              link: act.documentId ? `https://v.joho.cn/#/pages/activity/promo?act=${act.documentId}${invCode ? `&inviteCode=${invCode}` : ""}` : void 0,
               dedupeKey: `act_confirm:${sso.id}:${act.documentId}`
             });
           } catch (e) {

@@ -534,7 +534,7 @@ const feeSvc = () => strapi.plugin("zhao-point").service("fee-service");
 
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async signup({ userId, activityId, formData, preQuestionnaireData, chosenRewards }: { userId: number; activityId: string; formData?: any; preQuestionnaireData?: any; chosenRewards?: string[] }) {
-    const act = await strapi.documents(ACTIVITY_UID).findOne({ documentId: activityId, populate: { preUnlockLessons: { populate: { course: true } } } });
+    const act = await strapi.documents(ACTIVITY_UID).findOne({ documentId: activityId, populate: { preUnlockLessons: { populate: { course: true } }, venue: true } });
     if (!act) throw new Error("活动不存在");
     if (act.status !== "signup_open") throw new Error("活动未开放报名");
     const now = Date.now();
@@ -711,9 +711,26 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         // 报名确认立即发送（sendNow，不依赖 cron；参数按 act_confirm 微信模板字段映射预格式化）
         if (sso) {
           // 按 act_confirm 模板字段映射预格式化（thing2=会议主题, thing4=会议地点, time6=会议时间, const12 常量不填）
-          const day = act.startTime ? String(act.startTime).slice(0, 10) : "待定";
-          const sHm = act.startTime ? String(act.startTime).slice(11, 16) : "00:00";
-          const eHm = act.endTime ? String(act.endTime).slice(11, 16) : "23:59";
+          // 时间/地点与 C 端 promo 页口径一致：时间经 Date 走服务器本地时区（CST=北京），地点优先 venue 关联（政务大厅）、venueName 兜底
+          const fmtTime = (v: any) => {
+            if (!v) return "";
+            const d = new Date(v);
+            if (isNaN(d.getTime())) return String(v);
+            const pad = (n: number) => String(n).padStart(2, "0");
+            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+          };
+          const meetingStart = fmtTime(act.startTime);
+          const meetingEnd = act.endTime ? fmtTime(act.endTime).slice(11, 16) : "";
+          const meetingTime = meetingStart ? (meetingEnd ? `${meetingStart}~${meetingEnd}` : meetingStart) : "待定";
+          const actLocation = act.venue?.name || act.venueName || "待定";
+          // 取报名者自身可传播的 SSO 邀请码（creator=本人的有效记录），供接收者点击链接登录时建立分销归因；无则回落纯活动页链接
+          let invCode: string | undefined;
+          try {
+            const invRecord = await strapi.db
+              .query("plugin::zhao-sso.sso-invite-code")
+              .findOne({ where: { creator: sso.id, is_active: true } });
+            if (invRecord?.code) invCode = String(invRecord.code);
+          } catch { /* 邀请码异常不重要，不阻断发送 */ }
           try {
             await strapi
               .plugin("zhao-sso")
@@ -724,12 +741,14 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
                 templateCode: "act_confirm",
                 params: {
                   activityName: act.title ? String(act.title).slice(0, 20) : "",
-                  activityLocation: act.venueName ? String(act.venueName).slice(0, 20) : "待定",
-                  meetingTime: `${day} ${sHm}~${eHm}`,
+                  activityLocation: actLocation ? String(actLocation).slice(0, 20) : "待定",
+                  meetingTime,
                   remark: "感谢您报名成功，请准时到场参加",
                 },
-                // 点击消息跳转活动宣传页（C 端），不跳后台
-                link: act.documentId ? `https://v.joho.cn/#/pages/activity/promo?act=${act.documentId}` : undefined,
+                // 点击消息跳转活动宣传页（C 端），携带报名者自身可传播邀请码，供接收者登录时建立分销归因
+                link: act.documentId
+                  ? `https://v.joho.cn/#/pages/activity/promo?act=${act.documentId}${invCode ? `&inviteCode=${invCode}` : ""}`
+                  : undefined,
                 dedupeKey: `act_confirm:${sso.id}:${act.documentId}`,
               });
           } catch (e: any) {
