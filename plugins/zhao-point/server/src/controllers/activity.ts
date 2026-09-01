@@ -165,6 +165,9 @@ function normalizePromoModules(promoModules: any): any[] | undefined {
         populate: "*",
       });
       if (!activity) { ctx.status = 404; ctx.body = { error: "活动不存在" }; return; }
+      // 合并联系方式：活动级未配置时回落站点 extraConfig.promoContact
+      const contact = await activitySvc().getPromoContact(activity.promoContact, ctx.state?.siteDocumentId);
+      if (contact) activity.promoContact = contact;
       // 强角色门控：租户开启 roleGate 且活动配置了 visibleToRoles 时，未授权角色不可见
       const roleGateEnabled = await isRoleGateEnabled(strapi, ctx.state?.siteDocumentId);
       if (roleGateEnabled) {

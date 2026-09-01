@@ -245,6 +245,8 @@ declare const _default: ({ strapi }: {
             total: number;
         };
     }>;
+    /** 合并联系方式：活动覆盖优先，否则回落站点 extraConfig.promoContact */
+    getPromoContact(activityContact: any, siteDocumentId?: string): Promise<any | null>;
     /** 宣传页聚合：活动 + 模块 + 合并联系方式 + 奖励摘要 + 本人报名状态 */
     promoDetail({ activityDocumentId, userId, siteDocumentId }: {
         activityDocumentId: string;

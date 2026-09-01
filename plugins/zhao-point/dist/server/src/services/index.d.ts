@@ -994,6 +994,7 @@ declare const _default: {
                 total: number;
             };
         }>;
+        getPromoContact(activityContact: any, siteDocumentId?: string): Promise<any | null>;
         promoDetail({ activityDocumentId, userId, siteDocumentId }: {
             activityDocumentId: string;
             userId?: number;
