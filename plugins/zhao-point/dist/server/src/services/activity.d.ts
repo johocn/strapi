@@ -1,6 +1,6 @@
 import { Core } from '@strapi/strapi';
 /** 宣传页允许的模块类型（与 C端渲染组件一一对应） */
-export declare const PROMO_MODULE_TYPES: readonly ["cover", "info", "rich", "highlights", "speakers", "agenda", "images", "rewards", "contact", "message", "faq", "custom"];
+export declare const PROMO_MODULE_TYPES: readonly ["cover", "info", "rich", "highlights", "speakers", "agenda", "images", "rewards", "contact", "message", "faq", "custom", "floatContact"];
 /** 宣传页风格枚举 */
 export declare const PROMO_TEMPLATES: readonly ["summit", "salon", "training", "action", "life"];
 /** 按达成项累加发放分级积分：基础5 + 授权+5 + 联系方式+20 + 问卷+50 + 关注+50（关注奖励 isOneTime 防重） */

@@ -2124,7 +2124,8 @@ const PROMO_MODULE_TYPES = [
   "contact",
   "message",
   "faq",
-  "custom"
+  "custom",
+  "floatContact"
 ];
 const PROMO_TEMPLATES = ["summit", "salon", "training", "action", "life"];
 function isEmpty(v) {

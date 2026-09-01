@@ -10,7 +10,7 @@ const MSG_UID = "plugin::zhao-point.activity-message";
 /** 宣传页允许的模块类型（与 C端渲染组件一一对应） */
 export const PROMO_MODULE_TYPES = [
   "cover", "info", "rich", "highlights", "speakers", "agenda",
-  "images", "rewards", "contact", "message", "faq", "custom",
+  "images", "rewards", "contact", "message", "faq", "custom", "floatContact",
 ] as const;
 
 /** 宣传页风格枚举 */
