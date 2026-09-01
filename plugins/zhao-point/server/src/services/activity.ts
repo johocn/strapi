@@ -710,7 +710,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         }
         // 报名确认立即发送（sendNow，不依赖 cron；参数按 act_confirm 微信模板字段映射预格式化）
         if (sso) {
-          // 按 act_confirm 模板字段映射预格式化（date5=活动日期, time13=时间段, thing1=名称, thing3=地点, thing6=备注）
+          // 按 act_confirm 模板字段映射预格式化（thing2=会议主题, thing4=会议地点, time6=会议时间, const12 常量不填）
           const day = act.startTime ? String(act.startTime).slice(0, 10) : "待定";
           const sHm = act.startTime ? String(act.startTime).slice(11, 16) : "00:00";
           const eHm = act.endTime ? String(act.endTime).slice(11, 16) : "23:59";
@@ -725,8 +725,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
                 params: {
                   activityName: act.title ? String(act.title).slice(0, 20) : "",
                   activityLocation: act.venueName ? String(act.venueName).slice(0, 20) : "待定",
-                  startTime: day,
-                  endTime: `${sHm}~${eHm}`,
+                  meetingTime: `${day} ${sHm}~${eHm}`,
                   remark: "感谢您报名成功，请准时到场参加",
                 },
                 // 点击消息跳转活动宣传页（C 端），不跳后台

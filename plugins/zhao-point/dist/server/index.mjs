@@ -2751,8 +2751,7 @@ const activity$1 = ({ strapi: strapi2 }) => ({
               params: {
                 activityName: act.title ? String(act.title).slice(0, 20) : "",
                 activityLocation: act.venueName ? String(act.venueName).slice(0, 20) : "待定",
-                startTime: day,
-                endTime: `${sHm}~${eHm}`,
+                meetingTime: `${day} ${sHm}~${eHm}`,
                 remark: "感谢您报名成功，请准时到场参加"
               },
               // 点击消息跳转活动宣传页（C 端），不跳后台
