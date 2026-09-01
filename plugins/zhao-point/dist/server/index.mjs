@@ -2112,6 +2112,7 @@ const ATT_UID$2 = "plugin::zhao-point.activity-attendance";
 const AUTH_UID$1 = "plugin::zhao-course.user-course-auth";
 const ACTIVITY_UID$9 = "plugin::zhao-point.activity";
 const MSG_UID = "plugin::zhao-point.activity-message";
+const SSO_USER_UID = "plugin::zhao-sso.sso-user";
 const PROMO_MODULE_TYPES = [
   "cover",
   "info",
@@ -3082,6 +3083,10 @@ const activity$1 = ({ strapi: strapi2 }) => ({
       orderBy: { id: "DESC" },
       limit: 100
     });
+    const sso = await strapi2.db.query(SSO_USER_UID).findOne({
+      where: { id: userId },
+      select: ["id", "nickname", "avatar_url"]
+    });
     return rows.map((r) => ({
       id: r.id,
       documentId: r.documentId,
@@ -3090,7 +3095,8 @@ const activity$1 = ({ strapi: strapi2 }) => ({
       status: r.status,
       repliedAt: r.repliedAt,
       createdAt: r.created_at,
-      nickname: r.user?.nickname || r.user?.username || ""
+      nickname: r.user?.nickname || sso?.nickname || r.user?.username || "",
+      avatar: sso?.avatar_url || ""
     }));
   },
   /** 运营端留言列表（可按活动/状态过滤） */
@@ -3110,6 +3116,12 @@ const activity$1 = ({ strapi: strapi2 }) => ({
       pageSize
     });
     const rows = result?.results ?? [];
+    const userIds = Array.from(new Set(rows.filter((r) => r.user?.id).map((r) => r.user.id)));
+    const ssoList = userIds.length ? await strapi2.db.query(SSO_USER_UID).findMany({
+      where: { id: { $in: userIds } },
+      select: ["id", "nickname", "avatar_url"]
+    }) : [];
+    const ssoById = new Map(ssoList.map((s) => [s.id, s]));
     return {
       list: rows.map((r) => ({
         id: r.id,
@@ -3123,8 +3135,8 @@ const activity$1 = ({ strapi: strapi2 }) => ({
           id: r.user.id,
           documentId: r.user.documentId,
           username: r.user.username,
-          nickname: r.user.nickname,
-          avatar: r.user.avatar,
+          nickname: ssoById.get(r.user.id)?.nickname || r.user.nickname || "",
+          avatar: ssoById.get(r.user.id)?.avatar_url || "",
           phone: r.user.phone
         } : null,
         activity: r.activity ? { documentId: r.activity.documentId, title: r.activity.title } : null

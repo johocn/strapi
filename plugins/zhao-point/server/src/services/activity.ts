@@ -6,6 +6,8 @@ const ATT_UID = "plugin::zhao-point.activity-attendance";
 const AUTH_UID = "plugin::zhao-course.user-course-auth";
 const ACTIVITY_UID = "plugin::zhao-point.activity";
 const MSG_UID = "plugin::zhao-point.activity-message";
+// 客户展示名来自 sso_user.nickname（up_users 无昵称列）；sso_user 与 up_user 同 id（身份对齐铁律）
+const SSO_USER_UID = "plugin::zhao-sso.sso-user";
 
 /** 宣传页允许的模块类型（与 C端渲染组件一一对应） */
 export const PROMO_MODULE_TYPES = [
@@ -1078,6 +1080,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       orderBy: { id: "DESC" },
       limit: 100,
     });
+    // 客户友好昵称/头像来自 sso_user（与 up_user 同 id）
+    const sso = await strapi.db.query(SSO_USER_UID).findOne({
+      where: { id: userId },
+      select: ["id", "nickname", "avatar_url"],
+    });
     return rows.map((r: any) => ({
       id: r.id,
       documentId: r.documentId,
@@ -1086,7 +1093,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       status: r.status,
       repliedAt: r.repliedAt,
       createdAt: r.created_at,
-      nickname: r.user?.nickname || r.user?.username || "",
+      nickname: r.user?.nickname || sso?.nickname || r.user?.username || "",
+      avatar: sso?.avatar_url || "",
     }));
   },
 
@@ -1108,6 +1116,15 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       page, pageSize,
     });
     const rows = result?.results ?? [];
+    // 客户友好昵称/头像来自 sso_user（与 up_user 同 id）
+    const userIds = Array.from(new Set(rows.filter((r: any) => r.user?.id).map((r: any) => r.user.id)));
+    const ssoList = userIds.length
+      ? await strapi.db.query(SSO_USER_UID).findMany({
+          where: { id: { $in: userIds } },
+          select: ["id", "nickname", "avatar_url"],
+        })
+      : [];
+    const ssoById = new Map(ssoList.map((s: any) => [s.id, s]));
     return {
       list: rows.map((r: any) => ({
         id: r.id,
@@ -1119,8 +1136,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         createdAt: r.created_at,
         user: r.user ? {
           id: r.user.id, documentId: r.user.documentId,
-          username: r.user.username, nickname: r.user.nickname,
-          avatar: r.user.avatar, phone: r.user.phone,
+          username: r.user.username,
+          nickname: ssoById.get(r.user.id)?.nickname || r.user.nickname || "",
+          avatar: ssoById.get(r.user.id)?.avatar_url || "",
+          phone: r.user.phone,
         } : null,
         activity: r.activity ? { documentId: r.activity.documentId, title: r.activity.title } : null,
       })),
