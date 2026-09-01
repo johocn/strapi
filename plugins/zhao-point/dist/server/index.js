@@ -3091,7 +3091,8 @@ const activity$1 = ({ strapi: strapi2 }) => ({
     if (!act) throw new Error("活动不存在");
     const rows = await strapi2.db.query(MSG_UID).findMany({
       where: { activity: act.id, user: userId },
-      populate: { user: { select: ["id", "username", "nickname"] } },
+      // 注意：up_users 无 nickname 列，仅 select 现有列，避免 SQL 报错（nickname 由前端按 username 兜底）
+      populate: { user: { select: ["id", "username", "email"] } },
       orderBy: { id: "DESC" },
       limit: 100
     });
