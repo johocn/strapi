@@ -4056,6 +4056,14 @@ const ssoAuth$1 = ({ strapi }) => {
       strapi.log.warn(`[zhao-sso] 分销关系建立异常: ${e.message}`);
     }
   };
+  const getOwnInviteCode = async (ssoUserId) => {
+    try {
+      const rec = await strapi.db.query("plugin::zhao-sso.sso-invite-code").findOne({ where: { creator: ssoUserId, is_active: true } });
+      return rec?.code || "";
+    } catch {
+      return "";
+    }
+  };
   const login = async (params) => {
     const { type, identifier, password, code, appCode, channelCode, inviteCode, ip, userAgent } = params;
     const maxAttempts = 5;
@@ -4096,6 +4104,7 @@ const ssoAuth$1 = ({ strapi }) => {
       return {
         ...tokenPair,
         ssoUserId: user.id,
+        ownInviteCode: await getOwnInviteCode(user.id),
         user: sanitizeUser(user)
       };
     }
@@ -4126,6 +4135,7 @@ const ssoAuth$1 = ({ strapi }) => {
       return {
         ...tokenPair,
         ssoUserId: user.id,
+        ownInviteCode: await getOwnInviteCode(user.id),
         user: sanitizeUser(user)
       };
     }
@@ -4165,6 +4175,7 @@ const ssoAuth$1 = ({ strapi }) => {
     return {
       ...tokenPair,
       ssoUserId: user.id,
+      ownInviteCode: await getOwnInviteCode(user.id),
       user: sanitizeUser(user)
     };
   };
