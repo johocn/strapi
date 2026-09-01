@@ -28,7 +28,7 @@ declare const _default: {
                 appSecret: string;
             };
             manualSop: {
-                adminNotifyUsers: any[];
+                adminNotifyUsers: number[];
             };
         };
     };

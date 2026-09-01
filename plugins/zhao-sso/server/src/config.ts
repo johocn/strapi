@@ -24,7 +24,8 @@ export default {
     },
     manualSop: {
       // 收手动 SOP 待办微信提醒的管理员 sso-user 名单(可后台配置覆盖)；空则只保留后台待办列表
-      adminNotifyUsers: [],
+      // 2026-09-01: 2=赵义涛，收留言微信通知/公众号回复留言（sso-wx-callback handleAdminMessageReply 校验）
+      adminNotifyUsers: [2],
     },
   },
 };
