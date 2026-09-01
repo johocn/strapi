@@ -1073,16 +1073,19 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     if (!act) throw new Error("活动不存在");
     const rows = await strapi.db.query(MSG_UID).findMany({
       where: { activity: act.id, user: userId },
+      populate: { user: { select: ["id", "username", "nickname"] } },
       orderBy: { id: "DESC" },
       limit: 100,
     });
     return rows.map((r: any) => ({
+      id: r.id,
       documentId: r.documentId,
       content: r.content,
       reply: r.reply,
       status: r.status,
       repliedAt: r.repliedAt,
       createdAt: r.created_at,
+      nickname: r.user?.nickname || r.user?.username || "",
     }));
   },
 
@@ -1106,6 +1109,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     const rows = result?.results ?? [];
     return {
       list: rows.map((r: any) => ({
+        id: r.id,
         documentId: r.documentId,
         content: r.content,
         reply: r.reply,

@@ -274,12 +274,14 @@ declare const _default: ({ strapi }: {
         userId: number;
         activityDocumentId: string;
     }): Promise<{
+        id: any;
         documentId: any;
         content: any;
         reply: any;
         status: any;
         repliedAt: any;
         createdAt: any;
+        nickname: any;
     }[]>;
     /** 运营端留言列表（可按活动/状态过滤） */
     adminListMessages({ activity, status, page, pageSize }: {
@@ -289,6 +291,7 @@ declare const _default: ({ strapi }: {
         pageSize: number;
     }): Promise<{
         list: {
+            id: any;
             documentId: any;
             content: any;
             reply: any;

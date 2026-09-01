@@ -3077,16 +3077,19 @@ const activity$1 = ({ strapi: strapi2 }) => ({
     if (!act) throw new Error("活动不存在");
     const rows = await strapi2.db.query(MSG_UID).findMany({
       where: { activity: act.id, user: userId },
+      populate: { user: { select: ["id", "username", "nickname"] } },
       orderBy: { id: "DESC" },
       limit: 100
     });
     return rows.map((r) => ({
+      id: r.id,
       documentId: r.documentId,
       content: r.content,
       reply: r.reply,
       status: r.status,
       repliedAt: r.repliedAt,
-      createdAt: r.created_at
+      createdAt: r.created_at,
+      nickname: r.user?.nickname || r.user?.username || ""
     }));
   },
   /** 运营端留言列表（可按活动/状态过滤） */
@@ -3108,6 +3111,7 @@ const activity$1 = ({ strapi: strapi2 }) => ({
     const rows = result?.results ?? [];
     return {
       list: rows.map((r) => ({
+        id: r.id,
         documentId: r.documentId,
         content: r.content,
         reply: r.reply,

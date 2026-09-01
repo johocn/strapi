@@ -3238,12 +3238,14 @@ declare const _default: {
                 userId: number;
                 activityDocumentId: string;
             }): Promise<{
+                id: any;
                 documentId: any;
                 content: any;
                 reply: any;
                 status: any;
                 repliedAt: any;
                 createdAt: any;
+                nickname: any;
             }[]>;
             adminListMessages({ activity, status, page, pageSize }: {
                 activity?: string;
@@ -3252,6 +3254,7 @@ declare const _default: {
                 pageSize: number;
             }): Promise<{
                 list: {
+                    id: any;
                     documentId: any;
                     content: any;
                     reply: any;
