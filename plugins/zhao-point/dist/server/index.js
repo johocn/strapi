@@ -2782,8 +2782,8 @@ const activity$1 = ({ strapi: strapi2 }) => ({
                 meetingTime,
                 remark: "感谢您报名成功，请准时到场参加"
               },
-              // 点击消息跳转活动宣传页（C 端），携带报名者自身可传播邀请码，供接收者登录时建立分销归因
-              link: act.documentId ? `https://v.joho.cn/#/pages/activity/promo?act=${act.documentId}${invCode ? `&inviteCode=${invCode}` : ""}` : void 0,
+              // 点击消息跳转活动详情页（C 端），携带报名者自身可传播邀请码，供接收者登录时建立分销归因
+              link: act.documentId ? `https://v.joho.cn/#/pages/activity/detail?id=${act.documentId}${invCode ? `&inviteCode=${invCode}` : ""}` : void 0,
               dedupeKey: `act_confirm:${sso.id}:${act.documentId}`
             });
           } catch (e) {
