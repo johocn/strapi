@@ -310,8 +310,8 @@ const activityLedger$1 = {
 const kind$2 = "collectionType";
 const collectionName$2 = "zhao_point_share_visits";
 const info$2 = { "singularName": "activity-share-visit", "pluralName": "activity-share-visits", "displayName": "Activity Share Visit" };
-const options$2 = { "draftAndPublish": false, "comment": "分享裂变好友点击访问埋点（去重，用于活动分享冷却判定）" };
-const attributes$2 = { "inviter": { "type": "relation", "relation": "manyToOne", "target": "plugin::users-permissions.user" }, "targetType": { "type": "enumeration", "enum": ["article", "course", "activity"] }, "targetId": { "type": "string" }, "attemptId": { "type": "string" }, "createdAt": { "type": "datetime" } };
+const options$2 = { "draftAndPublish": false, "comment": "分享裂变好友点击访问埋点（每次点击各记一条，无需去重；用于分享冷却判定）" };
+const attributes$2 = { "inviter": { "type": "relation", "relation": "manyToOne", "target": "plugin::users-permissions.user" }, "targetType": { "type": "enumeration", "enum": ["article", "course", "activity", "task"] }, "targetId": { "type": "string" }, "createdAt": { "type": "datetime" } };
 const activityShareVisit = {
   kind: kind$2,
   collectionName: collectionName$2,
@@ -639,12 +639,29 @@ const point$1 = ({ strapi: strapi2 }) => {
           ctx.body = { error: "不允许领取该类型积分", code: "POINT_021" };
           return;
         }
+        const dimType = ["activity", "task"].includes(body.dimType || "") ? body.dimType : "activity";
+        const dimId = body.dimId != null ? body.dimId : body.activityId;
+        const pointSvc = strapi2.plugin("zhao-point").service("point");
+        const { hasClick, firstClickAt } = await pointSvc.getShareVisitState({ userId, dimType, dimId });
+        if (!hasClick) {
+          ctx.status = 400;
+          ctx.body = { error: "分享出去等待好友点击", code: "POINT_024" };
+          return;
+        }
+        const interval = 30;
+        const elapsed = Date.now() - (firstClickAt ?? 0);
+        if (firstClickAt != null && elapsed < interval * 60 * 1e3) {
+          const min = Math.ceil((interval * 60 * 1e3 - elapsed) / 6e4);
+          ctx.status = 400;
+          ctx.body = { error: `请${Math.max(1, min)}分钟后重试`, code: "POINT_020" };
+          return;
+        }
         let points;
         let remark = "分享活动";
-        if (body.activityId != null) {
-          const idNum = Number(body.activityId);
+        if (dimType === "activity" && dimId != null) {
+          const idNum = Number(dimId);
           const act = await strapi2.db.query(ACTIVITY_UID$a).findOne({
-            where: Number.isNaN(idNum) ? { documentId: String(body.activityId) } : { id: idNum },
+            where: Number.isNaN(idNum) ? { documentId: String(dimId) } : { id: idNum },
             select: ["documentId", "title", "shareRewardPoints"]
           });
           if (act?.shareRewardPoints) {
@@ -670,18 +687,20 @@ const point$1 = ({ strapi: strapi2 }) => {
             resolvedChannel = Array.isArray(siteChannels) && siteChannels.length > 0 ? siteChannels[0].id ?? void 0 : void 0;
           }
         }
-        const record2 = await strapi2.plugin("zhao-point").service("point").earnPoints({
+        const record2 = await pointSvc.earnPoints({
           userId,
           action,
-          source: "activity",
+          source: `share:${dimType}:${dimId ?? ""}`,
           method: "用户分享领取",
           remark,
           points,
-          userChannelId: resolvedChannel
+          userChannelId: resolvedChannel,
+          dimType,
+          dimId
         });
         ctx.body = wrap$6(record2);
       } catch (e) {
-        const status = ["POINT_001", "POINT_004", "POINT_011", "POINT_019", "POINT_020"].includes(e.code) ? 400 : 500;
+        const status = ["POINT_001", "POINT_004", "POINT_011", "POINT_019", "POINT_020", "POINT_024"].includes(e.code) ? 400 : 500;
         ctx.status = status;
         ctx.body = { error: e.message, code: e.code };
       }
@@ -1050,19 +1069,19 @@ const point$1 = ({ strapi: strapi2 }) => {
     async shareStatus(ctx) {
       try {
         const userId = getUserId(ctx);
-        const { activityId } = ctx.query || {};
-        const result = await strapi2.plugin("zhao-point").service("point").getShareStatus({ userId, activityId });
+        const { dimType, dimId, activityId } = ctx.query || {};
+        const result = await strapi2.plugin("zhao-point").service("point").getShareStatus({ userId, dimType, dimId, activityId });
         ctx.body = wrap$6(result);
       } catch (e) {
         ctx.status = e.status || 500;
         ctx.body = { error: e.message };
       }
     },
-    // 分享裂变好友点击埋点（公开，无需登录）；inviteCode 反查失败时 inviter=null 仍记录（仅坐标，不影响去重）
+    // 分享裂变好友点击埋点（公开，无需登录）；每次点击各记一条（不做去重，冷却随首次点击计时）
     async reportShareVisit(ctx) {
       try {
         const body = ctx.request.body?.data || ctx.request.body || {};
-        const { inviterId, inviteCode, targetType, targetId, attemptId } = body;
+        const { inviterId, inviteCode, targetType, targetId } = body;
         let inviter = null;
         if (inviterId !== void 0 && inviterId !== null && inviterId !== "") {
           const uid = Number(inviterId);
@@ -1070,32 +1089,15 @@ const point$1 = ({ strapi: strapi2 }) => {
         } else if (inviteCode) {
           inviter = await resolveInviterByCode(String(inviteCode));
         }
-        const VISIT_UID = "plugin::zhao-point.activity-share-visit";
-        let recorded = false;
-        if (attemptId) {
-          const exists = await strapi2.db.query(VISIT_UID).findOne({ where: { attemptId: String(attemptId) } });
-          if (!exists) {
-            await strapi2.db.query(VISIT_UID).create({
-              data: {
-                inviter: inviter ?? void 0,
-                targetType: targetType || void 0,
-                targetId: targetId || void 0,
-                attemptId: String(attemptId)
-              }
-            });
-            recorded = true;
+        const VISIT_UID2 = "plugin::zhao-point.activity-share-visit";
+        await strapi2.db.query(VISIT_UID2).create({
+          data: {
+            inviter: inviter ?? void 0,
+            targetType: targetType || void 0,
+            targetId: targetId || void 0
           }
-        } else {
-          await strapi2.db.query(VISIT_UID).create({
-            data: {
-              inviter: inviter ?? void 0,
-              targetType: targetType || void 0,
-              targetId: targetId || void 0
-            }
-          });
-          recorded = true;
-        }
-        ctx.body = wrap$6({ ok: true, recorded });
+        });
+        ctx.body = wrap$6({ ok: true, recorded: true });
       } catch (e) {
         ctx.status = e.status || 400;
         ctx.body = { error: e.message };
@@ -35778,6 +35780,7 @@ const destroy = ({ strapi: _strapi }) => {
 };
 const RECORD_UID$1 = "plugin::zhao-point.point-record";
 const ACTIVITY_UID$5 = "plugin::zhao-point.activity";
+const VISIT_UID = "plugin::zhao-point.activity-share-visit";
 const getDefaultConfig = () => config$1.default;
 const point = ({ strapi: strapi2 }) => {
   const RULE_UID2 = "plugin::zhao-point.point-rule";
@@ -35849,6 +35852,30 @@ const point = ({ strapi: strapi2 }) => {
     const elapsed = Date.now() - new Date(last.createdAt).getTime();
     return Math.max(0, intervalMinutes * 60 * 1e3 - elapsed);
   };
+  const getShareVisitState = async (params) => {
+    const where = { inviter: params.userId, targetType: params.dimType };
+    if (params.dimId != null && params.dimId !== "") where.targetId = String(params.dimId);
+    const first = await strapi2.db.query(VISIT_UID).findOne({
+      where,
+      orderBy: { createdAt: "asc" },
+      select: ["createdAt"]
+    });
+    return { hasClick: !!first?.createdAt, firstClickAt: first?.createdAt ? new Date(first.createdAt).getTime() : null };
+  };
+  const countTodayShareByDim = async (userId, dimType, dimId) => {
+    const today = /* @__PURE__ */ new Date();
+    today.setHours(0, 0, 0, 0);
+    const tag = `share:${dimType}:${dimId ?? ""}`;
+    const count = await strapi2.db.query(RECORD_UID$1).count({
+      where: {
+        user: userId,
+        action: "activity_share",
+        source: tag,
+        createdAt: { $gte: today.toISOString() }
+      }
+    });
+    return count;
+  };
   const createRecord = async (userId, action, points, currentBalance, type2, extra) => {
     if (!extra.channelId && !extra.userChannelId) {
       throwError("POINT_020", "积分记录必须归属渠道（业务渠道或用户渠道）", { action });
@@ -35906,17 +35933,22 @@ const point = ({ strapi: strapi2 }) => {
       const interval = Number(rule.extraConfig?.intervalMinutes) || 0;
       if (interval > 0) {
         if (action === "activity_share") {
-          const last = await strapi2.db.query(RECORD_UID$1).findOne({
-            where: { user: userId, action, type: "increase" },
-            orderBy: { createdAt: "desc" },
-            select: ["createdAt"]
-          });
-          if (last?.createdAt) {
-            const elapsed = Date.now() - new Date(last.createdAt).getTime();
-            if (elapsed < interval * 60 * 1e3) {
-              const min = Math.ceil((interval * 60 * 1e3 - elapsed) / 6e4);
-              throwError("POINT_020", `请${Math.max(1, min)}分钟后重试`, { action, intervalMinutes: interval });
+          const dimType = ["activity", "task"].includes(params.dimType || "") ? params.dimType : "activity";
+          const dimId = params.dimType ? params.dimId : params.activityId;
+          if (rule.limitPerDay > 0) {
+            const dimCount = await countTodayShareByDim(userId, dimType, dimId);
+            if (dimCount >= rule.limitPerDay) {
+              throwError("POINT_004", `已达当日分享次数上限 (action=${action})`, { action, limit: rule.limitPerDay });
             }
+          }
+          const { hasClick, firstClickAt } = await getShareVisitState({ userId, dimType, dimId });
+          if (!hasClick || firstClickAt == null) {
+            throwError("POINT_024", "分享出去等待好友点击", { action, dimType, dimId });
+          }
+          const elapsed = Date.now() - firstClickAt;
+          if (elapsed < interval * 60 * 1e3) {
+            const min = Math.ceil((interval * 60 * 1e3 - elapsed) / 6e4);
+            throwError("POINT_020", `请${Math.max(1, min)}分钟后重试`, { action, intervalMinutes: interval });
           }
         } else {
           const remainMs = await cooldownRemainingMs(userId, action, interval);
@@ -36454,38 +36486,40 @@ const point = ({ strapi: strapi2 }) => {
     return groups;
   };
   const getShareStatus = async (params) => {
-    const { userId, activityId } = params;
+    const dimType = ["activity", "task"].includes(params.dimType || "") ? params.dimType : "activity";
+    const dimId = params.dimType ? params.dimId : params.activityId ?? null;
+    const { userId } = params;
     const rule = await getMergedRule("activity_share");
     const interval = Number(rule?.extraConfig?.intervalMinutes) || 30;
     const limitPerDay = Number(rule?.limitPerDay) || 0;
     let points = Number(rule?.points) || 5;
-    if (activityId != null) {
+    if (dimType === "activity" && dimId != null) {
       try {
-        const idNum = Number(activityId);
+        const idNum = Number(dimId);
         const act = await strapi2.db.query(ACTIVITY_UID$5).findOne({
-          where: Number.isNaN(idNum) ? { documentId: String(activityId) } : { id: idNum },
+          where: Number.isNaN(idNum) ? { documentId: String(dimId) } : { id: idNum },
           select: ["shareRewardPoints"]
         });
         if (act?.shareRewardPoints) points = Number(act.shareRewardPoints);
       } catch {
       }
     }
-    const last = await strapi2.db.query(RECORD_UID$1).findOne({
-      where: { user: userId, action: "activity_share", type: "increase" },
-      orderBy: { createdAt: "desc" },
-      select: ["createdAt"]
-    });
-    const dailyCount = await countTodayAction(userId, "activity_share");
+    const { hasClick, firstClickAt } = await getShareVisitState({ userId, dimType, dimId });
+    const dailyCount = await countTodayShareByDim(userId, dimType, dimId);
     let remainingMs = 0;
-    if (last?.createdAt) {
-      const elapsed = Date.now() - new Date(last.createdAt).getTime();
+    if (hasClick && firstClickAt != null) {
+      const elapsed = Date.now() - firstClickAt;
       remainingMs = Math.max(0, interval * 60 * 1e3 - elapsed);
     }
-    let canClaim = remainingMs === 0;
+    let canClaim = hasClick && remainingMs === 0;
     if (limitPerDay > 0 && dailyCount >= limitPerDay) canClaim = false;
     return {
       action: "activity_share",
+      dimType,
+      dimId: dimId != null ? String(dimId) : void 0,
       canClaim,
+      hasClick,
+      waitClick: !hasClick,
       points,
       remainingMs,
       dailyCount,
@@ -36515,7 +36549,8 @@ const point = ({ strapi: strapi2 }) => {
     findVerificationByDocumentId,
     getMergedRule,
     getTasks,
-    getShareStatus
+    getShareStatus,
+    getShareVisitState
   };
 };
 const PRODUCT_UID = "plugin::zhao-point.point-product";

@@ -9,6 +9,9 @@ export interface EarnPointsParams {
     channelId?: string | number;
     userChannelId?: string | number;
     points?: string | number;
+    dimType?: string;
+    dimId?: string | number | null;
+    activityId?: string | number | null;
 }
 export interface DeductPointsParams {
     userId: string | number;
@@ -586,15 +589,29 @@ declare const _default: ({ strapi }: {
     getTasks: (userId: number) => Promise<Record<string, any[]>>;
     getShareStatus: (params: {
         userId: number | string;
+        dimType?: string;
+        dimId?: string | number | null;
         activityId?: string | number | null;
     }) => Promise<{
         action: string;
+        dimType: string;
+        dimId: string;
         canClaim: boolean;
+        hasClick: boolean;
+        waitClick: boolean;
         points: number;
         remainingMs: number;
         dailyCount: number;
         dailyLimit: number;
         intervalMinutes: number;
+    }>;
+    getShareVisitState: (params: {
+        userId: number | string;
+        dimType: string;
+        dimId?: string | number | null;
+    }) => Promise<{
+        hasClick: boolean;
+        firstClickAt: number | null;
     }>;
 };
 export default _default;

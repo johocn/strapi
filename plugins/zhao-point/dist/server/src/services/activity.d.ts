@@ -282,6 +282,7 @@ declare const _default: ({ strapi }: {
         repliedAt: any;
         createdAt: any;
         nickname: any;
+        avatar: any;
     }[]>;
     /** 运营端留言列表（可按活动/状态过滤） */
     adminListMessages({ activity, status, page, pageSize }: {

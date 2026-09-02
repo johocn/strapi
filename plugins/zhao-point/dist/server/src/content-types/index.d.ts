@@ -1467,9 +1467,6 @@ declare const _default: {
                 targetId: {
                     type: string;
                 };
-                attemptId: {
-                    type: string;
-                };
                 createdAt: {
                     type: string;
                 };
