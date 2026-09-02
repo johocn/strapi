@@ -69,13 +69,34 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         ctx.body = { error: "不允许领取该类型积分", code: "POINT_021" };
         return;
       }
-      // 转发积分复用现有邀请积分机制（shareRewardPoints）定价：传 activityId 则按该活动值发分；未配回退规则分
+      const dimType = (["activity", "task"].includes(body.dimType || "")) ? body.dimType : "activity";
+      const dimId = body.dimId != null ? body.dimId : body.activityId;
+      const pointSvc = strapi.plugin("zhao-point").service("point");
+
+      // 前置好友点击校验：无点击直接拒绝（与 getShareStatus 同一判定源）
+      const { hasClick, firstClickAt } = (await pointSvc.getShareVisitState({ userId, dimType, dimId }));
+      if (!hasClick) {
+        ctx.status = 400;
+        ctx.body = { error: "分享出去等待好友点击", code: "POINT_024" };
+        return;
+      }
+      // 预校验冷却（精确裁决由 pointSvc.earnPoints 内部维度化判定，此处仅用于提示）
+      const interval = 30;
+      const elapsed = Date.now() - (firstClickAt ?? 0);
+      if (firstClickAt != null && elapsed < interval * 60 * 1000) {
+        const min = Math.ceil((interval * 60 * 1000 - elapsed) / 60000);
+        ctx.status = 400;
+        ctx.body = { error: `请${Math.max(1, min)}分钟后重试`, code: "POINT_020" };
+        return;
+      }
+
+      // 定价：活动类按 shareRewardPoints；任务类用规则默认分
       let points: number | undefined;
       let remark = "分享活动";
-      if (body.activityId != null) {
-        const idNum = Number(body.activityId);
+      if (dimType === "activity" && dimId != null) {
+        const idNum = Number(dimId);
         const act = await strapi.db.query(ACTIVITY_UID).findOne({
-          where: Number.isNaN(idNum) ? { documentId: String(body.activityId) } : { id: idNum },
+          where: Number.isNaN(idNum) ? { documentId: String(dimId) } : { id: idNum },
           select: ["documentId", "title", "shareRewardPoints"],
         });
         if (act?.shareRewardPoints) {
@@ -109,13 +130,13 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
             : undefined;
         }
       }
-      const record = await strapi.plugin("zhao-point").service("point").earnPoints({
-        userId, action, source: "activity", method: "用户分享领取",
-        remark, points, userChannelId: resolvedChannel,
+      const record = await pointSvc.earnPoints({
+        userId, action, source: `share:${dimType}:${dimId ?? ""}`, method: "用户分享领取",
+        remark, points, userChannelId: resolvedChannel, dimType, dimId,
       });
       ctx.body = wrap(record);
     } catch (e: any) {
-      const status = ["POINT_001","POINT_004","POINT_011","POINT_019","POINT_020"].includes(e.code) ? 400 : 500;
+      const status = ["POINT_001","POINT_004","POINT_011","POINT_019","POINT_020","POINT_024"].includes(e.code) ? 400 : 500;
       ctx.status = status;
       ctx.body = { error: e.message, code: e.code };
     }
@@ -480,8 +501,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   async shareStatus(ctx: any) {
     try {
       const userId = getUserId(ctx);
-      const { activityId } = ctx.query || {};
-      const result = await strapi.plugin("zhao-point").service("point").getShareStatus({ userId, activityId });
+      const { dimType, dimId, activityId } = ctx.query || {};
+      const result = await strapi.plugin("zhao-point").service("point").getShareStatus({ userId, dimType, dimId, activityId });
       ctx.body = wrap(result);
     } catch (e: any) {
       ctx.status = (e as any).status || 500;
@@ -489,11 +510,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     }
   },
 
-  // 分享裂变好友点击埋点（公开，无需登录）；inviteCode 反查失败时 inviter=null 仍记录（仅坐标，不影响去重）
+  // 分享裂变好友点击埋点（公开，无需登录）；每次点击各记一条（不做去重，冷却随首次点击计时）
   async reportShareVisit(ctx: any) {
     try {
       const body = ctx.request.body?.data || ctx.request.body || {};
-      const { inviterId, inviteCode, targetType, targetId, attemptId } = body;
+      const { inviterId, inviteCode, targetType, targetId } = body;
 
       let inviter: number | null = null;
       if (inviterId !== undefined && inviterId !== null && inviterId !== "") {
@@ -504,32 +525,15 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       }
 
       const VISIT_UID = "plugin::zhao-point.activity-share-visit";
-      let recorded = false;
-      if (attemptId) {
-        const exists = await strapi.db.query(VISIT_UID).findOne({ where: { attemptId: String(attemptId) } });
-        if (!exists) {
-          await strapi.db.query(VISIT_UID).create({
-            data: {
-              inviter: inviter ?? undefined,
-              targetType: targetType || undefined,
-              targetId: targetId || undefined,
-              attemptId: String(attemptId),
-            },
-          });
-          recorded = true;
-        }
-      } else {
-        await strapi.db.query(VISIT_UID).create({
-          data: {
-            inviter: inviter ?? undefined,
-            targetType: targetType || undefined,
-            targetId: targetId || undefined,
-          },
-        });
-        recorded = true;
-      }
+      await strapi.db.query(VISIT_UID).create({
+        data: {
+          inviter: inviter ?? undefined,
+          targetType: targetType || undefined,
+          targetId: targetId || undefined,
+        },
+      });
 
-      ctx.body = wrap({ ok: true, recorded });
+      ctx.body = wrap({ ok: true, recorded: true });
     } catch (e: any) {
       ctx.status = (e as any).status || 400;
       ctx.body = { error: e.message };
