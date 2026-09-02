@@ -5,6 +5,8 @@ const RECORD_UID = "plugin::zhao-point.point-record";
 
 const ACTIVITY_UID = "plugin::zhao-point.activity";
 
+const VISIT_UID = "plugin::zhao-point.activity-share-visit";
+
 const getPluginStore = (strapi: Core.Strapi) => {
   return strapi.store({ type: "plugin", name: "zhao-point" });
 };
@@ -21,6 +23,9 @@ export interface EarnPointsParams {
   channelId?: string | number;
   userChannelId?: string | number;
   points?: string | number; // 发放积分覆盖值(缺省用规则 points)，用于活动分享裂变奖励等动态积分
+  dimType?: string; // 分享维度：activity | task
+  dimId?: string | number | null; // 分享维度 id（活动 id / 任务 id）
+  activityId?: string | number | null; // 兼容旧调用，映射到 dimType=activity
 }
 
 export interface DeductPointsParams {
@@ -144,6 +149,42 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     return Math.max(0, intervalMinutes * 60 * 1000 - elapsed);
   };
 
+  // 维度化好友点击：返回该分享者、该维度最早的（即冷却基准）与是否有点击
+  const getShareVisitState = async (params: {
+    userId: number | string;
+    dimType: string;
+    dimId?: string | number | null;
+  }): Promise<{ hasClick: boolean; firstClickAt: number | null }> => {
+    const where: Record<string, any> = { inviter: params.userId, targetType: params.dimType };
+    if (params.dimId != null && params.dimId !== "") where.targetId = String(params.dimId);
+    const first = await strapi.db.query(VISIT_UID).findOne({
+      where,
+      orderBy: { createdAt: "asc" },
+      select: ["createdAt"],
+    });
+    return { hasClick: !!first?.createdAt, firstClickAt: first?.createdAt ? new Date(first.createdAt).getTime() : null };
+  };
+
+  // 维度化每日领分计数：按 point_record.source 标签（share:{dimType}:{dimId}）统计当日
+  const countTodayShareByDim = async (
+    userId: number | string,
+    dimType: string,
+    dimId: string | number | null
+  ): Promise<number> => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tag = `share:${dimType}:${dimId ?? ""}`;
+    const count = await strapi.db.query(RECORD_UID).count({
+      where: {
+        user: userId,
+        action: "activity_share",
+        source: tag,
+        createdAt: { $gte: today.toISOString() },
+      },
+    });
+    return count;
+  };
+
   const createRecord = async (
     userId: string | number,
     action: string,
@@ -233,22 +274,27 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         }
       }
 
-      // 冷却校验：每次成功分享后重置计时（以最后一次成功记录为准）
+      // 冷却校验：分享领分以「好友点击」为成功判定，冷却从该维度首次点击起算，后续点击不更新
       const interval = Number((rule.extraConfig as any)?.intervalMinutes) || 0;
       if (interval > 0) {
         if (action === "activity_share") {
-          // 分享领分冷却：距上次成功>=interval 才可领取；跨自然日不自动解锁（成功一次即重置计时）
-          const last = await strapi.db.query(RECORD_UID).findOne({
-            where: { user: userId, action, type: "increase" },
-            orderBy: { createdAt: "desc" },
-            select: ["createdAt"],
-          });
-          if (last?.createdAt) {
-            const elapsed = Date.now() - new Date(last.createdAt).getTime();
-            if (elapsed < interval * 60 * 1000) {
-              const min = Math.ceil((interval * 60 * 1000 - elapsed) / 60000);
-              throwError("POINT_020", `请${Math.max(1, min)}分钟后重试`, { action, intervalMinutes: interval });
+          const dimType = ["activity", "task"].includes(params.dimType || "") ? params.dimType! : "activity";
+          const dimId = params.dimType ? params.dimId : params.activityId;
+          // 维度每日上限（同一事务内复核，防并发绕过）
+          if (rule.limitPerDay > 0) {
+            const dimCount = await countTodayShareByDim(userId, dimType, dimId);
+            if (dimCount >= rule.limitPerDay) {
+              throwError("POINT_004", `已达当日分享次数上限 (action=${action})`, { action, limit: rule.limitPerDay });
             }
+          }
+          const { hasClick, firstClickAt } = await getShareVisitState({ userId, dimType, dimId });
+          if (!hasClick || firstClickAt == null) {
+            throwError("POINT_024", "分享出去等待好友点击", { action, dimType, dimId });
+          }
+          const elapsed = Date.now() - firstClickAt!;
+          if (elapsed < interval * 60 * 1000) {
+            const min = Math.ceil((interval * 60 * 1000 - elapsed) / 60000);
+            throwError("POINT_020", `请${Math.max(1, min)}分钟后重试`, { action, intervalMinutes: interval });
           }
         } else {
           const remainMs = await cooldownRemainingMs(userId, action, interval);
@@ -927,45 +973,52 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     return groups;
   };
 
-  // 分享领分状态查询：供任务中心 / 活动页点亮「领取积分」按钮、展示规则与置灰原因
-  const getShareStatus = async (params: { userId: number | string; activityId?: string | number | null }) => {
-    const { userId, activityId } = params;
+  // 分享领分状态查询：供任务中心 / 活动页点亮「领取积分」按钮、展示规则与置灰原因；支持活动/任务维度核算
+  const getShareStatus = async (params: {
+    userId: number | string;
+    dimType?: string;
+    dimId?: string | number | null;
+    activityId?: string | number | null;   // 兼容旧调用，映射到 dimType=activity
+  }) => {
+    const dimType = (["activity", "task"].includes(params.dimType || "")) ? params.dimType! : "activity";
+    const dimId = params.dimType ? params.dimId : (params.activityId ?? null);
+    const { userId } = params;
+
     const rule = await getMergedRule("activity_share");
     const interval = Number(rule?.extraConfig?.intervalMinutes) || 30;
     const limitPerDay = Number(rule?.limitPerDay) || 0;
-    // 积分值：活动类按 shareRewardPoints 定价，未配/查不到回退规则默认分，再无则 5
+
     let points = Number(rule?.points) || 5;
-    if (activityId != null) {
+    if (dimType === "activity" && dimId != null) {
       try {
-        const idNum = Number(activityId);
+        const idNum = Number(dimId);
         const act = await strapi.db.query(ACTIVITY_UID).findOne({
-          where: Number.isNaN(idNum) ? { documentId: String(activityId) } : { id: idNum },
+          where: Number.isNaN(idNum) ? { documentId: String(dimId) } : { id: idNum },
           select: ["shareRewardPoints"],
         });
         if (act?.shareRewardPoints) points = Number(act.shareRewardPoints);
-      } catch {
-        // 活动不存在或类型异常：回退默认分
-      }
+      } catch { /* 活动不存在或类型异常：回退默认分 */ }
     }
 
-    const last = await strapi.db.query(RECORD_UID).findOne({
-      where: { user: userId, action: "activity_share", type: "increase" },
-      orderBy: { createdAt: "desc" },
-      select: ["createdAt"],
-    });
-    const dailyCount = await countTodayAction(userId, "activity_share");
+    const { hasClick, firstClickAt } = await getShareVisitState({ userId, dimType, dimId });
+    const dailyCount = await countTodayShareByDim(userId, dimType, dimId);
 
     let remainingMs = 0;
-    if (last?.createdAt) {
-      const elapsed = Date.now() - new Date(last.createdAt).getTime();
+    if (hasClick && firstClickAt != null) {
+      const elapsed = Date.now() - firstClickAt;
       remainingMs = Math.max(0, interval * 60 * 1000 - elapsed);
     }
-    let canClaim = remainingMs === 0;
+
+    let canClaim = hasClick && remainingMs === 0;
     if (limitPerDay > 0 && dailyCount >= limitPerDay) canClaim = false;
 
     return {
       action: "activity_share",
+      dimType,
+      dimId: dimId != null ? String(dimId) : undefined,
       canClaim,
+      hasClick,
+      waitClick: !hasClick,
       points,
       remainingMs,
       dailyCount,
@@ -997,5 +1050,6 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     getMergedRule,
     getTasks,
     getShareStatus,
+    getShareVisitState,
   };
 };
