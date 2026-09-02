@@ -36469,6 +36469,8 @@ const point = ({ strapi: strapi2 }) => {
       const isCompleted = rule.limitPerDay > 0 ? todayCount >= rule.limitPerDay : rule.isOneTime ? todayCount > 0 : false;
       groups[group].push({
         action: rule.action,
+        taskId: rule.documentId || rule.id,
+        // 稳定任务维度标识（分享任务按此核算 task 维度）
         name: rule.name || readableAction(rule.action),
         icon: rule.icon,
         linkType: rule.linkType || "none",

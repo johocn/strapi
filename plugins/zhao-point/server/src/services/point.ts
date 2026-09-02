@@ -955,6 +955,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
 
       groups[group].push({
         action: rule.action,
+        taskId: rule.documentId || rule.id,   // 稳定任务维度标识（分享任务按此核算 task 维度）
         name: rule.name || readableAction(rule.action),
         icon: rule.icon,
         linkType: rule.linkType || "none",
