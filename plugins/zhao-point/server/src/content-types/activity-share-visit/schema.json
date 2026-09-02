@@ -6,12 +6,11 @@
     "pluralName": "activity-share-visits",
     "displayName": "Activity Share Visit"
   },
-  "options": { "draftAndPublish": false, "comment": "分享裂变好友点击访问埋点（去重，用于活动分享冷却判定）" },
+  "options": { "draftAndPublish": false, "comment": "分享裂变好友点击访问埋点（每次点击各记一条，无需去重；用于分享冷却判定）" },
   "attributes": {
     "inviter": { "type": "relation", "relation": "manyToOne", "target": "plugin::users-permissions.user" },
-    "targetType": { "type": "enumeration", "enum": ["article", "course", "activity"] },
+    "targetType": { "type": "enumeration", "enum": ["article", "course", "activity", "task"] },
     "targetId": { "type": "string" },
-    "attemptId": { "type": "string" },
     "createdAt": { "type": "datetime" }
   }
 }
