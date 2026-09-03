@@ -2168,6 +2168,24 @@ async function notifyAdminsOfMessage(strapi2, act, created) {
 function isEmpty(v) {
   return v === void 0 || v === null || typeof v === "string" && v.trim() === "";
 }
+function fmtEventTimeForSop(act) {
+  const pad = (n) => String(n).padStart(2, "0");
+  try {
+    const st = new Date(act?.startTime);
+    if (isNaN(st.getTime())) return "";
+    let s = `${st.getFullYear()}-${pad(st.getMonth() + 1)}-${pad(st.getDate())} ${pad(st.getHours())}:${pad(st.getMinutes())}`;
+    if (act?.endTime) {
+      const et = new Date(act.endTime);
+      if (!isNaN(et.getTime())) s += `~${pad(et.getHours())}:${pad(et.getMinutes())}`;
+    }
+    return s;
+  } catch {
+    return "";
+  }
+}
+function fmtEventLocationForSop(act) {
+  return act?.venue?.name || act?.venueName || act?.venue?.title || "待定";
+}
 function normalizePromoModules(promoModules) {
   if (promoModules === void 0 || promoModules === null) return void 0;
   if (!Array.isArray(promoModules)) throw new Error("promoModules 必须为数组");
@@ -2771,8 +2789,12 @@ const activity$1 = ({ strapi: strapi2 }) => ({
               scene: "activity.before",
               templateCode: "act_before",
               audience: { activityDocumentId: act.documentId, filter: "registered" },
-              paramsTemplate: { activityName: act.title },
-              link: null
+              paramsTemplate: {
+                activityName: act.title,
+                activityLocation: fmtEventLocationForSop(act).slice(0, 20),
+                meetingTime: fmtEventTimeForSop(act)
+              },
+              link: act.documentId ? `https://v.joho.cn/#/pages/activity/detail?id=${act.documentId}` : null
             });
           }
         }
@@ -3334,7 +3356,7 @@ const activity$1 = ({ strapi: strapi2 }) => ({
       for (const [code, scene, template, title, filter] of [
         ["act_recap", "activity.recap", "act_receipt", `活动回放触达待办：${act.title}`, "recap"],
         ["act_repurchase", "activity.repurchase", "act_repurchase", `复购跟进待办：${act.title}`, "repurchase"],
-        ["act_noshow", "activity.noshow", "act_revisit", `未到场回访待办：${act.title}`, "noshow"]
+        ["act_noshow", "activity.noshow", "act_noshow_revisit", `未到场回访待办：${act.title}`, "noshow"]
       ]) {
         const key = `${code}:${actDocId}`;
         const existing = await strapi2.db.query("plugin::zhao-sso.manual-sop-todo").findOne({ where: { code: key, status: "open" } });
@@ -3345,8 +3367,12 @@ const activity$1 = ({ strapi: strapi2 }) => ({
           scene,
           templateCode: template,
           audience: { activityDocumentId: actDocId, filter },
-          paramsTemplate: { activityName: act.title },
-          link: null
+          paramsTemplate: {
+            activityName: act.title,
+            activityLocation: fmtEventLocationForSop(act).slice(0, 20),
+            meetingTime: fmtEventTimeForSop(act)
+          },
+          link: actDocId ? `https://v.joho.cn/#/pages/activity/detail?id=${actDocId}` : null
         });
         todosGenerated++;
       }
