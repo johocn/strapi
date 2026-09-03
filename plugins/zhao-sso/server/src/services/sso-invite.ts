@@ -193,9 +193,51 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     }
   };
 
+  /**
+   * 为用户获取/生成专属邀请码（creator=本人, app_code 维度, 幂等）
+   * 已有有效码直接返回；无则生成 8 位唯一码并落库（user_campaign 类型）
+   */
+  const ensureOwnInviteCode = async (ssoUserId: number, appCode: string): Promise<string> => {
+    try {
+      const exist = await strapi.db.query(INVITE_CODE_UID).findOne({
+        where: { creator: ssoUserId, app_code: appCode, is_active: true },
+      });
+      if (exist?.code) return exist.code;
+
+      // 生成唯一邀请码（8 位，去掉易混淆字符 0/O/1/I）
+      const charset = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+      for (let attempt = 0; attempt < 5; attempt++) {
+        let code = "";
+        for (let i = 0; i < 8; i++) code += charset[Math.floor(Math.random() * charset.length)];
+        const dup = await strapi.db.query(INVITE_CODE_UID).findOne({ where: { code } });
+        if (!dup) {
+          await strapi.db.query(INVITE_CODE_UID).create({
+            data: {
+              code,
+              app_code: appCode,
+              creator: { id: ssoUserId },
+              invite_type: "user_campaign",
+              use_count: 0,
+              per_user_limit: 1,
+              max_uses: 0,
+              is_active: true,
+              bonus_tags: {},
+            },
+          });
+          return code;
+        }
+      }
+      return "";
+    } catch (e: any) {
+      strapi.log.warn(`[sso-invite] 生成邀请码失败: ${e.message}`);
+      return "";
+    }
+  };
+
   return {
     validateInviteCode,
     getOrCreateVirtualUser,
     buildReferralRelation,
+    ensureOwnInviteCode,
   };
 };

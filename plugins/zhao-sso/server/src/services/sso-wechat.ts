@@ -255,6 +255,12 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       });
     }
 
+    // 微信新用户自动生成专属邀请码（course 主应用），保证分销可传播
+    const inviteSvc = strapi.service("plugin::zhao-sso.sso-invite") as any;
+    if (inviteSvc?.ensureOwnInviteCode) {
+      await inviteSvc.ensureOwnInviteCode(user.id, "course");
+    }
+
     await strapi.db.query(BINDING_UID).create({
       data: {
         user: { id: user.id },

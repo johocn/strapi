@@ -47,13 +47,15 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     }
   };
 
-  /** 取当前 sso 用户自身可传播的邀请码（sso_invite_codes.creator=本人 的有效记录），无则空串 */
-  const getOwnInviteCode = async (ssoUserId: number): Promise<string> => {
+  /** 取当前 sso 用户自身可传播的邀请码（sso_invite_codes.creator=本人 的有效记录），无则懒生成 */
+  const getOwnInviteCode = async (ssoUserId: number, appCode: string): Promise<string> => {
     try {
       const rec = await strapi.db
         .query("plugin::zhao-sso.sso-invite-code")
         .findOne({ where: { creator: ssoUserId, is_active: true } });
-      return rec?.code || "";
+      if (rec?.code) return rec.code;
+      // 无邀请码 → 自动为本人生成（保证 ownInviteCode 恒有值，分销可传播）
+      return (await inviteService().ensureOwnInviteCode(ssoUserId, appCode)) || "";
     } catch {
       return "";
     }
@@ -162,7 +164,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       return {
         ...tokenPair,
         ssoUserId: user.id,
-        ownInviteCode: await getOwnInviteCode(user.id),
+        ownInviteCode: await getOwnInviteCode(user.id, appCode),
         user: sanitizeUser(user),
       };
     }
@@ -224,7 +226,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     return {
       ...tokenPair,
       ssoUserId: user.id,
-      ownInviteCode: await getOwnInviteCode(user.id),
+      ownInviteCode: await getOwnInviteCode(user.id, appCode),
       user: sanitizeUser(user),
     };
   };

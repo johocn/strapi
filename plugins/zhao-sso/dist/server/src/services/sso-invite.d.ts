@@ -14,5 +14,6 @@ declare const _default: ({ strapi }: {
         message: string;
         skip?: boolean;
     }>;
+    ensureOwnInviteCode: (ssoUserId: number, appCode: string) => Promise<string>;
 };
 export default _default;

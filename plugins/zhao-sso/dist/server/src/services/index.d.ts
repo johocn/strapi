@@ -325,6 +325,7 @@ declare const _default: {
             message: string;
             skip?: boolean;
         }>;
+        ensureOwnInviteCode: (ssoUserId: number, appCode: string) => Promise<string>;
     };
     "sso-msg": ({ strapi }: {
         strapi: import('@strapi/types/dist/core').Strapi;

@@ -4097,10 +4097,11 @@ const ssoAuth$1 = ({ strapi }) => {
       strapi.log.warn(`[zhao-sso] 分销关系建立异常: ${e.message}`);
     }
   };
-  const getOwnInviteCode = async (ssoUserId) => {
+  const getOwnInviteCode = async (ssoUserId, appCode) => {
     try {
       const rec = await strapi.db.query("plugin::zhao-sso.sso-invite-code").findOne({ where: { creator: ssoUserId, is_active: true } });
-      return rec?.code || "";
+      if (rec?.code) return rec.code;
+      return await inviteService().ensureOwnInviteCode(ssoUserId, appCode) || "";
     } catch {
       return "";
     }
@@ -4176,7 +4177,7 @@ const ssoAuth$1 = ({ strapi }) => {
       return {
         ...tokenPair,
         ssoUserId: user.id,
-        ownInviteCode: await getOwnInviteCode(user.id),
+        ownInviteCode: await getOwnInviteCode(user.id, appCode),
         user: sanitizeUser(user)
       };
     }
@@ -4216,7 +4217,7 @@ const ssoAuth$1 = ({ strapi }) => {
     return {
       ...tokenPair,
       ssoUserId: user.id,
-      ownInviteCode: await getOwnInviteCode(user.id),
+      ownInviteCode: await getOwnInviteCode(user.id, appCode),
       user: sanitizeUser(user)
     };
   };
@@ -4524,6 +4525,10 @@ const ssoWechat = ({ strapi }) => {
           email: null,
           provider: "wechat"
         });
+      }
+      const inviteSvc = strapi.service("plugin::zhao-sso.sso-invite");
+      if (inviteSvc?.ensureOwnInviteCode) {
+        await inviteSvc.ensureOwnInviteCode(user.id, "course");
       }
       await strapi.db.query(BINDING_UID$4).create({
         data: {
@@ -5195,10 +5200,45 @@ const ssoInvite = ({ strapi }) => {
       return { success: false, message: e.message };
     }
   };
+  const ensureOwnInviteCode = async (ssoUserId, appCode) => {
+    try {
+      const exist = await strapi.db.query(INVITE_CODE_UID).findOne({
+        where: { creator: ssoUserId, app_code: appCode, is_active: true }
+      });
+      if (exist?.code) return exist.code;
+      const charset = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+      for (let attempt = 0; attempt < 5; attempt++) {
+        let code = "";
+        for (let i = 0; i < 8; i++) code += charset[Math.floor(Math.random() * charset.length)];
+        const dup = await strapi.db.query(INVITE_CODE_UID).findOne({ where: { code } });
+        if (!dup) {
+          await strapi.db.query(INVITE_CODE_UID).create({
+            data: {
+              code,
+              app_code: appCode,
+              creator: { id: ssoUserId },
+              invite_type: "user_campaign",
+              use_count: 0,
+              per_user_limit: 1,
+              max_uses: 0,
+              is_active: true,
+              bonus_tags: {}
+            }
+          });
+          return code;
+        }
+      }
+      return "";
+    } catch (e) {
+      strapi.log.warn(`[sso-invite] 生成邀请码失败: ${e.message}`);
+      return "";
+    }
+  };
   return {
     validateInviteCode,
     getOrCreateVirtualUser,
-    buildReferralRelation
+    buildReferralRelation,
+    ensureOwnInviteCode
   };
 };
 const CONFIG_UID = "plugin::zhao-sso.sso-oauth-config";
