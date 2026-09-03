@@ -85,7 +85,7 @@ const bootstrap = async ({ strapi }) => {
     if (!tpl) {
       tpl = await strapi.db.query(TEMPLATE_UID_ACT).create({ data: { code: t.code, name: t.name, provider: "wechat", content: "（shenglin SOP 模板）", isEnabled: true, description: t.desc, wxTemplateId: t.wxTemplateId || null, wxTemplateFields: t.wxTemplateFields || null } });
       strapi.log.info(`[zhao-sso] SOP template seeded: ${t.code}`);
-    } else if (t.wxTemplateId) {
+    } else {
       const patch = {};
       if (t.wxTemplateId && tpl.wxTemplateId !== t.wxTemplateId) patch.wxTemplateId = t.wxTemplateId;
       if (t.wxTemplateFields && JSON.stringify(tpl.wxTemplateFields) !== JSON.stringify(t.wxTemplateFields)) patch.wxTemplateFields = t.wxTemplateFields;

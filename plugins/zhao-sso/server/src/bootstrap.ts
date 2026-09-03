@@ -42,8 +42,9 @@ const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
     if (!tpl) {
       tpl = await strapi.db.query(TEMPLATE_UID_ACT).create({ data: { code: t.code, name: t.name, provider: "wechat", content: "（shenglin SOP 模板）", isEnabled: true, description: t.desc, wxTemplateId: t.wxTemplateId || null, wxTemplateFields: t.wxTemplateFields || null } });
       strapi.log.info(`[zhao-sso] SOP template seeded: ${t.code}`);
-    } else if (t.wxTemplateId) {
-      // 幂等补配微信模板配置（存量模板在重启时自动更新，无需重建 dist 后手动改库）
+    } else {
+      // 幂等补配微信模板配置（存量模板在重启时自动更新，无需重建 dist 后手动改库）。
+      // 注：wxTemplateId 与 wxTemplateFields 分开判定，保证「仅填字段映射、ID 留给运营后台后补」的模板也能把字段写进库。
       const patch: any = {};
       if (t.wxTemplateId && tpl.wxTemplateId !== t.wxTemplateId) patch.wxTemplateId = t.wxTemplateId;
       if (t.wxTemplateFields && JSON.stringify(tpl.wxTemplateFields) !== JSON.stringify(t.wxTemplateFields)) patch.wxTemplateFields = t.wxTemplateFields;
