@@ -1735,6 +1735,11 @@ declare const _default: {
                 utm_campaign?: string;
                 invite_code_used?: string;
             }): Promise<any>;
+            ensureUpUser(ssoId: number, info: {
+                username?: string | null;
+                email?: string | null;
+                provider?: string;
+            }): Promise<any>;
             findByIdentifier(identifier: string): Promise<any>;
             findByUuid(uuid: string): Promise<any>;
             verifyPassword(user: any, password: string): Promise<boolean>;

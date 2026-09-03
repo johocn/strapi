@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 import type { Core } from "@strapi/strapi";
 
 const USER_UID = "plugin::zhao-sso.sso-user";
+const UP_USER_UID = "plugin::users-permissions.user";
 
 function sanitize(user: any) {
   if (!user) return null;
@@ -37,7 +38,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
 
     const password_hash = data.password ? await bcrypt.hash(data.password, 12) : null;
 
-    return strapi.db.query(USER_UID).create({
+    const user = await strapi.db.query(USER_UID).create({
       data: {
         uuid: uuidv4(),
         username: data.username || null,
@@ -53,6 +54,36 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         login_count: 0,
       },
     });
+
+    // 身份桥接：同步创建同 id 的 up_user，保持 up_users 与 sso_users id 完全对齐
+    await this.ensureUpUser(user.id, { username: user.username, email: user.email });
+
+    return user;
+  },
+
+  /** 确保 C 端 up_user 与 sso_user 同 id 对齐存在（不足则补建，已存在则跳过） */
+  async ensureUpUser(
+    ssoId: number,
+    info: { username?: string | null; email?: string | null; provider?: string }
+  ) {
+    const exist = await strapi.db.query(UP_USER_UID).findOne({ where: { id: ssoId } });
+    if (exist) return exist;
+    try {
+      return await strapi.db.query(UP_USER_UID).create({
+        data: {
+          id: ssoId,
+          username: info.username || String(ssoId),
+          email: info.email || `${String(ssoId)}@bridge.local`,
+          provider: info.provider || "local",
+          confirmed: true,
+          blocked: false,
+        },
+      });
+    } catch (e: any) {
+      // 并发/唯一键冲突下以存在为准
+      const again = await strapi.db.query(UP_USER_UID).findOne({ where: { id: ssoId } });
+      return again || null;
+    }
   },
 
   async findByIdentifier(identifier: string) {

@@ -3683,6 +3683,7 @@ const ssoJwt = ({ strapi }) => {
   };
 };
 const USER_UID$3 = "plugin::zhao-sso.sso-user";
+const UP_USER_UID$1 = "plugin::users-permissions.user";
 function sanitize(user) {
   if (!user) return null;
   const { password_hash, ...safe } = user;
@@ -3701,7 +3702,7 @@ const ssoUser = ({ strapi }) => {
         throwErr("SSO_USER_001", 400, "username/mobile/email at least one required");
       }
       const password_hash = data.password ? await bcrypt__default.default.hash(data.password, 12) : null;
-      return strapi.db.query(USER_UID$3).create({
+      const user = await strapi.db.query(USER_UID$3).create({
         data: {
           uuid: uuid.v4(),
           username: data.username || null,
@@ -3717,6 +3718,28 @@ const ssoUser = ({ strapi }) => {
           login_count: 0
         }
       });
+      await this.ensureUpUser(user.id, { username: user.username, email: user.email });
+      return user;
+    },
+    /** 确保 C 端 up_user 与 sso_user 同 id 对齐存在（不足则补建，已存在则跳过） */
+    async ensureUpUser(ssoId, info2) {
+      const exist = await strapi.db.query(UP_USER_UID$1).findOne({ where: { id: ssoId } });
+      if (exist) return exist;
+      try {
+        return await strapi.db.query(UP_USER_UID$1).create({
+          data: {
+            id: ssoId,
+            username: info2.username || String(ssoId),
+            email: info2.email || `${String(ssoId)}@bridge.local`,
+            provider: info2.provider || "local",
+            confirmed: true,
+            blocked: false
+          }
+        });
+      } catch (e) {
+        const again = await strapi.db.query(UP_USER_UID$1).findOne({ where: { id: ssoId } });
+        return again || null;
+      }
     },
     async findByIdentifier(identifier) {
       return strapi.db.query(USER_UID$3).findOne({
@@ -4518,6 +4541,14 @@ const ssoWechat = ({ strapi }) => {
           register_channel: `sso_wechat_${appType}`
         }
       });
+      const userSvc = strapi.service("plugin::zhao-sso.sso-user");
+      if (userSvc?.ensureUpUser) {
+        await userSvc.ensureUpUser(user.id, {
+          username,
+          email: null,
+          provider: "wechat"
+        });
+      }
       await strapi.db.query(BINDING_UID$4).create({
         data: {
           user: { id: user.id },

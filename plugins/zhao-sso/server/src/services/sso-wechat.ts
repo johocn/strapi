@@ -245,6 +245,16 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       },
     });
 
+    // 身份桥接：微信新用户同步补齐同 id 的 up_user，避免 up_users 与 sso_users 错位
+    const userSvc = strapi.service("plugin::zhao-sso.sso-user") as any;
+    if (userSvc?.ensureUpUser) {
+      await userSvc.ensureUpUser(user.id, {
+        username,
+        email: null,
+        provider: "wechat",
+      });
+    }
+
     await strapi.db.query(BINDING_UID).create({
       data: {
         user: { id: user.id },
