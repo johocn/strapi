@@ -591,6 +591,108 @@ export function computePointsPreview({ loginAuth, subscribed, conditions }: {
 
 const feeSvc = () => strapi.plugin("zhao-point").service("fee-service");
 
+/** 剧本游业务错误（controller 捕获 e.code 转 400） */
+class TourError extends Error {
+  code: string;
+  constructor(code: string, message: string) {
+    super(message);
+    this.code = code;
+  }
+}
+
+// 取用户在指定活动（且打通旅游模式）active 报名记录，含剧目
+async function findTourSignup(strapi: any, userId: number, documentId: string) {
+  const act = await strapi.documents(ACTIVITY_UID).findOne({ documentId, populate: ["story"] });
+  if (!act || !act.tourMode) throw new TourError("NOT_TOUR", "该活动不是剧本游");
+  const signup = await strapi.db.query(SIGNS_UID).findOne({
+    where: { activity: act.id, user: userId, status: "active" },
+  });
+  return { act, signup };
+}
+
+// 剧本主视角：剧目信息 + 该用户进度
+async function tourStory(args: { documentId: string; userId: number }) {
+  const { act, signup } = await findTourSignup(strapi, args.userId, args.documentId);
+  if (!signup) throw new TourError("NOT_SIGNED", "请先报名");
+  const s = act.story || {};
+  return {
+    tourMode: true,
+    title: act.title,
+    backdrop: s.backdrop || "",
+    roles: Array.isArray(s.roles) ? s.roles : [],
+    itinerary: Array.isArray(act.itinerary) ? act.itinerary : [],
+    mainPuzzle: s.mainPuzzle || "",
+    hint: s.hint || "",
+    stationPoints: s.stationPoints ?? 10,
+    mainPoints: s.mainPoints ?? 50,
+    finalePoints: s.finalePoints ?? 100,
+    guideName: s.guideName || "",
+    progress: signup.tourProgress || null,
+  };
+}
+
+// 到站打卡：幂等，发站点头积分
+async function tourCheckinStation(args: { documentId: string; userId: number; stationOrder: any }) {
+  const order = Number(args.stationOrder);
+  const { act, signup } = await findTourSignup(strapi, args.userId, args.documentId);
+  if (!signup) throw new TourError("NOT_SIGNED", "请先报名");
+  const station = (Array.isArray(act.itinerary) ? act.itinerary : []).find((it: any) => Number(it.order) === order);
+  if (!station) throw new TourError("BAD_STATION", "站点不存在");
+  const prev = signup.tourProgress && typeof signup.tourProgress === "object" ? signup.tourProgress : {};
+  const stations: number[] = Array.isArray(prev.stations) ? prev.stations : [];
+  if (stations.includes(order)) return { already: true, progress: { ...prev, stations } };
+  stations.push(order);
+  const next = { ...prev, stations };
+  await strapi.db.query(SIGNS_UID).update({ where: { id: signup.id }, data: { tourProgress: next } });
+  const userChannelId = await resolveUserChannelId(strapi, args.userId);
+  await earnPointsSafe(strapi, args.userId, "tour_checkin", act.story?.stationPoints ?? 10, `剧本打卡·${station.name || `第${order}站`}`, userChannelId);
+  return { already: false, progress: next };
+}
+
+// 主线谜底答题：答对发主线积分；幂等
+async function tourAnswerMain(args: { documentId: string; userId: number; answer?: any }) {
+  const { act, signup } = await findTourSignup(strapi, args.userId, args.documentId);
+  if (!signup) throw new TourError("NOT_SIGNED", "请先报名");
+  const expected = ((act.story?.answer || "") as string).toString().trim().toLowerCase();
+  const given = ((args.answer as string) || "").toString().trim().toLowerCase();
+  const prev = signup.tourProgress && typeof signup.tourProgress === "object" ? signup.tourProgress : {};
+  if (prev.mainSolved) return { correct: true, already: true, progress: prev };
+  if (expected && given !== expected) return { correct: false, already: false, progress: prev };
+  const next = { ...prev, mainSolved: true, mainSolvedAt: new Date().toISOString() };
+  await strapi.db.query(SIGNS_UID).update({ where: { id: signup.id }, data: { tourProgress: next } });
+  const userChannelId = await resolveUserChannelId(strapi, args.userId);
+  await earnPointsSafe(strapi, args.userId, "tour_main", act.story?.mainPoints ?? 50, "剧本谜底破解", userChannelId);
+  return { correct: true, already: false, progress: next };
+}
+
+// 选择角色：落 progress.role（幂等，可改）
+async function tourChooseRole(args: { documentId: string; userId: number; role?: any }) {
+  const { act, signup } = await findTourSignup(strapi, args.userId, args.documentId);
+  if (!signup) throw new TourError("NOT_SIGNED", "请先报名");
+  const role = typeof args.role === "string" ? args.role : "";
+  const prev = signup.tourProgress && typeof signup.tourProgress === "object" ? signup.tourProgress : {};
+  const next = { ...prev, role };
+  await strapi.db.query(SIGNS_UID).update({ where: { id: signup.id }, data: { tourProgress: next } });
+  return { progress: next };
+}
+
+// 终章兑奖：需集齐站点 + 主线已破，发终章积分一次
+async function tourClaimFinale(args: { documentId: string; userId: number }) {
+  const { act, signup } = await findTourSignup(strapi, args.userId, args.documentId);
+  if (!signup) throw new TourError("NOT_SIGNED", "请先报名");
+  const prev = signup.tourProgress && typeof signup.tourProgress === "object" ? signup.tourProgress : {};
+  const stations: number[] = Array.isArray(prev.stations) ? prev.stations : [];
+  const total = Array.isArray(act.itinerary) ? act.itinerary.length : 0;
+  if (total > 0 && stations.length < total) throw new TourError("STATIONS_INCOMPLETE", "站点未完，无法兑终章奖");
+  if (!prev.mainSolved) throw new TourError("MAIN_UNSOLVED", "主线谜底未破解");
+  if (prev.finaleClaimed) return { already: true, progress: prev };
+  const next = { ...prev, finaleClaimed: true, claimedAt: new Date().toISOString() };
+  await strapi.db.query(SIGNS_UID).update({ where: { id: signup.id }, data: { tourProgress: next } });
+  const userChannelId = await resolveUserChannelId(strapi, args.userId);
+  await earnPointsSafe(strapi, args.userId, "tour_finale", act.story?.finalePoints ?? 100, "剧本终章兑奖", userChannelId);
+  return { already: false, progress: next };
+}
+
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async signup({ userId, activityId, formData, preQuestionnaireData, chosenRewards }: { userId: number; activityId: string; formData?: any; preQuestionnaireData?: any; chosenRewards?: string[] }) {
     const act = await strapi.documents(ACTIVITY_UID).findOne({ documentId: activityId, populate: { preUnlockLessons: { populate: { course: true } }, venue: true } });
@@ -1659,4 +1761,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     }
     return { ok: true, attendanceId: att.id, point: true };
   },
+  tourStory,
+  tourChooseRole,
+  tourCheckinStation,
+  tourAnswerMain,
+  tourClaimFinale,
 });

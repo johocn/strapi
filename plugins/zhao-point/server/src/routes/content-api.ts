@@ -174,6 +174,13 @@ export default () => ({
     userRoute("GET", "/my/activity/:documentId/learning", "activity.learningContent"),
     userRoute("GET", "/my/lesson/temp-auth/status", "activity.tempLessonAuthStatus"),
 
+    // 剧本游（在地·剧本游）注册用户路由
+    userRoute("GET", "/my/activity/:documentId/tour/story", "activity.tourStory"),
+    userRoute("POST", "/my/activity/:documentId/tour/choose-role", "activity.tourChooseRole"),
+    userRoute("POST", "/my/activity/:documentId/tour/checkin-station", "activity.tourCheckinStation"),
+    userRoute("POST", "/my/activity/:documentId/tour/answer-main", "activity.tourAnswerMain"),
+    userRoute("POST", "/my/activity/:documentId/tour/claim-finale", "activity.tourClaimFinale"),
+
     // 管理员路由（需渠道作用域）
     channelScopeRoute("GET", "/adm/activities", "activity.adminList", "activity.read"),
     channelScopeRoute("GET", "/adm/activities/calendar", "calendar.adminMonth", "activity.read"),

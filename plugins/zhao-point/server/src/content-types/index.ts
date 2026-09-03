@@ -19,6 +19,7 @@ import activityShareVisit from "./activity-share-visit/schema.json";
 import lecturer from "./lecturer/schema.json";
 import venue from "./venue/schema.json";
 import lecturerLifecycles from "./lecturer/lifecycles";
+import tourStory from "./tour-story/schema.json";
 import venueLifecycles from "./venue/lifecycles";
 import activityLifecycles from "./activity/lifecycles";
 import activitySeriesLifecycles from "./activity-series/lifecycles";
@@ -42,6 +43,7 @@ export default {
   "activity-referral-reward": { schema: activityReferralReward },
   "activity-ledger": { schema: activityLedger },
   "activity-share-visit": { schema: activityShareVisit },
+  "tour-story": { schema: tourStory },
   lecturer: { schema: lecturer, lifecycles: lecturerLifecycles },
   venue: { schema: venue, lifecycles: venueLifecycles },
 };

@@ -105,6 +105,19 @@ function normalizePromoModules(promoModules: any): any[] | undefined {
   return out.sort((a, b) => a.sort - b.sort);
 }
 
+  // 剧本游 action 统一处理：SSO 桥接取 user id + 调用 service + 业务错误转 400
+  const tourAction = (method: string) => async (ctx: any) => {
+    try {
+      const userId = await getUserId(ctx);
+      const service = strapi.service("plugin::zhao-point.activity");
+      const result = await service[method]({ documentId: ctx.params.documentId, userId, ...ctx.request.body });
+      return wrap(result);
+    } catch (e: any) {
+      if (e && e.code) return ctx.badRequest(e.message, { code: e.code });
+      throw e;
+    }
+  };
+
   return ({
   // ===== 公开 =====
 
@@ -926,6 +939,11 @@ function normalizePromoModules(promoModules: any): any[] | undefined {
       total: rows.length,
     };
   },
+    tourStory: tourAction("tourStory"),
+    tourChooseRole: tourAction("tourChooseRole"),
+    tourCheckinStation: tourAction("tourCheckinStation"),
+    tourAnswerMain: tourAction("tourAnswerMain"),
+    tourClaimFinale: tourAction("tourClaimFinale"),
   });
 };
 
