@@ -472,7 +472,7 @@ declare const _default: {
             hasData: boolean;
         }>;
         recalcAll(limit?: number): Promise<{
-            scanned: number;
+            scanned: any;
             calculated: number;
             matchedSso: number;
         }>;

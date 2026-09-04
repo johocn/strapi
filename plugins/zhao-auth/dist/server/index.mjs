@@ -128,6 +128,20 @@ const authService = ({ strapi: strapi2 }) => {
       if (!Number.isInteger(ssoId) || ssoId <= 0) return null;
       return alignUpUser(strapi2, ssoId, { nickname: info2.username, email: info2.email });
     },
+    /** 插件间中间层：按 id 读 up_users（供 zhao-sso 调用，读 up_users 归属 C 端） */
+    async findUpUserById(id, select) {
+      if (!Number.isInteger(id) || id <= 0) return null;
+      return strapi2.db.query(USER_UID$2).findOne({ where: { id }, select });
+    },
+    /** 插件间中间层：按标识 $or 匹配读 up_users（供 zhao-sso 调用） */
+    async findUpUserByMatch(matchOr, select) {
+      if (!Array.isArray(matchOr) || matchOr.length === 0) return null;
+      return strapi2.db.query(USER_UID$2).findOne({ where: { $or: matchOr }, select });
+    },
+    /** 插件间中间层：批量读 up_users（供 zhao-sso 调用） */
+    async listUpUsers(params = {}) {
+      return strapi2.db.query(USER_UID$2).findMany({ where: params.where || {}, select: params.select, limit: params.limit });
+    },
     /**
      * 验证 JWT token，返回用户信息
      * 如 JWT 中无角色信息，从数据库加载

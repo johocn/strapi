@@ -64,7 +64,7 @@ declare const _default: ({ strapi }: {
     }>;
     /** 批量重算：遍历 up_users → sso-user → getProfile */
     recalcAll(limit?: number): Promise<{
-        scanned: number;
+        scanned: any;
         calculated: number;
         matchedSso: number;
     }>;

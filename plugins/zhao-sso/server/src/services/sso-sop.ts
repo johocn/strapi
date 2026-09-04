@@ -35,10 +35,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
    * 匹配不到(未做微信绑定/标识不一)返回 null，调用方跳过触达并记日志。
    */
   async resolveSsoUserForUpUser(upUserId: number) {
-    const up = await strapi.db.query("plugin::users-permissions.user").findOne({
-      where: { id: upUserId },
-      select: ["id", "username", "email"],
-    });
+    const auth: any = strapi.plugin ? strapi.plugin("zhao-auth")?.service?.("auth") : null;
+    const up = auth?.findUpUserById ? await auth.findUpUserById(upUserId, ["id", "username", "email"]) : null;
     if (!up) return null;
     const or: any[] = [];
     if (up.username) or.push({ username: up.username });

@@ -5721,10 +5721,8 @@ const ssoSop = ({ strapi }) => ({
    * 匹配不到(未做微信绑定/标识不一)返回 null，调用方跳过触达并记日志。
    */
   async resolveSsoUserForUpUser(upUserId) {
-    const up = await strapi.db.query("plugin::users-permissions.user").findOne({
-      where: { id: upUserId },
-      select: ["id", "username", "email"]
-    });
+    const auth = strapi.plugin ? strapi.plugin("zhao-auth")?.service?.("auth") : null;
+    const up = auth?.findUpUserById ? await auth.findUpUserById(upUserId, ["id", "username", "email"]) : null;
     if (!up) return null;
     const or = [];
     if (up.username) or.push({ username: up.username });
@@ -5893,11 +5891,15 @@ const ssoSop = ({ strapi }) => ({
   }
 });
 const PROFILE_UID = "plugin::zhao-sso.sso-user-profile";
-const UP_USER_UID = "plugin::users-permissions.user";
 const SSO_USER_UID = "plugin::zhao-sso.sso-user";
 const BINDING_UID$1 = "plugin::zhao-sso.sso-third-party-binding";
-const THIRD_PARTY_ACCOUNT_UID = "plugin::zhao-third.third-party-account";
 const clamp = (n) => Math.max(0, Math.min(100, Math.round(n)));
+function authGate(strapi) {
+  return strapi.plugin && strapi.plugin("zhao-auth")?.service?.("auth") || null;
+}
+function thirdGate(strapi) {
+  return strapi.plugin && strapi.plugin("zhao-third")?.service?.("third-party-account") || null;
+}
 function websiteGate$1(strapi) {
   return strapi.plugin && strapi.plugin("zhao-website")?.service?.("gate") || null;
 }
@@ -5920,7 +5922,7 @@ const ssoProfile = ({ strapi }) => ({
     if (sso.email) or.push({ email: String(sso.email).toLowerCase() });
     if (sso.mobile) or.push({ mobile: sso.mobile });
     if (or.length) {
-      const hit = await strapi.db.query(UP_USER_UID).findOne({ where: { $or: or } });
+      const hit = authGate(strapi)?.findUpUserByMatch ? await authGate(strapi).findUpUserByMatch(or) : null;
       if (hit) return hit;
     }
     const bindings = await strapi.db.query(BINDING_UID$1).findMany({
@@ -5933,10 +5935,8 @@ const ssoProfile = ({ strapi }) => ({
         b.provider_union_id ? { unionId: b.provider_union_id } : null
       ].filter(Boolean);
       if (!conds.length) continue;
-      const acct = await strapi.db.query(THIRD_PARTY_ACCOUNT_UID).findOne({
-        where: { $or: conds },
-        populate: { user: true }
-      });
+      const matches = thirdGate(strapi)?.findAccounts ? await thirdGate(strapi).findAccounts({ $or: conds }) || [] : [];
+      const acct = matches.find((a) => a.user) || matches[0];
       if (acct?.user?.id) return acct.user;
     }
     return null;
@@ -6017,10 +6017,8 @@ const ssoProfile = ({ strapi }) => ({
   },
   /** 批量重算：遍历 up_users → sso-user → getProfile */
   async recalcAll(limit = 500) {
-    const upUsers = await strapi.db.query(UP_USER_UID).findMany({
-      select: ["id", "username", "email"],
-      limit
-    });
+    const g = authGate(strapi);
+    const upUsers = g?.listUpUsers ? await g.listUpUsers({ select: ["id", "username", "email"], limit }) : [];
     let n = 0;
     let sso = 0;
     for (const u of upUsers) {

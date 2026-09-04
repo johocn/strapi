@@ -179,6 +179,25 @@ export default ({ strapi }: { strapi: Core.Strapi }): AuthService & Record<strin
       return alignUpUser(strapi, ssoId, { nickname: info.username, email: info.email } as any);
     },
 
+    /** 插件间中间层：按 id 读 up_users（供 zhao-sso 调用，读 up_users 归属 C 端） */
+    async findUpUserById(id: number, select?: string[]): Promise<any> {
+      if (!Number.isInteger(id) || id <= 0) return null;
+      return strapi.db.query(USER_UID).findOne({ where: { id }, select });
+    },
+
+    /** 插件间中间层：按标识 $or 匹配读 up_users（供 zhao-sso 调用） */
+    async findUpUserByMatch(matchOr: any[], select?: string[]): Promise<any> {
+      if (!Array.isArray(matchOr) || matchOr.length === 0) return null;
+      return strapi.db.query(USER_UID).findOne({ where: { $or: matchOr }, select });
+    },
+
+    /** 插件间中间层：批量读 up_users（供 zhao-sso 调用） */
+    async listUpUsers(params: { where?: any; select?: string[]; limit?: number } = {}): Promise<any[]> {
+      return strapi.db
+        .query(USER_UID)
+        .findMany({ where: params.where || {}, select: params.select, limit: params.limit });
+    },
+
     /**
      * 验证 JWT token，返回用户信息
      * 如 JWT 中无角色信息，从数据库加载
