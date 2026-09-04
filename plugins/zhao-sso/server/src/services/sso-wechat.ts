@@ -273,20 +273,29 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       },
     });
 
-    // 身份桥接：微信新用户同步补齐同 id 的 up_user，避免 up_users 与 sso_users 错位（富字段对齐由 C 端 zhao-auth 懒对齐补全）
+    // 身份桥接：微信新用户同步补齐同 id 的 up_user，避免 up_users 与 sso_users 错位
     const userSvc = strapi.service("plugin::zhao-sso.sso-user") as any;
-    if (userSvc?.ensureUpUser) {
-      await userSvc.ensureUpUser(user.id, {
-        username,
-        email: null,
-        provider: "wechat",
-      });
-    }
-
     // 微信新用户自动生成专属邀请码（course 主应用），保证分销可传播
     const inviteSvc = strapi.service("plugin::zhao-sso.sso-invite") as any;
-    if (inviteSvc?.ensureOwnInviteCode) {
-      await inviteSvc.ensureOwnInviteCode(user.id, "course");
+    const ownInviteCode = ((await inviteSvc?.ensureOwnInviteCode?.(user.id, "course")) || "");
+    await userSvc?.ensureUpUser?.(user.id, {
+      username,
+      email: null,
+      provider: "wechat",
+    });
+
+    // 富字段对齐：把 sso_id/昵称/头像/真实专属邀请码直写 up_users（这些列并非 users-permissions schema 属性，
+    // 用 knex 直写避免被 Strapi 过滤。此前依赖 C 端回调 syncSsoProfile/懒对齐，存在漏对齐，
+    // 现改为注册时一次到位，确保 up_users 与 sso_users 严格对齐。）
+    try {
+      const knex = strapi.db.connection;
+      const patch: any = { sso_id: user.id, updated_at: new Date() };
+      if (userInfo?.nickname) patch.nickname = userInfo.nickname;
+      if (userInfo?.headimgurl) patch.avatar = userInfo.headimgurl;
+      if (ownInviteCode) patch.invite_code = ownInviteCode;
+      await knex("up_users").where({ id: user.id }).update(patch);
+    } catch (e2: any) {
+      strapi.log.warn(`[zhao-sso] createUser 富字段对齐失败 user=${user.id}: ${e2?.message}`);
     }
 
     await strapi.db.query(BINDING_UID).create({

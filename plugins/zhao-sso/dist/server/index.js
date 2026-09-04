@@ -4594,16 +4594,22 @@ const ssoWechat = ({ strapi }) => {
         }
       });
       const userSvc = strapi.service("plugin::zhao-sso.sso-user");
-      if (userSvc?.ensureUpUser) {
-        await userSvc.ensureUpUser(user.id, {
-          username,
-          email: null,
-          provider: "wechat"
-        });
-      }
       const inviteSvc = strapi.service("plugin::zhao-sso.sso-invite");
-      if (inviteSvc?.ensureOwnInviteCode) {
-        await inviteSvc.ensureOwnInviteCode(user.id, "course");
+      const ownInviteCode = await inviteSvc?.ensureOwnInviteCode?.(user.id, "course") || "";
+      await userSvc?.ensureUpUser?.(user.id, {
+        username,
+        email: null,
+        provider: "wechat"
+      });
+      try {
+        const knex = strapi.db.connection;
+        const patch = { sso_id: user.id, updated_at: /* @__PURE__ */ new Date() };
+        if (userInfo?.nickname) patch.nickname = userInfo.nickname;
+        if (userInfo?.headimgurl) patch.avatar = userInfo.headimgurl;
+        if (ownInviteCode) patch.invite_code = ownInviteCode;
+        await knex("up_users").where({ id: user.id }).update(patch);
+      } catch (e2) {
+        strapi.log.warn(`[zhao-sso] createUser 富字段对齐失败 user=${user.id}: ${e2?.message}`);
       }
       await strapi.db.query(BINDING_UID$4).create({
         data: {
