@@ -23,6 +23,7 @@ declare const _default: {
         login(ctx: any): Promise<void>;
         config(ctx: any): Promise<void>;
         checkThirdPartyEnabled(): Promise<boolean>;
+        syncSsoProfile(ctx: any): Promise<void>;
         switchTenant(ctx: any): Promise<void>;
     };
     permission: ({ strapi }: {

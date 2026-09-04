@@ -249,6 +249,31 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     }
   },
 
+  async syncSsoProfile(ctx: any) {
+    try {
+      // 身份取自认证 token（SSO token 携带 sso_id），前端额外透传真实邀请码/昵称/头像
+      const user = ctx.state?.user;
+      const ssoId = Number(user?.sso_id ?? user?.id ?? ctx.request.body?.ssoId);
+      if (!Number.isInteger(ssoId) || ssoId <= 0) {
+        ctx.status = 400; ctx.body = { error: "无法识别用户身份" }; return;
+      }
+      const body = ctx.request.body?.data || ctx.request.body || {};
+      const authService = strapi.plugin("zhao-auth").service("auth");
+      const result = await authService.syncSsoProfile(ssoId, {
+        nickname: body.nickname ?? null,
+        avatar: body.avatar ?? null,
+        inviteCode: body.inviteCode ?? null,
+      });
+      if (!result) {
+        ctx.status = 500; ctx.body = { error: "同步失败" }; return;
+      }
+      ctx.body = { success: true, ...result };
+    } catch (error: any) {
+      strapi.log.error(`[zhao-auth] syncSsoProfile failed: ${error.message}`);
+      ctx.status = 500; ctx.body = { error: error.message };
+    }
+  },
+
   async switchTenant(ctx: any) {
     try {
       const user = ctx.state?.user;

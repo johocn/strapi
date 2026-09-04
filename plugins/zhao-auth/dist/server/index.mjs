@@ -46,6 +46,46 @@ async function alignUpUser(strapi2, ssoId, decoded) {
     return null;
   }
 }
+async function syncSsoProfile(strapi2, ssoId, data) {
+  const knex = strapi2.db.connection;
+  try {
+    const nickname = data.nickname || null;
+    const avatar = data.avatar || null;
+    const inviteCode = data.inviteCode || `U${ssoId}`;
+    const exist = await knex(UP_USERS_TABLE).select("id", "sso_id", "nickname", "avatar", "invite_code").where({ id: ssoId }).first();
+    if (exist) {
+      const patch = { updated_at: /* @__PURE__ */ new Date() };
+      if (exist.sso_id == null) patch.sso_id = ssoId;
+      if (nickname || !exist.nickname) patch.nickname = nickname || exist.nickname;
+      if (avatar) patch.avatar = avatar;
+      if (inviteCode && (!exist.invite_code || exist.invite_code.startsWith("U"))) patch.invite_code = inviteCode;
+      await knex(UP_USERS_TABLE).where({ id: ssoId }).update(patch);
+    } else {
+      await knex(UP_USERS_TABLE).insert({
+        id: ssoId,
+        document_id: null,
+        username: nickname || `wx_${ssoId}`,
+        email: `${ssoId}@bridge.local`,
+        provider: "local",
+        password: null,
+        confirmed: true,
+        blocked: false,
+        sso_id: ssoId,
+        nickname,
+        avatar,
+        invite_code: inviteCode,
+        created_at: /* @__PURE__ */ new Date(),
+        updated_at: /* @__PURE__ */ new Date(),
+        published_at: /* @__PURE__ */ new Date()
+      });
+    }
+    strapi2.log.info(`[zhao-auth] syncSsoProfile sso=${ssoId} invite_code=${inviteCode}`);
+    return { ssoId, inviteCode, nickname, avatar };
+  } catch (e) {
+    strapi2.log.warn(`[zhao-auth] syncSsoProfile 失败 sso=${ssoId}: ${e?.message || e}`);
+    return null;
+  }
+}
 const authService = ({ strapi: strapi2 }) => {
   function throwErr2(code, status, message) {
     const e = new Error(message);
@@ -272,10 +312,16 @@ const authService = ({ strapi: strapi2 }) => {
       return { success: true, user, roles, formattedRole };
     },
     /**
-     * 兼容保留：策略注册
-     * 新代码应通过 Strapi 原生 policies 导出机制注册
-     */
+       * 兼容保留：策略注册
+       * 新代码应通过 Strapi 原生 policies 导出机制注册
+       */
     registerPolicy(_name, _handler) {
+    },
+    /**
+     * C 端登录后对齐 up_users：写入 SSO 真实邀请码/昵称/头像（计划：SSO 返回 ownInviteCode → C 端落库）
+     */
+    async syncSsoProfile(ssoId, data) {
+      return syncSsoProfile(strapi2, ssoId, data);
     },
     /**
      * 检查用户是否具有特定权限（委托给 permission.service.getMyPermissions）
@@ -4125,6 +4171,34 @@ const authController = ({ strapi: strapi2 }) => ({
       return false;
     }
   },
+  async syncSsoProfile(ctx) {
+    try {
+      const user = ctx.state?.user;
+      const ssoId = Number(user?.sso_id ?? user?.id ?? ctx.request.body?.ssoId);
+      if (!Number.isInteger(ssoId) || ssoId <= 0) {
+        ctx.status = 400;
+        ctx.body = { error: "无法识别用户身份" };
+        return;
+      }
+      const body = ctx.request.body?.data || ctx.request.body || {};
+      const authService2 = strapi2.plugin("zhao-auth").service("auth");
+      const result = await authService2.syncSsoProfile(ssoId, {
+        nickname: body.nickname ?? null,
+        avatar: body.avatar ?? null,
+        inviteCode: body.inviteCode ?? null
+      });
+      if (!result) {
+        ctx.status = 500;
+        ctx.body = { error: "同步失败" };
+        return;
+      }
+      ctx.body = { success: true, ...result };
+    } catch (error) {
+      strapi2.log.error(`[zhao-auth] syncSsoProfile failed: ${error.message}`);
+      ctx.status = 500;
+      ctx.body = { error: error.message };
+    }
+  },
   async switchTenant(ctx) {
     try {
       const user = ctx.state?.user;
@@ -5046,6 +5120,7 @@ const contentApi = () => ({
     publicRoute("POST", "/register", "auth.register"),
     publicRoute("POST", "/reset-password", "auth.resetPassword"),
     userRoute("POST", "/auth/switch-tenant", "auth.switchTenant"),
+    userRoute("POST", "/auth/sync-sso-profile", "auth.syncSsoProfile"),
     userRoute("GET", "/my/roles", "role-management.getMyRoles"),
     userRoute("GET", "/my/permissions", "role-management.getMyPermissions"),
     userRoute("GET", "/my/permission-keys", "permission.getMyPermissions"),

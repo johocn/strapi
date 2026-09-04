@@ -8,6 +8,7 @@ declare const _default: ({ strapi }: {
     login(ctx: any): Promise<void>;
     config(ctx: any): Promise<void>;
     checkThirdPartyEnabled(): Promise<boolean>;
+    syncSsoProfile(ctx: any): Promise<void>;
     switchTenant(ctx: any): Promise<void>;
 };
 export default _default;

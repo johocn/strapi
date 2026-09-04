@@ -49,6 +49,7 @@ export default () => ({
     publicRoute("POST", "/reset-password", "auth.resetPassword"),
 
     userRoute("POST", "/auth/switch-tenant", "auth.switchTenant"),
+    userRoute("POST", "/auth/sync-sso-profile", "auth.syncSsoProfile"),
 
     userRoute("GET", "/my/roles", "role-management.getMyRoles"),
     userRoute("GET", "/my/permissions", "role-management.getMyPermissions"),
