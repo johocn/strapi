@@ -130,7 +130,7 @@ const kind$4 = "collectionType";
 const collectionName$4 = "zhao_user_course_auths";
 const info$4 = { "singularName": "user-course-auth", "pluralName": "user-course-auths", "displayName": "用户课程授权" };
 const options$4 = { "draftAndPublish": false };
-const attributes$4 = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::users-permissions.user" }, "course": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-course.course" }, "authType": { "type": "enumeration", "enum": ["free", "paid", "admin_grant"], "default": "free" }, "expiresAt": { "type": "datetime" }, "isExpired": { "type": "boolean", "default": false }, "channel": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-channel.channel" }, "deletedAt": { "type": "datetime", "default": null } };
+const attributes$4 = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::users-permissions.user" }, "course": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-course.course" }, "activityDocumentId": { "type": "string" }, "lessonDocumentId": { "type": "string" }, "authType": { "type": "enumeration", "enum": ["free", "paid", "admin_grant", "temp_lesson"], "default": "free" }, "source": { "type": "enumeration", "enum": ["signup", "milestone", "manual"], "default": "manual" }, "grantedAt": { "type": "datetime" }, "expiresAt": { "type": "datetime" }, "isExpired": { "type": "boolean", "default": false }, "channel": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-channel.channel" }, "deletedAt": { "type": "datetime", "default": null } };
 const userCourseAuth$2 = {
   kind: kind$4,
   collectionName: collectionName$4,
@@ -2447,7 +2447,7 @@ const userCourseAuth = ({ strapi }) => {
   };
 };
 const QUIZ_RECORD_UID = "plugin::zhao-quiz.quiz-record";
-const LESSON_PROGRESS_UID$1 = "plugin::zhao-course.lesson-progress";
+const LESSON_PROGRESS_UID$2 = "plugin::zhao-course.lesson-progress";
 async function sumQuizPoints(strapi, userId, lessonId) {
   const detail = {};
   let total = 0;
@@ -2499,7 +2499,7 @@ async function calculateCoursePoints(strapi, course2, userId, courseId) {
     return { points: course2.points ?? 0, detail: {} };
   }
   if (course2.pointsType === "lesson_points") {
-    const lessonProgresses = await strapi.db.query(LESSON_PROGRESS_UID$1).findMany({
+    const lessonProgresses = await strapi.db.query(LESSON_PROGRESS_UID$2).findMany({
       where: { user: userId, course: courseId, isPointsClaimed: true },
       populate: { lesson: { select: ["documentId", "title"] } }
     });
@@ -2521,7 +2521,7 @@ async function calculateCoursePoints(strapi, course2, userId, courseId) {
   return { points: 0, detail: {} };
 }
 const UID$3 = "plugin::zhao-course.course-progress";
-const LESSON_PROGRESS_UID = "plugin::zhao-course.lesson-progress";
+const LESSON_PROGRESS_UID$1 = "plugin::zhao-course.lesson-progress";
 const LESSON_UID$1 = "plugin::zhao-course.course-lesson";
 const courseProgress = ({ strapi }) => {
   function throwErr(code, status, message) {
@@ -2600,7 +2600,7 @@ const courseProgress = ({ strapi }) => {
     },
     async recalculate(userId, courseId) {
       const progress = await this.getOrCreate(userId, courseId);
-      const completedCount = await strapi.db.query(LESSON_PROGRESS_UID).count({
+      const completedCount = await strapi.db.query(LESSON_PROGRESS_UID$1).count({
         where: { user: userId, course: courseId, isCompleted: true }
       });
       const totalLessons = progress.totalLessons || 0;
@@ -2985,7 +2985,7 @@ const lessonProgress = ({ strapi }) => {
   };
 };
 const UID$1 = "plugin::zhao-course.course-enrollment";
-const COURSE_UID$2 = "plugin::zhao-course.course";
+const COURSE_UID$3 = "plugin::zhao-course.course";
 const ACCESS_CODE_UID = "plugin::zhao-course.course-access-code";
 const USER_AUTH_UID = "plugin::zhao-course.user-course-auth";
 const enrollment = ({ strapi }) => {
@@ -3047,7 +3047,7 @@ const enrollment = ({ strapi }) => {
       });
     }
     try {
-      const course2 = await strapi.db.query(COURSE_UID$2).findOne({
+      const course2 = await strapi.db.query(COURSE_UID$3).findOne({
         where: { id: courseId },
         select: ["title"]
       });
@@ -3085,7 +3085,7 @@ const enrollment = ({ strapi }) => {
      * 查询当前用户对某课程的报名记录（仅返回最新一条有效记录）
      */
     async findMyEnrollment(userId, courseDocumentId) {
-      const course2 = await strapi.db.query(COURSE_UID$2).findOne({
+      const course2 = await strapi.db.query(COURSE_UID$3).findOne({
         where: { document_id: courseDocumentId },
         select: ["id"]
       });
@@ -3125,7 +3125,7 @@ const enrollment = ({ strapi }) => {
      */
     async createEnrollment(userId, data) {
       const { courseDocumentId, enrollType, voucherUrl, voucherNote, accessCode: accessCode2 } = data;
-      const course2 = await strapi.db.query(COURSE_UID$2).findOne({
+      const course2 = await strapi.db.query(COURSE_UID$3).findOne({
         where: { document_id: courseDocumentId }
       });
       if (!course2) {
@@ -3296,7 +3296,7 @@ const enrollment = ({ strapi }) => {
   };
 };
 const UID = "plugin::zhao-course.course-access-code";
-const COURSE_UID$1 = "plugin::zhao-course.course";
+const COURSE_UID$2 = "plugin::zhao-course.course";
 const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const CODE_LENGTH = 8;
 const accessCode = ({ strapi }) => {
@@ -3354,7 +3354,7 @@ const accessCode = ({ strapi }) => {
       }
       const safeCount = Math.min(Math.max(1, Number(count) || 1), 100);
       const quota = totalQuota === void 0 || totalQuota === null ? -1 : Math.max(-1, Number(totalQuota));
-      const course2 = await strapi.db.query(COURSE_UID$1).findOne({
+      const course2 = await strapi.db.query(COURSE_UID$2).findOne({
         where: { document_id: courseDocumentId },
         select: ["id", "title"]
       });
@@ -3408,8 +3408,8 @@ const accessCode = ({ strapi }) => {
     }
   };
 };
-const COURSE_UID = "plugin::zhao-course.course";
-const ENROLL_UID = "plugin::zhao-course.course-enrollment";
+const COURSE_UID$1 = "plugin::zhao-course.course";
+const ENROLL_UID$1 = "plugin::zhao-course.course-enrollment";
 const PROGRESS_UID = "plugin::zhao-course.course-progress";
 const LEVEL_ORDER = {
   introductory: 1,
@@ -3432,7 +3432,7 @@ const recommend = ({ strapi }) => ({
   /** 学习中心个人续学清单：seed=在学课程（progress<100），否则回退最近报名课程 */
   async suggestionsFor(userId, limit = 6) {
     const [enrollments, progresses] = await Promise.all([
-      strapi.db.query(ENROLL_UID).findMany({ where: { user: userId, status: "enrolled" }, populate: { course: { select: ["documentId"] } }, limit: 300 }),
+      strapi.db.query(ENROLL_UID$1).findMany({ where: { user: userId, status: "enrolled" }, populate: { course: { select: ["documentId"] } }, limit: 300 }),
       strapi.db.query(PROGRESS_UID).findMany({ where: { user: userId }, populate: { course: { select: ["documentId"] } }, limit: 300 })
     ]);
     const enrolledDocIds = new Set(enrollments.map((e) => e.course?.documentId).filter(Boolean));
@@ -3500,7 +3500,7 @@ const recommend = ({ strapi }) => ({
     return { score, sequenceNext };
   },
   async candidatePool(excludeDocIds) {
-    const all = await strapi.db.query(COURSE_UID).findMany({
+    const all = await strapi.db.query(COURSE_UID$1).findMany({
       where: { status: "published" },
       populate: { category: true, sequenceTag: true, tags: true },
       limit: 500
@@ -3508,20 +3508,20 @@ const recommend = ({ strapi }) => ({
     return all.filter((c) => !excludeDocIds.has(String(c.documentId)));
   },
   async findOneCourse(documentId) {
-    return strapi.db.query(COURSE_UID).findOne({
+    return strapi.db.query(COURSE_UID$1).findOne({
       where: { documentId, status: "published" },
       populate: { category: true, sequenceTag: true, tags: true }
     });
   },
   async findCoursesByIds(docIds) {
     if (!docIds.length) return [];
-    return strapi.db.query(COURSE_UID).findMany({
+    return strapi.db.query(COURSE_UID$1).findMany({
       where: { documentId: { $in: docIds }, status: "published" },
       populate: { category: true, sequenceTag: true, tags: true }
     });
   },
   async fallbackCourses(limit, excludeDocIds) {
-    const all = await strapi.db.query(COURSE_UID).findMany({
+    const all = await strapi.db.query(COURSE_UID$1).findMany({
       where: { status: "published" },
       populate: { category: true, sequenceTag: true, tags: true },
       orderBy: { studentCount: "DESC" },
@@ -3549,6 +3549,107 @@ const recommend = ({ strapi }) => ({
     };
   }
 });
+const COURSE_UID = "plugin::zhao-course.course";
+const COURSE_CAT_UID = "plugin::zhao-course.course-category";
+const ENROLL_UID = "plugin::zhao-course.course-enrollment";
+const LESSON_PROGRESS_UID = "plugin::zhao-course.lesson-progress";
+const COURSE_PROGRESS_UID = "plugin::zhao-course.course-progress";
+const gate = ({ strapi }) => ({
+  /** 近 since 内学习的课时数（活跃度用） */
+  async countActiveLessons(userId, since) {
+    if (!Number.isInteger(userId) || userId <= 0) return 0;
+    return strapi.db.query(LESSON_PROGRESS_UID).count({ where: { user: userId, lastStudyAt: { $gte: since } } }).catch(() => 0);
+  },
+  /** 课时学习记录（完课率计算用：isCompleted / isCorrect） */
+  async listLessonProgress(userId, opts = {}) {
+    if (!Number.isInteger(userId) || userId <= 0) return [];
+    const where = { user: userId };
+    if (opts.since) where.lastStudyAt = { $gte: opts.since };
+    return strapi.db.query(LESSON_PROGRESS_UID).findMany({ where, select: ["id", "isCompleted", "isCorrect"], limit: opts.limit ?? 500 }).catch(() => []);
+  },
+  /** 付费/积分购课次数（付费潜力用） */
+  async countPaidEnrolls(userId) {
+    if (!Number.isInteger(userId) || userId <= 0) return 0;
+    return strapi.db.query(ENROLL_UID).count({ where: { user: userId, enrollType: { $in: ["paid", "points"] } } }).catch(() => 0);
+  },
+  /** 已购/已报名课程 id（推荐排除用） */
+  async listEnrolledCourseIds(userId) {
+    if (!Number.isInteger(userId) || userId <= 0) return [];
+    const ens = await strapi.db.query(ENROLL_UID).findMany({
+      where: { user: userId },
+      populate: { course: { select: ["id"] } },
+      limit: 500
+    }).catch(() => []);
+    return ens.map((e) => e.course?.id).filter((v) => Number.isInteger(v));
+  },
+  /** 近 since 学习过的课程分类名（lesson-progress → course → category.name，去重） */
+  async collectCourseInterests(userId, opts = {}) {
+    if (!Number.isInteger(userId) || userId <= 0) return [];
+    const where = { user: userId };
+    if (opts.since) where.lastStudyAt = { $gte: opts.since };
+    const lps = await strapi.db.query(LESSON_PROGRESS_UID).findMany({
+      where,
+      populate: { course: { select: ["id"], populate: { category: { select: ["name"] } } } },
+      limit: opts.limit ?? 500
+    }).catch(() => []);
+    const seen = /* @__PURE__ */ new Map();
+    for (const lp of lps) {
+      const c = lp.course;
+      if (c?.id && c.category?.name) seen.set(c.id, c.category.name);
+    }
+    return Array.from(seen.values());
+  },
+  /** 个性化推荐课程：兴趣分类内，或最新兜底；返回已映射的推荐项 */
+  async recommendCourses(interests, excludeIds, limit = 5) {
+    const exclude = new Set(excludeIds || []);
+    let rows = [];
+    try {
+      if (interests?.length) {
+        const cats = await strapi.db.query(COURSE_CAT_UID).findMany({ where: { name: { $in: interests } }, select: ["id"] });
+        const catIds = cats.map((c) => c.id);
+        if (catIds.length) {
+          rows = await strapi.db.query(COURSE_UID).findMany({
+            where: { category: catIds },
+            populate: { category: { select: ["name"] }, cover: true },
+            limit: 100
+          });
+        }
+      }
+      if (!rows.length) {
+        rows = await strapi.db.query(COURSE_UID).findMany({
+          populate: { category: { select: ["name"] }, cover: true },
+          orderBy: { createdAt: "DESC" },
+          limit: 100
+        });
+      }
+    } catch {
+      rows = [];
+    }
+    return rows.filter((c) => !exclude.has(c.id)).sort((a, b) => (b.studentCount || 0) - (a.studentCount || 0)).slice(0, limit).map((c) => ({
+      documentId: c.documentId,
+      id: c.id,
+      title: c.title,
+      category: c.category?.name ?? null,
+      cover: c.cover ?? null,
+      price: c.price,
+      isFree: c.isFree ?? true,
+      isPaid: c.isPaid,
+      courseType: c.courseType,
+      pointsPrice: c.pointsPrice,
+      studentCount: c.studentCount
+    }));
+  },
+  /** 窗口内再报新课数（复购/D7 统计） */
+  async countNewEnrolls(userId, from, to) {
+    if (!Number.isInteger(userId) || userId <= 0) return 0;
+    return strapi.db.query(ENROLL_UID).count({ where: { user: userId, status: "enrolled", enrolledAt: { $gt: from, $lte: to } } }).catch(() => 0);
+  },
+  /** 窗口内课程完课数（完课统计） */
+  async countCompletedProgress(userId, from, to) {
+    if (!Number.isInteger(userId) || userId <= 0) return 0;
+    return strapi.db.query(COURSE_PROGRESS_UID).count({ where: { user: userId, isCompleted: true, completedAt: { $gt: from, $lte: to } } }).catch(() => 0);
+  }
+});
 const services = {
   "course-category": courseCategory,
   course,
@@ -3558,7 +3659,8 @@ const services = {
   "lesson-progress": lessonProgress,
   enrollment,
   "access-code": accessCode,
-  recommend
+  recommend,
+  gate
 };
 const index = {
   register,

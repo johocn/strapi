@@ -3,7 +3,6 @@ import type { Core } from "@strapi/strapi";
 const VERSION_UID = "plugin::zhao-sso.msg-template-version";
 const TEMPLATE_UID = "plugin::zhao-sso.msg-template";
 const JOB_UID = "plugin::zhao-sso.msg-job";
-const VISIT_LOG_UID = "plugin::zhao-website.visit-log";
 
 export default ({ strapi }: { strapi: Core.Strapi }) => {
   async function wrap(ctx: any, fn: () => Promise<any>) {
@@ -39,16 +38,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
           where: { template: templateId },
           orderBy: { id: "DESC" },
         });
-        // 点击数实时聚合（utm_source=msg, utm_campaign=code）
-        const clicks: Record<string, number> = {};
-        for (const r of rows) {
-          if (!r.code) continue;
-          const c = await strapi.db
-            .query(VISIT_LOG_UID)
-            .count({ where: { utmSource: "msg", utmCampaign: r.code } })
-            .catch(() => 0);
-          clicks[r.code] = c;
-        }
+        // 点击数实时聚合（utm_source=msg, utm_campaign=code）——经 zhao-website 门面，不直查其表
+        const gate: any = strapi.plugin ? strapi.plugin("zhao-website")?.service?.("gate") : null;
+        const codes = rows.map((r: any) => r.code).filter(Boolean);
+        const clicks = (gate?.countMsgClicks ? await gate.countMsgClicks(codes) : {}) || {};
         return { data: rows.map((r: any) => ({ ...r, clickCountLive: clicks[r.code] || 0 })) };
       });
     },
@@ -111,11 +104,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
           orderBy: { id: "ASC" },
         });
         const out = [];
+        const gate: any = strapi.plugin ? strapi.plugin("zhao-website")?.service?.("gate") : null;
+        const codes = rows.map((r: any) => r.code).filter(Boolean);
+        const clicks = (gate?.countMsgClicks ? await gate.countMsgClicks(codes) : {}) || {};
         for (const r of rows) {
-          const click = await strapi.db
-            .query(VISIT_LOG_UID)
-            .count({ where: { utmSource: "msg", utmCampaign: r.code } })
-            .catch(() => 0);
+          const click = clicks[r.code] || 0;
           const sent = r.sentCount || 0;
           out.push({
             ...r,

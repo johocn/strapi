@@ -7,6 +7,7 @@ import lessonProgress from "./lesson-progress";
 import enrollment from "./enrollment";
 import accessCode from "./access-code";
 import recommend from "./recommend";
+import gate from "./gate";
 
 export default {
   "course-category": courseCategory,
@@ -18,4 +19,5 @@ export default {
   enrollment,
   "access-code": accessCode,
   recommend,
+  gate,
 };

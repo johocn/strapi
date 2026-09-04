@@ -6,73 +6,15 @@ declare const _default: ({ strapi }: {
 }) => {
     recommendFor(ssoUserId: number, limit?: number): Promise<{
         interests: any;
-        courses: {
-            documentId: any;
-            id: any;
-            title: any;
-            category: any;
-            cover: any;
-            price: any;
-            isFree: any;
-            isPaid: any;
-            courseType: any;
-            pointsPrice: any;
-            studentCount: any;
-        }[];
-        articles: {
-            documentId: any;
-            id: any;
-            title: any;
-            excerpt: any;
-            category: any;
-            publishedAt: any;
-        }[];
-        activities: {
-            documentId: any;
-            id: any;
-            title: any;
-            type: any;
-            startTime: any;
-            endTime: any;
-            venueName: any;
-            capacity: any;
-            usedCapacity: any;
-        }[];
+        courses: any;
+        articles: any;
+        activities: any;
     }>;
     /** 推荐课程：兴趣分类内，排除已购/已报名，按学员数排序；无兴趣 → 最新课程兜底 */
-    recCourses(interests: string[], upUserId: number | null, limit: number): Promise<{
-        documentId: any;
-        id: any;
-        title: any;
-        category: any;
-        cover: any;
-        price: any;
-        isFree: any;
-        isPaid: any;
-        courseType: any;
-        pointsPrice: any;
-        studentCount: any;
-    }[]>;
+    recCourses(interests: string[], upUserId: number | null, limit: number): Promise<any>;
     /** 推荐文章：兴趣分类内已发布文章，按发布时间排序；无兴趣 → 最新兜底 */
-    recArticles(interests: string[], limit: number): Promise<{
-        documentId: any;
-        id: any;
-        title: any;
-        excerpt: any;
-        category: any;
-        publishedAt: any;
-    }[]>;
+    recArticles(interests: string[], limit: number): Promise<any>;
     /** 推荐活动：兴趣类型内报名中的活动，排除已报名，按开始时间排序；无匹配 → 报名中兜底 */
-    recActivities(interests: string[], upUserId: number | null, limit: number): Promise<{
-        documentId: any;
-        id: any;
-        title: any;
-        type: any;
-        startTime: any;
-        endTime: any;
-        venueName: any;
-        capacity: any;
-        usedCapacity: any;
-    }[]>;
+    recActivities(interests: string[], upUserId: number | null, limit: number): Promise<any>;
 };
 export default _default;

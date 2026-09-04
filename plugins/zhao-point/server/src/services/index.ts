@@ -13,6 +13,7 @@ import form from "./form";
 import resourceSchedule from "./resource-schedule";
 import activityLedger from "./activity-ledger";
 import activitySopAudience from "./activity-sop-audience";
+import gate from "./gate";
 
 export default {
   point,
@@ -30,4 +31,5 @@ export default {
   "resource-schedule": resourceSchedule,
   "activity-ledger": activityLedger,
   "activity-sop-audience": activitySopAudience,
+  gate,
 };

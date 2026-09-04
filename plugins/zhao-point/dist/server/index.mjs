@@ -449,7 +449,7 @@ const venueLifecycles = {
     await run$1(event);
   }
 };
-const ACTIVITY_UID$b = "plugin::zhao-point.activity";
+const ACTIVITY_UID$c = "plugin::zhao-point.activity";
 const CATEGORY_GROUP = "activity-category";
 const gStrapi$1 = () => globalThis?.strapi;
 function tagIdOf(rel) {
@@ -463,7 +463,7 @@ async function syncActivityIndex(documentId) {
   const tagSvc = strapi2?.plugin("zhao-tag")?.service("tag");
   const indexSvc = strapi2?.plugin("zhao-tag")?.service("tag-index");
   if (!tagSvc || !indexSvc) return;
-  const act = await strapi2.documents(ACTIVITY_UID$b).findOne({
+  const act = await strapi2.documents(ACTIVITY_UID$c).findOne({
     documentId,
     populate: {
       lecturer: { populate: ["tag"] },
@@ -585,7 +585,7 @@ const contentTypes = {
   venue: { schema: venue, lifecycles: venueLifecycles }
 };
 const wrap$6 = (data, meta = {}) => ({ data, meta });
-const ACTIVITY_UID$a = "plugin::zhao-point.activity";
+const ACTIVITY_UID$b = "plugin::zhao-point.activity";
 const wrapList$2 = (result) => {
   if (result && typeof result === "object" && !Array.isArray(result) && "results" in result) {
     return { data: result.results, meta: { pagination: result.pagination || {} } };
@@ -675,7 +675,7 @@ const point$1 = ({ strapi: strapi2 }) => {
         let remark = "分享活动";
         if (dimType === "activity" && dimId != null) {
           const idNum = Number(dimId);
-          const act = await strapi2.db.query(ACTIVITY_UID$a).findOne({
+          const act = await strapi2.db.query(ACTIVITY_UID$b).findOne({
             where: Number.isNaN(idNum) ? { documentId: String(dimId) } : { id: idNum },
             select: ["documentId", "title", "shareRewardPoints"]
           });
@@ -2124,10 +2124,10 @@ const form = ({ strapi: strapi2 }) => ({
   channelFilled,
   collectQuestionnaire
 });
-const SIGNS_UID$5 = "plugin::zhao-point.activity-signup";
+const SIGNS_UID$6 = "plugin::zhao-point.activity-signup";
 const ATT_UID$2 = "plugin::zhao-point.activity-attendance";
 const AUTH_UID$1 = "plugin::zhao-course.user-course-auth";
-const ACTIVITY_UID$9 = "plugin::zhao-point.activity";
+const ACTIVITY_UID$a = "plugin::zhao-point.activity";
 const MSG_UID = "plugin::zhao-point.activity-message";
 const SSO_USER_UID = "plugin::zhao-sso.sso-user";
 const PROMO_MODULE_TYPES = [
@@ -2325,7 +2325,7 @@ async function recomputeUnlock(strapi2, signup, act, userId) {
     conditions,
     chosenRewards: [...prevChosen, ...granted.map((g) => g.id)]
   };
-  await strapi2.db.query(SIGNS_UID$5).update({ where: { id: signup.id }, data: { unlockInfo } });
+  await strapi2.db.query(SIGNS_UID$6).update({ where: { id: signup.id }, data: { unlockInfo } });
   const tempLessons = act.preUnlockLessons || [];
   if (tempLessons.length) {
     for (const lesson of tempLessons) {
@@ -2662,9 +2662,9 @@ class TourError extends Error {
   }
 }
 async function findTourSignup(strapi2, userId, documentId) {
-  const act = await strapi2.documents(ACTIVITY_UID$9).findOne({ documentId, populate: ["story"] });
+  const act = await strapi2.documents(ACTIVITY_UID$a).findOne({ documentId, populate: ["story"] });
   if (!act || !act.tourMode) throw new TourError("NOT_TOUR", "该活动不是剧本游");
-  const signup = await strapi2.db.query(SIGNS_UID$5).findOne({
+  const signup = await strapi2.db.query(SIGNS_UID$6).findOne({
     where: { activity: act.id, user: userId, status: "active" }
   });
   return { act, signup };
@@ -2699,7 +2699,7 @@ async function tourCheckinStation(args) {
   if (stations.includes(order)) return { already: true, progress: { ...prev, stations } };
   stations.push(order);
   const next = { ...prev, stations };
-  await strapi.db.query(SIGNS_UID$5).update({ where: { id: signup.id }, data: { tourProgress: next } });
+  await strapi.db.query(SIGNS_UID$6).update({ where: { id: signup.id }, data: { tourProgress: next } });
   const userChannelId = await resolveUserChannelId(strapi, args.userId);
   await earnPointsSafe(strapi, args.userId, "tour_checkin", act.story?.stationPoints ?? 10, `剧本打卡·${station.name || `第${order}站`}`, userChannelId);
   return { already: false, progress: next };
@@ -2713,7 +2713,7 @@ async function tourAnswerMain(args) {
   if (prev.mainSolved) return { correct: true, already: true, progress: prev };
   if (expected && given !== expected) return { correct: false, already: false, progress: prev };
   const next = { ...prev, mainSolved: true, mainSolvedAt: (/* @__PURE__ */ new Date()).toISOString() };
-  await strapi.db.query(SIGNS_UID$5).update({ where: { id: signup.id }, data: { tourProgress: next } });
+  await strapi.db.query(SIGNS_UID$6).update({ where: { id: signup.id }, data: { tourProgress: next } });
   const userChannelId = await resolveUserChannelId(strapi, args.userId);
   await earnPointsSafe(strapi, args.userId, "tour_main", act.story?.mainPoints ?? 50, "剧本谜底破解", userChannelId);
   return { correct: true, already: false, progress: next };
@@ -2724,7 +2724,7 @@ async function tourChooseRole(args) {
   const role = typeof args.role === "string" ? args.role : "";
   const prev = signup.tourProgress && typeof signup.tourProgress === "object" ? signup.tourProgress : {};
   const next = { ...prev, role };
-  await strapi.db.query(SIGNS_UID$5).update({ where: { id: signup.id }, data: { tourProgress: next } });
+  await strapi.db.query(SIGNS_UID$6).update({ where: { id: signup.id }, data: { tourProgress: next } });
   return { progress: next };
 }
 async function tourClaimFinale(args) {
@@ -2737,14 +2737,14 @@ async function tourClaimFinale(args) {
   if (!prev.mainSolved) throw new TourError("MAIN_UNSOLVED", "主线谜底未破解");
   if (prev.finaleClaimed) return { already: true, progress: prev };
   const next = { ...prev, finaleClaimed: true, claimedAt: (/* @__PURE__ */ new Date()).toISOString() };
-  await strapi.db.query(SIGNS_UID$5).update({ where: { id: signup.id }, data: { tourProgress: next } });
+  await strapi.db.query(SIGNS_UID$6).update({ where: { id: signup.id }, data: { tourProgress: next } });
   const userChannelId = await resolveUserChannelId(strapi, args.userId);
   await earnPointsSafe(strapi, args.userId, "tour_finale", act.story?.finalePoints ?? 100, "剧本终章兑奖", userChannelId);
   return { already: false, progress: next };
 }
 const activity$1 = ({ strapi: strapi2 }) => ({
   async signup({ userId, activityId, formData, preQuestionnaireData, chosenRewards }) {
-    const act = await strapi2.documents(ACTIVITY_UID$9).findOne({ documentId: activityId, populate: { preUnlockLessons: { populate: { course: true } }, venue: true } });
+    const act = await strapi2.documents(ACTIVITY_UID$a).findOne({ documentId: activityId, populate: { preUnlockLessons: { populate: { course: true } }, venue: true } });
     if (!act) throw new Error("活动不存在");
     if (act.status !== "signup_open") throw new Error("活动未开放报名");
     const now = Date.now();
@@ -2788,17 +2788,17 @@ const activity$1 = ({ strapi: strapi2 }) => ({
     else if (selectMode === "any") multiSelected = multiSelected.slice(0, selectN);
     const chosenRewardsIds = [...autoChosen, ...multiSelected];
     const unlockInfo = hasReward ? { loginAuth, subscribed, channelDone, conditions, chosenRewards: chosenRewardsIds } : void 0;
-    const dup = await strapi2.db.query(SIGNS_UID$5).findOne({
+    const dup = await strapi2.db.query(SIGNS_UID$6).findOne({
       where: { user: userId, activity: act.id, status: { $in: ["active", "waiting"] } }
     });
     if (dup) return { ok: false, reason: "already_signed_up" };
     const knex = strapi2.db.connection;
     const reserved = await knex("activities").where("id", act.id).andWhere("used_capacity", "<", knex.raw("capacity")).increment("used_capacity", 1);
     if (reserved === 0) {
-      const sig2 = await strapi2.db.query(SIGNS_UID$5).create({
+      const sig2 = await strapi2.db.query(SIGNS_UID$6).create({
         data: { user: userId, activity: act.id, status: "waiting", signupAt: /* @__PURE__ */ new Date(), ...storedFormData ? { formData: storedFormData } : {}, ...preQuestionnaireData && Object.keys(preQuestionnaireData).length ? { preQuestionnaireData } : {}, ...unlockInfo ? { unlockInfo: { ...unlockInfo, chosenRewards: [] } } : {} }
       });
-      const waitCount = await strapi2.db.query(SIGNS_UID$5).count({
+      const waitCount = await strapi2.db.query(SIGNS_UID$6).count({
         where: {
           activity: act.id,
           status: "waiting",
@@ -2846,7 +2846,7 @@ const activity$1 = ({ strapi: strapi2 }) => ({
         return { ok: false, reason: "insufficient_points" };
       }
     }
-    const sig = await strapi2.db.query(SIGNS_UID$5).create({ data: { user: userId, activity: act.id, status: "active", signupAt: /* @__PURE__ */ new Date(), pointsCharged: feeCollectAt === "signup" ? cost : 0, feeTierId: resolved.tierId ?? null, ...storedFormData ? { formData: storedFormData } : {}, ...preQuestionnaireData && Object.keys(preQuestionnaireData).length ? { preQuestionnaireData } : {}, ...unlockInfo ? { unlockInfo } : {} } });
+    const sig = await strapi2.db.query(SIGNS_UID$6).create({ data: { user: userId, activity: act.id, status: "active", signupAt: /* @__PURE__ */ new Date(), pointsCharged: feeCollectAt === "signup" ? cost : 0, feeTierId: resolved.tierId ?? null, ...storedFormData ? { formData: storedFormData } : {}, ...preQuestionnaireData && Object.keys(preQuestionnaireData).length ? { preQuestionnaireData } : {}, ...unlockInfo ? { unlockInfo } : {} } });
     const granted = [];
     if (hasReward && chosenRewardsIds.length) {
       const userChannelId = await resolveUserChannelId(strapi2, userId);
@@ -2945,7 +2945,7 @@ const activity$1 = ({ strapi: strapi2 }) => ({
   },
   /** 补填问卷：type=pre(活动前，报名后即可填，驱动 survey 解锁/积分) | post(活动后，需已签到且活动已结束，仅记录反馈) */
   async fillQuestionnaire({ userId, signupId, answers, type: type2 = "pre" }) {
-    const signup = await strapi2.db.query(SIGNS_UID$5).findOne({
+    const signup = await strapi2.db.query(SIGNS_UID$6).findOne({
       where: { id: signupId, user: userId },
       populate: { activity: true }
     });
@@ -2959,15 +2959,15 @@ const activity$1 = ({ strapi: strapi2 }) => ({
       if (!signup.attendedAt) throw new Error("需到场签到后才能填写活动后问卷");
       if (!act.endTime || Date.now() < new Date(act.endTime).getTime()) throw new Error("活动结束后才能填写活动后问卷");
       const collected2 = collectQuestionnaire(q2.fields, answers);
-      await strapi2.db.query(SIGNS_UID$5).update({ where: { id: signup.id }, data: { questionnaireData: collected2 } });
+      await strapi2.db.query(SIGNS_UID$6).update({ where: { id: signup.id }, data: { questionnaireData: collected2 } });
       return { ok: true, type: "post", postDone: surveyFilled(collected2, q2.fields) };
     }
     const q = act.preQuestionnaire || act.questionnaire;
     if (!q || q.enabled !== true || !Array.isArray(q.fields) || !q.fields.length) throw new Error("该活动未开启问卷");
     const prevSurvey = surveyFilled(signup.preQuestionnaireData || {}, q.fields);
     const collected = collectQuestionnaire(q.fields, answers);
-    await strapi2.db.query(SIGNS_UID$5).update({ where: { id: signup.id }, data: { preQuestionnaireData: collected } });
-    const fresh = await strapi2.db.query(SIGNS_UID$5).findOne({ where: { id: signup.id } });
+    await strapi2.db.query(SIGNS_UID$6).update({ where: { id: signup.id }, data: { preQuestionnaireData: collected } });
+    const fresh = await strapi2.db.query(SIGNS_UID$6).findOne({ where: { id: signup.id } });
     const { unlockInfo, newlyGranted } = await recomputeUnlock(strapi2, fresh, act, userId);
     const currentSurvey = surveyFilled(fresh.preQuestionnaireData || {}, q.fields);
     if (!prevSurvey && currentSurvey) {
@@ -2978,7 +2978,7 @@ const activity$1 = ({ strapi: strapi2 }) => ({
   },
   /** 补填联系方式：更新 signup.formData → 重算解锁 → 本轮新达成联系方式补发 +20 */
   async fillContact({ userId, signupId, formData }) {
-    const signup = await strapi2.db.query(SIGNS_UID$5).findOne({
+    const signup = await strapi2.db.query(SIGNS_UID$6).findOne({
       where: { id: signupId, user: userId },
       populate: { activity: true }
     });
@@ -2990,8 +2990,8 @@ const activity$1 = ({ strapi: strapi2 }) => ({
     if (!formConfig.length) throw new Error("该活动未开启报名表单");
     const prevContact = contactFilled(formConfig, signup.formData);
     const collected = collectFormData(formConfig, formData);
-    await strapi2.db.query(SIGNS_UID$5).update({ where: { id: signup.id }, data: { formData: collected } });
-    const fresh = await strapi2.db.query(SIGNS_UID$5).findOne({ where: { id: signup.id } });
+    await strapi2.db.query(SIGNS_UID$6).update({ where: { id: signup.id }, data: { formData: collected } });
+    const fresh = await strapi2.db.query(SIGNS_UID$6).findOne({ where: { id: signup.id } });
     const { unlockInfo, newlyGranted } = await recomputeUnlock(strapi2, fresh, act, userId);
     const currentContact = contactFilled(formConfig, fresh.formData);
     if (!prevContact && currentContact) {
@@ -3016,7 +3016,7 @@ const activity$1 = ({ strapi: strapi2 }) => ({
   },
   /** 补领关注公众号：已关注则补发关注积分(幂等)，并重算解锁新增权益 */
   async claimSubscribe({ userId, signupId }) {
-    const signup = await strapi2.db.query(SIGNS_UID$5).findOne({
+    const signup = await strapi2.db.query(SIGNS_UID$6).findOne({
       where: { id: signupId, user: userId },
       populate: { activity: true }
     });
@@ -3033,7 +3033,7 @@ const activity$1 = ({ strapi: strapi2 }) => ({
   },
   /** 报名后权益状态：已报名用户回访时卡片区读取真实已领/可领/未达成（不入库） */
   async signupUnlockStatus({ userId, signupId }) {
-    const signup = await strapi2.db.query(SIGNS_UID$5).findOne({
+    const signup = await strapi2.db.query(SIGNS_UID$6).findOne({
       where: { id: signupId, user: userId },
       populate: { activity: true }
     });
@@ -3095,7 +3095,7 @@ const activity$1 = ({ strapi: strapi2 }) => ({
   },
   /** 解锁状态探测：C 端报名前或关注/授权后调用，返回通道/条件/可领权益（不入库） */
   async unlockCheck({ userId, activityDocumentId, formData, preQuestionnaireData }) {
-    const act = await strapi2.documents(ACTIVITY_UID$9).findOne({ documentId: activityDocumentId });
+    const act = await strapi2.documents(ACTIVITY_UID$a).findOne({ documentId: activityDocumentId });
     if (!act) throw new Error("活动不存在");
     const rewardConfig = act.rewardConfig;
     const hasReward = !!rewardConfig && typeof rewardConfig === "object";
@@ -3151,7 +3151,7 @@ const activity$1 = ({ strapi: strapi2 }) => ({
   },
   /** 宣传页聚合：活动 + 模块 + 合并联系方式 + 奖励摘要 + 本人报名状态 */
   async promoDetail({ activityDocumentId, userId, siteDocumentId }) {
-    const act = await strapi2.documents(ACTIVITY_UID$9).findOne({
+    const act = await strapi2.documents(ACTIVITY_UID$a).findOne({
       documentId: activityDocumentId,
       populate: ["lecturer", "venue"]
     });
@@ -3160,7 +3160,7 @@ const activity$1 = ({ strapi: strapi2 }) => ({
     const contact = await resolvePromoContact(strapi2, act.promoContact, siteDocumentId);
     let signupStatus = { signedUp: false };
     if (userId) {
-      const signup = await strapi2.db.query(SIGNS_UID$5).findOne({
+      const signup = await strapi2.db.query(SIGNS_UID$6).findOne({
         where: { activity: act.id, user: userId },
         orderBy: { id: "DESC" }
       });
@@ -3185,7 +3185,7 @@ const activity$1 = ({ strapi: strapi2 }) => ({
   async sendMessage({ userId, activityDocumentId, content }) {
     if (!content || typeof content !== "string" || !content.trim()) throw new Error("留言内容不能为空");
     if (content.trim().length > 1e3) throw new Error("留言内容过长");
-    const act = await strapi2.documents(ACTIVITY_UID$9).findOne({ documentId: activityDocumentId });
+    const act = await strapi2.documents(ACTIVITY_UID$a).findOne({ documentId: activityDocumentId });
     if (!act) throw new Error("活动不存在");
     const created = await strapi2.documents(MSG_UID).create({
       data: {
@@ -3200,7 +3200,7 @@ const activity$1 = ({ strapi: strapi2 }) => ({
   },
   /** 我的留言 + 运营回复列表（按活动） */
   async listMyMessages({ userId, activityDocumentId }) {
-    const act = await strapi2.documents(ACTIVITY_UID$9).findOne({ documentId: activityDocumentId });
+    const act = await strapi2.documents(ACTIVITY_UID$a).findOne({ documentId: activityDocumentId });
     if (!act) throw new Error("活动不存在");
     const rows = await strapi2.db.query(MSG_UID).findMany({
       where: { activity: act.id, user: userId },
@@ -3229,7 +3229,7 @@ const activity$1 = ({ strapi: strapi2 }) => ({
   async adminListMessages({ activity: activity2, status, page, pageSize }) {
     const where = {};
     if (activity2) {
-      const act = await strapi2.documents(ACTIVITY_UID$9).findOne({ documentId: activity2 });
+      const act = await strapi2.documents(ACTIVITY_UID$a).findOne({ documentId: activity2 });
       if (!act) throw new Error("活动不存在");
       where.activity = act.id;
     }
@@ -3296,7 +3296,7 @@ const activity$1 = ({ strapi: strapi2 }) => ({
     return { documentId: updated.documentId, status: updated.status, repliedAt: updated.repliedAt };
   },
   async listPublicReviews({ activityDocumentId, page = 1, pageSize = 20 }) {
-    const act = await strapi2.documents(ACTIVITY_UID$9).findOne({ documentId: activityDocumentId });
+    const act = await strapi2.documents(ACTIVITY_UID$a).findOne({ documentId: activityDocumentId });
     if (!act) throw new Error("活动不存在");
     const visible = {
       activity: act.id,
@@ -3304,7 +3304,7 @@ const activity$1 = ({ strapi: strapi2 }) => ({
       rating: { $notNull: true },
       reviewHidden: { $ne: true }
     };
-    const result = await strapi2.db.query(SIGNS_UID$5).findPage({
+    const result = await strapi2.db.query(SIGNS_UID$6).findPage({
       where: visible,
       populate: { user: true },
       orderBy: { reviewedAt: "desc" },
@@ -3324,7 +3324,7 @@ const activity$1 = ({ strapi: strapi2 }) => ({
         avatar: r.user.avatar
       } : null
     }));
-    const all = await strapi2.db.query(SIGNS_UID$5).findMany({
+    const all = await strapi2.db.query(SIGNS_UID$6).findMany({
       where: visible,
       select: ["rating", "nps", "review"]
     });
@@ -3358,7 +3358,7 @@ const activity$1 = ({ strapi: strapi2 }) => ({
     if (!auth) return { authorized: false, reason: "no_auth" };
     const actId = auth.activityDocumentId;
     if (actId) {
-      const act = await strapi2.db.query(ACTIVITY_UID$9).findOne({
+      const act = await strapi2.db.query(ACTIVITY_UID$a).findOne({
         where: { documentId: actId },
         populate: { preUnlockLessons: { select: ["documentId"] } }
       });
@@ -3371,7 +3371,7 @@ const activity$1 = ({ strapi: strapi2 }) => ({
   },
   /** 运营手动授权单课时临时播放权（幂等复用 grantTempLessonLesson，source=manual） */
   async adminGrantTempLesson(opts) {
-    const act = await strapi2.db.query(ACTIVITY_UID$9).findOne({
+    const act = await strapi2.db.query(ACTIVITY_UID$a).findOne({
       where: { documentId: opts.activityId },
       populate: { preUnlockLessons: { select: ["documentId", "course"] } }
     });
@@ -3399,7 +3399,7 @@ const activity$1 = ({ strapi: strapi2 }) => ({
   },
   /** 本活动本人已解锁学习内容：报名解锁(preUnlock*) + 签到解锁(learningPackage*) */
   async getLearningContent({ userId, activityDocumentId }) {
-    const act = await strapi2.documents(ACTIVITY_UID$9).findOne({
+    const act = await strapi2.documents(ACTIVITY_UID$a).findOne({
       documentId: activityDocumentId,
       populate: {
         preUnlockArticles: true,
@@ -3409,7 +3409,7 @@ const activity$1 = ({ strapi: strapi2 }) => ({
       }
     });
     if (!act) throw new Error("活动不存在");
-    const signup = await strapi2.db.query(SIGNS_UID$5).findOne({
+    const signup = await strapi2.db.query(SIGNS_UID$6).findOne({
       where: { activity: act.id, user: userId }
     });
     const checkedIn = !!signup?.attendedAt;
@@ -3493,11 +3493,11 @@ const activity$1 = ({ strapi: strapi2 }) => ({
    * 返回是否发生流转；不引入 cron。
    */
   async ensureTransitions(activityDocumentId) {
-    const act = await strapi2.documents(ACTIVITY_UID$9).findOne({ documentId: activityDocumentId });
+    const act = await strapi2.documents(ACTIVITY_UID$a).findOne({ documentId: activityDocumentId });
     if (!act) return false;
     const now = Date.now();
     if (act.status === "signup_open" && act.startTime && now >= new Date(act.startTime).getTime()) {
-      await strapi2.documents(ACTIVITY_UID$9).update({ documentId: activityDocumentId, data: { status: "ongoing" } });
+      await strapi2.documents(ACTIVITY_UID$a).update({ documentId: activityDocumentId, data: { status: "ongoing" } });
       return true;
     }
     if (act.status === "ongoing" && act.endTime && now >= new Date(act.endTime).getTime()) {
@@ -3509,7 +3509,7 @@ const activity$1 = ({ strapi: strapi2 }) => ({
   /** 批量兜底：扫描到期的 signup_open/ongoing 活动统一推进（管理端聚合/启动时调用） */
   async drainDueActivities() {
     const now = (/* @__PURE__ */ new Date()).toISOString();
-    const rows = await strapi2.db.query(ACTIVITY_UID$9).findMany({
+    const rows = await strapi2.db.query(ACTIVITY_UID$a).findMany({
       where: {
         status: { $in: ["signup_open", "ongoing"] },
         $or: [
@@ -3531,33 +3531,33 @@ const activity$1 = ({ strapi: strapi2 }) => ({
   },
   /** 管理端归档: 仅 ended -> archived; 幂等(已是 archived 直接返回) */
   async adminArchive(activityDocumentId) {
-    const act = await strapi2.documents(ACTIVITY_UID$9).findOne({ documentId: activityDocumentId });
+    const act = await strapi2.documents(ACTIVITY_UID$a).findOne({ documentId: activityDocumentId });
     if (!act) throw new Error("活动不存在");
     if (act.status === "archived") return act;
     if (act.status !== "ended") throw new Error("仅已结束活动可归档");
-    return strapi2.documents(ACTIVITY_UID$9).update({
+    return strapi2.documents(ACTIVITY_UID$a).update({
       documentId: activityDocumentId,
       data: { status: "archived" }
     });
   },
   /** 管理端恢复: archived -> ended; 幂等(非 archived 抛错) */
   async adminUnarchive(activityDocumentId) {
-    const act = await strapi2.documents(ACTIVITY_UID$9).findOne({ documentId: activityDocumentId });
+    const act = await strapi2.documents(ACTIVITY_UID$a).findOne({ documentId: activityDocumentId });
     if (!act) throw new Error("活动不存在");
     if (act.status !== "archived") throw new Error("仅已归档活动可恢复");
-    return strapi2.documents(ACTIVITY_UID$9).update({
+    return strapi2.documents(ACTIVITY_UID$a).update({
       documentId: activityDocumentId,
       data: { status: "ended" }
     });
   },
   async cancel({ userId, activityId }) {
-    const signup = await strapi2.db.query(SIGNS_UID$5).findOne({
+    const signup = await strapi2.db.query(SIGNS_UID$6).findOne({
       where: { user: userId, activity: activityId, status: { $in: ["active", "waiting"] } }
     });
     if (!signup) throw new Error("未报名");
-    await strapi2.db.query(SIGNS_UID$5).update({ where: { id: signup.id }, data: { status: "cancelled" } });
+    await strapi2.db.query(SIGNS_UID$6).update({ where: { id: signup.id }, data: { status: "cancelled" } });
     try {
-      const act = await strapi2.db.query(ACTIVITY_UID$9).findOne({ where: { id: activityId } });
+      const act = await strapi2.db.query(ACTIVITY_UID$a).findOne({ where: { id: activityId } });
       const params = { name: act?.title ?? "", startTime: act?.startTime ?? null };
       await this.notifyInApp(userId, activityId, "activity.cancelled", params, `activity:cancelled:${userId}:${activityId}`);
       const sop = strapi2.plugin("zhao-sso")?.service("sso-sop");
@@ -3575,7 +3575,7 @@ const activity$1 = ({ strapi: strapi2 }) => ({
       strapi2.log.warn(`[zhao-point:activity] cancel notify failed (user=${userId}): ${e.message}`);
     }
     if (signup.status === "active") {
-      const act = await strapi2.db.query(ACTIVITY_UID$9).findOne({ where: { id: activityId } });
+      const act = await strapi2.db.query(ACTIVITY_UID$a).findOne({ where: { id: activityId } });
       if (signup.pointsCharged > 0) {
         const userChannelId = await resolveUserChannelId(strapi2, userId);
         try {
@@ -3594,13 +3594,13 @@ const activity$1 = ({ strapi: strapi2 }) => ({
    * cancel 释放一席后调用，故每次至多转正一人），并对转正用户即时通知。
    */
   async promoteWaiting(activityId) {
-    const pending = await strapi2.db.query(SIGNS_UID$5).findMany({
+    const pending = await strapi2.db.query(SIGNS_UID$6).findMany({
       where: { activity: activityId, status: "waiting" },
       orderBy: [{ signupAt: "asc" }, { id: "asc" }],
       populate: ["user"]
     });
     const knex = strapi2.db.connection;
-    const act = await strapi2.db.query(ACTIVITY_UID$9).findOne({ where: { id: activityId } });
+    const act = await strapi2.db.query(ACTIVITY_UID$a).findOne({ where: { id: activityId } });
     let promoted = 0;
     for (const p of pending) {
       if (promoted >= 1) break;
@@ -3619,7 +3619,7 @@ const activity$1 = ({ strapi: strapi2 }) => ({
           continue;
         }
       }
-      await strapi2.db.query(SIGNS_UID$5).update({
+      await strapi2.db.query(SIGNS_UID$6).update({
         where: { id: p.id },
         data: { status: "active", signupAt: /* @__PURE__ */ new Date(), pointsCharged: feeCollectAt === "signup" ? cost : 0, feeTierId: resolved.tierId ?? null }
       });
@@ -3641,7 +3641,7 @@ const activity$1 = ({ strapi: strapi2 }) => ({
   },
   /** 候补序号（1-based）：按 signupAt 升序、同时间按 id 升序，统计排在该候补记录之前的 waiting 数 + 1 */
   async waitlistPositionOf(activityId, signup) {
-    const waitCount = await strapi2.db.query(SIGNS_UID$5).count({
+    const waitCount = await strapi2.db.query(SIGNS_UID$6).count({
       where: {
         activity: activityId,
         status: "waiting",
@@ -3693,7 +3693,7 @@ const activity$1 = ({ strapi: strapi2 }) => ({
   async checkin({ userId, activityId, method, lat, lng }) {
     const act = await strapi2.documents("plugin::zhao-point.activity").findOne({ documentId: activityId, populate: { learningPackageLessons: { populate: { course: true } } } });
     if (!act) throw new Error("活动不存在");
-    const signup = await strapi2.db.query(SIGNS_UID$5).findOne({ where: { user: userId, activity: act.id, status: "active" } });
+    const signup = await strapi2.db.query(SIGNS_UID$6).findOne({ where: { user: userId, activity: act.id, status: "active" } });
     if (!signup) throw new Error("尚未报名");
     const existing = await strapi2.db.query(ATT_UID$2).findOne({ where: { signup: signup.id } });
     if (existing) return { ok: false, reason: "already_checked_in", attendanceId: existing.id, point: existing.pointsGranted };
@@ -3714,7 +3714,7 @@ const activity$1 = ({ strapi: strapi2 }) => ({
     const att = await strapi2.db.query(ATT_UID$2).create({
       data: { signup: signup.id, method, checkinAt: /* @__PURE__ */ new Date(), lat, lng, geoPassed, pointsGranted: false }
     });
-    await strapi2.db.query(SIGNS_UID$5).update({ where: { id: signup.id }, data: { attendedAt: /* @__PURE__ */ new Date() } });
+    await strapi2.db.query(SIGNS_UID$6).update({ where: { id: signup.id }, data: { attendedAt: /* @__PURE__ */ new Date() } });
     await grantPoints(strapi2, userId, "activity_attend", "活动到场签到");
     await strapi2.db.query(ATT_UID$2).update({ where: { id: att.id }, data: { pointsGranted: true } });
     for (const lesson of act.learningPackageLessons || []) {
@@ -3748,9 +3748,9 @@ async function resolveUserRoles(strapi2, userId) {
   const raw = Array.isArray(user?.zhaoRoles) ? user.zhaoRoles : [];
   return raw.filter((r) => typeof r === "string");
 }
-const ACTIVITY_UID$8 = "plugin::zhao-point.activity";
+const ACTIVITY_UID$9 = "plugin::zhao-point.activity";
 const AUTH_UID = "plugin::zhao-course.user-course-auth";
-const SIGNS_UID$4 = "plugin::zhao-point.activity-signup";
+const SIGNS_UID$5 = "plugin::zhao-point.activity-signup";
 const ATT_UID$1 = "plugin::zhao-point.activity-attendance";
 const REWARD_UID$1 = "plugin::zhao-point.activity-referral-reward";
 const UP_USER_UID = "plugin::users-permissions.user";
@@ -3853,7 +3853,7 @@ const activity = ({ strapi: strapi2 }) => {
         if (search && search !== "undefined") filters2.title = { $contains: search };
         const docIds = parseDocumentIds(ctx.query.documentIds);
         if (docIds.length) filters2.documentId = { $in: docIds };
-        const rows = await strapi2.documents(ACTIVITY_UID$8).findMany({
+        const rows = await strapi2.documents(ACTIVITY_UID$9).findMany({
           ...rest,
           filters: filters2,
           populate: "*",
@@ -3875,7 +3875,7 @@ const activity = ({ strapi: strapi2 }) => {
     // GET /activities/categories
     async categories(ctx) {
       try {
-        const rows = await strapi2.db.query(ACTIVITY_UID$8).findMany({
+        const rows = await strapi2.db.query(ACTIVITY_UID$9).findMany({
           select: ["category"],
           where: { status: { $notIn: ["draft", "archived"] } }
         });
@@ -3891,7 +3891,7 @@ const activity = ({ strapi: strapi2 }) => {
     async detail(ctx) {
       try {
         await activitySvc().ensureTransitions(ctx.params.documentId);
-        const activity2 = await strapi2.documents(ACTIVITY_UID$8).findOne({
+        const activity2 = await strapi2.documents(ACTIVITY_UID$9).findOne({
           documentId: ctx.params.documentId,
           populate: "*"
         });
@@ -3911,7 +3911,7 @@ const activity = ({ strapi: strapi2 }) => {
             return;
           }
         }
-        const reviews = await strapi2.db.query(SIGNS_UID$4).findMany({
+        const reviews = await strapi2.db.query(SIGNS_UID$5).findMany({
           where: { activity: activity2.id, status: "active", rating: { $notNull: true }, reviewHidden: { $ne: true } },
           select: ["rating", "review"]
         });
@@ -3970,7 +3970,7 @@ const activity = ({ strapi: strapi2 }) => {
         if (result?.ok === false && result.reason === "already_signed_up") {
           ctx.status = 200;
           if (result.signupId == null) {
-            const existing = await strapi2.db.query(SIGNS_UID$4).findOne({
+            const existing = await strapi2.db.query(SIGNS_UID$5).findOne({
               where: { user: userId, activity: { documentId: activityId }, status: "active" },
               select: ["id"]
             });
@@ -4147,7 +4147,7 @@ const activity = ({ strapi: strapi2 }) => {
     async cancel(ctx) {
       try {
         const userId = await getUserId(ctx);
-        const act = await strapi2.documents(ACTIVITY_UID$8).findOne({ documentId: ctx.params.documentId });
+        const act = await strapi2.documents(ACTIVITY_UID$9).findOne({ documentId: ctx.params.documentId });
         if (!act) {
           ctx.status = 404;
           ctx.body = { error: "活动不存在" };
@@ -4183,7 +4183,7 @@ const activity = ({ strapi: strapi2 }) => {
       try {
         await activitySvc().drainDueActivities();
         const userId = await getUserId(ctx);
-        const rows = await strapi2.db.query(SIGNS_UID$4).findMany({
+        const rows = await strapi2.db.query(SIGNS_UID$5).findMany({
           where: { user: userId },
           populate: { activity: true },
           orderBy: { signupAt: "desc" }
@@ -4218,7 +4218,7 @@ const activity = ({ strapi: strapi2 }) => {
         if (status) filters2.status = status;
         const docIds = parseDocumentIds(ctx.query.documentIds);
         if (docIds.length) filters2.documentId = { $in: docIds };
-        const result = await strapi2.documents(ACTIVITY_UID$8).findMany({
+        const result = await strapi2.documents(ACTIVITY_UID$9).findMany({
           ...rest,
           filters: Object.keys(filters2).length ? filters2 : void 0,
           populate: "*",
@@ -4270,7 +4270,7 @@ const activity = ({ strapi: strapi2 }) => {
           ctx.body = { error: "活动结束时间必须晚于活动开始时间" };
           return;
         }
-        const activity2 = await strapi2.documents(ACTIVITY_UID$8).create({ data: body });
+        const activity2 = await strapi2.documents(ACTIVITY_UID$9).create({ data: body });
         ctx.body = wrap$5(activity2);
       } catch (e) {
         ctx.status = e.status || 400;
@@ -4290,7 +4290,7 @@ const activity = ({ strapi: strapi2 }) => {
             throw new Error("promoContact 必须为对象或 null");
           }
         }
-        const existing = await strapi2.documents(ACTIVITY_UID$8).findOne({ documentId: ctx.params.documentId, populate: { lecturer: true, venue: true } });
+        const existing = await strapi2.documents(ACTIVITY_UID$9).findOne({ documentId: ctx.params.documentId, populate: { lecturer: true, venue: true } });
         if (!existing) {
           ctx.status = 404;
           ctx.body = { error: "活动不存在" };
@@ -4327,7 +4327,7 @@ const activity = ({ strapi: strapi2 }) => {
             return;
           }
         }
-        const activity2 = await strapi2.documents(ACTIVITY_UID$8).update({
+        const activity2 = await strapi2.documents(ACTIVITY_UID$9).update({
           documentId: ctx.params.documentId,
           data: body
         });
@@ -4340,7 +4340,7 @@ const activity = ({ strapi: strapi2 }) => {
     // DELETE /adm/activities/:documentId
     async adminDelete(ctx) {
       try {
-        const activity2 = await strapi2.documents(ACTIVITY_UID$8).delete({ documentId: ctx.params.documentId });
+        const activity2 = await strapi2.documents(ACTIVITY_UID$9).delete({ documentId: ctx.params.documentId });
         ctx.body = wrap$5(activity2);
       } catch (e) {
         ctx.status = e.status || 400;
@@ -4350,13 +4350,13 @@ const activity = ({ strapi: strapi2 }) => {
     // GET /adm/activities/:documentId/signups
     async adminSignups(ctx) {
       try {
-        const act = await strapi2.documents(ACTIVITY_UID$8).findOne({ documentId: ctx.params.documentId });
+        const act = await strapi2.documents(ACTIVITY_UID$9).findOne({ documentId: ctx.params.documentId });
         if (!act) {
           ctx.status = 404;
           ctx.body = { error: "活动不存在" };
           return;
         }
-        const rows = await strapi2.db.query(SIGNS_UID$4).findMany({
+        const rows = await strapi2.db.query(SIGNS_UID$5).findMany({
           where: { activity: act.id },
           populate: { user: true },
           orderBy: { signupAt: "desc" }
@@ -4370,14 +4370,14 @@ const activity = ({ strapi: strapi2 }) => {
     // POST /adm/activities/:documentId/signups/:signupId/cancel  仅可移出候补(waiting)
     async adminCancelSignup(ctx) {
       try {
-        const act = await strapi2.documents(ACTIVITY_UID$8).findOne({ documentId: ctx.params.documentId });
+        const act = await strapi2.documents(ACTIVITY_UID$9).findOne({ documentId: ctx.params.documentId });
         if (!act) {
           ctx.status = 404;
           ctx.body = { error: "活动不存在" };
           return;
         }
         const signupId = parseInt(ctx.params.signupId, 10);
-        const signup = await strapi2.db.query(SIGNS_UID$4).findOne({ where: { id: signupId, activity: act.id } });
+        const signup = await strapi2.db.query(SIGNS_UID$5).findOne({ where: { id: signupId, activity: act.id } });
         if (!signup) {
           ctx.status = 404;
           ctx.body = { error: "报名记录不存在" };
@@ -4388,7 +4388,7 @@ const activity = ({ strapi: strapi2 }) => {
           ctx.body = { error: "仅可移出候补名单" };
           return;
         }
-        await strapi2.db.query(SIGNS_UID$4).update({ where: { id: signupId }, data: { status: "cancelled" } });
+        await strapi2.db.query(SIGNS_UID$5).update({ where: { id: signupId }, data: { status: "cancelled" } });
         ctx.body = wrap$5({ ok: true });
       } catch (e) {
         ctx.status = e.status || 400;
@@ -4413,7 +4413,7 @@ const activity = ({ strapi: strapi2 }) => {
     // GET /adm/activities/:documentId/attendance
     async adminAttendance(ctx) {
       try {
-        const act = await strapi2.documents(ACTIVITY_UID$8).findOne({ documentId: ctx.params.documentId });
+        const act = await strapi2.documents(ACTIVITY_UID$9).findOne({ documentId: ctx.params.documentId });
         if (!act) {
           ctx.status = 404;
           ctx.body = { error: "活动不存在" };
@@ -4433,13 +4433,13 @@ const activity = ({ strapi: strapi2 }) => {
     // POST /activities/:documentId/review （注册用户评价：评分1-5/NPS 0-10/文字）
     async review(ctx) {
       const userId = await getUserId(ctx);
-      const act = await strapi2.documents(ACTIVITY_UID$8).findOne({ documentId: ctx.params.documentId });
+      const act = await strapi2.documents(ACTIVITY_UID$9).findOne({ documentId: ctx.params.documentId });
       if (!act) {
         ctx.status = 404;
         ctx.body = { error: "活动不存在" };
         return;
       }
-      const signup = await strapi2.db.query(SIGNS_UID$4).findOne({
+      const signup = await strapi2.db.query(SIGNS_UID$5).findOne({
         where: { user: userId, activity: act.id, status: "active" }
       });
       if (!signup) {
@@ -4458,7 +4458,7 @@ const activity = ({ strapi: strapi2 }) => {
         ctx.body = { error: "NPS须在0-10之间" };
         return;
       }
-      await strapi2.db.query(SIGNS_UID$4).update({
+      await strapi2.db.query(SIGNS_UID$5).update({
         where: { id: signup.id },
         data: {
           rating: rating != null ? Number(rating) : signup.rating,
@@ -4598,7 +4598,7 @@ const activity = ({ strapi: strapi2 }) => {
       try {
         const { signupId } = ctx.params;
         const { hidden } = ctx.request.body || {};
-        await strapi2.db.query(SIGNS_UID$4).update({
+        await strapi2.db.query(SIGNS_UID$5).update({
           where: { id: Number(signupId) },
           data: { reviewHidden: !!hidden }
         });
@@ -4616,7 +4616,7 @@ const activity = ({ strapi: strapi2 }) => {
           $or: [{ rating: { $notNull: true } }, { review: { $notNull: true } }]
         };
         if (activityDId) {
-          const act = await strapi2.documents(ACTIVITY_UID$8).findOne({ documentId: activityDId });
+          const act = await strapi2.documents(ACTIVITY_UID$9).findOne({ documentId: activityDId });
           if (!act) {
             ctx.status = 404;
             ctx.body = { error: "活动不存在" };
@@ -4624,7 +4624,7 @@ const activity = ({ strapi: strapi2 }) => {
           }
           filter.activity = act.id;
         }
-        const result = await strapi2.db.query(SIGNS_UID$4).findPage({
+        const result = await strapi2.db.query(SIGNS_UID$5).findPage({
           where: filter,
           populate: { user: true, activity: true },
           orderBy: { reviewedAt: "desc" },
@@ -4632,7 +4632,7 @@ const activity = ({ strapi: strapi2 }) => {
           pageSize: parseInt(pageSize)
         });
         const rows = result?.results ?? [];
-        const all = await strapi2.db.query(SIGNS_UID$4).findMany({ where: filter });
+        const all = await strapi2.db.query(SIGNS_UID$5).findMany({ where: filter });
         const count = all.length;
         const withRating = all.filter((r) => r.rating != null);
         const withNps = all.filter((r) => r.nps != null);
@@ -4843,7 +4843,7 @@ function parseDocumentIds(v) {
   return [];
 }
 const SERIES_UID$2 = "plugin::zhao-point.activity-series";
-const ACTIVITY_UID$7 = "plugin::zhao-point.activity";
+const ACTIVITY_UID$8 = "plugin::zhao-point.activity";
 const wrap$4 = (data, meta = {}) => ({ data, meta });
 const wrapList = (result) => {
   if (result && typeof result === "object" && !Array.isArray(result) && "results" in result) {
@@ -4870,7 +4870,7 @@ const series = ({ strapi: strapi2 }) => {
           populate: "*"
         });
         for (const s of result) {
-          s.sessionCount = await strapi2.db.query(ACTIVITY_UID$7).count({
+          s.sessionCount = await strapi2.db.query(ACTIVITY_UID$8).count({
             where: { belongsToSeries: s.id, status: { $in: ["signup_open", "ongoing"] } }
           });
         }
@@ -4958,7 +4958,7 @@ const series = ({ strapi: strapi2 }) => {
           ctx.body = { error: "系列不存在" };
           return;
         }
-        const rows = await strapi2.db.query(ACTIVITY_UID$7).findMany({
+        const rows = await strapi2.db.query(ACTIVITY_UID$8).findMany({
           where: { belongsToSeries: series2.id },
           orderBy: { startTime: "asc" }
         });
@@ -35609,7 +35609,7 @@ const fee = ({ strapi: strapi2 }) => ({
     ctx.body = { mode: fee2.mode, cost: fee2.cost, feeCollectAt: fee2.feeCollectAt, ...detail };
   }
 });
-const ACTIVITY_UID$6 = "plugin::zhao-point.activity";
+const ACTIVITY_UID$7 = "plugin::zhao-point.activity";
 const LECTURER_UID$1 = "plugin::zhao-point.lecturer";
 const VENUE_UID$1 = "plugin::zhao-point.venue";
 const wrap$1 = (data, meta = {}) => ({ data, meta });
@@ -35632,7 +35632,7 @@ const resource = ({ strapi: strapi2 }) => {
     if (v === void 0 || v === null || v === "") return void 0;
     if (typeof v === "number") return v;
     if (/^\d+$/.test(String(v))) return parseInt(String(v), 10);
-    const row = await strapi2.db.query(ACTIVITY_UID$6).findOne({ where: { documentId: String(v) }, select: ["id"] });
+    const row = await strapi2.db.query(ACTIVITY_UID$7).findOne({ where: { documentId: String(v) }, select: ["id"] });
     return row?.id;
   }
   async function listType(type2, ctx) {
@@ -35736,7 +35736,7 @@ const resource = ({ strapi: strapi2 }) => {
         };
         if (from && to) where.startTime = { $gte: new Date(from).toISOString(), $lte: new Date(to).toISOString() };
         else if (to) where.startTime = { $lte: new Date(to).toISOString() };
-        const rows = await strapi2.db.query(ACTIVITY_UID$6).findMany({
+        const rows = await strapi2.db.query(ACTIVITY_UID$7).findMany({
           where,
           orderBy: { startTime: "desc" },
           select: ["id", "title", "startTime", "endTime", "status"]
@@ -35928,7 +35928,7 @@ const bootstrap = async ({ strapi: strapi2 }) => {
 const destroy = ({ strapi: _strapi }) => {
 };
 const RECORD_UID$1 = "plugin::zhao-point.point-record";
-const ACTIVITY_UID$5 = "plugin::zhao-point.activity";
+const ACTIVITY_UID$6 = "plugin::zhao-point.activity";
 const VISIT_UID = "plugin::zhao-point.activity-share-visit";
 const getDefaultConfig = () => config$1.default;
 const point = ({ strapi: strapi2 }) => {
@@ -36647,7 +36647,7 @@ const point = ({ strapi: strapi2 }) => {
     if (dimType === "activity" && dimId != null) {
       try {
         const idNum = Number(dimId);
-        const act = await strapi2.db.query(ACTIVITY_UID$5).findOne({
+        const act = await strapi2.db.query(ACTIVITY_UID$6).findOne({
           where: Number.isNaN(idNum) ? { documentId: String(dimId) } : { id: idNum },
           select: ["shareRewardPoints"]
         });
@@ -36705,7 +36705,7 @@ const point = ({ strapi: strapi2 }) => {
   };
 };
 const PRODUCT_UID = "plugin::zhao-point.point-product";
-const REDEMPTION_UID = "plugin::zhao-point.point-redemption";
+const REDEMPTION_UID$1 = "plugin::zhao-point.point-redemption";
 const RECORD_UID = "plugin::zhao-point.point-record";
 const CHANNEL_MEMBER_UID = "plugin::zhao-channel.channel-member";
 const redemption = ({ strapi: strapi2 }) => {
@@ -36975,7 +36975,7 @@ const redemption = ({ strapi: strapi2 }) => {
         throwError("POINT_014", "商品库存不足");
       }
       if (product.maxPerUser > 0) {
-        const userRedemptions = await strapi2.db.query(REDEMPTION_UID).count({
+        const userRedemptions = await strapi2.db.query(REDEMPTION_UID$1).count({
           where: {
             user: userId,
             product: product.id,
@@ -37140,7 +37140,7 @@ const redemption = ({ strapi: strapi2 }) => {
         }
       }
       const initialStatus = finalSalesMode === "purchase_only" ? "approved" : "pending";
-      const redemption2 = await strapi2.db.query(REDEMPTION_UID).create({
+      const redemption2 = await strapi2.db.query(REDEMPTION_UID$1).create({
         data: {
           user: userId,
           product: productNumericId || void 0,
@@ -37171,14 +37171,14 @@ const redemption = ({ strapi: strapi2 }) => {
   const reviewRedemption = async (redemptionId, status, operatorId, extra) => {
     let numericRedemptionId = redemptionId;
     if (typeof redemptionId === "string" && isNaN(Number(redemptionId))) {
-      const found = await strapi2.db.query(REDEMPTION_UID).findOne({
+      const found = await strapi2.db.query(REDEMPTION_UID$1).findOne({
         where: { documentId: redemptionId },
         select: ["id"]
       });
       if (!found) throwError("POINT_006", "兑换记录不存在", { redemptionId });
       numericRedemptionId = found.id;
     }
-    const redemption2 = await strapi2.db.query(REDEMPTION_UID).findOne({
+    const redemption2 = await strapi2.db.query(REDEMPTION_UID$1).findOne({
       where: { id: numericRedemptionId },
       populate: { product: { select: ["id"] }, user: { select: ["id"] } }
     });
@@ -37259,7 +37259,7 @@ const redemption = ({ strapi: strapi2 }) => {
         }
       }
     }
-    return await strapi2.db.query(REDEMPTION_UID).update({
+    return await strapi2.db.query(REDEMPTION_UID$1).update({
       where: { id: numericRedemptionId },
       data: updateData
     });
@@ -37279,7 +37279,7 @@ const redemption = ({ strapi: strapi2 }) => {
       Object.assign(where, extraWhere);
     }
     const [records, total] = await Promise.all([
-      strapi2.db.query(REDEMPTION_UID).findMany({
+      strapi2.db.query(REDEMPTION_UID$1).findMany({
         where,
         orderBy: { createdAt: "desc" },
         offset: (page - 1) * pageSize,
@@ -37290,7 +37290,7 @@ const redemption = ({ strapi: strapi2 }) => {
           user: { select: ["id", "documentId", "username"] }
         }
       }),
-      strapi2.db.query(REDEMPTION_UID).count({ where })
+      strapi2.db.query(REDEMPTION_UID$1).count({ where })
     ]);
     return { records, total, page, pageSize };
   };
@@ -37301,7 +37301,7 @@ const redemption = ({ strapi: strapi2 }) => {
     } else {
       where.id = id;
     }
-    return await strapi2.db.query(REDEMPTION_UID).findOne({
+    return await strapi2.db.query(REDEMPTION_UID$1).findOne({
       where,
       populate: {
         pickupLocation: { select: ["id", "documentId", "name", "address", "phone", "latitude", "longitude"] },
@@ -37317,7 +37317,7 @@ const redemption = ({ strapi: strapi2 }) => {
     if (!pickupCode) {
       throwError("POINT_020", "提货码不能为空");
     }
-    const redemption2 = await strapi2.db.query(REDEMPTION_UID).findOne({
+    const redemption2 = await strapi2.db.query(REDEMPTION_UID$1).findOne({
       where: { pickupCode, deletedAt: null },
       populate: { pickupLocation: { select: ["id", "documentId", "name", "address", "phone", "latitude", "longitude"] } }
     });
@@ -37328,7 +37328,7 @@ const redemption = ({ strapi: strapi2 }) => {
       throwError("POINT_025", "订单状态不允许核销", { currentStatus: redemption2.status });
     }
     const now = (/* @__PURE__ */ new Date()).toISOString();
-    return await strapi2.db.query(REDEMPTION_UID).update({
+    return await strapi2.db.query(REDEMPTION_UID$1).update({
       where: { id: redemption2.id },
       data: {
         status: "completed",
@@ -37933,7 +37933,7 @@ const signIn = ({ strapi: strapi2 }) => {
   return { signIn: signIn2, getSignInStatus };
 };
 const SERIES_UID$1 = "plugin::zhao-point.activity-series";
-const ACTIVITY_UID$4 = "plugin::zhao-point.activity";
+const ACTIVITY_UID$5 = "plugin::zhao-point.activity";
 const seriesService = ({ strapi: strapi2 }) => ({
   async find(params) {
     return strapi2.documents(SERIES_UID$1).findMany(params);
@@ -37957,7 +37957,7 @@ const seriesService = ({ strapi: strapi2 }) => ({
   async listActivities(seriesDocumentId) {
     const series2 = await strapi2.documents(SERIES_UID$1).findOne({ documentId: seriesDocumentId });
     if (!series2) return null;
-    return strapi2.db.query(ACTIVITY_UID$4).findMany({
+    return strapi2.db.query(ACTIVITY_UID$5).findMany({
       where: {
         belongsToSeries: series2.id,
         status: { $in: ["signup_open", "ongoing"] }
@@ -37969,7 +37969,7 @@ const seriesService = ({ strapi: strapi2 }) => ({
    * 复制活动为新草稿：保留基础信息与预解锁课时/文章，重置时间、名额与状态。
    */
   async duplicate(activityDocumentId) {
-    const src = await strapi2.documents(ACTIVITY_UID$4).findOne({
+    const src = await strapi2.documents(ACTIVITY_UID$5).findOne({
       documentId: activityDocumentId,
       populate: { preUnlockArticles: true, preUnlockLessons: true, lecturer: true, venue: true }
     });
@@ -38017,7 +38017,7 @@ const seriesService = ({ strapi: strapi2 }) => ({
     }
     if (src.lecturer) copy.lecturer = { connect: [{ id: src.lecturer?.id ?? src.lecturer }] };
     if (src.venue) copy.venue = { connect: [{ id: src.venue?.id ?? src.venue }] };
-    return strapi2.documents(ACTIVITY_UID$4).create({ data: copy });
+    return strapi2.documents(ACTIVITY_UID$5).create({ data: copy });
   },
   /**
    * 按系列排期(eachWeek: weekdays + time)批量生成日程草稿。
@@ -38043,7 +38043,7 @@ const seriesService = ({ strapi: strapi2 }) => ({
     const durationMin = Number(sched.durationMin) || 60;
     let latest = null;
     try {
-      latest = await strapi2.db.query(ACTIVITY_UID$4).findOne({
+      latest = await strapi2.db.query(ACTIVITY_UID$5).findOne({
         where: { belongsToSeries: series2.id },
         orderBy: { startTime: "desc" }
       });
@@ -38071,7 +38071,7 @@ const seriesService = ({ strapi: strapi2 }) => ({
         if (new Date(startDate).getTime() <= now.getTime()) continue;
         const endDate = new Date(startDate);
         endDate.setMinutes(endDate.getMinutes() + durationMin);
-        const exists = await strapi2.db.query(ACTIVITY_UID$4).count({
+        const exists = await strapi2.db.query(ACTIVITY_UID$5).count({
           where: {
             belongsToSeries: series2.id,
             startTime: { $between: [startDate.toISOString(), endDate.toISOString()] }
@@ -38081,7 +38081,7 @@ const seriesService = ({ strapi: strapi2 }) => ({
         const dr = series2.defaultRules || {};
         const pointsCost = Number(dr.pointsCost ?? 0);
         const feeCollectAt = dr.feeCollectAt === "checkin" ? "checkin" : "signup";
-        await strapi2.documents(ACTIVITY_UID$4).create({
+        await strapi2.documents(ACTIVITY_UID$5).create({
           data: {
             title: series2.title,
             description: series2.description,
@@ -38112,7 +38112,7 @@ const seriesService = ({ strapi: strapi2 }) => ({
   }
 });
 const SERIES_UID = "plugin::zhao-point.activity-series";
-const ACTIVITY_UID$3 = "plugin::zhao-point.activity";
+const ACTIVITY_UID$4 = "plugin::zhao-point.activity";
 function monthRange(month) {
   const m = /^(\d{4})-(\d{2})$/.exec((month || "").trim());
   if (!m) return null;
@@ -38148,7 +38148,7 @@ const calendarService = ({ strapi: strapi2 }) => ({
         await seriesSvc.generateSchedule(s.documentId);
       }
     }
-    const rows = await strapi2.db.query(ACTIVITY_UID$3).findMany({
+    const rows = await strapi2.db.query(ACTIVITY_UID$4).findMany({
       where: {
         ...includeAllStatus ? {} : { status: { $in: ["signup_open", "ongoing"] } },
         startTime: { $gte: range.start.toISOString(), $lt: range.end.toISOString() }
@@ -38166,7 +38166,7 @@ const calendarService = ({ strapi: strapi2 }) => ({
     return { days };
   }
 });
-const SIGNS_UID$3 = "plugin::zhao-point.activity-signup";
+const SIGNS_UID$4 = "plugin::zhao-point.activity-signup";
 const SSO_PROFILE_UID = "plugin::zhao-sso.sso-user-profile";
 const REF_UID$1 = "plugin::zhao-sso.sso-referral-relation";
 function inRange(nowTs, win) {
@@ -38205,7 +38205,7 @@ const feeService = ({ strapi: strapi2 }) => ({
   },
   async tierUsage(activityId, tierId) {
     if (!tierId) return 0;
-    return strapi2.db.query(SIGNS_UID$3).count({ where: { activity: activityId, feeTierId: tierId, status: "active" } });
+    return strapi2.db.query(SIGNS_UID$4).count({ where: { activity: activityId, feeTierId: tierId, status: "active" } });
   },
   async resolveFee(activity2, upUserId, opts = {}) {
     const nowTs = opts.now ? new Date(opts.now).getTime() : Date.now();
@@ -38248,8 +38248,8 @@ const feeService = ({ strapi: strapi2 }) => ({
     return { mode: "flat", cost: Number(activity2.pointsCost || 0), feeCollectAt: activity2.feeCollectAt || "signup", tierId: null, tier: null };
   }
 });
-const ACTIVITY_UID$2 = "plugin::zhao-point.activity";
-const SIGNS_UID$2 = "plugin::zhao-point.activity-signup";
+const ACTIVITY_UID$3 = "plugin::zhao-point.activity";
+const SIGNS_UID$3 = "plugin::zhao-point.activity-signup";
 const REWARD_UID = "plugin::zhao-point.activity-referral-reward";
 const POINT_RECORD_UID = "plugin::zhao-point.point-record";
 const STATUS_LIST = ["draft", "signup_open", "ongoing", "ended"];
@@ -38271,7 +38271,7 @@ const activityStats = ({ strapi: strapi2 }) => ({
    */
   async getOverview({ status } = {}) {
     const statusFilter = status && status !== "all" && STATUS_LIST.includes(status) ? status : void 0;
-    const acts = await strapi2.db.query(ACTIVITY_UID$2).findMany({
+    const acts = await strapi2.db.query(ACTIVITY_UID$3).findMany({
       where: statusFilter ? { status: statusFilter } : void 0,
       populate: { belongsToSeries: true }
     });
@@ -38294,7 +38294,7 @@ const activityStats = ({ strapi: strapi2 }) => ({
       };
     }
     const actIds = acts.map((a) => a.id);
-    const signs = await strapi2.db.query(SIGNS_UID$2).findMany({
+    const signs = await strapi2.db.query(SIGNS_UID$3).findMany({
       where: { activity: { $in: actIds } },
       populate: { user: true, activity: true }
     });
@@ -38430,7 +38430,7 @@ const activityStats = ({ strapi: strapi2 }) => ({
     };
   }
 });
-const ACTIVITY_UID$1 = "plugin::zhao-point.activity";
+const ACTIVITY_UID$2 = "plugin::zhao-point.activity";
 const LECTURER_UID = "plugin::zhao-point.lecturer";
 const VENUE_UID = "plugin::zhao-point.venue";
 const UID = { lecturer: LECTURER_UID, venue: VENUE_UID };
@@ -38455,7 +38455,7 @@ const resourceSchedule = ({ strapi: strapi2 }) => {
       status: { $notIn: ["draft"] }
     };
     if (excludeActivityId) where.id = { $ne: excludeActivityId };
-    const rows = await strapi2.db.query(ACTIVITY_UID$1).findMany({
+    const rows = await strapi2.db.query(ACTIVITY_UID$2).findMany({
       where,
       select: ["id", "title", "startTime", "endTime"]
     });
@@ -38511,7 +38511,7 @@ const resourceSchedule = ({ strapi: strapi2 }) => {
       const durMs = end.getTime() - start.getTime();
       const buffer = await bufferOf(opts.type, opts.resourceId);
       if (buffer === null) throw Object.assign(new Error("资源不存在"), { status: 400, code: "RESOURCE_NOT_FOUND" });
-      const rows = await strapi2.db.query(ACTIVITY_UID$1).findMany({
+      const rows = await strapi2.db.query(ACTIVITY_UID$2).findMany({
         where: {
           [opts.type]: opts.resourceId,
           startTime: { $notNull: true },
@@ -38557,10 +38557,10 @@ const resourceSchedule = ({ strapi: strapi2 }) => {
   };
 };
 const LEDGER_UID = "plugin::zhao-point.activity-ledger";
-const SIGNS_UID$1 = "plugin::zhao-point.activity-signup";
+const SIGNS_UID$2 = "plugin::zhao-point.activity-signup";
 const ATT_UID = "plugin::zhao-point.activity-attendance";
 const REF_UID = "plugin::zhao-point.activity-referral-reward";
-const ACTIVITY_UID = "plugin::zhao-point.activity";
+const ACTIVITY_UID$1 = "plugin::zhao-point.activity";
 function userName(u) {
   return u?.username || u?.phone || u?.email || String(u?.id ?? "");
 }
@@ -38571,7 +38571,7 @@ const activityLedger = ({ strapi: strapi2 }) => ({
    * @param source 'auto' | 'manual'
    */
   async generate(activityId, source = "manual") {
-    const act = await strapi2.documents(ACTIVITY_UID).findOne({
+    const act = await strapi2.documents(ACTIVITY_UID$1).findOne({
       documentId: activityId,
       populate: { lecturer: true, venue: true }
     });
@@ -38579,7 +38579,7 @@ const activityLedger = ({ strapi: strapi2 }) => ({
     const lecturer2 = act.lecturer;
     const venue2 = act.venue;
     const cashPrice = Number(act.cashPrice) || 0;
-    const activeSigns = await strapi2.db.query(SIGNS_UID$1).findMany({
+    const activeSigns = await strapi2.db.query(SIGNS_UID$2).findMany({
       where: { activity: act.id, status: "active" },
       populate: { user: true }
     });
@@ -38605,8 +38605,8 @@ const activityLedger = ({ strapi: strapi2 }) => ({
     const venueCost = Number(act.settleVenue) > 0 ? Number(act.settleVenue) : venue2?.cashMode === "flat" ? Number(venue2.cashFee) || 0 : 0;
     const cashExpense = lecturerCost + venueCost;
     const cashNet = cashRevenue - cashExpense;
-    const canceledCount = await strapi2.db.query(SIGNS_UID$1).count({ where: { activity: act.id, status: "cancelled" } });
-    const waitingCount = await strapi2.db.query(SIGNS_UID$1).count({ where: { activity: act.id, status: "waiting" } });
+    const canceledCount = await strapi2.db.query(SIGNS_UID$2).count({ where: { activity: act.id, status: "cancelled" } });
+    const waitingCount = await strapi2.db.query(SIGNS_UID$2).count({ where: { activity: act.id, status: "waiting" } });
     const detail = {
       signups: (activeSigns || []).map((s) => ({
         userId: s.user?.id ?? s.user,
@@ -38675,7 +38675,7 @@ const activityLedger = ({ strapi: strapi2 }) => ({
   },
   /** 自动生成：活动无 auto 快照才生成（幂等），供 closeActivity 调用 */
   async generateAutoIfAbsent(activityId) {
-    const act = await strapi2.documents(ACTIVITY_UID).findOne({ documentId: activityId });
+    const act = await strapi2.documents(ACTIVITY_UID$1).findOne({ documentId: activityId });
     if (!act) return null;
     const hasAuto = await strapi2.db.query(LEDGER_UID).count({ where: { activity: act.id, source: "auto" } });
     if (hasAuto > 0) return null;
@@ -38692,7 +38692,7 @@ const activityLedger = ({ strapi: strapi2 }) => ({
     return strapi2.db.query(LEDGER_UID).update({ where: { id: found.id }, data: { settleStatus: "pending", settledAt: null } });
   }
 });
-const SIGNS_UID = "plugin::zhao-point.activity-signup";
+const SIGNS_UID$1 = "plugin::zhao-point.activity-signup";
 const activitySopAudience = ({ strapi: strapi2 }) => ({
   /**
    * 按手动 SOP 待办的 audience 条件解析目标 up_user 名单（供 zhao-sso 的 dispatchManualTodo 委托调用）。
@@ -38704,7 +38704,7 @@ const activitySopAudience = ({ strapi: strapi2 }) => ({
     if (!activityDocumentId) return [];
     const act = await strapi2.documents("plugin::zhao-point.activity").findOne({ documentId: activityDocumentId });
     if (!act) return [];
-    const signs = await strapi2.db.query(SIGNS_UID).findMany({
+    const signs = await strapi2.db.query(SIGNS_UID$1).findMany({
       where: { activity: act.id, status: "active" },
       populate: ["user"]
     });
@@ -38715,6 +38715,87 @@ const activitySopAudience = ({ strapi: strapi2 }) => ({
       if (filter === "repurchase") return attended;
       return true;
     }).map((s) => s.user?.id ?? s.user).filter((id) => Number.isFinite(id));
+  }
+});
+const ACTIVITY_UID = "plugin::zhao-point.activity";
+const SIGNS_UID = "plugin::zhao-point.activity-signup";
+const REDEMPTION_UID = "plugin::zhao-point.point-redemption";
+const gate = ({ strapi: strapi2 }) => ({
+  /** 报名/到场状态列表（到场意愿用） */
+  async listSignups(userId, opts = {}) {
+    if (!Number.isInteger(userId) || userId <= 0) return [];
+    const where = { user: userId };
+    if (opts.since) where.signupAt = { $gte: opts.since };
+    return strapi2.db.query(SIGNS_UID).findMany({ where, select: ["id", "attendedAt", "status"], limit: opts.limit ?? 100 }).catch(() => []);
+  },
+  /** 用户积分兑换次数（付费潜力用） */
+  async countRedemptions(userId) {
+    if (!Number.isInteger(userId) || userId <= 0) return 0;
+    return strapi2.db.query(REDEMPTION_UID).count({ where: { user: userId } }).catch(() => 0);
+  },
+  /** 已报名活动 id（推荐排除用） */
+  async listSignedActivityIds(userId) {
+    if (!Number.isInteger(userId) || userId <= 0) return [];
+    const signs = await strapi2.db.query(SIGNS_UID).findMany({
+      where: { user: userId },
+      populate: { activity: { select: ["id"] } },
+      limit: 500
+    }).catch(() => []);
+    return signs.map((s) => s.activity?.id).filter((v) => Number.isInteger(v));
+  },
+  /** 近 since 报名过的活动类型名（activity-signup → activity.type，去重，忽略"其他"） */
+  async collectActivityTypes(userId, opts = {}) {
+    if (!Number.isInteger(userId) || userId <= 0) return [];
+    const where = { user: userId };
+    if (opts.since) where.signupAt = { $gte: opts.since };
+    const signs = await strapi2.db.query(SIGNS_UID).findMany({
+      where,
+      populate: { activity: { select: ["id", "type"] } },
+      limit: opts.limit ?? 200
+    }).catch(() => []);
+    const seen = /* @__PURE__ */ new Map();
+    for (const s of signs) {
+      const a = s.activity;
+      if (a?.id && a.type && a.type !== "其他") seen.set(a.id, a.type);
+    }
+    return Array.from(seen.values());
+  },
+  /** 个性化推荐活动：兴趣类型内报名中的活动，或报名中兜底；返回已映射的推荐项 */
+  async recommendActivities(interests, excludeIds, limit = 5) {
+    const exclude = new Set(excludeIds || []);
+    let rows = [];
+    try {
+      if (interests?.length) {
+        rows = await strapi2.db.query(ACTIVITY_UID).findMany({
+          where: { status: "signup_open", type: { $in: interests } },
+          limit: 100
+        });
+      }
+      if (!rows.length) {
+        rows = await strapi2.db.query(ACTIVITY_UID).findMany({
+          where: { status: "signup_open" },
+          limit: 100
+        });
+      }
+    } catch {
+      rows = [];
+    }
+    return rows.filter((a) => !exclude.has(a.id)).sort((a, b) => new Date(b.startTime || b.createdAt).getTime() - new Date(a.startTime || a.createdAt).getTime()).slice(0, limit).map((a) => ({
+      documentId: a.documentId,
+      id: a.id,
+      title: a.title,
+      type: a.type,
+      startTime: a.startTime,
+      endTime: a.endTime,
+      venueName: a.venueName,
+      capacity: a.capacity,
+      usedCapacity: a.usedCapacity
+    }));
+  },
+  /** 窗口内有效报名数（复购统计） */
+  async countActiveSignups(userId, from, to) {
+    if (!Number.isInteger(userId) || userId <= 0) return 0;
+    return strapi2.db.query(SIGNS_UID).count({ where: { user: userId, status: "active", signupAt: { $gt: from, $lte: to } } }).catch(() => 0);
   }
 });
 const services = {
@@ -38732,7 +38813,8 @@ const services = {
   form,
   "resource-schedule": resourceSchedule,
   "activity-ledger": activityLedger,
-  "activity-sop-audience": activitySopAudience
+  "activity-sop-audience": activitySopAudience,
+  gate
 };
 const publicRoute = (method, path, handler) => ({
   method,

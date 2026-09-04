@@ -4,10 +4,16 @@ const SOP_RULE_UID = "plugin::zhao-sso.sop-rule";
 const MSG_JOB_UID = "plugin::zhao-sso.msg-job";
 const MSG_TEMPLATE_UID = "plugin::zhao-sso.msg-template";
 const MSG_VERSION_UID = "plugin::zhao-sso.msg-template-version";
-const REPURCHASE_SIGNS_UID = "plugin::zhao-point.activity-signup";
-const COURSE_ENROLL_UID = "plugin::zhao-course.course-enrollment";
-const COURSE_PROGRESS_UID = "plugin::zhao-course.course-progress";
 const DATE_MS = 86400000;
+
+/** 只读门面（隔离：不直查他域表，经对应插件 service 调用） */
+function pointGate(strapi: any): any {
+  return (strapi.plugin && strapi.plugin("zhao-point")?.service?.("gate")) || null;
+}
+
+function courseGate(strapi: any): any {
+  return (strapi.plugin && strapi.plugin("zhao-course")?.service?.("gate")) || null;
+}
 
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async getSopStats(opts: { from?: string; to?: string; scene?: string }) {
@@ -106,9 +112,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       const userId = up.id;
       const from2 = new Date(j.sentAt);
       const to2 = new Date(from2.getTime() + windowMs);
-      const cnt = await strapi.db.query(REPURCHASE_SIGNS_UID).count({
-        where: { user: userId, status: "active", signupAt: { $gt: from2, $lte: to2 } },
-      });
+      const cnt = await (pointGate(strapi)?.countActiveSignups
+        ? pointGate(strapi).countActiveSignups(userId, from2, to2)
+        : 0);
       if (cnt > 0) {
         conversions += cnt;
         convertedUserSet.add(userId);
@@ -151,10 +157,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       const userId = up.id;
       const from2 = new Date(j.sentAt);
       const to2 = new Date(from2.getTime() + windowMs);
-      // 窗口内再报新课（status=enrolled）计为转化
-      const cnt = await strapi.db.query(COURSE_ENROLL_UID).count({
-        where: { user: userId, status: "enrolled", enrolledAt: { $gt: from2, $lte: to2 } },
-      });
+      // 窗口内再报新课（status=enrolled）计为转化——经课程门面
+      const cnt = await (courseGate(strapi)?.countNewEnrolls
+        ? courseGate(strapi).countNewEnrolls(userId, from2, to2)
+        : 0);
       if (cnt > 0) {
         conversions += cnt;
         convertedUserSet.add(userId);
@@ -197,10 +203,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       const userId = up.id;
       const from2 = new Date(j.sentAt);
       const to2 = new Date(from2.getTime() + windowMs);
-      // 窗口内课程完课（isCompleted=true 且 completedAt 落在窗口内）计为转化
-      const cnt = await strapi.db.query(COURSE_PROGRESS_UID).count({
-        where: { user: userId, isCompleted: true, completedAt: { $gt: from2, $lte: to2 } },
-      });
+      // 窗口内课程完课（isCompleted=true 且 completedAt 落在窗口内）计为转化——经课程门面
+      const cnt = await (courseGate(strapi)?.countCompletedProgress
+        ? courseGate(strapi).countCompletedProgress(userId, from2, to2)
+        : 0);
       if (cnt > 0) {
         conversions += cnt;
         convertedUserSet.add(userId);
@@ -268,9 +274,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       if (upId) {
         const touchTime = j.sentAt || j.scheduledAt || j.createdAt;
         if (touchTime) {
-          reorderedCount = await strapi.db.query(REPURCHASE_SIGNS_UID).count({
-            where: { user: upId, status: "active", signupAt: { $gte: new Date(touchTime), $lte: new Date(new Date(touchTime).getTime() + windowMs) } },
-          });
+          reorderedCount = await (pointGate(strapi)?.countActiveSignups
+            ? pointGate(strapi).countActiveSignups(upId, new Date(touchTime), new Date(new Date(touchTime).getTime() + windowMs))
+            : 0);
         }
       }
       rows.push({

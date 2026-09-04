@@ -3,16 +3,23 @@ import type { Core } from "@strapi/strapi";
 const PROFILE_UID = "plugin::zhao-sso.sso-user-profile";
 const UP_USER_UID = "plugin::users-permissions.user";
 const SSO_USER_UID = "plugin::zhao-sso.sso-user";
-const LESSON_PROGRESS_UID = "plugin::zhao-course.lesson-progress";
-const ENROLL_UID = "plugin::zhao-course.course-enrollment";
-const VISIT_LOG_UID = "plugin::zhao-website.visit-log";
-const ARTICLE_UID = "plugin::zhao-website.article";
-const SIGNS_UID = "plugin::zhao-point.activity-signup";
-const REDEMPTION_UID = "plugin::zhao-point.point-redemption";
 const BINDING_UID = "plugin::zhao-sso.sso-third-party-binding";
 const THIRD_PARTY_ACCOUNT_UID = "plugin::zhao-third.third-party-account";
 
 const clamp = (n: number) => Math.max(0, Math.min(100, Math.round(n)));
+
+/** 只读门面（隔离：不直查他域表，经对应插件 service 调用） */
+function websiteGate(strapi: any): any {
+  return (strapi.plugin && strapi.plugin("zhao-website")?.service?.("gate")) || null;
+}
+
+function courseGate(strapi: any): any {
+  return (strapi.plugin && strapi.plugin("zhao-course")?.service?.("gate")) || null;
+}
+
+function pointGate(strapi: any): any {
+  return (strapi.plugin && strapi.plugin("zhao-point")?.service?.("gate")) || null;
+}
 
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
   /** sso-user → up_user 反向桥接（按标识匹配；匹配不到返回 null） */
@@ -60,46 +67,35 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     const userId = up.id;
     const days30 = new Date(Date.now() - 30 * 24 * 3600 * 1000);
 
-    // 活跃度：近30天学习课时数 + 文章访问数
-    const [lp30, visit30] = await Promise.all([
-      strapi.db.query(LESSON_PROGRESS_UID).count({ where: { user: userId, lastStudyAt: { $gte: days30 } } }),
-      strapi.db.query(VISIT_LOG_UID).count({ where: { userId, createdAt: { $gte: days30 } } }),
-    ]);
+    // 活跃度：近30天学习课时数 + 文章访问数（课时读经课程门面）
+    const g = websiteGate(strapi);
+    const cg = courseGate(strapi);
+    const pg = pointGate(strapi);
+    const lp30 = cg?.countActiveLessons ? await cg.countActiveLessons(userId, days30) : 0;
+    const visit30 = g?.countActive ? await g.countActive(userId, days30) : 0;
     const activity = clamp(lp30 * 10 + visit30 * 3);
 
     // 阅读深度：article_view 次数 + 平均停留
-    const reads = await strapi.db.query(VISIT_LOG_UID).findMany({
-      where: { userId, type: "article_view" },
-      select: ["id", "dwellTime", "scrollDepth"],
-      limit: 200,
-    });
+    const reads = g?.listArticleReads ? await g.listArticleReads(userId, { limit: 200 }) : [];
     const avgDwell = reads.length ? reads.reduce((s: number, r: any) => s + (r.dwellTime || 0), 0) / reads.length : 0;
     const reading = clamp(Math.min(reads.length, 20) * 3 + (Math.min(avgDwell, 120) / 120) * 40);
 
     // 完课率：完成课时占比 + 答题正确率
-    const allLp = await strapi.db.query(LESSON_PROGRESS_UID).findMany({
-      where: { user: userId },
-      select: ["isCompleted", "isCorrect"],
-      limit: 500,
-    });
+    const allLp = cg?.listLessonProgress ? await cg.listLessonProgress(userId, { limit: 500 }) : [];
     const done = allLp.filter((r: any) => r.isCompleted).length;
     const correct = allLp.filter((r: any) => r.isCorrect === true).length;
     const completion = clamp((allLp.length ? done / allLp.length : 0) * 60 + (correct ? correct / Math.max(allLp.length, 1) : 0) * 40);
 
-    // 到场意愿：报名数 + 到场率
-    const signs = await strapi.db.query(SIGNS_UID).findMany({
-      where: { user: userId },
-      select: ["attendedAt", "status"],
-      limit: 100,
-    });
+    // 到场意愿：报名数 + 到场率（经积分/活动门面）
+    const signs = pg?.listSignups ? await pg.listSignups(userId, { limit: 100 }) : [];
     const activeSigns = signs.filter((s: any) => s.status !== "cancelled");
     const attended = activeSigns.filter((s: any) => s.attendedAt).length;
     const attendance = clamp(activeSigns.length * 10 + (activeSigns.length ? (attended / activeSigns.length) * 50 : 0));
 
     // 付费潜力：付费/积分购课次数 + 兑换
     const [paid, points] = await Promise.all([
-      strapi.db.query(ENROLL_UID).count({ where: { user: userId, enrollType: { $in: ["paid", "points"] } } }),
-      strapi.db.query(REDEMPTION_UID).count({ where: { user: userId } }).catch(() => 0),
+      cg?.countPaidEnrolls ? cg.countPaidEnrolls(userId) : 0,
+      pg?.countRedemptions ? pg.countRedemptions(userId) : 0,
     ]);
     const payment = clamp(paid * 30 + points * 15);
 
@@ -114,53 +110,24 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     const days30 = new Date(Date.now() - 30 * 24 * 3600 * 1000);
     const counts: Record<string, number> = {};
 
-    // 1) 课程分类：lesson-progress → course → category（去重：一课程计 1 次）
-    const lps = await strapi.db.query(LESSON_PROGRESS_UID).findMany({
-      where: { user: userId, lastStudyAt: { $gte: days30 } },
-      populate: { course: { select: ["id"], populate: { category: { select: ["name"] } } } },
-      limit: 500,
-    });
-    const courseCats = new Map<number, string>();
-    for (const lp of lps) {
-      const c = lp.course;
-      if (c?.id && c.category?.name) courseCats.set(c.id, c.category.name);
-    }
-    for (const name of courseCats.values()) counts[name] = (counts[name] || 0) + 1;
-
-    // 2) 文章分类：visit-log(targetId=article documentId) → article → category（去重）
-    const reads = await strapi.db.query(VISIT_LOG_UID).findMany({
-      where: { userId, type: "article_view", createdAt: { $gte: days30 } },
-      select: ["targetId"],
-      limit: 300,
-    });
-    const docIds = [...new Set(reads.map((r: any) => r.targetId).filter(Boolean))].slice(0, 200);
-    if (docIds.length) {
-      const articles = await strapi.db.query(ARTICLE_UID).findMany({
-        where: { documentId: { $in: docIds } },
-        populate: { category: { select: ["name"] } },
-        limit: 200,
-      });
-      const seenCats = new Set<string>();
-      for (const a of articles) {
-        if (a.category?.name && !seenCats.has(a.category.name)) {
-          seenCats.add(a.category.name);
-          counts[a.category.name] = (counts[a.category.name] || 0) + 1;
-        }
-      }
+    // 1) 课程分类：lesson-progress → course → category（去重：一课程计 1 次）——经课程门面
+    const cg = courseGate(strapi);
+    for (const name of cg?.collectCourseInterests ? await cg.collectCourseInterests(userId, { since: days30 }) : []) {
+      counts[name] = (counts[name] || 0) + 1;
     }
 
-    // 3) 活动类型：activity-signup → activity.type（去重，忽略"其他"）
-    const signs = await strapi.db.query(SIGNS_UID).findMany({
-      where: { user: userId, signupAt: { $gte: days30 } },
-      populate: { activity: { select: ["id", "type"] } },
-      limit: 200,
-    });
-    const actTypes = new Map<number, string>();
-    for (const s of signs) {
-      const a = s.activity;
-      if (a?.id && a.type && a.type !== "其他") actTypes.set(a.id, a.type);
+    // 2) 文章分类：visit-log(targetId=article documentId) → article → category（去重）——经 zhao-website 门面
+    const g2 = websiteGate(strapi);
+    const cats = g2?.collectArticleCategories
+      ? await g2.collectArticleCategories(userId, { since: days30 })
+      : [];
+    for (const name of cats) counts[name] = (counts[name] || 0) + 1;
+
+    // 3) 活动类型：activity-signup → activity.type（去重，忽略"其他"）——经积分/活动门面
+    const pg = pointGate(strapi);
+    for (const t of pg?.collectActivityTypes ? await pg.collectActivityTypes(userId, { since: days30 }) : []) {
+      counts[t] = (counts[t] || 0) + 1;
     }
-    for (const t of actTypes.values()) counts[t] = (counts[t] || 0) + 1;
 
     return Object.entries(counts)
       .sort((a, b) => b[1] - a[1])

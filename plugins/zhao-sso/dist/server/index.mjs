@@ -2639,7 +2639,6 @@ const partnerController = ({ strapi }) => {
 const VERSION_UID$1 = "plugin::zhao-sso.msg-template-version";
 const TEMPLATE_UID = "plugin::zhao-sso.msg-template";
 const JOB_UID$1 = "plugin::zhao-sso.msg-job";
-const VISIT_LOG_UID$1 = "plugin::zhao-website.visit-log";
 const msgVersionController = ({ strapi }) => {
   async function wrap(ctx, fn) {
     try {
@@ -2671,12 +2670,9 @@ const msgVersionController = ({ strapi }) => {
           where: { template: templateId },
           orderBy: { id: "DESC" }
         });
-        const clicks = {};
-        for (const r of rows) {
-          if (!r.code) continue;
-          const c = await strapi.db.query(VISIT_LOG_UID$1).count({ where: { utmSource: "msg", utmCampaign: r.code } }).catch(() => 0);
-          clicks[r.code] = c;
-        }
+        const gate = strapi.plugin ? strapi.plugin("zhao-website")?.service?.("gate") : null;
+        const codes = rows.map((r) => r.code).filter(Boolean);
+        const clicks = (gate?.countMsgClicks ? await gate.countMsgClicks(codes) : {}) || {};
         return { data: rows.map((r) => ({ ...r, clickCountLive: clicks[r.code] || 0 })) };
       });
     },
@@ -2733,8 +2729,11 @@ const msgVersionController = ({ strapi }) => {
           orderBy: { id: "ASC" }
         });
         const out = [];
+        const gate = strapi.plugin ? strapi.plugin("zhao-website")?.service?.("gate") : null;
+        const codes = rows.map((r) => r.code).filter(Boolean);
+        const clicks = (gate?.countMsgClicks ? await gate.countMsgClicks(codes) : {}) || {};
         for (const r of rows) {
-          const click = await strapi.db.query(VISIT_LOG_UID$1).count({ where: { utmSource: "msg", utmCampaign: r.code } }).catch(() => 0);
+          const click = clicks[r.code] || 0;
           const sent = r.sentCount || 0;
           out.push({
             ...r,
@@ -5872,15 +5871,18 @@ const ssoSop = ({ strapi }) => ({
 const PROFILE_UID = "plugin::zhao-sso.sso-user-profile";
 const UP_USER_UID = "plugin::users-permissions.user";
 const SSO_USER_UID = "plugin::zhao-sso.sso-user";
-const LESSON_PROGRESS_UID = "plugin::zhao-course.lesson-progress";
-const ENROLL_UID$1 = "plugin::zhao-course.course-enrollment";
-const VISIT_LOG_UID = "plugin::zhao-website.visit-log";
-const ARTICLE_UID$2 = "plugin::zhao-website.article";
-const SIGNS_UID$1 = "plugin::zhao-point.activity-signup";
-const REDEMPTION_UID = "plugin::zhao-point.point-redemption";
 const BINDING_UID$1 = "plugin::zhao-sso.sso-third-party-binding";
 const THIRD_PARTY_ACCOUNT_UID = "plugin::zhao-third.third-party-account";
 const clamp = (n) => Math.max(0, Math.min(100, Math.round(n)));
+function websiteGate$1(strapi) {
+  return strapi.plugin && strapi.plugin("zhao-website")?.service?.("gate") || null;
+}
+function courseGate$2(strapi) {
+  return strapi.plugin && strapi.plugin("zhao-course")?.service?.("gate") || null;
+}
+function pointGate$2(strapi) {
+  return strapi.plugin && strapi.plugin("zhao-point")?.service?.("gate") || null;
+}
 const ssoProfile = ({ strapi }) => ({
   /** sso-user → up_user 反向桥接（按标识匹配；匹配不到返回 null） */
   async resolveUpUserForSsoUser(ssoUserId) {
@@ -5922,37 +5924,26 @@ const ssoProfile = ({ strapi }) => ({
     if (!up) return { ...zero, user: ssoUserId, upUser: null, hasData: false };
     const userId = up.id;
     const days30 = new Date(Date.now() - 30 * 24 * 3600 * 1e3);
-    const [lp30, visit30] = await Promise.all([
-      strapi.db.query(LESSON_PROGRESS_UID).count({ where: { user: userId, lastStudyAt: { $gte: days30 } } }),
-      strapi.db.query(VISIT_LOG_UID).count({ where: { userId, createdAt: { $gte: days30 } } })
-    ]);
+    const g = websiteGate$1(strapi);
+    const cg = courseGate$2(strapi);
+    const pg = pointGate$2(strapi);
+    const lp30 = cg?.countActiveLessons ? await cg.countActiveLessons(userId, days30) : 0;
+    const visit30 = g?.countActive ? await g.countActive(userId, days30) : 0;
     const activity = clamp(lp30 * 10 + visit30 * 3);
-    const reads = await strapi.db.query(VISIT_LOG_UID).findMany({
-      where: { userId, type: "article_view" },
-      select: ["id", "dwellTime", "scrollDepth"],
-      limit: 200
-    });
+    const reads = g?.listArticleReads ? await g.listArticleReads(userId, { limit: 200 }) : [];
     const avgDwell = reads.length ? reads.reduce((s, r) => s + (r.dwellTime || 0), 0) / reads.length : 0;
     const reading = clamp(Math.min(reads.length, 20) * 3 + Math.min(avgDwell, 120) / 120 * 40);
-    const allLp = await strapi.db.query(LESSON_PROGRESS_UID).findMany({
-      where: { user: userId },
-      select: ["isCompleted", "isCorrect"],
-      limit: 500
-    });
+    const allLp = cg?.listLessonProgress ? await cg.listLessonProgress(userId, { limit: 500 }) : [];
     const done = allLp.filter((r) => r.isCompleted).length;
     const correct = allLp.filter((r) => r.isCorrect === true).length;
     const completion = clamp((allLp.length ? done / allLp.length : 0) * 60 + (correct ? correct / Math.max(allLp.length, 1) : 0) * 40);
-    const signs = await strapi.db.query(SIGNS_UID$1).findMany({
-      where: { user: userId },
-      select: ["attendedAt", "status"],
-      limit: 100
-    });
+    const signs = pg?.listSignups ? await pg.listSignups(userId, { limit: 100 }) : [];
     const activeSigns = signs.filter((s) => s.status !== "cancelled");
     const attended = activeSigns.filter((s) => s.attendedAt).length;
     const attendance = clamp(activeSigns.length * 10 + (activeSigns.length ? attended / activeSigns.length * 50 : 0));
     const [paid, points] = await Promise.all([
-      strapi.db.query(ENROLL_UID$1).count({ where: { user: userId, enrollType: { $in: ["paid", "points"] } } }),
-      strapi.db.query(REDEMPTION_UID).count({ where: { user: userId } }).catch(() => 0)
+      cg?.countPaidEnrolls ? cg.countPaidEnrolls(userId) : 0,
+      pg?.countRedemptions ? pg.countRedemptions(userId) : 0
     ]);
     const payment = clamp(paid * 30 + points * 15);
     const interests = await this.collectInterests(userId);
@@ -5962,48 +5953,17 @@ const ssoProfile = ({ strapi }) => ({
   async collectInterests(userId) {
     const days30 = new Date(Date.now() - 30 * 24 * 3600 * 1e3);
     const counts = {};
-    const lps = await strapi.db.query(LESSON_PROGRESS_UID).findMany({
-      where: { user: userId, lastStudyAt: { $gte: days30 } },
-      populate: { course: { select: ["id"], populate: { category: { select: ["name"] } } } },
-      limit: 500
-    });
-    const courseCats = /* @__PURE__ */ new Map();
-    for (const lp of lps) {
-      const c = lp.course;
-      if (c?.id && c.category?.name) courseCats.set(c.id, c.category.name);
+    const cg = courseGate$2(strapi);
+    for (const name of cg?.collectCourseInterests ? await cg.collectCourseInterests(userId, { since: days30 }) : []) {
+      counts[name] = (counts[name] || 0) + 1;
     }
-    for (const name of courseCats.values()) counts[name] = (counts[name] || 0) + 1;
-    const reads = await strapi.db.query(VISIT_LOG_UID).findMany({
-      where: { userId, type: "article_view", createdAt: { $gte: days30 } },
-      select: ["targetId"],
-      limit: 300
-    });
-    const docIds = [...new Set(reads.map((r) => r.targetId).filter(Boolean))].slice(0, 200);
-    if (docIds.length) {
-      const articles = await strapi.db.query(ARTICLE_UID$2).findMany({
-        where: { documentId: { $in: docIds } },
-        populate: { category: { select: ["name"] } },
-        limit: 200
-      });
-      const seenCats = /* @__PURE__ */ new Set();
-      for (const a of articles) {
-        if (a.category?.name && !seenCats.has(a.category.name)) {
-          seenCats.add(a.category.name);
-          counts[a.category.name] = (counts[a.category.name] || 0) + 1;
-        }
-      }
+    const g2 = websiteGate$1(strapi);
+    const cats = g2?.collectArticleCategories ? await g2.collectArticleCategories(userId, { since: days30 }) : [];
+    for (const name of cats) counts[name] = (counts[name] || 0) + 1;
+    const pg = pointGate$2(strapi);
+    for (const t of pg?.collectActivityTypes ? await pg.collectActivityTypes(userId, { since: days30 }) : []) {
+      counts[t] = (counts[t] || 0) + 1;
     }
-    const signs = await strapi.db.query(SIGNS_UID$1).findMany({
-      where: { user: userId, signupAt: { $gte: days30 } },
-      populate: { activity: { select: ["id", "type"] } },
-      limit: 200
-    });
-    const actTypes = /* @__PURE__ */ new Map();
-    for (const s of signs) {
-      const a = s.activity;
-      if (a?.id && a.type && a.type !== "其他") actTypes.set(a.id, a.type);
-    }
-    for (const t of actTypes.values()) counts[t] = (counts[t] || 0) + 1;
     return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([tag]) => tag);
   },
   /** 加权打分 + 分层 */
@@ -6057,13 +6017,15 @@ const ssoProfile = ({ strapi }) => ({
     return { scanned: upUsers.length, calculated: n, matchedSso: sso };
   }
 });
-const COURSE_UID = "plugin::zhao-course.course";
-const COURSE_CAT_UID = "plugin::zhao-course.course-category";
-const ENROLL_UID = "plugin::zhao-course.course-enrollment";
-const ARTICLE_UID$1 = "plugin::zhao-website.article";
-const ARTICLE_CAT_UID = "plugin::zhao-website.article-category";
-const ACTIVITY_UID = "plugin::zhao-point.activity";
-const SIGNS_UID = "plugin::zhao-point.activity-signup";
+function courseGate$1(strapi) {
+  return strapi.plugin && strapi.plugin("zhao-course")?.service?.("gate") || null;
+}
+function websiteGate(strapi) {
+  return strapi.plugin && strapi.plugin("zhao-website")?.service?.("gate") || null;
+}
+function pointGate$1(strapi) {
+  return strapi.plugin && strapi.plugin("zhao-point")?.service?.("gate") || null;
+}
 const ssoRecommend = ({ strapi }) => ({
   async recommendFor(ssoUserId, limit = 5) {
     const profile = await strapi.plugin("zhao-sso").service("sso-profile").getProfile(ssoUserId);
@@ -6078,111 +6040,23 @@ const ssoRecommend = ({ strapi }) => ({
   },
   /** 推荐课程：兴趣分类内，排除已购/已报名，按学员数排序；无兴趣 → 最新课程兜底 */
   async recCourses(interests, upUserId, limit) {
-    let enrolled = /* @__PURE__ */ new Set();
-    if (upUserId) {
-      const ens = await strapi.db.query(ENROLL_UID).findMany({
-        where: { user: upUserId },
-        populate: { course: { select: ["id"] } },
-        limit: 500
-      });
-      enrolled = new Set(ens.map((e) => e.course?.id).filter(Boolean));
-    }
-    let rows = [];
-    if (interests.length) {
-      const cats = await strapi.db.query(COURSE_CAT_UID).findMany({ where: { name: { $in: interests } }, select: ["id"] });
-      const catIds = cats.map((c) => c.id);
-      if (catIds.length) {
-        rows = await strapi.db.query(COURSE_UID).findMany({
-          where: { category: catIds },
-          populate: { category: { select: ["name"] }, cover: true },
-          limit: 100
-        });
-      }
-    }
-    if (!rows.length) {
-      rows = await strapi.db.query(COURSE_UID).findMany({
-        populate: { category: { select: ["name"] }, cover: true },
-        orderBy: { createdAt: "DESC" },
-        limit: 100
-      });
-    }
-    return rows.filter((c) => !enrolled.has(c.id)).sort((a, b) => (b.studentCount || 0) - (a.studentCount || 0)).slice(0, limit).map((c) => ({
-      documentId: c.documentId,
-      id: c.id,
-      title: c.title,
-      category: c.category?.name ?? null,
-      cover: c.cover ?? null,
-      price: c.price,
-      isFree: c.isFree ?? true,
-      isPaid: c.isPaid,
-      courseType: c.courseType,
-      pointsPrice: c.pointsPrice,
-      studentCount: c.studentCount
-    }));
+    const g = courseGate$1(strapi);
+    const enrolled = g?.listEnrolledCourseIds ? await g.listEnrolledCourseIds(upUserId || 0) : [];
+    const rows = g?.recommendCourses ? await g.recommendCourses(interests, enrolled, limit) : [];
+    return rows;
   },
   /** 推荐文章：兴趣分类内已发布文章，按发布时间排序；无兴趣 → 最新兜底 */
   async recArticles(interests, limit) {
-    let rows = [];
-    if (interests.length) {
-      const cats = await strapi.db.query(ARTICLE_CAT_UID).findMany({ where: { name: { $in: interests } }, select: ["id"] });
-      const catIds = cats.map((c) => c.id);
-      if (catIds.length) {
-        rows = await strapi.db.query(ARTICLE_UID$1).findMany({
-          where: { category: catIds, status: "published" },
-          populate: { category: { select: ["name"] } },
-          limit: 100
-        });
-      }
-    }
-    if (!rows.length) {
-      rows = await strapi.db.query(ARTICLE_UID$1).findMany({
-        where: { status: "published" },
-        populate: { category: { select: ["name"] } },
-        orderBy: { publishedAt: "DESC" },
-        limit: 100
-      });
-    }
-    return rows.sort((a, b) => new Date(b.publishedAt || b.createdAt).getTime() - new Date(a.publishedAt || a.createdAt).getTime()).slice(0, limit).map((a) => ({
-      documentId: a.documentId,
-      id: a.id,
-      title: a.seoTitle || a.title,
-      excerpt: a.excerpt,
-      category: a.category?.name ?? null,
-      publishedAt: a.publishedAt || a.createdAt
-    }));
+    const g = websiteGate(strapi);
+    const rows = g?.recommendArticles ? await g.recommendArticles(interests, limit) : [];
+    return rows;
   },
   /** 推荐活动：兴趣类型内报名中的活动，排除已报名，按开始时间排序；无匹配 → 报名中兜底 */
   async recActivities(interests, upUserId, limit) {
-    let signed = /* @__PURE__ */ new Set();
-    if (upUserId) {
-      const signs = await strapi.db.query(SIGNS_UID).findMany({
-        where: { user: upUserId },
-        populate: { activity: { select: ["id"] } },
-        limit: 500
-      });
-      signed = new Set(signs.map((s) => s.activity?.id).filter(Boolean));
-    }
-    let rows = [];
-    if (interests.length) {
-      rows = await strapi.db.query(ACTIVITY_UID).findMany({
-        where: { status: "signup_open", type: { $in: interests } },
-        limit: 100
-      });
-    }
-    if (!rows.length) {
-      rows = await strapi.db.query(ACTIVITY_UID).findMany({ where: { status: "signup_open" }, limit: 100 });
-    }
-    return rows.filter((a) => !signed.has(a.id)).sort((a, b) => new Date(b.startTime || b.createdAt).getTime() - new Date(a.startTime || a.createdAt).getTime()).slice(0, limit).map((a) => ({
-      documentId: a.documentId,
-      id: a.id,
-      title: a.title,
-      type: a.type,
-      startTime: a.startTime,
-      endTime: a.endTime,
-      venueName: a.venueName,
-      capacity: a.capacity,
-      usedCapacity: a.usedCapacity
-    }));
+    const g = pointGate$1(strapi);
+    const signed = g?.listSignedActivityIds ? await g.listSignedActivityIds(upUserId || 0) : [];
+    const rows = g?.recommendActivities ? await g.recommendActivities(interests, signed, limit) : [];
+    return rows;
   }
 });
 const MSG_JOB_UID$1 = "plugin::zhao-sso.msg-job";
@@ -6241,10 +6115,13 @@ const SOP_RULE_UID = "plugin::zhao-sso.sop-rule";
 const MSG_JOB_UID = "plugin::zhao-sso.msg-job";
 const MSG_TEMPLATE_UID = "plugin::zhao-sso.msg-template";
 const MSG_VERSION_UID = "plugin::zhao-sso.msg-template-version";
-const REPURCHASE_SIGNS_UID = "plugin::zhao-point.activity-signup";
-const COURSE_ENROLL_UID = "plugin::zhao-course.course-enrollment";
-const COURSE_PROGRESS_UID = "plugin::zhao-course.course-progress";
 const DATE_MS = 864e5;
+function pointGate(strapi) {
+  return strapi.plugin && strapi.plugin("zhao-point")?.service?.("gate") || null;
+}
+function courseGate(strapi) {
+  return strapi.plugin && strapi.plugin("zhao-course")?.service?.("gate") || null;
+}
 const ssoStats = ({ strapi }) => ({
   async getSopStats(opts) {
     const from = opts.from ? new Date(opts.from) : new Date(Date.now() - 30 * DATE_MS);
@@ -6339,9 +6216,7 @@ const ssoStats = ({ strapi }) => ({
       const userId = up.id;
       const from2 = new Date(j.sentAt);
       const to2 = new Date(from2.getTime() + windowMs);
-      const cnt = await strapi.db.query(REPURCHASE_SIGNS_UID).count({
-        where: { user: userId, status: "active", signupAt: { $gt: from2, $lte: to2 } }
-      });
+      const cnt = await (pointGate(strapi)?.countActiveSignups ? pointGate(strapi).countActiveSignups(userId, from2, to2) : 0);
       if (cnt > 0) {
         conversions += cnt;
         convertedUserSet.add(userId);
@@ -6378,9 +6253,7 @@ const ssoStats = ({ strapi }) => ({
       const userId = up.id;
       const from2 = new Date(j.sentAt);
       const to2 = new Date(from2.getTime() + windowMs);
-      const cnt = await strapi.db.query(COURSE_ENROLL_UID).count({
-        where: { user: userId, status: "enrolled", enrolledAt: { $gt: from2, $lte: to2 } }
-      });
+      const cnt = await (courseGate(strapi)?.countNewEnrolls ? courseGate(strapi).countNewEnrolls(userId, from2, to2) : 0);
       if (cnt > 0) {
         conversions += cnt;
         convertedUserSet.add(userId);
@@ -6417,9 +6290,7 @@ const ssoStats = ({ strapi }) => ({
       const userId = up.id;
       const from2 = new Date(j.sentAt);
       const to2 = new Date(from2.getTime() + windowMs);
-      const cnt = await strapi.db.query(COURSE_PROGRESS_UID).count({
-        where: { user: userId, isCompleted: true, completedAt: { $gt: from2, $lte: to2 } }
-      });
+      const cnt = await (courseGate(strapi)?.countCompletedProgress ? courseGate(strapi).countCompletedProgress(userId, from2, to2) : 0);
       if (cnt > 0) {
         conversions += cnt;
         convertedUserSet.add(userId);
@@ -6479,9 +6350,7 @@ const ssoStats = ({ strapi }) => ({
       if (upId) {
         const touchTime = j.sentAt || j.scheduledAt || j.createdAt;
         if (touchTime) {
-          reorderedCount = await strapi.db.query(REPURCHASE_SIGNS_UID).count({
-            where: { user: upId, status: "active", signupAt: { $gte: new Date(touchTime), $lte: new Date(new Date(touchTime).getTime() + windowMs) } }
-          });
+          reorderedCount = await (pointGate(strapi)?.countActiveSignups ? pointGate(strapi).countActiveSignups(upId, new Date(touchTime), new Date(new Date(touchTime).getTime() + windowMs)) : 0);
         }
       }
       rows.push({

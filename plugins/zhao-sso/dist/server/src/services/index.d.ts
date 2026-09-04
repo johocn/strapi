@@ -482,71 +482,13 @@ declare const _default: {
     }) => {
         recommendFor(ssoUserId: number, limit?: number): Promise<{
             interests: any;
-            courses: {
-                documentId: any;
-                id: any;
-                title: any;
-                category: any;
-                cover: any;
-                price: any;
-                isFree: any;
-                isPaid: any;
-                courseType: any;
-                pointsPrice: any;
-                studentCount: any;
-            }[];
-            articles: {
-                documentId: any;
-                id: any;
-                title: any;
-                excerpt: any;
-                category: any;
-                publishedAt: any;
-            }[];
-            activities: {
-                documentId: any;
-                id: any;
-                title: any;
-                type: any;
-                startTime: any;
-                endTime: any;
-                venueName: any;
-                capacity: any;
-                usedCapacity: any;
-            }[];
+            courses: any;
+            articles: any;
+            activities: any;
         }>;
-        recCourses(interests: string[], upUserId: number | null, limit: number): Promise<{
-            documentId: any;
-            id: any;
-            title: any;
-            category: any;
-            cover: any;
-            price: any;
-            isFree: any;
-            isPaid: any;
-            courseType: any;
-            pointsPrice: any;
-            studentCount: any;
-        }[]>;
-        recArticles(interests: string[], limit: number): Promise<{
-            documentId: any;
-            id: any;
-            title: any;
-            excerpt: any;
-            category: any;
-            publishedAt: any;
-        }[]>;
-        recActivities(interests: string[], upUserId: number | null, limit: number): Promise<{
-            documentId: any;
-            id: any;
-            title: any;
-            type: any;
-            startTime: any;
-            endTime: any;
-            venueName: any;
-            capacity: any;
-            usedCapacity: any;
-        }[]>;
+        recCourses(interests: string[], upUserId: number | null, limit: number): Promise<any>;
+        recArticles(interests: string[], limit: number): Promise<any>;
+        recActivities(interests: string[], upUserId: number | null, limit: number): Promise<any>;
     };
     "sso-quota": ({ strapi }: {
         strapi: import('@strapi/types/dist/core').Strapi;

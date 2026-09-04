@@ -10,6 +10,7 @@ import tutorial from "./tutorial";
 import download from "./download";
 import lead from "./lead";
 import visitLog from "./visit-log";
+import gate from "./gate";
 import interaction from "./interaction";
 import searchLog from "./search-log";
 import knowledgeGraph from "./knowledge-graph";
@@ -40,6 +41,7 @@ export default {
   "download": download,
   "lead": lead,
   "visit-log": visitLog,
+  "gate": gate,
   "interaction": interaction,
   "search-log": searchLog,
   "knowledge-graph": knowledgeGraph,
