@@ -3,7 +3,6 @@ import { v4 as uuidv4 } from "uuid";
 import type { Core } from "@strapi/strapi";
 
 const USER_UID = "plugin::zhao-sso.sso-user";
-const UP_USER_UID = "plugin::users-permissions.user";
 
 function sanitize(user: any) {
   if (!user) return null;
@@ -58,28 +57,21 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     return user;
   },
 
-  /** 确保 C 端 up_user 与 sso_user 同 id 对齐存在（不足则补建；对齐字段仅在写入时补齐，不覆盖已有 uid） */
+  /** 确保 C 端 up_user 与 sso_user 同 id 对齐存在（隔离：写 up_users 归属 zhao-auth 中间层，zhao-sso 不直写他域表） */
   async ensureUpUser(
     ssoId: number,
     info: { username?: string | null; email?: string | null; provider?: string }
   ) {
-    const exist = await strapi.db.query(UP_USER_UID).findOne({ where: { id: ssoId } });
-    if (exist) return exist;
     try {
-      return await strapi.db.query(UP_USER_UID).create({
-        data: {
-          id: ssoId,
-          username: info.username || String(ssoId),
-          email: info.email || `${String(ssoId)}@bridge.local`,
-          provider: info.provider || "local",
-          confirmed: true,
-          blocked: false,
-        },
-      });
+      const auth: any = strapi.plugin?.("zhao-auth")?.service?.("auth");
+      const r = auth?.ensureUserById ? await auth.ensureUserById(ssoId, info) : null;
+      if (!r) {
+        strapi.log.warn(`[zhao-sso] zhao-auth.ensureUserById 未就绪，跳过 up_users 对齐 sso=${ssoId}`);
+      }
+      return r;
     } catch (e: any) {
-      // 并发/唯一键冲突下以存在为准
-      const again = await strapi.db.query(UP_USER_UID).findOne({ where: { id: ssoId } });
-      return again || null;
+      strapi.log.warn(`[zhao-sso] up_users 对齐失败 sso=${ssoId}: ${e?.message || e}`);
+      return null;
     }
   },
 

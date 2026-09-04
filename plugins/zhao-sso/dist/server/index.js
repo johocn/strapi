@@ -3725,7 +3725,6 @@ const ssoJwt = ({ strapi }) => {
   };
 };
 const USER_UID$3 = "plugin::zhao-sso.sso-user";
-const UP_USER_UID$1 = "plugin::users-permissions.user";
 function sanitize(user) {
   if (!user) return null;
   const { password_hash, ...safe } = user;
@@ -3762,24 +3761,18 @@ const ssoUser = ({ strapi }) => {
       });
       return user;
     },
-    /** 确保 C 端 up_user 与 sso_user 同 id 对齐存在（不足则补建；对齐字段仅在写入时补齐，不覆盖已有 uid） */
+    /** 确保 C 端 up_user 与 sso_user 同 id 对齐存在（隔离：写 up_users 归属 zhao-auth 中间层，zhao-sso 不直写他域表） */
     async ensureUpUser(ssoId, info2) {
-      const exist = await strapi.db.query(UP_USER_UID$1).findOne({ where: { id: ssoId } });
-      if (exist) return exist;
       try {
-        return await strapi.db.query(UP_USER_UID$1).create({
-          data: {
-            id: ssoId,
-            username: info2.username || String(ssoId),
-            email: info2.email || `${String(ssoId)}@bridge.local`,
-            provider: info2.provider || "local",
-            confirmed: true,
-            blocked: false
-          }
-        });
+        const auth = strapi.plugin?.("zhao-auth")?.service?.("auth");
+        const r = auth?.ensureUserById ? await auth.ensureUserById(ssoId, info2) : null;
+        if (!r) {
+          strapi.log.warn(`[zhao-sso] zhao-auth.ensureUserById 未就绪，跳过 up_users 对齐 sso=${ssoId}`);
+        }
+        return r;
       } catch (e) {
-        const again = await strapi.db.query(UP_USER_UID$1).findOne({ where: { id: ssoId } });
-        return again || null;
+        strapi.log.warn(`[zhao-sso] up_users 对齐失败 sso=${ssoId}: ${e?.message || e}`);
+        return null;
       }
     },
     async findByIdentifier(identifier) {

@@ -121,6 +121,14 @@ const authService = ({ strapi: strapi2 }) => {
   };
   return {
     /**
+     * 插件间中间层：确保 up_users 存在与 sso_user 同 id 的行（供 zhao-sso 调用，写 up_users 归属 C 端）。
+     * 复用 alignUpUser 的 knex 直写（up_users 的 sso_id/invite_code 等未在 schema 声明，Strapi query 会过滤）。
+     */
+    async ensureUserById(ssoId, info2 = {}) {
+      if (!Number.isInteger(ssoId) || ssoId <= 0) return null;
+      return alignUpUser(strapi2, ssoId, { nickname: info2.username, email: info2.email });
+    },
+    /**
      * 验证 JWT token，返回用户信息
      * 如 JWT 中无角色信息，从数据库加载
      */
