@@ -128,7 +128,16 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         return;
       }
 
-      const siteDocId = ctx.state?.siteDocumentId;
+      // 未按站点解析到 siteDocumentId 时，用前端传入的 domain 反查站点（如 v.joho.cn）
+      let siteDocId = ctx.state?.siteDocumentId;
+      if (!siteDocId && ctx.query?.domain) {
+        const siteConfigSvc = strapi.plugin?.("zhao-common")?.service?.("site-config");
+        const site = siteConfigSvc?.getConfigByDomain
+          ? await siteConfigSvc.getConfigByDomain(ctx.query.domain)
+          : null;
+        siteDocId = site?.documentId || undefined;
+      }
+
       const authService = strapi.plugin("zhao-third").service("third-party-auth");
       const result = await authService.getJssdkSignature(url, siteDocId);
 

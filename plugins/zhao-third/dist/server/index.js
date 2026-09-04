@@ -361,9 +361,19 @@ const thirdPartyAuthService = ({ strapi }) => ({
    */
   async getJssdkSignature(url, siteId) {
     const configService = strapi.plugin("zhao-third").service("third-party-config");
-    let config2 = await configService.findByPlatformAndAppType("wechat", "official_account", siteId);
+    const isSsoSite = await this.isSsoMode(siteId);
+    let config2 = null;
+    if (isSsoSite) {
+      config2 = await this.resolveSsoWechatConfig();
+    }
     if (!config2) {
-      config2 = await configService.findByPlatformAndAppType("wechat", "open_platform", siteId);
+      config2 = await configService.findByPlatformAndAppType("wechat", "official_account", siteId);
+      if (!config2) {
+        config2 = await configService.findByPlatformAndAppType("wechat", "open_platform", siteId);
+      }
+    }
+    if (!config2 && isSsoSite) {
+      config2 = await this.resolveSsoWechatConfig();
     }
     if (!config2) {
       const e = new Error("未找到微信公众号或开放平台配置");
@@ -399,6 +409,29 @@ const thirdPartyAuthService = ({ strapi }) => ({
       nonceStr,
       signature
     };
+  },
+  /** 站点登录模式是否为 SSO（extraConfig.mode==='sso' 或 featureFlags.sso），经 zhao-common 中间层读取 */
+  async isSsoMode(siteId) {
+    if (!siteId) return false;
+    try {
+      const siteSvc = strapi.plugin?.("zhao-common")?.service?.("site-config");
+      const site = siteSvc?.getConfig ? await siteSvc.getConfig(siteId) : null;
+      if (!site) return false;
+      return site.extraConfig?.mode === "sso" || !!site.featureFlags?.sso;
+    } catch {
+      return false;
+    }
+  },
+  /** 经 zhao-sso 配置服务读取公众号 appId/appSecret（跨插件走服务，不直查其表） */
+  async resolveSsoWechatConfig() {
+    try {
+      const ssoCfg = strapi.plugin?.("zhao-sso")?.service?.("sso-oauth-config");
+      if (!ssoCfg?.findByProviderAndAppType) return null;
+      const c = await ssoCfg.findByProviderAndAppType("wechat", "official_account");
+      return c?.appId ? { appId: String(c.appId).trim(), appSecret: String(c.appSecret || "").trim() } : null;
+    } catch {
+      return null;
+    }
   },
   /**
    * 更新三方资料
@@ -733,7 +766,12 @@ const thirdPartyAuthController = ({ strapi }) => ({
         ctx.body = { error: "请提供 url" };
         return;
       }
-      const siteDocId = ctx.state?.siteDocumentId;
+      let siteDocId = ctx.state?.siteDocumentId;
+      if (!siteDocId && ctx.query?.domain) {
+        const siteConfigSvc = strapi.plugin?.("zhao-common")?.service?.("site-config");
+        const site = siteConfigSvc?.getConfigByDomain ? await siteConfigSvc.getConfigByDomain(ctx.query.domain) : null;
+        siteDocId = site?.documentId || void 0;
+      }
       const authService = strapi.plugin("zhao-third").service("third-party-auth");
       const result = await authService.getJssdkSignature(url, siteDocId);
       ctx.body = result;

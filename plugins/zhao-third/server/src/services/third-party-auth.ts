@@ -413,11 +413,23 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
    */
   async getJssdkSignature(url: string, siteId?: string) {
     const configService = strapi.plugin("zhao-third").service("third-party-config");
-    // 优先公众号(微信公众号网页场景)
-    let config = await configService.findByPlatformAndAppType("wechat", "official_account", siteId);
-    // fallback 开放平台
+    // 签名配置来源按站点登录模式分流：
+    //   SSO 站点 → 用 zhao-sso 公众号配置（如 v.joho.cn，经 zhao-sso 服务读取，不直查其表）
+    //   三方言/local → 用 zhao-third 自有配置（公众号优先，开放平台兜底）
+    const isSsoSite = await this.isSsoMode(siteId);
+    let config: any = null;
+    if (isSsoSite) {
+      config = await this.resolveSsoWechatConfig();
+    }
     if (!config) {
-      config = await configService.findByPlatformAndAppType("wechat", "open_platform", siteId);
+      config = await configService.findByPlatformAndAppType("wechat", "official_account", siteId);
+      if (!config) {
+        config = await configService.findByPlatformAndAppType("wechat", "open_platform", siteId);
+      }
+    }
+    // 兜底：SSO 站点即便 siteId 解析异常，仍回退 zhao-sso 公众号，避免 JS-SDK 分享失效
+    if (!config && isSsoSite) {
+      config = await this.resolveSsoWechatConfig();
     }
 
     if (!config) {
@@ -463,6 +475,33 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       nonceStr,
       signature,
     };
+  },
+
+  /** 站点登录模式是否为 SSO（extraConfig.mode==='sso' 或 featureFlags.sso），经 zhao-common 中间层读取 */
+  async isSsoMode(siteId?: string): Promise<boolean> {
+    if (!siteId) return false;
+    try {
+      const siteSvc = strapi.plugin?.("zhao-common")?.service?.("site-config");
+      const site = siteSvc?.getConfig ? await siteSvc.getConfig(siteId) : null;
+      if (!site) return false;
+      return site.extraConfig?.mode === "sso" || !!site.featureFlags?.sso;
+    } catch {
+      return false;
+    }
+  },
+
+  /** 经 zhao-sso 配置服务读取公众号 appId/appSecret（跨插件走服务，不直查其表） */
+  async resolveSsoWechatConfig(): Promise<{ appId: string; appSecret: string } | null> {
+    try {
+      const ssoCfg = strapi.plugin?.("zhao-sso")?.service?.("sso-oauth-config");
+      if (!ssoCfg?.findByProviderAndAppType) return null;
+      const c = await ssoCfg.findByProviderAndAppType("wechat", "official_account");
+      return c?.appId
+        ? { appId: String(c.appId).trim(), appSecret: String(c.appSecret || "").trim() }
+        : null;
+    } catch {
+      return null;
+    }
   },
 
   /**
