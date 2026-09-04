@@ -4220,7 +4220,8 @@ const ssoAuth$1 = ({ strapi }) => {
           ssoUserId: user.id,
           ssoId: user.id,
           inviteCode: await getOwnInviteCode(user.id, appCode),
-          ownInviteCode: await getOwnInviteCode(user.id, appCode)
+          ownInviteCode: await getOwnInviteCode(user.id, appCode),
+          inviteCodeUsed: inviteCode || null
         }
       };
     }
@@ -4260,7 +4261,8 @@ const ssoAuth$1 = ({ strapi }) => {
           ssoUserId: user.id,
           ssoId: user.id,
           inviteCode: await getOwnInviteCode(user.id, appCode),
-          ownInviteCode: await getOwnInviteCode(user.id, appCode)
+          ownInviteCode: await getOwnInviteCode(user.id, appCode),
+          inviteCodeUsed: inviteCode || null
         }
       };
     }
@@ -4309,7 +4311,8 @@ const ssoAuth$1 = ({ strapi }) => {
         ssoUserId: user.id,
         ssoId: user.id,
         inviteCode: await getOwnInviteCode(user.id, appCode),
-        ownInviteCode: await getOwnInviteCode(user.id, appCode)
+        ownInviteCode: await getOwnInviteCode(user.id, appCode),
+        inviteCodeUsed: inviteCode || null
       }
     };
   };

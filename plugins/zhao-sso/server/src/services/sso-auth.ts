@@ -132,6 +132,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
           ssoId: user.id,
           inviteCode: await getOwnInviteCode(user.id, appCode),
           ownInviteCode: await getOwnInviteCode(user.id, appCode),
+          inviteCodeUsed: inviteCode || null,
         },
       };
     }
@@ -183,6 +184,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
           ssoId: user.id,
           inviteCode: await getOwnInviteCode(user.id, appCode),
           ownInviteCode: await getOwnInviteCode(user.id, appCode),
+          inviteCodeUsed: inviteCode || null,
         },
       };
     }
@@ -254,6 +256,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         ssoId: user.id,
         inviteCode: await getOwnInviteCode(user.id, appCode),
         ownInviteCode: await getOwnInviteCode(user.id, appCode),
+        inviteCodeUsed: inviteCode || null,
       },
     };
   };
