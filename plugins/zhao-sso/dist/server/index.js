@@ -4515,16 +4515,14 @@ const ssoWechat = ({ strapi }) => {
         }
         userInfo = userInfoRes.data;
       }
-      let binding = await strapi.db.query(BINDING_UID$4).findOne({
-        where: { provider: "wechat", provider_union_id: unionid },
-        populate: { user: true }
-      });
-      if ((!binding || !binding.user) && unionid) {
+      let binding = null;
+      if (unionid) {
         binding = await strapi.db.query(BINDING_UID$4).findOne({
-          where: { provider: "wechat", provider_user_id: openid },
+          where: { provider: "wechat", provider_union_id: unionid },
           populate: { user: true }
         });
-      } else if (!binding) {
+      }
+      if (!binding || !binding.user) {
         binding = await strapi.db.query(BINDING_UID$4).findOne({
           where: { provider: "wechat", provider_user_id: openid },
           populate: { user: true }

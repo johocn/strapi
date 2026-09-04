@@ -184,17 +184,17 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       userInfo = userInfoRes.data;
     }
 
-    // 优先 unionid 匹配已有用户（同一微信号跨不同 app 一致，避免重复建号），无 unionid 退 openid
-    let binding: any = await strapi.db.query(BINDING_UID).findOne({
-      where: { provider: "wechat", provider_union_id: unionid },
-      populate: { user: true },
-    });
-    if ((!binding || !binding.user) && unionid) {
+    // 优先 unionid 匹配已有用户（同一微信号跨不同 app 一致，避免重复建号）。
+    // 注意：unionid 为空/未返回时必须跳过 unionid 匹配，否则空串可能误命中其它绑定，导致不同 openid 串到同一账号。
+    // 空串时直接按 openid 精确匹配即可（openid 才是公众号下真实的唯一身份标识）。
+    let binding: any = null;
+    if (unionid) {
       binding = await strapi.db.query(BINDING_UID).findOne({
-        where: { provider: "wechat", provider_user_id: openid },
+        where: { provider: "wechat", provider_union_id: unionid },
         populate: { user: true },
       });
-    } else if (!binding) {
+    }
+    if (!binding || !binding.user) {
       binding = await strapi.db.query(BINDING_UID).findOne({
         where: { provider: "wechat", provider_user_id: openid },
         populate: { user: true },
