@@ -1031,13 +1031,27 @@ const oauthController = ({ strapi }) => ({
     const oauthService = strapi.plugin("zhao-sso").service("sso-oauth");
     try {
       const { userId, isNew } = await wechatService.handleCallback(code, stateData.app_type);
+      if (stateData.invite_code) {
+        try {
+          const invRes = await strapi.plugin("zhao-sso").service("sso-invite").buildReferralRelation({
+            inviteeId: userId,
+            inviteCode: stateData.invite_code,
+            appCode: stateData.app_code || "course",
+            channelCode: stateData.channel_code
+          });
+          if (invRes.skip) strapi.log.info(`[zhao-sso] 微信回调分销关系已存在，跳过: userId=${userId}`);
+          else strapi.log.info(`[zhao-sso] 微信回调分销关系: ${invRes.message}`);
+        } catch (ie) {
+          strapi.log.warn(`[zhao-sso] 微信回调建立sso分销关系异常: ${ie.message}`);
+        }
+      }
       try {
         const channelSync2 = strapi.plugin("zhao-sso").service("channel-sync").getSync();
         if (channelSync2) {
           await channelSync2.syncUserInvite(userId, stateData.invite_code, stateData.channel_code);
         }
       } catch (ce) {
-        strapi.log.warn(`[zhao-sso] 微信回调分销同步失败: ${ce.message}`);
+        strapi.log.warn(`[zhao-sso] 微信回调渠道同步失败: ${ce.message}`);
       }
       const appCode = stateData.app_code || "course";
       const authCode = await oauthService.generateAuthCode({
@@ -1108,13 +1122,27 @@ const oauthController = ({ strapi }) => ({
       }
       const wechatService = strapi.plugin("zhao-sso").service("sso-wechat");
       const { userId, isNew } = await wechatService.handleCallback(code, "mini_program");
+      if (inviteCode) {
+        try {
+          const invRes = await strapi.plugin("zhao-sso").service("sso-invite").buildReferralRelation({
+            inviteeId: userId,
+            inviteCode,
+            appCode,
+            channelCode
+          });
+          if (invRes.skip) strapi.log.info(`[zhao-sso] 小程序登录分销关系已存在，跳过: userId=${userId}`);
+          else strapi.log.info(`[zhao-sso] 小程序登录分销关系: ${invRes.message}`);
+        } catch (ie) {
+          strapi.log.warn(`[zhao-sso] 小程序登录建立sso分销关系异常: ${ie.message}`);
+        }
+      }
       try {
         const channelSync2 = strapi.plugin("zhao-sso").service("channel-sync").getSync();
         if (channelSync2) {
           await channelSync2.syncUserInvite(userId, inviteCode, channelCode);
         }
       } catch (ce) {
-        strapi.log.warn(`[zhao-sso] 小程序登录分销同步失败: ${ce.message}`);
+        strapi.log.warn(`[zhao-sso] 小程序登录渠道同步失败: ${ce.message}`);
       }
       const authService = strapi.plugin("zhao-sso").service("sso-auth");
       const userService = strapi.plugin("zhao-sso").service("sso-user");
@@ -1301,13 +1329,27 @@ const oauthController = ({ strapi }) => ({
     try {
       const { userId, isNew } = await alipayService.handleCallback(auth_code);
       const appCode = stateData.app_code || "course";
+      if (stateData.invite_code) {
+        try {
+          const invRes = await strapi.plugin("zhao-sso").service("sso-invite").buildReferralRelation({
+            inviteeId: userId,
+            inviteCode: stateData.invite_code,
+            appCode: stateData.app_code || "course",
+            channelCode: stateData.channel_code
+          });
+          if (invRes.skip) strapi.log.info(`[zhao-sso] alipay 分销关系已存在，跳过: userId=${userId}`);
+          else strapi.log.info(`[zhao-sso] alipay 分销关系: ${invRes.message}`);
+        } catch (ie) {
+          strapi.log.warn(`[zhao-sso] alipay 建立sso分销关系异常: ${ie.message}`);
+        }
+      }
       try {
         const channelSync2 = strapi.plugin("zhao-sso").service("channel-sync").getSync();
         if (channelSync2) {
           await channelSync2.syncUserInvite(userId, stateData.invite_code || "", stateData.channel_code || "");
         }
       } catch (e) {
-        strapi.log.warn(`[zhao-sso] alipay 分销关系建立失败: ${e.message}`);
+        strapi.log.warn(`[zhao-sso] alipay 渠道同步失败: ${e.message}`);
       }
       const authCode = await oauthService.generateAuthCode({
         userId,

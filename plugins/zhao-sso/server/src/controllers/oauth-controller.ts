@@ -252,14 +252,34 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     try {
       const { userId, isNew } = await wechatService.handleCallback(code, stateData.app_type);
 
-      // 建立 sso-user 分销关系（失败只 warn 不阻断）
+      // 建立 sso 分销关系（用户邀请码 → sso_referral_relations / sso_invite_usages / use_count）
+      // 注意：下方 syncUserInvite 仅同步渠道归属(zhao-channel)，sso 分销必须调用 buildReferralRelation
+      if (stateData.invite_code) {
+        try {
+          const invRes = await strapi
+            .plugin("zhao-sso")
+            .service("sso-invite")
+            .buildReferralRelation({
+              inviteeId: userId,
+              inviteCode: stateData.invite_code,
+              appCode: stateData.app_code || "course",
+              channelCode: stateData.channel_code,
+            });
+          if (invRes.skip) strapi.log.info(`[zhao-sso] 微信回调分销关系已存在，跳过: userId=${userId}`);
+          else strapi.log.info(`[zhao-sso] 微信回调分销关系: ${invRes.message}`);
+        } catch (ie: any) {
+          strapi.log.warn(`[zhao-sso] 微信回调建立sso分销关系异常: ${ie.message}`);
+        }
+      }
+
+      // 渠道归属同步（失败只 warn 不阻断）
       try {
         const channelSync = strapi.plugin("zhao-sso").service("channel-sync").getSync();
         if (channelSync) {
           await channelSync.syncUserInvite(userId, stateData.invite_code, stateData.channel_code);
         }
       } catch (ce: any) {
-        strapi.log.warn(`[zhao-sso] 微信回调分销同步失败: ${ce.message}`);
+        strapi.log.warn(`[zhao-sso] 微信回调渠道同步失败: ${ce.message}`);
       }
 
       const appCode = stateData.app_code || "course";
@@ -348,14 +368,33 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       const wechatService = strapi.plugin("zhao-sso").service("sso-wechat");
       const { userId, isNew } = await wechatService.handleCallback(code, "mini_program");
 
-      // 建立 sso-user 分销关系
+      // 建立 sso 分销关系（用户邀请码 → sso_referral_relations / sso_invite_usages / use_count）
+      if (inviteCode) {
+        try {
+          const invRes = await strapi
+            .plugin("zhao-sso")
+            .service("sso-invite")
+            .buildReferralRelation({
+              inviteeId: userId,
+              inviteCode,
+              appCode,
+              channelCode,
+            });
+          if (invRes.skip) strapi.log.info(`[zhao-sso] 小程序登录分销关系已存在，跳过: userId=${userId}`);
+          else strapi.log.info(`[zhao-sso] 小程序登录分销关系: ${invRes.message}`);
+        } catch (ie: any) {
+          strapi.log.warn(`[zhao-sso] 小程序登录建立sso分销关系异常: ${ie.message}`);
+        }
+      }
+
+      // 渠道归属同步
       try {
         const channelSync = strapi.plugin("zhao-sso").service("channel-sync").getSync();
         if (channelSync) {
           await channelSync.syncUserInvite(userId, inviteCode, channelCode);
         }
       } catch (ce: any) {
-        strapi.log.warn(`[zhao-sso] 小程序登录分销同步失败: ${ce.message}`);
+        strapi.log.warn(`[zhao-sso] 小程序登录渠道同步失败: ${ce.message}`);
       }
 
       const authService = strapi.plugin("zhao-sso").service("sso-auth");
@@ -556,13 +595,31 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
       // 建立分销关系（失败只 warn，不阻断登录，与微信路径保持一致）
       // 注意：channel-sync service 导出的是 { getSync() }，必须先调 getSync() 拿到实际服务
+      if (stateData.invite_code) {
+        try {
+          const invRes = await strapi
+            .plugin("zhao-sso")
+            .service("sso-invite")
+            .buildReferralRelation({
+              inviteeId: userId,
+              inviteCode: stateData.invite_code,
+              appCode: stateData.app_code || "course",
+              channelCode: stateData.channel_code,
+            });
+          if (invRes.skip) strapi.log.info(`[zhao-sso] alipay 分销关系已存在，跳过: userId=${userId}`);
+          else strapi.log.info(`[zhao-sso] alipay 分销关系: ${invRes.message}`);
+        } catch (ie: any) {
+          strapi.log.warn(`[zhao-sso] alipay 建立sso分销关系异常: ${ie.message}`);
+        }
+      }
+
       try {
         const channelSync = strapi.plugin("zhao-sso").service("channel-sync").getSync();
         if (channelSync) {
           await channelSync.syncUserInvite(userId, stateData.invite_code || "", stateData.channel_code || "");
         }
       } catch (e: any) {
-        strapi.log.warn(`[zhao-sso] alipay 分销关系建立失败: ${e.message}`);
+        strapi.log.warn(`[zhao-sso] alipay 渠道同步失败: ${e.message}`);
       }
 
       const authCode = await oauthService.generateAuthCode({
