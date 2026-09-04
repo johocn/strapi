@@ -184,10 +184,22 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       userInfo = userInfoRes.data;
     }
 
-    const binding = await strapi.db.query(BINDING_UID).findOne({
-      where: { provider: "wechat", provider_user_id: openid },
+    // 优先 unionid 匹配已有用户（同一微信号跨不同 app 一致，避免重复建号），无 unionid 退 openid
+    let binding: any = await strapi.db.query(BINDING_UID).findOne({
+      where: { provider: "wechat", provider_union_id: unionid },
       populate: { user: true },
     });
+    if ((!binding || !binding.user) && unionid) {
+      binding = await strapi.db.query(BINDING_UID).findOne({
+        where: { provider: "wechat", provider_user_id: openid },
+        populate: { user: true },
+      });
+    } else if (!binding) {
+      binding = await strapi.db.query(BINDING_UID).findOne({
+        where: { provider: "wechat", provider_user_id: openid },
+        populate: { user: true },
+      });
+    }
 
     if (binding) {
       // 孤儿绑定（关联的 sso_user 已被清理/删除）：删除绑定，走新用户注册流程，避免空引用
@@ -223,7 +235,23 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
             data: { subscribe, subscribe_at: new Date(), subscribe_check_at: new Date() },
           });
         } catch { /* ignore */ }
-        return { userId: binding.user.id, isNew: false };
+        // 老用户登录：确保 up_user 行存在（富字段对齐由 C 端 zhao-auth 懒对齐）
+        try {
+          const alignUp = strapi.service("plugin::zhao-sso.sso-user") as any;
+          if (alignUp?.ensureUpUser) {
+            await alignUp.ensureUpUser(binding.user.id, {
+              username: binding.user.username,
+              email: null,
+              provider: "wechat",
+            });
+          }
+        } catch { /* 对齐失败静默 */ }
+        // 老用户登录：保证有 own 邀请码
+        try {
+          const alignInv = strapi.service("plugin::zhao-sso.sso-invite") as any;
+          if (alignInv?.ensureOwnInviteCode) await alignInv.ensureOwnInviteCode(binding.user.id, "course");
+        } catch { /* 邀请码生成失败静默 */ }
+        return { userId: binding.user.id, isNew: false, ownInviteCode: (await strapi.service("plugin::zhao-sso.sso-invite")?.ensureOwnInviteCode?.(binding.user.id, "course")) || "" };
       }
     }
 
@@ -245,7 +273,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       },
     });
 
-    // 身份桥接：微信新用户同步补齐同 id 的 up_user，避免 up_users 与 sso_users 错位
+    // 身份桥接：微信新用户同步补齐同 id 的 up_user，避免 up_users 与 sso_users 错位（富字段对齐由 C 端 zhao-auth 懒对齐补全）
     const userSvc = strapi.service("plugin::zhao-sso.sso-user") as any;
     if (userSvc?.ensureUpUser) {
       await userSvc.ensureUpUser(user.id, {
@@ -283,7 +311,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       });
     } catch { /* ignore */ }
 
-    return { userId: user.id, isNew: true };
+    // 微信新用户注册后返回 ownInviteCode，供 C 端 user 对齐写入
+    return { userId: user.id, isNew: true, ownInviteCode: ((await inviteSvc?.ensureOwnInviteCode?.(user.id, "course")) || "") };
   },
 
   async getJssdkSignature(url: string, appType: WechatAppType) {

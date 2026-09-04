@@ -25,6 +25,9 @@ export interface SsoJwtPayload {
     sub: string;
     jti: string;
     app_code: string;
+    sso_id?: number;
+    nickname?: string;
+    avatar?: string;
     roles?: string[];
     channel?: string;
     type?: "access" | "refresh";

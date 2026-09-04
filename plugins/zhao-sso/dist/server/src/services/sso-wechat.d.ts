@@ -19,6 +19,7 @@ declare const _default: ({ strapi }: {
     handleCallback(code: string, appType: WechatAppType): Promise<{
         userId: any;
         isNew: boolean;
+        ownInviteCode: any;
     }>;
     getJssdkSignature(url: string, appType: WechatAppType): Promise<{
         appId: any;

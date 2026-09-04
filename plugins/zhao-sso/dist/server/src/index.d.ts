@@ -1906,6 +1906,7 @@ declare const _default: {
             handleCallback(code: string, appType: "official_account" | "open_platform" | "mini_program" | "app"): Promise<{
                 userId: any;
                 isNew: boolean;
+                ownInviteCode: any;
             }>;
             getJssdkSignature(url: string, appType: "official_account" | "open_platform" | "mini_program" | "app"): Promise<{
                 appId: any;

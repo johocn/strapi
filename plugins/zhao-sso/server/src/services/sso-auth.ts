@@ -107,6 +107,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       const roles = await getUserRoles(user.id, appCode);
       const tokenPair = await jwtService().signTokenPair({
         sub: user.uuid,
+        sso_id: user.id,
+        nickname: user.nickname || null,
+        avatar: user.avatar_url || null,
         app_code: appCode,
         roles,
         channel: channelCode,
@@ -122,8 +125,14 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       return {
         ...tokenPair,
         ssoUserId: user.id,
-        ownInviteCode: await getOwnInviteCode(user.id),
-        user: sanitizeUser(user),
+        ownInviteCode: await getOwnInviteCode(user.id, appCode),
+        user: {
+          ...sanitizeUser(user),
+          ssoUserId: user.id,
+          ssoId: user.id,
+          inviteCode: await getOwnInviteCode(user.id, appCode),
+          ownInviteCode: await getOwnInviteCode(user.id, appCode),
+        },
       };
     }
 
@@ -149,6 +158,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       const roles = await getUserRoles(user.id, appCode);
       const tokenPair = await jwtService().signTokenPair({
         sub: user.uuid,
+        sso_id: user.id,
+        nickname: user.nickname || null,
+        avatar: user.avatar_url || null,
         app_code: appCode,
         roles,
         channel: channelCode,
@@ -165,7 +177,13 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         ...tokenPair,
         ssoUserId: user.id,
         ownInviteCode: await getOwnInviteCode(user.id, appCode),
-        user: sanitizeUser(user),
+        user: {
+          ...sanitizeUser(user),
+          ssoUserId: user.id,
+          ssoId: user.id,
+          inviteCode: await getOwnInviteCode(user.id, appCode),
+          ownInviteCode: await getOwnInviteCode(user.id, appCode),
+        },
       };
     }
 
@@ -203,6 +221,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     const roles = await getUserRoles(user.id, appCode);
     const tokenPair = await jwtService().signTokenPair({
       sub: user.uuid,
+      sso_id: user.id,
+      nickname: user.nickname || null,
+      avatar: user.avatar_url || null,
       app_code: appCode,
       roles,
       channel: channelCode,
@@ -227,7 +248,13 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       ...tokenPair,
       ssoUserId: user.id,
       ownInviteCode: await getOwnInviteCode(user.id, appCode),
-      user: sanitizeUser(user),
+      user: {
+        ...sanitizeUser(user),
+        ssoUserId: user.id,
+        ssoId: user.id,
+        inviteCode: await getOwnInviteCode(user.id, appCode),
+        ownInviteCode: await getOwnInviteCode(user.id, appCode),
+      },
     };
   };
 

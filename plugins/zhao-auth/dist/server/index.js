@@ -6,6 +6,51 @@ const _interopDefault = (e) => e && e.__esModule ? e : { default: e };
 const bcrypt__default = /* @__PURE__ */ _interopDefault(bcrypt);
 const jwt__default = /* @__PURE__ */ _interopDefault(jwt);
 const USER_UID$2 = "plugin::users-permissions.user";
+const UP_USERS_TABLE = "up_users";
+async function alignUpUser(strapi2, ssoId, decoded) {
+  const knex = strapi2.db.connection;
+  try {
+    const exist = await knex(UP_USERS_TABLE).select("id", "sso_id", "username", "nickname", "avatar", "invite_code").where({ id: ssoId }).first();
+    const nickname = decoded.nickname || null;
+    const avatar = decoded.avatar || null;
+    if (exist) {
+      const patch = {};
+      if (exist.sso_id == null) patch.sso_id = ssoId;
+      if (nickname && !exist.nickname && !exist.username?.startsWith("wx_")) patch.nickname = nickname;
+      if (avatar && !exist.avatar) patch.avatar = avatar;
+      if (!exist.invite_code) {
+        patch.invite_code = `U${ssoId}`;
+      }
+      if (Object.keys(patch).length) {
+        patch.updated_at = /* @__PURE__ */ new Date();
+        await knex(UP_USERS_TABLE).where({ id: ssoId }).update(patch);
+      }
+      return exist;
+    }
+    const rows = await knex(UP_USERS_TABLE).insert({
+      id: ssoId,
+      document_id: null,
+      username: nickname || `wx_${ssoId}`,
+      email: decoded.email || `${ssoId}@bridge.local`,
+      provider: "local",
+      password: null,
+      confirmed: true,
+      blocked: false,
+      sso_id: ssoId,
+      nickname,
+      avatar,
+      invite_code: `U${ssoId}`,
+      created_at: /* @__PURE__ */ new Date(),
+      updated_at: /* @__PURE__ */ new Date(),
+      published_at: /* @__PURE__ */ new Date()
+    }).returning("id");
+    strapi2.log.info(`[zhao-auth] 懒对齐新建 up_users id=${rows?.[0] ?? ssoId} (sso_id=${ssoId})`);
+    return { id: rows?.[0] ?? ssoId };
+  } catch (e) {
+    strapi2.log.warn(`[zhao-auth] up_users 懒对齐失败 sso=${ssoId}: ${e?.message || e}`);
+    return null;
+  }
+}
 const authService = ({ strapi: strapi2 }) => {
   function throwErr2(code, status, message) {
     const e = new Error(message);
@@ -72,6 +117,9 @@ const authService = ({ strapi: strapi2 }) => {
           } catch (err) {
             strapi2.log.error("[zhao-auth] 从数据库加载角色失败:", err);
           }
+        }
+        if (Number.isInteger(decoded.sso_id) && decoded.sso_id > 0) {
+          await alignUpUser(strapi2, decoded.sso_id, decoded);
         }
         return user;
       } catch (error) {

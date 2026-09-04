@@ -8,6 +8,66 @@ import bcrypt from "bcryptjs";
 
 const USER_UID = "plugin::users-permissions.user";
 
+const UP_USERS_TABLE = "up_users";
+
+// C 端懒对齐：SSO 已建 sso_user，但 C 端 up_users 未必有对应行。
+// 认证到 token 里的 sso_id 时，确保 up_users 存在同 id 行并补齐对齐字段。
+// 用 knex 直写（up_users 的 sso_id/nickname/avatar/invite_code 未在 users-permissions schema 声明，
+// Strapi query 会过滤这些列），与 SSO 域彻底解耦——SSO 只管 sso_users，C 端只碰 up_users。
+async function alignUpUser(strapi: Core.Strapi, ssoId: number, decoded: Record<string, any>) {
+  const knex = strapi.db.connection;
+  try {
+    const exist = await knex(UP_USERS_TABLE)
+      .select("id", "sso_id", "username", "nickname", "avatar", "invite_code")
+      .where({ id: ssoId })
+      .first();
+
+    const nickname = decoded.nickname || null;
+    const avatar = decoded.avatar || null;
+
+    if (exist) {
+      const patch: Record<string, any> = {};
+      if (exist.sso_id == null) patch.sso_id = ssoId;
+      // 昵称/头像仅缺时回填，且不覆盖非 wx_ 占位的手设昵称
+      if (nickname && !exist.nickname && !exist.username?.startsWith("wx_")) patch.nickname = nickname;
+      if (avatar && !exist.avatar) patch.avatar = avatar;
+      // 兜底邀请码：SSO 未给 ownInviteCode 时本地生成
+      if (!exist.invite_code) {
+        patch.invite_code = `U${ssoId}`;
+      }
+      if (Object.keys(patch).length) {
+        patch.updated_at = new Date();
+        await knex(UP_USERS_TABLE).where({ id: ssoId }).update(patch);
+      }
+      return exist;
+    }
+
+    // 不存在：经原生 SQL 补建（同名逻辑与原 SSO ensureUpUser 一致，现在归属 C 端）
+    const rows = await knex(UP_USERS_TABLE).insert({
+      id: ssoId,
+      document_id: null,
+      username: nickname || `wx_${ssoId}`,
+      email: decoded.email || `${ssoId}@bridge.local`,
+      provider: "local",
+      password: null,
+      confirmed: true,
+      blocked: false,
+      sso_id: ssoId,
+      nickname,
+      avatar,
+      invite_code: `U${ssoId}`,
+      created_at: new Date(),
+      updated_at: new Date(),
+      published_at: new Date(),
+    }).returning("id");
+    strapi.log.info(`[zhao-auth] 懒对齐新建 up_users id=${rows?.[0] ?? ssoId} (sso_id=${ssoId})`);
+    return { id: rows?.[0] ?? ssoId };
+  } catch (e: any) {
+    strapi.log.warn(`[zhao-auth] up_users 懒对齐失败 sso=${ssoId}: ${e?.message || e}`);
+    return null;
+  }
+}
+
 // SSO 开关内存缓存，TTL 5 分钟
 let ssoCache: { enabled: boolean; loginUrl: string; expireAt: number } | null = null;
 const SSO_CACHE_TTL = 5 * 60 * 1000;
@@ -97,6 +157,11 @@ export default ({ strapi }: { strapi: Core.Strapi }): AuthService & Record<strin
           } catch (err) {
             strapi.log.error("[zhao-auth] 从数据库加载角色失败:", err);
           }
+        }
+
+        // 懒对齐：SSO token 携带 sso_id 时，确保 C 端 up_users 有同 id 行（SSO 与 C 端分离，不在 SSO 侧写库）
+        if (Number.isInteger(decoded.sso_id) && decoded.sso_id > 0) {
+          await alignUpUser(strapi, decoded.sso_id, decoded);
         }
 
         return user;

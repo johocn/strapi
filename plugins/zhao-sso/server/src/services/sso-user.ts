@@ -55,13 +55,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       },
     });
 
-    // 身份桥接：同步创建同 id 的 up_user，保持 up_users 与 sso_users id 完全对齐
-    await this.ensureUpUser(user.id, { username: user.username, email: user.email });
-
     return user;
   },
 
-  /** 确保 C 端 up_user 与 sso_user 同 id 对齐存在（不足则补建，已存在则跳过） */
+  /** 确保 C 端 up_user 与 sso_user 同 id 对齐存在（不足则补建；对齐字段仅在写入时补齐，不覆盖已有 uid） */
   async ensureUpUser(
     ssoId: number,
     info: { username?: string | null; email?: string | null; provider?: string }

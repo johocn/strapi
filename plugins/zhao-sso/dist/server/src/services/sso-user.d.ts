@@ -13,7 +13,7 @@ declare const _default: ({ strapi }: {
         utm_campaign?: string;
         invite_code_used?: string;
     }): Promise<any>;
-    /** 确保 C 端 up_user 与 sso_user 同 id 对齐存在（不足则补建，已存在则跳过） */
+    /** 确保 C 端 up_user 与 sso_user 同 id 对齐存在（不足则补建；对齐字段仅在写入时补齐，不覆盖已有 uid） */
     ensureUpUser(ssoId: number, info: {
         username?: string | null;
         email?: string | null;

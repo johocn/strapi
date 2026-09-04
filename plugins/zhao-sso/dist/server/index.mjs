@@ -3694,10 +3694,9 @@ const ssoUser = ({ strapi }) => {
           login_count: 0
         }
       });
-      await this.ensureUpUser(user.id, { username: user.username, email: user.email });
       return user;
     },
-    /** 确保 C 端 up_user 与 sso_user 同 id 对齐存在（不足则补建，已存在则跳过） */
+    /** 确保 C 端 up_user 与 sso_user 同 id 对齐存在（不足则补建；对齐字段仅在写入时补齐，不覆盖已有 uid） */
     async ensureUpUser(ssoId, info2) {
       const exist = await strapi.db.query(UP_USER_UID$1).findOne({ where: { id: ssoId } });
       if (exist) return exist;
@@ -4136,6 +4135,9 @@ const ssoAuth$1 = ({ strapi }) => {
       const roles = await getUserRoles(user.id, appCode);
       const tokenPair = await jwtService().signTokenPair({
         sub: user.uuid,
+        sso_id: user.id,
+        nickname: user.nickname || null,
+        avatar: user.avatar_url || null,
         app_code: appCode,
         roles,
         channel: channelCode
@@ -4146,8 +4148,14 @@ const ssoAuth$1 = ({ strapi }) => {
       return {
         ...tokenPair,
         ssoUserId: user.id,
-        ownInviteCode: await getOwnInviteCode(user.id),
-        user: sanitizeUser(user)
+        ownInviteCode: await getOwnInviteCode(user.id, appCode),
+        user: {
+          ...sanitizeUser(user),
+          ssoUserId: user.id,
+          ssoId: user.id,
+          inviteCode: await getOwnInviteCode(user.id, appCode),
+          ownInviteCode: await getOwnInviteCode(user.id, appCode)
+        }
       };
     }
     if (type === "sms") {
@@ -4167,6 +4175,9 @@ const ssoAuth$1 = ({ strapi }) => {
       const roles = await getUserRoles(user.id, appCode);
       const tokenPair = await jwtService().signTokenPair({
         sub: user.uuid,
+        sso_id: user.id,
+        nickname: user.nickname || null,
+        avatar: user.avatar_url || null,
         app_code: appCode,
         roles,
         channel: channelCode
@@ -4178,7 +4189,13 @@ const ssoAuth$1 = ({ strapi }) => {
         ...tokenPair,
         ssoUserId: user.id,
         ownInviteCode: await getOwnInviteCode(user.id, appCode),
-        user: sanitizeUser(user)
+        user: {
+          ...sanitizeUser(user),
+          ssoUserId: user.id,
+          ssoId: user.id,
+          inviteCode: await getOwnInviteCode(user.id, appCode),
+          ownInviteCode: await getOwnInviteCode(user.id, appCode)
+        }
       };
     }
     throwErr("SSO_AUTH_005", 400, `不支持的登录类型: ${type}`);
@@ -4199,6 +4216,9 @@ const ssoAuth$1 = ({ strapi }) => {
     const roles = await getUserRoles(user.id, appCode);
     const tokenPair = await jwtService().signTokenPair({
       sub: user.uuid,
+      sso_id: user.id,
+      nickname: user.nickname || null,
+      avatar: user.avatar_url || null,
       app_code: appCode,
       roles,
       channel: channelCode
@@ -4218,7 +4238,13 @@ const ssoAuth$1 = ({ strapi }) => {
       ...tokenPair,
       ssoUserId: user.id,
       ownInviteCode: await getOwnInviteCode(user.id, appCode),
-      user: sanitizeUser(user)
+      user: {
+        ...sanitizeUser(user),
+        ssoUserId: user.id,
+        ssoId: user.id,
+        inviteCode: await getOwnInviteCode(user.id, appCode),
+        ownInviteCode: await getOwnInviteCode(user.id, appCode)
+      }
     };
   };
   const verifyToken = async (token) => {
@@ -4465,10 +4491,21 @@ const ssoWechat = ({ strapi }) => {
         }
         userInfo = userInfoRes.data;
       }
-      const binding = await strapi.db.query(BINDING_UID$4).findOne({
-        where: { provider: "wechat", provider_user_id: openid },
+      let binding = await strapi.db.query(BINDING_UID$4).findOne({
+        where: { provider: "wechat", provider_union_id: unionid },
         populate: { user: true }
       });
+      if ((!binding || !binding.user) && unionid) {
+        binding = await strapi.db.query(BINDING_UID$4).findOne({
+          where: { provider: "wechat", provider_user_id: openid },
+          populate: { user: true }
+        });
+      } else if (!binding) {
+        binding = await strapi.db.query(BINDING_UID$4).findOne({
+          where: { provider: "wechat", provider_user_id: openid },
+          populate: { user: true }
+        });
+      }
       if (binding) {
         if (!binding.user) {
           await strapi.db.query(BINDING_UID$4).delete({ where: { id: binding.id } });
@@ -4501,7 +4538,23 @@ const ssoWechat = ({ strapi }) => {
             });
           } catch {
           }
-          return { userId: binding.user.id, isNew: false };
+          try {
+            const alignUp = strapi.service("plugin::zhao-sso.sso-user");
+            if (alignUp?.ensureUpUser) {
+              await alignUp.ensureUpUser(binding.user.id, {
+                username: binding.user.username,
+                email: null,
+                provider: "wechat"
+              });
+            }
+          } catch {
+          }
+          try {
+            const alignInv = strapi.service("plugin::zhao-sso.sso-invite");
+            if (alignInv?.ensureOwnInviteCode) await alignInv.ensureOwnInviteCode(binding.user.id, "course");
+          } catch {
+          }
+          return { userId: binding.user.id, isNew: false, ownInviteCode: await strapi.service("plugin::zhao-sso.sso-invite")?.ensureOwnInviteCode?.(binding.user.id, "course") || "" };
         }
       }
       const rawNickname = (userInfo?.nickname || "wx_user").replace(/[^\w\u4e00-\u9fa5]/g, "").substring(0, 12) || "wx_user";
@@ -4550,7 +4603,7 @@ const ssoWechat = ({ strapi }) => {
         });
       } catch {
       }
-      return { userId: user.id, isNew: true };
+      return { userId: user.id, isNew: true, ownInviteCode: await inviteSvc?.ensureOwnInviteCode?.(user.id, "course") || "" };
     },
     async getJssdkSignature(url, appType) {
       const config2 = await getConfig(appType);
