@@ -669,7 +669,13 @@ async function tourAnswerMain(args: { documentId: string; userId: number; answer
 async function tourChooseRole(args: { documentId: string; userId: number; role?: any }) {
   const { act, signup } = await findTourSignup(strapi, args.userId, args.documentId);
   if (!signup) throw new TourError("NOT_SIGNED", "请先报名");
-  const role = typeof args.role === "string" ? args.role : "";
+  const role = typeof args.role === "string" ? args.role.trim() : "";
+  if (!role) throw new TourError("BAD_ROLE", "请选择角色");
+  const roles = Array.isArray(act.story?.roles) ? act.story.roles : [];
+  const valid = roles.some(
+    (r: any) => String(r?.id) === role || String(r?.name) === role
+  );
+  if (!valid) throw new TourError("BAD_ROLE", "角色不存在");
   const prev = signup.tourProgress && typeof signup.tourProgress === "object" ? signup.tourProgress : {};
   const next = { ...prev, role };
   await strapi.db.query(SIGNS_UID).update({ where: { id: signup.id }, data: { tourProgress: next } });
