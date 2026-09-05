@@ -4843,7 +4843,14 @@ const createLocalChannelSync = ({ strapi }) => ({
     if (!userInviteService || typeof userInviteService.createForUser !== "function") {
       return { success: false, message: "zhao-channel user-invite 服务不可用" };
     }
-    await userInviteService.createForUser(ssoUserId, inviteCode, void 0, void 0, channelCode);
+    let ownInviteCode;
+    try {
+      const rec = await strapi.db.query("plugin::zhao-sso.sso-invite-code").findOne({ where: { creator: ssoUserId, is_active: true } });
+      ownInviteCode = rec?.code;
+    } catch {
+      ownInviteCode = void 0;
+    }
+    await userInviteService.createForUser(ssoUserId, inviteCode, void 0, ownInviteCode, channelCode);
     return { success: true };
   }
 });
@@ -4857,7 +4864,13 @@ const createRemoteChannelSync = ({
       return { success: false, message: "RemoteChannelSync 配置不完整（remoteUrl/appCode/appSecret）" };
     }
     const url = `${remoteUrl.replace(/\/+$/, "")}/api/zhao-channel/v1/admin/user-invites/sync`;
-    const body = JSON.stringify({ userId: ssoUserId, inviteCode, channelCode });
+    let ownInviteCode = inviteCode;
+    try {
+      const rec = await strapi.db.query("plugin::zhao-sso.sso-invite-code").findOne({ where: { creator: ssoUserId, is_active: true } });
+      if (rec?.code) ownInviteCode = rec.code;
+    } catch {
+    }
+    const body = JSON.stringify({ userId: ssoUserId, inviteCode: ownInviteCode, channelCode });
     const maxRetries = 3;
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {

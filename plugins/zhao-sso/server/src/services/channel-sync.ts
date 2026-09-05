@@ -25,8 +25,19 @@ export const createLocalChannelSync = ({ strapi }: { strapi: Core.Strapi }): ICh
     }
 
     // inviteCode 是邀请人的码（v.joho.cn），应传给 inviterCode（第 2 参数）建立 invitedBy 关系
-    // externalInviteCode（第 4 参数）留 undefined，让 createForUser 自动生成本用户的码
-    await userInviteService.createForUser(ssoUserId, inviteCode, undefined, undefined, channelCode);
+    // externalInviteCode（第 4 参数）传入 SSO 自有码，保证 zhao_user_invites.invite_code 与
+    // sso_invite_codes / up_users.invite_code 三码统一（禁止自动生成不同码）
+    let ownInviteCode: string | undefined;
+    try {
+      // 取用户任意有效自有码，避免按 app_code 再生成导致两套码并存
+      const rec = await strapi.db
+        .query("plugin::zhao-sso.sso-invite-code")
+        .findOne({ where: { creator: ssoUserId, is_active: true } });
+      ownInviteCode = rec?.code;
+    } catch {
+      ownInviteCode = undefined;
+    }
+    await userInviteService.createForUser(ssoUserId, inviteCode, undefined, ownInviteCode, channelCode);
     return { success: true };
   },
 });
@@ -49,7 +60,18 @@ export const createRemoteChannelSync = ({
     }
 
     const url = `${remoteUrl.replace(/\/+$/, "")}/api/zhao-channel/v1/admin/user-invites/sync`;
-    const body = JSON.stringify({ userId: ssoUserId, inviteCode, channelCode });
+    // body.inviteCode 作为远端 externalInviteCode（user-invite.ts syncInvite L234），
+    // 取 SSO 自有码，保证 zhao_user_invites.invite_code 与 sso/up 三码统一
+    let ownInviteCode = inviteCode as string | undefined;
+    try {
+      const rec = await strapi.db
+        .query("plugin::zhao-sso.sso-invite-code")
+        .findOne({ where: { creator: ssoUserId, is_active: true } });
+      if (rec?.code) ownInviteCode = rec.code;
+    } catch {
+      /* 保持原值 */
+    }
+    const body = JSON.stringify({ userId: ssoUserId, inviteCode: ownInviteCode, channelCode });
 
     const maxRetries = 3;
     for (let attempt = 0; attempt < maxRetries; attempt++) {
