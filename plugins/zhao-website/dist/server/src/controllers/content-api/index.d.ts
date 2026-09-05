@@ -60,5 +60,8 @@ declare const _default: {
         rss(ctx: any): Promise<void>;
         atom(ctx: any): Promise<void>;
     };
+    "invite-trace": {
+        track(ctx: any): Promise<any>;
+    };
 };
 export default _default;

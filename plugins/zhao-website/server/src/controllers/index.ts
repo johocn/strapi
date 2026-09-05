@@ -15,6 +15,7 @@ import contentKnowledgeGraph from "./content-api/knowledge-graph";
 import adminArticle from "./admin-api/article";
 import adminSeoConfig from "./admin-api/seo-config";
 import adminBrandInfo from "./admin-api/brand-info";
+import inviteTrace from "./content-api/invite-trace";
 import generic from "./admin-api/generic";
 import adminKnowledgeGraph from "./admin-api/knowledge-graph";
 import firstTruth from "./admin-api/first-truth";
@@ -45,6 +46,7 @@ export default {
   "site-info": siteInfo,
   "seo-meta": seoMeta,
   feed,
+  "invite-trace": inviteTrace,
   "article-admin": adminArticle,
   "seo-config-admin": adminSeoConfig,
   "brand-info-admin": adminBrandInfo,

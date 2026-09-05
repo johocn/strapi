@@ -109,6 +109,9 @@ declare const _default: {
         rss(ctx: any): Promise<void>;
         atom(ctx: any): Promise<void>;
     };
+    "invite-trace": {
+        track(ctx: any): Promise<any>;
+    };
     "article-admin": {
         find(ctx: any): Promise<void>;
         findOne(ctx: any): Promise<any>;

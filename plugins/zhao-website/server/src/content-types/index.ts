@@ -18,6 +18,7 @@ import aiContentSummary from "./ai-content-summary/schema.json";
 import firstTruthPolicy from "./first-truth-policy/schema.json";
 import brandVoice from "./brand-voice/schema.json";
 import redirectRule from "./redirect-rule/schema.json";
+import inviteTrace from "./invite-trace/schema.json";
 
 export default {
   "seo-config": { schema: seoConfig },
@@ -40,4 +41,5 @@ export default {
   "first-truth-policy": { schema: firstTruthPolicy },
   "brand-voice": { schema: brandVoice },
   "redirect-rule": { schema: redirectRule },
+  "invite-trace": { schema: inviteTrace },
 };

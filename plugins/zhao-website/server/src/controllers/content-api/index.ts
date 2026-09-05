@@ -11,6 +11,7 @@ import siteInfo from "./site-info";
 import seoMeta from "./seo-meta";
 import knowledgeGraph from "./knowledge-graph";
 import feed from "./feed";
+import inviteTrace from "./invite-trace";
 
 export default {
   article,
@@ -26,4 +27,5 @@ export default {
   "seo-meta": seoMeta,
   "knowledge-graph": knowledgeGraph,
   "feed": feed,
+  "invite-trace": inviteTrace,
 };

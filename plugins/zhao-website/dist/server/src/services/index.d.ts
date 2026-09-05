@@ -251,6 +251,21 @@ declare const _default: {
         }>;
         purgeOlderThan(days: number): Promise<number>;
     };
+    gate: ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        countMsgClicks(campaigns: string[]): Promise<Record<string, number>>;
+        countActive(userId: number, since: Date | string): Promise<number>;
+        listArticleReads(userId: number, opts?: {
+            since?: Date | string;
+            limit?: number;
+        }): Promise<any[]>;
+        collectArticleCategories(userId: number, opts?: {
+            since?: Date | string;
+            limit?: number;
+        }): Promise<string[]>;
+        recommendArticles(interests: string[], limit?: number): Promise<any[]>;
+    };
     interaction: ({ strapi }: {
         strapi: import('@strapi/types/dist/core').Strapi;
     }) => {
@@ -459,6 +474,11 @@ declare const _default: {
             toUrl: string;
             statusCode: number;
         } | null>;
+    };
+    "invite-trace": ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        createPublic(data: any): Promise<any>;
     };
 };
 export default _default;

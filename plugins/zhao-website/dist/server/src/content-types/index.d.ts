@@ -2396,5 +2396,93 @@ declare const _default: {
             };
         };
     };
+    "invite-trace": {
+        schema: {
+            kind: string;
+            collectionName: string;
+            info: {
+                singularName: string;
+                pluralName: string;
+                displayName: string;
+            };
+            options: {
+                draftAndPublish: boolean;
+            };
+            pluginOptions: {
+                "content-manager": {
+                    visible: boolean;
+                };
+                "content-type-builder": {
+                    visible: boolean;
+                };
+            };
+            attributes: {
+                event: {
+                    type: string;
+                    enum: string[];
+                    required: boolean;
+                };
+                inviteCode: {
+                    type: string;
+                    maxLength: number;
+                };
+                storedCode: {
+                    type: string;
+                    maxLength: number;
+                };
+                channelInviteCode: {
+                    type: string;
+                    maxLength: number;
+                };
+                inviterId: {
+                    type: string;
+                    maxLength: number;
+                };
+                targetType: {
+                    type: string;
+                    maxLength: number;
+                };
+                targetId: {
+                    type: string;
+                };
+                pagePath: {
+                    type: string;
+                    maxLength: number;
+                };
+                loggedIn: {
+                    type: string;
+                    default: boolean;
+                };
+                success: {
+                    type: string;
+                    default: boolean;
+                };
+                detail: {
+                    type: string;
+                };
+                sessionId: {
+                    type: string;
+                    maxLength: number;
+                };
+                visitorId: {
+                    type: string;
+                    maxLength: number;
+                };
+                ipAddress: {
+                    type: string;
+                    maxLength: number;
+                };
+                userAgent: {
+                    type: string;
+                    maxLength: number;
+                };
+                userId: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                };
+            };
+        };
+    };
 };
 export default _default;

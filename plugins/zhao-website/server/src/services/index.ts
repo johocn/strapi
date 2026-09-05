@@ -27,6 +27,7 @@ import seoMeta from "./seo-meta";
 import cache from "./cache";
 import feed from "./feed";
 import redirect from "./redirect";
+import inviteTrace from "./invite-trace";
 
 export default {
   "seo-config": seoConfig,
@@ -58,4 +59,5 @@ export default {
   "cache": cache,
   "feed": feed,
   "redirect": redirect,
+  "invite-trace": inviteTrace,
 };
