@@ -5349,11 +5349,13 @@ const ssoInvite = ({ strapi }) => {
   };
   const getLatestLandingAt = async (userId) => {
     try {
-      const rel = await strapi.db.query(REFERRAL_RELATION_UID).findOne({
+      const rels = await strapi.db.query(REFERRAL_RELATION_UID).findMany({
         where: { inviter: { id: userId } },
-        orderBy: { createdAt: "desc" },
+        orderBy: { id: "desc" },
+        limit: 1,
         select: ["createdAt"]
       });
+      const rel = rels?.[0];
       return rel?.createdAt ? new Date(rel.createdAt).getTime() : null;
     } catch (e) {
       strapi.log.warn(`[sso-invite] 查询最近邀约落地失败: ${e.message}`);

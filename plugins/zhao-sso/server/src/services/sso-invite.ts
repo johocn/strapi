@@ -241,11 +241,14 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
    */
   const getLatestLandingAt = async (userId: number): Promise<number | null> => {
     try {
-      const rel = await strapi.db.query(REFERRAL_RELATION_UID).findOne({
+      // 用自增主键 id 倒序取最新一条：id 单调递增，新落地必然更新；避免依赖 createdAt 排序
+      const rels = await strapi.db.query(REFERRAL_RELATION_UID).findMany({
         where: { inviter: { id: userId } },
-        orderBy: { createdAt: "desc" },
+        orderBy: { id: "desc" },
+        limit: 1,
         select: ["createdAt"],
       });
+      const rel = rels?.[0];
       return rel?.createdAt ? new Date(rel.createdAt).getTime() : null;
     } catch (e: any) {
       strapi.log.warn(`[sso-invite] 查询最近邀约落地失败: ${e.message}`);
