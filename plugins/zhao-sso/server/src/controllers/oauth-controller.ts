@@ -57,6 +57,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         const userService = strapi.plugin("zhao-sso").service("sso-user");
         const user = await userService.findById(userId);
 
+        // 注入用户自有邀请码（与 exchangeToken 返回结构保持一致）
+        const ownInviteCode = (await strapi.plugin("zhao-sso").service("sso-invite").ensureOwnInviteCode(user.id, app_code)) || "";
+        user.inviteCode = ownInviteCode;
+        user.ownInviteCode = ownInviteCode;
+
         await userService.updateLoginInfo(user.id, channelCode);
         const roles = await authService.getUserRoles(user.id, app_code);
         const tokenPair = await strapi.plugin("zhao-sso").service("sso-jwt").signTokenPair({
@@ -145,6 +150,12 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       // 4. 签发 token 对
       const userService = strapi.plugin("zhao-sso").service("sso-user");
       const user = await userService.findById(userId);
+
+      // 注入用户自有邀请码：C 端 getInviteCode() 读 user.inviteCode，
+      // 登录后即可用真实码分享（而非前端自造临时码）；幂等（有码返回无码生成）
+      const ownInviteCode = (await strapi.plugin("zhao-sso").service("sso-invite").ensureOwnInviteCode(user.id, app_code)) || "";
+      user.inviteCode = ownInviteCode;
+      user.ownInviteCode = ownInviteCode;
 
       const roles = await authService.getUserRoles(user.id, app_code);
       const tokenPair = await strapi.plugin("zhao-sso").service("sso-jwt").signTokenPair({

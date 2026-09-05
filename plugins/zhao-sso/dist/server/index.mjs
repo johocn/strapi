@@ -856,6 +856,9 @@ const oauthController = ({ strapi }) => ({
         const { userId, channelCode, isNew } = await oauthService.exchangeCode({ code, appCode: app_code, appSecret: app_secret, redirectUri: redirect_uri });
         const userService = strapi.plugin("zhao-sso").service("sso-user");
         const user = await userService.findById(userId);
+        const ownInviteCode = await strapi.plugin("zhao-sso").service("sso-invite").ensureOwnInviteCode(user.id, app_code) || "";
+        user.inviteCode = ownInviteCode;
+        user.ownInviteCode = ownInviteCode;
         await userService.updateLoginInfo(user.id, channelCode);
         const roles = await authService.getUserRoles(user.id, app_code);
         const tokenPair = await strapi.plugin("zhao-sso").service("sso-jwt").signTokenPair({
@@ -933,6 +936,9 @@ const oauthController = ({ strapi }) => ({
       });
       const userService = strapi.plugin("zhao-sso").service("sso-user");
       const user = await userService.findById(userId);
+      const ownInviteCode = await strapi.plugin("zhao-sso").service("sso-invite").ensureOwnInviteCode(user.id, app_code) || "";
+      user.inviteCode = ownInviteCode;
+      user.ownInviteCode = ownInviteCode;
       const roles = await authService.getUserRoles(user.id, app_code);
       const tokenPair = await strapi.plugin("zhao-sso").service("sso-jwt").signTokenPair({
         sub: user.uuid,
