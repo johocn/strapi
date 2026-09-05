@@ -4214,6 +4214,14 @@ const authController = ({ strapi: strapi2 }) => ({
         ctx.body = { error: "同步失败" };
         return;
       }
+      try {
+        const memberService = strapi2.plugin("zhao-channel")?.service("channel-member");
+        if (memberService && typeof memberService.ensureDefaultChannel === "function") {
+          await memberService.ensureDefaultChannel(Number(result.ssoId), ctx.state?.siteDocumentId);
+        }
+      } catch (e) {
+        strapi2.log.warn(`[zhao-auth] syncSsoProfile 分配默认渠道失败: ${e.message}`);
+      }
       ctx.body = { success: true, ...result };
     } catch (error) {
       strapi2.log.error(`[zhao-auth] syncSsoProfile failed: ${error.message}`);

@@ -379,6 +379,15 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
           }
         }
       }
+      // 兜底：无站点上下文（如自然注册/SSO 无站点）或站点无渠道时，回退到系统第一个启用渠道（按 id 升序，即平台根渠道）
+      if (!channelId) {
+        const firstChannel: any = await strapi.db.query(CHANNEL_UID).findOne({
+          where: { status: true },
+          orderBy: { id: "asc" },
+          select: ["id"],
+        });
+        if (firstChannel) channelId = firstChannel.id ?? null;
+      }
       if (!channelId) return null;
 
       await strapi.db.query(CHANNEL_MEMBER_UID).create({

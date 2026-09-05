@@ -5519,7 +5519,7 @@ const channel$1 = ({ strapi }) => ({
       const parsed = validateOrThrow(registerSchema, ctx.request.body, ctx);
       if (!parsed) return;
       const service = strapi.plugin("zhao-channel").service("channel");
-      const result = await service.register(parsed);
+      const result = await service.register(parsed, { newUser: true });
       let token = null;
       if (result.user) {
         const jwtService = strapi.plugin("zhao-auth").service("jwt");
@@ -6764,7 +6764,7 @@ const channel = ({ strapi }) => ({
   /**
    * 通过邀请码注册子渠道，并创建登录用户
    */
-  async register(data) {
+  async register(data, opts) {
     const parentChannel = await strapi.db.query(CHANNEL_UID$2).findOne({
       where: { code: data.code }
     });
@@ -6773,6 +6773,10 @@ const channel = ({ strapi }) => ({
     }
     if (!parentChannel.status) {
       throwErr$1("030104", 403, "渠道已被禁用");
+    }
+    const autoCreateChannel = process.env.CHANNEL_AUTO_CREATE_CHANNEL === "true";
+    if (opts?.newUser === true && !autoCreateChannel) {
+      return this.registerAsMember(parentChannel, data);
     }
     if (isLeafTier(parentChannel.channelTier)) {
       throwErr$1("030105", 400, "渠道层级深度超限");
@@ -6901,6 +6905,48 @@ const channel = ({ strapi }) => ({
       };
     });
     return result;
+  },
+  /**
+   * 加入上级渠道模式：关闭"每用户单建渠道"后，新用户注册改为加入上级渠道成为成员
+   * 复用 channel-member.joinByInvite（channel-member role=member + user-invite 分销绑定 + 幂等）
+   */
+  async registerAsMember(parentChannel, data) {
+    if (!data.email || !data.username || !data.password) {
+      throwErr$1("030111", 400, "新用户注册必须提供 email/username/password");
+    }
+    return strapi.db.transaction(async () => {
+      const existingByEmail = await strapi.db.query("plugin::users-permissions.user").findOne({
+        where: { email: data.email }
+      });
+      if (existingByEmail) {
+        throwErr$1("030107", 409, "该邮箱已被注册");
+      }
+      const existingByUsername = await strapi.db.query("plugin::users-permissions.user").findOne({
+        where: { username: data.username }
+      });
+      if (existingByUsername) {
+        throwErr$1("030108", 409, "该用户名已被注册");
+      }
+      const user = await runWithContext(
+        "/admin/channel/register-as-member",
+        () => strapi.plugin("zhao-auth").service("auth").createUser({
+          email: data.email,
+          username: data.username,
+          password: data.password
+        })
+      );
+      const joined = await strapi.plugin("zhao-channel").service("channel-member").joinByInvite(user.id, data.code);
+      return {
+        user: { id: user.id, email: user.email, username: user.username },
+        joinedChannel: {
+          id: parentChannel.id,
+          name: parentChannel.name,
+          code: parentChannel.code,
+          channelTier: parentChannel.channelTier
+        },
+        member: joined
+      };
+    });
   },
   /**
    * 获取渠道网络（父+直接子渠道）
@@ -7388,6 +7434,14 @@ const channelMember = ({ strapi }) => ({
             channelId = siteChannels[0].id ?? null;
           }
         }
+      }
+      if (!channelId) {
+        const firstChannel = await strapi.db.query(CHANNEL_UID$1).findOne({
+          where: { status: true },
+          orderBy: { id: "asc" },
+          select: ["id"]
+        });
+        if (firstChannel) channelId = firstChannel.id ?? null;
       }
       if (!channelId) return null;
       await strapi.db.query(CHANNEL_MEMBER_UID$2).create({

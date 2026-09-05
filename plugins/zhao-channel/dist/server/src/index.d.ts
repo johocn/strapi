@@ -218,7 +218,22 @@ declare const _default: {
                 email?: string;
                 username?: string;
                 password?: string;
+            }, opts?: {
+                newUser?: boolean;
             }): Promise<{
+                user: {
+                    id: any;
+                    email: any;
+                    username: any;
+                };
+                joinedChannel: {
+                    id: any;
+                    name: any;
+                    code: any;
+                    channelTier: any;
+                };
+                member: any;
+            } | {
                 user?: {
                     id: any;
                     email: any;
@@ -232,6 +247,25 @@ declare const _default: {
                 path: any;
                 depth: any;
                 parentChannelId: any;
+            }>;
+            registerAsMember(parentChannel: any, data: {
+                code: string;
+                email?: string;
+                username?: string;
+                password?: string;
+            }): Promise<{
+                user: {
+                    id: any;
+                    email: any;
+                    username: any;
+                };
+                joinedChannel: {
+                    id: any;
+                    name: any;
+                    code: any;
+                    channelTier: any;
+                };
+                member: any;
             }>;
             getNetwork(id: number): Promise<{
                 channel: {

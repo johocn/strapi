@@ -140,7 +140,22 @@ declare const _default: ({ strapi }: {
         email?: string;
         username?: string;
         password?: string;
+    }, opts?: {
+        newUser?: boolean;
     }): Promise<{
+        user: {
+            id: any;
+            email: any;
+            username: any;
+        };
+        joinedChannel: {
+            id: any;
+            name: any;
+            code: any;
+            channelTier: any;
+        };
+        member: any;
+    } | {
         user?: {
             id: any;
             email: any;
@@ -154,6 +169,29 @@ declare const _default: ({ strapi }: {
         path: any;
         depth: any;
         parentChannelId: any;
+    }>;
+    /**
+     * 加入上级渠道模式：关闭"每用户单建渠道"后，新用户注册改为加入上级渠道成为成员
+     * 复用 channel-member.joinByInvite（channel-member role=member + user-invite 分销绑定 + 幂等）
+     */
+    registerAsMember(parentChannel: any, data: {
+        code: string;
+        email?: string;
+        username?: string;
+        password?: string;
+    }): Promise<{
+        user: {
+            id: any;
+            email: any;
+            username: any;
+        };
+        joinedChannel: {
+            id: any;
+            name: any;
+            code: any;
+            channelTier: any;
+        };
+        member: any;
     }>;
     /**
      * 获取渠道网络（父+直接子渠道）

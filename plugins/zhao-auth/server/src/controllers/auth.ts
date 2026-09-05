@@ -267,6 +267,15 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       if (!result) {
         ctx.status = 500; ctx.body = { error: "同步失败" }; return;
       }
+      // SSO 用户同步后补默认渠道（无站点上下文时已在内兜底到系统第一个启用渠道），确保无邀请码的自然用户也有渠道归属
+      try {
+        const memberService = strapi.plugin("zhao-channel")?.service("channel-member");
+        if (memberService && typeof memberService.ensureDefaultChannel === "function") {
+          await memberService.ensureDefaultChannel(Number(result.ssoId), ctx.state?.siteDocumentId);
+        }
+      } catch (e) {
+        strapi.log.warn(`[zhao-auth] syncSsoProfile 分配默认渠道失败: ${(e as Error).message}`);
+      }
       ctx.body = { success: true, ...result };
     } catch (error: any) {
       strapi.log.error(`[zhao-auth] syncSsoProfile failed: ${error.message}`);
