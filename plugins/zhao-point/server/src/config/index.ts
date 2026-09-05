@@ -12,11 +12,11 @@ export default {
       browse_article:        { points: 3,    limitPerDay: 10, isOneTime: false, description: "浏览文章",         taskGroup: "interact", extraConfig: {} },
       like_article:          { points: 1,    limitPerDay: 20, isOneTime: false, description: "文章点赞",         taskGroup: "interact", extraConfig: {} },
       comment_article:       { points: 2,    limitPerDay: 10, isOneTime: false, description: "文章评论",         taskGroup: "interact", extraConfig: {} },
-      share_article:         { points: 3,    limitPerDay: 5,  isOneTime: false, description: "文章分享",         taskGroup: "interact", extraConfig: {} },
+      share_article:         { points: 3,    limitPerDay: 5,  isOneTime: false, description: "文章分享",         taskGroup: "interact", extraConfig: { intervalMinutes: 30 } },
       watch_video:           { points: 5,    limitPerDay: 10, isOneTime: false, description: "观看视频",         taskGroup: "interact", extraConfig: {} },
       like_video:            { points: 1,    limitPerDay: 20, isOneTime: false, description: "视频点赞",         taskGroup: "interact", extraConfig: {} },
       comment_video:         { points: 2,    limitPerDay: 10, isOneTime: false, description: "视频评论",         taskGroup: "interact", extraConfig: {} },
-      share_video:           { points: 3,    limitPerDay: 5,  isOneTime: false, description: "视频分享",         taskGroup: "interact", extraConfig: {} },
+      share_video:           { points: 3,    limitPerDay: 5,  isOneTime: false, description: "视频分享",         taskGroup: "interact", extraConfig: { intervalMinutes: 30 } },
 
       // 广告类 (taskGroup: interact)
       click_ad:              { points: 1,    limitPerDay: 20, isOneTime: false, description: "点击广告",         taskGroup: "interact", extraConfig: {} },

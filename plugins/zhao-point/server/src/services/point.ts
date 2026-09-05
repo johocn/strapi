@@ -317,8 +317,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         }
       }
 
-      // 冷却校验：分享领分以「好友点击」为成功判定，冷却从该维度首次点击起算，后续点击不更新
-      const interval = Number((rule.extraConfig as any)?.intervalMinutes) || 0;
+      // 冷却校验：分享领分以「好友点击」为成功判定，冷却从该维度首次点击起算，后续点击不更新。
+      // 分享类任务未配置 intervalMinutes 时统一兜底 30（与 getShareStatus 一致，保证落地消耗分支必然进入）
+      const interval = isShareAction(action)
+        ? (Number((rule.extraConfig as any)?.intervalMinutes) || 30)
+        : (Number((rule.extraConfig as any)?.intervalMinutes) || 0);
       if (interval > 0 && isShareAction(action)) {
         const dimType = ["activity", "task"].includes(params.dimType || "") ? params.dimType! : "activity";
         const dimId = params.dimType ? params.dimId : params.activityId;

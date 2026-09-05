@@ -76,7 +76,9 @@ declare const _default: {
                     isOneTime: boolean;
                     description: string;
                     taskGroup: string;
-                    extraConfig: {};
+                    extraConfig: {
+                        intervalMinutes: number;
+                    };
                 };
                 watch_video: {
                     points: number;
@@ -108,7 +110,9 @@ declare const _default: {
                     isOneTime: boolean;
                     description: string;
                     taskGroup: string;
-                    extraConfig: {};
+                    extraConfig: {
+                        intervalMinutes: number;
+                    };
                 };
                 click_ad: {
                     points: number;
@@ -2495,7 +2499,9 @@ declare const _default: {
                         isOneTime: boolean;
                         description: string;
                         taskGroup: string;
-                        extraConfig: {};
+                        extraConfig: {
+                            intervalMinutes: number;
+                        };
                     };
                     watch_video: {
                         points: number;
@@ -2527,7 +2533,9 @@ declare const _default: {
                         isOneTime: boolean;
                         description: string;
                         taskGroup: string;
-                        extraConfig: {};
+                        extraConfig: {
+                            intervalMinutes: number;
+                        };
                     };
                     click_ad: {
                         points: number;

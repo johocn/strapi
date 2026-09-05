@@ -37,11 +37,11 @@ const config$1 = {
       browse_article: { points: 3, limitPerDay: 10, isOneTime: false, description: "浏览文章", taskGroup: "interact", extraConfig: {} },
       like_article: { points: 1, limitPerDay: 20, isOneTime: false, description: "文章点赞", taskGroup: "interact", extraConfig: {} },
       comment_article: { points: 2, limitPerDay: 10, isOneTime: false, description: "文章评论", taskGroup: "interact", extraConfig: {} },
-      share_article: { points: 3, limitPerDay: 5, isOneTime: false, description: "文章分享", taskGroup: "interact", extraConfig: {} },
+      share_article: { points: 3, limitPerDay: 5, isOneTime: false, description: "文章分享", taskGroup: "interact", extraConfig: { intervalMinutes: 30 } },
       watch_video: { points: 5, limitPerDay: 10, isOneTime: false, description: "观看视频", taskGroup: "interact", extraConfig: {} },
       like_video: { points: 1, limitPerDay: 20, isOneTime: false, description: "视频点赞", taskGroup: "interact", extraConfig: {} },
       comment_video: { points: 2, limitPerDay: 10, isOneTime: false, description: "视频评论", taskGroup: "interact", extraConfig: {} },
-      share_video: { points: 3, limitPerDay: 5, isOneTime: false, description: "视频分享", taskGroup: "interact", extraConfig: {} },
+      share_video: { points: 3, limitPerDay: 5, isOneTime: false, description: "视频分享", taskGroup: "interact", extraConfig: { intervalMinutes: 30 } },
       // 广告类 (taskGroup: interact)
       click_ad: { points: 1, limitPerDay: 20, isOneTime: false, description: "点击广告", taskGroup: "interact", extraConfig: {} },
       watch_ad: { points: 3, limitPerDay: 10, isOneTime: false, description: "观看完整广告视频", taskGroup: "interact", extraConfig: {} },
@@ -36137,7 +36137,7 @@ const point = ({ strapi: strapi2 }) => {
           throwError("POINT_004", `已达每日积分上限 (action=${action})`, { action, limit: rule.limitPerDay });
         }
       }
-      const interval = Number(rule.extraConfig?.intervalMinutes) || 0;
+      const interval = isShareAction(action) ? Number(rule.extraConfig?.intervalMinutes) || 30 : Number(rule.extraConfig?.intervalMinutes) || 0;
       if (interval > 0 && isShareAction(action)) {
         const dimType = ["activity", "task"].includes(params.dimType || "") ? params.dimType : "activity";
         const dimId = params.dimType ? params.dimId : params.activityId;
