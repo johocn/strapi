@@ -2857,6 +2857,7 @@ declare const _default: {
             getTasks: (userId: number) => Promise<Record<string, any[]>>;
             getShareStatus: (params: {
                 userId: number | string;
+                action?: string;
                 dimType?: string;
                 dimId?: string | number | null;
                 activityId?: string | number | null;
@@ -2876,6 +2877,8 @@ declare const _default: {
                 intervalMinutes: number;
                 landedAt: number;
             }>;
+            SHARE_ACTIONS: readonly ["activity_share", "share_article", "share_video"];
+            isShareAction: (action?: string | null) => boolean;
         };
         redemption: ({ strapi }: {
             strapi: import('@strapi/types/dist/core').Strapi;

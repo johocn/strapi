@@ -649,15 +649,16 @@ const point$1 = ({ strapi: strapi2 }) => {
         const userId = getUserId(ctx);
         const body = ctx.request.body?.data || ctx.request.body || {};
         const { action } = body;
-        if (action !== "activity_share") {
+        const pointSvc = strapi2.plugin("zhao-point").service("point");
+        const SHAres = pointSvc?.SHARE_ACTIONS ?? [];
+        if (!SHAres.includes(action)) {
           ctx.status = 400;
           ctx.body = { error: "不允许领取该类型积分", code: "POINT_021" };
           return;
         }
         const dimType = ["activity", "task"].includes(body.dimType || "") ? body.dimType : "activity";
         const dimId = body.dimId != null ? body.dimId : body.activityId;
-        const pointSvc = strapi2.plugin("zhao-point").service("point");
-        const st = await pointSvc.getShareStatus({ userId, dimType, dimId });
+        const st = await pointSvc.getShareStatus({ userId, dimType, dimId, action });
         if (!st?.canClaim) {
           if (st?.waitNewLanding) {
             ctx.status = 400;
@@ -1098,8 +1099,8 @@ const point$1 = ({ strapi: strapi2 }) => {
     async shareStatus(ctx) {
       try {
         const userId = getUserId(ctx);
-        const { dimType, dimId, activityId } = ctx.query || {};
-        const result = await strapi2.plugin("zhao-point").service("point").getShareStatus({ userId, dimType, dimId, activityId });
+        const { dimType, dimId, activityId, action } = ctx.query || {};
+        const result = await strapi2.plugin("zhao-point").service("point").getShareStatus({ userId, dimType, dimId, activityId, action });
         ctx.body = wrap$6(result);
       } catch (e) {
         ctx.status = e.status || 500;
@@ -35944,6 +35945,8 @@ const destroy = ({ strapi: _strapi }) => {
 const RECORD_UID$1 = "plugin::zhao-point.point-record";
 const ACTIVITY_UID$6 = "plugin::zhao-point.activity";
 const getDefaultConfig = () => config$1.default;
+const SHARE_ACTIONS = ["activity_share", "share_article", "share_video"];
+const isShareAction = (action) => !!action && SHARE_ACTIONS.includes(action);
 const point = ({ strapi: strapi2 }) => {
   const RULE_UID2 = "plugin::zhao-point.point-rule";
   const getMergedRule = async (action) => {
@@ -36028,7 +36031,7 @@ const point = ({ strapi: strapi2 }) => {
   const getConsumedLandingIds = async (userId) => {
     const ids = /* @__PURE__ */ new Set();
     const records = await strapi2.db.query(RECORD_UID$1).findMany({
-      where: { user: userId, action: "activity_share" },
+      where: { user: userId, orderId: { $contains: "landing:" } },
       select: ["orderId"]
     });
     for (const r of records) {
@@ -36052,14 +36055,14 @@ const point = ({ strapi: strapi2 }) => {
       // 最近未消耗落地时刻（若存在）
     };
   };
-  const countTodayShareByDim = async (userId, dimType, dimId) => {
+  const countTodayShareByDim = async (userId, action, dimType, dimId) => {
     const today = /* @__PURE__ */ new Date();
     today.setHours(0, 0, 0, 0);
     const tag = `share:${dimType}:${dimId ?? ""}`;
     const count = await strapi2.db.query(RECORD_UID$1).count({
       where: {
         user: userId,
-        action: "activity_share",
+        action,
         source: tag,
         createdAt: { $gte: today.toISOString() }
       }
@@ -36121,37 +36124,35 @@ const point = ({ strapi: strapi2 }) => {
         }
       }
       const interval = Number(rule.extraConfig?.intervalMinutes) || 0;
-      if (interval > 0) {
-        if (action === "activity_share") {
-          const dimType = ["activity", "task"].includes(params.dimType || "") ? params.dimType : "activity";
-          const dimId = params.dimType ? params.dimId : params.activityId;
-          if (rule.limitPerDay > 0) {
-            const dimCount = await countTodayShareByDim(userId, dimType, dimId);
-            if (dimCount >= rule.limitPerDay) {
-              throwError("POINT_004", `已达当日分享次数上限 (action=${action})`, { action, limit: rule.limitPerDay });
-            }
+      if (interval > 0 && isShareAction(action)) {
+        const dimType = ["activity", "task"].includes(params.dimType || "") ? params.dimType : "activity";
+        const dimId = params.dimType ? params.dimId : params.activityId;
+        if (rule.limitPerDay > 0) {
+          const dimCount = await countTodayShareByDim(userId, action, dimType, dimId);
+          if (dimCount >= rule.limitPerDay) {
+            throwError("POINT_004", `已达当日分享次数上限 (action=${action})`, { action, limit: rule.limitPerDay });
           }
-          const unconsumed = await listUnconsumedLandings(userId);
-          const landing = unconsumed[0];
-          if (!landing) {
-            const state = await resolveShareLandingState(userId);
-            if (!state.hasLanding) {
-              throwError("POINT_024", "分享出去等待好友注册", { action, dimType, dimId });
-            }
-            throwError("POINT_025", "已领取过该好友注册的分享积分，等待新的好友注册落地", { action, dimType, dimId });
+        }
+        const unconsumed = await listUnconsumedLandings(userId);
+        const landing = unconsumed[0];
+        if (!landing) {
+          const state = await resolveShareLandingState(userId);
+          if (!state.hasLanding) {
+            throwError("POINT_024", "分享出去等待好友注册", { action, dimType, dimId });
           }
-          const elapsed = Date.now() - landing.createdAt;
-          if (elapsed < interval * 60 * 1e3) {
-            const remainMin = Math.max(1, Math.ceil((interval * 60 * 1e3 - elapsed) / 6e4));
-            throwError("POINT_020", `邀约落地满 ${interval} 分钟后可领取，还剩 ${remainMin} 分钟`, { action, intervalMinutes: interval, landAt: landing.createdAt });
-          }
-          params.orderId = `landing:${landing.id}`;
-        } else {
-          const remainMs = await cooldownRemainingMs(userId, action, interval);
-          if (remainMs > 0) {
-            const min = Math.ceil(remainMs / 6e4);
-            throwError("POINT_020", `请${Math.max(1, min)}分钟后重试`, { action, intervalMinutes: interval });
-          }
+          throwError("POINT_025", "已领取过该好友注册的分享积分，等待新的好友注册落地", { action, dimType, dimId });
+        }
+        const elapsed = Date.now() - landing.createdAt;
+        if (elapsed < interval * 60 * 1e3) {
+          const remainMin = Math.max(1, Math.ceil((interval * 60 * 1e3 - elapsed) / 6e4));
+          throwError("POINT_020", `邀约落地满 ${interval} 分钟后可领取，还剩 ${remainMin} 分钟`, { action, intervalMinutes: interval, landAt: landing.createdAt });
+        }
+        params.orderId = `landing:${landing.id}`;
+      } else {
+        const remainMs = await cooldownRemainingMs(userId, action, interval);
+        if (remainMs > 0) {
+          const min = Math.ceil(remainMs / 6e4);
+          throwError("POINT_020", `请${Math.max(1, min)}分钟后重试`, { action, intervalMinutes: interval });
         }
       }
       const balance = await getLatestBalance(userId, trx);
@@ -36684,10 +36685,11 @@ const point = ({ strapi: strapi2 }) => {
     return groups;
   };
   const getShareStatus = async (params) => {
+    const shareAction = isShareAction(params.action) ? params.action : "activity_share";
     const dimType = ["activity", "task"].includes(params.dimType || "") ? params.dimType : "activity";
     const dimId = params.dimType ? params.dimId : params.activityId ?? null;
     const { userId } = params;
-    const rule = await getMergedRule("activity_share");
+    const rule = await getMergedRule(shareAction);
     const interval = Number(rule?.extraConfig?.intervalMinutes) || 30;
     const limitPerDay = Number(rule?.limitPerDay) || 0;
     let points = Number(rule?.points) || 5;
@@ -36704,7 +36706,7 @@ const point = ({ strapi: strapi2 }) => {
     }
     const unconsumed = await listUnconsumedLandings(userId);
     const hasAnyLanding = (unconsumed.length > 0 ? unconsumed : await listAllLandings(userId)).length > 0;
-    const dailyCount = await countTodayShareByDim(userId, dimType, dimId);
+    const dailyCount = await countTodayShareByDim(userId, shareAction, dimType, dimId);
     const nextAt = unconsumed[0]?.createdAt ?? null;
     let cooldownRemainingMs2 = 0;
     let canClaim = false;
@@ -36721,7 +36723,7 @@ const point = ({ strapi: strapi2 }) => {
     }
     if (limitPerDay > 0 && dailyCount >= limitPerDay) canClaim = false;
     return {
-      action: "activity_share",
+      action: shareAction,
       dimType,
       dimId: dimId != null ? String(dimId) : void 0,
       canClaim,
@@ -36760,7 +36762,9 @@ const point = ({ strapi: strapi2 }) => {
     findVerificationByDocumentId,
     getMergedRule,
     getTasks,
-    getShareStatus
+    getShareStatus,
+    SHARE_ACTIONS,
+    isShareAction
   };
 };
 const PRODUCT_UID = "plugin::zhao-point.point-product";

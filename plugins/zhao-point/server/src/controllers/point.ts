@@ -64,17 +64,18 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       const userId = getUserId(ctx);
       const body = ctx.request.body?.data || ctx.request.body || {};
       const { action } = body;
-      if (action !== "activity_share") {
+      const pointSvc = strapi.plugin("zhao-point").service("point");
+      const SHAres: readonly string[] = pointSvc?.SHARE_ACTIONS ?? [];
+      if (!SHAres.includes(action)) {
         ctx.status = 400;
         ctx.body = { error: "不允许领取该类型积分", code: "POINT_021" };
         return;
       }
       const dimType = (["activity", "task"].includes(body.dimType || "")) ? body.dimType : "activity";
       const dimId = body.dimId != null ? body.dimId : body.activityId;
-      const pointSvc = strapi.plugin("zhao-point").service("point");
 
       // 前置邀约落地校验：可领以 getShareStatus 为准（落地满 interval 分钟、未消耗、未达每日上限）
-      const st = await pointSvc.getShareStatus({ userId, dimType, dimId });
+      const st = await pointSvc.getShareStatus({ userId, dimType, dimId, action });
       if (!st?.canClaim) {
         if (st?.waitNewLanding) {
           ctx.status = 400;
@@ -514,8 +515,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   async shareStatus(ctx: any) {
     try {
       const userId = getUserId(ctx);
-      const { dimType, dimId, activityId } = ctx.query || {};
-      const result = await strapi.plugin("zhao-point").service("point").getShareStatus({ userId, dimType, dimId, activityId });
+      const { dimType, dimId, activityId, action } = ctx.query || {};
+      const result = await strapi.plugin("zhao-point").service("point").getShareStatus({ userId, dimType, dimId, activityId, action });
       ctx.body = wrap(result);
     } catch (e: any) {
       ctx.status = (e as any).status || 500;

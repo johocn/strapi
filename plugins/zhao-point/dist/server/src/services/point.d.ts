@@ -38,6 +38,8 @@ export interface BatchAdjustItem {
     action?: string;
     remark?: string;
 }
+export declare const SHARE_ACTIONS: readonly ["activity_share", "share_article", "share_video"];
+export declare const isShareAction: (action?: string | null) => boolean;
 declare const _default: ({ strapi }: {
     strapi: Core.Strapi;
 }) => {
@@ -589,6 +591,7 @@ declare const _default: ({ strapi }: {
     getTasks: (userId: number) => Promise<Record<string, any[]>>;
     getShareStatus: (params: {
         userId: number | string;
+        action?: string;
         dimType?: string;
         dimId?: string | number | null;
         activityId?: string | number | null;
@@ -608,5 +611,7 @@ declare const _default: ({ strapi }: {
         intervalMinutes: number;
         landedAt: number;
     }>;
+    SHARE_ACTIONS: readonly ["activity_share", "share_article", "share_video"];
+    isShareAction: (action?: string | null) => boolean;
 };
 export default _default;

@@ -54,6 +54,12 @@ export interface BatchAdjustItem {
   remark?: string;
 }
 
+// 分享领分类任务白名单：任务中心/活动页可触发「分享→邀约落地领分」的 action。
+// 分享资源（邀约落地）对所有分享任务共享，领分逻辑统一走落地满 interval 分钟可领。
+export const SHARE_ACTIONS = ["activity_share", "share_article", "share_video"] as const;
+export const isShareAction = (action?: string | null): boolean =>
+  !!action && (SHARE_ACTIONS as readonly string[]).includes(action);
+
 export default ({ strapi }: { strapi: Core.Strapi }) => {
   // ===== 辅助方法 =====
 
@@ -165,11 +171,12 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     }
   };
 
-  /** 已被领取消耗的落地 id 集合：来自该用户活动分享积分记录的 orderId 标记（landing:{relationId}） */
+  /** 已被领取消耗的落地 id 集合：来自该用户任意分享领分积分记录的 orderId 标记（landing:{relationId}）。
+   *  落地资源对所有分享任务共享，因此不按单个 action 过滤，凡带 landing: 标记均视为已消耗 */
   const getConsumedLandingIds = async (userId: number | string): Promise<Set<number>> => {
     const ids = new Set<number>();
     const records = await strapi.db.query(RECORD_UID).findMany({
-      where: { user: userId, action: "activity_share" },
+      where: { user: userId, orderId: { $contains: "landing:" } },
       select: ["orderId"],
     });
     for (const r of records) {
@@ -200,9 +207,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     };
   };
 
-  // 维度化每日领分计数：按 point_record.source 标签（share:{dimType}:{dimId}）统计当日
+  // 维度化每日领分计数：按 point_record.source 标签（share:{dimType}:{dimId}）统计当日，按 action 各自核算
   const countTodayShareByDim = async (
     userId: number | string,
+    action: string,
     dimType: string,
     dimId: string | number | null
   ): Promise<number> => {
@@ -212,7 +220,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     const count = await strapi.db.query(RECORD_UID).count({
       where: {
         user: userId,
-        action: "activity_share",
+        action,
         source: tag,
         createdAt: { $gte: today.toISOString() },
       },
@@ -311,40 +319,38 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
 
       // 冷却校验：分享领分以「好友点击」为成功判定，冷却从该维度首次点击起算，后续点击不更新
       const interval = Number((rule.extraConfig as any)?.intervalMinutes) || 0;
-      if (interval > 0) {
-        if (action === "activity_share") {
-          const dimType = ["activity", "task"].includes(params.dimType || "") ? params.dimType! : "activity";
-          const dimId = params.dimType ? params.dimId : params.activityId;
-          // 维度每日上限（同一事务内复核，防并发绕过）
-          if (rule.limitPerDay > 0) {
-            const dimCount = await countTodayShareByDim(userId, dimType, dimId);
-            if (dimCount >= rule.limitPerDay) {
-              throwError("POINT_004", `已达当日分享次数上限 (action=${action})`, { action, limit: rule.limitPerDay });
-            }
+      if (interval > 0 && isShareAction(action)) {
+        const dimType = ["activity", "task"].includes(params.dimType || "") ? params.dimType! : "activity";
+        const dimId = params.dimType ? params.dimId : params.activityId;
+        // 维度每日上限（同一事务内复核，防并发绕过）
+        if (rule.limitPerDay > 0) {
+          const dimCount = await countTodayShareByDim(userId, action, dimType, dimId);
+          if (dimCount >= rule.limitPerDay) {
+            throwError("POINT_004", `已达当日分享次数上限 (action=${action})`, { action, limit: rule.limitPerDay });
           }
-          // 取最近未消耗落地：落地满 interval 分钟后才可领一次；无可用落地需新的好友注册落地
-          const unconsumed = await listUnconsumedLandings(userId);
-          const landing = unconsumed[0];
-          if (!landing) {
-            const state = await resolveShareLandingState(userId, interval);
-            if (!state.hasLanding) {
-              throwError("POINT_024", "分享出去等待好友注册", { action, dimType, dimId });
-            }
-            throwError("POINT_025", "已领取过该好友注册的分享积分，等待新的好友注册落地", { action, dimType, dimId });
+        }
+        // 取最近未消耗落地：落地满 interval 分钟后才可领一次；无可用落地需新的好友注册落地
+        const unconsumed = await listUnconsumedLandings(userId);
+        const landing = unconsumed[0];
+        if (!landing) {
+          const state = await resolveShareLandingState(userId, interval);
+          if (!state.hasLanding) {
+            throwError("POINT_024", "分享出去等待好友注册", { action, dimType, dimId });
           }
-          const elapsed = Date.now() - landing.createdAt;
-          if (elapsed < interval * 60 * 1000) {
-            const remainMin = Math.max(1, Math.ceil((interval * 60 * 1000 - elapsed) / 60000));
-            throwError("POINT_020", `邀约落地满 ${interval} 分钟后可领取，还剩 ${remainMin} 分钟`, { action, intervalMinutes: interval, landAt: landing.createdAt });
-          }
-          // 领分成功将消耗该落地：把落地 id 写入 orderId 标记，供下次查询排除
-          params.orderId = `landing:${landing.id}`;
-        } else {
-          const remainMs = await cooldownRemainingMs(userId, action, interval);
-          if (remainMs > 0) {
-            const min = Math.ceil(remainMs / 60000);
-            throwError("POINT_020", `请${Math.max(1, min)}分钟后重试`, { action, intervalMinutes: interval });
-          }
+          throwError("POINT_025", "已领取过该好友注册的分享积分，等待新的好友注册落地", { action, dimType, dimId });
+        }
+        const elapsed = Date.now() - landing.createdAt;
+        if (elapsed < interval * 60 * 1000) {
+          const remainMin = Math.max(1, Math.ceil((interval * 60 * 1000 - elapsed) / 60000));
+          throwError("POINT_020", `邀约落地满 ${interval} 分钟后可领取，还剩 ${remainMin} 分钟`, { action, intervalMinutes: interval, landAt: landing.createdAt });
+        }
+        // 领分成功将消耗该落地：把落地 id 写入 orderId 标记，供下次查询排除
+        params.orderId = `landing:${landing.id}`;
+      } else {
+        const remainMs = await cooldownRemainingMs(userId, action, interval);
+        if (remainMs > 0) {
+          const min = Math.ceil(remainMs / 60000);
+          throwError("POINT_020", `请${Math.max(1, min)}分钟后重试`, { action, intervalMinutes: interval });
         }
       }
 
@@ -1017,18 +1023,21 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     return groups;
   };
 
-  // 分享领分状态查询：供任务中心 / 活动页点亮「领取积分」按钮、展示规则与置灰原因；支持活动/任务维度核算
+  // 分享领分状态查询：供任务中心 / 活动页点亮「领取积分」按钮、展示规则与置灰原因；支持活动/任务维度核算。
+  // action 不传则默认 activity_share（活动页兼容）；任务中心传具体分享 action 按各自规则核算
   const getShareStatus = async (params: {
     userId: number | string;
+    action?: string;
     dimType?: string;
     dimId?: string | number | null;
     activityId?: string | number | null;   // 兼容旧调用，映射到 dimType=activity
   }) => {
+    const shareAction = isShareAction(params.action) ? params.action! : "activity_share";
     const dimType = (["activity", "task"].includes(params.dimType || "")) ? params.dimType! : "activity";
     const dimId = params.dimType ? params.dimId : (params.activityId ?? null);
     const { userId } = params;
 
-    const rule = await getMergedRule("activity_share");
+    const rule = await getMergedRule(shareAction);
     const interval = Number(rule?.extraConfig?.intervalMinutes) || 30;
     const limitPerDay = Number(rule?.limitPerDay) || 0;
 
@@ -1046,7 +1055,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
 
     const unconsumed = await listUnconsumedLandings(userId);
     const hasAnyLanding = (unconsumed.length > 0 ? unconsumed : await listAllLandings(userId)).length > 0;
-    const dailyCount = await countTodayShareByDim(userId, dimType, dimId);
+    const dailyCount = await countTodayShareByDim(userId, shareAction, dimType, dimId);
 
     // 可领 = 存在「满 interval 分钟」的未消耗落地；每次领取消耗一个落地，需新的好友注册落地才能再领
     const nextAt = unconsumed[0]?.createdAt ?? null; // 最近未消耗落地时刻
@@ -1069,7 +1078,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     if (limitPerDay > 0 && dailyCount >= limitPerDay) canClaim = false;
 
     return {
-      action: "activity_share",
+      action: shareAction,
       dimType,
       dimId: dimId != null ? String(dimId) : undefined,
       canClaim,
@@ -1109,5 +1118,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     getMergedRule,
     getTasks,
     getShareStatus,
+    SHARE_ACTIONS,
+    isShareAction,
   };
 };
