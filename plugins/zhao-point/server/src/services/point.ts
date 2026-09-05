@@ -147,17 +147,57 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     return Math.max(0, intervalMinutes * 60 * 1000 - elapsed);
   };
 
-  // 邀约落地：最近一次被邀请人注册成功（分销关系建立）时刻；经 zhao-sso 只读门面获取
-  const getLatestInviteLandingAt = async (userId: number | string): Promise<number | null> => {
+  /**
+   * 邀约落地管理（分享领分核心）：经 zhao-sso 只读门面获取该用户全部落地，
+   * 排除已被领取消耗的落地，得到【可用落地】。
+   * 规则：落地（有好友通过邀请链接注册成功）满 interval 分钟后方可领一次，
+   * 每次领取消耗一个可用落地，需新的好友注册落地才能再领。每日上限见 rule.limitPerDay。
+   */
+  const listAllLandings = async (userId: number | string): Promise<Array<{ id: number; createdAt: number }>> => {
     try {
       const invSvc = strapi.plugin("zhao-sso")?.service("sso-invite");
-      if (!invSvc?.getLatestLandingAt) return null;
-      const ts = await invSvc.getLatestLandingAt(Number(userId));
-      return ts || null;
+      if (!invSvc?.listLandings) return [];
+      const landings = await invSvc.listLandings(Number(userId));
+      return Array.isArray(landings) ? landings : [];
     } catch (e: any) {
-      strapi.log.warn(`[zhao-point] 查询邀约落地失败: ${e.message}`);
-      return null;
+      strapi.log.warn(`[zhao-point] 查询邀约落地列表失败: ${e.message}`);
+      return [];
     }
+  };
+
+  /** 已被领取消耗的落地 id 集合：来自该用户活动分享积分记录的 orderId 标记（landing:{relationId}） */
+  const getConsumedLandingIds = async (userId: number | string): Promise<Set<number>> => {
+    const ids = new Set<number>();
+    const records = await strapi.db.query(RECORD_UID).findMany({
+      where: { user: userId, action: "activity_share" },
+      select: ["orderId"],
+    });
+    for (const r of records) {
+      const m = r.orderId ? String(r.orderId).match(/^landing:(\d+)$/) : null;
+      if (m) ids.add(Number(m[1]));
+    }
+    return ids;
+  };
+
+  /** 未消耗落地（按 id 倒序，最新在前） */
+  const listUnconsumedLandings = async (userId: number | string): Promise<Array<{ id: number; createdAt: number }>> => {
+    const all = await listAllLandings(userId);
+    const consumed = await getConsumedLandingIds(userId);
+    return all.filter((l) => !consumed.has(l.id));
+  };
+
+  /**
+   * 分享领分状态判定（与 getShareStatus 同一逻辑）：
+   * 返回 { hasLanding: 是否有落地; unconsumed: 可用(未消耗)落地数; nextAt: 最近未消耗落地时刻(null)；cooldownRemainingMs }
+   */
+  const resolveShareLandingState = async (userId: number | string, intervalMinutes: number) => {
+    const unconsumed = await listUnconsumedLandings(userId);
+    const all = unconsumed.length > 0 ? unconsumed : await listAllLandings(userId);
+    return {
+      hasLanding: all.length > 0,
+      unconsumedCount: unconsumed.length,
+      nextAt: unconsumed[0]?.createdAt ?? null, // 最近未消耗落地时刻（若存在）
+    };
   };
 
   // 维度化每日领分计数：按 point_record.source 标签（share:{dimType}:{dimId}）统计当日
@@ -282,15 +322,23 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
               throwError("POINT_004", `已达当日分享次数上限 (action=${action})`, { action, limit: rule.limitPerDay });
             }
           }
-          const landingAt = await getLatestInviteLandingAt(userId);
-          if (landingAt == null) {
-            throwError("POINT_024", "分享出去等待好友注册", { action, dimType, dimId });
+          // 取最近未消耗落地：落地满 interval 分钟后才可领一次；无可用落地需新的好友注册落地
+          const unconsumed = await listUnconsumedLandings(userId);
+          const landing = unconsumed[0];
+          if (!landing) {
+            const state = await resolveShareLandingState(userId, interval);
+            if (!state.hasLanding) {
+              throwError("POINT_024", "分享出去等待好友注册", { action, dimType, dimId });
+            }
+            throwError("POINT_025", "已领取过该好友注册的分享积分，等待新的好友注册落地", { action, dimType, dimId });
           }
-          const elapsed = Date.now() - landingAt!;
-          if (elapsed >= interval * 60 * 1000) {
-            const expiredMin = Math.floor(elapsed / 60000);
-            throwError("POINT_020", `邀约落地已超过${expiredMin}分钟，请在落地后 ${interval} 分钟内领取`, { action, intervalMinutes: interval, landAt: landingAt });
+          const elapsed = Date.now() - landing.createdAt;
+          if (elapsed < interval * 60 * 1000) {
+            const remainMin = Math.max(1, Math.ceil((interval * 60 * 1000 - elapsed) / 60000));
+            throwError("POINT_020", `邀约落地满 ${interval} 分钟后可领取，还剩 ${remainMin} 分钟`, { action, intervalMinutes: interval, landAt: landing.createdAt });
           }
+          // 领分成功将消耗该落地：把落地 id 写入 orderId 标记，供下次查询排除
+          params.orderId = `landing:${landing.id}`;
         } else {
           const remainMs = await cooldownRemainingMs(userId, action, interval);
           if (remainMs > 0) {
@@ -322,7 +370,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       const earnAmount = pointsOverride ?? rule.points;
 
       const record = await createRecord(userId, action, earnAmount, balance, "increase", {
-        source, method, remark, orderId, channelId: finalChannelId, userChannelId, expiresAt,
+        source, method, remark, orderId: params.orderId ?? orderId, channelId: finalChannelId, userChannelId, expiresAt,
       });
 
       return record;
@@ -996,20 +1044,28 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       } catch { /* 活动不存在或类型异常：回退默认分 */ }
     }
 
-    const landingAt = await getLatestInviteLandingAt(userId);
+    const unconsumed = await listUnconsumedLandings(userId);
+    const hasAnyLanding = (unconsumed.length > 0 ? unconsumed : await listAllLandings(userId)).length > 0;
     const dailyCount = await countTodayShareByDim(userId, dimType, dimId);
 
-    const hasLanding = landingAt != null;
-    // 落地进入 30 分钟可领窗口：窗口内可领，超时过期不可领（需新的邀约落地）
-    let remainingMs = 0;
-    let inWindow = false;
-    if (hasLanding) {
-      const elapsed = Date.now() - landingAt!;
-      inWindow = elapsed < interval * 60 * 1000;
-      remainingMs = Math.max(0, interval * 60 * 1000 - elapsed);
+    // 可领 = 存在「满 interval 分钟」的未消耗落地；每次领取消耗一个落地，需新的好友注册落地才能再领
+    const nextAt = unconsumed[0]?.createdAt ?? null; // 最近未消耗落地时刻
+    let cooldownRemainingMs = 0;
+    let canClaim = false;
+    let waitNewLanding = false;
+
+    if (hasAnyLanding && unconsumed.length === 0) {
+      // 有落地但全部已被领取消耗 → 需新的好友注册落地
+      waitNewLanding = true;
+    } else if (nextAt != null) {
+      const elapsed = Date.now() - nextAt;
+      if (elapsed >= interval * 60 * 1000) {
+        canClaim = true;
+      } else {
+        cooldownRemainingMs = Math.max(0, interval * 60 * 1000 - elapsed);
+      }
     }
 
-    let canClaim = hasLanding && inWindow;
     if (limitPerDay > 0 && dailyCount >= limitPerDay) canClaim = false;
 
     return {
@@ -1017,14 +1073,16 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       dimType,
       dimId: dimId != null ? String(dimId) : undefined,
       canClaim,
-      hasLanding,
-      waitLanding: !hasLanding,
+      hasLanding: hasAnyLanding,
+      waitLanding: !hasAnyLanding,
+      waitNewLanding,
       points,
-      remainingMs, // 窗口剩余毫秒（可领取期间 > 0）
+      remainingMs: cooldownRemainingMs,   // 兼容旧字段：距可领还需毫秒
+      cooldownRemainingMs,
       dailyCount,
       dailyLimit: limitPerDay,
       intervalMinutes: interval,
-      landedAt: landingAt,
+      landedAt: nextAt,
     };
   };
 

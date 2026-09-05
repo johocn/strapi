@@ -671,16 +671,32 @@ const point$1 = ({ strapi: strapi2 }) => {
         const dimType = ["activity", "task"].includes(body.dimType || "") ? body.dimType : "activity";
         const dimId = body.dimId != null ? body.dimId : body.activityId;
         const pointSvc = strapi2.plugin("zhao-point").service("point");
-        const landingAt = (await pointSvc.getShareStatus({ userId, dimType, dimId }))?.landedAt ?? null;
-        if (landingAt == null) {
+        const st = await pointSvc.getShareStatus({ userId, dimType, dimId });
+        if (!st?.canClaim) {
+          if (st?.waitNewLanding) {
+            ctx.status = 400;
+            ctx.body = { error: "已领取过该好友注册的分享积分，等待新的好友注册落地", code: "POINT_025" };
+            return;
+          }
+          if (!st?.hasLanding) {
+            ctx.status = 400;
+            ctx.body = { error: "分享出去等待好友注册", code: "POINT_024" };
+            return;
+          }
+          const cooldown = st.cooldownRemainingMs ?? 0;
+          if (cooldown > 0) {
+            const remainMin = Math.max(1, Math.ceil(cooldown / 6e4));
+            ctx.status = 400;
+            ctx.body = { error: `邀约落地满 ${st.intervalMinutes ?? 30} 分钟后可领取，还剩 ${remainMin} 分钟`, code: "POINT_020" };
+            return;
+          }
+          if ((st.dailyLimit ?? 0) > 0 && (st.dailyCount ?? 0) >= (st.dailyLimit ?? 0)) {
+            ctx.status = 400;
+            ctx.body = { error: "已达当日分享次数上限", code: "POINT_004" };
+            return;
+          }
           ctx.status = 400;
-          ctx.body = { error: "分享出去等待好友注册", code: "POINT_024" };
-          return;
-        }
-        const interval = 30;
-        if (Date.now() - landingAt >= interval * 60 * 1e3) {
-          ctx.status = 400;
-          ctx.body = { error: `邀约落地已超过${Math.max(0, interval)}分钟，请在落地后 ${interval} 分钟内领取`, code: "POINT_020" };
+          ctx.body = { error: "当前不可领取分享积分", code: "POINT_020" };
           return;
         }
         let points;
@@ -727,7 +743,7 @@ const point$1 = ({ strapi: strapi2 }) => {
         });
         ctx.body = wrap$6(record2);
       } catch (e) {
-        const status = ["POINT_001", "POINT_004", "POINT_011", "POINT_019", "POINT_020", "POINT_024"].includes(e.code) ? 400 : 500;
+        const status = ["POINT_001", "POINT_004", "POINT_011", "POINT_019", "POINT_020", "POINT_024", "POINT_025"].includes(e.code) ? 400 : 500;
         ctx.status = status;
         ctx.body = { error: e.message, code: e.code };
       }
@@ -36012,16 +36028,43 @@ const point = ({ strapi: strapi2 }) => {
     const elapsed = Date.now() - new Date(last.createdAt).getTime();
     return Math.max(0, intervalMinutes * 60 * 1e3 - elapsed);
   };
-  const getLatestInviteLandingAt = async (userId) => {
+  const listAllLandings = async (userId) => {
     try {
       const invSvc = strapi2.plugin("zhao-sso")?.service("sso-invite");
-      if (!invSvc?.getLatestLandingAt) return null;
-      const ts = await invSvc.getLatestLandingAt(Number(userId));
-      return ts || null;
+      if (!invSvc?.listLandings) return [];
+      const landings = await invSvc.listLandings(Number(userId));
+      return Array.isArray(landings) ? landings : [];
     } catch (e) {
-      strapi2.log.warn(`[zhao-point] 查询邀约落地失败: ${e.message}`);
-      return null;
+      strapi2.log.warn(`[zhao-point] 查询邀约落地列表失败: ${e.message}`);
+      return [];
     }
+  };
+  const getConsumedLandingIds = async (userId) => {
+    const ids = /* @__PURE__ */ new Set();
+    const records = await strapi2.db.query(RECORD_UID$1).findMany({
+      where: { user: userId, action: "activity_share" },
+      select: ["orderId"]
+    });
+    for (const r of records) {
+      const m = r.orderId ? String(r.orderId).match(/^landing:(\d+)$/) : null;
+      if (m) ids.add(Number(m[1]));
+    }
+    return ids;
+  };
+  const listUnconsumedLandings = async (userId) => {
+    const all = await listAllLandings(userId);
+    const consumed = await getConsumedLandingIds(userId);
+    return all.filter((l) => !consumed.has(l.id));
+  };
+  const resolveShareLandingState = async (userId, intervalMinutes) => {
+    const unconsumed = await listUnconsumedLandings(userId);
+    const all = unconsumed.length > 0 ? unconsumed : await listAllLandings(userId);
+    return {
+      hasLanding: all.length > 0,
+      unconsumedCount: unconsumed.length,
+      nextAt: unconsumed[0]?.createdAt ?? null
+      // 最近未消耗落地时刻（若存在）
+    };
   };
   const countTodayShareByDim = async (userId, dimType, dimId) => {
     const today = /* @__PURE__ */ new Date();
@@ -36102,15 +36145,21 @@ const point = ({ strapi: strapi2 }) => {
               throwError("POINT_004", `已达当日分享次数上限 (action=${action})`, { action, limit: rule.limitPerDay });
             }
           }
-          const landingAt = await getLatestInviteLandingAt(userId);
-          if (landingAt == null) {
-            throwError("POINT_024", "分享出去等待好友注册", { action, dimType, dimId });
+          const unconsumed = await listUnconsumedLandings(userId);
+          const landing = unconsumed[0];
+          if (!landing) {
+            const state = await resolveShareLandingState(userId);
+            if (!state.hasLanding) {
+              throwError("POINT_024", "分享出去等待好友注册", { action, dimType, dimId });
+            }
+            throwError("POINT_025", "已领取过该好友注册的分享积分，等待新的好友注册落地", { action, dimType, dimId });
           }
-          const elapsed = Date.now() - landingAt;
-          if (elapsed >= interval * 60 * 1e3) {
-            const expiredMin = Math.floor(elapsed / 6e4);
-            throwError("POINT_020", `邀约落地已超过${expiredMin}分钟，请在落地后 ${interval} 分钟内领取`, { action, intervalMinutes: interval, landAt: landingAt });
+          const elapsed = Date.now() - landing.createdAt;
+          if (elapsed < interval * 60 * 1e3) {
+            const remainMin = Math.max(1, Math.ceil((interval * 60 * 1e3 - elapsed) / 6e4));
+            throwError("POINT_020", `邀约落地满 ${interval} 分钟后可领取，还剩 ${remainMin} 分钟`, { action, intervalMinutes: interval, landAt: landing.createdAt });
           }
+          params.orderId = `landing:${landing.id}`;
         } else {
           const remainMs = await cooldownRemainingMs(userId, action, interval);
           if (remainMs > 0) {
@@ -36139,7 +36188,7 @@ const point = ({ strapi: strapi2 }) => {
         source,
         method,
         remark,
-        orderId,
+        orderId: params.orderId ?? orderId,
         channelId: finalChannelId,
         userChannelId,
         expiresAt
@@ -36667,32 +36716,40 @@ const point = ({ strapi: strapi2 }) => {
       } catch {
       }
     }
-    const landingAt = await getLatestInviteLandingAt(userId);
+    const unconsumed = await listUnconsumedLandings(userId);
+    const hasAnyLanding = (unconsumed.length > 0 ? unconsumed : await listAllLandings(userId)).length > 0;
     const dailyCount = await countTodayShareByDim(userId, dimType, dimId);
-    const hasLanding = landingAt != null;
-    let remainingMs = 0;
-    let inWindow = false;
-    if (hasLanding) {
-      const elapsed = Date.now() - landingAt;
-      inWindow = elapsed < interval * 60 * 1e3;
-      remainingMs = Math.max(0, interval * 60 * 1e3 - elapsed);
+    const nextAt = unconsumed[0]?.createdAt ?? null;
+    let cooldownRemainingMs2 = 0;
+    let canClaim = false;
+    let waitNewLanding = false;
+    if (hasAnyLanding && unconsumed.length === 0) {
+      waitNewLanding = true;
+    } else if (nextAt != null) {
+      const elapsed = Date.now() - nextAt;
+      if (elapsed >= interval * 60 * 1e3) {
+        canClaim = true;
+      } else {
+        cooldownRemainingMs2 = Math.max(0, interval * 60 * 1e3 - elapsed);
+      }
     }
-    let canClaim = hasLanding && inWindow;
     if (limitPerDay > 0 && dailyCount >= limitPerDay) canClaim = false;
     return {
       action: "activity_share",
       dimType,
       dimId: dimId != null ? String(dimId) : void 0,
       canClaim,
-      hasLanding,
-      waitLanding: !hasLanding,
+      hasLanding: hasAnyLanding,
+      waitLanding: !hasAnyLanding,
+      waitNewLanding,
       points,
-      remainingMs,
-      // 窗口剩余毫秒（可领取期间 > 0）
+      remainingMs: cooldownRemainingMs2,
+      // 兼容旧字段：距可领还需毫秒
+      cooldownRemainingMs: cooldownRemainingMs2,
       dailyCount,
       dailyLimit: limitPerDay,
       intervalMinutes: interval,
-      landedAt: landingAt
+      landedAt: nextAt
     };
   };
   return {

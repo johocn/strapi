@@ -15,6 +15,9 @@ declare const _default: ({ strapi }: {
         skip?: boolean;
     }>;
     ensureOwnInviteCode: (ssoUserId: number, appCode: string) => Promise<string>;
-    getLatestLandingAt: (userId: number) => Promise<number | null>;
+    listLandings: (userId: number) => Promise<Array<{
+        id: number;
+        createdAt: number;
+    }>>;
 };
 export default _default;

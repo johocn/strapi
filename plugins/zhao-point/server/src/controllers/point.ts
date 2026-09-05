@@ -73,17 +73,33 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       const dimId = body.dimId != null ? body.dimId : body.activityId;
       const pointSvc = strapi.plugin("zhao-point").service("point");
 
-      // 前置邀约落地校验：无落地直接拒绝（与 getShareStatus 同一判定源）；窗口过期也拒绝
-      const landingAt = (await pointSvc.getShareStatus({ userId, dimType, dimId }))?.landedAt ?? null;
-      if (landingAt == null) {
+      // 前置邀约落地校验：可领以 getShareStatus 为准（落地满 interval 分钟、未消耗、未达每日上限）
+      const st = await pointSvc.getShareStatus({ userId, dimType, dimId });
+      if (!st?.canClaim) {
+        if (st?.waitNewLanding) {
+          ctx.status = 400;
+          ctx.body = { error: "已领取过该好友注册的分享积分，等待新的好友注册落地", code: "POINT_025" };
+          return;
+        }
+        if (!st?.hasLanding) {
+          ctx.status = 400;
+          ctx.body = { error: "分享出去等待好友注册", code: "POINT_024" };
+          return;
+        }
+        const cooldown = st.cooldownRemainingMs ?? 0;
+        if (cooldown > 0) {
+          const remainMin = Math.max(1, Math.ceil(cooldown / 60000));
+          ctx.status = 400;
+          ctx.body = { error: `邀约落地满 ${st.intervalMinutes ?? 30} 分钟后可领取，还剩 ${remainMin} 分钟`, code: "POINT_020" };
+          return;
+        }
+        if ((st.dailyLimit ?? 0) > 0 && (st.dailyCount ?? 0) >= (st.dailyLimit ?? 0)) {
+          ctx.status = 400;
+          ctx.body = { error: "已达当日分享次数上限", code: "POINT_004" };
+          return;
+        }
         ctx.status = 400;
-        ctx.body = { error: "分享出去等待好友注册", code: "POINT_024" };
-        return;
-      }
-      const interval = 30;
-      if (Date.now() - landingAt >= interval * 60 * 1000) {
-        ctx.status = 400;
-        ctx.body = { error: `邀约落地已超过${Math.max(0, interval)}分钟，请在落地后 ${interval} 分钟内领取`, code: "POINT_020" };
+        ctx.body = { error: "当前不可领取分享积分", code: "POINT_020" };
         return;
       }
 
@@ -133,7 +149,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       });
       ctx.body = wrap(record);
     } catch (e: any) {
-      const status = ["POINT_001","POINT_004","POINT_011","POINT_019","POINT_020","POINT_024"].includes(e.code) ? 400 : 500;
+      const status = ["POINT_001","POINT_004","POINT_011","POINT_019","POINT_020","POINT_024","POINT_025"].includes(e.code) ? 400 : 500;
       ctx.status = status;
       ctx.body = { error: e.message, code: e.code };
     }

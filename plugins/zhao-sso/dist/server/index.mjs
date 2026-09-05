@@ -5347,19 +5347,20 @@ const ssoInvite = ({ strapi }) => {
       return "";
     }
   };
-  const getLatestLandingAt = async (userId) => {
+  const listLandings = async (userId) => {
     try {
       const rels = await strapi.db.query(REFERRAL_RELATION_UID).findMany({
         where: { inviter: { id: userId } },
         orderBy: { id: "desc" },
-        limit: 1,
-        select: ["createdAt"]
+        select: ["id", "createdAt"]
       });
-      const rel = rels?.[0];
-      return rel?.createdAt ? new Date(rel.createdAt).getTime() : null;
+      return (rels || []).map((r) => ({
+        id: Number(r.id),
+        createdAt: r.createdAt ? new Date(r.createdAt).getTime() : 0
+      }));
     } catch (e) {
-      strapi.log.warn(`[sso-invite] 查询最近邀约落地失败: ${e.message}`);
-      return null;
+      strapi.log.warn(`[sso-invite] 查询邀约落地列表失败: ${e.message}`);
+      return [];
     }
   };
   return {
@@ -5367,7 +5368,7 @@ const ssoInvite = ({ strapi }) => {
     getOrCreateVirtualUser,
     buildReferralRelation,
     ensureOwnInviteCode,
-    getLatestLandingAt
+    listLandings
   };
 };
 const CONFIG_UID = "plugin::zhao-sso.sso-oauth-config";

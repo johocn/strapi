@@ -235,24 +235,25 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   };
 
   /**
-   * 查询该用户最近一次「邀约关系落地」时刻（作为分享领分的前提锚点）
-   * 落地=作为 inviter 建立了一条分销关系（被邀请人注册成功）；返回该关系的 created_at 时间戳。
-   * 只读门面，供 zhao-point 跨插件调用，避免直接操作 sso_referral_relations 表。
+   * 查询该用户作为 inviter 的全部「邀约关系落地」列表（分享领分前提锚点）
+   * 落地=作为 inviter 建立了一条分销关系（被邀请人注册成功），返回 { id, createdAt } 按 id 倒序。
+   * 只读门面，供 zhao-point 跨插件调用（需排除已被领取消耗的落地），避免直接操作 sso_referral_relations 表。
    */
-  const getLatestLandingAt = async (userId: number): Promise<number | null> => {
+  const listLandings = async (userId: number): Promise<Array<{ id: number; createdAt: number }>> => {
     try {
       // 用自增主键 id 倒序取最新一条：id 单调递增，新落地必然更新；避免依赖 createdAt 排序
       const rels = await strapi.db.query(REFERRAL_RELATION_UID).findMany({
         where: { inviter: { id: userId } },
         orderBy: { id: "desc" },
-        limit: 1,
-        select: ["createdAt"],
+        select: ["id", "createdAt"],
       });
-      const rel = rels?.[0];
-      return rel?.createdAt ? new Date(rel.createdAt).getTime() : null;
+      return (rels || []).map((r) => ({
+        id: Number(r.id),
+        createdAt: r.createdAt ? new Date(r.createdAt).getTime() : 0,
+      }));
     } catch (e: any) {
-      strapi.log.warn(`[sso-invite] 查询最近邀约落地失败: ${e.message}`);
-      return null;
+      strapi.log.warn(`[sso-invite] 查询邀约落地列表失败: ${e.message}`);
+      return [];
     }
   };
 
@@ -261,6 +262,6 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     getOrCreateVirtualUser,
     buildReferralRelation,
     ensureOwnInviteCode,
-    getLatestLandingAt,
+    listLandings,
   };
 };

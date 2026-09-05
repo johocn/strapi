@@ -599,8 +599,10 @@ declare const _default: ({ strapi }: {
         canClaim: boolean;
         hasLanding: boolean;
         waitLanding: boolean;
+        waitNewLanding: boolean;
         points: number;
         remainingMs: number;
+        cooldownRemainingMs: number;
         dailyCount: number;
         dailyLimit: number;
         intervalMinutes: number;

@@ -327,7 +327,10 @@ declare const _default: {
             skip?: boolean;
         }>;
         ensureOwnInviteCode: (ssoUserId: number, appCode: string) => Promise<string>;
-        getLatestLandingAt: (userId: number) => Promise<number | null>;
+        listLandings: (userId: number) => Promise<Array<{
+            id: number;
+            createdAt: number;
+        }>>;
     };
     "sso-msg": ({ strapi }: {
         strapi: import('@strapi/types/dist/core').Strapi;
