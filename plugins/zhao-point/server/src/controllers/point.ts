@@ -73,20 +73,17 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       const dimId = body.dimId != null ? body.dimId : body.activityId;
       const pointSvc = strapi.plugin("zhao-point").service("point");
 
-      // 前置好友点击校验：无点击直接拒绝（与 getShareStatus 同一判定源）
-      const { hasClick, firstClickAt } = (await pointSvc.getShareVisitState({ userId, dimType, dimId }));
-      if (!hasClick) {
+      // 前置邀约落地校验：无落地直接拒绝（与 getShareStatus 同一判定源）；窗口过期也拒绝
+      const landingAt = (await pointSvc.getShareStatus({ userId, dimType, dimId }))?.landedAt ?? null;
+      if (landingAt == null) {
         ctx.status = 400;
-        ctx.body = { error: "分享出去等待好友点击", code: "POINT_024" };
+        ctx.body = { error: "分享出去等待好友注册", code: "POINT_024" };
         return;
       }
-      // 预校验冷却（精确裁决由 pointSvc.earnPoints 内部维度化判定，此处仅用于提示）
       const interval = 30;
-      const elapsed = Date.now() - (firstClickAt ?? 0);
-      if (firstClickAt != null && elapsed < interval * 60 * 1000) {
-        const min = Math.ceil((interval * 60 * 1000 - elapsed) / 60000);
+      if (Date.now() - landingAt >= interval * 60 * 1000) {
         ctx.status = 400;
-        ctx.body = { error: `请${Math.max(1, min)}分钟后重试`, code: "POINT_020" };
+        ctx.body = { error: `邀约落地已超过${Math.max(0, interval)}分钟，请在落地后 ${interval} 分钟内领取`, code: "POINT_020" };
         return;
       }
 

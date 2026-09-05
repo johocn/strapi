@@ -657,18 +657,16 @@ const point$1 = ({ strapi: strapi2 }) => {
         const dimType = ["activity", "task"].includes(body.dimType || "") ? body.dimType : "activity";
         const dimId = body.dimId != null ? body.dimId : body.activityId;
         const pointSvc = strapi2.plugin("zhao-point").service("point");
-        const { hasClick, firstClickAt } = await pointSvc.getShareVisitState({ userId, dimType, dimId });
-        if (!hasClick) {
+        const landingAt = (await pointSvc.getShareStatus({ userId, dimType, dimId }))?.landedAt ?? null;
+        if (landingAt == null) {
           ctx.status = 400;
-          ctx.body = { error: "分享出去等待好友点击", code: "POINT_024" };
+          ctx.body = { error: "分享出去等待好友注册", code: "POINT_024" };
           return;
         }
         const interval = 30;
-        const elapsed = Date.now() - (firstClickAt ?? 0);
-        if (firstClickAt != null && elapsed < interval * 60 * 1e3) {
-          const min = Math.ceil((interval * 60 * 1e3 - elapsed) / 6e4);
+        if (Date.now() - landingAt >= interval * 60 * 1e3) {
           ctx.status = 400;
-          ctx.body = { error: `请${Math.max(1, min)}分钟后重试`, code: "POINT_020" };
+          ctx.body = { error: `邀约落地已超过${Math.max(0, interval)}分钟，请在落地后 ${interval} 分钟内领取`, code: "POINT_020" };
           return;
         }
         let points;
@@ -1104,8 +1102,8 @@ const point$1 = ({ strapi: strapi2 }) => {
         } else if (inviteCode) {
           inviter = await resolveInviterByCode(String(inviteCode));
         }
-        const VISIT_UID2 = "plugin::zhao-point.activity-share-visit";
-        await strapi2.db.query(VISIT_UID2).create({
+        const VISIT_UID = "plugin::zhao-point.activity-share-visit";
+        await strapi2.db.query(VISIT_UID).create({
           data: {
             inviter: inviter ?? void 0,
             targetType: targetType || void 0,
@@ -35929,7 +35927,6 @@ const destroy = ({ strapi: _strapi }) => {
 };
 const RECORD_UID$1 = "plugin::zhao-point.point-record";
 const ACTIVITY_UID$6 = "plugin::zhao-point.activity";
-const VISIT_UID = "plugin::zhao-point.activity-share-visit";
 const getDefaultConfig = () => config$1.default;
 const point = ({ strapi: strapi2 }) => {
   const RULE_UID2 = "plugin::zhao-point.point-rule";
@@ -36001,15 +35998,16 @@ const point = ({ strapi: strapi2 }) => {
     const elapsed = Date.now() - new Date(last.createdAt).getTime();
     return Math.max(0, intervalMinutes * 60 * 1e3 - elapsed);
   };
-  const getShareVisitState = async (params) => {
-    const where = { inviter: params.userId, targetType: params.dimType };
-    if (params.dimId != null && params.dimId !== "") where.targetId = String(params.dimId);
-    const first = await strapi2.db.query(VISIT_UID).findOne({
-      where,
-      orderBy: { createdAt: "asc" },
-      select: ["createdAt"]
-    });
-    return { hasClick: !!first?.createdAt, firstClickAt: first?.createdAt ? new Date(first.createdAt).getTime() : null };
+  const getLatestInviteLandingAt = async (userId) => {
+    try {
+      const invSvc = strapi2.plugin("zhao-sso")?.service("sso-invite");
+      if (!invSvc?.getLatestLandingAt) return null;
+      const ts = await invSvc.getLatestLandingAt(Number(userId));
+      return ts || null;
+    } catch (e) {
+      strapi2.log.warn(`[zhao-point] 查询邀约落地失败: ${e.message}`);
+      return null;
+    }
   };
   const countTodayShareByDim = async (userId, dimType, dimId) => {
     const today = /* @__PURE__ */ new Date();
@@ -36090,14 +36088,14 @@ const point = ({ strapi: strapi2 }) => {
               throwError("POINT_004", `已达当日分享次数上限 (action=${action})`, { action, limit: rule.limitPerDay });
             }
           }
-          const { hasClick, firstClickAt } = await getShareVisitState({ userId, dimType, dimId });
-          if (!hasClick || firstClickAt == null) {
-            throwError("POINT_024", "分享出去等待好友点击", { action, dimType, dimId });
+          const landingAt = await getLatestInviteLandingAt(userId);
+          if (landingAt == null) {
+            throwError("POINT_024", "分享出去等待好友注册", { action, dimType, dimId });
           }
-          const elapsed = Date.now() - firstClickAt;
-          if (elapsed < interval * 60 * 1e3) {
-            const min = Math.ceil((interval * 60 * 1e3 - elapsed) / 6e4);
-            throwError("POINT_020", `请${Math.max(1, min)}分钟后重试`, { action, intervalMinutes: interval });
+          const elapsed = Date.now() - landingAt;
+          if (elapsed >= interval * 60 * 1e3) {
+            const expiredMin = Math.floor(elapsed / 6e4);
+            throwError("POINT_020", `邀约落地已超过${expiredMin}分钟，请在落地后 ${interval} 分钟内领取`, { action, intervalMinutes: interval, landAt: landingAt });
           }
         } else {
           const remainMs = await cooldownRemainingMs(userId, action, interval);
@@ -36655,27 +36653,32 @@ const point = ({ strapi: strapi2 }) => {
       } catch {
       }
     }
-    const { hasClick, firstClickAt } = await getShareVisitState({ userId, dimType, dimId });
+    const landingAt = await getLatestInviteLandingAt(userId);
     const dailyCount = await countTodayShareByDim(userId, dimType, dimId);
+    const hasLanding = landingAt != null;
     let remainingMs = 0;
-    if (hasClick && firstClickAt != null) {
-      const elapsed = Date.now() - firstClickAt;
+    let inWindow = false;
+    if (hasLanding) {
+      const elapsed = Date.now() - landingAt;
+      inWindow = elapsed < interval * 60 * 1e3;
       remainingMs = Math.max(0, interval * 60 * 1e3 - elapsed);
     }
-    let canClaim = hasClick && remainingMs === 0;
+    let canClaim = hasLanding && inWindow;
     if (limitPerDay > 0 && dailyCount >= limitPerDay) canClaim = false;
     return {
       action: "activity_share",
       dimType,
       dimId: dimId != null ? String(dimId) : void 0,
       canClaim,
-      hasClick,
-      waitClick: !hasClick,
+      hasLanding,
+      waitLanding: !hasLanding,
       points,
       remainingMs,
+      // 窗口剩余毫秒（可领取期间 > 0）
       dailyCount,
       dailyLimit: limitPerDay,
-      intervalMinutes: interval
+      intervalMinutes: interval,
+      landedAt: landingAt
     };
   };
   return {
@@ -36700,8 +36703,7 @@ const point = ({ strapi: strapi2 }) => {
     findVerificationByDocumentId,
     getMergedRule,
     getTasks,
-    getShareStatus,
-    getShareVisitState
+    getShareStatus
   };
 };
 const PRODUCT_UID = "plugin::zhao-point.point-product";

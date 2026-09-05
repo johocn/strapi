@@ -558,21 +558,14 @@ declare const _default: {
             dimType: string;
             dimId: string;
             canClaim: boolean;
-            hasClick: boolean;
-            waitClick: boolean;
+            hasLanding: boolean;
+            waitLanding: boolean;
             points: number;
             remainingMs: number;
             dailyCount: number;
             dailyLimit: number;
             intervalMinutes: number;
-        }>;
-        getShareVisitState: (params: {
-            userId: number | string;
-            dimType: string;
-            dimId?: string | number | null;
-        }) => Promise<{
-            hasClick: boolean;
-            firstClickAt: number | null;
+            landedAt: number;
         }>;
     };
     redemption: ({ strapi }: {
@@ -1227,6 +1220,54 @@ declare const _default: {
             point: boolean;
             reason?: undefined;
         }>;
+        tourStory: (args: {
+            documentId: string;
+            userId: number;
+        }) => Promise<{
+            tourMode: boolean;
+            title: any;
+            backdrop: any;
+            roles: any;
+            itinerary: any;
+            mainPuzzle: any;
+            hint: any;
+            stationPoints: any;
+            mainPoints: any;
+            finalePoints: any;
+            guideName: any;
+            progress: any;
+        }>;
+        tourChooseRole: (args: {
+            documentId: string;
+            userId: number;
+            role?: any;
+        }) => Promise<{
+            progress: any;
+        }>;
+        tourCheckinStation: (args: {
+            documentId: string;
+            userId: number;
+            stationOrder: any;
+        }) => Promise<{
+            already: boolean;
+            progress: any;
+        }>;
+        tourAnswerMain: (args: {
+            documentId: string;
+            userId: number;
+            answer?: any;
+        }) => Promise<{
+            correct: boolean;
+            already: boolean;
+            progress: any;
+        }>;
+        tourClaimFinale: (args: {
+            documentId: string;
+            userId: number;
+        }) => Promise<{
+            already: boolean;
+            progress: any;
+        }>;
     };
     "series-service": ({ strapi }: {
         strapi: import('@strapi/types/dist/core').Strapi;
@@ -1375,6 +1416,22 @@ declare const _default: {
         strapi: any;
     }) => {
         resolveAudience(audience: any): Promise<any>;
+    };
+    gate: ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        listSignups(userId: number, opts?: {
+            since?: Date | string;
+            limit?: number;
+        }): Promise<any[]>;
+        countRedemptions(userId: number): Promise<number>;
+        listSignedActivityIds(userId: number): Promise<number[]>;
+        collectActivityTypes(userId: number, opts?: {
+            since?: Date | string;
+            limit?: number;
+        }): Promise<string[]>;
+        recommendActivities(interests: string[], excludeIds: number[], limit?: number): Promise<any[]>;
+        countActiveSignups(userId: number, from: Date, to: Date): Promise<number>;
     };
 };
 export default _default;

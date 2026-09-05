@@ -5,8 +5,6 @@ const RECORD_UID = "plugin::zhao-point.point-record";
 
 const ACTIVITY_UID = "plugin::zhao-point.activity";
 
-const VISIT_UID = "plugin::zhao-point.activity-share-visit";
-
 const getPluginStore = (strapi: Core.Strapi) => {
   return strapi.store({ type: "plugin", name: "zhao-point" });
 };
@@ -149,20 +147,17 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     return Math.max(0, intervalMinutes * 60 * 1000 - elapsed);
   };
 
-  // 维度化好友点击：返回该分享者、该维度最早的（即冷却基准）与是否有点击
-  const getShareVisitState = async (params: {
-    userId: number | string;
-    dimType: string;
-    dimId?: string | number | null;
-  }): Promise<{ hasClick: boolean; firstClickAt: number | null }> => {
-    const where: Record<string, any> = { inviter: params.userId, targetType: params.dimType };
-    if (params.dimId != null && params.dimId !== "") where.targetId = String(params.dimId);
-    const first = await strapi.db.query(VISIT_UID).findOne({
-      where,
-      orderBy: { createdAt: "asc" },
-      select: ["createdAt"],
-    });
-    return { hasClick: !!first?.createdAt, firstClickAt: first?.createdAt ? new Date(first.createdAt).getTime() : null };
+  // 邀约落地：最近一次被邀请人注册成功（分销关系建立）时刻；经 zhao-sso 只读门面获取
+  const getLatestInviteLandingAt = async (userId: number | string): Promise<number | null> => {
+    try {
+      const invSvc = strapi.plugin("zhao-sso")?.service("sso-invite");
+      if (!invSvc?.getLatestLandingAt) return null;
+      const ts = await invSvc.getLatestLandingAt(Number(userId));
+      return ts || null;
+    } catch (e: any) {
+      strapi.log.warn(`[zhao-point] 查询邀约落地失败: ${e.message}`);
+      return null;
+    }
   };
 
   // 维度化每日领分计数：按 point_record.source 标签（share:{dimType}:{dimId}）统计当日
@@ -287,14 +282,14 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
               throwError("POINT_004", `已达当日分享次数上限 (action=${action})`, { action, limit: rule.limitPerDay });
             }
           }
-          const { hasClick, firstClickAt } = await getShareVisitState({ userId, dimType, dimId });
-          if (!hasClick || firstClickAt == null) {
-            throwError("POINT_024", "分享出去等待好友点击", { action, dimType, dimId });
+          const landingAt = await getLatestInviteLandingAt(userId);
+          if (landingAt == null) {
+            throwError("POINT_024", "分享出去等待好友注册", { action, dimType, dimId });
           }
-          const elapsed = Date.now() - firstClickAt!;
-          if (elapsed < interval * 60 * 1000) {
-            const min = Math.ceil((interval * 60 * 1000 - elapsed) / 60000);
-            throwError("POINT_020", `请${Math.max(1, min)}分钟后重试`, { action, intervalMinutes: interval });
+          const elapsed = Date.now() - landingAt!;
+          if (elapsed >= interval * 60 * 1000) {
+            const expiredMin = Math.floor(elapsed / 60000);
+            throwError("POINT_020", `邀约落地已超过${expiredMin}分钟，请在落地后 ${interval} 分钟内领取`, { action, intervalMinutes: interval, landAt: landingAt });
           }
         } else {
           const remainMs = await cooldownRemainingMs(userId, action, interval);
@@ -1001,16 +996,20 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       } catch { /* 活动不存在或类型异常：回退默认分 */ }
     }
 
-    const { hasClick, firstClickAt } = await getShareVisitState({ userId, dimType, dimId });
+    const landingAt = await getLatestInviteLandingAt(userId);
     const dailyCount = await countTodayShareByDim(userId, dimType, dimId);
 
+    const hasLanding = landingAt != null;
+    // 落地进入 30 分钟可领窗口：窗口内可领，超时过期不可领（需新的邀约落地）
     let remainingMs = 0;
-    if (hasClick && firstClickAt != null) {
-      const elapsed = Date.now() - firstClickAt;
+    let inWindow = false;
+    if (hasLanding) {
+      const elapsed = Date.now() - landingAt!;
+      inWindow = elapsed < interval * 60 * 1000;
       remainingMs = Math.max(0, interval * 60 * 1000 - elapsed);
     }
 
-    let canClaim = hasClick && remainingMs === 0;
+    let canClaim = hasLanding && inWindow;
     if (limitPerDay > 0 && dailyCount >= limitPerDay) canClaim = false;
 
     return {
@@ -1018,13 +1017,14 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       dimType,
       dimId: dimId != null ? String(dimId) : undefined,
       canClaim,
-      hasClick,
-      waitClick: !hasClick,
+      hasLanding,
+      waitLanding: !hasLanding,
       points,
-      remainingMs,
+      remainingMs, // 窗口剩余毫秒（可领取期间 > 0）
       dailyCount,
       dailyLimit: limitPerDay,
       intervalMinutes: interval,
+      landedAt: landingAt,
     };
   };
 
@@ -1051,6 +1051,5 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     getMergedRule,
     getTasks,
     getShareStatus,
-    getShareVisitState,
   };
 };

@@ -234,10 +234,30 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     }
   };
 
+  /**
+   * 查询该用户最近一次「邀约关系落地」时刻（作为分享领分的前提锚点）
+   * 落地=作为 inviter 建立了一条分销关系（被邀请人注册成功）；返回该关系的 created_at 时间戳。
+   * 只读门面，供 zhao-point 跨插件调用，避免直接操作 sso_referral_relations 表。
+   */
+  const getLatestLandingAt = async (userId: number): Promise<number | null> => {
+    try {
+      const rel = await strapi.db.query(REFERRAL_RELATION_UID).findOne({
+        where: { inviter: { id: userId } },
+        orderBy: { createdAt: "desc" },
+        select: ["createdAt"],
+      });
+      return rel?.createdAt ? new Date(rel.createdAt).getTime() : null;
+    } catch (e: any) {
+      strapi.log.warn(`[sso-invite] 查询最近邀约落地失败: ${e.message}`);
+      return null;
+    }
+  };
+
   return {
     validateInviteCode,
     getOrCreateVirtualUser,
     buildReferralRelation,
     ensureOwnInviteCode,
+    getLatestLandingAt,
   };
 };

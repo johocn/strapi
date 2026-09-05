@@ -42,5 +42,10 @@ declare const _default: ({ strapi }: {
     adminReviews(ctx: any): Promise<void>;
     /** 裂变榜：按 inviter 聚合奖励记录，可筛时间；返回带来报名数/发放积分/明细 */
     fissionLeaderboard(ctx: any): Promise<void>;
+    tourStory: (ctx: any) => Promise<any>;
+    tourChooseRole: (ctx: any) => Promise<any>;
+    tourCheckinStation: (ctx: any) => Promise<any>;
+    tourAnswerMain: (ctx: any) => Promise<any>;
+    tourClaimFinale: (ctx: any) => Promise<any>;
 };
 export default _default;

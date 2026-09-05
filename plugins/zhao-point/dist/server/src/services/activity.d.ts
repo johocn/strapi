@@ -26,6 +26,54 @@ export declare function computePointsPreview({ loginAuth, subscribed, conditions
     subscribe: number;
     total: number;
 };
+declare function tourStory(args: {
+    documentId: string;
+    userId: number;
+}): Promise<{
+    tourMode: boolean;
+    title: any;
+    backdrop: any;
+    roles: any;
+    itinerary: any;
+    mainPuzzle: any;
+    hint: any;
+    stationPoints: any;
+    mainPoints: any;
+    finalePoints: any;
+    guideName: any;
+    progress: any;
+}>;
+declare function tourCheckinStation(args: {
+    documentId: string;
+    userId: number;
+    stationOrder: any;
+}): Promise<{
+    already: boolean;
+    progress: any;
+}>;
+declare function tourAnswerMain(args: {
+    documentId: string;
+    userId: number;
+    answer?: any;
+}): Promise<{
+    correct: boolean;
+    already: boolean;
+    progress: any;
+}>;
+declare function tourChooseRole(args: {
+    documentId: string;
+    userId: number;
+    role?: any;
+}): Promise<{
+    progress: any;
+}>;
+declare function tourClaimFinale(args: {
+    documentId: string;
+    userId: number;
+}): Promise<{
+    already: boolean;
+    progress: any;
+}>;
 declare const _default: ({ strapi }: {
     strapi: Core.Strapi;
 }) => {
@@ -496,5 +544,10 @@ declare const _default: ({ strapi }: {
         point: boolean;
         reason?: undefined;
     }>;
+    tourStory: typeof tourStory;
+    tourChooseRole: typeof tourChooseRole;
+    tourCheckinStation: typeof tourCheckinStation;
+    tourAnswerMain: typeof tourAnswerMain;
+    tourClaimFinale: typeof tourClaimFinale;
 };
 export default _default;

@@ -56,7 +56,10 @@ declare const _default: {
     "promoColors": { "type": "json" },
     "promoAssets": { "type": "json" },
     "customPromoHtml": { "type": "text" },
-    "customPromoActive": { "type": "boolean", "default": true }
+    "customPromoActive": { "type": "boolean", "default": true },
+    "tourMode": { "type": "boolean", "default": false },
+    "itinerary": { "type": "json" },
+    "story": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.tour-story", "inversedBy": "activities" }
   }
 };
 

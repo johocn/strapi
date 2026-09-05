@@ -1087,6 +1087,19 @@ declare const _default: {
                     type: string;
                     default: boolean;
                 };
+                tourMode: {
+                    type: string;
+                    default: boolean;
+                };
+                itinerary: {
+                    type: string;
+                };
+                story: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    inversedBy: string;
+                };
             };
         };
         lifecycles: {
@@ -1167,6 +1180,10 @@ declare const _default: {
                 };
                 preQuestionnaireData: {
                     type: string;
+                };
+                tourProgress: {
+                    type: string;
+                    description: string;
                 };
             };
         };
@@ -1469,6 +1486,75 @@ declare const _default: {
                 };
                 createdAt: {
                     type: string;
+                };
+            };
+        };
+    };
+    "tour-story": {
+        schema: {
+            kind: string;
+            collectionName: string;
+            info: {
+                singularName: string;
+                pluralName: string;
+                displayName: string;
+                description: string;
+            };
+            options: {
+                draftAndPublish: boolean;
+            };
+            pluginOptions: {
+                i18n: {
+                    localized: boolean;
+                };
+            };
+            attributes: {
+                title: {
+                    type: string;
+                    required: boolean;
+                };
+                lineTitle: {
+                    type: string;
+                };
+                backdrop: {
+                    type: string;
+                    description: string;
+                };
+                roles: {
+                    type: string;
+                    description: string;
+                };
+                mainPuzzle: {
+                    type: string;
+                    description: string;
+                };
+                answer: {
+                    type: string;
+                    description: string;
+                };
+                hint: {
+                    type: string;
+                };
+                stationPoints: {
+                    type: string;
+                    default: number;
+                };
+                mainPoints: {
+                    type: string;
+                    default: number;
+                };
+                finalePoints: {
+                    type: string;
+                    default: number;
+                };
+                guideName: {
+                    type: string;
+                };
+                activities: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    mappedBy: string;
                 };
             };
         };

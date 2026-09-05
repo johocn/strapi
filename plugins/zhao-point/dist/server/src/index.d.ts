@@ -537,6 +537,11 @@ declare const _default: {
             adminToggleReviewHidden(ctx: any): Promise<void>;
             adminReviews(ctx: any): Promise<void>;
             fissionLeaderboard(ctx: any): Promise<void>;
+            tourStory: (ctx: any) => Promise<any>;
+            tourChooseRole: (ctx: any) => Promise<any>;
+            tourCheckinStation: (ctx: any) => Promise<any>;
+            tourAnswerMain: (ctx: any) => Promise<any>;
+            tourClaimFinale: (ctx: any) => Promise<any>;
         };
         series: ({ strapi }: {
             strapi: import('@strapi/types/dist/core').Strapi;
@@ -1699,6 +1704,19 @@ declare const _default: {
                         type: string;
                         default: boolean;
                     };
+                    tourMode: {
+                        type: string;
+                        default: boolean;
+                    };
+                    itinerary: {
+                        type: string;
+                    };
+                    story: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        inversedBy: string;
+                    };
                 };
             };
             lifecycles: {
@@ -1779,6 +1797,10 @@ declare const _default: {
                     };
                     preQuestionnaireData: {
                         type: string;
+                    };
+                    tourProgress: {
+                        type: string;
+                        description: string;
                     };
                 };
             };
@@ -2081,6 +2103,75 @@ declare const _default: {
                     };
                     createdAt: {
                         type: string;
+                    };
+                };
+            };
+        };
+        "tour-story": {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                    description: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                pluginOptions: {
+                    i18n: {
+                        localized: boolean;
+                    };
+                };
+                attributes: {
+                    title: {
+                        type: string;
+                        required: boolean;
+                    };
+                    lineTitle: {
+                        type: string;
+                    };
+                    backdrop: {
+                        type: string;
+                        description: string;
+                    };
+                    roles: {
+                        type: string;
+                        description: string;
+                    };
+                    mainPuzzle: {
+                        type: string;
+                        description: string;
+                    };
+                    answer: {
+                        type: string;
+                        description: string;
+                    };
+                    hint: {
+                        type: string;
+                    };
+                    stationPoints: {
+                        type: string;
+                        default: number;
+                    };
+                    mainPoints: {
+                        type: string;
+                        default: number;
+                    };
+                    finalePoints: {
+                        type: string;
+                        default: number;
+                    };
+                    guideName: {
+                        type: string;
+                    };
+                    activities: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
                     };
                 };
             };
@@ -2774,21 +2865,14 @@ declare const _default: {
                 dimType: string;
                 dimId: string;
                 canClaim: boolean;
-                hasClick: boolean;
-                waitClick: boolean;
+                hasLanding: boolean;
+                waitLanding: boolean;
                 points: number;
                 remainingMs: number;
                 dailyCount: number;
                 dailyLimit: number;
                 intervalMinutes: number;
-            }>;
-            getShareVisitState: (params: {
-                userId: number | string;
-                dimType: string;
-                dimId?: string | number | null;
-            }) => Promise<{
-                hasClick: boolean;
-                firstClickAt: number | null;
+                landedAt: number;
             }>;
         };
         redemption: ({ strapi }: {
@@ -3443,6 +3527,54 @@ declare const _default: {
                 point: boolean;
                 reason?: undefined;
             }>;
+            tourStory: (args: {
+                documentId: string;
+                userId: number;
+            }) => Promise<{
+                tourMode: boolean;
+                title: any;
+                backdrop: any;
+                roles: any;
+                itinerary: any;
+                mainPuzzle: any;
+                hint: any;
+                stationPoints: any;
+                mainPoints: any;
+                finalePoints: any;
+                guideName: any;
+                progress: any;
+            }>;
+            tourChooseRole: (args: {
+                documentId: string;
+                userId: number;
+                role?: any;
+            }) => Promise<{
+                progress: any;
+            }>;
+            tourCheckinStation: (args: {
+                documentId: string;
+                userId: number;
+                stationOrder: any;
+            }) => Promise<{
+                already: boolean;
+                progress: any;
+            }>;
+            tourAnswerMain: (args: {
+                documentId: string;
+                userId: number;
+                answer?: any;
+            }) => Promise<{
+                correct: boolean;
+                already: boolean;
+                progress: any;
+            }>;
+            tourClaimFinale: (args: {
+                documentId: string;
+                userId: number;
+            }) => Promise<{
+                already: boolean;
+                progress: any;
+            }>;
         };
         "series-service": ({ strapi }: {
             strapi: import('@strapi/types/dist/core').Strapi;
@@ -3591,6 +3723,22 @@ declare const _default: {
             strapi: any;
         }) => {
             resolveAudience(audience: any): Promise<any>;
+        };
+        gate: ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            listSignups(userId: number, opts?: {
+                since?: Date | string;
+                limit?: number;
+            }): Promise<any[]>;
+            countRedemptions(userId: number): Promise<number>;
+            listSignedActivityIds(userId: number): Promise<number[]>;
+            collectActivityTypes(userId: number, opts?: {
+                since?: Date | string;
+                limit?: number;
+            }): Promise<string[]>;
+            recommendActivities(interests: string[], excludeIds: number[], limit?: number): Promise<any[]>;
+            countActiveSignups(userId: number, from: Date, to: Date): Promise<number>;
         };
     };
     routes: {

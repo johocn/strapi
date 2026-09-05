@@ -597,21 +597,14 @@ declare const _default: ({ strapi }: {
         dimType: string;
         dimId: string;
         canClaim: boolean;
-        hasClick: boolean;
-        waitClick: boolean;
+        hasLanding: boolean;
+        waitLanding: boolean;
         points: number;
         remainingMs: number;
         dailyCount: number;
         dailyLimit: number;
         intervalMinutes: number;
-    }>;
-    getShareVisitState: (params: {
-        userId: number | string;
-        dimType: string;
-        dimId?: string | number | null;
-    }) => Promise<{
-        hasClick: boolean;
-        firstClickAt: number | null;
+        landedAt: number;
     }>;
 };
 export default _default;

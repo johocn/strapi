@@ -117,6 +117,11 @@ declare const _default: {
         adminToggleReviewHidden(ctx: any): Promise<void>;
         adminReviews(ctx: any): Promise<void>;
         fissionLeaderboard(ctx: any): Promise<void>;
+        tourStory: (ctx: any) => Promise<any>;
+        tourChooseRole: (ctx: any) => Promise<any>;
+        tourCheckinStation: (ctx: any) => Promise<any>;
+        tourAnswerMain: (ctx: any) => Promise<any>;
+        tourClaimFinale: (ctx: any) => Promise<any>;
     };
     series: ({ strapi }: {
         strapi: import('@strapi/types/dist/core').Strapi;

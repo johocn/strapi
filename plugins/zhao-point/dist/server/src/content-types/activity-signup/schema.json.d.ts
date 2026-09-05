@@ -19,7 +19,8 @@ declare const _default: {
     "formData": { "type": "json" },
     "unlockInfo": { "type": "json" },
     "questionnaireData": { "type": "json" },
-    "preQuestionnaireData": { "type": "json" }
+    "preQuestionnaireData": { "type": "json" },
+    "tourProgress": { "type": "json", "description": "剧本游进度 {stations:[order],mainSolved,mainSolvedAt,finaleClaimed,claimedAt}" }
   }
 };
 
