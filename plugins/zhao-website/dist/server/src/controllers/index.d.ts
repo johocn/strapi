@@ -60,6 +60,11 @@ declare const _default: {
         featured(ctx: any): Promise<void>;
         related(ctx: any): Promise<any>;
     };
+    "geo-article": {
+        list(ctx: any): Promise<void>;
+        detail(ctx: any): Promise<any>;
+        featured(ctx: any): Promise<void>;
+    };
     product: {
         list(ctx: any): Promise<void>;
         detail(ctx: any): Promise<any>;

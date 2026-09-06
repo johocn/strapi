@@ -478,6 +478,25 @@ const article$1 = {
     ctx.body = { results: Array.isArray(result) ? result : result.results || result };
   }
 };
+const geoArticle$1 = {
+  async list(ctx) {
+    const siteId = ctx.state.siteId;
+    const result = await strapi.plugin("zhao-website").service("geo-article").find(siteId, ctx.query);
+    ctx.body = result;
+  },
+  async detail(ctx) {
+    const siteId = ctx.state.siteId;
+    const { slug } = ctx.params;
+    const doc = await strapi.plugin("zhao-website").service("geo-article").findOne(siteId, slug, ctx.query.locale);
+    if (!doc) return ctx.notFound("GeoArticle not found");
+    ctx.body = doc;
+  },
+  async featured(ctx) {
+    const siteId = ctx.state.siteId;
+    const result = await strapi.plugin("zhao-website").service("geo-article").findFeatured(siteId, Number(ctx.query.limit) || 5, ctx.query.locale);
+    ctx.body = result;
+  }
+};
 const product$1 = {
   async list(ctx) {
     const siteId = ctx.state.siteId;
@@ -1129,6 +1148,7 @@ const knowledgeGraph$1 = {
 };
 const controllers = {
   article: article$1,
+  "geo-article": geoArticle$1,
   product: product$1,
   case: casE,
   faq: faq$1,
@@ -1169,6 +1189,9 @@ const contentApi = () => ({
     publicRoute("GET", "/articles/category/:categorySlug", "article.byCategory"),
     publicRoute("GET", "/articles/:slug", "article.detail"),
     publicRoute("GET", "/articles/:slug/related", "article.related"),
+    publicRoute("GET", "/geo-articles", "geo-article.list"),
+    publicRoute("GET", "/geo-articles/featured", "geo-article.featured"),
+    publicRoute("GET", "/geo-articles/:slug", "geo-article.detail"),
     publicRoute("GET", "/products", "product.list"),
     publicRoute("GET", "/products/:slug", "product.detail"),
     publicRoute("GET", "/cases", "case.list"),
@@ -1329,17 +1352,17 @@ const routes = {
     routes: [...contentApi().routes, ...adminApi().routes]
   }
 };
-const UID$i = "plugin::zhao-website.seo-config";
+const UID$j = "plugin::zhao-website.seo-config";
 const seoConfig = ({ strapi: strapi2 }) => ({
   /**
    * 获取或创建租户的 SEO 配置（单例）
    */
   async ensureDefault(siteId) {
-    const existing = await strapi2.db.query(UID$i).findOne({
+    const existing = await strapi2.db.query(UID$j).findOne({
       where: { site: siteId, deletedAt: null }
     });
     if (existing) return existing;
-    return strapi2.db.query(UID$i).create({
+    return strapi2.db.query(UID$j).create({
       data: {
         site: siteId,
         defaultTitle: "",
@@ -1359,7 +1382,7 @@ const seoConfig = ({ strapi: strapi2 }) => ({
   },
   async update(siteId, data) {
     const existing = await this.ensureDefault(siteId);
-    return strapi2.db.query(UID$i).update({
+    return strapi2.db.query(UID$j).update({
       where: { id: existing.id },
       data
     });
@@ -1373,14 +1396,14 @@ const seoConfig = ({ strapi: strapi2 }) => ({
     return publicFields;
   }
 });
-const UID$h = "plugin::zhao-website.brand-info";
+const UID$i = "plugin::zhao-website.brand-info";
 const brandInfo = ({ strapi: strapi2 }) => ({
   async ensureDefault(siteId) {
-    const existing = await strapi2.db.query(UID$h).findOne({
+    const existing = await strapi2.db.query(UID$i).findOne({
       where: { site: siteId, deletedAt: null }
     });
     if (existing) return existing;
-    return strapi2.db.query(UID$h).create({
+    return strapi2.db.query(UID$i).create({
       data: {
         site: siteId,
         companyName: ""
@@ -1395,7 +1418,7 @@ const brandInfo = ({ strapi: strapi2 }) => ({
   },
   async update(siteId, data) {
     const existing = await this.ensureDefault(siteId);
-    return strapi2.db.query(UID$h).update({
+    return strapi2.db.query(UID$i).update({
       where: { id: existing.id },
       data
     });
@@ -1473,7 +1496,7 @@ async function resolveCategoryFilter(strapi2, siteId, category) {
   });
   return cat?.id ?? -1;
 }
-const UID$g = "plugin::zhao-website.article";
+const UID$h = "plugin::zhao-website.article";
 const article = ({ strapi: strapi2 }) => ({
   async find(siteId, query = {}) {
     const { page = 1, pageSize = 20, category, tag, exclude, status, isFeatured, q, locale } = query;
@@ -1498,7 +1521,7 @@ const article = ({ strapi: strapi2 }) => ({
     if (exclude) {
       const excludeIds = String(exclude).split(",").map((s) => s.trim()).filter(Boolean);
       if (excludeIds.length > 0) {
-        const excludeRows = await strapi2.db.query(UID$g).findMany({
+        const excludeRows = await strapi2.db.query(UID$h).findMany({
           where: { documentId: { $in: excludeIds } },
           select: ["id"]
         });
@@ -1509,8 +1532,8 @@ const article = ({ strapi: strapi2 }) => ({
       }
     }
     const filterService = strapi2.plugin("zhao-website").service("content-filter");
-    const where = await filterService.buildWhere(siteId, UID$g, extra, locale);
-    return strapi2.db.query(UID$g).findMany({
+    const where = await filterService.buildWhere(siteId, UID$h, extra, locale);
+    return strapi2.db.query(UID$h).findMany({
       where,
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
@@ -1520,13 +1543,13 @@ const article = ({ strapi: strapi2 }) => ({
   },
   async findOne(siteId, slug, locale) {
     const filterService = strapi2.plugin("zhao-website").service("content-filter");
-    const where = await filterService.buildWhere(siteId, UID$g, { slug }, locale);
-    const article2 = await strapi2.db.query(UID$g).findOne({
+    const where = await filterService.buildWhere(siteId, UID$h, { slug }, locale);
+    const article2 = await strapi2.db.query(UID$h).findOne({
       where,
       populate: ["coverImage", "category", "tags", "mainEntity", "mentionedEntities", "ogImage"]
     });
     if (!article2) return null;
-    const siblings = await strapi2.db.query(UID$g).findMany({
+    const siblings = await strapi2.db.query(UID$h).findMany({
       where: {
         site: siteId,
         documentId: article2.documentId,
@@ -1540,8 +1563,8 @@ const article = ({ strapi: strapi2 }) => ({
   },
   async findFeatured(siteId, limit = 5, locale) {
     const filterService = strapi2.plugin("zhao-website").service("content-filter");
-    const where = await filterService.buildWhere(siteId, UID$g, { isFeatured: true }, locale);
-    return strapi2.db.query(UID$g).findMany({
+    const where = await filterService.buildWhere(siteId, UID$h, { isFeatured: true }, locale);
+    return strapi2.db.query(UID$h).findMany({
       where,
       limit,
       orderBy: { publishedAt: "DESC" },
@@ -1553,14 +1576,14 @@ const article = ({ strapi: strapi2 }) => ({
       return { data: [], meta: { pagination: { page, pageSize, total: 0, pageCount: 0 } } };
     }
     const filterService = strapi2.plugin("zhao-website").service("content-filter");
-    const where = await filterService.buildWhere(siteId, UID$g, {
+    const where = await filterService.buildWhere(siteId, UID$h, {
       $or: [
         { title: { $containsi: keyword } },
         { excerpt: { $containsi: keyword } },
         { content: { $containsi: keyword } }
       ]
     });
-    const items = await strapi2.db.query(UID$g).findMany({
+    const items = await strapi2.db.query(UID$h).findMany({
       where,
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
@@ -1594,7 +1617,7 @@ const article = ({ strapi: strapi2 }) => ({
         }
       }
     }
-    return strapi2.db.query(UID$g).findMany({
+    return strapi2.db.query(UID$h).findMany({
       where: filters,
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
@@ -1603,7 +1626,7 @@ const article = ({ strapi: strapi2 }) => ({
     });
   },
   async findOneAdmin(siteId, documentId) {
-    return strapi2.db.query(UID$g).findOne({
+    return strapi2.db.query(UID$h).findOne({
       where: { site: siteId, documentId, deletedAt: null },
       populate: {
         coverImage: true,
@@ -1618,7 +1641,7 @@ const article = ({ strapi: strapi2 }) => ({
     });
   },
   async create(siteId, data) {
-    const slug = data.slug || await generateUniqueSlug(strapi2, UID$g, siteId, data.title || "untitled");
+    const slug = data.slug || await generateUniqueSlug(strapi2, UID$h, siteId, data.title || "untitled");
     const validation = await firstTruthValidate(siteId, data);
     if (validation.hasError) {
       const e = new Error("内容与第一真值冲突（error 级）");
@@ -1627,7 +1650,7 @@ const article = ({ strapi: strapi2 }) => ({
       e.details = validation.conflicts;
       throw e;
     }
-    return strapi2.db.query(UID$g).create({
+    return strapi2.db.query(UID$h).create({
       data: { ...data, site: siteId, slug, status: data.status || STATUS.DRAFT }
     });
   },
@@ -1640,7 +1663,7 @@ const article = ({ strapi: strapi2 }) => ({
     }
     let updateData = { ...data };
     if (data.slug && data.slug !== existing.slug) {
-      updateData.slug = await generateUniqueSlug(strapi2, UID$g, siteId, data.slug, documentId);
+      updateData.slug = await generateUniqueSlug(strapi2, UID$h, siteId, data.slug, documentId);
     }
     if (data.status && isValidStatus(data.status)) {
       updateData = applyStatusChange(updateData, data.status);
@@ -1655,7 +1678,7 @@ const article = ({ strapi: strapi2 }) => ({
         throw e;
       }
     }
-    return strapi2.db.query(UID$g).update({
+    return strapi2.db.query(UID$h).update({
       where: { id: existing.id },
       data: updateData
     });
@@ -1672,7 +1695,7 @@ const article = ({ strapi: strapi2 }) => ({
   async softDelete(siteId, documentId) {
     const existing = await this.findOneAdmin(siteId, documentId);
     if (!existing) return null;
-    return strapi2.db.query(UID$g).update({
+    return strapi2.db.query(UID$h).update({
       where: { id: existing.id },
       data: { deletedAt: (/* @__PURE__ */ new Date()).toISOString() }
     });
@@ -1680,10 +1703,49 @@ const article = ({ strapi: strapi2 }) => ({
   async incrementViewCount(siteId, documentId) {
     const existing = await this.findOneAdmin(siteId, documentId);
     if (!existing) return;
-    await strapi2.db.query(UID$g).update({
+    await strapi2.db.query(UID$h).update({
       where: { id: existing.id },
       data: { viewCount: (existing.viewCount || 0) + 1 }
     });
+  }
+});
+const UID$g = "plugin::zhao-website.geo-article";
+const geoArticle = ({ strapi: strapi2 }) => ({
+  async find(siteId, query = {}) {
+    const { page = 1, pageSize = 20, type, q, locale } = query;
+    const extra = {};
+    if (type) extra.type = type;
+    if (q) extra.title = { $containsi: q };
+    const filterService = strapi2.plugin("zhao-website").service("content-filter");
+    const where = await filterService.buildWhere(siteId, UID$g, extra, locale);
+    const items = await strapi2.db.query(UID$g).findMany({
+      where,
+      limit: Number(pageSize),
+      offset: (Number(page) - 1) * Number(pageSize),
+      orderBy: { publishedAt: "DESC" },
+      populate: ["coverImage", "category", "tags"]
+    });
+    const total = await strapi2.db.query(UID$g).count({ where });
+    return { results: items, meta: { pagination: { page: Number(page), pageSize: Number(pageSize), total, pageCount: Math.ceil(total / Number(pageSize)) } } };
+  },
+  async findOne(siteId, slug, locale) {
+    const filterService = strapi2.plugin("zhao-website").service("content-filter");
+    const where = await filterService.buildWhere(siteId, UID$g, { slug }, locale);
+    const doc = await strapi2.db.query(UID$g).findOne({
+      where,
+      populate: ["coverImage", "category", "tags"]
+    });
+    if (!doc) return null;
+    const siblings = await strapi2.db.query(UID$g).findMany({
+      where: { site: siteId, documentId: doc.documentId, status: "published", deletedAt: null, locale: { $ne: doc.locale } },
+      select: ["id", "locale", "slug", "title"]
+    });
+    return { ...doc, localizations: siblings };
+  },
+  async findFeatured(siteId, limit = 5, locale) {
+    const filterService = strapi2.plugin("zhao-website").service("content-filter");
+    const where = await filterService.buildWhere(siteId, UID$g, { isFeatured: true }, locale);
+    return strapi2.db.query(UID$g).findMany({ where, limit, orderBy: { publishedAt: "DESC" }, populate: ["coverImage", "category"] });
   }
 });
 const UID$f = "plugin::zhao-website.article-category";
@@ -4665,6 +4727,7 @@ const services = {
   "seo-config": seoConfig,
   "brand-info": brandInfo,
   "article": article,
+  "geo-article": geoArticle,
   "article-category": articleCategory,
   "product": product,
   "case": caseService,

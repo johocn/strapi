@@ -70,6 +70,11 @@ declare const _default: {
             featured(ctx: any): Promise<void>;
             related(ctx: any): Promise<any>;
         };
+        "geo-article": {
+            list(ctx: any): Promise<void>;
+            detail(ctx: any): Promise<any>;
+            featured(ctx: any): Promise<void>;
+        };
         product: {
             list(ctx: any): Promise<void>;
             detail(ctx: any): Promise<any>;
@@ -205,6 +210,23 @@ declare const _default: {
             archive(siteId: number, documentId: string): Promise<any>;
             softDelete(siteId: number, documentId: string): Promise<any>;
             incrementViewCount(siteId: number, documentId: string): Promise<void>;
+        };
+        "geo-article": ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            find(siteId: number, query?: any): Promise<{
+                results: any[];
+                meta: {
+                    pagination: {
+                        page: number;
+                        pageSize: number;
+                        total: number;
+                        pageCount: number;
+                    };
+                };
+            }>;
+            findOne(siteId: number, slug: string, locale?: string): Promise<any>;
+            findFeatured(siteId: number, limit?: number, locale?: string): Promise<any[]>;
         };
         "article-category": ({ strapi }: {
             strapi: import('@strapi/types/dist/core').Strapi;

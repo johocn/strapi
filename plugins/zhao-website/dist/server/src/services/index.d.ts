@@ -44,6 +44,23 @@ declare const _default: {
         softDelete(siteId: number, documentId: string): Promise<any>;
         incrementViewCount(siteId: number, documentId: string): Promise<void>;
     };
+    "geo-article": ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        find(siteId: number, query?: any): Promise<{
+            results: any[];
+            meta: {
+                pagination: {
+                    page: number;
+                    pageSize: number;
+                    total: number;
+                    pageCount: number;
+                };
+            };
+        }>;
+        findOne(siteId: number, slug: string, locale?: string): Promise<any>;
+        findFeatured(siteId: number, limit?: number, locale?: string): Promise<any[]>;
+    };
     "article-category": ({ strapi }: {
         strapi: import('@strapi/types/dist/core').Strapi;
     }) => {
