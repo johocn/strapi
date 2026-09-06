@@ -2655,9 +2655,11 @@ declare const _default: {
                 coverImage: {
                     type: string;
                 };
-                isFinance: {
+                riskType: {
                     type: string;
-                    default: boolean;
+                    enum: string[];
+                    default: string;
+                    required: boolean;
                     description: string;
                 };
                 riskDisclaimer: {
