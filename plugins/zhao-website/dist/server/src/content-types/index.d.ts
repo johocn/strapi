@@ -2494,5 +2494,240 @@ declare const _default: {
             };
         };
     };
+    "geo-article": {
+        schema: {
+            kind: string;
+            collectionName: string;
+            info: {
+                singularName: string;
+                pluralName: string;
+                displayName: string;
+            };
+            options: {
+                draftAndPublish: boolean;
+            };
+            pluginOptions: {
+                i18n: {
+                    localized: boolean;
+                };
+                "content-manager": {
+                    visible: boolean;
+                };
+                "content-type-builder": {
+                    visible: boolean;
+                };
+            };
+            attributes: {
+                site: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    required: boolean;
+                    inversedBy: string;
+                };
+                title: {
+                    type: string;
+                    maxLength: number;
+                    required: boolean;
+                    localized: boolean;
+                };
+                slug: {
+                    type: string;
+                    targetField: string;
+                    required: boolean;
+                    localized: boolean;
+                };
+                content: {
+                    type: string;
+                    required: boolean;
+                    localized: boolean;
+                    description: string;
+                };
+                type: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                    required: boolean;
+                };
+                faqQuestion: {
+                    type: string;
+                    maxLength: number;
+                    localized: boolean;
+                    description: string;
+                };
+                publishedAt: {
+                    type: string;
+                };
+                articleNo: {
+                    type: string;
+                    maxLength: number;
+                    unique: boolean;
+                    description: string;
+                };
+                authorName: {
+                    type: string;
+                    maxLength: number;
+                };
+                authorBio: {
+                    type: string;
+                    description: string;
+                };
+                status: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
+                category: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    inversedBy: string;
+                };
+                tags: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    inversedBy: string;
+                };
+                sourceName: {
+                    type: string;
+                    maxLength: number;
+                    description: string;
+                };
+                sourceUrl: {
+                    type: string;
+                    maxLength: number;
+                    description: string;
+                };
+                sourcePublishedAt: {
+                    type: string;
+                    description: string;
+                };
+                serviceScope: {
+                    type: string;
+                    description: string;
+                };
+                businessData: {
+                    type: string;
+                    default: any[];
+                    description: string;
+                };
+                caseContent: {
+                    type: string;
+                    description: string;
+                };
+                internalLinks: {
+                    type: string;
+                    default: any[];
+                    description: string;
+                };
+                metaTitle: {
+                    type: string;
+                    maxLength: number;
+                    localized: boolean;
+                };
+                metaDescription: {
+                    type: string;
+                    maxLength: number;
+                    localized: boolean;
+                    description: string;
+                };
+                canonicalUrl: {
+                    type: string;
+                    maxLength: number;
+                    localized: boolean;
+                };
+                jsonLdType: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
+                coverImage: {
+                    type: string;
+                };
+                isFinance: {
+                    type: string;
+                    default: boolean;
+                    description: string;
+                };
+                riskDisclaimer: {
+                    type: string;
+                    localized: boolean;
+                    description: string;
+                };
+                ctaType: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                    description: string;
+                };
+                leadFormEnabled: {
+                    type: string;
+                    default: boolean;
+                    description: string;
+                };
+                vendureProductListId: {
+                    type: string;
+                    maxLength: number;
+                    description: string;
+                };
+                readPoints: {
+                    type: string;
+                    default: number;
+                    description: string;
+                };
+                miniProgramPath: {
+                    type: string;
+                    maxLength: number;
+                    description: string;
+                };
+                reviewerName: {
+                    type: string;
+                    maxLength: number;
+                    description: string;
+                };
+                reviewedAt: {
+                    type: string;
+                    description: string;
+                };
+                reviewChecks: {
+                    type: string;
+                    default: {};
+                    description: string;
+                };
+                reviewNote: {
+                    type: string;
+                    description: string;
+                };
+                summaryPoints: {
+                    type: string;
+                    localized: boolean;
+                    description: string;
+                };
+                localTips: {
+                    type: string;
+                    localized: boolean;
+                    description: string;
+                };
+                infoBoundary: {
+                    type: string;
+                    localized: boolean;
+                    description: string;
+                };
+                allowIndex: {
+                    type: string;
+                    default: boolean;
+                };
+                noFollow: {
+                    type: string;
+                    default: boolean;
+                };
+                deletedAt: {
+                    type: string;
+                    default: any;
+                };
+            };
+        };
+    };
 };
 export default _default;

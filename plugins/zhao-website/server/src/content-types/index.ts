@@ -19,6 +19,7 @@ import firstTruthPolicy from "./first-truth-policy/schema.json";
 import brandVoice from "./brand-voice/schema.json";
 import redirectRule from "./redirect-rule/schema.json";
 import inviteTrace from "./invite-trace/schema.json";
+import geoArticle from "./geo-article/schema.json";
 
 export default {
   "seo-config": { schema: seoConfig },
@@ -42,4 +43,5 @@ export default {
   "brand-voice": { schema: brandVoice },
   "redirect-rule": { schema: redirectRule },
   "invite-trace": { schema: inviteTrace },
+  "geo-article": { schema: geoArticle },
 };
