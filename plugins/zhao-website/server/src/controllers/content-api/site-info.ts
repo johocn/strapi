@@ -1,14 +1,16 @@
 export default {
   async info(ctx: any) {
     const siteId = ctx.state.siteId;
-    if (!siteId) {
+    const siteDocumentId = ctx.state.siteDocumentId;
+    if (!siteId || !siteDocumentId) {
       ctx.body = null;
       return;
     }
     // 用 knex 查 site-config + template 关系（Document Service 关系 filter 不稳定）
+    // 注意：document_id 是字符串列，必须用 siteDocumentId（siteId 是数字主键，用于下方 service 调用）
     const db = strapi.db.connection;
     const site = await db('zhao_site_configs')
-      .where('document_id', siteId)
+      .where('document_id', siteDocumentId)
       .select('id', 'site_name', 'site_description', 'logo', 'favicon', 'icp_number',
               'seo_keywords', 'seo_description', 'customer_service_url', 'domain',
               'template', 'theme_config', 'extra_config', 'share_title', 'share_description', 'share_image')

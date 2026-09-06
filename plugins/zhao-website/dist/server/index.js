@@ -695,12 +695,13 @@ const seoOutput = {
 const siteInfo = {
   async info(ctx) {
     const siteId = ctx.state.siteId;
-    if (!siteId) {
+    const siteDocumentId = ctx.state.siteDocumentId;
+    if (!siteId || !siteDocumentId) {
       ctx.body = null;
       return;
     }
     const db = strapi.db.connection;
-    const site = await db("zhao_site_configs").where("document_id", siteId).select(
+    const site = await db("zhao_site_configs").where("document_id", siteDocumentId).select(
       "id",
       "site_name",
       "site_description",
