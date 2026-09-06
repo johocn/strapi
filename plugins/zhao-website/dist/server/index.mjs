@@ -32235,7 +32235,8 @@ const adminApi = () => ({
     channelScopeRoute("POST", "/studio-bridge/publish", "studio-bridge.publishFromStudio", "article.create"),
     channelScopeRoute("GET", "/stats/overview", "stats.overview", "article.read"),
     channelScopeRoute("GET", "/stats/leads", "stats.leadStats", "lead.read"),
-    channelScopeRoute("GET", "/stats/search", "stats.searchStats", "search-log.read")
+    channelScopeRoute("GET", "/stats/search", "stats.searchStats", "search-log.read"),
+    channelScopeRoute("POST", "/geo-articles/:documentId/audit-check", "geo-article-audit.check", "article.read")
   ]
 });
 const routes = {
