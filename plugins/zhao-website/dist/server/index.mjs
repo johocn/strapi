@@ -34422,8 +34422,9 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
     if (subjectId === objectId) return true;
     if (visited.has(subjectId)) return false;
     visited.add(subjectId);
+    const objectNumId = await this._resolveEntityId(objectId);
     const outRelations = await strapi2.db.query(RELATION_UID).findMany({
-      where: { subjectEntity: objectId, predicate, deletedAt: null },
+      where: { subjectEntity: objectNumId, predicate, deletedAt: null },
       populate: ["objectEntity"]
     });
     for (const rel of outRelations) {
@@ -34510,15 +34511,16 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
   async exportEntity(siteId, slug) {
     const entity = await this.findEntityBySlug(siteId, slug);
     if (!entity) return null;
+    const entityId = await this._resolveEntityId(entity.documentId);
     const outgoing = await strapi2.db.query(RELATION_UID).findMany({
-      where: { $or: [{ site: siteId, subjectEntity: entity.documentId, deletedAt: null }, { site: null, subjectEntity: entity.documentId, deletedAt: null }] },
+      where: { $or: [{ site: siteId, subjectEntity: entityId, deletedAt: null }, { site: null, subjectEntity: entityId, deletedAt: null }] },
       populate: ["objectEntity"]
     });
     const incoming = await strapi2.db.query(RELATION_UID).findMany({
-      where: { $or: [{ site: siteId, objectEntity: entity.documentId, deletedAt: null }, { site: null, objectEntity: entity.documentId, deletedAt: null }] },
+      where: { $or: [{ site: siteId, objectEntity: entityId, deletedAt: null }, { site: null, objectEntity: entityId, deletedAt: null }] },
       populate: ["subjectEntity"]
     });
-    const articles = await this.findArticlesByEntity(siteId, entity.documentId);
+    const articles = await this.findArticlesByEntity(siteId, entityId);
     return {
       ...this._entityToJsonLd(entity, outgoing, incoming),
       // 前端实体页按 outgoing/incoming 数组渲染「知识关系」
@@ -34537,10 +34539,10 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
       articles
     };
   },
-  /** 实体 → 提及该实体的已发布 GEO 文章 */
-  async findArticlesByEntity(siteId, entityDocumentId, limit = 20) {
+  /** 实体 → 提及该实体的已发布 GEO 文章（entityId 为实体数字 id） */
+  async findArticlesByEntity(siteId, entityId, limit = 20) {
     return strapi2.db.query("plugin::zhao-website.geo-article").findMany({
-      where: { site: siteId, status: "published", deletedAt: null, mentionedEntities: entityDocumentId },
+      where: { site: siteId, status: "published", deletedAt: null, mentionedEntities: entityId },
       select: ["slug", "title", "type", "publishedAt"],
       limit
     });

@@ -215,9 +215,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     if (subjectId === objectId) return true;
     if (visited.has(subjectId)) return false;
     visited.add(subjectId);
-    // 查询 object 的所有同 predicate 出边
+    // 查询 object 的所有同 predicate 出边（关系过滤需数字 id）
+    const objectNumId = await this._resolveEntityId(objectId);
     const outRelations = await strapi.db.query(RELATION_UID).findMany({
-      where: { subjectEntity: objectId, predicate, deletedAt: null },
+      where: { subjectEntity: objectNumId, predicate, deletedAt: null },
       populate: ["objectEntity"],
     });
     for (const rel of outRelations) {
@@ -314,15 +315,17 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async exportEntity(siteId: number, slug: string): Promise<any | null> {
     const entity = await this.findEntityBySlug(siteId, slug);
     if (!entity) return null;
+    // 关系过滤必须用实体数字 id（documentId 是字符串，直接过滤 lnk 列会报 integer 类型错误）
+    const entityId = await this._resolveEntityId(entity.documentId);
     const outgoing = await strapi.db.query(RELATION_UID).findMany({
-      where: { $or: [{ site: siteId, subjectEntity: entity.documentId, deletedAt: null }, { site: null, subjectEntity: entity.documentId, deletedAt: null }] },
+      where: { $or: [{ site: siteId, subjectEntity: entityId, deletedAt: null }, { site: null, subjectEntity: entityId, deletedAt: null }] },
       populate: ["objectEntity"],
     });
     const incoming = await strapi.db.query(RELATION_UID).findMany({
-      where: { $or: [{ site: siteId, objectEntity: entity.documentId, deletedAt: null }, { site: null, objectEntity: entity.documentId, deletedAt: null }] },
+      where: { $or: [{ site: siteId, objectEntity: entityId, deletedAt: null }, { site: null, objectEntity: entityId, deletedAt: null }] },
       populate: ["subjectEntity"],
     });
-    const articles = await this.findArticlesByEntity(siteId, entity.documentId);
+    const articles = await this.findArticlesByEntity(siteId, entityId);
     return {
       ...this._entityToJsonLd(entity, outgoing, incoming),
       // 前端实体页按 outgoing/incoming 数组渲染「知识关系」
@@ -342,10 +345,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     };
   },
 
-  /** 实体 → 提及该实体的已发布 GEO 文章 */
-  async findArticlesByEntity(siteId: number, entityDocumentId: string, limit = 20): Promise<any[]> {
+  /** 实体 → 提及该实体的已发布 GEO 文章（entityId 为实体数字 id） */
+  async findArticlesByEntity(siteId: number, entityId: number, limit = 20): Promise<any[]> {
     return strapi.db.query("plugin::zhao-website.geo-article").findMany({
-      where: { site: siteId, status: "published", deletedAt: null, mentionedEntities: entityDocumentId },
+      where: { site: siteId, status: "published", deletedAt: null, mentionedEntities: entityId },
       select: ["slug", "title", "type", "publishedAt"],
       limit,
     });
