@@ -53,6 +53,9 @@ declare const _default: {
         publicList(ctx: any): Promise<void>;
         publicByCategory(ctx: any): Promise<void>;
     };
+    "geo-article-audit": {
+        check(ctx: any): Promise<any>;
+    };
     article: {
         list(ctx: any): Promise<void>;
         detail(ctx: any): Promise<any>;

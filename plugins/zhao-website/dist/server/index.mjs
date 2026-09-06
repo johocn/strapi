@@ -31243,14 +31243,14 @@ function auditGeoArticle(article2) {
   const pass = missing.every((m) => m.passed);
   return { pass, missing };
 }
-const UID$k = "plugin::zhao-website.geo-article";
+const UID$l = "plugin::zhao-website.geo-article";
 const ApplicationError2 = ApplicationError$1;
-const POPULATE = ["truthBasis", "mentionedEntities", "author"];
+const POPULATE$1 = ["truthBasis", "mentionedEntities", "author"];
 const geoArticleLifecycles = ({ strapi: strapi2 }) => ({
   async beforeUpdate(event) {
     const { data, where } = event.params;
     if (!data || data.status !== "published") return;
-    const existing = await strapi2.db.query(UID$k).findOne({ where, populate: POPULATE });
+    const existing = await strapi2.db.query(UID$l).findOne({ where, populate: POPULATE$1 });
     if (!existing || existing.status === "published") return;
     const merged = { ...existing, ...data };
     const audit = auditGeoArticle({
@@ -32031,6 +32031,53 @@ const brandVoice$1 = {
     );
   }
 };
+const UID$k = "plugin::zhao-website.geo-article";
+const POPULATE = ["truthBasis", "mentionedEntities", "author"];
+const geoArticleAudit = {
+  async check(ctx) {
+    const { documentId } = ctx.params;
+    const siteId = ctx.state.siteId;
+    const doc = await strapi.db.query(UID$k).findOne({
+      where: { documentId, site: siteId, deletedAt: null },
+      populate: POPULATE
+    });
+    if (!doc) return ctx.notFound("GeoArticle not found");
+    const audit = auditGeoArticle({
+      type: doc.type,
+      title: doc.title,
+      content: doc.content,
+      faqQuestion: doc.faqQuestion,
+      comparisonData: doc.comparisonData,
+      listItems: doc.listItems,
+      summaryPoints: doc.summaryPoints,
+      localTips: doc.localTips,
+      infoBoundary: doc.infoBoundary,
+      sourceName: doc.sourceName,
+      sourceUrl: doc.sourceUrl,
+      truthBasis: doc.truthBasis,
+      mentionedEntities: doc.mentionedEntities,
+      author: doc.author,
+      authorName: doc.authorName,
+      jsonLdType: doc.jsonLdType,
+      businessData: doc.businessData,
+      ctaType: doc.ctaType,
+      leadFormEnabled: doc.leadFormEnabled,
+      riskType: doc.riskType,
+      reviewChecks: doc.reviewChecks,
+      reviewerName: doc.reviewerName,
+      reviewedAt: doc.reviewedAt
+    });
+    const total = audit.missing.length;
+    const passedCount = audit.missing.filter((m) => m.passed).length;
+    ctx.body = {
+      documentId,
+      status: doc.status,
+      pass: audit.pass,
+      score: total === 0 ? 1 : Math.round(passedCount / total * 100) / 100,
+      checks: audit.missing
+    };
+  }
+};
 const adminGeneric = Object.fromEntries(
   Object.entries(generic).map(([key, value]) => [`${key}-admin`, value])
 );
@@ -32062,7 +32109,8 @@ const controllers = {
   "ai-content-summary": aiContentSummary$1,
   "studio-bridge": studioBridge$1,
   stats,
-  "brand-voice": brandVoice$1
+  "brand-voice": brandVoice$1,
+  "geo-article-audit": geoArticleAudit
 };
 const publicRoute = (method, path, handler) => ({
   method,
