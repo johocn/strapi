@@ -13,15 +13,19 @@ export default {
       .where('document_id', siteDocumentId)
       .select('id', 'site_name', 'site_description', 'logo', 'favicon', 'icp_number',
               'seo_keywords', 'seo_description', 'customer_service_url', 'domain',
-              'template', 'theme_config', 'extra_config', 'share_title', 'share_description', 'share_image')
+              'theme_config', 'extra_config', 'share_title', 'share_description', 'share_image')
       .first();
     if (!site) {
       ctx.body = null;
       return;
     }
+    // template 是 manyToOne 关系，Strapi v5 存 lnk 表，无 template 列，须经 zhao_site_configs_template_lnk 取
     let template = null;
-    if (site.template) {
-      template = await db('zhao_site_templates').where('id', site.template).select('id', 'name', 'display_name', 'theme_config').first();
+    if (site.id) {
+      const lnk = await db('zhao_site_configs_template_lnk').where('site_config_id', site.id).first();
+      if (lnk && lnk.site_template_id) {
+        template = await db('zhao_site_templates').where('id', lnk.site_template_id).select('id', 'name', 'display_name', 'theme_config').first();
+      }
     }
     // brand-info + seo-config（若存在）
     let brandInfo = null;

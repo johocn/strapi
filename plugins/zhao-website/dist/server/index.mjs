@@ -762,7 +762,6 @@ const siteInfo = {
       "seo_description",
       "customer_service_url",
       "domain",
-      "template",
       "theme_config",
       "extra_config",
       "share_title",
@@ -774,8 +773,11 @@ const siteInfo = {
       return;
     }
     let template = null;
-    if (site.template) {
-      template = await db("zhao_site_templates").where("id", site.template).select("id", "name", "display_name", "theme_config").first();
+    if (site.id) {
+      const lnk = await db("zhao_site_configs_template_lnk").where("site_config_id", site.id).first();
+      if (lnk && lnk.site_template_id) {
+        template = await db("zhao_site_templates").where("id", lnk.site_template_id).select("id", "name", "display_name", "theme_config").first();
+      }
     }
     let brandInfo2 = null;
     let seoConfig2 = null;
