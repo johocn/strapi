@@ -13,7 +13,7 @@ export default {
   },
   async featured(ctx: any) {
     const siteId = ctx.state.siteId;
-    const result = await strapi.plugin("zhao-website").service("geo-article").findFeatured(siteId, Number(ctx.query.limit) || 5, ctx.query.locale);
+    const result = await strapi.plugin("zhao-website").service("geo-article").findFeatured(siteId, Number(ctx.query.limit) || 5, ctx.query.locale, ctx.query.type);
     ctx.body = result;
   },
 };

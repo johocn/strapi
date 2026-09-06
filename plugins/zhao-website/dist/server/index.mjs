@@ -506,7 +506,7 @@ const geoArticle$1 = {
   },
   async featured(ctx) {
     const siteId = ctx.state.siteId;
-    const result = await strapi.plugin("zhao-website").service("geo-article").findFeatured(siteId, Number(ctx.query.limit) || 5, ctx.query.locale);
+    const result = await strapi.plugin("zhao-website").service("geo-article").findFeatured(siteId, Number(ctx.query.limit) || 5, ctx.query.locale, ctx.query.type);
     ctx.body = result;
   }
 };
@@ -1755,9 +1755,11 @@ const geoArticle = ({ strapi: strapi2 }) => ({
     });
     return { ...doc, localizations: siblings };
   },
-  async findFeatured(siteId, limit = 5, locale) {
+  async findFeatured(siteId, limit = 5, locale, type) {
+    const extra = {};
+    if (type) extra.type = type;
     const filterService = strapi2.plugin("zhao-website").service("content-filter");
-    const where = await filterService.buildWhere(siteId, UID$g, { isFeatured: true }, locale);
+    const where = await filterService.buildWhere(siteId, UID$g, extra, locale);
     return strapi2.db.query(UID$g).findMany({ where, limit, orderBy: { publishedAt: "DESC" }, populate: ["coverImage", "category"] });
   }
 });

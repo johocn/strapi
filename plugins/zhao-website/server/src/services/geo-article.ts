@@ -36,9 +36,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     return { ...doc, localizations: siblings };
   },
 
-  async findFeatured(siteId: number, limit = 5, locale?: string) {
+  async findFeatured(siteId: number, limit = 5, locale?: string, type?: string) {
+    const extra: any = {};
+    if (type) extra.type = type;
     const filterService = strapi.plugin("zhao-website").service("content-filter");
-    const where = await filterService.buildWhere(siteId, UID, { isFeatured: true }, locale);
+    const where = await filterService.buildWhere(siteId, UID, extra, locale);
     return strapi.db.query(UID).findMany({ where, limit, orderBy: { publishedAt: "DESC" }, populate: ["coverImage", "category"] });
   },
 });

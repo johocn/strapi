@@ -14,6 +14,6 @@ declare const _default: ({ strapi }: {
         };
     }>;
     findOne(siteId: number, slug: string, locale?: string): Promise<any>;
-    findFeatured(siteId: number, limit?: number, locale?: string): Promise<any[]>;
+    findFeatured(siteId: number, limit?: number, locale?: string, type?: string): Promise<any[]>;
 };
 export default _default;
