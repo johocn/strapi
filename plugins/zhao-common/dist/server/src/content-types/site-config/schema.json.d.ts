@@ -366,6 +366,12 @@ declare const _default: {
       "type": "json",
       "default": ["admin"],
       "description": "倍速特权角色名单（如 [\"admin\",\"instructor\"]），命中可打破课程倍速限制"
+    },
+    "website_geo_articles": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-website.geo-article",
+      "mappedBy": "site"
     }
   }
 }

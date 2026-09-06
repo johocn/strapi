@@ -588,6 +588,12 @@ declare const _default: {
                         default: string[];
                         description: string;
                     };
+                    website_geo_articles: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
                 };
             };
         };
