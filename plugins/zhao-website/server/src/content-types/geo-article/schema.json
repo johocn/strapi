@@ -23,7 +23,7 @@
     "content": { "type": "text", "required": true, "localized": true,
       "description": "正文（HTML：文字/表格/图片/锚链接/引用标注）" },
     "type": { "type": "enumeration",
-      "enum": ["geo-article", "geo-faq", "local-report"],
+      "enum": ["geo-article", "geo-faq", "local-report", "local-comparison", "local-list"],
       "default": "geo-article", "required": true },
     "faqQuestion": { "type": "string", "maxLength": 200, "localized": true,
       "description": "type=geo-faq 时的问答标题" },
@@ -54,7 +54,7 @@
       "description": "建议包含吉林本地场景词" },
     "canonicalUrl": { "type": "string", "maxLength": 500, "localized": true },
     "jsonLdType": { "type": "enumeration",
-      "enum": ["Article", "FAQPage", "LocalBusiness"], "default": "Article" },
+      "enum": ["Article", "FAQPage", "LocalBusiness", "ItemList"], "default": "Article" },
     "coverImage": { "type": "media" },
     "isFinance": { "type": "boolean", "default": false,
       "description": "金融内容开关；开启后前端强制置顶不可折叠风险提示" },
@@ -81,6 +81,35 @@
       "description": "信息边界说明（统计范围/适用场景/局限性）" },
     "allowIndex": { "type": "boolean", "default": true },
     "noFollow": { "type": "boolean", "default": false },
+    "author": {
+      "type": "relation", "relation": "manyToOne",
+      "target": "plugin::zhao-website.author",
+      "description": "作者档案（可选；缺失时前端回退 authorName/authorBio）"
+    },
+    "editor": {
+      "type": "relation", "relation": "manyToOne",
+      "target": "admin::user",
+      "description": "编辑人（仅后台记录，不参与前端展示）"
+    },
+    "reviewer": {
+      "type": "relation", "relation": "manyToOne",
+      "target": "admin::user",
+      "description": "审核人（仅后台记录；前端审核展示用扁平 reviewerName/reviewedAt）"
+    },
+    "truthBasis": {
+      "type": "relation", "relation": "manyToMany",
+      "target": "plugin::zhao-website.first-truth-policy",
+      "description": "文章背书的真值声明"
+    },
+    "mentionedEntities": {
+      "type": "relation", "relation": "manyToMany",
+      "target": "plugin::zhao-website.knowledge-entity",
+      "description": "文中提及的知识图谱实体"
+    },
+    "comparisonData": { "type": "json", "default": [],
+      "description": "type=local-comparison 评分维度：[{dimension, items:[{name, score, note}]}]" },
+    "listItems": { "type": "json", "default": [],
+      "description": "type=local-list 清单条目：[{name, desc, price, link}]" },
     "deletedAt": { "type": "datetime", "default": null }
   }
 }
