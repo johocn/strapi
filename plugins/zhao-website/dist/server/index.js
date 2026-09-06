@@ -109,7 +109,7 @@ const collectionName$k = "zhao_website_seo_configs";
 const info$k = { "singularName": "seo-config", "pluralName": "seo-configs", "displayName": "SEO 全局配置" };
 const options$k = { "draftAndPublish": false };
 const pluginOptions$k = { "content-manager": { "visible": true }, "content-type-builder": { "visible": false } };
-const attributes$k = { "site": { "type": "relation", "relation": "oneToOne", "target": "plugin::zhao-common.site-config", "required": true, "inversedBy": "website_seo_config" }, "defaultTitle": { "type": "string", "maxLength": 60 }, "titleTemplate": { "type": "string", "maxLength": 60 }, "defaultDescription": { "type": "string", "maxLength": 160 }, "defaultKeywords": { "type": "string", "maxLength": 200 }, "ogImage": { "type": "media" }, "favicon": { "type": "media" }, "googleSiteVerification": { "type": "string", "maxLength": 100 }, "baiduSiteVerification": { "type": "string", "maxLength": 100 }, "bingSiteVerification": { "type": "string", "maxLength": 100 }, "baiduAnalyticsId": { "type": "string", "maxLength": 50 }, "googleAnalyticsId": { "type": "string", "maxLength": 50 }, "customHeadCode": { "type": "text" }, "customBodyCode": { "type": "text" }, "enableSitemap": { "type": "boolean", "default": true }, "sitemapExcludeTypes": { "type": "json" }, "enableRobotsTxt": { "type": "boolean", "default": true }, "robotsContent": { "type": "text" }, "aiCrawlerPolicy": { "type": "enumeration", "enum": ["allow_all", "block_all", "selective"], "default": "allow_all" }, "geoRegion": { "type": "string", "maxLength": 20 }, "geoPlacename": { "type": "string", "maxLength": 100 }, "geoPosition": { "type": "string", "maxLength": 50 }, "geoICBM": { "type": "string", "maxLength": 50 }, "defaultLocale": { "type": "string", "maxLength": 10, "default": "zh-CN" }, "alternateLocales": { "type": "json" }, "hreflangStrategy": { "type": "enumeration", "enum": ["none", "subdirectory", "subdomain", "tld"], "default": "subdirectory" }, "organizationName": { "type": "string", "maxLength": 200 }, "organizationLogo": { "type": "media" }, "organizationType": { "type": "string", "maxLength": 50 }, "schemaSameAs": { "type": "json" }, "schemaContactPoint": { "type": "json" }, "icpNumber": { "type": "string", "maxLength": 50 }, "publicSecurityRecord": { "type": "string", "maxLength": 50 }, "allowedAiCrawlers": { "type": "json", "default": [] }, "twitterSite": { "type": "string", "maxLength": 50 }, "twitterCreator": { "type": "string", "maxLength": 50 }, "sogouSiteVerification": { "type": "string", "maxLength": 100 }, "extraConfig": { "type": "json" }, "deletedAt": { "type": "datetime", "default": null } };
+const attributes$k = { "site": { "type": "relation", "relation": "oneToOne", "target": "plugin::zhao-common.site-config", "required": true, "inversedBy": "website_seo_config" }, "defaultTitle": { "type": "string", "maxLength": 60 }, "titleTemplate": { "type": "string", "maxLength": 60 }, "defaultDescription": { "type": "string", "maxLength": 160 }, "defaultKeywords": { "type": "string", "maxLength": 200 }, "ogImage": { "type": "media" }, "favicon": { "type": "media" }, "googleSiteVerification": { "type": "string", "maxLength": 100 }, "baiduSiteVerification": { "type": "string", "maxLength": 100 }, "bingSiteVerification": { "type": "string", "maxLength": 100 }, "baiduAnalyticsId": { "type": "string", "maxLength": 50 }, "googleAnalyticsId": { "type": "string", "maxLength": 50 }, "customHeadCode": { "type": "text" }, "customBodyCode": { "type": "text" }, "enableSitemap": { "type": "boolean", "default": true }, "sitemapExcludeTypes": { "type": "json" }, "enableRobotsTxt": { "type": "boolean", "default": true }, "robotsContent": { "type": "text" }, "aiCrawlerPolicy": { "type": "enumeration", "enum": ["allow_all", "block_all", "selective"], "default": "allow_all" }, "geoRegion": { "type": "string", "maxLength": 20 }, "geoPlacename": { "type": "string", "maxLength": 100 }, "geoPosition": { "type": "string", "maxLength": 50 }, "geoICBM": { "type": "string", "maxLength": 50 }, "defaultLocale": { "type": "string", "maxLength": 10, "default": "zh-CN" }, "alternateLocales": { "type": "json" }, "hreflangStrategy": { "type": "enumeration", "enum": ["none", "subdirectory", "subdomain", "tld"], "default": "subdirectory" }, "organizationName": { "type": "string", "maxLength": 200 }, "organizationLogo": { "type": "media" }, "organizationType": { "type": "string", "maxLength": 50 }, "schemaSameAs": { "type": "json" }, "schemaContactPoint": { "type": "json" }, "icpNumber": { "type": "string", "maxLength": 50 }, "publicSecurityRecord": { "type": "string", "maxLength": 50 }, "allowedAiCrawlers": { "type": "json", "default": [] }, "twitterSite": { "type": "string", "maxLength": 50 }, "twitterCreator": { "type": "string", "maxLength": 50 }, "sogouSiteVerification": { "type": "string", "maxLength": 100 }, "extraConfig": { "type": "json" }, "deletedAt": { "type": "datetime", "default": null }, "organizationAddress": { "type": "text" }, "organizationPhone": { "type": "string", "maxLength": 50 }, "areaServed": { "type": "json" } };
 const seoConfig$1 = {
   kind: kind$k,
   collectionName: collectionName$k,
@@ -424,20 +424,21 @@ const contentTypes = {
 const article$1 = {
   async list(ctx) {
     const siteId = ctx.state.siteId;
-    const { page = 1, pageSize = 10, category, tag, sort = "publishedAt:DESC" } = ctx.query;
+    const { page = 1, pageSize = 10, category, tag, sort = "publishedAt:DESC", locale } = ctx.query;
     const result = await strapi.plugin("zhao-website").service("article").find(siteId, {
       page: Number(page),
       pageSize: Number(pageSize),
       category,
       tag,
-      sort
+      sort,
+      locale
     });
     ctx.body = result;
   },
   async detail(ctx) {
     const siteId = ctx.state.siteId;
     const { slug } = ctx.params;
-    const article2 = await strapi.plugin("zhao-website").service("article").findOne(siteId, slug);
+    const article2 = await strapi.plugin("zhao-website").service("article").findOne(siteId, slug, ctx.query.locale);
     if (!article2) return ctx.notFound("Article not found");
     strapi.plugin("zhao-website").service("article").incrementViewCount(siteId, article2.documentId).catch(() => {
     });
@@ -454,13 +455,13 @@ const article$1 = {
   },
   async featured(ctx) {
     const siteId = ctx.state.siteId;
-    const result = await strapi.plugin("zhao-website").service("article").findFeatured(siteId, Number(ctx.query.limit) || 5);
+    const result = await strapi.plugin("zhao-website").service("article").findFeatured(siteId, Number(ctx.query.limit) || 5, ctx.query.locale);
     ctx.body = result;
   },
   async related(ctx) {
     const siteId = ctx.state.siteId;
     const { slug } = ctx.params;
-    const article2 = await strapi.plugin("zhao-website").service("article").findOne(siteId, slug);
+    const article2 = await strapi.plugin("zhao-website").service("article").findOne(siteId, slug, ctx.query.locale);
     if (!article2) return ctx.notFound("Article not found");
     const tagIds = (article2.tags || []).map((t) => t.documentId || t.id).slice(0, 3);
     if (tagIds.length === 0) {
@@ -471,7 +472,8 @@ const article$1 = {
       page: 1,
       pageSize: 5,
       tag: tagIds.join(","),
-      exclude: article2.documentId
+      exclude: article2.documentId,
+      locale: ctx.query.locale
     });
     ctx.body = { results: Array.isArray(result) ? result : result.results || result };
   }
@@ -642,7 +644,8 @@ async function getSiteUrl$1(siteId, fallbackHost) {
   const siteConfig = await strapi.db.query("plugin::zhao-common.site-config").findOne({
     where: { id: siteId }
   });
-  return siteConfig?.domain || `https://${fallbackHost}`;
+  const domain = siteConfig?.domain;
+  return domain ? /^https?:\/\//.test(domain) ? domain : `https://${domain}` : `https://${fallbackHost}`;
 }
 const seoOutput = {
   async sitemap(ctx) {
@@ -770,7 +773,8 @@ async function getSiteUrl(siteId, fallbackHost) {
   const siteConfig = await strapi.db.query("plugin::zhao-common.site-config").findOne({
     where: { id: siteId }
   });
-  return siteConfig?.domain || `https://${fallbackHost}`;
+  const domain = siteConfig?.domain;
+  return domain ? /^https?:\/\//.test(domain) ? domain : `https://${domain}` : `https://${fallbackHost}`;
 }
 const feed$1 = {
   async rss(ctx) {
@@ -1458,15 +1462,25 @@ async function firstTruthValidate(siteId, content) {
   const hasError = conflicts.some((c) => c.priority >= 80);
   return { hasError, conflicts };
 }
+const CATEGORY_UID = "plugin::zhao-website.article-category";
+async function resolveCategoryFilter(strapi2, siteId, category) {
+  const raw = String(category).trim();
+  const numeric = Number(raw);
+  if (Number.isInteger(numeric) && numeric > 0) return numeric;
+  const cat = await strapi2.db.query(CATEGORY_UID).findOne({
+    where: { site: siteId, $or: [{ slug: raw }, { documentId: raw }] },
+    select: ["id"]
+  });
+  return cat?.id ?? -1;
+}
 const UID$g = "plugin::zhao-website.article";
 const article = ({ strapi: strapi2 }) => ({
   async find(siteId, query = {}) {
-    const { page = 1, pageSize = 20, category, tag, exclude, status, isFeatured, q } = query;
-    const filters = { site: siteId, deletedAt: null };
-    if (status) filters.status = status;
-    else filters.status = "published";
-    if (category) filters.category = category;
-    if (isFeatured !== void 0) filters.isFeatured = isFeatured === "true" || isFeatured === true;
+    const { page = 1, pageSize = 20, category, tag, exclude, status, isFeatured, q, locale } = query;
+    const extra = {};
+    if (status) extra.status = status;
+    if (category) extra.category = await resolveCategoryFilter(strapi2, siteId, category);
+    if (isFeatured !== void 0) extra.isFeatured = isFeatured === "true" || isFeatured === true;
     if (tag) {
       const tagIds = String(tag).split(",").map((s) => s.trim()).filter(Boolean);
       if (tagIds.length > 0) {
@@ -1475,7 +1489,7 @@ const article = ({ strapi: strapi2 }) => ({
           const rows = await db.select("article_id").from("zhao_website_articles_tags_lnk").whereIn("tag_id", tagIds);
           const articleIds = [...new Set(rows.map((r) => r.article_id))];
           if (articleIds.length === 0) return [];
-          filters.id = { $in: articleIds };
+          extra.id = { $in: articleIds };
         } catch (err) {
           strapi2.log.warn("[zhao-website] tag filter knex failed, fallback to no-tag:", err.message);
         }
@@ -1490,27 +1504,33 @@ const article = ({ strapi: strapi2 }) => ({
         });
         const excludeNumericIds = excludeRows.map((r) => r.id);
         if (excludeNumericIds.length > 0) {
-          filters.id = { ...filters.id || {}, $notIn: excludeNumericIds };
+          extra.id = { ...extra.id || {}, $notIn: excludeNumericIds };
         }
       }
     }
+    const filterService = strapi2.plugin("zhao-website").service("content-filter");
+    const where = await filterService.buildWhere(siteId, UID$g, extra, locale);
     return strapi2.db.query(UID$g).findMany({
-      where: filters,
+      where,
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
       orderBy: { publishedAt: "DESC" },
       populate: ["coverImage", "category", "tags", "mainEntity"]
     });
   },
-  async findOne(siteId, slug) {
+  async findOne(siteId, slug, locale) {
+    const filterService = strapi2.plugin("zhao-website").service("content-filter");
+    const where = await filterService.buildWhere(siteId, UID$g, { slug }, locale);
     return strapi2.db.query(UID$g).findOne({
-      where: { site: siteId, slug, deletedAt: null, status: "published" },
+      where,
       populate: ["coverImage", "category", "tags", "mainEntity", "mentionedEntities", "ogImage"]
     });
   },
-  async findFeatured(siteId, limit = 5) {
+  async findFeatured(siteId, limit = 5, locale) {
+    const filterService = strapi2.plugin("zhao-website").service("content-filter");
+    const where = await filterService.buildWhere(siteId, UID$g, { isFeatured: true }, locale);
     return strapi2.db.query(UID$g).findMany({
-      where: { site: siteId, deletedAt: null, status: "published", isFeatured: true },
+      where,
       limit,
       orderBy: { publishedAt: "DESC" },
       populate: ["coverImage", "category"]
@@ -1520,17 +1540,16 @@ const article = ({ strapi: strapi2 }) => ({
     if (!keyword || keyword.length < 2) {
       return { data: [], meta: { pagination: { page, pageSize, total: 0, pageCount: 0 } } };
     }
+    const filterService = strapi2.plugin("zhao-website").service("content-filter");
+    const where = await filterService.buildWhere(siteId, UID$g, {
+      $or: [
+        { title: { $containsi: keyword } },
+        { excerpt: { $containsi: keyword } },
+        { content: { $containsi: keyword } }
+      ]
+    });
     const items = await strapi2.db.query(UID$g).findMany({
-      where: {
-        site: siteId,
-        deletedAt: null,
-        status: "published",
-        $or: [
-          { title: { $containsi: keyword } },
-          { excerpt: { $containsi: keyword } },
-          { content: { $containsi: keyword } }
-        ]
-      },
+      where,
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
       orderBy: { publishedAt: "DESC" },
@@ -1546,7 +1565,7 @@ const article = ({ strapi: strapi2 }) => ({
     const { page = 1, pageSize = 20, status, category, tagGroup } = query;
     const filters = { site: siteId, deletedAt: null };
     if (status) filters.status = status;
-    if (category) filters.category = category;
+    if (category) filters.category = await resolveCategoryFilter(strapi2, siteId, category);
     if (tagGroup) {
       const knex = strapi2.db.connection;
       const groupRow = await knex("zhao_tag_groups").where("slug", tagGroup).first() || await knex("zhao_tag_groups").where("document_id", tagGroup).first();
@@ -1724,13 +1743,14 @@ const UID$e = "plugin::zhao-website.product";
 const product = ({ strapi: strapi2 }) => ({
   async find(siteId, query = {}) {
     const { page = 1, pageSize = 20, category, tag, status, isFeatured, q } = query;
-    const filters = { site: siteId, deletedAt: null };
-    if (status) filters.status = status;
-    else filters.status = "published";
-    if (category) filters.category = category;
-    if (isFeatured !== void 0) filters.isFeatured = isFeatured === "true" || isFeatured === true;
+    const extra = {};
+    if (status) extra.status = status;
+    if (category) extra.category = await resolveCategoryFilter(strapi2, siteId, category);
+    if (isFeatured !== void 0) extra.isFeatured = isFeatured === "true" || isFeatured === true;
+    const filterService = strapi2.plugin("zhao-website").service("content-filter");
+    const where = await filterService.buildWhere(siteId, UID$e, extra);
     return strapi2.db.query(UID$e).findMany({
-      where: filters,
+      where,
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
       orderBy: { publishedAt: "DESC" },
@@ -1738,14 +1758,18 @@ const product = ({ strapi: strapi2 }) => ({
     });
   },
   async findOne(siteId, slug) {
+    const filterService = strapi2.plugin("zhao-website").service("content-filter");
+    const where = await filterService.buildWhere(siteId, UID$e, { slug });
     return strapi2.db.query(UID$e).findOne({
-      where: { site: siteId, slug, deletedAt: null, status: "published" },
+      where,
       populate: ["coverImage", "category", "tags", "mainEntity", "images", "mentionedEntities", "ogImage"]
     });
   },
   async findFeatured(siteId, limit = 5) {
+    const filterService = strapi2.plugin("zhao-website").service("content-filter");
+    const where = await filterService.buildWhere(siteId, UID$e, { isFeatured: true });
     return strapi2.db.query(UID$e).findMany({
-      where: { site: siteId, deletedAt: null, status: "published", isFeatured: true },
+      where,
       limit,
       orderBy: { publishedAt: "DESC" },
       populate: ["coverImage", "category"]
@@ -1755,17 +1779,16 @@ const product = ({ strapi: strapi2 }) => ({
     if (!keyword || keyword.length < 2) {
       return { data: [], meta: { pagination: { page, pageSize, total: 0, pageCount: 0 } } };
     }
+    const filterService = strapi2.plugin("zhao-website").service("content-filter");
+    const where = await filterService.buildWhere(siteId, UID$e, {
+      $or: [
+        { name: { $containsi: keyword } },
+        { description: { $containsi: keyword } },
+        { content: { $containsi: keyword } }
+      ]
+    });
     const items = await strapi2.db.query(UID$e).findMany({
-      where: {
-        site: siteId,
-        deletedAt: null,
-        status: "published",
-        $or: [
-          { name: { $containsi: keyword } },
-          { description: { $containsi: keyword } },
-          { content: { $containsi: keyword } }
-        ]
-      },
+      where,
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
       orderBy: { publishedAt: "DESC" },
@@ -1781,7 +1804,7 @@ const product = ({ strapi: strapi2 }) => ({
     const { page = 1, pageSize = 20, status, category, tagGroup } = query;
     const filters = { site: siteId, deletedAt: null };
     if (status) filters.status = status;
-    if (category) filters.category = category;
+    if (category) filters.category = await resolveCategoryFilter(strapi2, siteId, category);
     if (tagGroup) {
       const knex = strapi2.db.connection;
       const groupRow = await knex("zhao_tag_groups").where("slug", tagGroup).first() || await knex("zhao_tag_groups").where("document_id", tagGroup).first();
@@ -1894,12 +1917,13 @@ const UID$d = "plugin::zhao-website.case";
 const caseService = ({ strapi: strapi2 }) => ({
   async find(siteId, query = {}) {
     const { page = 1, pageSize = 20, tag, status, isFeatured, q } = query;
-    const filters = { site: siteId, deletedAt: null };
-    if (status) filters.status = status;
-    else filters.status = "published";
-    if (isFeatured !== void 0) filters.isFeatured = isFeatured === "true" || isFeatured === true;
+    const extra = {};
+    if (status) extra.status = status;
+    if (isFeatured !== void 0) extra.isFeatured = isFeatured === "true" || isFeatured === true;
+    const filterService = strapi2.plugin("zhao-website").service("content-filter");
+    const where = await filterService.buildWhere(siteId, UID$d, extra);
     return strapi2.db.query(UID$d).findMany({
-      where: filters,
+      where,
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
       orderBy: { publishedAt: "DESC" },
@@ -1907,14 +1931,18 @@ const caseService = ({ strapi: strapi2 }) => ({
     });
   },
   async findOne(siteId, slug) {
+    const filterService = strapi2.plugin("zhao-website").service("content-filter");
+    const where = await filterService.buildWhere(siteId, UID$d, { slug });
     return strapi2.db.query(UID$d).findOne({
-      where: { site: siteId, slug, deletedAt: null, status: "published" },
+      where,
       populate: ["coverImage", "clientLogo", "tags", "mainEntity", "images", "mentionedEntities", "relatedProducts"]
     });
   },
   async findFeatured(siteId, limit = 5) {
+    const filterService = strapi2.plugin("zhao-website").service("content-filter");
+    const where = await filterService.buildWhere(siteId, UID$d, { isFeatured: true });
     return strapi2.db.query(UID$d).findMany({
-      where: { site: siteId, deletedAt: null, status: "published", isFeatured: true },
+      where,
       limit,
       orderBy: { publishedAt: "DESC" },
       populate: ["coverImage", "clientLogo"]
@@ -1924,18 +1952,17 @@ const caseService = ({ strapi: strapi2 }) => ({
     if (!keyword || keyword.length < 2) {
       return { data: [], meta: { pagination: { page, pageSize, total: 0, pageCount: 0 } } };
     }
+    const filterService = strapi2.plugin("zhao-website").service("content-filter");
+    const where = await filterService.buildWhere(siteId, UID$d, {
+      $or: [
+        { title: { $containsi: keyword } },
+        { challenge: { $containsi: keyword } },
+        { solution: { $containsi: keyword } },
+        { results: { $containsi: keyword } }
+      ]
+    });
     const items = await strapi2.db.query(UID$d).findMany({
-      where: {
-        site: siteId,
-        deletedAt: null,
-        status: "published",
-        $or: [
-          { title: { $containsi: keyword } },
-          { challenge: { $containsi: keyword } },
-          { solution: { $containsi: keyword } },
-          { results: { $containsi: keyword } }
-        ]
-      },
+      where,
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
       orderBy: { publishedAt: "DESC" },
@@ -2063,13 +2090,14 @@ const UID$c = "plugin::zhao-website.compliance";
 const compliance = ({ strapi: strapi2 }) => ({
   async find(siteId, query = {}) {
     const { page = 1, pageSize = 20, category, tag, status, isFeatured, q } = query;
-    const filters = { site: siteId, deletedAt: null };
-    if (status) filters.status = status;
-    else filters.status = "published";
-    if (category) filters.category = category;
-    if (isFeatured !== void 0) filters.isFeatured = isFeatured === "true" || isFeatured === true;
+    const extra = {};
+    if (status) extra.status = status;
+    if (category) extra.category = category;
+    if (isFeatured !== void 0) extra.isFeatured = isFeatured === "true" || isFeatured === true;
+    const filterService = strapi2.plugin("zhao-website").service("content-filter");
+    const where = await filterService.buildWhere(siteId, UID$c, extra);
     return strapi2.db.query(UID$c).findMany({
-      where: filters,
+      where,
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
       orderBy: { publishedAt: "DESC" },
@@ -2077,8 +2105,10 @@ const compliance = ({ strapi: strapi2 }) => ({
     });
   },
   async findOne(siteId, slug) {
+    const filterService = strapi2.plugin("zhao-website").service("content-filter");
+    const where = await filterService.buildWhere(siteId, UID$c, { slug });
     return strapi2.db.query(UID$c).findOne({
-      where: { site: siteId, slug, deletedAt: null, status: "published" },
+      where,
       populate: ["tags"]
     });
   },
@@ -2086,16 +2116,15 @@ const compliance = ({ strapi: strapi2 }) => ({
     if (!keyword || keyword.length < 2) {
       return { data: [], meta: { pagination: { page, pageSize, total: 0, pageCount: 0 } } };
     }
+    const filterService = strapi2.plugin("zhao-website").service("content-filter");
+    const where = await filterService.buildWhere(siteId, UID$c, {
+      $or: [
+        { title: { $containsi: keyword } },
+        { content: { $containsi: keyword } }
+      ]
+    });
     const items = await strapi2.db.query(UID$c).findMany({
-      where: {
-        site: siteId,
-        deletedAt: null,
-        status: "published",
-        $or: [
-          { title: { $containsi: keyword } },
-          { content: { $containsi: keyword } }
-        ]
-      },
+      where,
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
       orderBy: { publishedAt: "DESC" },
@@ -2215,13 +2244,14 @@ const UID$b = "plugin::zhao-website.faq";
 const faq = ({ strapi: strapi2 }) => ({
   async find(siteId, query = {}) {
     const { page = 1, pageSize = 20, category, tag, status, isFeatured, q } = query;
-    const filters = { site: siteId, deletedAt: null };
-    if (status) filters.status = status;
-    else filters.status = "published";
-    if (category) filters.category = category;
-    if (isFeatured !== void 0) filters.isFeatured = isFeatured === "true" || isFeatured === true;
+    const extra = {};
+    if (status) extra.status = status;
+    if (category) extra.category = await resolveCategoryFilter(strapi2, siteId, category);
+    if (isFeatured !== void 0) extra.isFeatured = isFeatured === "true" || isFeatured === true;
+    const filterService = strapi2.plugin("zhao-website").service("content-filter");
+    const where = await filterService.buildWhere(siteId, UID$b, extra);
     return strapi2.db.query(UID$b).findMany({
-      where: filters,
+      where,
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
       orderBy: { publishedAt: "DESC" },
@@ -2229,14 +2259,18 @@ const faq = ({ strapi: strapi2 }) => ({
     });
   },
   async findOne(siteId, slug) {
+    const filterService = strapi2.plugin("zhao-website").service("content-filter");
+    const where = await filterService.buildWhere(siteId, UID$b, { slug });
     return strapi2.db.query(UID$b).findOne({
-      where: { site: siteId, slug, deletedAt: null, status: "published" },
+      where,
       populate: ["category", "tags", "mainEntity", "mentionedEntities"]
     });
   },
   async findFeatured(siteId, limit = 5) {
+    const filterService = strapi2.plugin("zhao-website").service("content-filter");
+    const where = await filterService.buildWhere(siteId, UID$b, { isFeatured: true });
     return strapi2.db.query(UID$b).findMany({
-      where: { site: siteId, deletedAt: null, status: "published", isFeatured: true },
+      where,
       limit,
       orderBy: { publishedAt: "DESC" },
       populate: ["category"]
@@ -2246,16 +2280,15 @@ const faq = ({ strapi: strapi2 }) => ({
     if (!keyword || keyword.length < 2) {
       return { data: [], meta: { pagination: { page, pageSize, total: 0, pageCount: 0 } } };
     }
+    const filterService = strapi2.plugin("zhao-website").service("content-filter");
+    const where = await filterService.buildWhere(siteId, UID$b, {
+      $or: [
+        { question: { $containsi: keyword } },
+        { answer: { $containsi: keyword } }
+      ]
+    });
     const items = await strapi2.db.query(UID$b).findMany({
-      where: {
-        site: siteId,
-        deletedAt: null,
-        status: "published",
-        $or: [
-          { question: { $containsi: keyword } },
-          { answer: { $containsi: keyword } }
-        ]
-      },
+      where,
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
       orderBy: { publishedAt: "DESC" },
@@ -2271,7 +2304,7 @@ const faq = ({ strapi: strapi2 }) => ({
     const { page = 1, pageSize = 20, status, category, tagGroup } = query;
     const filters = { site: siteId, deletedAt: null };
     if (status) filters.status = status;
-    if (category) filters.category = category;
+    if (category) filters.category = await resolveCategoryFilter(strapi2, siteId, category);
     if (tagGroup) {
       const knex = strapi2.db.connection;
       const groupRow = await knex("zhao_tag_groups").where("slug", tagGroup).first() || await knex("zhao_tag_groups").where("document_id", tagGroup).first();
@@ -2380,13 +2413,14 @@ const UID$a = "plugin::zhao-website.tutorial";
 const tutorial = ({ strapi: strapi2 }) => ({
   async find(siteId, query = {}) {
     const { page = 1, pageSize = 20, category, tag, status, isFeatured, q } = query;
-    const filters = { site: siteId, deletedAt: null };
-    if (status) filters.status = status;
-    else filters.status = "published";
-    if (category) filters.category = category;
-    if (isFeatured !== void 0) filters.isFeatured = isFeatured === "true" || isFeatured === true;
+    const extra = {};
+    if (status) extra.status = status;
+    if (category) extra.category = await resolveCategoryFilter(strapi2, siteId, category);
+    if (isFeatured !== void 0) extra.isFeatured = isFeatured === "true" || isFeatured === true;
+    const filterService = strapi2.plugin("zhao-website").service("content-filter");
+    const where = await filterService.buildWhere(siteId, UID$a, extra);
     return strapi2.db.query(UID$a).findMany({
-      where: filters,
+      where,
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
       orderBy: { publishedAt: "DESC" },
@@ -2394,14 +2428,18 @@ const tutorial = ({ strapi: strapi2 }) => ({
     });
   },
   async findOne(siteId, slug) {
+    const filterService = strapi2.plugin("zhao-website").service("content-filter");
+    const where = await filterService.buildWhere(siteId, UID$a, { slug });
     return strapi2.db.query(UID$a).findOne({
-      where: { site: siteId, slug, deletedAt: null, status: "published" },
+      where,
       populate: ["coverImage", "category", "tags", "mainEntity", "mentionedEntities"]
     });
   },
   async findFeatured(siteId, limit = 5) {
+    const filterService = strapi2.plugin("zhao-website").service("content-filter");
+    const where = await filterService.buildWhere(siteId, UID$a, { isFeatured: true });
     return strapi2.db.query(UID$a).findMany({
-      where: { site: siteId, deletedAt: null, status: "published", isFeatured: true },
+      where,
       limit,
       orderBy: { publishedAt: "DESC" },
       populate: ["coverImage", "category"]
@@ -2411,17 +2449,16 @@ const tutorial = ({ strapi: strapi2 }) => ({
     if (!keyword || keyword.length < 2) {
       return { data: [], meta: { pagination: { page, pageSize, total: 0, pageCount: 0 } } };
     }
+    const filterService = strapi2.plugin("zhao-website").service("content-filter");
+    const where = await filterService.buildWhere(siteId, UID$a, {
+      $or: [
+        { title: { $containsi: keyword } },
+        { description: { $containsi: keyword } },
+        { content: { $containsi: keyword } }
+      ]
+    });
     const items = await strapi2.db.query(UID$a).findMany({
-      where: {
-        site: siteId,
-        deletedAt: null,
-        status: "published",
-        $or: [
-          { title: { $containsi: keyword } },
-          { description: { $containsi: keyword } },
-          { content: { $containsi: keyword } }
-        ]
-      },
+      where,
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
       orderBy: { publishedAt: "DESC" },
@@ -2437,7 +2474,7 @@ const tutorial = ({ strapi: strapi2 }) => ({
     const { page = 1, pageSize = 20, status, category, tagGroup } = query;
     const filters = { site: siteId, deletedAt: null };
     if (status) filters.status = status;
-    if (category) filters.category = category;
+    if (category) filters.category = await resolveCategoryFilter(strapi2, siteId, category);
     if (tagGroup) {
       const knex = strapi2.db.connection;
       const groupRow = await knex("zhao_tag_groups").where("slug", tagGroup).first() || await knex("zhao_tag_groups").where("document_id", tagGroup).first();
@@ -2547,13 +2584,14 @@ const UID$9 = "plugin::zhao-website.download";
 const download = ({ strapi: strapi2 }) => ({
   async find(siteId, query = {}) {
     const { page = 1, pageSize = 20, category, tag, status, isFeatured, q } = query;
-    const filters = { site: siteId, deletedAt: null };
-    if (status) filters.status = status;
-    else filters.status = "published";
-    if (category) filters.category = category;
-    if (isFeatured !== void 0) filters.isFeatured = isFeatured === "true" || isFeatured === true;
+    const extra = {};
+    if (status) extra.status = status;
+    if (category) extra.category = await resolveCategoryFilter(strapi2, siteId, category);
+    if (isFeatured !== void 0) extra.isFeatured = isFeatured === "true" || isFeatured === true;
+    const filterService = strapi2.plugin("zhao-website").service("content-filter");
+    const where = await filterService.buildWhere(siteId, UID$9, extra);
     return strapi2.db.query(UID$9).findMany({
-      where: filters,
+      where,
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
       orderBy: { publishedAt: "DESC" },
@@ -2561,14 +2599,18 @@ const download = ({ strapi: strapi2 }) => ({
     });
   },
   async findOne(siteId, slug) {
+    const filterService = strapi2.plugin("zhao-website").service("content-filter");
+    const where = await filterService.buildWhere(siteId, UID$9, { slug });
     return strapi2.db.query(UID$9).findOne({
-      where: { site: siteId, slug, deletedAt: null, status: "published" },
+      where,
       populate: ["tags", "file"]
     });
   },
   async findFeatured(siteId, limit = 5) {
+    const filterService = strapi2.plugin("zhao-website").service("content-filter");
+    const where = await filterService.buildWhere(siteId, UID$9, { isFeatured: true });
     return strapi2.db.query(UID$9).findMany({
-      where: { site: siteId, deletedAt: null, status: "published", isFeatured: true },
+      where,
       limit,
       orderBy: { publishedAt: "DESC" },
       populate: ["tags", "file"]
@@ -2578,16 +2620,15 @@ const download = ({ strapi: strapi2 }) => ({
     if (!keyword || keyword.length < 2) {
       return { data: [], meta: { pagination: { page, pageSize, total: 0, pageCount: 0 } } };
     }
+    const filterService = strapi2.plugin("zhao-website").service("content-filter");
+    const where = await filterService.buildWhere(siteId, UID$9, {
+      $or: [
+        { name: { $containsi: keyword } },
+        { description: { $containsi: keyword } }
+      ]
+    });
     const items = await strapi2.db.query(UID$9).findMany({
-      where: {
-        site: siteId,
-        deletedAt: null,
-        status: "published",
-        $or: [
-          { name: { $containsi: keyword } },
-          { description: { $containsi: keyword } }
-        ]
-      },
+      where,
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
       orderBy: { publishedAt: "DESC" },
@@ -2603,7 +2644,7 @@ const download = ({ strapi: strapi2 }) => ({
     const { page = 1, pageSize = 20, status, category, tagGroup } = query;
     const filters = { site: siteId, deletedAt: null };
     if (status) filters.status = status;
-    if (category) filters.category = category;
+    if (category) filters.category = await resolveCategoryFilter(strapi2, siteId, category);
     if (tagGroup) {
       const knex = strapi2.db.connection;
       const groupRow = await knex("zhao_tag_groups").where("slug", tagGroup).first() || await knex("zhao_tag_groups").where("document_id", tagGroup).first();
@@ -3720,10 +3761,17 @@ const schemaBuilder = ({ strapi: strapi2 }) => ({
     if (brandInfo2?.logo) org.logo = brandInfo2.logo.url;
     if (brandInfo2?.description) org.description = brandInfo2.description;
     if (brandInfo2?.foundingDate) org.foundingDate = brandInfo2.foundingDate;
-    if (brandInfo2?.registeredAddress) org.address = {
-      "@type": "PostalAddress",
-      streetAddress: brandInfo2.registeredAddress
-    };
+    if (brandInfo2?.registeredAddress) {
+      org.address = {
+        "@type": "PostalAddress",
+        streetAddress: brandInfo2.registeredAddress
+      };
+    } else if (seoConfig2?.organizationAddress) {
+      org.address = {
+        "@type": "PostalAddress",
+        streetAddress: seoConfig2.organizationAddress
+      };
+    }
     if (brandInfo2?.contactPhone) org.contactPoint = {
       "@type": "ContactPoint",
       telephone: brandInfo2.contactPhone,
@@ -3731,19 +3779,31 @@ const schemaBuilder = ({ strapi: strapi2 }) => ({
     };
     if (seoConfig2?.schemaSameAs) org.sameAs = seoConfig2.schemaSameAs;
     if (seoConfig2?.schemaContactPoint) org.contactPoint = seoConfig2.schemaContactPoint;
+    else if (seoConfig2?.organizationPhone) org.telephone = seoConfig2.organizationPhone;
     return org;
   },
   buildLocalBusiness(brandInfo2, seoConfig2) {
     const org = this.buildOrganization(brandInfo2, seoConfig2);
     org["@type"] = seoConfig2?.organizationType || "LocalBusiness";
     if (seoConfig2?.geoPosition) {
-      const coords = seoConfig2.geoPosition.split(";").map((s) => s.trim());
-      if (coords.length >= 2) {
+      const coords = String(seoConfig2.geoPosition).split(/[;,]/).map((s) => s.trim());
+      if (coords.length >= 2 && coords[0] && coords[1]) {
         org.geo = { "@type": "GeoCoordinates", latitude: coords[0], longitude: coords[1] };
       }
     }
-    if (seoConfig2?.geoPlacename) {
-      org.address = { "@type": "PostalAddress", addressLocality: seoConfig2.geoPlacename };
+    const locality = seoConfig2?.geoPlacename;
+    const street = seoConfig2?.organizationAddress;
+    if (locality || street) {
+      org.address = { "@type": "PostalAddress" };
+      if (locality) org.address.addressLocality = locality;
+      if (street) org.address.streetAddress = street;
+    }
+    if (seoConfig2?.organizationPhone) {
+      org.telephone = seoConfig2.organizationPhone;
+    }
+    if (seoConfig2?.areaServed) {
+      const served = Array.isArray(seoConfig2.areaServed) ? seoConfig2.areaServed : [seoConfig2.areaServed];
+      org.areaServed = served.map((s) => ({ "@type": "City", name: String(s) }));
     }
     return org;
   },
@@ -3903,6 +3963,7 @@ const llmsTxt = ({ strapi: strapi2 }) => ({
   async generate(siteId, siteUrl) {
     await strapi2.plugin("zhao-website").service("seo-config").get(siteId);
     const brandInfo2 = await strapi2.plugin("zhao-website").service("brand-info").get(siteId);
+    const filterService = strapi2.plugin("zhao-website").service("content-filter");
     const lines = [];
     lines.push(`# ${brandInfo2?.companyName || "Website"}`);
     if (brandInfo2?.slogan) lines.push(`> ${brandInfo2.slogan}`);
@@ -3914,7 +3975,7 @@ const llmsTxt = ({ strapi: strapi2 }) => ({
     }
     lines.push("## Pages");
     const articles = await strapi2.db.query("plugin::zhao-website.article").findMany({
-      where: { site: siteId, status: "published", deletedAt: null, allowIndex: true },
+      where: await filterService.buildWhere(siteId, "plugin::zhao-website.article"),
       limit: 100,
       orderBy: { publishedAt: "DESC" }
     });
@@ -3922,35 +3983,35 @@ const llmsTxt = ({ strapi: strapi2 }) => ({
       lines.push(`- [${a.title}](${siteUrl}/articles/${a.slug}): ${a.excerpt || ""}`);
     }
     const products = await strapi2.db.query("plugin::zhao-website.product").findMany({
-      where: { site: siteId, status: "published", deletedAt: null, allowIndex: true },
+      where: await filterService.buildWhere(siteId, "plugin::zhao-website.product"),
       limit: 50
     });
     for (const p of products) {
       lines.push(`- [${p.name}](${siteUrl}/products/${p.slug}): ${p.tagline || ""}`);
     }
     const tutorials = await strapi2.db.query("plugin::zhao-website.tutorial").findMany({
-      where: { site: siteId, status: "published", deletedAt: null, allowIndex: true },
+      where: await filterService.buildWhere(siteId, "plugin::zhao-website.tutorial"),
       limit: 50
     });
     for (const t of tutorials) {
       lines.push(`- [${t.title}](${siteUrl}/tutorials/${t.slug}): ${t.description || ""}`);
     }
     const cases = await strapi2.db.query("plugin::zhao-website.case").findMany({
-      where: { site: siteId, status: "published", deletedAt: null, allowIndex: true },
+      where: await filterService.buildWhere(siteId, "plugin::zhao-website.case"),
       limit: 50
     });
     for (const c of cases) {
       lines.push(`- [${c.title || c.clientName}](${siteUrl}/cases/${c.slug}): ${c.clientIndustry || ""}`);
     }
     const faqs = await strapi2.db.query("plugin::zhao-website.faq").findMany({
-      where: { site: siteId, status: "published", deletedAt: null, allowIndex: true },
+      where: await filterService.buildWhere(siteId, "plugin::zhao-website.faq"),
       limit: 50
     });
     for (const f of faqs) {
       lines.push(`- [FAQ: ${f.question}](${siteUrl}/faqs/${f.slug})`);
     }
     const compliances = await strapi2.db.query("plugin::zhao-website.compliance").findMany({
-      where: { site: siteId, status: "published", deletedAt: null, allowIndex: true },
+      where: await filterService.buildWhere(siteId, "plugin::zhao-website.compliance"),
       limit: 30
     });
     for (const c of compliances) {
@@ -3994,8 +4055,10 @@ const sitemap = ({ strapi: strapi2 }) => ({
       if (excludeTypes.includes(ct.uid.split(".").pop())) continue;
       const populate = [];
       if (ct.imageField) populate.push(ct.imageField);
+      const filterService = strapi2.plugin("zhao-website").service("content-filter");
+      const where = await filterService.buildWhere(siteId, ct.uid);
       const items = await strapi2.db.query(ct.uid).findMany({
-        where: { site: siteId, status: "published", deletedAt: null, allowIndex: true },
+        where,
         orderBy: { publishedAt: "DESC" },
         populate: populate.length > 0 ? populate : void 0
       });
@@ -4068,6 +4131,81 @@ ${urls.join("\n")}
     }
     result.push({ hreflang: "x-default", href: `${siteUrl}${path}` });
     return result;
+  }
+});
+const SITE_CONFIG_UID = "plugin::zhao-common.site-config";
+const DEFAULT_FILTERS = {
+  siteScoped: true,
+  defaultStatus: "published",
+  excludeDeleted: true,
+  allowIndex: "auto"
+  // auto=有该字段才过滤 / strict=强制 / off=不过滤
+};
+const contentFilter = ({ strapi: strapi2 }) => ({
+  /**
+   * 读取一级过滤配置（含模板合并链）
+   * 注：ctx.state.siteId 为 site-config 的 numeric id，而 zhao-common.getConfig 按 documentId 查询，
+   * 因此先按 numeric id 解析记录（带 template 关联）再走 getMergedConfig 合并；拿不到时回退 getConfig。
+   */
+  async getFilters(siteId) {
+    try {
+      const siteConfigService = strapi2.plugin("zhao-common").service("site-config");
+      const numericId = Number(siteId);
+      let siteConfig = null;
+      if (Number.isInteger(numericId) && numericId > 0) {
+        siteConfig = await strapi2.db.query(SITE_CONFIG_UID).findOne({
+          where: { id: numericId },
+          populate: ["template"]
+        });
+      }
+      if (!siteConfig) {
+        siteConfig = await siteConfigService.getConfig(siteId ? String(siteId) : "");
+      }
+      const merged = await strapi2.plugin("zhao-common").service("site-template").getMergedConfig(siteConfig);
+      return {
+        ...DEFAULT_FILTERS,
+        ...merged?.config?.global?.filters || {}
+      };
+    } catch {
+      return { ...DEFAULT_FILTERS };
+    }
+  },
+  /**
+   * 构建查询条件
+   * @param siteId 站点 ID
+   * @param uid 内容模型 uid，如 plugin::zhao-website.article
+   * @param extra 附加条件（调用方自定义，优先级最高）
+   * @param locale 语言（可空，空则不加 locale 过滤）
+   */
+  async buildWhere(siteId, uid, extra = {}, locale) {
+    const f = await this.getFilters(siteId);
+    const where = { ...extra };
+    if (f.siteScoped) where.site = siteId;
+    if (f.defaultStatus) where.status = f.defaultStatus;
+    if (f.excludeDeleted) where.deletedAt = null;
+    if (f.allowIndex === "strict") {
+      where.allowIndex = true;
+    } else if (f.allowIndex === "auto" && strapi2.getModel(uid)?.attributes?.allowIndex) {
+      where.allowIndex = true;
+    }
+    if (locale) where.locale = locale;
+    return where;
+  },
+  /**
+   * 统一查询入口：buildWhere + findMany
+   */
+  async findMany(uid, siteId, params = {}) {
+    const { where = {}, locale, ...rest } = params;
+    const fullWhere = await this.buildWhere(siteId, uid, where, locale);
+    return strapi2.db.query(uid).findMany({ ...rest, where: fullWhere });
+  },
+  /**
+   * 统一计数入口
+   */
+  async count(uid, siteId, params = {}) {
+    const { where = {}, locale, ...rest } = params;
+    const fullWhere = await this.buildWhere(siteId, uid, where, locale);
+    return strapi2.db.query(uid).count({ ...rest, where: fullWhere });
   }
 });
 const AI_CRAWLER_LIST$1 = [
@@ -4292,7 +4430,8 @@ const seoMeta = ({ strapi: strapi2 }) => ({
     const siteConfig = await strapi2.db.query("plugin::zhao-common.site-config").findOne({
       where: { id: siteId }
     });
-    const siteUrl = siteConfig?.domain || `https://${requestHost}`;
+    const rawDomain = siteConfig?.domain;
+    const siteUrl = rawDomain ? /^https?:\/\//.test(rawDomain) ? rawDomain : `https://${rawDomain}` : `https://${requestHost}`;
     const title = seoConfig2?.defaultTitle || brandInfo2?.companyName || "";
     const description = seoConfig2?.defaultDescription || brandInfo2?.description || "";
     const keywords = seoConfig2?.defaultKeywords || "";
@@ -4532,6 +4671,7 @@ const services = {
   "schema-builder": schemaBuilder,
   "llms-txt": llmsTxt,
   "sitemap": sitemap,
+  "content-filter": contentFilter,
   "robots": robots,
   "search-engine-push": searchEnginePush,
   "studio-bridge": studioBridge,

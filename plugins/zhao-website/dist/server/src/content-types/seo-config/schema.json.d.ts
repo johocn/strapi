@@ -164,6 +164,16 @@ declare const _default: {
     "deletedAt": {
       "type": "datetime",
       "default": null
+    },
+    "organizationAddress": {
+      "type": "text"
+    },
+    "organizationPhone": {
+      "type": "string",
+      "maxLength": 50
+    },
+    "areaServed": {
+      "type": "json"
     }
   }
 }

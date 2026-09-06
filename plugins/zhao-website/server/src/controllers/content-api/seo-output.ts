@@ -2,7 +2,13 @@ async function getSiteUrl(siteId: number, fallbackHost: string): Promise<string>
   const siteConfig = await strapi.db.query("plugin::zhao-common.site-config").findOne({
     where: { id: siteId },
   });
-  return siteConfig?.domain || `https://${fallbackHost}`;
+  // domain 存的是裸域名，需补协议成绝对 URL，否则 sitemap/llms-txt 里 new URL() 抛错
+  const domain = siteConfig?.domain;
+  return domain
+    ? /^https?:\/\//.test(domain)
+      ? domain
+      : `https://${domain}`
+    : `https://${fallbackHost}`;
 }
 
 export default {

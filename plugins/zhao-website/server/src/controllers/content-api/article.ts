@@ -1,9 +1,9 @@
 export default {
   async list(ctx: any) {
     const siteId = ctx.state.siteId;
-    const { page = 1, pageSize = 10, category, tag, sort = "publishedAt:DESC" } = ctx.query;
+    const { page = 1, pageSize = 10, category, tag, sort = "publishedAt:DESC", locale } = ctx.query;
     const result = await strapi.plugin("zhao-website").service("article").find(siteId, {
-      page: Number(page), pageSize: Number(pageSize), category, tag, sort,
+      page: Number(page), pageSize: Number(pageSize), category, tag, sort, locale,
     });
     ctx.body = result;
   },
@@ -11,7 +11,7 @@ export default {
   async detail(ctx: any) {
     const siteId = ctx.state.siteId;
     const { slug } = ctx.params;
-    const article = await strapi.plugin("zhao-website").service("article").findOne(siteId, slug);
+    const article = await strapi.plugin("zhao-website").service("article").findOne(siteId, slug, ctx.query.locale);
     if (!article) return ctx.notFound("Article not found");
     // 异步 +1 viewCount
     strapi.plugin("zhao-website").service("article").incrementViewCount(siteId, article.documentId).catch(() => {});
@@ -30,14 +30,14 @@ export default {
 
   async featured(ctx: any) {
     const siteId = ctx.state.siteId;
-    const result = await strapi.plugin("zhao-website").service("article").findFeatured(siteId, Number(ctx.query.limit) || 5);
+    const result = await strapi.plugin("zhao-website").service("article").findFeatured(siteId, Number(ctx.query.limit) || 5, ctx.query.locale);
     ctx.body = result;
   },
 
   async related(ctx: any) {
     const siteId = ctx.state.siteId;
     const { slug } = ctx.params;
-    const article = await strapi.plugin("zhao-website").service("article").findOne(siteId, slug);
+    const article = await strapi.plugin("zhao-website").service("article").findOne(siteId, slug, ctx.query.locale);
     if (!article) return ctx.notFound("Article not found");
     const tagIds = (article.tags || []).map((t: any) => t.documentId || t.id).slice(0, 3);
     if (tagIds.length === 0) {
@@ -49,6 +49,7 @@ export default {
       pageSize: 5,
       tag: tagIds.join(","),
       exclude: article.documentId,
+      locale: ctx.query.locale,
     });
     ctx.body = { results: Array.isArray(result) ? result : (result.results || result) };
   },

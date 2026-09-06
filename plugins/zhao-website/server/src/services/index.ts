@@ -19,6 +19,7 @@ import firstTruth from "./first-truth";
 import schemaBuilder from "./schema-builder";
 import llmsTxt from "./llms-txt";
 import sitemap from "./sitemap";
+import contentFilter from "./content-filter";
 import robots from "./robots";
 import searchEnginePush from "./search-engine-push";
 import studioBridge from "./studio-bridge";
@@ -51,6 +52,7 @@ export default {
   "schema-builder": schemaBuilder,
   "llms-txt": llmsTxt,
   "sitemap": sitemap,
+  "content-filter": contentFilter,
   "robots": robots,
   "search-engine-push": searchEnginePush,
   "studio-bridge": studioBridge,

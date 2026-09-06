@@ -171,6 +171,16 @@ declare const _default: {
                     type: string;
                     default: any;
                 };
+                organizationAddress: {
+                    type: string;
+                };
+                organizationPhone: {
+                    type: string;
+                    maxLength: number;
+                };
+                areaServed: {
+                    type: string;
+                };
             };
         };
     };

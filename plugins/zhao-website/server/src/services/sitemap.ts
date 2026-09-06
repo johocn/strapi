@@ -22,8 +22,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       if (excludeTypes.includes(ct.uid.split(".").pop())) continue;
       const populate: string[] = [];
       if (ct.imageField) populate.push(ct.imageField);
+      const filterService = strapi.plugin("zhao-website").service("content-filter");
+      const where = await filterService.buildWhere(siteId, ct.uid);
       const items = await strapi.db.query(ct.uid).findMany({
-        where: { site: siteId, status: "published", deletedAt: null, allowIndex: true },
+        where,
         orderBy: { publishedAt: "DESC" },
         populate: populate.length > 0 ? populate : undefined,
       });

@@ -4,6 +4,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async generate(siteId: number, siteUrl: string): Promise<string> {
     const seoConfig = await strapi.plugin("zhao-website").service("seo-config").get(siteId);
     const brandInfo = await strapi.plugin("zhao-website").service("brand-info").get(siteId);
+    const filterService = strapi.plugin("zhao-website").service("content-filter");
     const lines: string[] = [];
 
     lines.push(`# ${brandInfo?.companyName || "Website"}`);
@@ -19,7 +20,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     lines.push("## Pages");
 
     const articles = await strapi.db.query("plugin::zhao-website.article").findMany({
-      where: { site: siteId, status: "published", deletedAt: null, allowIndex: true },
+      where: await filterService.buildWhere(siteId, "plugin::zhao-website.article"),
       limit: 100,
       orderBy: { publishedAt: "DESC" },
     });
@@ -28,7 +29,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     }
 
     const products = await strapi.db.query("plugin::zhao-website.product").findMany({
-      where: { site: siteId, status: "published", deletedAt: null, allowIndex: true },
+      where: await filterService.buildWhere(siteId, "plugin::zhao-website.product"),
       limit: 50,
     });
     for (const p of products) {
@@ -36,7 +37,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     }
 
     const tutorials = await strapi.db.query("plugin::zhao-website.tutorial").findMany({
-      where: { site: siteId, status: "published", deletedAt: null, allowIndex: true },
+      where: await filterService.buildWhere(siteId, "plugin::zhao-website.tutorial"),
       limit: 50,
     });
     for (const t of tutorials) {
@@ -44,7 +45,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     }
 
     const cases = await strapi.db.query("plugin::zhao-website.case").findMany({
-      where: { site: siteId, status: "published", deletedAt: null, allowIndex: true },
+      where: await filterService.buildWhere(siteId, "plugin::zhao-website.case"),
       limit: 50,
     });
     for (const c of cases) {
@@ -52,7 +53,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     }
 
     const faqs = await strapi.db.query("plugin::zhao-website.faq").findMany({
-      where: { site: siteId, status: "published", deletedAt: null, allowIndex: true },
+      where: await filterService.buildWhere(siteId, "plugin::zhao-website.faq"),
       limit: 50,
     });
     for (const f of faqs) {
@@ -60,7 +61,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     }
 
     const compliances = await strapi.db.query("plugin::zhao-website.compliance").findMany({
-      where: { site: siteId, status: "published", deletedAt: null, allowIndex: true },
+      where: await filterService.buildWhere(siteId, "plugin::zhao-website.compliance"),
       limit: 30,
     });
     for (const c of compliances) {

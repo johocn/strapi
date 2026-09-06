@@ -3,8 +3,8 @@ declare const _default: ({ strapi }: {
     strapi: Core.Strapi;
 }) => {
     find(siteId: number, query?: any): Promise<any[]>;
-    findOne(siteId: number, slug: string): Promise<any>;
-    findFeatured(siteId: number, limit?: number): Promise<any[]>;
+    findOne(siteId: number, slug: string, locale?: string): Promise<any>;
+    findFeatured(siteId: number, limit?: number, locale?: string): Promise<any[]>;
     search(siteId: number, keyword: string, page?: number, pageSize?: number): Promise<{
         data: any[];
         meta: {

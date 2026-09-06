@@ -2,20 +2,22 @@ import type { Core } from "@strapi/strapi";
 import { generateUniqueSlug } from "./utils/slug";
 import { applyStatusChange, STATUS, isValidStatus } from "./utils/status";
 import { firstTruthValidate } from "./utils/first-truth-validate";
+import { resolveCategoryFilter } from "./utils/category-filter";
 
 const UID = "plugin::zhao-website.product";
 
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async find(siteId: number, query: any = {}) {
     const { page = 1, pageSize = 20, category, tag, status, isFeatured, q } = query;
-    const filters: any = { site: siteId, deletedAt: null };
-    if (status) filters.status = status;
-    else filters.status = "published"; // 默认只查 published
-    if (category) filters.category = category;
-    if (isFeatured !== undefined) filters.isFeatured = isFeatured === "true" || isFeatured === true;
+    const extra: any = {};
+    if (status) extra.status = status;
+    if (category) extra.category = await resolveCategoryFilter(strapi, siteId, category);
+    if (isFeatured !== undefined) extra.isFeatured = isFeatured === "true" || isFeatured === true;
 
+    const filterService = strapi.plugin("zhao-website").service("content-filter");
+    const where = await filterService.buildWhere(siteId, UID, extra);
     return strapi.db.query(UID).findMany({
-      where: filters,
+      where,
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
       orderBy: { publishedAt: "DESC" },
@@ -24,15 +26,19 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   },
 
   async findOne(siteId: number, slug: string) {
+    const filterService = strapi.plugin("zhao-website").service("content-filter");
+    const where = await filterService.buildWhere(siteId, UID, { slug });
     return strapi.db.query(UID).findOne({
-      where: { site: siteId, slug, deletedAt: null, status: "published" },
+      where,
       populate: ["coverImage", "category", "tags", "mainEntity", "images", "mentionedEntities", "ogImage"],
     });
   },
 
   async findFeatured(siteId: number, limit = 5) {
+    const filterService = strapi.plugin("zhao-website").service("content-filter");
+    const where = await filterService.buildWhere(siteId, UID, { isFeatured: true });
     return strapi.db.query(UID).findMany({
-      where: { site: siteId, deletedAt: null, status: "published", isFeatured: true },
+      where,
       limit,
       orderBy: { publishedAt: "DESC" },
       populate: ["coverImage", "category"],
@@ -43,17 +49,16 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     if (!keyword || keyword.length < 2) {
       return { data: [], meta: { pagination: { page, pageSize, total: 0, pageCount: 0 } } };
     }
+    const filterService = strapi.plugin("zhao-website").service("content-filter");
+    const where = await filterService.buildWhere(siteId, UID, {
+      $or: [
+        { name: { $containsi: keyword } },
+        { description: { $containsi: keyword } },
+        { content: { $containsi: keyword } },
+      ],
+    });
     const items = await strapi.db.query(UID).findMany({
-      where: {
-        site: siteId,
-        deletedAt: null,
-        status: "published",
-        $or: [
-          { name: { $containsi: keyword } },
-          { description: { $containsi: keyword } },
-          { content: { $containsi: keyword } },
-        ],
-      },
+      where,
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
       orderBy: { publishedAt: "DESC" },
@@ -70,7 +75,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     const { page = 1, pageSize = 20, status, category, tagGroup } = query;
     const filters: any = { site: siteId, deletedAt: null };
     if (status) filters.status = status;
-    if (category) filters.category = category;
+    if (category) filters.category = await resolveCategoryFilter(strapi, siteId, category);
 
     // tagGroup 筛选：knex 查 join 表拿 product_id 列表
     if (tagGroup) {

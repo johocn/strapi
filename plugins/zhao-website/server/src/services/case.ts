@@ -8,13 +8,14 @@ const UID = "plugin::zhao-website.case";
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async find(siteId: number, query: any = {}) {
     const { page = 1, pageSize = 20, tag, status, isFeatured, q } = query;
-    const filters: any = { site: siteId, deletedAt: null };
-    if (status) filters.status = status;
-    else filters.status = "published"; // 默认只查 published
-    if (isFeatured !== undefined) filters.isFeatured = isFeatured === "true" || isFeatured === true;
+    const extra: any = {};
+    if (status) extra.status = status;
+    if (isFeatured !== undefined) extra.isFeatured = isFeatured === "true" || isFeatured === true;
 
+    const filterService = strapi.plugin("zhao-website").service("content-filter");
+    const where = await filterService.buildWhere(siteId, UID, extra);
     return strapi.db.query(UID).findMany({
-      where: filters,
+      where,
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
       orderBy: { publishedAt: "DESC" },
@@ -23,15 +24,19 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   },
 
   async findOne(siteId: number, slug: string) {
+    const filterService = strapi.plugin("zhao-website").service("content-filter");
+    const where = await filterService.buildWhere(siteId, UID, { slug });
     return strapi.db.query(UID).findOne({
-      where: { site: siteId, slug, deletedAt: null, status: "published" },
+      where,
       populate: ["coverImage", "clientLogo", "tags", "mainEntity", "images", "mentionedEntities", "relatedProducts"],
     });
   },
 
   async findFeatured(siteId: number, limit = 5) {
+    const filterService = strapi.plugin("zhao-website").service("content-filter");
+    const where = await filterService.buildWhere(siteId, UID, { isFeatured: true });
     return strapi.db.query(UID).findMany({
-      where: { site: siteId, deletedAt: null, status: "published", isFeatured: true },
+      where,
       limit,
       orderBy: { publishedAt: "DESC" },
       populate: ["coverImage", "clientLogo"],
@@ -42,18 +47,17 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     if (!keyword || keyword.length < 2) {
       return { data: [], meta: { pagination: { page, pageSize, total: 0, pageCount: 0 } } };
     }
+    const filterService = strapi.plugin("zhao-website").service("content-filter");
+    const where = await filterService.buildWhere(siteId, UID, {
+      $or: [
+        { title: { $containsi: keyword } },
+        { challenge: { $containsi: keyword } },
+        { solution: { $containsi: keyword } },
+        { results: { $containsi: keyword } },
+      ],
+    });
     const items = await strapi.db.query(UID).findMany({
-      where: {
-        site: siteId,
-        deletedAt: null,
-        status: "published",
-        $or: [
-          { title: { $containsi: keyword } },
-          { challenge: { $containsi: keyword } },
-          { solution: { $containsi: keyword } },
-          { results: { $containsi: keyword } },
-        ],
-      },
+      where,
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
       orderBy: { publishedAt: "DESC" },

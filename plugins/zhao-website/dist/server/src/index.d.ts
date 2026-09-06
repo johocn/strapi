@@ -183,8 +183,8 @@ declare const _default: {
             strapi: import('@strapi/types/dist/core').Strapi;
         }) => {
             find(siteId: number, query?: any): Promise<any[]>;
-            findOne(siteId: number, slug: string): Promise<any>;
-            findFeatured(siteId: number, limit?: number): Promise<any[]>;
+            findOne(siteId: number, slug: string, locale?: string): Promise<any>;
+            findFeatured(siteId: number, limit?: number, locale?: string): Promise<any[]>;
             search(siteId: number, keyword: string, page?: number, pageSize?: number): Promise<{
                 data: any[];
                 meta: {
@@ -572,6 +572,14 @@ declare const _default: {
                 href: string;
             }>;
         };
+        "content-filter": ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            getFilters(siteId: number): Promise<Record<string, any>>;
+            buildWhere(siteId: number, uid: string, extra?: Record<string, any>, locale?: string): Promise<Record<string, any>>;
+            findMany(uid: string, siteId: number, params?: any): Promise<any[]>;
+            count(uid: string, siteId: number, params?: any): Promise<number>;
+        };
         robots: ({ strapi }: {
             strapi: import('@strapi/types/dist/core').Strapi;
         }) => {
@@ -815,6 +823,16 @@ declare const _default: {
                     deletedAt: {
                         type: string;
                         default: any;
+                    };
+                    organizationAddress: {
+                        type: string;
+                    };
+                    organizationPhone: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    areaServed: {
+                        type: string;
                     };
                 };
             };
