@@ -109,15 +109,29 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     const filters: any = {
       $or: [{ site: siteId, deletedAt: null }, { site: null, deletedAt: null }],
     };
-    if (subjectEntityId) { filters.$or[0].subjectEntity = subjectEntityId; filters.$or[1].subjectEntity = subjectEntityId; }
+    if (subjectEntityId) {
+      const sid = await this._resolveEntityId(subjectEntityId);
+      if (sid) { filters.$or[0].subjectEntity = sid; filters.$or[1].subjectEntity = sid; }
+    }
     if (predicate) { filters.$or[0].predicate = predicate; filters.$or[1].predicate = predicate; }
-    if (objectEntityId) { filters.$or[0].objectEntity = objectEntityId; filters.$or[1].objectEntity = objectEntityId; }
+    if (objectEntityId) {
+      const oid = await this._resolveEntityId(objectEntityId);
+      if (oid) { filters.$or[0].objectEntity = oid; filters.$or[1].objectEntity = oid; }
+    }
     return strapi.db.query(RELATION_UID).findMany({
       where: filters,
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
       populate: ["subjectEntity", "objectEntity"],
     });
+  },
+
+  /** documentId/数字 id → 实体数字 id（关系过滤必须用数字 id） */
+  async _resolveEntityId(ref: string | number): Promise<number | null> {
+    if (typeof ref === "number" && Number.isInteger(ref)) return ref;
+    if (/^\d+$/.test(String(ref))) return Number(ref);
+    const ent = await strapi.db.query(ENTITY_UID).findOne({ where: { documentId: String(ref) } });
+    return ent ? ent.id : null;
   },
 
   async addRelation(params: {

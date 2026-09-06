@@ -34327,16 +34327,22 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
       $or: [{ site: siteId, deletedAt: null }, { site: null, deletedAt: null }]
     };
     if (subjectEntityId) {
-      filters2.$or[0].subjectEntity = subjectEntityId;
-      filters2.$or[1].subjectEntity = subjectEntityId;
+      const sid = await this._resolveEntityId(subjectEntityId);
+      if (sid) {
+        filters2.$or[0].subjectEntity = sid;
+        filters2.$or[1].subjectEntity = sid;
+      }
     }
     if (predicate) {
       filters2.$or[0].predicate = predicate;
       filters2.$or[1].predicate = predicate;
     }
     if (objectEntityId) {
-      filters2.$or[0].objectEntity = objectEntityId;
-      filters2.$or[1].objectEntity = objectEntityId;
+      const oid = await this._resolveEntityId(objectEntityId);
+      if (oid) {
+        filters2.$or[0].objectEntity = oid;
+        filters2.$or[1].objectEntity = oid;
+      }
     }
     return strapi2.db.query(RELATION_UID).findMany({
       where: filters2,
@@ -34344,6 +34350,13 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
       offset: (Number(page) - 1) * Number(pageSize),
       populate: ["subjectEntity", "objectEntity"]
     });
+  },
+  /** documentId/数字 id → 实体数字 id（关系过滤必须用数字 id） */
+  async _resolveEntityId(ref) {
+    if (typeof ref === "number" && Number.isInteger(ref)) return ref;
+    if (/^\d+$/.test(String(ref))) return Number(ref);
+    const ent = await strapi2.db.query(ENTITY_UID).findOne({ where: { documentId: String(ref) } });
+    return ent ? ent.id : null;
   },
   async addRelation(params) {
     if (params.objectEntityId && params.subjectEntityId === params.objectEntityId) {

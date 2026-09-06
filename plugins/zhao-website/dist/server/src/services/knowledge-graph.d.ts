@@ -19,6 +19,8 @@ declare const _default: ({ strapi }: {
     updateEntity(siteId: number | null, documentId: string, data: any): Promise<any>;
     deleteEntity(siteId: number | null, documentId: string): Promise<any>;
     findRelations(siteId: number, query?: any): Promise<any[]>;
+    /** documentId/数字 id → 实体数字 id（关系过滤必须用数字 id） */
+    _resolveEntityId(ref: string | number): Promise<number | null>;
     addRelation(params: {
         siteId: number;
         subjectEntityId: string;
