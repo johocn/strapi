@@ -93,6 +93,11 @@ declare const _default: {
       "type": "boolean",
       "default": true
     },
+    "geoArticles": {
+      "type": "relation", "relation": "manyToMany",
+      "target": "plugin::zhao-website.geo-article",
+      "mappedBy": "truthBasis"
+    },
     "deletedAt": {
       "type": "datetime",
       "default": null

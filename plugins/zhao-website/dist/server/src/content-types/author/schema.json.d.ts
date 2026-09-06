@@ -1,0 +1,38 @@
+declare const _default: {
+  "kind": "collectionType",
+  "collectionName": "zhao_website_authors",
+  "info": {
+    "singularName": "author",
+    "pluralName": "authors",
+    "displayName": "文章作者"
+  },
+  "options": { "draftAndPublish": false },
+  "pluginOptions": {
+    "content-manager": { "visible": true },
+    "content-type-builder": { "visible": false }
+  },
+  "attributes": {
+    "site": {
+      "type": "relation", "relation": "manyToOne",
+      "target": "plugin::zhao-common.site-config",
+      "required": true, "inversedBy": "website_authors"
+    },
+    "name": { "type": "string", "maxLength": 50, "required": true },
+    "slug": { "type": "uid", "targetField": "name", "required": true },
+    "position": { "type": "string", "maxLength": 100, "description": "职位头衔，如「本地家装行业分析师」" },
+    "bio": { "type": "text", "description": "从业背景（E-E-A-T 背书）" },
+    "avatar": { "type": "media", "multiple": false },
+    "experienceYears": { "type": "integer", "description": "从业年限" },
+    "sameAs": { "type": "json", "description": "外部档案链接" },
+    "status": { "type": "boolean", "default": true },
+    "deletedAt": { "type": "datetime", "default": null },
+    "geoArticles": {
+      "type": "relation", "relation": "oneToMany",
+      "target": "plugin::zhao-website.geo-article",
+      "mappedBy": "author"
+    }
+  }
+}
+;
+
+export default _default;

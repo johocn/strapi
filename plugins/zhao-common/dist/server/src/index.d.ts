@@ -594,6 +594,12 @@ declare const _default: {
                         target: string;
                         mappedBy: string;
                     };
+                    website_authors: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
                 };
             };
         };

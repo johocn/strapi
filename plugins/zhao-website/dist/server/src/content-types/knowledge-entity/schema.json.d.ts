@@ -192,6 +192,11 @@ declare const _default: {
       "target": "plugin::zhao-website.case",
       "mappedBy": "mentionedEntities"
     },
+    "geoArticleMentions": {
+      "type": "relation", "relation": "manyToMany",
+      "target": "plugin::zhao-website.geo-article",
+      "mappedBy": "mentionedEntities"
+    },
     "deletedAt": {
       "type": "datetime",
       "default": null

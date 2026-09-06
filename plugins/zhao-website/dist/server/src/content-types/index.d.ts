@@ -2006,6 +2006,12 @@ declare const _default: {
                     target: string;
                     mappedBy: string;
                 };
+                geoArticleMentions: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    mappedBy: string;
+                };
                 deletedAt: {
                     type: string;
                     default: any;
@@ -2281,6 +2287,12 @@ declare const _default: {
                 status: {
                     type: string;
                     default: boolean;
+                };
+                geoArticles: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    mappedBy: string;
                 };
                 deletedAt: {
                     type: string;
@@ -2720,9 +2732,125 @@ declare const _default: {
                     type: string;
                     default: boolean;
                 };
+                author: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    description: string;
+                };
+                editor: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    description: string;
+                };
+                reviewer: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    description: string;
+                };
+                truthBasis: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    description: string;
+                };
+                mentionedEntities: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    description: string;
+                };
+                comparisonData: {
+                    type: string;
+                    default: any[];
+                    description: string;
+                };
+                listItems: {
+                    type: string;
+                    default: any[];
+                    description: string;
+                };
                 deletedAt: {
                     type: string;
                     default: any;
+                };
+            };
+        };
+    };
+    author: {
+        schema: {
+            kind: string;
+            collectionName: string;
+            info: {
+                singularName: string;
+                pluralName: string;
+                displayName: string;
+            };
+            options: {
+                draftAndPublish: boolean;
+            };
+            pluginOptions: {
+                "content-manager": {
+                    visible: boolean;
+                };
+                "content-type-builder": {
+                    visible: boolean;
+                };
+            };
+            attributes: {
+                site: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    required: boolean;
+                    inversedBy: string;
+                };
+                name: {
+                    type: string;
+                    maxLength: number;
+                    required: boolean;
+                };
+                slug: {
+                    type: string;
+                    targetField: string;
+                    required: boolean;
+                };
+                position: {
+                    type: string;
+                    maxLength: number;
+                    description: string;
+                };
+                bio: {
+                    type: string;
+                    description: string;
+                };
+                avatar: {
+                    type: string;
+                    multiple: boolean;
+                };
+                experienceYears: {
+                    type: string;
+                    description: string;
+                };
+                sameAs: {
+                    type: string;
+                    description: string;
+                };
+                status: {
+                    type: string;
+                    default: boolean;
+                };
+                deletedAt: {
+                    type: string;
+                    default: any;
+                };
+                geoArticles: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    mappedBy: string;
                 };
             };
         };

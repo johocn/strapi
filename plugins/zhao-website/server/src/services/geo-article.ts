@@ -26,7 +26,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     const where = await filterService.buildWhere(siteId, UID, { slug }, locale);
     const doc = await strapi.db.query(UID).findOne({
       where,
-      populate: ["coverImage", "category", "tags"],
+      populate: ["coverImage", "category", "tags", "author", "truthBasis", "mentionedEntities"],
     });
     if (!doc) return null;
     const siblings = await strapi.db.query(UID).findMany({
