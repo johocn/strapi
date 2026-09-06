@@ -34520,7 +34520,23 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
       populate: ["subjectEntity"]
     });
     const articles = await this.findArticlesByEntity(siteId, entity.documentId);
-    return { ...this._entityToJsonLd(entity, outgoing, incoming), articles };
+    return {
+      ...this._entityToJsonLd(entity, outgoing, incoming),
+      // 前端实体页按 outgoing/incoming 数组渲染「知识关系」
+      outgoing: outgoing.map((r) => ({
+        predicate: r.predicate,
+        objectEntity: r.objectEntity ? { slug: r.objectEntity.slug, name: r.objectEntity.name, "@id": r.objectEntity.slug || r.objectEntity.documentId } : void 0,
+        objectValue: r.objectValue,
+        objectText: r.objectText,
+        sourceType: r.sourceType
+      })),
+      incoming: incoming.map((r) => ({
+        predicate: r.predicate,
+        subjectEntity: r.subjectEntity ? { slug: r.subjectEntity.slug, name: r.subjectEntity.name, "@id": r.subjectEntity.slug || r.subjectEntity.documentId } : void 0,
+        sourceType: r.sourceType
+      })),
+      articles
+    };
   },
   /** 实体 → 提及该实体的已发布 GEO 文章 */
   async findArticlesByEntity(siteId, entityDocumentId, limit = 20) {

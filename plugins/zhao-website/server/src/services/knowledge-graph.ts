@@ -309,7 +309,23 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       populate: ["subjectEntity"],
     });
     const articles = await this.findArticlesByEntity(siteId, entity.documentId);
-    return { ...this._entityToJsonLd(entity, outgoing, incoming), articles };
+    return {
+      ...this._entityToJsonLd(entity, outgoing, incoming),
+      // 前端实体页按 outgoing/incoming 数组渲染「知识关系」
+      outgoing: outgoing.map((r: any) => ({
+        predicate: r.predicate,
+        objectEntity: r.objectEntity ? { slug: r.objectEntity.slug, name: r.objectEntity.name, "@id": r.objectEntity.slug || r.objectEntity.documentId } : undefined,
+        objectValue: r.objectValue,
+        objectText: r.objectText,
+        sourceType: r.sourceType,
+      })),
+      incoming: incoming.map((r: any) => ({
+        predicate: r.predicate,
+        subjectEntity: r.subjectEntity ? { slug: r.subjectEntity.slug, name: r.subjectEntity.name, "@id": r.subjectEntity.slug || r.subjectEntity.documentId } : undefined,
+        sourceType: r.sourceType,
+      })),
+      articles,
+    };
   },
 
   /** 实体 → 提及该实体的已发布 GEO 文章 */
