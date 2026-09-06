@@ -62,10 +62,23 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async findOne(siteId: number, slug: string, locale?: string) {
     const filterService = strapi.plugin("zhao-website").service("content-filter");
     const where = await filterService.buildWhere(siteId, UID, { slug }, locale);
-    return strapi.db.query(UID).findOne({
+    const article = await strapi.db.query(UID).findOne({
       where,
       populate: ["coverImage", "category", "tags", "mainEntity", "mentionedEntities", "ogImage"],
     });
+    if (!article) return null;
+    // 同 document 的其他语言版本（hreflang/x-default 需跨语言定位，slug 因 localized 可不同）
+    const siblings = await strapi.db.query(UID).findMany({
+      where: {
+        site: siteId,
+        documentId: article.documentId,
+        status: "published",
+        deletedAt: null,
+        locale: { $ne: article.locale },
+      },
+      select: ["id", "locale", "slug", "title"],
+    });
+    return { ...article, localizations: siblings };
   },
 
   async findFeatured(siteId: number, limit = 5, locale?: string) {

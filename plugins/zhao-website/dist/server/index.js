@@ -1521,10 +1521,22 @@ const article = ({ strapi: strapi2 }) => ({
   async findOne(siteId, slug, locale) {
     const filterService = strapi2.plugin("zhao-website").service("content-filter");
     const where = await filterService.buildWhere(siteId, UID$g, { slug }, locale);
-    return strapi2.db.query(UID$g).findOne({
+    const article2 = await strapi2.db.query(UID$g).findOne({
       where,
       populate: ["coverImage", "category", "tags", "mainEntity", "mentionedEntities", "ogImage"]
     });
+    if (!article2) return null;
+    const siblings = await strapi2.db.query(UID$g).findMany({
+      where: {
+        site: siteId,
+        documentId: article2.documentId,
+        status: "published",
+        deletedAt: null,
+        locale: { $ne: article2.locale }
+      },
+      select: ["id", "locale", "slug", "title"]
+    });
+    return { ...article2, localizations: siblings };
   },
   async findFeatured(siteId, limit = 5, locale) {
     const filterService = strapi2.plugin("zhao-website").service("content-filter");
