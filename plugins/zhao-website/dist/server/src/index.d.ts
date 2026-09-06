@@ -3455,6 +3455,11 @@ declare const _default: {
                     };
                 };
             };
+            lifecycles: ({ strapi }: {
+                strapi: import('@strapi/types/dist/core').Strapi;
+            }) => {
+                beforeUpdate(event: any): Promise<void>;
+            };
         };
         author: {
             schema: {

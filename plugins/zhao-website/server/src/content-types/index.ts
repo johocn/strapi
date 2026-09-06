@@ -21,6 +21,7 @@ import redirectRule from "./redirect-rule/schema.json";
 import inviteTrace from "./invite-trace/schema.json";
 import geoArticle from "./geo-article/schema.json";
 import author from "./author/schema.json";
+import geoArticleLifecycles from "./geo-article/lifecycles";
 
 export default {
   "seo-config": { schema: seoConfig },
@@ -44,6 +45,6 @@ export default {
   "brand-voice": { schema: brandVoice },
   "redirect-rule": { schema: redirectRule },
   "invite-trace": { schema: inviteTrace },
-  "geo-article": { schema: geoArticle },
+  "geo-article": { schema: geoArticle, lifecycles: geoArticleLifecycles },
   "author": { schema: author },
 };
