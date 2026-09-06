@@ -156,6 +156,58 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     }
   },
 
+  // 用户侧领取行为积分（geo 阅读/留资等）；积分值取规则默认，points 为可选覆盖（readPoints）
+  async earnAction(ctx: any) {
+    try {
+      const userId = ctx.state.user?.id;
+      if (!userId) {
+        ctx.status = 401;
+        ctx.body = { error: "请先登录" };
+        return;
+      }
+      const body = ctx.request.body?.data || ctx.request.body || {};
+      const { action, source = "geo", points, remark } = body;
+      if (!action) {
+        ctx.status = 400;
+        ctx.body = { error: "Missing action" };
+        return;
+      }
+      // 解析用户归属渠道（与 earnShare 同一套兜底逻辑；积分记录必须归属渠道）
+      let resolvedChannel: number | undefined = undefined;
+      const channelSvc = strapi.plugin("zhao-channel")?.service("channel-permission");
+      if (channelSvc) {
+        const member = await strapi.db.query("plugin::zhao-channel.channel-member")
+          .findOne({ where: { user: userId, isCurrent: true }, populate: ["channel"] });
+        resolvedChannel = member?.channel?.id || member?.channel;
+        if (!resolvedChannel) {
+          const dirs = await channelSvc.getUserDirectChannels(userId);
+          resolvedChannel = dirs?.[0];
+        }
+      }
+      if (!resolvedChannel) {
+        // 兜底：当前站点关联的第一个渠道
+        const siteDocId = (ctx as any).state?.siteDocumentId;
+        if (siteDocId) {
+          const siteSvc = strapi.plugin("zhao-common")?.service("site-config");
+          const siteChannels = siteSvc?.getAvailableChannels
+            ? await siteSvc.getAvailableChannels(siteDocId)
+            : null;
+          resolvedChannel = Array.isArray(siteChannels) && siteChannels.length > 0
+            ? (siteChannels[0].id ?? undefined)
+            : undefined;
+        }
+      }
+      const result = await strapi.plugin("zhao-point").service("point").earnPoints({
+        userId, action, source, points, remark: remark || action, userChannelId: resolvedChannel,
+      });
+      ctx.body = { success: true, ...result };
+    } catch (e: any) {
+      const status = ["POINT_001", "POINT_004", "POINT_011", "POINT_019", "POINT_020"].includes(e.code) ? 400 : 500;
+      ctx.status = status;
+      ctx.body = { error: e.message, code: e.code };
+    }
+  },
+
   async deduct(ctx: any) {
     try {
       const userId = getUserId(ctx);

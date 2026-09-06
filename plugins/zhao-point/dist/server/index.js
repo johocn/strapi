@@ -749,6 +749,55 @@ const point$1 = ({ strapi: strapi2 }) => {
         ctx.body = { error: e.message, code: e.code };
       }
     },
+    // 用户侧领取行为积分（geo 阅读/留资等）；积分值取规则默认，points 为可选覆盖（readPoints）
+    async earnAction(ctx) {
+      try {
+        const userId = ctx.state.user?.id;
+        if (!userId) {
+          ctx.status = 401;
+          ctx.body = { error: "请先登录" };
+          return;
+        }
+        const body = ctx.request.body?.data || ctx.request.body || {};
+        const { action, source = "geo", points, remark } = body;
+        if (!action) {
+          ctx.status = 400;
+          ctx.body = { error: "Missing action" };
+          return;
+        }
+        let resolvedChannel = void 0;
+        const channelSvc = strapi2.plugin("zhao-channel")?.service("channel-permission");
+        if (channelSvc) {
+          const member = await strapi2.db.query("plugin::zhao-channel.channel-member").findOne({ where: { user: userId, isCurrent: true }, populate: ["channel"] });
+          resolvedChannel = member?.channel?.id || member?.channel;
+          if (!resolvedChannel) {
+            const dirs = await channelSvc.getUserDirectChannels(userId);
+            resolvedChannel = dirs?.[0];
+          }
+        }
+        if (!resolvedChannel) {
+          const siteDocId = ctx.state?.siteDocumentId;
+          if (siteDocId) {
+            const siteSvc = strapi2.plugin("zhao-common")?.service("site-config");
+            const siteChannels = siteSvc?.getAvailableChannels ? await siteSvc.getAvailableChannels(siteDocId) : null;
+            resolvedChannel = Array.isArray(siteChannels) && siteChannels.length > 0 ? siteChannels[0].id ?? void 0 : void 0;
+          }
+        }
+        const result = await strapi2.plugin("zhao-point").service("point").earnPoints({
+          userId,
+          action,
+          source,
+          points,
+          remark: remark || action,
+          userChannelId: resolvedChannel
+        });
+        ctx.body = { success: true, ...result };
+      } catch (e) {
+        const status = ["POINT_001", "POINT_004", "POINT_011", "POINT_019", "POINT_020"].includes(e.code) ? 400 : 500;
+        ctx.status = status;
+        ctx.body = { error: e.message, code: e.code };
+      }
+    },
     async deduct(ctx) {
       try {
         const userId = getUserId(ctx);
@@ -38953,6 +39002,7 @@ const contentApi = () => ({
     userRoute("GET", "/my/point/eligible-actions", "point.getEligibleActions"),
     userRoute("POST", "/my/point/sign-in", "point.signIn"),
     userRoute("POST", "/my/point/earn/share", "point.earnShare"),
+    userRoute("POST", "/my/point/earn/action", "point.earnAction"),
     userRoute("GET", "/my/point/share/status", "point.shareStatus"),
     userRoute("GET", "/my/point/sign-in/status", "point.getSignInStatus"),
     userRoute("GET", "/my/point/tasks", "point.getTasks"),

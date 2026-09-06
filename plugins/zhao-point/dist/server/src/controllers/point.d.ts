@@ -4,6 +4,7 @@ declare const _default: ({ strapi }: {
 }) => {
     earn(ctx: any): Promise<void>;
     earnShare(ctx: any): Promise<void>;
+    earnAction(ctx: any): Promise<void>;
     deduct(ctx: any): Promise<void>;
     balance(ctx: any): Promise<void>;
     records(ctx: any): Promise<void>;
