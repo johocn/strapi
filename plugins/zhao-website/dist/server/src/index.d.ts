@@ -3256,13 +3256,11 @@ declare const _default: {
                         type: string;
                         relation: string;
                         target: string;
-                        inversedBy: string;
                     };
                     tags: {
                         type: string;
                         relation: string;
                         target: string;
-                        inversedBy: string;
                     };
                     sourceName: {
                         type: string;
