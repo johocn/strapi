@@ -362,6 +362,7 @@ declare const _default: {
         }>;
         exportGraph(siteId: number): Promise<any>;
         exportEntity(siteId: number, slug: string): Promise<any | null>;
+        findArticlesByEntity(siteId: number, entityDocumentId: string, limit?: number): Promise<any[]>;
         _entityToJsonLd(entity: any, outgoing?: any[], incoming?: any[]): any;
         exportFacts(siteId: number): Promise<any[]>;
     };

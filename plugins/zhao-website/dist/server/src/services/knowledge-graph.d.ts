@@ -42,6 +42,8 @@ declare const _default: ({ strapi }: {
     }>;
     exportGraph(siteId: number): Promise<any>;
     exportEntity(siteId: number, slug: string): Promise<any | null>;
+    /** 实体 → 提及该实体的已发布 GEO 文章 */
+    findArticlesByEntity(siteId: number, entityDocumentId: string, limit?: number): Promise<any[]>;
     _entityToJsonLd(entity: any, outgoing?: any[], incoming?: any[]): any;
     exportFacts(siteId: number): Promise<any[]>;
 };

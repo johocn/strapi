@@ -34471,7 +34471,16 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
       where: { $or: [{ site: siteId, objectEntity: entity.documentId, deletedAt: null }, { site: null, objectEntity: entity.documentId, deletedAt: null }] },
       populate: ["subjectEntity"]
     });
-    return this._entityToJsonLd(entity, outgoing, incoming);
+    const articles = await this.findArticlesByEntity(siteId, entity.documentId);
+    return { ...this._entityToJsonLd(entity, outgoing, incoming), articles };
+  },
+  /** 实体 → 提及该实体的已发布 GEO 文章 */
+  async findArticlesByEntity(siteId, entityDocumentId, limit = 20) {
+    return strapi2.db.query("plugin::zhao-website.geo-article").findMany({
+      where: { site: siteId, status: "published", deletedAt: null, mentionedEntities: entityDocumentId },
+      select: ["slug", "title", "type", "publishedAt"],
+      limit
+    });
   },
   _entityToJsonLd(entity, outgoing = [], incoming = []) {
     const jsonLd = {
