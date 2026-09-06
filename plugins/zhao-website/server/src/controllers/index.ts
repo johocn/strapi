@@ -1,4 +1,5 @@
 import article from "./content-api/article";
+import geoArticle from "./content-api/geo-article";
 import product from "./content-api/product";
 import casE from "./content-api/case";
 import faq from "./content-api/faq";
@@ -35,6 +36,7 @@ const knowledgeGraph = {
 
 export default {
   article,
+  "geo-article": geoArticle,
   product,
   case: casE,
   faq,

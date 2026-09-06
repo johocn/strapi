@@ -1,6 +1,7 @@
 import seoConfig from "./seo-config";
 import brandInfo from "./brand-info";
 import article from "./article";
+import geoArticle from "./geo-article";
 import articleCategory from "./article-category";
 import product from "./product";
 import caseService from "./case";
@@ -34,6 +35,7 @@ export default {
   "seo-config": seoConfig,
   "brand-info": brandInfo,
   "article": article,
+  "geo-article": geoArticle,
   "article-category": articleCategory,
   "product": product,
   "case": caseService,

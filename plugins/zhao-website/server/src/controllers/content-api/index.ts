@@ -1,4 +1,5 @@
 import article from "./article";
+import geoArticle from "./geo-article";
 import product from "./product";
 import casE from "./case";
 import faq from "./faq";
@@ -15,6 +16,7 @@ import inviteTrace from "./invite-trace";
 
 export default {
   article,
+  "geo-article": geoArticle,
   product,
   case: casE,
   faq,
