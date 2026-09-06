@@ -45,6 +45,11 @@ declare const _default: ({ strapi }: {
      */
     getPublicConfig(siteId?: string): Promise<any>;
     /**
+     * 获取合并后的公开配置：站点公开字段 + 模板合并 config + templateMeta
+     * 供前端四级模板体系消费（二级 style / 三级 pages / 四级 modules 均取自 merged.config）
+     */
+    getMergedPublic(siteDocId?: string): Promise<any>;
+    /**
      * 获取用户可访问渠道（site channels ∪ user direct channels，按 numeric id 去重）
      * 跨插件复用：zhao-point getProducts 等场景调用
      * @param siteId site-config documentId

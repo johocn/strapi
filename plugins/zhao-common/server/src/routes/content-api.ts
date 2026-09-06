@@ -70,6 +70,7 @@ export default () => ({
   routes: [
     // ===== 公开路由 =====
     publicRoute("GET", "/public/config", "config.getPublic"),
+    publicRoute("GET", "/site-config/merged", "site-config.getMerged"),
 
     // ===== 管理端路由 =====
     adminRoute("POST", "/soft-delete/:contentType/:documentId", "soft-delete.softDelete", "soft-delete.manage"),

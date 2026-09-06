@@ -830,6 +830,21 @@ const siteConfig$2 = ({ strapi: strapi2 }) => ({
     return result;
   },
   /**
+   * 获取合并后的公开配置：站点公开字段 + 模板合并 config + templateMeta
+   * 供前端四级模板体系消费（二级 style / 三级 pages / 四级 modules 均取自 merged.config）
+   */
+  async getMergedPublic(siteDocId) {
+    const publicConfig = await this.getPublicConfig(siteDocId);
+    const fullConfig = await this.getConfig(siteDocId);
+    const merged = await strapi2.plugin("zhao-common").service("site-template").getMergedConfig(fullConfig);
+    return {
+      ...publicConfig || {},
+      site: publicConfig || {},
+      templateMeta: merged.meta,
+      config: merged.config
+    };
+  },
+  /**
    * 获取用户可访问渠道（site channels ∪ user direct channels，按 numeric id 去重）
    * 跨插件复用：zhao-point getProducts 等场景调用
    * @param siteId site-config documentId
@@ -3090,6 +3105,16 @@ const siteConfig = ({ strapi: strapi2 }) => ({
       ctx.status = e.status ?? 400;
       ctx.body = { error: e.message };
     }
+  },
+  async getMerged(ctx) {
+    try {
+      const service = strapi2.plugin("zhao-common").service("site-config");
+      const config2 = await service.getMergedPublic(ctx.state?.siteDocumentId);
+      ctx.body = { data: config2 };
+    } catch (e) {
+      ctx.status = e.status ?? 400;
+      ctx.body = { error: e.message };
+    }
   }
 });
 const siteTemplate = ({ strapi: strapi2 }) => ({
@@ -3302,6 +3327,7 @@ const contentApi = () => ({
   routes: [
     // ===== 公开路由 =====
     publicRoute("GET", "/public/config", "config.getPublic"),
+    publicRoute("GET", "/site-config/merged", "site-config.getMerged"),
     // ===== 管理端路由 =====
     adminRoute("POST", "/soft-delete/:contentType/:documentId", "soft-delete.softDelete", "soft-delete.manage"),
     adminRoute("POST", "/soft-delete/:contentType/:documentId/restore", "soft-delete.restore", "soft-delete.manage"),

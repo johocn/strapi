@@ -12,6 +12,7 @@ const config = ({ env }: Core.Config.Shared.ConfigParams): Core.Config.Plugin =>
             defaultLocale: "zh-CN",
             locales: [
                 { code: "zh-CN", name: "中文 (简体)" },
+                { code: "en", name: "English" },
             ],
         },
     },

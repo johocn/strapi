@@ -11,10 +11,17 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     if (brandInfo?.logo) org.logo = brandInfo.logo.url;
     if (brandInfo?.description) org.description = brandInfo.description;
     if (brandInfo?.foundingDate) org.foundingDate = brandInfo.foundingDate;
-    if (brandInfo?.registeredAddress) org.address = {
-      "@type": "PostalAddress",
-      streetAddress: brandInfo.registeredAddress,
-    };
+    if (brandInfo?.registeredAddress) {
+      org.address = {
+        "@type": "PostalAddress",
+        streetAddress: brandInfo.registeredAddress,
+      };
+    } else if (seoConfig?.organizationAddress) {
+      org.address = {
+        "@type": "PostalAddress",
+        streetAddress: seoConfig.organizationAddress,
+      };
+    }
     if (brandInfo?.contactPhone) org.contactPoint = {
       "@type": "ContactPoint",
       telephone: brandInfo.contactPhone,
@@ -22,6 +29,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     };
     if (seoConfig?.schemaSameAs) org.sameAs = seoConfig.schemaSameAs;
     if (seoConfig?.schemaContactPoint) org.contactPoint = seoConfig.schemaContactPoint;
+    else if (seoConfig?.organizationPhone) org.telephone = seoConfig.organizationPhone;
     return org;
   },
 
@@ -29,13 +37,25 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     const org = this.buildOrganization(brandInfo, seoConfig);
     org["@type"] = seoConfig?.organizationType || "LocalBusiness";
     if (seoConfig?.geoPosition) {
-      const coords = seoConfig.geoPosition.split(";").map((s: string) => s.trim());
-      if (coords.length >= 2) {
+      // 兼容 "39.90,116.40" 与 "39.90;116.40" 两种格式
+      const coords = String(seoConfig.geoPosition).split(/[;,]/).map((s: string) => s.trim());
+      if (coords.length >= 2 && coords[0] && coords[1]) {
         org.geo = { "@type": "GeoCoordinates", latitude: coords[0], longitude: coords[1] };
       }
     }
-    if (seoConfig?.geoPlacename) {
-      org.address = { "@type": "PostalAddress", addressLocality: seoConfig.geoPlacename };
+    const locality = seoConfig?.geoPlacename;
+    const street = seoConfig?.organizationAddress;
+    if (locality || street) {
+      org.address = { "@type": "PostalAddress" };
+      if (locality) org.address.addressLocality = locality;
+      if (street) org.address.streetAddress = street;
+    }
+    if (seoConfig?.organizationPhone) {
+      org.telephone = seoConfig.organizationPhone;
+    }
+    if (seoConfig?.areaServed) {
+      const served = Array.isArray(seoConfig.areaServed) ? seoConfig.areaServed : [seoConfig.areaServed];
+      org.areaServed = served.map((s: string) => ({ "@type": "City", name: String(s) }));
     }
     return org;
   },

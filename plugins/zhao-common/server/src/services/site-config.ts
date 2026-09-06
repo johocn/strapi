@@ -108,6 +108,26 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   },
 
   /**
+   * 获取合并后的公开配置：站点公开字段 + 模板合并 config + templateMeta
+   * 供前端四级模板体系消费（二级 style / 三级 pages / 四级 modules 均取自 merged.config）
+   */
+  async getMergedPublic(siteDocId?: string) {
+    const publicConfig = await this.getPublicConfig(siteDocId);
+    // 必须传完整站点配置（含 template 关系与 extraConfig），否则 getMergedConfig 无法解析模板合并链
+    const fullConfig = await this.getConfig(siteDocId);
+    const merged = await strapi
+      .plugin("zhao-common")
+      .service("site-template")
+      .getMergedConfig(fullConfig);
+    return {
+      ...(publicConfig || {}),
+      site: publicConfig || {},
+      templateMeta: merged.meta,
+      config: merged.config,
+    };
+  },
+
+  /**
    * 获取用户可访问渠道（site channels ∪ user direct channels，按 numeric id 去重）
    * 跨插件复用：zhao-point getProducts 等场景调用
    * @param siteId site-config documentId

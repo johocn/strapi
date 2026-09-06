@@ -39,6 +39,7 @@ declare const _default: {
         get(ctx: any): Promise<void>;
         update(ctx: any): Promise<void>;
         getPublic(ctx: any): Promise<void>;
+        getMerged(ctx: any): Promise<void>;
     };
     "site-template": ({ strapi }: {
         strapi: import('@strapi/types/dist/core').Strapi;

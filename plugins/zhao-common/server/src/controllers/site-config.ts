@@ -34,4 +34,15 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       ctx.body = { error: e.message };
     }
   },
+
+  async getMerged(ctx: any) {
+    try {
+      const service = strapi.plugin("zhao-common").service("site-config");
+      const config = await service.getMergedPublic(ctx.state?.siteDocumentId);
+      ctx.body = { data: config };
+    } catch (e: any) {
+      ctx.status = (e as any).status ?? 400;
+      ctx.body = { error: e.message };
+    }
+  },
 });

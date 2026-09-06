@@ -14,7 +14,14 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     const siteConfig = await strapi.db.query("plugin::zhao-common.site-config").findOne({
       where: { id: siteId },
     });
-    const siteUrl = siteConfig?.domain || `https://${requestHost}`;
+    // domain 存的是裸域名（如 localhost / v.joho.cn），需补协议成绝对 URL，
+    // 否则 canonical/og:image 非法，_buildHreflang 里 new URL() 直接抛错
+    const rawDomain = siteConfig?.domain;
+    const siteUrl = rawDomain
+      ? /^https?:\/\//.test(rawDomain)
+        ? rawDomain
+        : `https://${rawDomain}`
+      : `https://${requestHost}`;
 
     const title = seoConfig?.defaultTitle || brandInfo?.companyName || "";
     const description = seoConfig?.defaultDescription || brandInfo?.description || "";

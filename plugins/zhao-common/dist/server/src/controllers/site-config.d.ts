@@ -5,5 +5,6 @@ declare const _default: ({ strapi }: {
     get(ctx: any): Promise<void>;
     update(ctx: any): Promise<void>;
     getPublic(ctx: any): Promise<void>;
+    getMerged(ctx: any): Promise<void>;
 };
 export default _default;
