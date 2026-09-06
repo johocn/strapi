@@ -20,6 +20,7 @@ import brandVoice from "./brand-voice/schema.json";
 import redirectRule from "./redirect-rule/schema.json";
 import inviteTrace from "./invite-trace/schema.json";
 import geoArticle from "./geo-article/schema.json";
+import author from "./author/schema.json";
 
 export default {
   "seo-config": { schema: seoConfig },
@@ -44,4 +45,5 @@ export default {
   "redirect-rule": { schema: redirectRule },
   "invite-trace": { schema: inviteTrace },
   "geo-article": { schema: geoArticle },
+  "author": { schema: author },
 };

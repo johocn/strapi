@@ -372,6 +372,12 @@
       "relation": "oneToMany",
       "target": "plugin::zhao-website.geo-article",
       "mappedBy": "site"
+    },
+    "website_authors": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-website.author",
+      "mappedBy": "site"
     }
   }
 }
