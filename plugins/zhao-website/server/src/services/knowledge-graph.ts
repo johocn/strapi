@@ -242,6 +242,35 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     });
   },
 
+  async updateRelation(siteId: number, documentId: string, data: any) {
+    const existing = await strapi.db.query(RELATION_UID).findOne({
+      where: { site: siteId, documentId, deletedAt: null },
+    });
+    if (!existing) {
+      const e: any = new Error("Relation not found");
+      e.status = 404;
+      throw e;
+    }
+    const payload: any = {};
+    if (data.predicate !== undefined) payload.predicate = data.predicate;
+    if (data.objectText !== undefined) payload.objectText = data.objectText;
+    if (data.objectValue !== undefined) payload.objectValue = data.objectValue;
+    if (data.confidence !== undefined) payload.confidence = Number(data.confidence);
+    if (data.verificationStatus !== undefined) payload.verificationStatus = data.verificationStatus;
+    if (data.status !== undefined) payload.status = data.status === true || data.status === "true";
+    // 可选：更新指向实体的客体（数字 id / 数字字符串 / documentId 均可，经 _resolveEntityId 解析）
+    if (data.objectEntityId !== undefined && data.objectEntityId !== null && data.objectEntityId !== "") {
+      const objectEntity = await this._resolveEntityId(data.objectEntityId);
+      if (!objectEntity) {
+        const e: any = new Error("objectEntityId 无效");
+        e.status = 400;
+        throw e;
+      }
+      payload.objectEntity = objectEntity;
+    }
+    return strapi.db.query(RELATION_UID).update({ where: { id: existing.id }, data: payload });
+  },
+
   // ===== 消歧 =====
   async disambiguate(siteId: number, params: { name: string; entityType?: string }): Promise<any | null> {
     const baseFilter = {

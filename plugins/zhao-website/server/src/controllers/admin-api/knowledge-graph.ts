@@ -24,6 +24,9 @@ export default {
     await strapi.plugin("zhao-website").service("knowledge-graph").deleteRelation(ctx.state.siteId, ctx.params.documentId);
     ctx.body = { success: true };
   },
+  async updateRelation(ctx: any) {
+    ctx.body = await strapi.plugin("zhao-website").service("knowledge-graph").updateRelation(ctx.state.siteId, ctx.params.documentId, ctx.request.body);
+  },
   // ===== 消歧 =====
   async disambiguate(ctx: any) {
     ctx.body = await strapi.plugin("zhao-website").service("knowledge-graph").disambiguate(ctx.state.siteId, ctx.request.body);
