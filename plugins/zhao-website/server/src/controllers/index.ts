@@ -25,6 +25,7 @@ import studioBridge from "./admin-api/studio-bridge";
 import stats from "./admin-api/stats";
 import brandVoice from "./admin-api/brand-voice";
 import geoArticleAudit from "./admin-api/geo-article-audit";
+import geoArticleAdmin from "./admin-api/geo-article-admin";
 
 const adminGeneric = Object.fromEntries(
   Object.entries(generic).map(([key, value]) => [`${key}-admin`, value])
@@ -61,4 +62,5 @@ export default {
   stats,
   "brand-voice": brandVoice,
   "geo-article-audit": geoArticleAudit,
+  "geoArticleAdmin": geoArticleAdmin,
 };
