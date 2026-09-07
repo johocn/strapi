@@ -17,7 +17,7 @@ declare const _default: {
     "match": { "type": "string", "unique": true },
     "reply_type": {
       "type": "enumeration",
-      "enum": ["text", "article"],
+      "enum": ["text", "image", "voice", "video", "music", "news", "transfer", "article"],
       "default": "text"
     },
     "text": { "type": "text" },
@@ -25,6 +25,11 @@ declare const _default: {
     "desc": { "type": "string" },
     "pic_url": { "type": "string" },
     "link_url": { "type": "string" },
+    "media_id": { "type": "string" },
+    "music_url": { "type": "string" },
+    "hq_music_url": { "type": "string" },
+    "thumb_media_id": { "type": "string" },
+    "articles": { "type": "json" },
     "sort": { "type": "integer", "default": 0 },
     "enabled": { "type": "boolean", "default": true }
   }

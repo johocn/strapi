@@ -629,7 +629,7 @@ const kind$2 = "collectionType";
 const collectionName$2 = "sso_wx_replies";
 const info$2 = { "singularName": "sso-wx-reply", "pluralName": "sso-wx-replies", "displayName": "SSO WeChat Reply" };
 const options$2 = { "draftAndPublish": false };
-const attributes$2 = { "trigger": { "type": "enumeration", "enum": ["welcome", "fallback", "keyword"], "default": "keyword", "required": true }, "match": { "type": "string", "unique": true }, "reply_type": { "type": "enumeration", "enum": ["text", "article"], "default": "text" }, "text": { "type": "text" }, "title": { "type": "string" }, "desc": { "type": "string" }, "pic_url": { "type": "string" }, "link_url": { "type": "string" }, "sort": { "type": "integer", "default": 0 }, "enabled": { "type": "boolean", "default": true } };
+const attributes$2 = { "trigger": { "type": "enumeration", "enum": ["welcome", "fallback", "keyword"], "default": "keyword", "required": true }, "match": { "type": "string", "unique": true }, "reply_type": { "type": "enumeration", "enum": ["text", "image", "voice", "video", "music", "news", "transfer", "article"], "default": "text" }, "text": { "type": "text" }, "title": { "type": "string" }, "desc": { "type": "string" }, "pic_url": { "type": "string" }, "link_url": { "type": "string" }, "media_id": { "type": "string" }, "music_url": { "type": "string" }, "hq_music_url": { "type": "string" }, "thumb_media_id": { "type": "string" }, "articles": { "type": "json" }, "sort": { "type": "integer", "default": 0 }, "enabled": { "type": "boolean", "default": true } };
 const schema$2 = {
   kind: kind$2,
   collectionName: collectionName$2,
@@ -6507,11 +6507,50 @@ const ssoWxCallback = ({ strapi }) => {
       Content: content
     });
   }
-  function replyContent(rule) {
-    if (rule.reply_type === "article") {
-      return rule.text || rule.title || "已收到您的消息";
+  function cdata(v) {
+    if (v === void 0 || v === null || v === "") return "";
+    return typeof v === "number" ? String(v) : `<![CDATA[${String(v)}]]>`;
+  }
+  function ruleUsable(rule) {
+    const t = rule.reply_type || "text";
+    if (t === "text") return !!rule.text;
+    if (t === "image" || t === "voice" || t === "video") return !!rule.media_id;
+    if (t === "music") return !!(rule.title && rule.music_url);
+    if (t === "news" || t === "article") return !!(Array.isArray(rule.articles) && rule.articles.length) || !!rule.title;
+    if (t === "transfer") return true;
+    return false;
+  }
+  function buildReplyXml(rule, openid, toUser) {
+    const type = rule.reply_type || "text";
+    const head = () => `<ToUserName>${cdata(openid)}</ToUserName><FromUserName>${cdata(toUser)}</FromUserName><CreateTime>${Math.floor(Date.now() / 1e3)}</CreateTime>`;
+    switch (type) {
+      case "image":
+        return `<xml>${head()}<MsgType><![CDATA[image]]></MsgType><Image><MediaId>${cdata(rule.media_id)}</MediaId></Image></xml>`;
+      case "voice":
+        return `<xml>${head()}<MsgType><![CDATA[voice]]></MsgType><Voice><MediaId>${cdata(rule.media_id)}</MediaId></Voice></xml>`;
+      case "video":
+        return `<xml>${head()}<MsgType><![CDATA[video]]></MsgType><Video><MediaId>${cdata(rule.media_id)}</MediaId>` + (rule.title ? `<Title>${cdata(rule.title)}</Title>` : "") + (rule.desc ? `<Description>${cdata(rule.desc)}</Description>` : "") + `</Video></xml>`;
+      case "music":
+        return `<xml>${head()}<MsgType><![CDATA[music]]></MsgType><Music><Title>${cdata(rule.title)}</Title><Description>${cdata(rule.desc)}</Description><MusicUrl>${cdata(rule.music_url)}</MusicUrl>` + (rule.hq_music_url ? `<HQMusicUrl>${cdata(rule.hq_music_url)}</HQMusicUrl>` : "") + (rule.thumb_media_id ? `<ThumbMediaId>${cdata(rule.thumb_media_id)}</ThumbMediaId>` : "") + `</Music></xml>`;
+      case "news":
+      case "article": {
+        let articles = Array.isArray(rule.articles) && rule.articles.length ? rule.articles.slice(0, 8) : rule.title ? [{ title: rule.title, description: rule.desc, pic_url: rule.pic_url, url: rule.link_url }] : [];
+        const items = articles.map((a) => {
+          let s = "<item>";
+          if (a.title) s += `<Title>${cdata(a.title)}</Title>`;
+          if (a.description) s += `<Description>${cdata(a.description)}</Description>`;
+          if (a.pic_url) s += `<PicUrl>${cdata(a.pic_url)}</PicUrl>`;
+          if (a.url) s += `<Url>${cdata(a.url)}</Url>`;
+          s += "</item>";
+          return s;
+        }).join("");
+        return `<xml>${head()}<MsgType><![CDATA[news]]></MsgType><ArticleCount>${articles.length}</ArticleCount><Articles>${items}</Articles></xml>`;
+      }
+      case "transfer":
+        return `<xml>${head()}<MsgType><![CDATA[transfer_customer_service]]></MsgType></xml>`;
+      default:
+        return buildTextReply(openid, toUser, rule.text || "");
     }
-    return rule.text || "";
   }
   return {
     /** 读取服务器配置（供后台展示 / server-url） */
@@ -6628,15 +6667,15 @@ const ssoWxCallback = ({ strapi }) => {
           }
         }
         const rule = await replySvc.matchText(text);
-        if (rule && replyContent(rule)) {
-          return buildTextReply(openid, toUser, replyContent(rule));
+        if (rule && ruleUsable(rule)) {
+          return buildReplyXml(rule, openid, toUser);
         }
         return "success";
       }
       if (event === "subscribe") {
         const welcomeRule = await replySvc.findWelcome();
-        if (welcomeRule && replyContent(welcomeRule)) {
-          return buildTextReply(openid, toUser, replyContent(welcomeRule));
+        if (welcomeRule && ruleUsable(welcomeRule)) {
+          return buildReplyXml(welcomeRule, openid, toUser);
         }
         const { welcomeReply } = await getExtraConfig();
         if (welcomeReply) {
@@ -6935,6 +6974,11 @@ const ssoWxReply = ({ strapi }) => {
         desc: data.desc !== void 0 ? data.desc : null,
         pic_url: data.pic_url !== void 0 ? data.pic_url : null,
         link_url: data.link_url !== void 0 ? data.link_url : null,
+        media_id: data.media_id !== void 0 ? data.media_id : null,
+        music_url: data.music_url !== void 0 ? data.music_url : null,
+        hq_music_url: data.hq_music_url !== void 0 ? data.hq_music_url : null,
+        thumb_media_id: data.thumb_media_id !== void 0 ? data.thumb_media_id : null,
+        articles: data.articles !== void 0 ? data.articles : null,
         sort: data.sort !== void 0 ? data.sort : 0,
         enabled: data.enabled !== void 0 ? data.enabled : true
       }
@@ -6942,7 +6986,7 @@ const ssoWxReply = ({ strapi }) => {
   }
   async function update(id, data) {
     const updateData = {};
-    const keys = ["trigger", "match", "reply_type", "text", "title", "desc", "pic_url", "link_url", "sort", "enabled"];
+    const keys = ["trigger", "match", "reply_type", "text", "title", "desc", "pic_url", "link_url", "media_id", "music_url", "hq_music_url", "thumb_media_id", "articles", "sort", "enabled"];
     for (const k of keys) if (data[k] !== void 0) updateData[k] = data[k];
     return strapi.db.query(REPLY_UID).update({ where: { id }, data: updateData });
   }

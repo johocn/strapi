@@ -45,11 +45,75 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     });
   }
 
-  function replyContent(rule: { reply_type?: string; text?: string; title?: string }): string {
-    if (rule.reply_type === "article") {
-      return rule.text || rule.title || "已收到您的消息";
+  function cdata(v?: string | number | null): string {
+    if (v === undefined || v === null || v === "") return "";
+    return typeof v === "number" ? String(v) : `<![CDATA[${String(v)}]]>`;
+  }
+
+  /** 规则是否可用（按类型校验必填字段） */
+  function ruleUsable(rule: { reply_type?: string; text?: string; title?: string; media_id?: string; music_url?: string; articles?: unknown }): boolean {
+    const t = rule.reply_type || "text";
+    if (t === "text") return !!rule.text;
+    if (t === "image" || t === "voice" || t === "video") return !!rule.media_id;
+    if (t === "music") return !!(rule.title && rule.music_url);
+    if (t === "news" || t === "article") return !!(Array.isArray(rule.articles) && rule.articles.length) || !!rule.title;
+    if (t === "transfer") return true;
+    return false;
+  }
+
+  /** 按回复类型组装被动回复 XML（text/image/voice/video/music/news/transfer） */
+  function buildReplyXml(rule: any, openid: string, toUser: string): string {
+    const type = rule.reply_type || "text";
+    const head = () =>
+      `<ToUserName>${cdata(openid)}</ToUserName><FromUserName>${cdata(toUser)}</FromUserName><CreateTime>${Math.floor(Date.now() / 1000)}</CreateTime>`;
+
+    switch (type) {
+      case "image":
+        return `<xml>${head()}<MsgType><![CDATA[image]]></MsgType><Image><MediaId>${cdata(rule.media_id)}</MediaId></Image></xml>`;
+      case "voice":
+        return `<xml>${head()}<MsgType><![CDATA[voice]]></MsgType><Voice><MediaId>${cdata(rule.media_id)}</MediaId></Voice></xml>`;
+      case "video":
+        return (
+          `<xml>${head()}<MsgType><![CDATA[video]]></MsgType><Video><MediaId>${cdata(rule.media_id)}</MediaId>` +
+          (rule.title ? `<Title>${cdata(rule.title)}</Title>` : "") +
+          (rule.desc ? `<Description>${cdata(rule.desc)}</Description>` : "") +
+          `</Video></xml>`
+        );
+      case "music":
+        return (
+          `<xml>${head()}<MsgType><![CDATA[music]]></MsgType><Music>` +
+          `<Title>${cdata(rule.title)}</Title><Description>${cdata(rule.desc)}</Description>` +
+          `<MusicUrl>${cdata(rule.music_url)}</MusicUrl>` +
+          (rule.hq_music_url ? `<HQMusicUrl>${cdata(rule.hq_music_url)}</HQMusicUrl>` : "") +
+          (rule.thumb_media_id ? `<ThumbMediaId>${cdata(rule.thumb_media_id)}</ThumbMediaId>` : "") +
+          `</Music></xml>`
+        );
+      case "news":
+      case "article": {
+        // 多图文（最多 8 条）；旧 article 无 articles 数组时降级为单条
+        let articles: any[] = Array.isArray(rule.articles) && rule.articles.length
+          ? rule.articles.slice(0, 8)
+          : rule.title
+            ? [{ title: rule.title, description: rule.desc, pic_url: rule.pic_url, url: rule.link_url }]
+            : [];
+        const items = articles
+          .map((a: any) => {
+            let s = "<item>";
+            if (a.title) s += `<Title>${cdata(a.title)}</Title>`;
+            if (a.description) s += `<Description>${cdata(a.description)}</Description>`;
+            if (a.pic_url) s += `<PicUrl>${cdata(a.pic_url)}</PicUrl>`;
+            if (a.url) s += `<Url>${cdata(a.url)}</Url>`;
+            s += "</item>";
+            return s;
+          })
+          .join("");
+        return `<xml>${head()}<MsgType><![CDATA[news]]></MsgType><ArticleCount>${articles.length}</ArticleCount><Articles>${items}</Articles></xml>`;
+      }
+      case "transfer":
+        return `<xml>${head()}<MsgType><![CDATA[transfer_customer_service]]></MsgType></xml>`;
+      default:
+        return buildTextReply(openid, toUser, rule.text || "");
     }
-    return rule.text || "";
   }
 
   return {
@@ -181,16 +245,16 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
           }
         }
         const rule = await replySvc.matchText(text);
-        if (rule && replyContent(rule)) {
-          return buildTextReply(openid, toUser, replyContent(rule));
+        if (rule && ruleUsable(rule)) {
+          return buildReplyXml(rule, openid, toUser);
         }
         return "success";
       }
 
       if (event === "subscribe") {
         const welcomeRule = await replySvc.findWelcome();
-        if (welcomeRule && replyContent(welcomeRule)) {
-          return buildTextReply(openid, toUser, replyContent(welcomeRule));
+        if (welcomeRule && ruleUsable(welcomeRule)) {
+          return buildReplyXml(welcomeRule, openid, toUser);
         }
         const { welcomeReply } = await getExtraConfig();
         if (welcomeReply) {

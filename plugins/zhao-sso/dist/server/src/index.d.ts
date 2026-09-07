@@ -1310,6 +1310,21 @@ declare const _default: {
                     link_url: {
                         type: string;
                     };
+                    media_id: {
+                        type: string;
+                    };
+                    music_url: {
+                        type: string;
+                    };
+                    hq_music_url: {
+                        type: string;
+                    };
+                    thumb_media_id: {
+                        type: string;
+                    };
+                    articles: {
+                        type: string;
+                    };
                     sort: {
                         type: string;
                         default: number;
@@ -2457,6 +2472,11 @@ declare const _default: {
                 desc?: string;
                 pic_url?: string;
                 link_url?: string;
+                media_id?: string;
+                music_url?: string;
+                hq_music_url?: string;
+                thumb_media_id?: string;
+                articles?: unknown;
                 sort?: number;
                 enabled?: boolean;
             }) => Promise<any>;

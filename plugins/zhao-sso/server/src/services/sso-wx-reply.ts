@@ -41,6 +41,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     desc?: string;
     pic_url?: string;
     link_url?: string;
+    media_id?: string;
+    music_url?: string;
+    hq_music_url?: string;
+    thumb_media_id?: string;
+    articles?: unknown;
     sort?: number;
     enabled?: boolean;
   }) {
@@ -54,6 +59,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         desc: data.desc !== undefined ? data.desc : null,
         pic_url: data.pic_url !== undefined ? data.pic_url : null,
         link_url: data.link_url !== undefined ? data.link_url : null,
+        media_id: data.media_id !== undefined ? data.media_id : null,
+        music_url: data.music_url !== undefined ? data.music_url : null,
+        hq_music_url: data.hq_music_url !== undefined ? data.hq_music_url : null,
+        thumb_media_id: data.thumb_media_id !== undefined ? data.thumb_media_id : null,
+        articles: data.articles !== undefined ? data.articles : null,
         sort: data.sort !== undefined ? data.sort : 0,
         enabled: data.enabled !== undefined ? data.enabled : true,
       },
@@ -62,7 +72,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
 
   async function update(id: number, data: Record<string, any>) {
     const updateData: Record<string, any> = {};
-    const keys = ["trigger", "match", "reply_type", "text", "title", "desc", "pic_url", "link_url", "sort", "enabled"];
+    const keys = ["trigger", "match", "reply_type", "text", "title", "desc", "pic_url", "link_url", "media_id", "music_url", "hq_music_url", "thumb_media_id", "articles", "sort", "enabled"];
     for (const k of keys) if (data[k] !== undefined) updateData[k] = data[k];
     return strapi.db.query(REPLY_UID).update({ where: { id }, data: updateData });
   }

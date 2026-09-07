@@ -27,6 +27,11 @@ declare const _default: ({ strapi }: {
         desc?: string;
         pic_url?: string;
         link_url?: string;
+        media_id?: string;
+        music_url?: string;
+        hq_music_url?: string;
+        thumb_media_id?: string;
+        articles?: unknown;
         sort?: number;
         enabled?: boolean;
     }) => Promise<any>;

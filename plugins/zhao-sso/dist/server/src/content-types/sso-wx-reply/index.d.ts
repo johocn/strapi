@@ -41,6 +41,21 @@ declare const _default: {
             link_url: {
                 type: string;
             };
+            media_id: {
+                type: string;
+            };
+            music_url: {
+                type: string;
+            };
+            hq_music_url: {
+                type: string;
+            };
+            thumb_media_id: {
+                type: string;
+            };
+            articles: {
+                type: string;
+            };
             sort: {
                 type: string;
                 default: number;
