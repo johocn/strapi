@@ -31260,6 +31260,14 @@ function auditGeoArticle(article2) {
 const UID$l = "plugin::zhao-website.geo-article";
 const ApplicationError2 = ApplicationError$1;
 const POPULATE$1 = ["truthBasis", "mentionedEntities", "author"];
+function assertAuditPass(audit) {
+  if (!audit.pass) {
+    throw new ApplicationError2("发布未达标：请补齐以下缺漏项", {
+      code: "GEO_AUDIT_FAIL",
+      missing: audit.missing.filter((m) => !m.passed)
+    });
+  }
+}
 const geoArticleLifecycles = ({ strapi: strapi2 }) => ({
   async beforeUpdate(event) {
     const { data, where } = event.params;
@@ -31292,12 +31300,38 @@ const geoArticleLifecycles = ({ strapi: strapi2 }) => ({
       reviewerName: merged.reviewerName,
       reviewedAt: merged.reviewedAt
     });
-    if (!audit.pass) {
-      throw new ApplicationError2("发布未达标：请补齐以下缺漏项", {
-        code: "GEO_AUDIT_FAIL",
-        missing: audit.missing.filter((m) => !m.passed)
-      });
-    }
+    assertAuditPass(audit);
+  },
+  async beforeCreate(event) {
+    const { data } = event.params;
+    if (!data || data.status !== "published") return;
+    assertAuditPass(
+      auditGeoArticle({
+        type: data.type,
+        title: data.title,
+        content: data.content,
+        faqQuestion: data.faqQuestion,
+        comparisonData: data.comparisonData,
+        listItems: data.listItems,
+        summaryPoints: data.summaryPoints,
+        localTips: data.localTips,
+        infoBoundary: data.infoBoundary,
+        sourceName: data.sourceName,
+        sourceUrl: data.sourceUrl,
+        truthBasis: Array.isArray(data.truthBasis) ? data.truthBasis : data.truthBasis ? [data.truthBasis] : [],
+        mentionedEntities: Array.isArray(data.mentionedEntities) ? data.mentionedEntities : data.mentionedEntities ? [data.mentionedEntities] : [],
+        author: data.author,
+        authorName: data.authorName,
+        jsonLdType: data.jsonLdType,
+        businessData: data.businessData,
+        ctaType: data.ctaType,
+        leadFormEnabled: data.leadFormEnabled,
+        riskType: data.riskType,
+        reviewChecks: data.reviewChecks,
+        reviewerName: data.reviewerName,
+        reviewedAt: data.reviewedAt
+      })
+    );
   }
 });
 const contentTypes = {
@@ -31865,6 +31899,7 @@ function createGenericController(serviceName) {
 }
 const generic = {
   "article-category": createGenericController("article-category"),
+  author: createGenericController("author"),
   product: createGenericController("product"),
   case: createGenericController("case"),
   compliance: createGenericController("compliance"),
@@ -31902,6 +31937,9 @@ const adminKnowledgeGraph = {
   async deleteRelation(ctx) {
     await strapi.plugin("zhao-website").service("knowledge-graph").deleteRelation(ctx.state.siteId, ctx.params.documentId);
     ctx.body = { success: true };
+  },
+  async updateRelation(ctx) {
+    ctx.body = await strapi.plugin("zhao-website").service("knowledge-graph").updateRelation(ctx.state.siteId, ctx.params.documentId, ctx.request.body);
   },
   // ===== 消歧 =====
   async disambiguate(ctx) {
@@ -32092,6 +32130,35 @@ const geoArticleAudit = {
     };
   }
 };
+const geoArticleAdmin = {
+  async find(ctx) {
+    ctx.body = await strapi.plugin("zhao-website").service("geo-article").findAdmin(ctx.state.siteId, ctx.query);
+  },
+  async findOne(ctx) {
+    const item = await strapi.plugin("zhao-website").service("geo-article").findOneAdmin(ctx.state.siteId, ctx.params.documentId);
+    if (!item) return ctx.notFound();
+    ctx.body = item;
+  },
+  async create(ctx) {
+    ctx.body = await strapi.plugin("zhao-website").service("geo-article").create(ctx.state.siteId, ctx.request.body);
+  },
+  async update(ctx) {
+    ctx.body = await strapi.plugin("zhao-website").service("geo-article").update(ctx.state.siteId, ctx.params.documentId, ctx.request.body);
+  },
+  async softDelete(ctx) {
+    await strapi.plugin("zhao-website").service("geo-article").softDelete(ctx.state.siteId, ctx.params.documentId);
+    ctx.body = { success: true };
+  },
+  async publish(ctx) {
+    ctx.body = await strapi.plugin("zhao-website").service("geo-article").publish(ctx.state.siteId, ctx.params.documentId);
+  },
+  async archive(ctx) {
+    ctx.body = await strapi.plugin("zhao-website").service("geo-article").archive(ctx.state.siteId, ctx.params.documentId);
+  },
+  async batch(ctx) {
+    ctx.body = await strapi.plugin("zhao-website").service("geo-article").batch(ctx.state.siteId, ctx.request.body);
+  }
+};
 const adminGeneric = Object.fromEntries(
   Object.entries(generic).map(([key, value]) => [`${key}-admin`, value])
 );
@@ -32124,7 +32191,8 @@ const controllers = {
   "studio-bridge": studioBridge$1,
   stats,
   "brand-voice": brandVoice$1,
-  "geo-article-audit": geoArticleAudit
+  "geo-article-audit": geoArticleAudit,
+  "geoArticleAdmin": geoArticleAdmin
 };
 const publicRoute = (method, path, handler) => ({
   method,
@@ -32214,6 +32282,11 @@ const adminApi = () => ({
     channelScopeRoute("POST", "/article-categories", "article-category-admin.create", "article-category.create"),
     channelScopeRoute("PUT", "/article-categories/:documentId", "article-category-admin.update", "article-category.update"),
     channelScopeRoute("DELETE", "/article-categories/:documentId", "article-category-admin.delete", "article-category.delete"),
+    channelScopeRoute("GET", "/authors", "author-admin.find", "author.read"),
+    channelScopeRoute("GET", "/authors/:documentId", "author-admin.findOne", "author.read"),
+    channelScopeRoute("POST", "/authors", "author-admin.create", "author.create"),
+    channelScopeRoute("PUT", "/authors/:documentId", "author-admin.update", "author.update"),
+    channelScopeRoute("DELETE", "/authors/:documentId", "author-admin.softDelete", "author.delete"),
     channelScopeRoute("GET", "/products", "product-admin.find", "product.read"),
     channelScopeRoute("GET", "/products/:documentId", "product-admin.findOne", "product.read"),
     channelScopeRoute("POST", "/products", "product-admin.create", "product.create"),
@@ -32258,6 +32331,7 @@ const adminApi = () => ({
     channelScopeRoute("GET", "/knowledge-graph/relations", "knowledge-graph.findRelations", "knowledge-relation.read"),
     channelScopeRoute("POST", "/knowledge-graph/relations", "knowledge-graph.addRelation", "knowledge-relation.create"),
     channelScopeRoute("DELETE", "/knowledge-graph/relations/:documentId", "knowledge-graph.deleteRelation", "knowledge-relation.delete"),
+    channelScopeRoute("PUT", "/knowledge-graph/relations/:documentId", "knowledge-graph.updateRelation", "knowledge-relation.update"),
     channelScopeRoute("POST", "/knowledge-graph/disambiguate", "knowledge-graph.disambiguate", "knowledge-entity.read"),
     channelScopeRoute("GET", "/knowledge-graph/export", "knowledge-graph.exportGraph", "knowledge-entity.read"),
     // 全局实体路由
@@ -32298,6 +32372,14 @@ const adminApi = () => ({
     channelScopeRoute("GET", "/stats/overview", "stats.overview", "article.read"),
     channelScopeRoute("GET", "/stats/leads", "stats.leadStats", "lead.read"),
     channelScopeRoute("GET", "/stats/search", "stats.searchStats", "search-log.read"),
+    channelScopeRoute("GET", "/geo-articles", "geoArticleAdmin.find", "article.read"),
+    channelScopeRoute("GET", "/geo-articles/:documentId", "geoArticleAdmin.findOne", "article.read"),
+    channelScopeRoute("POST", "/geo-articles", "geoArticleAdmin.create", "article.create"),
+    channelScopeRoute("PUT", "/geo-articles/:documentId", "geoArticleAdmin.update", "article.update"),
+    channelScopeRoute("DELETE", "/geo-articles/:documentId", "geoArticleAdmin.softDelete", "article.update"),
+    channelScopeRoute("POST", "/geo-articles/:documentId/publish", "geoArticleAdmin.publish", "article.publish"),
+    channelScopeRoute("POST", "/geo-articles/:documentId/archive", "geoArticleAdmin.archive", "article.publish"),
+    channelScopeRoute("POST", "/geo-articles/batch", "geoArticleAdmin.batch", "article.publish"),
     channelScopeRoute("POST", "/geo-articles/:documentId/audit-check", "geo-article-audit.check", "article.read")
   ]
 });
@@ -32665,6 +32747,38 @@ const article = ({ strapi: strapi2 }) => ({
   }
 });
 const UID$g = "plugin::zhao-website.geo-article";
+const MANY_TO_ONE = ["author", "editor", "reviewer", "category"];
+const MANY_TO_MANY = ["tags", "truthBasis", "mentionedEntities"];
+const ADMIN_POPULATE = ["author", "editor", "reviewer", "category", "tags", "truthBasis", "mentionedEntities", "coverImage"];
+function badRequest(msg) {
+  const e = new Error(msg);
+  e.status = 400;
+  return e;
+}
+function notFound(msg = "GeoArticle not found") {
+  const e = new Error(msg);
+  e.status = 404;
+  return e;
+}
+function coerceRelationIds(data) {
+  const out = { ...data };
+  for (const f of MANY_TO_ONE) {
+    if (out[f] === void 0 || out[f] === null || out[f] === "") continue;
+    const n = Number(out[f]);
+    if (!Number.isInteger(n)) throw badRequest(`关系字段 ${f} 必须为数字 id`);
+    out[f] = n;
+  }
+  for (const f of MANY_TO_MANY) {
+    if (out[f] === void 0 || out[f] === null) continue;
+    const arr = Array.isArray(out[f]) ? out[f] : [out[f]];
+    out[f] = arr.map((v) => {
+      const n = Number(v);
+      if (!Number.isInteger(n)) throw badRequest(`关系字段 ${f} 必须为数字 id 数组`);
+      return n;
+    });
+  }
+  return out;
+}
 const geoArticle = ({ strapi: strapi2 }) => ({
   async find(siteId, query = {}) {
     const { page = 1, pageSize = 20, type: type2, q, locale: locale2 } = query;
@@ -32703,6 +32817,80 @@ const geoArticle = ({ strapi: strapi2 }) => ({
     const filterService = strapi2.plugin("zhao-website").service("content-filter");
     const where = await filterService.buildWhere(siteId, UID$g, extra, locale2);
     return strapi2.db.query(UID$g).findMany({ where, limit, orderBy: { publishedAt: "DESC" }, populate: ["coverImage", "category"] });
+  },
+  // ===== 管理端 =====
+  async findAdmin(siteId, query = {}) {
+    const { page = 1, pageSize = 20, status, type: type2, q } = query;
+    const filters2 = { site: siteId, deletedAt: null };
+    if (status) filters2.status = status;
+    if (type2) filters2.type = type2;
+    if (q) filters2.title = { $containsi: q };
+    const items = await strapi2.db.query(UID$g).findMany({
+      where: filters2,
+      limit: Number(pageSize),
+      offset: (Number(page) - 1) * Number(pageSize),
+      orderBy: { updatedAt: "DESC" },
+      populate: ADMIN_POPULATE
+    });
+    const total = await strapi2.db.query(UID$g).count({ where: filters2 });
+    return {
+      results: items,
+      meta: { pagination: { page: Number(page), pageSize: Number(pageSize), total, pageCount: Math.ceil(total / Number(pageSize)) } }
+    };
+  },
+  async findOneAdmin(siteId, documentId) {
+    return strapi2.db.query(UID$g).findOne({
+      where: { site: siteId, documentId, deletedAt: null },
+      populate: ADMIN_POPULATE
+    });
+  },
+  async create(siteId, data) {
+    const slug = data.slug || await generateUniqueSlug(strapi2, UID$g, siteId, data.title || "untitled");
+    const status = data.status && data.status !== "published" ? data.status : "draft";
+    const payload = coerceRelationIds({ ...data, site: siteId, slug, status, locale: data.locale || "zh-CN" });
+    return strapi2.db.query(UID$g).create({ data: payload });
+  },
+  async update(siteId, documentId, data) {
+    const existing = await this.findOneAdmin(siteId, documentId);
+    if (!existing) throw notFound();
+    return strapi2.db.query(UID$g).update({
+      where: { id: existing.id },
+      data: coerceRelationIds(data)
+    });
+  },
+  async publish(siteId, documentId) {
+    return this.update(siteId, documentId, { status: "published" });
+  },
+  async archive(siteId, documentId) {
+    return this.update(siteId, documentId, { status: "archived" });
+  },
+  async softDelete(siteId, documentId) {
+    const existing = await this.findOneAdmin(siteId, documentId);
+    if (!existing) return null;
+    return strapi2.db.query(UID$g).update({
+      where: { id: existing.id },
+      data: { deletedAt: (/* @__PURE__ */ new Date()).toISOString() }
+    });
+  },
+  async batch(siteId, body = {}) {
+    const { action, documentIds } = body;
+    if (!["publish", "archive", "delete"].includes(action) || !Array.isArray(documentIds)) {
+      const e = new Error("batch 参数错误：action ∈ publish/archive/delete，documentIds 为数组");
+      e.status = 400;
+      throw e;
+    }
+    const results = [];
+    for (const documentId of documentIds) {
+      try {
+        if (action === "publish") await this.publish(siteId, documentId);
+        else if (action === "archive") await this.archive(siteId, documentId);
+        else await this.softDelete(siteId, documentId);
+        results.push({ documentId, ok: true });
+      } catch (err) {
+        results.push({ documentId, ok: false, error: err.message });
+      }
+    }
+    return { results };
   }
 });
 const UID$f = "plugin::zhao-website.article-category";
@@ -34459,6 +34647,33 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
       where: { id: existing.id },
       data: { deletedAt: (/* @__PURE__ */ new Date()).toISOString() }
     });
+  },
+  async updateRelation(siteId, documentId, data) {
+    const existing = await strapi2.db.query(RELATION_UID).findOne({
+      where: { site: siteId, documentId, deletedAt: null }
+    });
+    if (!existing) {
+      const e = new Error("Relation not found");
+      e.status = 404;
+      throw e;
+    }
+    const payload = {};
+    if (data.predicate !== void 0) payload.predicate = data.predicate;
+    if (data.objectText !== void 0) payload.objectText = data.objectText;
+    if (data.objectValue !== void 0) payload.objectValue = data.objectValue;
+    if (data.confidence !== void 0) payload.confidence = Number(data.confidence);
+    if (data.verificationStatus !== void 0) payload.verificationStatus = data.verificationStatus;
+    if (data.status !== void 0) payload.status = data.status === true || data.status === "true";
+    if (data.objectEntityId !== void 0 && data.objectEntityId !== null && data.objectEntityId !== "") {
+      const objectEntity = await this._resolveEntityId(data.objectEntityId);
+      if (!objectEntity) {
+        const e = new Error("objectEntityId 无效");
+        e.status = 400;
+        throw e;
+      }
+      payload.objectEntity = objectEntity;
+    }
+    return strapi2.db.query(RELATION_UID).update({ where: { id: existing.id }, data: payload });
   },
   // ===== 消歧 =====
   async disambiguate(siteId, params) {

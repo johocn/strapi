@@ -6,6 +6,13 @@ declare const _default: {
         update(ctx: any): Promise<void>;
         delete(ctx: any): Promise<void>;
     };
+    author: {
+        find(ctx: any): Promise<void>;
+        findOne(ctx: any): Promise<any>;
+        create(ctx: any): Promise<void>;
+        update(ctx: any): Promise<void>;
+        delete(ctx: any): Promise<void>;
+    };
     product: {
         find(ctx: any): Promise<void>;
         findOne(ctx: any): Promise<any>;

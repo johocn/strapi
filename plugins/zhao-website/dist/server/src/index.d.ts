@@ -20,6 +20,7 @@ declare const _default: {
             findRelations(ctx: any): Promise<void>;
             addRelation(ctx: any): Promise<void>;
             deleteRelation(ctx: any): Promise<void>;
+            updateRelation(ctx: any): Promise<void>;
             disambiguate(ctx: any): Promise<void>;
             createGlobalEntity(ctx: any): Promise<void>;
             updateGlobalEntity(ctx: any): Promise<void>;
@@ -65,6 +66,16 @@ declare const _default: {
         };
         "geo-article-audit": {
             check(ctx: any): Promise<any>;
+        };
+        geoArticleAdmin: {
+            find(ctx: any): Promise<void>;
+            findOne(ctx: any): Promise<any>;
+            create(ctx: any): Promise<void>;
+            update(ctx: any): Promise<void>;
+            softDelete(ctx: any): Promise<void>;
+            publish(ctx: any): Promise<void>;
+            archive(ctx: any): Promise<void>;
+            batch(ctx: any): Promise<void>;
         };
         article: {
             list(ctx: any): Promise<void>;
@@ -230,6 +241,26 @@ declare const _default: {
             }>;
             findOne(siteId: number, slug: string, locale?: string): Promise<any>;
             findFeatured(siteId: number, limit?: number, locale?: string, type?: string): Promise<any[]>;
+            findAdmin(siteId: number, query?: any): Promise<{
+                results: any[];
+                meta: {
+                    pagination: {
+                        page: number;
+                        pageSize: number;
+                        total: number;
+                        pageCount: number;
+                    };
+                };
+            }>;
+            findOneAdmin(siteId: number, documentId: string): Promise<any>;
+            create(siteId: number, data: any): Promise<any>;
+            update(siteId: number, documentId: string, data: any): Promise<any>;
+            publish(siteId: number, documentId: string): Promise<any>;
+            archive(siteId: number, documentId: string): Promise<any>;
+            softDelete(siteId: number, documentId: string): Promise<any>;
+            batch(siteId: number, body?: any): Promise<{
+                results: any[];
+            }>;
         };
         "article-category": ({ strapi }: {
             strapi: import('@strapi/types/dist/core').Strapi;
@@ -521,6 +552,7 @@ declare const _default: {
             }): Promise<any>;
             _detectCycle(subjectId: string, objectId: string, predicate: string, visited?: Set<string>): Promise<boolean>;
             deleteRelation(siteId: number, documentId: string): Promise<any>;
+            updateRelation(siteId: number, documentId: string, data: any): Promise<any>;
             disambiguate(siteId: number, params: {
                 name: string;
                 entityType?: string;
@@ -3464,6 +3496,7 @@ declare const _default: {
                 strapi: import('@strapi/types/dist/core').Strapi;
             }) => {
                 beforeUpdate(event: any): Promise<void>;
+                beforeCreate(event: any): Promise<void>;
             };
         };
         author: {

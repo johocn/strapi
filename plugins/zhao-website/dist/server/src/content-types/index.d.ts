@@ -2784,6 +2784,7 @@ declare const _default: {
             strapi: import('@strapi/types/dist/core').Strapi;
         }) => {
             beforeUpdate(event: any): Promise<void>;
+            beforeCreate(event: any): Promise<void>;
         };
     };
     author: {

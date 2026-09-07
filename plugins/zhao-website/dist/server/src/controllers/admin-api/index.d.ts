@@ -7,6 +7,7 @@ declare const _default: {
         findRelations(ctx: any): Promise<void>;
         addRelation(ctx: any): Promise<void>;
         deleteRelation(ctx: any): Promise<void>;
+        updateRelation(ctx: any): Promise<void>;
         disambiguate(ctx: any): Promise<void>;
         exportGraph(ctx: any): Promise<void>;
         createGlobalEntity(ctx: any): Promise<void>;
@@ -43,6 +44,13 @@ declare const _default: {
         searchStats(ctx: any): Promise<void>;
     };
     "article-category": {
+        find(ctx: any): Promise<void>;
+        findOne(ctx: any): Promise<any>;
+        create(ctx: any): Promise<void>;
+        update(ctx: any): Promise<void>;
+        delete(ctx: any): Promise<void>;
+    };
+    author: {
         find(ctx: any): Promise<void>;
         findOne(ctx: any): Promise<any>;
         create(ctx: any): Promise<void>;

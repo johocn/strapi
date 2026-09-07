@@ -6,6 +6,7 @@ declare const _default: {
     findRelations(ctx: any): Promise<void>;
     addRelation(ctx: any): Promise<void>;
     deleteRelation(ctx: any): Promise<void>;
+    updateRelation(ctx: any): Promise<void>;
     disambiguate(ctx: any): Promise<void>;
     exportGraph(ctx: any): Promise<void>;
     createGlobalEntity(ctx: any): Promise<void>;

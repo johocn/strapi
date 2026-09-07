@@ -32,6 +32,7 @@ declare const _default: ({ strapi }: {
     }): Promise<any>;
     _detectCycle(subjectId: string, objectId: string, predicate: string, visited?: Set<string>): Promise<boolean>;
     deleteRelation(siteId: number, documentId: string): Promise<any>;
+    updateRelation(siteId: number, documentId: string, data: any): Promise<any>;
     disambiguate(siteId: number, params: {
         name: string;
         entityType?: string;
