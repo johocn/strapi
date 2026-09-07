@@ -40,5 +40,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     async delete(ctx: any) {
       await wrap(ctx, () => svc().remove(Number(ctx.params.id)).then((row: any) => ({ data: row })));
     },
+
+    /** POST /wx/materials/sync {type} → 从微信永久素材库拉取并落库 */
+    async sync(ctx: any) {
+      const body = ctx.request?.body || {};
+      await wrap(ctx, () => svc().syncFromWechat(body.type).then((r: any) => ({ data: r })));
+    },
   };
 };

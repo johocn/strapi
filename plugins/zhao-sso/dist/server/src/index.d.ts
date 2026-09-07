@@ -1670,6 +1670,7 @@ declare const _default: {
             create(ctx: any): Promise<void>;
             list(ctx: any): Promise<void>;
             delete(ctx: any): Promise<void>;
+            sync(ctx: any): Promise<void>;
         };
         "wx-article": ({ strapi }: {
             strapi: import('@strapi/types/dist/core').Strapi;
@@ -2511,6 +2512,11 @@ declare const _default: {
                 file?: import('./services/sso-wx-material').UploadFile;
             }): Promise<any>;
             remove(id: number): Promise<any>;
+            syncFromWechat(type: string): Promise<{
+                added: number;
+                updated: number;
+                total: number;
+            }>;
         };
         "sso-wx-article": ({ strapi }: {
             strapi: import('@strapi/types/dist/core').Strapi;

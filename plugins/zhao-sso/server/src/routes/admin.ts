@@ -165,6 +165,7 @@ export default () => ({
 
     // 永久素材
     adminRoute("POST", "/wx/materials", "wx-material.create", "sso.wx.write"),
+    adminRoute("POST", "/wx/materials/sync", "wx-material.sync", "sso.wx.write"),
     adminRoute("GET", "/wx/materials", "wx-material.list", "sso.wx.read"),
     adminRoute("DELETE", "/wx/materials/:id", "wx-material.delete", "sso.wx.write"),
 

@@ -6,5 +6,7 @@ declare const _default: ({ strapi }: {
     create(ctx: any): Promise<void>;
     list(ctx: any): Promise<void>;
     delete(ctx: any): Promise<void>;
+    /** POST /wx/materials/sync {type} → 从微信永久素材库拉取并落库 */
+    sync(ctx: any): Promise<void>;
 };
 export default _default;

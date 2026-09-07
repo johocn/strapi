@@ -34,5 +34,14 @@ declare const _default: ({ strapi }: {
     }): Promise<any>;
     /** 删除远程永久素材后删本地记录 */
     remove(id: number): Promise<any>;
+    /**
+     * 从微信永久素材库拉取素材并落库（batchget_material，仅 image/voice/video）
+     * 已存在的 media_id 走更新（name/url），否则新增；video/voice 微信不返回 url
+     */
+    syncFromWechat(type: string): Promise<{
+        added: number;
+        updated: number;
+        total: number;
+    }>;
 };
 export default _default;

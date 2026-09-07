@@ -3110,6 +3110,11 @@ const wxMaterialController = ({ strapi }) => {
     },
     async delete(ctx) {
       await wrap(ctx, () => svc().remove(Number(ctx.params.id)).then((row) => ({ data: row })));
+    },
+    /** POST /wx/materials/sync {type} → 从微信永久素材库拉取并落库 */
+    async sync(ctx) {
+      const body = ctx.request?.body || {};
+      await wrap(ctx, () => svc().syncFromWechat(body.type).then((r) => ({ data: r })));
     }
   };
 };
@@ -3586,6 +3591,7 @@ const admin = () => ({
     adminRoute("DELETE", "/wx/replies/:id", "wx-reply.delete", "sso.wx.write"),
     // 永久素材
     adminRoute("POST", "/wx/materials", "wx-material.create", "sso.wx.write"),
+    adminRoute("POST", "/wx/materials/sync", "wx-material.sync", "sso.wx.write"),
     adminRoute("GET", "/wx/materials", "wx-material.list", "sso.wx.read"),
     adminRoute("DELETE", "/wx/materials/:id", "wx-material.delete", "sso.wx.write"),
     // 图文草稿 + 发布
@@ -7095,6 +7101,52 @@ const ssoWxMaterial = ({ strapi }) => {
         if (d.errcode) throwErr("SSO_WX_MATERIAL_020", 502, `WeChat del material error: ${d.errmsg}`);
       }
       return strapi.db.query(MATERIAL_UID).delete({ where: { id } });
+    },
+    /**
+     * 从微信永久素材库拉取素材并落库（batchget_material，仅 image/voice/video）
+     * 已存在的 media_id 走更新（name/url），否则新增；video/voice 微信不返回 url
+     */
+    async syncFromWechat(type) {
+      if (!["image", "voice", "video"].includes(type)) {
+        throwErr("SSO_WX_MATERIAL_400", 400, "仅支持同步 image/voice/video 类型");
+      }
+      if (isMock$1()) return { added: 0, updated: 0, total: 0 };
+      const accessToken = await wechat().getAccessToken("official_account");
+      let added = 0;
+      let updated = 0;
+      let offset = 0;
+      const pageSize = 20;
+      let total = 0;
+      while (true) {
+        const res = await axios.post(
+          "https://api.weixin.qq.com/cgi-bin/material/batchget_material",
+          { type, offset, count: pageSize },
+          { params: { access_token: accessToken }, timeout: 3e4 }
+        );
+        const d = res.data || {};
+        if (d.errcode) throwErr("SSO_WX_MATERIAL_030", 502, `WeChat batchget material error: ${d.errmsg}`);
+        const items = d.item || [];
+        total = d.total_count || 0;
+        for (const it of items) {
+          const exist = await strapi.db.query(MATERIAL_UID).findOne({ where: { media_id: it.media_id } });
+          const data = {
+            type,
+            name: it.name || null,
+            media_id: it.media_id,
+            wx_url: it.url || ""
+          };
+          if (exist) {
+            await strapi.db.query(MATERIAL_UID).update({ where: { id: exist.id }, data });
+            updated++;
+          } else {
+            await strapi.db.query(MATERIAL_UID).create({ data });
+            added++;
+          }
+        }
+        offset += items.length;
+        if (!items.length || offset >= total) break;
+      }
+      return { added, updated, total };
     }
   };
 };

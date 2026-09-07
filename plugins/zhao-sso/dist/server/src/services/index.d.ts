@@ -784,6 +784,11 @@ declare const _default: {
             file?: import('./sso-wx-material').UploadFile;
         }): Promise<any>;
         remove(id: number): Promise<any>;
+        syncFromWechat(type: string): Promise<{
+            added: number;
+            updated: number;
+            total: number;
+        }>;
     };
     "sso-wx-article": ({ strapi }: {
         strapi: import('@strapi/types/dist/core').Strapi;

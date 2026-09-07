@@ -239,6 +239,7 @@ declare const _default: {
         create(ctx: any): Promise<void>;
         list(ctx: any): Promise<void>;
         delete(ctx: any): Promise<void>;
+        sync(ctx: any): Promise<void>;
     };
     "wx-article": ({ strapi }: {
         strapi: import('@strapi/types/dist/core').Strapi;

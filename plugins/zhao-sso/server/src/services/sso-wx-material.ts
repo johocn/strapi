@@ -116,5 +116,53 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       }
       return strapi.db.query(MATERIAL_UID).delete({ where: { id } });
     },
+
+    /**
+     * 从微信永久素材库拉取素材并落库（batchget_material，仅 image/voice/video）
+     * 已存在的 media_id 走更新（name/url），否则新增；video/voice 微信不返回 url
+     */
+    async syncFromWechat(type: string) {
+      if (!["image", "voice", "video"].includes(type)) {
+        throwErr("SSO_WX_MATERIAL_400", 400, "仅支持同步 image/voice/video 类型");
+      }
+      if (isMock()) return { added: 0, updated: 0, total: 0 };
+      const accessToken = await wechat().getAccessToken("official_account");
+      let added = 0;
+      let updated = 0;
+      let offset = 0;
+      const pageSize = 20;
+      let total = 0;
+      // 微信 batchget_material 每次最多拉 20 条，分页拉全
+      while (true) {
+        const res = await axios.post(
+          "https://api.weixin.qq.com/cgi-bin/material/batchget_material",
+          { type, offset, count: pageSize },
+          { params: { access_token: accessToken }, timeout: 30000 }
+        );
+        const d = res.data || {};
+        if (d.errcode) throwErr("SSO_WX_MATERIAL_030", 502, `WeChat batchget material error: ${d.errmsg}`);
+        const items: any[] = d.item || [];
+        total = d.total_count || 0;
+        for (const it of items) {
+          const exist: any = await strapi.db.query(MATERIAL_UID).findOne({ where: { media_id: it.media_id } });
+          const data = {
+            type,
+            name: it.name || null,
+            media_id: it.media_id,
+            wx_url: it.url || "",
+          };
+          if (exist) {
+            await strapi.db.query(MATERIAL_UID).update({ where: { id: exist.id }, data });
+            updated++;
+          } else {
+            await strapi.db.query(MATERIAL_UID).create({ data });
+            added++;
+          }
+        }
+        offset += items.length;
+        if (!items.length || offset >= total) break;
+      }
+      return { added, updated, total };
+    },
   };
 };
