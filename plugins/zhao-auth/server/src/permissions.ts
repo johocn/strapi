@@ -804,6 +804,16 @@ export const PERMISSION_TREE: Record<string, PermissionItem> = {
           "article-category.delete": { label: "删除分类", type: "button" },
         },
       },
+      "menu.website-author": {
+        label: "文章作者",
+        type: "menu",
+        children: {
+          "author.read": { label: "查看作者", type: "button" },
+          "author.create": { label: "新增作者", type: "button" },
+          "author.update": { label: "编辑作者", type: "button" },
+          "author.delete": { label: "删除作者", type: "button" },
+        },
+      },
       "menu.website-product": {
         label: "产品管理",
         type: "menu",
@@ -1497,6 +1507,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
     "menu.website-brand", "brand-info.read",
     "menu.website-article", "article.read", "article.create", "article.update",
     "menu.website-article-category", "article-category.read", "article-category.create", "article-category.update",
+    "menu.website-author", "author.read", "author.create", "author.update",
     "menu.website-product", "product.read", "product.create", "product.update",
     "menu.website-case", "case.read", "case.create", "case.update",
     "menu.website-compliance", "compliance.read", "compliance.create", "compliance.update",
