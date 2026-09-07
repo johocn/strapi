@@ -32272,7 +32272,7 @@ const adminApi = () => ({
     channelScopeRoute("GET", "/authors/:documentId", "author-admin.findOne", "author.read"),
     channelScopeRoute("POST", "/authors", "author-admin.create", "author.create"),
     channelScopeRoute("PUT", "/authors/:documentId", "author-admin.update", "author.update"),
-    channelScopeRoute("DELETE", "/authors/:documentId", "author-admin.softDelete", "author.delete"),
+    channelScopeRoute("DELETE", "/authors/:documentId", "author-admin.delete", "author.delete"),
     channelScopeRoute("GET", "/products", "product-admin.find", "product.read"),
     channelScopeRoute("GET", "/products/:documentId", "product-admin.findOne", "product.read"),
     channelScopeRoute("POST", "/products", "product-admin.create", "product.create"),
