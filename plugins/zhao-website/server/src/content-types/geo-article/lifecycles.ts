@@ -7,6 +7,15 @@ const ApplicationError = errors.ApplicationError;
 
 const POPULATE = ["truthBasis", "mentionedEntities", "author"];
 
+function assertAuditPass(audit: { pass: boolean; missing: { passed: boolean }[] }) {
+  if (!audit.pass) {
+    throw new ApplicationError("发布未达标：请补齐以下缺漏项", {
+      code: "GEO_AUDIT_FAIL",
+      missing: audit.missing.filter((m) => !m.passed),
+    });
+  }
+}
+
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async beforeUpdate(event: any) {
     const { data, where } = event.params;
@@ -42,11 +51,40 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       reviewedAt: merged.reviewedAt,
     });
 
-    if (!audit.pass) {
-      throw new ApplicationError("发布未达标：请补齐以下缺漏项", {
-        code: "GEO_AUDIT_FAIL",
-        missing: audit.missing.filter((m) => !m.passed),
-      });
-    }
+    assertAuditPass(audit);
+  },
+
+  async beforeCreate(event: any) {
+    const { data } = event.params;
+    // 仅在"创建即发布"时校验（服务层已强制非 published，此为内容管理器 UI 旁路的第二道防线）
+    if (!data || data.status !== "published") return;
+    // auditGeoArticle 只判 truthBasis/mentionedEntities 非空数组、author truthy，id 数组可直接通过
+    assertAuditPass(
+      auditGeoArticle({
+        type: data.type,
+        title: data.title,
+        content: data.content,
+        faqQuestion: data.faqQuestion,
+        comparisonData: data.comparisonData,
+        listItems: data.listItems,
+        summaryPoints: data.summaryPoints,
+        localTips: data.localTips,
+        infoBoundary: data.infoBoundary,
+        sourceName: data.sourceName,
+        sourceUrl: data.sourceUrl,
+        truthBasis: Array.isArray(data.truthBasis) ? data.truthBasis : data.truthBasis ? [data.truthBasis] : [],
+        mentionedEntities: Array.isArray(data.mentionedEntities) ? data.mentionedEntities : data.mentionedEntities ? [data.mentionedEntities] : [],
+        author: data.author,
+        authorName: data.authorName,
+        jsonLdType: data.jsonLdType,
+        businessData: data.businessData,
+        ctaType: data.ctaType,
+        leadFormEnabled: data.leadFormEnabled,
+        riskType: data.riskType,
+        reviewChecks: data.reviewChecks,
+        reviewerName: data.reviewerName,
+        reviewedAt: data.reviewedAt,
+      })
+    );
   },
 });
