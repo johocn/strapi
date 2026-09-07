@@ -35101,6 +35101,13 @@ const INDEXABLE_CTS = [
   { uid: "plugin::zhao-website.tutorial", pathPrefix: "/tutorials", priority: 0.6, imageField: "coverImage" },
   { uid: "plugin::zhao-website.faq", pathPrefix: "/faqs", priority: 0.5, imageField: null }
 ];
+const GEO_TYPE_PREFIX = {
+  "geo-article": "/geo-article",
+  "geo-faq": "/geo-faq",
+  "local-report": "/local-report",
+  "local-comparison": "/local-comparison",
+  "local-list": "/local-list"
+};
 const sitemap = ({ strapi: strapi2 }) => ({
   async generate(siteId, siteUrl) {
     const seoConfig2 = await strapi2.plugin("zhao-website").service("seo-config").get(siteId);
@@ -35124,6 +35131,34 @@ const sitemap = ({ strapi: strapi2 }) => ({
         const imageUrl = ct.imageField && item[ct.imageField]?.url ? `${siteUrl}${item[ct.imageField].url}` : void 0;
         const itemHreflang = this._buildItemHreflang(seoConfig2, siteUrl, `${ct.pathPrefix}/${item.slug}`);
         urls.push(this._urlEntry(siteUrl, `${ct.pathPrefix}/${item.slug}`, String(ct.priority), "weekly", lastmod, imageUrl, itemHreflang));
+      }
+    }
+    if (!excludeTypes.includes("geo-article")) {
+      const filterService = strapi2.plugin("zhao-website").service("content-filter");
+      const where = await filterService.buildWhere(siteId, "plugin::zhao-website.geo-article");
+      const items = await strapi2.db.query("plugin::zhao-website.geo-article").findMany({
+        where,
+        orderBy: { publishedAt: "DESC" },
+        populate: ["coverImage"]
+      });
+      for (const item of items) {
+        const prefix = GEO_TYPE_PREFIX[item.type];
+        if (!prefix) continue;
+        const lastmod = item.updatedAt || item.publishedAt;
+        const imageUrl = item.coverImage?.url ? `${siteUrl}${item.coverImage.url}` : void 0;
+        urls.push(this._urlEntry(siteUrl, `${prefix}/${item.slug}`, "0.8", "weekly", lastmod, imageUrl));
+      }
+    }
+    if (!excludeTypes.includes("knowledge-entity")) {
+      const filterService = strapi2.plugin("zhao-website").service("content-filter");
+      const where = await filterService.buildWhere(siteId, "plugin::zhao-website.knowledge-entity");
+      const items = await strapi2.db.query("plugin::zhao-website.knowledge-entity").findMany({
+        where,
+        orderBy: { publishedAt: "DESC" }
+      });
+      for (const item of items) {
+        const lastmod = item.updatedAt || item.publishedAt;
+        urls.push(this._urlEntry(siteUrl, `/knowledge/${item.slug}`, "0.6", "monthly", lastmod));
       }
     }
     return `<?xml version="1.0" encoding="UTF-8"?>
