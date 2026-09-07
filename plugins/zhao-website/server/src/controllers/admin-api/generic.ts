@@ -23,6 +23,7 @@ function createGenericController(serviceName: string) {
 
 export default {
   "article-category": createGenericController("article-category"),
+  author: createGenericController("author"),
   product: createGenericController("product"),
   case: createGenericController("case"),
   compliance: createGenericController("compliance"),
