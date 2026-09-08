@@ -2,6 +2,19 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 const USER_UID$2 = "plugin::users-permissions.user";
 const UP_USERS_TABLE = "up_users";
+async function resolveRealInviteCode(strapi2, ssoId) {
+  try {
+    const ssoInvite = strapi2.plugin("zhao-sso")?.service("sso-invite");
+    if (!ssoInvite?.ensureOwnInviteCode) return "";
+    for (const app of ["course", "wealth", "joho"]) {
+      const code = await ssoInvite.ensureOwnInviteCode(ssoId, app);
+      if (code) return code;
+    }
+  } catch (e) {
+    strapi2.log.warn(`[zhao-auth] resolveRealInviteCode sso=${ssoId} 失败: ${e?.message || e}`);
+  }
+  return "";
+}
 async function alignUpUser(strapi2, ssoId, decoded) {
   const knex = strapi2.db.connection;
   try {
@@ -14,7 +27,7 @@ async function alignUpUser(strapi2, ssoId, decoded) {
       if (nickname && !exist.nickname && !exist.username?.startsWith("wx_")) patch.nickname = nickname;
       if (avatar && !exist.avatar) patch.avatar = avatar;
       if (!exist.invite_code) {
-        patch.invite_code = `U${ssoId}`;
+        patch.invite_code = await resolveRealInviteCode(strapi2, ssoId) || `U${ssoId}`;
       }
       if (Object.keys(patch).length) {
         patch.updated_at = /* @__PURE__ */ new Date();
@@ -22,6 +35,7 @@ async function alignUpUser(strapi2, ssoId, decoded) {
       }
       return exist;
     }
+    const realCode = await resolveRealInviteCode(strapi2, ssoId);
     const rows = await knex(UP_USERS_TABLE).insert({
       id: ssoId,
       document_id: null,
@@ -34,12 +48,12 @@ async function alignUpUser(strapi2, ssoId, decoded) {
       sso_id: ssoId,
       nickname,
       avatar,
-      invite_code: `U${ssoId}`,
+      invite_code: realCode || `U${ssoId}`,
       created_at: /* @__PURE__ */ new Date(),
       updated_at: /* @__PURE__ */ new Date(),
       published_at: /* @__PURE__ */ new Date()
     }).returning("id");
-    strapi2.log.info(`[zhao-auth] 懒对齐新建 up_users id=${rows?.[0] ?? ssoId} (sso_id=${ssoId})`);
+    strapi2.log.info(`[zhao-auth] 懒对齐新建 up_users id=${rows?.[0] ?? ssoId} (sso_id=${ssoId}) invite_code=${realCode || `U${ssoId}`}`);
     return { id: rows?.[0] ?? ssoId };
   } catch (e) {
     strapi2.log.warn(`[zhao-auth] up_users 懒对齐失败 sso=${ssoId}: ${e?.message || e}`);
@@ -51,7 +65,7 @@ async function syncSsoProfile(strapi2, ssoId, data) {
   try {
     const nickname = data.nickname || null;
     const avatar = data.avatar || null;
-    const inviteCode = data.inviteCode || `U${ssoId}`;
+    const inviteCode = data.inviteCode || await resolveRealInviteCode(strapi2, ssoId) || `U${ssoId}`;
     const exist = await knex(UP_USERS_TABLE).select("id", "sso_id", "nickname", "avatar", "invite_code").where({ id: ssoId }).first();
     if (exist) {
       const patch = { updated_at: /* @__PURE__ */ new Date() };

@@ -10,6 +10,23 @@ const USER_UID = "plugin::users-permissions.user";
 
 const UP_USERS_TABLE = "up_users";
 
+// 跨插件门面：从 zhao-sso 拉取该用户真实邀请码（sso_invite_codes，三码统一铁律）。
+// 遍历常用 app_code 取第一个有效码；zhao-sso 不可用或无码时返回空串（调用方降级 U<id> 占位）。
+// 用于懒对齐/补建 up_users 时避免写 U<id> 占位码导致三码不一致、分销邀请失效。
+async function resolveRealInviteCode(strapi: Core.Strapi, ssoId: number): Promise<string> {
+  try {
+    const ssoInvite = strapi.plugin("zhao-sso")?.service("sso-invite") as any;
+    if (!ssoInvite?.ensureOwnInviteCode) return "";
+    for (const app of ["course", "wealth", "joho"]) {
+      const code = await ssoInvite.ensureOwnInviteCode(ssoId, app);
+      if (code) return code;
+    }
+  } catch (e: any) {
+    strapi.log.warn(`[zhao-auth] resolveRealInviteCode sso=${ssoId} 失败: ${e?.message || e}`);
+  }
+  return "";
+}
+
 // C 端懒对齐：SSO 已建 sso_user，但 C 端 up_users 未必有对应行。
 // 认证到 token 里的 sso_id 时，确保 up_users 存在同 id 行并补齐对齐字段。
 // 用 knex 直写（up_users 的 sso_id/nickname/avatar/invite_code 未在 users-permissions schema 声明，
@@ -31,9 +48,9 @@ async function alignUpUser(strapi: Core.Strapi, ssoId: number, decoded: Record<s
       // 昵称/头像仅缺时回填，且不覆盖非 wx_ 占位的手设昵称
       if (nickname && !exist.nickname && !exist.username?.startsWith("wx_")) patch.nickname = nickname;
       if (avatar && !exist.avatar) patch.avatar = avatar;
-      // 兜底邀请码：SSO 未给 ownInviteCode 时本地生成
+      // 兜底邀请码：优先从 zhao-sso 拉真实码（三码统一），无码才用 U<id> 占位
       if (!exist.invite_code) {
-        patch.invite_code = `U${ssoId}`;
+        patch.invite_code = (await resolveRealInviteCode(strapi, ssoId)) || `U${ssoId}`;
       }
       if (Object.keys(patch).length) {
         patch.updated_at = new Date();
@@ -43,6 +60,7 @@ async function alignUpUser(strapi: Core.Strapi, ssoId: number, decoded: Record<s
     }
 
     // 不存在：经原生 SQL 补建（同名逻辑与原 SSO ensureUpUser 一致，现在归属 C 端）
+    const realCode = await resolveRealInviteCode(strapi, ssoId);
     const rows = await knex(UP_USERS_TABLE).insert({
       id: ssoId,
       document_id: null,
@@ -55,12 +73,12 @@ async function alignUpUser(strapi: Core.Strapi, ssoId: number, decoded: Record<s
       sso_id: ssoId,
       nickname,
       avatar,
-      invite_code: `U${ssoId}`,
+      invite_code: realCode || `U${ssoId}`,
       created_at: new Date(),
       updated_at: new Date(),
       published_at: new Date(),
     }).returning("id");
-    strapi.log.info(`[zhao-auth] 懒对齐新建 up_users id=${rows?.[0] ?? ssoId} (sso_id=${ssoId})`);
+    strapi.log.info(`[zhao-auth] 懒对齐新建 up_users id=${rows?.[0] ?? ssoId} (sso_id=${ssoId}) invite_code=${realCode || `U${ssoId}`}`);
     return { id: rows?.[0] ?? ssoId };
   } catch (e: any) {
     strapi.log.warn(`[zhao-auth] up_users 懒对齐失败 sso=${ssoId}: ${e?.message || e}`);
@@ -83,7 +101,8 @@ async function syncSsoProfile(strapi: Core.Strapi, ssoId: number, data: {
   try {
     const nickname = data.nickname || null;
     const avatar = data.avatar || null;
-    const inviteCode = data.inviteCode || `U${ssoId}`; // 未给真实码时降级占位
+    // 未给真实码时：优先从 zhao-sso 拉真实码（三码统一），仍无码才降级占位
+    const inviteCode = data.inviteCode || (await resolveRealInviteCode(strapi, ssoId)) || `U${ssoId}`;
     const exist = await knex(UP_USERS_TABLE)
       .select("id", "sso_id", "nickname", "avatar", "invite_code")
       .where({ id: ssoId })
