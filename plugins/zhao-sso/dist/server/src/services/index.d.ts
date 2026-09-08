@@ -208,6 +208,7 @@ declare const _default: {
             oauthScopes: any;
             appId: any;
         }>;
+        fetchWechatProfile(openid: string, appType?: "official_account" | "open_platform" | "mini_program" | "app"): Promise<any>;
         querySubscribe(openid: string, provider?: string, appType?: "official_account" | "open_platform" | "mini_program" | "app"): Promise<0 | 1>;
     };
     "sso-alipay": ({ strapi }: {

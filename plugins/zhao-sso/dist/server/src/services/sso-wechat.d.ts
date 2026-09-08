@@ -34,6 +34,11 @@ declare const _default: ({ strapi }: {
         appId: any;
     }>;
     /**
+     * 拉取公众号用户完整资料（cgi-bin/user/info，全局基础 access_token）。
+     * 仅已关注用户返回 nickname/headimgurl；未关注返回 subscribe=0 无资料。
+     */
+    fetchWechatProfile(openid: string, appType?: WechatAppType): Promise<any>;
+    /**
      * 查询用户是否关注公众号(subscribe)
      * 调 cgi-bin/user/info + 全局 access_token，返回 subscribe(1关注/0未关注)
      */

@@ -4539,6 +4539,13 @@ const ssoWechat = ({ strapi }) => {
         } catch {
         }
         userInfo = userInfoRes.data;
+        if (!userInfo?.nickname) {
+          try {
+            const mgr = await this.fetchWechatProfile(openid, appType);
+            if (mgr?.subscribe === 1 && mgr?.nickname) userInfo = mgr;
+          } catch {
+          }
+        }
       }
       let binding = null;
       if (unionid) {
@@ -4687,19 +4694,26 @@ const ssoWechat = ({ strapi }) => {
       };
     },
     /**
-     * 查询用户是否关注公众号(subscribe)
-     * 调 cgi-bin/user/info + 全局 access_token，返回 subscribe(1关注/0未关注)
+     * 拉取公众号用户完整资料（cgi-bin/user/info，全局基础 access_token）。
+     * 仅已关注用户返回 nickname/headimgurl；未关注返回 subscribe=0 无资料。
      */
-    async querySubscribe(openid, provider = "wechat", appType = "official_account") {
-      if (provider !== "wechat") return 0;
-      if (process.env.MSG_WECHAT_PROVIDER === "mock") return 1;
+    async fetchWechatProfile(openid, appType = "official_account") {
       const config2 = await getConfig(appType);
       const accessToken = await getValidAccessToken(config2);
       const res = await axios.get("https://api.weixin.qq.com/cgi-bin/user/info", {
         params: { access_token: accessToken, openid },
         timeout: 1e4
       });
-      const data = res.data || {};
+      return res.data || {};
+    },
+    /**
+     * 查询用户是否关注公众号(subscribe)
+     * 调 cgi-bin/user/info + 全局 access_token，返回 subscribe(1关注/0未关注)
+     */
+    async querySubscribe(openid, provider = "wechat", appType = "official_account") {
+      if (provider !== "wechat") return 0;
+      if (process.env.MSG_WECHAT_PROVIDER === "mock") return 1;
+      const data = await this.fetchWechatProfile(openid, appType);
       if (data.errcode) {
         throwErr("SSO_WECHAT_012", 502, `WeChat user info error: ${data.errmsg}`);
       }

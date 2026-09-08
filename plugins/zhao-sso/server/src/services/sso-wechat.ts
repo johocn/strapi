@@ -182,6 +182,15 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         });
       } catch { /* ignore */ }
       userInfo = userInfoRes.data;
+
+      // 静默授权（snsapi_base）sns/userinfo 无权限拿不到昵称头像：
+      // 若用户已关注公众号，用用户管理接口 cgi-bin/user/info 兜底，静默注册/登录也能获得真实微信昵称（免二次弹窗）
+      if (!userInfo?.nickname) {
+        try {
+          const mgr = await this.fetchWechatProfile(openid, appType);
+          if (mgr?.subscribe === 1 && mgr?.nickname) userInfo = mgr;
+        } catch { /* 兜底失败静默：保持空昵称，后续 'n' 弹窗授权可回填 */ }
+      }
     }
 
     // 优先 unionid 匹配已有用户（同一微信号跨不同 app 一致，避免重复建号）。
@@ -357,19 +366,27 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   },
 
   /**
-   * 查询用户是否关注公众号(subscribe)
-   * 调 cgi-bin/user/info + 全局 access_token，返回 subscribe(1关注/0未关注)
+   * 拉取公众号用户完整资料（cgi-bin/user/info，全局基础 access_token）。
+   * 仅已关注用户返回 nickname/headimgurl；未关注返回 subscribe=0 无资料。
    */
-  async querySubscribe(openid: string, provider = "wechat", appType: WechatAppType = "official_account") {
-    if (provider !== "wechat") return 0;
-    if (process.env.MSG_WECHAT_PROVIDER === "mock") return 1; // mock 模式视为已关注，便于联调
+  async fetchWechatProfile(openid: string, appType: WechatAppType = "official_account") {
     const config = await getConfig(appType);
     const accessToken = await getValidAccessToken(config);
     const res = await axios.get("https://api.weixin.qq.com/cgi-bin/user/info", {
       params: { access_token: accessToken, openid },
       timeout: 10000,
     });
-    const data = res.data || {};
+    return res.data || {};
+  },
+
+  /**
+   * 查询用户是否关注公众号(subscribe)
+   * 调 cgi-bin/user/info + 全局 access_token，返回 subscribe(1关注/0未关注)
+   */
+  async querySubscribe(openid: string, provider = "wechat", appType: WechatAppType = "official_account") {
+    if (provider !== "wechat") return 0;
+    if (process.env.MSG_WECHAT_PROVIDER === "mock") return 1; // mock 模式视为已关注，便于联调
+    const data = await this.fetchWechatProfile(openid, appType);
     if (data.errcode) {
       throwErr("SSO_WECHAT_012", 502, `WeChat user info error: ${data.errmsg}`);
     }
