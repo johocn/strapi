@@ -19,7 +19,7 @@ const TYPE_FIELDS: Record<string, string[]> = {
   article: ["title", "slug", "excerpt", "updatedAt"],
   geoArticle: ["title", "slug", "summaryPoints", "updatedAt"],
   case: ["title", "slug", "clientDescription", "updatedAt"],
-  product: ["title", "slug", "description", "updatedAt"],
+  product: ["name", "slug", "description", "updatedAt"],
   faq: ["question", "slug", "answer", "updatedAt"],
   tutorial: ["title", "slug", "description", "updatedAt"],
   course: ["title", "slug", "description", "updatedAt"],
