@@ -123,6 +123,12 @@ declare const _default: {
                     target: string;
                     mappedBy: string;
                 };
+                pointActivities: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    mappedBy: string;
+                };
                 sequenceCourses: {
                     type: string;
                     relation: string;

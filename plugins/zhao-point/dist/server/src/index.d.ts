@@ -1520,6 +1520,9 @@ declare const _default: {
                     };
                     tags: {
                         type: string;
+                        relation: string;
+                        target: string;
+                        inversedBy: string;
                     };
                     assets: {
                         type: string;
@@ -1685,6 +1688,18 @@ declare const _default: {
                     settleVenue: {
                         type: string;
                         default: number;
+                    };
+                    slug: {
+                        type: string;
+                        targetField: string;
+                        required: boolean;
+                    };
+                    relatedOverride: {
+                        type: string;
+                    };
+                    showRelatedSection: {
+                        type: string;
+                        default: boolean;
                     };
                     promoTemplate: {
                         type: string;

@@ -119,6 +119,12 @@
       "target": "plugin::zhao-website.product",
       "mappedBy": "tags"
     },
+    "pointActivities": {
+      "type": "relation",
+      "relation": "manyToMany",
+      "target": "plugin::zhao-point.activity",
+      "mappedBy": "tags"
+    },
     "sequenceCourses": {
       "type": "relation",
       "relation": "oneToMany",
