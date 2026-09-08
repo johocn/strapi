@@ -550,6 +550,28 @@ const TYPE_UID = {
   activity: "plugin::zhao-point.activity"
 };
 const ALL_TYPES = Object.keys(TYPE_UID);
+const TYPE_FIELDS = {
+  article: ["title", "slug", "excerpt", "updatedAt"],
+  geoArticle: ["title", "slug", "summaryPoints", "updatedAt"],
+  case: ["title", "slug", "clientDescription", "updatedAt"],
+  product: ["title", "slug", "description", "updatedAt"],
+  faq: ["question", "slug", "answer", "updatedAt"],
+  tutorial: ["title", "slug", "description", "updatedAt"],
+  course: ["title", "slug", "description", "updatedAt"],
+  lesson: ["title", "slug", "updatedAt"],
+  activity: ["title", "slug", "description", "updatedAt"]
+};
+const TYPE_SUMMARY = {
+  article: "excerpt",
+  geoArticle: "summaryPoints",
+  case: "clientDescription",
+  product: "description",
+  faq: "answer",
+  tutorial: "description",
+  course: "description",
+  lesson: "",
+  activity: "description"
+};
 const related = ({ strapi }) => ({
   async findByTags(tagIds, types, limit = 3, exclude = "") {
     const result = {};
@@ -562,13 +584,14 @@ const related = ({ strapi }) => ({
         filters,
         limit,
         sort: { updatedAt: "desc" },
-        fields: ["title", "slug", "excerpt", "description", "updatedAt"]
+        fields: TYPE_FIELDS[type] ?? ["title", "slug", "updatedAt"]
       });
+      const summaryKey = TYPE_SUMMARY[type] ?? "";
       result[type] = docs.map((d) => ({
         type,
         documentId: d.documentId,
-        title: d.title ?? "",
-        summary: d.excerpt || d.description || "",
+        title: d.title ?? d.question ?? "",
+        summary: summaryKey ? d[summaryKey] ?? "" : "",
         url: this.buildUrl(type, d)
       }));
     }

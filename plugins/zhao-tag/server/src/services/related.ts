@@ -14,6 +14,30 @@ const TYPE_UID: Record<string, string> = {
 
 const ALL_TYPES = Object.keys(TYPE_UID);
 
+// 各类型可查字段与摘要字段（CT schema 不一致，不能统一 fields）
+const TYPE_FIELDS: Record<string, string[]> = {
+  article: ["title", "slug", "excerpt", "updatedAt"],
+  geoArticle: ["title", "slug", "summaryPoints", "updatedAt"],
+  case: ["title", "slug", "clientDescription", "updatedAt"],
+  product: ["title", "slug", "description", "updatedAt"],
+  faq: ["question", "slug", "answer", "updatedAt"],
+  tutorial: ["title", "slug", "description", "updatedAt"],
+  course: ["title", "slug", "description", "updatedAt"],
+  lesson: ["title", "slug", "updatedAt"],
+  activity: ["title", "slug", "description", "updatedAt"],
+};
+const TYPE_SUMMARY: Record<string, string> = {
+  article: "excerpt",
+  geoArticle: "summaryPoints",
+  case: "clientDescription",
+  product: "description",
+  faq: "answer",
+  tutorial: "description",
+  course: "description",
+  lesson: "",
+  activity: "description",
+};
+
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async findByTags(tagIds: string[], types: string[], limit = 3, exclude = "") {
     const result: Record<string, any[]> = {};
@@ -26,13 +50,14 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         filters,
         limit,
         sort: { updatedAt: "desc" } as any,
-        fields: ["title", "slug", "excerpt", "description", "updatedAt"],
+        fields: TYPE_FIELDS[type] ?? ["title", "slug", "updatedAt"],
       });
+      const summaryKey = TYPE_SUMMARY[type] ?? "";
       result[type] = docs.map((d) => ({
         type,
         documentId: d.documentId,
-        title: d.title ?? "",
-        summary: d.excerpt || d.description || "",
+        title: d.title ?? d.question ?? "",
+        summary: summaryKey ? d[summaryKey] ?? "" : "",
         url: this.buildUrl(type, d),
       }));
     }
