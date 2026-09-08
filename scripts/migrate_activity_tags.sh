@@ -16,14 +16,14 @@ set -euo pipefail
 DRY="${DRY:-1}"
 STAMP=$(date +%Y%m%d%H%M%S)
 
-# ---- 连接参数（占位，需按生产环境实测替换）----
-PG_CONTAINER="<PG_CONTAINER>"
-PG_USER="<PG_USER>"
-PG_DB="<PG_DB>"
+# ---- 连接参数（生产环境实测值）----
+PG_CONTAINER="1Panel-postgresql-pIe0"
+PG_USER="strapi"
+PG_DB="strapi"
 PSQL="docker exec ${PG_CONTAINER} psql -U ${PG_USER} -d ${PG_DB} -tA -P pager=off"
 
-# ---- manyToMany 关联表名（占位，先用 \dt *tag*lnk* 实测）----
-LNK="<LNK_TABLE>"
+# ---- manyToMany 关联表名（实测 \dt *tag*lnk* = activities_tags_lnk）----
+LNK="activities_tags_lnk"
 
 BACKUP="/home/admin/migrate_activity_tags_${STAMP}.csv"
 
