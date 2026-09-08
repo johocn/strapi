@@ -586,6 +586,7 @@ const related = ({ strapi }) => ({
         filters,
         limit,
         sort: { updatedAt: "desc" },
+        locale: "zh-CN",
         fields: TYPE_FIELDS[type] ?? ["title", "slug", "updatedAt"]
       });
       const summaryKey = TYPE_SUMMARY[type] ?? "";

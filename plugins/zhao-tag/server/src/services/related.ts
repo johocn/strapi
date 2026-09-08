@@ -50,6 +50,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         filters,
         limit,
         sort: { updatedAt: "desc" } as any,
+        locale: "zh-CN",
         fields: TYPE_FIELDS[type] ?? ["title", "slug", "updatedAt"],
       });
       const summaryKey = TYPE_SUMMARY[type] ?? "";
