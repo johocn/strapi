@@ -57,7 +57,7 @@ const contentTypes = {
   "tag-group": { schema: tagGroupSchema }
 };
 const wrap$1 = (data, meta = {}) => ({ data, meta });
-const wrapList$2 = (result) => {
+const wrapList$3 = (result) => {
   if (result && typeof result === "object" && !Array.isArray(result) && "results" in result) {
     return { data: result.results, meta: { pagination: result.pagination || {} } };
   }
@@ -72,7 +72,7 @@ const wrapList$2 = (result) => {
 const tag$1 = ({ strapi }) => ({
   async find(ctx) {
     try {
-      ctx.body = wrapList$2(await strapi.plugin("zhao-tag").service("tag").find(ctx.query));
+      ctx.body = wrapList$3(await strapi.plugin("zhao-tag").service("tag").find(ctx.query));
     } catch (err) {
       ctx.status = err.status || 400;
       ctx.body = { error: err.message };
@@ -124,7 +124,7 @@ const tag$1 = ({ strapi }) => ({
     }
   }
 });
-const wrapList$1 = (result) => {
+const wrapList$2 = (result) => {
   if (Array.isArray(result)) {
     return { data: result, meta: {} };
   }
@@ -133,7 +133,7 @@ const wrapList$1 = (result) => {
 const tagIndex$1 = ({ strapi }) => ({
   async find(ctx) {
     try {
-      ctx.body = wrapList$1(await strapi.documents("plugin::zhao-tag.tag-index").findMany(ctx.query));
+      ctx.body = wrapList$2(await strapi.documents("plugin::zhao-tag.tag-index").findMany(ctx.query));
     } catch (err) {
       ctx.status = err.status || 400;
       ctx.body = { error: err.message };
@@ -148,7 +148,7 @@ const tagIndex$1 = ({ strapi }) => ({
         return;
       }
       const result = await strapi.plugin("zhao-tag").service("tag-index").searchByTag(tagId, targetType);
-      ctx.body = wrapList$1(result);
+      ctx.body = wrapList$2(result);
     } catch (err) {
       ctx.status = err.status || 400;
       ctx.body = { error: err.message };
@@ -156,7 +156,7 @@ const tagIndex$1 = ({ strapi }) => ({
   }
 });
 const wrap = (data, meta = {}) => ({ data, meta });
-const wrapList = (result) => {
+const wrapList$1 = (result) => {
   if (result && typeof result === "object" && !Array.isArray(result) && "results" in result) {
     return { data: result.results, meta: { pagination: result.pagination || {} } };
   }
@@ -171,7 +171,7 @@ const wrapList = (result) => {
 const tagGroup$1 = ({ strapi }) => ({
   async find(ctx) {
     try {
-      ctx.body = wrapList(await strapi.plugin("zhao-tag").service("tag-group").find(ctx.query));
+      ctx.body = wrapList$1(await strapi.plugin("zhao-tag").service("tag-group").find(ctx.query));
     } catch (err) {
       ctx.status = err.status || 400;
       ctx.body = { error: err.message };
@@ -223,10 +223,32 @@ const tagGroup$1 = ({ strapi }) => ({
     }
   }
 });
+const wrapList = (data, meta = {}) => ({ data, meta });
+const related$1 = ({ strapi }) => ({
+  async findByTags(ctx) {
+    try {
+      const { tags, types, limit = "3", exclude = "" } = ctx.query;
+      if (!tags) {
+        ctx.status = 400;
+        ctx.body = { error: "tags 必填（逗号分隔 tag documentId）" };
+        return;
+      }
+      const tagIds = String(tags).split(",").map((s) => s.trim()).filter(Boolean);
+      const svc = strapi.plugin("zhao-tag").service("related");
+      const typeList = types ? String(types).split(",").map((s) => s.trim()).filter(Boolean) : svc.defaultTypes();
+      const numLimit = Math.max(1, Math.min(20, parseInt(String(limit), 10) || 3));
+      ctx.body = wrapList(await svc.findByTags(tagIds, typeList, numLimit, String(exclude)));
+    } catch (err) {
+      ctx.status = err.status || 400;
+      ctx.body = { error: err.message };
+    }
+  }
+});
 const controllers = {
   tag: tag$1,
   "tag-index": tagIndex$1,
-  "tag-group": tagGroup$1
+  "tag-group": tagGroup$1,
+  related: related$1
 };
 const UID$2 = "plugin::zhao-tag.tag";
 function validatePublicSite$1(data) {
@@ -516,10 +538,63 @@ const tagGroup = ({ strapi }) => ({
     return strapi.documents(UID).delete({ documentId });
   }
 });
+const TYPE_UID = {
+  article: "plugin::zhao-website.article",
+  geoArticle: "plugin::zhao-website.geo-article",
+  case: "plugin::zhao-website.case",
+  product: "plugin::zhao-website.product",
+  faq: "plugin::zhao-website.faq",
+  tutorial: "plugin::zhao-website.tutorial",
+  course: "plugin::zhao-course.course",
+  lesson: "plugin::zhao-course.course-lesson",
+  activity: "plugin::zhao-point.activity"
+};
+const ALL_TYPES = Object.keys(TYPE_UID);
+const related = ({ strapi }) => ({
+  async findByTags(tagIds, types, limit = 3, exclude = "") {
+    const result = {};
+    for (const type of types) {
+      const uid = TYPE_UID[type];
+      if (!uid) continue;
+      const filters = { tags: { documentId: { $in: tagIds } } };
+      if (exclude && type === "activity") filters.documentId = { $ne: exclude };
+      const docs = await strapi.documents(uid).findMany({
+        filters,
+        limit,
+        sort: { updatedAt: "desc" },
+        fields: ["title", "slug", "excerpt", "description", "updatedAt"]
+      });
+      result[type] = docs.map((d) => ({
+        type,
+        documentId: d.documentId,
+        title: d.title ?? "",
+        summary: d.excerpt || d.description || "",
+        url: this.buildUrl(type, d)
+      }));
+    }
+    return result;
+  },
+  buildUrl(type, d) {
+    switch (type) {
+      case "geoArticle":
+        return d.slug ? `https://www.joho.cn/geo-article/${d.slug}` : "";
+      case "course":
+        return `https://v.joho.cn/pages/course-detail/course-detail?id=${d.documentId}`;
+      case "activity":
+        return `https://v.joho.cn/pages/activity/detail?id=${d.documentId}`;
+      default:
+        return "";
+    }
+  },
+  defaultTypes() {
+    return ALL_TYPES;
+  }
+});
 const services = {
   tag,
   "tag-index": tagIndex,
-  "tag-group": tagGroup
+  "tag-group": tagGroup,
+  related
 };
 const publicRoute = (method, path, handler) => ({
   method,
@@ -556,6 +631,8 @@ const contentApi = () => ({
     channelScopeRoute("POST", "/tags", "tag.create", "tag.create"),
     channelScopeRoute("PUT", "/tags/:documentId", "tag.update", "tag.update"),
     channelScopeRoute("DELETE", "/tags/:documentId", "tag.delete", "tag.delete"),
+    // ===== 公开路由（related） =====
+    publicRoute("GET", "/related-by-tags", "related.findByTags"),
     // ===== 公开路由（tag-group） =====
     publicRoute("GET", "/tag-groups", "tag-group.find"),
     publicRoute("GET", "/tag-groups/:documentId", "tag-group.findOne"),

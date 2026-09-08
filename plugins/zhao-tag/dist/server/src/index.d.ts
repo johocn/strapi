@@ -349,6 +349,11 @@ declare const _default: {
             update(ctx: any): Promise<void>;
             delete(ctx: any): Promise<void>;
         };
+        related: ({ strapi }: {
+            strapi: Core.Strapi;
+        }) => {
+            findByTags(ctx: any): Promise<void>;
+        };
     };
     services: {
         tag: ({ strapi }: {
@@ -402,6 +407,13 @@ declare const _default: {
                 documentId: import('@strapi/types/dist/modules/documents').ID;
                 entries: import('@strapi/types/dist/modules/documents').Result<TContentTypeUID, TParams>[];
             }>;
+        };
+        related: ({ strapi }: {
+            strapi: Core.Strapi;
+        }) => {
+            findByTags(tagIds: string[], types: string[], limit?: number, exclude?: string): Promise<Record<string, any[]>>;
+            buildUrl(type: string, d: any): string;
+            defaultTypes(): string[];
         };
     };
     routes: {

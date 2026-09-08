@@ -39,6 +39,9 @@ export default () => ({
     channelScopeRoute("PUT", "/tags/:documentId", "tag.update", "tag.update"),
     channelScopeRoute("DELETE", "/tags/:documentId", "tag.delete", "tag.delete"),
 
+    // ===== 公开路由（related） =====
+    publicRoute("GET", "/related-by-tags", "related.findByTags"),
+
     // ===== 公开路由（tag-group） =====
     publicRoute("GET", "/tag-groups", "tag-group.find"),
     publicRoute("GET", "/tag-groups/:documentId", "tag-group.findOne"),

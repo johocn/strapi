@@ -51,6 +51,13 @@ declare const _default: {
             entries: import('@strapi/types/dist/modules/documents').Result<TContentTypeUID, TParams>[];
         }>;
     };
+    related: ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        findByTags(tagIds: string[], types: string[], limit?: number, exclude?: string): Promise<Record<string, any[]>>;
+        buildUrl(type: string, d: any): string;
+        defaultTypes(): string[];
+    };
 };
 export default _default;
 //# sourceMappingURL=index.d.ts.map

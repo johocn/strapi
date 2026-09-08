@@ -23,6 +23,11 @@ declare const _default: {
         update(ctx: any): Promise<void>;
         delete(ctx: any): Promise<void>;
     };
+    related: ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        findByTags(ctx: any): Promise<void>;
+    };
 };
 export default _default;
 //# sourceMappingURL=index.d.ts.map
