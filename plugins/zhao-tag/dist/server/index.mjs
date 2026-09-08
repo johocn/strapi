@@ -590,7 +590,7 @@ const related = ({ strapi }) => ({
       result[type] = docs.map((d) => ({
         type,
         documentId: d.documentId,
-        title: d.title ?? d.question ?? "",
+        title: d.title ?? d.question ?? d.name ?? "",
         summary: summaryKey ? d[summaryKey] ?? "" : "",
         url: this.buildUrl(type, d)
       }));
