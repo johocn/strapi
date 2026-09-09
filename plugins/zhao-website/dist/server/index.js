@@ -34879,8 +34879,9 @@ const aiContentSummary = ({ strapi: strapi2 }) => ({
     return this.findByTarget(siteId, targetType, targetId, summaryType);
   },
   async findAdmin(siteId, query = {}) {
+    const { pagination, ...filters2 } = query;
     return strapi2.db.query(UID$4).findMany({
-      where: { site: siteId, deletedAt: null, ...query },
+      where: { site: siteId, deletedAt: null, ...filters2 },
       orderBy: { updatedAt: "DESC" }
     });
   },

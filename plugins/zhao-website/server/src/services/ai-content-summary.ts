@@ -15,8 +15,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   },
 
   async findAdmin(siteId: number, query: any = {}) {
+    // 剥离分页参数：前端传 pagination[page]/pagination[pageSize]，直接透传进 where 会把分页参数当成过滤条件导致 0 行
+    const { pagination, ...filters } = query;
     return strapi.db.query(UID).findMany({
-      where: { site: siteId, deletedAt: null, ...query },
+      where: { site: siteId, deletedAt: null, ...filters },
       orderBy: { updatedAt: "DESC" },
     });
   },
