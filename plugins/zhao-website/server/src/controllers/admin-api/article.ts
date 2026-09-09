@@ -14,13 +14,15 @@ export default {
 
   async create(ctx: any) {
     const siteId = ctx.state.siteId;
-    ctx.body = await strapi.plugin("zhao-website").service("article").create(siteId, ctx.request.body);
+    const body = ctx.request.body?.data ?? ctx.request.body;
+    ctx.body = await strapi.plugin("zhao-website").service("article").create(siteId, body);
   },
 
   async update(ctx: any) {
     const siteId = ctx.state.siteId;
     const { documentId } = ctx.params;
-    ctx.body = await strapi.plugin("zhao-website").service("article").update(siteId, documentId, ctx.request.body);
+    const body = ctx.request.body?.data ?? ctx.request.body;
+    ctx.body = await strapi.plugin("zhao-website").service("article").update(siteId, documentId, body);
   },
 
   async delete(ctx: any) {

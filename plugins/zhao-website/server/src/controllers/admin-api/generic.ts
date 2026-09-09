@@ -9,10 +9,12 @@ function createGenericController(serviceName: string) {
       ctx.body = item;
     },
     async create(ctx: any) {
-      ctx.body = await strapi.plugin("zhao-website").service(serviceName).create(ctx.state.siteId, ctx.request.body);
+      const body = ctx.request.body?.data ?? ctx.request.body;
+      ctx.body = await strapi.plugin("zhao-website").service(serviceName).create(ctx.state.siteId, body);
     },
     async update(ctx: any) {
-      ctx.body = await strapi.plugin("zhao-website").service(serviceName).update(ctx.state.siteId, ctx.params.documentId, ctx.request.body);
+      const body = ctx.request.body?.data ?? ctx.request.body;
+      ctx.body = await strapi.plugin("zhao-website").service(serviceName).update(ctx.state.siteId, ctx.params.documentId, body);
     },
     async delete(ctx: any) {
       await strapi.plugin("zhao-website").service(serviceName).softDelete(ctx.state.siteId, ctx.params.documentId);

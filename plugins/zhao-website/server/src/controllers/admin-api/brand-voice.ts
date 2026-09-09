@@ -13,10 +13,12 @@ export default {
 
   // ===== 全局话术 =====
   async createGlobal(ctx: any) {
-    ctx.body = await strapi.plugin("zhao-website").service("brand-voice").create(null, ctx.request.body);
+    const body = ctx.request.body?.data ?? ctx.request.body;
+    ctx.body = await strapi.plugin("zhao-website").service("brand-voice").create(null, body);
   },
   async updateGlobal(ctx: any) {
-    ctx.body = await strapi.plugin("zhao-website").service("brand-voice").update(null, ctx.params.documentId, ctx.request.body);
+    const body = ctx.request.body?.data ?? ctx.request.body;
+    ctx.body = await strapi.plugin("zhao-website").service("brand-voice").update(null, ctx.params.documentId, body);
   },
   async deleteGlobal(ctx: any) {
     await strapi.plugin("zhao-website").service("brand-voice").softDelete(null, ctx.params.documentId);

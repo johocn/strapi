@@ -31777,12 +31777,14 @@ const adminArticle = {
   },
   async create(ctx) {
     const siteId = ctx.state.siteId;
-    ctx.body = await strapi.plugin("zhao-website").service("article").create(siteId, ctx.request.body);
+    const body = ctx.request.body?.data ?? ctx.request.body;
+    ctx.body = await strapi.plugin("zhao-website").service("article").create(siteId, body);
   },
   async update(ctx) {
     const siteId = ctx.state.siteId;
     const { documentId } = ctx.params;
-    ctx.body = await strapi.plugin("zhao-website").service("article").update(siteId, documentId, ctx.request.body);
+    const body = ctx.request.body?.data ?? ctx.request.body;
+    ctx.body = await strapi.plugin("zhao-website").service("article").update(siteId, documentId, body);
   },
   async delete(ctx) {
     const siteId = ctx.state.siteId;
@@ -31817,7 +31819,8 @@ const adminSeoConfig = {
     ctx.body = await strapi.plugin("zhao-website").service("seo-config").find(ctx.state.siteId);
   },
   async update(ctx) {
-    ctx.body = await strapi.plugin("zhao-website").service("seo-config").update(ctx.state.siteId, ctx.request.body);
+    const body = ctx.request.body?.data ?? ctx.request.body;
+    ctx.body = await strapi.plugin("zhao-website").service("seo-config").update(ctx.state.siteId, body);
   }
 };
 const adminBrandInfo = {
@@ -31825,7 +31828,8 @@ const adminBrandInfo = {
     ctx.body = await strapi.plugin("zhao-website").service("brand-info").find(ctx.state.siteId);
   },
   async update(ctx) {
-    ctx.body = await strapi.plugin("zhao-website").service("brand-info").update(ctx.state.siteId, ctx.request.body);
+    const body = ctx.request.body?.data ?? ctx.request.body;
+    ctx.body = await strapi.plugin("zhao-website").service("brand-info").update(ctx.state.siteId, body);
   }
 };
 const inviteTrace$1 = {
@@ -31872,10 +31876,12 @@ function createGenericController(serviceName) {
       ctx.body = item;
     },
     async create(ctx) {
-      ctx.body = await strapi.plugin("zhao-website").service(serviceName).create(ctx.state.siteId, ctx.request.body);
+      const body = ctx.request.body?.data ?? ctx.request.body;
+      ctx.body = await strapi.plugin("zhao-website").service(serviceName).create(ctx.state.siteId, body);
     },
     async update(ctx) {
-      ctx.body = await strapi.plugin("zhao-website").service(serviceName).update(ctx.state.siteId, ctx.params.documentId, ctx.request.body);
+      const body = ctx.request.body?.data ?? ctx.request.body;
+      ctx.body = await strapi.plugin("zhao-website").service(serviceName).update(ctx.state.siteId, ctx.params.documentId, body);
     },
     async delete(ctx) {
       await strapi.plugin("zhao-website").service(serviceName).softDelete(ctx.state.siteId, ctx.params.documentId);
@@ -31937,10 +31943,12 @@ const adminKnowledgeGraph = {
   },
   // ===== 全局实体 =====
   async createGlobalEntity(ctx) {
-    ctx.body = await strapi.plugin("zhao-website").service("knowledge-graph").createEntity(null, ctx.request.body);
+    const body = ctx.request.body?.data ?? ctx.request.body;
+    ctx.body = await strapi.plugin("zhao-website").service("knowledge-graph").createEntity(null, body);
   },
   async updateGlobalEntity(ctx) {
-    ctx.body = await strapi.plugin("zhao-website").service("knowledge-graph").updateEntity(null, ctx.params.documentId, ctx.request.body);
+    const body = ctx.request.body?.data ?? ctx.request.body;
+    ctx.body = await strapi.plugin("zhao-website").service("knowledge-graph").updateEntity(null, ctx.params.documentId, body);
   },
   async deleteGlobalEntity(ctx) {
     await strapi.plugin("zhao-website").service("knowledge-graph").deleteEntity(null, ctx.params.documentId);
@@ -31955,10 +31963,12 @@ const firstTruth$1 = {
     ctx.body = await strapi.plugin("zhao-website").service("first-truth").findOne(ctx.state.siteId, ctx.params.documentId);
   },
   async create(ctx) {
-    ctx.body = await strapi.plugin("zhao-website").service("first-truth").create(ctx.state.siteId, ctx.request.body);
+    const body = ctx.request.body?.data ?? ctx.request.body;
+    ctx.body = await strapi.plugin("zhao-website").service("first-truth").create(ctx.state.siteId, body);
   },
   async update(ctx) {
-    ctx.body = await strapi.plugin("zhao-website").service("first-truth").update(ctx.state.siteId, ctx.params.documentId, ctx.request.body);
+    const body = ctx.request.body?.data ?? ctx.request.body;
+    ctx.body = await strapi.plugin("zhao-website").service("first-truth").update(ctx.state.siteId, ctx.params.documentId, body);
   },
   async delete(ctx) {
     await strapi.plugin("zhao-website").service("first-truth").softDelete(ctx.state.siteId, ctx.params.documentId);
@@ -31975,10 +31985,12 @@ const firstTruth$1 = {
   },
   // ===== 全局真值 =====
   async createGlobal(ctx) {
-    ctx.body = await strapi.plugin("zhao-website").service("first-truth").create(null, ctx.request.body);
+    const body = ctx.request.body?.data ?? ctx.request.body;
+    ctx.body = await strapi.plugin("zhao-website").service("first-truth").create(null, body);
   },
   async updateGlobal(ctx) {
-    ctx.body = await strapi.plugin("zhao-website").service("first-truth").update(null, ctx.params.documentId, ctx.request.body);
+    const body = ctx.request.body?.data ?? ctx.request.body;
+    ctx.body = await strapi.plugin("zhao-website").service("first-truth").update(null, ctx.params.documentId, body);
   },
   async deleteGlobal(ctx) {
     await strapi.plugin("zhao-website").service("first-truth").softDelete(null, ctx.params.documentId);
@@ -31993,10 +32005,12 @@ const aiContentSummary$1 = {
     ctx.body = await strapi.plugin("zhao-website").service("ai-content-summary").findByTarget(ctx.state.siteId, ctx.query.targetType, ctx.query.targetId, ctx.query.summaryType);
   },
   async create(ctx) {
-    ctx.body = await strapi.plugin("zhao-website").service("ai-content-summary").create(ctx.state.siteId, ctx.request.body);
+    const body = ctx.request.body?.data ?? ctx.request.body;
+    ctx.body = await strapi.plugin("zhao-website").service("ai-content-summary").create(ctx.state.siteId, body);
   },
   async update(ctx) {
-    ctx.body = await strapi.plugin("zhao-website").service("ai-content-summary").update(ctx.state.siteId, ctx.params.documentId, ctx.request.body);
+    const body = ctx.request.body?.data ?? ctx.request.body;
+    ctx.body = await strapi.plugin("zhao-website").service("ai-content-summary").update(ctx.state.siteId, ctx.params.documentId, body);
   },
   async delete(ctx) {
     await strapi.plugin("zhao-website").service("ai-content-summary").softDelete(ctx.state.siteId, ctx.params.documentId);
@@ -32046,10 +32060,12 @@ const brandVoice$1 = {
   },
   // ===== 全局话术 =====
   async createGlobal(ctx) {
-    ctx.body = await strapi.plugin("zhao-website").service("brand-voice").create(null, ctx.request.body);
+    const body = ctx.request.body?.data ?? ctx.request.body;
+    ctx.body = await strapi.plugin("zhao-website").service("brand-voice").create(null, body);
   },
   async updateGlobal(ctx) {
-    ctx.body = await strapi.plugin("zhao-website").service("brand-voice").update(null, ctx.params.documentId, ctx.request.body);
+    const body = ctx.request.body?.data ?? ctx.request.body;
+    ctx.body = await strapi.plugin("zhao-website").service("brand-voice").update(null, ctx.params.documentId, body);
   },
   async deleteGlobal(ctx) {
     await strapi.plugin("zhao-website").service("brand-voice").softDelete(null, ctx.params.documentId);
@@ -32126,10 +32142,12 @@ const geoArticleAdmin = {
     ctx.body = item;
   },
   async create(ctx) {
-    ctx.body = await strapi.plugin("zhao-website").service("geo-article").create(ctx.state.siteId, ctx.request.body);
+    const body = ctx.request.body?.data ?? ctx.request.body;
+    ctx.body = await strapi.plugin("zhao-website").service("geo-article").create(ctx.state.siteId, body);
   },
   async update(ctx) {
-    ctx.body = await strapi.plugin("zhao-website").service("geo-article").update(ctx.state.siteId, ctx.params.documentId, ctx.request.body);
+    const body = ctx.request.body?.data ?? ctx.request.body;
+    ctx.body = await strapi.plugin("zhao-website").service("geo-article").update(ctx.state.siteId, ctx.params.documentId, body);
   },
   async softDelete(ctx) {
     await strapi.plugin("zhao-website").service("geo-article").softDelete(ctx.state.siteId, ctx.params.documentId);
