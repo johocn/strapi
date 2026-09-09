@@ -32015,6 +32015,9 @@ const firstTruth$1 = {
   }
 };
 const aiContentSummary$1 = {
+  async findAdmin(ctx) {
+    ctx.body = await strapi.plugin("zhao-website").service("ai-content-summary").findAdmin(ctx.state.siteId, ctx.query);
+  },
   async findByTarget(ctx) {
     ctx.body = await strapi.plugin("zhao-website").service("ai-content-summary").findByTarget(ctx.state.siteId, ctx.query.targetType, ctx.query.targetId, ctx.query.summaryType);
   },

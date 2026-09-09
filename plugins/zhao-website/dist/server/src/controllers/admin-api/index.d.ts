@@ -29,6 +29,7 @@ declare const _default: {
         verifyGlobal(ctx: any): Promise<void>;
     };
     "ai-content-summary": {
+        findAdmin(ctx: any): Promise<void>;
         findByTarget(ctx: any): Promise<void>;
         create(ctx: any): Promise<void>;
         update(ctx: any): Promise<void>;

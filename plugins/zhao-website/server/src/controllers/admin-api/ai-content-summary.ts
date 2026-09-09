@@ -1,4 +1,5 @@
 export default {
+  async findAdmin(ctx: any) { ctx.body = await strapi.plugin("zhao-website").service("ai-content-summary").findAdmin(ctx.state.siteId, ctx.query); },
   async findByTarget(ctx: any) { ctx.body = await strapi.plugin("zhao-website").service("ai-content-summary").findByTarget(ctx.state.siteId, ctx.query.targetType, ctx.query.targetId, ctx.query.summaryType); },
   async create(ctx: any) { const body = ctx.request.body?.data ?? ctx.request.body; ctx.body = await strapi.plugin("zhao-website").service("ai-content-summary").create(ctx.state.siteId, body); },
   async update(ctx: any) { const body = ctx.request.body?.data ?? ctx.request.body; ctx.body = await strapi.plugin("zhao-website").service("ai-content-summary").update(ctx.state.siteId, ctx.params.documentId, body); },
