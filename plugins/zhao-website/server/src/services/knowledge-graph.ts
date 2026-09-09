@@ -105,10 +105,13 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
   // ===== 关系 =====
   async findRelations(siteId: number, query: any = {}) {
-    const { subjectEntityId, predicate, objectEntityId, page = 1, pageSize = 20 } = query;
+    const { subjectEntityId, predicate, objectEntityId, documentId, page = 1, pageSize = 20 } = query;
+    // 支持 filters[documentId]（前端编辑页按 documentId 拉详情）与裸 documentId
+    const docId = query.filters?.documentId ?? documentId;
     const filters: any = {
       $or: [{ site: siteId, deletedAt: null }, { site: null, deletedAt: null }],
     };
+    if (docId) { filters.$or[0].documentId = docId; filters.$or[1].documentId = docId; }
     if (subjectEntityId) {
       const sid = await this._resolveEntityId(subjectEntityId);
       if (sid) { filters.$or[0].subjectEntity = sid; filters.$or[1].subjectEntity = sid; }
@@ -252,6 +255,15 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       throw e;
     }
     const payload: any = {};
+    if (data.subjectEntityId !== undefined && data.subjectEntityId !== null && data.subjectEntityId !== "") {
+      const subjectEntity = await this._resolveEntityId(data.subjectEntityId);
+      if (!subjectEntity) {
+        const e: any = new Error("subjectEntityId 无效");
+        e.status = 400;
+        throw e;
+      }
+      payload.subjectEntity = subjectEntity;
+    }
     if (data.predicate !== undefined) payload.predicate = data.predicate;
     if (data.objectText !== undefined) payload.objectText = data.objectText;
     if (data.objectValue !== undefined) payload.objectValue = data.objectValue;
@@ -267,6 +279,13 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         throw e;
       }
       payload.objectEntity = objectEntity;
+    }
+    // 自引用校验（主体与客体同时更新且相同）
+    if (payload.subjectEntity && payload.objectEntity && payload.subjectEntity === payload.objectEntity) {
+      const e: any = new Error("Self-relation not allowed");
+      e.status = 400;
+      e.code = "SELF_RELATION";
+      throw e;
     }
     return strapi.db.query(RELATION_UID).update({ where: { id: existing.id }, data: payload });
   },

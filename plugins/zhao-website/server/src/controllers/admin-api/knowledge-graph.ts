@@ -18,14 +18,16 @@ export default {
     ctx.body = await strapi.plugin("zhao-website").service("knowledge-graph").findRelations(ctx.state.siteId, ctx.query);
   },
   async addRelation(ctx: any) {
-    ctx.body = await strapi.plugin("zhao-website").service("knowledge-graph").addRelation({ siteId: ctx.state.siteId, ...ctx.request.body });
+    const body = ctx.request.body?.data ?? ctx.request.body;
+    ctx.body = await strapi.plugin("zhao-website").service("knowledge-graph").addRelation({ siteId: ctx.state.siteId, ...body });
   },
   async deleteRelation(ctx: any) {
     await strapi.plugin("zhao-website").service("knowledge-graph").deleteRelation(ctx.state.siteId, ctx.params.documentId);
     ctx.body = { success: true };
   },
   async updateRelation(ctx: any) {
-    ctx.body = await strapi.plugin("zhao-website").service("knowledge-graph").updateRelation(ctx.state.siteId, ctx.params.documentId, ctx.request.body);
+    const body = ctx.request.body?.data ?? ctx.request.body;
+    ctx.body = await strapi.plugin("zhao-website").service("knowledge-graph").updateRelation(ctx.state.siteId, ctx.params.documentId, body);
   },
   // ===== 消歧 =====
   async disambiguate(ctx: any) {

@@ -31924,14 +31924,16 @@ const adminKnowledgeGraph = {
     ctx.body = await strapi.plugin("zhao-website").service("knowledge-graph").findRelations(ctx.state.siteId, ctx.query);
   },
   async addRelation(ctx) {
-    ctx.body = await strapi.plugin("zhao-website").service("knowledge-graph").addRelation({ siteId: ctx.state.siteId, ...ctx.request.body });
+    const body = ctx.request.body?.data ?? ctx.request.body;
+    ctx.body = await strapi.plugin("zhao-website").service("knowledge-graph").addRelation({ siteId: ctx.state.siteId, ...body });
   },
   async deleteRelation(ctx) {
     await strapi.plugin("zhao-website").service("knowledge-graph").deleteRelation(ctx.state.siteId, ctx.params.documentId);
     ctx.body = { success: true };
   },
   async updateRelation(ctx) {
-    ctx.body = await strapi.plugin("zhao-website").service("knowledge-graph").updateRelation(ctx.state.siteId, ctx.params.documentId, ctx.request.body);
+    const body = ctx.request.body?.data ?? ctx.request.body;
+    ctx.body = await strapi.plugin("zhao-website").service("knowledge-graph").updateRelation(ctx.state.siteId, ctx.params.documentId, body);
   },
   // ===== 消歧 =====
   async disambiguate(ctx) {
@@ -34565,10 +34567,15 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
   },
   // ===== 关系 =====
   async findRelations(siteId, query = {}) {
-    const { subjectEntityId, predicate, objectEntityId, page = 1, pageSize = 20 } = query;
+    const { subjectEntityId, predicate, objectEntityId, documentId, page = 1, pageSize = 20 } = query;
+    const docId = query.filters?.documentId ?? documentId;
     const filters2 = {
       $or: [{ site: siteId, deletedAt: null }, { site: null, deletedAt: null }]
     };
+    if (docId) {
+      filters2.$or[0].documentId = docId;
+      filters2.$or[1].documentId = docId;
+    }
     if (subjectEntityId) {
       const sid = await this._resolveEntityId(subjectEntityId);
       if (sid) {
@@ -34699,6 +34706,15 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
       throw e;
     }
     const payload = {};
+    if (data.subjectEntityId !== void 0 && data.subjectEntityId !== null && data.subjectEntityId !== "") {
+      const subjectEntity = await this._resolveEntityId(data.subjectEntityId);
+      if (!subjectEntity) {
+        const e = new Error("subjectEntityId 无效");
+        e.status = 400;
+        throw e;
+      }
+      payload.subjectEntity = subjectEntity;
+    }
     if (data.predicate !== void 0) payload.predicate = data.predicate;
     if (data.objectText !== void 0) payload.objectText = data.objectText;
     if (data.objectValue !== void 0) payload.objectValue = data.objectValue;
@@ -34713,6 +34729,12 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
         throw e;
       }
       payload.objectEntity = objectEntity;
+    }
+    if (payload.subjectEntity && payload.objectEntity && payload.subjectEntity === payload.objectEntity) {
+      const e = new Error("Self-relation not allowed");
+      e.status = 400;
+      e.code = "SELF_RELATION";
+      throw e;
     }
     return strapi2.db.query(RELATION_UID).update({ where: { id: existing.id }, data: payload });
   },
