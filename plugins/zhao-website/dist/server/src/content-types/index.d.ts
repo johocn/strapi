@@ -2758,6 +2758,11 @@ declare const _default: {
                     target: string;
                     description: string;
                 };
+                truthBasisSections: {
+                    type: string;
+                    default: any[];
+                    description: string;
+                };
                 mentionedEntities: {
                     type: string;
                     relation: string;

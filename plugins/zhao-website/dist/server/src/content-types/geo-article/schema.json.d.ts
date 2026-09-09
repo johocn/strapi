@@ -107,6 +107,11 @@ declare const _default: {
       "target": "plugin::zhao-website.first-truth-policy",
       "description": "文章背书的真值声明"
     },
+    "truthBasisSections": {
+      "type": "json",
+      "default": [],
+      "description": "真值声明绑定正文段落：[{claimKey, section}]，section 为正文 H2 标题（如『二、长期学习规划四步法』）"
+    },
     "mentionedEntities": {
       "type": "relation", "relation": "manyToMany",
       "target": "plugin::zhao-website.knowledge-entity",

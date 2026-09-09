@@ -92,6 +92,15 @@ declare const _default: {
         update(siteId: number, documentId: string, data: any): Promise<any>;
         softDelete(siteId: number, documentId: string): Promise<any>;
     };
+    author: ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        findAdmin(siteId: number): Promise<any[]>;
+        findOneAdmin(siteId: number, documentId: string): Promise<any>;
+        create(siteId: number, data: any): Promise<any>;
+        update(siteId: number, documentId: string, data: any): Promise<any>;
+        softDelete(siteId: number, documentId: string): Promise<any>;
+    };
     product: ({ strapi }: {
         strapi: import('@strapi/types/dist/core').Strapi;
     }) => {
