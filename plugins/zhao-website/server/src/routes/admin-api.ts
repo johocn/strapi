@@ -121,7 +121,7 @@ export default () => ({
     channelScopeRoute("POST", "/brand-voices/global", "brand-voice.createGlobal", "brand-voice.create-global"),
     channelScopeRoute("PUT", "/brand-voices/global/:documentId", "brand-voice.updateGlobal", "brand-voice.update-global"),
     channelScopeRoute("DELETE", "/brand-voices/global/:documentId", "brand-voice.deleteGlobal", "brand-voice.delete-global"),
-    channelScopeRoute("GET", "/ai-summaries", "ai-content-summary.findByTarget", "ai-summary.read"),
+    channelScopeRoute("GET", "/ai-summaries", "ai-content-summary.findAdmin", "ai-summary.read"),
     channelScopeRoute("POST", "/ai-summaries", "ai-content-summary.create", "ai-summary.create"),
     channelScopeRoute("PUT", "/ai-summaries/:documentId", "ai-content-summary.update", "ai-summary.update"),
     channelScopeRoute("DELETE", "/ai-summaries/:documentId", "ai-content-summary.delete", "ai-summary.delete"),
