@@ -115,9 +115,10 @@ const bootstrap = ({ strapi }) => {
         const userInviteService = strapi.plugin("zhao-channel").service("user-invite");
         await userInviteService.createForUser(result.id);
         const _skipAutoChannel = isAdminContext();
+        const autoCreateChannel = process.env.CHANNEL_AUTO_CREATE_CHANNEL === "true";
         setTimeout(async () => {
           try {
-            if (_skipAutoChannel) return;
+            if (_skipAutoChannel || !autoCreateChannel) return;
             const existingMember = await strapi.db.query(CHANNEL_MEMBER_UID$4).findOne({
               where: { user: result.id, isCurrent: true }
             });
@@ -7919,6 +7920,27 @@ const userInvite = ({ strapi }) => ({
         distributionDepth
       }
     });
+    if (inviteMethod === "invite_code" && inviteChannel) {
+      try {
+        const existingMember = await strapi.db.query(CHANNEL_MEMBER_UID).findOne({
+          where: { user: userId }
+        });
+        if (!existingMember) {
+          await strapi.db.query(CHANNEL_MEMBER_UID).create({
+            data: {
+              channel: inviteChannel,
+              user: userId,
+              role: "member",
+              isCurrent: true
+            }
+          });
+        }
+      } catch (err) {
+        strapi.log.error(
+          `[zhao-channel] 分销渠道归属失败 userId=${userId}: ${err.message}`
+        );
+      }
+    }
     return strapi.db.query(USER_INVITE_UID).findOne({
       where: { id: record.id },
       populate: ["user", "invitedBy", "inviteChannel"]

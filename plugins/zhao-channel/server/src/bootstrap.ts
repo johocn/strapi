@@ -34,12 +34,17 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         // 注意：isAdminContext 必须在 setTimeout 之前调用，因为 setTimeout 会断开 AsyncLocalStorage 链
         const _skipAutoChannel = isAdminContext();
 
+        // 每用户单建渠道开关：仅 CHANNEL_AUTO_CREATE_CHANNEL=true 时自动创建个人渠道
+        // （默认关闭：分销/邀请码注册用户归属邀请人渠道，不新建个人渠道，
+        //   与 channel.register 中 registerAsMember 分支的开关语义保持一致）
+        const autoCreateChannel = process.env.CHANNEL_AUTO_CREATE_CHANNEL === "true";
+
         // 延迟检查：若为前台自然注册且非邀请码，自动创建个人渠道
         // 邀请码注册在 entityService.create() 后还会创建 channel-member，
         // 使用 setTimeout 确保在 register() 全部完成后再检查，避免重复创建
         setTimeout(async () => {
           try {
-            if (_skipAutoChannel) return;
+            if (_skipAutoChannel || !autoCreateChannel) return;
             const existingMember = await strapi.db.query(CHANNEL_MEMBER_UID).findOne({
               where: { user: result.id, isCurrent: true },
             });

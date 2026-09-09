@@ -152,6 +152,31 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       },
     });
 
+    // ── 渠道归属：通过邀请码注册的用户加入邀请人渠道，不再新建个人渠道 ──
+    // 仅当存在邀请人渠道时归属（user-invite 记录已写入 inviteChannel），
+    // 用户已有任意 channel-member 时幂等跳过，不重复创建
+    if (inviteMethod === "invite_code" && inviteChannel) {
+      try {
+        const existingMember = await strapi.db.query(CHANNEL_MEMBER_UID).findOne({
+          where: { user: userId },
+        });
+        if (!existingMember) {
+          await strapi.db.query(CHANNEL_MEMBER_UID).create({
+            data: {
+              channel: inviteChannel,
+              user: userId,
+              role: "member",
+              isCurrent: true,
+            },
+          });
+        }
+      } catch (err: any) {
+        strapi.log.error(
+          `[zhao-channel] 分销渠道归属失败 userId=${userId}: ${err.message}`
+        );
+      }
+    }
+
     return strapi.db.query(USER_INVITE_UID).findOne({
       where: { id: record.id },
       populate: ["user", "invitedBy", "inviteChannel"],
