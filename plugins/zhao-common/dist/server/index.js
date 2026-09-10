@@ -2272,7 +2272,44 @@ const config = ({ strapi: strapi2 }) => ({
   async getSiteList(ctx) {
     try {
       const service = strapi2.plugin("zhao-common").service("config");
-      const { page, pageSize, filters, sort } = ctx.query || {};
+      const { page, pageSize, filters: rawFilters = {}, sort } = ctx.query || {};
+      const filters = { ...rawFilters };
+      const scope = ctx.state?.channelScope;
+      if (scope && scope.all !== true) {
+        const ids = Array.isArray(scope.channelIds) ? scope.channelIds : [];
+        const channelFilter = ids.length === 0 ? [-1] : ids;
+        const knex = strapi2.db.connection;
+        const linkRows = await knex("zhao_channels_sites_lnk").whereIn("channel_id", channelFilter).select("site_config_id");
+        const siteIds = linkRows.map((r) => r.site_config_id);
+        const NO_ACCESS = "__no_access_site__";
+        if (siteIds.length === 0) {
+          filters.documentId = NO_ACCESS;
+        } else {
+          const sites = await strapi2.db.query("plugin::zhao-common.site-config").findMany({
+            where: { id: { $in: siteIds } },
+            select: ["documentId"]
+          });
+          const visibleDocIds = sites.map((s) => s.documentId);
+          const userDoc = filters.documentId;
+          if (userDoc !== void 0) {
+            let inList = null;
+            if (typeof userDoc === "string") {
+              inList = [userDoc];
+            } else if (userDoc && typeof userDoc === "object") {
+              const maybeIn = userDoc.$in;
+              if (Array.isArray(maybeIn)) inList = maybeIn;
+            }
+            if (inList === null) {
+              filters.documentId = NO_ACCESS;
+            } else {
+              const filtered = inList.filter((d) => visibleDocIds.includes(d));
+              filters.documentId = filtered.length === 0 ? NO_ACCESS : { $in: filtered };
+            }
+          } else {
+            filters.documentId = { $in: visibleDocIds };
+          }
+        }
+      }
       const result = await service.getSiteConfigList({
         page: page ? parseInt(page, 10) : void 0,
         pageSize: pageSize ? parseInt(pageSize, 10) : void 0,

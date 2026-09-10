@@ -126,7 +126,51 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async getSiteList(ctx: any) {
     try {
       const service = strapi.plugin("zhao-common").service("config");
-      const { page, pageSize, filters, sort } = ctx.query || {};
+      const { page, pageSize, filters: rawFilters = {}, sort } = ctx.query || {};
+      const filters: Record<string, any> = { ...rawFilters };
+
+      // 渠道范围收紧：非 all 用户仅显示其可见渠道关联的站点（site.channels 中间表过滤）
+      // joho.cn 等无渠道关联的站点对渠道受限用户不可见
+      const scope = ctx.state?.channelScope;
+      if (scope && scope.all !== true) {
+        const ids: number[] = Array.isArray(scope.channelIds) ? scope.channelIds : [];
+        const channelFilter = ids.length === 0 ? [-1] : ids;
+        const knex = strapi.db.connection;
+        const linkRows = await knex("zhao_channels_sites_lnk")
+          .whereIn("channel_id", channelFilter)
+          .select("site_config_id");
+        const siteIds: number[] = linkRows.map((r: any) => r.site_config_id);
+        const NO_ACCESS = "__no_access_site__";
+        if (siteIds.length === 0) {
+          filters.documentId = NO_ACCESS;
+        } else {
+          const sites = await strapi.db.query("plugin::zhao-common.site-config").findMany({
+            where: { id: { $in: siteIds } },
+            select: ["documentId"],
+          });
+          const visibleDocIds: string[] = (sites as any[]).map((s) => s.documentId);
+          const userDoc = filters.documentId;
+          if (userDoc !== undefined) {
+            // 与用户传入的 documentId 过滤取交集；不在可见范围则永假
+            let inList: string[] | null = null;
+            if (typeof userDoc === "string") {
+              inList = [userDoc];
+            } else if (userDoc && typeof userDoc === "object") {
+              const maybeIn = (userDoc as any).$in;
+              if (Array.isArray(maybeIn)) inList = maybeIn as string[];
+            }
+            if (inList === null) {
+              filters.documentId = NO_ACCESS;
+            } else {
+              const filtered = inList.filter((d: string) => visibleDocIds.includes(d));
+              filters.documentId = filtered.length === 0 ? NO_ACCESS : { $in: filtered };
+            }
+          } else {
+            filters.documentId = { $in: visibleDocIds };
+          }
+        }
+      }
+
       const result = await service.getSiteConfigList({
         page: page ? parseInt(page, 10) : undefined,
         pageSize: pageSize ? parseInt(pageSize, 10) : undefined,
