@@ -37882,7 +37882,8 @@ const configService = ({ strapi: strapi2 }) => {
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const increaseRecords = await strapi2.db.query(RECORD_UID2).findMany({
       where: { type: "increase" },
-      select: ["points", "user", "action", "createdAt"]
+      select: ["points", "action", "createdAt"],
+      populate: { user: { select: ["id"] } }
     });
     const decreaseRecords = await strapi2.db.query(RECORD_UID2).findMany({
       where: { type: "decrease" },

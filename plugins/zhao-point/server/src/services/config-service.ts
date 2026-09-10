@@ -63,7 +63,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     // 总积分发放/消耗（使用聚合查询避免全量加载）
     const increaseRecords = await strapi.db.query(RECORD_UID).findMany({
       where: { type: "increase" },
-      select: ['points', 'user', 'action', 'createdAt'],
+      select: ['points', 'action', 'createdAt'],
+      populate: { user: { select: ['id'] } },
     });
     const decreaseRecords = await strapi.db.query(RECORD_UID).findMany({
       where: { type: "decrease" },
