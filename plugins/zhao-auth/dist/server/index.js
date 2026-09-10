@@ -4896,6 +4896,15 @@ const isAuthenticated = async (policyContext, config2, { strapi: strapi2 }) => {
               where: { uuid: ssoPayload.sub }
             });
             if (ssoUser) {
+              let zhaoRoles = [];
+              try {
+                const upUser = await strapi2.db.query("plugin::users-permissions.user").findOne({
+                  where: { id: ssoUser.id },
+                  select: ["zhaoRoles"]
+                });
+                if (Array.isArray(upUser?.zhaoRoles)) zhaoRoles = upUser.zhaoRoles;
+              } catch {
+              }
               const user = {
                 id: ssoUser.id,
                 documentId: ssoUser.documentId,
@@ -4903,7 +4912,8 @@ const isAuthenticated = async (policyContext, config2, { strapi: strapi2 }) => {
                 username: ssoUser.username,
                 email: ssoUser.email,
                 mobile: ssoUser.mobile,
-                roles: ssoPayload.roles || []
+                roles: ssoPayload.roles || [],
+                zhaoRoles
               };
               ctx.state.user = user;
               ctx.user = user;

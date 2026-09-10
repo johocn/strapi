@@ -52,6 +52,18 @@ const isAuthenticated = async (policyContext: any, config: any, { strapi }: { st
               where: { uuid: ssoPayload.sub },
             });
             if (ssoUser) {
+              // SSO 用户 id 与 up_users.id 严格一致（用户身份 ID 对齐铁律），
+              // 回查 up_users.zhaoRoles 注入，供 zhao-auth 角色体系（channel-scope/has-tenant-access）识别 admin
+              let zhaoRoles: string[] = [];
+              try {
+                const upUser = await strapi.db.query("plugin::users-permissions.user").findOne({
+                  where: { id: ssoUser.id },
+                  select: ["zhaoRoles"],
+                });
+                if (Array.isArray(upUser?.zhaoRoles)) zhaoRoles = upUser.zhaoRoles;
+              } catch {
+                // zhao_roles 列不存在（旧库）时忽略，回退 SSO payload roles
+              }
               const user = {
                 id: ssoUser.id,
                 documentId: ssoUser.documentId,
@@ -60,6 +72,7 @@ const isAuthenticated = async (policyContext: any, config: any, { strapi }: { st
                 email: ssoUser.email,
                 mobile: ssoUser.mobile,
                 roles: ssoPayload.roles || [],
+                zhaoRoles,
               };
               ctx.state.user = user;
               ctx.user = user;
