@@ -3365,7 +3365,21 @@ const contentApi = () => ({
     adminRoute("POST", "/soft-delete/:contentType/:documentId/restore", "soft-delete.restore", "soft-delete.manage"),
     adminRoute("GET", "/soft-delete/:contentType/deleted", "soft-delete.findDeleted", "soft-delete.read"),
     // 统一配置路由
-    adminRoute("GET", "/config/sites", "config.getSiteList", "config.read"),
+    // 站点列表：宽松租户校验（列表接口不绑定单一租户，由控制器按 channelScope 过滤）
+    {
+      method: "GET",
+      path: "/v1/admin/config/sites",
+      handler: "config.getSiteList",
+      config: {
+        auth: false,
+        policies: [
+          "plugin::zhao-auth.is-authenticated",
+          { name: "plugin::zhao-auth.has-permission", config: { action: "config.read" } },
+          "plugin::zhao-auth.has-channel-scope",
+          "plugin::zhao-common.has-tenant-access-loose"
+        ]
+      }
+    },
     adminRoute("GET", "/config/site", "config.getSite", "config.read"),
     adminRoute("GET", "/config/site/:documentId", "config.getSiteOne", "config.read"),
     adminRoute("POST", "/config/site", "config.createSite", "config.create"),
