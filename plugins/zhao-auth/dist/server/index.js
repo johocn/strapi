@@ -4993,19 +4993,18 @@ const hasChannelScope = async (policyContext, config2, { strapi: strapi2 }) => {
     } catch (err) {
       strapi2.log.error(`[has-channel-scope] 解析 token 失败: ${err.message}`);
     }
-    if (!user?.id) {
-      policyContext.state.channelScope = { all: false, channelIds: [], isGuest: true };
-      return true;
-    }
-    try {
-      const channelScopeService2 = strapi2.plugin("zhao-auth").service("channel-scope");
-      const scope = await channelScopeService2.resolve(user);
-      policyContext.state.channelScope = scope;
-    } catch (err) {
-      strapi2.log.error(`[has-channel-scope] 错误: ${err.message}`);
-      policyContext.state.channelScope = { all: false, channelIds: [], isGuest: false };
-    }
+  }
+  if (!user?.id) {
+    policyContext.state.channelScope = { all: false, channelIds: [], isGuest: true };
     return true;
+  }
+  try {
+    const channelScopeService2 = strapi2.plugin("zhao-auth").service("channel-scope");
+    const scope = await channelScopeService2.resolve(user);
+    policyContext.state.channelScope = scope;
+  } catch (err) {
+    strapi2.log.error(`[has-channel-scope] 错误: ${err.message}`);
+    policyContext.state.channelScope = { all: false, channelIds: [], isGuest: false };
   }
   return true;
 };
