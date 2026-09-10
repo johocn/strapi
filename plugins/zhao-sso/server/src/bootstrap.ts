@@ -181,6 +181,39 @@ const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
     }
   }
 
+  // www.youshop.cn C 端商城（nshop）SSO 应用。
+  // 与 vendure 仓库 china-data/02-default-channel.ts 及各租户渠道 runtime authConfig 的 ssoProviders 对应，
+  // 所有 youshop 渠道共用同一个 app，由 channel_code 区分渠道；clientSecret 明文 = 'youshop-app-secret'
+  const YOUSHOP_APP_CODE = "vendure-youshop";
+  const YOUSHOP_REDIRECT_URIS = ["https://www.youshop.cn/*", "http://localhost:*"];
+  const youshopApp = await strapi.db.query("plugin::zhao-sso.sso-app").findOne({
+    where: { app_code: YOUSHOP_APP_CODE },
+  });
+  if (youshopApp) {
+    const newUris = JSON.stringify(YOUSHOP_REDIRECT_URIS);
+    const oldUris = JSON.stringify(youshopApp.redirect_uris || []);
+    if (oldUris !== newUris) {
+      await strapi.db.query("plugin::zhao-sso.sso-app").update({
+        where: { id: youshopApp.id },
+        data: { redirect_uris: YOUSHOP_REDIRECT_URIS },
+      });
+      strapi.log.info(`[zhao-sso] youshop app redirect_uris updated (app_code=${YOUSHOP_APP_CODE})`);
+    }
+  } else {
+    const youshopSecret = await bcrypt.hash("youshop-app-secret", 10);
+    await strapi.db.query("plugin::zhao-sso.sso-app").create({
+      data: {
+        app_code: YOUSHOP_APP_CODE,
+        app_name: "Vendure 商城 youshop 租户",
+        app_secret: youshopSecret,
+        redirect_uris: YOUSHOP_REDIRECT_URIS,
+        allowed_grant_types: ["authorization_code", "refresh_token"],
+        is_active: true,
+      },
+    });
+    strapi.log.info(`[zhao-sso] youshop app created (app_code=${YOUSHOP_APP_CODE})`);
+  }
+
   // Seed 默认自动化 SOP 规则（幂等按 code；运营可在后台改 templateCode/enabled/delay）
   const RULE_UID = "plugin::zhao-sso.sop-rule";
   const DEFAULT_SOP_RULES = [

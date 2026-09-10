@@ -228,6 +228,35 @@ const bootstrap = async ({ strapi }) => {
       strapi.log.info(`[zhao-sso] Vendure app created (app_code=${app_code})`);
     }
   }
+  const YOUSHOP_APP_CODE = "vendure-youshop";
+  const YOUSHOP_REDIRECT_URIS = ["https://www.youshop.cn/*", "http://localhost:*"];
+  const youshopApp = await strapi.db.query("plugin::zhao-sso.sso-app").findOne({
+    where: { app_code: YOUSHOP_APP_CODE }
+  });
+  if (youshopApp) {
+    const newUris = JSON.stringify(YOUSHOP_REDIRECT_URIS);
+    const oldUris = JSON.stringify(youshopApp.redirect_uris || []);
+    if (oldUris !== newUris) {
+      await strapi.db.query("plugin::zhao-sso.sso-app").update({
+        where: { id: youshopApp.id },
+        data: { redirect_uris: YOUSHOP_REDIRECT_URIS }
+      });
+      strapi.log.info(`[zhao-sso] youshop app redirect_uris updated (app_code=${YOUSHOP_APP_CODE})`);
+    }
+  } else {
+    const youshopSecret = await bcrypt__default.default.hash("youshop-app-secret", 10);
+    await strapi.db.query("plugin::zhao-sso.sso-app").create({
+      data: {
+        app_code: YOUSHOP_APP_CODE,
+        app_name: "Vendure 商城 youshop 租户",
+        app_secret: youshopSecret,
+        redirect_uris: YOUSHOP_REDIRECT_URIS,
+        allowed_grant_types: ["authorization_code", "refresh_token"],
+        is_active: true
+      }
+    });
+    strapi.log.info(`[zhao-sso] youshop app created (app_code=${YOUSHOP_APP_CODE})`);
+  }
   const RULE_UID2 = "plugin::zhao-sso.sop-rule";
   const DEFAULT_SOP_RULES = [
     { code: "act_confirm", name: "活动报名成功确认", source: "event", event: "activity.signup", templateCode: "act_confirm", scene: "activity.confirm", delayMinutes: 0, enabled: true, description: "报名成功立即发送" },
