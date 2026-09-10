@@ -329,7 +329,22 @@ const authService = ({ strapi: strapi2 }) => {
       if (!user) {
         return { success: false, error: "账号不存在或已注销" };
       }
-      const isValidPassword = await bcrypt__default.default.compare(password, user.password);
+      let isValidPassword = false;
+      if (user.password) {
+        isValidPassword = await bcrypt__default.default.compare(password, user.password);
+      } else {
+        try {
+          const ssoUserService = strapi2.plugin("zhao-sso")?.service("sso-user");
+          if (ssoUserService && typeof ssoUserService.verifyPassword === "function") {
+            const ssoUser = await ssoUserService.findById(user.id);
+            if (ssoUser) {
+              isValidPassword = await ssoUserService.verifyPassword(ssoUser, password);
+            }
+          }
+        } catch (e) {
+          strapi2.log.warn(`[zhao-auth] SSO 密码验证失败 userId=${user.id}: ${e.message}`);
+        }
+      }
       if (!isValidPassword) {
         return { success: false, error: "密码错误" };
       }

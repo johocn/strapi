@@ -417,7 +417,25 @@ export default ({ strapi }: { strapi: Core.Strapi }): AuthService & Record<strin
       return { success: false, error: "账号不存在或已注销" };
     }
 
-    const isValidPassword = await bcrypt.compare(password, user.password);
+    // 密码验证：本地用户验 up_users.password；
+    // SSO 用户（up_users.password=null，密码哈希在 sso_users.password_hash）回退 zhao-sso 验证
+    let isValidPassword = false;
+    if (user.password) {
+      isValidPassword = await bcrypt.compare(password, user.password);
+    } else {
+      try {
+        const ssoUserService = strapi.plugin("zhao-sso")?.service("sso-user");
+        if (ssoUserService && typeof ssoUserService.verifyPassword === "function") {
+          // up_users.id 与 sso_users.id 严格一致（身份桥接铁律）
+          const ssoUser = await ssoUserService.findById(user.id);
+          if (ssoUser) {
+            isValidPassword = await ssoUserService.verifyPassword(ssoUser, password);
+          }
+        }
+      } catch (e: any) {
+        strapi.log.warn(`[zhao-auth] SSO 密码验证失败 userId=${user.id}: ${e.message}`);
+      }
+    }
     if (!isValidPassword) {
       return { success: false, error: "密码错误" };
     }
