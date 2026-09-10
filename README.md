@@ -1,40 +1,41 @@
 # 📦 项目构建说明
 
-> **构建策略**：本地构建成功后上传仓库，服务器直接 `git pull` 拉取构建产物。
+> **构建策略**：本地构建成功 → 上传 → 服务器 `pm2 restart`。**绝不在服务器构建/安装依赖**（服务器内存 2G 不足，构建/安装会失败或 OOM）。
 
-**原因**：服务器内存不足，无法在服务器上执行 `npm run build`（构建过程中会因内存溢出失败）。
+**产物分两类、两种交付路径**：
 
-**本地构建流程**：
+| 产物 | 内容 | 交付方式 |
+|---|---|---|
+| 根 `dist/` | 后端编译（config/plugins/src）+ Admin 前端（build/~80MB） | `scripts/deploy.mjs` scp 上传 |
+| `plugins/*/dist/` | 插件编译产物（zhao-sso 等，体积小） | git 提交 → 服务器 `git pull` |
+
+> `.gitignore`：根 `dist/`、`build/` 忽略（上传流程单发，不入库）；`!plugins/*/dist/` 放行（插件产物随 git 拉取）。
+
+**一次完整部署**：
 
 ```bash
-# 1. 安装依赖
+# 1. 构建插件（改到 zhao-sso 等插件源码后）：Windows 用 build-plugins.ps1，Linux/Mac 用 build-plugins.sh
+powershell -File scripts\build-plugins.ps1      # Windows
+
+# 2. 构建 Strapi 主项目（含 Admin 前端）+ 提交插件产物
 npm install
-
-# 2. 构建所有插件（zhao-sso、zhao-channel 等）
-#    Windows:  powershell -File scripts\build-plugins.ps1
-#    Linux/Mac: bash scripts/build-plugins.sh
-
-# 3. 构建 Strapi 主项目（含 Admin 前端）
-#    内存充裕时直接构建；内存紧张时调大 Node 堆
 NODE_OPTIONS=--max-old-space-size=8192 npm run build
-
-# 4. 提交构建产物到仓库
-git add dist/ build/ plugins/*/dist/
-git commit -m "build: 构建产物"
+git add plugins/*/dist/                        # 只提交插件产物，根 dist/ 不入库
+git commit -m "build: 插件构建产物"
 git push origin main
+
+# 3. 一键部署（构建 + 上传根 dist/ + 服务器重启，见 scripts/deploy.mjs 头部环境变量说明）
+node scripts/deploy.mjs
 ```
 
-**服务器部署流程**：
+**只看存量/不想重新构建时**（复用本地已有 dist）：
 
 ```bash
-cd /www/apps/strapi
-git pull origin main
-npm install --production   # 仅装运行依赖，不重新构建
-pm2 restart strapi
-pm2 logs strapi --lines 30
+SKIP_BUILD=1 node scripts/deploy.mjs   # 仅上传 + 重启
+SKIP_RESTART=1 node scripts/deploy.mjs # 仅构建 + 上传，不重启
 ```
 
-> 注：`.gitignore` 已放行 `dist/`、`build/`、`plugins/*/dist/`，构建产物会被提交到仓库。
+> 部署参数从 `.env` 底部「部署配置」段读取（`SERVER_HOST=qing` 等，qing 为 ssh 别名，含 User/Port/IdentityFile）。服务器进程由 `ecosystem.config.cjs` 管理（`npm run start`，堆 384MB）。
 
 ---
 
