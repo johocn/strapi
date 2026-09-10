@@ -132,6 +132,7 @@ declare const _default: {
         quiz: ({ strapi }: {
             strapi: import('@strapi/types/dist/core').Strapi;
         }) => {
+            _scopeDocIds(channelIds: number[]): Promise<string[]>;
             find(query?: any, channelScope?: {
                 all: boolean;
                 channelIds: number[];

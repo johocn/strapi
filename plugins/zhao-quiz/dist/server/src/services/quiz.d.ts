@@ -2,6 +2,12 @@ import { Core } from '@strapi/strapi';
 declare const _default: ({ strapi }: {
     strapi: Core.Strapi;
 }) => {
+    /**
+     * 渠道范围文档预筛（jsonb 兼容）
+     * Strapi 对 json 字段的 $contains 会生成 like 操作符（~~），jsonb 列不支持导致 SQL 错误（400）；
+     * 改为直接查表：channel_scope='all' 或 channel_ids 包含任一渠道 → 返回 document_id 白名单
+     */
+    _scopeDocIds(channelIds: number[]): Promise<string[]>;
     find(query?: any, channelScope?: {
         all: boolean;
         channelIds: number[];

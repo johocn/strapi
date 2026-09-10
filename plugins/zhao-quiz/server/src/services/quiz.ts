@@ -17,14 +17,34 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   };
 
   return {
+  /**
+   * 渠道范围文档预筛（jsonb 兼容）
+   * Strapi 对 json 字段的 $contains 会生成 like 操作符（~~），jsonb 列不支持导致 SQL 错误（400）；
+   * 改为直接查表：channel_scope='all' 或 channel_ids 包含任一渠道 → 返回 document_id 白名单
+   */
+  async _scopeDocIds(channelIds: number[]): Promise<string[]> {
+    if (!Array.isArray(channelIds) || channelIds.length === 0) return [];
+    const knex = (strapi.db as any).connection;
+    const rows: any[] = await knex("zhao_quizzes")
+      .where((qb: any) => {
+        qb.where("channel_scope", "all");
+        for (const id of channelIds) {
+          // channel_ids 可能存数字或字符串 ID，两种形式都匹配
+          qb.orWhereRaw("channel_ids @> ?::jsonb", [JSON.stringify([Number(id)])]);
+          qb.orWhereRaw("channel_ids @> ?::jsonb", [JSON.stringify([String(id)])]);
+        }
+      })
+      .whereNull("deleted_at")
+      .select("document_id");
+    return (rows || []).map((r: any) => r.document_id).filter(Boolean);
+  },
+
   async find(query: any = {}, channelScope?: { all: boolean; channelIds: number[] }) {
     const mergedFilters: any = { ...(query.filters || {}) };
 
     if (channelScope && !channelScope.all && channelScope.channelIds.length > 0) {
-      mergedFilters.$or = [
-        { channelScope: "all" },
-        ...channelScope.channelIds.map((id) => ({ channelScope: "specific", channelIds: { $contains: id } })),
-      ];
+      const docIds = await this._scopeDocIds(channelScope.channelIds);
+      mergedFilters.documentId = { $in: docIds };
     }
 
     const page = Number(query.pagination?.page) || 1;
@@ -135,11 +155,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       if (f.difficulty) filters.difficulty = { $eq: f.difficulty };
 
       if (channelScope && !channelScope.all && channelScope.channelIds.length > 0) {
-        const scope = [
-          { channelScope: "all" },
-          ...channelScope.channelIds.map((id: any) => ({ channelScope: "specific", channelIds: { $contains: id } })),
-        ];
-        filters.$or = filters.$or ? [...filters.$or, ...scope] : scope;
+        const docIds = await this._scopeDocIds(channelScope.channelIds);
+        filters.documentId = { $in: docIds };
       }
 
       const questions = await strapi.documents(UID).findMany({
