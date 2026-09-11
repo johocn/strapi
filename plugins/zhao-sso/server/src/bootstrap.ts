@@ -186,8 +186,21 @@ const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
   // 所有 youshop 渠道共用同一个 app，由 channel_code 区分渠道；clientSecret 明文 = 'youshop-app-secret'
   // 注：www.youshop.cn(nshop) 与 e.joho.cn(vshop 商城，同解析到 __default_channel__) 共用此 app，
   //     故回调白名单同时放行两个域名。
+  // ⚠️ 白名单必须同时包含 h.joho.cn 的统一登录回调地址：nshop 统一页 token 直验流中，
+  //     微信 OAuth 成功后.generateAuthCode 校验的 redirect_uri 是
+  //     https://h.joho.cn/#/pages/sso/login-callback（微信回跳中转页），
+  //     只放行 C 端域名（www.youshop.cn / e.joho.cn）会导致该回调校验失败
+  //     报「redirect_uri 不在允许列表中」。此处 4 条 h.joho.cn 回调与 course/wealth/default 应用保持一致。
   const YOUSHOP_APP_CODE = "vendure-youshop";
-  const YOUSHOP_REDIRECT_URIS = ["https://www.youshop.cn/*", "https://e.joho.cn/*", "http://localhost:*"];
+  const YOUSHOP_REDIRECT_URIS = [
+    "https://www.youshop.cn/*",
+    "https://e.joho.cn/*",
+    "http://localhost:*",
+    "https://h.joho.cn/#/pages/sso/login-callback",
+    "http://h.joho.cn/#/pages/sso/login-callback",
+    "https://h.joho.cn/#/pages/login-callback",
+    "http://h.joho.cn/#/pages/login-callback",
+  ];
   const youshopApp = await strapi.db.query("plugin::zhao-sso.sso-app").findOne({
     where: { app_code: YOUSHOP_APP_CODE },
   });

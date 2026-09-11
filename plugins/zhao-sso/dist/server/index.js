@@ -229,7 +229,15 @@ const bootstrap = async ({ strapi }) => {
     }
   }
   const YOUSHOP_APP_CODE = "vendure-youshop";
-  const YOUSHOP_REDIRECT_URIS = ["https://www.youshop.cn/*", "https://e.joho.cn/*", "http://localhost:*"];
+  const YOUSHOP_REDIRECT_URIS = [
+    "https://www.youshop.cn/*",
+    "https://e.joho.cn/*",
+    "http://localhost:*",
+    "https://h.joho.cn/#/pages/sso/login-callback",
+    "http://h.joho.cn/#/pages/sso/login-callback",
+    "https://h.joho.cn/#/pages/login-callback",
+    "http://h.joho.cn/#/pages/login-callback"
+  ];
   const youshopApp = await strapi.db.query("plugin::zhao-sso.sso-app").findOne({
     where: { app_code: YOUSHOP_APP_CODE }
   });
