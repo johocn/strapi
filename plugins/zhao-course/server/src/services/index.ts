@@ -8,6 +8,7 @@ import enrollment from "./enrollment";
 import accessCode from "./access-code";
 import recommend from "./recommend";
 import gate from "./gate";
+import vendureProfile from "./vendure-profile";
 
 export default {
   "course-category": courseCategory,
@@ -20,4 +21,5 @@ export default {
   "access-code": accessCode,
   recommend,
   gate,
+  "vendure-profile": vendureProfile,
 };

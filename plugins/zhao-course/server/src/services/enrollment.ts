@@ -100,6 +100,32 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     } catch (err: any) {
       strapi.log.warn(`[course] course.enrolled 埋点失败: ${err?.message || err}`);
     }
+
+    // 电商档案：把开通成功的用户标记为课程用户（幂等；失败只记日志）
+    try {
+      // 优先直读 up_users.sso_id（SSO 维护且始终同步）；失败回退启发式身份桥接
+      let ssoId: string | null = null;
+      const knex = strapi.db?.connection;
+      if (knex) {
+        const row = await knex("up_users").where({ id: userId }).select("sso_id").first();
+        if (row && row.sso_id != null) ssoId = String(row.sso_id);
+      }
+      if (!ssoId) {
+        const sop = strapi.plugin("zhao-sso").service("sso-sop");
+        const sso = await sop.resolveSsoUserForUpUser(userId);
+        if (sso?.id) ssoId = String(sso.id);
+      }
+      if (ssoId) {
+        const result = await strapi.plugin("zhao-course").service("vendure-profile").markAsCourseUser(ssoId);
+        if (!result.ok) {
+          strapi.log.warn(`[course] 标记课程用户 ssoId=${ssoId} 未成功: ${result.reason || ""}`);
+        } else {
+          strapi.log.info(`[course] 已标记课程用户 ssoId=${ssoId} customerId=${result.customerId || "-"}${result.skipped ? "(已是course)" : ""}`);
+        }
+      }
+    } catch (err: any) {
+      strapi.log.warn(`[course] 电商档案标记失败: ${err?.message || err}`);
+    }
   }
 
   return {

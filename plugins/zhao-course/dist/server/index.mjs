@@ -3065,6 +3065,29 @@ const enrollment = ({ strapi }) => {
     } catch (err) {
       strapi.log.warn(`[course] course.enrolled 埋点失败: ${err?.message || err}`);
     }
+    try {
+      let ssoId = null;
+      const knex = strapi.db?.connection;
+      if (knex) {
+        const row = await knex("up_users").where({ id: userId }).select("sso_id").first();
+        if (row && row.sso_id != null) ssoId = String(row.sso_id);
+      }
+      if (!ssoId) {
+        const sop = strapi.plugin("zhao-sso").service("sso-sop");
+        const sso = await sop.resolveSsoUserForUpUser(userId);
+        if (sso?.id) ssoId = String(sso.id);
+      }
+      if (ssoId) {
+        const result = await strapi.plugin("zhao-course").service("vendure-profile").markAsCourseUser(ssoId);
+        if (!result.ok) {
+          strapi.log.warn(`[course] 标记课程用户 ssoId=${ssoId} 未成功: ${result.reason || ""}`);
+        } else {
+          strapi.log.info(`[course] 已标记课程用户 ssoId=${ssoId} customerId=${result.customerId || "-"}${result.skipped ? "(已是course)" : ""}`);
+        }
+      }
+    } catch (err) {
+      strapi.log.warn(`[course] 电商档案标记失败: ${err?.message || err}`);
+    }
   }
   return {
     async find(query = {}) {
@@ -3648,6 +3671,111 @@ const gate = ({ strapi }) => ({
     return strapi.db.query(COURSE_PROGRESS_UID).count({ where: { user: userId, isCompleted: true, completedAt: { $gt: from, $lte: to } } }).catch(() => 0);
   }
 });
+const vendureProfile = ({ strapi }) => {
+  const apiUrl = process.env.ZUES_VENDURE_ADMIN_API || "http://127.0.0.1:3020/admin-api";
+  const username = process.env.ZUES_VENDURE_ADMIN_USERNAME || "";
+  const password = process.env.ZUES_VENDURE_ADMIN_PASSWORD || "";
+  const COURSE_TYPE = "course";
+  let cachedToken = null;
+  function configured() {
+    return Boolean(username && password);
+  }
+  async function gql(body, token) {
+    const res = await fetch(apiUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...token ? { Authorization: `Bearer ${token}` } : {}
+      },
+      body: JSON.stringify(body)
+    });
+    const authToken = res.headers.get("vendure-auth-token");
+    let json = null;
+    try {
+      json = await res.json();
+    } catch {
+      json = null;
+    }
+    return { status: res.status, authToken, json };
+  }
+  async function login() {
+    const { authToken, json } = await gql({
+      query: `mutation($u:String!,$p:String!){ login(username:$u,password:$p){ ... on CurrentUser { id } } }`,
+      variables: { u: username, p: password }
+    });
+    if (!authToken) {
+      const msg = json?.errors?.[0]?.message || "unknown";
+      throw new Error(`Vendure admin 登录失败: ${msg}`);
+    }
+    cachedToken = authToken;
+    return authToken;
+  }
+  async function ensureToken() {
+    if (cachedToken) return cachedToken;
+    return login();
+  }
+  async function runWithRetry(fn) {
+    const token = await ensureToken();
+    try {
+      return await fn(token);
+    } catch (err) {
+      if (err && (err.code === "FORBIDDEN" || err.code === "UNAUTHORIZED" || err.status === 401)) {
+        cachedToken = null;
+        const fresh = await login();
+        return await fn(fresh);
+      }
+      throw err;
+    }
+  }
+  return {
+    /**
+     * 将用户标记为课程用户（幂等）
+     * @param ssoId SSO 用户数字主键（对应电商 customer.customFieldsSsoid 字符串）
+     */
+    async markAsCourseUser(ssoId) {
+      const sid = String(ssoId);
+      if (!configured()) {
+        return { ok: false, reason: "ZUES_VENDURE_ADMIN_* 未配置，跳过电商档案标记" };
+      }
+      try {
+        return await runWithRetry(async (token) => {
+          const q = await gql({
+            query: `query($s:String!){
+              customers(options:{ filter:{ ssoId:{ eq:$s } } }){
+                items { id customFields { customerType } }
+              }
+            }`,
+            variables: { s: sid }
+          }, token);
+          if (q.json?.errors?.length) {
+            throw Object.assign(new Error(q.json.errors[0].message), { status: 400 });
+          }
+          const items = q.json?.data?.customers?.items || [];
+          if (items.length === 0) {
+            return { ok: false, reason: `未找到 ssoId=${sid} 的电商顾客（可能在其他渠道或未建档）` };
+          }
+          const customer = items[0];
+          if (customer.customFields?.customerType === COURSE_TYPE) {
+            return { ok: true, skipped: true, customerId: customer.id };
+          }
+          const mut = await gql({
+            query: `mutation($input:UpdateCustomerInput!){
+              updateCustomer(input:$input){ ... on Customer { id customFields { customerType } } }
+            }`,
+            variables: { input: { id: customer.id, customFields: { customerType: COURSE_TYPE } } }
+          }, token);
+          if (mut.json?.errors?.length) {
+            throw Object.assign(new Error(mut.json.errors[0].message), { status: 400 });
+          }
+          return { ok: true, customerId: mut.json?.data?.updateCustomer?.id };
+        });
+      } catch (err) {
+        strapi.log.warn(`[zhao-course] 标记课程用户失败 ssoId=${sid}: ${err?.message || err}`);
+        return { ok: false, reason: err?.message || "unknown error" };
+      }
+    }
+  };
+};
 const services = {
   "course-category": courseCategory,
   course,
@@ -3658,7 +3786,8 @@ const services = {
   enrollment,
   "access-code": accessCode,
   recommend,
-  gate
+  gate,
+  "vendure-profile": vendureProfile
 };
 const index = {
   register,
