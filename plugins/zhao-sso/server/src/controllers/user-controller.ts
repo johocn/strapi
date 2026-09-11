@@ -18,7 +18,26 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         return;
       }
 
-      ctx.body = user;
+      // 附加本人自有邀请码（sso_invite_codes.creator=本人 的活跃码）
+      // 供 Vendure sso 认证链把本地 referralCode 与 SSO 自有码对齐（四层同码）。
+      // 无则懒生成保证恒有值；多 app 码时优先 vendure-youshop，无则 course 兜底。
+      let ownInviteCode = "";
+      try {
+        const inviteSvc = strapi.plugin("zhao-sso").service("sso-invite");
+        if (inviteSvc) {
+          const q = strapi.db.query("plugin::zhao-sso.sso-invite-code");
+          const pref = await q.findOne({ where: { creator: user.id, app_code: "vendure-youshop", is_active: true } });
+          const anyActive = pref || (await q.findOne({ where: { creator: user.id, is_active: true } }));
+          ownInviteCode = pref?.code || anyActive?.code || "";
+          if (!ownInviteCode && inviteSvc.ensureOwnInviteCode) {
+            ownInviteCode = (await inviteSvc.ensureOwnInviteCode(user.id, "vendure-youshop")) || "";
+          }
+        }
+      } catch (e: any) {
+        strapi.log.warn(`[user-controller] 获取 ownInviteCode 失败: ${e?.message || e}`);
+      }
+
+      ctx.body = { ...user, ownInviteCode };
     } catch (e: any) {
       ctx.status = (e as any).status || 400; ctx.body = { error: e.message };
     }

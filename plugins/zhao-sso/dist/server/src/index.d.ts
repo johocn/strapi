@@ -2061,6 +2061,15 @@ declare const _default: {
                 createdAt: number;
             }>>;
         };
+        "sso-align": ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            backfillUsers: (onlySsoUserIds?: number[]) => Promise<{
+                total: number;
+                ok: number;
+                err: number;
+            }>;
+        };
         "sso-msg": ({ strapi }: {
             strapi: import('@strapi/types/dist/core').Strapi;
         }) => {

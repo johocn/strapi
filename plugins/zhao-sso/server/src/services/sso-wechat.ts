@@ -255,6 +255,34 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
             });
           }
         } catch { /* 对齐失败静默 */ }
+        // 老用户登录：补齐 up_users 的 sso_id/invite_code（与 sso_invite_codes 对齐，幂等）
+        try {
+          const knex = strapi.db.connection;
+          const inviteSvc = strapi.service("plugin::zhao-sso.sso-invite") as any;
+          // 主观有码优先 vendure-youshop（主商城），无则 course 兜底 —— 与 /v1/user/me 返回的 ownInviteCode 优先级一致，保证四层同码
+          let ownCode = "";
+          if (inviteSvc) {
+            const q = strapi.db.query("plugin::zhao-sso.sso-invite-code");
+            const pref = await q.findOne({ where: { creator: binding.user.id, app_code: "vendure-youshop", is_active: true } }).catch(() => null);
+            const anyActive = pref || (await q.findOne({ where: { creator: binding.user.id, is_active: true } }).catch(() => null));
+            ownCode = pref?.code || anyActive?.code || "";
+            if (!ownCode) ownCode = (await inviteSvc.ensureOwnInviteCode(binding.user.id, "vendure-youshop")) || "";
+          }
+          const patchUp: any = { sso_id: binding.user.id, updated_at: new Date() };
+          if (ownCode) patchUp.invite_code = ownCode;
+          if (binding.user.nickname) patchUp.nickname = binding.user.nickname;
+          await knex("up_users").where({ id: binding.user.id }).update(patchUp);
+        } catch (e2: any) {
+          strapi.log.warn(`[zhao-sso] 老用户 up_users 富字段补齐失败 user=${binding.user.id}: ${e2?.message}`);
+        }
+        // 老用户登录：同步 zhao-channel 分销邀请（建立/刷新 D 层，externalInviteCode=SSO 自有码保证三码统一）
+        try {
+          const sync = strapi.service("plugin::zhao-sso.channel-sync") as any;
+          if (sync?.getSync) {
+            const s = sync.getSync();
+            if (s?.syncUserInvite) await s.syncUserInvite(binding.user.id);
+          }
+        } catch { /* 同步失败静默 */ }
         // 老用户登录：保证有 own 邀请码
         try {
           const alignInv = strapi.service("plugin::zhao-sso.sso-invite") as any;
@@ -284,9 +312,16 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
 
     // 身份桥接：微信新用户同步补齐同 id 的 up_user，避免 up_users 与 sso_users 错位
     const userSvc = strapi.service("plugin::zhao-sso.sso-user") as any;
-    // 微信新用户自动生成专属邀请码（course 主应用），保证分销可传播
+    // 微信新用户自动生成专属邀请码（主商城 app 优先 vendure-youshop，无则 course 兜底），保证分销可传播
     const inviteSvc = strapi.service("plugin::zhao-sso.sso-invite") as any;
-    const ownInviteCode = ((await inviteSvc?.ensureOwnInviteCode?.(user.id, "course")) || "");
+    let ownInviteCode = "";
+    try {
+      const q = strapi.db.query("plugin::zhao-sso.sso-invite-code");
+      const pref = await q.findOne({ where: { creator: user.id, app_code: "vendure-youshop", is_active: true } });
+      const anyActive = pref || (await q.findOne({ where: { creator: user.id, is_active: true } }));
+      ownInviteCode = pref?.code || anyActive?.code || "";
+      if (!ownInviteCode) ownInviteCode = ((await inviteSvc?.ensureOwnInviteCode?.(user.id, "vendure-youshop")) || "");
+    } catch { ownInviteCode = ((await inviteSvc?.ensureOwnInviteCode?.(user.id, "course")) || ""); }
     await userSvc?.ensureUpUser?.(user.id, {
       username,
       email: null,
@@ -329,8 +364,17 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       });
     } catch { /* ignore */ }
 
+    // 新用户注册：同步 zhao-channel 分销邀请（建立 D 层，externalInviteCode=SSO 自有码保证三码统一）
+    try {
+      const sync = strapi.service("plugin::zhao-sso.channel-sync") as any;
+      if (sync?.getSync) {
+        const s = sync.getSync();
+        if (s?.syncUserInvite) await s.syncUserInvite(user.id);
+      }
+    } catch { /* 同步失败静默 */ }
+
     // 微信新用户注册后返回 ownInviteCode，供 C 端 user 对齐写入
-    return { userId: user.id, isNew: true, ownInviteCode: ((await inviteSvc?.ensureOwnInviteCode?.(user.id, "course")) || "") };
+    return { userId: user.id, isNew: true, ownInviteCode };
   },
 
   async getJssdkSignature(url: string, appType: WechatAppType) {

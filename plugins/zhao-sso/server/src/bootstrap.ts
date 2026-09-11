@@ -184,8 +184,10 @@ const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
   // www.youshop.cn C 端商城（nshop）SSO 应用。
   // 与 vendure 仓库 china-data/02-default-channel.ts 及各租户渠道 runtime authConfig 的 ssoProviders 对应，
   // 所有 youshop 渠道共用同一个 app，由 channel_code 区分渠道；clientSecret 明文 = 'youshop-app-secret'
+  // 注：www.youshop.cn(nshop) 与 e.joho.cn(vshop 商城，同解析到 __default_channel__) 共用此 app，
+  //     故回调白名单同时放行两个域名。
   const YOUSHOP_APP_CODE = "vendure-youshop";
-  const YOUSHOP_REDIRECT_URIS = ["https://www.youshop.cn/*", "http://localhost:*"];
+  const YOUSHOP_REDIRECT_URIS = ["https://www.youshop.cn/*", "https://e.joho.cn/*", "http://localhost:*"];
   const youshopApp = await strapi.db.query("plugin::zhao-sso.sso-app").findOne({
     where: { app_code: YOUSHOP_APP_CODE },
   });
@@ -227,6 +229,24 @@ const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
     if (!existing) {
       await strapi.db.query(RULE_UID).create({ data: rule });
       strapi.log.info(`[zhao-sso] SOP rule seeded: ${rule.code}`);
+    }
+  }
+
+  // 存量邀请码对齐回填（一次性，幂等）：设置 SSO_BACKFILL_INVITE_ALIGN=1 时在启动期执行，
+  // 保证每个 sso_user 都有自有码，并把 sso_id / invite_code / nickname 对齐到 up_users、
+  // 建立 zhao_user_invites 分销记录（四层同码底座）。执行完即可移除该环境变量。
+  if (process.env.SSO_BACKFILL_INVITE_ALIGN === "1") {
+    const alignSvc = strapi.plugin("zhao-sso").service("sso-align") as any;
+    if (alignSvc?.backfillUsers) {
+      let onlyIds: number[] | undefined;
+      if (process.env.SSO_BACKFILL_ONLY_IDS) {
+        onlyIds = process.env.SSO_BACKFILL_ONLY_IDS.split(",")
+          .map((s) => Number(s.trim()))
+          .filter((n) => Number.isFinite(n) && n > 0);
+      }
+      await alignSvc.backfillUsers(onlyIds);
+    } else {
+      strapi.log.warn("[zhao-sso] sso-align service missing, skip invite backfill");
     }
   }
 };

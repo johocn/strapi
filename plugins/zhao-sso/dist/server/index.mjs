@@ -205,7 +205,7 @@ const bootstrap = async ({ strapi }) => {
     }
   }
   const YOUSHOP_APP_CODE = "vendure-youshop";
-  const YOUSHOP_REDIRECT_URIS = ["https://www.youshop.cn/*", "http://localhost:*"];
+  const YOUSHOP_REDIRECT_URIS = ["https://www.youshop.cn/*", "https://e.joho.cn/*", "http://localhost:*"];
   const youshopApp = await strapi.db.query("plugin::zhao-sso.sso-app").findOne({
     where: { app_code: YOUSHOP_APP_CODE }
   });
@@ -245,6 +245,18 @@ const bootstrap = async ({ strapi }) => {
     if (!existing) {
       await strapi.db.query(RULE_UID2).create({ data: rule });
       strapi.log.info(`[zhao-sso] SOP rule seeded: ${rule.code}`);
+    }
+  }
+  if (process.env.SSO_BACKFILL_INVITE_ALIGN === "1") {
+    const alignSvc = strapi.plugin("zhao-sso").service("sso-align");
+    if (alignSvc?.backfillUsers) {
+      let onlyIds;
+      if (process.env.SSO_BACKFILL_ONLY_IDS) {
+        onlyIds = process.env.SSO_BACKFILL_ONLY_IDS.split(",").map((s) => Number(s.trim())).filter((n) => Number.isFinite(n) && n > 0);
+      }
+      await alignSvc.backfillUsers(onlyIds);
+    } else {
+      strapi.log.warn("[zhao-sso] sso-align service missing, skip invite backfill");
     }
   }
 };
@@ -1418,7 +1430,22 @@ const userController = ({ strapi }) => ({
         ctx.body = { error: "用户不存在" };
         return;
       }
-      ctx.body = user;
+      let ownInviteCode = "";
+      try {
+        const inviteSvc = strapi.plugin("zhao-sso").service("sso-invite");
+        if (inviteSvc) {
+          const q = strapi.db.query("plugin::zhao-sso.sso-invite-code");
+          const pref = await q.findOne({ where: { creator: user.id, app_code: "vendure-youshop", is_active: true } });
+          const anyActive = pref || await q.findOne({ where: { creator: user.id, is_active: true } });
+          ownInviteCode = pref?.code || anyActive?.code || "";
+          if (!ownInviteCode && inviteSvc.ensureOwnInviteCode) {
+            ownInviteCode = await inviteSvc.ensureOwnInviteCode(user.id, "vendure-youshop") || "";
+          }
+        }
+      } catch (e) {
+        strapi.log.warn(`[user-controller] 获取 ownInviteCode 失败: ${e?.message || e}`);
+      }
+      ctx.body = { ...user, ownInviteCode };
     } catch (e) {
       ctx.status = e.status || 400;
       ctx.body = { error: e.message };
@@ -3740,7 +3767,7 @@ const ssoJwt = ({ strapi }) => {
     extractToken
   };
 };
-const USER_UID$3 = "plugin::zhao-sso.sso-user";
+const USER_UID$4 = "plugin::zhao-sso.sso-user";
 function sanitize(user) {
   if (!user) return null;
   const { password_hash, ...safe } = user;
@@ -3759,7 +3786,7 @@ const ssoUser = ({ strapi }) => {
         throwErr("SSO_USER_001", 400, "username/mobile/email at least one required");
       }
       const password_hash = data.password ? await bcrypt.hash(data.password, 12) : null;
-      const user = await strapi.db.query(USER_UID$3).create({
+      const user = await strapi.db.query(USER_UID$4).create({
         data: {
           uuid: v4(),
           username: data.username || null,
@@ -3792,7 +3819,7 @@ const ssoUser = ({ strapi }) => {
       }
     },
     async findByIdentifier(identifier) {
-      return strapi.db.query(USER_UID$3).findOne({
+      return strapi.db.query(USER_UID$4).findOne({
         where: {
           $or: [
             { email: identifier.toLowerCase() },
@@ -3803,19 +3830,19 @@ const ssoUser = ({ strapi }) => {
       });
     },
     async findByUuid(uuid) {
-      const user = await strapi.db.query(USER_UID$3).findOne({ where: { uuid } });
+      const user = await strapi.db.query(USER_UID$4).findOne({ where: { uuid } });
       return sanitize(user);
     },
     async verifyPassword(user, password) {
       if (!user.password_hash) {
-        const raw = await strapi.db.query(USER_UID$3).findOne({ where: { id: user.id }, select: ["password_hash"] });
+        const raw = await strapi.db.query(USER_UID$4).findOne({ where: { id: user.id }, select: ["password_hash"] });
         if (!raw?.password_hash) return false;
         return bcrypt.compare(password, raw.password_hash);
       }
       return bcrypt.compare(password, user.password_hash);
     },
     async updateLoginInfo(userId, channelCode) {
-      const current = await strapi.db.query(USER_UID$3).findOne({ where: { id: userId } });
+      const current = await strapi.db.query(USER_UID$4).findOne({ where: { id: userId } });
       const updateData = {
         last_login_at: /* @__PURE__ */ new Date(),
         login_count: (current?.login_count || 0) + 1
@@ -3823,14 +3850,14 @@ const ssoUser = ({ strapi }) => {
       if (channelCode) {
         updateData.last_login_channel = channelCode;
       }
-      return strapi.db.query(USER_UID$3).update({
+      return strapi.db.query(USER_UID$4).update({
         where: { id: userId },
         data: updateData
       });
     },
     async changePassword(userId, newPassword) {
       const password_hash = await bcrypt.hash(newPassword, 12);
-      return strapi.db.query(USER_UID$3).update({
+      return strapi.db.query(USER_UID$4).update({
         where: { id: userId },
         data: { password_hash, password_changed_at: /* @__PURE__ */ new Date() }
       });
@@ -3839,7 +3866,7 @@ const ssoUser = ({ strapi }) => {
       return user.status === "blocked";
     },
     async findById(id) {
-      const user = await strapi.db.query(USER_UID$3).findOne({ where: { id } });
+      const user = await strapi.db.query(USER_UID$4).findOne({ where: { id } });
       return sanitize(user);
     },
     async bindContact(userId, type, identifier, password) {
@@ -3848,7 +3875,7 @@ const ssoUser = ({ strapi }) => {
       if (type === "email") updateData.email = identifier;
       if (type === "username") updateData.username = identifier;
       if (password) updateData.password_hash = await bcrypt.hash(password, 12);
-      return strapi.db.query(USER_UID$3).update({ where: { id: userId }, data: updateData });
+      return strapi.db.query(USER_UID$4).update({ where: { id: userId }, data: updateData });
     },
     async bindThirdParty(userId, providerData) {
       return strapi.db.query("plugin::zhao-sso.sso-third-party-binding").create({
@@ -3869,10 +3896,10 @@ const ssoUser = ({ strapi }) => {
       });
     },
     async count(where) {
-      return strapi.db.query(USER_UID$3).count({ where });
+      return strapi.db.query(USER_UID$4).count({ where });
     },
     async findMany(params) {
-      const users = await strapi.db.query(USER_UID$3).findMany({
+      const users = await strapi.db.query(USER_UID$4).findMany({
         where: params.where || {},
         orderBy: params.orderBy || { createdAt: "desc" },
         limit: params.limit,
@@ -3881,7 +3908,7 @@ const ssoUser = ({ strapi }) => {
       return users.map(sanitize);
     },
     async findOneWithBindings(id) {
-      const user = await strapi.db.query(USER_UID$3).findOne({
+      const user = await strapi.db.query(USER_UID$4).findOne({
         where: { id },
         populate: { third_party_bindings: true }
       });
@@ -3893,14 +3920,14 @@ const ssoUser = ({ strapi }) => {
       for (const field of allowedFields) {
         if (body[field] !== void 0) data[field] = body[field];
       }
-      const user = await strapi.db.query(USER_UID$3).update({ where: { id }, data });
+      const user = await strapi.db.query(USER_UID$4).update({ where: { id }, data });
       return sanitize(user);
     },
     /** 自助修改本人昵称（C 端个人中心用，白名单仅昵称） */
     async updateNickname(userId, nickname) {
       const name = String(nickname || "").trim().substring(0, 50);
       if (!name) throwErr("SSO_NICKNAME_001", 400, "昵称不能为空");
-      await strapi.db.query(USER_UID$3).update({ where: { id: userId }, data: { nickname: name } });
+      await strapi.db.query(USER_UID$4).update({ where: { id: userId }, data: { nickname: name } });
       return this.findById(userId);
     }
   };
@@ -4415,7 +4442,7 @@ const ssoAuth$1 = ({ strapi }) => {
   return { login, register: register2, verifyToken, refreshToken, logout, getUserRoles, saveTokenRecord, sanitizeUser };
 };
 const BINDING_UID$4 = "plugin::zhao-sso.sso-third-party-binding";
-const USER_UID$2 = "plugin::zhao-sso.sso-user";
+const USER_UID$3 = "plugin::zhao-sso.sso-user";
 const ssoWechat = ({ strapi }) => {
   const tokenCache = /* @__PURE__ */ new Map();
   const ticketCache = /* @__PURE__ */ new Map();
@@ -4602,13 +4629,13 @@ const ssoWechat = ({ strapi }) => {
             await strapi.db.query(BINDING_UID$4).update({ where: { id: binding.id }, data: backingUpdates });
           }
           if (hasWxNick && !binding.user.nickname) {
-            await strapi.db.query(USER_UID$2).update({
+            await strapi.db.query(USER_UID$3).update({
               where: { id: binding.user.id },
               data: { nickname: userInfo.nickname }
             });
           }
           if (hasWxAvatar && !binding.user.avatar_url) {
-            await strapi.db.query(USER_UID$2).update({
+            await strapi.db.query(USER_UID$3).update({
               where: { id: binding.user.id },
               data: { avatar_url: userInfo.headimgurl }
             });
@@ -4633,6 +4660,32 @@ const ssoWechat = ({ strapi }) => {
           } catch {
           }
           try {
+            const knex = strapi.db.connection;
+            const inviteSvc2 = strapi.service("plugin::zhao-sso.sso-invite");
+            let ownCode = "";
+            if (inviteSvc2) {
+              const q = strapi.db.query("plugin::zhao-sso.sso-invite-code");
+              const pref = await q.findOne({ where: { creator: binding.user.id, app_code: "vendure-youshop", is_active: true } }).catch(() => null);
+              const anyActive = pref || await q.findOne({ where: { creator: binding.user.id, is_active: true } }).catch(() => null);
+              ownCode = pref?.code || anyActive?.code || "";
+              if (!ownCode) ownCode = await inviteSvc2.ensureOwnInviteCode(binding.user.id, "vendure-youshop") || "";
+            }
+            const patchUp = { sso_id: binding.user.id, updated_at: /* @__PURE__ */ new Date() };
+            if (ownCode) patchUp.invite_code = ownCode;
+            if (binding.user.nickname) patchUp.nickname = binding.user.nickname;
+            await knex("up_users").where({ id: binding.user.id }).update(patchUp);
+          } catch (e2) {
+            strapi.log.warn(`[zhao-sso] 老用户 up_users 富字段补齐失败 user=${binding.user.id}: ${e2?.message}`);
+          }
+          try {
+            const sync = strapi.service("plugin::zhao-sso.channel-sync");
+            if (sync?.getSync) {
+              const s = sync.getSync();
+              if (s?.syncUserInvite) await s.syncUserInvite(binding.user.id);
+            }
+          } catch {
+          }
+          try {
             const alignInv = strapi.service("plugin::zhao-sso.sso-invite");
             if (alignInv?.ensureOwnInviteCode) await alignInv.ensureOwnInviteCode(binding.user.id, "course");
           } catch {
@@ -4643,7 +4696,7 @@ const ssoWechat = ({ strapi }) => {
       const rawNickname = (userInfo?.nickname || "wx_user").replace(/[^\w\u4e00-\u9fa5]/g, "").substring(0, 12) || "wx_user";
       const shortId = v4().replace(/-/g, "").substring(0, 8);
       const username = `wx_${rawNickname}_${shortId}`;
-      const user = await strapi.db.query(USER_UID$2).create({
+      const user = await strapi.db.query(USER_UID$3).create({
         data: {
           uuid: v4(),
           username,
@@ -4656,7 +4709,16 @@ const ssoWechat = ({ strapi }) => {
       });
       const userSvc = strapi.service("plugin::zhao-sso.sso-user");
       const inviteSvc = strapi.service("plugin::zhao-sso.sso-invite");
-      const ownInviteCode = await inviteSvc?.ensureOwnInviteCode?.(user.id, "course") || "";
+      let ownInviteCode = "";
+      try {
+        const q = strapi.db.query("plugin::zhao-sso.sso-invite-code");
+        const pref = await q.findOne({ where: { creator: user.id, app_code: "vendure-youshop", is_active: true } });
+        const anyActive = pref || await q.findOne({ where: { creator: user.id, is_active: true } });
+        ownInviteCode = pref?.code || anyActive?.code || "";
+        if (!ownInviteCode) ownInviteCode = await inviteSvc?.ensureOwnInviteCode?.(user.id, "vendure-youshop") || "";
+      } catch {
+        ownInviteCode = await inviteSvc?.ensureOwnInviteCode?.(user.id, "course") || "";
+      }
       await userSvc?.ensureUpUser?.(user.id, {
         username,
         email: null,
@@ -4692,7 +4754,15 @@ const ssoWechat = ({ strapi }) => {
         });
       } catch {
       }
-      return { userId: user.id, isNew: true, ownInviteCode: await inviteSvc?.ensureOwnInviteCode?.(user.id, "course") || "" };
+      try {
+        const sync = strapi.service("plugin::zhao-sso.channel-sync");
+        if (sync?.getSync) {
+          const s = sync.getSync();
+          if (s?.syncUserInvite) await s.syncUserInvite(user.id);
+        }
+      } catch {
+      }
+      return { userId: user.id, isNew: true, ownInviteCode };
     },
     async getJssdkSignature(url, appType) {
       const config2 = await getConfig(appType);
@@ -4751,7 +4821,7 @@ const ssoWechat = ({ strapi }) => {
   };
 };
 const BINDING_UID$3 = "plugin::zhao-sso.sso-third-party-binding";
-const USER_UID$1 = "plugin::zhao-sso.sso-user";
+const USER_UID$2 = "plugin::zhao-sso.sso-user";
 const ssoAlipay = ({ strapi }) => {
   function throwErr(code, status, message) {
     const e = new Error(message);
@@ -4800,7 +4870,7 @@ const ssoAlipay = ({ strapi }) => {
         userInfo = await this.fetchUserInfo(config2.appId, config2.privateKey, tokenRes.access_token);
       } catch {
       }
-      const user = await strapi.db.query(USER_UID$1).create({
+      const user = await strapi.db.query(USER_UID$2).create({
         data: {
           uuid: v4(),
           nickname: userInfo.nick_name || null,
@@ -5244,7 +5314,7 @@ ${hashedCanonicalRequest}`;
 const INVITE_CODE_UID = "plugin::zhao-sso.sso-invite-code";
 const REFERRAL_RELATION_UID = "plugin::zhao-sso.sso-referral-relation";
 const INVITE_USAGE_UID = "plugin::zhao-sso.sso-invite-usage";
-const USER_UID = "plugin::zhao-sso.sso-user";
+const USER_UID$1 = "plugin::zhao-sso.sso-user";
 const ssoInvite = ({ strapi }) => {
   const validateInviteCode = async (code, appCode) => {
     if (!code || !appCode) return null;
@@ -5266,17 +5336,17 @@ const ssoInvite = ({ strapi }) => {
   };
   const getOrCreateVirtualUser = async (inviteCodeRecord) => {
     if (inviteCodeRecord.creator && inviteCodeRecord.creator.id) {
-      const existing = await strapi.db.query(USER_UID).findOne({
+      const existing = await strapi.db.query(USER_UID$1).findOne({
         where: { id: inviteCodeRecord.creator.id }
       });
       if (existing) return existing;
     }
     const virtualUsername = `virtual_${inviteCodeRecord.code}`;
-    const existingVirtual = await strapi.db.query(USER_UID).findOne({
+    const existingVirtual = await strapi.db.query(USER_UID$1).findOne({
       where: { username: virtualUsername }
     });
     if (existingVirtual) return existingVirtual;
-    return strapi.db.query(USER_UID).create({
+    return strapi.db.query(USER_UID$1).create({
       data: {
         uuid: v4(),
         username: virtualUsername,
@@ -5301,7 +5371,7 @@ const ssoInvite = ({ strapi }) => {
   const buildReferralRelation = async (params) => {
     const { inviteeId, inviteCode, appCode, channelCode } = params;
     try {
-      const invitee = await strapi.db.query(USER_UID).findOne({ where: { id: inviteeId } });
+      const invitee = await strapi.db.query(USER_UID$1).findOne({ where: { id: inviteeId } });
       if (!invitee) {
         return { success: false, message: "被邀请用户不存在" };
       }
@@ -5322,7 +5392,7 @@ const ssoInvite = ({ strapi }) => {
       }
       const level = await calculateLevel(inviter.id);
       const result = await strapi.db.transaction(async () => {
-        await strapi.db.query(USER_UID).update({
+        await strapi.db.query(USER_UID$1).update({
           where: { id: inviteeId },
           data: {
             invite_code_used: inviteCode,
@@ -5419,6 +5489,37 @@ const ssoInvite = ({ strapi }) => {
     ensureOwnInviteCode,
     listLandings
   };
+};
+const USER_UID = "plugin::zhao-sso.sso-user";
+const ssoAlign = ({ strapi }) => {
+  async function backfillUsers(onlySsoUserIds) {
+    const q = strapi.db.query(USER_UID);
+    const users = onlySsoUserIds?.length ? await q.findMany({ where: { id: { $in: onlySsoUserIds } }, limit: 2e3 }) : await q.findMany({ limit: 2e3 });
+    const knex = strapi.db.connection;
+    const inviteSvc = strapi.plugin("zhao-sso").service("sso-invite");
+    const sync = strapi.plugin("zhao-sso").service("channel-sync")?.getSync?.() ?? null;
+    let ok = 0;
+    let err = 0;
+    for (const u of users) {
+      try {
+        let ownCode = await inviteSvc?.ensureOwnInviteCode?.(u.id, "vendure-youshop") || "";
+        if (!ownCode) ownCode = await inviteSvc?.ensureOwnInviteCode?.(u.id, "course") || "";
+        const patch = { sso_id: u.id, updated_at: /* @__PURE__ */ new Date() };
+        if (ownCode) patch.invite_code = ownCode;
+        if (u.nickname) patch.nickname = u.nickname;
+        const matchedBySsoId = await knex("up_users").where({ sso_id: u.id }).first();
+        await knex("up_users").where(matchedBySsoId ? { sso_id: u.id } : { id: u.id }).update(patch);
+        if (sync?.syncUserInvite) await sync.syncUserInvite(u.id, void 0, void 0);
+        ok++;
+      } catch (e) {
+        err++;
+        strapi.log.warn(`[zhao-sso] backfill sso_user ${u.id} failed: ${e?.message}`);
+      }
+    }
+    strapi.log.info(`[zhao-sso] invite backfill done: total=${users.length} ok=${ok} err=${err}`);
+    return { total: users.length, ok, err };
+  }
+  return { backfillUsers };
 };
 const CONFIG_UID = "plugin::zhao-sso.sso-oauth-config";
 function createWechatTemplateChannel({ strapi }) {
@@ -7406,6 +7507,7 @@ const services = {
   "sso-oauth-config": ssoOauthConfig,
   "sso-sms": ssoSms,
   "sso-invite": ssoInvite,
+  "sso-align": ssoAlign,
   "sso-msg": ssoMsg,
   "sso-sop": ssoSop,
   "sso-profile": ssoProfile,

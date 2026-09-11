@@ -11,6 +11,7 @@ import ssoApp from "./sso-app";
 import ssoOauthConfig from "./sso-oauth-config";
 import ssoSms from "./sso-sms";
 import ssoInvite from "./sso-invite";
+import ssoAlign from "./sso-align";
 import ssoMsg from "./sso-msg";
 import ssoSop from "./sso-sop";
 import ssoProfile from "./sso-profile";
@@ -38,6 +39,7 @@ export default {
   "sso-oauth-config": ssoOauthConfig,
   "sso-sms": ssoSms,
   "sso-invite": ssoInvite,
+  "sso-align": ssoAlign,
   "sso-msg": ssoMsg,
   "sso-sop": ssoSop,
   "sso-profile": ssoProfile,
