@@ -32783,8 +32783,12 @@ function notFound(msg = "GeoArticle not found") {
   e.status = 404;
   return e;
 }
+const DATETIME_FIELDS = ["sourcePublishedAt", "reviewedAt"];
 function coerceRelationIds(data) {
   const out = { ...data };
+  for (const f of DATETIME_FIELDS) {
+    if (out[f] === "" || out[f] === void 0) out[f] = null;
+  }
   for (const f of MANY_TO_ONE) {
     if (out[f] === void 0 || out[f] === null || out[f] === "") continue;
     const n = Number(out[f]);

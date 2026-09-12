@@ -18,9 +18,15 @@ function notFound(msg = "GeoArticle not found") {
   return e;
 }
 
+// datetime 字段：前端未填时提交空串('')，直接落库会 InvalidDatetimeFormat 500。统一清洗为 null。
+const DATETIME_FIELDS = ["sourcePublishedAt", "reviewedAt"];
+
 /** 关系入参宽容解析：manyToOne 收数字/数字字符串标量，manyToMany 收数字 id 数组；非法值 400 而非 500 */
 function coerceRelationIds(data: any): any {
   const out = { ...data };
+  for (const f of DATETIME_FIELDS) {
+    if (out[f] === "" || out[f] === undefined) out[f] = null;
+  }
   for (const f of MANY_TO_ONE) {
     if (out[f] === undefined || out[f] === null || out[f] === "") continue;
     const n = Number(out[f]);
