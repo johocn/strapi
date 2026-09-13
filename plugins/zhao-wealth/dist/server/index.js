@@ -11406,7 +11406,8 @@ function registerCollectJobs(strapi) {
       if (!productCode) {
         throw new Error("产品无代码，无法采集");
       }
-      const navData = await collector.collectNavData(productCode);
+      const registerCode = config.product?.registerCode || "";
+      const navData = await collector.collectNavData(productCode, { registerCode });
       let savedCount = 0;
       for (const nav2 of navData) {
         const existing = await strapi.db.query("plugin::zhao-wealth.wealth-nav").findOne({

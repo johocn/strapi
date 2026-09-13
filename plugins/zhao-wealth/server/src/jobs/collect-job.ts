@@ -82,7 +82,8 @@ export function registerCollectJobs(strapi: any) {
         throw new Error('产品无代码，无法采集');
       }
 
-      const navData = await collector.collectNavData(productCode);
+      const registerCode = config.product?.registerCode || '';
+      const navData = await collector.collectNavData(productCode, { registerCode });
 
       let savedCount = 0;
       for (const nav of navData) {
