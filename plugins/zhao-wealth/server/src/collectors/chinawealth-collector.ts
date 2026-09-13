@@ -73,7 +73,7 @@ export default class ChinawealthCollector extends BaseCollector {
       await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
       await page.waitForTimeout(3000); // 等待 Vue SPA 渲染完成
 
-      const product = await page.evaluate((regCode) => {
+      const product: any = await page.evaluate((regCode) => {
         /**
          * 从 .basic-info 精确提取字段
          * 找到标签文本完全匹配的 .el-col，取其下一个兄弟 .el-col 的文本

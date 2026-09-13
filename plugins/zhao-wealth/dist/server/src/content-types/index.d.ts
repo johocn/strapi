@@ -84,6 +84,9 @@ declare const _default: {
                     unique: boolean;
                     required: boolean;
                 };
+                navSourceUrl: {
+                    type: string;
+                };
                 riskLevel: {
                     type: string;
                     enum: string[];

@@ -19,7 +19,7 @@ const kind$d = "collectionType";
 const collectionName$d = "wealth_products";
 const info$d = { "singularName": "wealth-product", "pluralName": "wealth-products", "displayName": "理财产品", "description": "理财/基金产品信息" };
 const options$d = { "draftAndPublish": false };
-const attributes$d = { "productCode": { "type": "string", "unique": true }, "productName": { "type": "string", "required": true }, "productNameCw": { "type": "string" }, "saleCode": { "type": "string" }, "productType": { "type": "enumeration", "enum": ["bank-wealth", "stock-fund", "bond-fund", "mixed-fund", "money-fund"] }, "registerCode": { "type": "string", "unique": true, "required": true }, "riskLevel": { "type": "enumeration", "enum": ["R1", "R2", "R3", "R4", "R5"], "default": "R2" }, "termType": { "type": "enumeration", "enum": ["short", "medium", "long"] }, "issueDate": { "type": "date" }, "maturityDate": { "type": "date" }, "company": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-company", "inversedBy": "products" }, "navs": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-nav", "mappedBy": "product" }, "moneyIncomes": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-money-income", "mappedBy": "product" }, "annualSnapshots": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-annual-snapshot", "mappedBy": "product" }, "yearlyReturns": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-yearly-return", "mappedBy": "product" }, "riskMetrics": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-risk-metric", "mappedBy": "product" }, "scoreSnapshots": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-score-snapshot", "mappedBy": "product" }, "recommendWeight": { "type": "integer", "default": 0 }, "recommendTags": { "type": "json" }, "recommendEnabled": { "type": "boolean", "default": false }, "recommendReason": { "type": "text" }, "status": { "type": "boolean", "default": true }, "benchmark": { "type": "string" }, "operationMode": { "type": "enumeration", "enum": ["daily-open", "fixed-term", "closed"] }, "productStatus": { "type": "string" }, "remark": { "type": "text" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const attributes$d = { "productCode": { "type": "string", "unique": true }, "productName": { "type": "string", "required": true }, "productNameCw": { "type": "string" }, "saleCode": { "type": "string" }, "productType": { "type": "enumeration", "enum": ["bank-wealth", "stock-fund", "bond-fund", "mixed-fund", "money-fund"] }, "registerCode": { "type": "string", "unique": true, "required": true }, "navSourceUrl": { "type": "string" }, "riskLevel": { "type": "enumeration", "enum": ["R1", "R2", "R3", "R4", "R5"], "default": "R2" }, "termType": { "type": "enumeration", "enum": ["short", "medium", "long"] }, "issueDate": { "type": "date" }, "maturityDate": { "type": "date" }, "company": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-company", "inversedBy": "products" }, "navs": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-nav", "mappedBy": "product" }, "moneyIncomes": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-money-income", "mappedBy": "product" }, "annualSnapshots": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-annual-snapshot", "mappedBy": "product" }, "yearlyReturns": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-yearly-return", "mappedBy": "product" }, "riskMetrics": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-risk-metric", "mappedBy": "product" }, "scoreSnapshots": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-score-snapshot", "mappedBy": "product" }, "recommendWeight": { "type": "integer", "default": 0 }, "recommendTags": { "type": "json" }, "recommendEnabled": { "type": "boolean", "default": false }, "recommendReason": { "type": "text" }, "status": { "type": "boolean", "default": true }, "benchmark": { "type": "string" }, "operationMode": { "type": "enumeration", "enum": ["daily-open", "fixed-term", "closed"] }, "productStatus": { "type": "string" }, "remark": { "type": "text" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
 const wealthProduct = {
   kind: kind$d,
   collectionName: collectionName$d,
@@ -7518,6 +7518,7 @@ class ChinawealthCollector extends BaseCollector {
     try {
       const product2 = await this.collectViaPlaywright(url, registerCode);
       if (product2) {
+        product2.navSourceUrl = `${CW_DETAIL_URL}?prodRegCode=${encodeURIComponent(registerCode)}`;
         console.log(`[chinawealth] 采集成功: ${product2.productName}`);
         console.log(`[chinawealth] 字段详情: registerCode=${product2.registerCode}, companyName=${product2.companyName}, risk=${product2.riskLevel}, type=${product2.productType}, opMode=${product2.operationMode}, issueDate=${product2.issueDate}`);
         return product2;
@@ -7631,7 +7632,8 @@ class ChinawealthCollector extends BaseCollector {
    * 采集净值数据
    * 通过登记编码访问中国理财网产品详情页，拦截 AJAX 请求或解析页面表格获取净值
    */
-  async collectNavData(registerCode) {
+  async collectNavData(productCode, options2) {
+    const registerCode = options2 && options2.registerCode || productCode;
     console.log(`[chinawealth] 开始采集净值: registerCode=${registerCode}`);
     const page = await createPage();
     if (!page) {
@@ -7773,7 +7775,7 @@ class ChinawealthCollector extends BaseCollector {
   }
 }
 const BASE_URL = "https://www.hzbankwealth.com.cn";
-const RISK_MAP = {
+const RISK_MAP$1 = {
   "低风险": "R1",
   "中低风险": "R2",
   "中风险": "R3",
@@ -7900,18 +7902,153 @@ class HzbankCollector extends BaseCollector {
    * 按关键词长度降序检查，避免"低风险"匹配到"中低风险"的子串
    */
   parseRiskLevel(text) {
-    const sortedKeys = Object.keys(RISK_MAP).sort((a, b) => b.length - a.length);
+    const sortedKeys = Object.keys(RISK_MAP$1).sort((a, b) => b.length - a.length);
     for (const key of sortedKeys) {
-      if (text.includes(key)) return RISK_MAP[key];
+      if (text.includes(key)) return RISK_MAP$1[key];
     }
     return "R2";
+  }
+}
+const QDCCB_LIST_URL = "https://www.qdccb.com/eportal/ui?pageId=cad5fba118244923ab077d6071fc4b4d&aisiteOutPageId=b9d7863b63f74689b5fe16de82f45bce";
+const QDCCB_DETAIL_URL = "https://www.qdccb.com/eportal/ui?pageId=c788082319fc4da1ad9a35eb2150d872&prdcode=";
+const INFO_MODULE_ID = "3567249ec8ca464d8c77a548570c2928";
+const NAV_MODULE_ID = "8c1e93dc09154b83a11ba801b3971f95";
+const NAV_PAGE_SIZE = 10;
+const RISK_MAP = {
+  "低风险": "R1",
+  "中低风险": "R2",
+  "中等风险": "R3",
+  "中高风险": "R4",
+  "高风险": "R5"
+};
+function mapRiskLevel(text) {
+  if (!text) return "R2";
+  if (/R[1-5]/.test(text)) return text.match(/R[1-5]/)[0];
+  return RISK_MAP[text] || "R2";
+}
+function normalizeDate(text) {
+  if (!text) return "";
+  return text.replace(/\//g, "-");
+}
+async function fetchPortlet(page, moduleId, portlet, body) {
+  const params = new URLSearchParams(body).toString();
+  return page.evaluate(async ({ moduleId: moduleId2, portlet: portlet2, params: params2 }) => {
+    const resp = await fetch(`/eportal/ui?portal.url=${encodeURIComponent(portlet2)}&moduleId=${moduleId2}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        "X-Requested-With": "XMLHttpRequest"
+      },
+      body: params2
+    });
+    const text = await resp.text();
+    try {
+      return JSON.parse(text);
+    } catch {
+      return { success: false, result: [], raw: text.slice(0, 200) };
+    }
+  }, { moduleId, portlet, params });
+}
+class QingdaoCollector extends BaseCollector {
+  /**
+   * 采集产品信息：官网列表接口 queryData.portlet 按产品代码精确查询
+   * 官网仅收录在售产品；查不到（如已下架/理财网特有产品）抛错，提示改用中国理财网源
+   */
+  async collectProductInfo(productCode) {
+    const page = await createPage();
+    if (!page) {
+      throw new Error("Playwright Browser 不可用");
+    }
+    try {
+      await page.goto(QDCCB_LIST_URL, { waitUntil: "networkidle", timeout: 6e4 });
+      await page.waitForTimeout(2e3);
+      const data = await fetchPortlet(page, INFO_MODULE_ID, "/portlet/finance!queryData.portlet", {
+        bz: "人民币",
+        cpzt: "",
+        prdCode: productCode,
+        cpdjbm: "",
+        cpgly: "",
+        fxdj: "",
+        yzfs: "",
+        qx: "",
+        pageNo: "1",
+        pageSize: "10"
+      });
+      const rows = data.result || data.aaData || [];
+      if (!rows.length) {
+        throw new Error(`官网未找到匹配产品（${productCode}），可改用中国理财网源（需登记编码）`);
+      }
+      const row = rows[0];
+      return {
+        productCode: row.prdCode || productCode,
+        productName: row.prdName || "",
+        registerCode: row.cpdjbm || "",
+        riskLevel: mapRiskLevel(row.fxdj),
+        productStatus: row.zscxq || "",
+        issueDate: normalizeDate(row.estDate),
+        operationMode: row.yzfs || "",
+        navSourceUrl: QDCCB_LIST_URL
+      };
+    } finally {
+      await closePage(page);
+    }
+  }
+  /**
+   * 采集净值：打开官网详情页（prdcode={代码}1），页面内 fetch queryNavData.portlet 分页取全
+   * 净值行字段：nav（单位净值）、navdate（净值日期）
+   */
+  async collectNavData(productCode) {
+    const page = await createPage();
+    if (!page) {
+      throw new Error("Playwright Browser 不可用");
+    }
+    try {
+      const detailUrl = `${QDCCB_DETAIL_URL}${productCode}1`;
+      await page.goto(detailUrl, { waitUntil: "networkidle", timeout: 6e4 }).catch(() => {
+      });
+      await page.waitForTimeout(3e3);
+      const all = [];
+      const pageNo = 1;
+      const data = await fetchPortlet(page, NAV_MODULE_ID, "/portlet/finance!queryNavData.portlet", {
+        prdcode: `${productCode}1`,
+        pageNo: String(pageNo),
+        pageSize: String(NAV_PAGE_SIZE)
+      });
+      if (!data || data.success === false) {
+        return [];
+      }
+      const rows = data.result || data.aaData || [];
+      const total = Number(data.totalCount || rows.length);
+      all.push(...rows);
+      const totalPages = Math.max(1, Math.ceil(total / NAV_PAGE_SIZE));
+      for (let p = 2; p <= totalPages; p++) {
+        const next = await fetchPortlet(page, NAV_MODULE_ID, "/portlet/finance!queryNavData.portlet", {
+          prdcode: `${productCode}1`,
+          pageNo: String(p),
+          pageSize: String(NAV_PAGE_SIZE)
+        });
+        const nextRows = next && (next.result || next.aaData) || [];
+        if (!nextRows.length) break;
+        all.push(...nextRows);
+      }
+      return all.map((row) => ({
+        navDate: row.navdate || "",
+        unitNav: row.nav != null ? String(row.nav) : null
+      })).filter((d) => d.navDate && d.unitNav !== null);
+    } finally {
+      await closePage(page);
+    }
   }
 }
 const COLLECTOR_MAP = {
   "cbhb": CbhbCollector,
   "渤银理财": CbhbCollector,
   "hzbank": HzbankCollector,
-  "杭银理财": HzbankCollector
+  "杭银理财": HzbankCollector,
+  "qdccb": QingdaoCollector,
+  "青岛银行": QingdaoCollector,
+  "chinawealth": ChinawealthCollector,
+  "中国理财网": ChinawealthCollector
   // 后续扩展：'工银理财': IcbcCollector, ...
 };
 function getCollector(source) {
@@ -8604,6 +8741,7 @@ const adminApi$1 = ({ strapi }) => ({
           saleCode: data.saleCode || null,
           productType: data.productType || null,
           registerCode: data.registerCode || null,
+          navSourceUrl: data.navSourceUrl || null,
           riskLevel: data.riskLevel || "R2",
           termType: data.termType || null,
           operationMode: data.operationMode || null,

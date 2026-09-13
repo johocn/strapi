@@ -17,6 +17,7 @@ declare const _default: {
     "saleCode": { "type": "string" },
     "productType": { "type": "enumeration", "enum": ["bank-wealth", "stock-fund", "bond-fund", "mixed-fund", "money-fund"] },
     "registerCode": { "type": "string", "unique": true, "required": true },
+    "navSourceUrl": { "type": "string" },
     "riskLevel": { "type": "enumeration", "enum": ["R1", "R2", "R3", "R4", "R5"], "default": "R2" },
     "termType": { "type": "enumeration", "enum": ["short", "medium", "long"] },
     "issueDate": { "type": "date" },
