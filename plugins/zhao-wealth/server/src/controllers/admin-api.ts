@@ -541,6 +541,7 @@ export default ({ strapi }) => ({
           saleCode: data.saleCode || null,
           productType: data.productType || null,
           registerCode: data.registerCode || null,
+          navSourceUrl: data.navSourceUrl || null,
           riskLevel: data.riskLevel || 'R2',
           termType: data.termType || null,
           operationMode: data.operationMode || null,
