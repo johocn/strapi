@@ -40,6 +40,7 @@ export default class ChinawealthCollector extends BaseCollector {
     try {
       const product = await this.collectViaPlaywright(url, registerCode);
       if (product) {
+        product.navSourceUrl = `${CW_DETAIL_URL}?prodRegCode=${encodeURIComponent(registerCode)}`;
         console.log(`[chinawealth] 采集成功: ${product.productName}`);
         console.log(`[chinawealth] 字段详情: registerCode=${product.registerCode}, companyName=${product.companyName}, risk=${product.riskLevel}, type=${product.productType}, opMode=${product.operationMode}, issueDate=${product.issueDate}`);
         return product;
@@ -182,7 +183,8 @@ export default class ChinawealthCollector extends BaseCollector {
    * 采集净值数据
    * 通过登记编码访问中国理财网产品详情页，拦截 AJAX 请求或解析页面表格获取净值
    */
-  async collectNavData(registerCode: string): Promise<any[]> {
+  async collectNavData(productCode: string, options?: { registerCode?: string }): Promise<any[]> {
+    const registerCode = (options && options.registerCode) || productCode;
     console.log(`[chinawealth] 开始采集净值: registerCode=${registerCode}`);
 
     const page = await createPage();
