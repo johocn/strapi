@@ -12,6 +12,8 @@ declare const _default: {
     "sso-user": ({ strapi }: {
         strapi: import('@strapi/types/dist/core').Strapi;
     }) => {
+        syncSequence(): Promise<void>;
+        createSsoUserWithSeqGuard(data: any): Promise<any>;
         createUser(data: {
             username?: string;
             mobile?: string;

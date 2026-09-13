@@ -65,19 +65,18 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     });
     if (existingVirtual) return existingVirtual;
 
-    // 3. 创建虚拟用户
-    return strapi.db.query(USER_UID).create({
-      data: {
-        uuid: uuidv4(),
-        username: virtualUsername,
-        mobile: null,
-        email: null,
-        password_hash: null,
-        status: "virtual",
-        register_channel: "virtual_invite_code",
-        invite_code_used: null,
-        invited_by: null,
-      },
+    // 3. 创建虚拟用户（走序列失步守卫，防止备份恢复导致的 pkey 冲突）
+    const userSvc = strapi.service("plugin::zhao-sso.sso-user") as any;
+    return userSvc.createSsoUserWithSeqGuard({
+      uuid: uuidv4(),
+      username: virtualUsername,
+      mobile: null,
+      email: null,
+      password_hash: null,
+      status: "virtual",
+      register_channel: "virtual_invite_code",
+      invite_code_used: null,
+      invited_by: null,
     });
   };
 

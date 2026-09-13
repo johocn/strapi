@@ -48,6 +48,12 @@ const register = ({ strapi }) => {
 };
 const bootstrap = async ({ strapi }) => {
   strapi.log.info("[zhao-sso] Plugin bootstrapped");
+  try {
+    const userSvc = strapi.service("plugin::zhao-sso.sso-user");
+    await userSvc?.syncSequence?.();
+  } catch (e) {
+    strapi.log.warn(`[zhao-sso] 启动序列自检失败: ${e?.message}`);
+  }
   const TEMPLATE_UID_ACT = "plugin::zhao-sso.msg-template";
   const VERSION_UID_ACT = "plugin::zhao-sso.msg-template-version";
   const DEFAULT_SOP_TEMPLATES = [
@@ -3781,6 +3787,10 @@ function sanitize(user) {
   const { password_hash, ...safe } = user;
   return safe;
 }
+function isPkeyViolation(e) {
+  const msg = String(e?.message || e?.detail || "");
+  return msg.includes("sso_users_pkey") || msg.includes("duplicate key") || e?.code === "23505";
+}
 const ssoUser = ({ strapi }) => {
   function throwErr(code, status, message) {
     const e = new Error(message);
@@ -3789,26 +3799,57 @@ const ssoUser = ({ strapi }) => {
     throw e;
   }
   return {
+    /** 幂等同步 sso_users 主键序列：仅当 nextval 将撞上已有 id 时 setval(max(id))（备份恢复/显式ID合并后的自愈） */
+    async syncSequence() {
+      try {
+        const knex = strapi.db.connection;
+        const seqRes = await knex.raw(`SELECT last_value, is_called FROM sso_users_id_seq`);
+        const maxRes = await knex.raw(`SELECT COALESCE(MAX(id), 0) AS max_id FROM sso_users`);
+        const seq = Array.isArray(seqRes) ? seqRes[0] : seqRes.rows?.[0];
+        const maxRow = Array.isArray(maxRes) ? maxRes[0] : maxRes.rows?.[0];
+        const lastValue = Number(seq?.last_value ?? 0);
+        const isCalled = !!seq?.is_called;
+        const maxId = Number(maxRow?.max_id ?? 0);
+        const next = isCalled ? lastValue + 1 : lastValue;
+        if (next <= maxId) {
+          await knex.raw(`SELECT setval('sso_users_id_seq'::regclass, ?)`, [maxId]);
+          strapi.log.info(`[zhao-sso] sso_users 序列自愈: next=${next} max=${maxId} -> next=${maxId + 1}`);
+        }
+      } catch (e) {
+        strapi.log.warn(`[zhao-sso] sso_users 序列同步失败: ${e?.message}`);
+      }
+    },
+    /** 创建 sso_user：捕获主键冲突（序列失步）→ 同步序列 → 重试一次 */
+    async createSsoUserWithSeqGuard(data) {
+      try {
+        return await strapi.db.query(USER_UID$4).create({ data });
+      } catch (e) {
+        if (isPkeyViolation(e)) {
+          strapi.log.warn(`[zhao-sso] sso_users 主键冲突(序列失步)，同步后重试: ${e?.message}`);
+          await this.syncSequence();
+          return await strapi.db.query(USER_UID$4).create({ data });
+        }
+        throw e;
+      }
+    },
     async createUser(data) {
       if (!data.username && !data.mobile && !data.email) {
         throwErr("SSO_USER_001", 400, "username/mobile/email at least one required");
       }
       const password_hash = data.password ? await bcrypt.hash(data.password, 12) : null;
-      const user = await strapi.db.query(USER_UID$4).create({
-        data: {
-          uuid: v4(),
-          username: data.username || null,
-          mobile: data.mobile || null,
-          email: data.email || null,
-          password_hash,
-          status: "active",
-          register_channel: data.register_channel || "sso_local",
-          utm_source: data.utm_source || null,
-          utm_medium: data.utm_medium || null,
-          utm_campaign: data.utm_campaign || null,
-          invite_code_used: data.invite_code_used || null,
-          login_count: 0
-        }
+      const user = await this.createSsoUserWithSeqGuard({
+        uuid: v4(),
+        username: data.username || null,
+        mobile: data.mobile || null,
+        email: data.email || null,
+        password_hash,
+        status: "active",
+        register_channel: data.register_channel || "sso_local",
+        utm_source: data.utm_source || null,
+        utm_medium: data.utm_medium || null,
+        utm_campaign: data.utm_campaign || null,
+        invite_code_used: data.invite_code_used || null,
+        login_count: 0
       });
       return user;
     },
@@ -4704,18 +4745,16 @@ const ssoWechat = ({ strapi }) => {
       const rawNickname = (userInfo?.nickname || "wx_user").replace(/[^\w\u4e00-\u9fa5]/g, "").substring(0, 12) || "wx_user";
       const shortId = v4().replace(/-/g, "").substring(0, 8);
       const username = `wx_${rawNickname}_${shortId}`;
-      const user = await strapi.db.query(USER_UID$3).create({
-        data: {
-          uuid: v4(),
-          username,
-          nickname: userInfo?.nickname || null,
-          avatar_url: userInfo?.headimgurl || null,
-          status: "active",
-          login_count: 0,
-          register_channel: `sso_wechat_${appType}`
-        }
-      });
       const userSvc = strapi.service("plugin::zhao-sso.sso-user");
+      const user = await userSvc.createSsoUserWithSeqGuard({
+        uuid: v4(),
+        username,
+        nickname: userInfo?.nickname || null,
+        avatar_url: userInfo?.headimgurl || null,
+        status: "active",
+        login_count: 0,
+        register_channel: `sso_wechat_${appType}`
+      });
       const inviteSvc = strapi.service("plugin::zhao-sso.sso-invite");
       let ownInviteCode = "";
       try {
@@ -5354,18 +5393,17 @@ const ssoInvite = ({ strapi }) => {
       where: { username: virtualUsername }
     });
     if (existingVirtual) return existingVirtual;
-    return strapi.db.query(USER_UID$1).create({
-      data: {
-        uuid: v4(),
-        username: virtualUsername,
-        mobile: null,
-        email: null,
-        password_hash: null,
-        status: "virtual",
-        register_channel: "virtual_invite_code",
-        invite_code_used: null,
-        invited_by: null
-      }
+    const userSvc = strapi.service("plugin::zhao-sso.sso-user");
+    return userSvc.createSsoUserWithSeqGuard({
+      uuid: v4(),
+      username: virtualUsername,
+      mobile: null,
+      email: null,
+      password_hash: null,
+      status: "virtual",
+      register_channel: "virtual_invite_code",
+      invite_code_used: null,
+      invited_by: null
     });
   };
   const calculateLevel = async (inviterId) => {

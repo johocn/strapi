@@ -11,6 +11,12 @@ function sanitize(user: any) {
   return safe;
 }
 
+/** PG 唯一约束冲突（主键重复）判断：用于 sso_users 序列失步自愈 */
+function isPkeyViolation(e: any): boolean {
+  const msg = String(e?.message || e?.detail || "");
+  return msg.includes("sso_users_pkey") || msg.includes("duplicate key") || e?.code === "23505";
+}
+
 export default ({ strapi }: { strapi: Core.Strapi }) => {
   function throwErr(code: string, status: number, message: string): never {
     const e: any = new Error(message);
@@ -20,6 +26,41 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   }
 
   return {
+  /** 幂等同步 sso_users 主键序列：仅当 nextval 将撞上已有 id 时 setval(max(id))（备份恢复/显式ID合并后的自愈） */
+  async syncSequence() {
+    try {
+      const knex = strapi.db.connection;
+      const seqRes = await knex.raw(`SELECT last_value, is_called FROM sso_users_id_seq`);
+      const maxRes = await knex.raw(`SELECT COALESCE(MAX(id), 0) AS max_id FROM sso_users`);
+      const seq = Array.isArray(seqRes) ? seqRes[0] : seqRes.rows?.[0];
+      const maxRow = Array.isArray(maxRes) ? maxRes[0] : maxRes.rows?.[0];
+      const lastValue = Number(seq?.last_value ?? 0);
+      const isCalled = !!seq?.is_called;
+      const maxId = Number(maxRow?.max_id ?? 0);
+      const next = isCalled ? lastValue + 1 : lastValue;
+      if (next <= maxId) {
+        await knex.raw(`SELECT setval('sso_users_id_seq'::regclass, ?)`, [maxId]);
+        strapi.log.info(`[zhao-sso] sso_users 序列自愈: next=${next} max=${maxId} -> next=${maxId + 1}`);
+      }
+    } catch (e: any) {
+      strapi.log.warn(`[zhao-sso] sso_users 序列同步失败: ${e?.message}`);
+    }
+  },
+
+  /** 创建 sso_user：捕获主键冲突（序列失步）→ 同步序列 → 重试一次 */
+  async createSsoUserWithSeqGuard(data: any) {
+    try {
+      return await strapi.db.query(USER_UID).create({ data });
+    } catch (e: any) {
+      if (isPkeyViolation(e)) {
+        strapi.log.warn(`[zhao-sso] sso_users 主键冲突(序列失步)，同步后重试: ${e?.message}`);
+        await this.syncSequence();
+        return await strapi.db.query(USER_UID).create({ data });
+      }
+      throw e;
+    }
+  },
+
   async createUser(data: {
     username?: string;
     mobile?: string;
@@ -37,21 +78,19 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
 
     const password_hash = data.password ? await bcrypt.hash(data.password, 12) : null;
 
-    const user = await strapi.db.query(USER_UID).create({
-      data: {
-        uuid: uuidv4(),
-        username: data.username || null,
-        mobile: data.mobile || null,
-        email: data.email || null,
-        password_hash,
-        status: "active",
-        register_channel: data.register_channel || "sso_local",
-        utm_source: data.utm_source || null,
-        utm_medium: data.utm_medium || null,
-        utm_campaign: data.utm_campaign || null,
-        invite_code_used: data.invite_code_used || null,
-        login_count: 0,
-      },
+    const user = await this.createSsoUserWithSeqGuard({
+      uuid: uuidv4(),
+      username: data.username || null,
+      mobile: data.mobile || null,
+      email: data.email || null,
+      password_hash,
+      status: "active",
+      register_channel: data.register_channel || "sso_local",
+      utm_source: data.utm_source || null,
+      utm_medium: data.utm_medium || null,
+      utm_campaign: data.utm_campaign || null,
+      invite_code_used: data.invite_code_used || null,
+      login_count: 0,
     });
 
     return user;

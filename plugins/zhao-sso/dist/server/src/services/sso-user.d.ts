@@ -2,6 +2,10 @@ import { Core } from '@strapi/strapi';
 declare const _default: ({ strapi }: {
     strapi: Core.Strapi;
 }) => {
+    /** 幂等同步 sso_users 主键序列：仅当 nextval 将撞上已有 id 时 setval(max(id))（备份恢复/显式ID合并后的自愈） */
+    syncSequence(): Promise<void>;
+    /** 创建 sso_user：捕获主键冲突（序列失步）→ 同步序列 → 重试一次 */
+    createSsoUserWithSeqGuard(data: any): Promise<any>;
     createUser(data: {
         username?: string;
         mobile?: string;

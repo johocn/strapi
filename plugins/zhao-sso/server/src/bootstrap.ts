@@ -4,6 +4,15 @@ import type { Core } from "@strapi/strapi";
 const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
   strapi.log.info("[zhao-sso] Plugin bootstrapped");
 
+  // sso_users 主键序列启动自检：备份恢复/显式ID合并可能导致序列落后于 max(id)，
+  // 不修复则下一个新用户插入即报 duplicate key (sso_users_pkey)。幂等，正常时零开销。
+  try {
+    const userSvc = strapi.service("plugin::zhao-sso.sso-user") as any;
+    await userSvc?.syncSequence?.();
+  } catch (e: any) {
+    strapi.log.warn(`[zhao-sso] 启动序列自检失败: ${e?.message}`);
+  }
+
   // Seed 活动 SOP 消息模板 + active 版本（幂等按 code；模板不存落地页 link，link 由 sop-rule.link 或触发 payload 提供）
   const TEMPLATE_UID_ACT = "plugin::zhao-sso.msg-template";
   const VERSION_UID_ACT = "plugin::zhao-sso.msg-template-version";
