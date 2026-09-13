@@ -4,6 +4,7 @@ import BaseCollector from './base-collector';
 import CbhbCollector from './cbhb-collector';
 import ChinawealthCollector from './chinawealth-collector';
 import HzbankCollector from './hzbank-collector';
+import QingdaoCollector from './qingdao-collector';
 
 export { getCollector, getChinawealthCollector, getAvailableSources } from './collector-factory';
 
@@ -12,4 +13,5 @@ export default {
   'cbhb-collector': CbhbCollector,
   'chinawealth-collector': ChinawealthCollector,
   'hzbank-collector': HzbankCollector,
+  'qingdao-collector': QingdaoCollector,
 };
