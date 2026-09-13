@@ -298,20 +298,19 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     const shortId = uuidv4().replace(/-/g, "").substring(0, 8);
     const username = `wx_${rawNickname}_${shortId}`;
 
-    const user = await strapi.db.query(USER_UID).create({
-      data: {
-        uuid: uuidv4(),
-        username,
-        nickname: userInfo?.nickname || null,
-        avatar_url: userInfo?.headimgurl || null,
-        status: "active",
-        login_count: 0,
-        register_channel: `sso_wechat_${appType}`,
-      },
+    // 走序列失步守卫创建：主键冲突（备份恢复/显式ID合并导致序列落后）时自动同步并重试
+    const userSvc = strapi.service("plugin::zhao-sso.sso-user") as any;
+    const user = await userSvc.createSsoUserWithSeqGuard({
+      uuid: uuidv4(),
+      username,
+      nickname: userInfo?.nickname || null,
+      avatar_url: userInfo?.headimgurl || null,
+      status: "active",
+      login_count: 0,
+      register_channel: `sso_wechat_${appType}`,
     });
 
     // 身份桥接：微信新用户同步补齐同 id 的 up_user，避免 up_users 与 sso_users 错位
-    const userSvc = strapi.service("plugin::zhao-sso.sso-user") as any;
     // 微信新用户自动生成专属邀请码（主商城 app 优先 vendure-youshop，无则 course 兜底），保证分销可传播
     const inviteSvc = strapi.service("plugin::zhao-sso.sso-invite") as any;
     let ownInviteCode = "";
