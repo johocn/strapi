@@ -19,7 +19,7 @@ const kind$d = "collectionType";
 const collectionName$d = "wealth_products";
 const info$d = { "singularName": "wealth-product", "pluralName": "wealth-products", "displayName": "理财产品", "description": "理财/基金产品信息" };
 const options$d = { "draftAndPublish": false };
-const attributes$d = { "productCode": { "type": "string", "unique": true }, "productName": { "type": "string", "required": true }, "productNameCw": { "type": "string" }, "saleCode": { "type": "string" }, "productType": { "type": "enumeration", "enum": ["bank-wealth", "stock-fund", "bond-fund", "mixed-fund", "money-fund"] }, "registerCode": { "type": "string", "unique": true, "required": true }, "navSourceUrl": { "type": "string" }, "riskLevel": { "type": "enumeration", "enum": ["R1", "R2", "R3", "R4", "R5"], "default": "R2" }, "termType": { "type": "enumeration", "enum": ["short", "medium", "long"] }, "issueDate": { "type": "date" }, "maturityDate": { "type": "date" }, "company": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-company", "inversedBy": "products" }, "navs": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-nav", "mappedBy": "product" }, "moneyIncomes": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-money-income", "mappedBy": "product" }, "annualSnapshots": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-annual-snapshot", "mappedBy": "product" }, "yearlyReturns": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-yearly-return", "mappedBy": "product" }, "riskMetrics": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-risk-metric", "mappedBy": "product" }, "scoreSnapshots": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-score-snapshot", "mappedBy": "product" }, "recommendWeight": { "type": "integer", "default": 0 }, "recommendTags": { "type": "json" }, "recommendEnabled": { "type": "boolean", "default": false }, "recommendReason": { "type": "text" }, "status": { "type": "boolean", "default": true }, "benchmark": { "type": "string" }, "operationMode": { "type": "enumeration", "enum": ["daily-open", "fixed-term", "closed"] }, "productStatus": { "type": "string" }, "remark": { "type": "text" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const attributes$d = { "productCode": { "type": "string", "unique": true }, "productName": { "type": "string", "required": true }, "productNameCw": { "type": "string" }, "saleCode": { "type": "string" }, "productType": { "type": "enumeration", "enum": ["bank-wealth", "stock-fund", "bond-fund", "mixed-fund", "money-fund", "money-wealth"] }, "registerCode": { "type": "string", "unique": true, "required": true }, "navSourceUrl": { "type": "string" }, "riskLevel": { "type": "enumeration", "enum": ["R1", "R2", "R3", "R4", "R5"], "default": "R2" }, "termType": { "type": "enumeration", "enum": ["short", "medium", "long"] }, "issueDate": { "type": "date" }, "maturityDate": { "type": "date" }, "company": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-company", "inversedBy": "products" }, "navs": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-nav", "mappedBy": "product" }, "moneyIncomes": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-money-income", "mappedBy": "product" }, "annualSnapshots": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-annual-snapshot", "mappedBy": "product" }, "yearlyReturns": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-yearly-return", "mappedBy": "product" }, "riskMetrics": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-risk-metric", "mappedBy": "product" }, "scoreSnapshots": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-score-snapshot", "mappedBy": "product" }, "recommendWeight": { "type": "integer", "default": 0 }, "recommendTags": { "type": "json" }, "recommendEnabled": { "type": "boolean", "default": false }, "recommendReason": { "type": "text" }, "status": { "type": "boolean", "default": true }, "benchmark": { "type": "string" }, "operationMode": { "type": "enumeration", "enum": ["daily-open", "fixed-term", "closed"] }, "productStatus": { "type": "string" }, "remark": { "type": "text" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
 const wealthProduct = {
   kind: kind$d,
   collectionName: collectionName$d,
@@ -7062,6 +7062,32 @@ const nav = ({ strapi }) => ({
       strapi.log.error(`[zhao-wealth] 净值时序查询失败: ${error.message}`);
       ctx.body = errorResponse(500, "查询失败");
     }
+  },
+  /**
+   * 货币型产品收益序列（万份收益/七日年化，C端）
+   */
+  async moneyIncomeTimeSeries(ctx) {
+    try {
+      const { id } = ctx.params;
+      const { page = 1, pageSize = 100 } = ctx.query;
+      const where = { product: Number(id) };
+      const incomes = await strapi.db.query("plugin::zhao-wealth.wealth-money-income").findMany({
+        where,
+        limit: Math.min(pageSize, 500),
+        offset: (page - 1) * pageSize,
+        orderBy: { incomeDate: "desc" }
+      });
+      const total = await strapi.db.query("plugin::zhao-wealth.wealth-money-income").count({ where });
+      const list = incomes.map((n2) => ({
+        date: n2.incomeDate,
+        tenThousandIncome: n2.tenThousandIncome,
+        sevenDayAnnual: n2.sevenDayAnnual
+      }));
+      ctx.body = paginatedResponse(list, page, pageSize, total);
+    } catch (error) {
+      strapi.log.error(`[zhao-wealth] 收益序列查询失败: ${error.message}`);
+      ctx.body = errorResponse(500, "查询失败");
+    }
   }
 });
 const annual = ({ strapi }) => ({
@@ -7865,7 +7891,8 @@ class HzbankCollector extends BaseCollector {
       const opModeText = d.yunzuomoshi || "";
       const operationMode = OPMODE_MAP[opModeText] || "open";
       let productType = "bank-wealth";
-      if (d.touzileixin === "固定收益类") productType = "bank-wealth";
+      if (d.leixing === "活钱管理") productType = "money-wealth";
+      else if (d.touzileixin === "固定收益类") productType = "bank-wealth";
       else if (d.touzileixin === "权益类") productType = "stock-fund";
       else if (d.touzileixin === "混合类") productType = "mixed-fund";
       return {
@@ -9497,6 +9524,15 @@ const contentApi = () => ({
       method: "GET",
       path: "/v1/wealth/products/:id/nav",
       handler: "nav.timeSeries",
+      config: {
+        auth: false,
+        policies: ["plugin::zhao-sso.sso-authenticated"]
+      }
+    },
+    {
+      method: "GET",
+      path: "/v1/wealth/products/:id/money-incomes",
+      handler: "nav.moneyIncomeTimeSeries",
       config: {
         auth: false,
         policies: ["plugin::zhao-sso.sso-authenticated"]

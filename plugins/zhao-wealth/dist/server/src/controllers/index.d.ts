@@ -9,6 +9,7 @@ declare const _default: {
         strapi: any;
     }) => {
         timeSeries(ctx: any): Promise<void>;
+        moneyIncomeTimeSeries(ctx: any): Promise<void>;
     };
     annual: ({ strapi }: {
         strapi: any;
