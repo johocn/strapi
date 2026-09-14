@@ -129,21 +129,19 @@ export function registerCollectJobs(strapi: any) {
       const registerCode = config.product?.registerCode || '';
       const navData = await collector.collectNavData(productCode, { registerCode });
 
-      let savedCount = 0;
-      for (const nav of navData) {
-        // 去重
-        const existing = await strapi.db.query('plugin::zhao-wealth.wealth-nav').findOne({
-          where: { product: productId, navDate: nav.navDate },
-        });
-        if (existing) continue;
+      const { insertCount, updateCount, updatedDates } = await processNavData(strapi, productId, navData);
 
-        await strapi.db.query('plugin::zhao-wealth.wealth-nav').create({
-          data: {
-            product: productId,
-            ...nav,
-          },
-        });
-        savedCount++;
+      // 净值被更新时，删除同日期年化快照与风险指标，触发补缺重算（保证指标与净值一致）
+      if (updateCount > 0) {
+        for (const dateStr of updatedDates) {
+          await strapi.db.query('plugin::zhao-wealth.wealth-annual-snapshot').delete({
+            where: { product: productId, snapshotDate: dateStr },
+          });
+          await strapi.db.query('plugin::zhao-wealth.wealth-risk-metric').delete({
+            where: { product: productId, snapshotDate: dateStr },
+          });
+        }
+        strapi.log.info(`[zhao-wealth] 产品${productId}净值更新${updateCount}条，已清除对应日期指标待重算`);
       }
 
       await strapi.db.query('plugin::zhao-wealth.wealth-collect-config').update({
@@ -152,10 +150,13 @@ export function registerCollectJobs(strapi: any) {
           collectStatus: 'success',
           lastCollectTime: new Date(),
           failCount: 0,
+          failReason: null,
+          lastInsertCount: insertCount,
+          lastUpdateCount: updateCount,
         },
       });
 
-      strapi.log.info(`[zhao-wealth] 产品${productId}采集成功，保存${savedCount}/${navData.length}条净值`);
+      strapi.log.info(`[zhao-wealth] 产品${productId}采集成功，新增${insertCount}条，更新${updateCount}条（共${navData.length}条）`);
 
       // 触发年化+风险指标补缺（老产品只补新日期，新产品自动全量回溯）
       const calculateQueue = getCalculateQueue();
