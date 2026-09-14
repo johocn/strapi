@@ -20,7 +20,7 @@ zhao-wealth 现有 3 款理财产品（青银、渤银、杭银），净值采�
 
 关键发现：
 1. **除渤银外，青银、杭银均有净值**（数据量少、更新滞后 2~4 天）。
-2. **风险指标表 0 行**：20:30 定时任务历史日志连续多日「0个产品」，20:00 年化定时任务同样「0个产品」——产品查询 `where: { status: true }` 在生产实例返回空；同日 10:22 手动全量重算（无过滤）正常查到 3 个产品。**自动链路失效，需前置修复。**
+2. **风险指标表 0 行是必然结果，非故障**：三款产品均为 2026-09-14 上午（06:53~10:21）经管理端采集入库创建（`wealth_products.created_at` 佐证），此前 20:00/20:30 定时任务日志的「0个产品」是因为当时**无产品存在**，`where: { status: true }` 过滤本身正常。今晚 20:00/20:30 定时任务将首次对 3 个产品自动执行，需验证。
 
 ## 设计决策（已与用户确认）
 
@@ -35,7 +35,7 @@ zhao-wealth 现有 3 款理财产品（青银、渤银、杭银），净值采�
 
 核心方法 `getProductMonitorList()`：
 
-1. 查询全部产品（populate company；过滤方式待前置修复确认）
+1. 查询全部产品（populate company），不按 status 过滤（监察需覆盖全部产品）
 2. 每产品实时推导三段数据：
    - `latestNav`：wealth-nav 按 navDate 降序取 1 条 → `{ navDate, unitNav, accNav, dataSource }`
    - `latestSnapshot`：wealth-annual-snapshot 按 snapshotDate 降序取 1 条 → `{ snapshotDate, annual1m, annual3m, annual6m, annual1y }`
@@ -52,12 +52,11 @@ zhao-wealth 现有 3 款理财产品（青银、渤银、杭银），净值采�
 - 四步注册铁律：service → `services/index.ts`；controller → `controllers/index.ts`；route → `routes/admin-api.ts`
 - 路由沿用 `adminRoute` 封装（`plugin::zhao-auth.is-authenticated` 策略）
 
-### 3. 前置修复：定时任务产品查询返回 0
+### 3. 自动链路验证（原「前置修复」已排除）
 
-实现阶段第一步：
-- 验证 `strapi.db.query('plugin::zhao-wealth.wealth-product').findMany({ where: { status: true } })` 在生产实例的真实行为（对比无过滤查询）
-- 定位修复（候选：改 documents API、调整过滤写法、排查 dist 版本不一致）
-- 修复后验证：当晚 20:00/20:30 定时日志应显示「3个产品」
+产品今日创建、定时任务今晚首跑，无需代码修复。部署后验证：
+- 当晚 20:00 日志应为「3个产品」年化计算、20:30 日志应为「3个产品」风险指标计算
+- 次晨确认 `wealth_risk_metrics` 出现数据
 
 ## 前端设计
 
@@ -85,11 +84,11 @@ zhao-wealth 现有 3 款理财产品（青银、渤银、杭银），净值采�
 2. 部署链路（按既有铁律）：
    - 插件 `npm run build` 重建 dist → 提交 + push → `deploy.sh`
    - 管理端 web 构建部署
-3. 前置修复验证：当晚 20:00/20:30 定时日志「3个产品」
+3. 自动链路验证：当晚 20:00/20:30 定时日志「3个产品」
 4. 首次上线后：点「风险重算」补齐三款产品风险指标，确认 `wealth_risk_metrics` 出现数据、监察页状态转绿
 
 ## 风险点
 
-- 定时任务产品查询 0 问题根因未完全定位（疑似 status:true 过滤或 dist 版本差异），实现第一步必须先验证
+- 风险指标今晚首跑，若 20:30 计算失败需次日排查（首次运行无历史参照）
 - 风险指标全量重算较慢（遍历所有净值日期），三产品数据量小可接受
 - 自然日阈值未考虑周末/节假日无净值场景，先以阈值可调 + 展示滞后天数兜底
