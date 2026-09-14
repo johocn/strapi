@@ -43,4 +43,36 @@ export default ({ strapi }) => ({
       ctx.body = errorResponse(500, '查询失败');
     }
   },
+
+  /**
+   * 货币型产品收益序列（万份收益/七日年化，C端）
+   */
+  async moneyIncomeTimeSeries(ctx) {
+    try {
+      const { id } = ctx.params;
+      const { page = 1, pageSize = 100 } = ctx.query;
+
+      const where = { product: Number(id) };
+
+      const incomes = await strapi.db.query('plugin::zhao-wealth.wealth-money-income').findMany({
+        where,
+        limit: Math.min(pageSize, 500),
+        offset: (page - 1) * pageSize,
+        orderBy: { incomeDate: 'desc' },
+      });
+
+      const total = await strapi.db.query('plugin::zhao-wealth.wealth-money-income').count({ where });
+
+      const list = incomes.map(n => ({
+        date: n.incomeDate,
+        tenThousandIncome: n.tenThousandIncome,
+        sevenDayAnnual: n.sevenDayAnnual,
+      }));
+
+      ctx.body = paginatedResponse(list, page, pageSize, total);
+    } catch (error) {
+      strapi.log.error(`[zhao-wealth] 收益序列查询失败: ${error.message}`);
+      ctx.body = errorResponse(500, '查询失败');
+    }
+  },
 });

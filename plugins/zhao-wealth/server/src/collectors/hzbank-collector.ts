@@ -137,9 +137,10 @@ export default class HzbankCollector extends BaseCollector {
       const opModeText = d.yunzuomoshi || '';
       const operationMode = OPMODE_MAP[opModeText] || 'open';
 
-      // 产品类型映射
+      // 产品类型映射（活钱管理=现金管理类理财，优先于 touzileixin 判定）
       let productType = 'bank-wealth';
-      if (d.touzileixin === '固定收益类') productType = 'bank-wealth';
+      if (d.leixing === '活钱管理') productType = 'money-wealth';
+      else if (d.touzileixin === '固定收益类') productType = 'bank-wealth';
       else if (d.touzileixin === '权益类') productType = 'stock-fund';
       else if (d.touzileixin === '混合类') productType = 'mixed-fund';
 

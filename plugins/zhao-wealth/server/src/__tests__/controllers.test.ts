@@ -311,4 +311,40 @@ describe('controllers integration', () => {
       });
     });
   });
+
+  // ============= nav money-income timeSeries =============
+  describe('nav money-income timeSeries', () => {
+    let controller: any;
+
+    beforeEach(() => {
+      const factory = require('../controllers/nav').default;
+      controller = factory({ strapi: mockStrapi });
+    });
+
+    it('200: GET /products/:id/money-incomes 返回倒序分页收益列表', async () => {
+      mockDbQuery.findMany = jest.fn().mockResolvedValue([
+        { incomeDate: '2026-09-13', tenThousandIncome: 0.4876, sevenDayAnnual: 0.0188 },
+        { incomeDate: '2026-09-12', tenThousandIncome: 0.4821, sevenDayAnnual: 0.0185 },
+      ]);
+      mockDbQuery.count = jest.fn().mockResolvedValue(17);
+
+      const ctx = makeCtx({ params: { id: '3' }, query: { page: 1, pageSize: 2 } });
+
+      await controller.moneyIncomeTimeSeries(ctx);
+
+      expect(ctx.body.code).toBe(200);
+      expect(ctx.body.data.total).toBe(17);
+      expect(ctx.body.data.records).toHaveLength(2);
+      expect(ctx.body.data.records[0]).toMatchObject({
+        date: '2026-09-13',
+        tenThousandIncome: 0.4876,
+        sevenDayAnnual: 0.0188,
+      });
+      expect(mockDbQuery.findMany).toHaveBeenCalledWith(expect.objectContaining({
+        where: { product: 3 },
+        orderBy: { incomeDate: 'desc' },
+      }));
+      expect(mockDbQuery.count).toHaveBeenCalledWith({ where: { product: 3 } });
+    });
+  });
 });

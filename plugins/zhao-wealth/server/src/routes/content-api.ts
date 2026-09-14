@@ -32,6 +32,15 @@ export default () => ({
     },
     {
       method: 'GET',
+      path: '/v1/wealth/products/:id/money-incomes',
+      handler: 'nav.moneyIncomeTimeSeries',
+      config: {
+        auth: false,
+        policies: ['plugin::zhao-sso.sso-authenticated'],
+      },
+    },
+    {
+      method: 'GET',
       path: '/v1/wealth/products/:id/annual-snapshot',
       handler: 'annual.snapshotTimeSeries',
       config: {
