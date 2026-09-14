@@ -5,6 +5,45 @@ import { getCollector } from '../collectors';
 import { acquireLock, releaseLock } from '../utils';
 
 /**
+ * 按「日期+净值」双重条件保存净值：
+ * - 日期不存在 → 插入（insertCount++）
+ * - 日期存在且净值相同 → 跳过
+ * - 日期存在但净值不同 → 更新净值字段（updateCount++），记录日期供联动删除指标
+ * 返回 { insertCount, updateCount, updatedDates }
+ */
+export async function processNavData(strapi: any, productId: number, navData: any[]) {
+  let insertCount = 0;
+  let updateCount = 0;
+  const updatedDates: string[] = [];
+
+  for (const nav of navData) {
+    const existing = await strapi.db.query('plugin::zhao-wealth.wealth-nav').findOne({
+      where: { product: productId, navDate: nav.navDate },
+    });
+
+    if (!existing) {
+      await strapi.db.query('plugin::zhao-wealth.wealth-nav').create({
+        data: { product: productId, ...nav },
+      });
+      insertCount++;
+    } else if (Number(existing.unitNav) !== Number(nav.unitNav)) {
+      await strapi.db.query('plugin::zhao-wealth.wealth-nav').update({
+        where: { id: existing.id },
+        data: {
+          unitNav: nav.unitNav,
+          accNav: nav.accNav ?? existing.accNav,
+          dataSource: nav.dataSource ?? existing.dataSource,
+        },
+      });
+      updateCount++;
+      updatedDates.push(nav.navDate);
+    }
+  }
+
+  return { insertCount, updateCount, updatedDates };
+}
+
+/**
  * 根据采集配置查找对应采集器
  * 优先从 collectRules.source 获取，其次从公司简称匹配
  */
