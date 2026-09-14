@@ -61,10 +61,10 @@ export function registerCollectJobs(strapi: any) {
       return;
     }
 
-      await strapi.db.query('plugin::zhao-wealth.wealth-collect-config').update({
-        where: { id: config.id },
-        data: { collectStatus: 'running' },
-      });
+    await strapi.db.query('plugin::zhao-wealth.wealth-collect-config').update({
+      where: { id: config.id },
+      data: { collectStatus: 'running' },
+    });
 
     const { collector, source } = await getCollectorForConfig(strapi, config);
 
