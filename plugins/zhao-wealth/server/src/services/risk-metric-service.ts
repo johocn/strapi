@@ -410,4 +410,50 @@ export default ({ strapi }) => ({
       metricValue: r.metricValue,
     }));
   },
+
+  /**
+   * 补缺重算风险指标（增量）
+   * 两阶段：① 先补缺年化快照（sharpe/rank 依赖 annualReturn）
+   *         ② 再按「有净值但无指标」的日期补缺，此时同日快照已齐，rank 准确
+   */
+  async recalculateMissing(productId?: number) {
+    const navCalculator = strapi.service('plugin::zhao-wealth.nav-calculator');
+    await navCalculator.recalculateMissing(productId);
+
+    const filter = productId ? { where: { id: productId } } : {};
+    const products = await strapi.db.query('plugin::zhao-wealth.wealth-product').findMany(filter);
+
+    const results: { productId: number; missingDates: number }[] = [];
+
+    for (const product of products) {
+      const navs = await strapi.db.query('plugin::zhao-wealth.wealth-nav').findMany({
+        where: { product: product.id },
+        select: ['navDate'],
+        orderBy: { navDate: 'asc' },
+      });
+
+      if (navs.length === 0) continue;
+
+      const existingMetrics = await strapi.db.query('plugin::zhao-wealth.wealth-risk-metric').findMany({
+        where: { product: product.id },
+        select: ['snapshotDate'],
+      });
+
+      const existingDates = new Set(existingMetrics.map((m: any) => toDateStr(m.snapshotDate)));
+      const missingDates = navs.map((n: any) => toDateStr(n.navDate)).filter((dateStr: string) => !existingDates.has(dateStr));
+
+      for (const dateStr of missingDates) {
+        try {
+          await this.calculateAndSaveMetrics(product.id, new Date(dateStr));
+        } catch (error: any) {
+          strapi.log.error(`[zhao-wealth] 产品${product.id}风险指标补缺失败 ${dateStr}: ${error.message}`);
+        }
+      }
+
+      results.push({ productId: product.id, missingDates: missingDates.length });
+    }
+
+    strapi.log.info(`[zhao-wealth] 风险指标补缺完成，${results.length}个产品`);
+    return results;
+  },
 });
