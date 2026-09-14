@@ -191,4 +191,47 @@ export default ({ strapi }) => ({
 
     strapi.log.info(`[zhao-wealth] 全量年化快照重算完成，${products.length}个产品`);
   },
+
+  /**
+   * 补缺重算：只计算「有净值但无年化快照」的日期（增量）
+   * 无 productId = 全产品；有 productId = 单产品（新产品首次采集后=全量回溯）
+   */
+  async recalculateMissing(productId?: number) {
+    const filter = productId ? { where: { id: productId } } : {};
+    const products = await strapi.db.query('plugin::zhao-wealth.wealth-product').findMany(filter);
+
+    const results: { productId: number; missingDates: number; calculated: number }[] = [];
+
+    for (const product of products) {
+      const navs = await strapi.db.query('plugin::zhao-wealth.wealth-nav').findMany({
+        where: { product: product.id },
+        select: ['navDate'],
+        orderBy: { navDate: 'asc' },
+      });
+
+      if (navs.length === 0) continue;
+
+      const existingSnapshots = await strapi.db.query('plugin::zhao-wealth.wealth-annual-snapshot').findMany({
+        where: { product: product.id },
+        select: ['snapshotDate'],
+      });
+
+      const existingDates = new Set(existingSnapshots.map((s: any) => toDateStr(s.snapshotDate)));
+      const missingDates = navs.map((n: any) => toDateStr(n.navDate)).filter((dateStr: string) => !existingDates.has(dateStr));
+
+      let calculated = 0;
+      for (const dateStr of missingDates) {
+        const snapshot = await this.calculateSnapshot(product.id, new Date(dateStr));
+        if (snapshot) {
+          await strapi.db.query('plugin::zhao-wealth.wealth-annual-snapshot').create({ data: snapshot });
+          calculated++;
+        }
+      }
+
+      results.push({ productId: product.id, missingDates: missingDates.length, calculated });
+    }
+
+    strapi.log.info(`[zhao-wealth] 年化快照补缺完成，${results.length}个产品`);
+    return results;
+  },
 });
