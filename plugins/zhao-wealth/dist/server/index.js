@@ -11564,12 +11564,13 @@ async function processNavData(strapi, productId, navData) {
   let updateCount = 0;
   const updatedDates = [];
   for (const nav2 of navData) {
+    const { tenThousandIncome, sevenDayAnnualized, ...navOnly } = nav2;
     const existing = await strapi.db.query("plugin::zhao-wealth.wealth-nav").findOne({
       where: { product: productId, navDate: nav2.navDate }
     });
     if (!existing) {
       await strapi.db.query("plugin::zhao-wealth.wealth-nav").create({
-        data: { product: productId, ...nav2 }
+        data: { product: productId, ...navOnly }
       });
       insertCount++;
     } else if (Number(existing.unitNav) !== Number(nav2.unitNav)) {
@@ -11583,6 +11584,27 @@ async function processNavData(strapi, productId, navData) {
       });
       updateCount++;
       updatedDates.push(nav2.navDate);
+    }
+    if (tenThousandIncome != null || sevenDayAnnualized != null) {
+      const existingIncome = await strapi.db.query("plugin::zhao-wealth.wealth-money-income").findOne({
+        where: { product: productId, incomeDate: nav2.navDate }
+      });
+      const incomeData = {
+        incomeDate: nav2.navDate,
+        tenThousandIncome: tenThousandIncome != null ? Number(tenThousandIncome) : null,
+        sevenDayAnnual: sevenDayAnnualized != null ? Number(sevenDayAnnualized) : null,
+        dataSource: "crawler"
+      };
+      if (existingIncome) {
+        await strapi.db.query("plugin::zhao-wealth.wealth-money-income").update({
+          where: { id: existingIncome.id },
+          data: incomeData
+        });
+      } else {
+        await strapi.db.query("plugin::zhao-wealth.wealth-money-income").create({
+          data: { product: productId, ...incomeData }
+        });
+      }
     }
   }
   return { insertCount, updateCount, updatedDates };
