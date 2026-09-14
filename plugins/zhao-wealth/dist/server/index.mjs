@@ -9083,7 +9083,7 @@ const disclosure = ({ strapi }) => ({
         ctx.body = errorResponse(400, "productType 参数必填");
         return;
       }
-      const validTypes = ["bank-wealth", "stock-fund", "bond-fund", "mixed-fund", "money-fund"];
+      const validTypes = ["bank-wealth", "stock-fund", "bond-fund", "mixed-fund", "money-fund", "money-wealth"];
       if (!validTypes.includes(productType)) {
         ctx.body = errorResponse(400, "无效的 productType");
         return;
