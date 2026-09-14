@@ -19,6 +19,8 @@ declare const _default: {
     "lastCollectTime": { "type": "datetime" },
     "failCount": { "type": "integer", "default": 0 },
     "failReason": { "type": "text" },
+    "lastInsertCount": { "type": "integer", "default": 0 },
+    "lastUpdateCount": { "type": "integer", "default": 0 },
     "createdAt": { "type": "datetime" },
     "updatedAt": { "type": "datetime" }
   }

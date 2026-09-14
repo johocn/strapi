@@ -37,7 +37,7 @@ const kind$c = "collectionType";
 const collectionName$c = "wealth_collect_configs";
 const info$c = { "singularName": "wealth-collect-config", "pluralName": "wealth-collect-configs", "displayName": "采集配置", "description": "产品数据采集配置" };
 const options$c = { "draftAndPublish": false };
-const attributes$c = { "product": { "type": "relation", "relation": "oneToOne", "target": "plugin::zhao-wealth.wealth-product" }, "collectMethod": { "type": "enumeration", "enum": ["web-crawler", "zip-pdf", "manual", "api"], "default": "web-crawler" }, "collectUrl": { "type": "string" }, "collectRules": { "type": "json" }, "collectStatus": { "type": "enumeration", "enum": ["pending", "running", "success", "failed"], "default": "pending" }, "lastCollectTime": { "type": "datetime" }, "failCount": { "type": "integer", "default": 0 }, "failReason": { "type": "text" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const attributes$c = { "product": { "type": "relation", "relation": "oneToOne", "target": "plugin::zhao-wealth.wealth-product" }, "collectMethod": { "type": "enumeration", "enum": ["web-crawler", "zip-pdf", "manual", "api"], "default": "web-crawler" }, "collectUrl": { "type": "string" }, "collectRules": { "type": "json" }, "collectStatus": { "type": "enumeration", "enum": ["pending", "running", "success", "failed"], "default": "pending" }, "lastCollectTime": { "type": "datetime" }, "failCount": { "type": "integer", "default": 0 }, "failReason": { "type": "text" }, "lastInsertCount": { "type": "integer", "default": 0 }, "lastUpdateCount": { "type": "integer", "default": 0 }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
 const wealthCollectConfig = {
   kind: kind$c,
   collectionName: collectionName$c,
@@ -11554,6 +11554,34 @@ const register = ({ strapi }) => {
   strapi.config.set("plugin::zhao-wealth", pluginConfig);
   strapi.log.info("[zhao-wealth] 插件已注册（config 已加载）");
 };
+async function processNavData(strapi, productId, navData) {
+  let insertCount = 0;
+  let updateCount = 0;
+  const updatedDates = [];
+  for (const nav2 of navData) {
+    const existing = await strapi.db.query("plugin::zhao-wealth.wealth-nav").findOne({
+      where: { product: productId, navDate: nav2.navDate }
+    });
+    if (!existing) {
+      await strapi.db.query("plugin::zhao-wealth.wealth-nav").create({
+        data: { product: productId, ...nav2 }
+      });
+      insertCount++;
+    } else if (Number(existing.unitNav) !== Number(nav2.unitNav)) {
+      await strapi.db.query("plugin::zhao-wealth.wealth-nav").update({
+        where: { id: existing.id },
+        data: {
+          unitNav: nav2.unitNav,
+          accNav: nav2.accNav ?? existing.accNav,
+          dataSource: nav2.dataSource ?? existing.dataSource
+        }
+      });
+      updateCount++;
+      updatedDates.push(nav2.navDate);
+    }
+  }
+  return { insertCount, updateCount, updatedDates };
+}
 async function getCollectorForConfig(strapi, config) {
   let source = null;
   if (config.collectRules) {
@@ -11618,29 +11646,30 @@ function registerCollectJobs(strapi) {
       }
       const registerCode = config.product?.registerCode || "";
       const navData = await collector.collectNavData(productCode, { registerCode });
-      let savedCount = 0;
-      for (const nav2 of navData) {
-        const existing = await strapi.db.query("plugin::zhao-wealth.wealth-nav").findOne({
-          where: { product: productId, navDate: nav2.navDate }
-        });
-        if (existing) continue;
-        await strapi.db.query("plugin::zhao-wealth.wealth-nav").create({
-          data: {
-            product: productId,
-            ...nav2
-          }
-        });
-        savedCount++;
+      const { insertCount, updateCount, updatedDates } = await processNavData(strapi, productId, navData);
+      if (updateCount > 0) {
+        for (const dateStr of updatedDates) {
+          await strapi.db.query("plugin::zhao-wealth.wealth-annual-snapshot").delete({
+            where: { product: productId, snapshotDate: dateStr }
+          });
+          await strapi.db.query("plugin::zhao-wealth.wealth-risk-metric").delete({
+            where: { product: productId, snapshotDate: dateStr }
+          });
+        }
+        strapi.log.info(`[zhao-wealth] 产品${productId}净值更新${updateCount}条，已清除对应日期指标待重算`);
       }
       await strapi.db.query("plugin::zhao-wealth.wealth-collect-config").update({
         where: { id: config.id },
         data: {
           collectStatus: "success",
           lastCollectTime: /* @__PURE__ */ new Date(),
-          failCount: 0
+          failCount: 0,
+          failReason: null,
+          lastInsertCount: insertCount,
+          lastUpdateCount: updateCount
         }
       });
-      strapi.log.info(`[zhao-wealth] 产品${productId}采集成功，保存${savedCount}/${navData.length}条净值`);
+      strapi.log.info(`[zhao-wealth] 产品${productId}采集成功，新增${insertCount}条，更新${updateCount}条（共${navData.length}条）`);
       const calculateQueue2 = getCalculateQueue();
       if (calculateQueue2) {
         calculateQueue2.add("recalculate-product", { productId });

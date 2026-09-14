@@ -229,6 +229,14 @@ declare const _default: {
                 failReason: {
                     type: string;
                 };
+                lastInsertCount: {
+                    type: string;
+                    default: number;
+                };
+                lastUpdateCount: {
+                    type: string;
+                    default: number;
+                };
                 createdAt: {
                     type: string;
                 };
