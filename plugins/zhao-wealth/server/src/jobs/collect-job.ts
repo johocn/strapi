@@ -61,6 +61,11 @@ export function registerCollectJobs(strapi: any) {
       return;
     }
 
+      await strapi.db.query('plugin::zhao-wealth.wealth-collect-config').update({
+        where: { id: config.id },
+        data: { collectStatus: 'running' },
+      });
+
     const { collector, source } = await getCollectorForConfig(strapi, config);
 
     if (!collector) {
@@ -113,10 +118,11 @@ export function registerCollectJobs(strapi: any) {
 
       strapi.log.info(`[zhao-wealth] 产品${productId}采集成功，保存${savedCount}/${navData.length}条净值`);
 
-      // 触发年化计算
+      // 触发年化+风险指标补缺（老产品只补新日期，新产品自动全量回溯）
       const calculateQueue = getCalculateQueue();
       if (calculateQueue) {
-        calculateQueue.add('calculate-snapshot', { productId });
+        calculateQueue.add('recalculate-product', { productId });
+        calculateQueue.add('recalculate-risk-metric-product', { productId });
       }
     } catch (error) {
       // P2修复：安全获取错误信息，防止非 Error 对象 throw 时 message 为 undefined
