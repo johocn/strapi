@@ -84,3 +84,94 @@ describe('nav-calculator.recalculateMissing', () => {
     ]);
   });
 });
+
+describe('nav-calculator.calculateMoneyFundSnapshot', () => {
+  let mockStrapi: any;
+  let mockQueries: Record<string, any>;
+  const PRODUCT_UID = 'plugin::zhao-wealth.wealth-product';
+  const INCOME_UID = 'plugin::zhao-wealth.wealth-money-income';
+
+  // 06-01 ~ 06-20 共 20 天，万份收益恒 0.5
+  const incomeDataset = Array.from({ length: 20 }, (_, i) => ({
+    incomeDate: new Date(2026, 5, i + 1),
+    tenThousandIncome: 0.5,
+  }));
+
+  beforeEach(() => {
+    jest.resetModules();
+    mockQueries = {};
+    mockQueries[PRODUCT_UID] = { findOne: jest.fn() };
+    mockQueries[INCOME_UID] = {
+      findOne: jest.fn(),
+      findMany: jest.fn().mockImplementation(({ where }: any) => {
+        const gte = where.incomeDate.$gte ? new Date(where.incomeDate.$gte).getTime() : -Infinity;
+        const lte = where.incomeDate.$lte ? new Date(where.incomeDate.$lte).getTime() : Infinity;
+        return incomeDataset.filter((r) => {
+          const t = new Date(r.incomeDate).getTime();
+          return t >= gte && t <= lte;
+        });
+      }),
+    };
+    mockStrapi = {
+      db: { query: jest.fn((uid: string) => mockQueries[uid]) },
+      log: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+    };
+  });
+
+  function getService() {
+    return require('../services/nav-calculator').default({ strapi: mockStrapi });
+  }
+
+  it('8 期限全部输出：1日/3日/7日/2周 有值，1月及以上 null（待积累）', async () => {
+    mockQueries[PRODUCT_UID].findOne.mockResolvedValue({ id: 1, productType: 'money-fund' });
+    const service = getService();
+
+    // snapshotDate = 06-20：1日窗口 06-20（1条）、3日 06-18~20（3条）、7日 06-14~20（7条）、
+    // 2周 06-07~20（14条）均可算；1月需 30 条不足 → null
+    const snapshot = await service.calculateMoneyFundSnapshot(1, new Date(2026, 5, 20));
+
+    expect(snapshot.annual1d).toBe(0.01825); // 0.5×365/10000
+    expect(snapshot.annual3d).toBe(0.01825);
+    expect(snapshot.annual7d).toBe(0.01825);
+    expect(snapshot.annual2w).toBe(0.01825);
+    expect(snapshot.annual1m).toBeNull();
+    expect(snapshot.annual3m).toBeNull();
+    expect(snapshot.annual6m).toBeNull();
+    expect(snapshot.annual1y).toBeNull();
+    expect(snapshot.isEstimate).toBe(false);
+  });
+
+  it('当日无收益记录 → annual1d 为 null', async () => {
+    mockQueries[PRODUCT_UID].findOne.mockResolvedValue({ id: 1, productType: 'money-fund' });
+    const service = getService();
+
+    // snapshotDate = 07-01：数据集最晚 06-20，当日窗口 0 条
+    const snapshot = await service.calculateMoneyFundSnapshot(1, new Date(2026, 6, 1));
+
+    expect(snapshot.annual1d).toBeNull();
+    expect(snapshot.annual7d).toBeNull();
+  });
+
+  it('3日窗口按均值年化：0.5/0.7/0.6 → 0.0219', async () => {
+    mockQueries[PRODUCT_UID].findOne.mockResolvedValue({ id: 1, productType: 'money-fund' });
+    mockQueries[INCOME_UID].findMany.mockImplementation(({ where }: any) => {
+      const gte = where.incomeDate.$gte ? new Date(where.incomeDate.$gte).getTime() : -Infinity;
+      const lte = where.incomeDate.$lte ? new Date(where.incomeDate.$lte).getTime() : Infinity;
+      const dataset = [
+        { incomeDate: new Date(2026, 5, 18), tenThousandIncome: 0.5 },
+        { incomeDate: new Date(2026, 5, 19), tenThousandIncome: 0.7 },
+        { incomeDate: new Date(2026, 5, 20), tenThousandIncome: 0.6 },
+      ];
+      return dataset.filter((r) => {
+        const t = new Date(r.incomeDate).getTime();
+        return t >= gte && t <= lte;
+      });
+    });
+    const service = getService();
+
+    const snapshot = await service.calculateMoneyFundSnapshot(1, new Date(2026, 5, 20));
+
+    expect(snapshot.annual3d).toBe(0.0219); // (0.5+0.7+0.6)/3 × 365 / 10000
+    expect(snapshot.annual7d).toBeNull(); // 仅 3 条不足 7 天
+  });
+});

@@ -92,7 +92,10 @@ export default ({ strapi }) => ({
    */
   async calculateMoneyFundSnapshot(productId: number, snapshotDate: Date) {
     const periods = [
+      { field: 'annual1d', days: 1 },
+      { field: 'annual3d', days: 3 },
       { field: 'annual7d', days: 7 },
+      { field: 'annual2w', days: 14 },
       { field: 'annual1m', days: 30 },
       { field: 'annual3m', days: 90 },
       { field: 'annual6m', days: 180 },
@@ -102,9 +105,6 @@ export default ({ strapi }) => ({
     const snapshot: any = {
       product: productId,
       snapshotDate,
-      annual1d: null,
-      annual3d: null,
-      annual2w: null,
       isEstimate: false,
     };
 
