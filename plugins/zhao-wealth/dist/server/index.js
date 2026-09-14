@@ -37,7 +37,7 @@ const kind$c = "collectionType";
 const collectionName$c = "wealth_collect_configs";
 const info$c = { "singularName": "wealth-collect-config", "pluralName": "wealth-collect-configs", "displayName": "采集配置", "description": "产品数据采集配置" };
 const options$c = { "draftAndPublish": false };
-const attributes$c = { "product": { "type": "relation", "relation": "oneToOne", "target": "plugin::zhao-wealth.wealth-product" }, "collectMethod": { "type": "enumeration", "enum": ["web-crawler", "zip-pdf", "manual", "api"], "default": "web-crawler" }, "collectUrl": { "type": "string" }, "collectRules": { "type": "json" }, "collectStatus": { "type": "enumeration", "enum": ["pending", "success", "failed"], "default": "pending" }, "lastCollectTime": { "type": "datetime" }, "failCount": { "type": "integer", "default": 0 }, "failReason": { "type": "text" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const attributes$c = { "product": { "type": "relation", "relation": "oneToOne", "target": "plugin::zhao-wealth.wealth-product" }, "collectMethod": { "type": "enumeration", "enum": ["web-crawler", "zip-pdf", "manual", "api"], "default": "web-crawler" }, "collectUrl": { "type": "string" }, "collectRules": { "type": "json" }, "collectStatus": { "type": "enumeration", "enum": ["pending", "running", "success", "failed"], "default": "pending" }, "lastCollectTime": { "type": "datetime" }, "failCount": { "type": "integer", "default": 0 }, "failReason": { "type": "text" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
 const wealthCollectConfig = {
   kind: kind$c,
   collectionName: collectionName$c,
@@ -8296,9 +8296,9 @@ const collect = ({ strapi }) => ({
           recalcQueue.add("recalculate-all", {});
           ctx.body = successResponse({}, "全量重算任务已触发");
         } else {
-          strapi.log.info("[zhao-wealth] Redis 不可用，同步全量重算年化快照");
-          await navCalculator2.recalculateAll();
-          ctx.body = successResponse({}, "全量重算完成（同步）");
+          strapi.log.info("[zhao-wealth] Redis 不可用，同步全量年化补缺");
+          await navCalculator2.recalculateMissing();
+          ctx.body = successResponse({}, "全量年化补缺完成（同步）");
         }
       }
     } catch (error) {
@@ -8938,7 +8938,7 @@ const riskMetric = ({ strapi }) => ({
   async recalculate(ctx) {
     try {
       const { productId, type } = ctx.request.body;
-      if (type !== "risk-metric" && type !== "all") {
+      if (type && type !== "risk-metric" && type !== "all") {
         ctx.status = 400;
         ctx.body = errorResponse(400, "type 必须为 'risk-metric' 或 'all'");
         return;
@@ -8970,9 +8970,8 @@ const riskMetric = ({ strapi }) => ({
           recalcQueue.add("recalculate-all-risk-metrics", {});
           ctx.body = successResponse({}, "全量风险指标重算任务已触发");
         } else {
-          strapi.log.info("[zhao-wealth] Redis 不可用，同步全量重算风险指标");
-          await riskMetricService2.recalculateAll();
-          ctx.body = successResponse({}, "全量风险指标重算完成（同步）");
+          await riskMetricService2.recalculateMissing();
+          ctx.body = successResponse({}, "全量风险指标补缺完成（同步）");
         }
       }
     } catch (error) {
@@ -10065,6 +10064,40 @@ const navCalculator = ({ strapi }) => ({
       }
     }
     strapi.log.info(`[zhao-wealth] 全量年化快照重算完成，${products.length}个产品`);
+  },
+  /**
+   * 补缺重算：只计算「有净值但无年化快照」的日期（增量）
+   * 无 productId = 全产品；有 productId = 单产品（新产品首次采集后=全量回溯）
+   */
+  async recalculateMissing(productId) {
+    const filter = productId ? { where: { id: productId } } : {};
+    const products = await strapi.db.query("plugin::zhao-wealth.wealth-product").findMany(filter);
+    const results = [];
+    for (const product2 of products) {
+      const navs = await strapi.db.query("plugin::zhao-wealth.wealth-nav").findMany({
+        where: { product: product2.id },
+        select: ["navDate"],
+        orderBy: { navDate: "asc" }
+      });
+      if (navs.length === 0) continue;
+      const existingSnapshots = await strapi.db.query("plugin::zhao-wealth.wealth-annual-snapshot").findMany({
+        where: { product: product2.id },
+        select: ["snapshotDate"]
+      });
+      const existingDates = new Set(existingSnapshots.map((s2) => toDateStr(s2.snapshotDate)));
+      const missingDates = navs.map((n2) => toDateStr(n2.navDate)).filter((dateStr) => !existingDates.has(dateStr));
+      let calculated = 0;
+      for (const dateStr of missingDates) {
+        const snapshot = await this.calculateSnapshot(product2.id, new Date(dateStr));
+        if (snapshot) {
+          await strapi.db.query("plugin::zhao-wealth.wealth-annual-snapshot").create({ data: snapshot });
+          calculated++;
+        }
+      }
+      results.push({ productId: product2.id, missingDates: missingDates.length, calculated });
+    }
+    strapi.log.info(`[zhao-wealth] 年化快照补缺完成，${results.length}个产品`);
+    return results;
   }
 });
 const annualSnapshot = ({ strapi }) => ({
@@ -10609,6 +10642,42 @@ const riskMetricService = ({ strapi }) => ({
       productType: r.product.productType,
       metricValue: r.metricValue
     }));
+  },
+  /**
+   * 补缺重算风险指标（增量）
+   * 两阶段：① 先补缺年化快照（sharpe/rank 依赖 annualReturn）
+   *         ② 再按「有净值但无指标」的日期补缺，此时同日快照已齐，rank 准确
+   */
+  async recalculateMissing(productId) {
+    const navCalculator2 = strapi.service("plugin::zhao-wealth.nav-calculator");
+    await navCalculator2.recalculateMissing(productId);
+    const filter = productId ? { where: { id: productId } } : {};
+    const products = await strapi.db.query("plugin::zhao-wealth.wealth-product").findMany(filter);
+    const results = [];
+    for (const product2 of products) {
+      const navs = await strapi.db.query("plugin::zhao-wealth.wealth-nav").findMany({
+        where: { product: product2.id },
+        select: ["navDate"],
+        orderBy: { navDate: "asc" }
+      });
+      if (navs.length === 0) continue;
+      const existingMetrics = await strapi.db.query("plugin::zhao-wealth.wealth-risk-metric").findMany({
+        where: { product: product2.id },
+        select: ["snapshotDate"]
+      });
+      const existingDates = new Set(existingMetrics.map((m) => toDateStr(m.snapshotDate)));
+      const missingDates = navs.map((n2) => toDateStr(n2.navDate)).filter((dateStr) => !existingDates.has(dateStr));
+      for (const dateStr of missingDates) {
+        try {
+          await this.calculateAndSaveMetrics(product2.id, new Date(dateStr));
+        } catch (error) {
+          strapi.log.error(`[zhao-wealth] 产品${product2.id}风险指标补缺失败 ${dateStr}: ${error.message}`);
+        }
+      }
+      results.push({ productId: product2.id, missingDates: missingDates.length });
+    }
+    strapi.log.info(`[zhao-wealth] 风险指标补缺完成，${results.length}个产品`);
+    return results;
   }
 });
 const statsService = ({ strapi }) => ({
@@ -11519,6 +11588,10 @@ function registerCollectJobs(strapi) {
       strapi.log.warn(`[zhao-wealth] 产品${productId}无采集配置`);
       return;
     }
+    await strapi.db.query("plugin::zhao-wealth.wealth-collect-config").update({
+      where: { id: config.id },
+      data: { collectStatus: "running" }
+    });
     const { collector, source } = await getCollectorForConfig(strapi, config);
     if (!collector) {
       strapi.log.error(`[zhao-wealth] 产品${productId}未找到匹配的采集器（source=${source || "未知"}）`);
@@ -11564,7 +11637,8 @@ function registerCollectJobs(strapi) {
       strapi.log.info(`[zhao-wealth] 产品${productId}采集成功，保存${savedCount}/${navData.length}条净值`);
       const calculateQueue2 = getCalculateQueue();
       if (calculateQueue2) {
-        calculateQueue2.add("calculate-snapshot", { productId });
+        calculateQueue2.add("recalculate-product", { productId });
+        calculateQueue2.add("recalculate-risk-metric-product", { productId });
       }
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
@@ -11616,15 +11690,7 @@ function registerCalculateJobs(strapi) {
   });
   queue.process("recalculate-product", async (job) => {
     const { productId } = job.data;
-    const navs = await strapi.db.query("plugin::zhao-wealth.wealth-nav").findMany({
-      where: { product: productId },
-      orderBy: { navDate: "asc" }
-    });
-    if (navs.length > 0) {
-      const startDate = navs[0].navDate;
-      const endDate = navs[navs.length - 1].navDate;
-      await strapi.service("plugin::zhao-wealth.nav-calculator").recalculateSnapshots(productId, startDate, endDate);
-    }
+    await strapi.service("plugin::zhao-wealth.nav-calculator").recalculateMissing(productId);
   });
   queue.process("recalculate-range", async (job) => {
     const { productId, startDate, endDate } = job.data;
@@ -11643,7 +11709,7 @@ function registerCalculateJobs(strapi) {
       return;
     }
     try {
-      await strapi.service("plugin::zhao-wealth.nav-calculator").recalculateAll();
+      await strapi.service("plugin::zhao-wealth.nav-calculator").recalculateMissing();
     } finally {
       await releaseLock(lockKey);
     }
@@ -11659,13 +11725,8 @@ function registerRiskMetricJobs(strapi) {
     });
     calcQueue.process("recalculate-risk-metric-product", async (job) => {
       const { productId } = job.data;
-      const navDates = await strapi.db.connection.raw(`
-        SELECT DISTINCT nav_date FROM wealth_navs WHERE product_id = ? ORDER BY nav_date ASC
-      `, [productId]);
-      for (const row of navDates.rows) {
-        await strapi.service("plugin::zhao-wealth.risk-metric-service").calculateAndSaveMetrics(productId, new Date(row.nav_date));
-      }
-      strapi.log.info(`[zhao-wealth] 产品${productId}风险指标重算完成`);
+      await strapi.service("plugin::zhao-wealth.risk-metric-service").recalculateMissing(productId);
+      strapi.log.info(`[zhao-wealth] 产品${productId}风险指标补缺完成`);
     });
   } else {
     strapi.log.warn("[zhao-wealth] calculate queue 不可用，跳过 risk-metric job 注册");
@@ -11680,7 +11741,7 @@ function registerRiskMetricJobs(strapi) {
         return;
       }
       try {
-        await strapi.service("plugin::zhao-wealth.risk-metric-service").recalculateAll();
+        await strapi.service("plugin::zhao-wealth.risk-metric-service").recalculateMissing();
       } finally {
         await releaseLock(lockKey);
       }

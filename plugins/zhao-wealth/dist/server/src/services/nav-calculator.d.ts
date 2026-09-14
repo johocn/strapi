@@ -21,5 +21,14 @@ declare const _default: ({ strapi }: {
      * 全量重算所有产品年化快照
      */
     recalculateAll(): Promise<void>;
+    /**
+     * 补缺重算：只计算「有净值但无年化快照」的日期（增量）
+     * 无 productId = 全产品；有 productId = 单产品（新产品首次采集后=全量回溯）
+     */
+    recalculateMissing(productId?: number): Promise<{
+        productId: number;
+        missingDates: number;
+        calculated: number;
+    }[]>;
 };
 export default _default;

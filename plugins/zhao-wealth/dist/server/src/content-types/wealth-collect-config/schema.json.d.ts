@@ -15,7 +15,7 @@ declare const _default: {
     "collectMethod": { "type": "enumeration", "enum": ["web-crawler", "zip-pdf", "manual", "api"], "default": "web-crawler" },
     "collectUrl": { "type": "string" },
     "collectRules": { "type": "json" },
-    "collectStatus": { "type": "enumeration", "enum": ["pending", "success", "failed"], "default": "pending" },
+    "collectStatus": { "type": "enumeration", "enum": ["pending", "running", "success", "failed"], "default": "pending" },
     "lastCollectTime": { "type": "datetime" },
     "failCount": { "type": "integer", "default": 0 },
     "failReason": { "type": "text" },

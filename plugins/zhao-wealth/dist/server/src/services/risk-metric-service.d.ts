@@ -57,5 +57,14 @@ declare const _default: ({ strapi }: {
      * 返回同 period + metricName 下所有产品的排名
      */
     adminPeers(period: string, metricName: string, limit?: number): Promise<any>;
+    /**
+     * 补缺重算风险指标（增量）
+     * 两阶段：① 先补缺年化快照（sharpe/rank 依赖 annualReturn）
+     *         ② 再按「有净值但无指标」的日期补缺，此时同日快照已齐，rank 准确
+     */
+    recalculateMissing(productId?: number): Promise<{
+        productId: number;
+        missingDates: number;
+    }[]>;
 };
 export default _default;
