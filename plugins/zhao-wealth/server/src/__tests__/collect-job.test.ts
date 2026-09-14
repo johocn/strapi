@@ -9,17 +9,20 @@ describe('collect-job.processNavData', () => {
   let navQuery: any;
   let snapshotQuery: any;
   let metricQuery: any;
+  let incomeQuery: any;
 
   beforeEach(() => {
     navQuery = { findOne: jest.fn(), create: jest.fn(), update: jest.fn() };
     snapshotQuery = { delete: jest.fn() };
     metricQuery = { delete: jest.fn() };
+    incomeQuery = { findOne: jest.fn(), create: jest.fn(), update: jest.fn() };
     mockStrapi = {
       db: {
         query: jest.fn((uid: string) => {
           if (uid === 'plugin::zhao-wealth.wealth-nav') return navQuery;
           if (uid === 'plugin::zhao-wealth.wealth-annual-snapshot') return snapshotQuery;
           if (uid === 'plugin::zhao-wealth.wealth-risk-metric') return metricQuery;
+          if (uid === 'plugin::zhao-wealth.wealth-money-income') return incomeQuery;
           throw new Error(`unexpected uid: ${uid}`);
         }),
       },
@@ -104,5 +107,99 @@ describe('collect-job.processNavData', () => {
     }
     expect(snapshotQuery.delete).toHaveBeenCalledTimes(2);
     expect(metricQuery.delete).toHaveBeenCalledTimes(2);
+  });
+
+  it('新日期且带收益字段 → 净值 create + 收益 create', async () => {
+    navQuery.findOne.mockResolvedValue(null);
+    incomeQuery.findOne.mockResolvedValue(null);
+    const processNavData = getProcessNavData();
+
+    const result = await processNavData(mockStrapi, 1, [
+      { navDate: d(1), unitNav: 1.0, accNav: 1.0, tenThousandIncome: '0.4876', sevenDayAnnualized: '0.0188', dataSource: 'crawler' },
+    ]);
+
+    expect(navQuery.create).toHaveBeenCalledTimes(1);
+    expect(incomeQuery.create).toHaveBeenCalledTimes(1);
+    expect(incomeQuery.create).toHaveBeenCalledWith({
+      data: {
+        product: 1,
+        incomeDate: d(1),
+        tenThousandIncome: 0.4876,
+        sevenDayAnnual: 0.0188,
+        dataSource: 'crawler',
+      },
+    });
+    expect(result).toEqual({ insertCount: 1, updateCount: 0, updatedDates: [] });
+  });
+
+  it('同日期同净值但收益变化 → 净值跳过 + 收益 update', async () => {
+    navQuery.findOne.mockResolvedValue({ id: 10, unitNav: 1.0, accNav: 1.0 });
+    incomeQuery.findOne.mockResolvedValue({ id: 20 });
+    const processNavData = getProcessNavData();
+
+    const result = await processNavData(mockStrapi, 1, [
+      { navDate: d(1), unitNav: 1.0, accNav: 1.0, tenThousandIncome: '0.5123', sevenDayAnnualized: '0.0199', dataSource: 'crawler' },
+    ]);
+
+    expect(navQuery.update).not.toHaveBeenCalled();
+    expect(incomeQuery.create).not.toHaveBeenCalled();
+    expect(incomeQuery.update).toHaveBeenCalledWith({
+      where: { id: 20 },
+      data: {
+        incomeDate: d(1),
+        tenThousandIncome: 0.5123,
+        sevenDayAnnual: 0.0199,
+        dataSource: 'crawler',
+      },
+    });
+    expect(result).toEqual({ insertCount: 0, updateCount: 0, updatedDates: [] });
+  });
+
+  it('同日期不同净值且带收益 → 净值 update + 收益 update', async () => {
+    navQuery.findOne.mockResolvedValue({ id: 10, unitNav: 1.0, accNav: 1.0 });
+    incomeQuery.findOne.mockResolvedValue({ id: 20 });
+    const processNavData = getProcessNavData();
+
+    const result = await processNavData(mockStrapi, 1, [
+      { navDate: d(1), unitNav: 1.02, accNav: 1.02, tenThousandIncome: '0.5123', sevenDayAnnualized: '0.0199', dataSource: 'crawler' },
+    ]);
+
+    expect(navQuery.update).toHaveBeenCalledTimes(1);
+    expect(incomeQuery.update).toHaveBeenCalledTimes(1);
+    expect(result).toEqual({ insertCount: 0, updateCount: 1, updatedDates: [d(1)] });
+  });
+
+  it('无收益字段 → 不写 income 表', async () => {
+    navQuery.findOne.mockResolvedValue(null);
+    const processNavData = getProcessNavData();
+
+    const result = await processNavData(mockStrapi, 1, [
+      { navDate: d(1), unitNav: 1.01, accNav: 1.01, dataSource: 'crawler' },
+    ]);
+
+    expect(incomeQuery.findOne).not.toHaveBeenCalled();
+    expect(incomeQuery.create).not.toHaveBeenCalled();
+    expect(incomeQuery.update).not.toHaveBeenCalled();
+    expect(result).toEqual({ insertCount: 1, updateCount: 0, updatedDates: [] });
+  });
+
+  it('仅有一个收益字段 → 仍写 income，另一字段为 null', async () => {
+    navQuery.findOne.mockResolvedValue(null);
+    incomeQuery.findOne.mockResolvedValue(null);
+    const processNavData = getProcessNavData();
+
+    await processNavData(mockStrapi, 1, [
+      { navDate: d(1), unitNav: 1.0, tenThousandIncome: '0.4876', dataSource: 'crawler' },
+    ]);
+
+    expect(incomeQuery.create).toHaveBeenCalledWith({
+      data: {
+        product: 1,
+        incomeDate: d(1),
+        tenThousandIncome: 0.4876,
+        sevenDayAnnual: null,
+        dataSource: 'crawler',
+      },
+    });
   });
 });

@@ -9,6 +9,7 @@ import { acquireLock, releaseLock } from '../utils';
  * - 日期不存在 → 插入（insertCount++）
  * - 日期存在且净值相同 → 跳过
  * - 日期存在但净值不同 → 更新净值字段（updateCount++），记录日期供联动删除指标
+ * 货币型产品收益（万份收益/七日年化）按「产品+日期」upsert 到独立表，与净值判定解耦。
  * 返回 { insertCount, updateCount, updatedDates }
  */
 export async function processNavData(strapi: any, productId: number, navData: any[]) {
@@ -17,13 +18,15 @@ export async function processNavData(strapi: any, productId: number, navData: an
   const updatedDates: string[] = [];
 
   for (const nav of navData) {
+    const { tenThousandIncome, sevenDayAnnualized, ...navOnly } = nav;
+
     const existing = await strapi.db.query('plugin::zhao-wealth.wealth-nav').findOne({
       where: { product: productId, navDate: nav.navDate },
     });
 
     if (!existing) {
       await strapi.db.query('plugin::zhao-wealth.wealth-nav').create({
-        data: { product: productId, ...nav },
+        data: { product: productId, ...navOnly },
       });
       insertCount++;
     } else if (Number(existing.unitNav) !== Number(nav.unitNav)) {
@@ -37,6 +40,29 @@ export async function processNavData(strapi: any, productId: number, navData: an
       });
       updateCount++;
       updatedDates.push(nav.navDate);
+    }
+
+    // 货币型产品收益（万份收益/七日年化）写入独立表，独立于净值判定
+    if (tenThousandIncome != null || sevenDayAnnualized != null) {
+      const existingIncome = await strapi.db.query('plugin::zhao-wealth.wealth-money-income').findOne({
+        where: { product: productId, incomeDate: nav.navDate },
+      });
+      const incomeData = {
+        incomeDate: nav.navDate,
+        tenThousandIncome: tenThousandIncome != null ? Number(tenThousandIncome) : null,
+        sevenDayAnnual: sevenDayAnnualized != null ? Number(sevenDayAnnualized) : null,
+        dataSource: 'crawler',
+      };
+      if (existingIncome) {
+        await strapi.db.query('plugin::zhao-wealth.wealth-money-income').update({
+          where: { id: existingIncome.id },
+          data: incomeData,
+        });
+      } else {
+        await strapi.db.query('plugin::zhao-wealth.wealth-money-income').create({
+          data: { product: productId, ...incomeData },
+        });
+      }
     }
   }
 
