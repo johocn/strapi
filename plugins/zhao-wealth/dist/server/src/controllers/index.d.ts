@@ -126,5 +126,10 @@ declare const _default: {
         cancel(ctx: any): Promise<void>;
         disclosure(ctx: any): Promise<void>;
     };
+    monitor: ({ strapi }: {
+        strapi: any;
+    }) => {
+        list(ctx: any): Promise<void>;
+    };
 };
 export default _default;

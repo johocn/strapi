@@ -9444,6 +9444,20 @@ const consultation = ({ strapi }) => ({
     }
   }
 });
+const monitor = ({ strapi }) => ({
+  /**
+   * 净值监察列表（管理端）
+   */
+  async list(ctx) {
+    try {
+      const result = await strapi.service("plugin::zhao-wealth.monitor-service").getProductMonitorList();
+      ctx.body = successResponse(result, "success");
+    } catch (error) {
+      strapi.log.error(`[zhao-wealth] 净值监察查询失败: ${error.message}`);
+      ctx.body = errorResponse(500, "查询失败");
+    }
+  }
+});
 const controllers = {
   product: product$1,
   nav,
@@ -9456,7 +9470,8 @@ const controllers = {
   compare,
   scoring,
   portfolio,
-  consultation
+  consultation,
+  monitor
 };
 const contentApi = () => ({
   type: "content-api",
@@ -9725,6 +9740,8 @@ const adminApi = () => ({
     // ===== 产品采集（双源采集 + 中国理财网校验） =====
     adminRoute("POST", "/v1/admin/products/collect", "admin-api.collect"),
     adminRoute("POST", "/v1/admin/products/collect/confirm", "admin-api.collectConfirm"),
+    // ===== 净值监察 =====
+    adminRoute("GET", "/v1/admin/monitor/products", "monitor.list"),
     // ===== 合规披露 =====
     adminRoute("GET", "/v1/admin/disclosures", "disclosure.adminList"),
     adminRoute("POST", "/v1/admin/disclosures", "disclosure.adminCreate"),
@@ -11293,6 +11310,119 @@ const riskDisclosureService = ({ strapi }) => ({
     return text;
   }
 });
+const NAV_STALE_YELLOW_DAYS = 3;
+const NAV_STALE_RED_DAYS = 7;
+const monitorService = ({ strapi }) => ({
+  /**
+   * 净值监察列表：每产品实时推导最新净值/年化/风险指标 + 双维度状态
+   */
+  async getProductMonitorList() {
+    const products = await strapi.db.query("plugin::zhao-wealth.wealth-product").findMany({
+      populate: ["company"],
+      orderBy: { id: "asc" }
+    });
+    const list = [];
+    for (const product2 of products) {
+      list.push(await this.buildProductMonitor(product2));
+    }
+    return {
+      list,
+      summary: {
+        ok: list.filter((p) => p.overall === "ok").length,
+        warning: list.filter((p) => p.overall === "warning").length,
+        danger: list.filter((p) => p.overall === "danger").length
+      }
+    };
+  },
+  async buildProductMonitor(product2) {
+    const latestNav = await strapi.db.query("plugin::zhao-wealth.wealth-nav").findOne({
+      where: { product: product2.id },
+      orderBy: { navDate: "desc" }
+    });
+    const latestSnapshot = await strapi.db.query("plugin::zhao-wealth.wealth-annual-snapshot").findOne({
+      where: { product: product2.id },
+      orderBy: { snapshotDate: "desc" }
+    });
+    const latestMetricDateRow = await strapi.db.query("plugin::zhao-wealth.wealth-risk-metric").findOne({
+      where: { product: product2.id },
+      orderBy: { snapshotDate: "desc" }
+    });
+    let latestMetrics = null;
+    if (latestMetricDateRow) {
+      const metricRows = await strapi.db.query("plugin::zhao-wealth.wealth-risk-metric").findMany({
+        where: { product: product2.id, snapshotDate: latestMetricDateRow.snapshotDate, period: "m1" }
+      });
+      const metricMap = {};
+      for (const row of metricRows) {
+        metricMap[row.metricName] = row.metricValue;
+      }
+      latestMetrics = {
+        snapshotDate: latestMetricDateRow.snapshotDate,
+        volatility: metricMap.volatility ?? null,
+        maxDrawdown: metricMap.maxDrawdown ?? null,
+        sharpe: metricMap.sharpe ?? null
+      };
+    }
+    const navStatus = this.judgeNavStatus(latestNav);
+    const annualStatus = this.judgeSyncStatus(
+      latestSnapshot?.snapshotDate || null,
+      latestNav?.navDate || null
+    );
+    const riskStatus = this.judgeSyncStatus(
+      latestMetrics?.snapshotDate || null,
+      latestNav?.navDate || null
+    );
+    const statuses = [navStatus.status, annualStatus, riskStatus];
+    const overall = statuses.includes("danger") ? "danger" : statuses.includes("warning") ? "warning" : "ok";
+    return {
+      id: product2.id,
+      productName: product2.productName,
+      productCode: product2.productCode || product2.saleCode || "",
+      companyName: product2.company?.shortName || product2.company?.name || "",
+      latestNav: latestNav ? {
+        navDate: latestNav.navDate,
+        unitNav: latestNav.unitNav,
+        accNav: latestNav.accNav,
+        dataSource: latestNav.dataSource
+      } : null,
+      latestSnapshot: latestSnapshot ? {
+        snapshotDate: latestSnapshot.snapshotDate,
+        annual1m: latestSnapshot.annual1m,
+        annual3m: latestSnapshot.annual3m,
+        annual6m: latestSnapshot.annual6m,
+        annual1y: latestSnapshot.annual1y
+      } : null,
+      latestMetrics,
+      navStatus: navStatus.status,
+      navDaysBehind: navStatus.daysBehind,
+      annualStatus,
+      riskStatus,
+      overall
+    };
+  },
+  /**
+   * 净值新鲜度：距今天数 > 7 danger，> 3 warning，否则 ok
+   */
+  judgeNavStatus(latestNav) {
+    if (!latestNav?.navDate) return { status: "danger", daysBehind: null };
+    const todayStr = toDateStr(/* @__PURE__ */ new Date());
+    const navDateStr = String(latestNav.navDate);
+    const daysBehind = Math.floor(
+      (new Date(todayStr).getTime() - new Date(navDateStr).getTime()) / 864e5
+    );
+    if (daysBehind > NAV_STALE_RED_DAYS) return { status: "danger", daysBehind };
+    if (daysBehind > NAV_STALE_YELLOW_DAYS) return { status: "warning", daysBehind };
+    return { status: "ok", daysBehind };
+  },
+  /**
+   * 同步度：dataDate 为空 → danger；dataDate < navDate → warning；否则 ok
+   */
+  judgeSyncStatus(dataDate, navDate) {
+    if (!dataDate) return "danger";
+    if (!navDate) return "ok";
+    return dataDate < navDate ? "warning" : "ok";
+  }
+});
 const services = {
   product,
   "nav-calculator": navCalculator,
@@ -11305,7 +11435,8 @@ const services = {
   "scoring-service": scoringService,
   "portfolio-service": portfolioService,
   "consultation-service": consultationService,
-  "risk-disclosure-service": riskDisclosureService
+  "risk-disclosure-service": riskDisclosureService,
+  "monitor-service": monitorService
 };
 const hasChannelAccess = async (ctx, config, { strapi }) => {
   const user = ctx.state.user;
