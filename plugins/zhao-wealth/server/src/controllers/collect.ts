@@ -276,9 +276,9 @@ export default ({ strapi }) => ({
           ctx.body = successResponse({}, '全量重算任务已触发');
         } else {
           // 同步降级
-          strapi.log.info('[zhao-wealth] Redis 不可用，同步全量重算年化快照');
-          await navCalculator.recalculateAll();
-          ctx.body = successResponse({}, '全量重算完成（同步）');
+          strapi.log.info('[zhao-wealth] Redis 不可用，同步全量年化补缺');
+          await navCalculator.recalculateMissing();
+          ctx.body = successResponse({}, '全量年化补缺完成（同步）');
         }
       }
     } catch (error) {

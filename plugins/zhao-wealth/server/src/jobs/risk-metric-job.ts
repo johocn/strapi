@@ -13,19 +13,11 @@ export function registerRiskMetricJobs(strapi: any) {
       await strapi.service('plugin::zhao-wealth.risk-metric-service').calculateAndSaveMetrics(productId, date);
     });
 
-    // 单产品重算风险指标
+    // 单产品补缺重算（内部先补年化快照，再补风险指标）
     calcQueue.process('recalculate-risk-metric-product', async (job) => {
       const { productId } = job.data;
-      // 重算所有历史日期
-      const navDates = await strapi.db.connection.raw(`
-        SELECT DISTINCT nav_date FROM wealth_navs WHERE product_id = ? ORDER BY nav_date ASC
-      `, [productId]);
-
-      for (const row of navDates.rows) {
-        await strapi.service('plugin::zhao-wealth.risk-metric-service').calculateAndSaveMetrics(productId, new Date(row.nav_date));
-      }
-
-      strapi.log.info(`[zhao-wealth] 产品${productId}风险指标重算完成`);
+      await strapi.service('plugin::zhao-wealth.risk-metric-service').recalculateMissing(productId);
+      strapi.log.info(`[zhao-wealth] 产品${productId}风险指标补缺完成`);
     });
   } else {
     strapi.log.warn('[zhao-wealth] calculate queue 不可用，跳过 risk-metric job 注册');
@@ -44,7 +36,7 @@ export function registerRiskMetricJobs(strapi: any) {
       }
 
       try {
-        await strapi.service('plugin::zhao-wealth.risk-metric-service').recalculateAll();
+        await strapi.service('plugin::zhao-wealth.risk-metric-service').recalculateMissing();
       } finally {
         await releaseLock(lockKey);
       }

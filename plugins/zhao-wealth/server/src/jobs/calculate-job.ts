@@ -23,20 +23,10 @@ export function registerCalculateJobs(strapi: any) {
     }
   });
 
-  // 单产品重算
+  // 单产品补缺重算
   queue.process('recalculate-product', async (job) => {
     const { productId } = job.data;
-
-    const navs = await strapi.db.query('plugin::zhao-wealth.wealth-nav').findMany({
-      where: { product: productId },
-      orderBy: { navDate: 'asc' },
-    });
-
-    if (navs.length > 0) {
-      const startDate = navs[0].navDate;
-      const endDate = navs[navs.length - 1].navDate;
-      await strapi.service('plugin::zhao-wealth.nav-calculator').recalculateSnapshots(productId, startDate, endDate);
-    }
+    await strapi.service('plugin::zhao-wealth.nav-calculator').recalculateMissing(productId);
   });
 
   // 指定范围重算
@@ -62,7 +52,7 @@ export function registerCalculateJobs(strapi: any) {
     }
 
     try {
-      await strapi.service('plugin::zhao-wealth.nav-calculator').recalculateAll();
+      await strapi.service('plugin::zhao-wealth.nav-calculator').recalculateMissing();
     } finally {
       await releaseLock(lockKey);
     }

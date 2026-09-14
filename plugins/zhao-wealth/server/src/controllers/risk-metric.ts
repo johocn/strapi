@@ -65,7 +65,7 @@ export default ({ strapi }) => ({
     try {
       const { productId, type } = ctx.request.body;
 
-      if (type !== 'risk-metric' && type !== 'all') {
+      if (type && type !== 'risk-metric' && type !== 'all') {
         ctx.status = 400;
         ctx.body = errorResponse(400, "type 必须为 'risk-metric' 或 'all'");
         return;
@@ -103,9 +103,8 @@ export default ({ strapi }) => ({
           ctx.body = successResponse({}, '全量风险指标重算任务已触发');
         } else {
           // 同步降级
-          strapi.log.info('[zhao-wealth] Redis 不可用，同步全量重算风险指标');
-          await riskMetricService.recalculateAll();
-          ctx.body = successResponse({}, '全量风险指标重算完成（同步）');
+          await riskMetricService.recalculateMissing();
+          ctx.body = successResponse({}, '全量风险指标补缺完成（同步）');
         }
       }
     } catch (error) {
