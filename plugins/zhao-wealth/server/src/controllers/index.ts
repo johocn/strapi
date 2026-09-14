@@ -12,6 +12,7 @@ import compare from './compare';
 import scoring from './scoring';
 import portfolio from './portfolio';
 import consultation from './consultation';
+import monitor from './monitor';
 
 export default {
   product,
@@ -26,4 +27,5 @@ export default {
   scoring,
   portfolio,
   consultation,
+  monitor,
 };

@@ -72,6 +72,9 @@ export default () => ({
     adminRoute('POST', '/v1/admin/products/collect', 'admin-api.collect'),
     adminRoute('POST', '/v1/admin/products/collect/confirm', 'admin-api.collectConfirm'),
 
+    // ===== 净值监察 =====
+    adminRoute('GET', '/v1/admin/monitor/products', 'monitor.list'),
+
     // ===== 合规披露 =====
     adminRoute('GET', '/v1/admin/disclosures', 'disclosure.adminList'),
     adminRoute('POST', '/v1/admin/disclosures', 'disclosure.adminCreate'),
