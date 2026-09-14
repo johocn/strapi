@@ -38,7 +38,10 @@ describe('risk-metric-service.recalculateMissing', () => {
   it('单产品：先年化补缺，再只补缺「有净值但无指标」的日期', async () => {
     mockQueries[PRODUCT_UID].findMany.mockResolvedValue([{ id: 1 }]);
     mockQueries[NAV_UID].findMany.mockResolvedValue([{ navDate: d(1) }, { navDate: d(2) }]);
-    mockQueries[METRIC_UID].findMany.mockResolvedValue([{ snapshotDate: d(1) }]);
+    // d(1) 完整 4 条，d(2) 无记录 → 只补 d(2)
+    mockQueries[METRIC_UID].findMany.mockResolvedValue([
+      { snapshotDate: d(1) }, { snapshotDate: d(1) }, { snapshotDate: d(1) }, { snapshotDate: d(1) },
+    ]);
 
     const service = getService();
     service.calculateAndSaveMetrics = jest.fn().mockResolvedValue(undefined);
@@ -53,7 +56,10 @@ describe('risk-metric-service.recalculateMissing', () => {
   it('无缺失日期时零计算（幂等）', async () => {
     mockQueries[PRODUCT_UID].findMany.mockResolvedValue([{ id: 1 }]);
     mockQueries[NAV_UID].findMany.mockResolvedValue([{ navDate: d(1) }]);
-    mockQueries[METRIC_UID].findMany.mockResolvedValue([{ snapshotDate: d(1) }]);
+    // d(1) 完整 4 条
+    mockQueries[METRIC_UID].findMany.mockResolvedValue([
+      { snapshotDate: d(1) }, { snapshotDate: d(1) }, { snapshotDate: d(1) }, { snapshotDate: d(1) },
+    ]);
 
     const service = getService();
     service.calculateAndSaveMetrics = jest.fn();
@@ -115,5 +121,28 @@ describe('risk-metric-service.recalculateMissing', () => {
 
     const created = createMock.mock.calls.map((c: any) => c[0].data.metricValue);
     expect(created).toEqual([null, -0.01, null, null]);
+  });
+
+  it('recalculateMissing：日期记录数不足（并发残缺）时视为缺失并重算', async () => {
+    mockQueries[PRODUCT_UID].findMany.mockResolvedValue([{ id: 1 }]);
+    mockQueries[NAV_UID].findMany.mockResolvedValue([{ navDate: d(1) }, { navDate: d(2) }]);
+    // 日期1 只有 2 条记录（应为 4 条），日期2 完整 4 条
+    mockQueries[METRIC_UID].findMany.mockResolvedValue([
+      { snapshotDate: d(1) },
+      { snapshotDate: d(1) },
+      { snapshotDate: d(2) },
+      { snapshotDate: d(2) },
+      { snapshotDate: d(2) },
+      { snapshotDate: d(2) },
+    ]);
+
+    const service = getService();
+    service.calculateAndSaveMetrics = jest.fn().mockResolvedValue(undefined);
+
+    const result = await service.recalculateMissing(1);
+
+    expect(service.calculateAndSaveMetrics).toHaveBeenCalledTimes(1);
+    expect(service.calculateAndSaveMetrics).toHaveBeenCalledWith(1, d(1));
+    expect(result).toEqual([{ productId: 1, missingDates: 1 }]);
   });
 });

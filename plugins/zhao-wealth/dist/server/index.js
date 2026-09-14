@@ -10671,8 +10671,13 @@ const riskMetricService = ({ strapi }) => ({
         where: { product: product2.id },
         select: ["snapshotDate"]
       });
-      const existingDates = new Set(existingMetrics.map((m) => toDateStr(m.snapshotDate)));
-      const missingDates = navs.map((n2) => toDateStr(n2.navDate)).filter((dateStr) => !existingDates.has(dateStr));
+      const expectedCount = pluginConfig.riskMetricPeriods.length * 4;
+      const dateCounts = /* @__PURE__ */ new Map();
+      for (const m of existingMetrics) {
+        const ds = toDateStr(m.snapshotDate);
+        dateCounts.set(ds, (dateCounts.get(ds) || 0) + 1);
+      }
+      const missingDates = navs.map((n2) => toDateStr(n2.navDate)).filter((dateStr) => (dateCounts.get(dateStr) || 0) < expectedCount);
       for (const dateStr of missingDates) {
         try {
           await this.calculateAndSaveMetrics(product2.id, new Date(dateStr));

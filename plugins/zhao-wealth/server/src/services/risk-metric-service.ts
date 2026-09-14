@@ -450,8 +450,17 @@ export default ({ strapi }) => ({
         select: ['snapshotDate'],
       });
 
-      const existingDates = new Set(existingMetrics.map((m: any) => toDateStr(m.snapshotDate)));
-      const missingDates = navs.map((n: any) => toDateStr(n.navDate)).filter((dateStr: string) => !existingDates.has(dateStr));
+      // 统计每个日期的记录数；并发 delete+create 交错可能造成部分指标缺失，
+      // 按日期存在与否判断会漏掉残缺日期，需校验记录数（4 指标 × N 周期）
+      const expectedCount = pluginConfig.riskMetricPeriods.length * 4;
+      const dateCounts = new Map<string, number>();
+      for (const m of existingMetrics) {
+        const ds = toDateStr(m.snapshotDate);
+        dateCounts.set(ds, (dateCounts.get(ds) || 0) + 1);
+      }
+      const missingDates = navs
+        .map((n: any) => toDateStr(n.navDate))
+        .filter((dateStr: string) => (dateCounts.get(dateStr) || 0) < expectedCount);
 
       for (const dateStr of missingDates) {
         try {
