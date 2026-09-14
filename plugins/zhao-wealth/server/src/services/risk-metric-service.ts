@@ -55,7 +55,9 @@ function calculateVolatility(navs: { navDate: string; unitNav: number | string }
     returns.push(curr / prev - 1);
   }
 
-  // 标准差（样本标准差，n-1）
+  // 标准差（样本标准差，n-1）；不足 2 个收益样本时 n-1 除零产生 NaN，直接返回 null
+  if (returns.length < 2) return null;
+
   const mean = returns.reduce((sum, r) => sum + r, 0) / returns.length;
   const variance = returns.reduce((sum, r) => sum + Math.pow(r - mean, 2), 0) / (returns.length - 1);
   const std = Math.sqrt(variance);
@@ -103,6 +105,15 @@ function calculateSharpe(annualReturn: number | string | null, volatility: numbe
   const annualRet = Number(annualReturn);
   if (isNaN(annualRet)) return null;
   return (annualRet - riskFreeRate) / volatility;
+}
+
+/**
+ * 将数值转为有限数；NaN/Infinity/undefined 统一转 null，避免写入数据库报错
+ */
+function toFinite(v: number | null | undefined): number | null {
+  if (v === null || v === undefined) return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
 }
 
 export default ({ strapi }) => ({
@@ -200,10 +211,10 @@ export default ({ strapi }) => ({
       const rankPercentile = await this.calculateRankPercentile(productId, snapshotDate, period);
 
       const metricEntries: { metricName: string; metricValue: number | null }[] = [
-        { metricName: 'volatility', metricValue: metrics.volatility },
-        { metricName: 'maxDrawdown', metricValue: metrics.maxDrawdown },
-        { metricName: 'sharpe', metricValue: metrics.sharpe },
-        { metricName: 'rankPercentile', metricValue: rankPercentile },
+        { metricName: 'volatility', metricValue: toFinite(metrics.volatility) },
+        { metricName: 'maxDrawdown', metricValue: toFinite(metrics.maxDrawdown) },
+        { metricName: 'sharpe', metricValue: toFinite(metrics.sharpe) },
+        { metricName: 'rankPercentile', metricValue: toFinite(rankPercentile) },
       ];
 
       for (const entry of metricEntries) {

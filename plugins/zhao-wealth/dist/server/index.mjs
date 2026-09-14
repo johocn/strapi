@@ -10376,6 +10376,7 @@ function calculateVolatility(navs) {
     if (isNaN(prev) || isNaN(curr) || prev <= 0) return null;
     returns.push(curr / prev - 1);
   }
+  if (returns.length < 2) return null;
   const mean = returns.reduce((sum, r) => sum + r, 0) / returns.length;
   const variance = returns.reduce((sum, r) => sum + Math.pow(r - mean, 2), 0) / (returns.length - 1);
   const std = Math.sqrt(variance);
@@ -10406,6 +10407,11 @@ function calculateSharpe(annualReturn, volatility, riskFreeRate) {
   const annualRet = Number(annualReturn);
   if (isNaN(annualRet)) return null;
   return (annualRet - riskFreeRate) / volatility;
+}
+function toFinite(v) {
+  if (v === null || v === void 0) return null;
+  const n2 = Number(v);
+  return Number.isFinite(n2) ? n2 : null;
 }
 const riskMetricService = ({ strapi }) => ({
   /**
@@ -10470,10 +10476,10 @@ const riskMetricService = ({ strapi }) => ({
       const metrics = await this.calculateMetricsForPeriod(productId, snapshotDate, period);
       const rankPercentile = await this.calculateRankPercentile(productId, snapshotDate, period);
       const metricEntries = [
-        { metricName: "volatility", metricValue: metrics.volatility },
-        { metricName: "maxDrawdown", metricValue: metrics.maxDrawdown },
-        { metricName: "sharpe", metricValue: metrics.sharpe },
-        { metricName: "rankPercentile", metricValue: rankPercentile }
+        { metricName: "volatility", metricValue: toFinite(metrics.volatility) },
+        { metricName: "maxDrawdown", metricValue: toFinite(metrics.maxDrawdown) },
+        { metricName: "sharpe", metricValue: toFinite(metrics.sharpe) },
+        { metricName: "rankPercentile", metricValue: toFinite(rankPercentile) }
       ];
       for (const entry of metricEntries) {
         await strapi.db.query("plugin::zhao-wealth.wealth-risk-metric").delete({

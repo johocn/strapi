@@ -1,5 +1,10 @@
 'use strict';
 
+jest.mock('../config', () => ({
+  __esModule: true,
+  default: { riskMetricPeriods: ['m1'], riskFreeRate: 0.02 },
+}));
+
 function d(day: number): Date {
   return new Date(`2026-06-${String(day).padStart(2, '0')}T00:00:00Z`);
 }
@@ -75,5 +80,40 @@ describe('risk-metric-service.recalculateMissing', () => {
       { productId: 1, missingDates: 1 },
       { productId: 2, missingDates: 1 },
     ]);
+  });
+
+  it('波动率：仅 2 条净值（1 个收益样本）时返回 null 而非 NaN', async () => {
+    mockQueries[NAV_UID].findMany.mockResolvedValue([
+      { navDate: d(1), unitNav: '1.05' },
+      { navDate: d(2), unitNav: '1.06' },
+    ]);
+    mockQueries['plugin::zhao-wealth.wealth-annual-snapshot'] = {
+      findOne: jest.fn().mockResolvedValue(null),
+    };
+
+    const service = getService();
+    const metrics = await service.calculateMetricsForPeriod(1, d(2), 'm1');
+
+    expect(metrics.volatility).toBeNull();
+    expect(Number.isNaN(metrics.volatility)).toBe(false);
+  });
+
+  it('写入防御：指标值为 NaN 时落库为 null（不会抛 Expected a valid Number）', async () => {
+    const createMock = jest.fn().mockResolvedValue({});
+    mockQueries[METRIC_UID].create = createMock;
+
+    const service = getService();
+    service.calculateMetricsForPeriod = jest.fn().mockResolvedValue({
+      volatility: NaN,
+      maxDrawdown: -0.01,
+      sharpe: NaN,
+      annualReturn: null,
+    });
+    service.calculateRankPercentile = jest.fn().mockResolvedValue(null);
+
+    await service.calculateAndSaveMetrics(1, d(2));
+
+    const created = createMock.mock.calls.map((c: any) => c[0].data.metricValue);
+    expect(created).toEqual([null, -0.01, null, null]);
   });
 });
