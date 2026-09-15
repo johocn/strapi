@@ -35,7 +35,11 @@ describe('ningyin-collector.collectNavData', () => {
     jest.clearAllMocks();
     mockGoto = jest.fn().mockResolvedValue(undefined);
     mockEvaluate = jest.fn();
-    (createPage as jest.Mock).mockResolvedValue({ goto: mockGoto, evaluate: mockEvaluate });
+    (createPage as jest.Mock).mockResolvedValue({
+      goto: mockGoto,
+      evaluate: mockEvaluate,
+      waitForLoadState: jest.fn().mockResolvedValue(undefined),
+    });
     mockCwCollectNav = jest.fn();
     (ChinawealthCollector as unknown as jest.Mock).mockImplementation(() => ({
       collectNavData: mockCwCollectNav,
@@ -125,7 +129,11 @@ describe('ningyin-collector.collectProductInfo', () => {
     jest.clearAllMocks();
     mockGoto = jest.fn().mockResolvedValue(undefined);
     mockEvaluate = jest.fn();
-    (createPage as jest.Mock).mockResolvedValue({ goto: mockGoto, evaluate: mockEvaluate });
+    (createPage as jest.Mock).mockResolvedValue({
+      goto: mockGoto,
+      evaluate: mockEvaluate,
+      waitForLoadState: jest.fn().mockResolvedValue(undefined),
+    });
   });
 
   it('成功：list.json 映射产品信息', async () => {

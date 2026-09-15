@@ -37,6 +37,8 @@ export default class NingyinCollector extends BaseCollector {
 
     try {
       await page.goto(DETAIL_PAGE_URL(code), { waitUntil: 'domcontentloaded', timeout: 30000 });
+      // 官网详情页为 SPA，goto 后会发生重导航，等待 networkidle 消除竞态（超时静默忽略）
+      await page.waitForLoadState('networkidle', { timeout: 20000 }).catch(() => {});
       const info = await page.evaluate(async (c: string) => {
         const res = await fetch(`/ningbo-web/product/list.json?projectcode=${encodeURIComponent(c)}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -94,6 +96,8 @@ export default class NingyinCollector extends BaseCollector {
 
     try {
       await page.goto(DETAIL_PAGE_URL(code), { waitUntil: 'domcontentloaded', timeout: 30000 });
+      // 官网详情页为 SPA，goto 后会发生重导航，等待 networkidle 消除竞态（超时静默忽略）
+      await page.waitForLoadState('networkidle', { timeout: 20000 }).catch(() => {});
       const perPage = 100; // 服务端有封顶（实测约 13-15 条/页），依赖翻页直至 list 为空
       const out: any[] = [];
       for (let pageno = 1; pageno <= MAX_PAGES; pageno++) {
