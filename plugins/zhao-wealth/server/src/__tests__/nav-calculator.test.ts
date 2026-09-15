@@ -175,3 +175,49 @@ describe('nav-calculator.calculateMoneyFundSnapshot', () => {
     expect(snapshot.annual7d).toBeNull(); // 仅 3 条不足 7 天
   });
 });
+
+describe('nav-calculator.calculateSnapshot money-wealth 分支', () => {
+  let mockStrapi: any;
+  let mockQueries: Record<string, any>;
+  const PRODUCT_UID = 'plugin::zhao-wealth.wealth-product';
+
+  beforeEach(() => {
+    jest.resetModules();
+    mockQueries = {};
+    mockQueries[PRODUCT_UID] = { findOne: jest.fn() };
+    mockStrapi = {
+      db: { query: jest.fn((uid: string) => mockQueries[uid]) },
+      log: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+    };
+  });
+
+  function getService() {
+    return require('../services/nav-calculator').default({ strapi: mockStrapi });
+  }
+
+  it('money-wealth 走收益型快照（calculateMoneyFundSnapshot）而非净值分支', async () => {
+    mockQueries[PRODUCT_UID].findOne.mockResolvedValue({ id: 1, productType: 'money-wealth' });
+    const service = getService();
+    service.calculateMoneyFundSnapshot = jest.fn().mockResolvedValue({ product: 1, snapshotDate: new Date(), annual1d: 0.01825 });
+    service.calculateNavSnapshot = jest.fn().mockResolvedValue({ product: 1, snapshotDate: new Date(), annual1d: 0.0 });
+
+    const snapshot = await service.calculateSnapshot(1, new Date(2026, 5, 20));
+
+    expect(service.calculateMoneyFundSnapshot).toHaveBeenCalledWith(1, new Date(2026, 5, 20));
+    expect(service.calculateNavSnapshot).not.toHaveBeenCalled();
+    expect(snapshot.annual1d).toBe(0.01825);
+  });
+
+  it('bank-wealth 仍走净值分支', async () => {
+    mockQueries[PRODUCT_UID].findOne.mockResolvedValue({ id: 2, productType: 'bank-wealth' });
+    const service = getService();
+    service.calculateMoneyFundSnapshot = jest.fn();
+    service.calculateNavSnapshot = jest.fn().mockResolvedValue({ product: 2, annual1d: 0.02 });
+
+    const snapshot = await service.calculateSnapshot(2, new Date(2026, 5, 20));
+
+    expect(service.calculateNavSnapshot).toHaveBeenCalledWith(2, new Date(2026, 5, 20));
+    expect(service.calculateMoneyFundSnapshot).not.toHaveBeenCalled();
+    expect(snapshot.annual1d).toBe(0.02);
+  });
+});

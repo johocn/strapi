@@ -16,9 +16,9 @@ export default ({ strapi }) => ({
       return null;
     }
 
-    const isMoneyFund = product.productType === 'money-fund';
+    const isMoneyType = product.productType === 'money-fund' || product.productType === 'money-wealth';
 
-    if (isMoneyFund) {
+    if (isMoneyType) {
       return await this.calculateMoneyFundSnapshot(productId, snapshotDate);
     } else {
       return await this.calculateNavSnapshot(productId, snapshotDate);
