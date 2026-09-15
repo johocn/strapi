@@ -93,7 +93,47 @@ function calculateMaxDrawdown(navs: { navDate: string; unitNav: number | string 
     }
   }
 
-  return -maxDrawdown; // 返回负数
+  return maxDrawdown === 0 ? 0 : -maxDrawdown; // 返回负数（避免 -0）
+}
+
+/**
+ * 收益型波动率：std(每日万份收益/10000) × sqrt(365)
+ * 万份收益 = 每万元当日收益，/10000 得日收益率，年化按 365 天
+ */
+function calculateIncomeVolatility(incomes: { incomeDate: string; tenThousandIncome: number | string }[]): number | null {
+  if (incomes.length < 2) return null;
+
+  const sorted = [...incomes].sort((a, b) => new Date(a.incomeDate).getTime() - new Date(b.incomeDate).getTime());
+  const returns: number[] = [];
+  for (const r of sorted) {
+    const v = Number(r.tenThousandIncome);
+    if (!isNaN(v)) returns.push(v / 10000);
+  }
+  if (returns.length < 2) return null;
+
+  const mean = returns.reduce((sum, r) => sum + r, 0) / returns.length;
+  const variance = returns.reduce((sum, r) => sum + Math.pow(r - mean, 2), 0) / (returns.length - 1);
+  return Math.sqrt(variance) * Math.sqrt(365);
+}
+
+/**
+ * 收益稳定度：周期内万份收益变异系数 CV = std / mean，越小越稳
+ */
+function calculateIncomeStability(incomes: { incomeDate: string; tenThousandIncome: number | string }[]): number | null {
+  if (incomes.length < 2) return null;
+
+  const values: number[] = [];
+  for (const r of incomes) {
+    const v = Number(r.tenThousandIncome);
+    if (!isNaN(v)) values.push(v);
+  }
+  if (values.length < 2) return null;
+
+  const mean = values.reduce((sum, v) => sum + v, 0) / values.length;
+  if (mean === 0) return null;
+
+  const variance = values.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / (values.length - 1);
+  return Math.sqrt(variance) / mean;
 }
 
 /**
@@ -127,10 +167,42 @@ export default ({ strapi }) => ({
     maxDrawdown: number | null;
     sharpe: number | null;
     annualReturn: number | null;
+    incomeStability: number | null;
   }> {
     const { start, end } = getPeriodRange(snapshotDate, period);
 
-    // 取 period 内的净值
+    const product = await strapi.db.query('plugin::zhao-wealth.wealth-product').findOne({
+      where: { id: productId },
+    });
+    const isMoneyType = !!product && (product.productType === 'money-fund' || product.productType === 'money-wealth');
+
+    // 取对应周期的年化收益（从 wealth-annual-snapshot）
+    const annualField = PERIOD_TO_ANNUAL_FIELD[period];
+    const snapshot = await strapi.db.query('plugin::zhao-wealth.wealth-annual-snapshot').findOne({
+      where: {
+        product: productId,
+        snapshotDate: toDateStr(snapshotDate),
+      },
+    });
+    const annualReturn = snapshot ? snapshot[annualField] : null;
+
+    if (isMoneyType) {
+      // 货币型：收益型指标（净值恒 1，净值波动/回撤/夏普无意义）
+      const incomes = await strapi.db.query('plugin::zhao-wealth.wealth-money-income').findMany({
+        where: {
+          product: productId,
+          incomeDate: { $gte: toDateStr(start), $lte: toDateStr(end) },
+        },
+        orderBy: { incomeDate: 'asc' },
+      });
+
+      const volatility = calculateIncomeVolatility(incomes);
+      const incomeStability = calculateIncomeStability(incomes);
+
+      return { volatility, maxDrawdown: null, sharpe: null, annualReturn, incomeStability };
+    }
+
+    // 净值型：原有净值指标
     const navs = await strapi.db.query('plugin::zhao-wealth.wealth-nav').findMany({
       where: {
         product: productId,
@@ -141,21 +213,9 @@ export default ({ strapi }) => ({
 
     const volatility = calculateVolatility(navs);
     const maxDrawdown = calculateMaxDrawdown(navs);
-
-    // 取对应周期的年化收益（从 wealth-annual-snapshot）
-    const annualField = PERIOD_TO_ANNUAL_FIELD[period];
-    const snapshot = await strapi.db.query('plugin::zhao-wealth.wealth-annual-snapshot').findOne({
-      where: {
-        product: productId,
-        snapshotDate: toDateStr(snapshotDate),
-      },
-    });
-
-    const annualReturn = snapshot ? snapshot[annualField] : null;
-
     const sharpe = calculateSharpe(annualReturn, volatility, pluginConfig.riskFreeRate);
 
-    return { volatility, maxDrawdown, sharpe, annualReturn };
+    return { volatility, maxDrawdown, sharpe, annualReturn, incomeStability: null };
   },
 
   /**
@@ -206,16 +266,29 @@ export default ({ strapi }) => ({
     const dateStr = toDateStr(snapshotDate);
     const periods = pluginConfig.riskMetricPeriods;
 
+    const product = await strapi.db.query('plugin::zhao-wealth.wealth-product').findOne({
+      where: { id: productId },
+    });
+    const isMoneyType = !!product && (product.productType === 'money-fund' || product.productType === 'money-wealth');
+
     for (const period of periods) {
       const metrics = await this.calculateMetricsForPeriod(productId, snapshotDate, period);
       const rankPercentile = await this.calculateRankPercentile(productId, snapshotDate, period);
 
-      const metricEntries: { metricName: string; metricValue: number | null }[] = [
-        { metricName: 'volatility', metricValue: toFinite(metrics.volatility) },
-        { metricName: 'maxDrawdown', metricValue: toFinite(metrics.maxDrawdown) },
-        { metricName: 'sharpe', metricValue: toFinite(metrics.sharpe) },
-        { metricName: 'rankPercentile', metricValue: toFinite(rankPercentile) },
-      ];
+      // 货币型 4 项（sharpe 不适用省略，保持每周期 4 条与 recalculateMissing 的 expectedCount 一致）
+      const metricEntries: { metricName: string; metricValue: number | null }[] = isMoneyType
+        ? [
+            { metricName: 'volatility', metricValue: toFinite(metrics.volatility) },
+            { metricName: 'maxDrawdown', metricValue: null },
+            { metricName: 'rankPercentile', metricValue: toFinite(rankPercentile) },
+            { metricName: 'incomeStability', metricValue: toFinite(metrics.incomeStability) },
+          ]
+        : [
+            { metricName: 'volatility', metricValue: toFinite(metrics.volatility) },
+            { metricName: 'maxDrawdown', metricValue: toFinite(metrics.maxDrawdown) },
+            { metricName: 'sharpe', metricValue: toFinite(metrics.sharpe) },
+            { metricName: 'rankPercentile', metricValue: toFinite(rankPercentile) },
+          ];
 
       for (const entry of metricEntries) {
         // 先删除同日同周期同指标的旧记录（upsert 语义）
@@ -321,7 +394,7 @@ export default ({ strapi }) => ({
    * 返回最新 snapshotDate 的 4 指标值
    */
   async adminAggregate(productId: number, period: string) {
-    const metricNames = ['volatility', 'maxDrawdown', 'sharpe', 'rankPercentile'];
+    const metricNames = ['volatility', 'maxDrawdown', 'sharpe', 'rankPercentile', 'incomeStability'];
     const result: Record<string, number | null> = {};
 
     for (const metricName of metricNames) {
