@@ -3,8 +3,8 @@
 import crypto from 'crypto';
 import { aesEncrypt, aesDecrypt, rsaEncrypt, parsePublicKey } from '../collectors/nanyin-utils';
 
-// 固定 16 字节 AES key（hex 0123456789abcdef0123456789abcdef）
-const KEY = Buffer.from('0123456789abcdef0123456789abcdef', 'hex');
+// 固定 16 字符 AES key（与官网 aesUtil.genKey 生成的 key 格式一致）
+const KEY = '0123456789abcdef';
 
 describe('nanyin-utils AES-128-ECB', () => {
   it('固定 key 加密后解密还原', () => {
@@ -13,9 +13,9 @@ describe('nanyin-utils AES-128-ECB', () => {
     expect(aesDecrypt(cipher, KEY)).toBe('hello');
   });
 
-  it('固定向量断言（Node crypto 预计算: plaintext="hello", key=0123456789abcdef0123456789abcdef）', () => {
-    // 期望密文由 node crypto 预计算得到: Ef4PBReTVwnxGqQmuhw9QA==
-    expect(aesEncrypt('hello', KEY)).toBe('Ef4PBReTVwnxGqQmuhw9QA==');
+  it('固定向量断言（Node crypto 预计算: plaintext="hello", key="0123456789abcdef"）', () => {
+    // 期望密文由 node crypto 预计算得到: Z0x+8454yr2c7JwSWCOmOQ==
+    expect(aesEncrypt('hello', KEY)).toBe('Z0x+8454yr2c7JwSWCOmOQ==');
   });
 
   it('中英文长文本加解密还原', () => {

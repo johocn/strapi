@@ -80,25 +80,34 @@ export function parsePublicKey(raw: string): string {
 }
 
 /**
- * 生成随机 16 字节 AES key
+ * 生成 16 位随机字母数字 AES key（与官网 aesUtil.genKey 一致：
+ * [A-Za-z0-9] 随机 16 字符，UTF-8 字节长度恰为 16，满足 AES-128）
  */
-export function generateAesKey(): Buffer {
-  return crypto.randomBytes(16);
+export function generateAesKey(): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let key = '';
+  for (let i = 0; i < 16; i++) {
+    key += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return key;
 }
 
 /**
  * AES-128-ECB-PKCS7 加密，输出 base64（ECB 无 IV）
+ * key 为 16 字符字符串，按 UTF-8 字节作为密钥（与官网 CryptoJS.enc.Utf8.parse 一致）
  */
-export function aesEncrypt(plainText: string, aesKey: Buffer): string {
-  const cipher = crypto.createCipheriv('aes-128-ecb', aesKey, null);
+export function aesEncrypt(plainText: string, aesKey: string): string {
+  const key = Buffer.from(aesKey, 'utf8');
+  const cipher = crypto.createCipheriv('aes-128-ecb', key, null);
   return Buffer.concat([cipher.update(plainText, 'utf8'), cipher.final()]).toString('base64');
 }
 
 /**
  * AES-128-ECB-PKCS7 解密（base64 输入）
  */
-export function aesDecrypt(cipherBase64: string, aesKey: Buffer): string {
-  const decipher = crypto.createDecipheriv('aes-128-ecb', aesKey, null);
+export function aesDecrypt(cipherBase64: string, aesKey: string): string {
+  const key = Buffer.from(aesKey, 'utf8');
+  const decipher = crypto.createDecipheriv('aes-128-ecb', key, null);
   return Buffer.concat([
     decipher.update(Buffer.from(cipherBase64, 'base64')),
     decipher.final(),

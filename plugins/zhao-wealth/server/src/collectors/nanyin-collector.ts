@@ -111,10 +111,9 @@ export default class NanyinCollector extends BaseCollector {
     let rawCount = 0;
 
     try {
-      // 1. 服务器 RSA 公钥 + 随机 16 字节 AES key（传输用 hex 字符串）
+      // 1. 服务器 RSA 公钥 + 随机 16 字符 AES key（与官网 genKey 一致）
       const publicKey = await getServerPublicKey();
       const aesKey = generateAesKey();
-      const aesKeyHex = aesKey.toString('hex');
 
       // 2. currentPage 从 1 递增翻页，直到收满 totalCount 或返回空
       for (let currentPage = 1; currentPage <= MAX_PAGES; currentPage++) {
@@ -127,7 +126,7 @@ export default class NanyinCollector extends BaseCollector {
         });
         const body = {
           data: aesEncrypt(payload, aesKey),
-          aesKey: rsaEncrypt(aesKeyHex, publicKey),
+          aesKey: rsaEncrypt(aesKey, publicKey),
           timeStamp: aesEncrypt(String(Date.now()), aesKey),
         };
 

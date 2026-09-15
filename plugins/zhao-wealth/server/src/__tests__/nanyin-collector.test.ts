@@ -26,7 +26,7 @@ jest.mock('../collectors/nanyin-utils', () => {
   return {
     ...actual,
     getServerPublicKey: jest.fn().mockResolvedValue(mockPublicKeyPem),
-    generateAesKey: jest.fn().mockReturnValue(Buffer.from('0123456789abcdef', 'utf8')),
+    generateAesKey: jest.fn().mockReturnValue('0123456789abcdef'),
   };
 });
 
@@ -35,7 +35,7 @@ import { createPage } from '../playwright-manager';
 import { aesEncrypt, aesDecrypt } from '../collectors/nanyin-utils';
 import NanyinCollector from '../collectors/nanyin-collector';
 
-const KEY = Buffer.from('0123456789abcdef', 'utf8');
+const KEY = '0123456789abcdef';
 const collector = new NanyinCollector();
 
 // 构造加密净值响应：{ data: { data: AES密文(aaData JSON) } }

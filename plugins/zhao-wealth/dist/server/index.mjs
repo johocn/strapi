@@ -8119,14 +8119,21 @@ ${b64}
   throw new Error("无法解析 RSA 公钥（已尝试 PEM/SPKI/PKCS1）");
 }
 function generateAesKey() {
-  return crypto.randomBytes(16);
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let key = "";
+  for (let i = 0; i < 16; i++) {
+    key += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return key;
 }
 function aesEncrypt(plainText, aesKey) {
-  const cipher = crypto.createCipheriv("aes-128-ecb", aesKey, null);
+  const key = Buffer.from(aesKey, "utf8");
+  const cipher = crypto.createCipheriv("aes-128-ecb", key, null);
   return Buffer.concat([cipher.update(plainText, "utf8"), cipher.final()]).toString("base64");
 }
 function aesDecrypt(cipherBase64, aesKey) {
-  const decipher = crypto.createDecipheriv("aes-128-ecb", aesKey, null);
+  const key = Buffer.from(aesKey, "utf8");
+  const decipher = crypto.createDecipheriv("aes-128-ecb", key, null);
   return Buffer.concat([
     decipher.update(Buffer.from(cipherBase64, "base64")),
     decipher.final()
@@ -8211,7 +8218,6 @@ class NanyinCollector extends BaseCollector {
     try {
       const publicKey = await getServerPublicKey();
       const aesKey = generateAesKey();
-      const aesKeyHex = aesKey.toString("hex");
       for (let currentPage = 1; currentPage <= MAX_PAGES; currentPage++) {
         const payload = JSON.stringify({
           productCode: code,
@@ -8221,7 +8227,7 @@ class NanyinCollector extends BaseCollector {
         });
         const body = {
           data: aesEncrypt(payload, aesKey),
-          aesKey: rsaEncrypt(aesKeyHex, publicKey),
+          aesKey: rsaEncrypt(aesKey, publicKey),
           timeStamp: aesEncrypt(String(Date.now()), aesKey)
         };
         const resp = await this.postNavQuery(code, body);
