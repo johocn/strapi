@@ -202,4 +202,37 @@ describe('collect-job.processNavData', () => {
       },
     });
   });
+
+  it('annualYield：create 透传，update 覆盖，缺省保留原值', async () => {
+    const processNavData = getProcessNavData();
+
+    // create 路径：annualYield 随净值入库
+    navQuery.findOne.mockResolvedValueOnce(null);
+    await processNavData(mockStrapi, 1, [
+      { navDate: d(1), unitNav: 1.01, accNav: 1.01, annualYield: 1.72, dataSource: 'crawler' },
+    ]);
+    expect(navQuery.create).toHaveBeenCalledWith({
+      data: { product: 1, navDate: d(1), unitNav: 1.01, accNav: 1.01, annualYield: 1.72, dataSource: 'crawler' },
+    });
+
+    // update 路径：净值变化时 annualYield 一并覆盖
+    navQuery.findOne.mockResolvedValueOnce({ id: 10, unitNav: 1.00, accNav: 1.00, dataSource: 'old' });
+    await processNavData(mockStrapi, 1, [
+      { navDate: d(2), unitNav: 1.02, accNav: 1.02, annualYield: 3.2, dataSource: 'crawler' },
+    ]);
+    expect(navQuery.update).toHaveBeenCalledWith({
+      where: { id: 10 },
+      data: { unitNav: 1.02, accNav: 1.02, annualYield: 3.2, dataSource: 'crawler' },
+    });
+
+    // update 路径：annualYield 缺省保留原值
+    navQuery.findOne.mockResolvedValueOnce({ id: 11, unitNav: 1.00, accNav: 1.00, annualYield: 1.5, dataSource: 'old' });
+    await processNavData(mockStrapi, 1, [
+      { navDate: d(3), unitNav: 1.02 },
+    ]);
+    expect(navQuery.update).toHaveBeenCalledWith({
+      where: { id: 11 },
+      data: { unitNav: 1.02, accNav: 1.00, annualYield: 1.5, dataSource: 'old' },
+    });
+  });
 });

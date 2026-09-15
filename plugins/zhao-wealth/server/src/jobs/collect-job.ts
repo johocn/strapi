@@ -35,6 +35,7 @@ export async function processNavData(strapi: any, productId: number, navData: an
         data: {
           unitNav: nav.unitNav,
           accNav: nav.accNav ?? existing.accNav,
+          annualYield: nav.annualYield != null ? Number(nav.annualYield) : existing.annualYield,
           dataSource: nav.dataSource ?? existing.dataSource,
         },
       });
