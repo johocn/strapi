@@ -12251,7 +12251,7 @@ const holdingService = ({ strapi }) => {
     await strapi.db.query(HOLDING).delete({ where: { id } });
   }
   async function profitTrend(id) {
-    const holding2 = await strapi.db.query(HOLDING).findOne({ where: { id } });
+    const holding2 = await strapi.db.query(HOLDING).findOne({ where: { id }, populate: ["product"] });
     if (!holding2) return null;
     const productId = holding2.product?.id || holding2.product;
     const navs = await strapi.db.query(NAV).findMany({

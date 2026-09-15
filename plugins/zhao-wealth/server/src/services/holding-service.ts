@@ -143,7 +143,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
    * 盈亏时序：从买入日到最新净值日，按日净值计算市值与盈亏
    */
   async function profitTrend(id: number) {
-    const holding = await strapi.db.query(HOLDING).findOne({ where: { id } });
+    const holding = await strapi.db.query(HOLDING).findOne({ where: { id }, populate: ['product'] });
     if (!holding) return null;
 
     const productId = holding.product?.id || holding.product;
