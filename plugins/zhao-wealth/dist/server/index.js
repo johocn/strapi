@@ -8238,8 +8238,12 @@ class NanyinCollector extends BaseCollector {
           timeStamp: aesEncrypt(String(Date.now()), aesKey)
         };
         const resp = await this.postNavQuery(code, body);
-        const cipherBase64 = resp && resp.data;
-        if (!cipherBase64) throw new Error("响应缺少 data.data");
+        const envelope = resp;
+        const cipherBase64 = envelope && envelope.data && envelope.data.data;
+        if (!cipherBase64) {
+          const errMsg = envelope && (envelope.errorMessage || envelope.message);
+          throw new Error(errMsg || "响应缺少加密数据");
+        }
         const parsed = JSON.parse(aesDecrypt(cipherBase64, aesKey));
         const aaData = Array.isArray(parsed.aaData) ? parsed.aaData : [];
         const totalCount = parsed.totalCount != null ? Number(parsed.totalCount) : 0;

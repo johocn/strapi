@@ -134,8 +134,13 @@ export default class NanyinCollector extends BaseCollector {
         const resp = await this.postNavQuery(code, body);
 
         // 5. 解密响应 data.data → { aaData, totalCount, currentPage }
-        const cipherBase64 = resp && resp.data;
-        if (!cipherBase64) throw new Error('响应缺少 data.data');
+        // 服务端响应结构：{ code, message, data: { data: AES密文 } }，与官网页面 json.data.data 一致
+        const envelope = resp; // postNavQuery 返回 axios resp.data
+        const cipherBase64 = envelope && envelope.data && envelope.data.data;
+        if (!cipherBase64) {
+          const errMsg = envelope && (envelope.errorMessage || envelope.message);
+          throw new Error(errMsg || '响应缺少加密数据');
+        }
         const parsed = JSON.parse(aesDecrypt(cipherBase64, aesKey));
         const aaData = Array.isArray(parsed.aaData) ? parsed.aaData : [];
         const totalCount = parsed.totalCount != null ? Number(parsed.totalCount) : 0;

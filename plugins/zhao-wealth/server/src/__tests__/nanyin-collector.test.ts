@@ -38,10 +38,12 @@ import NanyinCollector from '../collectors/nanyin-collector';
 const KEY = '0123456789abcdef';
 const collector = new NanyinCollector();
 
-// 构造加密净值响应：{ data: { data: AES密文(aaData JSON) } }
+// 构造加密净值响应：axios resp = { data: { code, message, data: { data: AES密文(aaData JSON) } } }
 const makeNavResponse = (aaData: any[], totalCount: number, currentPage: number) => ({
   data: {
-    data: aesEncrypt(JSON.stringify({ aaData, totalCount, currentPage }), KEY),
+    code: 0,
+    message: 'success',
+    data: { data: aesEncrypt(JSON.stringify({ aaData, totalCount, currentPage }), KEY) },
   },
 });
 
