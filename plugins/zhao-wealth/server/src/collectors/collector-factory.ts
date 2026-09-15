@@ -3,6 +3,7 @@
 import CbhbCollector from './cbhb-collector';
 import ChinawealthCollector from './chinawealth-collector';
 import HzbankCollector from './hzbank-collector';
+import NanyinCollector from './nanyin-collector';
 import QingdaoCollector from './qingdao-collector';
 
 const COLLECTOR_MAP: Record<string, any> = {
@@ -14,6 +15,8 @@ const COLLECTOR_MAP: Record<string, any> = {
   '青岛银行': QingdaoCollector,
   'chinawealth': ChinawealthCollector,
   '中国理财网': ChinawealthCollector,
+  'nanyin': NanyinCollector,
+  '南银理财': NanyinCollector,
   // 后续扩展：'工银理财': IcbcCollector, ...
 };
 
@@ -41,6 +44,7 @@ export function getAvailableSources(): Array<{ value: string; label: string }> {
     { value: 'hzbank', label: '杭银理财' },
     { value: 'qdccb', label: '青岛银行' },
     { value: 'chinawealth', label: '中国理财网' },
+    { value: 'nanyin', label: '南银理财' },
     // 后续扩展
   ];
 }

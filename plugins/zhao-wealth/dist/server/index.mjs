@@ -3,6 +3,7 @@ import axios from "axios";
 import Queue from "bull";
 import { chromium } from "playwright";
 import { existsSync } from "fs";
+import crypto from "crypto";
 const kind$e = "collectionType";
 const collectionName$e = "wealth_companies";
 const info$e = { "singularName": "wealth-company", "pluralName": "wealth-companies", "displayName": "理财公司", "description": "银行理财公司信息管理" };
@@ -8067,6 +8068,258 @@ class QingdaoCollector extends BaseCollector {
     }
   }
 }
+const NANYIN_BASE_URL = "https://www.nanyinwealth.com";
+const PUBLIC_KEY_URL = `${NANYIN_BASE_URL}/eportal/ui?moduleId=5&portal.url=/portlet/login-handle!publicKey.portlet&TopModuelId=e7db4f2628cb40548f6101d71695ada2`;
+const QUERY_NAV_URL = `${NANYIN_BASE_URL}/eportal/ui?moduleId=5&portal.url=/portlet/article-data!queryNetValueList.portlet&TopModuelId=e7db4f2628cb40548f6101d71695ada2`;
+const NAV_PAGE_URL = (productCode) => `${NANYIN_BASE_URL}/nanyinwealth/lccp/cpjz/index.html?id=${productCode}`;
+const BROWSER_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36";
+async function getServerPublicKey() {
+  const resp = await httpClient.get(PUBLIC_KEY_URL, {
+    headers: {
+      "User-Agent": BROWSER_UA,
+      "Origin": NANYIN_BASE_URL,
+      "Referer": `${NANYIN_BASE_URL}/nanyinwealth/lccp/cpjz/index.html`
+    }
+  });
+  return parsePublicKey(extractRawKey(resp.data));
+}
+function extractRawKey(data) {
+  if (typeof data === "string") return data;
+  if (data && typeof data === "object") {
+    for (const key of ["data", "key", "publicKey", "public_key", "result", "content"]) {
+      if (typeof data[key] === "string" && data[key].trim()) return data[key];
+    }
+  }
+  return JSON.stringify(data);
+}
+function parsePublicKey(raw) {
+  const trimmed = (raw || "").trim().replace(/^["']|["']$/g, "");
+  if (!trimmed) throw new Error("公钥为空");
+  if (trimmed.includes("BEGIN")) {
+    try {
+      return crypto.createPublicKey(trimmed).export({ format: "pem", type: "spki" }).toString();
+    } catch {
+    }
+  }
+  const b64 = trimmed.replace(/\s+/g, "");
+  try {
+    const pem = `-----BEGIN PUBLIC KEY-----
+${b64}
+-----END PUBLIC KEY-----`;
+    return crypto.createPublicKey(pem).export({ format: "pem", type: "spki" }).toString();
+  } catch {
+  }
+  try {
+    const pem = `-----BEGIN RSA PUBLIC KEY-----
+${b64}
+-----END RSA PUBLIC KEY-----`;
+    return crypto.createPublicKey(pem).export({ format: "pem", type: "spki" }).toString();
+  } catch {
+  }
+  throw new Error("无法解析 RSA 公钥（已尝试 PEM/SPKI/PKCS1）");
+}
+function generateAesKey() {
+  return crypto.randomBytes(16);
+}
+function aesEncrypt(plainText, aesKey) {
+  const cipher = crypto.createCipheriv("aes-128-ecb", aesKey, null);
+  return Buffer.concat([cipher.update(plainText, "utf8"), cipher.final()]).toString("base64");
+}
+function aesDecrypt(cipherBase64, aesKey) {
+  const decipher = crypto.createDecipheriv("aes-128-ecb", aesKey, null);
+  return Buffer.concat([
+    decipher.update(Buffer.from(cipherBase64, "base64")),
+    decipher.final()
+  ]).toString("utf8");
+}
+function rsaEncrypt(aesKeyUtf8, publicKeyPem) {
+  return crypto.publicEncrypt(
+    { key: publicKeyPem, padding: crypto.constants.RSA_PKCS1_PADDING },
+    Buffer.from(aesKeyUtf8, "utf8")
+  ).toString("base64");
+}
+const MAX_PAGES = 100;
+class NanyinCollector extends BaseCollector {
+  /**
+   * 采集产品基本信息 — Playwright 打开净值页从 DOM 提取
+   * 提取不到结构化信息时返回 null，提示走中国理财网补录
+   */
+  async collectProductInfo(productCode) {
+    const code = productCode.toUpperCase();
+    const page = await createPage();
+    if (!page) {
+      console.log("[nanyin] Playwright Browser 不可用，产品信息请通过中国理财网补录（登记编码 Z7003225000398）");
+      return null;
+    }
+    try {
+      const url = NAV_PAGE_URL(code);
+      console.log(`[nanyin] Playwright 打开净值页: ${url}`);
+      await page.goto(url, { waitUntil: "networkidle", timeout: 3e4 });
+      await page.waitForTimeout(2e3);
+      const info2 = await page.evaluate(() => {
+        const bodyText = document.body.textContent || "";
+        const title = (document.title || "").trim();
+        let productName = "";
+        const selectors = [".product-name", ".prod-name", ".cp-name", ".cpName", ".name", "h1", "h2"];
+        for (const sel of selectors) {
+          const el = document.querySelector(sel);
+          const text = el ? (el.textContent || "").trim() : "";
+          if (text && text.length > 2 && text.length <= 60) {
+            productName = text;
+            break;
+          }
+        }
+        if (!productName && title) {
+          productName = title.split(/[-_|]/)[0].trim();
+        }
+        if (!productName || productName.length < 4) return null;
+        let riskLevelRaw = "";
+        const riskMatch = bodyText.match(/风险等级[：:\s]*([一二三四五]级|R\s*[1-5])/);
+        if (riskMatch) riskLevelRaw = riskMatch[1].replace(/\s+/g, "");
+        return {
+          productName,
+          riskLevel: riskLevelRaw,
+          riskLevelRaw,
+          productType: "bank-wealth",
+          company: "南银理财"
+        };
+      });
+      if (!info2) {
+        console.log("[nanyin] 未提取到结构化产品信息，产品信息请通过中国理财网补录（登记编码 Z7003225000398）");
+        return null;
+      }
+      console.log(`[nanyin] 产品信息采集成功: ${info2.productName}`);
+      return info2;
+    } catch (error) {
+      console.log(`[nanyin] 产品信息采集失败: ${error.message}，产品信息请通过中国理财网补录（登记编码 Z7003225000398）`);
+      return null;
+    } finally {
+      await closePage(page);
+    }
+  }
+  /**
+   * 采集净值数据 — RSA/AES 双层加密接口
+   *
+   * 链路：公钥 → 随机 AES key → 加密请求体（data/timeStamp/AES，aesKey/RSA）
+   *       → POST 翻页 → 解密 data.data → aaData 映射 → 过滤排序
+   * 字段映射：date→navDate、netValue→unitNav、cumulativeNetValue→accNav（缺省回退 unitNav）
+   */
+  async collectNavData(productCode, options2) {
+    const code = productCode.toUpperCase();
+    const allRecords = [];
+    let rawCount = 0;
+    try {
+      const publicKey = await getServerPublicKey();
+      const aesKey = generateAesKey();
+      const aesKeyHex = aesKey.toString("hex");
+      for (let currentPage = 1; currentPage <= MAX_PAGES; currentPage++) {
+        const payload = JSON.stringify({
+          productCode: code,
+          startDate: options2 && options2.startDate || "",
+          endDate: options2 && options2.endDate || "",
+          currentPage
+        });
+        const body = {
+          data: aesEncrypt(payload, aesKey),
+          aesKey: rsaEncrypt(aesKeyHex, publicKey),
+          timeStamp: aesEncrypt(String(Date.now()), aesKey)
+        };
+        const resp = await this.postNavQuery(code, body);
+        const cipherBase64 = resp && resp.data;
+        if (!cipherBase64) throw new Error("响应缺少 data.data");
+        const parsed = JSON.parse(aesDecrypt(cipherBase64, aesKey));
+        const aaData = Array.isArray(parsed.aaData) ? parsed.aaData : [];
+        const totalCount = parsed.totalCount != null ? Number(parsed.totalCount) : 0;
+        for (const r of aaData) {
+          const navDate = toNavDate(r.date);
+          const unitNav = r.netValue != null ? String(r.netValue) : null;
+          allRecords.push({
+            navDate,
+            unitNav,
+            accNav: r.cumulativeNetValue != null ? String(r.cumulativeNetValue) : unitNav,
+            dataSource: "crawler"
+          });
+        }
+        rawCount += aaData.length;
+        if (aaData.length === 0) break;
+        if (totalCount > 0 && allRecords.length >= totalCount) break;
+      }
+      const validData = allRecords.filter((d) => d.navDate && (d.unitNav || d.accNav));
+      validData.sort((a, b) => String(b.navDate).localeCompare(String(a.navDate)));
+      if (validData.length === 0) throw new Error("未获取到净值数据");
+      console.log(`[nanyin] 净值采集完成: code=${code}, 共${validData.length}条（原始${rawCount}条）`);
+      return validData;
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      throw new Error(`南银理财净值采集失败: ${msg} 改用中国理财网源（登记编码 Z7003225000398）`);
+    }
+  }
+  /**
+   * POST 净值接口 — httpClient 优先，502/非 2xx 切 Playwright 会话兜底
+   */
+  async postNavQuery(productCode, body) {
+    try {
+      const resp = await httpClient.post(QUERY_NAV_URL, body, {
+        headers: {
+          "User-Agent": BROWSER_UA,
+          "Origin": NANYIN_BASE_URL,
+          "Referer": NAV_PAGE_URL(productCode),
+          "Content-Type": "application/json;charset=UTF-8"
+        }
+      });
+      return resp.data;
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      if (/HTTP [45]\d{2}/.test(msg)) {
+        console.log(`[nanyin] HTTP 异常(${msg})，改用 Playwright 会话请求`);
+        return this.postNavQueryViaPlaywright(productCode, body);
+      }
+      throw error;
+    }
+  }
+  /**
+   * Playwright 兜底：页面会话内同源 fetch（自动携带 Cookie）
+   * 请求体仍为 Node 端已加密的 JSON 字符串，解密仍在 Node 端完成
+   */
+  async postNavQueryViaPlaywright(productCode, body) {
+    const page = await createPage();
+    if (!page) throw new Error("Playwright Browser 不可用");
+    try {
+      await page.goto(NAV_PAGE_URL(productCode), { waitUntil: "domcontentloaded", timeout: 3e4 });
+      const bodyStr = JSON.stringify(body);
+      return await page.evaluate(
+        async (args) => {
+          const res = await fetch(args.fetchUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json;charset=UTF-8", "X-Requested-With": "XMLHttpRequest" },
+            body: args.bodyStr
+          });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          return await res.json();
+        },
+        { fetchUrl: QUERY_NAV_URL, bodyStr }
+      );
+    } finally {
+      await closePage(page);
+    }
+  }
+}
+function toNavDate(raw) {
+  if (raw == null) return "";
+  if (typeof raw === "number" || /^\d{10,13}$/.test(String(raw))) {
+    const n2 = Number(raw);
+    const ms = n2 < 1e12 ? n2 * 1e3 : n2;
+    if (ms > 0) {
+      const d = new Date(ms);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    }
+    return "";
+  }
+  const s2 = String(raw).trim().replace(/[/.]/g, "-");
+  const m = s2.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (m) return `${m[1]}-${m[2].padStart(2, "0")}-${m[3].padStart(2, "0")}`;
+  return s2.slice(0, 10);
+}
 const COLLECTOR_MAP = {
   "cbhb": CbhbCollector,
   "渤银理财": CbhbCollector,
@@ -8075,7 +8328,9 @@ const COLLECTOR_MAP = {
   "qdccb": QingdaoCollector,
   "青岛银行": QingdaoCollector,
   "chinawealth": ChinawealthCollector,
-  "中国理财网": ChinawealthCollector
+  "中国理财网": ChinawealthCollector,
+  "nanyin": NanyinCollector,
+  "南银理财": NanyinCollector
   // 后续扩展：'工银理财': IcbcCollector, ...
 };
 function getCollector(source) {
