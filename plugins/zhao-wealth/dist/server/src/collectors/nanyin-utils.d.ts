@@ -15,17 +15,19 @@ export declare function getServerPublicKey(): Promise<string>;
  */
 export declare function parsePublicKey(raw: string): string;
 /**
- * 生成随机 16 字节 AES key
+ * 生成 16 位随机字母数字 AES key（与官网 aesUtil.genKey 一致：
+ * [A-Za-z0-9] 随机 16 字符，UTF-8 字节长度恰为 16，满足 AES-128）
  */
-export declare function generateAesKey(): Buffer;
+export declare function generateAesKey(): string;
 /**
  * AES-128-ECB-PKCS7 加密，输出 base64（ECB 无 IV）
+ * key 为 16 字符字符串，按 UTF-8 字节作为密钥（与官网 CryptoJS.enc.Utf8.parse 一致）
  */
-export declare function aesEncrypt(plainText: string, aesKey: Buffer): string;
+export declare function aesEncrypt(plainText: string, aesKey: string): string;
 /**
  * AES-128-ECB-PKCS7 解密（base64 输入）
  */
-export declare function aesDecrypt(cipherBase64: string, aesKey: Buffer): string;
+export declare function aesDecrypt(cipherBase64: string, aesKey: string): string;
 /**
  * RSA 公钥加密（PKCS1 v1.5 padding），输出 base64
  */
