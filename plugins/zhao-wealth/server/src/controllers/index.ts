@@ -13,6 +13,7 @@ import scoring from './scoring';
 import portfolio from './portfolio';
 import consultation from './consultation';
 import monitor from './monitor';
+import holding from './holding';
 
 export default {
   product,
@@ -28,4 +29,5 @@ export default {
   portfolio,
   consultation,
   monitor,
+  holding,
 };

@@ -13,6 +13,7 @@ import portfolioService from './portfolio-service';
 import consultationService from './consultation-service';
 import riskDisclosureService from './risk-disclosure-service';
 import monitorService from './monitor-service';
+import holdingService from './holding-service';
 
 export default {
   product,
@@ -28,4 +29,5 @@ export default {
   'consultation-service': consultationService,
   'risk-disclosure-service': riskDisclosureService,
   'monitor-service': monitorService,
+  'holding-service': holdingService,
 };

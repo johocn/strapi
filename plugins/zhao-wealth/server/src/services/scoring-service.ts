@@ -287,11 +287,36 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       }
     }
 
+    // 批量查询每个产品的最新年化快照，补充榜单年化展示字段
+    const annualField = PERIOD_TO_ANNUAL_FIELD[period] || 'annual1m';
+    const annualKey = `latestAnnual${period.replace(/^(\w)(\d+)$/, (_m, p1, p2) => p1 + p2.toUpperCase())}`;
+    const annualQuery = strapi.db.query('plugin::zhao-wealth.wealth-annual-snapshot');
+    const allAnnuals = await annualQuery.findMany({
+      where: {
+        product: { id: { $in: productIds } },
+      },
+      orderBy: { snapshotDate: 'desc' },
+      limit: productIds.length * 2,
+    });
+    const annualMap: Record<number, any> = {};
+    for (const a of allAnnuals) {
+      const pid = a.product?.id || a.product;
+      if (!annualMap[pid]) {
+        annualMap[pid] = a;
+      }
+    }
+
     // 组装结果
-    const records = products.map((product: any) => ({
-      ...product,
-      score: scoreMap[product.id] || null,
-    }));
+    const records = products.map((product: any) => {
+      const annual = annualMap[product.id];
+      const annualValue = annual ? Number(annual[annualField]) : null;
+      return {
+        ...product,
+        score: scoreMap[product.id] || null,
+        [annualKey]: annualValue !== null && !isNaN(annualValue) ? annualValue : null,
+        annual1m: annualValue !== null && !isNaN(annualValue) ? annualValue : null,
+      };
+    });
 
     // 按评分降序排序
     records.sort((a, b) => {

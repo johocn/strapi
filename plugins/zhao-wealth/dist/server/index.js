@@ -9900,6 +9900,102 @@ const monitor = ({ strapi }) => ({
     }
   }
 });
+const holding = ({ strapi }) => ({
+  /**
+   * GET /v1/admin/holdings
+   */
+  async list(ctx) {
+    try {
+      const { page, pageSize, status, user } = ctx.query;
+      const result = await strapi.service("plugin::zhao-wealth.holding-service").list({
+        page: Number(page) || 1,
+        pageSize: Number(pageSize) || 20,
+        status,
+        user
+      });
+      ctx.body = paginatedResponse(result.records, result.pagination.page, result.pagination.pageSize, result.pagination.total);
+    } catch (error) {
+      strapi.log.error(`[zhao-wealth] 持仓列表查询失败: ${error.message}`);
+      ctx.body = errorResponse(500, "查询失败");
+    }
+  },
+  /**
+   * GET /v1/admin/holdings/:id
+   */
+  async detail(ctx) {
+    try {
+      const { id } = ctx.params;
+      const holding2 = await strapi.service("plugin::zhao-wealth.holding-service").detail(Number(id));
+      if (!holding2) {
+        ctx.body = errorResponse(404, "持仓不存在");
+        return;
+      }
+      ctx.body = successResponse(holding2);
+    } catch (error) {
+      strapi.log.error(`[zhao-wealth] 持仓详情查询失败: ${error.message}`);
+      ctx.body = errorResponse(500, "查询失败");
+    }
+  },
+  /**
+   * POST /v1/admin/holdings
+   */
+  async create(ctx) {
+    try {
+      const holding2 = await strapi.service("plugin::zhao-wealth.holding-service").create(ctx.request.body);
+      ctx.body = successResponse(holding2, "创建成功");
+    } catch (error) {
+      strapi.log.error(`[zhao-wealth] 持仓创建失败: ${error.message}`);
+      ctx.body = errorResponse(500, "创建失败");
+    }
+  },
+  /**
+   * PUT /v1/admin/holdings/:id
+   */
+  async update(ctx) {
+    try {
+      const { id } = ctx.params;
+      const holding2 = await strapi.service("plugin::zhao-wealth.holding-service").update(Number(id), ctx.request.body);
+      if (!holding2) {
+        ctx.body = errorResponse(404, "持仓不存在");
+        return;
+      }
+      ctx.body = successResponse(holding2, "更新成功");
+    } catch (error) {
+      strapi.log.error(`[zhao-wealth] 持仓更新失败: ${error.message}`);
+      ctx.body = errorResponse(500, "更新失败");
+    }
+  },
+  /**
+   * DELETE /v1/admin/holdings/:id
+   */
+  async delete(ctx) {
+    try {
+      const { id } = ctx.params;
+      await strapi.service("plugin::zhao-wealth.holding-service").remove(Number(id));
+      ctx.body = successResponse(null, "删除成功");
+    } catch (error) {
+      strapi.log.error(`[zhao-wealth] 持仓删除失败: ${error.message}`);
+      ctx.body = errorResponse(500, "删除失败");
+    }
+  },
+  /**
+   * GET /v1/admin/holdings/:id/profit-trend
+   */
+  async profitTrend(ctx) {
+    try {
+      const { id } = ctx.params;
+      const result = await strapi.service("plugin::zhao-wealth.holding-service").profitTrend(Number(id));
+      if (!result) {
+        ctx.body = errorResponse(404, "持仓不存在");
+        return;
+      }
+      ctx.body = successResponse(result);
+    } catch (error) {
+      strapi.log.error(`[zhao-wealth] 持仓盈亏时序查询失败: ${error.message}`);
+      ctx.body = errorResponse(500, "查询失败");
+    }
+  }
+});
 const controllers = {
   product: product$1,
   nav,
@@ -9913,7 +10009,8 @@ const controllers = {
   scoring,
   portfolio,
   consultation,
-  monitor
+  monitor,
+  holding
 };
 const contentApi = () => ({
   type: "content-api",
@@ -10197,7 +10294,14 @@ const adminApi = () => ({
     adminRoute("GET", "/v1/admin/disclosures", "disclosure.adminList"),
     adminRoute("POST", "/v1/admin/disclosures", "disclosure.adminCreate"),
     adminRoute("PUT", "/v1/admin/disclosures/:id", "disclosure.adminUpdate"),
-    adminRoute("DELETE", "/v1/admin/disclosures/:id", "disclosure.adminDelete")
+    adminRoute("DELETE", "/v1/admin/disclosures/:id", "disclosure.adminDelete"),
+    // ===== 客户持仓（管理端代客录入） =====
+    adminRoute("GET", "/v1/admin/holdings", "holding.list"),
+    adminRoute("GET", "/v1/admin/holdings/:id", "holding.detail"),
+    adminRoute("POST", "/v1/admin/holdings", "holding.create"),
+    adminRoute("PUT", "/v1/admin/holdings/:id", "holding.update"),
+    adminRoute("DELETE", "/v1/admin/holdings/:id", "holding.delete"),
+    adminRoute("GET", "/v1/admin/holdings/:id/profit-trend", "holding.profitTrend")
   ]
 });
 const routes = {
@@ -11542,10 +11646,33 @@ const scoringService = ({ strapi }) => {
         scoreMap[pid] = s2;
       }
     }
-    const records = products.map((product2) => ({
-      ...product2,
-      score: scoreMap[product2.id] || null
-    }));
+    const annualField = PERIOD_TO_ANNUAL_FIELD2[period] || "annual1m";
+    const annualKey = `latestAnnual${period.replace(/^(\w)(\d+)$/, (_m, p1, p2) => p1 + p2.toUpperCase())}`;
+    const annualQuery = strapi.db.query("plugin::zhao-wealth.wealth-annual-snapshot");
+    const allAnnuals = await annualQuery.findMany({
+      where: {
+        product: { id: { $in: productIds } }
+      },
+      orderBy: { snapshotDate: "desc" },
+      limit: productIds.length * 2
+    });
+    const annualMap = {};
+    for (const a of allAnnuals) {
+      const pid = a.product?.id || a.product;
+      if (!annualMap[pid]) {
+        annualMap[pid] = a;
+      }
+    }
+    const records = products.map((product2) => {
+      const annual2 = annualMap[product2.id];
+      const annualValue = annual2 ? Number(annual2[annualField]) : null;
+      return {
+        ...product2,
+        score: scoreMap[product2.id] || null,
+        [annualKey]: annualValue !== null && !isNaN(annualValue) ? annualValue : null,
+        annual1m: annualValue !== null && !isNaN(annualValue) ? annualValue : null
+      };
+    });
     records.sort((a, b) => {
       const sa = a.score?.compositeScore ?? 0;
       const sb = b.score?.compositeScore ?? 0;
@@ -12014,6 +12141,138 @@ const monitorService = ({ strapi }) => ({
     return dataDate < navDate ? "warning" : "ok";
   }
 });
+const holdingService = ({ strapi }) => {
+  const HOLDING = "plugin::zhao-wealth.wealth-customer-holding";
+  const NAV = "plugin::zhao-wealth.wealth-nav";
+  const toNum = (v) => {
+    if (v === null || v === void 0 || v === "") return null;
+    const n2 = Number(v);
+    return isNaN(n2) ? null : n2;
+  };
+  function daysBetween(from, to) {
+    const ms = new Date(to).getTime() - new Date(from).getTime();
+    return Math.max(0, Math.floor(ms / 864e5));
+  }
+  async function getNavOnOrBefore(productId, date) {
+    return strapi.db.query(NAV).findOne({
+      where: { product: productId, navDate: { $lte: date } },
+      orderBy: { navDate: "desc" }
+    });
+  }
+  async function getLatestNav(productId) {
+    return strapi.db.query(NAV).findOne({
+      where: { product: productId },
+      orderBy: { navDate: "desc" }
+    });
+  }
+  async function calcMetrics(holding2) {
+    const buyAmount = toNum(holding2.buyAmount) || 0;
+    const buyDate = holding2.buyDate;
+    const redeemDate = holding2.status === "redeemed" ? holding2.redeemDate || buyDate : null;
+    let buyNav = toNum(holding2.buyNav);
+    let navAnchor = redeemDate || buyDate;
+    let latestNav = null;
+    if (buyNav === null) {
+      const buyNavRec = await getNavOnOrBefore(holding2.product?.id || holding2.product, navAnchor);
+      buyNav = toNum(buyNavRec?.unitNav);
+    }
+    const latestRec = redeemDate ? await getNavOnOrBefore(holding2.product?.id || holding2.product, redeemDate) : await getLatestNav(holding2.product?.id || holding2.product);
+    latestNav = toNum(latestRec?.unitNav);
+    if (buyNav === null || buyNav === 0) buyNav = 1;
+    if (latestNav === null || latestNav === 0) latestNav = buyNav;
+    const shares = buyAmount / buyNav;
+    const currentValue = shares * latestNav;
+    const profit = currentValue - buyAmount;
+    const profitPercent = buyAmount > 0 ? profit / buyAmount : 0;
+    const holdingDays = redeemDate ? daysBetween(buyDate, redeemDate) : daysBetween(buyDate, (/* @__PURE__ */ new Date()).toISOString().split("T")[0]);
+    let annualizedProfit = null;
+    if (holdingDays > 0 && profitPercent > -1) {
+      annualizedProfit = Math.pow(1 + profitPercent, 365 / holdingDays) - 1;
+    }
+    return {
+      buyNav,
+      shares,
+      currentValue,
+      profit,
+      profitPercent,
+      holdingDays,
+      annualizedProfit,
+      navDate: latestRec?.navDate || null
+    };
+  }
+  const populate = ["user", "product.company"];
+  async function list(params) {
+    const { page = 1, pageSize = 20, status, user } = params;
+    const limit = Math.min(pageSize, 100);
+    const offset2 = (page - 1) * limit;
+    const where = {};
+    if (status) where.status = status;
+    if (user) where.user = Number(user);
+    const query = strapi.db.query(HOLDING);
+    const holdings = await query.findMany({ where, limit, offset: offset2, orderBy: { createdAt: "desc" }, populate });
+    const total = await query.count({ where });
+    const records = [];
+    for (const holding2 of holdings) {
+      const metrics = await calcMetrics(holding2);
+      records.push({ ...holding2, ...metrics });
+    }
+    return { records, pagination: { page, pageSize: limit, total } };
+  }
+  async function detail(id) {
+    const holding2 = await strapi.db.query(HOLDING).findOne({ where: { id }, populate });
+    if (!holding2) return null;
+    const metrics = await calcMetrics(holding2);
+    return { ...holding2, ...metrics };
+  }
+  async function create(data) {
+    const payload = {
+      product: data.product,
+      buyDate: data.buyDate,
+      buyAmount: data.buyAmount
+    };
+    if (data.user) payload.user = data.user;
+    if (data.channel) payload.channel = data.channel;
+    if (data.buyNav !== void 0 && data.buyNav !== null && data.buyNav !== "") payload.buyNav = data.buyNav;
+    if (data.remark) payload.remark = data.remark;
+    if (data.status) payload.status = data.status;
+    if (data.redeemDate) payload.redeemDate = data.redeemDate;
+    const holding2 = await strapi.db.query(HOLDING).create({ data: payload });
+    return detail(holding2.id);
+  }
+  async function update(id, data) {
+    const payload = {};
+    for (const key of ["user", "product", "channel", "buyDate", "buyAmount", "buyNav", "remark", "status", "redeemDate"]) {
+      if (data[key] !== void 0) payload[key] = data[key];
+    }
+    await strapi.db.query(HOLDING).update({ where: { id }, data: payload });
+    return detail(id);
+  }
+  async function remove(id) {
+    await strapi.db.query(HOLDING).delete({ where: { id } });
+  }
+  async function profitTrend(id) {
+    const holding2 = await strapi.db.query(HOLDING).findOne({ where: { id } });
+    if (!holding2) return null;
+    const productId = holding2.product?.id || holding2.product;
+    const navs = await strapi.db.query(NAV).findMany({
+      where: { product: productId, navDate: { $gte: holding2.buyDate } },
+      orderBy: { navDate: "asc" },
+      limit: 1e3
+    });
+    const buyNav = toNum(holding2.buyNav) || toNum(navs[0]?.unitNav) || 1;
+    const shares = (toNum(holding2.buyAmount) || 0) / buyNav;
+    const points = navs.map((nav2) => {
+      const value = shares * (toNum(nav2.unitNav) || buyNav);
+      return {
+        date: nav2.navDate,
+        value,
+        profit: value - (toNum(holding2.buyAmount) || 0)
+      };
+    });
+    return { points };
+  }
+  return { list, detail, create, update, remove, profitTrend };
+};
 const services = {
   product,
   "nav-calculator": navCalculator,
@@ -12027,7 +12286,8 @@ const services = {
   "portfolio-service": portfolioService,
   "consultation-service": consultationService,
   "risk-disclosure-service": riskDisclosureService,
-  "monitor-service": monitorService
+  "monitor-service": monitorService,
+  "holding-service": holdingService
 };
 const hasChannelAccess = async (ctx, config, { strapi }) => {
   const user = ctx.state.user;

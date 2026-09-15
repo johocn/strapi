@@ -132,5 +132,15 @@ declare const _default: {
     }) => {
         list(ctx: any): Promise<void>;
     };
+    holding: ({ strapi }: {
+        strapi: any;
+    }) => {
+        list(ctx: any): Promise<void>;
+        detail(ctx: any): Promise<void>;
+        create(ctx: any): Promise<void>;
+        update(ctx: any): Promise<void>;
+        delete(ctx: any): Promise<void>;
+        profitTrend(ctx: any): Promise<void>;
+    };
 };
 export default _default;

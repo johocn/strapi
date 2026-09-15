@@ -80,5 +80,13 @@ export default () => ({
     adminRoute('POST', '/v1/admin/disclosures', 'disclosure.adminCreate'),
     adminRoute('PUT', '/v1/admin/disclosures/:id', 'disclosure.adminUpdate'),
     adminRoute('DELETE', '/v1/admin/disclosures/:id', 'disclosure.adminDelete'),
+
+    // ===== 客户持仓（管理端代客录入） =====
+    adminRoute('GET', '/v1/admin/holdings', 'holding.list'),
+    adminRoute('GET', '/v1/admin/holdings/:id', 'holding.detail'),
+    adminRoute('POST', '/v1/admin/holdings', 'holding.create'),
+    adminRoute('PUT', '/v1/admin/holdings/:id', 'holding.update'),
+    adminRoute('DELETE', '/v1/admin/holdings/:id', 'holding.delete'),
+    adminRoute('GET', '/v1/admin/holdings/:id/profit-trend', 'holding.profitTrend'),
   ],
 });
