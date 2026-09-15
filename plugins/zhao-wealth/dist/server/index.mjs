@@ -44,7 +44,7 @@ const kind$b = "collectionType";
 const collectionName$b = "wealth_navs";
 const info$b = { "singularName": "wealth-nav", "pluralName": "wealth-navs", "displayName": "净值数据", "description": "理财/基金净值数据（不含货币基金）" };
 const options$b = { "draftAndPublish": false };
-const attributes$b = { "product": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-product", "inversedBy": "navs" }, "navDate": { "type": "date", "required": true }, "unitNav": { "type": "decimal", "precision": 20, "scale": 8 }, "accNav": { "type": "decimal", "precision": 20, "scale": 8 }, "dataSource": { "type": "enumeration", "enum": ["crawler", "manual"], "default": "crawler" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const attributes$b = { "product": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-product", "inversedBy": "navs" }, "navDate": { "type": "date", "required": true }, "unitNav": { "type": "decimal", "precision": 20, "scale": 8 }, "accNav": { "type": "decimal", "precision": 20, "scale": 8 }, "dataSource": { "type": "enumeration", "enum": ["crawler", "manual"], "default": "crawler" }, "annualYield": { "type": "decimal", "precision": 12, "scale": 6 }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
 const wealthNav = {
   kind: kind$b,
   collectionName: collectionName$b,
@@ -116,7 +116,7 @@ const kind$5 = "collectionType";
 const collectionName$5 = "wealth_risk_metrics";
 const info$5 = { "singularName": "wealth-risk-metric", "pluralName": "wealth-risk-metrics", "displayName": "风险指标", "description": "业绩归因指标（波动率/最大回撤/夏普/同类排名）" };
 const options$5 = { "draftAndPublish": false };
-const attributes$5 = { "product": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-product", "inversedBy": "riskMetrics" }, "snapshotDate": { "type": "date", "required": true }, "period": { "type": "enumeration", "enum": ["m1", "m3", "m6", "y1"], "required": true }, "metricName": { "type": "enumeration", "enum": ["volatility", "maxDrawdown", "sharpe", "rankPercentile"], "required": true }, "metricValue": { "type": "decimal", "precision": 12, "scale": 6 }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const attributes$5 = { "product": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-product", "inversedBy": "riskMetrics" }, "snapshotDate": { "type": "date", "required": true }, "period": { "type": "enumeration", "enum": ["m1", "m3", "m6", "y1"], "required": true }, "metricName": { "type": "enumeration", "enum": ["volatility", "maxDrawdown", "sharpe", "rankPercentile", "incomeStability"], "required": true }, "metricValue": { "type": "decimal", "precision": 12, "scale": 6 }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
 const wealthRiskMetric = {
   kind: kind$5,
   collectionName: collectionName$5,
@@ -8145,7 +8145,7 @@ function rsaEncrypt(aesKeyUtf8, publicKeyPem) {
     Buffer.from(aesKeyUtf8, "utf8")
   ).toString("base64");
 }
-const MAX_PAGES = 100;
+const MAX_PAGES$1 = 100;
 class NanyinCollector extends BaseCollector {
   /**
    * 采集产品基本信息 — Playwright 打开净值页从 DOM 提取
@@ -8218,7 +8218,7 @@ class NanyinCollector extends BaseCollector {
     try {
       const publicKey = await getServerPublicKey();
       const aesKey = generateAesKey();
-      for (let currentPage = 1; currentPage <= MAX_PAGES; currentPage++) {
+      for (let currentPage = 1; currentPage <= MAX_PAGES$1; currentPage++) {
         const payload = JSON.stringify({
           productCode: code,
           startDate: options2 && options2.startDate || "",
@@ -8241,7 +8241,7 @@ class NanyinCollector extends BaseCollector {
         const aaData = Array.isArray(parsed.aaData) ? parsed.aaData : [];
         const totalCount = parsed.totalCount != null ? Number(parsed.totalCount) : 0;
         for (const r of aaData) {
-          const navDate = toNavDate(r.date);
+          const navDate = toNavDate$1(r.date);
           const unitNav = r.netValue != null ? String(r.netValue) : null;
           allRecords.push({
             navDate,
@@ -8314,6 +8314,144 @@ class NanyinCollector extends BaseCollector {
     }
   }
 }
+function toNavDate$1(raw) {
+  if (raw == null) return "";
+  if (typeof raw === "number" || /^\d{10,13}$/.test(String(raw))) {
+    const n2 = Number(raw);
+    const ms = n2 < 1e12 ? n2 * 1e3 : n2;
+    if (ms > 0) {
+      const d = new Date(ms);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    }
+    return "";
+  }
+  const s2 = String(raw).trim().replace(/[/.]/g, "-");
+  const m = s2.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (m) return `${m[1]}-${m[2].padStart(2, "0")}-${m[3].padStart(2, "0")}`;
+  return s2.slice(0, 10);
+}
+const NINGYIN_BASE_URL = "https://www.wmbnb.com";
+const DETAIL_PAGE_URL = (productCode) => `${NINGYIN_BASE_URL}/product/productdetails/index.html?projectcode=${productCode}`;
+const MAX_PAGES = 500;
+class NingyinCollector extends BaseCollector {
+  /**
+   * 采集产品基本信息 — Playwright 会话内 fetch list.json
+   * 提取不到结构化信息时返回 null（提示走中国理财网补录登记编码）
+   */
+  async collectProductInfo(productCode) {
+    const code = productCode.toUpperCase();
+    const page = await createPage();
+    if (!page) {
+      console.log("[ningyin] Playwright Browser 不可用，产品信息请通过中国理财网补录");
+      return null;
+    }
+    try {
+      await page.goto(DETAIL_PAGE_URL(code), { waitUntil: "domcontentloaded", timeout: 3e4 });
+      const info2 = await page.evaluate(async (c) => {
+        const res = await fetch(`/ningbo-web/product/list.json?projectcode=${encodeURIComponent(c)}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const j = await res.json();
+        const p = j.list && j.list[0];
+        if (!p) return null;
+        return {
+          productName: p.projectname || "",
+          registerCode: p.id || "",
+          riskLevel: p.risklevelDesc || "",
+          riskLevelRaw: p.risklevelDesc || "",
+          productType: "bank-wealth",
+          company: "宁银理财",
+          issueDate: p.projectsetupdate ? new Date(p.projectsetupdate).toISOString().slice(0, 10) : ""
+        };
+      }, code);
+      if (!info2 || !info2.productName) {
+        console.log("[ningyin] 未提取到产品信息（请确认产品代码或在中国理财网补录登记编码）");
+        return null;
+      }
+      console.log(`[ningyin] 产品信息采集成功: ${info2.productName}`);
+      return info2;
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      console.log(`[ningyin] 产品信息采集失败: ${msg}`);
+      return null;
+    } finally {
+      await closePage(page);
+    }
+  }
+  /**
+   * 采集净值数据 — 官网 funddaytable 翻页拉全量，失败自动切中国理财网兜底
+   * 字段映射：cdate(ms)→navDate、netvalue→unitNav、totalnetvalue→accNav、incomeratio→annualYield
+   */
+  async collectNavData(productCode, options2) {
+    const code = productCode.toUpperCase();
+    const registerCode = options2 && options2.registerCode || "";
+    const startDate = options2 && options2.startDate || "2020-01-01";
+    const endDate = options2 && options2.endDate || todayStr();
+    try {
+      return await this.collectViaOfficial(code, startDate, endDate);
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      console.log(`[ningyin] 官网采集失败(${msg})，改用中国理财网源（登记编码 ${registerCode || "未知"}）`);
+      return this.collectViaChinawealth(code, registerCode, msg);
+    }
+  }
+  async collectViaOfficial(code, startDate, endDate) {
+    const page = await createPage();
+    if (!page) throw new Error("Playwright Browser 不可用");
+    try {
+      await page.goto(DETAIL_PAGE_URL(code), { waitUntil: "domcontentloaded", timeout: 3e4 });
+      const perPage = 100;
+      const out = [];
+      for (let pageno = 1; pageno <= MAX_PAGES; pageno++) {
+        const url = `/ningbo-web/product/funddaytable.json?code=${encodeURIComponent(code)}&startdate=${startDate}&enddate=${endDate}&request_num=${perPage}&request_pageno=${pageno}`;
+        const list = await page.evaluate(
+          async (u) => {
+            const res = await fetch(u, { headers: { "X-Requested-With": "XMLHttpRequest" } });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const j = await res.json();
+            return j.list || [];
+          },
+          url
+        );
+        if (!list || list.length === 0) break;
+        out.push(...list);
+      }
+      const records = out.filter((r) => r.cdate != null && (r.netvalue != null || r.totalnetvalue != null)).map((r) => ({
+        navDate: toNavDate(r.cdate),
+        unitNav: r.netvalue != null ? String(r.netvalue) : null,
+        accNav: r.totalnetvalue != null ? String(r.totalnetvalue) : r.netvalue != null ? String(r.netvalue) : null,
+        annualYield: r.incomeratio != null ? String(r.incomeratio) : void 0,
+        dataSource: "crawler"
+      })).filter((r) => r.navDate && (r.unitNav || r.accNav));
+      const seen = /* @__PURE__ */ new Set();
+      const uniqueRecords = records.filter((r) => {
+        if (seen.has(r.navDate)) return false;
+        seen.add(r.navDate);
+        return true;
+      });
+      uniqueRecords.sort((a, b) => String(b.navDate).localeCompare(String(a.navDate)));
+      if (uniqueRecords.length === 0) throw new Error("未获取到净值数据");
+      console.log(`[ningyin] 官网净值采集完成: code=${code}, 共${uniqueRecords.length}条`);
+      return uniqueRecords;
+    } finally {
+      await closePage(page);
+    }
+  }
+  async collectViaChinawealth(code, registerCode, cause) {
+    if (!registerCode) {
+      throw new Error(`宁银理财净值采集失败: ${cause}（无登记编码，无法走中国理财网兜底）`);
+    }
+    const fallback = await new ChinawealthCollector().collectNavData(code, { registerCode });
+    if (fallback.length === 0) {
+      throw new Error(`宁银理财净值采集失败: ${cause} 改用中国理财网源（登记编码 ${registerCode}）也未获取到净值`);
+    }
+    console.log(`[ningyin] 中国理财网兜底采集完成: registerCode=${registerCode}, 共${fallback.length}条`);
+    return fallback;
+  }
+}
+function todayStr() {
+  const d = /* @__PURE__ */ new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
 function toNavDate(raw) {
   if (raw == null) return "";
   if (typeof raw === "number" || /^\d{10,13}$/.test(String(raw))) {
@@ -8340,7 +8478,9 @@ const COLLECTOR_MAP = {
   "chinawealth": ChinawealthCollector,
   "中国理财网": ChinawealthCollector,
   "nanyin": NanyinCollector,
-  "南银理财": NanyinCollector
+  "南银理财": NanyinCollector,
+  "ningyin": NingyinCollector,
+  "宁银理财": NingyinCollector
   // 后续扩展：'工银理财': IcbcCollector, ...
 };
 function getCollector(source) {
@@ -9194,7 +9334,7 @@ const riskMetric = ({ strapi }) => ({
       }
       const result = {};
       for (const period of periods) {
-        const metricNames = ["volatility", "maxDrawdown", "sharpe", "rankPercentile"];
+        const metricNames = ["volatility", "maxDrawdown", "sharpe", "rankPercentile", "incomeStability"];
         const periodData = {};
         for (const metricName of metricNames) {
           const records = await strapi.db.query("plugin::zhao-wealth.wealth-risk-metric").findMany({
@@ -9322,7 +9462,7 @@ const riskMetric = ({ strapi }) => ({
         return;
       }
       const validPeriods = ["m1", "m3", "m6", "y1"];
-      const validMetrics = ["volatility", "maxDrawdown", "sharpe", "rankPercentile"];
+      const validMetrics = ["volatility", "maxDrawdown", "sharpe", "rankPercentile", "incomeStability"];
       if (!validPeriods.includes(period) || !validMetrics.includes(metricName)) {
         ctx.status = 400;
         ctx.body = errorResponse(400, "无效的 period 或 metricName");
@@ -10220,8 +10360,8 @@ const navCalculator = ({ strapi }) => ({
       strapi.log.warn(`[zhao-wealth] 产品不存在: ${productId}`);
       return null;
     }
-    const isMoneyFund = product2.productType === "money-fund";
-    if (isMoneyFund) {
+    const isMoneyType = product2.productType === "money-fund" || product2.productType === "money-wealth";
+    if (isMoneyType) {
       return await this.calculateMoneyFundSnapshot(productId, snapshotDate);
     } else {
       return await this.calculateNavSnapshot(productId, snapshotDate);
@@ -10437,11 +10577,11 @@ const annualSnapshot = ({ strapi }) => ({
       where: { id: productId }
     });
     if (!product2) return null;
-    const isMoneyFund = product2.productType === "money-fund";
+    const isMoneyType = product2.productType === "money-fund" || product2.productType === "money-wealth";
     const existing = await strapi.db.query("plugin::zhao-wealth.wealth-yearly-return").findOne({
       where: { product: productId, year }
     });
-    if (isMoneyFund) {
+    if (isMoneyType) {
       const yearStart = new Date(year, 0, 1);
       const yearEnd = new Date(year, 11, 31);
       const incomes = await strapi.db.query("plugin::zhao-wealth.wealth-money-income").findMany({
@@ -10627,6 +10767,7 @@ const pluginConfig = {
     "bank-wealth:closed": { returns: 0.5, volatility: 0.25, drawdown: 0.25, peerRank: 0 },
     "bank-wealth": { returns: 0.5, volatility: 0.25, drawdown: 0.25, peerRank: 0 },
     "money-fund": { returns: 0.7, volatility: 0.3, drawdown: 0, peerRank: 0 },
+    "money-wealth": { returns: 0.8, volatility: 0.2, drawdown: 0, peerRank: 0 },
     "stock-fund": { returns: 0.4, volatility: 0.3, drawdown: 0.3, peerRank: 0 },
     "bond-fund": { returns: 0.5, volatility: 0.25, drawdown: 0.25, peerRank: 0 },
     "mixed-fund": { returns: 0.4, volatility: 0.3, drawdown: 0.3, peerRank: 0 }
@@ -10638,7 +10779,13 @@ const pluginConfig = {
   scoreScales: {
     returnScale: 0.06,
     volatilityScale: 0.1,
-    drawdownScale: 0.05
+    drawdownScale: 0.05,
+    // 按产品类型覆盖波动率标尺（银行理财/货币类天然低波动，全局 0.10 按股票基金定标会失真）
+    volatilityScaleByType: {
+      "bank-wealth": 0.03,
+      "money-fund": 0.02,
+      "money-wealth": 0.02
+    }
   },
   // 星级阈值
   starThresholds: {
@@ -10701,7 +10848,33 @@ function calculateMaxDrawdown(navs) {
       }
     }
   }
-  return -maxDrawdown;
+  return maxDrawdown === 0 ? 0 : -maxDrawdown;
+}
+function calculateIncomeVolatility(incomes) {
+  if (incomes.length < 2) return null;
+  const sorted = [...incomes].sort((a, b) => new Date(a.incomeDate).getTime() - new Date(b.incomeDate).getTime());
+  const returns = [];
+  for (const r of sorted) {
+    const v = Number(r.tenThousandIncome);
+    if (!isNaN(v)) returns.push(v / 1e4);
+  }
+  if (returns.length < 2) return null;
+  const mean = returns.reduce((sum, r) => sum + r, 0) / returns.length;
+  const variance = returns.reduce((sum, r) => sum + Math.pow(r - mean, 2), 0) / (returns.length - 1);
+  return Math.sqrt(variance) * Math.sqrt(365);
+}
+function calculateIncomeStability(incomes) {
+  if (incomes.length < 2) return null;
+  const values = [];
+  for (const r of incomes) {
+    const v = Number(r.tenThousandIncome);
+    if (!isNaN(v)) values.push(v);
+  }
+  if (values.length < 2) return null;
+  const mean = values.reduce((sum, v) => sum + v, 0) / values.length;
+  if (mean === 0) return null;
+  const variance = values.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / (values.length - 1);
+  return Math.sqrt(variance) / mean;
 }
 function calculateSharpe(annualReturn, volatility, riskFreeRate) {
   if (annualReturn === null || annualReturn === void 0 || volatility === null || volatility === 0) return null;
@@ -10722,6 +10895,30 @@ const riskMetricService = ({ strapi }) => ({
    */
   async calculateMetricsForPeriod(productId, snapshotDate, period) {
     const { start, end } = getPeriodRange(snapshotDate, period);
+    const product2 = await strapi.db.query("plugin::zhao-wealth.wealth-product").findOne({
+      where: { id: productId }
+    });
+    const isMoneyType = !!product2 && (product2.productType === "money-fund" || product2.productType === "money-wealth");
+    const annualField = PERIOD_TO_ANNUAL_FIELD$1[period];
+    const snapshot = await strapi.db.query("plugin::zhao-wealth.wealth-annual-snapshot").findOne({
+      where: {
+        product: productId,
+        snapshotDate: toDateStr(snapshotDate)
+      }
+    });
+    const annualReturn = snapshot ? snapshot[annualField] : null;
+    if (isMoneyType) {
+      const incomes = await strapi.db.query("plugin::zhao-wealth.wealth-money-income").findMany({
+        where: {
+          product: productId,
+          incomeDate: { $gte: toDateStr(start), $lte: toDateStr(end) }
+        },
+        orderBy: { incomeDate: "asc" }
+      });
+      const volatility2 = calculateIncomeVolatility(incomes);
+      const incomeStability = calculateIncomeStability(incomes);
+      return { volatility: volatility2, maxDrawdown: null, sharpe: null, annualReturn, incomeStability };
+    }
     const navs = await strapi.db.query("plugin::zhao-wealth.wealth-nav").findMany({
       where: {
         product: productId,
@@ -10731,16 +10928,8 @@ const riskMetricService = ({ strapi }) => ({
     });
     const volatility = calculateVolatility(navs);
     const maxDrawdown = calculateMaxDrawdown(navs);
-    const annualField = PERIOD_TO_ANNUAL_FIELD$1[period];
-    const snapshot = await strapi.db.query("plugin::zhao-wealth.wealth-annual-snapshot").findOne({
-      where: {
-        product: productId,
-        snapshotDate: toDateStr(snapshotDate)
-      }
-    });
-    const annualReturn = snapshot ? snapshot[annualField] : null;
     const sharpe = calculateSharpe(annualReturn, volatility, pluginConfig.riskFreeRate);
-    return { volatility, maxDrawdown, sharpe, annualReturn };
+    return { volatility, maxDrawdown, sharpe, annualReturn, incomeStability: null };
   },
   /**
    * 计算同类排名百分位
@@ -10773,10 +10962,19 @@ const riskMetricService = ({ strapi }) => ({
   async calculateAndSaveMetrics(productId, snapshotDate) {
     const dateStr = toDateStr(snapshotDate);
     const periods = pluginConfig.riskMetricPeriods;
+    const product2 = await strapi.db.query("plugin::zhao-wealth.wealth-product").findOne({
+      where: { id: productId }
+    });
+    const isMoneyType = !!product2 && (product2.productType === "money-fund" || product2.productType === "money-wealth");
     for (const period of periods) {
       const metrics = await this.calculateMetricsForPeriod(productId, snapshotDate, period);
       const rankPercentile = await this.calculateRankPercentile(productId, snapshotDate, period);
-      const metricEntries = [
+      const metricEntries = isMoneyType ? [
+        { metricName: "volatility", metricValue: toFinite(metrics.volatility) },
+        { metricName: "maxDrawdown", metricValue: null },
+        { metricName: "rankPercentile", metricValue: toFinite(rankPercentile) },
+        { metricName: "incomeStability", metricValue: toFinite(metrics.incomeStability) }
+      ] : [
         { metricName: "volatility", metricValue: toFinite(metrics.volatility) },
         { metricName: "maxDrawdown", metricValue: toFinite(metrics.maxDrawdown) },
         { metricName: "sharpe", metricValue: toFinite(metrics.sharpe) },
@@ -10862,7 +11060,7 @@ const riskMetricService = ({ strapi }) => ({
    * 返回最新 snapshotDate 的 4 指标值
    */
   async adminAggregate(productId, period) {
-    const metricNames = ["volatility", "maxDrawdown", "sharpe", "rankPercentile"];
+    const metricNames = ["volatility", "maxDrawdown", "sharpe", "rankPercentile", "incomeStability"];
     const result = {};
     for (const metricName of metricNames) {
       const records = await strapi.db.query("plugin::zhao-wealth.wealth-risk-metric").findMany({
@@ -11166,7 +11364,7 @@ const compareService = ({ strapi }) => ({
 const scoringService = ({ strapi }) => {
   const config = strapi.config.get("plugin::zhao-wealth");
   const scoreWeights = config?.scoreWeights || {};
-  const scoreScales = config?.scoreScales || { returnScale: 0.06, volatilityScale: 0.1, drawdownScale: 0.05 };
+  const scoreScales = config?.scoreScales || { returnScale: 0.06, volatilityScale: 0.1, drawdownScale: 0.05, volatilityScaleByType: {} };
   const starThresholds = config?.starThresholds || { five: 90, four: 75, three: 60, two: 40 };
   const PERIOD_TO_ANNUAL_FIELD2 = {
     m1: "annual1m",
@@ -11200,9 +11398,10 @@ const scoringService = ({ strapi }) => {
     if (annualReturn === null || isNaN(Number(annualReturn))) return 50;
     return clampScore(Number(annualReturn) / scoreScales.returnScale * 100);
   }
-  function absoluteVolatilityScore(volatility) {
+  function absoluteVolatilityScore(volatility, productType) {
     if (volatility === null || isNaN(Number(volatility))) return 50;
-    return clampScore((1 - Number(volatility) / scoreScales.volatilityScale) * 100);
+    const scale = (scoreScales.volatilityScaleByType && scoreScales.volatilityScaleByType[productType || ""]) ?? scoreScales.volatilityScale;
+    return clampScore((1 - Number(volatility) / scale) * 100);
   }
   function absoluteDrawdownScore(maxDrawdown) {
     if (maxDrawdown === null || isNaN(Number(maxDrawdown))) return 50;
@@ -11250,7 +11449,7 @@ const scoringService = ({ strapi }) => {
     const weights = getWeights(weightProfile);
     const metrics = await getProductMetrics(productId, period);
     const returnScore = absoluteReturnScore(metrics.annualReturn);
-    const volatilityScore = absoluteVolatilityScore(metrics.volatility);
+    const volatilityScore = absoluteVolatilityScore(metrics.volatility, product2.productType);
     const drawdownScore = absoluteDrawdownScore(metrics.maxDrawdown);
     const peerRankScore = 50;
     const compositeScore = Math.round(
@@ -11786,10 +11985,10 @@ const monitorService = ({ strapi }) => ({
    */
   judgeNavStatus(latestNav) {
     if (!latestNav?.navDate) return { status: "danger", daysBehind: null };
-    const todayStr = toDateStr(/* @__PURE__ */ new Date());
+    const todayStr2 = toDateStr(/* @__PURE__ */ new Date());
     const navDateStr = String(latestNav.navDate);
     const daysBehind = Math.floor(
-      (new Date(todayStr).getTime() - new Date(navDateStr).getTime()) / 864e5
+      (new Date(todayStr2).getTime() - new Date(navDateStr).getTime()) / 864e5
     );
     if (daysBehind > NAV_STALE_RED_DAYS) return { status: "danger", daysBehind };
     if (daysBehind > NAV_STALE_YELLOW_DAYS) return { status: "warning", daysBehind };
@@ -11874,6 +12073,7 @@ async function processNavData(strapi, productId, navData) {
         data: {
           unitNav: nav2.unitNav,
           accNav: nav2.accNav ?? existing.accNav,
+          annualYield: nav2.annualYield != null ? Number(nav2.annualYield) : existing.annualYield,
           dataSource: nav2.dataSource ?? existing.dataSource
         }
       });

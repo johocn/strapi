@@ -28,7 +28,7 @@ declare const _default: {
     },
     "metricName": {
       "type": "enumeration",
-      "enum": ["volatility", "maxDrawdown", "sharpe", "rankPercentile"],
+      "enum": ["volatility", "maxDrawdown", "sharpe", "rankPercentile", "incomeStability"],
       "required": true
     },
     "metricValue": {

@@ -12,6 +12,11 @@ declare const _default: {
         returnScale: number;
         volatilityScale: number;
         drawdownScale: number;
+        volatilityScaleByType: {
+            'bank-wealth': number;
+            'money-fund': number;
+            'money-wealth': number;
+        };
     };
     starThresholds: Record<string, number>;
 };

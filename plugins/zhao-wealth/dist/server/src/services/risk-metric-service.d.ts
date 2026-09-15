@@ -11,6 +11,7 @@ declare const _default: ({ strapi }: {
         maxDrawdown: number | null;
         sharpe: number | null;
         annualReturn: number | null;
+        incomeStability: number | null;
     }>;
     /**
      * 计算同类排名百分位

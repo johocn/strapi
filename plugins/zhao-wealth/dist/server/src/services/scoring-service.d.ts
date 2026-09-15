@@ -18,6 +18,7 @@ interface ScoreBreakdown {
         returnScale: number;
         volatilityScale: number;
         drawdownScale: number;
+        volatilityScaleByType?: Record<string, number>;
     };
 }
 declare const _default: ({ strapi }: {

@@ -16,6 +16,7 @@ declare const _default: {
     "unitNav": { "type": "decimal", "precision": 20, "scale": 8 },
     "accNav": { "type": "decimal", "precision": 20, "scale": 8 },
     "dataSource": { "type": "enumeration", "enum": ["crawler", "manual"], "default": "crawler" },
+    "annualYield": { "type": "decimal", "precision": 12, "scale": 6 },
     "createdAt": { "type": "datetime" },
     "updatedAt": { "type": "datetime" }
   }

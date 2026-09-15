@@ -285,6 +285,11 @@ declare const _default: {
                     enum: string[];
                     default: string;
                 };
+                annualYield: {
+                    type: string;
+                    precision: number;
+                    scale: number;
+                };
                 createdAt: {
                     type: string;
                 };
