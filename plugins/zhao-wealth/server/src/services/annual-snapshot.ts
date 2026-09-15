@@ -50,14 +50,14 @@ export default ({ strapi }) => ({
 
     if (!product) return null;
 
-    const isMoneyFund = product.productType === 'money-fund';
+    const isMoneyType = product.productType === 'money-fund' || product.productType === 'money-wealth';
 
     // P1修复：upsert 逻辑，先查再更新/创建，避免重复记录
     const existing = await strapi.db.query('plugin::zhao-wealth.wealth-yearly-return').findOne({
       where: { product: productId, year },
     });
 
-    if (isMoneyFund) {
+    if (isMoneyType) {
       // 货币基金年度收益计算
       const yearStart = new Date(year, 0, 1);
       const yearEnd = new Date(year, 11, 31);
