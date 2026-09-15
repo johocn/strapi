@@ -13,7 +13,7 @@ interface ScoreBreakdown {
   period: string;
   // 权重与标尺（用于前端公开计算公式）
   weights: { returns: number; volatility: number; drawdown: number; peerRank: number };
-  scales: { returnScale: number; volatilityScale: number; drawdownScale: number };
+  scales: { returnScale: number; volatilityScale: number; drawdownScale: number; volatilityScaleByType?: Record<string, number> };
 }
 
 interface ProductWithMetrics {
@@ -27,7 +27,7 @@ interface ProductWithMetrics {
 export default ({ strapi }: { strapi: Core.Strapi }) => {
   const config = strapi.config.get('plugin::zhao-wealth') as any;
   const scoreWeights = config?.scoreWeights || {};
-  const scoreScales = config?.scoreScales || { returnScale: 0.06, volatilityScale: 0.10, drawdownScale: 0.05 };
+  const scoreScales = config?.scoreScales || { returnScale: 0.06, volatilityScale: 0.10, drawdownScale: 0.05, volatilityScaleByType: {} };
   const starThresholds = config?.starThresholds || { five: 90, four: 75, three: 60, two: 40 };
 
   // 周期到年化快照字段的映射
@@ -88,10 +88,13 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
 
   /**
    * 波动得分（0-100）：波动率越低分越高，达到 volatilityScale 即 0 分
+   * productType 存在时优先使用按类型标尺（货币/银行理财天然低波动）
    */
-  function absoluteVolatilityScore(volatility: number | null): number {
+  function absoluteVolatilityScore(volatility: number | null, productType?: string): number {
     if (volatility === null || isNaN(Number(volatility))) return 50;
-    return clampScore((1 - Number(volatility) / scoreScales.volatilityScale) * 100);
+    const scale = (scoreScales.volatilityScaleByType && scoreScales.volatilityScaleByType[productType || ''])
+      ?? scoreScales.volatilityScale;
+    return clampScore((1 - Number(volatility) / scale) * 100);
   }
 
   /**
@@ -166,7 +169,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
 
     // 3. 各维度绝对评分（0-100）
     const returnScore = absoluteReturnScore(metrics.annualReturn);
-    const volatilityScore = absoluteVolatilityScore(metrics.volatility);
+    const volatilityScore = absoluteVolatilityScore(metrics.volatility, product.productType);
     const drawdownScore = absoluteDrawdownScore(metrics.maxDrawdown);
     // 同类排名样本过少，无统计意义，统一给中性分且不参与加权（权重已为 0）
     const peerRankScore = 50;

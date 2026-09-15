@@ -18,6 +18,7 @@ export default {
     'bank-wealth:closed':      { returns: 0.50, volatility: 0.25, drawdown: 0.25, peerRank: 0.00 },
     'bank-wealth':             { returns: 0.50, volatility: 0.25, drawdown: 0.25, peerRank: 0.00 },
     'money-fund':              { returns: 0.70, volatility: 0.30, drawdown: 0.00, peerRank: 0.00 },
+    'money-wealth':            { returns: 0.80, volatility: 0.20, drawdown: 0.00, peerRank: 0.00 },
     'stock-fund':              { returns: 0.40, volatility: 0.30, drawdown: 0.30, peerRank: 0.00 },
     'bond-fund':               { returns: 0.50, volatility: 0.25, drawdown: 0.25, peerRank: 0.00 },
     'mixed-fund':              { returns: 0.40, volatility: 0.30, drawdown: 0.30, peerRank: 0.00 },
@@ -31,6 +32,12 @@ export default {
     returnScale: 0.06,
     volatilityScale: 0.10,
     drawdownScale: 0.05,
+    // 按产品类型覆盖波动率标尺（银行理财/货币类天然低波动，全局 0.10 按股票基金定标会失真）
+    volatilityScaleByType: {
+      'bank-wealth': 0.03,
+      'money-fund': 0.02,
+      'money-wealth': 0.02,
+    },
   },
 
   // 星级阈值
