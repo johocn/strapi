@@ -29,7 +29,7 @@ export default ({ strapi }) => ({
       const result: Record<string, any> = {};
 
       for (const period of periods) {
-        const metricNames = ['volatility', 'maxDrawdown', 'sharpe', 'rankPercentile'];
+        const metricNames = ['volatility', 'maxDrawdown', 'sharpe', 'rankPercentile', 'incomeStability'];
         const periodData: any = {};
 
         for (const metricName of metricNames) {
@@ -176,7 +176,7 @@ export default ({ strapi }) => ({
       }
 
       const validPeriods = ['m1', 'm3', 'm6', 'y1'];
-      const validMetrics = ['volatility', 'maxDrawdown', 'sharpe', 'rankPercentile'];
+      const validMetrics = ['volatility', 'maxDrawdown', 'sharpe', 'rankPercentile', 'incomeStability'];
       if (!validPeriods.includes(period) || !validMetrics.includes(metricName)) {
         ctx.status = 400;
         ctx.body = errorResponse(400, '无效的 period 或 metricName');
