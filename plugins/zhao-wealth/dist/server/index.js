@@ -8354,6 +8354,8 @@ class NingyinCollector extends BaseCollector {
     }
     try {
       await page.goto(DETAIL_PAGE_URL(code), { waitUntil: "domcontentloaded", timeout: 3e4 });
+      await page.waitForLoadState("networkidle", { timeout: 2e4 }).catch(() => {
+      });
       const info2 = await page.evaluate(async (c) => {
         const res = await fetch(`/ningbo-web/product/list.json?projectcode=${encodeURIComponent(c)}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -8406,6 +8408,8 @@ class NingyinCollector extends BaseCollector {
     if (!page) throw new Error("Playwright Browser 不可用");
     try {
       await page.goto(DETAIL_PAGE_URL(code), { waitUntil: "domcontentloaded", timeout: 3e4 });
+      await page.waitForLoadState("networkidle", { timeout: 2e4 }).catch(() => {
+      });
       const perPage = 100;
       const out = [];
       for (let pageno = 1; pageno <= MAX_PAGES; pageno++) {
