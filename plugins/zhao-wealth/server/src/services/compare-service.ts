@@ -7,6 +7,8 @@ const PERIOD_TO_ANNUAL_FIELD: Record<string, string> = {
   y1: 'annual1y',
 };
 
+const PERIOD_TO_DAYS: Record<string, number> = { m1: 30, m3: 90, m6: 180, y1: 365 };
+
 export default ({ strapi }) => ({
   /**
    * 多产品对比
@@ -87,5 +89,100 @@ export default ({ strapi }) => ({
     }));
 
     return results;
+  },
+
+  /**
+   * 多产品累计收益趋势对比
+   * 普通产品：区间首条净值归一化 (nav/base-1)*100
+   * 货币理财：万份收益累计 (Σ tenThousandIncome/10000)*100
+   * 统一日期轴对齐，缺失前值填充、首点前补 0
+   */
+  async compareTrend(productIds: number[], period: string) {
+    if (productIds.length < 2 || productIds.length > 4) {
+      throw new Error('对比产品数量必须为 2-4 个');
+    }
+
+    const days = PERIOD_TO_DAYS[period] || 30;
+    const today = new Date();
+    const start = new Date(today);
+    start.setDate(start.getDate() - days);
+    const startStr = start.toISOString().split('T')[0];
+    const endStr = today.toISOString().split('T')[0];
+
+    const series = await Promise.all(productIds.map(async (productId: number) => {
+      const product = await strapi.db.query('plugin::zhao-wealth.wealth-product').findOne({
+        where: { id: productId, status: true },
+      });
+      if (!product) {
+        throw new Error(`产品 ${productId} 不存在或已下架`);
+      }
+
+      let points: { date: string; value: number }[] = [];
+      if (product.productType === 'money-wealth') {
+        const incomes = await strapi.db.query('plugin::zhao-wealth.wealth-money-income').findMany({
+          where: { product: productId, incomeDate: { $gte: startStr, $lte: endStr } },
+          orderBy: { incomeDate: 'asc' },
+          limit: 2000,
+        });
+        let cum = 0;
+        points = incomes.map((r: any) => {
+          cum += Number(r.tenThousandIncome || 0) / 10000;
+          return { date: r.incomeDate, value: Math.round(cum * 100 * 1e6) / 1e6 };
+        });
+      } else {
+        const navs = await strapi.db.query('plugin::zhao-wealth.wealth-nav').findMany({
+          where: { product: productId, navDate: { $gte: startStr, $lte: endStr } },
+          orderBy: { navDate: 'asc' },
+          limit: 2000,
+        });
+        if (navs.length > 0) {
+          const base = Number(navs[0].unitNav) || 1;
+          points = navs.map((r: any) => ({
+            date: r.navDate,
+            value: Math.round((((Number(r.unitNav) || base) / base - 1) * 100) * 1e6) / 1e6,
+          }));
+        }
+      }
+
+      return {
+        productId: product.id,
+        productName: product.productName,
+        productType: product.productType,
+        points,
+      };
+    }));
+
+    // 日期并集（升序去重）
+    const dateSet = new Set<string>();
+    for (const s of series) {
+      for (const p of s.points) dateSet.add(p.date);
+    }
+    const dates = [...dateSet].sort();
+
+    // 按日期轴对齐：缺失前值填充，首点前补 0
+    const aligned = series.map((s) => {
+      const values: number[] = [];
+      let last: number | null = null;
+      let idx = 0;
+      for (const d of dates) {
+        while (idx < s.points.length && s.points[idx].date < d) {
+          last = s.points[idx].value;
+          idx++;
+        }
+        if (idx < s.points.length && s.points[idx].date === d) {
+          last = s.points[idx].value;
+          idx++;
+        }
+        values.push(last === null ? 0 : last);
+      }
+      return {
+        productId: s.productId,
+        productName: s.productName,
+        productType: s.productType,
+        values,
+      };
+    });
+
+    return { period, startDate: startStr, endDate: endStr, dates, series: aligned };
   },
 });
