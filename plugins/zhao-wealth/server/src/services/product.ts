@@ -43,6 +43,7 @@ export default ({ strapi }) => ({
     let list = products.map((product: any) => ({
       ...product,
       latestNav: enrichedMap[product.id]?.latestNav || null,
+      latestNavDate: enrichedMap[product.id]?.latestNavDate ?? null,
       latestAnnual1m: enrichedMap[product.id]?.latestAnnual1m ?? null,
       latestAnnual7d: enrichedMap[product.id]?.latestAnnual7d ?? null,
       latestSevenDayAnnual: enrichedMap[product.id]?.latestSevenDayAnnual ?? null,
@@ -56,7 +57,18 @@ export default ({ strapi }) => ({
       list = sortProducts(list, sortBy);
     }
 
-    return { list, page, pageSize: limit, total };
+    // 全库最新净值日期（用于前端"数据更新至"提示）
+    const latestNavRow = await strapi.db.query('plugin::zhao-wealth.wealth-nav').findOne({
+      orderBy: { navDate: 'desc' },
+    });
+
+    return {
+      list,
+      page,
+      pageSize: limit,
+      total,
+      latestNavDate: latestNavRow?.navDate ? String(latestNavRow.navDate).slice(0, 10) : null,
+    };
   },
 
   /**
@@ -125,6 +137,7 @@ export default ({ strapi }) => ({
 
       result[pid] = {
         latestNav: latestNav || null,
+        latestNavDate: latestNav?.navDate ? String(latestNav.navDate).slice(0, 10) : null,
         latestAnnual1m: snapshot?.annual1m != null ? Number(snapshot.annual1m) : null,
         latestAnnual7d: snapshot?.annual7d != null ? Number(snapshot.annual7d) : null,
         latestSevenDayAnnual: moneyIncome?.sevenDayAnnual != null
@@ -198,6 +211,14 @@ function sortProducts(list: any[], sortBy: string): any[] {
         const ra = a.latestAnnual7d ?? -Infinity;
         const rb = b.latestAnnual7d ?? -Infinity;
         return rb - ra;
+      });
+      break;
+    case 'latestNav':
+      // 最新净值日期降序，无日期/无效日期排末尾
+      sorted.sort((a, b) => {
+        const ta = a.latestNavDate ? new Date(a.latestNavDate).getTime() : -Infinity;
+        const tb = b.latestNavDate ? new Date(b.latestNavDate).getTime() : -Infinity;
+        return tb - ta;
       });
       break;
     case 'volatility':
