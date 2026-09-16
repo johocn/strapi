@@ -22,6 +22,9 @@ declare const _default: {
             'money-fund': number;
             'money-wealth': number;
         };
+        drawdownScaleByType: {
+            'bank-wealth': number;
+        };
         returnScaleByType: {
             'money-fund': number;
             'money-wealth': number;

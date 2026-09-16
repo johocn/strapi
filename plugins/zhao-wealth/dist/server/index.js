@@ -10966,10 +10966,15 @@ const pluginConfig = {
     volatilityScale: 0.1,
     drawdownScale: 0.05,
     // 按产品类型覆盖波动率标尺（银行理财/货币类天然低波动，全局 0.10 按股票基金定标会失真）
+    // bank-wealth 收紧到 0.005：真实波动 0.05%~1.4%，0.5% 年化波动即 0 分，恢复区分度
     volatilityScaleByType: {
-      "bank-wealth": 0.03,
+      "bank-wealth": 5e-3,
       "money-fund": 0.02,
       "money-wealth": 0.02
+    },
+    // 按产品类型覆盖回撤标尺（银行理财真实回撤 0~0.2%，全局 0.05 形同虚设）
+    drawdownScaleByType: {
+      "bank-wealth": 5e-3
     },
     // 按产品类型细分收益标尺（货币类/银行理财正常年化低，全局 6% 按股基定标会失真）
     returnScaleByType: {
@@ -11644,7 +11649,7 @@ const compareService = ({ strapi }) => ({
 const scoringService = ({ strapi }) => {
   const config = strapi.config.get("plugin::zhao-wealth");
   const scoreWeights = config?.scoreWeights || {};
-  const scoreScales = config?.scoreScales || { returnScale: 0.06, volatilityScale: 0.1, drawdownScale: 0.05, volatilityScaleByType: {} };
+  const scoreScales = config?.scoreScales || { returnScale: 0.06, volatilityScale: 0.1, drawdownScale: 0.05, volatilityScaleByType: {}, drawdownScaleByType: {} };
   const operationModeAliases = config?.operationModeAliases || {};
   const starThresholds = config?.starThresholds || { five: 90, four: 75, three: 60, two: 40 };
   const PERIOD_TO_ANNUAL_FIELD2 = {
@@ -11686,9 +11691,10 @@ const scoringService = ({ strapi }) => {
     const scale = (scoreScales.volatilityScaleByType && scoreScales.volatilityScaleByType[productType || ""]) ?? scoreScales.volatilityScale;
     return clampScore((1 - Number(volatility) / scale) * 100);
   }
-  function absoluteDrawdownScore(maxDrawdown) {
+  function absoluteDrawdownScore(maxDrawdown, productType) {
     if (maxDrawdown === null || isNaN(Number(maxDrawdown))) return 50;
-    return clampScore((1 + Number(maxDrawdown) / scoreScales.drawdownScale) * 100);
+    const scale = (scoreScales.drawdownScaleByType && scoreScales.drawdownScaleByType[productType || ""]) ?? scoreScales.drawdownScale;
+    return clampScore((1 + Number(maxDrawdown) / scale) * 100);
   }
   async function getProductMetrics(productId, period) {
     const annualField = PERIOD_TO_ANNUAL_FIELD2[period] || "annual1m";
@@ -11733,7 +11739,7 @@ const scoringService = ({ strapi }) => {
     const metrics = await getProductMetrics(productId, period);
     const returnScore = absoluteReturnScore(metrics.annualReturn, product2.productType);
     const volatilityScore = absoluteVolatilityScore(metrics.volatility, product2.productType);
-    const drawdownScore = absoluteDrawdownScore(metrics.maxDrawdown);
+    const drawdownScore = absoluteDrawdownScore(metrics.maxDrawdown, product2.productType);
     const peerRankScore = 50;
     const compositeScore = Math.round(
       returnScore * weights.returns + volatilityScore * weights.volatility + drawdownScore * weights.drawdown + peerRankScore * weights.peerRank
