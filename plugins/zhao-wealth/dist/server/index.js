@@ -10376,6 +10376,7 @@ const product = ({ strapi }) => ({
     let list = products.map((product2) => ({
       ...product2,
       latestNav: enrichedMap[product2.id]?.latestNav || null,
+      latestNavDate: enrichedMap[product2.id]?.latestNavDate ?? null,
       latestAnnual1m: enrichedMap[product2.id]?.latestAnnual1m ?? null,
       latestAnnual7d: enrichedMap[product2.id]?.latestAnnual7d ?? null,
       latestSevenDayAnnual: enrichedMap[product2.id]?.latestSevenDayAnnual ?? null,
@@ -10386,7 +10387,16 @@ const product = ({ strapi }) => ({
     if (sortBy) {
       list = sortProducts(list, sortBy);
     }
-    return { list, page, pageSize: limit, total };
+    const latestNavRow = await strapi.db.query("plugin::zhao-wealth.wealth-nav").findOne({
+      orderBy: { navDate: "desc" }
+    });
+    return {
+      list,
+      page,
+      pageSize: limit,
+      total,
+      latestNavDate: latestNavRow?.navDate ? String(latestNavRow.navDate).slice(0, 10) : null
+    };
   },
   /**
    * 获取产品详情（含最新净值）
@@ -10437,6 +10447,7 @@ const product = ({ strapi }) => ({
       });
       result[pid] = {
         latestNav: latestNav || null,
+        latestNavDate: latestNav?.navDate ? String(latestNav.navDate).slice(0, 10) : null,
         latestAnnual1m: snapshot?.annual1m != null ? Number(snapshot.annual1m) : null,
         latestAnnual7d: snapshot?.annual7d != null ? Number(snapshot.annual7d) : null,
         latestSevenDayAnnual: moneyIncome?.sevenDayAnnual != null ? Number(moneyIncome.sevenDayAnnual) : null,
@@ -10493,6 +10504,13 @@ function sortProducts(list, sortBy) {
         const ra = a.latestAnnual7d ?? -Infinity;
         const rb = b.latestAnnual7d ?? -Infinity;
         return rb - ra;
+      });
+      break;
+    case "latestNav":
+      sorted.sort((a, b) => {
+        const ta = a.latestNavDate ? new Date(a.latestNavDate).getTime() : -Infinity;
+        const tb = b.latestNavDate ? new Date(b.latestNavDate).getTime() : -Infinity;
+        return tb - ta;
       });
       break;
     case "volatility":
@@ -10840,6 +10858,7 @@ const recommendService = ({ strapi }) => ({
         recommendSource: "manual",
         recommendReason: config.recommendReason,
         annual1y: latestSnapshot?.annual1y,
+        annual7d: latestSnapshot?.annual7d != null ? Number(latestSnapshot.annual7d) : null,
         latestNav: null
       });
     }
@@ -10874,6 +10893,7 @@ const recommendService = ({ strapi }) => ({
           recommendSource: "score-ranking",
           recommendReason: `综合评分 ${Number(product2.score.compositeScore).toFixed(0)} 分`,
           annual1y: null,
+          annual7d: null,
           latestNav: null,
           starRating: product2.score.starRating,
           compositeScore: Number(product2.score.compositeScore)
@@ -10900,6 +10920,7 @@ const recommendService = ({ strapi }) => ({
           recommendSource: "annual-ranking",
           recommendReason: "近一年年化收益排名靠前",
           annual1y: snapshot.annual1y,
+          annual7d: snapshot.annual7d != null ? Number(snapshot.annual7d) : null,
           latestNav: null
         });
       }
@@ -11798,6 +11819,7 @@ const scoringService = ({ strapi }) => {
         ...product2,
         score: scoreMap[product2.id] || null,
         [annualKey]: annualValue !== null && !isNaN(annualValue) ? annualValue : null,
+        latestAnnual7d: annual2?.annual7d != null && !isNaN(Number(annual2.annual7d)) ? Number(annual2.annual7d) : null,
         annual1m: annualValue !== null && !isNaN(annualValue) ? annualValue : null
       };
     });

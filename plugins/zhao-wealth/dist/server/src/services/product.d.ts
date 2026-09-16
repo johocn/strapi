@@ -14,10 +14,17 @@ declare const _default: ({ strapi }: {
      * @param options 额外参数：sortBy、period、productName 模糊搜索
      */
     findList(filters: any, page?: number, pageSize?: number, options?: any): Promise<{
+        list: any[];
+        page: number;
+        pageSize: number;
+        total: any;
+        latestNavDate?: undefined;
+    } | {
         list: any;
         page: number;
         pageSize: number;
         total: any;
+        latestNavDate: string;
     }>;
     /**
      * 获取产品详情（含最新净值）
