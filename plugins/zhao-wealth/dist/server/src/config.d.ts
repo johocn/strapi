@@ -8,6 +8,11 @@ declare const _default: {
         drawdown: number;
         peerRank: number;
     }>;
+    operationModeAliases: {
+        开放式净值型: string;
+        封闭式: string;
+        定期开放: string;
+    };
     scoreScales: {
         returnScale: number;
         volatilityScale: number;
@@ -16,6 +21,14 @@ declare const _default: {
             'bank-wealth': number;
             'money-fund': number;
             'money-wealth': number;
+        };
+        returnScaleByType: {
+            'money-fund': number;
+            'money-wealth': number;
+            'bank-wealth': number;
+            'bond-fund': number;
+            'mixed-fund': number;
+            'stock-fund': number;
         };
     };
     starThresholds: Record<string, number>;

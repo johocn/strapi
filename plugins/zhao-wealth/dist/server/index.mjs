@@ -10308,6 +10308,7 @@ const adminApi = () => ({
     adminRoute("GET", "/v1/admin/stats/anomalies", "admin-api.statsAnomalies"),
     // ===== 风险指标 =====
     adminRoute("POST", "/v1/admin/recalculate-risk-metric", "risk-metric.recalculate"),
+    adminRoute("POST", "/v1/admin/recalculate-scores", "scoring.recalculate"),
     adminRoute("GET", "/v1/admin/risk-metrics/aggregate", "risk-metric.adminAggregate"),
     adminRoute("GET", "/v1/admin/risk-metrics/trend", "risk-metric.adminTrend"),
     adminRoute("GET", "/v1/admin/risk-metrics/peers", "risk-metric.adminPeers"),
@@ -10943,6 +10944,12 @@ const pluginConfig = {
     "bond-fund": { returns: 0.5, volatility: 0.25, drawdown: 0.25, peerRank: 0 },
     "mixed-fund": { returns: 0.4, volatility: 0.3, drawdown: 0.3, peerRank: 0 }
   },
+  // operation_mode 生产值与权重键的别名映射（数据为中文/简写，config 键为英文规范值）
+  operationModeAliases: {
+    "开放式净值型": "daily-open",
+    "封闭式": "closed",
+    "定期开放": "fixed-term"
+  },
   // 绝对评分标尺（不依赖同类样本量，用于将指标映射到 0-100 分）
   // returnScale: 年化收益率达该值即满分（6% 年化 = 100 分）
   // volatilityScale: 年化波动率达该值即 0 分（10% 波动 = 0 分）
@@ -10956,6 +10963,15 @@ const pluginConfig = {
       "bank-wealth": 0.03,
       "money-fund": 0.02,
       "money-wealth": 0.02
+    },
+    // 按产品类型细分收益标尺（货币类/银行理财正常年化低，全局 6% 按股基定标会失真）
+    returnScaleByType: {
+      "money-fund": 0.025,
+      "money-wealth": 0.025,
+      "bank-wealth": 0.05,
+      "bond-fund": 0.1,
+      "mixed-fund": 0.1,
+      "stock-fund": 0.15
     }
   },
   // 星级阈值
@@ -11622,6 +11638,7 @@ const scoringService = ({ strapi }) => {
   const config = strapi.config.get("plugin::zhao-wealth");
   const scoreWeights = config?.scoreWeights || {};
   const scoreScales = config?.scoreScales || { returnScale: 0.06, volatilityScale: 0.1, drawdownScale: 0.05, volatilityScaleByType: {} };
+  const operationModeAliases = config?.operationModeAliases || {};
   const starThresholds = config?.starThresholds || { five: 90, four: 75, three: 60, two: 40 };
   const PERIOD_TO_ANNUAL_FIELD2 = {
     m1: "annual1m",
@@ -11637,7 +11654,8 @@ const scoringService = ({ strapi }) => {
   };
   function getWeightProfile(productType, operationMode) {
     if (operationMode) {
-      const specificKey = `${productType}:${operationMode}`;
+      const normalized = operationModeAliases[operationMode] || operationMode;
+      const specificKey = `${productType}:${normalized}`;
       if (scoreWeights[specificKey]) {
         return specificKey;
       }
@@ -11651,9 +11669,10 @@ const scoringService = ({ strapi }) => {
     if (isNaN(n2) || !isFinite(n2)) return 50;
     return Math.max(0, Math.min(100, Math.round(n2)));
   }
-  function absoluteReturnScore(annualReturn) {
+  function absoluteReturnScore(annualReturn, productType) {
     if (annualReturn === null || isNaN(Number(annualReturn))) return 50;
-    return clampScore(Number(annualReturn) / scoreScales.returnScale * 100);
+    const scale = (scoreScales.returnScaleByType && scoreScales.returnScaleByType[productType || ""]) ?? scoreScales.returnScale;
+    return clampScore(50 + Number(annualReturn) / scale * 50);
   }
   function absoluteVolatilityScore(volatility, productType) {
     if (volatility === null || isNaN(Number(volatility))) return 50;
@@ -11705,7 +11724,7 @@ const scoringService = ({ strapi }) => {
     const weightProfile = getWeightProfile(product2.productType, product2.operationMode);
     const weights = getWeights(weightProfile);
     const metrics = await getProductMetrics(productId, period);
-    const returnScore = absoluteReturnScore(metrics.annualReturn);
+    const returnScore = absoluteReturnScore(metrics.annualReturn, product2.productType);
     const volatilityScore = absoluteVolatilityScore(metrics.volatility, product2.productType);
     const drawdownScore = absoluteDrawdownScore(metrics.maxDrawdown);
     const peerRankScore = 50;
@@ -11805,17 +11824,17 @@ const scoringService = ({ strapi }) => {
         annualMap[pid] = a;
       }
     }
-    const records = products.map((product2) => {
+    const records = await Promise.all(products.map(async (product2) => {
       const annual2 = annualMap[product2.id];
       const annualValue = annual2 ? Number(annual2[annualField]) : null;
       return {
         ...product2,
-        score: scoreMap[product2.id] || null,
+        score: scoreMap[product2.id] || await calculateScore(product2.id, period),
         [annualKey]: annualValue !== null && !isNaN(annualValue) ? annualValue : null,
         latestAnnual7d: annual2?.annual7d != null && !isNaN(Number(annual2.annual7d)) ? Number(annual2.annual7d) : null,
         annual1m: annualValue !== null && !isNaN(annualValue) ? annualValue : null
       };
-    });
+    }));
     records.sort((a, b) => {
       const sa = a.score?.compositeScore ?? 0;
       const sb = b.score?.compositeScore ?? 0;
@@ -12692,6 +12711,7 @@ function registerRiskMetricJobs(strapi) {
     calcQueue.process("calculate-risk-metric", async (job) => {
       const { productId, snapshotDate } = job.data;
       const date = snapshotDate ? new Date(snapshotDate) : /* @__PURE__ */ new Date();
+      await strapi.service("plugin::zhao-wealth.nav-calculator").recalculateMissing(productId);
       await strapi.service("plugin::zhao-wealth.risk-metric-service").calculateAndSaveMetrics(productId, date);
     });
     calcQueue.process("recalculate-risk-metric-product", async (job) => {
