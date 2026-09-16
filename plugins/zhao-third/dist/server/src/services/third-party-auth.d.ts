@@ -97,6 +97,13 @@ declare const _default: ({ strapi }: {
         nonceStr: string;
         signature: string;
     }>;
+    /** 站点登录模式是否为 SSO（extraConfig.mode==='sso' 或 featureFlags.sso），经 zhao-common 中间层读取 */
+    isSsoMode(siteId?: string): Promise<boolean>;
+    /** 经 zhao-sso 配置服务读取公众号 appId/appSecret（跨插件走服务，不直查其表） */
+    resolveSsoWechatConfig(): Promise<{
+        appId: string;
+        appSecret: string;
+    } | null>;
     /**
      * 更新三方资料
      */

@@ -12,10 +12,21 @@ const TIME_ABS = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
 function stripCodeBlock(raw) {
   let s = String(raw ?? "");
   s = s.replace(/```[a-zA-Z]*\s*/g, "").replace(/```/g, "");
-  const i = s.indexOf("{");
-  const j = s.lastIndexOf("}");
-  if (i < 0 || j < 0 || j <= i) return s;
-  return s.slice(i, j + 1);
+  // 括号配对（跳过字符串/转义内括号）→ 取首个根对象，尾随含 { } 的解说不被误截
+  const start = s.indexOf("{");
+  if (start >= 0) {
+    let depth = 0, inStr = false, esc = false;
+    for (let i = start; i < s.length; i++) {
+      const ch = s[i];
+      if (inStr) { if (esc) esc = false; else if (ch === "\\") esc = true; else if (ch === '"') inStr = false; continue; }
+      if (ch === '"') { inStr = true; continue; }
+      if (ch === "{") depth++;
+      else if (ch === "}") { depth--; if (depth === 0) return s.slice(start, i + 1); }
+    }
+    const j = s.lastIndexOf("}");
+    if (j > start) return s.slice(start, j + 1);
+  }
+  return s;
 }
 
 function parseTime(v, now) {
@@ -360,7 +371,7 @@ console.log("T8 模拟外部 AI 按提示词模板产出新需求（带代码块
   }
 }
 
-console.log("T9 模块 config 标准化：highlights items→points / agenda 二维数组→对象 / speakers items 丢弃");
+console.log("T9 模块 config 标准化：highlights items→points / agenda 二维数组→对象 / speakers items 丢弃）");
 {
   const p = { ...GOOD, promoModules: [
     { type: "cover", config: { title: "欢乐亲子趣味体验工坊", subtitle: "陪伴成长" }, sort: 1 },
@@ -378,6 +389,14 @@ console.log("T9 模块 config 标准化：highlights items→points / agenda 二
     check("speakers items 丢弃", !("items" in byType.speakers), JSON.stringify(byType.speakers));
     check("cover config 透传", byType.cover.title === "欢乐亲子趣味体验工坊");
   }
+}
+
+console.log("T10 尾随解说含（花）括号时，不误截 JSON 根对象");
+{
+  const trailing = JSON.stringify(GOOD) + "\n好的，这是我按你要求生成的。需要我微调语气让转化更强吗？(语气加强版) {注意：输出固定为 JSON} 或 [调整别的]";
+  const r = importActivity(trailing, NOW);
+  check("ok", r.ok, JSON.stringify(r.errors));
+  check("尾随括号不污染字段", r.ok && r.body.title === GOOD.title && r.body.capacity === GOOD.capacity);
 }
 
 console.log("\n结果: " + pass + " 通过, " + fail + " 失败");

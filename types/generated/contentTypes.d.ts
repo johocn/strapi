@@ -1546,6 +1546,10 @@ export interface PluginZhaoCommonSiteConfig
       'oneToMany',
       'plugin::zhao-website.article'
     >;
+    website_authors: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-website.author'
+    >;
     website_brand_info: Schema.Attribute.Relation<
       'oneToOne',
       'plugin::zhao-website.brand-info'
@@ -1573,6 +1577,10 @@ export interface PluginZhaoCommonSiteConfig
     website_first_truths: Schema.Attribute.Relation<
       'oneToMany',
       'plugin::zhao-website.first-truth-policy'
+    >;
+    website_geo_articles: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-website.geo-article'
     >;
     website_interactions: Schema.Attribute.Relation<
       'oneToMany',
@@ -2118,7 +2126,10 @@ export interface PluginZhaoCourseUserCourseAuth
     draftAndPublish: false;
   };
   attributes: {
-    authType: Schema.Attribute.Enumeration<['free', 'paid', 'admin_grant']> &
+    activityDocumentId: Schema.Attribute.String;
+    authType: Schema.Attribute.Enumeration<
+      ['free', 'paid', 'admin_grant', 'temp_lesson']
+    > &
       Schema.Attribute.DefaultTo<'free'>;
     channel: Schema.Attribute.Relation<
       'manyToOne',
@@ -2133,7 +2144,9 @@ export interface PluginZhaoCourseUserCourseAuth
       Schema.Attribute.Private;
     deletedAt: Schema.Attribute.DateTime;
     expiresAt: Schema.Attribute.DateTime;
+    grantedAt: Schema.Attribute.DateTime;
     isExpired: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    lessonDocumentId: Schema.Attribute.String;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
@@ -2141,6 +2154,8 @@ export interface PluginZhaoCourseUserCourseAuth
     > &
       Schema.Attribute.Private;
     publishedAt: Schema.Attribute.DateTime;
+    source: Schema.Attribute.Enumeration<['signup', 'milestone', 'manual']> &
+      Schema.Attribute.DefaultTo<'manual'>;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -4112,6 +4127,9 @@ export interface PluginZhaoPointActivity extends Struct.CollectionTypeSchema {
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+    customPromoActive: Schema.Attribute.Boolean &
+      Schema.Attribute.DefaultTo<true>;
+    customPromoHtml: Schema.Attribute.Text;
     description: Schema.Attribute.Text;
     endTime: Schema.Attribute.DateTime;
     feeCollectAt: Schema.Attribute.Enumeration<['signup', 'checkin']> &
@@ -4121,6 +4139,7 @@ export interface PluginZhaoPointActivity extends Struct.CollectionTypeSchema {
     formConfig: Schema.Attribute.JSON;
     geoEnforced: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
     geoRadiusM: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<500>;
+    itinerary: Schema.Attribute.JSON;
     lat: Schema.Attribute.Float;
     learningPackageArticles: Schema.Attribute.Relation<
       'manyToMany',
@@ -4142,6 +4161,7 @@ export interface PluginZhaoPointActivity extends Struct.CollectionTypeSchema {
     > &
       Schema.Attribute.Private;
     pointsCost: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    preQuestionnaire: Schema.Attribute.JSON;
     preUnlockArticles: Schema.Attribute.Relation<
       'manyToMany',
       'plugin::zhao-website.article'
@@ -4152,7 +4172,14 @@ export interface PluginZhaoPointActivity extends Struct.CollectionTypeSchema {
     >;
     pricingMode: Schema.Attribute.Enumeration<['flat', 'tier', 'factor']> &
       Schema.Attribute.DefaultTo<'flat'>;
+    promoAssets: Schema.Attribute.JSON;
+    promoColors: Schema.Attribute.JSON;
+    promoContact: Schema.Attribute.JSON;
+    promoModules: Schema.Attribute.JSON;
+    promoTemplate: Schema.Attribute.String &
+      Schema.Attribute.DefaultTo<'summit'>;
     publishedAt: Schema.Attribute.DateTime;
+    questionnaire: Schema.Attribute.JSON;
     remindLeadMinutes: Schema.Attribute.Integer &
       Schema.Attribute.SetMinMax<
         {
@@ -4165,6 +4192,8 @@ export interface PluginZhaoPointActivity extends Struct.CollectionTypeSchema {
     settleLecturer: Schema.Attribute.Decimal & Schema.Attribute.DefaultTo<0>;
     settleVenue: Schema.Attribute.Decimal & Schema.Attribute.DefaultTo<0>;
     shareRewardPoints: Schema.Attribute.Integer;
+    signupAdvanceHours: Schema.Attribute.Integer &
+      Schema.Attribute.DefaultTo<0>;
     signupEnd: Schema.Attribute.DateTime;
     signupStart: Schema.Attribute.DateTime;
     startTime: Schema.Attribute.DateTime;
@@ -4172,8 +4201,17 @@ export interface PluginZhaoPointActivity extends Struct.CollectionTypeSchema {
       ['draft', 'signup_open', 'ongoing', 'ended', 'archived']
     > &
       Schema.Attribute.DefaultTo<'draft'>;
+    story: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-point.tour-story'
+    >;
     tags: Schema.Attribute.JSON;
+    tempLessonMode: Schema.Attribute.Enumeration<
+      ['none', 'signup', 'milestone', 'manual', 'mixed']
+    > &
+      Schema.Attribute.DefaultTo<'none'>;
     title: Schema.Attribute.String & Schema.Attribute.Required;
+    tourMode: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
     type: Schema.Attribute.String & Schema.Attribute.DefaultTo<'\u5176\u4ED6'>;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
@@ -4278,6 +4316,48 @@ export interface PluginZhaoPointActivityLedger
   };
 }
 
+export interface PluginZhaoPointActivityMessage
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'activity_messages';
+  info: {
+    displayName: 'Activity Message';
+    pluralName: 'activity-messages';
+    singularName: 'activity-message';
+  };
+  options: {
+    comment: '\u6D3B\u52A8\u5BA3\u4F20\u9875\u5BA2\u670D\u7559\u8A00\uFF08\u5F02\u6B65\u56DE\u590D\uFF09';
+    draftAndPublish: false;
+  };
+  attributes: {
+    activity: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-point.activity'
+    >;
+    content: Schema.Attribute.Text;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-point.activity-message'
+    > &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    repliedAt: Schema.Attribute.DateTime;
+    reply: Schema.Attribute.Text;
+    status: Schema.Attribute.Enumeration<['open', 'replied']> &
+      Schema.Attribute.DefaultTo<'open'>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    user: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
+  };
+}
+
 export interface PluginZhaoPointActivityReferralReward
   extends Struct.CollectionTypeSchema {
   collectionName: 'activity_referral_rewards';
@@ -4363,6 +4443,43 @@ export interface PluginZhaoPointActivitySeries
   };
 }
 
+export interface PluginZhaoPointActivityShareVisit
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_point_share_visits';
+  info: {
+    displayName: 'Activity Share Visit';
+    pluralName: 'activity-share-visits';
+    singularName: 'activity-share-visit';
+  };
+  options: {
+    comment: '\u5206\u4EAB\u88C2\u53D8\u597D\u53CB\u70B9\u51FB\u8BBF\u95EE\u57CB\u70B9\uFF08\u6BCF\u6B21\u70B9\u51FB\u5404\u8BB0\u4E00\u6761\uFF0C\u65E0\u9700\u53BB\u91CD\uFF1B\u7528\u4E8E\u5206\u4EAB\u51B7\u5374\u5224\u5B9A\uFF09';
+    draftAndPublish: false;
+  };
+  attributes: {
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    inviter: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-point.activity-share-visit'
+    > &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    targetId: Schema.Attribute.String;
+    targetType: Schema.Attribute.Enumeration<
+      ['article', 'course', 'activity', 'task']
+    >;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
 export interface PluginZhaoPointActivitySignup
   extends Struct.CollectionTypeSchema {
   collectionName: 'activity_signups';
@@ -4400,7 +4517,9 @@ export interface PluginZhaoPointActivitySignup
         number
       >;
     pointsCharged: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    preQuestionnaireData: Schema.Attribute.JSON;
     publishedAt: Schema.Attribute.DateTime;
+    questionnaireData: Schema.Attribute.JSON;
     rating: Schema.Attribute.Integer &
       Schema.Attribute.SetMinMax<
         {
@@ -4411,9 +4530,11 @@ export interface PluginZhaoPointActivitySignup
       >;
     review: Schema.Attribute.Text;
     reviewedAt: Schema.Attribute.DateTime;
+    reviewHidden: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
     signupAt: Schema.Attribute.DateTime;
     status: Schema.Attribute.Enumeration<['active', 'cancelled', 'waiting']> &
       Schema.Attribute.DefaultTo<'active'>;
+    tourProgress: Schema.Attribute.JSON;
     unlockInfo: Schema.Attribute.JSON;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
@@ -4955,17 +5076,26 @@ export interface PluginZhaoPointPointRule extends Struct.CollectionTypeSchema {
     enabled: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
     endTime: Schema.Attribute.Time;
     extraConfig: Schema.Attribute.JSON;
+    icon: Schema.Attribute.String;
     isOneTime: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
     limitPerDay: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
     limitPerDayPerUser: Schema.Attribute.Integer &
       Schema.Attribute.DefaultTo<0>;
     limitPerUser: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    linkTargetId: Schema.Attribute.String;
+    linkThumb: Schema.Attribute.String;
+    linkTitle: Schema.Attribute.String;
+    linkType: Schema.Attribute.Enumeration<
+      ['none', 'article', 'course', 'activity']
+    > &
+      Schema.Attribute.DefaultTo<'none'>;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
       'plugin::zhao-point.point-rule'
     > &
       Schema.Attribute.Private;
+    name: Schema.Attribute.String;
     points: Schema.Attribute.Integer & Schema.Attribute.Required;
     priority: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
     publishedAt: Schema.Attribute.DateTime;
@@ -5137,6 +5267,54 @@ export interface PluginZhaoPointSignInRecord
       'plugin::users-permissions.user'
     > &
       Schema.Attribute.Required;
+  };
+}
+
+export interface PluginZhaoPointTourStory extends Struct.CollectionTypeSchema {
+  collectionName: 'tour_stories';
+  info: {
+    description: '\u5728\u5730\u5267\u672C\u6E38\u00B7\u5267\u76EE\uFF08\u7EBF\u8DEF\u5267\u672C\uFF09';
+    displayName: 'Tour Story';
+    pluralName: 'tour-stories';
+    singularName: 'tour-story';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    i18n: {
+      localized: false;
+    };
+  };
+  attributes: {
+    activities: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-point.activity'
+    >;
+    answer: Schema.Attribute.String;
+    backdrop: Schema.Attribute.Text;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    finalePoints: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<100>;
+    guideName: Schema.Attribute.String;
+    hint: Schema.Attribute.Text;
+    lineTitle: Schema.Attribute.String;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-point.tour-story'
+    > &
+      Schema.Attribute.Private;
+    mainPoints: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<50>;
+    mainPuzzle: Schema.Attribute.Text;
+    publishedAt: Schema.Attribute.DateTime;
+    roles: Schema.Attribute.JSON;
+    stationPoints: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<10>;
+    title: Schema.Attribute.String & Schema.Attribute.Required;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
   };
 }
 
@@ -5509,6 +5687,47 @@ export interface PluginZhaoQuizWrongQuiz extends Struct.CollectionTypeSchema {
       'plugin::users-permissions.user'
     >;
     wrongCount: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<1>;
+  };
+}
+
+export interface PluginZhaoSsoManualSopTodo
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'sso_sop_manual_todos';
+  info: {
+    displayName: 'SSO Manual SOP Todo';
+    pluralName: 'manual-sop-todos';
+    singularName: 'manual-sop-todo';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    audience: Schema.Attribute.JSON;
+    code: Schema.Attribute.String & Schema.Attribute.Required;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    description: Schema.Attribute.Text;
+    doneAt: Schema.Attribute.DateTime;
+    link: Schema.Attribute.Text;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-sso.manual-sop-todo'
+    > &
+      Schema.Attribute.Private;
+    paramsTemplate: Schema.Attribute.JSON;
+    publishedAt: Schema.Attribute.DateTime;
+    scene: Schema.Attribute.String & Schema.Attribute.Required;
+    sentCount: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    status: Schema.Attribute.Enumeration<['open', 'done', 'skipped']> &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'open'>;
+    templateCode: Schema.Attribute.String;
+    title: Schema.Attribute.String & Schema.Attribute.Required;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
   };
 }
 
@@ -9454,6 +9673,66 @@ export interface PluginZhaoWebsiteArticleCategory
   };
 }
 
+export interface PluginZhaoWebsiteAuthor extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_website_authors';
+  info: {
+    displayName: '\u6587\u7AE0\u4F5C\u8005';
+    pluralName: 'authors';
+    singularName: 'author';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: true;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+  };
+  attributes: {
+    avatar: Schema.Attribute.Media;
+    bio: Schema.Attribute.Text;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    deletedAt: Schema.Attribute.DateTime;
+    experienceYears: Schema.Attribute.Integer;
+    geoArticles: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-website.geo-article'
+    >;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-website.author'
+    > &
+      Schema.Attribute.Private;
+    name: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
+    position: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    publishedAt: Schema.Attribute.DateTime;
+    sameAs: Schema.Attribute.JSON;
+    site: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-common.site-config'
+    > &
+      Schema.Attribute.Required;
+    slug: Schema.Attribute.UID<'name'> & Schema.Attribute.Required;
+    status: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+  };
+}
+
 export interface PluginZhaoWebsiteBrandInfo
   extends Struct.CollectionTypeSchema {
   collectionName: 'zhao_website_brand_infos';
@@ -10006,6 +10285,10 @@ export interface PluginZhaoWebsiteFirstTruthPolicy
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
     deletedAt: Schema.Attribute.DateTime;
+    geoArticles: Schema.Attribute.Relation<
+      'manyToMany',
+      'plugin::zhao-website.geo-article'
+    >;
     lastVerifiedAt: Schema.Attribute.DateTime & Schema.Attribute.Required;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
@@ -10027,6 +10310,191 @@ export interface PluginZhaoWebsiteFirstTruthPolicy
       ['verified', 'pending', 'outdated', 'conflict']
     > &
       Schema.Attribute.DefaultTo<'verified'>;
+  };
+}
+
+export interface PluginZhaoWebsiteGeoArticle
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_website_geo_articles';
+  info: {
+    displayName: 'GEO \u6587\u7AE0';
+    pluralName: 'geo-articles';
+    singularName: 'geo-article';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: true;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+    i18n: {
+      localized: true;
+    };
+  };
+  attributes: {
+    allowIndex: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    articleNo: Schema.Attribute.String &
+      Schema.Attribute.Unique &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 32;
+      }>;
+    author: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-website.author'
+    >;
+    authorBio: Schema.Attribute.Text;
+    authorName: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
+    businessData: Schema.Attribute.JSON & Schema.Attribute.DefaultTo<[]>;
+    canonicalUrl: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 500;
+      }>;
+    caseContent: Schema.Attribute.Text;
+    category: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-website.article-category'
+    >;
+    comparisonData: Schema.Attribute.JSON & Schema.Attribute.DefaultTo<[]>;
+    content: Schema.Attribute.Text & Schema.Attribute.Required;
+    coverImage: Schema.Attribute.Media;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    ctaType: Schema.Attribute.Enumeration<
+      ['none', 'download-list', 'consult-appointment']
+    > &
+      Schema.Attribute.DefaultTo<'none'>;
+    deletedAt: Schema.Attribute.DateTime;
+    editor: Schema.Attribute.Relation<'manyToOne', 'admin::user'>;
+    faqQuestion: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 200;
+      }>;
+    infoBoundary: Schema.Attribute.Text;
+    internalLinks: Schema.Attribute.JSON & Schema.Attribute.DefaultTo<[]>;
+    jsonLdType: Schema.Attribute.Enumeration<
+      ['Article', 'FAQPage', 'LocalBusiness', 'ItemList']
+    > &
+      Schema.Attribute.DefaultTo<'Article'>;
+    leadFormEnabled: Schema.Attribute.Boolean &
+      Schema.Attribute.DefaultTo<false>;
+    listItems: Schema.Attribute.JSON & Schema.Attribute.DefaultTo<[]>;
+    locale: Schema.Attribute.String;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-website.geo-article'
+    >;
+    localTips: Schema.Attribute.Text;
+    mentionedEntities: Schema.Attribute.Relation<
+      'manyToMany',
+      'plugin::zhao-website.knowledge-entity'
+    >;
+    metaDescription: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 160;
+      }>;
+    metaTitle: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 60;
+      }>;
+    miniProgramPath: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 200;
+      }>;
+    noFollow: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    publishedAt: Schema.Attribute.DateTime;
+    readPoints: Schema.Attribute.Integer & Schema.Attribute.DefaultTo<0>;
+    reviewChecks: Schema.Attribute.JSON & Schema.Attribute.DefaultTo<{}>;
+    reviewedAt: Schema.Attribute.DateTime;
+    reviewer: Schema.Attribute.Relation<'manyToOne', 'admin::user'>;
+    reviewerName: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
+    reviewNote: Schema.Attribute.Text;
+    riskDisclaimer: Schema.Attribute.Text;
+    riskType: Schema.Attribute.Enumeration<
+      [
+        'none',
+        'finance-general',
+        'finance-stock',
+        'finance-fund',
+        'finance-bond',
+        'finance-wealth',
+        'finance-futures',
+        'finance-precious-metals',
+        'finance-forex',
+        'finance-trust',
+        'finance-convertible-bond',
+        'finance-hk-us-stock',
+        'finance-index',
+        'finance-insurance',
+        'finance-otc',
+        'finance-reverse-repo',
+        'finance-cd',
+        'health',
+        'legal',
+        'other',
+      ]
+    > &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'none'>;
+    serviceScope: Schema.Attribute.Text;
+    site: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::zhao-common.site-config'
+    > &
+      Schema.Attribute.Required;
+    slug: Schema.Attribute.UID<'title'> & Schema.Attribute.Required;
+    sourceName: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    sourcePublishedAt: Schema.Attribute.DateTime;
+    sourceUrl: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 500;
+      }>;
+    status: Schema.Attribute.Enumeration<
+      ['draft', 'review', 'published', 'archived']
+    > &
+      Schema.Attribute.DefaultTo<'draft'>;
+    summaryPoints: Schema.Attribute.Text;
+    tags: Schema.Attribute.Relation<'manyToMany', 'plugin::zhao-tag.tag'>;
+    title: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 200;
+      }>;
+    truthBasis: Schema.Attribute.Relation<
+      'manyToMany',
+      'plugin::zhao-website.first-truth-policy'
+    >;
+    type: Schema.Attribute.Enumeration<
+      [
+        'geo-article',
+        'geo-faq',
+        'local-report',
+        'local-comparison',
+        'local-list',
+      ]
+    > &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'geo-article'>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    vendureProductListId: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
   };
 }
 
@@ -10091,6 +10559,101 @@ export interface PluginZhaoWebsiteInteraction
     >;
     visitorId: Schema.Attribute.String &
       Schema.Attribute.Required &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+  };
+}
+
+export interface PluginZhaoWebsiteInviteTrace
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'zhao_website_invite_traces';
+  info: {
+    displayName: '\u9080\u8BF7\u7801\u6D41\u8F6C\u57CB\u70B9';
+    pluralName: 'invite-traces';
+    singularName: 'invite-trace';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  pluginOptions: {
+    'content-manager': {
+      visible: false;
+    };
+    'content-type-builder': {
+      visible: false;
+    };
+  };
+  attributes: {
+    channelInviteCode: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    detail: Schema.Attribute.Text;
+    event: Schema.Attribute.Enumeration<
+      [
+        'share_sent',
+        'landing',
+        'login_start',
+        'login_callback',
+        'redirect_back',
+        'use_invite',
+      ]
+    > &
+      Schema.Attribute.Required;
+    inviteCode: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    inviterId: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
+    ipAddress: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
+      }>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'plugin::zhao-website.invite-trace'
+    > &
+      Schema.Attribute.Private;
+    loggedIn: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<false>;
+    pagePath: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 200;
+      }>;
+    publishedAt: Schema.Attribute.DateTime;
+    sessionId: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 64;
+      }>;
+    storedCode: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 100;
+      }>;
+    success: Schema.Attribute.Boolean & Schema.Attribute.DefaultTo<true>;
+    targetId: Schema.Attribute.String;
+    targetType: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 30;
+      }>;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    userAgent: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 500;
+      }>;
+    userId: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
+    visitorId: Schema.Attribute.String &
       Schema.Attribute.SetMinMaxLength<{
         maxLength: 100;
       }>;
@@ -10177,6 +10740,10 @@ export interface PluginZhaoWebsiteKnowledgeEntity
     firstTruthPolicies: Schema.Attribute.Relation<
       'oneToMany',
       'plugin::zhao-website.first-truth-policy'
+    >;
+    geoArticleMentions: Schema.Attribute.Relation<
+      'manyToMany',
+      'plugin::zhao-website.geo-article'
     >;
     identifier: Schema.Attribute.String &
       Schema.Attribute.SetMinMaxLength<{
@@ -10710,6 +11277,7 @@ export interface PluginZhaoWebsiteSeoConfig
       Schema.Attribute.DefaultTo<'allow_all'>;
     allowedAiCrawlers: Schema.Attribute.JSON & Schema.Attribute.DefaultTo<[]>;
     alternateLocales: Schema.Attribute.JSON;
+    areaServed: Schema.Attribute.JSON;
     baiduAnalyticsId: Schema.Attribute.String &
       Schema.Attribute.SetMinMaxLength<{
         maxLength: 50;
@@ -10789,10 +11357,15 @@ export interface PluginZhaoWebsiteSeoConfig
     > &
       Schema.Attribute.Private;
     ogImage: Schema.Attribute.Media;
+    organizationAddress: Schema.Attribute.Text;
     organizationLogo: Schema.Attribute.Media;
     organizationName: Schema.Attribute.String &
       Schema.Attribute.SetMinMaxLength<{
         maxLength: 200;
+      }>;
+    organizationPhone: Schema.Attribute.String &
+      Schema.Attribute.SetMinMaxLength<{
+        maxLength: 50;
       }>;
     organizationType: Schema.Attribute.String &
       Schema.Attribute.SetMinMaxLength<{
@@ -11129,8 +11702,10 @@ declare module '@strapi/strapi' {
       'plugin::zhao-point.activity': PluginZhaoPointActivity;
       'plugin::zhao-point.activity-attendance': PluginZhaoPointActivityAttendance;
       'plugin::zhao-point.activity-ledger': PluginZhaoPointActivityLedger;
+      'plugin::zhao-point.activity-message': PluginZhaoPointActivityMessage;
       'plugin::zhao-point.activity-referral-reward': PluginZhaoPointActivityReferralReward;
       'plugin::zhao-point.activity-series': PluginZhaoPointActivitySeries;
+      'plugin::zhao-point.activity-share-visit': PluginZhaoPointActivityShareVisit;
       'plugin::zhao-point.activity-signup': PluginZhaoPointActivitySignup;
       'plugin::zhao-point.channel-verification': PluginZhaoPointChannelVerification;
       'plugin::zhao-point.lecturer': PluginZhaoPointLecturer;
@@ -11143,6 +11718,7 @@ declare module '@strapi/strapi' {
       'plugin::zhao-point.point-type': PluginZhaoPointPointType;
       'plugin::zhao-point.rule-template': PluginZhaoPointRuleTemplate;
       'plugin::zhao-point.sign-in-record': PluginZhaoPointSignInRecord;
+      'plugin::zhao-point.tour-story': PluginZhaoPointTourStory;
       'plugin::zhao-point.venue': PluginZhaoPointVenue;
       'plugin::zhao-quiz.quiz': PluginZhaoQuizQuiz;
       'plugin::zhao-quiz.quiz-batch': PluginZhaoQuizQuizBatch;
@@ -11150,6 +11726,7 @@ declare module '@strapi/strapi' {
       'plugin::zhao-quiz.quiz-exam-attempt': PluginZhaoQuizQuizExamAttempt;
       'plugin::zhao-quiz.quiz-record': PluginZhaoQuizQuizRecord;
       'plugin::zhao-quiz.wrong-quiz': PluginZhaoQuizWrongQuiz;
+      'plugin::zhao-sso.manual-sop-todo': PluginZhaoSsoManualSopTodo;
       'plugin::zhao-sso.msg-job': PluginZhaoSsoMsgJob;
       'plugin::zhao-sso.msg-template': PluginZhaoSsoMsgTemplate;
       'plugin::zhao-sso.msg-template-version': PluginZhaoSsoMsgTemplateVersion;
@@ -11224,6 +11801,7 @@ declare module '@strapi/strapi' {
       'plugin::zhao-website.ai-content-summary': PluginZhaoWebsiteAiContentSummary;
       'plugin::zhao-website.article': PluginZhaoWebsiteArticle;
       'plugin::zhao-website.article-category': PluginZhaoWebsiteArticleCategory;
+      'plugin::zhao-website.author': PluginZhaoWebsiteAuthor;
       'plugin::zhao-website.brand-info': PluginZhaoWebsiteBrandInfo;
       'plugin::zhao-website.brand-voice': PluginZhaoWebsiteBrandVoice;
       'plugin::zhao-website.case': PluginZhaoWebsiteCase;
@@ -11231,7 +11809,9 @@ declare module '@strapi/strapi' {
       'plugin::zhao-website.download': PluginZhaoWebsiteDownload;
       'plugin::zhao-website.faq': PluginZhaoWebsiteFaq;
       'plugin::zhao-website.first-truth-policy': PluginZhaoWebsiteFirstTruthPolicy;
+      'plugin::zhao-website.geo-article': PluginZhaoWebsiteGeoArticle;
       'plugin::zhao-website.interaction': PluginZhaoWebsiteInteraction;
+      'plugin::zhao-website.invite-trace': PluginZhaoWebsiteInviteTrace;
       'plugin::zhao-website.knowledge-entity': PluginZhaoWebsiteKnowledgeEntity;
       'plugin::zhao-website.knowledge-relation': PluginZhaoWebsiteKnowledgeRelation;
       'plugin::zhao-website.lead': PluginZhaoWebsiteLead;

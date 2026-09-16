@@ -1,0 +1,10 @@
+#!/bin/bash
+DB="docker exec 1Panel-postgresql-pIe0 psql -U strapi -d strapi -v ON_ERROR_STOP=0"
+echo "===== 相关表清单 ====="
+$DB -c "SELECT tablename FROM pg_tables WHERE schemaname='public' AND (tablename LIKE '%share%' OR tablename LIKE '%visit%' OR tablename LIKE '%referral%' OR tablename LIKE '%invite%' OR tablename LIKE '%user_invite%' OR tablename LIKE '%zhao_point%') ORDER BY tablename;"
+echo ""
+echo "===== up_users 全部 ====="
+$DB -c "SELECT id, username, email, sso_id, nickname, invite_code, created_at FROM up_users ORDER BY id;"
+echo ""
+echo "===== sso_users 近30 ====="
+$DB -c "SELECT id, username, nickname, app_code, created_at FROM sso_users ORDER BY id DESC LIMIT 30;"

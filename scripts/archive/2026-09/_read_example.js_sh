@@ -1,0 +1,8 @@
+#!/bin/bash
+export PATH=/home/admin/.nvm/versions/node/v22.23.1/bin:/usr/bin:/bin:$PATH
+echo '=== check-doc-id.js 头部 ==='
+head -30 /www/apps/strapi/check-doc-id.js
+echo ''
+echo '=== check-kp.js 头部 ==='
+head -25 /www/apps/strapi/check-kp.js
+echo 'DONE'

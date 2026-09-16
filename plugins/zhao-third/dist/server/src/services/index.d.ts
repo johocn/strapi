@@ -70,6 +70,11 @@ declare const _default: {
             nonceStr: string;
             signature: string;
         }>;
+        isSsoMode(siteId?: string): Promise<boolean>;
+        resolveSsoWechatConfig(): Promise<{
+            appId: string;
+            appSecret: string;
+        } | null>;
         updateProfile(userId: number | string, data: {
             nickname?: string;
             avatar?: string;
