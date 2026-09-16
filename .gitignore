@@ -153,3 +153,14 @@ scripts/_recon_login.py
 scripts/_verify_promo_page.py
 scripts/tmp-browser-cend.py
 scripts/tmp-check-config.cjs
+
+############################
+# 敏感凭据/备份/工具目录，禁止入库（2026-09-16 补充）
+############################
+
+*.dump
+sso_backup_*.dump
+scripts/_admin_token.txt
+.commitmsg.tmp
+.trae/
+plugins/zhao-website/server/src/services/utils/.build/
