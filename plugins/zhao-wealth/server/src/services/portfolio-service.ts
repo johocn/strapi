@@ -27,6 +27,19 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   };
 
   /**
+   * 配比规范化：缺失 allocationRatio 的产品默认等权（填 1，计算侧按归一化处理）
+   */
+  function normalizeProducts(products: PortfolioProduct[]): PortfolioProduct[] {
+    return products.map((p) => {
+      const ratio = Number(p.allocationRatio);
+      if (p.allocationRatio === undefined || p.allocationRatio === null || !isFinite(ratio)) {
+        return { ...p, allocationRatio: 1 };
+      }
+      return p;
+    });
+  }
+
+  /**
    * 创建组合方案
    */
   async function createPlan(userId: string, planData: {
@@ -41,7 +54,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         userId,
         planName: planData.planName,
         planType: planData.planType || 'custom',
-        products: planData.products,
+        products: normalizeProducts(planData.products),
         totalAmount: planData.totalAmount || null,
         status: 'active',
       },
@@ -128,7 +141,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     const data: any = {};
     if (planData.planName !== undefined) data.planName = planData.planName;
     if (planData.planType !== undefined) data.planType = planData.planType;
-    if (planData.products !== undefined) data.products = planData.products;
+    if (planData.products !== undefined) data.products = normalizeProducts(planData.products);
     if (planData.totalAmount !== undefined) data.totalAmount = planData.totalAmount;
 
     const record = await query.update({ where: { id: planId }, data });
@@ -277,5 +290,6 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     deletePlan,
     calculatePlanPerformance,
     exportPlanSummary,
+    normalizeProducts,
   };
 };
