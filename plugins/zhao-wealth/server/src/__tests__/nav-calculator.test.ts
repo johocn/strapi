@@ -2,6 +2,16 @@
 
 import { toDateStr } from '../utils';
 
+// 保留 utils 真实实现，仅 mock 锁函数（测试环境无 Redis 时 acquireLock 返回 false 会导致跳过）
+jest.mock('../utils', () => {
+  const actual = jest.requireActual('../utils');
+  return {
+    ...actual,
+    acquireLock: jest.fn().mockResolvedValue(true),
+    releaseLock: jest.fn().mockResolvedValue(undefined),
+  };
+});
+
 function d(day: number): Date {
   return new Date(`2026-06-${String(day).padStart(2, '0')}T00:00:00Z`);
 }

@@ -1,6 +1,6 @@
 ﻿'use strict';
 
-import { getPreviousTradingDay, getNaturalDays, calculateAnnualReturn, calculateMoneyFundAnnual, isEstimateValue, toDateStr } from '../utils';
+import { getPreviousTradingDay, getNaturalDays, calculateAnnualReturn, calculateMoneyFundAnnual, isEstimateValue, toDateStr, acquireLock, releaseLock } from '../utils';
 
 export default ({ strapi }) => ({
   /**
@@ -151,18 +151,28 @@ export default ({ strapi }) => ({
       const snapshot = await this.calculateSnapshot(productId, nav.navDate);
 
       if (snapshot) {
-        // 更新或创建快照（使用日期字符串查询，避免时区偏移）
-        const existing = await strapi.db.query('plugin::zhao-wealth.wealth-annual-snapshot').findOne({
-          where: { product: productId, snapshotDate: toDateStr(nav.navDate) },
-        });
-
-        if (existing) {
-          await strapi.db.query('plugin::zhao-wealth.wealth-annual-snapshot').update({
-            where: { id: existing.id },
-            data: snapshot,
+        const lockKey = `wealth:annual-snapshot:${productId}`;
+        const acquired = await acquireLock(lockKey, 600);
+        if (!acquired) {
+          strapi.log.warn(`[zhao-wealth] 产品${productId}年化快照重算已在执行中，跳过${toDateStr(nav.navDate)}`);
+          continue;
+        }
+        try {
+          // 更新或创建快照（锁内 findOne 重查，避免并发双 create）
+          const existing = await strapi.db.query('plugin::zhao-wealth.wealth-annual-snapshot').findOne({
+            where: { product: productId, snapshotDate: toDateStr(nav.navDate) },
           });
-        } else {
-          await strapi.db.query('plugin::zhao-wealth.wealth-annual-snapshot').create({ data: snapshot });
+
+          if (existing) {
+            await strapi.db.query('plugin::zhao-wealth.wealth-annual-snapshot').update({
+              where: { id: existing.id },
+              data: snapshot,
+            });
+          } else {
+            await strapi.db.query('plugin::zhao-wealth.wealth-annual-snapshot').create({ data: snapshot });
+          }
+        } finally {
+          await releaseLock(lockKey);
         }
       }
     }
@@ -211,24 +221,36 @@ export default ({ strapi }) => ({
 
       if (navs.length === 0) continue;
 
-      const existingSnapshots = await strapi.db.query('plugin::zhao-wealth.wealth-annual-snapshot').findMany({
-        where: { product: product.id },
-        select: ['snapshotDate'],
-      });
-
-      const existingDates = new Set(existingSnapshots.map((s: any) => toDateStr(s.snapshotDate)));
-      const missingDates = navs.map((n: any) => toDateStr(n.navDate)).filter((dateStr: string) => !existingDates.has(dateStr));
-
-      let calculated = 0;
-      for (const dateStr of missingDates) {
-        const snapshot = await this.calculateSnapshot(product.id, new Date(dateStr));
-        if (snapshot) {
-          await strapi.db.query('plugin::zhao-wealth.wealth-annual-snapshot').create({ data: snapshot });
-          calculated++;
-        }
+      // 产品级锁：多 job 并发（采集触发/定时重算）时串行写入，防止同 product+date 重复
+      const lockKey = `wealth:annual-snapshot:${product.id}`;
+      const acquired = await acquireLock(lockKey, 600);
+      if (!acquired) {
+        strapi.log.warn(`[zhao-wealth] 产品${product.id}年化快照补缺已在执行中，跳过`);
+        continue;
       }
 
-      results.push({ productId: product.id, missingDates: missingDates.length, calculated });
+      try {
+        const existingSnapshots = await strapi.db.query('plugin::zhao-wealth.wealth-annual-snapshot').findMany({
+          where: { product: product.id },
+          select: ['snapshotDate'],
+        });
+
+        const existingDates = new Set(existingSnapshots.map((s: any) => toDateStr(s.snapshotDate)));
+        const missingDates = navs.map((n: any) => toDateStr(n.navDate)).filter((dateStr: string) => !existingDates.has(dateStr));
+
+        let calculated = 0;
+        for (const dateStr of missingDates) {
+          const snapshot = await this.calculateSnapshot(product.id, new Date(dateStr));
+          if (snapshot) {
+            await strapi.db.query('plugin::zhao-wealth.wealth-annual-snapshot').create({ data: snapshot });
+            calculated++;
+          }
+        }
+
+        results.push({ productId: product.id, missingDates: missingDates.length, calculated });
+      } finally {
+        await releaseLock(lockKey);
+      }
     }
 
     strapi.log.info(`[zhao-wealth] 年化快照补缺完成，${results.length}个产品`);
