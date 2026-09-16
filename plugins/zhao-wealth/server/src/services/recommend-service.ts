@@ -35,6 +35,7 @@ export default ({ strapi }) => ({
         recommendSource: 'manual',
         recommendReason: config.recommendReason,
         annual1y: latestSnapshot?.annual1y,
+        annual7d: latestSnapshot?.annual7d != null ? Number(latestSnapshot.annual7d) : null,
         latestNav: null,
       });
     }
@@ -80,6 +81,7 @@ export default ({ strapi }) => ({
           recommendSource: 'score-ranking',
           recommendReason: `综合评分 ${Number(product.score.compositeScore).toFixed(0)} 分`,
           annual1y: null,
+          annual7d: null,
           latestNav: null,
           starRating: product.score.starRating,
           compositeScore: Number(product.score.compositeScore),
@@ -111,6 +113,7 @@ export default ({ strapi }) => ({
           recommendSource: 'annual-ranking',
           recommendReason: '近一年年化收益排名靠前',
           annual1y: snapshot.annual1y,
+          annual7d: snapshot.annual7d != null ? Number(snapshot.annual7d) : null,
           latestNav: null,
         });
       }

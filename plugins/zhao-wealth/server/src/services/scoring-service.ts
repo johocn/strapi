@@ -314,6 +314,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         ...product,
         score: scoreMap[product.id] || null,
         [annualKey]: annualValue !== null && !isNaN(annualValue) ? annualValue : null,
+        latestAnnual7d: annual?.annual7d != null && !isNaN(Number(annual.annual7d))
+          ? Number(annual.annual7d)
+          : null,
         annual1m: annualValue !== null && !isNaN(annualValue) ? annualValue : null,
       };
     });
