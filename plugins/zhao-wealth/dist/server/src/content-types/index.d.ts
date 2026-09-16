@@ -882,6 +882,28 @@ declare const _default: {
                 message: {
                     type: string;
                 };
+                submitType: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
+                contactType: {
+                    type: string;
+                    enum: string[];
+                };
+                contactValue: {
+                    type: string;
+                };
+                wechatType: {
+                    type: string;
+                    enum: string[];
+                };
+                reply: {
+                    type: string;
+                };
+                repliedAt: {
+                    type: string;
+                };
                 status: {
                     type: string;
                     enum: string[];

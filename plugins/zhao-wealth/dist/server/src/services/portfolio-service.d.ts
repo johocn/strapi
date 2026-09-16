@@ -49,5 +49,6 @@ declare const _default: ({ strapi }: {
         exportDate: string;
         disclaimer: string;
     }>;
+    normalizeProducts: (products: PortfolioProduct[]) => PortfolioProduct[];
 };
 export default _default;

@@ -176,7 +176,7 @@ const kind = "collectionType";
 const collectionName = "wealth_consultations";
 const info = { "singularName": "wealth-consultation", "pluralName": "wealth-consultations", "displayName": "预约咨询", "description": "客户预约理财咨询服务记录" };
 const options = { "draftAndPublish": false };
-const attributes = { "userId": { "type": "string", "required": true }, "name": { "type": "string", "required": true }, "phone": { "type": "string", "required": true }, "productId": { "type": "integer" }, "portfolioPlanId": { "type": "integer" }, "preferredTime": { "type": "datetime" }, "preferredChannel": { "type": "enumeration", "enum": ["online", "branch", "phone"], "default": "branch" }, "message": { "type": "text" }, "status": { "type": "enumeration", "enum": ["pending", "confirmed", "completed", "cancelled"], "default": "pending" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const attributes = { "userId": { "type": "string", "required": true }, "name": { "type": "string", "required": false }, "phone": { "type": "string", "required": false }, "productId": { "type": "integer" }, "portfolioPlanId": { "type": "integer" }, "preferredTime": { "type": "datetime" }, "preferredChannel": { "type": "enumeration", "enum": ["online", "branch", "phone"], "default": "branch" }, "message": { "type": "text" }, "submitType": { "type": "enumeration", "enum": ["phone", "wechat", "message"], "default": "phone" }, "contactType": { "type": "enumeration", "enum": ["phone", "email", "wechat"] }, "contactValue": { "type": "string" }, "wechatType": { "type": "enumeration", "enum": ["personal", "enterprise"] }, "reply": { "type": "text" }, "repliedAt": { "type": "datetime" }, "status": { "type": "enumeration", "enum": ["pending", "confirmed", "completed", "cancelled", "replied"], "default": "pending" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
 const wealthConsultation = {
   kind,
   collectionName,
@@ -9834,24 +9834,28 @@ const consultation = ({ strapi }) => ({
         ctx.body = errorResponse(401, "未登录");
         return;
       }
-      const { name, phone, productId, portfolioPlanId, preferredTime, preferredChannel, message } = ctx.request.body;
-      if (!name || !phone) {
-        ctx.body = errorResponse(400, "name 和 phone 必填");
-        return;
-      }
-      const record = await strapi.service("plugin::zhao-wealth.consultation-service").createBooking(String(userId), {
+      const { submitType, name, phone, contactType, contactValue, wechatType, message, productId, portfolioPlanId, preferredTime, preferredChannel } = ctx.request.body;
+      const result = await strapi.service("plugin::zhao-wealth.consultation-service").createBooking(String(userId), {
+        submitType,
         name,
         phone,
+        contactType,
+        contactValue,
+        wechatType,
+        message,
         productId,
         portfolioPlanId,
         preferredTime,
-        preferredChannel,
-        message
+        preferredChannel
       });
-      ctx.body = successResponse(record, "预约成功，我们将在1个工作日内与您联系");
+      if (!result.ok) {
+        ctx.body = errorResponse(result.code, result.msg);
+        return;
+      }
+      ctx.body = successResponse(result.record, "提交成功，我们将在1个工作日内与您联系");
     } catch (error) {
       strapi.log.error(`[zhao-wealth] 创建预约咨询失败: ${error.message}`);
-      ctx.body = errorResponse(500, "预约失败");
+      ctx.body = errorResponse(500, "提交失败");
     }
   },
   /**
@@ -9900,6 +9904,77 @@ const consultation = ({ strapi }) => ({
     } catch (error) {
       strapi.log.error(`[zhao-wealth] 风险揭示查询失败: ${error.message}`);
       ctx.body = errorResponse(500, "查询失败");
+    }
+  },
+  /**
+   * GET /v1/wealth/consult/config（公开）
+   */
+  async consultConfig(ctx) {
+    try {
+      const cfg = await strapi.service("plugin::zhao-wealth.consultation-service").getConsultConfig();
+      ctx.body = successResponse(cfg);
+    } catch (error) {
+      strapi.log.error(`[zhao-wealth] 咨询配置查询失败: ${error.message}`);
+      ctx.body = errorResponse(500, "查询失败");
+    }
+  },
+  /**
+   * GET /v1/admin/consultations
+   */
+  async adminList(ctx) {
+    try {
+      const { page, pageSize, status, submitType } = ctx.query;
+      const result = await strapi.service("plugin::zhao-wealth.consultation-service").adminListBookings({ page, pageSize, status, submitType });
+      ctx.body = successResponse({
+        list: result.records,
+        pagination: { page: result.page, pageSize: result.pageSize, total: result.total }
+      });
+    } catch (error) {
+      strapi.log.error(`[zhao-wealth] 咨询列表查询失败: ${error.message}`);
+      ctx.body = errorResponse(500, "查询失败");
+    }
+  },
+  /**
+   * POST /v1/admin/consultations/:id/reply
+   */
+  async adminReply(ctx) {
+    try {
+      const { id } = ctx.params;
+      const { reply } = ctx.request.body;
+      const result = await strapi.service("plugin::zhao-wealth.consultation-service").replyBooking(Number(id), reply);
+      if (!result.ok) {
+        ctx.body = errorResponse(result.code, result.msg);
+        return;
+      }
+      ctx.body = successResponse(result.record, "回复成功");
+    } catch (error) {
+      strapi.log.error(`[zhao-wealth] 回复留言失败: ${error.message}`);
+      ctx.body = errorResponse(500, "回复失败");
+    }
+  },
+  /**
+   * GET /v1/admin/consult-config
+   */
+  async adminGetConfig(ctx) {
+    try {
+      const cfg = await strapi.service("plugin::zhao-wealth.consultation-service").getConsultConfig();
+      ctx.body = successResponse(cfg);
+    } catch (error) {
+      strapi.log.error(`[zhao-wealth] 咨询配置查询失败: ${error.message}`);
+      ctx.body = errorResponse(500, "查询失败");
+    }
+  },
+  /**
+   * PUT /v1/admin/consult-config
+   */
+  async adminUpdateConfig(ctx) {
+    try {
+      const body = ctx.request.body;
+      const record = await strapi.service("plugin::zhao-wealth.consultation-service").adminUpdateConsultConfig(body);
+      ctx.body = successResponse(record, "配置已保存");
+    } catch (error) {
+      strapi.log.error(`[zhao-wealth] 咨询配置保存失败: ${error.message}`);
+      ctx.body = errorResponse(500, "保存失败");
     }
   }
 });
@@ -10258,6 +10333,14 @@ const contentApi = () => ({
         auth: false,
         policies: ["plugin::zhao-sso.sso-authenticated"]
       }
+    },
+    {
+      method: "GET",
+      path: "/v1/wealth/consult/config",
+      handler: "consultation.consultConfig",
+      config: {
+        auth: false
+      }
     }
   ]
 });
@@ -10322,6 +10405,11 @@ const adminApi = () => ({
     adminRoute("POST", "/v1/admin/disclosures", "disclosure.adminCreate"),
     adminRoute("PUT", "/v1/admin/disclosures/:id", "disclosure.adminUpdate"),
     adminRoute("DELETE", "/v1/admin/disclosures/:id", "disclosure.adminDelete"),
+    // ===== 预约咨询管理 =====
+    adminRoute("GET", "/v1/admin/consultations", "consultation.adminList"),
+    adminRoute("POST", "/v1/admin/consultations/:id/reply", "consultation.adminReply"),
+    adminRoute("GET", "/v1/admin/consult-config", "consultation.adminGetConfig"),
+    adminRoute("PUT", "/v1/admin/consult-config", "consultation.adminUpdateConfig"),
     // ===== 客户持仓（管理端代客录入） =====
     adminRoute("GET", "/v1/admin/holdings", "holding.list"),
     adminRoute("GET", "/v1/admin/holdings/:id", "holding.detail"),
@@ -10636,16 +10724,26 @@ const navCalculator = ({ strapi }) => ({
     for (const nav2 of navs) {
       const snapshot = await this.calculateSnapshot(productId, nav2.navDate);
       if (snapshot) {
-        const existing = await strapi.db.query("plugin::zhao-wealth.wealth-annual-snapshot").findOne({
-          where: { product: productId, snapshotDate: toDateStr(nav2.navDate) }
-        });
-        if (existing) {
-          await strapi.db.query("plugin::zhao-wealth.wealth-annual-snapshot").update({
-            where: { id: existing.id },
-            data: snapshot
+        const lockKey = `wealth:annual-snapshot:${productId}`;
+        const acquired = await acquireLock(lockKey, 600);
+        if (!acquired) {
+          strapi.log.warn(`[zhao-wealth] 产品${productId}年化快照重算已在执行中，跳过${toDateStr(nav2.navDate)}`);
+          continue;
+        }
+        try {
+          const existing = await strapi.db.query("plugin::zhao-wealth.wealth-annual-snapshot").findOne({
+            where: { product: productId, snapshotDate: toDateStr(nav2.navDate) }
           });
-        } else {
-          await strapi.db.query("plugin::zhao-wealth.wealth-annual-snapshot").create({ data: snapshot });
+          if (existing) {
+            await strapi.db.query("plugin::zhao-wealth.wealth-annual-snapshot").update({
+              where: { id: existing.id },
+              data: snapshot
+            });
+          } else {
+            await strapi.db.query("plugin::zhao-wealth.wealth-annual-snapshot").create({ data: snapshot });
+          }
+        } finally {
+          await releaseLock(lockKey);
         }
       }
     }
@@ -10684,21 +10782,31 @@ const navCalculator = ({ strapi }) => ({
         orderBy: { navDate: "asc" }
       });
       if (navs.length === 0) continue;
-      const existingSnapshots = await strapi.db.query("plugin::zhao-wealth.wealth-annual-snapshot").findMany({
-        where: { product: product2.id },
-        select: ["snapshotDate"]
-      });
-      const existingDates = new Set(existingSnapshots.map((s2) => toDateStr(s2.snapshotDate)));
-      const missingDates = navs.map((n2) => toDateStr(n2.navDate)).filter((dateStr) => !existingDates.has(dateStr));
-      let calculated = 0;
-      for (const dateStr of missingDates) {
-        const snapshot = await this.calculateSnapshot(product2.id, new Date(dateStr));
-        if (snapshot) {
-          await strapi.db.query("plugin::zhao-wealth.wealth-annual-snapshot").create({ data: snapshot });
-          calculated++;
-        }
+      const lockKey = `wealth:annual-snapshot:${product2.id}`;
+      const acquired = await acquireLock(lockKey, 600);
+      if (!acquired) {
+        strapi.log.warn(`[zhao-wealth] 产品${product2.id}年化快照补缺已在执行中，跳过`);
+        continue;
       }
-      results.push({ productId: product2.id, missingDates: missingDates.length, calculated });
+      try {
+        const existingSnapshots = await strapi.db.query("plugin::zhao-wealth.wealth-annual-snapshot").findMany({
+          where: { product: product2.id },
+          select: ["snapshotDate"]
+        });
+        const existingDates = new Set(existingSnapshots.map((s2) => toDateStr(s2.snapshotDate)));
+        const missingDates = navs.map((n2) => toDateStr(n2.navDate)).filter((dateStr) => !existingDates.has(dateStr));
+        let calculated = 0;
+        for (const dateStr of missingDates) {
+          const snapshot = await this.calculateSnapshot(product2.id, new Date(dateStr));
+          if (snapshot) {
+            await strapi.db.query("plugin::zhao-wealth.wealth-annual-snapshot").create({ data: snapshot });
+            calculated++;
+          }
+        }
+        results.push({ productId: product2.id, missingDates: missingDates.length, calculated });
+      } finally {
+        await releaseLock(lockKey);
+      }
     }
     strapi.log.info(`[zhao-wealth] 年化快照补缺完成，${results.length}个产品`);
     return results;
@@ -11790,8 +11898,7 @@ const scoringService = ({ strapi }) => {
     const offset2 = (page - 1) * limit;
     const products = await productQuery.findMany({
       where,
-      limit,
-      offset: offset2,
+      limit: 500,
       orderBy: { recommendWeight: "desc" },
       populate: ["company"]
     });
@@ -11846,7 +11953,7 @@ const scoringService = ({ strapi }) => {
       const sb = b.score?.compositeScore ?? 0;
       return sb - sa;
     });
-    return { records, total, page, pageSize: limit };
+    return { records: records.slice(offset2, offset2 + limit), total, page, pageSize: limit };
   }
   async function getScoreBreakdown(productId, period) {
     const scoreQuery = strapi.db.query("plugin::zhao-wealth.wealth-score-snapshot");
@@ -11905,6 +12012,15 @@ const portfolioService = ({ strapi }) => {
     m6: "annual6m",
     y1: "annual1y"
   };
+  function normalizeProducts(products) {
+    return products.map((p) => {
+      const ratio = Number(p.allocationRatio);
+      if (p.allocationRatio === void 0 || p.allocationRatio === null || !isFinite(ratio)) {
+        return { ...p, allocationRatio: 1 };
+      }
+      return p;
+    });
+  }
   async function createPlan(userId, planData) {
     const query = strapi.db.query("plugin::zhao-wealth.wealth-portfolio-plan");
     const record = await query.create({
@@ -11912,7 +12028,7 @@ const portfolioService = ({ strapi }) => {
         userId,
         planName: planData.planName,
         planType: planData.planType || "custom",
-        products: planData.products,
+        products: normalizeProducts(planData.products),
         totalAmount: planData.totalAmount || null,
         status: "active"
       }
@@ -11968,7 +12084,7 @@ const portfolioService = ({ strapi }) => {
     const data = {};
     if (planData.planName !== void 0) data.planName = planData.planName;
     if (planData.planType !== void 0) data.planType = planData.planType;
-    if (planData.products !== void 0) data.products = planData.products;
+    if (planData.products !== void 0) data.products = normalizeProducts(planData.products);
     if (planData.totalAmount !== void 0) data.totalAmount = planData.totalAmount;
     const record = await query.update({ where: { id: planId }, data });
     return record;
@@ -12085,54 +12201,119 @@ const portfolioService = ({ strapi }) => {
     updatePlan,
     deletePlan,
     calculatePlanPerformance,
-    exportPlanSummary
+    exportPlanSummary,
+    normalizeProducts
   };
 };
-const consultationService = ({ strapi }) => ({
-  /**
-   * 创建预约咨询
-   */
-  async createBooking(userId, bookingData) {
-    const query = strapi.db.query("plugin::zhao-wealth.wealth-consultation");
-    const record = await query.create({
+const PHONE_RE = /^1\d{10}$/;
+const consultationService = ({ strapi }) => {
+  const query = () => strapi.db.query("plugin::zhao-wealth.wealth-consultation");
+  function fail(code, msg) {
+    return { ok: false, code, msg };
+  }
+  async function createBooking(userId, bookingData) {
+    const submitType = bookingData.submitType || "phone";
+    if (submitType === "phone") {
+      if (!bookingData.phone || !PHONE_RE.test(bookingData.phone)) {
+        return fail(400, "请输入正确的11位手机号");
+      }
+    } else if (submitType === "wechat") {
+      if (!bookingData.wechatType || !bookingData.contactValue) {
+        return fail(400, "请选择微信类型并填写微信号");
+      }
+    } else if (submitType === "message") {
+      if (!bookingData.message || !String(bookingData.message).trim()) {
+        return fail(400, "请输入留言内容");
+      }
+      if (!bookingData.contactType || !bookingData.contactValue) {
+        return fail(400, "请至少预留一种联系方式（电话/邮箱/微信）");
+      }
+    } else {
+      return fail(400, "无效的提交渠道");
+    }
+    const record = await query().create({
       data: {
         userId,
-        name: bookingData.name,
-        phone: bookingData.phone,
+        submitType,
+        name: bookingData.name || null,
+        phone: bookingData.phone || null,
+        contactType: bookingData.contactType || null,
+        contactValue: bookingData.contactValue || null,
+        wechatType: bookingData.wechatType || null,
+        message: bookingData.message || null,
         productId: bookingData.productId || null,
         portfolioPlanId: bookingData.portfolioPlanId || null,
         preferredTime: bookingData.preferredTime || null,
         preferredChannel: bookingData.preferredChannel || "branch",
-        message: bookingData.message || null,
         status: "pending"
       }
     });
-    return record;
-  },
-  /**
-   * 获取用户的预约列表
-   */
-  async getBookings(userId) {
-    const query = strapi.db.query("plugin::zhao-wealth.wealth-consultation");
-    const records = await query.findMany({
+    return { ok: true, record };
+  }
+  async function getBookings(userId) {
+    const records = await query().findMany({
       where: { userId },
       orderBy: { createdAt: "desc" },
       limit: 100
     });
     return records;
-  },
-  /**
-   * 取消预约
-   */
-  async cancelBooking(bookingId) {
-    const query = strapi.db.query("plugin::zhao-wealth.wealth-consultation");
-    const record = await query.update({
+  }
+  async function cancelBooking(bookingId) {
+    const record = await query().update({
       where: { id: bookingId },
       data: { status: "cancelled" }
     });
     return record;
   }
-});
+  async function adminListBookings(params) {
+    const page = Number(params.page) || 1;
+    const pageSize = Math.min(Number(params.pageSize) || 20, 100);
+    const offset2 = (page - 1) * pageSize;
+    const where = {};
+    if (params.status && params.status !== "all") where.status = params.status;
+    if (params.submitType && params.submitType !== "all") where.submitType = params.submitType;
+    const [records, total] = await Promise.all([
+      query().findMany({ where, orderBy: { createdAt: "desc" }, limit: pageSize, offset: offset2 }),
+      query().count({ where })
+    ]);
+    return { records, total, page, pageSize };
+  }
+  async function replyBooking(bookingId, reply) {
+    if (!reply || !String(reply).trim()) {
+      return fail(400, "请输入回复内容");
+    }
+    const record = await query().update({
+      where: { id: bookingId },
+      data: { reply, repliedAt: (/* @__PURE__ */ new Date()).toISOString(), status: "replied" }
+    });
+    return { ok: true, record };
+  }
+  async function getConsultConfig() {
+    const cfgQuery = strapi.db.query("plugin::zhao-wealth.wealth-consult-config");
+    const cfg = await cfgQuery.findOne({});
+    if (!cfg) {
+      return { enterpriseWechatQr: null, personalWechatQr: null, enterpriseWechatId: null, personalWechatId: null };
+    }
+    return {
+      enterpriseWechatQr: cfg.enterpriseWechatQr?.url || null,
+      personalWechatQr: cfg.personalWechatQr?.url || null,
+      enterpriseWechatId: cfg.enterpriseWechatId || null,
+      personalWechatId: cfg.personalWechatId || null
+    };
+  }
+  async function adminUpdateConsultConfig(data) {
+    const cfgQuery = strapi.db.query("plugin::zhao-wealth.wealth-consult-config");
+    const existing = await cfgQuery.findOne({});
+    const payload = {};
+    if (data.enterpriseWechatQr !== void 0) payload.enterpriseWechatQr = data.enterpriseWechatQr;
+    if (data.personalWechatQr !== void 0) payload.personalWechatQr = data.personalWechatQr;
+    if (data.enterpriseWechatId !== void 0) payload.enterpriseWechatId = data.enterpriseWechatId;
+    if (data.personalWechatId !== void 0) payload.personalWechatId = data.personalWechatId;
+    const record = existing ? await cfgQuery.update({ where: { id: existing.id }, data: payload }) : await cfgQuery.create({ data: payload });
+    return record;
+  }
+  return { createBooking, getBookings, cancelBooking, adminListBookings, replyBooking, getConsultConfig, adminUpdateConsultConfig };
+};
 const riskDisclosureService = ({ strapi }) => ({
   /**
    * 获取动态风险揭示

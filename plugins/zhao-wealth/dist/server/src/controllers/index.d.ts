@@ -127,6 +127,11 @@ declare const _default: {
         list(ctx: any): Promise<void>;
         cancel(ctx: any): Promise<void>;
         disclosure(ctx: any): Promise<void>;
+        consultConfig(ctx: any): Promise<void>;
+        adminList(ctx: any): Promise<void>;
+        adminReply(ctx: any): Promise<void>;
+        adminGetConfig(ctx: any): Promise<void>;
+        adminUpdateConfig(ctx: any): Promise<void>;
     };
     monitor: ({ strapi }: {
         strapi: any;
