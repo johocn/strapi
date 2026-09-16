@@ -38,6 +38,8 @@ describe('scoring-service 校准', () => {
     expect(pluginConfig.scoreScales.returnScaleByType['money-wealth']).toBe(0.025);
     expect(pluginConfig.scoreScales.returnScaleByType['bank-wealth']).toBe(0.05);
     expect(pluginConfig.operationModeAliases['开放式净值型']).toBe('daily-open');
+    expect(pluginConfig.scoreScales.volatilityScaleByType['bank-wealth']).toBe(0.005);
+    expect(pluginConfig.scoreScales.drawdownScaleByType['bank-wealth']).toBe(0.005);
   });
 
   it('银行理财负收益按对称标尺计分（-2% → 30 分）', async () => {
@@ -51,7 +53,33 @@ describe('scoring-service 校准', () => {
 
     const score = await service.calculateScore(1, 'm1');
     expect(score!.returnScore).toBe(30); // 50 + (-0.02/0.05)*50
-    expect(score!.compositeScore).toBe(52); // 30*.5 + 67*.25 + 80*.25
+    expect(score!.compositeScore).toBe(15); // 30*.5 + 0*.25 + 0*.25（波动1%/回撤1%超0.005标尺→0分）
+  });
+
+  it('银行理财波动分按 0.005 标尺（0.05% → 90 分）', async () => {
+    mockProductFindOne.mockResolvedValue({ id: 1, productType: 'bank-wealth', operationMode: 'open' });
+    mockSnapshotFindOne.mockResolvedValue({ annual1m: 0.01 });
+    mockMetricFindMany.mockImplementation((opts: any) => {
+      const map: Record<string, number> = { volatility: 0.0005, maxDrawdown: 0 };
+      const v = map[opts.where.metricName];
+      return Promise.resolve(v !== undefined ? [{ metricValue: v }] : []);
+    });
+
+    const score = await service.calculateScore(1, 'm1');
+    expect(score!.volatilityScore).toBe(90); // (1 - 0.0005/0.005)*100
+  });
+
+  it('银行理财回撤分按 0.005 标尺（-0.02% → 96 分）', async () => {
+    mockProductFindOne.mockResolvedValue({ id: 1, productType: 'bank-wealth', operationMode: 'open' });
+    mockSnapshotFindOne.mockResolvedValue({ annual1m: 0.01 });
+    mockMetricFindMany.mockImplementation((opts: any) => {
+      const map: Record<string, number> = { volatility: 0.0005, maxDrawdown: -0.0002 };
+      const v = map[opts.where.metricName];
+      return Promise.resolve(v !== undefined ? [{ metricValue: v }] : []);
+    });
+
+    const score = await service.calculateScore(1, 'm1');
+    expect(score!.drawdownScore).toBe(96); // (1 + (-0.0002)/0.005)*100
   });
 
   it('货币理财按 2.5% 标尺计分（2% → 90 分）', async () => {

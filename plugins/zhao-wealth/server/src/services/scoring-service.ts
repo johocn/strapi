@@ -27,7 +27,7 @@ interface ProductWithMetrics {
 export default ({ strapi }: { strapi: Core.Strapi }) => {
   const config = strapi.config.get('plugin::zhao-wealth') as any;
   const scoreWeights = config?.scoreWeights || {};
-  const scoreScales = config?.scoreScales || { returnScale: 0.06, volatilityScale: 0.10, drawdownScale: 0.05, volatilityScaleByType: {} };
+  const scoreScales = config?.scoreScales || { returnScale: 0.06, volatilityScale: 0.10, drawdownScale: 0.05, volatilityScaleByType: {}, drawdownScaleByType: {} };
   const operationModeAliases = config?.operationModeAliases || {};
   const starThresholds = config?.starThresholds || { five: 90, four: 75, three: 60, two: 40 };
 
@@ -103,10 +103,13 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
 
   /**
    * 回撤得分（0-100）：最大回撤越小分越高，达到 drawdownScale 即 0 分（maxDrawdown 为负）
+   * productType 存在时优先使用按类型标尺（银行理财真实回撤极小，全局 0.05 无区分度）
    */
-  function absoluteDrawdownScore(maxDrawdown: number | null): number {
+  function absoluteDrawdownScore(maxDrawdown: number | null, productType?: string): number {
     if (maxDrawdown === null || isNaN(Number(maxDrawdown))) return 50;
-    return clampScore((1 + Number(maxDrawdown) / scoreScales.drawdownScale) * 100);
+    const scale = (scoreScales.drawdownScaleByType && scoreScales.drawdownScaleByType[productType || ''])
+      ?? scoreScales.drawdownScale;
+    return clampScore((1 + Number(maxDrawdown) / scale) * 100);
   }
 
   /**
@@ -174,7 +177,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     // 3. 各维度绝对评分（0-100）
     const returnScore = absoluteReturnScore(metrics.annualReturn, product.productType);
     const volatilityScore = absoluteVolatilityScore(metrics.volatility, product.productType);
-    const drawdownScore = absoluteDrawdownScore(metrics.maxDrawdown);
+    const drawdownScore = absoluteDrawdownScore(metrics.maxDrawdown, product.productType);
     // 同类排名样本过少，无统计意义，统一给中性分且不参与加权（权重已为 0）
     const peerRankScore = 50;
 

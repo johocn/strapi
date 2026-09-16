@@ -40,10 +40,15 @@ export default {
     volatilityScale: 0.10,
     drawdownScale: 0.05,
     // 按产品类型覆盖波动率标尺（银行理财/货币类天然低波动，全局 0.10 按股票基金定标会失真）
+    // bank-wealth 收紧到 0.005：真实波动 0.05%~1.4%，0.5% 年化波动即 0 分，恢复区分度
     volatilityScaleByType: {
-      'bank-wealth': 0.03,
+      'bank-wealth': 0.005,
       'money-fund': 0.02,
       'money-wealth': 0.02,
+    },
+    // 按产品类型覆盖回撤标尺（银行理财真实回撤 0~0.2%，全局 0.05 形同虚设）
+    drawdownScaleByType: {
+      'bank-wealth': 0.005,
     },
     // 按产品类型细分收益标尺（货币类/银行理财正常年化低，全局 6% 按股基定标会失真）
     returnScaleByType: {
