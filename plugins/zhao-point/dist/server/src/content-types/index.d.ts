@@ -932,6 +932,19 @@ declare const _default: {
                     type: string;
                     default: number;
                 };
+                meetupPoint: {
+                    type: string;
+                };
+                minParticipants: {
+                    type: string;
+                    default: number;
+                };
+                costIncludes: {
+                    type: string;
+                };
+                costExcludes: {
+                    type: string;
+                };
                 signupStart: {
                     type: string;
                 };
