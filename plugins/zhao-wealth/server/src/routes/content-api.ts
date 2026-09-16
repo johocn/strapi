@@ -92,6 +92,15 @@ export default () => ({
         policies: ['plugin::zhao-sso.sso-authenticated'],
       },
     },
+    {
+      method: 'GET',
+      path: '/v1/wealth/compare/trend',
+      handler: 'compare.trend',
+      config: {
+        auth: false,
+        policies: ['plugin::zhao-sso.sso-authenticated'],
+      },
+    },
     // === 评分相关 ===
     {
       method: 'GET',
