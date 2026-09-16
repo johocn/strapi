@@ -263,10 +263,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     const limit = Math.min(pageSize, 50);
     const offset = (page - 1) * limit;
 
+    // 全量取上架产品（数量小），评分组装后再排序切片，避免 recommendWeight 分页把高分产品挤出榜单
     const products = await productQuery.findMany({
       where,
-      limit,
-      offset,
+      limit: 500,
       orderBy: { recommendWeight: 'desc' },
       populate: ['company'],
     });
@@ -335,7 +335,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       return sb - sa;
     });
 
-    return { records, total, page, pageSize: limit };
+    return { records: records.slice(offset, offset + limit), total, page, pageSize: limit };
   }
 
   /**

@@ -12,10 +12,12 @@ describe('scoring-service 校准', () => {
   const mockScoreFindMany = jest.fn().mockResolvedValue([]);
   const mockOtherFindOne = jest.fn().mockResolvedValue(null);
   const mockOtherFindMany = jest.fn().mockResolvedValue([]);
+  const mockProductFindMany = jest.fn();
+  const mockProductCount = jest.fn();
 
   const mockQuery = jest.fn().mockImplementation((name: string) => {
-    if (name === 'plugin::zhao-wealth.wealth-product') return { findOne: mockProductFindOne };
-    if (name === 'plugin::zhao-wealth.wealth-annual-snapshot') return { findOne: mockSnapshotFindOne };
+    if (name === 'plugin::zhao-wealth.wealth-product') return { findOne: mockProductFindOne, findMany: mockProductFindMany, count: mockProductCount };
+    if (name === 'plugin::zhao-wealth.wealth-annual-snapshot') return { findOne: mockSnapshotFindOne, findMany: jest.fn().mockResolvedValue([]) };
     if (name === 'plugin::zhao-wealth.wealth-risk-metric') return { findMany: mockMetricFindMany };
     if (name === 'plugin::zhao-wealth.wealth-score-snapshot') return { findOne: mockScoreFindOne, findMany: mockScoreFindMany };
     return { findOne: mockOtherFindOne, findMany: mockOtherFindMany };
@@ -128,5 +130,37 @@ describe('scoring-service 校准', () => {
     const result = await service.getScoreLeaderboard({});
     expect(result.records[0].score).not.toBeNull();
     expect(result.records[0].score.compositeScore).toBeGreaterThan(0);
+  });
+
+  it('榜单：分页边界外的最高分产品必须上榜', async () => {
+    const products = [1, 2, 3, 4, 5, 6].map((id) => ({
+      id, productType: 'bank-wealth', operationMode: 'open', status: true, recommendWeight: 0,
+    }));
+    mockProductFindMany.mockResolvedValue(products);
+    mockProductCount.mockResolvedValue(6);
+    // 前序用例已覆盖 mockQuery 实现（clearAllMocks 不清除 mockImplementation），此处按既有风格重写
+    mockQuery.mockImplementation((name: string) => {
+      if (name === 'plugin::zhao-wealth.wealth-product') return { findOne: mockProductFindOne, findMany: mockProductFindMany, count: mockProductCount };
+      if (name === 'plugin::zhao-wealth.wealth-annual-snapshot') return { findOne: mockSnapshotFindOne, findMany: jest.fn().mockResolvedValue([]) };
+      if (name === 'plugin::zhao-wealth.wealth-risk-metric') return { findMany: mockMetricFindMany };
+      if (name === 'plugin::zhao-wealth.wealth-score-snapshot') return { findOne: mockScoreFindOne, findMany: mockScoreFindMany };
+      return { findOne: mockOtherFindOne, findMany: mockOtherFindMany };
+    });
+    // 评分快照只覆盖前 5 个产品（产品 6 无快照 → 走实时计算，得分最高）
+    mockScoreFindMany.mockResolvedValue(
+      [1, 2, 3, 4, 5].map((id) => ({ product: { id }, snapshotDate: '2026-09-16', period: 'm1', compositeScore: 60 + id }))
+    );
+    mockProductFindOne.mockResolvedValue({ id: 6, productType: 'bank-wealth', operationMode: 'open' });
+    mockSnapshotFindOne.mockResolvedValue({ annual1m: 0.02 });
+    mockMetricFindMany.mockImplementation((opts: any) => {
+      const map: Record<string, number> = { volatility: 0.0005, maxDrawdown: 0 };
+      const v = map[opts.where.metricName];
+      return Promise.resolve(v !== undefined ? [{ metricValue: v }] : []);
+    });
+
+    const board = await service.getScoreLeaderboard({ pageSize: 5 });
+    expect(board.records.length).toBe(5);
+    expect(board.records[0].id).toBe(6); // 最高分产品必须排第一
+    expect(board.total).toBe(6);
   });
 });
