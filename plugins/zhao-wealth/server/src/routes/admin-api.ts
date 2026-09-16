@@ -64,6 +64,7 @@ export default () => ({
 
     // ===== 风险指标 =====
     adminRoute('POST', '/v1/admin/recalculate-risk-metric', 'risk-metric.recalculate'),
+    adminRoute('POST', '/v1/admin/recalculate-scores', 'scoring.recalculate'),
     adminRoute('GET', '/v1/admin/risk-metrics/aggregate', 'risk-metric.adminAggregate'),
     adminRoute('GET', '/v1/admin/risk-metrics/trend', 'risk-metric.adminTrend'),
     adminRoute('GET', '/v1/admin/risk-metrics/peers', 'risk-metric.adminPeers'),
