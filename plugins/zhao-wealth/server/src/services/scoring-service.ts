@@ -28,6 +28,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   const config = strapi.config.get('plugin::zhao-wealth') as any;
   const scoreWeights = config?.scoreWeights || {};
   const scoreScales = config?.scoreScales || { returnScale: 0.06, volatilityScale: 0.10, drawdownScale: 0.05, volatilityScaleByType: {} };
+  const operationModeAliases = config?.operationModeAliases || {};
   const starThresholds = config?.starThresholds || { five: 90, four: 75, three: 60, two: 40 };
 
   // 周期到年化快照字段的映射
@@ -52,7 +53,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
    */
   function getWeightProfile(productType: string, operationMode: string | null): string {
     if (operationMode) {
-      const specificKey = `${productType}:${operationMode}`;
+      const normalized = operationModeAliases[operationMode] || operationMode;
+      const specificKey = `${productType}:${normalized}`;
       if (scoreWeights[specificKey]) {
         return specificKey;
       }
@@ -81,9 +83,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   /**
    * 收益得分（0-100）：年化收益 / returnScale，封顶 100
    */
-  function absoluteReturnScore(annualReturn: number | null): number {
+  function absoluteReturnScore(annualReturn: number | null, productType?: string): number {
     if (annualReturn === null || isNaN(Number(annualReturn))) return 50;
-    return clampScore((Number(annualReturn) / scoreScales.returnScale) * 100);
+    const scale = (scoreScales.returnScaleByType && scoreScales.returnScaleByType[productType || ''])
+      ?? scoreScales.returnScale;
+    return clampScore(50 + (Number(annualReturn) / scale) * 50);
   }
 
   /**
@@ -168,7 +172,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     const metrics = await getProductMetrics(productId, period);
 
     // 3. 各维度绝对评分（0-100）
-    const returnScore = absoluteReturnScore(metrics.annualReturn);
+    const returnScore = absoluteReturnScore(metrics.annualReturn, product.productType);
     const volatilityScore = absoluteVolatilityScore(metrics.volatility, product.productType);
     const drawdownScore = absoluteDrawdownScore(metrics.maxDrawdown);
     // 同类排名样本过少，无统计意义，统一给中性分且不参与加权（权重已为 0）
@@ -307,19 +311,19 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     }
 
     // 组装结果
-    const records = products.map((product: any) => {
+    const records = await Promise.all(products.map(async (product: any) => {
       const annual = annualMap[product.id];
       const annualValue = annual ? Number(annual[annualField]) : null;
       return {
         ...product,
-        score: scoreMap[product.id] || null,
+        score: scoreMap[product.id] || await calculateScore(product.id, period),
         [annualKey]: annualValue !== null && !isNaN(annualValue) ? annualValue : null,
         latestAnnual7d: annual?.annual7d != null && !isNaN(Number(annual.annual7d))
           ? Number(annual.annual7d)
           : null,
         annual1m: annualValue !== null && !isNaN(annualValue) ? annualValue : null,
       };
-    });
+    }));
 
     // 按评分降序排序
     records.sort((a, b) => {

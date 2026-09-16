@@ -24,6 +24,13 @@ export default {
     'mixed-fund':              { returns: 0.40, volatility: 0.30, drawdown: 0.30, peerRank: 0.00 },
   } as Record<string, { returns: number; volatility: number; drawdown: number; peerRank: number }>,
 
+  // operation_mode 生产值与权重键的别名映射（数据为中文/简写，config 键为英文规范值）
+  operationModeAliases: {
+    '开放式净值型': 'daily-open',
+    '封闭式': 'closed',
+    '定期开放': 'fixed-term',
+  },
+
   // 绝对评分标尺（不依赖同类样本量，用于将指标映射到 0-100 分）
   // returnScale: 年化收益率达该值即满分（6% 年化 = 100 分）
   // volatilityScale: 年化波动率达该值即 0 分（10% 波动 = 0 分）
@@ -37,6 +44,15 @@ export default {
       'bank-wealth': 0.03,
       'money-fund': 0.02,
       'money-wealth': 0.02,
+    },
+    // 按产品类型细分收益标尺（货币类/银行理财正常年化低，全局 6% 按股基定标会失真）
+    returnScaleByType: {
+      'money-fund': 0.025,
+      'money-wealth': 0.025,
+      'bank-wealth': 0.05,
+      'bond-fund': 0.10,
+      'mixed-fund': 0.10,
+      'stock-fund': 0.15,
     },
   },
 
