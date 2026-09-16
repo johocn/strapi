@@ -44,6 +44,7 @@ export default ({ strapi }) => ({
       ...product,
       latestNav: enrichedMap[product.id]?.latestNav || null,
       latestAnnual1m: enrichedMap[product.id]?.latestAnnual1m ?? null,
+      latestAnnual7d: enrichedMap[product.id]?.latestAnnual7d ?? null,
       latestSevenDayAnnual: enrichedMap[product.id]?.latestSevenDayAnnual ?? null,
       latestTenThousandIncome: enrichedMap[product.id]?.latestTenThousandIncome ?? null,
       score: enrichedMap[product.id]?.score || null,
@@ -125,6 +126,7 @@ export default ({ strapi }) => ({
       result[pid] = {
         latestNav: latestNav || null,
         latestAnnual1m: snapshot?.annual1m != null ? Number(snapshot.annual1m) : null,
+        latestAnnual7d: snapshot?.annual7d != null ? Number(snapshot.annual7d) : null,
         latestSevenDayAnnual: moneyIncome?.sevenDayAnnual != null
           ? Number(moneyIncome.sevenDayAnnual)
           : null,
@@ -187,6 +189,14 @@ function sortProducts(list: any[], sortBy: string): any[] {
       sorted.sort((a, b) => {
         const ra = a.latestAnnual1m ?? -Infinity;
         const rb = b.latestAnnual1m ?? -Infinity;
+        return rb - ra;
+      });
+      break;
+    case 'annual7d':
+      // 近7日年化降序，无数据排末尾
+      sorted.sort((a, b) => {
+        const ra = a.latestAnnual7d ?? -Infinity;
+        const rb = b.latestAnnual7d ?? -Infinity;
         return rb - ra;
       });
       break;
