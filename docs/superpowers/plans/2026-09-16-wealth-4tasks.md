@@ -474,4 +474,4 @@ Expected: 线上资源 hash 与本地一致。
 **Type consistency:** `acquireLock(lockKey, 600)` / `releaseLock(lockKey)` 与 risk-metric-job.ts 既有用法一致；锁 key 统一 `wealth:annual-snapshot:{productId}`；`getScoreLeaderboard` 返回结构不变（records/total/page/pageSize）。
 
 **验证记录（实施后填写）：**
-- Task 3 根因结论：
+- Task 3 根因结论：2026-09-16 当日净值数据源未更新（各产品最新净值 09-14/09-15，查询确认），故 09-16 sharpe/rankPercentile 为空属模型预期（无净值不产出指标），非代码缺陷；补缺接口 `POST /v1/admin/recalculate-risk-metric {"type":"all"}` 验证返回 200「全量风险指标重算任务已触发」，链路正常，任务完成。
