@@ -10,6 +10,8 @@ export function registerRiskMetricJobs(strapi: any) {
     calcQueue.process('calculate-risk-metric', async (job) => {
       const { productId, snapshotDate } = job.data;
       const date = snapshotDate ? new Date(snapshotDate) : new Date();
+      // 与 recalculate-risk-metric-product 路径一致：先补当日年化快照，再算指标（sharpe/rank 依赖 annualReturn）
+      await strapi.service('plugin::zhao-wealth.nav-calculator').recalculateMissing(productId);
       await strapi.service('plugin::zhao-wealth.risk-metric-service').calculateAndSaveMetrics(productId, date);
     });
 
