@@ -131,5 +131,45 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     return { ok: true, record };
   }
 
-  return { createBooking, getBookings, cancelBooking, adminListBookings, replyBooking };
+  /**
+   * 获取微信咨询配置（公开，C 端展示二维码）
+   */
+  async function getConsultConfig() {
+    const cfgQuery = strapi.db.query('plugin::zhao-wealth.wealth-consult-config');
+    const cfg = await cfgQuery.findOne({});
+    if (!cfg) {
+      return { enterpriseWechatQr: null, personalWechatQr: null, enterpriseWechatId: null, personalWechatId: null };
+    }
+    return {
+      enterpriseWechatQr: cfg.enterpriseWechatQr?.url || null,
+      personalWechatQr: cfg.personalWechatQr?.url || null,
+      enterpriseWechatId: cfg.enterpriseWechatId || null,
+      personalWechatId: cfg.personalWechatId || null,
+    };
+  }
+
+  /**
+   * 管理端：更新微信咨询配置（单条 upsert）
+   */
+  async function adminUpdateConsultConfig(data: {
+    enterpriseWechatQr?: number;
+    personalWechatQr?: number;
+    enterpriseWechatId?: string;
+    personalWechatId?: string;
+  }) {
+    const cfgQuery = strapi.db.query('plugin::zhao-wealth.wealth-consult-config');
+    const existing = await cfgQuery.findOne({});
+    const payload: any = {};
+    if (data.enterpriseWechatQr !== undefined) payload.enterpriseWechatQr = data.enterpriseWechatQr;
+    if (data.personalWechatQr !== undefined) payload.personalWechatQr = data.personalWechatQr;
+    if (data.enterpriseWechatId !== undefined) payload.enterpriseWechatId = data.enterpriseWechatId;
+    if (data.personalWechatId !== undefined) payload.personalWechatId = data.personalWechatId;
+
+    const record = existing
+      ? await cfgQuery.update({ where: { id: existing.id }, data: payload })
+      : await cfgQuery.create({ data: payload });
+    return record;
+  }
+
+  return { createBooking, getBookings, cancelBooking, adminListBookings, replyBooking, getConsultConfig, adminUpdateConsultConfig };
 };

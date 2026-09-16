@@ -230,5 +230,13 @@ export default () => ({
         policies: ['plugin::zhao-sso.sso-authenticated'],
       },
     },
+    {
+      method: 'GET',
+      path: '/v1/wealth/consult/config',
+      handler: 'consultation.consultConfig',
+      config: {
+        auth: false,
+      },
+    },
   ],
 });

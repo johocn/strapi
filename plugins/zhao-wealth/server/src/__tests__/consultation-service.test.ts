@@ -77,4 +77,27 @@ describe('consultation-service 三渠道', () => {
     expect(where.submitType).toBe('message');
     expect(r.total).toBe(1);
   });
+
+  it('咨询配置：返回二维码 URL 与微信号（无配置时返回 null 字段）', async () => {
+    const mockCfgFindOne = jest.fn();
+    mockQuery.mockImplementation((name: string) => {
+      if (name === 'plugin::zhao-wealth.wealth-consultation') {
+        return { create: mockCreate, update: mockUpdate, findMany: mockFindMany, count: mockCount };
+      }
+      if (name === 'plugin::zhao-wealth.wealth-consult-config') {
+        return { findOne: mockCfgFindOne };
+      }
+      return { create: jest.fn(), update: jest.fn(), findMany: jest.fn(), count: jest.fn(), findOne: jest.fn() };
+    });
+    mockCfgFindOne.mockResolvedValue({
+      enterpriseWechatQr: { url: '/uploads/ent.png' },
+      personalWechatQr: null,
+      enterpriseWechatId: 'joho-wealth',
+      personalWechatId: null,
+    });
+    const cfg = await service.getConsultConfig();
+    expect(cfg.enterpriseWechatId).toBe('joho-wealth');
+    expect(cfg.enterpriseWechatQr).toBe('/uploads/ent.png');
+    expect(cfg.personalWechatQr).toBeNull();
+  });
 });

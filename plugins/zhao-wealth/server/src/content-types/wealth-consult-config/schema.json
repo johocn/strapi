@@ -1,0 +1,35 @@
+{
+  "kind": "collectionType",
+  "collectionName": "wealth_consult_configs",
+  "info": {
+    "singularName": "wealth-consult-config",
+    "pluralName": "wealth-consult-configs",
+    "displayName": "咨询微信配置",
+    "description": "预约咨询微信渠道二维码与微信号配置"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "enterpriseWechatQr": {
+      "type": "media",
+      "multiple": false,
+      "required": false,
+      "allowedTypes": ["images"]
+    },
+    "personalWechatQr": {
+      "type": "media",
+      "multiple": false,
+      "required": false,
+      "allowedTypes": ["images"]
+    },
+    "enterpriseWechatId": {
+      "type": "string"
+    },
+    "personalWechatId": {
+      "type": "string"
+    },
+    "createdAt": { "type": "datetime" },
+    "updatedAt": { "type": "datetime" }
+  }
+}
