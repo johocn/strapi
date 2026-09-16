@@ -9622,6 +9622,30 @@ const compare = ({ strapi }) => ({
       strapi.log.error(`[zhao-wealth] 产品对比失败: ${error.message}`);
       ctx.body = errorResponse(500, error.message || "对比失败");
     }
+  },
+  /**
+   * C 端：多产品累计收益趋势
+   * GET /v1/wealth/compare/trend?productIds=1,2,3&period=m1
+   */
+  async trend(ctx) {
+    try {
+      const { productIds, period = "m1" } = ctx.query;
+      if (!productIds) {
+        ctx.body = errorResponse(400, "productIds 参数必填");
+        return;
+      }
+      const ids = String(productIds).split(",").map((s2) => Number(s2.trim())).filter((n2) => !isNaN(n2) && n2 > 0);
+      const validPeriods = ["m1", "m3", "m6", "y1"];
+      if (!validPeriods.includes(period)) {
+        ctx.body = errorResponse(400, "无效的 period，可选 m1/m3/m6/y1");
+        return;
+      }
+      const result = await strapi.service("plugin::zhao-wealth.compare-service").compareTrend(ids, period);
+      ctx.body = successResponse(result);
+    } catch (error) {
+      strapi.log.error(`[zhao-wealth] 趋势对比失败: ${error.message}`);
+      ctx.body = errorResponse(500, error.message || "趋势对比失败");
+    }
   }
 });
 const scoring = ({ strapi }) => ({
@@ -10104,6 +10128,15 @@ const contentApi = () => ({
         policies: ["plugin::zhao-sso.sso-authenticated"]
       }
     },
+    {
+      method: "GET",
+      path: "/v1/wealth/compare/trend",
+      handler: "compare.trend",
+      config: {
+        auth: false,
+        policies: ["plugin::zhao-sso.sso-authenticated"]
+      }
+    },
     // === 评分相关 ===
     {
       method: "GET",
@@ -10344,6 +10377,7 @@ const product = ({ strapi }) => ({
       ...product2,
       latestNav: enrichedMap[product2.id]?.latestNav || null,
       latestAnnual1m: enrichedMap[product2.id]?.latestAnnual1m ?? null,
+      latestAnnual7d: enrichedMap[product2.id]?.latestAnnual7d ?? null,
       latestSevenDayAnnual: enrichedMap[product2.id]?.latestSevenDayAnnual ?? null,
       latestTenThousandIncome: enrichedMap[product2.id]?.latestTenThousandIncome ?? null,
       score: enrichedMap[product2.id]?.score || null,
@@ -10404,6 +10438,7 @@ const product = ({ strapi }) => ({
       result[pid] = {
         latestNav: latestNav || null,
         latestAnnual1m: snapshot?.annual1m != null ? Number(snapshot.annual1m) : null,
+        latestAnnual7d: snapshot?.annual7d != null ? Number(snapshot.annual7d) : null,
         latestSevenDayAnnual: moneyIncome?.sevenDayAnnual != null ? Number(moneyIncome.sevenDayAnnual) : null,
         latestTenThousandIncome: moneyIncome?.tenThousandIncome != null ? Number(moneyIncome.tenThousandIncome) : null,
         score: score || null,
@@ -10450,6 +10485,13 @@ function sortProducts(list, sortBy) {
       sorted.sort((a, b) => {
         const ra = a.latestAnnual1m ?? -Infinity;
         const rb = b.latestAnnual1m ?? -Infinity;
+        return rb - ra;
+      });
+      break;
+    case "annual7d":
+      sorted.sort((a, b) => {
+        const ra = a.latestAnnual7d ?? -Infinity;
+        const rb = b.latestAnnual7d ?? -Infinity;
         return rb - ra;
       });
       break;
@@ -11414,6 +11456,7 @@ const PERIOD_TO_ANNUAL_FIELD = {
   m6: "annual6m",
   y1: "annual1y"
 };
+const PERIOD_TO_DAYS = { m1: 30, m3: 90, m6: 180, y1: 365 };
 const compareService = ({ strapi }) => ({
   /**
    * 多产品对比
@@ -11474,6 +11517,91 @@ const compareService = ({ strapi }) => ({
       };
     }));
     return results;
+  },
+  /**
+   * 多产品累计收益趋势对比
+   * 普通产品：区间首条净值归一化 (nav/base-1)*100
+   * 货币理财：万份收益累计 (Σ tenThousandIncome/10000)*100
+   * 统一日期轴对齐，缺失前值填充、首点前补 0
+   */
+  async compareTrend(productIds, period) {
+    if (productIds.length < 2 || productIds.length > 4) {
+      throw new Error("对比产品数量必须为 2-4 个");
+    }
+    const days = PERIOD_TO_DAYS[period] || 30;
+    const today = /* @__PURE__ */ new Date();
+    const start = new Date(today);
+    start.setDate(start.getDate() - days);
+    const startStr = start.toISOString().split("T")[0];
+    const endStr = today.toISOString().split("T")[0];
+    const series = await Promise.all(productIds.map(async (productId) => {
+      const product2 = await strapi.db.query("plugin::zhao-wealth.wealth-product").findOne({
+        where: { id: productId, status: true }
+      });
+      if (!product2) {
+        throw new Error(`产品 ${productId} 不存在或已下架`);
+      }
+      let points = [];
+      if (product2.productType === "money-wealth") {
+        const incomes = await strapi.db.query("plugin::zhao-wealth.wealth-money-income").findMany({
+          where: { product: productId, incomeDate: { $gte: startStr, $lte: endStr } },
+          orderBy: { incomeDate: "asc" },
+          limit: 2e3
+        });
+        let cum = 0;
+        points = incomes.map((r) => {
+          cum += Number(r.tenThousandIncome || 0) / 1e4;
+          return { date: r.incomeDate, value: Math.round(cum * 100 * 1e6) / 1e6 };
+        });
+      } else {
+        const navs = await strapi.db.query("plugin::zhao-wealth.wealth-nav").findMany({
+          where: { product: productId, navDate: { $gte: startStr, $lte: endStr } },
+          orderBy: { navDate: "asc" },
+          limit: 2e3
+        });
+        if (navs.length > 0) {
+          const base = Number(navs[0].unitNav) || 1;
+          points = navs.map((r) => ({
+            date: r.navDate,
+            value: Math.round(((Number(r.unitNav) || base) / base - 1) * 100 * 1e6) / 1e6
+          }));
+        }
+      }
+      return {
+        productId: product2.id,
+        productName: product2.productName,
+        productType: product2.productType,
+        points
+      };
+    }));
+    const dateSet = /* @__PURE__ */ new Set();
+    for (const s2 of series) {
+      for (const p of s2.points) dateSet.add(p.date);
+    }
+    const dates = [...dateSet].sort();
+    const aligned = series.map((s2) => {
+      const values = [];
+      let last = null;
+      let idx = 0;
+      for (const d of dates) {
+        while (idx < s2.points.length && s2.points[idx].date < d) {
+          last = s2.points[idx].value;
+          idx++;
+        }
+        if (idx < s2.points.length && s2.points[idx].date === d) {
+          last = s2.points[idx].value;
+          idx++;
+        }
+        values.push(last === null ? 0 : last);
+      }
+      return {
+        productId: s2.productId,
+        productName: s2.productName,
+        productType: s2.productType,
+        values
+      };
+    });
+    return { period, startDate: startStr, endDate: endStr, dates, series: aligned };
   }
 });
 const scoringService = ({ strapi }) => {

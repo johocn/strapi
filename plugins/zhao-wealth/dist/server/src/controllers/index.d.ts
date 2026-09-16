@@ -100,6 +100,7 @@ declare const _default: {
         strapi: any;
     }) => {
         compare(ctx: any): Promise<void>;
+        trend(ctx: any): Promise<void>;
     };
     scoring: ({ strapi }: {
         strapi: any;
