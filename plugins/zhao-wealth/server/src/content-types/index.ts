@@ -15,6 +15,7 @@ import wealthCustomerHolding from './wealth-customer-holding/schema.json';
 import wealthScoreSnapshot from './wealth-score-snapshot/schema.json';
 import wealthPortfolioPlan from './wealth-portfolio-plan/schema.json';
 import wealthConsultation from './wealth-consultation/schema.json';
+import wealthConsultConfig from './wealth-consult-config/schema.json';
 
 export default {
   'wealth-company': { schema: wealthCompany },
@@ -32,4 +33,5 @@ export default {
   'wealth-score-snapshot': { schema: wealthScoreSnapshot },
   'wealth-portfolio-plan': { schema: wealthPortfolioPlan },
   'wealth-consultation': { schema: wealthConsultation },
+  'wealth-consult-config': { schema: wealthConsultConfig },
 };

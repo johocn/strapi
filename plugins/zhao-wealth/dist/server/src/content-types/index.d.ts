@@ -918,5 +918,46 @@ declare const _default: {
             };
         };
     };
+    'wealth-consult-config': {
+        schema: {
+            kind: string;
+            collectionName: string;
+            info: {
+                singularName: string;
+                pluralName: string;
+                displayName: string;
+                description: string;
+            };
+            options: {
+                draftAndPublish: boolean;
+            };
+            attributes: {
+                enterpriseWechatQr: {
+                    type: string;
+                    multiple: boolean;
+                    required: boolean;
+                    allowedTypes: string[];
+                };
+                personalWechatQr: {
+                    type: string;
+                    multiple: boolean;
+                    required: boolean;
+                    allowedTypes: string[];
+                };
+                enterpriseWechatId: {
+                    type: string;
+                };
+                personalWechatId: {
+                    type: string;
+                };
+                createdAt: {
+                    type: string;
+                };
+                updatedAt: {
+                    type: string;
+                };
+            };
+        };
+    };
 };
 export default _default;
