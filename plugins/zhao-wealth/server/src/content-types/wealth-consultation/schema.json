@@ -17,11 +17,11 @@
     },
     "name": {
       "type": "string",
-      "required": true
+      "required": false
     },
     "phone": {
       "type": "string",
-      "required": true
+      "required": false
     },
     "productId": {
       "type": "integer"
@@ -40,9 +40,31 @@
     "message": {
       "type": "text"
     },
+    "submitType": {
+      "type": "enumeration",
+      "enum": ["phone", "wechat", "message"],
+      "default": "phone"
+    },
+    "contactType": {
+      "type": "enumeration",
+      "enum": ["phone", "email", "wechat"]
+    },
+    "contactValue": {
+      "type": "string"
+    },
+    "wechatType": {
+      "type": "enumeration",
+      "enum": ["personal", "enterprise"]
+    },
+    "reply": {
+      "type": "text"
+    },
+    "repliedAt": {
+      "type": "datetime"
+    },
     "status": {
       "type": "enumeration",
-      "enum": ["pending", "confirmed", "completed", "cancelled"],
+      "enum": ["pending", "confirmed", "completed", "cancelled", "replied"],
       "default": "pending"
     },
     "createdAt": { "type": "datetime" },

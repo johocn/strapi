@@ -13,24 +13,28 @@ export default ({ strapi }) => ({
         ctx.body = errorResponse(401, '未登录');
         return;
       }
-      const { name, phone, productId, portfolioPlanId, preferredTime, preferredChannel, message } = ctx.request.body;
-      if (!name || !phone) {
-        ctx.body = errorResponse(400, 'name 和 phone 必填');
-        return;
-      }
-      const record = await strapi.service('plugin::zhao-wealth.consultation-service').createBooking(String(userId), {
+      const { submitType, name, phone, contactType, contactValue, wechatType, message, productId, portfolioPlanId, preferredTime, preferredChannel } = ctx.request.body;
+      const result = await strapi.service('plugin::zhao-wealth.consultation-service').createBooking(String(userId), {
+        submitType,
         name,
         phone,
+        contactType,
+        contactValue,
+        wechatType,
+        message,
         productId,
         portfolioPlanId,
         preferredTime,
         preferredChannel,
-        message,
       });
-      ctx.body = successResponse(record, '预约成功，我们将在1个工作日内与您联系');
+      if (!result.ok) {
+        ctx.body = errorResponse(result.code, result.msg);
+        return;
+      }
+      ctx.body = successResponse(result.record, '提交成功，我们将在1个工作日内与您联系');
     } catch (error) {
       strapi.log.error(`[zhao-wealth] 创建预约咨询失败: ${error.message}`);
-      ctx.body = errorResponse(500, '预约失败');
+      ctx.body = errorResponse(500, '提交失败');
     }
   },
 
