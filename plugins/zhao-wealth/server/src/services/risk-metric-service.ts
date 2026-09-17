@@ -269,7 +269,28 @@ export default ({ strapi }) => ({
     const product = await strapi.db.query('plugin::zhao-wealth.wealth-product').findOne({
       where: { id: productId },
     });
-    const isMoneyType = !!product && (product.productType === 'money-fund' || product.productType === 'money-wealth');
+    if (!product) return;
+
+    const isMoneyType = product.productType === 'money-fund' || product.productType === 'money-wealth';
+
+    // 数据源检查：当日无净值/收益 → 跳过，不写任何指标记录
+    if (isMoneyType) {
+      const income = await strapi.db.query('plugin::zhao-wealth.wealth-money-income').findOne({
+        where: { product: productId, incomeDate: dateStr },
+      });
+      if (!income || income.tenThousandIncome == null) {
+        strapi.log.warn(`[zhao-wealth] 产品${productId}当日(${dateStr})无收益数据，跳过风险指标计算`);
+        return;
+      }
+    } else {
+      const nav = await strapi.db.query('plugin::zhao-wealth.wealth-nav').findOne({
+        where: { product: productId, navDate: dateStr },
+      });
+      if (!nav || nav.unitNav == null) {
+        strapi.log.warn(`[zhao-wealth] 产品${productId}当日(${dateStr})无净值数据，跳过风险指标计算`);
+        return;
+      }
+    }
 
     for (const period of periods) {
       const metrics = await this.calculateMetricsForPeriod(productId, snapshotDate, period);
@@ -510,13 +531,19 @@ export default ({ strapi }) => ({
     const results: { productId: number; missingDates: number }[] = [];
 
     for (const product of products) {
-      const navs = await strapi.db.query('plugin::zhao-wealth.wealth-nav').findMany({
+      const isMoneyType = product.productType === 'money-fund' || product.productType === 'money-wealth';
+
+      // 日期源按产品类型分流：净值型用净值日期，货币型用收益日期
+      const dateField = isMoneyType ? 'incomeDate' : 'navDate';
+      const dataDates = await strapi.db.query(
+        isMoneyType ? 'plugin::zhao-wealth.wealth-money-income' : 'plugin::zhao-wealth.wealth-nav'
+      ).findMany({
         where: { product: product.id },
-        select: ['navDate'],
-        orderBy: { navDate: 'asc' },
+        select: [dateField],
+        orderBy: { [dateField]: 'asc' },
       });
 
-      if (navs.length === 0) continue;
+      if (dataDates.length === 0) continue;
 
       const existingMetrics = await strapi.db.query('plugin::zhao-wealth.wealth-risk-metric').findMany({
         where: { product: product.id },
@@ -531,8 +558,8 @@ export default ({ strapi }) => ({
         const ds = toDateStr(m.snapshotDate);
         dateCounts.set(ds, (dateCounts.get(ds) || 0) + 1);
       }
-      const missingDates = navs
-        .map((n: any) => toDateStr(n.navDate))
+      const missingDates = dataDates
+        .map((n: any) => toDateStr(n[dateField]))
         .filter((dateStr: string) => (dateCounts.get(dateStr) || 0) < expectedCount);
 
       for (const dateStr of missingDates) {

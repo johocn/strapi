@@ -117,6 +117,9 @@ describe('risk-metric-service.recalculateMissing', () => {
     });
     service.calculateRankPercentile = jest.fn().mockResolvedValue(null);
 
+    mockQueries[PRODUCT_UID].findOne.mockResolvedValue({ id: 1, productType: 'bank-wealth' });
+    mockQueries[NAV_UID].findOne.mockResolvedValue({ id: 9, unitNav: 1.0 });
+
     await service.calculateAndSaveMetrics(1, d(2));
 
     const created = createMock.mock.calls.map((c: any) => c[0].data.metricValue);
@@ -143,6 +146,96 @@ describe('risk-metric-service.recalculateMissing', () => {
 
     expect(service.calculateAndSaveMetrics).toHaveBeenCalledTimes(1);
     expect(service.calculateAndSaveMetrics).toHaveBeenCalledWith(1, d(1));
+    expect(result).toEqual([{ productId: 1, missingDates: 1 }]);
+  });
+});
+
+describe('risk-metric-service.calculateAndSaveMetrics 数据源检查', () => {
+  let mockStrapi: any;
+  let mockQueries: Record<string, any>;
+  const PRODUCT_UID = 'plugin::zhao-wealth.wealth-product';
+  const NAV_UID = 'plugin::zhao-wealth.wealth-nav';
+  const INCOME_UID = 'plugin::zhao-wealth.wealth-money-income';
+  const METRIC_UID = 'plugin::zhao-wealth.wealth-risk-metric';
+
+  beforeEach(() => {
+    jest.resetModules();
+    mockQueries = {};
+    for (const uid of [PRODUCT_UID, NAV_UID, INCOME_UID, METRIC_UID]) {
+      mockQueries[uid] = { findOne: jest.fn(), findMany: jest.fn(), create: jest.fn(), delete: jest.fn() };
+    }
+    mockStrapi = {
+      db: { query: jest.fn((uid: string) => mockQueries[uid]), connection: { raw: jest.fn() } },
+      log: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+      service: jest.fn().mockReturnValue({ recalculateMissing: jest.fn() }),
+    };
+  });
+
+  function getService() {
+    return require('../services/risk-metric-service').default({ strapi: mockStrapi });
+  }
+
+  it('净值型当日无净值 → 跳过，不写任何指标', async () => {
+    mockQueries[PRODUCT_UID].findOne.mockResolvedValue({ id: 1, productType: 'bank-wealth' });
+    mockQueries[NAV_UID].findOne.mockResolvedValue(null);
+    const service = getService();
+    service.calculateMetricsForPeriod = jest.fn();
+    service.calculateRankPercentile = jest.fn();
+
+    await service.calculateAndSaveMetrics(1, d(2));
+
+    expect(service.calculateMetricsForPeriod).not.toHaveBeenCalled();
+    expect(mockQueries[METRIC_UID].delete).not.toHaveBeenCalled();
+    expect(mockQueries[METRIC_UID].create).not.toHaveBeenCalled();
+  });
+
+  it('货币型当日无收益 → 跳过，不写任何指标', async () => {
+    mockQueries[PRODUCT_UID].findOne.mockResolvedValue({ id: 1, productType: 'money-fund' });
+    mockQueries[INCOME_UID].findOne.mockResolvedValue(null);
+    const service = getService();
+    service.calculateMetricsForPeriod = jest.fn();
+    service.calculateRankPercentile = jest.fn();
+
+    await service.calculateAndSaveMetrics(1, d(2));
+
+    expect(service.calculateMetricsForPeriod).not.toHaveBeenCalled();
+    expect(mockQueries[METRIC_UID].create).not.toHaveBeenCalled();
+  });
+
+  it('净值型当日有净值 → 正常写入 4 条指标', async () => {
+    mockQueries[PRODUCT_UID].findOne.mockResolvedValue({ id: 1, productType: 'bank-wealth' });
+    mockQueries[NAV_UID].findOne.mockResolvedValue({ id: 9, unitNav: 1.0 });
+    const service = getService();
+    service.calculateMetricsForPeriod = jest.fn().mockResolvedValue({
+      volatility: 0.1, maxDrawdown: -0.01, sharpe: 1.2, annualReturn: 0.05, incomeStability: null,
+    });
+    service.calculateRankPercentile = jest.fn().mockResolvedValue(50);
+
+    await service.calculateAndSaveMetrics(1, d(2));
+
+    expect(service.calculateMetricsForPeriod).toHaveBeenCalledTimes(1);
+    expect(mockQueries[METRIC_UID].delete).toHaveBeenCalledTimes(4);
+    expect(mockQueries[METRIC_UID].create).toHaveBeenCalledTimes(4);
+  });
+
+  it('recalculateMissing 货币型：日期源用收益日期而非净值日期', async () => {
+    mockQueries[PRODUCT_UID].findMany.mockResolvedValue([{ id: 1, productType: 'money-fund' }]);
+    mockQueries[INCOME_UID].findMany.mockResolvedValue([{ incomeDate: d(1) }, { incomeDate: d(2) }]);
+    // d(1) 完整 4 条，d(2) 无记录 → 只补 d(2)
+    mockQueries[METRIC_UID].findMany.mockResolvedValue([
+      { snapshotDate: d(1) }, { snapshotDate: d(1) }, { snapshotDate: d(1) }, { snapshotDate: d(1) },
+    ]);
+    const service = getService();
+    service.calculateAndSaveMetrics = jest.fn().mockResolvedValue(undefined);
+
+    const result = await service.recalculateMissing(1);
+
+    expect(mockQueries[NAV_UID].findMany).not.toHaveBeenCalled();
+    expect(mockQueries[INCOME_UID].findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { product: 1 }, select: ['incomeDate'] })
+    );
+    expect(service.calculateAndSaveMetrics).toHaveBeenCalledTimes(1);
+    expect(service.calculateAndSaveMetrics).toHaveBeenCalledWith(1, d(2));
     expect(result).toEqual([{ productId: 1, missingDates: 1 }]);
   });
 });
