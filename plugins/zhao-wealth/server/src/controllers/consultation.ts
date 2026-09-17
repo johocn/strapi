@@ -90,11 +90,34 @@ export default ({ strapi }) => ({
   },
 
   /**
-   * GET /v1/wealth/consult/config（公开）
+   * GET /v1/wealth/consult/config（公开，可选登录）
+   * 带 token 时解析推荐人；带 city/latitude/longitude 时城市就近匹配
    */
   async consultConfig(ctx) {
     try {
-      const cfg = await strapi.service('plugin::zhao-wealth.consultation-service').getConsultConfig();
+      const { city, latitude, longitude } = ctx.query;
+      let invitedBy = null;
+
+      const authHeader = ctx.request.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        try {
+          const jwtService = strapi.plugin('zhao-sso').service('sso-jwt');
+          const payload = await jwtService.verifyToken(authHeader.slice(7));
+          if (payload && payload.type === 'access' && payload.id) {
+            const ssoUser = await strapi.plugin('zhao-sso').service('sso-user').findById(payload.id);
+            invitedBy = ssoUser?.invited_by || null;
+          }
+        } catch (e) {
+          // 无效/过期 token 视为未登录，继续走城市/全局
+        }
+      }
+
+      const cfg = await strapi.service('plugin::zhao-wealth.consultation-service').resolveContact({
+        invitedBy,
+        city: city || null,
+        latitude: latitude != null ? Number(latitude) : null,
+        longitude: longitude != null ? Number(longitude) : null,
+      });
       ctx.body = successResponse(cfg);
     } catch (error) {
       strapi.log.error(`[zhao-wealth] 咨询配置查询失败: ${error.message}`);
@@ -162,6 +185,68 @@ export default ({ strapi }) => ({
     } catch (error) {
       strapi.log.error(`[zhao-wealth] 咨询配置保存失败: ${error.message}`);
       ctx.body = errorResponse(500, '保存失败');
+    }
+  },
+
+  /**
+   * GET /v1/admin/consult-contacts
+   */
+  async adminListContacts(ctx) {
+    try {
+      const { page, pageSize, city } = ctx.query;
+      const result = await strapi.service('plugin::zhao-wealth.consultation-service').adminListContacts({ page, pageSize, city });
+      ctx.body = successResponse({
+        list: result.records,
+        pagination: { page: result.page, pageSize: result.pageSize, total: result.total },
+      });
+    } catch (error) {
+      strapi.log.error(`[zhao-wealth] 服务人配置列表失败: ${error.message}`);
+      ctx.body = errorResponse(500, '查询失败');
+    }
+  },
+
+  /**
+   * POST /v1/admin/consult-contacts
+   */
+  async adminCreateContact(ctx) {
+    try {
+      const result = await strapi.service('plugin::zhao-wealth.consultation-service').adminCreateContact(ctx.request.body);
+      if (!result.ok) {
+        ctx.body = errorResponse(result.code, result.msg);
+        return;
+      }
+      ctx.body = successResponse(result.record, '已保存');
+    } catch (error) {
+      strapi.log.error(`[zhao-wealth] 服务人配置创建失败: ${error.message}`);
+      ctx.body = errorResponse(500, '保存失败');
+    }
+  },
+
+  /**
+   * PUT /v1/admin/consult-contacts/:id
+   */
+  async adminUpdateContact(ctx) {
+    try {
+      const { id } = ctx.params;
+      const result = await strapi.service('plugin::zhao-wealth.consultation-service').adminUpdateContact(Number(id), ctx.request.body);
+      ctx.body = successResponse(result.record, '已保存');
+    } catch (error) {
+      strapi.log.error(`[zhao-wealth] 服务人配置更新失败: ${error.message}`);
+      ctx.body = errorResponse(500, '保存失败');
+    }
+  },
+
+  /**
+   * DELETE /v1/admin/consult-contacts/:id
+   */
+  async adminDeleteContact(ctx) {
+    try {
+      const { id } = ctx.params;
+      await strapi.service('plugin::zhao-wealth.consultation-service').adminDeleteContact(Number(id));
+      ctx.body = successResponse(null, '已删除');
+    } catch (error) {
+      strapi.log.error(`[zhao-wealth] 服务人配置删除失败: ${error.message}`);
+      ctx.body = errorResponse(500, '删除失败');
     }
   },
 });

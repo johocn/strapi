@@ -88,6 +88,12 @@ export default () => ({
     adminRoute('GET', '/v1/admin/consult-config', 'consultation.adminGetConfig'),
     adminRoute('PUT', '/v1/admin/consult-config', 'consultation.adminUpdateConfig'),
 
+    // ===== 服务人联系方式配置 =====
+    adminRoute('GET', '/v1/admin/consult-contacts', 'consultation.adminListContacts'),
+    adminRoute('POST', '/v1/admin/consult-contacts', 'consultation.adminCreateContact'),
+    adminRoute('PUT', '/v1/admin/consult-contacts/:id', 'consultation.adminUpdateContact'),
+    adminRoute('DELETE', '/v1/admin/consult-contacts/:id', 'consultation.adminDeleteContact'),
+
     // ===== 客户持仓（管理端代客录入） =====
     adminRoute('GET', '/v1/admin/holdings', 'holding.list'),
     adminRoute('GET', '/v1/admin/holdings/:id', 'holding.detail'),
