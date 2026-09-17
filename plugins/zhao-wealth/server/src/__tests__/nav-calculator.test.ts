@@ -112,7 +112,11 @@ describe('nav-calculator.calculateMoneyFundSnapshot', () => {
     mockQueries = {};
     mockQueries[PRODUCT_UID] = { findOne: jest.fn() };
     mockQueries[INCOME_UID] = {
-      findOne: jest.fn(),
+      findOne: jest.fn().mockImplementation(({ where }: any) => {
+        if (!where.incomeDate) return null;
+        const ds = toDateStr(where.incomeDate);
+        return incomeDataset.find((r) => toDateStr(r.incomeDate) === ds) || null;
+      }),
       findMany: jest.fn().mockImplementation(({ where }: any) => {
         const gte = where.incomeDate.$gte ? new Date(where.incomeDate.$gte).getTime() : -Infinity;
         const lte = where.incomeDate.$lte ? new Date(where.incomeDate.$lte).getTime() : Infinity;
@@ -151,15 +155,14 @@ describe('nav-calculator.calculateMoneyFundSnapshot', () => {
     expect(snapshot.isEstimate).toBe(false);
   });
 
-  it('当日无收益记录 → annual1d 为 null', async () => {
+  it('当日无收益记录 → 返回 null（不写全 null 快照）', async () => {
     mockQueries[PRODUCT_UID].findOne.mockResolvedValue({ id: 1, productType: 'money-fund' });
     const service = getService();
 
-    // snapshotDate = 07-01：数据集最晚 06-20，当日窗口 0 条
+    // snapshotDate = 07-01：数据集最晚 06-20，当日无收益
     const snapshot = await service.calculateMoneyFundSnapshot(1, new Date(2026, 6, 1));
 
-    expect(snapshot.annual1d).toBeNull();
-    expect(snapshot.annual7d).toBeNull();
+    expect(snapshot).toBeNull();
   });
 
   it('3日窗口按均值年化：0.5/0.7/0.6 → 0.0219', async () => {

@@ -151,6 +151,16 @@ export default ({ strapi }) => ({
    * 货币基金年化快照计算（万份收益单利）
    */
   async calculateMoneyFundSnapshot(productId: number, snapshotDate: Date) {
+    // 当日无收益 → 返回 null（堵住无收益日全 null 快照）
+    const currentIncome = await strapi.db.query('plugin::zhao-wealth.wealth-money-income').findOne({
+      where: { product: productId, incomeDate: toDateStr(snapshotDate) },
+    });
+
+    if (!currentIncome || currentIncome.tenThousandIncome == null) {
+      strapi.log.warn(`[zhao-wealth] 货基${productId}当日(${toDateStr(snapshotDate)})无收益数据`);
+      return null;
+    }
+
     const periods = [
       { field: 'annual1d', days: 1 },
       { field: 'annual3d', days: 3 },
