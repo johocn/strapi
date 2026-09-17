@@ -40,13 +40,17 @@ export default ({ strapi }) => ({
         ctx.body = errorResponse(400, 'planName 和 products 必填');
         return;
       }
-      const record = await strapi.service('plugin::zhao-wealth.portfolio-service').createPlan(String(userId), {
+      const result = await strapi.service('plugin::zhao-wealth.portfolio-service').createPlan(String(userId), {
         planName,
         planType,
         products,
         totalAmount,
       });
-      ctx.body = successResponse(record, '创建成功');
+      if (!result.ok) {
+        ctx.body = errorResponse(result.code, result.msg);
+        return;
+      }
+      ctx.body = successResponse(result.record, '创建成功');
     } catch (error) {
       strapi.log.error(`[zhao-wealth] 创建组合方案失败: ${error.message}`);
       ctx.body = errorResponse(500, '创建失败');
@@ -58,8 +62,13 @@ export default ({ strapi }) => ({
    */
   async detail(ctx) {
     try {
+      const userId = ctx.state.user?.id || ctx.state.ssoUser?.id;
+      if (!userId) {
+        ctx.body = errorResponse(401, '未登录');
+        return;
+      }
       const { id } = ctx.params;
-      const record = await strapi.service('plugin::zhao-wealth.portfolio-service').getPlanDetail(Number(id));
+      const record = await strapi.service('plugin::zhao-wealth.portfolio-service').getPlanDetail(Number(id), String(userId));
       if (!record) {
         ctx.body = errorResponse(404, '组合方案不存在');
         return;
@@ -76,10 +85,19 @@ export default ({ strapi }) => ({
    */
   async update(ctx) {
     try {
+      const userId = ctx.state.user?.id || ctx.state.ssoUser?.id;
+      if (!userId) {
+        ctx.body = errorResponse(401, '未登录');
+        return;
+      }
       const { id } = ctx.params;
       const data = ctx.request.body;
-      const record = await strapi.service('plugin::zhao-wealth.portfolio-service').updatePlan(Number(id), data);
-      ctx.body = successResponse(record, '更新成功');
+      const result = await strapi.service('plugin::zhao-wealth.portfolio-service').updatePlan(Number(id), String(userId), data);
+      if (!result.ok) {
+        ctx.body = errorResponse(result.code, result.msg);
+        return;
+      }
+      ctx.body = successResponse(result.record, '更新成功');
     } catch (error) {
       strapi.log.error(`[zhao-wealth] 更新组合方案失败: ${error.message}`);
       ctx.body = errorResponse(500, '更新失败');
@@ -91,9 +109,18 @@ export default ({ strapi }) => ({
    */
   async remove(ctx) {
     try {
+      const userId = ctx.state.user?.id || ctx.state.ssoUser?.id;
+      if (!userId) {
+        ctx.body = errorResponse(401, '未登录');
+        return;
+      }
       const { id } = ctx.params;
-      const record = await strapi.service('plugin::zhao-wealth.portfolio-service').deletePlan(Number(id));
-      ctx.body = successResponse(record, '删除成功');
+      const result = await strapi.service('plugin::zhao-wealth.portfolio-service').deletePlan(Number(id), String(userId));
+      if (!result.ok) {
+        ctx.body = errorResponse(result.code, result.msg);
+        return;
+      }
+      ctx.body = successResponse(result.record, '删除成功');
     } catch (error) {
       strapi.log.error(`[zhao-wealth] 删除组合方案失败: ${error.message}`);
       ctx.body = errorResponse(500, '删除失败');
@@ -105,9 +132,14 @@ export default ({ strapi }) => ({
    */
   async performance(ctx) {
     try {
+      const userId = ctx.state.user?.id || ctx.state.ssoUser?.id;
+      if (!userId) {
+        ctx.body = errorResponse(401, '未登录');
+        return;
+      }
       const { id } = ctx.params;
       const { period } = ctx.query;
-      const result = await strapi.service('plugin::zhao-wealth.portfolio-service').calculatePlanPerformance(Number(id), period || 'm1');
+      const result = await strapi.service('plugin::zhao-wealth.portfolio-service').calculatePlanPerformance(Number(id), String(userId), period || 'm1');
       if (!result) {
         ctx.body = errorResponse(404, '组合方案不存在或无产品数据');
         return;
@@ -124,8 +156,13 @@ export default ({ strapi }) => ({
    */
   async export(ctx) {
     try {
+      const userId = ctx.state.user?.id || ctx.state.ssoUser?.id;
+      if (!userId) {
+        ctx.body = errorResponse(401, '未登录');
+        return;
+      }
       const { id } = ctx.params;
-      const result = await strapi.service('plugin::zhao-wealth.portfolio-service').exportPlanSummary(Number(id));
+      const result = await strapi.service('plugin::zhao-wealth.portfolio-service').exportPlanSummary(Number(id), String(userId));
       if (!result) {
         ctx.body = errorResponse(404, '组合方案不存在');
         return;
