@@ -109,6 +109,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       if (!bookingData.contactType || !bookingData.contactValue) {
         return fail(400, '请至少预留一种联系方式（电话/邮箱/微信）');
       }
+      if (bookingData.contactType === 'phone' && !PHONE_RE.test(String(bookingData.contactValue))) {
+        return fail(400, '手机号格式不正确');
+      }
     } else {
       return fail(400, '无效的提交渠道');
     }

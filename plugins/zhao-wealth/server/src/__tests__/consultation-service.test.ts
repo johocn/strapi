@@ -52,6 +52,25 @@ describe('consultation-service 三渠道', () => {
     expect(bad.code).toBe(400);
   });
 
+  it('message 渠道：预留电话格式非法返回 400', async () => {
+    const bad = await service.createBooking('u1', {
+      submitType: 'message', message: '想了解净值型理财',
+      contactType: 'phone', contactValue: '12345',
+    });
+    expect(bad.ok).toBe(false);
+    expect(bad.code).toBe(400);
+    expect(mockCreate).not.toHaveBeenCalled();
+  });
+
+  it('message 渠道：预留电话格式合法通过', async () => {
+    mockCreate.mockResolvedValue({ id: 4 });
+    const ok = await service.createBooking('u1', {
+      submitType: 'message', message: '想了解净值型理财',
+      contactType: 'phone', contactValue: '13800138000',
+    });
+    expect(ok.ok).toBe(true);
+  });
+
   it('wechat 提交型：wechatType 与 contactValue 必填', async () => {
     mockCreate.mockResolvedValue({ id: 3 });
     const ok = await service.createBooking('u1', { submitType: 'wechat', wechatType: 'personal', contactValue: 'wx_abc' });
