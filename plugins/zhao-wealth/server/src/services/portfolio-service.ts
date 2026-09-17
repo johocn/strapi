@@ -40,7 +40,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   }
 
   /**
-   * 创建组合方案
+   * 创建组合方案（products 非空 + 产品存在性校验）
    */
   async function createPlan(userId: string, planData: {
     planName: string;
@@ -48,18 +48,31 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     products: PortfolioProduct[];
     totalAmount?: number;
   }) {
+    const products = planData.products;
+    if (!Array.isArray(products) || products.length === 0) {
+      return { ok: false, code: 400, msg: '请至少选择一个产品' };
+    }
+    const productIds = products.map((p) => Number(p.productId)).filter((n) => Number.isFinite(n));
+    if (productIds.length !== products.length) {
+      return { ok: false, code: 400, msg: '产品参数不合法' };
+    }
+    const productQuery = strapi.db.query('plugin::zhao-wealth.wealth-product');
+    const found = await productQuery.count({ where: { id: { $in: productIds } } });
+    if (found !== productIds.length) {
+      return { ok: false, code: 400, msg: '包含无效产品' };
+    }
     const query = strapi.db.query('plugin::zhao-wealth.wealth-portfolio-plan');
     const record = await query.create({
       data: {
         userId,
         planName: planData.planName,
         planType: planData.planType || 'custom',
-        products: normalizeProducts(planData.products),
+        products: normalizeProducts(products),
         totalAmount: planData.totalAmount || null,
         status: 'active',
       },
     });
-    return record;
+    return { ok: true, record };
   }
 
   /**
@@ -86,9 +99,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   /**
    * 获取组合方案详情
    */
-  async function getPlanDetail(planId: number) {
+  async function getPlanDetail(planId: number, userId: string) {
     const query = strapi.db.query('plugin::zhao-wealth.wealth-portfolio-plan');
-    const plan = await query.findOne({ where: { id: planId } });
+    const plan = await query.findOne({ where: { id: planId, userId } });
     if (!plan) return null;
 
     // 解析 products JSON
@@ -131,13 +144,15 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   /**
    * 更新组合方案
    */
-  async function updatePlan(planId: number, planData: {
+  async function updatePlan(planId: number, userId: string, planData: {
     planName?: string;
     planType?: string;
     products?: PortfolioProduct[];
     totalAmount?: number;
   }) {
     const query = strapi.db.query('plugin::zhao-wealth.wealth-portfolio-plan');
+    const plan = await query.findOne({ where: { id: planId, userId } });
+    if (!plan) return { ok: false, code: 404, msg: '组合方案不存在' };
     const data: any = {};
     if (planData.planName !== undefined) data.planName = planData.planName;
     if (planData.planType !== undefined) data.planType = planData.planType;
@@ -145,26 +160,28 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     if (planData.totalAmount !== undefined) data.totalAmount = planData.totalAmount;
 
     const record = await query.update({ where: { id: planId }, data });
-    return record;
+    return { ok: true, record };
   }
 
   /**
    * 删除组合方案（标记为 archived）
    */
-  async function deletePlan(planId: number) {
+  async function deletePlan(planId: number, userId: string) {
     const query = strapi.db.query('plugin::zhao-wealth.wealth-portfolio-plan');
+    const plan = await query.findOne({ where: { id: planId, userId } });
+    if (!plan) return { ok: false, code: 404, msg: '组合方案不存在' };
     const record = await query.update({
       where: { id: planId },
       data: { status: 'archived' },
     });
-    return record;
+    return { ok: true, record };
   }
 
   /**
    * 计算组合方案业绩
    */
-  async function calculatePlanPerformance(planId: number, period: string = 'm1'): Promise<PlanPerformance | null> {
-    const plan = await getPlanDetail(planId);
+  async function calculatePlanPerformance(planId: number, userId: string, period: string = 'm1'): Promise<PlanPerformance | null> {
+    const plan = await getPlanDetail(planId, userId);
     if (!plan || !plan.productDetails || plan.productDetails.length === 0) return null;
 
     const annualField = PERIOD_TO_ANNUAL_FIELD[period] || 'annual1m';
@@ -259,11 +276,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   /**
    * 导出方案摘要数据
    */
-  async function exportPlanSummary(planId: number) {
-    const plan = await getPlanDetail(planId);
+  async function exportPlanSummary(planId: number, userId: string) {
+    const plan = await getPlanDetail(planId, userId);
     if (!plan) return null;
 
-    const performance = await calculatePlanPerformance(planId, 'm1');
+    const performance = await calculatePlanPerformance(planId, userId, 'm1');
 
     return {
       planName: plan.planName,
