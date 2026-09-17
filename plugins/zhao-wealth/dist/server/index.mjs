@@ -6830,9 +6830,6 @@ function calculateMoneyFundAnnual(totalIncome, naturalDays) {
   }
   return Math.round(annualReturn * 1e6) / 1e6;
 }
-function isEstimateValue(naturalDays) {
-  return naturalDays < 7;
-}
 function getRedisOptions() {
   const host = process.env.REDIS_HOST || "localhost";
   const port = parseInt(process.env.REDIS_PORT || "6379", 10);
@@ -9759,13 +9756,17 @@ const portfolio = ({ strapi }) => ({
         ctx.body = errorResponse(400, "planName 和 products 必填");
         return;
       }
-      const record = await strapi.service("plugin::zhao-wealth.portfolio-service").createPlan(String(userId), {
+      const result = await strapi.service("plugin::zhao-wealth.portfolio-service").createPlan(String(userId), {
         planName,
         planType,
         products,
         totalAmount
       });
-      ctx.body = successResponse(record, "创建成功");
+      if (!result.ok) {
+        ctx.body = errorResponse(result.code, result.msg);
+        return;
+      }
+      ctx.body = successResponse(result.record, "创建成功");
     } catch (error) {
       strapi.log.error(`[zhao-wealth] 创建组合方案失败: ${error.message}`);
       ctx.body = errorResponse(500, "创建失败");
@@ -9776,8 +9777,13 @@ const portfolio = ({ strapi }) => ({
    */
   async detail(ctx) {
     try {
+      const userId = ctx.state.user?.id || ctx.state.ssoUser?.id;
+      if (!userId) {
+        ctx.body = errorResponse(401, "未登录");
+        return;
+      }
       const { id } = ctx.params;
-      const record = await strapi.service("plugin::zhao-wealth.portfolio-service").getPlanDetail(Number(id));
+      const record = await strapi.service("plugin::zhao-wealth.portfolio-service").getPlanDetail(Number(id), String(userId));
       if (!record) {
         ctx.body = errorResponse(404, "组合方案不存在");
         return;
@@ -9793,10 +9799,19 @@ const portfolio = ({ strapi }) => ({
    */
   async update(ctx) {
     try {
+      const userId = ctx.state.user?.id || ctx.state.ssoUser?.id;
+      if (!userId) {
+        ctx.body = errorResponse(401, "未登录");
+        return;
+      }
       const { id } = ctx.params;
       const data = ctx.request.body;
-      const record = await strapi.service("plugin::zhao-wealth.portfolio-service").updatePlan(Number(id), data);
-      ctx.body = successResponse(record, "更新成功");
+      const result = await strapi.service("plugin::zhao-wealth.portfolio-service").updatePlan(Number(id), String(userId), data);
+      if (!result.ok) {
+        ctx.body = errorResponse(result.code, result.msg);
+        return;
+      }
+      ctx.body = successResponse(result.record, "更新成功");
     } catch (error) {
       strapi.log.error(`[zhao-wealth] 更新组合方案失败: ${error.message}`);
       ctx.body = errorResponse(500, "更新失败");
@@ -9807,9 +9822,18 @@ const portfolio = ({ strapi }) => ({
    */
   async remove(ctx) {
     try {
+      const userId = ctx.state.user?.id || ctx.state.ssoUser?.id;
+      if (!userId) {
+        ctx.body = errorResponse(401, "未登录");
+        return;
+      }
       const { id } = ctx.params;
-      const record = await strapi.service("plugin::zhao-wealth.portfolio-service").deletePlan(Number(id));
-      ctx.body = successResponse(record, "删除成功");
+      const result = await strapi.service("plugin::zhao-wealth.portfolio-service").deletePlan(Number(id), String(userId));
+      if (!result.ok) {
+        ctx.body = errorResponse(result.code, result.msg);
+        return;
+      }
+      ctx.body = successResponse(result.record, "删除成功");
     } catch (error) {
       strapi.log.error(`[zhao-wealth] 删除组合方案失败: ${error.message}`);
       ctx.body = errorResponse(500, "删除失败");
@@ -9820,9 +9844,14 @@ const portfolio = ({ strapi }) => ({
    */
   async performance(ctx) {
     try {
+      const userId = ctx.state.user?.id || ctx.state.ssoUser?.id;
+      if (!userId) {
+        ctx.body = errorResponse(401, "未登录");
+        return;
+      }
       const { id } = ctx.params;
       const { period } = ctx.query;
-      const result = await strapi.service("plugin::zhao-wealth.portfolio-service").calculatePlanPerformance(Number(id), period || "m1");
+      const result = await strapi.service("plugin::zhao-wealth.portfolio-service").calculatePlanPerformance(Number(id), String(userId), period || "m1");
       if (!result) {
         ctx.body = errorResponse(404, "组合方案不存在或无产品数据");
         return;
@@ -9838,8 +9867,13 @@ const portfolio = ({ strapi }) => ({
    */
   async export(ctx) {
     try {
+      const userId = ctx.state.user?.id || ctx.state.ssoUser?.id;
+      if (!userId) {
+        ctx.body = errorResponse(401, "未登录");
+        return;
+      }
       const { id } = ctx.params;
-      const result = await strapi.service("plugin::zhao-wealth.portfolio-service").exportPlanSummary(Number(id));
+      const result = await strapi.service("plugin::zhao-wealth.portfolio-service").exportPlanSummary(Number(id), String(userId));
       if (!result) {
         ctx.body = errorResponse(404, "组合方案不存在");
         return;
@@ -10739,15 +10773,17 @@ const navCalculator = ({ strapi }) => ({
    * 净值复利年化快照计算（理财/普通基金）
    */
   async calculateNavSnapshot(productId, snapshotDate) {
-    const periods = [
-      { field: "annual1d", days: 1 },
-      { field: "annual3d", days: 3 },
-      { field: "annual7d", days: 7 },
+    const LONG_PERIODS = [
       { field: "annual2w", days: 14 },
       { field: "annual1m", days: 22 },
       { field: "annual3m", days: 66 },
       { field: "annual6m", days: 125 },
       { field: "annual1y", days: 250 }
+    ];
+    const SHORT_PERIODS = [
+      { field: "annual1d", days: 1, maxGap: 5 },
+      { field: "annual3d", days: 3, maxGap: 10 },
+      { field: "annual7d", days: 7, maxGap: 15 }
     ];
     const snapshot = {
       product: productId,
@@ -10760,7 +10796,48 @@ const navCalculator = ({ strapi }) => ({
       strapi.log.warn(`[zhao-wealth] 产品${productId}当日(${toDateStr(snapshotDate)})无净值数据`);
       return null;
     }
-    for (const period of periods) {
+    const navSeries = await strapi.db.query("plugin::zhao-wealth.wealth-nav").findMany({
+      where: { product: productId, navDate: { $lte: toDateStr(snapshotDate) } },
+      select: ["navDate", "unitNav"],
+      orderBy: { navDate: "desc" },
+      limit: 30
+    });
+    const snapshotDateStr = toDateStr(snapshotDate);
+    let isEstimate = false;
+    let gap7 = null;
+    for (const period of SHORT_PERIODS) {
+      const targetDate = new Date(snapshotDate);
+      targetDate.setDate(targetDate.getDate() - period.days);
+      const targetStr = toDateStr(targetDate);
+      const prevNav = navSeries.find((n2) => {
+        const nd = toDateStr(n2.navDate);
+        return nd <= targetStr && nd !== snapshotDateStr;
+      });
+      if (!prevNav || !prevNav.unitNav || Number(prevNav.unitNav) <= 0) {
+        snapshot[period.field] = null;
+        continue;
+      }
+      const gap = getNaturalDays(prevNav.navDate, snapshotDate);
+      if (gap <= 0 || gap > period.maxGap) {
+        snapshot[period.field] = null;
+        continue;
+      }
+      let annualReturn = calculateAnnualReturn(prevNav.unitNav, currentNav.unitNav, gap);
+      if (annualReturn !== null) {
+        if (annualReturn > 1) {
+          annualReturn = 1;
+          isEstimate = true;
+        } else if (annualReturn < -1) {
+          annualReturn = -1;
+          isEstimate = true;
+        }
+      }
+      if (period.field === "annual7d") {
+        gap7 = gap;
+      }
+      snapshot[period.field] = annualReturn;
+    }
+    for (const period of LONG_PERIODS) {
       const prevDate = getPreviousTradingDay(snapshotDate, period.days);
       if (!prevDate) {
         snapshot[period.field] = null;
@@ -10778,14 +10855,23 @@ const navCalculator = ({ strapi }) => ({
       const annualReturn = calculateAnnualReturn(prevNav.unitNav, currentNav.unitNav, naturalDays);
       snapshot[period.field] = annualReturn !== null && !isNaN(Number(annualReturn)) ? annualReturn : null;
     }
-    const minNaturalDays = getNaturalDays(getPreviousTradingDay(snapshotDate, 7), snapshotDate);
-    snapshot.isEstimate = isEstimateValue(minNaturalDays || 0);
+    if (gap7 !== null && gap7 < 7) {
+      isEstimate = true;
+    }
+    snapshot.isEstimate = isEstimate;
     return snapshot;
   },
   /**
    * 货币基金年化快照计算（万份收益单利）
    */
   async calculateMoneyFundSnapshot(productId, snapshotDate) {
+    const currentIncome = await strapi.db.query("plugin::zhao-wealth.wealth-money-income").findOne({
+      where: { product: productId, incomeDate: toDateStr(snapshotDate) }
+    });
+    if (!currentIncome || currentIncome.tenThousandIncome == null) {
+      strapi.log.warn(`[zhao-wealth] 货基${productId}当日(${toDateStr(snapshotDate)})无收益数据`);
+      return null;
+    }
     const periods = [
       { field: "annual1d", days: 1 },
       { field: "annual3d", days: 3 },
@@ -11376,7 +11462,25 @@ const riskMetricService = ({ strapi }) => ({
     const product2 = await strapi.db.query("plugin::zhao-wealth.wealth-product").findOne({
       where: { id: productId }
     });
-    const isMoneyType = !!product2 && (product2.productType === "money-fund" || product2.productType === "money-wealth");
+    if (!product2) return;
+    const isMoneyType = product2.productType === "money-fund" || product2.productType === "money-wealth";
+    if (isMoneyType) {
+      const income = await strapi.db.query("plugin::zhao-wealth.wealth-money-income").findOne({
+        where: { product: productId, incomeDate: dateStr }
+      });
+      if (!income || income.tenThousandIncome == null) {
+        strapi.log.warn(`[zhao-wealth] 产品${productId}当日(${dateStr})无收益数据，跳过风险指标计算`);
+        return;
+      }
+    } else {
+      const nav2 = await strapi.db.query("plugin::zhao-wealth.wealth-nav").findOne({
+        where: { product: productId, navDate: dateStr }
+      });
+      if (!nav2 || nav2.unitNav == null) {
+        strapi.log.warn(`[zhao-wealth] 产品${productId}当日(${dateStr})无净值数据，跳过风险指标计算`);
+        return;
+      }
+    }
     for (const period of periods) {
       const metrics = await this.calculateMetricsForPeriod(productId, snapshotDate, period);
       const rankPercentile = await this.calculateRankPercentile(productId, snapshotDate, period);
@@ -11565,12 +11669,16 @@ const riskMetricService = ({ strapi }) => ({
     const products = await strapi.db.query("plugin::zhao-wealth.wealth-product").findMany(filter);
     const results = [];
     for (const product2 of products) {
-      const navs = await strapi.db.query("plugin::zhao-wealth.wealth-nav").findMany({
+      const isMoneyType = product2.productType === "money-fund" || product2.productType === "money-wealth";
+      const dateField = isMoneyType ? "incomeDate" : "navDate";
+      const dataDates = await strapi.db.query(
+        isMoneyType ? "plugin::zhao-wealth.wealth-money-income" : "plugin::zhao-wealth.wealth-nav"
+      ).findMany({
         where: { product: product2.id },
-        select: ["navDate"],
-        orderBy: { navDate: "asc" }
+        select: [dateField],
+        orderBy: { [dateField]: "asc" }
       });
-      if (navs.length === 0) continue;
+      if (dataDates.length === 0) continue;
       const existingMetrics = await strapi.db.query("plugin::zhao-wealth.wealth-risk-metric").findMany({
         where: { product: product2.id },
         select: ["snapshotDate"]
@@ -11581,7 +11689,7 @@ const riskMetricService = ({ strapi }) => ({
         const ds = toDateStr(m.snapshotDate);
         dateCounts.set(ds, (dateCounts.get(ds) || 0) + 1);
       }
-      const missingDates = navs.map((n2) => toDateStr(n2.navDate)).filter((dateStr) => (dateCounts.get(dateStr) || 0) < expectedCount);
+      const missingDates = dataDates.map((n2) => toDateStr(n2[dateField])).filter((dateStr) => (dateCounts.get(dateStr) || 0) < expectedCount);
       for (const dateStr of missingDates) {
         try {
           await this.calculateAndSaveMetrics(product2.id, new Date(dateStr));
@@ -12133,18 +12241,31 @@ const portfolioService = ({ strapi }) => {
     });
   }
   async function createPlan(userId, planData) {
+    const products = planData.products;
+    if (!Array.isArray(products) || products.length === 0) {
+      return { ok: false, code: 400, msg: "请至少选择一个产品" };
+    }
+    const productIds = products.map((p) => Number(p.productId)).filter((n2) => Number.isFinite(n2));
+    if (productIds.length !== products.length) {
+      return { ok: false, code: 400, msg: "产品参数不合法" };
+    }
+    const productQuery = strapi.db.query("plugin::zhao-wealth.wealth-product");
+    const found = await productQuery.count({ where: { id: { $in: productIds } } });
+    if (found !== productIds.length) {
+      return { ok: false, code: 400, msg: "包含无效产品" };
+    }
     const query = strapi.db.query("plugin::zhao-wealth.wealth-portfolio-plan");
     const record = await query.create({
       data: {
         userId,
         planName: planData.planName,
         planType: planData.planType || "custom",
-        products: normalizeProducts(planData.products),
+        products: normalizeProducts(products),
         totalAmount: planData.totalAmount || null,
         status: "active"
       }
     });
-    return record;
+    return { ok: true, record };
   }
   async function getPlans(userId, params) {
     const { page = 1, pageSize = 20 } = params;
@@ -12160,9 +12281,9 @@ const portfolioService = ({ strapi }) => {
     const total = await query.count({ where: { userId, status: "active" } });
     return { records, total, page, pageSize: limit };
   }
-  async function getPlanDetail(planId) {
+  async function getPlanDetail(planId, userId) {
     const query = strapi.db.query("plugin::zhao-wealth.wealth-portfolio-plan");
-    const plan = await query.findOne({ where: { id: planId } });
+    const plan = await query.findOne({ where: { id: planId, userId } });
     if (!plan) return null;
     const products = typeof plan.products === "string" ? JSON.parse(plan.products) : plan.products || [];
     const productIds = products.map((p) => p.productId);
@@ -12190,26 +12311,30 @@ const portfolioService = ({ strapi }) => {
       productDetails
     };
   }
-  async function updatePlan(planId, planData) {
+  async function updatePlan(planId, userId, planData) {
     const query = strapi.db.query("plugin::zhao-wealth.wealth-portfolio-plan");
+    const plan = await query.findOne({ where: { id: planId, userId } });
+    if (!plan) return { ok: false, code: 404, msg: "组合方案不存在" };
     const data = {};
     if (planData.planName !== void 0) data.planName = planData.planName;
     if (planData.planType !== void 0) data.planType = planData.planType;
     if (planData.products !== void 0) data.products = normalizeProducts(planData.products);
     if (planData.totalAmount !== void 0) data.totalAmount = planData.totalAmount;
     const record = await query.update({ where: { id: planId }, data });
-    return record;
+    return { ok: true, record };
   }
-  async function deletePlan(planId) {
+  async function deletePlan(planId, userId) {
     const query = strapi.db.query("plugin::zhao-wealth.wealth-portfolio-plan");
+    const plan = await query.findOne({ where: { id: planId, userId } });
+    if (!plan) return { ok: false, code: 404, msg: "组合方案不存在" };
     const record = await query.update({
       where: { id: planId },
       data: { status: "archived" }
     });
-    return record;
+    return { ok: true, record };
   }
-  async function calculatePlanPerformance(planId, period = "m1") {
-    const plan = await getPlanDetail(planId);
+  async function calculatePlanPerformance(planId, userId, period = "m1") {
+    const plan = await getPlanDetail(planId, userId);
     if (!plan || !plan.productDetails || plan.productDetails.length === 0) return null;
     const annualField = PERIOD_TO_ANNUAL_FIELD2[period] || "annual1m";
     const metricPeriod = period;
@@ -12285,10 +12410,10 @@ const portfolioService = ({ strapi }) => {
       period
     };
   }
-  async function exportPlanSummary(planId) {
-    const plan = await getPlanDetail(planId);
+  async function exportPlanSummary(planId, userId) {
+    const plan = await getPlanDetail(planId, userId);
     if (!plan) return null;
-    const performance = await calculatePlanPerformance(planId, "m1");
+    const performance = await calculatePlanPerformance(planId, userId, "m1");
     return {
       planName: plan.planName,
       planType: plan.planType,
@@ -12394,6 +12519,9 @@ const consultationService = ({ strapi }) => {
       }
       if (!bookingData.contactType || !bookingData.contactValue) {
         return fail(400, "请至少预留一种联系方式（电话/邮箱/微信）");
+      }
+      if (bookingData.contactType === "phone" && !PHONE_RE.test(String(bookingData.contactValue))) {
+        return fail(400, "手机号格式不正确");
       }
     } else {
       return fail(400, "无效的提交渠道");
@@ -13122,7 +13250,6 @@ function registerCollectJobs(strapi) {
       strapi.log.info(`[zhao-wealth] 产品${productId}采集成功，新增${insertCount}条，更新${updateCount}条（共${navData.length}条）`);
       const calculateQueue2 = getCalculateQueue();
       if (calculateQueue2) {
-        calculateQueue2.add("recalculate-product", { productId });
         calculateQueue2.add("recalculate-risk-metric-product", { productId });
       }
     } catch (error) {
