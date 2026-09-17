@@ -4,12 +4,24 @@ import Queue from "bull";
 import { chromium } from "playwright";
 import { existsSync } from "fs";
 import crypto from "crypto";
-const kind$f = "collectionType";
-const collectionName$f = "wealth_companies";
-const info$f = { "singularName": "wealth-company", "pluralName": "wealth-companies", "displayName": "理财公司", "description": "银行理财公司信息管理" };
-const options$f = { "draftAndPublish": false };
-const attributes$f = { "name": { "type": "string", "required": true }, "shortName": { "type": "string" }, "companyType": { "type": "enumeration", "enum": ["bank", "bank-subsidiary", "joint-venture"], "default": "bank-subsidiary" }, "website": { "type": "string" }, "products": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-product", "mappedBy": "company" }, "status": { "type": "boolean", "default": true }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const kind$g = "collectionType";
+const collectionName$g = "wealth_companies";
+const info$g = { "singularName": "wealth-company", "pluralName": "wealth-companies", "displayName": "理财公司", "description": "银行理财公司信息管理" };
+const options$g = { "draftAndPublish": false };
+const attributes$g = { "name": { "type": "string", "required": true }, "shortName": { "type": "string" }, "companyType": { "type": "enumeration", "enum": ["bank", "bank-subsidiary", "joint-venture"], "default": "bank-subsidiary" }, "website": { "type": "string" }, "products": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-product", "mappedBy": "company" }, "status": { "type": "boolean", "default": true }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
 const wealthCompany = {
+  kind: kind$g,
+  collectionName: collectionName$g,
+  info: info$g,
+  options: options$g,
+  attributes: attributes$g
+};
+const kind$f = "collectionType";
+const collectionName$f = "wealth_products";
+const info$f = { "singularName": "wealth-product", "pluralName": "wealth-products", "displayName": "理财产品", "description": "理财/基金产品信息" };
+const options$f = { "draftAndPublish": false };
+const attributes$f = { "productCode": { "type": "string", "unique": true }, "productName": { "type": "string", "required": true }, "productNameCw": { "type": "string" }, "saleCode": { "type": "string" }, "productType": { "type": "enumeration", "enum": ["bank-wealth", "stock-fund", "bond-fund", "mixed-fund", "money-fund", "money-wealth"] }, "registerCode": { "type": "string", "unique": true, "required": true }, "navSourceUrl": { "type": "string" }, "riskLevel": { "type": "enumeration", "enum": ["R1", "R2", "R3", "R4", "R5"], "default": "R2" }, "termType": { "type": "enumeration", "enum": ["short", "medium", "long"] }, "issueDate": { "type": "date" }, "maturityDate": { "type": "date" }, "company": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-company", "inversedBy": "products" }, "navs": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-nav", "mappedBy": "product" }, "moneyIncomes": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-money-income", "mappedBy": "product" }, "annualSnapshots": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-annual-snapshot", "mappedBy": "product" }, "yearlyReturns": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-yearly-return", "mappedBy": "product" }, "riskMetrics": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-risk-metric", "mappedBy": "product" }, "scoreSnapshots": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-score-snapshot", "mappedBy": "product" }, "recommendWeight": { "type": "integer", "default": 0 }, "recommendTags": { "type": "json" }, "recommendEnabled": { "type": "boolean", "default": false }, "recommendReason": { "type": "text" }, "status": { "type": "boolean", "default": true }, "benchmark": { "type": "string" }, "operationMode": { "type": "enumeration", "enum": ["daily-open", "fixed-term", "closed"] }, "productStatus": { "type": "string" }, "remark": { "type": "text" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const wealthProduct = {
   kind: kind$f,
   collectionName: collectionName$f,
   info: info$f,
@@ -17,11 +29,11 @@ const wealthCompany = {
   attributes: attributes$f
 };
 const kind$e = "collectionType";
-const collectionName$e = "wealth_products";
-const info$e = { "singularName": "wealth-product", "pluralName": "wealth-products", "displayName": "理财产品", "description": "理财/基金产品信息" };
+const collectionName$e = "wealth_collect_configs";
+const info$e = { "singularName": "wealth-collect-config", "pluralName": "wealth-collect-configs", "displayName": "采集配置", "description": "产品数据采集配置" };
 const options$e = { "draftAndPublish": false };
-const attributes$e = { "productCode": { "type": "string", "unique": true }, "productName": { "type": "string", "required": true }, "productNameCw": { "type": "string" }, "saleCode": { "type": "string" }, "productType": { "type": "enumeration", "enum": ["bank-wealth", "stock-fund", "bond-fund", "mixed-fund", "money-fund", "money-wealth"] }, "registerCode": { "type": "string", "unique": true, "required": true }, "navSourceUrl": { "type": "string" }, "riskLevel": { "type": "enumeration", "enum": ["R1", "R2", "R3", "R4", "R5"], "default": "R2" }, "termType": { "type": "enumeration", "enum": ["short", "medium", "long"] }, "issueDate": { "type": "date" }, "maturityDate": { "type": "date" }, "company": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-company", "inversedBy": "products" }, "navs": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-nav", "mappedBy": "product" }, "moneyIncomes": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-money-income", "mappedBy": "product" }, "annualSnapshots": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-annual-snapshot", "mappedBy": "product" }, "yearlyReturns": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-yearly-return", "mappedBy": "product" }, "riskMetrics": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-risk-metric", "mappedBy": "product" }, "scoreSnapshots": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-wealth.wealth-score-snapshot", "mappedBy": "product" }, "recommendWeight": { "type": "integer", "default": 0 }, "recommendTags": { "type": "json" }, "recommendEnabled": { "type": "boolean", "default": false }, "recommendReason": { "type": "text" }, "status": { "type": "boolean", "default": true }, "benchmark": { "type": "string" }, "operationMode": { "type": "enumeration", "enum": ["daily-open", "fixed-term", "closed"] }, "productStatus": { "type": "string" }, "remark": { "type": "text" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
-const wealthProduct = {
+const attributes$e = { "product": { "type": "relation", "relation": "oneToOne", "target": "plugin::zhao-wealth.wealth-product" }, "collectMethod": { "type": "enumeration", "enum": ["web-crawler", "zip-pdf", "manual", "api"], "default": "web-crawler" }, "collectUrl": { "type": "string" }, "collectRules": { "type": "json" }, "collectStatus": { "type": "enumeration", "enum": ["pending", "running", "success", "failed"], "default": "pending" }, "lastCollectTime": { "type": "datetime" }, "failCount": { "type": "integer", "default": 0 }, "failReason": { "type": "text" }, "lastInsertCount": { "type": "integer", "default": 0 }, "lastUpdateCount": { "type": "integer", "default": 0 }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const wealthCollectConfig = {
   kind: kind$e,
   collectionName: collectionName$e,
   info: info$e,
@@ -29,11 +41,11 @@ const wealthProduct = {
   attributes: attributes$e
 };
 const kind$d = "collectionType";
-const collectionName$d = "wealth_collect_configs";
-const info$d = { "singularName": "wealth-collect-config", "pluralName": "wealth-collect-configs", "displayName": "采集配置", "description": "产品数据采集配置" };
+const collectionName$d = "wealth_navs";
+const info$d = { "singularName": "wealth-nav", "pluralName": "wealth-navs", "displayName": "净值数据", "description": "理财/基金净值数据（不含货币基金）" };
 const options$d = { "draftAndPublish": false };
-const attributes$d = { "product": { "type": "relation", "relation": "oneToOne", "target": "plugin::zhao-wealth.wealth-product" }, "collectMethod": { "type": "enumeration", "enum": ["web-crawler", "zip-pdf", "manual", "api"], "default": "web-crawler" }, "collectUrl": { "type": "string" }, "collectRules": { "type": "json" }, "collectStatus": { "type": "enumeration", "enum": ["pending", "running", "success", "failed"], "default": "pending" }, "lastCollectTime": { "type": "datetime" }, "failCount": { "type": "integer", "default": 0 }, "failReason": { "type": "text" }, "lastInsertCount": { "type": "integer", "default": 0 }, "lastUpdateCount": { "type": "integer", "default": 0 }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
-const wealthCollectConfig = {
+const attributes$d = { "product": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-product", "inversedBy": "navs" }, "navDate": { "type": "date", "required": true }, "unitNav": { "type": "decimal", "precision": 20, "scale": 8 }, "accNav": { "type": "decimal", "precision": 20, "scale": 8 }, "dataSource": { "type": "enumeration", "enum": ["crawler", "manual"], "default": "crawler" }, "annualYield": { "type": "decimal", "precision": 12, "scale": 6 }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const wealthNav = {
   kind: kind$d,
   collectionName: collectionName$d,
   info: info$d,
@@ -41,11 +53,11 @@ const wealthCollectConfig = {
   attributes: attributes$d
 };
 const kind$c = "collectionType";
-const collectionName$c = "wealth_navs";
-const info$c = { "singularName": "wealth-nav", "pluralName": "wealth-navs", "displayName": "净值数据", "description": "理财/基金净值数据（不含货币基金）" };
+const collectionName$c = "wealth_money_incomes";
+const info$c = { "singularName": "wealth-money-income", "pluralName": "wealth-money-incomes", "displayName": "货币基金收益", "description": "货币基金万份收益数据" };
 const options$c = { "draftAndPublish": false };
-const attributes$c = { "product": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-product", "inversedBy": "navs" }, "navDate": { "type": "date", "required": true }, "unitNav": { "type": "decimal", "precision": 20, "scale": 8 }, "accNav": { "type": "decimal", "precision": 20, "scale": 8 }, "dataSource": { "type": "enumeration", "enum": ["crawler", "manual"], "default": "crawler" }, "annualYield": { "type": "decimal", "precision": 12, "scale": 6 }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
-const wealthNav = {
+const attributes$c = { "product": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-product", "inversedBy": "moneyIncomes" }, "incomeDate": { "type": "date", "required": true }, "tenThousandIncome": { "type": "decimal", "precision": 10, "scale": 6 }, "sevenDayAnnual": { "type": "decimal", "precision": 10, "scale": 4 }, "dataSource": { "type": "enumeration", "enum": ["crawler", "manual"], "default": "crawler" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const wealthMoneyIncome = {
   kind: kind$c,
   collectionName: collectionName$c,
   info: info$c,
@@ -53,11 +65,11 @@ const wealthNav = {
   attributes: attributes$c
 };
 const kind$b = "collectionType";
-const collectionName$b = "wealth_money_incomes";
-const info$b = { "singularName": "wealth-money-income", "pluralName": "wealth-money-incomes", "displayName": "货币基金收益", "description": "货币基金万份收益数据" };
+const collectionName$b = "wealth_annual_snapshots";
+const info$b = { "singularName": "wealth-annual-snapshot", "pluralName": "wealth-annual-snapshots", "displayName": "年化快照", "description": "各周期年化收益快照" };
 const options$b = { "draftAndPublish": false };
-const attributes$b = { "product": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-product", "inversedBy": "moneyIncomes" }, "incomeDate": { "type": "date", "required": true }, "tenThousandIncome": { "type": "decimal", "precision": 10, "scale": 6 }, "sevenDayAnnual": { "type": "decimal", "precision": 10, "scale": 4 }, "dataSource": { "type": "enumeration", "enum": ["crawler", "manual"], "default": "crawler" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
-const wealthMoneyIncome = {
+const attributes$b = { "product": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-product", "inversedBy": "annualSnapshots" }, "snapshotDate": { "type": "date", "required": true }, "annual1d": { "type": "decimal", "precision": 10, "scale": 6 }, "annual3d": { "type": "decimal", "precision": 10, "scale": 6 }, "annual7d": { "type": "decimal", "precision": 10, "scale": 6 }, "annual2w": { "type": "decimal", "precision": 10, "scale": 6 }, "annual1m": { "type": "decimal", "precision": 10, "scale": 6 }, "annual3m": { "type": "decimal", "precision": 10, "scale": 6 }, "annual6m": { "type": "decimal", "precision": 10, "scale": 6 }, "annual1y": { "type": "decimal", "precision": 10, "scale": 6 }, "isEstimate": { "type": "boolean", "default": false }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const wealthAnnualSnapshot = {
   kind: kind$b,
   collectionName: collectionName$b,
   info: info$b,
@@ -65,11 +77,11 @@ const wealthMoneyIncome = {
   attributes: attributes$b
 };
 const kind$a = "collectionType";
-const collectionName$a = "wealth_annual_snapshots";
-const info$a = { "singularName": "wealth-annual-snapshot", "pluralName": "wealth-annual-snapshots", "displayName": "年化快照", "description": "各周期年化收益快照" };
+const collectionName$a = "wealth_yearly_returns";
+const info$a = { "singularName": "wealth-yearly-return", "pluralName": "wealth-yearly-returns", "displayName": "年度收益", "description": "历年年度收益统计" };
 const options$a = { "draftAndPublish": false };
-const attributes$a = { "product": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-product", "inversedBy": "annualSnapshots" }, "snapshotDate": { "type": "date", "required": true }, "annual1d": { "type": "decimal", "precision": 10, "scale": 6 }, "annual3d": { "type": "decimal", "precision": 10, "scale": 6 }, "annual7d": { "type": "decimal", "precision": 10, "scale": 6 }, "annual2w": { "type": "decimal", "precision": 10, "scale": 6 }, "annual1m": { "type": "decimal", "precision": 10, "scale": 6 }, "annual3m": { "type": "decimal", "precision": 10, "scale": 6 }, "annual6m": { "type": "decimal", "precision": 10, "scale": 6 }, "annual1y": { "type": "decimal", "precision": 10, "scale": 6 }, "isEstimate": { "type": "boolean", "default": false }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
-const wealthAnnualSnapshot = {
+const attributes$a = { "product": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-product", "inversedBy": "yearlyReturns" }, "year": { "type": "integer", "required": true }, "annualReturn": { "type": "decimal", "precision": 10, "scale": 6 }, "baseDays": { "type": "integer" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const wealthYearlyReturn = {
   kind: kind$a,
   collectionName: collectionName$a,
   info: info$a,
@@ -77,11 +89,11 @@ const wealthAnnualSnapshot = {
   attributes: attributes$a
 };
 const kind$9 = "collectionType";
-const collectionName$9 = "wealth_yearly_returns";
-const info$9 = { "singularName": "wealth-yearly-return", "pluralName": "wealth-yearly-returns", "displayName": "年度收益", "description": "历年年度收益统计" };
+const collectionName$9 = "wealth_customer_products";
+const info$9 = { "singularName": "wealth-customer-product", "pluralName": "wealth-customer-products", "displayName": "客户自选产品", "description": "客户关注的产品列表" };
 const options$9 = { "draftAndPublish": false };
-const attributes$9 = { "product": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-product", "inversedBy": "yearlyReturns" }, "year": { "type": "integer", "required": true }, "annualReturn": { "type": "decimal", "precision": 10, "scale": 6 }, "baseDays": { "type": "integer" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
-const wealthYearlyReturn = {
+const attributes$9 = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::users-permissions.user" }, "product": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-product" }, "channel": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-channel.channel" }, "followTime": { "type": "datetime" }, "sortOrder": { "type": "integer", "default": 0 }, "remark": { "type": "string" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const wealthCustomerProduct = {
   kind: kind$9,
   collectionName: collectionName$9,
   info: info$9,
@@ -89,11 +101,11 @@ const wealthYearlyReturn = {
   attributes: attributes$9
 };
 const kind$8 = "collectionType";
-const collectionName$8 = "wealth_customer_products";
-const info$8 = { "singularName": "wealth-customer-product", "pluralName": "wealth-customer-products", "displayName": "客户自选产品", "description": "客户关注的产品列表" };
+const collectionName$8 = "wealth_recommend_configs";
+const info$8 = { "singularName": "wealth-recommend-config", "pluralName": "wealth-recommend-configs", "displayName": "推荐配置", "description": "手动推荐产品配置" };
 const options$8 = { "draftAndPublish": false };
-const attributes$8 = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::users-permissions.user" }, "product": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-product" }, "channel": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-channel.channel" }, "followTime": { "type": "datetime" }, "sortOrder": { "type": "integer", "default": 0 }, "remark": { "type": "string" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
-const wealthCustomerProduct = {
+const attributes$8 = { "product": { "type": "relation", "relation": "oneToOne", "target": "plugin::zhao-wealth.wealth-product" }, "channel": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-channel.channel" }, "recommendOrder": { "type": "integer", "default": 0 }, "recommendReason": { "type": "text" }, "status": { "type": "boolean", "default": true }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const wealthRecommendConfig = {
   kind: kind$8,
   collectionName: collectionName$8,
   info: info$8,
@@ -101,11 +113,11 @@ const wealthCustomerProduct = {
   attributes: attributes$8
 };
 const kind$7 = "collectionType";
-const collectionName$7 = "wealth_recommend_configs";
-const info$7 = { "singularName": "wealth-recommend-config", "pluralName": "wealth-recommend-configs", "displayName": "推荐配置", "description": "手动推荐产品配置" };
+const collectionName$7 = "wealth_risk_metrics";
+const info$7 = { "singularName": "wealth-risk-metric", "pluralName": "wealth-risk-metrics", "displayName": "风险指标", "description": "业绩归因指标（波动率/最大回撤/夏普/同类排名）" };
 const options$7 = { "draftAndPublish": false };
-const attributes$7 = { "product": { "type": "relation", "relation": "oneToOne", "target": "plugin::zhao-wealth.wealth-product" }, "channel": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-channel.channel" }, "recommendOrder": { "type": "integer", "default": 0 }, "recommendReason": { "type": "text" }, "status": { "type": "boolean", "default": true }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
-const wealthRecommendConfig = {
+const attributes$7 = { "product": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-product", "inversedBy": "riskMetrics" }, "snapshotDate": { "type": "date", "required": true }, "period": { "type": "enumeration", "enum": ["m1", "m3", "m6", "y1"], "required": true }, "metricName": { "type": "enumeration", "enum": ["volatility", "maxDrawdown", "sharpe", "rankPercentile", "incomeStability"], "required": true }, "metricValue": { "type": "decimal", "precision": 12, "scale": 6 }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const wealthRiskMetric = {
   kind: kind$7,
   collectionName: collectionName$7,
   info: info$7,
@@ -113,11 +125,11 @@ const wealthRecommendConfig = {
   attributes: attributes$7
 };
 const kind$6 = "collectionType";
-const collectionName$6 = "wealth_risk_metrics";
-const info$6 = { "singularName": "wealth-risk-metric", "pluralName": "wealth-risk-metrics", "displayName": "风险指标", "description": "业绩归因指标（波动率/最大回撤/夏普/同类排名）" };
+const collectionName$6 = "wealth_disclosures";
+const info$6 = { "singularName": "wealth-disclosure", "pluralName": "wealth-disclosures", "displayName": "合规披露", "description": "按产品类型的合规披露文案" };
 const options$6 = { "draftAndPublish": false };
-const attributes$6 = { "product": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-product", "inversedBy": "riskMetrics" }, "snapshotDate": { "type": "date", "required": true }, "period": { "type": "enumeration", "enum": ["m1", "m3", "m6", "y1"], "required": true }, "metricName": { "type": "enumeration", "enum": ["volatility", "maxDrawdown", "sharpe", "rankPercentile", "incomeStability"], "required": true }, "metricValue": { "type": "decimal", "precision": 12, "scale": 6 }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
-const wealthRiskMetric = {
+const attributes$6 = { "productType": { "type": "enumeration", "enum": ["bank-wealth", "stock-fund", "bond-fund", "mixed-fund", "money-fund", "money-wealth", "all"], "required": true }, "title": { "type": "string", "required": true }, "content": { "type": "text", "required": true }, "effectiveDate": { "type": "date", "required": true }, "status": { "type": "boolean", "default": true }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const wealthDisclosure = {
   kind: kind$6,
   collectionName: collectionName$6,
   info: info$6,
@@ -125,11 +137,11 @@ const wealthRiskMetric = {
   attributes: attributes$6
 };
 const kind$5 = "collectionType";
-const collectionName$5 = "wealth_disclosures";
-const info$5 = { "singularName": "wealth-disclosure", "pluralName": "wealth-disclosures", "displayName": "合规披露", "description": "按产品类型的合规披露文案" };
+const collectionName$5 = "wealth_customer_holdings";
+const info$5 = { "singularName": "wealth-customer-holding", "pluralName": "wealth-customer-holdings", "displayName": "客户持仓", "description": "客户实际持仓记录" };
 const options$5 = { "draftAndPublish": false };
-const attributes$5 = { "productType": { "type": "enumeration", "enum": ["bank-wealth", "stock-fund", "bond-fund", "mixed-fund", "money-fund", "money-wealth", "all"], "required": true }, "title": { "type": "string", "required": true }, "content": { "type": "text", "required": true }, "effectiveDate": { "type": "date", "required": true }, "status": { "type": "boolean", "default": true }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
-const wealthDisclosure = {
+const attributes$5 = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::users-permissions.user" }, "product": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-product" }, "channel": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-channel.channel" }, "buyDate": { "type": "date", "required": true }, "buyAmount": { "type": "decimal", "precision": 14, "scale": 2, "required": true }, "buyNav": { "type": "decimal", "precision": 10, "scale": 4 }, "remark": { "type": "string" }, "status": { "type": "enumeration", "enum": ["holding", "redeemed"], "default": "holding" }, "redeemDate": { "type": "date" }, "createdByManager": { "type": "relation", "relation": "manyToOne", "target": "admin::user" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const wealthCustomerHolding = {
   kind: kind$5,
   collectionName: collectionName$5,
   info: info$5,
@@ -137,11 +149,11 @@ const wealthDisclosure = {
   attributes: attributes$5
 };
 const kind$4 = "collectionType";
-const collectionName$4 = "wealth_customer_holdings";
-const info$4 = { "singularName": "wealth-customer-holding", "pluralName": "wealth-customer-holdings", "displayName": "客户持仓", "description": "客户实际持仓记录" };
+const collectionName$4 = "wealth_score_snapshots";
+const info$4 = { "singularName": "wealth-score-snapshot", "pluralName": "wealth-score-snapshots", "displayName": "评分快照", "description": "产品综合评分快照（收益/波动/回撤/同类排名加权）" };
 const options$4 = { "draftAndPublish": false };
-const attributes$4 = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::users-permissions.user" }, "product": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-product" }, "channel": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-channel.channel" }, "buyDate": { "type": "date", "required": true }, "buyAmount": { "type": "decimal", "precision": 14, "scale": 2, "required": true }, "buyNav": { "type": "decimal", "precision": 10, "scale": 4 }, "remark": { "type": "string" }, "status": { "type": "enumeration", "enum": ["holding", "redeemed"], "default": "holding" }, "redeemDate": { "type": "date" }, "createdByManager": { "type": "relation", "relation": "manyToOne", "target": "admin::user" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
-const wealthCustomerHolding = {
+const attributes$4 = { "product": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-product", "inversedBy": "scoreSnapshots" }, "snapshotDate": { "type": "date", "required": true }, "period": { "type": "enumeration", "enum": ["m1", "m3", "m6", "y1"], "required": true }, "compositeScore": { "type": "decimal", "precision": 5, "scale": 2, "required": true }, "starRating": { "type": "integer", "default": 1 }, "returnScore": { "type": "decimal", "precision": 5, "scale": 2 }, "volatilityScore": { "type": "decimal", "precision": 5, "scale": 2 }, "drawdownScore": { "type": "decimal", "precision": 5, "scale": 2 }, "peerRankScore": { "type": "decimal", "precision": 5, "scale": 2 }, "weightProfile": { "type": "string" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const wealthScoreSnapshot = {
   kind: kind$4,
   collectionName: collectionName$4,
   info: info$4,
@@ -149,11 +161,11 @@ const wealthCustomerHolding = {
   attributes: attributes$4
 };
 const kind$3 = "collectionType";
-const collectionName$3 = "wealth_score_snapshots";
-const info$3 = { "singularName": "wealth-score-snapshot", "pluralName": "wealth-score-snapshots", "displayName": "评分快照", "description": "产品综合评分快照（收益/波动/回撤/同类排名加权）" };
+const collectionName$3 = "wealth_portfolio_plans";
+const info$3 = { "singularName": "wealth-portfolio-plan", "pluralName": "wealth-portfolio-plans", "displayName": "组合方案", "description": "用户创建的产品组合方案（关注产品+配比+假设金额）" };
 const options$3 = { "draftAndPublish": false };
-const attributes$3 = { "product": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-wealth.wealth-product", "inversedBy": "scoreSnapshots" }, "snapshotDate": { "type": "date", "required": true }, "period": { "type": "enumeration", "enum": ["m1", "m3", "m6", "y1"], "required": true }, "compositeScore": { "type": "decimal", "precision": 5, "scale": 2, "required": true }, "starRating": { "type": "integer", "default": 1 }, "returnScore": { "type": "decimal", "precision": 5, "scale": 2 }, "volatilityScore": { "type": "decimal", "precision": 5, "scale": 2 }, "drawdownScore": { "type": "decimal", "precision": 5, "scale": 2 }, "peerRankScore": { "type": "decimal", "precision": 5, "scale": 2 }, "weightProfile": { "type": "string" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
-const wealthScoreSnapshot = {
+const attributes$3 = { "userId": { "type": "string", "required": true }, "planName": { "type": "string", "required": true }, "planType": { "type": "enumeration", "enum": ["conservative", "balanced", "aggressive", "custom"], "default": "custom" }, "products": { "type": "json", "required": true }, "totalAmount": { "type": "decimal", "precision": 14, "scale": 2 }, "status": { "type": "enumeration", "enum": ["active", "archived"], "default": "active" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const wealthPortfolioPlan = {
   kind: kind$3,
   collectionName: collectionName$3,
   info: info$3,
@@ -161,11 +173,11 @@ const wealthScoreSnapshot = {
   attributes: attributes$3
 };
 const kind$2 = "collectionType";
-const collectionName$2 = "wealth_portfolio_plans";
-const info$2 = { "singularName": "wealth-portfolio-plan", "pluralName": "wealth-portfolio-plans", "displayName": "组合方案", "description": "用户创建的产品组合方案（关注产品+配比+假设金额）" };
+const collectionName$2 = "wealth_consultations";
+const info$2 = { "singularName": "wealth-consultation", "pluralName": "wealth-consultations", "displayName": "预约咨询", "description": "客户预约理财咨询服务记录" };
 const options$2 = { "draftAndPublish": false };
-const attributes$2 = { "userId": { "type": "string", "required": true }, "planName": { "type": "string", "required": true }, "planType": { "type": "enumeration", "enum": ["conservative", "balanced", "aggressive", "custom"], "default": "custom" }, "products": { "type": "json", "required": true }, "totalAmount": { "type": "decimal", "precision": 14, "scale": 2 }, "status": { "type": "enumeration", "enum": ["active", "archived"], "default": "active" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
-const wealthPortfolioPlan = {
+const attributes$2 = { "userId": { "type": "string", "required": true }, "name": { "type": "string", "required": false }, "phone": { "type": "string", "required": false }, "productId": { "type": "integer" }, "portfolioPlanId": { "type": "integer" }, "preferredTime": { "type": "datetime" }, "preferredChannel": { "type": "enumeration", "enum": ["online", "branch", "phone"], "default": "branch" }, "message": { "type": "text" }, "submitType": { "type": "enumeration", "enum": ["phone", "wechat", "message"], "default": "phone" }, "contactType": { "type": "enumeration", "enum": ["phone", "email", "wechat"] }, "contactValue": { "type": "string" }, "wechatType": { "type": "enumeration", "enum": ["personal", "enterprise"] }, "reply": { "type": "text" }, "repliedAt": { "type": "datetime" }, "status": { "type": "enumeration", "enum": ["pending", "confirmed", "completed", "cancelled", "replied"], "default": "pending" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const wealthConsultation = {
   kind: kind$2,
   collectionName: collectionName$2,
   info: info$2,
@@ -173,11 +185,11 @@ const wealthPortfolioPlan = {
   attributes: attributes$2
 };
 const kind$1 = "collectionType";
-const collectionName$1 = "wealth_consultations";
-const info$1 = { "singularName": "wealth-consultation", "pluralName": "wealth-consultations", "displayName": "预约咨询", "description": "客户预约理财咨询服务记录" };
+const collectionName$1 = "wealth_consult_configs";
+const info$1 = { "singularName": "wealth-consult-config", "pluralName": "wealth-consult-configs", "displayName": "咨询微信配置", "description": "预约咨询微信渠道二维码与微信号配置" };
 const options$1 = { "draftAndPublish": false };
-const attributes$1 = { "userId": { "type": "string", "required": true }, "name": { "type": "string", "required": false }, "phone": { "type": "string", "required": false }, "productId": { "type": "integer" }, "portfolioPlanId": { "type": "integer" }, "preferredTime": { "type": "datetime" }, "preferredChannel": { "type": "enumeration", "enum": ["online", "branch", "phone"], "default": "branch" }, "message": { "type": "text" }, "submitType": { "type": "enumeration", "enum": ["phone", "wechat", "message"], "default": "phone" }, "contactType": { "type": "enumeration", "enum": ["phone", "email", "wechat"] }, "contactValue": { "type": "string" }, "wechatType": { "type": "enumeration", "enum": ["personal", "enterprise"] }, "reply": { "type": "text" }, "repliedAt": { "type": "datetime" }, "status": { "type": "enumeration", "enum": ["pending", "confirmed", "completed", "cancelled", "replied"], "default": "pending" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
-const wealthConsultation = {
+const attributes$1 = { "enterpriseWechatQr": { "type": "media", "multiple": false, "required": false, "allowedTypes": ["images"] }, "personalWechatQr": { "type": "media", "multiple": false, "required": false, "allowedTypes": ["images"] }, "enterpriseWechatId": { "type": "string" }, "personalWechatId": { "type": "string" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const wealthConsultConfig = {
   kind: kind$1,
   collectionName: collectionName$1,
   info: info$1,
@@ -185,15 +197,17 @@ const wealthConsultation = {
   attributes: attributes$1
 };
 const kind = "collectionType";
-const collectionName = "wealth_consult_configs";
-const info = { "singularName": "wealth-consult-config", "pluralName": "wealth-consult-configs", "displayName": "咨询微信配置", "description": "预约咨询微信渠道二维码与微信号配置" };
+const collectionName = "wealth_consult_contacts";
+const info = { "singularName": "wealth-consult-contact", "pluralName": "wealth-consult-contacts", "displayName": "服务人联系方式" };
 const options = { "draftAndPublish": false };
-const attributes = { "enterpriseWechatQr": { "type": "media", "multiple": false, "required": false, "allowedTypes": ["images"] }, "personalWechatQr": { "type": "media", "multiple": false, "required": false, "allowedTypes": ["images"] }, "enterpriseWechatId": { "type": "string" }, "personalWechatId": { "type": "string" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
-const wealthConsultConfig = {
+const pluginOptions = {};
+const attributes = { "inviterId": { "type": "integer", "required": true, "unique": true }, "nickname": { "type": "string" }, "branchName": { "type": "string" }, "branchPhones": { "type": "json" }, "latitude": { "type": "decimal" }, "longitude": { "type": "decimal" }, "city": { "type": "string" }, "enterpriseWechatQr": { "type": "media", "allowedTypes": ["images"], "multiple": false }, "enterpriseWechatId": { "type": "string" }, "personalWechatQr": { "type": "media", "allowedTypes": ["images"], "multiple": false }, "personalWechatId": { "type": "string" } };
+const wealthConsultContact = {
   kind,
   collectionName,
   info,
   options,
+  pluginOptions,
   attributes
 };
 const contentTypes = {
@@ -212,7 +226,8 @@ const contentTypes = {
   "wealth-score-snapshot": { schema: wealthScoreSnapshot },
   "wealth-portfolio-plan": { schema: wealthPortfolioPlan },
   "wealth-consultation": { schema: wealthConsultation },
-  "wealth-consult-config": { schema: wealthConsultConfig }
+  "wealth-consult-config": { schema: wealthConsultConfig },
+  "wealth-consult-contact": { schema: wealthConsultContact }
 };
 class LuxonError extends Error {
 }
@@ -9920,11 +9935,31 @@ const consultation = ({ strapi }) => ({
     }
   },
   /**
-   * GET /v1/wealth/consult/config（公开）
+   * GET /v1/wealth/consult/config（公开，可选登录）
+   * 带 token 时解析推荐人；带 city/latitude/longitude 时城市就近匹配
    */
   async consultConfig(ctx) {
     try {
-      const cfg = await strapi.service("plugin::zhao-wealth.consultation-service").getConsultConfig();
+      const { city, latitude, longitude } = ctx.query;
+      let invitedBy = null;
+      const authHeader = ctx.request.headers.authorization;
+      if (authHeader && authHeader.startsWith("Bearer ")) {
+        try {
+          const jwtService = strapi.plugin("zhao-sso").service("sso-jwt");
+          const payload = await jwtService.verifyToken(authHeader.slice(7));
+          if (payload && payload.type === "access" && payload.id) {
+            const ssoUser = await strapi.plugin("zhao-sso").service("sso-user").findById(payload.id);
+            invitedBy = ssoUser?.invited_by || null;
+          }
+        } catch (e) {
+        }
+      }
+      const cfg = await strapi.service("plugin::zhao-wealth.consultation-service").resolveContact({
+        invitedBy,
+        city: city || null,
+        latitude: latitude != null ? Number(latitude) : null,
+        longitude: longitude != null ? Number(longitude) : null
+      });
       ctx.body = successResponse(cfg);
     } catch (error) {
       strapi.log.error(`[zhao-wealth] 咨询配置查询失败: ${error.message}`);
@@ -9988,6 +10023,64 @@ const consultation = ({ strapi }) => ({
     } catch (error) {
       strapi.log.error(`[zhao-wealth] 咨询配置保存失败: ${error.message}`);
       ctx.body = errorResponse(500, "保存失败");
+    }
+  },
+  /**
+   * GET /v1/admin/consult-contacts
+   */
+  async adminListContacts(ctx) {
+    try {
+      const { page, pageSize, city } = ctx.query;
+      const result = await strapi.service("plugin::zhao-wealth.consultation-service").adminListContacts({ page, pageSize, city });
+      ctx.body = successResponse({
+        list: result.records,
+        pagination: { page: result.page, pageSize: result.pageSize, total: result.total }
+      });
+    } catch (error) {
+      strapi.log.error(`[zhao-wealth] 服务人配置列表失败: ${error.message}`);
+      ctx.body = errorResponse(500, "查询失败");
+    }
+  },
+  /**
+   * POST /v1/admin/consult-contacts
+   */
+  async adminCreateContact(ctx) {
+    try {
+      const result = await strapi.service("plugin::zhao-wealth.consultation-service").adminCreateContact(ctx.request.body);
+      if (!result.ok) {
+        ctx.body = errorResponse(result.code, result.msg);
+        return;
+      }
+      ctx.body = successResponse(result.record, "已保存");
+    } catch (error) {
+      strapi.log.error(`[zhao-wealth] 服务人配置创建失败: ${error.message}`);
+      ctx.body = errorResponse(500, "保存失败");
+    }
+  },
+  /**
+   * PUT /v1/admin/consult-contacts/:id
+   */
+  async adminUpdateContact(ctx) {
+    try {
+      const { id } = ctx.params;
+      const result = await strapi.service("plugin::zhao-wealth.consultation-service").adminUpdateContact(Number(id), ctx.request.body);
+      ctx.body = successResponse(result.record, "已保存");
+    } catch (error) {
+      strapi.log.error(`[zhao-wealth] 服务人配置更新失败: ${error.message}`);
+      ctx.body = errorResponse(500, "保存失败");
+    }
+  },
+  /**
+   * DELETE /v1/admin/consult-contacts/:id
+   */
+  async adminDeleteContact(ctx) {
+    try {
+      const { id } = ctx.params;
+      await strapi.service("plugin::zhao-wealth.consultation-service").adminDeleteContact(Number(id));
+      ctx.body = successResponse(null, "已删除");
+    } catch (error) {
+      strapi.log.error(`[zhao-wealth] 服务人配置删除失败: ${error.message}`);
+      ctx.body = errorResponse(500, "删除失败");
     }
   }
 });
@@ -10423,6 +10516,11 @@ const adminApi = () => ({
     adminRoute("POST", "/v1/admin/consultations/:id/reply", "consultation.adminReply"),
     adminRoute("GET", "/v1/admin/consult-config", "consultation.adminGetConfig"),
     adminRoute("PUT", "/v1/admin/consult-config", "consultation.adminUpdateConfig"),
+    // ===== 服务人联系方式配置 =====
+    adminRoute("GET", "/v1/admin/consult-contacts", "consultation.adminListContacts"),
+    adminRoute("POST", "/v1/admin/consult-contacts", "consultation.adminCreateContact"),
+    adminRoute("PUT", "/v1/admin/consult-contacts/:id", "consultation.adminUpdateContact"),
+    adminRoute("DELETE", "/v1/admin/consult-contacts/:id", "consultation.adminDeleteContact"),
     // ===== 客户持仓（管理端代客录入） =====
     adminRoute("GET", "/v1/admin/holdings", "holding.list"),
     adminRoute("GET", "/v1/admin/holdings/:id", "holding.detail"),
@@ -12219,6 +12317,62 @@ const portfolioService = ({ strapi }) => {
   };
 };
 const PHONE_RE = /^1\d{10}$/;
+const CONTACT_UID = "plugin::zhao-wealth.wealth-consult-contact";
+const CONFIG_UID = "plugin::zhao-wealth.wealth-consult-config";
+const contactCache = /* @__PURE__ */ new Map();
+function cacheGet(key) {
+  return contactCache.get(key);
+}
+function cacheSet(key, value) {
+  contactCache.set(key, value);
+}
+function cacheClear() {
+  contactCache.clear();
+}
+function haversineMeters(lat1, lng1, lat2, lng2) {
+  const R = 6371e3;
+  const rad = (d) => d * Math.PI / 180;
+  const dLat = rad(lat2 - lat1);
+  const dLng = rad(lng2 - lng1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(rad(lat1)) * Math.cos(rad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+function shapeContact(c) {
+  if (!c) return null;
+  let phones = [];
+  if (Array.isArray(c.branchPhones)) phones = c.branchPhones;
+  else if (c.branchPhones) {
+    try {
+      phones = JSON.parse(c.branchPhones);
+    } catch {
+      phones = [];
+    }
+  }
+  return {
+    nickname: c.nickname || null,
+    branchName: c.branchName || null,
+    branchPhones: phones,
+    enterpriseWechatQr: c.enterpriseWechatQr?.url || null,
+    personalWechatQr: c.personalWechatQr?.url || null,
+    enterpriseWechatId: c.enterpriseWechatId || null,
+    personalWechatId: c.personalWechatId || null
+  };
+}
+function pickNearest(list, latitude, longitude) {
+  if (list.length <= 1) return list[0];
+  if (latitude == null || longitude == null) return list[0];
+  let best = list[0];
+  let bestDist = Infinity;
+  for (const c of list) {
+    if (c.latitude == null || c.longitude == null) continue;
+    const d = haversineMeters(latitude, longitude, Number(c.latitude), Number(c.longitude));
+    if (d < bestDist) {
+      bestDist = d;
+      best = c;
+    }
+  }
+  return best;
+}
 const consultationService = ({ strapi }) => {
   const query = () => strapi.db.query("plugin::zhao-wealth.wealth-consultation");
   function fail(code, msg) {
@@ -12301,18 +12455,116 @@ const consultationService = ({ strapi }) => {
     });
     return { ok: true, record };
   }
-  async function getConsultConfig() {
-    const cfgQuery = strapi.db.query("plugin::zhao-wealth.wealth-consult-config");
-    const cfg = await cfgQuery.findOne({});
-    if (!cfg) {
-      return { enterpriseWechatQr: null, personalWechatQr: null, enterpriseWechatId: null, personalWechatId: null };
-    }
-    return {
-      enterpriseWechatQr: cfg.enterpriseWechatQr?.url || null,
-      personalWechatQr: cfg.personalWechatQr?.url || null,
-      enterpriseWechatId: cfg.enterpriseWechatId || null,
-      personalWechatId: cfg.personalWechatId || null
+  async function findContactByInviter(inviterId) {
+    const key = `inviter:${inviterId}`;
+    const hit = cacheGet(key);
+    if (hit !== void 0) return hit;
+    const contact = await strapi.db.query(CONTACT_UID).findOne({ where: { inviterId } });
+    cacheSet(key, contact || null);
+    return contact || null;
+  }
+  async function findContactsByCity(city) {
+    const key = `city:${city}`;
+    const hit = cacheGet(key);
+    if (hit !== void 0) return hit;
+    const list = await strapi.db.query(CONTACT_UID).findMany({
+      where: { city },
+      orderBy: { id: "asc" }
+    });
+    cacheSet(key, list);
+    return list;
+  }
+  async function getGlobalConfig() {
+    const key = "global";
+    const hit = cacheGet(key);
+    if (hit !== void 0) return hit;
+    const cfg = await strapi.db.query(CONFIG_UID).findOne({});
+    const shaped = {
+      nickname: null,
+      branchName: null,
+      branchPhones: [],
+      enterpriseWechatQr: cfg?.enterpriseWechatQr?.url || null,
+      personalWechatQr: cfg?.personalWechatQr?.url || null,
+      enterpriseWechatId: cfg?.enterpriseWechatId || null,
+      personalWechatId: cfg?.personalWechatId || null
     };
+    cacheSet(key, shaped);
+    return shaped;
+  }
+  async function resolveContact(params) {
+    if (params.invitedBy) {
+      const inviterContact = await findContactByInviter(params.invitedBy);
+      if (inviterContact) return shapeContact(inviterContact);
+    }
+    if (params.city) {
+      const list = await findContactsByCity(params.city);
+      if (list.length > 0) {
+        const pick2 = pickNearest(list, params.latitude, params.longitude);
+        return shapeContact(pick2);
+      }
+    }
+    return getGlobalConfig();
+  }
+  async function adminListContacts(params) {
+    const page = Number(params.page) || 1;
+    const pageSize = Math.min(Number(params.pageSize) || 20, 100);
+    const offset2 = (page - 1) * pageSize;
+    const where = {};
+    if (params.city) where.city = params.city;
+    const [records, total] = await Promise.all([
+      strapi.db.query(CONTACT_UID).findMany({
+        where,
+        orderBy: { id: "desc" },
+        limit: pageSize,
+        offset: offset2
+      }),
+      strapi.db.query(CONTACT_UID).count({ where })
+    ]);
+    return { records, total, page, pageSize };
+  }
+  async function adminCreateContact(data) {
+    if (!data.inviterId) return fail(400, "请选择服务人");
+    const payload = {
+      inviterId: Number(data.inviterId),
+      nickname: data.nickname || null,
+      branchName: data.branchName || null,
+      branchPhones: data.branchPhones ?? null,
+      latitude: data.latitude != null ? Number(data.latitude) : null,
+      longitude: data.longitude != null ? Number(data.longitude) : null,
+      city: data.city || null
+    };
+    if (data.enterpriseWechatQr !== void 0) payload.enterpriseWechatQr = data.enterpriseWechatQr;
+    if (data.enterpriseWechatId !== void 0) payload.enterpriseWechatId = data.enterpriseWechatId;
+    if (data.personalWechatQr !== void 0) payload.personalWechatQr = data.personalWechatQr;
+    if (data.personalWechatId !== void 0) payload.personalWechatId = data.personalWechatId;
+    const record = await strapi.db.query(CONTACT_UID).create({ data: payload });
+    cacheClear();
+    return { ok: true, record };
+  }
+  async function adminUpdateContact(id, data) {
+    const payload = {};
+    if (data.inviterId !== void 0) payload.inviterId = Number(data.inviterId);
+    if (data.nickname !== void 0) payload.nickname = data.nickname;
+    if (data.branchName !== void 0) payload.branchName = data.branchName;
+    if (data.branchPhones !== void 0) payload.branchPhones = data.branchPhones;
+    if (data.latitude !== void 0) payload.latitude = data.latitude != null ? Number(data.latitude) : null;
+    if (data.longitude !== void 0) payload.longitude = data.longitude != null ? Number(data.longitude) : null;
+    if (data.city !== void 0) payload.city = data.city;
+    if (data.enterpriseWechatQr !== void 0) payload.enterpriseWechatQr = data.enterpriseWechatQr;
+    if (data.enterpriseWechatId !== void 0) payload.enterpriseWechatId = data.enterpriseWechatId;
+    if (data.personalWechatQr !== void 0) payload.personalWechatQr = data.personalWechatQr;
+    if (data.personalWechatId !== void 0) payload.personalWechatId = data.personalWechatId;
+    const record = await strapi.db.query(CONTACT_UID).update({ where: { id }, data: payload });
+    cacheClear();
+    return { ok: true, record };
+  }
+  async function adminDeleteContact(id) {
+    await strapi.db.query(CONTACT_UID).delete({ where: { id } });
+    cacheClear();
+    return { ok: true };
+  }
+  async function getConsultConfig() {
+    return getGlobalConfig();
   }
   async function adminUpdateConsultConfig(data) {
     const cfgQuery = strapi.db.query("plugin::zhao-wealth.wealth-consult-config");
@@ -12323,9 +12575,23 @@ const consultationService = ({ strapi }) => {
     if (data.enterpriseWechatId !== void 0) payload.enterpriseWechatId = data.enterpriseWechatId;
     if (data.personalWechatId !== void 0) payload.personalWechatId = data.personalWechatId;
     const record = existing ? await cfgQuery.update({ where: { id: existing.id }, data: payload }) : await cfgQuery.create({ data: payload });
+    cacheClear();
     return record;
   }
-  return { createBooking, getBookings, cancelBooking, adminListBookings, replyBooking, getConsultConfig, adminUpdateConsultConfig };
+  return {
+    createBooking,
+    getBookings,
+    cancelBooking,
+    adminListBookings,
+    replyBooking,
+    getConsultConfig,
+    adminUpdateConsultConfig,
+    resolveContact,
+    adminListContacts,
+    adminCreateContact,
+    adminUpdateContact,
+    adminDeleteContact
+  };
 };
 const riskDisclosureService = ({ strapi }) => ({
   /**

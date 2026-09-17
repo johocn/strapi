@@ -43,17 +43,43 @@ declare const _default: ({ strapi }: {
         ok: boolean;
         record: any;
     }>;
-    getConsultConfig: () => Promise<{
-        enterpriseWechatQr: any;
-        personalWechatQr: any;
-        enterpriseWechatId: any;
-        personalWechatId: any;
-    }>;
+    getConsultConfig: () => Promise<any>;
     adminUpdateConsultConfig: (data: {
         enterpriseWechatQr?: number;
         personalWechatQr?: number;
         enterpriseWechatId?: string;
         personalWechatId?: string;
     }) => Promise<any>;
+    resolveContact: (params: {
+        invitedBy?: number | null;
+        city?: string | null;
+        latitude?: number | null;
+        longitude?: number | null;
+    }) => Promise<any>;
+    adminListContacts: (params: {
+        page?: number;
+        pageSize?: number;
+        city?: string;
+    }) => Promise<{
+        records: any[];
+        total: number;
+        page: number;
+        pageSize: number;
+    }>;
+    adminCreateContact: (data: any) => Promise<{
+        ok: boolean;
+        code: number;
+        msg: string;
+    } | {
+        ok: boolean;
+        record: any;
+    }>;
+    adminUpdateContact: (id: number, data: any) => Promise<{
+        ok: boolean;
+        record: any;
+    }>;
+    adminDeleteContact: (id: number) => Promise<{
+        ok: boolean;
+    }>;
 };
 export default _default;

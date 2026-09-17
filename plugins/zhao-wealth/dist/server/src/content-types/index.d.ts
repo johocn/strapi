@@ -959,5 +959,61 @@ declare const _default: {
             };
         };
     };
+    'wealth-consult-contact': {
+        schema: {
+            kind: string;
+            collectionName: string;
+            info: {
+                singularName: string;
+                pluralName: string;
+                displayName: string;
+            };
+            options: {
+                draftAndPublish: boolean;
+            };
+            pluginOptions: {};
+            attributes: {
+                inviterId: {
+                    type: string;
+                    required: boolean;
+                    unique: boolean;
+                };
+                nickname: {
+                    type: string;
+                };
+                branchName: {
+                    type: string;
+                };
+                branchPhones: {
+                    type: string;
+                };
+                latitude: {
+                    type: string;
+                };
+                longitude: {
+                    type: string;
+                };
+                city: {
+                    type: string;
+                };
+                enterpriseWechatQr: {
+                    type: string;
+                    allowedTypes: string[];
+                    multiple: boolean;
+                };
+                enterpriseWechatId: {
+                    type: string;
+                };
+                personalWechatQr: {
+                    type: string;
+                    allowedTypes: string[];
+                    multiple: boolean;
+                };
+                personalWechatId: {
+                    type: string;
+                };
+            };
+        };
+    };
 };
 export default _default;

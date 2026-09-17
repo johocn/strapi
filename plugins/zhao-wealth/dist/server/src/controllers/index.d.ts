@@ -132,6 +132,10 @@ declare const _default: {
         adminReply(ctx: any): Promise<void>;
         adminGetConfig(ctx: any): Promise<void>;
         adminUpdateConfig(ctx: any): Promise<void>;
+        adminListContacts(ctx: any): Promise<void>;
+        adminCreateContact(ctx: any): Promise<void>;
+        adminUpdateContact(ctx: any): Promise<void>;
+        adminDeleteContact(ctx: any): Promise<void>;
     };
     monitor: ({ strapi }: {
         strapi: any;
