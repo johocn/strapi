@@ -11,7 +11,7 @@ declare const _default: {
   },
   "pluginOptions": {},
   "attributes": {
-    "inviterId": { "type": "integer", "required": true, "unique": true },
+    "inviterId": { "type": "integer", "unique": true },
     "nickname": { "type": "string" },
     "branchName": { "type": "string" },
     "branchPhones": { "type": "json" },

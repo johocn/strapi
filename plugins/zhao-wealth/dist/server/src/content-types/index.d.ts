@@ -975,7 +975,6 @@ declare const _default: {
             attributes: {
                 inviterId: {
                     type: string;
-                    required: boolean;
                     unique: boolean;
                 };
                 nickname: {

@@ -237,12 +237,23 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     return shaped;
   }
 
+  /** 全局默认服务人（inviterId 为空，C 端兜底优先展示），缓存键 global-contact */
+  async function findGlobalContact() {
+    const key = 'global-contact';
+    const hit = cacheGet(key);
+    if (hit !== undefined) return hit;
+    const contact = await strapi.db.query(CONTACT_UID).findOne({ where: { inviterId: null } });
+    cacheSet(key, contact || null);
+    return contact || null;
+  }
+
   /**
    * 服务人联系方式分级匹配：
    * 1. 有推荐人且该推荐人是服务人 → 返回服务人配置
    * 2. 无推荐人/推荐人非服务人 → 城市就近（同城多服务人按经纬度最近）
-   * 3. 城市未命中 → 全局配置兜底（企业微信无图仅个人微信）
-   * 4. 全局也无 → 空字段占位
+   * 3. 城市未命中 → 全局默认服务人（inviterId 为空，若已配置）
+   * 4. 仍无 → 全局配置兜底（企业微信无图仅个人微信）
+   * 5. 全局也无 → 空字段占位
    */
   async function resolveContact(params: {
     invitedBy?: number | null;
@@ -261,6 +272,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         return shapeContact(pick);
       }
     }
+    const globalContact = await findGlobalContact();
+    if (globalContact) return shapeContact(globalContact);
     return getGlobalConfig();
   }
 
@@ -281,13 +294,18 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     return { records, total, page, pageSize };
   }
 
-  /** 管理端：创建服务人配置 */
+  /** 管理端：创建服务人配置（inviterId 为空 = 全局默认服务人员，仅允许一条） */
   async function adminCreateContact(data: any) {
-    if (!data.inviterId) return fail(400, '请选择服务人');
-    const existing = await strapi.db.query(CONTACT_UID).findOne({ where: { inviterId: Number(data.inviterId) } });
-    if (existing) return fail(400, '该服务人已配置，请直接编辑');
+    const inviterId = data.inviterId != null && data.inviterId !== '' ? Number(data.inviterId) : null;
+    if (inviterId == null) {
+      const g = await strapi.db.query(CONTACT_UID).findOne({ where: { inviterId: null } });
+      if (g) return fail(400, '已存在全局默认服务人员，请直接编辑');
+    } else {
+      const existing = await strapi.db.query(CONTACT_UID).findOne({ where: { inviterId } });
+      if (existing) return fail(400, '该服务人已配置，请直接编辑');
+    }
     const payload: any = {
-      inviterId: Number(data.inviterId),
+      inviterId,
       nickname: data.nickname || null,
       branchName: data.branchName || null,
       branchPhones: data.branchPhones ?? null,
@@ -304,14 +322,22 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     return { ok: true, record };
   }
 
-  /** 管理端：更新服务人配置 */
+  /** 管理端：更新服务人配置（支持改为全局默认，仅允许一条） */
   async function adminUpdateContact(id: number, data: any) {
     if (data.inviterId !== undefined) {
-      const dup = await strapi.db.query(CONTACT_UID).findOne({ where: { inviterId: Number(data.inviterId) } });
-      if (dup && dup.id !== id) return fail(400, '该服务人已被其他配置占用');
+      const inviterId = data.inviterId != null && data.inviterId !== '' ? Number(data.inviterId) : null;
+      if (inviterId == null) {
+        const g = await strapi.db.query(CONTACT_UID).findOne({ where: { inviterId: null } });
+        if (g && g.id !== id) return fail(400, '已存在全局默认服务人员，请直接编辑');
+      } else {
+        const dup = await strapi.db.query(CONTACT_UID).findOne({ where: { inviterId } });
+        if (dup && dup.id !== id) return fail(400, '该服务人已被其他配置占用');
+      }
     }
     const payload: any = {};
-    if (data.inviterId !== undefined) payload.inviterId = Number(data.inviterId);
+    if (data.inviterId !== undefined) {
+      payload.inviterId = data.inviterId != null && data.inviterId !== '' ? Number(data.inviterId) : null;
+    }
     if (data.nickname !== undefined) payload.nickname = data.nickname;
     if (data.branchName !== undefined) payload.branchName = data.branchName;
     if (data.branchPhones !== undefined) payload.branchPhones = data.branchPhones;

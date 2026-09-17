@@ -201,7 +201,7 @@ const collectionName = "wealth_consult_contacts";
 const info = { "singularName": "wealth-consult-contact", "pluralName": "wealth-consult-contacts", "displayName": "服务人联系方式" };
 const options = { "draftAndPublish": false };
 const pluginOptions = {};
-const attributes = { "inviterId": { "type": "integer", "required": true, "unique": true }, "nickname": { "type": "string" }, "branchName": { "type": "string" }, "branchPhones": { "type": "json" }, "latitude": { "type": "decimal" }, "longitude": { "type": "decimal" }, "city": { "type": "string" }, "enterpriseWechatQr": { "type": "media", "allowedTypes": ["images"], "multiple": false }, "enterpriseWechatId": { "type": "string" }, "personalWechatQr": { "type": "media", "allowedTypes": ["images"], "multiple": false }, "personalWechatId": { "type": "string" } };
+const attributes = { "inviterId": { "type": "integer", "unique": true }, "nickname": { "type": "string" }, "branchName": { "type": "string" }, "branchPhones": { "type": "json" }, "latitude": { "type": "decimal" }, "longitude": { "type": "decimal" }, "city": { "type": "string" }, "enterpriseWechatQr": { "type": "media", "allowedTypes": ["images"], "multiple": false }, "enterpriseWechatId": { "type": "string" }, "personalWechatQr": { "type": "media", "allowedTypes": ["images"], "multiple": false }, "personalWechatId": { "type": "string" } };
 const wealthConsultContact = {
   kind,
   collectionName,
@@ -12491,6 +12491,14 @@ const consultationService = ({ strapi }) => {
     cacheSet(key, shaped);
     return shaped;
   }
+  async function findGlobalContact() {
+    const key = "global-contact";
+    const hit = cacheGet(key);
+    if (hit !== void 0) return hit;
+    const contact = await strapi.db.query(CONTACT_UID).findOne({ where: { inviterId: null } });
+    cacheSet(key, contact || null);
+    return contact || null;
+  }
   async function resolveContact(params) {
     if (params.invitedBy) {
       const inviterContact = await findContactByInviter(params.invitedBy);
@@ -12503,6 +12511,8 @@ const consultationService = ({ strapi }) => {
         return shapeContact(pick2);
       }
     }
+    const globalContact = await findGlobalContact();
+    if (globalContact) return shapeContact(globalContact);
     return getGlobalConfig();
   }
   async function adminListContacts(params) {
@@ -12523,11 +12533,16 @@ const consultationService = ({ strapi }) => {
     return { records, total, page, pageSize };
   }
   async function adminCreateContact(data) {
-    if (!data.inviterId) return fail(400, "请选择服务人");
-    const existing = await strapi.db.query(CONTACT_UID).findOne({ where: { inviterId: Number(data.inviterId) } });
-    if (existing) return fail(400, "该服务人已配置，请直接编辑");
+    const inviterId = data.inviterId != null && data.inviterId !== "" ? Number(data.inviterId) : null;
+    if (inviterId == null) {
+      const g = await strapi.db.query(CONTACT_UID).findOne({ where: { inviterId: null } });
+      if (g) return fail(400, "已存在全局默认服务人员，请直接编辑");
+    } else {
+      const existing = await strapi.db.query(CONTACT_UID).findOne({ where: { inviterId } });
+      if (existing) return fail(400, "该服务人已配置，请直接编辑");
+    }
     const payload = {
-      inviterId: Number(data.inviterId),
+      inviterId,
       nickname: data.nickname || null,
       branchName: data.branchName || null,
       branchPhones: data.branchPhones ?? null,
@@ -12545,11 +12560,19 @@ const consultationService = ({ strapi }) => {
   }
   async function adminUpdateContact(id, data) {
     if (data.inviterId !== void 0) {
-      const dup = await strapi.db.query(CONTACT_UID).findOne({ where: { inviterId: Number(data.inviterId) } });
-      if (dup && dup.id !== id) return fail(400, "该服务人已被其他配置占用");
+      const inviterId = data.inviterId != null && data.inviterId !== "" ? Number(data.inviterId) : null;
+      if (inviterId == null) {
+        const g = await strapi.db.query(CONTACT_UID).findOne({ where: { inviterId: null } });
+        if (g && g.id !== id) return fail(400, "已存在全局默认服务人员，请直接编辑");
+      } else {
+        const dup = await strapi.db.query(CONTACT_UID).findOne({ where: { inviterId } });
+        if (dup && dup.id !== id) return fail(400, "该服务人已被其他配置占用");
+      }
     }
     const payload = {};
-    if (data.inviterId !== void 0) payload.inviterId = Number(data.inviterId);
+    if (data.inviterId !== void 0) {
+      payload.inviterId = data.inviterId != null && data.inviterId !== "" ? Number(data.inviterId) : null;
+    }
     if (data.nickname !== void 0) payload.nickname = data.nickname;
     if (data.branchName !== void 0) payload.branchName = data.branchName;
     if (data.branchPhones !== void 0) payload.branchPhones = data.branchPhones;

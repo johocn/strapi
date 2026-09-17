@@ -223,4 +223,40 @@ describe('consultation-service 服务人分级匹配', () => {
     expect(r.ok).toBe(false);
     expect(r.code).toBe(400);
   });
+
+  it('城市未命中且配置全局默认服务人：返回全局默认服务人', async () => {
+    const findOne = jest.fn().mockResolvedValue({
+      id: 5, inviterId: null, nickname: '总行服务', branchName: '吉林银行客服中心',
+      branchPhones: ['0432-88886666', '13800000000'], city: null,
+      enterpriseWechatQr: null, enterpriseWechatId: null,
+      personalWechatQr: null, personalWechatId: null,
+    });
+    mockContactQuery.mockReturnValue({ findOne, findMany: jest.fn().mockResolvedValue([]) });
+    const r = await service.resolveContact({ invitedBy: null, city: '不存在市' });
+    expect(r.nickname).toBe('总行服务');
+    expect(r.branchName).toBe('吉林银行客服中心');
+    expect(r.branchPhones).toEqual(['0432-88886666', '13800000000']);
+  });
+
+  it('创建全局默认服务人：inviterId 为空写入 null', async () => {
+    const mockCreate = jest.fn().mockResolvedValue({ id: 6, inviterId: null });
+    mockContactQuery.mockReturnValue({ findOne: jest.fn().mockResolvedValue(null), create: mockCreate });
+    const r = await service.adminCreateContact({ inviterId: null, nickname: '总行服务', branchName: '客服中心' });
+    expect(r.ok).toBe(true);
+    expect(mockCreate.mock.calls[0][0].data.inviterId).toBeNull();
+  });
+
+  it('创建全局默认服务人：已存在全局默认返回 400', async () => {
+    mockContactQuery.mockReturnValue({ findOne: jest.fn().mockResolvedValue({ id: 5, inviterId: null }) });
+    const r = await service.adminCreateContact({ inviterId: null, nickname: '另一个' });
+    expect(r.ok).toBe(false);
+    expect(r.code).toBe(400);
+  });
+
+  it('更新为全局默认：其他全局默认存在返回 400', async () => {
+    mockContactQuery.mockReturnValue({ findOne: jest.fn().mockResolvedValue({ id: 5, inviterId: null }) });
+    const r = await service.adminUpdateContact(1, { inviterId: null });
+    expect(r.ok).toBe(false);
+    expect(r.code).toBe(400);
+  });
 });
