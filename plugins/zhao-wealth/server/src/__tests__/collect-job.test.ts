@@ -236,3 +236,63 @@ describe('collect-job.processNavData', () => {
     });
   });
 });
+
+describe('collect-job.collect-single 队列触发', () => {
+  let handler: any;
+  let calculateQueue: any;
+  let configQuery: any;
+  let navQuery: any;
+  let mockStrapi: any;
+
+  beforeEach(() => {
+    jest.resetModules();
+    calculateQueue = { add: jest.fn() };
+    const collectQueue = {
+      process: jest.fn((name: string, fn: any) => {
+        if (name === 'collect-single') handler = fn;
+      }),
+    };
+    jest.doMock('../jobs/queue-setup', () => ({
+      getCollectQueue: jest.fn(() => collectQueue),
+      getCalculateQueue: jest.fn(() => calculateQueue),
+    }));
+    jest.doMock('../collectors', () => ({
+      getCollector: jest.fn(() => ({
+        collectNavData: jest.fn().mockResolvedValue([]),
+      })),
+    }));
+    jest.doMock('../utils', () => ({
+      acquireLock: jest.fn().mockResolvedValue(true),
+      releaseLock: jest.fn().mockResolvedValue(undefined),
+    }));
+
+    configQuery = {
+      findOne: jest.fn().mockResolvedValue({
+        id: 1,
+        collectStatus: 'idle',
+        failCount: 0,
+        product: { id: 5, productCode: 'P001', saleCode: 'S001', company: { shortName: 'test' } },
+      }),
+      update: jest.fn(),
+    };
+    navQuery = { findOne: jest.fn().mockResolvedValue(null), create: jest.fn() };
+    mockStrapi = {
+      db: {
+        query: jest.fn((uid: string) => {
+          if (uid === 'plugin::zhao-wealth.wealth-collect-config') return configQuery;
+          if (uid === 'plugin::zhao-wealth.wealth-nav') return navQuery;
+          throw new Error(`unexpected uid: ${uid}`);
+        }),
+      },
+      log: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+    };
+  });
+
+  it('采集成功后只触发 recalculate-risk-metric-product，不再触发 recalculate-product', async () => {
+    require('../jobs/collect-job').registerCollectJobs(mockStrapi);
+    await handler({ data: { productId: 5 } });
+
+    expect(calculateQueue.add).toHaveBeenCalledTimes(1);
+    expect(calculateQueue.add).toHaveBeenCalledWith('recalculate-risk-metric-product', { productId: 5 });
+  });
+});

@@ -185,10 +185,9 @@ export function registerCollectJobs(strapi: any) {
 
       strapi.log.info(`[zhao-wealth] 产品${productId}采集成功，新增${insertCount}条，更新${updateCount}条（共${navData.length}条）`);
 
-      // 触发年化+风险指标补缺（老产品只补新日期，新产品自动全量回溯）
+      // 触发风险指标补缺（内部第一步即年化快照补缺，含新增日期）
       const calculateQueue = getCalculateQueue();
       if (calculateQueue) {
-        calculateQueue.add('recalculate-product', { productId });
         calculateQueue.add('recalculate-risk-metric-product', { productId });
       }
     } catch (error) {
