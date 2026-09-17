@@ -231,3 +231,88 @@ describe('nav-calculator.calculateSnapshot money-wealth 分支', () => {
     expect(snapshot.annual1d).toBe(0.02);
   });
 });
+
+describe('nav-calculator.calculateNavSnapshot 短周期锚定与钳制', () => {
+  let mockStrapi: any;
+  let mockQueries: Record<string, any>;
+  const PRODUCT_UID = 'plugin::zhao-wealth.wealth-product';
+  const NAV_UID = 'plugin::zhao-wealth.wealth-nav';
+
+  beforeEach(() => {
+    jest.resetModules();
+    mockQueries = {};
+    mockQueries[PRODUCT_UID] = { findOne: jest.fn() };
+    mockQueries[NAV_UID] = { findOne: jest.fn(), findMany: jest.fn() };
+    mockStrapi = {
+      db: { query: jest.fn((uid: string) => mockQueries[uid]) },
+      log: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+    };
+  });
+
+  function getService() {
+    return require('../services/nav-calculator').default({ strapi: mockStrapi });
+  }
+
+  it('长假场景：净值 9/30、10/9，快照日 10/9 → 1d 超容差 null，3d/7d 有值（gap=9）', async () => {
+    mockQueries[NAV_UID].findOne.mockResolvedValue({ id: 10, unitNav: 1.0510, navDate: '2026-10-09' });
+    mockQueries[NAV_UID].findMany.mockResolvedValue([
+      { navDate: '2026-10-09', unitNav: 1.0510 },
+      { navDate: '2026-09-30', unitNav: 1.0500 },
+    ]);
+    const service = getService();
+
+    const snapshot = await service.calculateNavSnapshot(1, new Date('2026-10-09T00:00:00Z'));
+
+    expect(snapshot.annual1d).toBeNull(); // gap=9 > 5
+    expect(snapshot.annual3d).toBeCloseTo(0.039361, 5); // (1.0510/1.0500)^(365/9)-1
+    expect(snapshot.annual7d).toBeCloseTo(0.039361, 5);
+    expect(snapshot.isEstimate).toBe(false); // gap7=9 >= 7
+  });
+
+  it('调休场景：净值 10/9、10/12，快照日 10/12 → 1d/3d 有值（gap=3），7d null（序列不足）', async () => {
+    mockQueries[NAV_UID].findOne.mockResolvedValue({ id: 10, unitNav: 1.0510, navDate: '2026-10-12' });
+    mockQueries[NAV_UID].findMany.mockResolvedValue([
+      { navDate: '2026-10-12', unitNav: 1.0510 },
+      { navDate: '2026-10-09', unitNav: 1.0500 },
+    ]);
+    const service = getService();
+
+    const snapshot = await service.calculateNavSnapshot(1, new Date('2026-10-12T00:00:00Z'));
+
+    expect(snapshot.annual1d).toBeCloseTo(0.122791, 5); // (1.0510/1.0500)^(365/3)-1
+    expect(snapshot.annual3d).toBeCloseTo(0.122791, 5);
+    expect(snapshot.annual7d).toBeNull(); // 无 navDate<=10/05 的净值
+    expect(snapshot.isEstimate).toBe(false); // gap7=null
+  });
+
+  it('稀疏场景：净值 9/1、9/21，快照日 9/21 → 1d/3d/7d 全 null（gap=20 超容差）', async () => {
+    mockQueries[NAV_UID].findOne.mockResolvedValue({ id: 10, unitNav: 1.05, navDate: '2026-09-21' });
+    mockQueries[NAV_UID].findMany.mockResolvedValue([
+      { navDate: '2026-09-21', unitNav: 1.05 },
+      { navDate: '2026-09-01', unitNav: 1.0 },
+    ]);
+    const service = getService();
+
+    const snapshot = await service.calculateNavSnapshot(1, new Date('2026-09-21T00:00:00Z'));
+
+    expect(snapshot.annual1d).toBeNull(); // 20 > 5
+    expect(snapshot.annual3d).toBeNull(); // 20 > 10
+    expect(snapshot.annual7d).toBeNull(); // 20 > 15
+  });
+
+  it('跳变场景：净值 6/19=1.0、6/20=1.01，快照日 6/20 → 年化钳制到 1，isEstimate=true', async () => {
+    mockQueries[NAV_UID].findOne.mockResolvedValue({ id: 10, unitNav: 1.01, navDate: '2026-06-20' });
+    mockQueries[NAV_UID].findMany.mockResolvedValue([
+      { navDate: '2026-06-20', unitNav: 1.01 },
+      { navDate: '2026-06-19', unitNav: 1.0 },
+    ]);
+    const service = getService();
+
+    const snapshot = await service.calculateNavSnapshot(1, new Date('2026-06-20T00:00:00Z'));
+
+    expect(snapshot.annual1d).toBe(1); // 1.01^365-1 ≈ 36.78 钳制到 +100%
+    expect(snapshot.annual3d).toBeNull(); // 无更早净值
+    expect(snapshot.annual7d).toBeNull();
+    expect(snapshot.isEstimate).toBe(true); // 钳制强制标记
+  });
+});

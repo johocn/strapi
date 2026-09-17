@@ -1,6 +1,6 @@
 ﻿'use strict';
 
-import { getPreviousTradingDay, getNaturalDays, calculateAnnualReturn, calculateMoneyFundAnnual, isEstimateValue, toDateStr, acquireLock, releaseLock } from '../utils';
+import { getPreviousTradingDay, getNaturalDays, calculateAnnualReturn, calculateMoneyFundAnnual, toDateStr, acquireLock, releaseLock } from '../utils';
 
 export default ({ strapi }) => ({
   /**
@@ -29,15 +29,18 @@ export default ({ strapi }) => ({
    * 净值复利年化快照计算（理财/普通基金）
    */
   async calculateNavSnapshot(productId: number, snapshotDate: Date) {
-    const periods = [
-      { field: 'annual1d', days: 1 },
-      { field: 'annual3d', days: 3 },
-      { field: 'annual7d', days: 7 },
+    const LONG_PERIODS = [
       { field: 'annual2w', days: 14 },
       { field: 'annual1m', days: 22 },
       { field: 'annual3m', days: 66 },
       { field: 'annual6m', days: 125 },
       { field: 'annual1y', days: 250 },
+    ];
+    // 短周期：自然日回溯 + 最近实际净值日锚定，容差防失真
+    const SHORT_PERIODS = [
+      { field: 'annual1d', days: 1, maxGap: 5 },
+      { field: 'annual3d', days: 3, maxGap: 10 },
+      { field: 'annual7d', days: 7, maxGap: 15 },
     ];
 
     const snapshot: any = {
@@ -55,7 +58,62 @@ export default ({ strapi }) => ({
       return null;
     }
 
-    for (const period of periods) {
+    // 一次查询历史净值序列（降序），供短周期锚定
+    const navSeries = await strapi.db.query('plugin::zhao-wealth.wealth-nav').findMany({
+      where: { product: productId, navDate: { $lte: toDateStr(snapshotDate) } },
+      select: ['navDate', 'unitNav'],
+      orderBy: { navDate: 'desc' },
+      limit: 30,
+    });
+    const snapshotDateStr = toDateStr(snapshotDate);
+
+    let isEstimate = false;
+    let gap7: number | null = null;
+
+    for (const period of SHORT_PERIODS) {
+      const targetDate = new Date(snapshotDate);
+      targetDate.setDate(targetDate.getDate() - period.days);
+      const targetStr = toDateStr(targetDate);
+
+      // 取 navDate <= targetDate 的最近一条实际净值（排除当日重复记录）
+      const prevNav = navSeries.find((n: any) => {
+        const nd = toDateStr(n.navDate);
+        return nd <= targetStr && nd !== snapshotDateStr;
+      });
+
+      if (!prevNav || !prevNav.unitNav || Number(prevNav.unitNav) <= 0) {
+        snapshot[period.field] = null;
+        continue;
+      }
+
+      const gap = getNaturalDays(prevNav.navDate, snapshotDate);
+      if (gap <= 0 || gap > period.maxGap) {
+        snapshot[period.field] = null;
+        continue;
+      }
+
+      let annualReturn = calculateAnnualReturn(prevNav.unitNav, currentNav.unitNav, gap);
+
+      // 异常年化钳制 ±100%，钳制时标记估算
+      if (annualReturn !== null) {
+        if (annualReturn > 1) {
+          annualReturn = 1;
+          isEstimate = true;
+        } else if (annualReturn < -1) {
+          annualReturn = -1;
+          isEstimate = true;
+        }
+      }
+
+      if (period.field === 'annual7d') {
+        gap7 = gap;
+      }
+
+      snapshot[period.field] = annualReturn;
+    }
+
+    // 长周期：保持原「N 个交易日回溯」逻辑
+    for (const period of LONG_PERIODS) {
       const prevDate = getPreviousTradingDay(snapshotDate, period.days);
 
       if (!prevDate) {
@@ -80,9 +138,11 @@ export default ({ strapi }) => ({
       snapshot[period.field] = (annualReturn !== null && !isNaN(Number(annualReturn))) ? annualReturn : null;
     }
 
-    // 判断是否为估算值
-    const minNaturalDays = getNaturalDays(getPreviousTradingDay(snapshotDate, 7), snapshotDate);
-    snapshot.isEstimate = isEstimateValue(minNaturalDays || 0);
+    // isEstimate：7d 实际间隔不足 7 天，或短周期发生钳制
+    if (gap7 !== null && gap7 < 7) {
+      isEstimate = true;
+    }
+    snapshot.isEstimate = isEstimate;
 
     return snapshot;
   },
