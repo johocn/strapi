@@ -284,6 +284,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   /** 管理端：创建服务人配置 */
   async function adminCreateContact(data: any) {
     if (!data.inviterId) return fail(400, '请选择服务人');
+    const existing = await strapi.db.query(CONTACT_UID).findOne({ where: { inviterId: Number(data.inviterId) } });
+    if (existing) return fail(400, '该服务人已配置，请直接编辑');
     const payload: any = {
       inviterId: Number(data.inviterId),
       nickname: data.nickname || null,
@@ -304,6 +306,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
 
   /** 管理端：更新服务人配置 */
   async function adminUpdateContact(id: number, data: any) {
+    if (data.inviterId !== undefined) {
+      const dup = await strapi.db.query(CONTACT_UID).findOne({ where: { inviterId: Number(data.inviterId) } });
+      if (dup && dup.id !== id) return fail(400, '该服务人已被其他配置占用');
+    }
     const payload: any = {};
     if (data.inviterId !== undefined) payload.inviterId = Number(data.inviterId);
     if (data.nickname !== undefined) payload.nickname = data.nickname;

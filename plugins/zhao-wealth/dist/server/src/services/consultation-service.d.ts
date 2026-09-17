@@ -76,6 +76,10 @@ declare const _default: ({ strapi }: {
     }>;
     adminUpdateContact: (id: number, data: any) => Promise<{
         ok: boolean;
+        code: number;
+        msg: string;
+    } | {
+        ok: boolean;
         record: any;
     }>;
     adminDeleteContact: (id: number) => Promise<{

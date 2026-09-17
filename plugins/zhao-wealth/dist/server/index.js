@@ -12531,6 +12531,8 @@ const consultationService = ({ strapi }) => {
   }
   async function adminCreateContact(data) {
     if (!data.inviterId) return fail(400, "请选择服务人");
+    const existing = await strapi.db.query(CONTACT_UID).findOne({ where: { inviterId: Number(data.inviterId) } });
+    if (existing) return fail(400, "该服务人已配置，请直接编辑");
     const payload = {
       inviterId: Number(data.inviterId),
       nickname: data.nickname || null,
@@ -12549,6 +12551,10 @@ const consultationService = ({ strapi }) => {
     return { ok: true, record };
   }
   async function adminUpdateContact(id, data) {
+    if (data.inviterId !== void 0) {
+      const dup = await strapi.db.query(CONTACT_UID).findOne({ where: { inviterId: Number(data.inviterId) } });
+      if (dup && dup.id !== id) return fail(400, "该服务人已被其他配置占用");
+    }
     const payload = {};
     if (data.inviterId !== void 0) payload.inviterId = Number(data.inviterId);
     if (data.nickname !== void 0) payload.nickname = data.nickname;

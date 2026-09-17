@@ -204,9 +204,23 @@ describe('consultation-service 服务人分级匹配', () => {
 
   it('管理端创建服务人配置：写入 inviterId 唯一记录', async () => {
     const mockCreate = jest.fn().mockResolvedValue({ id: 1, inviterId: 9 });
-    mockContactQuery.mockReturnValue({ create: mockCreate });
+    mockContactQuery.mockReturnValue({ findOne: jest.fn().mockResolvedValue(null), create: mockCreate });
     const r = await service.adminCreateContact({ inviterId: 9, nickname: '王经理' });
     expect(r.ok).toBe(true);
     expect(mockCreate.mock.calls[0][0].data.inviterId).toBe(9);
+  });
+
+  it('管理端创建服务人配置：inviterId 已存在返回 400', async () => {
+    mockContactQuery.mockReturnValue({ findOne: jest.fn().mockResolvedValue({ id: 1, inviterId: 9 }) });
+    const r = await service.adminCreateContact({ inviterId: 9, nickname: '王经理' });
+    expect(r.ok).toBe(false);
+    expect(r.code).toBe(400);
+  });
+
+  it('管理端更新服务人配置：inviterId 被其他记录占用返回 400', async () => {
+    mockContactQuery.mockReturnValue({ findOne: jest.fn().mockResolvedValue({ id: 2, inviterId: 9 }) });
+    const r = await service.adminUpdateContact(1, { inviterId: 9 });
+    expect(r.ok).toBe(false);
+    expect(r.code).toBe(400);
   });
 });
