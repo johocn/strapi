@@ -101,3 +101,112 @@ describe('consultation-service 三渠道', () => {
     expect(cfg.personalWechatQr).toBeNull();
   });
 });
+
+describe('consultation-service 服务人分级匹配', () => {
+  let service: any;
+  const mockContactQuery = jest.fn();
+  const mockCfgFindOne = jest.fn();
+  const mockSsoFindById = jest.fn();
+
+  const mockQuery2 = jest.fn().mockImplementation((name: string) => {
+    if (name === 'plugin::zhao-wealth.wealth-consultation') {
+      return { create: jest.fn(), update: jest.fn(), findMany: jest.fn(), count: jest.fn() };
+    }
+    if (name === 'plugin::zhao-wealth.wealth-consult-contact') {
+      return mockContactQuery();
+    }
+    if (name === 'plugin::zhao-wealth.wealth-consult-config') {
+      return { findOne: mockCfgFindOne };
+    }
+    return { create: jest.fn(), update: jest.fn(), findMany: jest.fn(), count: jest.fn(), findOne: jest.fn() };
+  });
+
+  beforeEach(() => {
+    jest.resetModules();
+    jest.clearAllMocks();
+    const factory = require('../services/consultation-service').default;
+    service = factory({
+      strapi: {
+        db: { query: mockQuery2 },
+        log: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+        plugin: jest.fn().mockReturnValue({ service: jest.fn().mockReturnValue({ findById: mockSsoFindById }) }),
+      },
+    });
+  });
+
+  it('推荐人是服务人：返回该服务人配置', async () => {
+    mockContactQuery.mockReturnValue({
+      findOne: jest.fn().mockResolvedValue({
+        id: 1, inviterId: 9, nickname: '王经理', branchName: '市南支行',
+        branchPhones: ['0532-88888888'], latitude: 36.07, longitude: 120.38, city: '青岛',
+        enterpriseWechatQr: { url: '/uploads/ent.png' }, enterpriseWechatId: 'qd-wealth',
+        personalWechatQr: null, personalWechatId: null,
+      }),
+    });
+    const r = await service.resolveContact({ invitedBy: 9 });
+    expect(r.branchName).toBe('市南支行');
+    expect(r.nickname).toBe('王经理');
+    expect(r.enterpriseWechatId).toBe('qd-wealth');
+  });
+
+  it('无推荐人：城市命中返回城市服务人', async () => {
+    mockContactQuery.mockReturnValue({
+      findOne: jest.fn().mockResolvedValue(null),
+      findMany: jest.fn().mockResolvedValue([{
+        id: 2, inviterId: 10, nickname: '李顾问', branchName: '李沧支行',
+        branchPhones: [], latitude: 36.16, longitude: 120.43, city: '青岛',
+        enterpriseWechatQr: null, enterpriseWechatId: null,
+        personalWechatQr: { url: '/uploads/personal.png' }, personalWechatId: 'li-1888',
+      }]),
+    });
+    const r = await service.resolveContact({ invitedBy: null, city: '青岛' });
+    expect(r.nickname).toBe('李顾问');
+    expect(r.personalWechatId).toBe('li-1888');
+  });
+
+  it('城市多服务人：有经纬度按距离最近', async () => {
+    mockContactQuery.mockReturnValue({
+      findOne: jest.fn().mockResolvedValue(null),
+      findMany: jest.fn().mockResolvedValue([
+        { id: 3, inviterId: 11, nickname: '近点', city: '青岛', latitude: 36.06, longitude: 120.37, branchPhones: [] },
+        { id: 4, inviterId: 12, nickname: '远点', city: '青岛', latitude: 36.16, longitude: 120.50, branchPhones: [] },
+      ]),
+    });
+    const r = await service.resolveContact({ invitedBy: null, city: '青岛', latitude: 36.065, longitude: 120.375 });
+    expect(r.nickname).toBe('近点');
+  });
+
+  it('城市未命中：落全局配置兜底', async () => {
+    mockContactQuery.mockReturnValue({
+      findOne: jest.fn().mockResolvedValue(null),
+      findMany: jest.fn().mockResolvedValue([]),
+    });
+    mockCfgFindOne.mockResolvedValue({
+      enterpriseWechatQr: { url: '/uploads/global.png' },
+      personalWechatQr: null,
+      enterpriseWechatId: 'global-wealth',
+      personalWechatId: null,
+    });
+    const r = await service.resolveContact({ invitedBy: null, city: '不存在市' });
+    expect(r.enterpriseWechatId).toBe('global-wealth');
+  });
+
+  it('全局也无配置：空字段占位', async () => {
+    mockContactQuery.mockReturnValue({
+      findOne: jest.fn().mockResolvedValue(null),
+      findMany: jest.fn().mockResolvedValue([]),
+    });
+    mockCfgFindOne.mockResolvedValue(null);
+    const r = await service.resolveContact({ invitedBy: null, city: '不存在市' });
+    expect(r.enterpriseWechatId).toBeNull();
+    expect(r.personalWechatId).toBeNull();
+  });
+
+  it('管理端创建服务人配置：写入 inviterId 唯一记录', async () => {
+    const mockCreate = jest.fn().mockResolvedValue({ id: 1, inviterId: 9 });
+    mockContactQuery.mockReturnValue({ create: mockCreate });
+    const r = await service.adminCreateContact({ inviterId: 9, nickname: '王经理' });
+    expect(r.ok).toBe(true);
+    expect(mockCreate.mock.calls[0][0].data.inviterId).toBe(9);
+  });
+});

@@ -4,6 +4,70 @@ import type { Core } from '@strapi/strapi';
 
 const PHONE_RE = /^1\d{10}$/;
 
+const CONTACT_UID = 'plugin::zhao-wealth.wealth-consult-contact';
+const CONFIG_UID = 'plugin::zhao-wealth.wealth-consult-config';
+
+/** 内存缓存：inviter:{id} / city:{name} / global。服务人配置低频变更，写后清空即可 */
+const contactCache = new Map<string, any>();
+
+function cacheGet<T = any>(key: string): T | undefined {
+  return contactCache.get(key) as T | undefined;
+}
+function cacheSet(key: string, value: any) {
+  contactCache.set(key, value);
+}
+function cacheClear() {
+  contactCache.clear();
+}
+
+/** 经纬度距离（米，Haversine） */
+function haversineMeters(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371000;
+  const rad = (d: number) => (d * Math.PI) / 180;
+  const dLat = rad(lat2 - lat1);
+  const dLng = rad(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(rad(lat1)) * Math.cos(rad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+/** 服务人记录 → 对外响应结构（媒体字段取 url） */
+function shapeContact(c: any) {
+  if (!c) return null;
+  let phones: string[] = [];
+  if (Array.isArray(c.branchPhones)) phones = c.branchPhones;
+  else if (c.branchPhones) {
+    try { phones = JSON.parse(c.branchPhones); } catch { phones = []; }
+  }
+  return {
+    nickname: c.nickname || null,
+    branchName: c.branchName || null,
+    branchPhones: phones,
+    enterpriseWechatQr: c.enterpriseWechatQr?.url || null,
+    personalWechatQr: c.personalWechatQr?.url || null,
+    enterpriseWechatId: c.enterpriseWechatId || null,
+    personalWechatId: c.personalWechatId || null,
+  };
+}
+
+/** 同城多服务人就近选取：有客户经纬度按距离最近；无则 id 升序取第一 */
+function pickNearest(list: any[], latitude?: number | null, longitude?: number | null) {
+  if (list.length <= 1) return list[0];
+  if (latitude == null || longitude == null) return list[0];
+  let best = list[0];
+  let bestDist = Infinity;
+  for (const c of list) {
+    if (c.latitude == null || c.longitude == null) continue;
+    const d = haversineMeters(latitude, longitude, Number(c.latitude), Number(c.longitude));
+    if (d < bestDist) {
+      bestDist = d;
+      best = c;
+    }
+  }
+  return best;
+}
+
 export default ({ strapi }: { strapi: Core.Strapi }) => {
   const query = () => strapi.db.query('plugin::zhao-wealth.wealth-consultation');
 
@@ -131,21 +195,144 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     return { ok: true, record };
   }
 
+  /** 按邀请人（服务人）查询配置，缓存键 inviter:{id} */
+  async function findContactByInviter(inviterId: number) {
+    const key = `inviter:${inviterId}`;
+    const hit = cacheGet(key);
+    if (hit !== undefined) return hit;
+    const contact = await strapi.db.query(CONTACT_UID).findOne({ where: { inviterId } });
+    cacheSet(key, contact || null);
+    return contact || null;
+  }
+
+  /** 按城市查询服务人列表（id 升序），缓存键 city:{name} */
+  async function findContactsByCity(city: string) {
+    const key = `city:${city}`;
+    const hit = cacheGet(key);
+    if (hit !== undefined) return hit;
+    const list = await strapi.db.query(CONTACT_UID).findMany({
+      where: { city },
+      orderBy: { id: 'asc' },
+    });
+    cacheSet(key, list);
+    return list;
+  }
+
+  /** 全局配置兜底（企业微信无图仅返回个人微信），缓存键 global */
+  async function getGlobalConfig() {
+    const key = 'global';
+    const hit = cacheGet(key);
+    if (hit !== undefined) return hit;
+    const cfg = await strapi.db.query(CONFIG_UID).findOne({});
+    const shaped = {
+      nickname: null,
+      branchName: null,
+      branchPhones: [],
+      enterpriseWechatQr: cfg?.enterpriseWechatQr?.url || null,
+      personalWechatQr: cfg?.personalWechatQr?.url || null,
+      enterpriseWechatId: cfg?.enterpriseWechatId || null,
+      personalWechatId: cfg?.personalWechatId || null,
+    };
+    cacheSet(key, shaped);
+    return shaped;
+  }
+
+  /**
+   * 服务人联系方式分级匹配：
+   * 1. 有推荐人且该推荐人是服务人 → 返回服务人配置
+   * 2. 无推荐人/推荐人非服务人 → 城市就近（同城多服务人按经纬度最近）
+   * 3. 城市未命中 → 全局配置兜底（企业微信无图仅个人微信）
+   * 4. 全局也无 → 空字段占位
+   */
+  async function resolveContact(params: {
+    invitedBy?: number | null;
+    city?: string | null;
+    latitude?: number | null;
+    longitude?: number | null;
+  }) {
+    if (params.invitedBy) {
+      const inviterContact = await findContactByInviter(params.invitedBy);
+      if (inviterContact) return shapeContact(inviterContact);
+    }
+    if (params.city) {
+      const list = await findContactsByCity(params.city);
+      if (list.length > 0) {
+        const pick = pickNearest(list, params.latitude, params.longitude);
+        return shapeContact(pick);
+      }
+    }
+    return getGlobalConfig();
+  }
+
+  /** 管理端：服务人配置列表（分页） */
+  async function adminListContacts(params: { page?: number; pageSize?: number; city?: string }) {
+    const page = Number(params.page) || 1;
+    const pageSize = Math.min(Number(params.pageSize) || 20, 100);
+    const offset = (page - 1) * pageSize;
+    const where: any = {};
+    if (params.city) where.city = params.city;
+
+    const [records, total] = await Promise.all([
+      strapi.db.query(CONTACT_UID).findMany({
+        where, orderBy: { id: 'desc' }, limit: pageSize, offset,
+      }),
+      strapi.db.query(CONTACT_UID).count({ where }),
+    ]);
+    return { records, total, page, pageSize };
+  }
+
+  /** 管理端：创建服务人配置 */
+  async function adminCreateContact(data: any) {
+    if (!data.inviterId) return fail(400, '请选择服务人');
+    const payload: any = {
+      inviterId: Number(data.inviterId),
+      nickname: data.nickname || null,
+      branchName: data.branchName || null,
+      branchPhones: data.branchPhones ?? null,
+      latitude: data.latitude != null ? Number(data.latitude) : null,
+      longitude: data.longitude != null ? Number(data.longitude) : null,
+      city: data.city || null,
+    };
+    if (data.enterpriseWechatQr !== undefined) payload.enterpriseWechatQr = data.enterpriseWechatQr;
+    if (data.enterpriseWechatId !== undefined) payload.enterpriseWechatId = data.enterpriseWechatId;
+    if (data.personalWechatQr !== undefined) payload.personalWechatQr = data.personalWechatQr;
+    if (data.personalWechatId !== undefined) payload.personalWechatId = data.personalWechatId;
+    const record = await strapi.db.query(CONTACT_UID).create({ data: payload });
+    cacheClear();
+    return { ok: true, record };
+  }
+
+  /** 管理端：更新服务人配置 */
+  async function adminUpdateContact(id: number, data: any) {
+    const payload: any = {};
+    if (data.inviterId !== undefined) payload.inviterId = Number(data.inviterId);
+    if (data.nickname !== undefined) payload.nickname = data.nickname;
+    if (data.branchName !== undefined) payload.branchName = data.branchName;
+    if (data.branchPhones !== undefined) payload.branchPhones = data.branchPhones;
+    if (data.latitude !== undefined) payload.latitude = data.latitude != null ? Number(data.latitude) : null;
+    if (data.longitude !== undefined) payload.longitude = data.longitude != null ? Number(data.longitude) : null;
+    if (data.city !== undefined) payload.city = data.city;
+    if (data.enterpriseWechatQr !== undefined) payload.enterpriseWechatQr = data.enterpriseWechatQr;
+    if (data.enterpriseWechatId !== undefined) payload.enterpriseWechatId = data.enterpriseWechatId;
+    if (data.personalWechatQr !== undefined) payload.personalWechatQr = data.personalWechatQr;
+    if (data.personalWechatId !== undefined) payload.personalWechatId = data.personalWechatId;
+    const record = await strapi.db.query(CONTACT_UID).update({ where: { id }, data: payload });
+    cacheClear();
+    return { ok: true, record };
+  }
+
+  /** 管理端：删除服务人配置 */
+  async function adminDeleteContact(id: number) {
+    await strapi.db.query(CONTACT_UID).delete({ where: { id } });
+    cacheClear();
+    return { ok: true };
+  }
+
   /**
    * 获取微信咨询配置（公开，C 端展示二维码）
    */
   async function getConsultConfig() {
-    const cfgQuery = strapi.db.query('plugin::zhao-wealth.wealth-consult-config');
-    const cfg = await cfgQuery.findOne({});
-    if (!cfg) {
-      return { enterpriseWechatQr: null, personalWechatQr: null, enterpriseWechatId: null, personalWechatId: null };
-    }
-    return {
-      enterpriseWechatQr: cfg.enterpriseWechatQr?.url || null,
-      personalWechatQr: cfg.personalWechatQr?.url || null,
-      enterpriseWechatId: cfg.enterpriseWechatId || null,
-      personalWechatId: cfg.personalWechatId || null,
-    };
+    return getGlobalConfig();
   }
 
   /**
@@ -168,8 +355,22 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     const record = existing
       ? await cfgQuery.update({ where: { id: existing.id }, data: payload })
       : await cfgQuery.create({ data: payload });
+    cacheClear();
     return record;
   }
 
-  return { createBooking, getBookings, cancelBooking, adminListBookings, replyBooking, getConsultConfig, adminUpdateConsultConfig };
+  return {
+    createBooking,
+    getBookings,
+    cancelBooking,
+    adminListBookings,
+    replyBooking,
+    getConsultConfig,
+    adminUpdateConsultConfig,
+    resolveContact,
+    adminListContacts,
+    adminCreateContact,
+    adminUpdateContact,
+    adminDeleteContact,
+  };
 };
