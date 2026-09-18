@@ -29,7 +29,7 @@ export default ({ strapi }) => ({
       const result: Record<string, any> = {};
 
       for (const period of periods) {
-        const metricNames = ['volatility', 'maxDrawdown', 'sharpe', 'rankPercentile', 'incomeStability'];
+        const metricNames = ['volatility', 'maxDrawdown', 'sharpe', 'rankPercentile', 'incomeStability', 'peerTotal'];
         const periodData: any = {};
 
         for (const metricName of metricNames) {
