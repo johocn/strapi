@@ -18,7 +18,10 @@ declare const _default: ({ strapi }: {
      * 按 productType 分组，按同期 annualReturn 降序排名
      * rankPercentile = (rank / total) × 100
      */
-    calculateRankPercentile(productId: number, snapshotDate: Date, period: string): Promise<number | null>;
+    calculateRankPercentile(productId: number, snapshotDate: Date, period: string): Promise<{
+        rankPercentile: number | null;
+        peerTotal: number | null;
+    }>;
     /**
      * 计算单个产品的所有 4 周期 × 4 指标并写入数据库
      */

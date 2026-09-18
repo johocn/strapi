@@ -9363,7 +9363,7 @@ const riskMetric = ({ strapi }) => ({
       }
       const result = {};
       for (const period of periods) {
-        const metricNames = ["volatility", "maxDrawdown", "sharpe", "rankPercentile", "incomeStability"];
+        const metricNames = ["volatility", "maxDrawdown", "sharpe", "rankPercentile", "incomeStability", "peerTotal"];
         const periodData = {};
         for (const metricName of metricNames) {
           const records = await strapi.db.query("plugin::zhao-wealth.wealth-risk-metric").findMany({
@@ -11438,7 +11438,7 @@ const riskMetricService = ({ strapi }) => ({
     const product2 = await strapi.db.query("plugin::zhao-wealth.wealth-product").findOne({
       where: { id: productId }
     });
-    if (!product2) return null;
+    if (!product2) return { rankPercentile: null, peerTotal: null };
     const snapshots = await strapi.db.query("plugin::zhao-wealth.wealth-annual-snapshot").findMany({
       where: {
         snapshotDate: toDateStr(snapshotDate),
@@ -11447,11 +11447,11 @@ const riskMetricService = ({ strapi }) => ({
       populate: ["product"]
     });
     const valid = snapshots.filter((s2) => s2[annualField] !== null && s2[annualField] !== void 0);
-    if (valid.length < 2) return null;
+    if (valid.length < 5) return { rankPercentile: null, peerTotal: null };
     const sorted = valid.sort((a, b) => Number(b[annualField]) - Number(a[annualField]));
     const rank = sorted.findIndex((s2) => s2.product.id === productId) + 1;
-    if (rank === 0) return null;
-    return rank / valid.length * 100;
+    if (rank === 0) return { rankPercentile: null, peerTotal: null };
+    return { rankPercentile: rank / valid.length * 100, peerTotal: valid.length };
   },
   /**
    * 计算单个产品的所有 4 周期 × 4 指标并写入数据库
@@ -11483,17 +11483,19 @@ const riskMetricService = ({ strapi }) => ({
     }
     for (const period of periods) {
       const metrics = await this.calculateMetricsForPeriod(productId, snapshotDate, period);
-      const rankPercentile = await this.calculateRankPercentile(productId, snapshotDate, period);
+      const { rankPercentile, peerTotal } = await this.calculateRankPercentile(productId, snapshotDate, period);
       const metricEntries = isMoneyType ? [
         { metricName: "volatility", metricValue: toFinite(metrics.volatility) },
         { metricName: "maxDrawdown", metricValue: null },
         { metricName: "rankPercentile", metricValue: toFinite(rankPercentile) },
-        { metricName: "incomeStability", metricValue: toFinite(metrics.incomeStability) }
+        { metricName: "incomeStability", metricValue: toFinite(metrics.incomeStability) },
+        { metricName: "peerTotal", metricValue: toFinite(peerTotal) }
       ] : [
         { metricName: "volatility", metricValue: toFinite(metrics.volatility) },
         { metricName: "maxDrawdown", metricValue: toFinite(metrics.maxDrawdown) },
         { metricName: "sharpe", metricValue: toFinite(metrics.sharpe) },
-        { metricName: "rankPercentile", metricValue: toFinite(rankPercentile) }
+        { metricName: "rankPercentile", metricValue: toFinite(rankPercentile) },
+        { metricName: "peerTotal", metricValue: toFinite(peerTotal) }
       ];
       for (const entry of metricEntries) {
         await strapi.db.query("plugin::zhao-wealth.wealth-risk-metric").delete({
@@ -11683,7 +11685,7 @@ const riskMetricService = ({ strapi }) => ({
         where: { product: product2.id },
         select: ["snapshotDate"]
       });
-      const expectedCount = pluginConfig.riskMetricPeriods.length * 4;
+      const expectedCount = pluginConfig.riskMetricPeriods.length * 5;
       const dateCounts = /* @__PURE__ */ new Map();
       for (const m of existingMetrics) {
         const ds = toDateStr(m.snapshotDate);
@@ -12023,7 +12025,8 @@ const scoringService = ({ strapi }) => {
       where: { product: productId },
       orderBy: { snapshotDate: "desc" }
     });
-    const annualReturn = snapshot ? Number(snapshot[annualField]) : null;
+    const annualRaw = snapshot ? snapshot[annualField] : null;
+    const annualReturn = annualRaw === null || annualRaw === void 0 ? null : Number(annualRaw);
     const metricQuery = strapi.db.query("plugin::zhao-wealth.wealth-risk-metric");
     const metricMap = { volatility: null, maxDrawdown: null, rankPercentile: null };
     for (const name of Object.keys(metricMap)) {
@@ -12057,6 +12060,7 @@ const scoringService = ({ strapi }) => {
     const weightProfile = getWeightProfile(product2.productType, product2.operationMode);
     const weights = getWeights(weightProfile);
     const metrics = await getProductMetrics(productId, period);
+    if (metrics.annualReturn === null) return null;
     const returnScore = absoluteReturnScore(metrics.annualReturn, product2.productType);
     const volatilityScore = absoluteVolatilityScore(metrics.volatility, product2.productType);
     const drawdownScore = absoluteDrawdownScore(metrics.maxDrawdown, product2.productType);
@@ -12078,12 +12082,12 @@ const scoringService = ({ strapi }) => {
     };
   }
   async function calculateAndSaveScoreSnapshot(productId, snapshotDate, period) {
-    const score = await calculateScore(productId, period);
-    if (!score) return;
     const query = strapi.db.query("plugin::zhao-wealth.wealth-score-snapshot");
     await query.deleteMany({
       where: { product: productId, snapshotDate, period }
     });
+    const score = await calculateScore(productId, period);
+    if (!score) return;
     await query.create({
       data: {
         product: productId,
@@ -12121,7 +12125,7 @@ const scoringService = ({ strapi }) => {
       orderBy: { recommendWeight: "desc" },
       populate: ["company"]
     });
-    const total = await productQuery.count({ where });
+    await productQuery.count({ where });
     const productIds = products.map((p) => p.id);
     const scoreQuery = strapi.db.query("plugin::zhao-wealth.wealth-score-snapshot");
     const allScores = await scoreQuery.findMany({
@@ -12130,7 +12134,8 @@ const scoringService = ({ strapi }) => {
         period
       },
       orderBy: { snapshotDate: "desc" },
-      limit: productIds.length * 2
+      limit: productIds.length * 2,
+      populate: ["product"]
     });
     const scoreMap = {};
     for (const s2 of allScores) {
@@ -12147,32 +12152,39 @@ const scoringService = ({ strapi }) => {
         product: { id: { $in: productIds } }
       },
       orderBy: { snapshotDate: "desc" },
-      limit: productIds.length * 2
+      limit: productIds.length * 30,
+      populate: ["product"]
     });
     const annualMap = {};
+    const annual7dMap = {};
     for (const a of allAnnuals) {
       const pid = a.product?.id || a.product;
       if (!annualMap[pid]) {
         annualMap[pid] = a;
       }
+      if (pid && a.annual7d != null && !isNaN(Number(a.annual7d)) && !annual7dMap[pid]) {
+        annual7dMap[pid] = a;
+      }
     }
     const records = await Promise.all(products.map(async (product2) => {
       const annual2 = annualMap[product2.id];
+      const annual7d = annual7dMap[product2.id];
       const annualValue = annual2 ? Number(annual2[annualField]) : null;
       return {
         ...product2,
         score: scoreMap[product2.id] || await calculateScore(product2.id, period),
         [annualKey]: annualValue !== null && !isNaN(annualValue) ? annualValue : null,
-        latestAnnual7d: annual2?.annual7d != null && !isNaN(Number(annual2.annual7d)) ? Number(annual2.annual7d) : null,
+        latestAnnual7d: annual7d?.annual7d != null && !isNaN(Number(annual7d.annual7d)) ? Number(annual7d.annual7d) : null,
         annual1m: annualValue !== null && !isNaN(annualValue) ? annualValue : null
       };
     }));
-    records.sort((a, b) => {
-      const sa = a.score?.compositeScore ?? 0;
-      const sb = b.score?.compositeScore ?? 0;
+    const validRecords = records.filter((r) => r.score);
+    validRecords.sort((a, b) => {
+      const sa = Number(a.score?.compositeScore) || 0;
+      const sb = Number(b.score?.compositeScore) || 0;
       return sb - sa;
     });
-    return { records: records.slice(offset2, offset2 + limit), total, page, pageSize: limit };
+    return { records: validRecords.slice(offset2, offset2 + limit), total: validRecords.length, page, pageSize: limit };
   }
   async function getScoreBreakdown(productId, period) {
     const scoreQuery = strapi.db.query("plugin::zhao-wealth.wealth-score-snapshot");

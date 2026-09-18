@@ -21,7 +21,9 @@
 | basic | `plugins/zhao-wealth/server/src/controllers/risk-metric.ts` | C 端透传 peerTotal |
 | basic | `plugins/zhao-wealth/server/src/__tests__/scoring-service.test.ts` | Task1/2 测试 |
 | basic | `plugins/zhao-wealth/server/src/__tests__/risk-metric-service.test.ts` | Task3/4 测试（含既有用例更新） |
+| strapi-wealth | `components/annual-card.vue` | 首页产品卡片移除"同类前 X%"tag |
 | strapi-wealth | `pages/detail/index.vue` | 评分区"数据积累中"、移除同类排名 |
+| strapi-wealth | `pages/compare/index.vue` | 对比表移除"同类排名"行 |
 
 **测试运行命令**（插件目录）：
 ```
@@ -618,14 +620,35 @@ git commit -m "feat(wealth-web): 评分数据不足显示数据积累中提示"
 
 ---
 
-### Task 7: 前端详情页移除同类排名
+### Task 7: 前端隐藏同类排行（首页卡片 / 详情页 / 对比页）
 
 **Files:**
-- Modify: `e:\code\strapi-wealth\pages\detail\index.vue:124-140`（货币型 metric-grid）、`:154`（metric-note）、`:668-672`（formatRankPercentile）
+- Modify: `e:\code\strapi-wealth\components\annual-card.vue:11-13`（首页卡片 rank tag）
+- Modify: `e:\code\strapi-wealth\pages\detail\index.vue:124-140`（货币型 metric-grid）、`:154`（metric-note）、`:667-672`（formatRankPercentile）
+- Modify: `e:\code\strapi-wealth\pages\compare\index.vue:304`（rows 定义）、`:338`（cellText）
 
-- [ ] **Step 1: 实现模板**
+- [ ] **Step 1: 首页产品卡片移除"同类前 X%"tag**
 
-**1a.** 货币型 metric-grid（124-140 行）移除"同类排名"cell，并将剩余两个 cell 的 `third` class 去掉（恢复默认 50% 布局）：
+在 `components/annual-card.vue` 模板中删除 rank tag 行：
+
+```vue
+    <view class="card-tags">
+      <text class="tag type">{{ getTypeLabel(product.productType) }}</text>
+      <text class="tag company" v-if="product.company?.name">{{ product.company.name }}</text>
+    </view>
+```
+
+同时在 `<style>` 中删除不再使用的 `.tag.rank` 规则：
+
+```css
+.tag.rank { background: #fff7e6; color: #fa8c16; }
+```
+
+> 说明：后端 `peerRankPercentile` 字段照常返回，数据继续计算，仅前端不展示（后续展示方式待定）。
+
+- [ ] **Step 2: 详情页移除"同类排名"cell 与文案**
+
+**2a.** 货币型 metric-grid（124-140 行）移除"同类排名"cell，并将剩余两个 cell 的 `third` class 去掉（恢复默认 50% 布局）：
 
 ```vue
         <view v-if="isCashManagement" class="metric-grid">
@@ -642,13 +665,13 @@ git commit -m "feat(wealth-web): 评分数据不足显示数据积累中提示"
         </view>
 ```
 
-**1b.** 非货币型 metric-note（154 行）去掉"同类样本过少不提供排名"：
+**2b.** 非货币型 metric-note（154 行）去掉"同类样本过少不提供排名"：
 
 ```vue
         <view v-else class="metric-note">波动率、最大回撤基于近{{ getPeriodLabel(riskMetricPeriod) }}净值数据计算</view>
 ```
 
-- [ ] **Step 2: 移除失效代码**
+- [ ] **Step 3: 移除失效代码（详情页）**
 
 删除 `formatRankPercentile` 函数（约 667-672 行）：
 
@@ -669,16 +692,32 @@ function formatRankPercentile(v: number | null | undefined): string {
 }
 ```
 
-- [ ] **Step 3: 构建验证**
+- [ ] **Step 4: 对比页移除"同类排名"行**
+
+在 `pages/compare/index.vue` 中删除 rows 定义中的同类排名行（304 行）：
+
+```ts
+  { key: 'peerRankPercentile', label: '同类排名', direction: 'low' },
+```
+
+并删除 `cellText` 中对应的格式化分支（338 行）：
+
+```ts
+    if (row.key === 'peerRankPercentile') return '前 ' + formatPercent(v)
+```
+
+（`fieldValue` 中的 `case 'peerRankPercentile'` 分支一并删除，避免残留死代码。）
+
+- [ ] **Step 5: 构建验证**
 
 Run: `cd e:\code\strapi-wealth; npm run build:h5`
-Expected: 构建成功；检查产物中不再包含 `formatRankPercentile` 与"同类排名"字符串
+Expected: 构建成功；检查产物中不再包含 `formatRankPercentile`、"同类前"、"同类排名"、"peerRankPercentile` 字符串
 
-- [ ] **Step 4: 提交**
+- [ ] **Step 6: 提交**
 
 ```bash
-git add pages/detail/index.vue
-git commit -m "feat(wealth-web): 隐藏同类排名展示（后端数据照常计算）"
+git add components/annual-card.vue pages/detail/index.vue pages/compare/index.vue
+git commit -m "feat(wealth-web): 首页卡片/详情页/对比页隐藏同类排行（后端数据照常计算）"
 ```
 
 ---
@@ -753,7 +792,7 @@ npm run build:h5
 **Spec 覆盖检查：**
 - 修复1（评分数据不足→null）→ Task 1（calculateScore）+ Task 2 过滤/total/快照清理（3e）+ Task 6（前端"数据积累中"）
 - 修复2（populate + 7d 回退）→ Task 2 ✓
-- 修复3（阈值5 + peerTotal + 隐藏展示）→ Task 3/4/5（后端）、Task 7（前端隐藏）✓
+- 修复3（阈值5 + peerTotal + 隐藏展示）→ Task 3/4/5（后端）、Task 7（前端三处隐藏：首页卡片 annual-card.vue / 详情页 / 对比页）✓
 - 数据清理/重算 → Task 8 ✓
 - 部署 → Task 8 ✓
 
