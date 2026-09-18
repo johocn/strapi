@@ -38,9 +38,9 @@ describe('risk-metric-service.recalculateMissing', () => {
   it('单产品：先年化补缺，再只补缺「有净值但无指标」的日期', async () => {
     mockQueries[PRODUCT_UID].findMany.mockResolvedValue([{ id: 1 }]);
     mockQueries[NAV_UID].findMany.mockResolvedValue([{ navDate: d(1) }, { navDate: d(2) }]);
-    // d(1) 完整 4 条，d(2) 无记录 → 只补 d(2)
+    // d(1) 完整 5 条，d(2) 无记录 → 只补 d(2)
     mockQueries[METRIC_UID].findMany.mockResolvedValue([
-      { snapshotDate: d(1) }, { snapshotDate: d(1) }, { snapshotDate: d(1) }, { snapshotDate: d(1) },
+      { snapshotDate: d(1) }, { snapshotDate: d(1) }, { snapshotDate: d(1) }, { snapshotDate: d(1) }, { snapshotDate: d(1) },
     ]);
 
     const service = getService();
@@ -56,9 +56,9 @@ describe('risk-metric-service.recalculateMissing', () => {
   it('无缺失日期时零计算（幂等）', async () => {
     mockQueries[PRODUCT_UID].findMany.mockResolvedValue([{ id: 1 }]);
     mockQueries[NAV_UID].findMany.mockResolvedValue([{ navDate: d(1) }]);
-    // d(1) 完整 4 条
+    // d(1) 完整 5 条
     mockQueries[METRIC_UID].findMany.mockResolvedValue([
-      { snapshotDate: d(1) }, { snapshotDate: d(1) }, { snapshotDate: d(1) }, { snapshotDate: d(1) },
+      { snapshotDate: d(1) }, { snapshotDate: d(1) }, { snapshotDate: d(1) }, { snapshotDate: d(1) }, { snapshotDate: d(1) },
     ]);
 
     const service = getService();
@@ -115,7 +115,7 @@ describe('risk-metric-service.recalculateMissing', () => {
       sharpe: NaN,
       annualReturn: null,
     });
-    service.calculateRankPercentile = jest.fn().mockResolvedValue(null);
+    service.calculateRankPercentile = jest.fn().mockResolvedValue({ rankPercentile: null, peerTotal: null });
 
     mockQueries[PRODUCT_UID].findOne.mockResolvedValue({ id: 1, productType: 'bank-wealth' });
     mockQueries[NAV_UID].findOne.mockResolvedValue({ id: 9, unitNav: 1.0 });
@@ -123,16 +123,17 @@ describe('risk-metric-service.recalculateMissing', () => {
     await service.calculateAndSaveMetrics(1, d(2));
 
     const created = createMock.mock.calls.map((c: any) => c[0].data.metricValue);
-    expect(created).toEqual([null, -0.01, null, null]);
+    expect(created).toEqual([null, -0.01, null, null, null]);
   });
 
   it('recalculateMissing：日期记录数不足（并发残缺）时视为缺失并重算', async () => {
     mockQueries[PRODUCT_UID].findMany.mockResolvedValue([{ id: 1 }]);
     mockQueries[NAV_UID].findMany.mockResolvedValue([{ navDate: d(1) }, { navDate: d(2) }]);
-    // 日期1 只有 2 条记录（应为 4 条），日期2 完整 4 条
+    // 日期1 只有 2 条记录（应为 5 条），日期2 完整 5 条
     mockQueries[METRIC_UID].findMany.mockResolvedValue([
       { snapshotDate: d(1) },
       { snapshotDate: d(1) },
+      { snapshotDate: d(2) },
       { snapshotDate: d(2) },
       { snapshotDate: d(2) },
       { snapshotDate: d(2) },
@@ -180,7 +181,7 @@ describe('risk-metric-service.calculateAndSaveMetrics 数据源检查', () => {
     mockQueries[NAV_UID].findOne.mockResolvedValue(null);
     const service = getService();
     service.calculateMetricsForPeriod = jest.fn();
-    service.calculateRankPercentile = jest.fn();
+    service.calculateRankPercentile = jest.fn().mockResolvedValue({ rankPercentile: null, peerTotal: null });
 
     await service.calculateAndSaveMetrics(1, d(2));
 
@@ -194,7 +195,7 @@ describe('risk-metric-service.calculateAndSaveMetrics 数据源检查', () => {
     mockQueries[INCOME_UID].findOne.mockResolvedValue(null);
     const service = getService();
     service.calculateMetricsForPeriod = jest.fn();
-    service.calculateRankPercentile = jest.fn();
+    service.calculateRankPercentile = jest.fn().mockResolvedValue({ rankPercentile: null, peerTotal: null });
 
     await service.calculateAndSaveMetrics(1, d(2));
 
@@ -202,28 +203,32 @@ describe('risk-metric-service.calculateAndSaveMetrics 数据源检查', () => {
     expect(mockQueries[METRIC_UID].create).not.toHaveBeenCalled();
   });
 
-  it('净值型当日有净值 → 正常写入 4 条指标', async () => {
+  it('净值型当日有净值 → 正常写入 5 条指标', async () => {
     mockQueries[PRODUCT_UID].findOne.mockResolvedValue({ id: 1, productType: 'bank-wealth' });
     mockQueries[NAV_UID].findOne.mockResolvedValue({ id: 9, unitNav: 1.0 });
+    const createMock = mockQueries[METRIC_UID].create;
     const service = getService();
     service.calculateMetricsForPeriod = jest.fn().mockResolvedValue({
       volatility: 0.1, maxDrawdown: -0.01, sharpe: 1.2, annualReturn: 0.05, incomeStability: null,
     });
-    service.calculateRankPercentile = jest.fn().mockResolvedValue(50);
+    service.calculateRankPercentile = jest.fn().mockResolvedValue({ rankPercentile: 50, peerTotal: 8 });
 
     await service.calculateAndSaveMetrics(1, d(2));
 
     expect(service.calculateMetricsForPeriod).toHaveBeenCalledTimes(1);
-    expect(mockQueries[METRIC_UID].delete).toHaveBeenCalledTimes(4);
-    expect(mockQueries[METRIC_UID].create).toHaveBeenCalledTimes(4);
+    expect(mockQueries[METRIC_UID].delete).toHaveBeenCalledTimes(5);
+    expect(mockQueries[METRIC_UID].create).toHaveBeenCalledTimes(5);
+    const names = createMock.mock.calls.map((c: any) => c[0].data.metricName);
+    expect(names).toContain('peerTotal');
+    expect(createMock.mock.calls.find((c: any) => c[0].data.metricName === 'peerTotal')[0].data.metricValue).toBe(8);
   });
 
   it('recalculateMissing 货币型：日期源用收益日期而非净值日期', async () => {
     mockQueries[PRODUCT_UID].findMany.mockResolvedValue([{ id: 1, productType: 'money-fund' }]);
     mockQueries[INCOME_UID].findMany.mockResolvedValue([{ incomeDate: d(1) }, { incomeDate: d(2) }]);
-    // d(1) 完整 4 条，d(2) 无记录 → 只补 d(2)
+    // d(1) 完整 5 条，d(2) 无记录 → 只补 d(2)
     mockQueries[METRIC_UID].findMany.mockResolvedValue([
-      { snapshotDate: d(1) }, { snapshotDate: d(1) }, { snapshotDate: d(1) }, { snapshotDate: d(1) },
+      { snapshotDate: d(1) }, { snapshotDate: d(1) }, { snapshotDate: d(1) }, { snapshotDate: d(1) }, { snapshotDate: d(1) },
     ]);
     const service = getService();
     service.calculateAndSaveMetrics = jest.fn().mockResolvedValue(undefined);

@@ -294,22 +294,23 @@ export default ({ strapi }) => ({
 
     for (const period of periods) {
       const metrics = await this.calculateMetricsForPeriod(productId, snapshotDate, period);
-      // Task4 将扩展为 { rankPercentile, peerTotal }；此处先解构保持编译与行为一致
-      const { rankPercentile } = await this.calculateRankPercentile(productId, snapshotDate, period);
+      const { rankPercentile, peerTotal } = await this.calculateRankPercentile(productId, snapshotDate, period);
 
-      // 货币型 4 项（sharpe 不适用省略，保持每周期 4 条与 recalculateMissing 的 expectedCount 一致）
+      // 货币型 5 项（sharpe 不适用省略；peerTotal 为同类样本数，未来展示备用）
       const metricEntries: { metricName: string; metricValue: number | null }[] = isMoneyType
         ? [
             { metricName: 'volatility', metricValue: toFinite(metrics.volatility) },
             { metricName: 'maxDrawdown', metricValue: null },
             { metricName: 'rankPercentile', metricValue: toFinite(rankPercentile) },
             { metricName: 'incomeStability', metricValue: toFinite(metrics.incomeStability) },
+            { metricName: 'peerTotal', metricValue: toFinite(peerTotal) },
           ]
         : [
             { metricName: 'volatility', metricValue: toFinite(metrics.volatility) },
             { metricName: 'maxDrawdown', metricValue: toFinite(metrics.maxDrawdown) },
             { metricName: 'sharpe', metricValue: toFinite(metrics.sharpe) },
             { metricName: 'rankPercentile', metricValue: toFinite(rankPercentile) },
+            { metricName: 'peerTotal', metricValue: toFinite(peerTotal) },
           ];
 
       for (const entry of metricEntries) {
@@ -552,8 +553,8 @@ export default ({ strapi }) => ({
       });
 
       // 统计每个日期的记录数；并发 delete+create 交错可能造成部分指标缺失，
-      // 按日期存在与否判断会漏掉残缺日期，需校验记录数（4 指标 × N 周期）
-      const expectedCount = pluginConfig.riskMetricPeriods.length * 4;
+      // 按日期存在与否判断会漏掉残缺日期，需校验记录数（5 指标 × N 周期）
+      const expectedCount = pluginConfig.riskMetricPeriods.length * 5;
       const dateCounts = new Map<string, number>();
       for (const m of existingMetrics) {
         const ds = toDateStr(m.snapshotDate);
