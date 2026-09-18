@@ -18,7 +18,7 @@
 
 - `calculateScore`：获取指标后，`metrics.annualReturn === null` 时直接返回 `null`（m1 年化缺失 = 数据不足，无法评分）。不再用中性 50 分硬算。
 - `calculateAndSaveScoreSnapshot`：`score` 为 null 时**先删除该产品该日期的旧快照再返回**，避免 C 端读到残留的 compositeScore=0 旧快照。
-- `getScoreLeaderboard`：组装后过滤 `score` 为 null 的产品，评分 null 的产品不占榜单名额、不参与排序。
+- `getScoreLeaderboard`：组装后过滤 `score` 为 null 的产品，评分 null 的产品不占榜单名额、不参与排序；**过滤后按实际条数重算 total**（当前 total 来自过滤前 `productQuery.count`，需改为 `records.length` 口径），避免分页总数与展示条数不一致。
 
 ### 前端（detail/index.vue）
 
