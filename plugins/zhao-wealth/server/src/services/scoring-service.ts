@@ -123,7 +123,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       where: { product: productId },
       orderBy: { snapshotDate: 'desc' },
     });
-    const annualReturn = snapshot ? Number(snapshot[annualField]) : null;
+    // 快照字段为 null（净值样本不足）时保持 null，避免 Number(null) 变 0 被当成有效年化
+    const annualRaw = snapshot ? snapshot[annualField] : null;
+    const annualReturn = annualRaw === null || annualRaw === undefined ? null : Number(annualRaw);
 
     const metricQuery = strapi.db.query('plugin::zhao-wealth.wealth-risk-metric');
     const metricMap: Record<string, number | null> = { volatility: null, maxDrawdown: null, rankPercentile: null };
@@ -173,6 +175,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
 
     // 2. 获取当前产品指标
     const metrics = await getProductMetrics(productId, period);
+
+    // 数据不足：m1 年化为 null（净值样本不足）→ 无法评分，返回 null 由前端显示"数据积累中"
+    if (metrics.annualReturn === null) return null;
 
     // 3. 各维度绝对评分（0-100）
     const returnScore = absoluteReturnScore(metrics.annualReturn, product.productType);

@@ -163,4 +163,13 @@ describe('scoring-service 校准', () => {
     expect(board.records[0].id).toBe(6); // 最高分产品必须排第一
     expect(board.total).toBe(6);
   });
+
+  it('年化为 null（数据不足）→ calculateScore 返回 null，不再硬算低分', async () => {
+    mockProductFindOne.mockResolvedValue({ id: 8, productType: 'bank-wealth', operationMode: 'open' });
+    mockSnapshotFindOne.mockResolvedValue({ annual1m: null });
+    mockMetricFindMany.mockResolvedValue([]);
+
+    const score = await service.calculateScore(8, 'm1');
+    expect(score).toBeNull();
+  });
 });
