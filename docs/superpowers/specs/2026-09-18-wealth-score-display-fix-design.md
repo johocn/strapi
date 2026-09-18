@@ -42,7 +42,9 @@
 
 - hall/index.vue 无需改动（`latestAnnual7d ?? annual7d` 字段名不变）。
 
-## 修复3：同类排行数值 + 用语
+## 修复3：同类排行隐藏展示，数据照常计算
+
+> 用户决策（2026-09-18）：**首页/详情页同类排行全部隐藏**，后端数据照常计算并备好 `peerTotal`，未来展示方式待定。
 
 ### 后端（risk-metric-service.ts + controllers/risk-metric.ts）
 
@@ -50,14 +52,12 @@
 - 新增 `peerTotal` 指标记录：`calculateAndSaveMetrics` 每周期写入 `{ metricName: 'peerTotal', metricValue: 样本总数 }`（样本 <5 时与 rankPercentile 同为 null）。
   - 每周期记录数 4 → 5（货币型/非货币型均一致）。
   - `recalculateMissing` 的 `expectedCount = riskMetricPeriods.length * 4` 改为 `* 5`。
-- C 端 `getMetrics`：`metricNames` 增加 `'peerTotal'`。
+- C 端 `getMetrics`：`metricNames` 增加 `'peerTotal'`（透传备用，前端暂不消费）。
 
-### 前端（detail/index.vue）
+### 前端（detail/index.vue + hall/index.vue）
 
-- `formatRankPercentile` 改为 `formatPeerRank(rankPercentile, peerTotal)`：
-  - `rankPercentile` null → "样本不足"；
-  - 有值 → rank = `round(rankPercentile / 100 × peerTotal)`，显示"同类第X/共N名"。
-- 指标说明文案改为"同类产品中收益所处名次（样本不足时仅供参考）"。
+- **隐藏同类排行**：产品详情页（detail）的"同类排名"指标 cell 从模板移除；综合评分榜（hall）不新增任何同类排行展示。
+- 未来展示方案待定，届时直接消费 `rankPercentile` + `peerTotal`（rank = round(rankPercentile / 100 × peerTotal)，显示"同类第X/共N名"）。
 
 ## 数据清理与重算
 
@@ -71,14 +71,14 @@
 | basic | plugins/zhao-wealth/server/src/services/scoring-service.ts | 修复1+2 |
 | basic | plugins/zhao-wealth/server/src/services/risk-metric-service.ts | 修复3（阈值/peerTotal/expectedCount） |
 | basic | plugins/zhao-wealth/server/src/controllers/risk-metric.ts | 修复3（C 端透传 peerTotal） |
-| strapi-wealth | pages/detail/index.vue | 评分区"数据积累中" + 同类排名新格式 |
+| strapi-wealth | pages/detail/index.vue | 评分区"数据积累中" + 移除"同类排名"cell |
 | strapi-wealth | pages/hall/index.vue | 无改动（字段名不变） |
 
 按插件 dist 铁律：basic 变更需 `npm run build` 重建 dist 后一并提交，再走 deploy.sh。
 
 ## 风险点
 
-- **peerTotal 反推 rank 的舍入**：rank = rankPercentile × total / 100，因 rankPercentile = rank/total×100，反推为精确整数（浮点误差经 round 消除）。
-- **榜单过滤改变产品数量**：数据不足产品移出榜单后，榜单条目可能少于 pageSize，前端分页按 total 显示（total 为过滤前计数，需确认前端是否按返回 records 长度渲染；如不一致，后端在过滤后重算 total）。
+- **榜单过滤改变产品数量**：数据不足产品移出榜单后，榜单条目可能少于 pageSize，total 已按过滤后条数重算，前端分页正常。
 - **旧快照清理**：仅在评分 null 时删除当日快照，不影响其他日期快照。
+- **未来同类排行展示**：`rankPercentile` + `peerTotal` 已备好（rank = round(rankPercentile × total / 100)，因 rankPercentile = rank/total×100，反推为精确整数），待展示方案确定后前端直接消费。
 - **产品8 后续处理**：采集源失效与份额问题按用户要求单独处理，不在本方案范围。
