@@ -223,7 +223,7 @@ export default ({ strapi }) => ({
    * 按 productType 分组，按同期 annualReturn 降序排名
    * rankPercentile = (rank / total) × 100
    */
-  async calculateRankPercentile(productId: number, snapshotDate: Date, period: string): Promise<number | null> {
+  async calculateRankPercentile(productId: number, snapshotDate: Date, period: string): Promise<{ rankPercentile: number | null; peerTotal: number | null }> {
     const annualField = PERIOD_TO_ANNUAL_FIELD[period];
 
     // 取当前产品
@@ -231,7 +231,7 @@ export default ({ strapi }) => ({
       where: { id: productId },
     });
 
-    if (!product) return null;
+    if (!product) return { rankPercentile: null, peerTotal: null };
 
     // 取同类所有产品当日快照（含产品信息用于 productType 过滤）
     const snapshots = await strapi.db.query('plugin::zhao-wealth.wealth-annual-snapshot').findMany({
@@ -245,18 +245,18 @@ export default ({ strapi }) => ({
     // 过滤掉 annualReturn 为 null 的
     const valid = snapshots.filter(s => s[annualField] !== null && s[annualField] !== undefined);
 
-    if (valid.length < 2) return null;
+    // 同类样本过少无统计意义，不提供排名
+    if (valid.length < 5) return { rankPercentile: null, peerTotal: null };
 
-    // 按 annualReturn 降序排序
-    // P2修复：PG numeric 返回字符串，需显式 Number() 转换，否则字符串减法返回 NaN
+    // 按 annualReturn 降序排序（PG numeric 返回字符串，需显式 Number() 转换）
     const sorted = valid.sort((a, b) => Number(b[annualField]) - Number(a[annualField]));
 
     // 找到当前产品的排名
     const rank = sorted.findIndex(s => s.product.id === productId) + 1;
 
-    if (rank === 0) return null; // 当前产品不在列表中
+    if (rank === 0) return { rankPercentile: null, peerTotal: null }; // 当前产品不在列表中
 
-    return (rank / valid.length) * 100;
+    return { rankPercentile: (rank / valid.length) * 100, peerTotal: valid.length };
   },
 
   /**
@@ -294,7 +294,8 @@ export default ({ strapi }) => ({
 
     for (const period of periods) {
       const metrics = await this.calculateMetricsForPeriod(productId, snapshotDate, period);
-      const rankPercentile = await this.calculateRankPercentile(productId, snapshotDate, period);
+      // Task4 将扩展为 { rankPercentile, peerTotal }；此处先解构保持编译与行为一致
+      const { rankPercentile } = await this.calculateRankPercentile(productId, snapshotDate, period);
 
       // 货币型 4 项（sharpe 不适用省略，保持每周期 4 条与 recalculateMissing 的 expectedCount 一致）
       const metricEntries: { metricName: string; metricValue: number | null }[] = isMoneyType

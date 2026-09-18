@@ -239,3 +239,51 @@ describe('risk-metric-service.calculateAndSaveMetrics 数据源检查', () => {
     expect(result).toEqual([{ productId: 1, missingDates: 1 }]);
   });
 });
+
+describe('risk-metric-service.calculateRankPercentile', () => {
+  let mockStrapi: any;
+  let mockQueries: Record<string, any>;
+  const PRODUCT_UID = 'plugin::zhao-wealth.wealth-product';
+  const SNAPSHOT_UID = 'plugin::zhao-wealth.wealth-annual-snapshot';
+
+  beforeEach(() => {
+    jest.resetModules();
+    mockQueries = {};
+    for (const uid of [PRODUCT_UID, SNAPSHOT_UID]) {
+      mockQueries[uid] = { findOne: jest.fn(), findMany: jest.fn() };
+    }
+    mockStrapi = {
+      db: { query: jest.fn((uid: string) => mockQueries[uid]) },
+      log: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
+    };
+  });
+
+  function getService() {
+    return require('../services/risk-metric-service').default({ strapi: mockStrapi });
+  }
+
+  it('样本 ≥5 时返回百分位与样本总数（按年化降序，第一名=1/5=20%）', async () => {
+    mockQueries[PRODUCT_UID].findOne.mockResolvedValue({ id: 1, productType: 'bank-wealth' });
+    mockQueries[SNAPSHOT_UID].findMany.mockResolvedValue([
+      { product: { id: 1 }, annual1m: '0.05' },
+      { product: { id: 2 }, annual1m: '0.04' },
+      { product: { id: 3 }, annual1m: '0.03' },
+      { product: { id: 4 }, annual1m: '0.02' },
+      { product: { id: 5 }, annual1m: '0.01' },
+    ]);
+
+    const res = await getService().calculateRankPercentile(1, d(2), 'm1');
+    expect(res).toEqual({ rankPercentile: 20, peerTotal: 5 });
+  });
+
+  it('样本 <5 时返回 null（无统计意义，不提供排名）', async () => {
+    mockQueries[PRODUCT_UID].findOne.mockResolvedValue({ id: 1, productType: 'bank-wealth' });
+    mockQueries[SNAPSHOT_UID].findMany.mockResolvedValue([
+      { product: { id: 1 }, annual1m: '0.05' },
+      { product: { id: 2 }, annual1m: '0.04' },
+    ]);
+
+    const res = await getService().calculateRankPercentile(1, d(2), 'm1');
+    expect(res).toEqual({ rankPercentile: null, peerTotal: null });
+  });
+});
