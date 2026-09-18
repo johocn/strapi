@@ -172,4 +172,86 @@ describe('scoring-service 校准', () => {
     const score = await service.calculateScore(8, 'm1');
     expect(score).toBeNull();
   });
+
+  it('榜单：最新快照无 7d 年化时回退取最近有值快照', async () => {
+    const products = [
+      { id: 1, productName: 'A', productType: 'bank-wealth', operationMode: 'open', recommendWeight: 1 },
+      { id: 2, productName: 'B', productType: 'bank-wealth', operationMode: 'open', recommendWeight: 1 },
+    ];
+    mockQuery.mockImplementation((name: string) => {
+      if (name === 'plugin::zhao-wealth.wealth-product') {
+        return { findOne: mockProductFindOne, findMany: jest.fn().mockResolvedValue(products), count: jest.fn().mockResolvedValue(2) };
+      }
+      if (name === 'plugin::zhao-wealth.wealth-annual-snapshot') {
+        return {
+          findOne: mockSnapshotFindOne,
+          findMany: jest.fn().mockResolvedValue([
+            { product: { id: 1 }, snapshotDate: '2026-09-17', annual1m: 0.05, annual7d: 0.03 },
+            { product: { id: 2 }, snapshotDate: '2026-09-17', annual1m: 0.02, annual7d: null },
+            { product: { id: 2 }, snapshotDate: '2026-09-16', annual1m: 0.02, annual7d: 0.025 },
+          ]),
+        };
+      }
+      if (name === 'plugin::zhao-wealth.wealth-risk-metric') return { findMany: mockMetricFindMany };
+      if (name === 'plugin::zhao-wealth.wealth-score-snapshot') {
+        return {
+          findOne: mockScoreFindOne,
+          findMany: jest.fn().mockResolvedValue([
+            { product: { id: 1 }, snapshotDate: '2026-09-16', period: 'm1', compositeScore: 80 },
+            { product: { id: 2 }, snapshotDate: '2026-09-16', period: 'm1', compositeScore: 70 },
+          ]),
+        };
+      }
+      return { findOne: mockOtherFindOne, findMany: mockOtherFindMany };
+    });
+    mockProductFindOne.mockResolvedValue({ id: 1, productType: 'bank-wealth', operationMode: 'open' });
+    mockSnapshotFindOne.mockResolvedValue({ annual1m: 0.02 });
+    mockMetricFindMany.mockResolvedValue([]);
+
+    const board = await service.getScoreLeaderboard({});
+    expect(board.records).toHaveLength(2);
+    expect(board.records.find((r: any) => r.id === 1)!.latestAnnual7d).toBe(0.03);
+    // 产品2 最新快照（9/17）7d 为 null → 回退到 9/16 有值快照
+    expect(board.records.find((r: any) => r.id === 2)!.latestAnnual7d).toBe(0.025);
+  });
+
+  it('榜单：评分 null（数据不足）产品被过滤且 total 重算', async () => {
+    const products = [
+      { id: 1, productName: 'A', productType: 'bank-wealth', operationMode: 'open', recommendWeight: 1 },
+      { id: 2, productName: 'B', productType: 'bank-wealth', operationMode: 'open', recommendWeight: 1 },
+    ];
+    mockQuery.mockImplementation((name: string) => {
+      if (name === 'plugin::zhao-wealth.wealth-product') {
+        return { findOne: mockProductFindOne, findMany: jest.fn().mockResolvedValue(products), count: jest.fn().mockResolvedValue(2) };
+      }
+      if (name === 'plugin::zhao-wealth.wealth-annual-snapshot') {
+        return {
+          findOne: mockSnapshotFindOne,
+          findMany: jest.fn().mockResolvedValue([
+            { product: { id: 1 }, snapshotDate: '2026-09-17', annual1m: 0.05, annual7d: 0.03 },
+            { product: { id: 2 }, snapshotDate: '2026-09-17', annual1m: null, annual7d: null },
+          ]),
+        };
+      }
+      if (name === 'plugin::zhao-wealth.wealth-risk-metric') return { findMany: mockMetricFindMany };
+      if (name === 'plugin::zhao-wealth.wealth-score-snapshot') {
+        return {
+          findOne: mockScoreFindOne,
+          findMany: jest.fn().mockResolvedValue([
+            { product: { id: 1 }, snapshotDate: '2026-09-16', period: 'm1', compositeScore: 80 },
+          ]),
+        };
+      }
+      return { findOne: mockOtherFindOne, findMany: mockOtherFindMany };
+    });
+    // 产品2 无评分快照 → 实时计算 → annual1m null → calculateScore 返回 null
+    mockProductFindOne.mockResolvedValue({ id: 2, productType: 'bank-wealth', operationMode: 'open' });
+    mockSnapshotFindOne.mockResolvedValue({ annual1m: null });
+    mockMetricFindMany.mockResolvedValue([]);
+
+    const board = await service.getScoreLeaderboard({});
+    expect(board.records).toHaveLength(1);
+    expect(board.records[0].id).toBe(1);
+    expect(board.total).toBe(1); // 过滤后重算，而非产品总数 2
+  });
 });

@@ -212,14 +212,14 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
    * 计算并保存评分快照
    */
   async function calculateAndSaveScoreSnapshot(productId: number, snapshotDate: string, period: string): Promise<void> {
-    const score = await calculateScore(productId, period);
-    if (!score) return;
-
-    // 先删除旧记录
+    // 先删除旧记录（无论本次评分是否有效，避免 C 端读到残留快照）
     const query = strapi.db.query('plugin::zhao-wealth.wealth-score-snapshot');
     await query.deleteMany({
       where: { product: productId, snapshotDate, period },
     });
+
+    const score = await calculateScore(productId, period);
+    if (!score) return;
 
     // 创建新记录
     await query.create({
@@ -288,6 +288,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       },
       orderBy: { snapshotDate: 'desc' },
       limit: productIds.length * 2,
+      populate: ['product'],
     });
 
     // 内存中取每个产品最新的
@@ -308,39 +309,47 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         product: { id: { $in: productIds } },
       },
       orderBy: { snapshotDate: 'desc' },
-      limit: productIds.length * 2,
+      limit: productIds.length * 30,
+      populate: ['product'],
     });
     const annualMap: Record<number, any> = {};
+    const annual7dMap: Record<number, any> = {};
     for (const a of allAnnuals) {
       const pid = a.product?.id || a.product;
       if (!annualMap[pid]) {
         annualMap[pid] = a;
+      }
+      // 7d 年化回退：每个产品保留最近一条 annual7d 有值的快照
+      if (pid && a.annual7d != null && !isNaN(Number(a.annual7d)) && !annual7dMap[pid]) {
+        annual7dMap[pid] = a;
       }
     }
 
     // 组装结果
     const records = await Promise.all(products.map(async (product: any) => {
       const annual = annualMap[product.id];
+      const annual7d = annual7dMap[product.id];
       const annualValue = annual ? Number(annual[annualField]) : null;
       return {
         ...product,
         score: scoreMap[product.id] || await calculateScore(product.id, period),
         [annualKey]: annualValue !== null && !isNaN(annualValue) ? annualValue : null,
-        latestAnnual7d: annual?.annual7d != null && !isNaN(Number(annual.annual7d))
-          ? Number(annual.annual7d)
+        latestAnnual7d: annual7d?.annual7d != null && !isNaN(Number(annual7d.annual7d))
+          ? Number(annual7d.annual7d)
           : null,
         annual1m: annualValue !== null && !isNaN(annualValue) ? annualValue : null,
       };
     }));
 
-    // 按评分降序排序
-    records.sort((a, b) => {
-      const sa = a.score?.compositeScore ?? 0;
-      const sb = b.score?.compositeScore ?? 0;
+    // 过滤评分无效的产品（数据不足不占榜单名额），再按评分降序排序
+    const validRecords = records.filter(r => r.score);
+    validRecords.sort((a, b) => {
+      const sa = Number(a.score?.compositeScore) || 0;
+      const sb = Number(b.score?.compositeScore) || 0;
       return sb - sa;
     });
 
-    return { records: records.slice(offset, offset + limit), total, page, pageSize: limit };
+    return { records: validRecords.slice(offset, offset + limit), total: validRecords.length, page, pageSize: limit };
   }
 
   /**
