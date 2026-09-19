@@ -35,7 +35,7 @@ SKIP_BUILD=1 node scripts/deploy.mjs   # 仅上传 + 重启
 SKIP_RESTART=1 node scripts/deploy.mjs # 仅构建 + 上传，不重启
 ```
 
-> 部署参数从 `.env` 底部「部署配置」段读取（`SERVER_HOST=qing` 等，qing 为 ssh 别名，含 User/Port/IdentityFile）。服务器进程由 `ecosystem.config.cjs` 管理（`npm run start`，堆 384MB）。
+> 部署参数从 `.env` 底部「部署配置」段读取（`SERVER_HOST=joho` 等，joho 为 ssh 别名，含 User/Port/IdentityFile）。服务器进程由 `ecosystem.config.cjs` 管理（`npm run start`，堆 384MB）。
 
 ---
 

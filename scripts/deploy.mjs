@@ -6,7 +6,7 @@
  * 服务器 `strapi start` 从根 `dist/` 启动（含 admin 前端构建物 build/admin 与后端编译产物）。
  *
  * 环境变量（从 .env / 进程环境读取，不硬编码域名）：
- *   SERVER_HOST     服务器主机或 IP，或 ssh 别名（如 qing，别名已含 User/Port/IdentityFile）
+ *   SERVER_HOST     服务器主机或 IP，或 ssh 别名（如 joho，别名已含 User/Port/IdentityFile）
  *   SERVER_USER     SSH 用户名（默认空，用别名默认）
  *   SERVER_PORT     SSH/SCP 端口（默认空，用别名默认）
  *   REMOTE_DIR      服务器上 strapi 项目目录（必填，例如 /www/apps/strapi）
