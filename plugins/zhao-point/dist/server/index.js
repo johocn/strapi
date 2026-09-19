@@ -92,7 +92,11 @@ const config$1 = {
       refund_deduct: { points: 0, description: "退款扣回", taskGroup: "penalty", extraConfig: {} },
       expiration_deduct: { points: 0, description: "过期扣除", taskGroup: "penalty", extraConfig: {} }
     },
-    defaultOperator: "system"
+    defaultOperator: "system",
+    eco: {
+      url: "",
+      secret: ""
+    }
   }
 };
 const kind$k = "collectionType";
@@ -2720,6 +2724,11 @@ async function grantShareReward(strapi2, userId, act) {
         issuedAt: /* @__PURE__ */ new Date()
       }
     });
+    strapi2.plugin("zhao-point").service("eco-hook")?.send({
+      action: "distribute",
+      ssoId: inviterUp.id,
+      targetId: act.documentId
+    });
   } catch (e) {
     strapi2.log.warn(`[zhao-point:activity] grantShareReward failed: ${e.message}`);
   }
@@ -2931,6 +2940,11 @@ const activity$1 = ({ strapi: strapi2 }) => ({
       }
     }
     const sig = await strapi2.db.query(SIGNS_UID$6).create({ data: { user: userId, activity: act.id, status: "active", signupAt: /* @__PURE__ */ new Date(), pointsCharged: feeCollectAt === "signup" ? cost : 0, feeTierId: resolved.tierId ?? null, ...storedFormData ? { formData: storedFormData } : {}, ...preQuestionnaireData && Object.keys(preQuestionnaireData).length ? { preQuestionnaireData } : {}, ...unlockInfo ? { unlockInfo } : {} } });
+    strapi2.plugin("zhao-point").service("eco-hook")?.send({
+      action: "join_activity",
+      ssoId: userId,
+      targetId: act.documentId
+    });
     const granted = [];
     if (hasReward && chosenRewardsIds.length) {
       const userChannelId = await resolveUserChannelId(strapi2, userId);
@@ -4007,6 +4021,11 @@ const activity = ({ strapi: strapi2 }) => {
         };
         activity2.archived = activity2.status === "archived";
         ctx.body = wrap$5(activity2);
+        strapi2.plugin("zhao-point").service("eco-hook")?.send({
+          action: "view_activity",
+          ssoId: ctx.state.user?.id,
+          targetId: ctx.params.documentId
+        });
       } catch (e) {
         ctx.status = e.status || 400;
         ctx.body = { error: e.message };
@@ -38931,6 +38950,42 @@ const gate = ({ strapi: strapi2 }) => ({
     return strapi2.db.query(SIGNS_UID).count({ where: { user: userId, status: "active", signupAt: { $gt: from, $lte: to } } }).catch(() => 0);
   }
 });
+const PLUGIN_NAME = "zhao-point";
+const SCOPE = "joho";
+function resolveTarget(strapi2) {
+  const cfg = strapi2.config?.get(`plugin::${PLUGIN_NAME}`) || {};
+  return {
+    url: process.env.GAME_ECO_URL || process.env.GAME_URL || cfg.eco?.url || "",
+    secret: process.env.GAME_ECO_SECRET || process.env.ECO_SHARED_SECRET || cfg.eco?.secret || ""
+  };
+}
+const ecoHook = ({ strapi: strapi2 }) => ({
+  async send(opts) {
+    try {
+      const { ssoId, targetId, action } = opts;
+      if (ssoId == null || ssoId === "") return;
+      const { url, secret } = resolveTarget(strapi2);
+      if (!url || !secret) return;
+      const body = {
+        action,
+        scope: SCOPE,
+        ssoId: String(ssoId),
+        targetId: targetId != null ? String(targetId) : "",
+        extra: opts.extra || {}
+      };
+      const ts = Math.floor(Date.now() / 1e3);
+      const sign = crypto__default.default.createHmac("sha256", secret).update(`${JSON.stringify(body)}|${ts}`).digest("hex");
+      await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Eco-Sign": sign, "X-Eco-Ts": String(ts) },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(2e3)
+      });
+    } catch (e) {
+      console.warn(`[eco-hook:${PLUGIN_NAME}] ${opts.action} 上报失败: ${e?.message || e}`);
+    }
+  }
+});
 const services = {
   point,
   redemption,
@@ -38947,7 +39002,8 @@ const services = {
   "resource-schedule": resourceSchedule,
   "activity-ledger": activityLedger,
   "activity-sop-audience": activitySopAudience,
-  gate
+  gate,
+  "eco-hook": ecoHook
 };
 const publicRoute = (method, path, handler) => ({
   method,

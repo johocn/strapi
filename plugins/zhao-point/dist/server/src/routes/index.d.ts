@@ -2,7 +2,7 @@ declare const _default: {
     "content-api": {
         type: "content-api";
         routes: {
-            method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
+            method: "POST" | "GET" | "PUT" | "DELETE" | "PATCH";
             path: string;
             handler: string;
             config: {

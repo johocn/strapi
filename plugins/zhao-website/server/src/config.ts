@@ -1,3 +1,8 @@
 export default {
-  default: {},
+  default: {
+    eco: {
+      url: "",
+      secret: "",
+    },
+  },
 };

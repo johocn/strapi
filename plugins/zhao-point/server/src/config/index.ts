@@ -76,5 +76,9 @@ export default {
     },
 
     defaultOperator: "system",
+    eco: {
+      url: "",
+      secret: "",
+    },
   },
 };

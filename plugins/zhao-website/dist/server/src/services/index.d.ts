@@ -537,5 +537,15 @@ declare const _default: {
     }) => {
         createPublic(data: any): Promise<any>;
     };
+    "eco-hook": ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        send(opts: {
+            action: string;
+            ssoId?: string | number | null;
+            targetId?: string | number | null;
+            extra?: Record<string, unknown>;
+        }): Promise<void>;
+    };
 };
 export default _default;

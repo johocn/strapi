@@ -287,6 +287,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
 
       // 5. 创建 enrollment 记录
       const enrollment = await strapi.documents(UID).create({ data: baseData });
+      strapi.plugin("zhao-course").service("eco-hook")?.send({
+        action: "purchase",
+        ssoId: userId,
+        targetId: course.document_id ?? course.documentId ?? courseDocumentId,
+      });
 
       // 6. 已开通的课程同步创建 user-course-auth 记录（学习权限）
       if (baseData.status === "enrolled") {

@@ -410,6 +410,10 @@ declare const _default: {
             };
         };
         defaultOperator: string;
+        eco: {
+            url: string;
+            secret: string;
+        };
     };
 };
 export default _default;

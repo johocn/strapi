@@ -1,4 +1,9 @@
 declare const _default: {
-    default: {};
+    default: {
+        eco: {
+            url: string;
+            secret: string;
+        };
+    };
 };
 export default _default;

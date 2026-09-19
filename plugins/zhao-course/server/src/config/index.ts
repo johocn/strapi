@@ -5,6 +5,10 @@ export default {
       // 积分相关默认配置
       autoClaim: false, // 是否自动领取积分
     },
+    eco: {
+      url: "",
+      secret: "",
+    },
   },
   validator: (config: Record<string, unknown>) => {
     if (config.points && typeof config.points !== "object") {

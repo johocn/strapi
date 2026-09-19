@@ -22,6 +22,13 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
   async enqueueCreate(siteId: number, data: any) {
     this._getWriter().enqueue({ ...data, site_id: siteId, created_at: new Date() });
+    if (data?.type === "article_view") {
+      strapi.plugin("zhao-website").service("eco-hook")?.send({
+        action: "view_article",
+        ssoId: data.userId,
+        targetId: data.targetId,
+      });
+    }
   },
 
   async findAdmin(siteId: number, query: any = {}) {

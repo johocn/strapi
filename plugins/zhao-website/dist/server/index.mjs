@@ -1,4 +1,4 @@
-import require$$1 from "crypto";
+import crypto from "crypto";
 import require$$0$1 from "child_process";
 import require$$0$2 from "os";
 import require$$0$4 from "path";
@@ -112,7 +112,12 @@ const bootstrap = async ({ strapi: strapi2 }) => {
   if (!isTest) logger.info("[zhao-website] Ready");
 };
 const config$1 = {
-  default: {}
+  default: {
+    eco: {
+      url: "",
+      secret: ""
+    }
+  }
 };
 const kind$m = "collectionType";
 const collectionName$m = "zhao_website_seo_configs";
@@ -10242,7 +10247,7 @@ function requireDist() {
   hasRequiredDist = 1;
   (function(module, exports) {
     !(function(t, n) {
-      module.exports = n(require$$0$1, require$$1);
+      module.exports = n(require$$0$1, crypto);
     })(dist, function(t, n) {
       return (function(t2) {
         function n2(e) {
@@ -10952,7 +10957,7 @@ function requireDist() {
       }, function(t2, n2) {
         t2.exports = require$$0$1;
       }, function(t2, n2) {
-        t2.exports = require$$1;
+        t2.exports = crypto;
       }]);
     });
   })(dist$1);
@@ -34210,6 +34215,13 @@ const visitLog = ({ strapi: strapi2 }) => ({
   },
   async enqueueCreate(siteId, data) {
     this._getWriter().enqueue({ ...data, site_id: siteId, created_at: /* @__PURE__ */ new Date() });
+    if (data?.type === "article_view") {
+      strapi2.plugin("zhao-website").service("eco-hook")?.send({
+        action: "view_article",
+        ssoId: data.userId,
+        targetId: data.targetId
+      });
+    }
   },
   async findAdmin(siteId, query = {}) {
     const { page = 1, pageSize = 20, type: type2, targetType, targetId } = query;
@@ -34364,6 +34376,14 @@ const interaction = ({ strapi: strapi2 }) => ({
         userAgent: data.ctx?.request?.headers?.["user-agent"]
       }
     });
+    if (data.type === "like" || data.type === "comment") {
+      strapi2.plugin("zhao-website").service("eco-hook")?.send({
+        action: data.type,
+        ssoId: data.userId,
+        targetId: data.targetId,
+        extra: { targetType: data.targetType }
+      });
+    }
     return { action: "created" };
   },
   async check(siteId, params) {
@@ -36031,10 +36051,52 @@ const inviteTrace = ({ strapi: strapi2 }) => ({
    */
   async createPublic(data) {
     try {
-      return await strapi2.db.query(UID).create({ data });
+      const record2 = await strapi2.db.query(UID).create({ data });
+      strapi2.plugin("zhao-website").service("eco-hook")?.send({
+        action: "distribute",
+        ssoId: data.inviterId ?? data.userId,
+        targetId: data.targetId
+      });
+      return record2;
     } catch (e) {
       strapi2.log.warn("[invite-trace] 埋点写入失败", e);
       return null;
+    }
+  }
+});
+const PLUGIN_NAME = "zhao-website";
+const SCOPE = "joho";
+function resolveTarget(strapi2) {
+  const cfg = strapi2.config?.get(`plugin::${PLUGIN_NAME}`) || {};
+  return {
+    url: process.env.GAME_ECO_URL || process.env.GAME_URL || cfg.eco?.url || "",
+    secret: process.env.GAME_ECO_SECRET || process.env.ECO_SHARED_SECRET || cfg.eco?.secret || ""
+  };
+}
+const ecoHook = ({ strapi: strapi2 }) => ({
+  async send(opts) {
+    try {
+      const { ssoId, targetId, action } = opts;
+      if (ssoId == null || ssoId === "") return;
+      const { url, secret } = resolveTarget(strapi2);
+      if (!url || !secret) return;
+      const body = {
+        action,
+        scope: SCOPE,
+        ssoId: String(ssoId),
+        targetId: targetId != null ? String(targetId) : "",
+        extra: opts.extra || {}
+      };
+      const ts = Math.floor(Date.now() / 1e3);
+      const sign = crypto.createHmac("sha256", secret).update(`${JSON.stringify(body)}|${ts}`).digest("hex");
+      await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Eco-Sign": sign, "X-Eco-Ts": String(ts) },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(2e3)
+      });
+    } catch (e) {
+      console.warn(`[eco-hook:${PLUGIN_NAME}] ${opts.action} 上报失败: ${e?.message || e}`);
     }
   }
 });
@@ -36071,7 +36133,8 @@ const services = {
   "cache": cache$1,
   "feed": feed,
   "redirect": redirect,
-  "invite-trace": inviteTrace
+  "invite-trace": inviteTrace,
+  "eco-hook": ecoHook
 };
 const hasWebsitePermission = (config2) => {
   return async (ctx, next) => {

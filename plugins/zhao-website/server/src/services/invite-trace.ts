@@ -12,7 +12,13 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
    */
   async createPublic(data: any): Promise<any> {
     try {
-      return await strapi.db.query(UID).create({ data });
+      const record = await strapi.db.query(UID).create({ data });
+      strapi.plugin("zhao-website").service("eco-hook")?.send({
+        action: "distribute",
+        ssoId: data.inviterId ?? data.userId,
+        targetId: data.targetId,
+      });
+      return record;
     } catch (e) {
       strapi.log.warn("[invite-trace] 埋点写入失败", e);
       return null;

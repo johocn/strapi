@@ -120,6 +120,12 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       });
     }
 
+    strapi.plugin("zhao-course").service("eco-hook")?.send({
+      action: "view_course",
+      ssoId: userId,
+      targetId: lesson.course?.documentId ?? lesson.course?.id ?? courseId,
+    });
+
     if (progressPercent >= 100 && courseId) {
       await strapi.plugin("zhao-course").service("course-progress").recalculate(userId, courseId);
     }

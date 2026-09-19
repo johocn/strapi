@@ -36,6 +36,14 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         userAgent: data.ctx?.request?.headers?.["user-agent"],
       },
     });
+    if (data.type === "like" || data.type === "comment") {
+      strapi.plugin("zhao-website").service("eco-hook")?.send({
+        action: data.type,
+        ssoId: data.userId,
+        targetId: data.targetId,
+        extra: { targetType: data.targetType },
+      });
+    }
     return { action: "created" };
   },
 

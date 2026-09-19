@@ -14,6 +14,7 @@ import resourceSchedule from "./resource-schedule";
 import activityLedger from "./activity-ledger";
 import activitySopAudience from "./activity-sop-audience";
 import gate from "./gate";
+import ecoHook from "./eco-hook";
 
 export default {
   point,
@@ -32,4 +33,5 @@ export default {
   "activity-ledger": activityLedger,
   "activity-sop-audience": activitySopAudience,
   gate,
+  "eco-hook": ecoHook,
 };

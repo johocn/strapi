@@ -1,5 +1,8 @@
 "use strict";
 Object.defineProperties(exports, { __esModule: { value: true }, [Symbol.toStringTag]: { value: "Module" } });
+const crypto = require("crypto");
+const _interopDefault = (e) => e && e.__esModule ? e : { default: e };
+const crypto__default = /* @__PURE__ */ _interopDefault(crypto);
 const register = ({ strapi }) => {
   try {
     strapi.customFields.register({
@@ -82,6 +85,10 @@ const config = {
       // 积分相关默认配置
       autoClaim: false
       // 是否自动领取积分
+    },
+    eco: {
+      url: "",
+      secret: ""
     }
   },
   validator: (config2) => {
@@ -438,6 +445,13 @@ const course$1 = ({ strapi }) => ({
         return;
       }
       ctx.body = wrap$6(result);
+      if (!isAdmin) {
+        strapi.plugin("zhao-course").service("eco-hook")?.send({
+          action: "view_course",
+          ssoId: ctx.state.user?.id,
+          targetId: documentId
+        });
+      }
     } catch (err) {
       ctx.status = err.status || 400;
       ctx.body = { error: err.message };
@@ -2844,6 +2858,11 @@ const lessonProgress = ({ strapi }) => {
           }
         });
       }
+      strapi.plugin("zhao-course").service("eco-hook")?.send({
+        action: "view_course",
+        ssoId: userId,
+        targetId: lesson.course?.documentId ?? lesson.course?.id ?? courseId
+      });
       if (progressPercent >= 100 && courseId) {
         await strapi.plugin("zhao-course").service("course-progress").recalculate(userId, courseId);
       }
@@ -3224,6 +3243,11 @@ const enrollment = ({ strapi }) => {
         throwErr("COURSE_ENROLL_010", 400, `无效的报名类型: ${enrollType}`);
       }
       const enrollment2 = await strapi.documents(UID$1).create({ data: baseData });
+      strapi.plugin("zhao-course").service("eco-hook")?.send({
+        action: "purchase",
+        ssoId: userId,
+        targetId: course2.document_id ?? course2.documentId ?? courseDocumentId
+      });
       if (baseData.status === "enrolled") {
         await grantCourseAccess(userId, course2.id, enrollType);
       }
@@ -3778,6 +3802,42 @@ const vendureProfile = ({ strapi }) => {
     }
   };
 };
+const PLUGIN_NAME = "zhao-course";
+const SCOPE = "joho";
+function resolveTarget(strapi) {
+  const cfg = strapi.config?.get(`plugin::${PLUGIN_NAME}`) || {};
+  return {
+    url: process.env.GAME_ECO_URL || process.env.GAME_URL || cfg.eco?.url || "",
+    secret: process.env.GAME_ECO_SECRET || process.env.ECO_SHARED_SECRET || cfg.eco?.secret || ""
+  };
+}
+const ecoHook = ({ strapi }) => ({
+  async send(opts) {
+    try {
+      const { ssoId, targetId, action } = opts;
+      if (ssoId == null || ssoId === "") return;
+      const { url, secret } = resolveTarget(strapi);
+      if (!url || !secret) return;
+      const body = {
+        action,
+        scope: SCOPE,
+        ssoId: String(ssoId),
+        targetId: targetId != null ? String(targetId) : "",
+        extra: opts.extra || {}
+      };
+      const ts = Math.floor(Date.now() / 1e3);
+      const sign = crypto__default.default.createHmac("sha256", secret).update(`${JSON.stringify(body)}|${ts}`).digest("hex");
+      await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Eco-Sign": sign, "X-Eco-Ts": String(ts) },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(2e3)
+      });
+    } catch (e) {
+      console.warn(`[eco-hook:${PLUGIN_NAME}] ${opts.action} 上报失败: ${e?.message || e}`);
+    }
+  }
+});
 const services = {
   "course-category": courseCategory,
   course,
@@ -3789,7 +3849,8 @@ const services = {
   "access-code": accessCode,
   recommend,
   gate,
-  "vendure-profile": vendureProfile
+  "vendure-profile": vendureProfile,
+  "eco-hook": ecoHook
 };
 const index = {
   register,

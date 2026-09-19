@@ -420,6 +420,10 @@ declare const _default: {
                 };
             };
             defaultOperator: string;
+            eco: {
+                url: string;
+                secret: string;
+            };
         };
     };
     controllers: {
@@ -2872,6 +2876,10 @@ declare const _default: {
                     };
                 };
                 defaultOperator: string;
+                eco: {
+                    url: string;
+                    secret: string;
+                };
             };
             listRecords: (params: {
                 userId?: string;
@@ -3782,12 +3790,22 @@ declare const _default: {
             recommendActivities(interests: string[], excludeIds: number[], limit?: number): Promise<any[]>;
             countActiveSignups(userId: number, from: Date, to: Date): Promise<number>;
         };
+        "eco-hook": ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            send(opts: {
+                action: string;
+                ssoId?: string | number | null;
+                targetId?: string | number | null;
+                extra?: Record<string, unknown>;
+            }): Promise<void>;
+        };
     };
     routes: {
         "content-api": {
             type: "content-api";
             routes: {
-                method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
+                method: "POST" | "GET" | "PUT" | "DELETE" | "PATCH";
                 path: string;
                 handler: string;
                 config: {

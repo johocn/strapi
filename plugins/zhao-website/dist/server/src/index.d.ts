@@ -6,7 +6,12 @@ declare const _default: {
         strapi: import('@strapi/types/dist/core').Strapi;
     }) => Promise<void>;
     config: {
-        default: {};
+        default: {
+            eco: {
+                url: string;
+                secret: string;
+            };
+        };
     };
     controllers: {
         "knowledge-graph": {
@@ -718,6 +723,16 @@ declare const _default: {
             strapi: import('@strapi/types/dist/core').Strapi;
         }) => {
             createPublic(data: any): Promise<any>;
+        };
+        "eco-hook": ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            send(opts: {
+                action: string;
+                ssoId?: string | number | null;
+                targetId?: string | number | null;
+                extra?: Record<string, unknown>;
+            }): Promise<void>;
         };
     };
     contentTypes: {

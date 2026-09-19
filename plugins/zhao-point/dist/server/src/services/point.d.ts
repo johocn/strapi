@@ -573,6 +573,10 @@ declare const _default: ({ strapi }: {
             };
         };
         defaultOperator: string;
+        eco: {
+            url: string;
+            secret: string;
+        };
     };
     listRecords: (params: {
         userId?: string;

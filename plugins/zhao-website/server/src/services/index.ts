@@ -31,6 +31,7 @@ import cache from "./cache";
 import feed from "./feed";
 import redirect from "./redirect";
 import inviteTrace from "./invite-trace";
+import ecoHook from "./eco-hook";
 
 export default {
   "seo-config": seoConfig,
@@ -66,4 +67,5 @@ export default {
   "feed": feed,
   "redirect": redirect,
   "invite-trace": inviteTrace,
+  "eco-hook": ecoHook,
 };

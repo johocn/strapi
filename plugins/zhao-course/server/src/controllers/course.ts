@@ -68,6 +68,13 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         return;
       }
       ctx.body = wrap(result);
+      if (!isAdmin) {
+        strapi.plugin("zhao-course").service("eco-hook")?.send({
+          action: "view_course",
+          ssoId: ctx.state.user?.id,
+          targetId: documentId,
+        });
+      }
     } catch (err) {
       ctx.status = (err as any).status || 400;
       ctx.body = { error: (err as Error).message };

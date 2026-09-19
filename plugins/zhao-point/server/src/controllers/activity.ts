@@ -202,6 +202,11 @@ function normalizePromoModules(promoModules: any): any[] | undefined {
       };
       activity.archived = activity.status === "archived";
       ctx.body = wrap(activity);
+      strapi.plugin("zhao-point").service("eco-hook")?.send({
+        action: "view_activity",
+        ssoId: ctx.state.user?.id,
+        targetId: ctx.params.documentId,
+      });
     } catch (e: any) {
       ctx.status = (e as any).status || 400;
       ctx.body = { error: e.message };

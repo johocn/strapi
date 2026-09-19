@@ -566,6 +566,11 @@ async function grantShareReward(strapi, userId: number, act: any) {
         issuedAt: new Date(),
       },
     });
+    strapi.plugin("zhao-point").service("eco-hook")?.send({
+      action: "distribute",
+      ssoId: inviterUp.id,
+      targetId: act.documentId,
+    });
   } catch (e: any) {
     strapi.log.warn(`[zhao-point:activity] grantShareReward failed: ${e.message}`);
   }
@@ -815,6 +820,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       }
     }
     const sig = await strapi.db.query(SIGNS_UID).create({ data: { user: userId, activity: act.id, status: "active", signupAt: new Date(), pointsCharged: feeCollectAt === "signup" ? cost : 0, feeTierId: resolved.tierId ?? null, ...(storedFormData ? { formData: storedFormData } : {}), ...(preQuestionnaireData && Object.keys(preQuestionnaireData).length ? { preQuestionnaireData } : {}), ...(unlockInfo ? { unlockInfo } : {}) } });
+    strapi.plugin("zhao-point").service("eco-hook")?.send({
+      action: "join_activity",
+      ssoId: userId,
+      targetId: act.documentId,
+    });
     // 报名奖励发放：仅已选定(解锁)项，逐项独立幂等
     const granted: Array<{ id: string; type: string; name: string; message: string; link?: string }> = [];
     if (hasReward && chosenRewardsIds.length) {

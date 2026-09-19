@@ -9,6 +9,7 @@ import accessCode from "./access-code";
 import recommend from "./recommend";
 import gate from "./gate";
 import vendureProfile from "./vendure-profile";
+import ecoHook from "./eco-hook";
 
 export default {
   "course-category": courseCategory,
@@ -22,4 +23,5 @@ export default {
   recommend,
   gate,
   "vendure-profile": vendureProfile,
+  "eco-hook": ecoHook,
 };

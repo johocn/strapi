@@ -532,6 +532,10 @@ declare const _default: {
                 };
             };
             defaultOperator: string;
+            eco: {
+                url: string;
+                secret: string;
+            };
         };
         listRecords: (params: {
             userId?: string;
@@ -1441,6 +1445,16 @@ declare const _default: {
         }): Promise<string[]>;
         recommendActivities(interests: string[], excludeIds: number[], limit?: number): Promise<any[]>;
         countActiveSignups(userId: number, from: Date, to: Date): Promise<number>;
+    };
+    "eco-hook": ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        send(opts: {
+            action: string;
+            ssoId?: string | number | null;
+            targetId?: string | number | null;
+            extra?: Record<string, unknown>;
+        }): Promise<void>;
     };
 };
 export default _default;
