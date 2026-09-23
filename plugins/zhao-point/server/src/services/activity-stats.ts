@@ -24,14 +24,19 @@ function indexBy(rows: any[], key: string): Map<number, any[]> {
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
   /**
    * 活动效果总览：报名-到场-评价漏斗 + 积分成本/收益 + 裂变转化。
-   * 纯查询不落库；活动/系列双分组；status 过滤（all|draft|signup_open|ongoing|ended）。
+   * 纯查询不落库；活动/系列双分组；status 过滤（all|draft|signup_open|ongoing|ended）；promoTemplate 过滤（all|summit|salon|training|action|life|sale）。
    */
-  async getOverview({ status }: { status?: string } = {}) {
+  async getOverview({ status, promoTemplate }: { status?: string; promoTemplate?: string } = {}) {
     const statusFilter =
       status && status !== "all" && STATUS_LIST.includes(status) ? status : undefined;
+    const templateFilter =
+      promoTemplate && promoTemplate !== "all" ? promoTemplate : undefined;
 
     const acts = await strapi.db.query(ACTIVITY_UID).findMany({
-      where: statusFilter ? { status: statusFilter } : undefined,
+      where: {
+        ...(statusFilter ? { status: statusFilter } : {}),
+        ...(templateFilter ? { promoTemplate: templateFilter } : {}),
+      },
       populate: { belongsToSeries: true },
     });
     if (!acts.length) {

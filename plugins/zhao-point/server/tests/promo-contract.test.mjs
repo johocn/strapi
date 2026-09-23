@@ -35,3 +35,15 @@ test('PROMO_TEMPLATES 含 sale', () => {
   const actual = [...m[1].matchAll(/"([^"]+)"/g)].map(x => x[1])
   assert.ok(actual.includes('sale'), 'promoTemplate 缺 sale 会导致保存被拒')
 })
+
+const statsSvcSrc = readFileSync(resolve(here, '../src/services/activity-stats.ts'), 'utf8')
+const statsCtlSrc = readFileSync(resolve(here, '../src/controllers/activity-stats.ts'), 'utf8')
+
+test('getOverview 支持 promoTemplate 过滤', () => {
+  assert.ok(
+    /getOverview\(\{[^}]*promoTemplate/.test(statsSvcSrc),
+    'getOverview 签名缺 promoTemplate 参数'
+  )
+  assert.ok(statsSvcSrc.includes('promoTemplate'), '未按 promoTemplate 过滤')
+  assert.ok(/ctx\.query[\s\S]*promoTemplate/.test(statsCtlSrc) || statsCtlSrc.includes('promoTemplate'), 'controller 未透传 promoTemplate')
+})

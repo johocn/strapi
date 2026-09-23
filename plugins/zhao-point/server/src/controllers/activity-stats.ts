@@ -3,14 +3,14 @@ import type { Core } from "@strapi/strapi";
 const wrap = (data: any, meta: any = {}) => ({ data, meta });
 
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
-  // GET /adm/activity-overview?status=all|draft|signup_open|ongoing|ended
+  // GET /adm/activity-overview?status=all|draft|signup_open|ongoing|ended&promoTemplate=all|sale
   async overview(ctx: any) {
     try {
-      const { status = "all" } = ctx.query;
+      const { status = "all", promoTemplate = "all" } = ctx.query;
       const result = await strapi
         .plugin("zhao-point")
         .service("activity-stats")
-        .getOverview({ status: String(status) });
+        .getOverview({ status: String(status), promoTemplate: String(promoTemplate) });
       ctx.body = wrap(result);
     } catch (e: any) {
       ctx.status = (e as any).status || 400;
