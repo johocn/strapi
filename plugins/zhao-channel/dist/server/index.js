@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperties(exports, { __esModule: { value: true }, [Symbol.toStringTag]: { value: "Module" } });
 const Queue = require("bull");
-const async_hooks = require("async_hooks");
 const Redis = require("ioredis");
+const async_hooks = require("async_hooks");
 const crypto = require("crypto");
 const _interopDefault = (e) => e && e.__esModule ? e : { default: e };
 function _interopNamespace(e) {
@@ -25,374 +25,6 @@ function _interopNamespace(e) {
 const Queue__default = /* @__PURE__ */ _interopDefault(Queue);
 const Redis__default = /* @__PURE__ */ _interopDefault(Redis);
 const crypto__namespace = /* @__PURE__ */ _interopNamespace(crypto);
-function getRedisConfig() {
-  return {
-    host: process.env.REDIS_HOST || "localhost",
-    port: parseInt(process.env.REDIS_PORT || "6379", 10),
-    username: process.env.REDIS_USER || void 0,
-    password: process.env.REDIS_PASSWORD || void 0,
-    db: parseInt(process.env.REDIS_DB || "0", 10),
-    maxRetriesPerRequest: 1
-  };
-}
-let queueInstance = null;
-let queueAvailable = null;
-function getQueue() {
-  if (queueAvailable === false) return null;
-  if (!queueInstance) {
-    try {
-      queueInstance = new Queue__default.default("channel-batch-grant", {
-        redis: getRedisConfig(),
-        defaultJobOptions: {
-          attempts: 3,
-          backoff: {
-            type: "exponential",
-            delay: 2e3
-          },
-          removeOnComplete: 10,
-          removeOnFail: 5
-        }
-      });
-      queueInstance.on("error", () => {
-        queueAvailable = false;
-      });
-      queueAvailable = true;
-    } catch {
-      queueAvailable = false;
-      return null;
-    }
-  }
-  return queueInstance;
-}
-function addBatchGrantJob(data) {
-  const q = getQueue();
-  if (!q) return Promise.resolve(null);
-  return q.add("batch-grant", data);
-}
-function getQueueStatus() {
-  const q = getQueue();
-  if (!q) {
-    return Promise.resolve({ waiting: 0, active: 0, completed: 0, failed: 0 });
-  }
-  return Promise.all([
-    q.getWaitingCount(),
-    q.getActiveCount(),
-    q.getCompletedCount(),
-    q.getFailedCount()
-  ]).then(([waiting, active, completed, failed]) => ({
-    waiting,
-    active,
-    completed,
-    failed
-  }));
-}
-function getBatchGrantQueue() {
-  return getQueue();
-}
-async function closeBatchGrantQueue() {
-  if (queueInstance) {
-    try {
-      await queueInstance.close();
-    } catch {
-    }
-    queueInstance = null;
-  }
-  queueAvailable = null;
-}
-const queue = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
-  __proto__: null,
-  addBatchGrantJob,
-  closeBatchGrantQueue,
-  getBatchGrantQueue,
-  getQueueStatus
-}, Symbol.toStringTag, { value: "Module" }));
-const contextStorage = new async_hooks.AsyncLocalStorage();
-function runWithContext(url, fn) {
-  return contextStorage.run({ url }, fn);
-}
-function isAdminContext() {
-  const ctx = contextStorage.getStore();
-  if (!ctx) return false;
-  return ctx.url.includes("/admin/") || ctx.url.includes("/content-manager/");
-}
-const USER_CHANNEL_UID$2 = "plugin::zhao-channel.user-channel";
-const ROLE_CHANNEL_UID$2 = "plugin::zhao-channel.role-channel";
-const USER_UID$3 = "plugin::users-permissions.user";
-const USER_INVITE_UID$2 = "plugin::zhao-channel.user-invite";
-const CHANNEL_MEMBER_UID$4 = "plugin::zhao-channel.channel-member";
-const CHANNEL_UID$3 = "plugin::zhao-channel.channel";
-const bootstrap = ({ strapi }) => {
-  setTimeout(async () => {
-    try {
-      await initDefaultRootChannel(strapi);
-    } catch (err) {
-      strapi.log.warn(`[zhao-channel] 默认根渠道初始化失败（可通过后台手动创建）: ${err.message}`);
-    }
-  }, 5e3);
-  strapi.db.lifecycles.subscribe({
-    models: [USER_UID$3],
-    async afterCreate(event) {
-      const { result } = event;
-      if (!result?.id) return;
-      try {
-        const userInviteService = strapi.plugin("zhao-channel").service("user-invite");
-        await userInviteService.createForUser(result.id);
-        const _skipAutoChannel = isAdminContext();
-        const autoCreateChannel = process.env.CHANNEL_AUTO_CREATE_CHANNEL === "true";
-        setTimeout(async () => {
-          try {
-            if (_skipAutoChannel || !autoCreateChannel) return;
-            const existingMember = await strapi.db.query(CHANNEL_MEMBER_UID$4).findOne({
-              where: { user: result.id, isCurrent: true }
-            });
-            if (existingMember) return;
-            const channelService = strapi.plugin("zhao-channel").service("channel");
-            const channel2 = await channelService.createRoot({
-              name: `${result.username || result.email || `用户${result.id}`}的个人渠道`,
-              description: "自动创建的个人渠道"
-            });
-            await strapi.db.query(CHANNEL_MEMBER_UID$4).create({
-              data: {
-                channel: channel2.id,
-                user: result.id,
-                role: "member",
-                isCurrent: true
-              }
-            });
-            const userInvite2 = await strapi.db.query(USER_INVITE_UID$2).findOne({
-              where: { user: result.id }
-            });
-            if (userInvite2) {
-              await strapi.db.query(USER_INVITE_UID$2).update({
-                where: { id: userInvite2.id },
-                data: {
-                  inviteChannel: channel2.id,
-                  inviteMethod: "organic"
-                }
-              });
-            }
-            strapi.log.info(
-              `[zhao-channel] 自动为用户 ${result.id} 创建个人渠道: ${channel2.name} (ID: ${channel2.id})`
-            );
-          } catch (err) {
-            strapi.log.error(
-              `[zhao-channel] 自动创建用户 ${result.id} 的个人渠道失败: ${err.message}`
-            );
-          }
-        }, 0);
-      } catch (err) {
-        strapi.log.error(
-          `[zhao-channel] Failed to create user-invite for user ${result.id}: ${err.message}`
-        );
-      }
-    }
-  });
-  try {
-    const authService = strapi.plugin("zhao-auth").service("auth");
-    authService.registerPolicy(
-      "has-channel-access-advanced",
-      async (context) => {
-        if (!context.user?.id) {
-          return { passed: false, code: "UNAUTHENTICATED", message: "未认证，请先登录" };
-        }
-        const channelId = context.params.channelId || context.params.id || context.body.channelId || context.body.channelIds?.[0] || context.body.parentChannel || context.query?.channel;
-        if (!channelId) {
-          return { passed: false, code: "MISSING_CHANNEL_ID", message: "缺少渠道 ID" };
-        }
-        try {
-          const permService = strapi.plugin("zhao-channel").service("channel-permission");
-          const hasPermission = await permService.checkUserChannelPermission(
-            context.user.id,
-            Number(channelId)
-          );
-          if (!hasPermission) {
-            return { passed: false, code: "FORBIDDEN_CHANNEL", message: "无权访问该渠道" };
-          }
-          return { passed: true };
-        } catch {
-          return { passed: false, code: "CHANNEL_SERVICE_UNAVAILABLE", message: "渠道权限服务不可用" };
-        }
-      }
-    );
-    authService.registerPolicy(
-      "is-channel-admin",
-      async (context) => {
-        if (!context.user?.id) {
-          return { passed: false, code: "UNAUTHENTICATED", message: "未认证，请先登录" };
-        }
-        const channelId = context.params.channelId || context.params.id || context.body.channelId || context.body.channelIds?.[0] || context.body.parentChannel || context.query?.channel;
-        if (!channelId) {
-          return { passed: false, code: "MISSING_CHANNEL_ID", message: "缺少渠道 ID" };
-        }
-        try {
-          const permService = strapi.plugin("zhao-channel").service("channel-permission");
-          const isAdmin = await permService.checkChannelMemberRole(
-            context.user.id,
-            Number(channelId),
-            20
-          );
-          if (!isAdmin) {
-            return { passed: false, code: "FORBIDDEN_ROLE", message: "需要渠道管理员权限" };
-          }
-          return { passed: true };
-        } catch {
-          return { passed: false, code: "CHANNEL_SERVICE_UNAVAILABLE", message: "渠道权限服务不可用" };
-        }
-      }
-    );
-    authService.registerPolicy(
-      "is-channel-owner",
-      async (context) => {
-        if (!context.user?.id) {
-          return { passed: false, code: "UNAUTHENTICATED", message: "未认证，请先登录" };
-        }
-        const channelId = context.params.channelId || context.params.id || context.body.channelId || context.body.channelIds?.[0] || context.body.parentChannel || context.query?.channel;
-        if (!channelId) {
-          return { passed: false, code: "MISSING_CHANNEL_ID", message: "缺少渠道 ID" };
-        }
-        try {
-          const permService = strapi.plugin("zhao-channel").service("channel-permission");
-          const isOwner = await permService.checkChannelMemberRole(
-            context.user.id,
-            Number(channelId),
-            30
-          );
-          if (!isOwner) {
-            return { passed: false, code: "FORBIDDEN_ROLE", message: "需要渠道所有者权限" };
-          }
-          return { passed: true };
-        } catch {
-          return { passed: false, code: "CHANNEL_SERVICE_UNAVAILABLE", message: "渠道权限服务不可用" };
-        }
-      }
-    );
-    strapi.log.info("[zhao-channel] 渠道权限策略已注册到 zhao-auth");
-  } catch (err) {
-    strapi.log.warn(`[zhao-channel] zhao-auth 未启用，渠道权限策略跳过注册: ${err.message}`);
-  }
-  const batchGrantQueue = getBatchGrantQueue();
-  if (batchGrantQueue) {
-    batchGrantQueue.process("batch-grant", async (job) => {
-      const { type, targetId, channelIds, grantedBy } = job.data;
-      if (type === "user") {
-        for (const channelId of channelIds) {
-          const existing = await strapi.db.query(USER_CHANNEL_UID$2).findOne({
-            where: { user: targetId, channel: channelId }
-          });
-          if (!existing) {
-            await strapi.db.query(USER_CHANNEL_UID$2).create({
-              data: { user: targetId, channel: channelId, grantedBy }
-            });
-          }
-        }
-        const { setUserChannelCache: setUserChannelCache2, deleteUserAllChannelsCache: deleteUserAllChannelsCache2 } = await Promise.resolve().then(() => redis);
-        const allUserChannels = await strapi.db.query(USER_CHANNEL_UID$2).findMany({
-          where: { user: targetId },
-          populate: ["channel"]
-        });
-        const allChannelIds = allUserChannels.map(
-          (uc) => uc.channel?.id || uc.channel
-        );
-        await setUserChannelCache2(targetId, allChannelIds);
-        await deleteUserAllChannelsCache2(targetId);
-      } else if (type === "role") {
-        for (const channelId of channelIds) {
-          const existing = await strapi.db.query(ROLE_CHANNEL_UID$2).findOne({
-            where: { role: targetId, channel: channelId }
-          });
-          if (!existing) {
-            await strapi.db.query(ROLE_CHANNEL_UID$2).create({
-              data: { role: targetId, channel: channelId, grantedBy }
-            });
-          }
-        }
-        const { setRoleChannelCache: setRoleChannelCache2, deleteUserAllChannelsCache: deleteUserAllChannelsCache2 } = await Promise.resolve().then(() => redis);
-        const allRoleChannels = await strapi.db.query(ROLE_CHANNEL_UID$2).findMany({
-          where: { role: targetId },
-          populate: ["channel"]
-        });
-        const allChannelIds = allRoleChannels.map(
-          (rc) => rc.channel?.id || rc.channel
-        );
-        await setRoleChannelCache2(targetId, allChannelIds);
-        const usersWithRole = await strapi.db.query(USER_UID$3).findMany({
-          where: { role: targetId },
-          select: ["id"]
-        });
-        for (const user of usersWithRole) {
-          await deleteUserAllChannelsCache2(user.id);
-        }
-      }
-      return { success: true, granted: channelIds.length };
-    });
-    batchGrantQueue.on("failed", (job, err) => {
-      strapi.log.error(`Batch grant job ${job.id} failed: ${err.message}`);
-    });
-  }
-};
-async function initDefaultRootChannel(strapi) {
-  const existingRoot = await strapi.db.query(CHANNEL_UID$3).findOne({
-    where: { channelTier: "root" }
-  });
-  if (existingRoot) {
-    strapi.log.info(`[zhao-channel] 根渠道已存在，跳过初始化 (ID: ${existingRoot.id})`);
-    return;
-  }
-  const channelService = strapi.plugin("zhao-channel").service("channel");
-  const rootChannel = await channelService.createRoot({
-    name: "平台根渠道",
-    description: "系统自动创建的根渠道，所有渠道的顶级父渠道"
-  });
-  strapi.log.info(`[zhao-channel] 默认根渠道创建成功 (ID: ${rootChannel.id}, Code: ${rootChannel.code})`);
-  const adminUser = await strapi.db.query(USER_UID$3).findOne({
-    where: { role: { type: "admin" } }
-  });
-  if (adminUser) {
-    const existingMember = await strapi.db.query(CHANNEL_MEMBER_UID$4).findOne({
-      where: { user: adminUser.id, channel: rootChannel.id }
-    });
-    if (!existingMember) {
-      await strapi.db.query(CHANNEL_MEMBER_UID$4).create({
-        data: {
-          channel: rootChannel.id,
-          user: adminUser.id,
-          role: "owner",
-          isCurrent: true
-        }
-      });
-      strapi.log.info(`[zhao-channel] admin 用户已关联到根渠道作为 owner (User ID: ${adminUser.id})`);
-    }
-  }
-  const adminRole = await strapi.db.query("plugin::users-permissions.role").findOne({
-    where: { type: "admin" }
-  });
-  if (adminRole) {
-    const existingRoleChannel = await strapi.db.query(ROLE_CHANNEL_UID$2).findOne({
-      where: { role: adminRole.id, channel: rootChannel.id }
-    });
-    if (!existingRoleChannel) {
-      await strapi.db.query(ROLE_CHANNEL_UID$2).create({
-        data: {
-          role: adminRole.id,
-          channel: rootChannel.id
-        }
-      });
-      strapi.log.info(`[zhao-channel] admin 角色已关联到根渠道 (Role ID: ${adminRole.id})`);
-    }
-  }
-  const existingUserChannel = await strapi.db.query(USER_CHANNEL_UID$2).findOne({
-    where: { channel: rootChannel.id }
-  });
-  if (!existingUserChannel && adminUser) {
-    await strapi.db.query(USER_CHANNEL_UID$2).create({
-      data: {
-        user: adminUser.id,
-        channel: rootChannel.id
-      }
-    });
-    strapi.log.info(`[zhao-channel] admin 用户渠道权限已授予 (User ID: ${adminUser.id})`);
-  }
-}
 function getRedisOptions() {
   const host = process.env.REDIS_HOST || "localhost";
   const port = parseInt(process.env.REDIS_PORT || "6379", 10);
@@ -588,6 +220,397 @@ const redis = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.definePropert
   setUserAllChannelsCache,
   setUserChannelCache
 }, Symbol.toStringTag, { value: "Module" }));
+function getRedisConfig() {
+  return {
+    host: process.env.REDIS_HOST || "localhost",
+    port: parseInt(process.env.REDIS_PORT || "6379", 10),
+    username: process.env.REDIS_USER || void 0,
+    password: process.env.REDIS_PASSWORD || void 0,
+    db: parseInt(process.env.REDIS_DB || "0", 10),
+    maxRetriesPerRequest: 1
+  };
+}
+let queueInstance = null;
+let queueAvailable = null;
+async function probeBullSupport() {
+  const redis2 = getRedisClient();
+  if (!redis2) return false;
+  try {
+    if (redis2.status === "wait" || redis2.status === "connect") {
+      await redis2.connect();
+    }
+    return await redis2.eval("return 1", 0) === 1;
+  } catch {
+    return false;
+  }
+}
+async function initBatchGrantQueue() {
+  if (queueAvailable === null) {
+    queueAvailable = await probeBullSupport();
+  }
+  return queueAvailable ? getQueue() : null;
+}
+function getQueue() {
+  if (queueAvailable !== true) return null;
+  if (!queueInstance) {
+    try {
+      queueInstance = new Queue__default.default("channel-batch-grant", {
+        redis: getRedisConfig(),
+        defaultJobOptions: {
+          attempts: 3,
+          backoff: {
+            type: "exponential",
+            delay: 2e3
+          },
+          removeOnComplete: 10,
+          removeOnFail: 5
+        }
+      });
+      queueInstance.on("error", () => {
+        queueAvailable = false;
+      });
+    } catch {
+      queueAvailable = false;
+      return null;
+    }
+  }
+  return queueInstance;
+}
+function addBatchGrantJob(data) {
+  const q = getQueue();
+  if (!q) return Promise.resolve(null);
+  return q.add("batch-grant", data);
+}
+function getQueueStatus() {
+  const q = getQueue();
+  if (!q) {
+    return Promise.resolve({ waiting: 0, active: 0, completed: 0, failed: 0 });
+  }
+  return Promise.all([
+    q.getWaitingCount(),
+    q.getActiveCount(),
+    q.getCompletedCount(),
+    q.getFailedCount()
+  ]).then(([waiting, active, completed, failed]) => ({
+    waiting,
+    active,
+    completed,
+    failed
+  }));
+}
+function getBatchGrantQueue() {
+  return getQueue();
+}
+async function closeBatchGrantQueue() {
+  if (queueInstance) {
+    try {
+      await queueInstance.close();
+    } catch {
+    }
+    queueInstance = null;
+  }
+  queueAvailable = null;
+}
+const queue = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+  __proto__: null,
+  addBatchGrantJob,
+  closeBatchGrantQueue,
+  getBatchGrantQueue,
+  getQueueStatus,
+  initBatchGrantQueue
+}, Symbol.toStringTag, { value: "Module" }));
+const contextStorage = new async_hooks.AsyncLocalStorage();
+function runWithContext(url, fn) {
+  return contextStorage.run({ url }, fn);
+}
+function isAdminContext() {
+  const ctx = contextStorage.getStore();
+  if (!ctx) return false;
+  return ctx.url.includes("/admin/") || ctx.url.includes("/content-manager/");
+}
+const USER_CHANNEL_UID$2 = "plugin::zhao-channel.user-channel";
+const ROLE_CHANNEL_UID$2 = "plugin::zhao-channel.role-channel";
+const USER_UID$3 = "plugin::users-permissions.user";
+const USER_INVITE_UID$2 = "plugin::zhao-channel.user-invite";
+const CHANNEL_MEMBER_UID$4 = "plugin::zhao-channel.channel-member";
+const CHANNEL_UID$3 = "plugin::zhao-channel.channel";
+const bootstrap = ({ strapi }) => {
+  setTimeout(async () => {
+    try {
+      await initDefaultRootChannel(strapi);
+    } catch (err) {
+      strapi.log.warn(`[zhao-channel] 默认根渠道初始化失败（可通过后台手动创建）: ${err.message}`);
+    }
+  }, 5e3);
+  strapi.db.lifecycles.subscribe({
+    models: [USER_UID$3],
+    async afterCreate(event) {
+      const { result } = event;
+      if (!result?.id) return;
+      try {
+        const userInviteService = strapi.plugin("zhao-channel").service("user-invite");
+        await userInviteService.createForUser(result.id);
+        const _skipAutoChannel = isAdminContext();
+        const autoCreateChannel = process.env.CHANNEL_AUTO_CREATE_CHANNEL === "true";
+        setTimeout(async () => {
+          try {
+            if (_skipAutoChannel || !autoCreateChannel) return;
+            const existingMember = await strapi.db.query(CHANNEL_MEMBER_UID$4).findOne({
+              where: { user: result.id, isCurrent: true }
+            });
+            if (existingMember) return;
+            const channelService = strapi.plugin("zhao-channel").service("channel");
+            const channel2 = await channelService.createRoot({
+              name: `${result.username || result.email || `用户${result.id}`}的个人渠道`,
+              description: "自动创建的个人渠道"
+            });
+            await strapi.db.query(CHANNEL_MEMBER_UID$4).create({
+              data: {
+                channel: channel2.id,
+                user: result.id,
+                role: "member",
+                isCurrent: true
+              }
+            });
+            const userInvite2 = await strapi.db.query(USER_INVITE_UID$2).findOne({
+              where: { user: result.id }
+            });
+            if (userInvite2) {
+              await strapi.db.query(USER_INVITE_UID$2).update({
+                where: { id: userInvite2.id },
+                data: {
+                  inviteChannel: channel2.id,
+                  inviteMethod: "organic"
+                }
+              });
+            }
+            strapi.log.info(
+              `[zhao-channel] 自动为用户 ${result.id} 创建个人渠道: ${channel2.name} (ID: ${channel2.id})`
+            );
+          } catch (err) {
+            strapi.log.error(
+              `[zhao-channel] 自动创建用户 ${result.id} 的个人渠道失败: ${err.message}`
+            );
+          }
+        }, 0);
+      } catch (err) {
+        strapi.log.error(
+          `[zhao-channel] Failed to create user-invite for user ${result.id}: ${err.message}`
+        );
+      }
+    }
+  });
+  try {
+    const authService = strapi.plugin("zhao-auth").service("auth");
+    authService.registerPolicy(
+      "has-channel-access-advanced",
+      async (context) => {
+        if (!context.user?.id) {
+          return { passed: false, code: "UNAUTHENTICATED", message: "未认证，请先登录" };
+        }
+        const channelId = context.params.channelId || context.params.id || context.body.channelId || context.body.channelIds?.[0] || context.body.parentChannel || context.query?.channel;
+        if (!channelId) {
+          return { passed: false, code: "MISSING_CHANNEL_ID", message: "缺少渠道 ID" };
+        }
+        try {
+          const permService = strapi.plugin("zhao-channel").service("channel-permission");
+          const hasPermission = await permService.checkUserChannelPermission(
+            context.user.id,
+            Number(channelId)
+          );
+          if (!hasPermission) {
+            return { passed: false, code: "FORBIDDEN_CHANNEL", message: "无权访问该渠道" };
+          }
+          return { passed: true };
+        } catch {
+          return { passed: false, code: "CHANNEL_SERVICE_UNAVAILABLE", message: "渠道权限服务不可用" };
+        }
+      }
+    );
+    authService.registerPolicy(
+      "is-channel-admin",
+      async (context) => {
+        if (!context.user?.id) {
+          return { passed: false, code: "UNAUTHENTICATED", message: "未认证，请先登录" };
+        }
+        const channelId = context.params.channelId || context.params.id || context.body.channelId || context.body.channelIds?.[0] || context.body.parentChannel || context.query?.channel;
+        if (!channelId) {
+          return { passed: false, code: "MISSING_CHANNEL_ID", message: "缺少渠道 ID" };
+        }
+        try {
+          const permService = strapi.plugin("zhao-channel").service("channel-permission");
+          const isAdmin = await permService.checkChannelMemberRole(
+            context.user.id,
+            Number(channelId),
+            20
+          );
+          if (!isAdmin) {
+            return { passed: false, code: "FORBIDDEN_ROLE", message: "需要渠道管理员权限" };
+          }
+          return { passed: true };
+        } catch {
+          return { passed: false, code: "CHANNEL_SERVICE_UNAVAILABLE", message: "渠道权限服务不可用" };
+        }
+      }
+    );
+    authService.registerPolicy(
+      "is-channel-owner",
+      async (context) => {
+        if (!context.user?.id) {
+          return { passed: false, code: "UNAUTHENTICATED", message: "未认证，请先登录" };
+        }
+        const channelId = context.params.channelId || context.params.id || context.body.channelId || context.body.channelIds?.[0] || context.body.parentChannel || context.query?.channel;
+        if (!channelId) {
+          return { passed: false, code: "MISSING_CHANNEL_ID", message: "缺少渠道 ID" };
+        }
+        try {
+          const permService = strapi.plugin("zhao-channel").service("channel-permission");
+          const isOwner = await permService.checkChannelMemberRole(
+            context.user.id,
+            Number(channelId),
+            30
+          );
+          if (!isOwner) {
+            return { passed: false, code: "FORBIDDEN_ROLE", message: "需要渠道所有者权限" };
+          }
+          return { passed: true };
+        } catch {
+          return { passed: false, code: "CHANNEL_SERVICE_UNAVAILABLE", message: "渠道权限服务不可用" };
+        }
+      }
+    );
+    strapi.log.info("[zhao-channel] 渠道权限策略已注册到 zhao-auth");
+  } catch (err) {
+    strapi.log.warn(`[zhao-channel] zhao-auth 未启用，渠道权限策略跳过注册: ${err.message}`);
+  }
+  initBatchGrantQueue().then((batchGrantQueue) => {
+    if (!batchGrantQueue) {
+      strapi.log.warn(
+        "[zhao-channel] Redis 不支持 Bull 所需的 Lua 脚本，批量授权队列已禁用（降级为本地处理）"
+      );
+      return;
+    }
+    batchGrantQueue.process("batch-grant", async (job) => {
+      const { type, targetId, channelIds, grantedBy } = job.data;
+      if (type === "user") {
+        for (const channelId of channelIds) {
+          const existing = await strapi.db.query(USER_CHANNEL_UID$2).findOne({
+            where: { user: targetId, channel: channelId }
+          });
+          if (!existing) {
+            await strapi.db.query(USER_CHANNEL_UID$2).create({
+              data: { user: targetId, channel: channelId, grantedBy }
+            });
+          }
+        }
+        const { setUserChannelCache: setUserChannelCache2, deleteUserAllChannelsCache: deleteUserAllChannelsCache2 } = await Promise.resolve().then(() => redis);
+        const allUserChannels = await strapi.db.query(USER_CHANNEL_UID$2).findMany({
+          where: { user: targetId },
+          populate: ["channel"]
+        });
+        const allChannelIds = allUserChannels.map(
+          (uc) => uc.channel?.id || uc.channel
+        );
+        await setUserChannelCache2(targetId, allChannelIds);
+        await deleteUserAllChannelsCache2(targetId);
+      } else if (type === "role") {
+        for (const channelId of channelIds) {
+          const existing = await strapi.db.query(ROLE_CHANNEL_UID$2).findOne({
+            where: { role: targetId, channel: channelId }
+          });
+          if (!existing) {
+            await strapi.db.query(ROLE_CHANNEL_UID$2).create({
+              data: { role: targetId, channel: channelId, grantedBy }
+            });
+          }
+        }
+        const { setRoleChannelCache: setRoleChannelCache2, deleteUserAllChannelsCache: deleteUserAllChannelsCache2 } = await Promise.resolve().then(() => redis);
+        const allRoleChannels = await strapi.db.query(ROLE_CHANNEL_UID$2).findMany({
+          where: { role: targetId },
+          populate: ["channel"]
+        });
+        const allChannelIds = allRoleChannels.map(
+          (rc) => rc.channel?.id || rc.channel
+        );
+        await setRoleChannelCache2(targetId, allChannelIds);
+        const usersWithRole = await strapi.db.query(USER_UID$3).findMany({
+          where: { role: targetId },
+          select: ["id"]
+        });
+        for (const user of usersWithRole) {
+          await deleteUserAllChannelsCache2(user.id);
+        }
+      }
+      return { success: true, granted: channelIds.length };
+    });
+    batchGrantQueue.on("failed", (job, err) => {
+      strapi.log.error(`Batch grant job ${job.id} failed: ${err.message}`);
+    });
+  });
+};
+async function initDefaultRootChannel(strapi) {
+  const existingRoot = await strapi.db.query(CHANNEL_UID$3).findOne({
+    where: { channelTier: "root" }
+  });
+  if (existingRoot) {
+    strapi.log.info(`[zhao-channel] 根渠道已存在，跳过初始化 (ID: ${existingRoot.id})`);
+    return;
+  }
+  const channelService = strapi.plugin("zhao-channel").service("channel");
+  const rootChannel = await channelService.createRoot({
+    name: "平台根渠道",
+    description: "系统自动创建的根渠道，所有渠道的顶级父渠道"
+  });
+  strapi.log.info(`[zhao-channel] 默认根渠道创建成功 (ID: ${rootChannel.id}, Code: ${rootChannel.code})`);
+  const adminUser = await strapi.db.query(USER_UID$3).findOne({
+    where: { role: { type: "admin" } }
+  });
+  if (adminUser) {
+    const existingMember = await strapi.db.query(CHANNEL_MEMBER_UID$4).findOne({
+      where: { user: adminUser.id, channel: rootChannel.id }
+    });
+    if (!existingMember) {
+      await strapi.db.query(CHANNEL_MEMBER_UID$4).create({
+        data: {
+          channel: rootChannel.id,
+          user: adminUser.id,
+          role: "owner",
+          isCurrent: true
+        }
+      });
+      strapi.log.info(`[zhao-channel] admin 用户已关联到根渠道作为 owner (User ID: ${adminUser.id})`);
+    }
+  }
+  const adminRole = await strapi.db.query("plugin::users-permissions.role").findOne({
+    where: { type: "admin" }
+  });
+  if (adminRole) {
+    const existingRoleChannel = await strapi.db.query(ROLE_CHANNEL_UID$2).findOne({
+      where: { role: adminRole.id, channel: rootChannel.id }
+    });
+    if (!existingRoleChannel) {
+      await strapi.db.query(ROLE_CHANNEL_UID$2).create({
+        data: {
+          role: adminRole.id,
+          channel: rootChannel.id
+        }
+      });
+      strapi.log.info(`[zhao-channel] admin 角色已关联到根渠道 (Role ID: ${adminRole.id})`);
+    }
+  }
+  const existingUserChannel = await strapi.db.query(USER_CHANNEL_UID$2).findOne({
+    where: { channel: rootChannel.id }
+  });
+  if (!existingUserChannel && adminUser) {
+    await strapi.db.query(USER_CHANNEL_UID$2).create({
+      data: {
+        user: adminUser.id,
+        channel: rootChannel.id
+      }
+    });
+    strapi.log.info(`[zhao-channel] admin 用户渠道权限已授予 (User ID: ${adminUser.id})`);
+  }
+}
 const destroy = ({ strapi: _strapi }) => {
   closeRedisClient();
   closeBatchGrantQueue();

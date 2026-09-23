@@ -7197,6 +7197,15 @@ const recommend = ({ strapi }) => ({
 let collectQueue = null;
 let calculateQueue = null;
 let recalculateQueue = null;
+async function probeBullSupport() {
+  const redis = getRedisClient();
+  if (!redis) return false;
+  try {
+    return await redis.eval("return 1", 0) === 1;
+  } catch {
+    return false;
+  }
+}
 async function setupQueues(strapi) {
   const redisConfig = {
     host: process.env.REDIS_HOST || "localhost",
@@ -7210,6 +7219,12 @@ async function setupQueues(strapi) {
   if (!available) {
     markRedisUnavailable();
     strapi.log.warn("[zhao-wealth] Redis 不可用，队列功能降级（API 与手动操作仍可用）");
+    return;
+  }
+  if (!await probeBullSupport()) {
+    strapi.log.warn(
+      "[zhao-wealth] Redis 不支持 Bull 所需的 Lua 脚本，队列功能降级（API 与手动操作仍可用）"
+    );
     return;
   }
   try {

@@ -1,5 +1,5 @@
 import type { Core } from "@strapi/strapi";
-import { getBatchGrantQueue } from "./utils/queue";
+import { initBatchGrantQueue } from "./utils/queue";
 import { isAdminContext } from "./utils/registration-context";
 
 const USER_CHANNEL_UID = "plugin::zhao-channel.user-channel";
@@ -215,8 +215,18 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     strapi.log.warn(`[zhao-channel] zhao-auth 未启用，渠道权限策略跳过注册: ${err.message}`);
   }
 
-  const batchGrantQueue = getBatchGrantQueue();
-  if (batchGrantQueue) {
+  // 仅在确认 Redis 支持 Bull 所需的 Lua 脚本（EVAL）后才注册处理器。
+  // PING 通过不代表可用：若 6379 被不支持 EVAL 的兼容实现占用（如 mock-redis
+  // 对未知命令统一回 +OK），Bull 会凭空造出 __default__ 幻影任务并无限重试，
+  // 打满 CPU 并饿死事件循环。探测失败时队列保持禁用，批量授权走本地降级。
+  initBatchGrantQueue().then((batchGrantQueue) => {
+    if (!batchGrantQueue) {
+      strapi.log.warn(
+        "[zhao-channel] Redis 不支持 Bull 所需的 Lua 脚本，批量授权队列已禁用（降级为本地处理）"
+      );
+      return;
+    }
+
     batchGrantQueue.process("batch-grant", async (job) => {
     const { type, targetId, channelIds, grantedBy } = job.data;
 
@@ -285,7 +295,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     batchGrantQueue.on("failed", (job, err) => {
       strapi.log.error(`Batch grant job ${job.id} failed: ${err.message}`);
     });
-  }
+  });
 };
 
 async function initDefaultRootChannel(strapi: Core.Strapi) {
