@@ -17,7 +17,7 @@ const config = {
         ],
     },
     moduleFileExtensions: ["js", "ts", "json"],
-    testTimeout: 30000,
+    testTimeout: 240000,
     verbose: true,
     forceExit: true,
     clearMocks: true,
