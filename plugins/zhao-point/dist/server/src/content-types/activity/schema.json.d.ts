@@ -66,7 +66,9 @@ declare const _default: {
     "customPromoActive": { "type": "boolean", "default": true },
     "tourMode": { "type": "boolean", "default": false },
     "itinerary": { "type": "json" },
-    "story": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.tour-story", "inversedBy": "activities" }
+    "story": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.tour-story", "inversedBy": "activities" },
+    "goodsList": { "type": "json" },
+    "purpose": { "type": "text" }
   }
 };
 

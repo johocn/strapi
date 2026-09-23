@@ -1348,8 +1348,9 @@ declare const _default: {
     "activity-stats": ({ strapi }: {
         strapi: import('@strapi/types/dist/core').Strapi;
     }) => {
-        getOverview({ status }?: {
+        getOverview({ status, promoTemplate }?: {
             status?: string;
+            promoTemplate?: string;
         }): Promise<{
             summary: {
                 activityCount: number;

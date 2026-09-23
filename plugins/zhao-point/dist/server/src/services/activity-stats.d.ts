@@ -4,10 +4,11 @@ declare const _default: ({ strapi }: {
 }) => {
     /**
      * 活动效果总览：报名-到场-评价漏斗 + 积分成本/收益 + 裂变转化。
-     * 纯查询不落库；活动/系列双分组；status 过滤（all|draft|signup_open|ongoing|ended）。
+     * 纯查询不落库；活动/系列双分组；status 过滤（all|draft|signup_open|ongoing|ended）；promoTemplate 过滤（all|summit|salon|training|action|life|sale）。
      */
-    getOverview({ status }?: {
+    getOverview({ status, promoTemplate }?: {
         status?: string;
+        promoTemplate?: string;
     }): Promise<{
         summary: {
             activityCount: number;

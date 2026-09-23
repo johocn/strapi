@@ -244,7 +244,7 @@ const collectionName$a = "activities";
 const info$a = { "singularName": "activity", "pluralName": "activities", "displayName": "Activity", "description": "线下活动" };
 const options$a = { "draftAndPublish": false };
 const pluginOptions$3 = { "i18n": { "localized": false } };
-const attributes$a = { "title": { "type": "string", "required": true }, "type": { "type": "string", "default": "其他" }, "category": { "type": "string", "default": "" }, "tags": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-tag.tag", "inversedBy": "pointActivities" }, "assets": { "type": "json" }, "description": { "type": "text" }, "startTime": { "type": "datetime" }, "endTime": { "type": "datetime" }, "venueName": { "type": "string" }, "lat": { "type": "float" }, "lng": { "type": "float" }, "capacity": { "type": "integer", "required": true, "default": 100 }, "usedCapacity": { "type": "integer", "default": 0 }, "meetupPoint": { "type": "string" }, "minParticipants": { "type": "integer", "default": 0 }, "costIncludes": { "type": "text" }, "costExcludes": { "type": "text" }, "signupStart": { "type": "datetime" }, "signupEnd": { "type": "datetime" }, "signupAdvanceHours": { "type": "integer", "default": 0 }, "checkinMode": { "type": "enumeration", "enum": ["worker_scan", "self", "both"], "default": "both" }, "geoEnforced": { "type": "boolean", "default": false }, "geoRadiusM": { "type": "integer", "default": 500 }, "status": { "type": "enumeration", "enum": ["draft", "signup_open", "ongoing", "ended", "archived"], "default": "draft" }, "channelScope": { "type": "enumeration", "enum": ["all", "specific"], "default": "all" }, "channelIds": { "type": "json" }, "visibleToRoles": { "type": "json", "default": null }, "pointsCost": { "type": "integer", "default": 0 }, "pricingMode": { "type": "enumeration", "enum": ["flat", "tier", "factor"], "default": "flat" }, "feeTiers": { "type": "json" }, "feeFactors": { "type": "json" }, "feeCollectAt": { "type": "enumeration", "enum": ["signup", "checkin"], "default": "signup" }, "shareRewardPoints": { "type": "integer" }, "preUnlockArticles": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.article" }, "preUnlockLessons": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-course.course-lesson" }, "tempLessonMode": { "type": "enumeration", "enum": ["none", "signup", "milestone", "manual", "mixed"], "default": "none" }, "learningPackageArticles": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.article" }, "learningPackageLessons": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-course.course-lesson" }, "belongsToSeries": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.activity-series", "inversedBy": "activities" }, "formConfig": { "type": "json" }, "rewardConfig": { "type": "json" }, "questionnaire": { "type": "json" }, "preQuestionnaire": { "type": "json" }, "remindLeadMinutes": { "type": "integer", "default": 1440, "min": -1 }, "lecturer": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.lecturer", "inversedBy": "activities" }, "venue": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.venue", "inversedBy": "activities" }, "cashPrice": { "type": "decimal", "default": 0 }, "settleLecturer": { "type": "decimal", "default": 0 }, "settleVenue": { "type": "decimal", "default": 0 }, "slug": { "type": "uid", "targetField": "title", "required": false }, "relatedOverride": { "type": "json" }, "showRelatedSection": { "type": "boolean", "default": true }, "promoTemplate": { "type": "string", "default": "summit" }, "promoModules": { "type": "json" }, "promoContact": { "type": "json" }, "promoColors": { "type": "json" }, "promoAssets": { "type": "json" }, "customPromoHtml": { "type": "text" }, "customPromoActive": { "type": "boolean", "default": true }, "tourMode": { "type": "boolean", "default": false }, "itinerary": { "type": "json" }, "story": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.tour-story", "inversedBy": "activities" } };
+const attributes$a = { "title": { "type": "string", "required": true }, "type": { "type": "string", "default": "其他" }, "category": { "type": "string", "default": "" }, "tags": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-tag.tag", "inversedBy": "pointActivities" }, "assets": { "type": "json" }, "description": { "type": "text" }, "startTime": { "type": "datetime" }, "endTime": { "type": "datetime" }, "venueName": { "type": "string" }, "lat": { "type": "float" }, "lng": { "type": "float" }, "capacity": { "type": "integer", "required": true, "default": 100 }, "usedCapacity": { "type": "integer", "default": 0 }, "meetupPoint": { "type": "string" }, "minParticipants": { "type": "integer", "default": 0 }, "costIncludes": { "type": "text" }, "costExcludes": { "type": "text" }, "signupStart": { "type": "datetime" }, "signupEnd": { "type": "datetime" }, "signupAdvanceHours": { "type": "integer", "default": 0 }, "checkinMode": { "type": "enumeration", "enum": ["worker_scan", "self", "both"], "default": "both" }, "geoEnforced": { "type": "boolean", "default": false }, "geoRadiusM": { "type": "integer", "default": 500 }, "status": { "type": "enumeration", "enum": ["draft", "signup_open", "ongoing", "ended", "archived"], "default": "draft" }, "channelScope": { "type": "enumeration", "enum": ["all", "specific"], "default": "all" }, "channelIds": { "type": "json" }, "visibleToRoles": { "type": "json", "default": null }, "pointsCost": { "type": "integer", "default": 0 }, "pricingMode": { "type": "enumeration", "enum": ["flat", "tier", "factor"], "default": "flat" }, "feeTiers": { "type": "json" }, "feeFactors": { "type": "json" }, "feeCollectAt": { "type": "enumeration", "enum": ["signup", "checkin"], "default": "signup" }, "shareRewardPoints": { "type": "integer" }, "preUnlockArticles": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.article" }, "preUnlockLessons": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-course.course-lesson" }, "tempLessonMode": { "type": "enumeration", "enum": ["none", "signup", "milestone", "manual", "mixed"], "default": "none" }, "learningPackageArticles": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.article" }, "learningPackageLessons": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-course.course-lesson" }, "belongsToSeries": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.activity-series", "inversedBy": "activities" }, "formConfig": { "type": "json" }, "rewardConfig": { "type": "json" }, "questionnaire": { "type": "json" }, "preQuestionnaire": { "type": "json" }, "remindLeadMinutes": { "type": "integer", "default": 1440, "min": -1 }, "lecturer": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.lecturer", "inversedBy": "activities" }, "venue": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.venue", "inversedBy": "activities" }, "cashPrice": { "type": "decimal", "default": 0 }, "settleLecturer": { "type": "decimal", "default": 0 }, "settleVenue": { "type": "decimal", "default": 0 }, "slug": { "type": "uid", "targetField": "title", "required": false }, "relatedOverride": { "type": "json" }, "showRelatedSection": { "type": "boolean", "default": true }, "promoTemplate": { "type": "string", "default": "summit" }, "promoModules": { "type": "json" }, "promoContact": { "type": "json" }, "promoColors": { "type": "json" }, "promoAssets": { "type": "json" }, "customPromoHtml": { "type": "text" }, "customPromoActive": { "type": "boolean", "default": true }, "tourMode": { "type": "boolean", "default": false }, "itinerary": { "type": "json" }, "story": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.tour-story", "inversedBy": "activities" }, "goodsList": { "type": "json" }, "purpose": { "type": "text" } };
 const activity$2 = {
   kind: kind$a,
   collectionName: collectionName$a,
@@ -2225,9 +2225,12 @@ const PROMO_MODULE_TYPES = [
   "message",
   "faq",
   "custom",
-  "floatContact"
+  "floatContact",
+  "goods",
+  "purpose",
+  "notice"
 ];
-const PROMO_TEMPLATES = ["summit", "salon", "training", "action", "life"];
+const PROMO_TEMPLATES = ["summit", "salon", "training", "action", "life", "sale"];
 async function notifyAdminsOfMessage(strapi2, act, created) {
   try {
     const ssoPlug = strapi2.plugin("zhao-sso");
@@ -5118,11 +5121,11 @@ const calendar = ({ strapi: strapi2 }) => {
 };
 const wrap$2 = (data, meta = {}) => ({ data, meta });
 const activityStats$1 = ({ strapi: strapi2 }) => ({
-  // GET /adm/activity-overview?status=all|draft|signup_open|ongoing|ended
+  // GET /adm/activity-overview?status=all|draft|signup_open|ongoing|ended&promoTemplate=all|sale
   async overview(ctx) {
     try {
-      const { status = "all" } = ctx.query;
-      const result = await strapi2.plugin("zhao-point").service("activity-stats").getOverview({ status: String(status) });
+      const { status = "all", promoTemplate = "all" } = ctx.query;
+      const result = await strapi2.plugin("zhao-point").service("activity-stats").getOverview({ status: String(status), promoTemplate: String(promoTemplate) });
       ctx.body = wrap$2(result);
     } catch (e) {
       ctx.status = e.status || 400;
@@ -38419,12 +38422,16 @@ function indexBy(rows, key) {
 const activityStats = ({ strapi: strapi2 }) => ({
   /**
    * 活动效果总览：报名-到场-评价漏斗 + 积分成本/收益 + 裂变转化。
-   * 纯查询不落库；活动/系列双分组；status 过滤（all|draft|signup_open|ongoing|ended）。
+   * 纯查询不落库；活动/系列双分组；status 过滤（all|draft|signup_open|ongoing|ended）；promoTemplate 过滤（all|summit|salon|training|action|life|sale）。
    */
-  async getOverview({ status } = {}) {
+  async getOverview({ status, promoTemplate } = {}) {
     const statusFilter = status && status !== "all" && STATUS_LIST.includes(status) ? status : void 0;
+    const templateFilter = promoTemplate && promoTemplate !== "all" ? promoTemplate : void 0;
     const acts = await strapi2.db.query(ACTIVITY_UID$3).findMany({
-      where: statusFilter ? { status: statusFilter } : void 0,
+      where: {
+        ...statusFilter ? { status: statusFilter } : {},
+        ...templateFilter ? { promoTemplate: templateFilter } : {}
+      },
       populate: { belongsToSeries: true }
     });
     if (!acts.length) {

@@ -1128,6 +1128,12 @@ declare const _default: {
                     target: string;
                     inversedBy: string;
                 };
+                goodsList: {
+                    type: string;
+                };
+                purpose: {
+                    type: string;
+                };
             };
         };
         lifecycles: {
