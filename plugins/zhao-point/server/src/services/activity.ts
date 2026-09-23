@@ -13,10 +13,11 @@ const SSO_USER_UID = "plugin::zhao-sso.sso-user";
 export const PROMO_MODULE_TYPES = [
   "cover", "info", "rich", "highlights", "speakers", "agenda",
   "images", "rewards", "contact", "message", "faq", "custom", "floatContact",
+  "goods", "purpose", "notice",
 ] as const;
 
 /** 宣传页风格枚举 */
-export const PROMO_TEMPLATES = ["summit", "salon", "training", "action", "life"] as const;
+export const PROMO_TEMPLATES = ["summit", "salon", "training", "action", "life", "sale"] as const;
 
 /** 新留言微信通知管理员（复用 zhao-sso 的 manualSop.adminNotifyUsers 名单）。
  *  复用已绑定真实模板 act_confirm 发送；未配置名单/无 openid 时静默跳过，不影响留言落库。 */
