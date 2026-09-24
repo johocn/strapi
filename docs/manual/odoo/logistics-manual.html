@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>跨境物流系统操作手册 — zhao_logistics</title>
+<style>
+  :root {
+    --sidebar-width: 280px;
+    --sidebar-bg: #1a2332;
+    --sidebar-sub: #151d2a;
+    --sidebar-hover: #2a3a50;
+    --sidebar-active: #3b82f6;
+    --accent: #2563eb;
+    --accent-light: #3b82f6;
+    --text-primary: #1e293b;
+    --text-secondary: #475569;
+    --text-muted: #94a3b8;
+    --bg-body: #f8fafc;
+    --bg-card: #ffffff;
+    --border: #e2e8f0;
+    --code-bg: #1e293b;
+    --tag-bg: #eff6ff;
+    --tag-text: #1d4ed8;
+    --step-bg: #3b82f6;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    color: var(--text-primary);
+    background: var(--bg-body);
+    line-height: 1.7;
+    font-size: 15px;
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    width: var(--sidebar-width);
+    background: var(--sidebar-bg);
+    color: #cbd5e1;
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    overflow-y: auto;
+    z-index: 100;
+    flex-shrink: 0;
+  }
+  .sidebar::-webkit-scrollbar { width: 4px; }
+  .sidebar::-webkit-scrollbar-thumb { background: #475569; border-radius: 2px; }
+  .sidebar-header {
+    padding: 20px 20px 16px;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+    position: sticky;
+    top: 0;
+    background: var(--sidebar-bg);
+    z-index: 2;
+  }
+  .sidebar-header h1 { font-size: 16px; color: #f1f5f9; font-weight: 700; letter-spacing: .5px; }
+  .sidebar-header .version { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .sidebar-header .module { font-size: 11px; color: var(--accent-light); margin-top: 1px; }
+  .sidebar-nav { padding: 8px 0 40px; }
+  .sidebar-nav .nav-section { margin-bottom: 2px; }
+  .sidebar-nav .nav-section-title {
+    display: block;
+    padding: 8px 20px 8px 16px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: .8px;
+    cursor: pointer;
+    border-left: 3px solid transparent;
+    transition: .15s;
+    text-decoration: none;
+  }
+  .sidebar-nav .nav-section-title:hover { color: #e2e8f0; background: var(--sidebar-hover); }
+  .sidebar-nav .nav-link {
+    display: block;
+    padding: 6px 20px 6px 28px;
+    font-size: 13px;
+    color: #94a3b8;
+    text-decoration: none;
+    border-left: 3px solid transparent;
+    transition: .15s;
+  }
+  .sidebar-nav .nav-link:hover { color: #e2e8f0; background: var(--sidebar-hover); }
+  .sidebar-nav .nav-link.active { color: #fff; background: var(--sidebar-hover); border-left-color: var(--sidebar-active); }
+
+  /* Main */
+  .main {
+    margin-left: var(--sidebar-width);
+    flex: 1;
+    min-width: 0;
+    padding: 0;
+  }
+  .content {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 40px 48px 80px;
+  }
+
+  /* Typography */
+  h1 { font-size: 28px; font-weight: 800; color: var(--text-primary); margin: 0 0 8px; line-height: 1.3; }
+  h2 {
+    font-size: 22px; font-weight: 700; color: var(--text-primary);
+    margin: 48px 0 16px; padding-bottom: 8px;
+    border-bottom: 2px solid var(--border);
+    scroll-margin-top: 20px;
+  }
+  h2:first-of-type { margin-top: 0; }
+  h3 { font-size: 17px; font-weight: 600; color: var(--text-primary); margin: 28px 0 10px; }
+  h4 { font-size: 15px; font-weight: 600; color: var(--text-secondary); margin: 20px 0 8px; }
+  p { margin: 0 0 12px; color: var(--text-secondary); }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  ul, ol { margin: 0 0 14px; padding-left: 22px; }
+  li { margin-bottom: 4px; color: var(--text-secondary); }
+  strong { color: var(--text-primary); font-weight: 600; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 36px 0; }
+
+  /* Flow */
+  .flow-diagram {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px 28px;
+    margin: 16px 0 24px;
+    text-align: center;
+  }
+  .flow-steps {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .flow-step {
+    display: inline-flex;
+    align-items: center;
+    background: var(--tag-bg);
+    color: var(--tag-text);
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .flow-arrow {
+    color: var(--text-muted);
+    font-size: 16px;
+    font-weight: 300;
+    padding: 0 2px;
+  }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 14px 0 20px;
+    font-size: 14px;
+  }
+  thead { background: #f1f5f9; }
+  th {
+    padding: 10px 14px;
+    text-align: left;
+    font-weight: 600;
+    color: var(--text-primary);
+    border-bottom: 2px solid var(--border);
+    white-space: nowrap;
+  }
+  td {
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-secondary);
+    vertical-align: top;
+  }
+  tbody tr:hover { background: #fafbfc; }
+  .table-wrap { overflow-x: auto; }
+
+  /* Code */
+  code {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 13px;
+    background: #f1f5f9;
+    padding: 2px 7px;
+    border-radius: 4px;
+    color: #0f172a;
+  }
+  pre {
+    background: var(--code-bg);
+    color: #e2e8f0;
+    padding: 16px 20px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-size: 13px;
+    line-height: 1.6;
+    margin: 12px 0 20px;
+  }
+  pre code { background: transparent; padding: 0; color: inherit; font-size: inherit; }
+
+  /* Steps */
+  .step-list { counter-reset: step; list-style: none; padding: 0; }
+  .step-list > li {
+    counter-increment: step;
+    padding: 12px 16px 12px 48px;
+    position: relative;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 10px;
+    color: var(--text-secondary);
+  }
+  .step-list > li::before {
+    content: counter(step);
+    position: absolute;
+    left: 14px;
+    top: 12px;
+    width: 24px;
+    height: 24px;
+    background: var(--step-bg);
+    color: #fff;
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .step-list > li strong { display: block; margin-bottom: 2px; }
+
+  /* Cards */
+  .info-card {
+    background: var(--tag-bg);
+    border-left: 4px solid var(--accent);
+    padding: 14px 18px;
+    border-radius: 6px;
+    margin: 14px 0 20px;
+  }
+  .info-card p { margin: 0; color: var(--tag-text); font-size: 14px; }
+  .info-card code { background: rgba(37,99,235,.1); color: var(--tag-text); }
+
+  .warn-card {
+    background: #fffbeb;
+    border-left: 4px solid #f59e0b;
+    padding: 14px 18px;
+    border-radius: 6px;
+    margin: 14px 0 20px;
+  }
+  .warn-card p { margin: 0; color: #92400e; font-size: 14px; }
+
+  /* Tags */
+  .tag {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-right: 4px;
+  }
+  .tag-blue { background: #dbeafe; color: #1d4ed8; }
+  .tag-green { background: #d1fae5; color: #065f46; }
+  .tag-red { background: #fee2e2; color: #991b1b; }
+  .tag-gray { background: #f1f5f9; color: #475569; }
+  .tag-yellow { background: #fef3c7; color: #92400e; }
+
+  /* Status badges */
+  .status-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .status-draft { background: #f1f5f9; color: #475569; }
+  .status-confirm { background: #dbeafe; color: #1d4ed8; }
+  .status-done { background: #d1fae5; color: #065f46; }
+  .status-cancel { background: #fee2e2; color: #991b1b; }
+  .status-exception { background: #fef3c7; color: #92400e; }
+
+  /* Menu badge */
+  .menu-path {
+    display: inline-block;
+    background: #f1f5f9;
+    padding: 2px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-family: "SFMono-Regular", Consolas, monospace;
+  }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .sidebar {
+      width: 220px;
+    }
+    .content { padding: 28px 24px 60px; }
+  }
+  @media (max-width: 720px) {
+    body { flex-direction: column; }
+    .sidebar {
+      width: 100%;
+      height: auto;
+      position: relative;
+      max-height: 260px;
+      overflow-y: auto;
+    }
+    .main { margin-left: 0; }
+    .content { padding: 24px 16px 60px; }
+    .flow-steps { flex-direction: column; }
+    .flow-arrow { transform: rotate(90deg); }
+    h1 { font-size: 22px; }
+    h2 { font-size: 18px; }
+  }
+
+  /* Print */
+  @media print {
+    .sidebar { display: none; }
+    .main { margin-left: 0; }
+    .content { padding: 20px; max-width: none; }
+    h2 { page-break-before: always; }
+    h2:first-of-type { page-break-before: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ========== Sidebar ========== -->
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <h1>跨境物流系统</h1>
+    <div class="module">zhao_logistics</div>
+    <div class="version">Odoo 19 · 操作手册 v1.0</div>
+  </div>
+  <div class="sidebar-nav">
+
+    <div class="nav-section">
+      <a href="#ch1" class="nav-section-title">第一章 系统概述</a>
+      <a href="#ch1-flow" class="nav-link">全链路流程图</a>
+      <a href="#ch1-menu" class="nav-link">菜单结构总览</a>
+      <a href="#ch1-roles" class="nav-link">角色与权限</a>
+    </div>
+
+    <div class="nav-section">
+      <a href="#ch2" class="nav-section-title">第二章 订单管理</a>
+      <a href="#ch2-create" class="nav-link">2.1 创建物流订单</a>
+      <a href="#ch2-confirm" class="nav-link">2.2 订单确认与执行</a>
+      <a href="#ch2-track" class="nav-link">2.3 订单状态跟踪</a>
+      <a href="#ch2-exception" class="nav-link">2.4 订单异常处理</a>
+    </div>
+
+    <div class="nav-section">
+      <a href="#ch3" class="nav-section-title">第三章 仓库操作</a>
+      <a href="#ch3-inbound" class="nav-link">3.1 入库操作</a>
+      <a href="#ch3-package" class="nav-link">3.2 打包管理</a>
+      <a href="#ch3-lcl" class="nav-link">3.3 拼箱池管理</a>
+    </div>
+
+    <div class="nav-section">
+      <a href="#ch4" class="nav-section-title">第四章 集装箱管理</a>
+      <a href="#ch4-create" class="nav-link">4.1 创建集装箱</a>
+      <a href="#ch4-load" class="nav-link">4.2 装箱操作</a>
+      <a href="#ch4-customs" class="nav-link">4.3 清关文件生成</a>
+      <a href="#ch4-track" class="nav-link">4.4 状态跟踪</a>
+    </div>
+
+    <div class="nav-section">
+      <a href="#ch5" class="nav-section-title">第五章 航次管理</a>
+      <a href="#ch5-create" class="nav-link">5.1 创建航次</a>
+      <a href="#ch5-bind" class="nav-link">5.2 绑定集装箱</a>
+      <a href="#ch5-track" class="nav-link">5.3 航次跟踪</a>
+    </div>
+
+    <div class="nav-section">
+      <a href="#ch6" class="nav-section-title">第六章 派送管理</a>
+      <a href="#ch6-arrival" class="nav-link">6.1 到港登记</a>
+      <a href="#ch6-dispatch" class="nav-link">6.2 派送分配</a>
+      <a href="#ch6-sign" class="nav-link">6.3 签收确认</a>
+    </div>
+
+    <div class="nav-section">
+      <a href="#ch7" class="nav-section-title">第七章 退货管理</a>
+      <a href="#ch7-create" class="nav-link">7.1 退货订单创建</a>
+      <a href="#ch7-reverse" class="nav-link">7.2 逆向物流流程</a>
+      <a href="#ch7-refund" class="nav-link">7.3 退款单关联</a>
+    </div>
+
+    <div class="nav-section">
+      <a href="#ch8" class="nav-section-title">第八章 清关管理</a>
+      <a href="#ch8-docs" class="nav-link">8.1 报关文件生成</a>
+      <a href="#ch8-status" class="nav-link">8.2 集装箱报关状态</a>
+    </div>
+
+    <div class="nav-section">
+      <a href="#ch9" class="nav-section-title">第九章 异常工作台</a>
+      <a href="#ch9-view" class="nav-link">9.1 异常单查看与处理</a>
+      <a href="#ch9-category" class="nav-link">9.2 异常分类与升级</a>
+    </div>
+
+    <div class="nav-section">
+      <a href="#ch10" class="nav-section-title">第十章 报表</a>
+      <a href="#ch10-list" class="nav-link">10.1 业务报表列表</a>
+      <a href="#ch10-export" class="nav-link">10.2 报表导出</a>
+    </div>
+
+    <div class="nav-section">
+      <a href="#ch11" class="nav-section-title">第十一章 附录</a>
+      <a href="#ch11-sale" class="nav-link">sale_management</a>
+      <a href="#ch11-stock" class="nav-link">stock</a>
+      <a href="#ch11-barcode" class="nav-link">barcodes</a>
+      <a href="#ch11-crm" class="nav-link">crm</a>
+      <a href="#ch11-mail" class="nav-link">mail</a>
+      <a href="#ch11-deps" class="nav-link">依赖关系表</a>
+    </div>
+
+  </div>
+</nav>
+
+<!-- ========== Main Content ========== -->
+<div class="main">
+<div class="content">
+
+<!-- ==================== 第一章 ==================== -->
+<h1 id="ch1">第一章 系统概述</h1>
+
+<p>本系统基于 <strong>Odoo 19</strong> 企业版进行二次开发，核心业务模块为 <code>zhao_logistics</code>，覆盖中、日、韩三国跨境物流全链路管理。本手册面向业务操作人员及技术运维人员，详细说明各功能模块的操作流程与最佳实践。</p>
+
+<h2 id="ch1-flow">全链路流程图</h2>
+
+<p>跨境物流业务从客户下单至最终签收，全程在系统中流转。以下为完整链路及各环节对应系统模块：</p>
+
+<div class="flow-diagram">
+  <div class="flow-steps">
+    <span class="flow-step">📦 客户下单</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-step">🏭 仓库入库</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-step">📋 嵌套打包</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-step">🚢 集装箱装载</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-step">⚓ 船运</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-step">🏗️ 到港派送</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-step">✍️ 签收</span>
+  </div>
+</div>
+
+<table>
+  <thead>
+    <tr><th style="width:120px">环节</th><th>系统模块</th><th>关键动作</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>客户下单</td><td>销售订单 / 物流订单</td><td>客户在系统创建物流订单，填写收发件人、货物信息、运输方式</td></tr>
+    <tr><td>仓库入库</td><td>仓库 → 入库</td><td>仓库人员对到货进行入库登记，生成入库单（stock.picking incoming）</td></tr>
+    <tr><td>嵌套打包</td><td>仓库 → 打包管理</td><td>将货物按运输要求打包，生成唯一 package 编码，支持嵌套包装</td></tr>
+    <tr><td>集装箱装载</td><td>集装箱管理</td><td>将打包后的货物装进集装箱，记录封号、重量、体积</td></tr>
+    <tr><td>船运</td><td>航次管理</td><td>创建航次，绑定集装箱，关联船公司、船名、航次号、ETD/ETA</td></tr>
+    <tr><td>到港派送</td><td>派送管理</td><td>到港登记后分配末端派送，生成派送单</td></tr>
+    <tr><td>签收</td><td>派送管理</td><td>末端派送员确认签收，更新订单状态为已完成</td></tr>
+  </tbody>
+</table>
+
+<h2 id="ch1-menu">菜单结构总览</h2>
+
+<p>系统主菜单按业务域组织，以下为完整菜单树：</p>
+
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr><th style="width:180px">一级菜单</th><th style="width:200px">二级菜单</th><th>说明</th></tr>
+  </thead>
+  <tbody>
+    <tr><td rowspan="4"><strong>订单</strong></td><td>物流订单</td><td>创建、编辑、查看所有物流订单</td></tr>
+    <tr><td>订单确认</td><td>批量确认待处理订单</td></tr>
+    <tr><td>订单跟踪</td><td>按状态/时间线查看订单进度</td></tr>
+    <tr><td>异常订单</td><td>标记异常的订单集中处理</td></tr>
+    <tr><td rowspan="4"><strong>仓库</strong></td><td>入库单</td><td>入库操作（stock.picking incoming）</td></tr>
+    <tr><td>打包管理</td><td>包裹创建、嵌套打包、打印面单</td></tr>
+    <tr><td>拼箱池</td><td>LCL 拼箱货物集中管理池</td></tr>
+    <tr><td>库存查询</td><td>实时库存数量与位置</td></tr>
+    <tr><td rowspan="3"><strong>集装箱</strong></td><td>集装箱列表</td><td>所有集装箱的 CRUD 与状态管理</td></tr>
+    <tr><td>装箱操作</td><td>将包裹/货物装入集装箱</td></tr>
+    <tr><td>清关文件</td><td>批量生成报关单、装箱单、商业发票、舱单</td></tr>
+    <tr><td rowspan="1"><strong>拼箱池</strong></td><td>拼箱池看板</td><td>按目的地/航次聚合的拼箱货物看板</td></tr>
+    <tr><td rowspan="2"><strong>航次</strong></td><td>航次列表</td><td>创建和管理航次信息</td></tr>
+    <tr><td>航次跟踪</td><td>航次甘特图/时间线跟踪</td></tr>
+    <tr><td rowspan="3"><strong>派送</strong></td><td>到港登记</td><td>船到港后确认并登记</td></tr>
+    <tr><td>派送分配</td><td>分配末端派送任务</td></tr>
+    <tr><td>签收确认</td><td>末端签收确认操作</td></tr>
+    <tr><td rowspan="2"><strong>退货</strong></td><td>退货订单</td><td>逆向物流退货单管理</td></tr>
+    <tr><td>退款单</td><td>关联退货的退款处理</td></tr>
+    <tr><td rowspan="2"><strong>清关</strong></td><td>报关文件</td><td>报关单、装箱单、商业发票、舱单模板与生成</td></tr>
+    <tr><td>集装箱报关状态</td><td>按集装箱维度查看报关进度</td></tr>
+    <tr><td><strong>异常</strong></td><td>异常工作台</td><td>全类型异常单统一处理入口</td></tr>
+    <tr><td rowspan="3"><strong>报表</strong></td><td>业务报表</td><td>订单量、入库量、集装箱装载率、航次准时率等</td></tr>
+    <tr><td>财务报表</td><td>收入、成本、利润分析</td></tr>
+    <tr><td>报表导出</td><td>Excel/PDF 格式导出入口</td></tr>
+    <tr><td rowspan="2"><strong>财务</strong></td><td>应收账单</td><td>客户运费账单</td></tr>
+    <tr><td>应付账单</td><td>供应商/承运商费用</td></tr>
+    <tr><td rowspan="2"><strong>配置</strong></td><td>物流设置</td><td>运输方式、包装类型、费用规则等基础配置</td></tr>
+    <tr><td>权限管理</td><td>用户角色与权限组配置</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2 id="ch1-roles">用户角色与权限组说明</h2>
+
+<p>系统内置以下权限组，按职能划分：</p>
+
+<table>
+  <thead>
+    <tr><th style="width:140px">角色</th><th style="width:200px">权限组</th><th>可访问模块</th><th>说明</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>客服专员</td><td><code>zhao_logistics.group_cs</code></td><td>订单（只读+创建）、异常工作台（只读）</td><td>处理客户咨询、录入订单、查看异常</td></tr>
+    <tr><td>仓库操作员</td><td><code>zhao_logistics.group_warehouse</code></td><td>仓库（入库/打包/拼箱池）、库存查询</td><td>执行入库、打包、拼箱操作</td></tr>
+    <tr><td>集装箱专员</td><td><code>zhao_logistics.group_container</code></td><td>集装箱、清关文件、装箱操作</td><td>管理集装箱装载与文件生成</td></tr>
+    <tr><td>航次调度</td><td><code>zhao_logistics.group_voyage</code></td><td>航次、集装箱绑定、航次跟踪</td><td>管理船期与运力</td></tr>
+    <tr><td>派送员</td><td><code>zhao_logistics.group_delivery</code></td><td>派送（到港/分配/签收）</td><td>末端派送操作</td></tr>
+    <tr><td>清关专员</td><td><code>zhao_logistics.group_customs</code></td><td>清关、报关文件、集装箱报关状态</td><td>处理报关文件与清关进度</td></tr>
+    <tr><td>退货专员</td><td><code>zhao_logistics.group_return</code></td><td>退货、退款单</td><td>处理逆向物流</td></tr>
+    <tr><td>运营经理</td><td><code>zhao_logistics.group_manager</code></td><td>全部模块（读写）、报表、异常升级</td><td>全面管理业务运营</td></tr>
+    <tr><td>系统管理员</td><td><code>zhao_logistics.group_admin</code></td><td>全部权限+配置管理</td><td>系统配置与维护</td></tr>
+  </tbody>
+</table>
+
+<div class="info-card">
+  <p>💡 <strong>提示：</strong>权限组可在 <span class="menu-path">设置 → 用户 → 用户列表</span> 中为每个用户分配。一个用户可以属于多个权限组。</p>
+</div>
+
+<!-- ==================== 第二章 ==================== -->
+<h1 id="ch2">第二章 订单管理</h1>
+
+<h2 id="ch2-create">2.1 创建物流订单</h2>
+
+<p>物流订单是跨境物流业务的核心单据，记录客户委托的运输需求。创建入口：<span class="menu-path">订单 → 物流订单 → 新建</span>。</p>
+
+<h4>必填字段</h4>
+<table>
+  <thead>
+    <tr><th style="width:160px">字段</th><th>说明</th><th>备注</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>客户</td><td>选择已存在的客户伙伴</td><td>可先创建客户档案</td></tr>
+    <tr><td>运输方式</td><td>海运/空运/铁路/陆运</td><td>在配置中预定义</td></tr>
+    <tr><td>始发地</td><td>发货仓库/地址</td><td>自动关联仓库地址</td></tr>
+    <tr><td>目的地</td><td>最终收货地址</td><td>末端派送目标</td></tr>
+    <tr><td>货物明细</td><td>品名、数量、重量、体积</td><td>支持多行货物</td></tr>
+    <tr><td>预计发货日期</td><td>客户期望的发货时间</td><td>用于排期参考</td></tr>
+  </tbody>
+</table>
+
+<h4>操作步骤</h4>
+<ol class="step-list">
+  <li><strong>进入新建页面</strong> — 点击 <span class="menu-path">订单 → 物流订单 → 新建</span>，系统自动生成订单编号（前缀 <code>LOG</code>）。</li>
+  <li><strong>填写客户信息</strong> — 选择客户伙伴，系统自动带出默认联系人、地址、联系方式。</li>
+  <li><strong>填写运输信息</strong> — 选择运输方式、始发地、目的地、运输条款（如 FOB、CIF）。</li>
+  <li><strong>添加货物明细</strong> — 在订单行表格中添加货物，支持批量导入（Excel 模板）。</li>
+  <li><strong>保存为草稿</strong> — 点击"保存"，订单状态为 <span class="status-badge status-draft">草稿</span>。</li>
+</ol>
+
+<div class="info-card">
+  <p>💡 <strong>提示：</strong>货物明细支持按件数、毛重、净重、体积、HS 编码录入，为后续清关文件生成准备数据。</p>
+</div>
+
+<h2 id="ch2-confirm">2.2 订单确认与执行</h2>
+
+<p>草稿订单经过内部审核后确认执行。确认后系统自动触发后续仓库操作。</p>
+
+<ol class="step-list">
+  <li><strong>审核订单</strong> — 在物流订单列表中选择待确认订单，点击"确认"按钮。</li>
+  <li><strong>系统自动动作</strong> — 确认后订单状态变为 <span class="status-badge status-confirm">已确认</span>，系统自动：<br>
+    • 生成入库单（待处理）<br>
+    • 更新货物库存预留<br>
+    • 发送通知邮件给仓库操作员</li>
+  <li><strong>执行流转</strong> — 仓库操作员完成入库后，订单进入"执行中"状态。</li>
+</ol>
+
+<div class="warn-card">
+  <p>⚠️ <strong>注意：</strong>订单确认后不可直接删除。如需取消，需使用"取消"按钮，系统将自动取消关联的入库单。</p>
+</div>
+
+<h2 id="ch2-track">2.3 订单状态跟踪</h2>
+
+<p>物流订单的状态机反映货物在跨境链路中的实时位置：</p>
+
+<table>
+  <thead>
+    <tr><th style="width:120px">状态</th><th>说明</th><th>下一步操作</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><span class="status-badge status-draft">草稿</span></td><td>新建未确认</td><td>确认订单</td></tr>
+    <tr><td><span class="status-badge status-confirm">已确认</span></td><td>已确认待入库</td><td>仓库入库</td></tr>
+    <tr><td><span class="status-badge status-done">执行中</span></td><td>已入库，进入打包/装箱/航次流程</td><td>按流程推进</td></tr>
+    <tr><td><span class="status-badge status-done">已出运</span></td><td>已装船/已发运</td><td>到港登记</td></tr>
+    <tr><td><span class="status-badge status-done">派送中</span></td><td>已到港，末端派送进行中</td><td>签收确认</td></tr>
+    <tr><td><span class="status-badge status-done">已完成</span></td><td>已签收</td><td>—</td></tr>
+    <tr><td><span class="status-badge status-cancel">已取消</span></td><td>订单取消</td><td>—</td></tr>
+    <tr><td><span class="status-badge status-exception">异常</span></td><td>操作过程中出现异常</td><td>进入异常工作台处理</td></tr>
+  </tbody>
+</table>
+
+<p>在订单详情页的"跟踪"选项卡中，可以查看完整的时间线日志，记录每一步操作人、操作时间与备注。</p>
+
+<h2 id="ch2-exception">2.4 订单异常处理</h2>
+
+<p>当订单在任意环节遇到问题（如货物破损、信息不符、清关延误），操作员可在订单详情页点击"标记异常"按钮。</p>
+
+<ol class="step-list">
+  <li><strong>标记异常</strong> — 在订单表单中点击"标记异常"，选择异常类型（货物破损/信息缺失/清关问题/其他）。</li>
+  <li><strong>填写异常描述</strong> — 详细描述问题内容、涉及方、建议处理方式。</li>
+  <li><strong>系统自动动作</strong> — 异常信息同步至异常工作台，通知运营经理。</li>
+  <li><strong>解除异常</strong> — 问题解决后，运营经理在异常工作台点击"解除异常"，订单恢复原状态继续流转。</li>
+</ol>
+
+<!-- ==================== 第三章 ==================== -->
+<h1 id="ch3">第三章 仓库操作</h1>
+
+<h2 id="ch3-inbound">3.1 入库操作（stock.picking incoming）</h2>
+
+<p>当客户货物到达仓库时，仓库操作员执行入库登记。系统基于 Odoo <code>stock</code> 模块的 <code>stock.picking</code> 模型，类型为 <code>incoming</code>。</p>
+
+<h4>操作步骤</h4>
+<ol class="step-list">
+  <li><strong>查看待处理入库单</strong> — 进入 <span class="menu-path">仓库 → 入库单</span>，列表显示所有状态为"待处理"的入库单。</li>
+  <li><strong>执行入库</strong> — 打开入库单，核对货物信息（品名、数量、SKU），确认无误后点击"验证"按钮。</li>
+  <li><strong>打印入库标签</strong> — 验证后系统提示打印入库标签，贴于货物外包装。</li>
+  <li><strong>更新库存</strong> — 入库验证后，系统自动增加库存数量，更新库存位置。</li>
+</ol>
+
+<div class="info-card">
+  <p>💡 <strong>提示：</strong>支持扫码枪/PDA 扫码入库，快速匹配预生成的入库单。详见第十章 barcodes 模块说明。</p>
+</div>
+
+<h4>字段说明</h4>
+<table>
+  <thead>
+    <tr><th>字段</th><th>说明</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>入库单编号</td><td>系统自动生成，前缀 <code>IN/</code></td></tr>
+    <tr><td>来源订单</td><td>关联的物流订单编号</td></tr>
+    <tr><td>计划日期</td><td>预计到货日期</td></tr>
+    <tr><td>操作类型</td><td>入库（incoming）</td></tr>
+    <tr><td>明细行</td><td>产品、数量、包装单位</td></tr>
+    <tr><td>状态</td><td>草稿 / 待处理 / 已完成 / 取消</td></tr>
+  </tbody>
+</table>
+
+<h2 id="ch3-package">3.2 打包管理（stock.package）</h2>
+
+<p>货物入库后，仓库操作员根据运输要求进行打包。打包管理基于 Odoo <code>stock.quant.package</code> 模型扩展，支持嵌套包装（大箱套小箱）。</p>
+
+<h4>操作步骤</h4>
+<ol class="step-list">
+  <li><strong>创建包裹</strong> — 进入 <span class="menu-path">仓库 → 打包管理 → 新建</span>，选择关联的入库单/订单。</li>
+  <li><strong>选择包装类型</strong> — 选择纸箱、木箱、托盘等包装类型，系统自动生成包裹编号（前缀 <code>PKG</code>）。</li>
+  <li><strong>添加货物</strong> — 从入库单明细中选择货物，确认数量。</li>
+  <li><strong>嵌套包装（可选）</strong> — 如果大箱内含多个小箱，可在"子包裹"关联中绑定已有包裹，实现多级嵌套。</li>
+  <li><strong>打印面单</strong> — 保存后点击"打印面单"，生成运输标签贴于外包装。</li>
+  <li><strong>确认包裹</strong> — 确认无误后点击"标记完成"，包裹进入待装状态。</li>
+</ol>
+
+<h4>包裹状态</h4>
+<table>
+  <thead>
+    <tr><th>状态</th><th>说明</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><span class="status-badge status-draft">草稿</span></td><td>新建未确认</td></tr>
+    <tr><td><span class="status-badge status-confirm">已打包</span></td><td>打包完成，待装集装箱</td></tr>
+    <tr><td><span class="status-badge status-done">已装柜</span></td><td>已装入集装箱</td></tr>
+    <tr><td><span class="status-badge status-done">已出运</span></td><td>随航次出运</td></tr>
+  </tbody>
+</table>
+
+<h2 id="ch3-lcl">3.3 拼箱池管理（LCL Consolidation）</h2>
+
+<p>拼箱（Less than Container Load）是跨境物流中多个客户共享一个集装箱的运输模式。拼箱池管理模块用于集中管理待拼箱的货物。</p>
+
+<h4>操作流程</h4>
+<ol class="step-list">
+  <li><strong>将货物加入拼箱池</strong> — 在打包管理页面，选择"加入拼箱池"，系统将该包裹加入拼箱池看板。</li>
+  <li><strong>按目的地聚合</strong> — 拼箱池看板按目的地港口/航次维度聚合展示，方便操作员识别可拼箱的货物。</li>
+  <li><strong>创建拼箱组</strong> — 在拼箱池看板中，选择同一目的地的多个包裹，点击"创建拼箱组"，系统生成拼箱组记录。</li>
+  <li><strong>分配拼箱组到集装箱</strong> — 在拼箱组详情页，点击"分配集装箱"，选择一个目标集装箱完成绑定。</li>
+</ol>
+
+<div class="info-card">
+  <p>💡 <strong>提示：</strong>拼箱池看板实时显示当前待拼箱的总体积/总重量，帮助操作员合理规划集装箱利用率。</p>
+</div>
+
+<!-- ==================== 第四章 ==================== -->
+<h1 id="ch4">第四章 集装箱管理</h1>
+
+<h2 id="ch4-create">4.1 创建集装箱</h2>
+
+<p>集装箱是跨境物流中标准化的运输单元。创建入口：<span class="menu-path">集装箱 → 集装箱列表 → 新建</span>。</p>
+
+<h4>必填字段</h4>
+<table>
+  <thead>
+    <tr><th style="width:160px">字段</th><th>说明</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>集装箱编号</td><td>箱号（唯一标识，如 MSCU1234567）</td></tr>
+    <tr><td>箱型</td><td>20GP / 40GP / 40HQ / 45HQ 等</td></tr>
+    <tr><td>尺寸</td><td>长×宽×高（mm）</td></tr>
+    <tr><td>最大载重</td><td>箱体最大载重（kg）</td></tr>
+    <tr><td>皮重</td><td>空箱自重（kg）</td></tr>
+    <tr><td>封号</td><td>海关封条号</td></tr>
+    <tr><td>供应商</td><td>集装箱租赁公司或自有</td></tr>
+    <tr><td>当前位置</td><td>当前所在仓库/堆场</td></tr>
+  </tbody>
+</table>
+
+<h4>操作步骤</h4>
+<ol class="step-list">
+  <li><strong>新建集装箱</strong> — 填写箱号、箱型、尺寸、载重等基本信息。</li>
+  <li><strong>记录封号</strong> — 填写海关封条号，用于后续清关核对。</li>
+  <li><strong>保存</strong> — 保存后集装箱状态为 <span class="status-badge status-draft">空箱</span>，可进入装箱操作。</li>
+</ol>
+
+<h2 id="ch4-load">4.2 装箱操作</h2>
+
+<p>将已打包的货物装入集装箱，记录装箱明细。</p>
+
+<ol class="step-list">
+  <li><strong>进入装箱页面</strong> — 在集装箱详情页点击"装箱操作"，或进入 <span class="menu-path">集装箱 → 装箱操作</span>。</li>
+  <li><strong>选择货物</strong> — 从待装列表中选择包裹/拼箱组，支持多选。</li>
+  <li><strong>确认装箱</strong> — 系统自动计算已装体积/重量，如果超出箱体容量则提示警告。</li>
+  <li><strong>完成装箱</strong> — 点击"完成装箱"，集装箱状态变更为 <span class="status-badge status-done">已装箱</span>。</li>
+  <li><strong>打印装箱清单</strong> — 装箱完成后可打印装箱清单（Packing List），用于清关和随船文件。</li>
+</ol>
+
+<div class="warn-card">
+  <p>⚠️ <strong>注意：</strong>装箱时系统会校验体积和重量上限。如果超载，需调整货物或更换更大箱型。</p>
+</div>
+
+<h2 id="ch4-customs">4.3 清关申报文件生成</h2>
+
+<p>根据集装箱内的货物明细，系统自动生成标准清关申报文件。</p>
+
+<h4>可生成的文件类型</h4>
+<table>
+  <thead>
+    <tr><th>文件类型</th><th>说明</th><th>生成入口</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>报关单（Customs Declaration）</td><td>向海关申报的正式单据</td><td rowspan="4">集装箱详情页 → 生成清关文件</td></tr>
+    <tr><td>装箱单（Packing List）</td><td>货物装箱明细清单</td></tr>
+    <tr><td>商业发票（Commercial Invoice）</td><td>商业交易凭证，含金额、HS 编码</td></tr>
+    <tr><td>舱单（Cargo Manifest）</td><td>船公司向海关申报的货物总清单</td></tr>
+  </tbody>
+</table>
+
+<ol class="step-list">
+  <li><strong>选择文件模板</strong> — 系统预置中日韩三国的标准报关模板，按目的地自动匹配。</li>
+  <li><strong>预览并确认</strong> — 生成文件前可预览数据，确认 HS 编码、金额、重量等信息准确。</li>
+  <li><strong>生成并下载</strong> — 确认后生成 PDF/Excel 文件，支持批量下载。</li>
+  <li><strong>归档</strong> — 生成的文件自动关联到集装箱记录，供后续查阅。</li>
+</ol>
+
+<h2 id="ch4-track">4.4 集装箱状态跟踪</h2>
+
+<p>集装箱在生命周期中经历以下状态流转：</p>
+
+<table>
+  <thead>
+    <tr><th style="width:100px">状态</th><th>说明</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><span class="status-badge status-draft">空箱</span></td><td>新建未装货</td></tr>
+    <tr><td><span class="status-badge status-done">已装箱</span></td><td>货物已装入</td></tr>
+    <tr><td><span class="status-badge status-confirm">已绑航次</span></td><td>已分配到航次</td></tr>
+    <tr><td><span class="status-badge status-done">已出运</span></td><td>随航次离港</td></tr>
+    <tr><td><span class="status-badge status-done">已到港</span></td><td>到达目的港</td></tr>
+    <tr><td><span class="status-badge status-done">已拆箱</span></td><td>目的港拆箱，货物进入派送环节</td></tr>
+    <tr><td><span class="status-badge status-done">已返空</span></td><td>空箱返回堆场</td></tr>
+  </tbody>
+</table>
+
+<!-- ==================== 第五章 ==================== -->
+<h1 id="ch5">第五章 航次管理</h1>
+
+<h2 id="ch5-create">5.1 创建航次</h2>
+
+<p>航次代表一次船舶运输任务。创建入口：<span class="menu-path">航次 → 航次列表 → 新建</span>。</p>
+
+<h4>必填字段</h4>
+<table>
+  <thead>
+    <tr><th style="width:160px">字段</th><th>说明</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>航次号</td><td>船公司航次编号（如 COSCO001E）</td></tr>
+    <tr><td>船名</td><td>船舶名称</td></tr>
+    <tr><td>船公司</td><td>承运人/船公司</td></tr>
+    <tr><td>始发港</td><td>起运港口</td></tr>
+    <tr><td>目的港</td><td>目的港口</td></tr>
+    <tr><td>ETD（预计离港）</td><td>预计离港时间</td></tr>
+    <tr><td>ETA（预计到港）</td><td>预计到港时间</td></tr>
+    <tr><td>截关时间</td><td>最晚报关时间</td></tr>
+    <tr><td>截单时间</td><td>最晚提交文件时间</td></tr>
+  </tbody>
+</table>
+
+<ol class="step-list">
+  <li><strong>填写航次信息</strong> — 录入航次号、船名、船公司、港口及时间信息。</li>
+  <li><strong>保存航次</strong> — 保存后航次状态为 <span class="status-badge status-draft">计划中</span>。</li>
+</ol>
+
+<h2 id="ch5-bind">5.2 绑定集装箱</h2>
+
+<p>将已装箱的集装箱分配到航次。</p>
+
+<ol class="step-list">
+  <li><strong>进入航次详情</strong> — 打开目标航次记录。</li>
+  <li><strong>添加集装箱</strong> — 在"集装箱"子表中点击"添加"，选择已装箱的集装箱。</li>
+  <li><strong>确认绑定</strong> — 绑定后集装箱状态自动更新为 <span class="status-badge status-confirm">已绑航次</span>。</li>
+  <li><strong>确认出运</strong> — 实际离港后，点击"确认出运"，航次状态更新为 <span class="status-badge status-done">已出运</span>，关联集装箱同步更新。</li>
+</ol>
+
+<div class="info-card">
+  <p>💡 <strong>提示：</strong>一个航次可绑定多个集装箱。航次详情页的"集装箱"子表会汇总显示总箱数、总毛重、总体积。</p>
+</div>
+
+<h2 id="ch5-track">5.3 航次跟踪</h2>
+
+<p>航次跟踪提供可视化的时间线视图，帮助运营人员掌握航次进度。</p>
+
+<table>
+  <thead>
+    <tr><th style="width:100px">航次状态</th><th>说明</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><span class="status-badge status-draft">计划中</span></td><td>航次已创建，尚未开始装货</td></tr>
+    <tr><td><span class="status-badge status-confirm">装货中</span></td><td>集装箱正在装船</td></tr>
+    <tr><td><span class="status-badge status-done">已出运</span></td><td>船舶已离港，航行中</td></tr>
+    <tr><td><span class="status-badge status-done">已到港</span></td><td>船舶已抵达目的港</td></tr>
+    <tr><td><span class="status-badge status-done">已完成</span></td><td>所有集装箱已卸船并完成交接</td></tr>
+    <tr><td><span class="status-badge status-cancel">已取消</span></td><td>航次取消</td></tr>
+  </tbody>
+</table>
+
+<p>航次详情页的"跟踪日志"选项卡按时间线记录每一步操作，包括实际操作时间与计划时间的对比，便于分析延误原因。</p>
+
+<!-- ==================== 第六章 ==================== -->
+<h1 id="ch6">第六章 派送管理</h1>
+
+<h2 id="ch6-arrival">6.1 到港登记</h2>
+
+<p>船舶抵达目的港后，操作员在系统中进行到港确认。</p>
+
+<ol class="step-list">
+  <li><strong>进入航次列表</strong> — 找到已出运的航次，点击"到港登记"。</li>
+  <li><strong>确认到港时间</strong> — 填写实际到港时间（ATD），上传到港通知单（可选）。</li>
+  <li><strong>系统自动动作</strong> — 航次状态更新为 <span class="status-badge status-done">已到港</span>，关联集装箱状态更新为 <span class="status-badge status-done">已到港</span>。</li>
+  <li><strong>拆箱操作</strong> — 在集装箱详情页点击"拆箱"，拆箱后货物进入待派送状态。</li>
+</ol>
+
+<h2 id="ch6-dispatch">6.2 派送分配</h2>
+
+<p>拆箱后的货物需要分配末端派送任务。</p>
+
+<ol class="step-list">
+  <li><strong>进入派送分配</strong> — 进入 <span class="menu-path">派送 → 派送分配</span>，列表显示所有待派送的货物。</li>
+  <li><strong>创建派送单</strong> — 选择目标货物，点击"创建派送单"，系统自动生成派送单号（前缀 <code>DEL</code>）。</li>
+  <li><strong>分配派送员</strong> — 选择负责派送的司机/派送员，填写派送车辆信息。</li>
+  <li><strong>打印派送单</strong> — 打印派送清单，交派送员随车携带。</li>
+  <li><strong>确认派送</strong> — 确认后派送单状态为 <span class="status-badge status-confirm">派送中</span>。</li>
+</ol>
+
+<h2 id="ch6-sign">6.3 签收确认</h2>
+
+<p>末端派送员完成派送后，客户签收确认。</p>
+
+<ol class="step-list">
+  <li><strong>进入签收页面</strong> — 进入 <span class="menu-path">派送 → 签收确认</span>，选择对应派送单。</li>
+  <li><strong>录入签收信息</strong> — 填写签收人姓名、签收时间、签收照片（可选）。</li>
+  <li><strong>选择签收状态</strong> — 正常签收 / 拒收 / 部分签收。</li>
+  <li><strong>确认完成</strong> — 点击"确认签收"，派送单状态更新为 <span class="status-badge status-done">已完成</span>，关联物流订单状态更新为 <span class="status-badge status-done">已完成</span>。</li>
+</ol>
+
+<div class="warn-card">
+  <p>⚠️ <strong>注意：</strong>如果客户拒收或部分签收，系统自动创建异常单，进入异常工作台处理流程。</p>
+</div>
+
+<!-- ==================== 第七章 ==================== -->
+<h1 id="ch7">第七章 退货管理</h1>
+
+<h2 id="ch7-create">7.1 退货订单创建</h2>
+
+<p>当客户要求退货时，客服专员在系统中创建退货订单。</p>
+
+<ol class="step-list">
+  <li><strong>进入退货订单</strong> — 进入 <span class="menu-path">退货 → 退货订单 → 新建</span>。</li>
+  <li><strong>关联原订单</strong> — 选择原始物流订单，系统自动带出原货物明细。</li>
+  <li><strong>选择退货原因</strong> — 从预设退货原因中选择（如质量问题、错发、拒收等）。</li>
+  <li><strong>填写退货数量</strong> — 确认退货的货物数量及状态。</li>
+  <li><strong>保存</strong> — 保存后退货单状态为 <span class="status-badge status-draft">待审核</span>。</li>
+</ol>
+
+<h2 id="ch7-reverse">7.2 逆向物流流程</h2>
+
+<p>退货审核通过后，执行逆向物流操作。</p>
+
+<ol class="step-list">
+  <li><strong>审核退货单</strong> — 运营经理审核退货单，确认后状态变更为 <span class="status-badge status-confirm">已审核</span>。</li>
+  <li><strong>生成逆向入库单</strong> — 系统自动创建退货入库单（类型为 return），仓库人员等待退货到货。</li>
+  <li><strong>退货入库</strong> — 退货到达仓库后，仓库操作员在入库单中执行验证，完成退货入库。</li>
+  <li><strong>货物检查</strong> — 仓库人员检查退货货物状态，在系统中记录检查结果（可重新上架/需报废/需维修）。</li>
+</ol>
+
+<h2 id="ch7-refund">7.3 退款单关联</h2>
+
+<p>退货入库完成后，财务人员处理退款。</p>
+
+<ol class="step-list">
+  <li><strong>创建退款单</strong> — 在退货单详情页点击"创建退款单"，系统自动带出退款金额信息。</li>
+  <li><strong>确认退款金额</strong> — 财务人员根据退货检查结果确认最终退款金额（可能扣除折旧/损坏费用）。</li>
+  <li><strong>执行退款</strong> — 确认后执行退款，系统记录退款流水号。</li>
+  <li><strong>完成</strong> — 退款完成后退货单状态更新为 <span class="status-badge status-done">已完成</span>。</li>
+</ol>
+
+<!-- ==================== 第八章 ==================== -->
+<h1 id="ch8">第八章 清关管理</h1>
+
+<h2 id="ch8-docs">8.1 报关文件生成</h2>
+
+<p>清关专员按集装箱维度生成标准报关文件。系统支持批量生成，减少重复工作。</p>
+
+<h4>报关单（Customs Declaration）</h4>
+<p>报关单是向海关申报货物的核心文件。系统根据集装箱内货物明细自动生成。</p>
+<table>
+  <thead>
+    <tr><th style="width:160px">数据项</th><th>数据来源</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>发货人信息</td><td>订单始发地客户信息</td></tr>
+    <tr><td>收货人信息</td><td>订单目的地客户信息</td></tr>
+    <tr><td>货物描述</td><td>货物明细行的品名</td></tr>
+    <tr><td>HS 编码</td><td>货物明细行录入的 HS 编码</td></tr>
+    <tr><td>数量/重量/体积</td><td>货物明细行汇总</td></tr>
+    <tr><td>集装箱号</td><td>关联集装箱编号</td></tr>
+    <tr><td>航次信息</td><td>关联航次号、船名、ETD</td></tr>
+  </tbody>
+</table>
+
+<h4>装箱单（Packing List）</h4>
+<p>详细列出每个包裹/箱件的内装货物信息，包括件数、毛重、净重、体积。</p>
+
+<h4>商业发票（Commercial Invoice）</h4>
+<p>商业交易凭证，包含货物价值、成交方式、货币单位等信息。系统从订单行中的货物价值字段自动提取。</p>
+
+<h4>舱单（Cargo Manifest）</h4>
+<p>汇总航次下所有集装箱的货物总清单，报船公司及目的港海关。</p>
+
+<ol class="step-list">
+  <li><strong>选择集装箱</strong> — 在集装箱列表中选择目标集装箱，点击"生成清关文件"。</li>
+  <li><strong>选择文件类型</strong> — 勾选需要生成的文件类型（报关单/装箱单/商业发票/舱单）。</li>
+  <li><strong>预览</strong> — 系统生成文件预览，确认数据无误。</li>
+  <li><strong>生成并下载</strong> — 点击"生成"，文件以 PDF 格式保存，自动关联到集装箱记录。</li>
+</ol>
+
+<h2 id="ch8-status">8.2 集装箱报关状态</h2>
+
+<p>清关专员在清关管理中跟踪每个集装箱的报关进度。</p>
+
+<table>
+  <thead>
+    <tr><th style="width:120px">报关状态</th><th>说明</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><span class="status-badge status-draft">待申报</span></td><td>文件已生成，尚未提交海关</td></tr>
+    <tr><td><span class="status-badge status-confirm">已申报</span></td><td>已提交海关申报</td></tr>
+    <tr><td><span class="status-badge status-done">海关放行</span></td><td>海关审核通过，已放行</td></tr>
+    <tr><td><span class="status-badge status-exception">查验中</span></td><td>海关抽查查验</td></tr>
+    <tr><td><span class="status-badge status-cancel">退关</span></td><td>海关退回或申报撤销</td></tr>
+  </tbody>
+</table>
+
+<p>在 <span class="menu-path">清关 → 集装箱报关状态</span> 页面，可按航次、集装箱号、报关状态进行筛选和批量操作。</p>
+
+<!-- ==================== 第九章 ==================== -->
+<h1 id="ch9">第九章 异常工作台</h1>
+
+<h2 id="ch9-view">9.1 异常单查看与处理</h2>
+
+<p>异常工作台是统一处理全链路异常事件的中心。进入 <span class="menu-path">异常 → 异常工作台</span>。</p>
+
+<h4>异常单字段</h4>
+<table>
+  <thead>
+    <tr><th style="width:140px">字段</th><th>说明</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>异常编号</td><td>系统自动生成，前缀 <code>EXP</code></td></tr>
+    <tr><td>来源单据</td><td>关联的物流订单/入库单/集装箱/航次</td></tr>
+    <tr><td>异常类型</td><td>货物破损 / 信息缺失 / 清关延误 / 派送失败 / 其他</td></tr>
+    <tr><td>严重级别</td><td>低 / 中 / 高 / 紧急</td></tr>
+    <tr><td>状态</td><td>待处理 / 处理中 / 已解决 / 已关闭</td></tr>
+    <tr><td>处理人</td><td>当前负责处理的人员</td></tr>
+    <tr><td>创建时间</td><td>异常产生时间</td></tr>
+  </tbody>
+</table>
+
+<ol class="step-list">
+  <li><strong>筛选异常单</strong> — 使用过滤器按状态/类型/级别筛选。</li>
+  <li><strong>查看详情</strong> — 点击异常编号进入详情页，查看完整异常描述和关联单据。</li>
+  <li><strong>处理异常</strong> — 填写处理意见、上传附件（如照片、证明文件），点击"开始处理"。</li>
+  <li><strong>解决/关闭</strong> — 问题解决后点击"标记已解决"，经确认后关闭异常单。</li>
+</ol>
+
+<h2 id="ch9-category">9.2 异常分类与升级</h2>
+
+<h4>异常分类</h4>
+<table>
+  <thead>
+    <tr><th style="width:140px">异常类型</th><th>典型场景</th><th>默认处理人</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>货物破损</td><td>入库或到港时发现货物外包装破损</td><td>仓库操作员</td></tr>
+    <tr><td>信息缺失</td><td>订单缺少 HS 编码或货物价值信息</td><td>客服专员</td></tr>
+    <tr><td>清关延误</td><td>海关查验或其他清关问题导致延误</td><td>清关专员</td></tr>
+    <tr><td>派送失败</td><td>末端派送无人签收或地址错误</td><td>派送员</td></tr>
+    <tr><td>航次变更</td><td>船期变更、甩柜等</td><td>航次调度</td></tr>
+    <tr><td>其他</td><td>未归类异常</td><td>运营经理</td></tr>
+  </tbody>
+</table>
+
+<h4>升级机制</h4>
+<p>如果异常单在预设时限内未处理，系统自动升级：</p>
+<ul>
+  <li><strong>低级别</strong> — 24 小时未处理 → 升级为"中"级别</li>
+  <li><strong>中级别</strong> — 12 小时未处理 → 通知运营经理</li>
+  <li><strong>高级别</strong> — 6 小时未处理 → 通知系统管理员</li>
+  <li><strong>紧急</strong> — 立即通知所有相关人员</li>
+</ul>
+
+<!-- ==================== 第十章 ==================== -->
+<h1 id="ch10">第十章 报表</h1>
+
+<h2 id="ch10-list">10.1 业务报表列表</h2>
+
+<p>系统提供以下预置报表，帮助管理层和运营人员分析业务数据。</p>
+
+<table>
+  <thead>
+    <tr><th style="width:180px">报表名称</th><th>数据来源</th><th>用途</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>订单量统计报表</td><td>物流订单</td><td>按日/周/月/客户维度统计订单数量与金额</td></tr>
+    <tr><td>入库量统计报表</td><td>入库单</td><td>仓库入库量、SKU 分布、入库及时率</td></tr>
+    <tr><td>集装箱装载率报表</td><td>集装箱</td><td>各箱型装载率分析，优化装箱效率</td></tr>
+    <tr><td>航次准时率报表</td><td>航次</td><td>ETD/ETA 准时率统计，船公司绩效分析</td></tr>
+    <tr><td>派送时效报表</td><td>派送单</td><td>末端派送时效分析，派送员绩效</td></tr>
+    <tr><td>异常统计报表</td><td>异常单</td><td>按类型/级别/部门统计异常分布</td></tr>
+    <tr><td>客户满意度报表</td><td>签收记录</td><td>签收及时率、投诉率分析</td></tr>
+    <tr><td>收入分析报表</td><td>应收账单</td><td>按客户/航线/时间维度分析收入</td></tr>
+    <tr><td>成本分析报表</td><td>应付账单</td><td>按成本类型/供应商分析成本构成</td></tr>
+    <tr><td>利润分析报表</td><td>收入+成本</td><td>综合利润分析，按客户/航线/航次维度</td></tr>
+  </tbody>
+</table>
+
+<h2 id="ch10-export">10.2 报表导出</h2>
+
+<p>报表支持导出为多种格式，方便线下分析和存档。</p>
+
+<ol class="step-list">
+  <li><strong>进入报表</strong> — 在 <span class="menu-path">报表</span> 菜单中选择目标报表。</li>
+  <li><strong>设置筛选条件</strong> — 设置时间范围、客户、航线等筛选条件。</li>
+  <li><strong>预览</strong> — 点击"预览"，系统生成报表数据。</li>
+  <li><strong>导出</strong> — 点击"导出"按钮，选择导出格式：
+    <ul>
+      <li><strong>Excel（.xlsx）</strong> — 适用于数据分析和二次处理</li>
+      <li><strong>PDF</strong> — 适用于打印和存档</li>
+      <li><strong>CSV</strong> — 适用于系统间数据交换</li>
+    </ul>
+  </li>
+</ol>
+
+<div class="info-card">
+  <p>💡 <strong>提示：</strong>所有报表支持自定义列、分组、排序，用户可保存常用筛选条件为"收藏视图"。</p>
+</div>
+
+<!-- ==================== 第十一章 ==================== -->
+<h1 id="ch11">第十一章 附录 — 二开插件使用 Odoo 原生功能说明</h1>
+
+<p>本系统基于 Odoo 19 的多个原生模块进行二次开发。以下列出 <code>zhao_logistics</code> 对各原生模块的依赖与使用方式。</p>
+
+<h2 id="ch11-sale">sale_management 原生功能使用清单</h2>
+
+<table>
+  <thead>
+    <tr><th style="width:200px">原生模块/模型</th><th>使用方式</th><th>说明</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>sale.order</code></td><td>继承（_inherit）</td><td>扩展销售订单，添加物流相关字段（运输方式、始发地、目的地）</td></tr>
+    <tr><td><code>sale.order.line</code></td><td>继承（_inherit）</td><td>扩展订单行，添加 HS 编码、体积、毛重/净重等字段</td></tr>
+    <tr><td><code>sale.order</code> 状态机</td><td>扩展</td><td>在原生报价/销售订单状态基础上增加物流特有状态</td></tr>
+    <tr><td>报价单模板</td><td>复用</td><td>基于原生报价单模板定制物流报价格式</td></tr>
+    <tr><td>销售订单确认</td><td>扩展</td><td>确认销售订单时自动触发物流订单创建</td></tr>
+    <tr><td>客户地址</td><td>复用</td><td>使用原生 partner 地址体系，标识发货地址与收货地址</td></tr>
+    <tr><td>价格表（pricelist）</td><td>复用</td><td>使用原生价格表机制计算运费</td></tr>
+    <tr><td>税务（account.tax）</td><td>复用</td><td>使用原生税务模块处理跨境税务</td></tr>
+    <tr><td>销售订单报表</td><td>扩展</td><td>定制物流订单报表格式</td></tr>
+  </tbody>
+</table>
+
+<h2 id="ch11-stock">stock 原生功能使用清单</h2>
+
+<table>
+  <thead>
+    <tr><th style="width:200px">原生模块/模型</th><th>使用方式</th><th>说明</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>stock.picking</code></td><td>继承（_inherit）</td><td>扩展入库单，类型为 incoming，增加物流关联字段</td></tr>
+    <tr><td><code>stock.quant.package</code></td><td>继承（_inherit）</td><td>扩展包裹模型，支持嵌套包装、关联物流订单</td></tr>
+    <tr><td><code>stock.quant</code></td><td>复用</td><td>库存数量管理，记录货物在库位置</td></tr>
+    <tr><td><code>stock.location</code></td><td>复用</td><td>库位管理，划分收货区、存储区、发货区</td></tr>
+    <tr><td><code>stock.move</code></td><td>扩展</td><td>库存移动记录，关联物流订单行</td></tr>
+    <tr><td><code>stock.picking.type</code></td><td>扩展</td><td>新增操作类型：入库（incoming）、退货入库（return）</td></tr>
+    <tr><td>扫码/批次序列号</td><td>复用</td><td>使用原生库存追踪功能管理货物批次</td></tr>
+    <tr><td>库存报表</td><td>复用</td><td>使用原生库存报表功能</td></tr>
+    <tr><td>库存移动追溯</td><td>复用</td><td>使用原生库存追溯功能查看货物流转历史</td></tr>
+  </tbody>
+</table>
+
+<h2 id="ch11-barcode">barcodes 原生功能使用清单</h2>
+
+<table>
+  <thead>
+    <tr><th style="width:200px">原生模块/模型</th><th>使用方式</th><th>说明</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>barcodes.barcode_rule</code></td><td>配置</td><td>定义物流包裹面单的条码规则（GS1-128 / Code128）</td></tr>
+    <tr><td>扫码入库</td><td>复用</td><td>使用原生扫码界面快速验证入库单</td></tr>
+    <tr><td>扫码打包</td><td>扩展</td><td>在打包管理界面集成扫码功能，快速关联包裹与货物</td></tr>
+    <tr><td>扫码装箱</td><td>扩展</td><td>装箱操作中扫码确认包裹</td></tr>
+    <tr><td>条码打印</td><td>复用</td><td>使用原生条码打印功能生成面单标签</td></tr>
+    <tr><td>移动端扫码</td><td>复用</td><td>支持 Odoo 移动应用 / PDA 扫码操作</td></tr>
+  </tbody>
+</table>
+
+<h2 id="ch11-crm">crm 原生功能使用清单</h2>
+
+<table>
+  <thead>
+    <tr><th style="width:200px">原生模块/模型</th><th>使用方式</th><th>说明</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>crm.lead</code></td><td>可选集成</td><td>物流询价/运输需求可从 CRM 线索转化</td></tr>
+    <tr><td>客户线索管理</td><td>扩展</td><td>在 CRM 线索中添加物流需求字段（运输方式、货量、航线）</td></tr>
+    <tr><td>线索转订单</td><td>扩展</td><td>线索转化为销售订单时自动带入物流信息</td></tr>
+    <tr><td>客户活动记录</td><td>复用</td><td>使用原生 CRM 活动记录管理客户沟通</td></tr>
+    <tr><td>销售团队</td><td>复用</td><td>使用原生销售团队/渠道管理机制</td></tr>
+    <tr><td>CRM 报表</td><td>复用</td><td>使用原生 CRM 报表分析线索转化率</td></tr>
+  </tbody>
+</table>
+
+<h2 id="ch11-mail">mail 原生功能使用清单</h2>
+
+<table>
+  <thead>
+    <tr><th style="width:200px">原生模块/模型</th><th>使用方式</th><th>说明</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>mail.thread</code></td><td>继承</td><td>所有主要模型（物流订单、入库单、集装箱、航次等）启用消息跟踪</td></tr>
+    <tr><td><code>mail.activity</code></td><td>复用</td><td>使用原生活动计划功能，设置任务提醒（如截关提醒、ETA 提醒）</td></tr>
+    <tr><td>邮件通知</td><td>复用</td><td>状态变更时自动发送邮件通知给相关方</td></tr>
+    <tr><td>消息墙（chatter）</td><td>复用</td><td>所有业务单据启用 chatter，支持内部协作讨论</td></tr>
+    <tr><td>邮件别名</td><td>复用</td><td>支持通过邮件回复更新业务单据</td></tr>
+    <tr><td>订阅机制</td><td>复用</td><td>用户可订阅关注特定单据，接收变更通知</td></tr>
+    <tr><td>模板邮件</td><td>扩展</td><td>定制物流业务场景的邮件模板</td></tr>
+  </tbody>
+</table>
+
+<h2 id="ch11-deps">各模块依赖关系表</h2>
+
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr><th style="width:160px">模块名称</th><th>类型</th><th>依赖的模块</th><th>说明</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>zhao_logistics</code></td><td><span class="tag tag-blue">二开模块</span></td><td><code>sale_management</code>, <code>stock</code>, <code>barcodes</code>, <code>mail</code>, <code>account</code>, <code>uom</code>, <code>product</code>, <code>base</code></td><td>核心物流业务模块，强依赖上述所有模块</td></tr>
+    <tr><td><code>zhao_logistics_crm</code></td><td><span class="tag tag-blue">二开模块</span></td><td><code>zhao_logistics</code>, <code>crm</code></td><td>CRM 集成模块，可选安装</td></tr>
+    <tr><td><code>zhao_logistics_report</code></td><td><span class="tag tag-blue">二开模块</span></td><td><code>zhao_logistics</code></td><td>报表扩展模块，依赖核心物流模块</td></tr>
+    <tr><td><code>sale_management</code></td><td><span class="tag tag-green">原生模块</span></td><td><code>sale</code>, <code>product</code>, <code>account</code></td><td>销售管理，作为物流订单的入口</td></tr>
+    <tr><td><code>stock</code></td><td><span class="tag tag-green">原生模块</span></td><td><code>product</code>, <code>uom</code></td><td>库存管理，提供入库、打包、库存追踪功能</td></tr>
+    <tr><td><code>barcodes</code></td><td><span class="tag tag-green">原生模块</span></td><td><code>stock</code></td><td>条码管理，提供扫码能力</td></tr>
+    <tr><td><code>crm</code></td><td><span class="tag tag-green">原生模块</span></td><td><code>sale_management</code></td><td>客户关系管理，可选集成</td></tr>
+    <tr><td><code>mail</code></td><td><span class="tag tag-green">原生模块</span></td><td><code>base</code></td><td>消息与通知，所有模块的基础通信能力</td></tr>
+    <tr><td><code>account</code></td><td><span class="tag tag-green">原生模块</span></td><td><code>base</code></td><td>财务模块，提供应收应付能力</td></tr>
+    <tr><td><code>product</code></td><td><span class="tag tag-green">原生模块</span></td><td><code>base</code>, <code>uom</code></td><td>产品管理，定义货物信息</td></tr>
+    <tr><td><code>uom</code></td><td><span class="tag tag-green">原生模块</span></td><td><code>base</code></td><td>计量单位管理</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="info-card">
+  <p>💡 <strong>说明：</strong>安装 <code>zhao_logistics</code> 时，系统会自动安装所有强依赖的原生模块。用户无需手动逐个安装。</p>
+</div>
+
+<hr>
+
+<p style="text-align:center;color:var(--text-muted);font-size:13px;margin-top:48px;">
+  — 文档结束 —<br>
+  跨境物流系统操作手册 · zhao_logistics · Odoo 19<br>
+  生成日期：2026-08-01
+</p>
+
+</div><!-- /content -->
+</div><!-- /main -->
+
+</body>
+</html>

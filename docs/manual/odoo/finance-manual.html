@@ -1,0 +1,1200 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Odoo 19 进销存与财务公共模块操作手册</title>
+<style>
+  :root {
+    --sidebar-width: 280px;
+    --sidebar-bg: #1a2332;
+    --sidebar-hover: #243044;
+    --sidebar-active: #2d3f56;
+    --sidebar-text: #b0bec5;
+    --sidebar-text-active: #ffffff;
+    --accent: #4caf50;
+    --accent-light: #66bb6a;
+    --bg: #f5f7fa;
+    --card-bg: #ffffff;
+    --text: #263238;
+    --text-secondary: #546e7a;
+    --border: #e0e0e0;
+    --code-bg: #263238;
+    --code-text: #e2e8f0;
+    --step-bg: #e8f5e9;
+    --step-color: #2e7d32;
+    --table-header-bg: #37474f;
+    --table-header-text: #ffffff;
+    --table-stripe: #f8f9fa;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--text);
+    background: var(--bg);
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: var(--sidebar-width);
+    height: 100vh;
+    background: var(--sidebar-bg);
+    overflow-y: auto;
+    z-index: 100;
+    transition: transform 0.3s ease;
+  }
+  .sidebar::-webkit-scrollbar { width: 6px; }
+  .sidebar::-webkit-scrollbar-thumb { background: #4a5568; border-radius: 3px; }
+  .sidebar-header {
+    padding: 20px 20px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .sidebar-header h1 {
+    color: #fff;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+  .sidebar-header .version {
+    color: var(--accent-light);
+    font-size: 12px;
+    margin-top: 2px;
+  }
+  .sidebar-nav { padding: 8px 0; }
+  .sidebar-nav .nav-item { display: block; }
+  .sidebar-nav .nav-link {
+    display: block;
+    padding: 8px 20px;
+    color: var(--sidebar-text);
+    text-decoration: none;
+    font-size: 14px;
+    transition: all 0.2s;
+    cursor: pointer;
+    border-left: 3px solid transparent;
+  }
+  .sidebar-nav .nav-link:hover {
+    background: var(--sidebar-hover);
+    color: var(--sidebar-text-active);
+  }
+  .sidebar-nav .nav-link.active {
+    background: var(--sidebar-active);
+    color: var(--sidebar-text-active);
+    border-left-color: var(--accent);
+  }
+  .sidebar-nav .nav-link.chapter {
+    font-weight: 600;
+    font-size: 14px;
+    color: #e0e0e0;
+    padding-top: 14px;
+    padding-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: default;
+  }
+  .sidebar-nav .nav-link.chapter:hover { background: transparent; color: #e0e0e0; }
+  .sidebar-nav .nav-link.sub {
+    padding-left: 36px;
+    font-size: 13px;
+  }
+  .sidebar-nav .nav-link.sub2 {
+    padding-left: 52px;
+    font-size: 12.5px;
+  }
+
+  /* Main Content */
+  .main {
+    margin-left: var(--sidebar-width);
+    flex: 1;
+    min-height: 100vh;
+    padding: 0;
+  }
+  .content {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 40px 48px 80px;
+  }
+
+  /* Typography */
+  h1 { font-size: 28px; color: #1a2332; margin: 0 0 8px; font-weight: 700; }
+  h2 {
+    font-size: 22px;
+    color: #1a2332;
+    margin: 48px 0 16px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--accent);
+    font-weight: 700;
+  }
+  h3 {
+    font-size: 17px;
+    color: #2e3b4e;
+    margin: 32px 0 12px;
+    font-weight: 600;
+  }
+  h4 {
+    font-size: 15px;
+    color: #37474f;
+    margin: 20px 0 8px;
+    font-weight: 600;
+  }
+  p { margin: 0 0 14px; color: var(--text); }
+  a { color: #1b5e20; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* Steps */
+  .step-list { list-style: none; padding: 0; margin: 0 0 20px; }
+  .step-list li {
+    position: relative;
+    padding: 10px 16px 10px 48px;
+    margin-bottom: 8px;
+    background: var(--step-bg);
+    border-radius: 6px;
+    font-size: 14px;
+    line-height: 1.6;
+    border-left: 3px solid var(--step-color);
+  }
+  .step-list li::before {
+    content: counter(step-counter);
+    counter-increment: step-counter;
+    position: absolute;
+    left: 12px;
+    top: 10px;
+    width: 26px;
+    height: 26px;
+    background: var(--step-color);
+    color: #fff;
+    border-radius: 50%;
+    font-size: 13px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .step-list { counter-reset: step-counter; }
+
+  /* Code blocks */
+  code {
+    font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+    font-size: 13px;
+    background: #e8edf4;
+    padding: 2px 6px;
+    border-radius: 3px;
+    color: #c7254e;
+  }
+  pre {
+    background: var(--code-bg);
+    color: var(--code-text);
+    padding: 16px 20px;
+    border-radius: 6px;
+    overflow-x: auto;
+    margin: 0 0 20px;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  pre code {
+    background: transparent;
+    color: inherit;
+    padding: 0;
+    font-size: inherit;
+  }
+
+  /* Tables */
+  .table-wrap { overflow-x: auto; margin: 0 0 24px; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+  thead th {
+    background: var(--table-header-bg);
+    color: var(--table-header-text);
+    padding: 10px 14px;
+    text-align: left;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  tbody td {
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  tbody tr:nth-child(even) { background: var(--table-stripe); }
+  tbody tr:hover { background: #eef2f7; }
+
+  /* Cards */
+  .card {
+    background: var(--card-bg);
+    border-radius: 8px;
+    padding: 24px;
+    margin: 0 0 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .card-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: #1a2332;
+  }
+
+  /* Info / warning boxes */
+  .info-box {
+    background: #e3f2fd;
+    border-left: 4px solid #1976d2;
+    padding: 12px 16px;
+    margin: 0 0 20px;
+    border-radius: 0 6px 6px 0;
+    font-size: 14px;
+  }
+  .info-box strong { color: #1565c0; }
+  .warn-box {
+    background: #fff3e0;
+    border-left: 4px solid #f57c00;
+    padding: 12px 16px;
+    margin: 0 0 20px;
+    border-radius: 0 6px 6px 0;
+    font-size: 14px;
+  }
+  .warn-box strong { color: #e65100; }
+
+  /* Flow diagram */
+  .flow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 20px;
+    margin: 0 0 24px;
+    flex-wrap: wrap;
+  }
+  .flow-item {
+    background: var(--accent);
+    color: #fff;
+    padding: 10px 24px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 14px;
+    white-space: nowrap;
+  }
+  .flow-arrow {
+    color: #78909c;
+    font-size: 22px;
+    font-weight: 300;
+  }
+
+  /* Section anchor offset */
+  .section { scroll-margin-top: 20px; }
+
+  /* Responsive */
+  .sidebar-toggle {
+    display: none;
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 200;
+    background: var(--sidebar-bg);
+    color: #fff;
+    border: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 6px;
+    font-size: 20px;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+  }
+  .sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 99;
+  }
+
+  @media (max-width: 768px) {
+    .sidebar-toggle { display: flex; }
+    .sidebar { transform: translateX(-100%); }
+    .sidebar.open { transform: translateX(0); }
+    .sidebar-overlay.open { display: block; }
+    .main { margin-left: 0; }
+    .content { padding: 24px 20px 60px; padding-top: 60px; }
+    h1 { font-size: 22px; }
+    h2 { font-size: 18px; }
+    .flow { gap: 6px; }
+    .flow-item { padding: 8px 14px; font-size: 13px; }
+    .flow-arrow { font-size: 16px; }
+  }
+
+  /* Print */
+  @media print {
+    .sidebar { display: none; }
+    .sidebar-toggle { display: none; }
+    .sidebar-overlay { display: none; }
+    .main { margin-left: 0; }
+    .content { padding: 20px; }
+    .card { box-shadow: none; border: 1px solid #ddd; }
+    h2 { page-break-after: avoid; }
+    .section { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<button class="sidebar-toggle" id="sidebarToggle" aria-label="切换导航">☰</button>
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<!-- Sidebar -->
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <h1>Odoo 进销存与财务</h1>
+    <div class="version">v19.0 · 公共模块操作手册</div>
+  </div>
+  <div class="sidebar-nav">
+    <a href="#ch1" class="nav-link chapter">第一章 系统概述</a>
+    <a href="#ch1-1" class="nav-link sub">1.1 模块关系图</a>
+    <a href="#ch1-2" class="nav-link sub">1.2 模块功能总览</a>
+    <a href="#ch1-3" class="nav-link sub">1.3 数据流向说明</a>
+
+    <a href="#ch2" class="nav-link chapter">第二章 采购管理</a>
+    <a href="#ch2-1" class="nav-link sub">2.1 创建采购订单</a>
+    <a href="#ch2-2" class="nav-link sub">2.2 采购收货</a>
+    <a href="#ch2-3" class="nav-link sub">2.3 供应商管理</a>
+    <a href="#ch2-4" class="nav-link sub">2.4 采购报表</a>
+
+    <a href="#ch3" class="nav-link chapter">第三章 销售管理</a>
+    <a href="#ch3-1" "nav-link sub">3.1 创建销售订单</a>
+    <a href="#ch3-2" class="nav-link sub">3.2 销售发货</a>
+    <a href="#ch3-3" class="nav-link sub">3.3 客户管理</a>
+    <a href="#ch3-4" class="nav-link sub">3.4 报价与订单转化</a>
+    <a href="#ch3-5" class="nav-link sub">3.5 销售报表</a>
+
+    <a href="#ch4" class="nav-link chapter">第四章 库存管理</a>
+    <a href="#ch4-1" class="nav-link sub">4.1 仓库配置</a>
+    <a href="#ch4-2" class="nav-link sub">4.2 库存盘点</a>
+    <a href="#ch4-3" class="nav-link sub">4.3 库存调整</a>
+    <a href="#ch4-4" class="nav-link sub">4.4 报表与预警</a>
+    <a href="#ch4-5" class="nav-link sub">4.5 批次/序列号管理</a>
+
+    <a href="#ch5" class="nav-link chapter">第五章 财务管理</a>
+    <a href="#ch5-1" class="nav-link sub">5.1 会计科目表</a>
+    <a href="#ch5-2" class="nav-link sub">5.2 客户发票与收款</a>
+    <a href="#ch5-3" class="nav-link sub">5.3 供应商账单与付款</a>
+    <a href="#ch5-4" class="nav-link sub">5.4 银行对账</a>
+    <a href="#ch5-5" class="nav-link sub">5.5 总账与明细账</a>
+    <a href="#ch5-6" class="nav-link sub">5.6 财务报表</a>
+    <a href="#ch5-7" class="nav-link sub">5.7 税务管理</a>
+
+    <a href="#ch6" class="nav-link chapter">第六章 基础配置</a>
+    <a href="#ch6-1" class="nav-link sub">6.1 公司信息</a>
+    <a href="#ch6-2" class="nav-link sub">6.2 币种与汇率</a>
+    <a href="#ch6-3" class="nav-link sub">6.3 税收配置</a>
+    <a href="#ch6-4" class="nav-link sub">6.4 审批流设置</a>
+    <a href="#ch6-5" class="nav-link sub">6.5 用户权限与角色</a>
+  </div>
+</nav>
+
+<!-- Main Content -->
+<div class="main">
+<div class="content">
+
+<h1>Odoo 19 进销存与财务公共模块操作手册</h1>
+<p style="color: var(--text-secondary); margin-bottom: 32px; font-size: 14px;">
+  适用版本：Odoo 19 Community &amp; Enterprise &nbsp;|&nbsp; 更新日期：2026-08-01 &nbsp;|&nbsp; 面向对象：业务操作人员、技术运维人员
+</p>
+
+<!-- ============================================================ -->
+<!-- 第一章 -->
+<!-- ============================================================ -->
+<section id="ch1" class="section">
+<h2>第一章 系统概述</h2>
+
+<div class="card">
+  <div class="card-title">模块概览</div>
+  <p>Odoo 19 的进销存与财务模块是超市收银、跨境物流等业务模块的公共基础。四个核心模块——<strong>采购（Purchase）</strong>、<strong>库存（Stock）</strong>、<strong>销售（Sale）</strong>、<strong>财务（Accounting）</strong>——构成完整的业务闭环。</p>
+</div>
+
+<section id="ch1-1" class="section">
+<h3>1.1 模块关系图</h3>
+<div class="card">
+  <div class="flow">
+    <span class="flow-item">采购管理</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-item">库存管理</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-item">销售管理</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-item">财务管理</span>
+  </div>
+  <p style="text-align:center; color: var(--text-secondary); font-size: 13px;">数据流向：采购入库 → 库存流转 → 销售出库 → 财务核算</p>
+</div>
+</section>
+
+<section id="ch1-2" class="section">
+<h3>1.2 模块功能总览表</h3>
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>模块</th><th>技术名称</th><th>核心功能</th><th>依赖模块</th></tr>
+</thead>
+<tbody>
+<tr><td>采购管理</td><td>purchase</td><td>采购订单、询价、收货、供应商管理</td><td>stock, account</td></tr>
+<tr><td>销售管理</td><td>sale_management</td><td>销售订单、报价、发货、客户管理</td><td>stock, account</td></tr>
+<tr><td>库存管理</td><td>stock</td><td>仓库、盘点、移库、批次/序列号</td><td>product</td></tr>
+<tr><td>财务管理</td><td>account</td><td>科目表、发票、付款、对账、报表</td><td>base</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<section id="ch1-3" class="section">
+<h3>1.3 数据流向说明</h3>
+<div class="card">
+  <p>业务数据在模块间按以下路径流转：</p>
+  <ol style="padding-left: 20px; margin-bottom: 0;">
+    <li><strong>采购 → 库存</strong>：采购订单确认后生成入库单，库存量自动更新。</li>
+    <li><strong>库存 → 销售</strong>：销售订单确认后生成出库单，库存扣减。</li>
+    <li><strong>销售 → 财务</strong>：销售订单生成客户发票，进入应收管理。</li>
+    <li><strong>采购 → 财务</strong>：采购订单生成供应商账单，进入应付管理。</li>
+    <li><strong>库存 → 财务</strong>：库存价值变动（收货/发货/盘点）生成会计凭证，影响资产与成本。</li>
+  </ol>
+</div>
+<div class="info-box">
+  <strong>提示：</strong>所有模块共享同一套产品（Product）主数据和合作伙伴（Partner）主数据，保证数据一致性。
+</div>
+</section>
+</section>
+
+<!-- ============================================================ -->
+<!-- 第二章 采购管理 -->
+<!-- ============================================================ -->
+<section id="ch2" class="section">
+<h2>第二章 采购管理</h2>
+<p>采购管理模块（<code>purchase</code>）负责从供应商采购商品或服务的全流程管理，包括询价、采购订单、收货、开票以及供应商信息维护。</p>
+
+<section id="ch2-1" class="section">
+<h3>2.1 创建采购订单</h3>
+<div class="card">
+  <div class="card-title">操作步骤</div>
+  <ol class="step-list">
+    <li>导航至 <strong>采购 → 采购订单 → 新建</strong>。</li>
+    <li>选择供应商，系统自动带出预设的供应商地址、付款条款、货币等信息。</li>
+    <li>在订单行中添加产品，指定数量、单价。支持从历史采购价或上次采购价自动填充。</li>
+    <li>设置期望收货日期，该日期作为后续收货计划的参考。</li>
+    <li>点击"确认订单"——订单状态变为"采购订单"（PO），同时触发以下动作：
+      <ul style="margin-top:4px; padding-left:18px;">
+        <li>生成RFQ编号（询价单）→ 确认后转为正式采购订单。</li>
+        <li>若产品设置了"路线：补货规则"，触发补货。</li>
+        <li>生成待收货的入库单据。</li>
+      </ul>
+    </li>
+  </ol>
+</div>
+
+<div class="info-box">
+  <strong>提示：</strong>采购订单支持"一单多行"、多收货地址、按行确认收货。如需分批收货，可使用"收货"按钮分次处理。
+</div>
+</section>
+
+<section id="ch2-2" class="section">
+<h3>2.2 采购收货（入库）</h3>
+<div class="card">
+  <div class="card-title">操作步骤</div>
+  <ol class="step-list">
+    <li>导航至 <strong>采购 → 收货 → 待处理</strong>，查看所有待收货的采购订单。</li>
+    <li>打开目标收货单，核对产品、数量、批次（如有）。</li>
+    <li>点击"验证"按钮完成入库：
+      <ul style="margin-top:4px; padding-left:18px;">
+        <li><strong>全部收货</strong>：一次完成整单收货。</li>
+        <li><strong>部分收货</strong>：输入实际到货数量，剩余数量仍为待收货状态。</li>
+      </ul>
+    </li>
+    <li>入库完成后，库存数量自动增加，同时生成会计入库凭证（若已配置库存估价）。</li>
+  </ol>
+</div>
+
+<div class="warn-box">
+  <strong>注意：</strong>收货前请确保产品已启用"可采购"属性，且仓库位置已正确配置。若启用批次管理，必须在收货时录入批次号。
+</div>
+</section>
+
+<section id="ch2-3" class="section">
+<h3>2.3 供应商管理</h3>
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>功能</th><th>路径</th><th>说明</th></tr>
+</thead>
+<tbody>
+<tr><td>供应商列表</td><td>采购 → 供应商</td><td>查看所有供应商联系人，支持搜索、筛选、分组</td></tr>
+<tr><td>新建供应商</td><td>采购 → 供应商 → 新建</td><td>填写名称、地址、税号、联系方式、付款条款等</td></tr>
+<tr><td>供应商价格表</td><td>采购 → 供应商价格表</td><td>按产品/数量区间设置供应商专属价格</td></tr>
+<tr><td>供应商评价</td><td>采购 → 报表 → 供应商评价</td><td>基于交货准时率、质量等维度的评分</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<section id="ch2-4" class="section">
+<h3>2.4 采购报表</h3>
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>报表名称</th><th>路径</th><th>用途</th></tr>
+</thead>
+<tbody>
+<tr><td>采购订单分析</td><td>采购 → 报表 → 采购订单分析</td><td>按供应商、产品、时间段统计采购金额与数量</td></tr>
+<tr><td>待收货订单</td><td>采购 → 报表 → 待收货</td><td>追踪尚未完成收货的采购订单</td></tr>
+<tr><td>供应商历史价格</td><td>采购 → 报表 → 供应商价格对比</td><td>对比不同供应商的产品历史报价</td></tr>
+<tr><td>采购趋势</td><td>采购 → 报表 → 采购趋势</td><td>按月/季度展示采购量变化趋势</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+</section>
+
+<!-- ============================================================ -->
+<!-- 第三章 销售管理 -->
+<!-- ============================================================ -->
+<section id="ch3" class="section">
+<h2>第三章 销售管理</h2>
+<p>销售管理模块（<code>sale_management</code>）覆盖客户报价、销售订单、发货以及客户关系管理，是业务收入的核心入口。</p>
+
+<section id="ch3-1" class="section">
+<h3>3.1 创建销售订单</h3>
+<div class="card">
+  <div class="card-title">操作步骤</div>
+  <ol class="step-list">
+    <li>导航至 <strong>销售 → 销售订单 → 新建</strong>。</li>
+    <li>选择客户，系统自动带出客户地址、付款条款、价格表等信息。</li>
+    <li>添加产品行，选择数量、单价。若已配置客户价格表，单价自动填充。</li>
+    <li>设置承诺交货日期，该日期驱动后续发货计划。</li>
+    <li>确认订单——系统自动触发：
+      <ul style="margin-top:4px; padding-left:18px;">
+        <li>生成出库单（若产品路线配置为"交付"）。</li>
+        <li>生成客户发票（若设置"确认后自动开票"）。</li>
+        <li>更新库存预约量（Available to Promise, ATP）。</li>
+      </ul>
+    </li>
+  </ol>
+</div>
+</section>
+
+<section id="ch3-2" class="section">
+<h3>3.2 销售发货（出库）</h3>
+<div class="card">
+  <div class="card-title">操作步骤</div>
+  <ol class="step-list">
+    <li>导航至 <strong>库存 → 收货 → 待处理</strong>（出库单亦在此处）。</li>
+    <li>筛选"出库"类型，找到对应销售订单的出货单。</li>
+    <li>核对产品、数量、批次/序列号。</li>
+    <li>点击"验证"完成出库，库存数量扣减，状态更新为"已完成"。</li>
+  </ol>
+</div>
+<div class="info-box">
+  <strong>提示：</strong>支持按订单行分批发货。若客户需要部分发货，可在出货单中修改数量后验证，剩余数量自动生成新的出货单。
+</div>
+</section>
+
+<section id="ch3-3" class="section">
+<h3>3.3 客户管理</h3>
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>功能</th><th>路径</th><th>说明</th></tr>
+</thead>
+<tbody>
+<tr><td>客户列表</td><td>销售 → 客户</td><td>查看所有客户，支持标签、地域、行业分组</td></tr>
+<tr><td>新建客户</td><td>销售 → 客户 → 新建</td><td>填写名称、地址、联系人、税号、付款条款等</td></tr>
+<tr><td>客户价格表</td><td>销售 → 价格表</td><td>按客户等级、数量区间、有效期设置销售价格</td></tr>
+<tr><td>信用额度</td><td>销售 → 配置 → 客户信用</td><td>设置客户信用上限，超限时系统自动拦截</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<section id="ch3-4" class="section">
+<h3>3.4 销售报价与订单转化</h3>
+<div class="card">
+  <div class="card-title">流程说明</div>
+  <ol class="step-list">
+    <li>创建<strong>报价单</strong>（Quotation）：填写客户、产品、价格，保存后状态为"报价单"。</li>
+    <li>通过邮件发送报价单给客户（系统内置邮件模板，支持PDF附件）。</li>
+    <li>客户确认后，点击"确认订单"——报价单转化为<strong>销售订单</strong>。</li>
+    <li>也可在报价单上直接点击"确认"跳过度步骤。</li>
+  </ol>
+</div>
+<div class="info-box">
+  <strong>提示：</strong>报价单可设置有效期，过期后自动失效。支持在线报价门户，客户可在线确认。
+</div>
+</section>
+
+<section id="ch3-5" class="section">
+<h3>3.5 销售报表</h3>
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>报表名称</th><th>路径</th><th>用途</th></tr>
+</thead>
+<tbody>
+<tr><td>销售分析</td><td>销售 → 报表 → 销售分析</td><td>按客户、产品、销售员、时间段分析销售额</td></tr>
+<tr><td>报价转化率</td><td>销售 → 报表 → 报价分析</td><td>统计报价到订单的转化率与平均周期</td></tr>
+<tr><td>待发货订单</td><td>销售 → 报表 → 待发货</td><td>追踪已确认但未完全发货的订单</td></tr>
+<tr><td>销售毛利分析</td><td>销售 → 报表 → 毛利分析</td><td>按订单/产品维度计算销售收入与成本毛利</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+</section>
+
+<!-- ============================================================ -->
+<!-- 第四章 库存管理 -->
+<!-- ============================================================ -->
+<section id="ch4" class="section">
+<h2>第四章 库存管理</h2>
+<p>库存管理模块（<code>stock</code>）是进销存的中枢，管理仓库位置、库存移动、盘点、批次/序列号追踪等核心功能。</p>
+
+<section id="ch4-1" class="section">
+<h3>4.1 仓库配置</h3>
+<div class="card">
+  <div class="card-title">仓库与位置结构</div>
+  <p>Odoo 使用多级位置（Location）结构管理仓库。建议配置层次：</p>
+  <pre><code>公司仓库 (WH)
+├── 收货区 (WH/Receipt)    — 采购入库暂存
+├── 存储区 (WH/Stock)      — 主库存
+├── 拣货区 (WH/Pick)       — 销售出库暂存
+├── 包装区 (WH/Pack)       — 包装作业区
+├── 发货区 (WH/Ship)       — 待发货区域
+├── 报废区 (WH/Scrap)      — 不合格品
+└── 盘点差异区 (WH/Inventory Loss) — 盘点差异调整</code></pre>
+</div>
+
+<div class="card">
+  <div class="card-title">仓库配置步骤</div>
+  <ol class="step-list">
+    <li>导航至 <strong>库存 → 配置 → 仓库</strong>，点击新建。</li>
+    <li>填写仓库名称、简称、地址。</li>
+    <li>配置补货路线：选择"采购"、"制造"或"补货规则"。</li>
+    <li>设置出库/入库的默认位置。</li>
+    <li>可选：启用"多库位"、"批次管理"、"序列号管理"等高级功能。</li>
+  </ol>
+</div>
+</section>
+
+<section id="ch4-2" class="section">
+<h3>4.2 库存盘点</h3>
+<div class="card">
+  <div class="card-title">操作步骤</div>
+  <ol class="step-list">
+    <li>导航至 <strong>库存 → 操作 → 盘点</strong>，点击新建。</li>
+    <li>选择盘点类型：
+      <ul style="margin-top:4px; padding-left:18px;">
+        <li><strong>全部盘点</strong>：对仓库中所有产品进行盘点。</li>
+        <li><strong>部分盘点</strong>：仅对指定产品/位置盘点。</li>
+      </ul>
+    </li>
+    <li>点击"开始盘点"，系统生成当前库存数量作为参考。</li>
+    <li>逐行输入实际盘点数量。系统自动计算差异（数量差异 = 实盘数量 - 账面数量）。</li>
+    <li>点击"验证盘点"——差异部分自动生成库存调整单，并更新会计估价（如启用）。</li>
+  </ol>
+</div>
+<div class="warn-box">
+  <strong>注意：</strong>盘点期间建议暂停相关产品的出入库操作，避免数据冲突。启用"盘点锁库"功能可自动阻止盘点期间的库存移动。
+</div>
+</section>
+
+<section id="ch4-3" class="section">
+<h3>4.3 库存调整</h3>
+<div class="card">
+  <div class="card-title">三种调整类型</div>
+  <div class="table-wrap">
+  <table>
+  <thead>
+  <tr><th>类型</th><th>操作路径</th><th>说明</th></tr>
+  </thead>
+  <tbody>
+  <tr><td>入库调整</td><td>库存 → 操作 → 库存调整 → 新建（入库）</td><td>手动增加库存，适用于盘盈、退货入库等场景</td></tr>
+  <tr><td>出库调整</td><td>库存 → 操作 → 库存调整 → 新建（出库）</td><td>手动减少库存，适用于盘亏、样品、损坏等场景</td></tr>
+  <tr><td>库存移库</td><td>库存 → 操作 → 库存转移</td><td>在同一仓库内或跨仓库移动产品库存</td></tr>
+  </tbody>
+  </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-title">移库操作步骤</div>
+  <ol class="step-list">
+    <li>导航至 <strong>库存 → 操作 → 库存转移</strong>，点击新建。</li>
+    <li>选择源位置和目标位置。</li>
+    <li>添加产品行，指定移库数量。</li>
+    <li>点击"确认"——生成库存移动单。</li>
+    <li>操作员在源位置完成拣货后"验证"，到达目标位置后"验证"完成移库。</li>
+  </ol>
+</div>
+</section>
+
+<section id="ch4-4" class="section">
+<h3>4.4 库存报表与预警</h3>
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>报表/功能</th><th>路径</th><th>用途</th></tr>
+</thead>
+<tbody>
+<tr><td>库存概况</td><td>库存 → 报表 → 库存概况</td><td>按产品/位置查看当前库存数量与价值</td></tr>
+<tr><td>库存移动报表</td><td>库存 → 报表 → 库存移动</td><td>追踪所有出入库记录，按时间/产品/位置筛选</td></tr>
+<tr><td>库存价值分析</td><td>库存 → 报表 → 库存价值</td><td>按成本计算方法展示库存总价值</td></tr>
+<tr><td>库存预警规则</td><td>库存 → 配置 → 补货规则</td><td>设置最低库存量，低于阈值自动触发补货建议</td></tr>
+<tr><td>滞销品分析</td><td>库存 → 报表 → 滞销品</td><td>识别超过设定天数未移动的产品</td></tr>
+</tbody>
+</table>
+</div>
+<div class="info-box">
+  <strong>提示：</strong>补货规则支持"最小-最大"（Min-Max）策略，系统每日检查库存水平，自动生成采购建议或补货单。
+</div>
+</section>
+
+<section id="ch4-5" class="section">
+<h3>4.5 批次/序列号管理</h3>
+<div class="card">
+  <div class="card-title">启用配置</div>
+  <ol class="step-list">
+    <li>导航至 <strong>库存 → 配置 → 设置</strong>，启用"批次"和/或"序列号"功能。</li>
+    <li>在产品主数据中，为每个产品设置跟踪方式：
+      <ul style="margin-top:4px; padding-left:18px;">
+        <li><strong>无跟踪</strong>：不启用批次/序列号。</li>
+        <li><strong>按批次</strong>：同一批产品共享一个批次号，适用于保质期管理。</li>
+        <li><strong>按唯一序列号</strong>：每个产品有唯一序列号，适用于高价值或可追溯产品。</li>
+      </ul>
+    </li>
+  </ol>
+</div>
+
+<div class="card">
+  <div class="card-title">操作场景</div>
+  <div class="table-wrap">
+  <table>
+  <thead>
+  <tr><th>场景</th><th>操作说明</th></tr>
+  </thead>
+  <tbody>
+  <tr><td>采购收货录入批次</td><td>收货时，在"批次/序列号"列输入或选择批次号，支持批量生成</td></tr>
+  <tr><td>销售发货选择批次</td><td>发货时，系统自动建议先进先出（FIFO）的批次，也可手动选择</td></tr>
+  <tr><td>批次追溯</td><td>在产品表单 → 批次/序列号标签页，查看该批次的全部出入库记录</td></tr>
+  <tr><td>保质期管理</td><td>批次号可关联生产日期和有效期，系统自动预警临近过期产品</td></tr>
+  </tbody>
+  </table>
+  </div>
+</div>
+</section>
+</section>
+
+<!-- ============================================================ -->
+<!-- 第五章 财务管理 -->
+<!-- ============================================================ -->
+<section id="ch5" class="section">
+<h2>第五章 财务管理</h2>
+<p>财务管理模块（<code>account</code>）是企业财务核算的核心，涵盖科目表、发票、付款、对账、报表及税务管理。</p>
+
+<section id="ch5-1" class="section">
+<h3>5.1 会计科目表设置</h3>
+<div class="card">
+  <div class="card-title">科目表结构</div>
+  <p>Odoo 19 预置了多套科目表模板（中国会计准则、IFRS、US GAAP 等），安装后自动导入。</p>
+  <ol class="step-list">
+    <li>导航至 <strong>会计 → 配置 → 会计科目表</strong>。</li>
+    <li>查看所有科目列表，支持按代码、名称、类型（资产/负债/收入/费用/权益）筛选。</li>
+    <li>编辑科目：设置科目代码、名称、类型、是否允许对账、税务默认值等。</li>
+    <li>新建科目：点击"新建"，填写代码（建议遵循数字编码规则）、名称、类型和上级科目。</li>
+  </ol>
+</div>
+
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>科目类型</th><th>代码范围（示例）</th><th>说明</th></tr>
+</thead>
+<tbody>
+<tr><td>资产</td><td>1000-1999</td><td>现金、银行存款、应收账款、存货、固定资产等</td></tr>
+<tr><td>负债</td><td>2000-2999</td><td>应付账款、预收款项、应交税费等</td></tr>
+<tr><td>权益</td><td>3000-3999</td><td>实收资本、资本公积、未分配利润等</td></tr>
+<tr><td>收入</td><td>4000-4999</td><td>主营业务收入、其他业务收入等</td></tr>
+<tr><td>费用</td><td>5000-6999</td><td>主营业务成本、管理费用、销售费用、财务费用等</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<section id="ch5-2" class="section">
+<h3>5.2 客户发票与收款</h3>
+<div class="card">
+  <div class="card-title">开票流程</div>
+  <ol class="step-list">
+    <li>自动生成：销售订单确认后，点击"创建发票"或启用自动开票。</li>
+    <li>手动创建：导航至 <strong>会计 → 客户 → 发票</strong>，点击新建，选择客户、添加发票行。</li>
+    <li>核对发票金额、税率、付款条款无误后，点击"确认"。</li>
+    <li>确认后发票状态变为"已过账"，会计凭证自动生成。</li>
+    <li>发送发票给客户：点击"发送并打印"，支持PDF邮件发送。</li>
+  </ol>
+</div>
+
+<div class="card">
+  <div class="card-title">收款操作</div>
+  <ol class="step-list">
+    <li>导航至 <strong>会计 → 客户 → 收款</strong>，点击新建。</li>
+    <li>选择客户，系统自动显示该客户的未结清发票。</li>
+    <li>在"未结清款项"标签页中勾选要结算的发票，输入收款金额。</li>
+    <li>选择收款账户（银行账户/现金）、收款日期。</li>
+    <li>点击"确认"——收款凭证过账，发票状态更新为"已付清"或"部分付款"。</li>
+  </ol>
+</div>
+</section>
+
+<section id="ch5-3" class="section">
+<h3>5.3 供应商账单与付款</h3>
+<div class="card">
+  <div class="card-title">录入供应商账单</div>
+  <ol class="step-list">
+    <li>自动生成：采购收货后，点击"创建账单"。</li>
+    <li>手动录入：导航至 <strong>会计 → 供应商 → 账单</strong>，点击新建。</li>
+    <li>选择供应商，添加账单行（产品/费用），填写金额、税率。</li>
+    <li>确认过账，生成应付会计凭证。</li>
+  </ol>
+</div>
+
+<div class="card">
+  <div class="card-title">付款操作</div>
+  <ol class="step-list">
+    <li>导航至 <strong>会计 → 供应商 → 付款</strong>，点击新建。</li>
+    <li>选择供应商，系统自动显示未结清账单。</li>
+    <li>勾选要支付的账单，确认付款金额。</li>
+    <li>选择付款账户、付款方式（银行转账/现金/支票）。</li>
+    <li>确认过账，账单标记为"已付清"。</li>
+  </ol>
+</div>
+</section>
+
+<section id="ch5-4" class="section">
+<h3>5.4 银行对账</h3>
+<div class="card">
+  <div class="card-title">操作步骤</div>
+  <ol class="step-list">
+    <li>导入银行流水：导航至 <strong>会计 → 配置 → 银行账户</strong>，点击"导入对账单"。</li>
+    <li>支持 CSV/OFX/QIF 格式导入，也可手动逐笔录入。</li>
+    <li>进入"对账"界面，系统自动匹配银行流水与会计凭证（基于金额、日期、伙伴）。</li>
+    <li>手动匹配：将未匹配的银行流水拖拽到对应的发票/付款凭证上。</li>
+    <li>确认匹配后，银行流水状态变为"已对账"。</li>
+    <li>对账完成后，点击"验证"过账。</li>
+  </ol>
+</div>
+<div class="info-box">
+  <strong>提示：</strong>Odoo 19 支持智能对账引擎，基于历史匹配规则自动推荐匹配项，大幅提升对账效率。
+</div>
+</section>
+
+<section id="ch5-5" class="section">
+<h3>5.5 总账与明细账</h3>
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>报表名称</th><th>路径</th><th>说明</th></tr>
+</thead>
+<tbody>
+<tr><td>总分类账</td><td>会计 → 报表 → 总分类账</td><td>按科目展示所有过账凭证的汇总与明细，是财务核算的核心报表</td></tr>
+<tr><td>明细分类账</td><td>会计 → 报表 → 明细分类账</td><td>按科目+合作伙伴维度展示明细账，支持应收/应付明细追踪</td></tr>
+<tr><td>试算平衡表</td><td>会计 → 报表 → 试算平衡表</td><td>展示所有科目期初余额、本期发生额、期末余额</td></tr>
+<tr><td>日记账</td><td>会计 → 报表 → 日记账</td><td>按日记账类型（销售/采购/银行/现金）查看凭证明细</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<section id="ch5-6" class="section">
+<h3>5.6 财务报表</h3>
+<div class="card">
+  <div class="card-title">资产负债表</div>
+  <p>展示企业在特定日期的财务状况，包括资产、负债和所有者权益三大要素。</p>
+  <ul style="padding-left:18px; margin-bottom:12px;">
+    <li>路径：<strong>会计 → 报表 → 资产负债表</strong></li>
+    <li>支持按日期范围、对比期、公司（多公司）筛选</li>
+    <li>可导出 PDF / XLSX，支持打印</li>
+  </ul>
+</div>
+<div class="card">
+  <div class="card-title">利润表</div>
+  <p>展示企业在一定期间内的经营成果，包括收入、成本、费用和净利润。</p>
+  <ul style="padding-left:18px; margin-bottom:0;">
+    <li>路径：<strong>会计 → 报表 → 利润表</strong></li>
+    <li>支持期间对比（本月/本季/本年 vs 同期）</li>
+    <li>支持按成本中心/分析维度钻取</li>
+  </ul>
+</div>
+<div class="card">
+  <div class="card-title">现金流量表</div>
+  <p>展示企业现金及现金等价物的流入与流出情况，分为经营活动、投资活动和筹资活动。</p>
+  <ul style="padding-left:18px; margin-bottom:0;">
+    <li>路径：<strong>会计 → 报表 → 现金流量表</strong></li>
+    <li>Odoo 19 采用直接法/间接法生成，需正确配置科目映射</li>
+    <li>确保所有银行和现金科目正确归类到现金流量项目</li>
+  </ul>
+</div>
+<div class="warn-box">
+  <strong>注意：</strong>现金流量表需要预先完成现金流量项目的科目映射配置。请导航至 <strong>会计 → 配置 → 现金流量项目</strong> 检查映射是否完整。
+</div>
+</section>
+
+<section id="ch5-7" class="section">
+<h3>5.7 税务管理</h3>
+<div class="card">
+  <div class="card-title">税务配置</div>
+  <ol class="step-list">
+    <li>导航至 <strong>会计 → 配置 → 税务</strong>，查看所有已定义的税种。</li>
+    <li>编辑税种：设置税率、税务类型（销售税/采购税/出口退税等）、会计科目。</li>
+    <li>税务组：可将多个税种组合（如 13%增值税 + 附加税），自动计算复合税额。</li>
+    <li>税种分配：在产品的"会计"标签页中指定默认销售税和采购税。</li>
+  </ol>
+</div>
+
+<div class="card">
+  <div class="card-title">税务报表</div>
+  <div class="table-wrap">
+  <table>
+  <thead>
+  <tr><th>报表名称</th><th>路径</th><th>用途</th></tr>
+  </thead>
+  <tbody>
+  <tr><td>税务申报表</td><td>会计 → 报表 → 税务申报</td><td>按期间汇总应缴税额，支持导出税局申报格式</td></tr>
+  <tr><td>税务明细表</td><td>会计 → 报表 → 税务明细</td><td>逐笔展示每张发票/账单的税额</td></tr>
+  <tr><td>进项/销项税汇总</td><td>会计 → 报表 → 税务分析</td><td>按供应商/客户维度汇总进项与销项税额</td></tr>
+  </tbody>
+  </table>
+  </div>
+</div>
+</section>
+</section>
+
+<!-- ============================================================ -->
+<!-- 第六章 基础配置 -->
+<!-- ============================================================ -->
+<section id="ch6" class="section">
+<h2>第六章 基础配置</h2>
+<p>本章介绍进销存与财务模块运行所需的公共基础配置，供系统管理员和技术运维人员使用。</p>
+
+<section id="ch6-1" class="section">
+<h3>6.1 公司信息设置</h3>
+<div class="card">
+  <div class="card-title">操作步骤</div>
+  <ol class="step-list">
+    <li>导航至 <strong>设置 → 公司</strong>，选择或新建公司。</li>
+    <li>填写公司基本信息：名称、简称、地址、电话、邮箱、网站。</li>
+    <li>上传公司 Logo，该 Logo 将自动显示在所有报表和发票上。</li>
+    <li>配置公司财务信息：
+      <ul style="margin-top:4px; padding-left:18px;">
+        <li>默认货币（如人民币 CNY）。</li>
+        <li>默认会计科目表（选择适用的国家/地区模板）。</li>
+        <li>税号（统一社会信用代码 / VAT 等）。</li>
+      </ul>
+    </li>
+    <li>设置公司会计期间：定义财政年度起始月份（如 1 月或 4 月）。</li>
+  </ol>
+</div>
+</section>
+
+<section id="ch6-2" class="section">
+<h3>6.2 币种与汇率</h3>
+<div class="card">
+  <div class="card-title">操作步骤</div>
+  <ol class="step-list">
+    <li>导航至 <strong>会计 → 配置 → 币种</strong>，查看所有支持的币种。</li>
+    <li>启用多币种：在 <strong>会计 → 配置 → 设置</strong> 中勾选"多币种"。</li>
+    <li>配置汇率：点击目标币种，设置对基准货币（如 CNY）的汇率。</li>
+    <li>自动更新汇率：启用"自动汇率更新"，系统每日从指定服务获取最新汇率。</li>
+    <li>汇率差异处理：月末运行"重估未结清余额"生成汇兑损益凭证。</li>
+  </ol>
+</div>
+<div class="info-box">
+  <strong>提示：</strong>汇率更新支持 Yahoo Finance、欧洲央行、中国银行等多种数据源。在"设置"中配置自动更新频率。
+</div>
+</section>
+
+<section id="ch6-3" class="section">
+<h3>6.3 税收配置</h3>
+<div class="card">
+  <div class="card-title">税种配置步骤</div>
+  <ol class="step-list">
+    <li>导航至 <strong>会计 → 配置 → 税务 → 新建</strong>。</li>
+    <li>填写税务名称（如"增值税 13%"），设置税率百分比。</li>
+    <li>选择税务类型：<strong>销售税</strong>（销项）、<strong>采购税</strong>（进项）、<strong>出口退税</strong>等。</li>
+    <li>配置会计科目：
+      <ul style="margin-top:4px; padding-left:18px;">
+        <li>税务科目：记录应交税费/待抵扣进项税。</li>
+        <li>折扣科目：税务折扣对应的科目。</li>
+        <li>现金折扣科目：提前付款折扣对应的税务调整科目。</li>
+      </ul>
+    </li>
+    <li>分配税种：在产品主数据、客户/供应商的"会计"标签页中设置默认税种。</li>
+  </ol>
+</div>
+
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>配置项</th><th>推荐值（中国会计准则）</th><th>说明</th></tr>
+</thead>
+<tbody>
+<tr><td>销项税科目</td><td>2221-01 应交增值税-销项税额</td><td>销售发票上的增值税</td></tr>
+<tr><td>进项税科目</td><td>2221-02 应交增值税-进项税额</td><td>采购发票上的增值税</td></tr>
+<tr><td>税务类型</td><td>销售税/采购税</td><td>区分销项与进项方向</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<section id="ch6-4" class="section">
+<h3>6.4 审批流设置</h3>
+<div class="card">
+  <div class="card-title">配置审批规则</div>
+  <ol class="step-list">
+    <li>导航至 <strong>采购/销售 → 配置 → 审批规则</strong>。</li>
+    <li>点击新建，定义审批触发条件：
+      <ul style="margin-top:4px; padding-left:18px;">
+        <li>金额阈值：订单金额超过指定金额需审批。</li>
+        <li>基于产品：特定产品（如高价值商品）的订单需审批。</li>
+        <li>基于供应商/客户：特定合作伙伴的订单需审批。</li>
+      </ul>
+    </li>
+    <li>选择审批人（或审批用户组），可设置多级审批。</li>
+    <li>保存后规则生效，匹配条件的订单在确认时自动进入审批状态，通知审批人。</li>
+  </ol>
+</div>
+
+<div class="card">
+  <div class="card-title">财务审批配置</div>
+  <ol class="step-list">
+    <li>导航至 <strong>会计 → 配置 → 设置 → 审批流</strong>。</li>
+    <li>启用"发票审批"：指定发票金额超过多少时需要审批。</li>
+    <li>启用"付款审批"：指定付款金额超过多少时需要审批。</li>
+    <li>可设置差异化的审批层级（如经理审批、总监审批、总经理审批）。</li>
+  </ol>
+</div>
+</section>
+
+<section id="ch6-5" class="section">
+<h3>6.5 用户权限与角色</h3>
+<div class="card">
+  <div class="card-title">用户与权限组配置</div>
+  <ol class="step-list">
+    <li>导航至 <strong>设置 → 用户 → 用户管理</strong>，点击新建或编辑已有用户。</li>
+    <li>在"访问权限"标签页中为用户分配权限组。</li>
+    <li>各模块的内置权限组如下：</li>
+  </ol>
+
+  <div class="table-wrap">
+  <table>
+  <thead>
+  <tr><th>模块</th><th>权限组</th><th>说明</th></tr>
+  </thead>
+  <tbody>
+  <tr><td rowspan="3">采购</td><td>用户：仅自身订单</td><td>只能查看和操作自己创建的采购订单</td></tr>
+  <tr><td>用户：所有订单</td><td>可查看所有采购订单</td></tr>
+  <tr><td>管理员</td><td>完全访问权限，含配置</td></tr>
+  <tr><td rowspan="3">销售</td><td>用户：仅自身订单</td><td>只能查看和操作自己创建的销售订单</td></tr>
+  <tr><td>用户：所有订单</td><td>可查看所有销售订单</td></tr>
+  <tr><td>管理员</td><td>完全访问权限，含配置</td></tr>
+  <tr><td rowspan="3">库存</td><td>用户</td><td>基本库存操作（盘点、移库、查看报表）</td></tr>
+  <tr><td>管理员</td><td>完全访问权限，含仓库配置</td></tr>
+  <tr><td>批次/序列号</td><td>管理批次和序列号的操作权限</td></tr>
+  <tr><td rowspan="4">会计</td><td>用户：仅查看</td><td>只读查看财务报表、凭证</td></tr>
+  <tr><td>用户：开票</td><td>可创建和确认发票/账单</td></tr>
+  <tr><td>用户：付款</td><td>可创建和确认付款</td></tr>
+  <tr><td>管理员</td><td>完全访问权限，含科目表、税务等配置</td></tr>
+  </tbody>
+  </table>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-title">安全最佳实践</div>
+  <ul style="padding-left:18px; margin-bottom:0;">
+    <li><strong>最小权限原则</strong>：仅授予用户完成工作所需的最小权限集。</li>
+    <li><strong>职责分离</strong>：开票人与收款人不应为同一人；采购申请人与审批人应分离。</li>
+    <li><strong>定期审计</strong>：使用"设置 → 审计日志"功能追踪关键操作变更。</li>
+    <li><strong>密码策略</strong>：在设置中启用密码有效期、复杂度要求。</li>
+    <li><strong>多公司隔离</strong>：多公司场景下，确保用户权限按公司隔离。</li>
+  </ul>
+</div>
+</section>
+</section>
+
+<!-- Footer -->
+<div style="margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border); text-align: center; color: var(--text-secondary); font-size: 13px;">
+  <p>Odoo 19 进销存与财务公共模块操作手册 &nbsp;|&nbsp; 文档版本 v1.0 &nbsp;|&nbsp; 2026-08-01</p>
+  <p style="margin-top: 4px;">本手册仅作为操作参考，具体配置请以实际业务需求为准。</p>
+</div>
+
+</div>
+</div>
+
+<script>
+(function() {
+  var sidebar = document.getElementById('sidebar');
+  var toggle = document.getElementById('sidebarToggle');
+  var overlay = document.getElementById('sidebarOverlay');
+
+  function closeSidebar() {
+    sidebar.classList.remove('open');
+    overlay.classList.remove('open');
+  }
+
+  if (toggle) {
+    toggle.addEventListener('click', function(e) {
+      e.stopPropagation();
+      sidebar.classList.toggle('open');
+      overlay.classList.toggle('open');
+    });
+  }
+  if (overlay) {
+    overlay.addEventListener('click', closeSidebar);
+  }
+
+  // Active link highlighting
+  var links = document.querySelectorAll('.sidebar-nav .nav-link:not(.chapter)');
+  var sections = document.querySelectorAll('.section[id]');
+
+  function updateActiveLink() {
+    var scrollPos = window.scrollY + 100;
+    var currentId = '';
+    sections.forEach(function(section) {
+      if (section.offsetTop <= scrollPos) {
+        currentId = section.getAttribute('id');
+      }
+    });
+
+    links.forEach(function(link) {
+      link.classList.remove('active');
+      if (link.getAttribute('href') === '#' + currentId) {
+        link.classList.add('active');
+      }
+    });
+  }
+
+  window.addEventListener('scroll', updateActiveLink);
+  updateActiveLink();
+
+  // Close sidebar on link click (mobile)
+  links.forEach(function(link) {
+    link.addEventListener('click', function() {
+      if (window.innerWidth <= 768) {
+        closeSidebar();
+      }
+    });
+  });
+})();
+</script>
+
+</body>
+</html>

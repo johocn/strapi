@@ -1,0 +1,1255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>超市收银系统操作手册</title>
+<style>
+  :root {
+    --sidebar-width: 280px;
+    --sidebar-bg: #1a1d23;
+    --sidebar-hover: #2a2d35;
+    --sidebar-active: #3a3d45;
+    --accent: #4f9cf7;
+    --accent-hover: #3a7fd4;
+    --text-primary: #2c3e50;
+    --text-secondary: #606975;
+    --bg-main: #f5f7fa;
+    --bg-white: #ffffff;
+    --border: #e2e6ed;
+    --code-bg: #f0f2f5;
+    --shadow: 0 1px 4px rgba(0,0,0,0.08);
+    --radius: 6px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+    color: var(--text-primary);
+    background: var(--bg-main);
+    line-height: 1.7;
+    font-size: 15px;
+  }
+
+  /* ===== 侧边栏 ===== */
+  .sidebar {
+    position: fixed;
+    top: 0; left: 0;
+    width: var(--sidebar-width);
+    height: 100vh;
+    background: var(--sidebar-bg);
+    color: #c8cdd5;
+    overflow-y: auto;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+  }
+  .sidebar::-webkit-scrollbar { width: 4px; }
+  .sidebar::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
+  .sidebar-header {
+    padding: 20px 18px 14px;
+    border-bottom: 1px solid #2a2d35;
+    flex-shrink: 0;
+  }
+  .sidebar-header h1 {
+    font-size: 17px;
+    color: #fff;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+  .sidebar-header .version {
+    font-size: 12px;
+    color: #7a7f8a;
+    margin-top: 2px;
+  }
+  .sidebar-nav { padding: 8px 0; flex: 1; }
+  .sidebar-nav a {
+    display: block;
+    padding: 7px 18px 7px 22px;
+    color: #a8adb8;
+    text-decoration: none;
+    font-size: 13.5px;
+    border-left: 3px solid transparent;
+    transition: all 0.15s;
+  }
+  .sidebar-nav a:hover {
+    background: var(--sidebar-hover);
+    color: #e0e4ec;
+  }
+  .sidebar-nav a.active,
+  .sidebar-nav a:target { background: var(--sidebar-active); color: #fff; border-left-color: var(--accent); }
+  .sidebar-nav .l1 { font-weight: 500; color: #d0d5dd; padding-top: 12px; padding-bottom: 6px; font-size: 14px; }
+  .sidebar-nav .l2 { padding-left: 34px; font-size: 13px; }
+  .sidebar-nav .l3 { padding-left: 48px; font-size: 12.5px; color: #8a8f9a; }
+
+  /* ===== 主内容 ===== */
+  .main {
+    margin-left: var(--sidebar-width);
+    padding: 0;
+    min-height: 100vh;
+  }
+  .content {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 40px 48px 80px;
+  }
+
+  /* ===== 标题层级 ===== */
+  .content h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: #1a1d23;
+    margin: 0 0 8px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--accent);
+  }
+  .content h2 {
+    font-size: 22px;
+    font-weight: 600;
+    color: #1a1d23;
+    margin: 48px 0 16px;
+    padding-left: 0;
+  }
+  .content h3 {
+    font-size: 17px;
+    font-weight: 600;
+    color: #2c3e50;
+    margin: 28px 0 10px;
+  }
+  .content h4 {
+    font-size: 15px;
+    font-weight: 600;
+    color: #444;
+    margin: 20px 0 8px;
+  }
+  .content p {
+    margin: 0 0 12px;
+    color: var(--text-secondary);
+  }
+  .content ul, .content ol {
+    margin: 0 0 14px 22px;
+    color: var(--text-secondary);
+  }
+  .content li { margin-bottom: 4px; }
+  .content a { color: var(--accent); text-decoration: none; }
+  .content a:hover { text-decoration: underline; }
+
+  /* ===== 步骤编号 ===== */
+  .step-list { counter-reset: step; list-style: none; margin-left: 0 !important; }
+  .step-list > li {
+    counter-increment: step;
+    position: relative;
+    padding: 10px 14px 10px 48px;
+    margin-bottom: 8px;
+    background: var(--bg-white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+  }
+  .step-list > li::before {
+    content: counter(step);
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 26px;
+    height: 26px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .step-list > li strong { color: var(--text-primary); }
+
+  /* ===== 表格 ===== */
+  .table-wrap { overflow-x: auto; margin: 16px 0 20px; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    background: var(--bg-white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  th {
+    background: #f0f2f5;
+    font-weight: 600;
+    text-align: left;
+    padding: 10px 14px;
+    border-bottom: 2px solid var(--border);
+    color: var(--text-primary);
+    white-space: nowrap;
+  }
+  td {
+    padding: 8px 14px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-secondary);
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #f8f9fb; }
+
+  /* ===== 代码块 ===== */
+  code {
+    font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+    font-size: 13px;
+    background: var(--code-bg);
+    padding: 2px 6px;
+    border-radius: 3px;
+    color: #d63384;
+  }
+  pre {
+    background: #1e1e2e;
+    color: #cdd6f4;
+    padding: 16px 20px;
+    border-radius: var(--radius);
+    overflow-x: auto;
+    font-size: 13px;
+    line-height: 1.5;
+    margin: 12px 0 16px;
+  }
+  pre code {
+    background: none;
+    color: inherit;
+    padding: 0;
+    font-size: inherit;
+  }
+
+  /* ===== 提示框 ===== */
+  .tip {
+    padding: 12px 16px;
+    margin: 14px 0;
+    border-radius: var(--radius);
+    border-left: 4px solid;
+    font-size: 14px;
+  }
+  .tip-info {
+    background: #e8f4fd;
+    border-color: var(--accent);
+    color: #1a4d7a;
+  }
+  .tip-warn {
+    background: #fff8e6;
+    border-color: #f0a030;
+    color: #7a5a0a;
+  }
+  .tip-success {
+    background: #e6f7e6;
+    border-color: #3cb371;
+    color: #1a5a1a;
+  }
+
+  /* ===== 模块架构图 ===== */
+  .arch-diagram {
+    background: var(--bg-white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin: 16px 0;
+    text-align: center;
+    font-family: "SF Mono", "Consolas", monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    overflow-x: auto;
+  }
+  .arch-diagram .layer { margin: 6px 0; }
+  .arch-diagram .layer-title {
+    display: inline-block;
+    background: var(--accent);
+    color: #fff;
+    padding: 4px 16px;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 12px;
+  }
+  .arch-diagram .module-row {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin: 6px 0;
+  }
+  .arch-diagram .module {
+    background: #f0f2f5;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 6px 14px;
+    font-size: 12px;
+    color: var(--text-primary);
+  }
+  .arch-diagram .arrow {
+    color: #999;
+    font-size: 16px;
+    margin: 2px 0;
+  }
+
+  /* ===== 响应式 ===== */
+  .sidebar-toggle { display: none; }
+  @media (max-width: 768px) {
+    .sidebar {
+      transform: translateX(-100%);
+      transition: transform 0.3s;
+    }
+    .sidebar.open { transform: translateX(0); }
+    .main { margin-left: 0; }
+    .content { padding: 20px 18px 60px; }
+    .sidebar-toggle {
+      display: flex;
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      z-index: 200;
+      background: var(--sidebar-bg);
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      padding: 6px 12px;
+      font-size: 18px;
+      cursor: pointer;
+    }
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 99;
+    }
+    .sidebar-overlay.show { display: block; }
+    .content h1 { font-size: 22px; }
+    .content h2 { font-size: 18px; margin-top: 32px; }
+    .content h3 { font-size: 15px; }
+    table { font-size: 13px; }
+    th, td { padding: 6px 10px; }
+  }
+  @media (min-width: 769px) {
+    .sidebar { transform: translateX(0) !important; }
+  }
+
+  /* ===== 打印 ===== */
+  @media print {
+    .sidebar, .sidebar-toggle, .sidebar-overlay { display: none !important; }
+    .main { margin-left: 0; }
+    .content { padding: 20px; }
+    pre { white-space: pre-wrap; }
+    .step-list > li { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">☰</button>
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+<!-- ========== 侧边栏 ========== -->
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <h1>超市收银系统操作手册</h1>
+    <div class="version">基于 Odoo 19 · v1.0</div>
+  </div>
+  <div class="sidebar-nav">
+    <a href="#ch1" class="l1">第一章 系统概述</a>
+    <a href="#ch1-1" class="l2">1.1 模块架构图</a>
+    <a href="#ch1-2" class="l2">1.2 功能总览表</a>
+    <a href="#ch1-3" class="l2">1.3 数据流</a>
+
+    <a href="#ch2" class="l1">第二章 POS收银操作</a>
+    <a href="#ch2-1" class="l2">2.1 登录与开台</a>
+    <a href="#ch2-2" class="l2">2.2 商品扫码/选品</a>
+    <a href="#ch2-3" class="l2">2.3 挂单与取单</a>
+    <a href="#ch2-4" class="l2">2.4 会员识别</a>
+    <a href="#ch2-5" class="l2">2.5 结算</a>
+    <a href="#ch2-6" class="l2">2.6 退款操作</a>
+    <a href="#ch2-7" class="l2">2.7 日结操作</a>
+
+    <a href="#ch3" class="l1">第三章 商品管理</a>
+    <a href="#ch3-1" class="l2">3.1 商品创建与分类</a>
+    <a href="#ch3-2" class="l2">3.2 库存管理</a>
+    <a href="#ch3-3" class="l2">3.3 价格策略</a>
+    <a href="#ch3-4" class="l2">3.4 条码管理</a>
+
+    <a href="#ch4" class="l1">第四章 会员管理</a>
+    <a href="#ch4-1" class="l2">4.1 会员开卡</a>
+    <a href="#ch4-2" class="l2">4.2 会员等级设置</a>
+    <a href="#ch4-3" class="l2">4.3 积分规则配置</a>
+    <a href="#ch4-4" class="l2">4.4 积分查询与调整</a>
+
+    <a href="#ch5" class="l1">第五章 班次管理</a>
+    <a href="#ch5-1" class="l2">5.1 开班操作</a>
+    <a href="#ch5-2" class="l2">5.2 交班流程</a>
+    <a href="#ch5-3" class="l2">5.3 钱箱盘点</a>
+    <a href="#ch5-4" class="l2">5.4 差额处理与店长确认</a>
+
+    <a href="#ch6" class="l1">第六章 小票打印</a>
+    <a href="#ch6-1" class="l2">6.1 打印机配置</a>
+    <a href="#ch6-2" class="l2">6.2 小票模板定制</a>
+
+    <a href="#ch7" class="l1">第七章 支付管理</a>
+    <a href="#ch7-1" class="l2">7.1 聚合码支付配置</a>
+    <a href="#ch7-2" class="l2">7.2 支付对账</a>
+
+    <a href="#ch8" class="l1">第八章 权限管理</a>
+    <a href="#ch8-1" class="l2">8.1 多门店权限矩阵</a>
+    <a href="#ch8-2" class="l2">8.2 角色配置</a>
+    <a href="#ch8-3" class="l2">8.3 数据隔离规则</a>
+
+    <a href="#ch9" class="l1">第九章 附录</a>
+    <a href="#ch9-1" class="l2">9.1 POS 原生功能清单</a>
+    <a href="#ch9-2" class="l2">9.2 Product 原生功能清单</a>
+    <a href="#ch9-3" class="l2">9.3 Stock 原生功能清单</a>
+    <a href="#ch9-4" class="l2">9.4 Account 原生功能清单</a>
+    <a href="#ch9-5" class="l2">9.5 模块依赖关系表</a>
+  </div>
+</nav>
+
+<!-- ========== 主内容 ========== -->
+<div class="main">
+<div class="content">
+
+<!-- ==================== 第一章 ==================== -->
+<h1 id="ch1">第一章 系统概述</h1>
+<p>本系统基于 <strong>Odoo 19</strong> 进行二次开发，专为超市/零售业态打造，覆盖前台收银、会员管理、班次交接、支付对账、库存管理全链路。系统由多个定制模块协作完成，以下为模块架构与数据流说明。</p>
+
+<h2 id="ch1-1">1.1 模块架构图</h2>
+<div class="arch-diagram">
+  <div class="layer"><span class="layer-title">前端展示层</span></div>
+  <div class="module-row">
+    <span class="module">shop/ (Next.js 商城)</span>
+    <span class="module">POS 触摸屏界面</span>
+    <span class="module">后台管理界面</span>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="layer"><span class="layer-title">POS 收银核心</span></div>
+  <div class="module-row">
+    <span class="module">zhao_market_pos</span>
+    <span class="module">zhao_pos</span>
+    <span class="module">zhao_pos_print</span>
+    <span class="module">zhao_pos_receipt</span>
+    <span class="module">zhao_pos_shift</span>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="layer"><span class="layer-title">会员与积分</span></div>
+  <div class="module-row">
+    <span class="module">zhao_member</span>
+    <span class="module">zhao_member_points</span>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="layer"><span class="layer-title">Odoo 原生引擎</span></div>
+  <div class="module-row">
+    <span class="module">point_of_sale</span>
+    <span class="module">product</span>
+    <span class="module">stock</span>
+    <span class="module">account</span>
+    <span class="module">sale</span>
+  </div>
+  <div class="arrow">↓</div>
+  <div class="layer"><span class="layer-title">基础设施</span></div>
+  <div class="module-row">
+    <span class="module">PostgreSQL</span>
+    <span class="module">Redis (缓存)</span>
+    <span class="module">消息队列</span>
+  </div>
+</div>
+
+<h2 id="ch1-2">1.2 各模块功能总览表</h2>
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th style="width:22%">模块名称</th><th style="width:12%">技术标识</th><th>功能说明</th></tr>
+</thead>
+<tbody>
+<tr><td>超市POS收银核心</td><td><code>zhao_market_pos</code></td><td>超市定制化 POS 收银界面，支持商品扫码、选品、挂单、取单、多支付方式结算、退款、日结</td></tr>
+<tr><td>POS本地化扩展</td><td><code>zhao_pos</code></td><td>中文小票模板、税率映射（适配中国税务规则）、POS 界面汉化</td></tr>
+<tr><td>多门店权限矩阵</td><td><code>zhao_pos_iam</code></td><td>多门店/多店铺的权限隔离，角色-门店-用户三级权限矩阵，数据行级隔离</td></tr>
+<tr><td>小票打印适配</td><td><code>zhao_pos_print</code></td><td>58mm / 80mm 热敏小票打印机驱动适配，支持 ESC/POS 指令集</td></tr>
+<tr><td>聚合码支付收据确认</td><td><code>zhao_pos_receipt</code></td><td>微信/支付宝聚合码支付回调处理，支付成功收据确认与同步</td></tr>
+<tr><td>班次交接</td><td><code>zhao_pos_shift</code></td><td>开班/交班/钱箱盘点/差额处理/店长确认，支持多收银员轮班</td></tr>
+<tr><td>会员核心</td><td><code>zhao_member</code></td><td>会员卡管理（实体卡/电子卡）、等级体系、会员信息维护</td></tr>
+<tr><td>会员积分</td><td><code>zhao_member_points</code></td><td>消费赠积分、积分抵扣现金、退货回滚积分、积分规则配置</td></tr>
+<tr><td>前端商城</td><td><code>shop/</code></td><td>Next.js 构建的面向消费者的线上商城，与 POS 共享会员和商品数据</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="ch1-3">1.3 数据流：前台销售 → POS收银 → 会员积分 → 财务记账</h2>
+<p>一笔完整的交易数据流转如下：</p>
+<ol>
+  <li><strong>前台销售</strong>：收银员在 POS 触摸屏上通过扫码或搜索选择商品，系统实时从 <code>product</code> 模块获取商品信息（名称、价格、库存、条码）。</li>
+  <li><strong>POS 收银</strong>：<code>zhao_market_pos</code> 计算商品金额、应用促销/会员价，生成销售订单（<code>pos.order</code>）。</li>
+  <li><strong>会员识别</strong>：如果顾客出示会员卡（扫码或手机号），<code>zhao_member</code> 查询会员信息，<code>zhao_member_points</code> 计算本次可获积分。</li>
+  <li><strong>支付结算</strong>：收银员选择支付方式（聚合码/现金/刷卡），<code>zhao_pos_receipt</code> 处理聚合码支付回调，确认支付成功后订单状态变为"已付款"。</li>
+  <li><strong>小票打印</strong>：<code>zhao_pos_print</code> 驱动 58mm/80mm 打印机输出小票，<code>zhao_pos</code> 提供中文小票模板。</li>
+  <li><strong>会员积分</strong>：支付成功后，<code>zhao_member_points</code> 自动增加会员积分；若使用积分抵扣，则同时扣减积分。</li>
+  <li><strong>库存扣减</strong>：<code>stock</code> 模块自动扣减对应门店的库存量（<code>stock.move</code>）。</li>
+  <li><strong>财务记账</strong>：<code>account</code> 模块生成应收/收款会计凭证，完成财务入账。</li>
+  <li><strong>班次记录</strong>：<code>zhao_pos_shift</code> 记录该笔交易所属班次，用于交班盘点。</li>
+</ol>
+
+<div class="tip tip-info"><strong>提示：</strong> 如果退货发生，数据流逆向执行——积分回滚、库存恢复、红字冲销会计凭证。<code>zhao_member_points</code> 模块处理退货时的积分回滚逻辑。</div>
+
+<!-- ==================== 第二章 ==================== -->
+<h1 id="ch2">第二章 POS收银操作</h1>
+
+<h2 id="ch2-1">2.1 登录与开台</h2>
+<h3>2.1.1 系统登录</h3>
+<ol class="step-list">
+  <li><strong>打开 POS 应用</strong>：在浏览器中访问 <code>http://&lt;服务器地址&gt;/pos</code>，或在 Odoo 后台点击"POS"应用图标。</li>
+  <li><strong>输入凭证</strong>：输入收银员用户名和密码，点击"登录"。</li>
+  <li><strong>选择门店</strong>：如果账号关联多个门店，系统弹出门店选择对话框，选择当前所在门店。</li>
+  <li><strong>进入 POS 界面</strong>：登录成功后进入 POS 触摸屏主界面，左侧为商品区，右侧为购物车区。</li>
+</ol>
+
+<h3>2.1.2 开台（开班）</h3>
+<ol class="step-list">
+  <li>登录后点击右上角菜单按钮（☰），选择"开班"。</li>
+  <li>系统弹出钱箱初始金额对话框，输入开班备用金金额（如 500 元）。</li>
+  <li>确认后系统调用 <code>zhao_pos_shift</code> 创建新班次记录，状态为"进行中"。</li>
+  <li>开班成功后，POS 界面进入可收银状态，底部显示当前班次编号和收银员姓名。</li>
+</ol>
+<div class="tip tip-warn"><strong>注意：</strong> 开班后请勿关闭浏览器，否则可能导致未保存的订单丢失。如需临时离开，请使用"锁屏"功能。</div>
+
+<h2 id="ch2-2">2.2 商品扫码/选品</h2>
+<h3>2.2.1 扫码添加</h3>
+<ol class="step-list">
+  <li>确保扫码枪已连接至收银机，光标聚焦在 POS 搜索框中。</li>
+  <li>扫描商品条码，系统自动识别条码，查询 <code>product</code> 模块匹配商品。</li>
+  <li>匹配成功后，商品自动添加至右侧购物车列表，数量默认为 1。</li>
+  <li>如需修改数量，点击购物车中该商品行，使用数字键盘输入新数量。</li>
+</ol>
+
+<h3>2.2.2 手动选品</h3>
+<ol class="step-list">
+  <li>在左侧商品区浏览商品分类，点击分类标签切换显示。</li>
+  <li>点击目标商品，商品即添加至购物车。</li>
+  <li>也可在搜索框输入商品名称关键字（支持模糊搜索），从搜索结果中选择。</li>
+  <li>支持多规格商品（如不同口味/规格），选择后弹出规格选择对话框。</li>
+</ol>
+
+<div class="tip tip-info"><strong>提示：</strong> 搜索框支持扫描条码和手动输入两种模式，无需切换。商品列表支持网格视图和列表视图切换。</div>
+
+<h2 id="ch2-3">2.3 挂单与取单</h2>
+<h3>2.3.1 挂单</h3>
+<ol class="step-list">
+  <li>在购物车商品已选好但顾客暂未结算时，点击"挂单"按钮。</li>
+  <li>系统提示输入挂单备注（可选，如"顾客去取钱"），确认后挂单成功。</li>
+  <li>挂单后购物车清空，可继续服务下一位顾客。</li>
+  <li>挂单记录保存在当前班次中，不会丢失。</li>
+</ol>
+
+<h3>2.3.2 取单</h3>
+<ol class="step-list">
+  <li>点击"取单"按钮，系统列出当前班次所有挂单记录。</li>
+  <li>列表显示：挂单时间、商品数量、金额合计、备注。</li>
+  <li>点击目标挂单行，选择"取单"恢复购物车。</li>
+  <li>恢复后可继续添加商品或直接结算。</li>
+</ol>
+<div class="tip tip-warn"><strong>注意：</strong> 挂单仅在同一 POS 设备上可取出。换班后挂单将自动转为"已取消"状态。</div>
+
+<h2 id="ch2-4">2.4 会员识别</h2>
+<h3>2.4.1 扫码识别</h3>
+<ol class="step-list">
+  <li>在购物车页面点击"会员"按钮。</li>
+  <li>使用扫码枪扫描会员卡上的条码或二维码。</li>
+  <li>系统调用 <code>zhao_member</code> 查询会员信息，显示会员姓名、等级、可用积分。</li>
+  <li>确认后，本次消费自动关联该会员，享受会员价和积分累积。</li>
+</ol>
+
+<h3>2.4.2 手机号识别</h3>
+<ol class="step-list">
+  <li>点击"会员"按钮，选择"手机号查询"。</li>
+  <li>在数字键盘输入会员注册手机号。</li>
+  <li>系统查询并显示匹配的会员信息，确认后关联。</li>
+  <li>如果手机号未注册，可点击"快速开卡"引导顾客注册。</li>
+</ol>
+<div class="tip tip-success"><strong>提示：</strong> 会员关联后，购物车商品单价自动切换为会员价（如有），底部显示"已享会员折扣"提示。</div>
+
+<h2 id="ch2-5">2.5 结算</h2>
+<h3>2.5.1 聚合码支付</h3>
+<ol class="step-list">
+  <li>购物车确认无误后，点击"结算"按钮。</li>
+  <li>选择支付方式为"聚合码支付"。</li>
+  <li>系统生成动态收款二维码（微信/支付宝二合一），显示在顾客屏或收银副屏上。</li>
+  <li>顾客使用微信/支付宝扫码支付。</li>
+  <li><code>zhao_pos_receipt</code> 模块监听支付回调，支付成功后自动关闭二维码并跳转至小票打印页面。</li>
+  <li>如果支付超时或失败，可选择"重新生成二维码"或切换其他支付方式。</li>
+</ol>
+
+<h3>2.5.2 现金支付</h3>
+<ol class="step-list">
+  <li>选择"现金"支付方式。</li>
+  <li>系统显示应收金额，输入顾客支付的现金金额。</li>
+  <li>系统自动计算找零金额，显示在屏幕上。</li>
+  <li>确认后完成交易，钱箱弹开（需连接钱箱设备）。</li>
+</ol>
+
+<h3>2.5.3 刷卡支付</h3>
+<ol class="step-list">
+  <li>选择"刷卡"支付方式（银行卡/储值卡）。</li>
+  <li>在 POS 刷卡器上刷卡，系统读取卡号。</li>
+  <li>输入银行卡密码（如需要），或选择"免密支付"。</li>
+  <li>等待支付网关确认，成功后完成交易。</li>
+</ol>
+
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>支付方式</th><th>适用场景</th><th>到账时间</th><th>手续费</th></tr>
+</thead>
+<tbody>
+<tr><td>聚合码支付</td><td>微信/支付宝扫码</td><td>T+1</td><td>0.38% ~ 0.6%</td></tr>
+<tr><td>现金</td><td>线下现金交易</td><td>即时</td><td>无</td></tr>
+<tr><td>刷卡</td><td>银行卡/储值卡</td><td>T+1</td><td>按银行费率</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="ch2-6">2.6 退款操作</h2>
+<h3>2.6.1 整单退款</h3>
+<ol class="step-list">
+  <li>在主界面点击"退款"按钮，进入退款模式。</li>
+  <li>输入原始订单号（扫描小票条码或手动输入）。</li>
+  <li>系统查询出原始订单详情，显示商品列表、金额、支付方式。</li>
+  <li>确认退款原因为整单退款，系统自动计算退款金额。</li>
+  <li>选择退款方式（原路退回/现金退款），确认后执行退款。</li>
+  <li>退款成功后：<code>zhao_member_points</code> 回滚该笔消费获取的积分；<code>stock</code> 恢复库存；<code>account</code> 生成红字冲销凭证。</li>
+</ol>
+
+<h3>2.6.2 部分退款</h3>
+<ol class="step-list">
+  <li>在退款模式中查询原始订单。</li>
+  <li>在商品列表中勾选需要退款的商品项，取消勾选不退款的商品。</li>
+  <li>系统自动计算部分退款金额。</li>
+  <li>确认后执行退款，积分按比例回滚，库存按退款数量恢复。</li>
+</ol>
+<div class="tip tip-warn"><strong>注意：</strong> 退款操作需要店长权限或店长授权确认。超过 7 天的交易建议通过后台手工退款处理。</div>
+
+<h2 id="ch2-7">2.7 日结操作</h2>
+<ol class="step-list">
+  <li>营业结束后，在 POS 主界面点击"日结"按钮。</li>
+  <li>系统自动汇总当前班次数据：<ul>
+    <li>交易总笔数</li>
+    <li>各支付方式金额汇总</li>
+    <li>退款总金额</li>
+    <li>会员消费金额</li>
+    <li>积分发放/消耗统计</li>
+  </ul></li>
+  <li>打印日结小票，包含上述汇总数据。</li>
+  <li>系统自动关闭当前班次，生成班次报告。</li>
+  <li>日结完成后，如需继续收银需要重新开班。</li>
+</ol>
+
+<!-- ==================== 第三章 ==================== -->
+<h1 id="ch3">第三章 商品管理</h1>
+
+<h2 id="ch3-1">3.1 商品创建与分类</h2>
+<h3>3.1.1 创建商品</h3>
+<ol class="step-list">
+  <li>在 Odoo 后台进入"POS → 商品 → 商品"菜单。</li>
+  <li>点击"新建"按钮，填写商品信息：<ul>
+    <li><strong>商品名称</strong>：必填，显示在小票和屏幕上</li>
+    <li><strong>商品类型</strong>：储值商品/服务/消耗品</li>
+    <li><strong>内部参考</strong>：内部编码，用于管理</li>
+    <li><strong>条码</strong>：商品条码（EAN-13 或自定义）</li>
+    <li><strong>销售价格</strong>：标准零售价</li>
+    <li><strong>成本价格</strong>：进货成本</li>
+    <li><strong>分类</strong>：选择所属商品分类</li>
+  </ul></li>
+  <li>填写完成后点击"保存"。</li>
+</ol>
+
+<h3>3.1.2 商品分类管理</h3>
+<ol class="step-list">
+  <li>进入"POS → 商品 → 商品分类"菜单。</li>
+  <li>支持多级分类：如"食品 → 零食 → 膨化食品"。</li>
+  <li>每个分类可设置是否在 POS 前台显示，以及显示顺序。</li>
+  <li>分类可关联默认税率。</li>
+</ol>
+
+<h2 id="ch3-2">3.2 库存管理</h2>
+<p>系统使用 Odoo 原生 <code>stock</code> 模块进行库存管理，支持多仓库（多门店）库存隔离。</p>
+<h3>3.2.1 库存盘点</h3>
+<ol class="step-list">
+  <li>进入"库存 → 操作 → 盘点"菜单。</li>
+  <li>点击"新建"，选择盘点仓库/门店。</li>
+  <li>系统自动加载当前库存数量，填写实际盘点的数量。</li>
+  <li>确认差异，系统自动生成库存调整单（<code>stock.inventory.adjustment</code>）。</li>
+</ol>
+
+<h3>3.2.2 库存调拨</h3>
+<ol class="step-list">
+  <li>进入"库存 → 操作 → 调拨"菜单。</li>
+  <li>新建调拨单，选择"源位置"和"目标位置"（仓库到门店，门店到门店等）。</li>
+  <li>添加调拨商品和数量，确认后生成移库单。</li>
+  <li>源仓库确认出库，目标仓库确认入库。</li>
+</ol>
+
+<h3>3.2.3 库存预警</h3>
+<p>在商品表单中设置"最小库存量"和"最大库存量"。当库存低于最小值时，系统自动生成补货预警通知。可在"库存 → 报告 → 库存预警"中查看。</p>
+
+<h2 id="ch3-3">3.3 价格策略</h2>
+<h3>3.3.1 会员价</h3>
+<ol class="step-list">
+  <li>在商品编辑页面，找到"会员价格"字段。</li>
+  <li>可设置"普通会员价"和"高级会员价"两档价格。</li>
+  <li>当 POS 中识别会员后，系统自动应用对应等级的会员价。</li>
+  <li>会员价在购物车中以绿色字体标注，并显示"会员优惠 X 元"。</li>
+</ol>
+
+<h3>3.3.2 促销价</h3>
+<ol class="step-list">
+  <li>进入"POS → 促销活动"菜单。</li>
+  <li>新建促销活动，设置：<ul>
+    <li>促销名称、起止时间</li>
+    <li>适用商品范围（指定商品、指定分类或全场）</li>
+    <li>促销类型：折扣（百分比）/ 一口价 / 买赠</li>
+    <li>限购数量（可选）</li>
+  </ul></li>
+  <li>保存后促销活动自动生效，POS 收银时自动计算促销价。</li>
+</ol>
+
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>价格类型</th><th>优先级</th><th>说明</th></tr>
+</thead>
+<tbody>
+<tr><td>促销价</td><td>最高</td><td>覆盖其他所有价格，活动期间自动生效</td></tr>
+<tr><td>会员价</td><td>中</td><td>仅识别会员后生效，按会员等级匹配</td></tr>
+<tr><td>标准零售价</td><td>低</td><td>默认销售价格，无会员或促销时使用</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="ch3-4">3.4 条码管理</h2>
+<ol class="step-list">
+  <li>系统支持标准 EAN-13 条码和自定义内部条码。</li>
+  <li>在商品编辑页面"条码"字段输入条码号。</li>
+  <li>支持批量生成条码：勾选多个商品，点击"操作 → 生成条码"。</li>
+  <li>条码打印：进入"POS → 条码打印"菜单，选择商品，打印条码标签。</li>
+  <li>如果条码冲突，系统会提示"条码已被占用"。</li>
+</ol>
+
+<!-- ==================== 第四章 ==================== -->
+<h1 id="ch4">第四章 会员管理</h1>
+
+<h2 id="ch4-1">4.1 会员开卡</h2>
+<h3>4.1.1 实体卡开卡</h3>
+<ol class="step-list">
+  <li>在 POS 后台进入"会员 → 会员卡 → 新建"。</li>
+  <li>填写会员基本信息：姓名、手机号、性别、生日。</li>
+  <li>选择会员等级（默认"普通会员"）。</li>
+  <li>输入实体卡卡号（预印制的卡号），或点击"自动分配"。</li>
+  <li>保存后生成会员记录，实体卡激活。</li>
+</ol>
+
+<h3>4.1.2 电子卡开卡</h3>
+<ol class="step-list">
+  <li>顾客通过线上商城（shop/）注册，填写手机号并验证。</li>
+  <li>系统自动创建电子会员卡，关联微信/支付宝账号。</li>
+  <li>也可在 POS 端由收银员协助开卡：点击"会员 → 快速开卡"，输入手机号即可。</li>
+  <li>电子卡生成后，会员可在微信小程序中查看卡号和二维码。</li>
+</ol>
+
+<h2 id="ch4-2">4.2 会员等级设置</h2>
+<ol class="step-list">
+  <li>进入"会员 → 设置 → 会员等级"菜单。</li>
+  <li>系统预设等级：普通会员、银卡会员、金卡会员、钻石会员。</li>
+  <li>编辑每个等级：<ul>
+    <li>等级名称</li>
+    <li>升级条件（累计消费金额或积分数量）</li>
+    <li>等级权益（折扣率、积分倍率、生日礼遇等）</li>
+    <li>保级条件（年度消费金额要求）</li>
+  </ul></li>
+  <li>等级自动升降：系统每天定时任务检查会员消费数据，自动升级/降级。</li>
+</ol>
+
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>等级名称</th><th>升级条件</th><th>折扣率</th><th>积分倍率</th><th>保级条件</th></tr>
+</thead>
+<tbody>
+<tr><td>普通会员</td><td>默认</td><td>无</td><td>1x</td><td>无</td></tr>
+<tr><td>银卡会员</td><td>累计消费 ≥ 500 元</td><td>95%</td><td>1.2x</td><td>年消费 ≥ 300 元</td></tr>
+<tr><td>金卡会员</td><td>累计消费 ≥ 2000 元</td><td>90%</td><td>1.5x</td><td>年消费 ≥ 1000 元</td></tr>
+<tr><td>钻石会员</td><td>累计消费 ≥ 8000 元</td><td>85%</td><td>2x</td><td>年消费 ≥ 5000 元</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="ch4-3">4.3 积分规则配置</h2>
+<ol class="step-list">
+  <li>进入"会员 → 设置 → 积分规则"菜单。</li>
+  <li>新建积分规则：<ul>
+    <li><strong>规则名称</strong>：如"消费赠积分"</li>
+    <li><strong>触发事件</strong>：订单完成 / 注册 / 签到 / 自定义</li>
+    <li><strong>积分计算方式</strong>：按消费金额比例（每 1 元得 1 积分）或固定值</li>
+    <li><strong>适用会员等级</strong>：可选全部或指定等级</li>
+    <li><strong>积分上限</strong>：单笔交易最高可获积分</li>
+  </ul></li>
+  <li>积分抵扣规则：<ul>
+    <li>设置积分抵扣比例（如 100 积分 = 1 元）</li>
+    <li>设置抵扣上限（单笔订单最高抵扣金额）</li>
+    <li>设置最低消费金额（满 X 元可用积分）</li>
+  </ul></li>
+  <li>保存后规则即时生效。</li>
+</ol>
+
+<h2 id="ch4-4">4.4 积分查询与调整</h2>
+<h3>4.4.1 积分查询</h3>
+<p>在"会员 → 会员卡"中打开会员详情页，查看积分汇总：</p>
+<ul>
+  <li>当前可用积分</li>
+  <li>累计获得积分</li>
+  <li>累计使用积分</li>
+  <li>积分明细（按时间倒序，显示每笔积分的来源/去向）</li>
+</ul>
+
+<h3>4.4.2 积分手工调整</h3>
+<ol class="step-list">
+  <li>在会员详情页点击"积分调整"按钮。</li>
+  <li>选择调整类型：增加 / 扣减。</li>
+  <li>输入调整数量和调整原因（如"生日赠礼"、"补偿"）。</li>
+  <li>确认后生成积分调整记录，会员积分余额实时更新。</li>
+</ol>
+<div class="tip tip-warn"><strong>注意：</strong> 积分调整操作需要管理员权限，所有调整记录均留有操作日志，供后续审计。</div>
+
+<!-- ==================== 第五章 ==================== -->
+<h1 id="ch5">第五章 班次管理</h1>
+
+<h2 id="ch5-1">5.1 开班操作</h2>
+<ol class="step-list">
+  <li>收银员登录 POS 后，点击"开班"。</li>
+  <li>系统弹出"钱箱初始金额"输入框，输入当前班次起始备用金。</li>
+  <li>系统自动记录：开班时间、收银员、初始金额、门店。</li>
+  <li>开班成功后，POS 进入可收银状态，底部栏显示当前班次信息。</li>
+  <li>一个门店在同一时间只允许一个进行中的班次。</li>
+</ol>
+
+<h2 id="ch5-2">5.2 交班流程</h2>
+<ol class="step-list">
+  <li>收银员点击"交班"，系统进入交班确认流程。</li>
+  <li>系统汇总当前班次数据：<ul>
+    <li>交易总笔数（正常 + 退款）</li>
+    <li>各支付方式应收金额</li>
+    <li>各支付方式实收金额</li>
+    <li>会员消费金额</li>
+    <li>积分发放/消耗</li>
+  </ul></li>
+  <li>系统提示"请输入钱箱实盘金额"，收银员清点钱箱后输入实际现金金额。</li>
+  <li>系统自动比较应收与实收，计算差额。</li>
+  <li>如果差额在允许范围内（可配置，如 ±10 元），交班自动完成。</li>
+  <li>如果差额超出范围，进入"差额处理"流程（见 5.4）。</li>
+</ol>
+
+<h2 id="ch5-3">5.3 钱箱盘点</h2>
+<ol class="step-list">
+  <li>钱箱盘点在交班时自动触发，也可在班次中手动执行"盘点"。</li>
+  <li>盘点时系统列出所有支付方式（现金、聚合码、刷卡等）的理论应收金额。</li>
+  <li>收银员逐项清点并输入实际金额。</li>
+  <li>系统自动生成差异明细报表。</li>
+</ol>
+
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>项目</th><th>理论金额</th><th>实盘金额</th><th>差额</th></tr>
+</thead>
+<tbody>
+<tr><td>现金</td><td>¥1,280.00</td><td>¥1,285.00</td><td>+¥5.00</td></tr>
+<tr><td>聚合码支付</td><td>¥3,560.00</td><td>—</td><td>—</td></tr>
+<tr><td>刷卡</td><td>¥890.00</td><td>—</td><td>—</td></tr>
+<tr><td><strong>合计</strong></td><td><strong>¥5,730.00</strong></td><td><strong>—</strong></td><td><strong>—</strong></td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="ch5-4">5.4 差额处理与店长确认</h2>
+<h3>5.4.1 差额处理流程</h3>
+<ol class="step-list">
+  <li>当交班时发现现金差额超出允许范围，系统锁定交班操作。</li>
+  <li>收银员可填写"差额原因说明"（如：找零错误、遗漏收款等）。</li>
+  <li>系统通知店长/管理员（通过系统消息或飞书通知）。</li>
+  <li>店长登录系统，进入"班次管理 → 待确认班次"。</li>
+  <li>店长审核差额明细和原因说明，可选择：<ul>
+    <li><strong>确认通过</strong>：差额由门店承担，班次正常关闭。</li>
+    <li><strong>驳回</strong>：要求收银员重新盘点。</li>
+    <li><strong>调整</strong>：店长手工调整金额（需填写调整原因）。</li>
+  </ul></li>
+  <li>店长确认后，班次状态变更为"已关闭"。</li>
+</ol>
+
+<h3>5.4.2 差额处理界面</h3>
+<pre><code>班次编号: S20260801-003
+收银员: 张三
+门店: 中心店
+开盘时间: 2026-08-01 08:00
+交班时间: 2026-08-01 22:00
+
+┌──────────────────────────────┐
+│ 差额明细                      │
+│ 理论现金: ¥1,280.00          │
+│ 实盘现金: ¥1,265.00          │
+│ 差额: -¥15.00 (短款)          │
+│                              │
+│ 差额原因: 顾客取走未付款      │
+│                              │
+│ 店长意见:                     │
+│ [✓] 确认通过                  │
+│ [ ] 驳回重新盘点               │
+│ [ ] 手工调整                   │
+│                              │
+│ 备注: 本次为首次违规，予以警告  │
+│                              │
+│           [确认]  [取消]       │
+└──────────────────────────────┘</code></pre>
+
+<!-- ==================== 第六章 ==================== -->
+<h1 id="ch6">第六章 小票打印</h1>
+
+<h2 id="ch6-1">6.1 打印机配置</h2>
+<h3>6.1.1 58mm 打印机配置</h3>
+<ol class="step-list">
+  <li>进入"POS → 设置 → 打印机"菜单。</li>
+  <li>点击"新建"，填写打印机信息：<ul>
+    <li><strong>名称</strong>：如"前台58mm打印机"</li>
+    <li><strong>类型</strong>：选择"热敏打印机 (58mm)"</li>
+    <li><strong>连接方式</strong>：USB / 网络 / 蓝牙</li>
+    <li><strong>驱动</strong>：<code>zhao_pos_print</code> 提供的 58mm 驱动</li>
+    <li><strong>纸张宽度</strong>：58mm</li>
+    <li><strong>每行字符数</strong>：32（中文）</li>
+  </ul></li>
+  <li>保存后点击"测试打印"，验证配置是否正确。</li>
+</ol>
+
+<h3>6.1.2 80mm 打印机配置</h3>
+<ol class="step-list">
+  <li>配置步骤与 58mm 类似，选择"热敏打印机 (80mm)"。</li>
+  <li>纸张宽度设置为 80mm，每行字符数 42（中文）。</li>
+  <li>80mm 打印机支持更丰富的小票布局（如双列价格、品牌 Logo）。</li>
+</ol>
+
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>参数</th><th>58mm 打印机</th><th>80mm 打印机</th></tr>
+</thead>
+<tbody>
+<tr><td>纸张宽度</td><td>58mm</td><td>80mm</td></tr>
+<tr><td>每行汉字数</td><td>32</td><td>42</td></tr>
+<tr><td>适用场景</td><td>便携/移动收银</td><td>固定收银台</td></tr>
+<tr><td>打印内容</td><td>简版小票（商品名、数量、金额）</td><td>完整小票（Logo、商品明细、会员信息、优惠明细、二维码）</td></tr>
+<tr><td>ESC/POS 指令</td><td>兼容</td><td>兼容</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="ch6-2">6.2 小票模板定制</h2>
+<ol class="step-list">
+  <li>进入"POS → 设置 → 小票模板"菜单。</li>
+  <li>系统默认提供两种模板：<ul>
+    <li><strong>58mm 简约模板</strong>：精简内容，适合快速打印</li>
+    <li><strong>80mm 标准模板</strong>：完整内容，含 Logo 和会员信息</li>
+  </ul></li>
+  <li>点击"编辑"可自定义模板内容：<ul>
+    <li>头部：门店名称、Logo、地址、电话</li>
+    <li>商品行：商品名、单价、数量、小计</li>
+    <li>底部：合计金额、支付方式、找零、会员积分</li>
+    <li>页脚：感谢语、退换货政策、二维码</li>
+  </ul></li>
+  <li>模板使用 QWeb 语法，高级用户可编辑 XML 源码。</li>
+  <li>保存后，POS 收银打印时自动应用对应模板。</li>
+</ol>
+
+<pre><code>&lt;!-- 小票模板示例 (80mm) --&gt;
+&lt;t t-name="zhao_pos_receipt_80mm"&gt;
+  &lt;div class="receipt"&gt;
+    &lt;div class="header"&gt;
+      &lt;h2&gt;[[ shop.name ]]&lt;/h2&gt;
+      &lt;p&gt;[[ shop.address ]]&lt;/p&gt;
+      &lt;p&gt;Tel: [[ shop.phone ]]&lt;/p&gt;
+    &lt;/div&gt;
+    &lt;hr/&gt;
+    &lt;div class="items"&gt;
+      &lt;t t-foreach="order.lines" t-as="line"&gt;
+        &lt;div class="line"&gt;
+          &lt;span&gt;[[ line.product_name ]]&lt;/span&gt;
+          &lt;span class="right"&gt;[[ line.qty ]] x [[ line.price ]] = [[ line.subtotal ]]&lt;/span&gt;
+        &lt;/div&gt;
+      &lt;/t&gt;
+    &lt;/div&gt;
+    &lt;hr/&gt;
+    &lt;div class="total"&gt;
+      &lt;p&gt;合计: [[ order.total ]]&lt;/p&gt;
+      &lt;p&gt;支付: [[ order.payment_method ]]&lt;/p&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/t&gt;</code></pre>
+
+<!-- ==================== 第七章 ==================== -->
+<h1 id="ch7">第七章 支付管理</h1>
+
+<h2 id="ch7-1">7.1 聚合码支付配置</h2>
+<h3>7.1.1 商户接入</h3>
+<ol class="step-list">
+  <li>联系微信支付/支付宝服务商，申请商户号，开通聚合码支付功能。</li>
+  <li>获取以下参数：<ul>
+    <li>商户号（Merchant ID）</li>
+    <li>应用 ID（AppID）</li>
+    <li>API 密钥（API Key）</li>
+    <li>回调地址（Notify URL）</li>
+  </ul></li>
+  <li>在 Odoo 后台进入"POS → 设置 → 支付方式 → 聚合码支付"。</li>
+  <li>填入上述参数，保存配置。</li>
+</ol>
+
+<h3>7.1.2 回调地址配置</h3>
+<ol class="step-list">
+  <li>聚合码支付的回调地址需配置为：<code>http://&lt;服务器地址&gt;/pos_receipt/callback</code></li>
+  <li>该地址由 <code>zhao_pos_receipt</code> 模块自动注册，处理支付成功回调。</li>
+  <li>回调处理逻辑：<ul>
+    <li>验证签名</li>
+    <li>更新订单支付状态为"已付款"</li>
+    <li>触发小票打印</li>
+    <li>触发积分发放</li>
+    <li>触发库存扣减</li>
+  </ul></li>
+</ol>
+
+<h3>7.1.3 二维码生成</h3>
+<ol class="step-list">
+  <li>系统在结算时调用支付网关 API 生成动态二维码。</li>
+  <li>二维码有效期为 5 分钟（可配置），超时自动失效。</li>
+  <li>顾客扫码后，支付网关通过回调地址通知系统。</li>
+  <li>如果未收到回调，可在 POS 端点击"查询支付结果"主动查询。</li>
+</ol>
+
+<h2 id="ch7-2">7.2 支付对账</h2>
+<h3>7.2.1 每日对账</h3>
+<ol class="step-list">
+  <li>进入"POS → 报告 → 支付对账"菜单。</li>
+  <li>选择对账日期，系统自动汇总：<ul>
+    <li>POS 交易记录（各支付方式金额）</li>
+    <li>支付网关到账记录（需导入支付网关账单）</li>
+    <li>差异明细（如有）</li>
+  </ul></li>
+  <li>系统自动对账匹配，标记"已对账"和"未对账"记录。</li>
+  <li>对于未对账记录，手工排查原因（如：支付成功但 POS 未收到回调、退款等）。</li>
+</ol>
+
+<h3>7.2.2 对账差异处理</h3>
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>差异类型</th><th>常见原因</th><th>处理方法</th></tr>
+</thead>
+<tbody>
+<tr><td>POS 有记录，网关无记录</td><td>测试订单、操作失误</td><td>取消 POS 订单</td></tr>
+<tr><td>网关有记录，POS 无记录</td><td>回调丢失、网络异常</td><td>手工补录订单</td></tr>
+<tr><td>金额不一致</td><td>手续费扣除、退款差异</td><td>核对手续费明细，调整差额</td></tr>
+</tbody>
+</table>
+</div>
+
+<!-- ==================== 第八章 ==================== -->
+<h1 id="ch8">第八章 权限管理</h1>
+
+<h2 id="ch8-1">8.1 多门店权限矩阵</h2>
+<p><code>zhao_pos_iam</code> 模块实现了三维权限矩阵：<strong>用户 × 角色 × 门店</strong>。每个用户在不同门店可拥有不同角色，实现精细化的权限控制。</p>
+
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>用户</th><th>中心店</th><th>分店A</th><th>分店B</th></tr>
+</thead>
+<tbody>
+<tr><td>张三</td><td>收银员</td><td>—</td><td>—</td></tr>
+<tr><td>李四</td><td>店长</td><td>收银员</td><td>—</td></tr>
+<tr><td>王五</td><td>区域经理</td><td>区域经理</td><td>区域经理</td></tr>
+<tr><td>赵六</td><td>管理员</td><td>管理员</td><td>管理员</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="ch8-2">8.2 角色配置</h2>
+<ol class="step-list">
+  <li>进入"设置 → 用户 → 角色"菜单。</li>
+  <li>系统预置角色：<ul>
+    <li><strong>管理员</strong>：所有权限，包括系统配置、模块安装</li>
+    <li><strong>区域经理</strong>：可查看所辖门店所有数据，审核交班、退款</li>
+    <li><strong>店长</strong>：本门店管理权限，商品管理、交班确认、退款审批</li>
+    <li><strong>收银员</strong>：POS 收银操作，无法修改商品、价格、配置</li>
+    <li><strong>库管员</strong>：库存管理权限，入库、出库、盘点</li>
+  </ul></li>
+  <li>可新建自定义角色，按功能权限点（如"允许退款"、"允许修改价格"等）进行配置。</li>
+  <li>每个角色可设置"可访问门店"范围：全部门店 / 指定门店 / 仅本门店。</li>
+</ol>
+
+<div class="tip tip-info"><strong>提示：</strong> 权限修改即时生效，无需重新登录。建议先在实际使用前充分测试权限配置。</div>
+
+<h2 id="ch8-3">8.3 数据隔离规则</h2>
+<p><code>zhao_pos_iam</code> 实现的行级数据隔离：</p>
+<ul>
+  <li><strong>订单数据</strong>：收银员只能查看自己创建的订单；店长可查看本门店所有订单；区域经理可查看所辖区域所有订单。</li>
+  <li><strong>商品数据</strong>：商品信息共享，但门店可独立设置"门店可用商品列表"。</li>
+  <li><strong>会员数据</strong>：会员数据全门店共享，但积分操作按门店记录。</li>
+  <li><strong>班次数据</strong>：收银员只可操作自己的班次；店长可查看/确认本门店所有班次。</li>
+  <li><strong>财务数据</strong>：按门店进行财务数据隔离，各门店独立记账。</li>
+</ul>
+
+<pre><code>// 数据隔离实现示例 (Python)
+class PosOrder(models.Model):
+    _name = 'pos.order'
+    _inherit = 'pos.order'
+
+    def _check_access_rule(self):
+        """多门店数据隔离"""
+        user = self.env.user
+        if user.has_group('zhao_pos_iam.group_admin'):
+            return  # 管理员全可见
+        if user.has_group('zhao_pos_iam.group_region_manager'):
+            shops = user.managed_shop_ids  # 区域经理管辖门店
+            return self.filtered(lambda o: o.shop_id in shops)
+        if user.has_group('zhao_pos_iam.group_shop_manager'):
+            return self.filtered(lambda o: o.shop_id == user.shop_id)
+        # 收银员仅看自己
+        return self.filtered(lambda o: o.create_uid == user)</code></pre>
+
+<!-- ==================== 第九章 ==================== -->
+<h1 id="ch9">第九章 附录 — 二开插件使用 Odoo 原生功能说明</h1>
+
+<h2 id="ch9-1">9.1 使用 <code>point_of_sale</code> 原生功能的清单</h2>
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>原生功能</th><th>模型/视图</th><th>使用方式</th><th>所在模块</th></tr>
+</thead>
+<tbody>
+<tr><td>POS 会话管理</td><td><code>pos.session</code></td><td><code>_inherit</code> 扩展，增加班次字段</td><td>zhao_market_pos, zhao_pos_shift</td></tr>
+<tr><td>POS 订单</td><td><code>pos.order</code></td><td><code>_inherit</code> 扩展，增加会员/支付字段</td><td>zhao_market_pos, zhao_pos_receipt</td></tr>
+<tr><td>POS 订单行</td><td><code>pos.order.line</code></td><td><code>_inherit</code> 扩展，增加积分字段</td><td>zhao_market_pos, zhao_member_points</td></tr>
+<tr><td>支付方式</td><td><code>pos.payment.method</code></td><td><code>_inherit</code> 扩展聚合码支付配置</td><td>zhao_pos_receipt</td></tr>
+<tr><td>POS 配置</td><td><code>pos.config</code></td><td><code>_inherit</code> 扩展，增加打印机/门店配置</td><td>zhao_pos, zhao_pos_print</td></tr>
+<tr><td>POS 类别</td><td><code>pos.category</code></td><td>直接使用，无扩展</td><td>zhao_market_pos</td></tr>
+<tr><td>收银员登录</td><td><code>pos.user</code></td><td><code>_inherit</code> 扩展，增加门店关联</td><td>zhao_pos_iam</td></tr>
+<tr><td>小票渲染</td><td><code>pos.receipt</code></td><td>QWeb 模板继承，覆盖中文模板</td><td>zhao_pos</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="ch9-2">9.2 使用 <code>product</code> 原生功能的清单</h2>
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>原生功能</th><th>模型/视图</th><th>使用方式</th><th>所在模块</th></tr>
+</thead>
+<tbody>
+<tr><td>商品模板</td><td><code>product.template</code></td><td><code>_inherit</code> 扩展，增加会员价字段</td><td>zhao_member</td></tr>
+<tr><td>商品变体</td><td><code>product.product</code></td><td>直接使用，增加多规格字段</td><td>zhao_market_pos</td></tr>
+<tr><td>商品分类</td><td><code>product.category</code></td><td>直接使用，无扩展</td><td>zhao_market_pos</td></tr>
+<tr><td>条码管理</td><td><code>product.barcode</code></td><td>直接使用原生条码字段</td><td>zhao_market_pos</td></tr>
+<tr><td>价格表</td><td><code>product.pricelist</code></td><td><code>_inherit</code> 扩展，增加会员等级价格</td><td>zhao_member</td></tr>
+<tr><td>供应商信息</td><td><code>product.supplierinfo</code></td><td>直接使用，无扩展</td><td>zhao_market_pos</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="ch9-3">9.3 使用 <code>stock</code> 原生功能的清单</h2>
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>原生功能</th><th>模型/视图</th><th>使用方式</th><th>所在模块</th></tr>
+</thead>
+<tbody>
+<tr><td>库存调拨</td><td><code>stock.picking</code></td><td>直接使用原生功能</td><td>zhao_market_pos</td></tr>
+<tr><td>库存移动</td><td><code>stock.move</code></td><td>POS 订单确认时自动生成</td><td>zhao_market_pos</td></tr>
+<tr><td>库存盘点</td><td><code>stock.inventory</code></td><td>直接使用原生功能</td><td>zhao_market_pos</td></tr>
+<tr><td>库存数量</td><td><code>stock.quant</code></td><td>POS 实时查询库存量</td><td>zhao_market_pos</td></tr>
+<tr><td>仓库/位置</td><td><code>stock.warehouse</code>/<code>stock.location</code></td><td>门店映射到仓库位置</td><td>zhao_pos_iam</td></tr>
+<tr><td>库存预警</td><td><code>stock.warehouse.orderpoint</code></td><td>直接使用原生功能</td><td>zhao_market_pos</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="ch9-4">9.4 使用 <code>account</code> 原生功能的清单</h2>
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>原生功能</th><th>模型/视图</th><th>使用方式</th><th>所在模块</th></tr>
+</thead>
+<tbody>
+<tr><td>会计科目表</td><td><code>account.account</code></td><td>POS 收入/现金科目映射</td><td>zhao_market_pos</td></tr>
+<tr><td>日记账</td><td><code>account.journal</code></td><td>POS 支付方式对应日记账</td><td>zhao_market_pos</td></tr>
+<tr><td>会计凭证</td><td><code>account.move</code></td><td>POS 订单确认时自动生成</td><td>zhao_market_pos</td></tr>
+<tr><td>对账</td><td><code>account.reconciliation</code></td><td>支付对账模块使用</td><td>zhao_pos_receipt</td></tr>
+<tr><td>税务</td><td><code>account.tax</code></td><td><code>zhao_pos</code> 扩展税率映射</td><td>zhao_pos</td></tr>
+<tr><td>付款登记</td><td><code>account.payment</code></td><td>POS 支付时自动创建付款记录</td><td>zhao_market_pos</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="ch9-5">9.5 模块依赖关系表</h2>
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>模块</th><th>直接依赖</th><th>间接依赖</th></tr>
+</thead>
+<tbody>
+<tr><td><code>zhao_market_pos</code></td><td><code>point_of_sale</code>, <code>product</code>, <code>stock</code>, <code>account</code></td><td><code>sale</code>, <code>uom</code></td></tr>
+<tr><td><code>zhao_pos</code></td><td><code>point_of_sale</code></td><td><code>zhao_market_pos</code></td></tr>
+<tr><td><code>zhao_pos_iam</code></td><td><code>point_of_sale</code></td><td><code>zhao_market_pos</code></td></tr>
+<tr><td><code>zhao_pos_print</code></td><td><code>point_of_sale</code></td><td><code>zhao_market_pos</code>, <code>zhao_pos</code></td></tr>
+<tr><td><code>zhao_pos_receipt</code></td><td><code>point_of_sale</code>, <code>account</code></td><td><code>zhao_market_pos</code></td></tr>
+<tr><td><code>zhao_pos_shift</code></td><td><code>point_of_sale</code>, <code>account</code></td><td><code>zhao_market_pos</code>, <code>zhao_pos_iam</code></td></tr>
+<tr><td><code>zhao_member</code></td><td><code>product</code></td><td><code>zhao_market_pos</code></td></tr>
+<tr><td><code>zhao_member_points</code></td><td><code>zhao_member</code>, <code>point_of_sale</code></td><td><code>zhao_market_pos</code></td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="tip tip-success"><strong>说明：</strong> 所有二开插件均遵循 Odoo 19 模块规范，使用 <code>_inherit</code> 机制扩展原生模型，不修改 Odoo 原生代码，确保升级兼容性。</div>
+
+</div><!-- /content -->
+</div><!-- /main -->
+
+<script>
+function toggleSidebar() {
+  var s = document.getElementById('sidebar');
+  var o = document.getElementById('sidebarOverlay');
+  s.classList.toggle('open');
+  o.classList.toggle('show');
+}
+// 侧边栏高亮当前章节
+(function() {
+  var links = document.querySelectorAll('.sidebar-nav a');
+  var sections = [];
+  links.forEach(function(a) {
+    var href = a.getAttribute('href');
+    if (href && href.startsWith('#')) {
+      sections.push({ el: a, id: href.substring(1) });
+    }
+  });
+  function onScroll() {
+    var scrollY = window.scrollY + 80;
+    var activeId = null;
+    sections.forEach(function(s) {
+      var el = document.getElementById(s.id);
+      if (el && el.offsetTop <= scrollY) {
+        activeId = s.id;
+      }
+    });
+    links.forEach(function(a) { a.classList.remove('active'); });
+    if (activeId) {
+      var activeLink = document.querySelector('.sidebar-nav a[href="#' + activeId + '"]');
+      if (activeLink) activeLink.classList.add('active');
+    }
+  }
+  window.addEventListener('scroll', onScroll);
+  window.addEventListener('load', onScroll);
+})();
+</script>
+</body>
+</html>

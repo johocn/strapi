@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>赵氏物流门户网站 — 操作手册</title>
+<style>
+  /* ===== Reset & Base ===== */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+    font-size: 15px; line-height: 1.7; color: #1e293b; background: #f8fafc;
+    display: flex; min-height: 100vh;
+  }
+
+  /* ===== Sidebar ===== */
+  .sidebar {
+    width: 280px; min-width: 280px; background: #0f172a; color: #cbd5e1;
+    position: fixed; top: 0; left: 0; height: 100vh; overflow-y: auto;
+    z-index: 1000; display: flex; flex-direction: column;
+  }
+  .sidebar-header {
+    padding: 20px 18px 14px; border-bottom: 1px solid #1e293b;
+  }
+  .sidebar-header h1 {
+    font-size: 17px; font-weight: 700; color: #f1f5f9; letter-spacing: .5px;
+  }
+  .sidebar-header .sub {
+    font-size: 12px; color: #64748b; margin-top: 2px;
+  }
+  .sidebar-nav { padding: 10px 0; flex: 1; }
+  .sidebar-nav a {
+    display: block; padding: 7px 18px 7px 22px; font-size: 13px;
+    color: #94a3b8; text-decoration: none; border-left: 3px solid transparent;
+    transition: all .15s;
+  }
+  .sidebar-nav a:hover, .sidebar-nav a:focus {
+    color: #e2e8f0; background: rgba(255,255,255,.04); border-left-color: #3b82f6;
+  }
+  .sidebar-nav .ch { font-weight: 600; color: #e2e8f0; margin-top: 6px; }
+  .sidebar-nav .sec { padding-left: 34px; font-size: 12.5px; }
+  .sidebar-footer {
+    padding: 12px 18px; border-top: 1px solid #1e293b; font-size: 11px; color: #475569;
+  }
+
+  /* ===== Main ===== */
+  .main { margin-left: 280px; flex: 1; min-width: 0; padding: 0; }
+  .top-bar {
+    position: sticky; top: 0; z-index: 999; background: #ffffff;
+    border-bottom: 1px solid #e2e8f0; padding: 12px 36px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .top-bar .page-title { font-size: 15px; font-weight: 600; color: #0f172a; }
+  .top-bar .version { font-size: 12px; color: #94a3b8; }
+
+  .content { padding: 32px 40px 60px; max-width: 960px; }
+
+  /* ===== Typography ===== */
+  h2 { font-size: 22px; font-weight: 700; color: #0f172a; margin: 40px 0 16px; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0; }
+  h2:first-of-type { margin-top: 0; }
+  h3 { font-size: 17px; font-weight: 600; color: #1e293b; margin: 28px 0 12px; }
+  h4 { font-size: 14.5px; font-weight: 600; color: #334155; margin: 20px 0 8px; }
+  p  { margin: 0 0 12px; }
+  ul, ol { margin: 0 0 14px; padding-left: 22px; }
+  li { margin-bottom: 4px; }
+  a { color: #2563eb; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* ===== Table ===== */
+  table { width: 100%; border-collapse: collapse; margin: 16 0 20px; font-size: 13.5px; }
+  th, td { border: 1px solid #e2e8f0; padding: 9px 12px; text-align: left; }
+  th { background: #f1f5f9; font-weight: 600; color: #0f172a; }
+  tr:nth-child(even) td { background: #fafbfc; }
+
+  /* ===== Code Block ===== */
+  code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace; font-size: 13px; }
+  pre {
+    background: #0f172a; color: #e2e8f0; padding: 14px 16px; border-radius: 6px;
+    overflow-x: auto; font-size: 13px; line-height: 1.55; margin: 12px 0 18px;
+  }
+  pre code { background: none; color: inherit; padding: 0; font-size: inherit; }
+  :not(pre) > code { background: #f1f5f9; color: #b91c1c; padding: 2px 6px; border-radius: 3px; font-size: 13px; }
+
+  /* ===== Steps ===== */
+  .step { counter-increment: step-counter; margin-bottom: 10px; padding-left: 36px; position: relative; }
+  .step::before {
+    content: counter(step-counter); position: absolute; left: 0; top: 0;
+    width: 26px; height: 26px; border-radius: 50%; background: #2563eb;
+    color: #fff; font-size: 13px; font-weight: 700; text-align: center; line-height: 26px;
+  }
+  .steps-list { counter-reset: step-counter; list-style: none; padding-left: 0; }
+  .steps-list li { counter-increment: step-counter; margin-bottom: 10px; padding-left: 36px; position: relative; list-style: none; }
+  .steps-list li::before {
+    content: counter(step-counter); position: absolute; left: 0; top: 0;
+    width: 26px; height: 26px; border-radius: 50%; background: #2563eb;
+    color: #fff; font-size: 13px; font-weight: 700; text-align: center; line-height: 26px;
+  }
+
+  /* ===== Callout ===== */
+  .callout {
+    margin: 14px 0 18px; padding: 12px 16px; border-radius: 6px; border-left: 4px solid;
+    font-size: 14px;
+  }
+  .callout-info { background: #eff6ff; border-color: #3b82f6; color: #1e40af; }
+  .callout-tip { background: #f0fdf4; border-color: #22c55e; color: #166534; }
+  .callout-warn { background: #fffbeb; border-color: #f59e0b; color: #92400e; }
+  .callout strong { display: inline-block; margin-bottom: 2px; }
+
+  /* ===== Card ===== */
+  .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; margin: 14px 0 18px; }
+  .card {
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04);
+  }
+  .card h4 { margin: 0 0 6px; font-size: 14px; }
+  .card p { margin: 0; font-size: 13px; color: #64748b; }
+
+  /* ===== Responsive ===== */
+  @media (max-width: 820px) {
+    .sidebar { width: 220px; min-width: 220px; }
+    .main { margin-left: 220px; }
+    .content { padding: 20px 20px 40px; }
+  }
+  @media (max-width: 640px) {
+    body { flex-direction: column; }
+    .sidebar { position: static; width: 100%; height: auto; min-width: 0; max-height: 260px; }
+    .main { margin-left: 0; }
+    .top-bar { padding: 10px 16px; }
+    .content { padding: 16px; }
+    .card-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ===== Misc ===== */
+  .toc { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 18px 22px; margin: 0 0 32px; }
+  .toc h3 { margin: 0 0 10px; font-size: 15px; }
+  .toc ul { columns: 2; column-gap: 24px; padding-left: 18px; margin: 0; }
+  .toc li { font-size: 13px; margin-bottom: 3px; break-inside: avoid; }
+  .toc a { color: #2563eb; }
+  .img-placeholder {
+    background: #f1f5f9; border: 1px dashed #cbd5e1; border-radius: 6px;
+    padding: 28px 16px; text-align: center; color: #64748b; font-size: 13px;
+    margin: 12px 0 16px;
+  }
+  .matrix { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px,1fr)); gap: 10px; margin: 12px 0 16px; }
+  .matrix-item {
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 6px;
+    padding: 12px; text-align: center; font-size: 13px;
+  }
+  .matrix-item .icon { font-size: 22px; display: block; margin-bottom: 4px; }
+  .matrix-item .label { font-weight: 500; color: #0f172a; }
+  .matrix-item .desc { font-size: 11px; color: #64748b; }
+  hr { border: none; border-top: 1px solid #e2e8f0; margin: 30px 0; }
+</style>
+</head>
+<body>
+
+<!-- ==================== Sidebar ==================== -->
+<nav class="sidebar" aria-label="目录导航">
+  <div class="sidebar-header">
+    <h1>赵氏物流 · 门户手册</h1>
+    <div class="sub">跨境物流客户门户 v1.0</div>
+  </div>
+  <div class="sidebar-nav">
+    <a href="#ch1" class="ch">第一章 系统概述</a>
+    <a href="#ch2" class="ch">第二章 首页浏览</a>
+    <a href="#s2-1" class="sec">2.1 服务方案展示</a>
+    <a href="#s2-2" class="sec">2.2 信任数据动态展示</a>
+    <a href="#s2-3" class="sec">2.3 快速联系入口</a>
+    <a href="#s2-4" class="sec">2.4 语言切换</a>
+    <a href="#ch3" class="ch">第三章 在线询价</a>
+    <a href="#s3-1" class="sec">3.1 进入询价页面</a>
+    <a href="#s3-2" class="sec">3.2 填写货物信息</a>
+    <a href="#s3-3" class="sec">3.3 提交询价</a>
+    <a href="#s3-4" class="sec">3.4 后台线索生成流程</a>
+    <a href="#s3-5" class="sec">3.5 价格估算工具</a>
+    <a href="#ch4" class="ch">第四章 货物追踪</a>
+    <a href="#s4-1" class="sec">4.1 输入追踪单号</a>
+    <a href="#s4-2" class="sec">4.2 查看物流时间线</a>
+    <a href="#s4-3" class="sec">4.3 异常状态提醒</a>
+    <a href="#s4-4" class="sec">4.4 订阅状态更新通知</a>
+    <a href="#ch5" class="ch">第五章 服务方案</a>
+    <a href="#s5-1" class="sec">5.1 各服务方案详情</a>
+    <a href="#s5-2" class="sec">5.2 服务网络覆盖</a>
+    <a href="#ch6" class="ch">第六章 帮助中心</a>
+    <a href="#s6-1" class="sec">6.1 FAQ 浏览</a>
+    <a href="#s6-2" class="sec">6.2 资料下载</a>
+    <a href="#s6-3" class="sec">6.3 联系客服</a>
+    <a href="#ch7" class="ch">第七章 联系渠道</a>
+    <a href="#s7-1" class="sec">7.1 多渠道矩阵</a>
+    <a href="#s7-2" class="sec">7.2 热线电话与邮箱</a>
+    <a href="#s7-3" class="sec">7.3 快速回拨请求</a>
+    <a href="#ch8" class="ch">第八章 附录</a>
+    <a href="#s8-1" class="sec">8.1 API 端点说明</a>
+    <a href="#s8-2" class="sec">8.2 环境配置指南</a>
+    <a href="#s8-3" class="sec">8.3 常见问题</a>
+  </div>
+  <div class="sidebar-footer">v1.0 &mdash; 2026-08</div>
+</nav>
+
+<!-- ==================== Main ==================== -->
+<div class="main">
+  <header class="top-bar">
+    <span class="page-title">赵氏物流跨境客户门户 · 操作手册</span>
+    <span class="version">版本 1.0</span>
+  </header>
+
+  <div class="content">
+
+    <!-- ========== 目录 ========== -->
+    <div class="toc">
+      <h3>目录</h3>
+      <ul>
+        <li><a href="#ch1">第一章 系统概述</a></li>
+        <li><a href="#ch2">第二章 首页浏览</a></li>
+        <li><a href="#ch3">第三章 在线询价</a></li>
+        <li><a href="#ch4">第四章 货物追踪</a></li>
+        <li><a href="#ch5">第五章 服务方案</a></li>
+        <li><a href="#ch6">第六章 帮助中心</a></li>
+        <li><a href="#ch7">第七章 联系渠道</a></li>
+        <li><a href="#ch8">第八章 附录</a></li>
+      </ul>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- 第一章 -->
+    <!-- ============================================================ -->
+    <h2 id="ch1">第一章 系统概述</h2>
+
+    <h3>1.1 门户网站定位</h3>
+    <p>赵氏物流客户门户是一个面向跨境物流客户（货主 / 收货人）的<strong>客户自助服务平台</strong>。客户无需登录即可完成以下核心操作：</p>
+    <ul>
+      <li>浏览物流服务方案（FBA 头程、包裹快递、拼箱 LCL、特种货物）</li>
+      <li>在线提交货物询价，系统自动在 Odoo 后台生成销售线索</li>
+      <li>输入追踪单号，实时查看货物运输状态与时间线</li>
+      <li>浏览常见问题 FAQ、下载资料、联系客服</li>
+    </ul>
+    <p>门户旨在降低人工客服咨询量、提升客户响应效率，实现 7×24 小时自助服务。</p>
+
+    <h3>1.2 技术架构说明</h3>
+    <table>
+      <tr><th>层级</th><th>技术栈</th><th>说明</th></tr>
+      <tr><td>前端</td><td>React 18 + Vite + TypeScript</td><td>SPA 单页应用，组件化开发</td></tr>
+      <tr><td>后端</td><td>Odoo 19 (Python)</td><td>业务逻辑层，提供 REST API</td></tr>
+      <tr><td>API 通信</td><td>RESTful JSON</td><td>前端通过 <code>fetch</code> / axios 调用</td></tr>
+      <tr><td>API 前缀</td><td><code>/zhao_logistics/public/v1/*</code></td><td>所有公开接口统一前缀</td></tr>
+      <tr><td>部署</td><td>Nginx 反向代理</td><td>静态资源 + API 代理</td></tr>
+    </table>
+
+    <div class="callout callout-info">
+      <strong>架构要点</strong><br>
+      前端为纯静态 SPA，通过 REST API 与 Odoo 后端交互。所有公开接口无需认证，后端通过请求频率限制（Rate Limit）和 IP 白名单进行安全防护。
+    </div>
+
+    <h3>1.3 多语言支持</h3>
+    <p>门户内置 <strong>i18n</strong> 国际化方案，支持以下四种语言，用户可通过页面顶部的语言切换器即时切换：</p>
+    <table>
+      <tr><th>语言</th><th>Locale 代码</th><th>切换器显示</th></tr>
+      <tr><td>简体中文</td><td><code>zh-CN</code></td><td>中文</td></tr>
+      <tr><td>日语</td><td><code>ja-JP</code></td><td>日本語</td></tr>
+      <tr><td>韩语</td><td><code>ko-KR</code></td><td>한국어</td></tr>
+      <tr><td>英语</td><td><code>en-US</code></td><td>English</td></tr>
+    </table>
+    <p>切换后页面文案、错误提示、时间格式、数字格式等均同步切换。语言偏好以 <code>localStorage</code> 持久化保存。</p>
+
+    <h3>1.4 环境信息</h3>
+    <table>
+      <tr><th>环境</th><th>地址</th><th>说明</th></tr>
+      <tr><td>开发环境（前端）</td><td><code>http://localhost:5173</code></td><td>Vite 开发服务器，HMR 热更新</td></tr>
+      <tr><td>API 服务器</td><td><code>http://localhost:8069</code></td><td>Odoo 服务端口</td></tr>
+      <tr><td>生产环境</td><td>根据客户域名配置</td><td>Nginx 反向代理</td></tr>
+    </table>
+
+    <!-- ============================================================ -->
+    <!-- 第二章 -->
+    <!-- ============================================================ -->
+    <h2 id="ch2">第二章 首页浏览</h2>
+    <p>首页（Home）是客户进入门户的第一屏，主要承担品牌展示、服务概览、信任建立三大功能。</p>
+
+    <h3 id="s2-1">2.1 服务方案展示</h3>
+    <p>首页中部以卡片网格展示四大核心服务方案，每张卡片包含：方案名称、一句话描述、图标及「了解更多」链接。</p>
+
+    <div class="card-grid">
+      <div class="card"><h4>📦 FBA 头程</h4><p>亚马逊 FBA 入仓一站式服务，支持海空铁多式联运。</p></div>
+      <div class="card"><h4>📮 包裹快递</h4><p>门到门小包裹快递，覆盖全球主要国家。</p></div>
+      <div class="card"><h4>🚢 拼箱 LCL</h4><p>海运拼箱服务，灵活拼柜，降低运输成本。</p></div>
+      <div class="card"><h4>⚠️ 特种货物</h4><p>危险品、超大件、温控货物等特殊品类运输方案。</p></div>
+    </div>
+
+    <p>点击卡片或「了解更多」按钮，跳转至 <strong>服务方案（Solutions）</strong> 页面查看详细说明。</p>
+
+    <h3 id="s2-2">2.2 信任数据动态展示</h3>
+    <p>首页底部展示一组动态信任数据（Trust Data），数据由 Odoo 后台统计并通过 API 提供，前端以数字滚动动画呈现：</p>
+    <table>
+      <tr><th>数据项</th><th>示例值</th><th>数据来源</th></tr>
+      <tr><td>累计承运货量</td><td>128,000+ TEU</td><td>Odoo 仓储/货运统计</td></tr>
+      <tr><td>服务国家数</td><td>45+</td><td>系统配置</td></tr>
+      <tr><td>合作客户数</td><td>3,200+</td><td>Odoo res.partner 统计</td></tr>
+      <tr><td>准时交付率</td><td>99.2%</td><td>Odoo 货运准时率报表</td></tr>
+      <tr><td>客服响应时间</td><td>&lt; 30 分钟</td><td>客服工单系统统计</td></tr>
+    </table>
+
+    <div class="callout callout-info">
+      <strong>数据刷新</strong>：信任数据在页面加载时通过 <code>GET /zhao_logistics/public/v1/trust-stats</code> 获取，并支持定时刷新（默认 5 分钟）。
+    </div>
+
+    <h3 id="s2-3">2.3 快速联系入口</h3>
+    <p>首页右上角和右下角悬浮按钮提供快速联系入口：</p>
+    <ul>
+      <li><strong>悬浮 WhatsApp 按钮</strong>：点击直接打开 WhatsApp 聊天窗口</li>
+      <li><strong>「联系我们」按钮</strong>：跳转至 <strong>联系渠道（Contact）</strong> 页面</li>
+      <li><strong>底部热线信息</strong>：显示客服热线电话号码</li>
+    </ul>
+
+    <h3 id="s2-4">2.4 语言切换</h3>
+    <p>页面顶部导航栏右侧提供语言切换下拉菜单，操作步骤如下：</p>
+    <ol class="steps-list">
+      <li>点击导航栏右侧的 <strong>🌐 语言图标</strong> 或当前语言缩写（如"中文"）</li>
+      <li>在下拉菜单中点击目标语言（中文 / 日本語 / 한국어 / English）</li>
+      <li>页面立即刷新所有文案，语言偏好自动保存至 <code>localStorage</code></li>
+    </ol>
+    <p>下次访问时自动应用已保存的语言设置。</p>
+
+    <!-- ============================================================ -->
+    <!-- 第三章 -->
+    <!-- ============================================================ -->
+    <h2 id="ch3">第三章 在线询价</h2>
+    <p>在线询价（Quote）是门户核心功能之一。客户填写货物信息后提交，系统自动在 Odoo 后台创建 <code>crm.lead</code> 线索，供销售团队跟进。</p>
+
+    <h3 id="s3-1">3.1 进入询价页面</h3>
+    <ol class="steps-list">
+      <li>在门户顶部导航栏点击 <strong>「询价 Quote」</strong> 链接</li>
+      <li>页面路径为 <code>/quote</code>，加载询价表单</li>
+      <li>表单包含必填与选填字段，带前后端双重校验</li>
+    </ol>
+
+    <h3 id="s3-2">3.2 填写货物信息</h3>
+    <p>询价表单字段如下：</p>
+    <table>
+      <tr><th>字段</th><th>类型</th><th>必填</th><th>说明</th></tr>
+      <tr><td>起运地</td><td>下拉选择</td><td>是</td><td>支持城市/港口选择，如"深圳"、"上海"</td></tr>
+      <tr><td>目的地</td><td>下拉选择</td><td>是</td><td>如"洛杉矶"、"东京"、"汉堡"</td></tr>
+      <tr><td>货物品类</td><td>下拉选择</td><td>是</td><td>如"电子产品"、"服装"、"机械设备"、"化工品"等</td></tr>
+      <tr><td>重量 (kg)</td><td>数字输入</td><td>是</td><td>支持小数点，如 150.5</td></tr>
+      <tr><td>体积 (m³)</td><td>数字输入</td><td>否</td><td>选填，用于拼箱/整柜估算</td></tr>
+      <tr><td>联系人姓名</td><td>文本</td><td>是</td><td>客户姓名</td></tr>
+      <tr><td>联系人邮箱</td><td>邮箱</td><td>是</td><td>用于接收报价回复</td></tr>
+      <tr><td>联系人电话</td><td>文本</td><td>否</td><td>选填</td></tr>
+      <tr><td>备注</td><td>文本域</td><td>否</td><td>特殊要求或补充说明</td></tr>
+    </table>
+
+    <div class="callout callout-warn">
+      <strong>校验规则</strong>：重量必须大于 0；邮箱格式必须合法；必填字段为空时表单无法提交，错误提示以红色文字显示在对应字段下方。
+    </div>
+
+    <h3 id="s3-3">3.3 提交询价</h3>
+    <ol class="steps-list">
+      <li>填写完所有必填字段后，点击表单底部的 <strong>「提交询价」</strong> 按钮</li>
+      <li>按钮进入 loading 状态，显示旋转动画，防止重复提交</li>
+      <li>前端发送 <code>POST /zhao_logistics/public/v1/quote</code> 请求，携带 JSON body</li>
+      <li>提交成功后，页面显示成功提示："询价已提交，我们的销售团队将在 24 小时内与您联系"</li>
+      <li>如提交失败，显示错误提示信息，客户可尝试重新提交</li>
+    </ol>
+
+    <h3 id="s3-4">3.4 后台线索生成流程（Odoo crm.lead）</h3>
+    <p>API 接收到询价请求后的处理流程：</p>
+    <ol class="steps-list">
+      <li>API 控制器接收并校验请求参数</li>
+      <li>在 Odoo <code>crm.lead</code> 模型中创建一条新线索，字段映射如下：</li>
+    </ol>
+    <table>
+      <tr><th>表单字段</th><th>Odoo crm.lead 字段</th></tr>
+      <tr><td>起运地</td><td><code>origin_port</code>（自定义）</td></tr>
+      <tr><td>目的地</td><td><code>destination_port</code>（自定义）</td></tr>
+      <tr><td>货物品类</td><td><code>cargo_category</code>（自定义）</td></tr>
+      <tr><td>重量</td><td><code>estimated_weight</code>（自定义）</td></tr>
+      <tr><td>体积</td><td><code>estimated_volume</code>（自定义）</td></tr>
+      <tr><td>联系人姓名</td><td><code>contact_name</code></td></tr>
+      <tr><td>联系人邮箱</td><td><code>email_from</code></td></tr>
+      <tr><td>联系人电话</td><td><code>phone</code></td></tr>
+      <tr><td>备注</td><td><code>description</code></td></tr>
+    </table>
+    <ol class="steps-list" start="3">
+      <li>线索创建成功后，自动分配至预设的销售团队队列</li>
+      <li>API 返回 <code>{ "success": true, "lead_id": 12345 }</code> 给前端</li>
+    </ol>
+
+    <div class="callout callout-tip">
+      <strong>运维提示</strong>：可在 Odoo 后台 <code>crm.lead</code> 列表视图的筛选器中添加"来源 = 门户询价"来区分门户渠道线索。
+    </div>
+
+    <h3 id="s3-5">3.5 价格估算工具使用</h3>
+    <p>询价页面同时提供<strong>价格估算工具</strong>，客户可在提交前快速获取参考价格：</p>
+    <ol class="steps-list">
+      <li>在询价表单中填写起运地、目的地、货物品类、重量、体积</li>
+      <li>点击 <strong>「估算运费」</strong> 按钮</li>
+      <li>前端调用 <code>GET /zhao_logistics/public/v1/price-estimate?origin=...&amp;destination=...&amp;category=...&amp;weight=...&amp;volume=...</code></li>
+      <li>API 根据预设费率表返回估算价格区间（如"¥ 3,500 - ¥ 4,800"）</li>
+      <li>估算结果展示在表单下方，包含运输方式建议（如"建议使用海运拼箱"）</li>
+    </ol>
+
+    <div class="callout callout-warn">
+      <strong>注意</strong>：价格估算仅供参考，实际报价以销售团队确认的正式报价单为准。
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- 第四章 -->
+    <!-- ============================================================ -->
+    <h2 id="ch4">第四章 货物追踪</h2>
+    <p>货物追踪（Track）功能允许客户输入追踪单号，实时查看货物运输状态与完整时间线。</p>
+
+    <h3 id="s4-1">4.1 输入追踪单号</h3>
+    <ol class="steps-list">
+      <li>点击顶部导航栏 <strong>「追踪 Track」</strong> 进入追踪页面（<code>/track</code>）</li>
+      <li>在页面中央的搜索输入框中输入<strong>追踪单号</strong>（Tracking Number）</li>
+      <li>点击 <strong>「查询」</strong> 按钮或按回车键</li>
+      <li>前端调用 <code>GET /zhao_logistics/public/v1/tracking?tracking_no=...</code></li>
+    </ol>
+
+    <div class="callout callout-info">
+      <strong>单号格式</strong>：支持 ZL 开头的标准追踪号（如 ZL2026080012345），也支持客户自有单号（需后台配置映射）。
+    </div>
+
+    <h3 id="s4-2">4.2 查看物流时间线</h3>
+    <p>查询成功后，页面展示以下信息：</p>
+    <ul>
+      <li><strong>当前状态</strong>：以醒目徽章显示（如"运输中"、"已签收"、"异常"）</li>
+      <li><strong>物流时间线</strong>：按时间倒序排列的事件列表，每项包含：</li>
+      <ul>
+        <li>事件时间戳（格式：YYYY-MM-DD HH:mm，含时区）</li>
+        <li>事件描述（如"货物已抵达目的港"、"海关查验中"）</li>
+        <li>事件地点</li>
+        <li>状态图标（已签收 ✓ / 运输中 ⟳ / 异常 ⚠）</li>
+      </ul>
+      <li><strong>货物概要</strong>：起运地 → 目的地、运输方式、预计到达时间</li>
+    </ul>
+
+    <div class="img-placeholder">[ 物流时间线 UI 示意图 — 竖排时间轴 + 状态节点 ]</div>
+
+    <h3 id="s4-3">4.3 异常状态提醒</h3>
+    <p>当货物出现异常状态时，追踪页面会突出显示：</p>
+    <ul>
+      <li>状态徽章变为红色（<code>#dc2626</code>），显示"异常"标记</li>
+      <li>异常事件在时间线中以 <strong>红色背景</strong> 高亮</li>
+      <li>显示异常说明文字（如"海关查验 — 需补充文件，请联系客服"）</li>
+      <li>页面底部显示<strong>建议操作</strong>按钮（如"联系客服"、"查看所需文件"）</li>
+    </ul>
+
+    <h3 id="s4-4">4.4 订阅状态更新通知（邮件）</h3>
+    <p>客户可以订阅货物状态更新通知，当状态发生变化时自动收到邮件：</p>
+    <ol class="steps-list">
+      <li>在追踪结果页面找到 <strong>「订阅更新」</strong> 按钮</li>
+      <li>点击后弹出邮箱输入框，默认填入查询时使用的邮箱（如有）</li>
+      <li>输入/确认邮箱地址，点击 <strong>「确认订阅」</strong></li>
+      <li>前端调用 <code>POST /zhao_logistics/public/v1/tracking/subscribe</code>，携带 <code>{ tracking_no, email }</code></li>
+      <li>订阅成功后，每次该追踪号的状态更新时，系统自动发送邮件通知</li>
+    </ol>
+
+    <div class="callout callout-tip">
+      <strong>邮件模板</strong>：通知邮件使用 Odoo 邮件模板，包含追踪号、当前状态、最新事件描述、追踪链接。客户可直接点击链接查看最新状态。
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- 第五章 -->
+    <!-- ============================================================ -->
+    <h2 id="ch5">第五章 服务方案</h2>
+    <p>服务方案（Solutions）页面详细介绍赵氏物流提供的四类核心服务。</p>
+
+    <h3 id="s5-1">5.1 各服务方案详情</h3>
+
+    <h4>📦 FBA 头程服务</h4>
+    <p>为亚马逊卖家提供从中国到亚马逊 FBA 仓库的全程物流服务：</p>
+    <ul>
+      <li>支持海运、空运、铁路、快递四种运输方式</li>
+      <li>包含出口报关、进口清关、目的港拖车、入仓预约</li>
+      <li>提供 FBA 标签打印、装箱单制作等增值服务</li>
+      <li>覆盖美国、欧洲、日本、澳大利亚等主要站点</li>
+    </ul>
+
+    <h4>📮 包裹快递服务</h4>
+    <p>门到门小包裹快递，适合电商卖家和个人寄送：</p>
+    <ul>
+      <li>合作渠道：DHL、FedEx、UPS、TNT 等国际快递</li>
+      <li>支持全球 220+ 国家和地区</li>
+      <li>在线下单、上门揽收、全程追踪</li>
+      <li>提供中港台、东南亚等专线小包服务</li>
+    </ul>
+
+    <h4>🚢 拼箱 LCL 服务</h4>
+    <p>海运拼箱服务，适合货量不足整柜的客户：</p>
+    <ul>
+      <li>固定拼箱船期，每周/双周班次</li>
+      <li>覆盖主要航线：中国→北美、欧洲、东南亚、中东</li>
+      <li>提供 CFS 收货、拆箱、分货服务</li>
+      <li>支持买单出口、双清包税等增值模式</li>
+    </ul>
+
+    <h4>⚠️ 特种货物服务</h4>
+    <p>针对特殊品类货物的专业运输方案：</p>
+    <ul>
+      <li>危险品（DG）：拥有 IATA/IMDG 认证资质，支持 Class 2-9 类危险品</li>
+      <li>超大件：机械设备、车辆、工业零件等超尺寸货物</li>
+      <li>温控货物：冷链运输，支持温度实时监控</li>
+      <li>贵重物品：高价值货物，提供全程安保与保险</li>
+    </ul>
+
+    <h3 id="s5-2">5.2 服务网络覆盖</h3>
+    <p>赵氏物流服务网络覆盖以下主要区域：</p>
+    <table>
+      <tr><th>区域</th><th>覆盖国家/地区</th><th>主要港口/城市</th></tr>
+      <tr><td>北美</td><td>美国、加拿大、墨西哥</td><td>洛杉矶、纽约、温哥华、墨西哥城</td></tr>
+      <tr><td>欧洲</td><td>英国、德国、法国、荷兰、意大利、西班牙等</td><td>汉堡、鹿特丹、费利克斯托、勒阿弗尔</td></tr>
+      <tr><td>东南亚</td><td>越南、泰国、马来西亚、新加坡、印尼、菲律宾</td><td>胡志明、曼谷、新加坡、巴生港</td></tr>
+      <tr><td>东北亚</td><td>日本、韩国</td><td>东京、大阪、釜山、仁川</td></tr>
+      <tr><td>中东</td><td>阿联酋、沙特、土耳其</td><td>迪拜、吉达、伊斯坦布尔</td></tr>
+      <tr><td>大洋洲</td><td>澳大利亚、新西兰</td><td>悉尼、墨尔本、奥克兰</td></tr>
+    </table>
+
+    <!-- ============================================================ -->
+    <!-- 第六章 -->
+    <!-- ============================================================ -->
+    <h2 id="ch6">第六章 帮助中心</h2>
+    <p>帮助中心（Help）页面为客户提供自助查询和资料获取渠道。</p>
+
+    <h3 id="s6-1">6.1 FAQ 浏览（按分类展开）</h3>
+    <p>FAQ 页面采用<strong>分类折叠面板</strong>（Accordion）布局：</p>
+    <ul>
+      <li>按主题分类：运费与报价、货物追踪、报关清关、仓储配送、账户与支付</li>
+      <li>点击分类标题展开该分类下的问题列表</li>
+      <li>点击具体问题展开答案文本</li>
+      <li>支持同时展开多个分类</li>
+      <li>顶部提供搜索框，支持关键词模糊搜索 FAQ 内容</li>
+    </ul>
+    <p>FAQ 数据通过 <code>GET /zhao_logistics/public/v1/faq</code> 获取，支持按分类和语言筛选。</p>
+
+    <h3 id="s6-2">6.2 资料下载（填写邮箱 → 请求发送）</h3>
+    <p>客户可申请下载物流相关资料（如服务指南、报价手册、合规文件等）：</p>
+    <ol class="steps-list">
+      <li>在帮助中心页面找到 <strong>「资料下载」</strong> 区域</li>
+      <li>浏览可下载的资料列表，点击目标资料的 <strong>「申请下载」</strong> 按钮</li>
+      <li>弹出表单，填写<strong>姓名</strong>和<strong>邮箱地址</strong></li>
+      <li>点击 <strong>「发送」</strong> 提交请求</li>
+      <li>前端调用 <code>POST /zhao_logistics/public/v1/download-request</code></li>
+      <li>后台 Odoo 自动发送邮件，附件包含所申请的 PDF 资料</li>
+      <li>页面显示成功提示："资料已发送至您的邮箱，请查收"</li>
+    </ol>
+
+    <div class="callout callout-warn">
+      <strong>安全说明</strong>：资料不直接通过前端下载，而是通过邮件发送，确保资料分发可追溯、可审计。
+    </div>
+
+    <h3 id="s6-3">6.3 联系客服</h3>
+    <p>帮助中心页面底部提供在线客服入口：</p>
+    <ul>
+      <li><strong>在线客服</strong>：点击后弹出聊天窗口（集成第三方客服系统）</li>
+      <li><strong>客服热线</strong>：显示客服电话号码，支持一键拨打（移动端）</li>
+      <li><strong>客服邮箱</strong>：support@zhaologistics.com</li>
+      <li><strong>客服工作时间</strong>：周一至周五 09:00 - 18:00（UTC+8）</li>
+    </ul>
+
+    <!-- ============================================================ -->
+    <!-- 第七章 -->
+    <!-- ============================================================ -->
+    <h2 id="ch7">第七章 联系渠道</h2>
+    <p>联系渠道（Contact）页面提供完整的客户沟通矩阵，方便客户通过偏好的方式联系我们。</p>
+
+    <h3 id="s7-1">7.1 多渠道矩阵</h3>
+    <p>页面以图标矩阵展示以下即时通讯渠道，点击即可跳转：</p>
+
+    <div class="matrix">
+      <div class="matrix-item">
+        <span class="icon">💬</span>
+        <span class="label">WhatsApp</span>
+        <span class="desc">+86 138 0000 1234</span>
+      </div>
+      <div class="matrix-item">
+        <span class="icon">💚</span>
+        <span class="label">微信</span>
+        <span class="desc">ZhaoLogistics</span>
+      </div>
+      <div class="matrix-item">
+        <span class="icon">🔵</span>
+        <span class="label">Line</span>
+        <span class="desc">@zhao_logistics</span>
+      </div>
+      <div class="matrix-item">
+        <span class="icon">✈️</span>
+        <span class="label">Telegram</span>
+        <span class="desc">@ZhaoLogisticsBot</span>
+      </div>
+      <div class="matrix-item">
+        <span class="icon">🟢</span>
+        <span class="label">WeChat Work</span>
+        <span class="desc">企业微信</span>
+      </div>
+      <div class="matrix-item">
+        <span class="icon">💠</span>
+        <span class="label">Messenger</span>
+        <span class="desc">m.me/zhaologistics</span>
+      </div>
+    </div>
+
+    <p>每个渠道卡片包含渠道名称、图标、联系方式/二维码，点击后打开对应应用或复制联系方式。</p>
+
+    <h3 id="s7-2">7.2 热线电话与邮箱</h3>
+    <table>
+      <tr><th>渠道</th><th>联系方式</th><th>服务时间</th></tr>
+      <tr><td>客服热线</td><td>+86 400 888 9999</td><td>7×24 小时</td></tr>
+      <tr><td>销售咨询</td><td>+86 755 8888 6666</td><td>工作日 09:00-18:00</td></tr>
+      <tr><td>客服邮箱</td><td>support@zhaologistics.com</td><td>24 小时内回复</td></tr>
+      <tr><td>销售邮箱</td><td>sales@zhaologistics.com</td><td>工作日 24 小时内回复</td></tr>
+      <tr><td>投诉建议</td><td>complaint@zhaologistics.com</td><td>48 小时内回复</td></tr>
+    </table>
+
+    <h3 id="s7-3">7.3 快速回拨请求</h3>
+    <p>客户可提交快速回拨请求，由客服人员主动联系：</p>
+    <ol class="steps-list">
+      <li>在联系页面找到 <strong>「快速回拨」</strong> 表单区域</li>
+      <li>填写以下字段：</li>
+      <ul>
+        <li><strong>姓名</strong>（必填）</li>
+        <li><strong>联系电话</strong>（必填，支持国际号码格式）</li>
+        <li><strong>最佳联系时间</strong>（选填，如"今天下午 14:00-16:00"）</li>
+        <li><strong>备注</strong>（选填，如简要说明咨询事项）</li>
+      </ul>
+      <li>点击 <strong>「提交回拨请求」</strong> 按钮</li>
+      <li>前端调用 <code>POST /zhao_logistics/public/v1/callback-request</code></li>
+      <li>后台 Odoo 创建一条 <code>crm.lead</code> 线索，并标记为"回拨请求"</li>
+      <li>页面显示成功提示："回拨请求已提交，客服人员将在 30 分钟内与您联系"</li>
+    </ol>
+
+    <div class="callout callout-tip">
+      <strong>运维提示</strong>：回拨请求的线索在 Odoo 中可通过自定义字段 <code>request_type = 'callback'</code> 识别，建议配置自动化规则，在创建后立即通知销售团队。
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- 第八章 -->
+    <!-- ============================================================ -->
+    <h2 id="ch8">第八章 附录</h2>
+
+    <h3 id="s8-1">8.1 API 端点说明表</h3>
+    <p>以下为门户使用的核心公开 API 端点列表。所有端点均以 <code>/zhao_logistics/public/v1</code> 为前缀。</p>
+
+    <table>
+      <tr><th>方法</th><th>端点</th><th>说明</th><th>请求参数</th><th>响应格式</th></tr>
+      <tr>
+        <td><code>GET</code></td>
+        <td><code>/routes</code></td>
+        <td>获取可用运输路线</td>
+        <td><code>origin</code>, <code>destination</code> (可选)</td>
+        <td><code>{ "routes": [...] }</code></td>
+      </tr>
+      <tr>
+        <td><code>GET</code></td>
+        <td><code>/tracking</code></td>
+        <td>查询物流追踪信息</td>
+        <td><code>tracking_no</code> (必填)</td>
+        <td><code>{ "tracking_no": "", "status": "", "events": [...], "summary": {...} }</code></td>
+      </tr>
+      <tr>
+        <td><code>POST</code></td>
+        <td><code>/tracking/subscribe</code></td>
+        <td>订阅追踪状态更新</td>
+        <td><code>{ tracking_no, email }</code></td>
+        <td><code>{ "success": true, "subscription_id": 123 }</code></td>
+      </tr>
+      <tr>
+        <td><code>POST</code></td>
+        <td><code>/quote</code></td>
+        <td>提交询价</td>
+        <td><code>{ origin, destination, category, weight, volume?, name, email, phone?, notes? }</code></td>
+        <td><code>{ "success": true, "lead_id": 12345 }</code></td>
+      </tr>
+      <tr>
+        <td><code>GET</code></td>
+        <td><code>/price-estimate</code></td>
+        <td>价格估算</td>
+        <td><code>origin</code>, <code>destination</code>, <code>category</code>, <code>weight</code>, <code>volume</code> (可选)</td>
+        <td><code>{ "currency": "CNY", "min": 3500, "max": 4800, "suggestion": "" }</code></td>
+      </tr>
+      <tr>
+        <td><code>GET</code></td>
+        <td><code>/trust-stats</code></td>
+        <td>获取信任数据</td>
+        <td>无</td>
+        <td><code>{ "total_teu": 128000, "countries": 45, "clients": 3200, "on_time_rate": 99.2, "response_time": "&lt; 30min" }</code></td>
+      </tr>
+      <tr>
+        <td><code>GET</code></td>
+        <td><code>/faq</code></td>
+        <td>获取 FAQ 列表</td>
+        <td><code>category</code> (可选), <code>lang</code> (可选)</td>
+        <td><code>{ "faqs": [{ "category": "", "question": "", "answer": "" }] }</code></td>
+      </tr>
+      <tr>
+        <td><code>POST</code></td>
+        <td><code>/download-request</code></td>
+        <td>资料下载请求</td>
+        <td><code>{ name, email, document_id }</code></td>
+        <td><code>{ "success": true, "message": "" }</code></td>
+      </tr>
+      <tr>
+        <td><code>POST</code></td>
+        <td><code>/callback-request</code></td>
+        <td>快速回拨请求</td>
+        <td><code>{ name, phone, preferred_time?, notes? }</code></td>
+        <td><code>{ "success": true, "lead_id": 12345 }</code></td>
+      </tr>
+    </table>
+
+    <div class="callout callout-info">
+      <strong>完整请求示例</strong> — 询价提交：
+    </div>
+    <pre><code>POST /zhao_logistics/public/v1/quote
+Content-Type: application/json
+
+{
+  "origin": "深圳",
+  "destination": "洛杉矶",
+  "category": "电子产品",
+  "weight": 150.5,
+  "volume": 0.8,
+  "name": "张三",
+  "email": "zhangsan@example.com",
+  "phone": "+86 138 0013 8000",
+  "notes": "请提供 FBA 入仓报价"
+}</code></pre>
+
+    <pre><code>HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "success": true,
+  "lead_id": 12345,
+  "message": "询价已提交，我们的销售团队将在 24 小时内与您联系"
+}</code></pre>
+
+    <h3 id="s8-2">8.2 环境配置指南</h3>
+    <p>前端项目通过环境变量配置 API 地址。创建或修改项目根目录的 <code>.env</code> 文件：</p>
+
+    <pre><code># .env 文件 — API 基础地址配置
+VITE_ODOO_API_BASE=http://localhost:8069
+
+# 多语言配置（可选，默认启用四种语言）
+VITE_I18N_LOCALES=zh-CN,ja-JP,ko-KR,en-US
+
+# 默认语言
+VITE_I18N_DEFAULT_LOCALE=zh-CN</code></pre>
+
+    <table>
+      <tr><th>环境变量</th><th>必填</th><th>默认值</th><th>说明</th></tr>
+      <tr><td><code>VITE_ODOO_API_BASE</code></td><td>是</td><td>无</td><td>Odoo 服务器地址，包含协议和端口</td></tr>
+      <tr><td><code>VITE_I18N_LOCALES</code></td><td>否</td><td>四种语言</td><td>启用的语言列表，逗号分隔</td></tr>
+      <tr><td><code>VITE_I18N_DEFAULT_LOCALE</code></td><td>否</td><td><code>zh-CN</code></td><td>默认语言</td></tr>
+    </table>
+
+    <p>Vite 项目启动命令：</p>
+    <pre><code># 开发模式
+npm run dev
+
+# 生产构建
+npm run build
+
+# 预览构建产物
+npm run preview</code></pre>
+
+    <div class="callout callout-warn">
+      <strong>生产部署</strong>：建议通过 Nginx 将前端请求代理到 Odoo 后端，避免跨域问题。示例 Nginx 配置：
+    </div>
+    <pre><code>location /zhao_logistics/public/v1/ {
+    proxy_pass http://127.0.0.1:8069;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+
+location / {
+    root /var/www/zhao-portal/dist;
+    try_files $uri $uri/ /index.html;
+}</code></pre>
+
+    <h3 id="s8-3">8.3 常见问题</h3>
+
+    <h4>Q1: 询价提交后多久能收到回复？</h4>
+    <p>标准回复时间为 24 小时内。紧急询价建议通过 WhatsApp 或热线电话联系客服。</p>
+
+    <h4>Q2: 为什么查询追踪单号时显示"未找到"？</h4>
+    <p>可能原因：单号输入错误（注意区分 0 和 O）、货物尚未被系统录入（通常在发货后 24 小时内录入）、或该单号不属于赵氏物流承运范围。建议核对单号后重新查询，或联系客服确认。</p>
+
+    <h4>Q3: 如何切换门户语言？</h4>
+    <p>点击页面顶部导航栏右侧的 🌐 语言图标，在下拉菜单中选择所需语言。当前支持中文、日文、韩文、英文。选择后自动保存，下次访问自动应用。</p>
+
+    <h4>Q4: 门户在移动端显示异常怎么办？</h4>
+    <p>门户已适配响应式布局，支持手机和平板浏览。如遇显示异常，建议尝试以下操作：清除浏览器缓存、更新浏览器至最新版本、或切换至横屏模式。如问题持续，请联系技术支持。</p>
+
+    <h4>Q5: 资料下载后没有收到邮件？</h4>
+    <p>请检查：填写的邮箱地址是否正确、邮件是否被归入垃圾邮件箱。如确认无误仍未收到，请联系客服手动发送。</p>
+
+    <h4>Q6: 价格估算与实际报价有差异怎么办？</h4>
+    <p>价格估算基于系统预设费率表，仅供参考。实际报价受燃油附加费、旺季附加费、海关查验等因素影响，以销售团队出具的正式报价单为准。建议提交正式询价获取准确报价。</p>
+
+    <h4>Q7: 开发模式下前端无法连接 API？</h4>
+    <p>请确认：</p>
+    <ul>
+      <li>Odoo 服务已启动并在 <code>localhost:8069</code> 上监听</li>
+      <li><code>.env</code> 文件中 <code>VITE_ODOO_API_BASE</code> 配置正确</li>
+      <li>浏览器控制台无 CORS 错误。如有跨域问题，可在 Odoo 中配置 CORS 或使用 Nginx 代理</li>
+    </ul>
+
+    <hr>
+
+    <p style="text-align:center;color:#94a3b8;font-size:13px;margin-top:40px;">
+      赵氏物流客户门户操作手册 v1.0 &mdash; 文档生成日期 2026-08-01
+    </p>
+
+  </div><!-- /.content -->
+</div><!-- /.main -->
+
+</body>
+</html>
