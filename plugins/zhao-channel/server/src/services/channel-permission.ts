@@ -14,6 +14,23 @@ const ROLE_CHANNEL_UID = "plugin::zhao-auth.role-channel";
 const CHANNEL_MEMBER_UID = "plugin::zhao-channel.channel-member";
 const USER_UID = "plugin::users-permissions.user";
 
+/**
+ * 从 up_users 提取角色名
+ * 兼容 zhaoRoles 的两种存储形态：
+ * - 字符串数组（历史数据/SSO 写入）：["channel-admin"]
+ * - 对象数组（role-management.assignRole 写入）：[{ role, assignedByRole, assignedAt }]
+ * 无 zhaoRoles 时回退到 Strapi 内置 role.type（需调用方 populate role）
+ */
+function extractRoleNames(user: any): string[] {
+  const raw = Array.isArray(user?.zhaoRoles) ? user.zhaoRoles : [];
+  const names = raw
+    .map((r: any) => (typeof r === "string" ? r : r?.role))
+    .filter((n: any) => typeof n === "string" && n.trim());
+  if (names.length > 0) return names;
+  const roleType = user?.role?.type;
+  return typeof roleType === "string" && roleType ? [roleType] : [];
+}
+
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async grantChannelsToUser(userId: number, channelIds: number[], grantedBy: number) {
     const results = [];
@@ -254,17 +271,12 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
     const user = await strapi.db.query(USER_UID).findOne({
       where: { id: userId },
-      select: ["id"],
+      select: ["id", "zhaoRoles"],
+      populate: ["role"],
     });
 
     if (user) {
-      let roleNames: string[] = [];
-      const zhaoRoles = (user as any).zhaoRoles;
-      if (Array.isArray(zhaoRoles) && zhaoRoles.length > 0) {
-        roleNames = zhaoRoles.filter((r: any) => typeof r === "string");
-      } else if ((user as any).role?.type) {
-        roleNames = [(user as any).role.type];
-      }
+      const roleNames = extractRoleNames(user);
 
       if (roleNames.includes("admin")) {
         const allChannels = await strapi.db.query("plugin::zhao-channel.channel").findMany({
@@ -341,17 +353,12 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     // 源 2：role-channel 表（角色授权）；admin 返回全部渠道
     const user = await strapi.db.query(USER_UID).findOne({
       where: { id: userId },
-      select: ["id"],
+      select: ["id", "zhaoRoles"],
+      populate: ["role"],
     });
 
     if (user) {
-      let roleNames: string[] = [];
-      const zhaoRoles = (user as any).zhaoRoles;
-      if (Array.isArray(zhaoRoles) && zhaoRoles.length > 0) {
-        roleNames = zhaoRoles.filter((r: any) => typeof r === "string");
-      } else if ((user as any).role?.type) {
-        roleNames = [(user as any).role.type];
-      }
+      const roleNames = extractRoleNames(user);
 
       if (roleNames.includes("admin")) {
         const allChannels = await strapi.db.query("plugin::zhao-channel.channel").findMany({
