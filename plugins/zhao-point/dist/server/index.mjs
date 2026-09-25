@@ -36400,18 +36400,50 @@ const register = ({ strapi: strapi2 }) => {
   }
 };
 const RULE_UID = "plugin::zhao-point.point-rule";
+const ATT_TABLE = "activity_attendances";
 const ATT_LNK_TABLE = "activity_attendances_signup_lnk";
-const ATT_LNK_UNIQUE_INDEX = "activity_attendances_signup_lnk_suq";
-const ensureAttendanceUniqueIndex = async (strapi2) => {
+const ATT_METHOD_CHECK = "activity_attendances_method_check";
+const ATT_LNK_SIGNUP_INDEX = "activity_attendances_signup_lnk_suq";
+const ATT_LNK_ATTENDANCE_INDEX = "activity_attendances_signup_lnk_auq";
+const TICKET_TABLE = "activity_checkin_tickets";
+const TICKET_TOKEN_INDEX = "activity_checkin_tickets_token_suq";
+const ensureUniqueIndex = async (strapi2, table, column, indexName) => {
   const knex = strapi2.db.connection;
-  const dup = await knex(ATT_LNK_TABLE).select("activity_signup_id").groupBy("activity_signup_id").havingRaw("count(*) > 1").limit(5);
+  const dup = await knex(table).whereNotNull(column).select(column).groupBy(column).havingRaw("count(*) > 1").limit(5);
   if (Array.isArray(dup) && dup.length > 0) {
-    const ids = dup.map((d) => d.activity_signup_id).join(",");
-    strapi2.log.warn(`[zhao-point] 到场链接存在重复 signup(${ids})，跳过唯一索引创建，请先人工核账`);
+    const vals = dup.map((d) => d[column]).join(",");
+    strapi2.log.warn(`[zhao-point] ${table}.${column} 存在重复值(${vals})，跳过唯一索引 ${indexName}，请先人工核账`);
     return;
   }
-  await knex.raw(`CREATE UNIQUE INDEX IF NOT EXISTS ${ATT_LNK_UNIQUE_INDEX} ON ${ATT_LNK_TABLE} (activity_signup_id)`);
-  strapi2.log.info(`[zhao-point] 到场记录唯一索引已就绪 (${ATT_LNK_UNIQUE_INDEX})`);
+  await knex.raw(`CREATE UNIQUE INDEX IF NOT EXISTS ${indexName} ON ${table} (${column})`);
+  strapi2.log.info(`[zhao-point] 唯一索引已就绪 (${indexName})`);
+};
+const ensureAttendanceColumnConstraints = async (strapi2) => {
+  const knex = strapi2.db.connection;
+  const countNull = async (column) => {
+    const row = await knex(ATT_TABLE).whereNull(column).count({ n: "*" }).first();
+    return Number(row?.n ?? 0) || 0;
+  };
+  for (const column of ["checkin_at", "geo_passed", "points_granted"]) {
+    const n = await countNull(column);
+    if (n > 0) {
+      strapi2.log.warn(`[zhao-point] ${ATT_TABLE}.${column} 有 ${n} 行空值，跳过 NOT NULL，请先人工核账`);
+      continue;
+    }
+    await knex.raw(`ALTER TABLE ${ATT_TABLE} ALTER COLUMN ${column} SET NOT NULL`);
+  }
+  await knex.raw(`ALTER TABLE ${ATT_TABLE} ALTER COLUMN geo_passed SET DEFAULT true`);
+  await knex.raw(`ALTER TABLE ${ATT_TABLE} ALTER COLUMN points_granted SET DEFAULT false`);
+  strapi2.log.info(
+    `[zhao-point] 到场记录列约束已就绪 (${ATT_TABLE}: checkin_at/geo_passed/points_granted NOT NULL)`
+  );
+  const hasCheck = await knex("pg_constraint").where({ conname: ATT_METHOD_CHECK }).first();
+  if (!hasCheck) {
+    await knex.raw(
+      `ALTER TABLE ${ATT_TABLE} ADD CONSTRAINT ${ATT_METHOD_CHECK} CHECK (method IN ('worker_scan', 'self', 'manual'))`
+    );
+    strapi2.log.info(`[zhao-point] method 值域约束已创建 (${ATT_METHOD_CHECK})`);
+  }
 };
 const bootstrap = async ({ strapi: strapi2 }) => {
   strapi2.log.info("[zhao-point] 插件已加载，开始种子数据检查...");
@@ -36422,9 +36454,16 @@ const bootstrap = async ({ strapi: strapi2 }) => {
     strapi2.log.warn(`[zhao-point] 启动 drain 失败: ${err.message}`);
   }
   try {
-    await ensureAttendanceUniqueIndex(strapi2);
+    await ensureAttendanceColumnConstraints(strapi2);
   } catch (err) {
-    strapi2.log.warn(`[zhao-point] 到场记录唯一索引创建失败: ${err.message}`);
+    strapi2.log.warn(`[zhao-point] 到场记录列约束创建失败: ${err.message}`);
+  }
+  try {
+    await ensureUniqueIndex(strapi2, ATT_LNK_TABLE, "activity_signup_id", ATT_LNK_SIGNUP_INDEX);
+    await ensureUniqueIndex(strapi2, ATT_LNK_TABLE, "activity_attendance_id", ATT_LNK_ATTENDANCE_INDEX);
+    await ensureUniqueIndex(strapi2, TICKET_TABLE, "token", TICKET_TOKEN_INDEX);
+  } catch (err) {
+    strapi2.log.warn(`[zhao-point] 到场相关唯一索引创建失败: ${err.message}`);
   }
   try {
     const defaultConfig = strapi2.plugin("zhao-point").config("default");

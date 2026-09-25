@@ -2,31 +2,79 @@ import type { Core } from "@strapi/strapi";
 
 const RULE_UID = "plugin::zhao-point.point-rule";
 
-// 进场记录（activity_attendances）与报名的多对一关系走 Strapi 链接表，
-// 该表自带 _uq(activity_attendance_id, activity_signup_id) 只保证「同一条链接不重复」，
-// 无法阻止同一 signup 挂两条 attendance，故需补一条单列唯一索引作为 DB 级最终防线。
+// 到场记录（activity_attendances）的约束全部只能在 DB 层落地：
+// ① 与报名的关系走 Strapi 链接表，该表自带 _uq(activity_attendance_id, activity_signup_id)
+//    只保证「同一条链接不重复」，挡不住同一 signup 挂两条 attendance，也挡不住一条
+//    attendance 挂两条 signup（schema 声明的 oneToOne 在 DB 层没有对应约束）；
+// ② schema.json 的 required / unique / default 只做应用层校验，实测均不落库
+//    （activity-checkin-ticket.token 声明了 unique+required，DB 列仍可空且无唯一索引）。
+// 另：Strapi 的 schema sync 每次启动会无条件比较列的 notNullable / defaultTo
+// （@strapi/database/dist/schema/diff.js diffColumns），会把列约束 diff 回可空，
+// 故列级 NOT NULL 必须在 sync 之后的 bootstrap 阶段重新收紧；索引与 CHECK 不在
+// Strapi 管理的对象集合内（diff 的删除分支要求该对象存在于 previousTable），建好即稳定。
+const ATT_TABLE = "activity_attendances";
 const ATT_LNK_TABLE = "activity_attendances_signup_lnk";
-const ATT_LNK_UNIQUE_INDEX = "activity_attendances_signup_lnk_suq";
+const ATT_METHOD_CHECK = "activity_attendances_method_check";
+const ATT_LNK_SIGNUP_INDEX = "activity_attendances_signup_lnk_suq";
+const ATT_LNK_ATTENDANCE_INDEX = "activity_attendances_signup_lnk_auq";
+const TICKET_TABLE = "activity_checkin_tickets";
+const TICKET_TOKEN_INDEX = "activity_checkin_tickets_token_suq";
 
 /**
- * 幂等补建「一条报名至多一条到场记录」唯一索引。
- * Strapi 不支持在关系字段上声明 unique，只能以幂等 DDL 兜底；
- * 若已存在重复数据则只告警并跳过，绝不阻断启动（交由人工核账后重试）。
+ * 幂等补建单列唯一索引。
+ * 先查重（NULL 不参与比较）：已有重复值只告警并跳过，绝不阻断启动（交人工核账后重试）。
  */
-const ensureAttendanceUniqueIndex = async (strapi: Core.Strapi) => {
+const ensureUniqueIndex = async (strapi: Core.Strapi, table: string, column: string, indexName: string) => {
   const knex = strapi.db.connection;
-  const dup = await knex(ATT_LNK_TABLE)
-    .select("activity_signup_id")
-    .groupBy("activity_signup_id")
+  const dup = await knex(table)
+    .whereNotNull(column)
+    .select(column)
+    .groupBy(column)
     .havingRaw("count(*) > 1")
     .limit(5);
   if (Array.isArray(dup) && dup.length > 0) {
-    const ids = dup.map((d: any) => d.activity_signup_id).join(",");
-    strapi.log.warn(`[zhao-point] 到场链接存在重复 signup(${ids})，跳过唯一索引创建，请先人工核账`);
+    const vals = dup.map((d: any) => d[column]).join(",");
+    strapi.log.warn(`[zhao-point] ${table}.${column} 存在重复值(${vals})，跳过唯一索引 ${indexName}，请先人工核账`);
     return;
   }
-  await knex.raw(`CREATE UNIQUE INDEX IF NOT EXISTS ${ATT_LNK_UNIQUE_INDEX} ON ${ATT_LNK_TABLE} (activity_signup_id)`);
-  strapi.log.info(`[zhao-point] 到场记录唯一索引已就绪 (${ATT_LNK_UNIQUE_INDEX})`);
+  await knex.raw(`CREATE UNIQUE INDEX IF NOT EXISTS ${indexName} ON ${table} (${column})`);
+  strapi.log.info(`[zhao-point] 唯一索引已就绪 (${indexName})`);
+};
+
+/**
+ * 幂等收紧到场记录的列约束（详见文件头注释：schema 不落库，且每轮启动会被 sync 改回可空）。
+ * 有违例数据时逐列告警跳过，不阻断启动。
+ */
+const ensureAttendanceColumnConstraints = async (strapi: Core.Strapi) => {
+  const knex = strapi.db.connection;
+  const countNull = async (column: string) => {
+    const row = await knex(ATT_TABLE).whereNull(column).count({ n: "*" }).first();
+    return Number((row as any)?.n ?? 0) || 0;
+  };
+
+  for (const column of ["checkin_at", "geo_passed", "points_granted"]) {
+    const n = await countNull(column);
+    if (n > 0) {
+      strapi.log.warn(`[zhao-point] ${ATT_TABLE}.${column} 有 ${n} 行空值，跳过 NOT NULL，请先人工核账`);
+      continue;
+    }
+    await knex.raw(`ALTER TABLE ${ATT_TABLE} ALTER COLUMN ${column} SET NOT NULL`);
+  }
+  // DB 默认值：写入侧始终显式赋值，默认值仅供直连 SQL 兜底（避免布尔列三态）
+  await knex.raw(`ALTER TABLE ${ATT_TABLE} ALTER COLUMN geo_passed SET DEFAULT true`);
+  await knex.raw(`ALTER TABLE ${ATT_TABLE} ALTER COLUMN points_granted SET DEFAULT false`);
+  strapi.log.info(
+    `[zhao-point] 到场记录列约束已就绪 (${ATT_TABLE}: checkin_at/geo_passed/points_granted NOT NULL)`
+  );
+
+  // method 值域：Strapi enumeration 不建 DB CHECK，补一条防绕过应用层的脏值
+  const hasCheck = await knex("pg_constraint").where({ conname: ATT_METHOD_CHECK }).first();
+  if (!hasCheck) {
+    await knex.raw(
+      `ALTER TABLE ${ATT_TABLE} ADD CONSTRAINT ${ATT_METHOD_CHECK} CHECK (method IN ('worker_scan', 'self', 'manual'))`
+    );
+    strapi.log.info(`[zhao-point] method 值域约束已创建 (${ATT_METHOD_CHECK})`);
+  }
 };
 
 const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
@@ -44,11 +92,21 @@ const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
     strapi.log.warn(`[zhao-point] 启动 drain 失败: ${err.message}`);
   }
 
-  // 启动兜底：补建到场记录唯一索引（幂等 DDL）
+  // 启动兜底：补建到场记录相关约束（幂等 DDL）
   try {
-    await ensureAttendanceUniqueIndex(strapi);
+    await ensureAttendanceColumnConstraints(strapi);
   } catch (err: any) {
-    strapi.log.warn(`[zhao-point] 到场记录唯一索引创建失败: ${err.message}`);
+    strapi.log.warn(`[zhao-point] 到场记录列约束创建失败: ${err.message}`);
+  }
+
+  try {
+    // 一条报名至多一条到场记录 / 一条到场记录只对应一条报名（对齐 schema 的 oneToOne）
+    await ensureUniqueIndex(strapi, ATT_LNK_TABLE, "activity_signup_id", ATT_LNK_SIGNUP_INDEX);
+    await ensureUniqueIndex(strapi, ATT_LNK_TABLE, "activity_attendance_id", ATT_LNK_ATTENDANCE_INDEX);
+    // 到场核销票据 token：一次性凭据的唯一性/防重放底线
+    await ensureUniqueIndex(strapi, TICKET_TABLE, "token", TICKET_TOKEN_INDEX);
+  } catch (err: any) {
+    strapi.log.warn(`[zhao-point] 到场相关唯一索引创建失败: ${err.message}`);
   }
 
   try {
