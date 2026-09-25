@@ -46,6 +46,9 @@ declare const _default: ({ strapi }: {
     }): Promise<any>;
     /**
      * 发送指定 job（含重试上限），落库回执。
+     * 不变量：job 一旦进入 status="sending" 就不得再抛错——否则永久卡死 sending，
+     * 且 buildJob 的幂等判定会把 sending 视为未终态，该 dedupeKey 被永久占死。
+     * 故渠道/模板ID/触达目标三项解析与校验一律前置，任一失败即置 failed 终态返回。
      */
     sendJob(jobId: number): Promise<any>;
     getJob(jobId: number): Promise<any>;

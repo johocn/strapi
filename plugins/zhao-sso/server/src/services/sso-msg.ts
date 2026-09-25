@@ -111,6 +111,16 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       }
 
       const provider = template.provider || "wechat";
+      // 前置校验：微信通道必须有模板ID。若放行落库，任务会在发送阶段抛错并永久卡死 sending，
+      // 且 buildJob 的幂等判定会把 sending 视为未终态 → 该 dedupeKey 被永久占死。
+      // 调用方(trigger/notifyAdmins/dispatchManualTodo)均已 try/catch，故此处抛错是可见且安全的。
+      if (provider === "wechat" && !useWxTemplateId) {
+        throwErr(
+          "SSO_MSG_TEMPLATE_400",
+          400,
+          `模板 ${templateCode} 缺少微信模板ID(wx_template_id)，拒绝创建消息任务`
+        );
+      }
       const key = dedupeKey || `${scene}:${user}`;
 
       // 幂等：存在任意未终态 job 则跳过
@@ -201,6 +211,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
 
     /**
      * 发送指定 job（含重试上限），落库回执。
+     * 不变量：job 一旦进入 status="sending" 就不得再抛错——否则永久卡死 sending，
+     * 且 buildJob 的幂等判定会把 sending 视为未终态，该 dedupeKey 被永久占死。
+     * 故渠道/模板ID/触达目标三项解析与校验一律前置，任一失败即置 failed 终态返回。
      */
     async sendJob(jobId: number) {
       const job = await strapi.db.query(MSG_JOB_UID).findOne({
@@ -211,6 +224,16 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       if (job.status === "sent") return job;
       if (!job.template) throwErr("SSO_MSG_JOB_500", 500, "任务缺少模板");
       if (job.status === "failed" && job.retryCount >= MAX_RETRY) return job;
+
+      /** 终态化：任何前置校验失败都不留 sending 悬案（failed 为终态，dedupeKey 随之释放） */
+      const fail = async (reason: string, message: string, extra: Record<string, any> = {}) => {
+        strapi.log.warn(`[zhao-sso:msg] job ${job.id} 置 failed(${reason}): ${message}`);
+        await strapi.db.query(MSG_JOB_UID).update({
+          where: { id: job.id },
+          data: { status: "failed", result: { reason, message, ...extra } },
+        });
+        return this.getJob(job.id);
+      };
 
       // 触达频控：按用户每日上限 + 场景冷却在发送前拦截，超限置终态 quota_limited
       const qUserId = typeof job.user === "number" ? job.user : job.user?.id;
@@ -227,10 +250,23 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         return this.getJob(job.id);
       }
 
-      await strapi.db.query(MSG_JOB_UID).update({ where: { id: job.id }, data: { status: "sending" } });
+      // 前置 1：渠道可用性
+      let channel: any;
+      try {
+        channel = resolveChannel(job.provider);
+      } catch (e: any) {
+        return fail("unsupported_provider", e?.message || String(e), { provider: job.provider });
+      }
 
-      const channel = resolveChannel(job.provider);
+      // 前置 2：模板ID（版本优先取内容，无版本或字段为空回退模板本体）
+      const wxFields = job.version?.wxTemplateFields || job.template.wxTemplateFields;
+      const wxTemplateId = job.version?.wxTemplateId || job.template.wxTemplateId;
+      if (!wxTemplateId) {
+        return fail("missing_wx_template_id", "任务缺少模板ID", { template: job.template?.code || null });
+      }
+      const data = renderData(job.params || {}, wxFields);
 
+      // 前置 3：触达目标(openid)
       let toTarget = job.toTarget;
       if (!toTarget) {
         toTarget = await resolveToTarget(job.user, job.provider);
@@ -238,20 +274,12 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
           await strapi.db.query(MSG_JOB_UID).update({ where: { id: job.id }, data: { toTarget } });
         }
       }
-
       if (!toTarget) {
-        await strapi.db.query(MSG_JOB_UID).update({
-          where: { id: job.id },
-          data: { status: "failed", result: { reason: "no_target", message: "未解析到触达目标(openid)" } },
-        });
-        return this.getJob(job.id);
+        return fail("no_target", "未解析到触达目标(openid)");
       }
 
-      // 版本优先取内容，无版本（或字段为空）回退模板本体
-      const wxFields = job.version?.wxTemplateFields || job.template.wxTemplateFields;
-      const wxTemplateId = job.version?.wxTemplateId || job.template.wxTemplateId;
-      if (!wxTemplateId) throwErr("SSO_MSG_JOB_500", 500, "任务缺少模板ID");
-      const data = renderData(job.params || {}, wxFields);
+      // 至此全部前置校验通过，才允许进入 sending
+      await strapi.db.query(MSG_JOB_UID).update({ where: { id: job.id }, data: { status: "sending" } });
 
       try {
         const res = await channel.send({

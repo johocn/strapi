@@ -5730,15 +5730,22 @@ const ssoMsg = ({ strapi }) => {
         where: { template: template.id, status: "active" }
       });
       const picked = pickVersion(versions);
-      template.wxTemplateId;
+      let useWxTemplateId = template.wxTemplateId;
       template.wxTemplateFields;
       let useLink = template.link || link;
       if (picked) {
-        picked.wxTemplateId || template.wxTemplateId;
+        useWxTemplateId = picked.wxTemplateId || template.wxTemplateId;
         picked.wxTemplateFields || template.wxTemplateFields;
         useLink = picked.link || template.link || link;
       }
       const provider = template.provider || "wechat";
+      if (provider === "wechat" && !useWxTemplateId) {
+        throwErr(
+          "SSO_MSG_TEMPLATE_400",
+          400,
+          `模板 ${templateCode} 缺少微信模板ID(wx_template_id)，拒绝创建消息任务`
+        );
+      }
       const key = dedupeKey || `${scene}:${user}`;
       const existing = await strapi.db.query(MSG_JOB_UID$2).findOne({
         where: { dedupeKey: key }
@@ -5808,6 +5815,9 @@ const ssoMsg = ({ strapi }) => {
     },
     /**
      * 发送指定 job（含重试上限），落库回执。
+     * 不变量：job 一旦进入 status="sending" 就不得再抛错——否则永久卡死 sending，
+     * 且 buildJob 的幂等判定会把 sending 视为未终态，该 dedupeKey 被永久占死。
+     * 故渠道/模板ID/触达目标三项解析与校验一律前置，任一失败即置 failed 终态返回。
      */
     async sendJob(jobId) {
       const job = await strapi.db.query(MSG_JOB_UID$2).findOne({
@@ -5818,6 +5828,14 @@ const ssoMsg = ({ strapi }) => {
       if (job.status === "sent") return job;
       if (!job.template) throwErr("SSO_MSG_JOB_500", 500, "任务缺少模板");
       if (job.status === "failed" && job.retryCount >= MAX_RETRY) return job;
+      const fail = async (reason, message, extra = {}) => {
+        strapi.log.warn(`[zhao-sso:msg] job ${job.id} 置 failed(${reason}): ${message}`);
+        await strapi.db.query(MSG_JOB_UID$2).update({
+          where: { id: job.id },
+          data: { status: "failed", result: { reason, message, ...extra } }
+        });
+        return this.getJob(job.id);
+      };
       const qUserId = typeof job.user === "number" ? job.user : job.user?.id;
       const quota = await strapi.plugin("zhao-sso").service("sso-quota").evaluate({ userId: qUserId, scene: job.scene, templateId: job.template?.id });
       if (!quota.allowed) {
@@ -5828,8 +5846,18 @@ const ssoMsg = ({ strapi }) => {
         });
         return this.getJob(job.id);
       }
-      await strapi.db.query(MSG_JOB_UID$2).update({ where: { id: job.id }, data: { status: "sending" } });
-      const channel = resolveChannel(job.provider);
+      let channel;
+      try {
+        channel = resolveChannel(job.provider);
+      } catch (e) {
+        return fail("unsupported_provider", e?.message || String(e), { provider: job.provider });
+      }
+      const wxFields = job.version?.wxTemplateFields || job.template.wxTemplateFields;
+      const wxTemplateId = job.version?.wxTemplateId || job.template.wxTemplateId;
+      if (!wxTemplateId) {
+        return fail("missing_wx_template_id", "任务缺少模板ID", { template: job.template?.code || null });
+      }
+      const data = renderData(job.params || {}, wxFields);
       let toTarget = job.toTarget;
       if (!toTarget) {
         toTarget = await resolveToTarget(job.user, job.provider);
@@ -5838,16 +5866,9 @@ const ssoMsg = ({ strapi }) => {
         }
       }
       if (!toTarget) {
-        await strapi.db.query(MSG_JOB_UID$2).update({
-          where: { id: job.id },
-          data: { status: "failed", result: { reason: "no_target", message: "未解析到触达目标(openid)" } }
-        });
-        return this.getJob(job.id);
+        return fail("no_target", "未解析到触达目标(openid)");
       }
-      const wxFields = job.version?.wxTemplateFields || job.template.wxTemplateFields;
-      const wxTemplateId = job.version?.wxTemplateId || job.template.wxTemplateId;
-      if (!wxTemplateId) throwErr("SSO_MSG_JOB_500", 500, "任务缺少模板ID");
-      const data = renderData(job.params || {}, wxFields);
+      await strapi.db.query(MSG_JOB_UID$2).update({ where: { id: job.id }, data: { status: "sending" } });
       try {
         const res = await channel.send({
           openid: toTarget,
