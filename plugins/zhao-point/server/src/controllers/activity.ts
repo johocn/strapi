@@ -184,6 +184,18 @@ function normalizePromoModules(promoModules: any): any[] | undefined {
       // 合并联系方式：活动级未配置时回落站点 extraConfig.promoContact
       const contact = await activitySvc().getPromoContact(activity.promoContact, ctx.state?.siteDocumentId);
       if (contact) activity.promoContact = contact;
+      // 集合点：仅透出 C 端必要字段（名称/地址/描述/联系方式）
+      const pl: any = activity.pickupLocation;
+      if (pl && typeof pl === "object") {
+        activity.pickupLocation = {
+          id: pl.id,
+          documentId: pl.documentId,
+          name: pl.name,
+          address: pl.address,
+          description: pl.description,
+          phone: pl.phone,
+        };
+      }
       // 强角色门控：租户开启 roleGate 且活动配置了 visibleToRoles 时，未授权角色不可见
       const roleGateEnabled = await isRoleGateEnabled(strapi, ctx.state?.siteDocumentId);
       if (roleGateEnabled) {

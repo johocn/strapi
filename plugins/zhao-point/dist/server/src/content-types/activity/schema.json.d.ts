@@ -51,6 +51,7 @@ declare const _default: {
     "remindLeadMinutes": { "type": "integer", "default": 1440, "min": -1 },
     "lecturer": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.lecturer", "inversedBy": "activities" },
     "venue": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.venue", "inversedBy": "activities" },
+    "pickupLocation": { "type": "relation", "relation": "oneToOne", "target": "plugin::zhao-point.pickup-location" },
     "cashPrice": { "type": "decimal", "default": 0 },
     "settleLecturer": { "type": "decimal", "default": 0 },
     "settleVenue": { "type": "decimal", "default": 0 },

@@ -1728,6 +1728,11 @@ declare const _default: {
                         target: string;
                         inversedBy: string;
                     };
+                    pickupLocation: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                    };
                     cashPrice: {
                         type: string;
                         default: number;
