@@ -1,6 +1,6 @@
 import type { Core } from "@strapi/strapi";
 import { FormValidationError, validateFormData, collectFormData, collectQuestionnaire } from "./form";
-import { TICKET_TTL_MS, newTicketToken, shouldExpire, validateTicket } from "./checkin-ticket";
+import { TICKET_TTL_MS, newTicketToken, relId, shouldExpire, validateTicket } from "./checkin-ticket";
 
 const SIGNS_UID = "plugin::zhao-point.activity-signup";
 const ATT_UID = "plugin::zhao-point.activity-attendance";
@@ -1837,7 +1837,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     if (!act) throw new Error("活动不存在");
     const ticket = await strapi.db.query(TICKET_UID).findOne({
       where: { token },
-      populate: { signup: true, activity: true },
+      populate: { signup: { populate: { user: true } }, activity: true },
     });
     const check = validateTicket(ticket, { activityId: Number(act.id) });
     if (!check.ok) {
@@ -1856,8 +1856,14 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       err.status = 400;
       throw err;
     }
-    const signupUserId = typeof signup.user === "object" && signup.user !== null ? signup.user.id : signup.user;
-    const result = await this.checkin({ userId: Number(signupUserId), activityId: activityDocumentId, method: "worker_scan" });
+    const signupUserId = relId(signup.user);
+    if (!Number.isFinite(signupUserId)) {
+      const err: any = new Error("票据数据异常，无法核销");
+      err.code = "invalid_token";
+      err.status = 400;
+      throw err;
+    }
+    const result = await this.checkin({ userId: signupUserId, activityId: activityDocumentId, method: "worker_scan" });
     await strapi.db.query(TICKET_UID).update({
       where: { id: (ticket as any).id },
       data: { status: "used", usedAt: new Date(), usedByUserId: operatorUserId ?? null },

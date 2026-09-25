@@ -57,9 +57,9 @@ const fail = (code: string, message: string, httpStatus = 400): TicketCheck => (
 /**
  * 关系字段归一：number | "7" | { id: 7 } | null → number（无法解析返回 NaN）。
  * Strapi 的 db 层把 manyToOne 关系返回为对象（populate 与否都是对象），直接 Number() 会得 NaN，
- * 故必须先取 id 再转数字，否则跨活动比对会恒不相等。
+ * 故必须先取 id 再转数字，否则跨活动比对会恒不相等、落库时还会把 NaN 透传给 PG。
  */
-function relId(v: unknown): number {
+export function relId(v: unknown): number {
   if (v === null || v === undefined) return NaN;
   if (typeof v === "object") return Number((v as { id?: unknown }).id);
   return Number(v);

@@ -3950,7 +3950,7 @@ const activity$1 = ({ strapi: strapi2 }) => ({
     if (!act) throw new Error("活动不存在");
     const ticket = await strapi2.db.query(TICKET_UID).findOne({
       where: { token },
-      populate: { signup: true, activity: true }
+      populate: { signup: { populate: { user: true } }, activity: true }
     });
     const check2 = validateTicket(ticket, { activityId: Number(act.id) });
     if (!check2.ok) {
@@ -3969,8 +3969,14 @@ const activity$1 = ({ strapi: strapi2 }) => ({
       err.status = 400;
       throw err;
     }
-    const signupUserId = typeof signup.user === "object" && signup.user !== null ? signup.user.id : signup.user;
-    const result = await this.checkin({ userId: Number(signupUserId), activityId: activityDocumentId, method: "worker_scan" });
+    const signupUserId = relId(signup.user);
+    if (!Number.isFinite(signupUserId)) {
+      const err = new Error("票据数据异常，无法核销");
+      err.code = "invalid_token";
+      err.status = 400;
+      throw err;
+    }
+    const result = await this.checkin({ userId: signupUserId, activityId: activityDocumentId, method: "worker_scan" });
     await strapi2.db.query(TICKET_UID).update({
       where: { id: ticket.id },
       data: { status: "used", usedAt: /* @__PURE__ */ new Date(), usedByUserId: operatorUserId ?? null }

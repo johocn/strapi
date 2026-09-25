@@ -6,6 +6,7 @@ import {
   validateTicket,
   validateManualReason,
   shouldExpire,
+  relId,
 } from '../server/src/services/checkin-ticket';
 
 const HEX48 = 'a'.repeat(48);
@@ -88,6 +89,16 @@ describe('到场核销票据纯逻辑', () => {
     expect(
       (validateTicket({ status: 'pending', expiresAt: future, activity: null }, { activityId: 7, now }) as any).code,
     ).toBe('ticket_activity_mismatch');
+  });
+
+  test('relId 归一无常 number/string/{id}/null 四种形状', () => {
+    expect(relId(7)).toBe(7);
+    expect(relId('7')).toBe(7);
+    expect(relId({ id: 7 })).toBe(7);
+    expect(relId({ id: '7' })).toBe(7);
+    expect(Number.isNaN(relId(null))).toBe(true);
+    expect(Number.isNaN(relId(undefined))).toBe(true);
+    expect(Number.isNaN(relId({}))).toBe(true);
   });
 
   test('shouldExpire 只对 pending 且已过期的票为真', () => {

@@ -25,6 +25,12 @@ export interface TicketCheck {
     message?: string;
 }
 /**
+ * 关系字段归一：number | "7" | { id: 7 } | null → number（无法解析返回 NaN）。
+ * Strapi 的 db 层把 manyToOne 关系返回为对象（populate 与否都是对象），直接 Number() 会得 NaN，
+ * 故必须先取 id 再转数字，否则跨活动比对会恒不相等、落库时还会把 NaN 透传给 PG。
+ */
+export declare function relId(v: unknown): number;
+/**
  * 核销前校验：状态 → 时效 → 活动归属。
  * 全部通过才允许调用 checkin()，因此任何失败路径都不会发放签到积分。
  */
