@@ -28,21 +28,22 @@ describe("user-course-auth controller", () => {
       const ctx = createMockCtx();
       await controller.find(ctx);
       expect(mockService.find).toHaveBeenCalled();
-      expect(ctx.body).toEqual([{ id: 1, authType: "free" }]);
+      expect(ctx.body).toEqual({ data: [{ id: 1, authType: "free" }], meta: {} });
     });
 
     it("findOne 应调用 service.findOne", async () => {
       const ctx = createMockCtx({ params: { documentId: "doc-1" } });
       await controller.findOne(ctx);
       expect(mockService.findOne).toHaveBeenCalledWith("doc-1");
-      expect(ctx.body).toEqual({ id: 1, authType: "free" });
+      expect(ctx.body).toEqual({ data: { id: 1, authType: "free" }, meta: {} });
     });
 
     it("findOne 返回 null 时应 ctx.notFound", async () => {
       mockService.findOne.mockResolvedValue(null);
       const ctx = createMockCtx({ params: { documentId: "nonexistent" } });
       await controller.findOne(ctx);
-      expect(ctx.notFound).toHaveBeenCalledWith("授权记录不存在");
+      expect(ctx.status).toBe(404);
+      expect(ctx.body.error).toBe("授权记录不存在");
     });
 
     it("create 应调用 service.create 并设置状态201", async () => {
@@ -78,7 +79,7 @@ describe("user-course-auth controller", () => {
       await controller.checkAuth(ctx);
 
       expect(mockService.checkAuth).toHaveBeenCalledWith(42, "course-doc-1");
-      expect(ctx.body).toEqual({ authorized: true });
+      expect(ctx.body).toEqual({ data: { authorized: true }, meta: {} });
     });
 
     it("service 抛出异常时应 ctx.throw", async () => {
@@ -88,7 +89,9 @@ describe("user-course-auth controller", () => {
         state: { user: { id: 1 } },
       });
 
-      await expect(controller.checkAuth(ctx)).rejects.toThrow("课程不存在");
+      await controller.checkAuth(ctx);
+      expect(ctx.status).toBe(400);
+      expect(ctx.body.error).toBe("课程不存在");
     });
   });
 
@@ -99,14 +102,16 @@ describe("user-course-auth controller", () => {
       await controller.myCourses(ctx);
 
       expect(mockService.getUserAuthCourses).toHaveBeenCalledWith(42);
-      expect(ctx.body).toEqual([{ id: 1, course: { id: 10 } }]);
+      expect(ctx.body).toEqual({ data: [{ id: 1, course: { id: 10 } }], meta: {} });
     });
 
     it("service 抛出异常时应 ctx.throw(500)", async () => {
       mockService.getUserAuthCourses.mockRejectedValue(new Error("DB error"));
       const ctx = createMockCtx({ state: { user: { id: 1 } } });
 
-      await expect(controller.myCourses(ctx)).rejects.toThrow("DB error");
+      await controller.myCourses(ctx);
+      expect(ctx.status).toBe(400);
+      expect(ctx.body.error).toBe("DB error");
     });
   });
 });

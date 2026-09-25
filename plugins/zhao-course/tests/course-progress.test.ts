@@ -15,13 +15,18 @@ describe("course-progress service", () => {
     it("find 应查询进度列表", async () => {
       const mockResult = [{ id: 1, progress: 50 }];
       const mockFindMany = jest.fn().mockResolvedValue(mockResult);
-      strapi.documents = jest.fn().mockReturnValue({ findMany: mockFindMany });
+      const mockCount = jest.fn().mockResolvedValue(1);
+      strapi.documents = jest.fn().mockReturnValue({ findMany: mockFindMany, count: mockCount });
 
       const service = courseProgressFactory({ strapi });
       const result = await service.find();
 
       expect(strapi.documents).toHaveBeenCalledWith("plugin::zhao-course.course-progress");
-      expect(result).toEqual(mockResult);
+      expect(mockFindMany).toHaveBeenCalledWith(
+        expect.objectContaining({ populate: { user: true, course: true } })
+      );
+      expect(result.list).toEqual(mockResult);
+      expect(result.pagination).toEqual({ page: 1, pageSize: 25, total: 1, pageCount: 1 });
     });
 
     it("findOne 应查询单条进度", async () => {

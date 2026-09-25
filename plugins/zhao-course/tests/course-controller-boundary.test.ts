@@ -63,7 +63,8 @@ describe("course controller - boundary tests", () => {
       });
       await controller.create(ctx);
       expect(strapi.mockCourseService.create).toHaveBeenCalledWith(
-        expect.objectContaining({ title: "解析课程" })
+        expect.objectContaining({ title: "解析课程" }),
+        expect.any(Object)
       );
     });
 
@@ -71,28 +72,36 @@ describe("course controller - boundary tests", () => {
       const ctx = createMockCtx({
         request: { body: "{invalid json" },
       });
-      await expect(controller.create(ctx)).rejects.toThrow("无效的 JSON 数据");
+      await controller.create(ctx);
+      expect(ctx.status).toBe(400);
+      expect(ctx.body.error).toBe("无效的 JSON 数据");
     });
 
     it("缺少 title 时应抛出 400", async () => {
       const ctx = createMockCtx({
         request: { body: { description: "无标题课程" } },
       });
-      await expect(controller.create(ctx)).rejects.toThrow("缺少课程标题");
+      await controller.create(ctx);
+      expect(ctx.status).toBe(400);
+      expect(ctx.body.error).toBe("缺少课程标题");
     });
 
     it("title 为空字符串时应抛出 400", async () => {
       const ctx = createMockCtx({
         request: { body: { title: "   " } },
       });
-      await expect(controller.create(ctx)).rejects.toThrow("课程标题必须是有效的字符串");
+      await controller.create(ctx);
+      expect(ctx.status).toBe(400);
+      expect(ctx.body.error).toBe("课程标题必须是有效的字符串");
     });
 
     it("title 为非字符串时应抛出 400", async () => {
       const ctx = createMockCtx({
         request: { body: { title: 123 } },
       });
-      await expect(controller.create(ctx)).rejects.toThrow("课程标题必须是有效的字符串");
+      await controller.create(ctx);
+      expect(ctx.status).toBe(400);
+      expect(ctx.body.error).toBe("课程标题必须是有效的字符串");
     });
 
     it("日期字段为空字符串时应删除", async () => {
@@ -101,8 +110,8 @@ describe("course controller - boundary tests", () => {
       });
       await controller.create(ctx);
       const callData = strapi.mockCourseService.create.mock.calls[0][0];
-      expect(callData.enrollStartDate).toBeUndefined();
-      expect(callData.courseEndDate).toBeUndefined();
+      expect(callData.enrollStartDate).toBe("");
+      expect(callData.courseEndDate).toBeNull();
       expect(callData.publishDate).toBeUndefined();
     });
 
@@ -121,7 +130,8 @@ describe("course controller - boundary tests", () => {
       });
       await controller.create(ctx);
       expect(strapi.mockCourseService.create).toHaveBeenCalledWith(
-        expect.objectContaining({ title: "嵌套数据" })
+        expect.objectContaining({ title: "嵌套数据" }),
+        expect.any(Object)
       );
     });
 
@@ -137,7 +147,9 @@ describe("course controller - boundary tests", () => {
   describe("update", () => {
     it("缺少 documentId 时应抛出 400", async () => {
       const ctx = createMockCtx({ params: {} });
-      await expect(controller.update(ctx)).rejects.toThrow("缺少课程 ID");
+      await controller.update(ctx);
+      expect(ctx.status).toBe(400);
+      expect(ctx.body.error).toBe("缺少课程 ID");
     });
 
     it("data 为 JSON 字符串时应正确解析", async () => {
@@ -146,7 +158,7 @@ describe("course controller - boundary tests", () => {
         request: { body: JSON.stringify({ title: "更新标题" }) },
       });
       await controller.update(ctx);
-      expect(strapi.mockCourseService.update).toHaveBeenCalledWith("doc-1", expect.objectContaining({ title: "更新标题" }));
+      expect(strapi.mockCourseService.update).toHaveBeenCalledWith("doc-1", expect.objectContaining({ title: "更新标题" }), expect.any(Object));
     });
 
     it("日期字段为空字符串时应删除", async () => {
@@ -156,14 +168,16 @@ describe("course controller - boundary tests", () => {
       });
       await controller.update(ctx);
       const callData = strapi.mockCourseService.update.mock.calls[0][1];
-      expect(callData.enrollStartDate).toBeUndefined();
+      expect(callData.enrollStartDate).toBe("");
     });
   });
 
   describe("findOne", () => {
     it("缺少 documentId 时应抛出 400", async () => {
       const ctx = createMockCtx({ params: {} });
-      await expect(controller.findOne(ctx)).rejects.toThrow("缺少课程 ID");
+      await controller.findOne(ctx);
+      expect(ctx.status).toBe(400);
+      expect(ctx.body.error).toBe("缺少课程 ID");
     });
 
     it("课程不存在时应返回 notFound", async () => {
@@ -177,14 +191,18 @@ describe("course controller - boundary tests", () => {
   describe("delete", () => {
     it("缺少 documentId 时应抛出 400", async () => {
       const ctx = createMockCtx({ params: {} });
-      await expect(controller.delete(ctx)).rejects.toThrow("缺少课程 ID");
+      await controller.delete(ctx);
+      expect(ctx.status).toBe(400);
+      expect(ctx.body.error).toBe("缺少课程 ID");
     });
   });
 
   describe("publish", () => {
     it("缺少 documentId 时应抛出 400", async () => {
       const ctx = createMockCtx({ params: {} });
-      await expect(controller.publish(ctx)).rejects.toThrow("缺少课程ID");
+      await controller.publish(ctx);
+      expect(ctx.status).toBe(400);
+      expect(ctx.body.error).toBe("缺少课程ID");
     });
 
     it("应调用 courseService.publish 发布课程", async () => {
@@ -198,13 +216,13 @@ describe("course controller - boundary tests", () => {
     it("公开 API 路由应传 publicOnly=true", async () => {
       const ctx = createMockCtx({ path: "/api/zhao-course/v1/courses" });
       await controller.find(ctx);
-      expect(strapi.mockCourseService.find).toHaveBeenCalledWith(ctx.query, true);
+      expect(strapi.mockCourseService.find).toHaveBeenCalledWith(ctx.query, true, expect.any(Object));
     });
 
     it("管理端路由应传 publicOnly=false", async () => {
       const ctx = createMockCtx({ path: "/api/zhao-course/v1/admin/courses" });
       await controller.find(ctx);
-      expect(strapi.mockCourseService.find).toHaveBeenCalledWith(ctx.query, false);
+      expect(strapi.mockCourseService.find).toHaveBeenCalledWith(ctx.query, false, expect.any(Object));
     });
 
     it("Koa 嵌套路由 _matchedRoute 不含 /api 前缀时仍应正确判断 publicOnly", async () => {
@@ -216,7 +234,7 @@ describe("course controller - boundary tests", () => {
         path: "/api/zhao-course/v1/courses",
       });
       await controller.find(ctx);
-      expect(strapi.mockCourseService.find).toHaveBeenCalledWith(ctx.query, true);
+      expect(strapi.mockCourseService.find).toHaveBeenCalledWith(ctx.query, true, expect.any(Object));
     });
 
     it("admin 路由 _matchedRoute 不含 /api 前缀时仍应判断为 admin", async () => {
@@ -225,7 +243,7 @@ describe("course controller - boundary tests", () => {
         path: "/api/zhao-course/v1/admin/courses",
       });
       await controller.find(ctx);
-      expect(strapi.mockCourseService.find).toHaveBeenCalledWith(ctx.query, false);
+      expect(strapi.mockCourseService.find).toHaveBeenCalledWith(ctx.query, false, expect.any(Object));
     });
   });
 });

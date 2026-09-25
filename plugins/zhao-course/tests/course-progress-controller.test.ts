@@ -43,6 +43,11 @@ describe("course-progress controller", () => {
       update: jest.fn().mockResolvedValue({ id: 1, progress: 80 }),
       delete: jest.fn().mockResolvedValue({ id: 1 }),
       getUserProgresses: jest.fn().mockResolvedValue([{ id: 1, progress: 50 }]),
+      findCourseProgressById: jest.fn().mockResolvedValue({
+        id: 1,
+        user: { id: 42 },
+        course: { documentId: "course-doc-1" },
+      }),
       claimPoints: jest.fn().mockResolvedValue({ pointsEarned: 100, claimed: true }),
     };
     strapi = createControllerStrapi({ "course-progress": mockService });
@@ -54,7 +59,7 @@ describe("course-progress controller", () => {
       const ctx = createMockCtx();
       await controller.find(ctx);
       expect(mockService.find).toHaveBeenCalled();
-      expect(ctx.body).toEqual([{ id: 1, progress: 50 }]);
+      expect(ctx.body).toEqual({ data: [{ id: 1, progress: 50 }], meta: {} });
     });
 
     it("findOne 应调用 service.findOne", async () => {
@@ -67,7 +72,8 @@ describe("course-progress controller", () => {
       mockService.findOne.mockResolvedValue(null);
       const ctx = createMockCtx({ params: { documentId: "nonexistent" } });
       await controller.findOne(ctx);
-      expect(ctx.notFound).toHaveBeenCalledWith("进度记录不存在");
+      expect(ctx.status).toBe(404);
+      expect(ctx.body.error).toBe("进度记录不存在");
     });
 
     it("create 应调用 service.create 并设置状态201", async () => {
@@ -100,27 +106,22 @@ describe("course-progress controller", () => {
       await controller.myProgresses(ctx);
 
       expect(mockService.getUserProgresses).toHaveBeenCalledWith(42);
-      expect(ctx.body).toEqual([{ id: 1, progress: 50 }]);
+      expect(ctx.body).toEqual({ data: [{ id: 1, progress: 50 }], meta: {} });
     });
 
     it("service 抛出异常时应 ctx.throw(500)", async () => {
       mockService.getUserProgresses.mockRejectedValue(new Error("DB error"));
       const ctx = createMockCtx({ state: { user: { id: 1 } } });
 
-      await expect(controller.myProgresses(ctx)).rejects.toThrow("DB error");
+      await controller.myProgresses(ctx);
+
+      expect(ctx.status).toBe(400);
+      expect(ctx.body.error).toBe("DB error");
     });
   });
 
   describe("claimPoints", () => {
-    it("应从 ctx.state.user 获取 userId 并调用 service.claimPoints", async () => {
-      const mockProgressFindOne = jest.fn().mockResolvedValue({
-        id: 1,
-        user: { id: 42 },
-        course: { documentId: "course-doc-1" },
-      });
-      const mockCheckAuth = jest.fn().mockResolvedValue({ authorized: true });
-
-      strapi.db.query = jest.fn().mockReturnValue({ findOne: mockProgressFindOne });
+    const withAuth = (mockCheckAuth: jest.Mock) => {
       strapi.plugin = jest.fn().mockImplementation((name: string) => {
         if (name === "zhao-course") {
           return {
@@ -133,6 +134,10 @@ describe("course-progress controller", () => {
         }
         return { service: jest.fn() };
       });
+    };
+
+    it("应从 ctx.state.user 获取 userId 并调用 service.claimPoints", async () => {
+      withAuth(jest.fn().mockResolvedValue({ authorized: true }));
 
       const ctx = createMockCtx({
         params: { documentId: "course-doc-1" },
@@ -141,8 +146,9 @@ describe("course-progress controller", () => {
 
       await controller.claimPoints(ctx);
 
+      expect(mockService.findCourseProgressById).toHaveBeenCalledWith("course-doc-1");
       expect(mockService.claimPoints).toHaveBeenCalledWith(42, "course-doc-1");
-      expect(ctx.body).toEqual({ pointsEarned: 100, claimed: true });
+      expect(ctx.body).toEqual({ data: { pointsEarned: 100, claimed: true }, meta: {} });
     });
 
     it("缺少 documentId 时应 ctx.throw 400", async () => {
@@ -151,96 +157,71 @@ describe("course-progress controller", () => {
         state: { user: { id: 1 } },
       });
 
-      await expect(controller.claimPoints(ctx)).rejects.toThrow("缺少课程进度 ID");
+      await controller.claimPoints(ctx);
+
+      expect(ctx.status).toBe(400);
+      expect(ctx.body.error).toBe("缺少课程进度 ID");
     });
 
     it("课程进度不存在时应 ctx.throw 404", async () => {
-      const mockProgressFindOne = jest.fn().mockResolvedValue(null);
-      strapi.db.query = jest.fn().mockReturnValue({ findOne: mockProgressFindOne });
+      mockService.findCourseProgressById.mockResolvedValue(null);
 
       const ctx = createMockCtx({
         params: { documentId: "nonexistent" },
         state: { user: { id: 1 } },
       });
 
-      await expect(controller.claimPoints(ctx)).rejects.toThrow("课程进度不存在");
+      await controller.claimPoints(ctx);
+
+      expect(ctx.status).toBe(404);
+      expect(ctx.body.error).toBe("课程进度不存在");
     });
 
     it("非本人进度应 ctx.throw 403", async () => {
-      const mockProgressFindOne = jest.fn().mockResolvedValue({
+      mockService.findCourseProgressById.mockResolvedValue({
         id: 1,
         user: { id: 999 },
         course: { documentId: "course-doc-1" },
       });
-      strapi.db.query = jest.fn().mockReturnValue({ findOne: mockProgressFindOne });
 
       const ctx = createMockCtx({
         params: { documentId: "doc-1" },
         state: { user: { id: 1 } },
       });
 
-      await expect(controller.claimPoints(ctx)).rejects.toThrow("只能领取自己的课程积分");
+      await controller.claimPoints(ctx);
+
+      expect(ctx.status).toBe(403);
+      expect(ctx.body.error).toBe("只能领取自己的课程积分");
     });
 
     it("未授权访问应 ctx.throw 403", async () => {
-      const mockProgressFindOne = jest.fn().mockResolvedValue({
-        id: 1,
-        user: { id: 42 },
-        course: { documentId: "course-doc-1" },
-      });
-      const mockCheckAuth = jest.fn().mockResolvedValue({ authorized: false });
-
-      strapi.db.query = jest.fn().mockReturnValue({ findOne: mockProgressFindOne });
-      strapi.plugin = jest.fn().mockImplementation((name: string) => {
-        if (name === "zhao-course") {
-          return {
-            service: jest.fn().mockImplementation((svc: string) => {
-              if (svc === "course-progress") return mockService;
-              if (svc === "user-course-auth") return { checkAuth: mockCheckAuth };
-              return {};
-            }),
-          };
-        }
-        return { service: jest.fn() };
-      });
+      withAuth(jest.fn().mockResolvedValue({ authorized: false }));
 
       const ctx = createMockCtx({
         params: { documentId: "doc-1" },
         state: { user: { id: 42 } },
       });
 
-      await expect(controller.claimPoints(ctx)).rejects.toThrow("未授权访问该课程");
+      await controller.claimPoints(ctx);
+
+      expect(ctx.status).toBe(403);
+      expect(ctx.body.error).toBe("未授权访问该课程");
     });
 
     it("service 抛出异常时应 ctx.throw", async () => {
-      const mockProgressFindOne = jest.fn().mockResolvedValue({
-        id: 1,
-        user: { id: 42 },
-        course: { documentId: "course-doc-1" },
-      });
-      const mockCheckAuth = jest.fn().mockResolvedValue({ authorized: true });
+      withAuth(jest.fn().mockResolvedValue({ authorized: true }));
       mockService.claimPoints.mockRejectedValue(new Error("课程未启用积分"));
-
-      strapi.db.query = jest.fn().mockReturnValue({ findOne: mockProgressFindOne });
-      strapi.plugin = jest.fn().mockImplementation((name: string) => {
-        if (name === "zhao-course") {
-          return {
-            service: jest.fn().mockImplementation((svc: string) => {
-              if (svc === "course-progress") return mockService;
-              if (svc === "user-course-auth") return { checkAuth: mockCheckAuth };
-              return {};
-            }),
-          };
-        }
-        return { service: jest.fn() };
-      });
 
       const ctx = createMockCtx({
         params: { documentId: "doc-1" },
         state: { user: { id: 42 } },
       });
 
-      await expect(controller.claimPoints(ctx)).rejects.toThrow("课程未启用积分");
+      await controller.claimPoints(ctx);
+
+      expect(ctx.status).toBe(400);
+      expect(ctx.body.error).toBe("课程未启用积分");
     });
   });
 });

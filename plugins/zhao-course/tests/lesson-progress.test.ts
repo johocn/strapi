@@ -49,8 +49,24 @@ describe("lesson-progress service", () => {
       const mockDbFindOne = jest.fn().mockResolvedValue(null);
       const mockDbCreate = jest.fn().mockResolvedValue({ id: 1, progress: 50, isCompleted: false });
 
-      strapi.documents = jest.fn().mockReturnValue({ findOne: mockLessonFindOne });
-      strapi.db.query = jest.fn().mockReturnValue({ findOne: mockDbFindOne, create: mockDbCreate });
+      strapi.db.query = jest.fn().mockImplementation((uid: string) => {
+        if (uid === "plugin::zhao-course.course-lesson") {
+          return { findOne: mockLessonFindOne };
+        }
+        return { findOne: mockDbFindOne, create: mockDbCreate };
+      });
+      strapi.plugin.mockImplementation((name: string) => {
+        if (name === "zhao-course") {
+          return {
+            service: jest.fn().mockImplementation((svc: string) => {
+              if (svc === "eco-hook") return { send: jest.fn() };
+              if (svc === "course-progress") return { recalculate: jest.fn().mockResolvedValue({}) };
+              return {};
+            }),
+          };
+        }
+        return { service: jest.fn() };
+      });
 
       const service = lessonProgressFactory({ strapi });
       const result = await service.reportProgress(1, {
@@ -70,13 +86,21 @@ describe("lesson-progress service", () => {
       const mockDbFindOne = jest.fn().mockResolvedValue(existingProgress);
       const mockDbUpdate = jest.fn().mockResolvedValue({ ...existingProgress, progress: 100, isCompleted: true });
 
-      strapi.documents = jest.fn().mockReturnValue({ findOne: mockLessonFindOne });
-      strapi.db.query = jest.fn().mockReturnValue({ findOne: mockDbFindOne, update: mockDbUpdate });
+      strapi.db.query = jest.fn().mockImplementation((uid: string) => {
+        if (uid === "plugin::zhao-course.course-lesson") {
+          return { findOne: mockLessonFindOne };
+        }
+        return { findOne: mockDbFindOne, update: mockDbUpdate };
+      });
 
       strapi.plugin.mockImplementation((name: string) => {
         if (name === "zhao-course") {
           return {
-            service: jest.fn().mockReturnValue({ recalculate: jest.fn().mockResolvedValue({}) }),
+            service: jest.fn().mockImplementation((svc: string) => {
+              if (svc === "eco-hook") return { send: jest.fn() };
+              if (svc === "course-progress") return { recalculate: jest.fn().mockResolvedValue({}) };
+              return {};
+            }),
           };
         }
         return { service: jest.fn() };
