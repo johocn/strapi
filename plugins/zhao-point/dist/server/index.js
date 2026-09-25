@@ -36690,35 +36690,41 @@ const point = ({ strapi: strapi2 }) => {
     if (deductAmount <= 0) {
       throwError("POINT_010", "无效的积分操作类型", { action });
     }
-    const balance = await getLatestBalance(userId);
-    if (balance < deductAmount) {
-      throwError("POINT_002", "积分余额不足", { balance, required: deductAmount });
-    }
-    const record2 = await createRecord(userId, action, deductAmount, balance, "decrease", {
-      source,
-      method,
-      remark,
-      orderId,
-      channelId,
-      userChannelId
+    return strapi2.db.transaction(async ({ trx }) => {
+      await trx("up_users").where({ id: userId }).forUpdate();
+      const balance = await getLatestBalance(userId, trx);
+      if (balance < deductAmount) {
+        throwError("POINT_002", "积分余额不足", { balance, required: deductAmount });
+      }
+      const record2 = await createRecord(userId, action, deductAmount, balance, "decrease", {
+        source,
+        method,
+        remark,
+        orderId,
+        channelId,
+        userChannelId
+      });
+      return record2;
     });
-    return record2;
   };
   const refundPoints = async (params) => {
     const { userId, action, points, source, method, remark, orderId, channelId, userChannelId } = params;
     if (points <= 0) {
       throwError("POINT_021", "无效退款金额", { action });
     }
-    const balance = await getLatestBalance(userId);
-    const record2 = await createRecord(userId, action, points, balance, "increase", {
-      source,
-      method,
-      remark,
-      orderId,
-      channelId,
-      userChannelId
+    return strapi2.db.transaction(async ({ trx }) => {
+      await trx("up_users").where({ id: userId }).forUpdate();
+      const balance = await getLatestBalance(userId, trx);
+      const record2 = await createRecord(userId, action, points, balance, "increase", {
+        source,
+        method,
+        remark,
+        orderId,
+        channelId,
+        userChannelId
+      });
+      return record2;
     });
-    return record2;
   };
   const getBalance = async (userId) => {
     const records = await strapi2.db.query(RECORD_UID$1).findMany({

@@ -395,16 +395,22 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       throwError("POINT_010", "无效的积分操作类型", { action });
     }
 
-    const balance = await getLatestBalance(userId);
-    if (balance < deductAmount) {
-      throwError("POINT_002", "积分余额不足", { balance, required: deductAmount });
-    }
+    // 并发加固：余额读取与扣分写入同处一个事务，并对用户主行加排他锁。
+    // 与 earnPoints 共用同一把 up_users 行锁，串行化同一用户的全部积分操作，
+    // 消除「先读 SUM 再写 balance 快照」的竞态（权威余额本就以 SUM 为准，此处修的是快照列）。
+    return strapi.db.transaction(async ({ trx }) => {
+      await trx("up_users").where({ id: userId }).forUpdate();
+      const balance = await getLatestBalance(userId, trx);
+      if (balance < deductAmount) {
+        throwError("POINT_002", "积分余额不足", { balance, required: deductAmount });
+      }
 
-    const record = await createRecord(userId, action, deductAmount, balance, "decrease", {
-      source, method, remark, orderId, channelId, userChannelId,
+      const record = await createRecord(userId, action, deductAmount, balance, "decrease", {
+        source, method, remark, orderId, channelId, userChannelId,
+      });
+
+      return record;
     });
-
-    return record;
   };
 
   const refundPoints = async (params: {
@@ -424,12 +430,16 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       throwError("POINT_021", "无效退款金额", { action });
     }
 
-    const balance = await getLatestBalance(userId);
-    const record = await createRecord(userId, action, points, balance, "increase", {
-      source, method, remark, orderId, channelId, userChannelId,
-    });
+    // 并发加固：同 deductPoints，与 earnPoints 共用 up_users 行锁串行化同一用户
+    return strapi.db.transaction(async ({ trx }) => {
+      await trx("up_users").where({ id: userId }).forUpdate();
+      const balance = await getLatestBalance(userId, trx);
+      const record = await createRecord(userId, action, points, balance, "increase", {
+        source, method, remark, orderId, channelId, userChannelId,
+      });
 
-    return record;
+      return record;
+    });
   };
 
   const getBalance = async (userId: string | number) => {
