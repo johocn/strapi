@@ -36,9 +36,16 @@ export function decodeScanText(text: unknown): ScanPayload {
   return { kind: "invalid" };
 }
 
-export type TicketCheck =
-  | { ok: true }
-  | { ok: false; code: string; httpStatus: number; message: string };
+/**
+ * 校验结果。插件 tsconfig 继承 Strapi 基线（`strict: false` → strictNullChecks 关闭），
+ * 判别式联合在此配置下不会收窄，故用带可选字段的接口，避免消费者访问 code/message 报 TS2339。
+ */
+export interface TicketCheck {
+  ok: boolean;
+  code?: string;
+  httpStatus?: number;
+  message?: string;
+}
 
 const fail = (code: string, message: string, httpStatus = 400): TicketCheck => ({
   ok: false,

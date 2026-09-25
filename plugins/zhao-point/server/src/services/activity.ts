@@ -1839,7 +1839,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       where: { token },
       populate: { signup: true },
     });
-    const check = validateTicket(ticket, { activityId: act.id });
+    const check = validateTicket(ticket, { activityId: Number(act.id) });
     if (!check.ok) {
       if (ticket && check.code === "ticket_expired") {
         await strapi.db.query(TICKET_UID).update({ where: { id: (ticket as any).id }, data: { status: "expired" } });

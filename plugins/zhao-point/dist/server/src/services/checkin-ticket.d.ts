@@ -14,14 +14,16 @@ export type ScanPayload = {
 };
 /** 解析扫码文本：只认 atk:{48位hex}；旧明文码单独识别 */
 export declare function decodeScanText(text: unknown): ScanPayload;
-export type TicketCheck = {
-    ok: true;
-} | {
-    ok: false;
-    code: string;
-    httpStatus: number;
-    message: string;
-};
+/**
+ * 校验结果。插件 tsconfig 继承 Strapi 基线（`strict: false` → strictNullChecks 关闭），
+ * 判别式联合在此配置下不会收窄，故用带可选字段的接口，避免消费者访问 code/message 报 TS2339。
+ */
+export interface TicketCheck {
+    ok: boolean;
+    code?: string;
+    httpStatus?: number;
+    message?: string;
+}
 /**
  * 核销前校验：状态 → 时效 → 活动归属。
  * 全部通过才允许调用 checkin()，因此任何失败路径都不会发放签到积分。
