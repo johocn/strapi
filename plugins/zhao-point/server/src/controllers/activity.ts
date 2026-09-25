@@ -3,6 +3,7 @@ import type { Core } from "@strapi/strapi";
 import { FormValidationError } from "../services/form";
 import { PROMO_MODULE_TYPES, PROMO_TEMPLATES } from "../services/activity";
 import { decodeScanText, validateManualReason } from "../services/checkin-ticket";
+import { buildSignupCsv } from "../services/signup-export";
 import { isRoleGateEnabled, mayAccessVisibleToRoles } from "../../../../zhao-common/server/src/utils/role-gate";
 import { resolveUserRoles } from "../../../../zhao-course/server/src/utils/role-gate";
 
@@ -665,6 +666,49 @@ function normalizePromoModules(promoModules: any): any[] | undefined {
         orderBy: { signupAt: "desc" },
       });
       ctx.body = wrapList(rows);
+    } catch (e: any) {
+      ctx.status = (e as any).status || 400;
+      ctx.body = { error: e.message };
+    }
+  },
+
+  // GET /adm/activities/:documentId/signups/export  名单导出（CSV，含到场状态）
+  // 一行一人；到场状态由到场记录推导（无记录=未到场，取消报名=已取消），不改数据模型。
+  async adminExportSignups(ctx: any) {
+    try {
+      const act = await strapi.documents(ACTIVITY_UID).findOne({ documentId: ctx.params.documentId });
+      if (!act) { ctx.status = 404; ctx.body = { error: "活动不存在" }; return; }
+
+      const signups = await strapi.db.query(SIGNS_UID).findMany({
+        where: { activity: act.id },
+        populate: { user: true },
+        orderBy: { signupAt: "asc" },
+      });
+
+      // 到场记录按 signup id 建索引：关系字段统一走 relId() 归一，NaN 直接跳过（禁止透传给下游）
+      const attRows = await strapi.db.query(ATT_UID).findMany({ populate: { signup: true } });
+      const attendanceBySignupId: Record<string, any> = {};
+      for (const a of attRows) {
+        const sid = relId(a.signup);
+        if (!Number.isFinite(sid)) continue;
+        attendanceBySignupId[String(sid)] = { method: a.method, checkinAt: a.checkinAt };
+      }
+
+      const actFormConfig: any = (act as any).formConfig;
+      const csv = buildSignupCsv({
+        formFields: (Array.isArray(actFormConfig) ? actFormConfig : [])
+          .filter((f: any) => f && f.key)
+          .map((f: any) => ({ key: String(f.key), label: String(f.label || f.key) })),
+        signups: signups as any,
+        attendanceBySignupId,
+      });
+
+      // 文件名：ASCII 兜底 + RFC 5987 中文（前端 downloadFile 会覆盖保存名）
+      const stamp = new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 10).replace(/-/g, "");
+      const named = encodeURIComponent(`活动名单_${(act as any).title || "活动"}_${stamp}.csv`);
+      ctx.set("Content-Type", "text/csv; charset=utf-8");
+      ctx.set("Content-Disposition", `attachment; filename="signups.csv"; filename*=UTF-8''${named}`);
+      ctx.body = csv;
     } catch (e: any) {
       ctx.status = (e as any).status || 400;
       ctx.body = { error: e.message };
