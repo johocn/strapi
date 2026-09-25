@@ -36650,11 +36650,13 @@ const healIdSequences = async (strapi2) => {
     if (!seq2) continue;
     const maxRes = await knex.raw("SELECT COALESCE(max(id), 0) AS mx FROM ??", [tbl]);
     const mx = Number(((maxRes?.rows ?? maxRes) || [])[0]?.mx ?? 0);
-    const seqRes = await knex.raw(`SELECT last_value FROM ${seq2}`);
-    const lv = Number(((seqRes?.rows ?? seqRes) || [])[0]?.last_value ?? 0);
-    if (lv < mx) {
+    const seqRes = await knex.raw(`SELECT last_value, is_called FROM ${seq2}`);
+    const row = ((seqRes?.rows ?? seqRes) || [])[0] ?? {};
+    const lv = Number(row.last_value ?? 0);
+    const isCalled = Boolean(row.is_called);
+    if (isCalled && lv < mx || !isCalled && lv <= mx) {
       await knex.raw("SELECT setval(?, ?)", [seq2, mx]);
-      healed.push(`${tbl}:${lv}->${mx}`);
+      healed.push(`${tbl}:${lv}(called=${isCalled})->${mx}`);
     }
   }
   if (healed.length > 0) {

@@ -137,7 +137,9 @@ const ensureTicketTokenNotNull = async (strapi: Core.Strapi) => {
 /**
  * 启动期 ID 序列自愈：历史上存在显式 id 插入（导入/同步）导致 serial 序列落后于 max(id)，
  * 后续任何 insert 都会撞主键冲突（生产已实际发生：新用户注册 100% 失败）。
- * 幂等：仅当 last_value < max(id) 时 setval；每次启动巡检全部 public 表，修复明细打 warn。
+ * 幂等：仅当序列「下一个 nextval 会 <= max(id)」时 setval；每次启动巡检全部 public 表，修复明细打 warn。
+ * last_value 语义依赖 is_called：is_called=true 时下一值为 last_value+1；false 时下一值为 last_value 本身。
+ * 故漏判条件为：is_called ? last_value < max(id) : last_value <= max(id)。
  */
 const healIdSequences = async (strapi: Core.Strapi) => {
   const knex = strapi.db.connection;
@@ -154,11 +156,13 @@ const healIdSequences = async (strapi: Core.Strapi) => {
     if (!seq) continue;
     const maxRes: any = await knex.raw("SELECT COALESCE(max(id), 0) AS mx FROM ??", [tbl]);
     const mx = Number(((maxRes?.rows ?? maxRes) || [])[0]?.mx ?? 0);
-    const seqRes: any = await knex.raw(`SELECT last_value FROM ${seq}`);
-    const lv = Number(((seqRes?.rows ?? seqRes) || [])[0]?.last_value ?? 0);
-    if (lv < mx) {
+    const seqRes: any = await knex.raw(`SELECT last_value, is_called FROM ${seq}`);
+    const row = ((seqRes?.rows ?? seqRes) || [])[0] ?? {};
+    const lv = Number(row.last_value ?? 0);
+    const isCalled = Boolean(row.is_called);
+    if ((isCalled && lv < mx) || (!isCalled && lv <= mx)) {
       await knex.raw("SELECT setval(?, ?)", [seq, mx]);
-      healed.push(`${tbl}:${lv}->${mx}`);
+      healed.push(`${tbl}:${lv}(called=${isCalled})->${mx}`);
     }
   }
   if (healed.length > 0) {
