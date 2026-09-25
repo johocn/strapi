@@ -166,6 +166,7 @@ export default () => ({
     userRoute("GET", "/my/activity/:documentId/follow-qrcode", "activity.getFollowQrcode"),
     userRoute("POST", "/my/activity/:documentId/cancel", "activity.cancel"),
     userRoute("POST", "/my/activity/:documentId/checkin", "activity.checkin"),
+    userRoute("POST", "/my/activity/:documentId/checkin-ticket", "activity.checkinTicket"),
     userRoute("GET", "/my/activities", "activity.mySignups"),
     userRoute("GET", "/my/invitation", "activity.myInvitation"),
     userRoute("POST", "/my/activity/:documentId/message", "activity.sendMessage"),

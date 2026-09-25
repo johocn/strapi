@@ -2,6 +2,7 @@ import crypto from "crypto";
 import type { Core } from "@strapi/strapi";
 import { FormValidationError } from "../services/form";
 import { PROMO_MODULE_TYPES, PROMO_TEMPLATES } from "../services/activity";
+import { decodeScanText, validateManualReason } from "../services/checkin-ticket";
 import { isRoleGateEnabled, mayAccessVisibleToRoles } from "../../../../zhao-common/server/src/utils/role-gate";
 import { resolveUserRoles } from "../../../../zhao-course/server/src/utils/role-gate";
 
@@ -688,16 +689,78 @@ function normalizePromoModules(promoModules: any): any[] | undefined {
   },
 
   // POST /adm/activities/:documentId/scan-checkin
+  // A. { code: "atk:{token}" }        扫码核销（服务端验票）
+  // B. { token: "..." }               同 A（便于 curl/第三方扫码器直传 token）
+  // C. { userId, reason }             手动核销兜底（强制理由 + 审计）
   async adminScanCheckin(ctx: any) {
     try {
-      const { userId } = ctx.request.body;
-      const result = await activitySvc().checkin({
-        userId, activityId: ctx.params.documentId, method: "worker_scan",
-      });
-      ctx.body = wrap(result);
+      const body = ctx.request.body || {};
+      const documentId = ctx.params.documentId;
+      const operatorUserId = await getUserId(ctx).catch(() => undefined);
+      const svc = activitySvc();
+
+      // 扫码路径：统一按原始文本解析，旧明文码给明确文案
+      const rawCode = typeof body.code === "string" && body.code.trim() ? body.code : null;
+      let token: string | null = typeof body.token === "string" && body.token.trim() ? body.token.trim() : null;
+      if (!token && rawCode) {
+        const parsed = decodeScanText(rawCode);
+        if (parsed.kind === "legacy") {
+          ctx.status = 400;
+          ctx.body = { error: "旧版二维码已停用，请让用户刷新页面重新出示", code: "legacy_code_disabled" };
+          return;
+        }
+        if (parsed.kind !== "ticket") {
+          ctx.status = 400;
+          ctx.body = { error: "无效二维码", code: "invalid_token" };
+          return;
+        }
+        token = parsed.token;
+      }
+      if (token) {
+        const result = await svc.redeemCheckinTicket({ token, activityDocumentId: documentId, operatorUserId });
+        ctx.body = wrap(result);
+        return;
+      }
+
+      // 手动核销路径
+      if (body.userId != null && body.userId !== "") {
+        const reasonCheck = validateManualReason(body.reason);
+        if (!reasonCheck.ok) {
+          ctx.status = reasonCheck.httpStatus;
+          ctx.body = { error: reasonCheck.message, code: reasonCheck.code };
+          return;
+        }
+        const result = await svc.checkin({
+          userId: Number(body.userId),
+          activityId: documentId,
+          method: "manual",
+          manualReason: String(body.reason).trim(),
+          operatorId: operatorUserId,
+        });
+        ctx.body = wrap(result);
+        return;
+      }
+
+      ctx.status = 400;
+      ctx.body = { error: "缺少核销凭证", code: "invalid_token" };
     } catch (e: any) {
       ctx.status = (e as any).status || 400;
-      ctx.body = { error: e.message };
+      ctx.body = { error: e.message, code: (e as any).code };
+    }
+  },
+
+  // POST /my/activity/:documentId/checkin-ticket
+  async checkinTicket(ctx: any) {
+    try {
+      const userId = await getUserId(ctx);
+      const data = await activitySvc().issueCheckinTicket({
+        userId,
+        activityDocumentId: ctx.params.documentId,
+      });
+      ctx.body = wrap(data);
+    } catch (e: any) {
+      ctx.status = (e as any).status || 400;
+      ctx.body = { error: e.message, code: (e as any).code };
     }
   },
 
