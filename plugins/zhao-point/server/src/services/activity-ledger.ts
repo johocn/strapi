@@ -100,27 +100,31 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       waitingCount: waitingCount,
     };
 
-    // snapshotNo = 该活动已有快照数 + 1
-    const prev = await strapi.db.query(LEDGER_UID).count({ where: { activity: act.id } });
-
-    const ledger = await strapi.db.query(LEDGER_UID).create({
-      data: {
-        activity: act.id,
-        activityDocumentId: act.documentId,
-        activityTitle: act.title,
-        snapshotNo: prev + 1,
-        source,
-        generatedAt: new Date(),
-        revenuePoints,
-        signinCostPoints,
-        referralCostPoints,
-        netPoints,
-        cashRevenue,
-        cashExpense,
-        cashNet,
-        summary,
-        detail,
-      },
+    // 并发硬化：号段分配（count）与写入同处一个事务，并锚点锁活动行，
+    // 避免 close 自动归档与手动重归档并发时两份快照撞同一 snapshotNo。
+    const ledger = await strapi.db.transaction(async ({ trx }) => {
+      await trx("activities").where({ id: act.id }).forUpdate();
+      // snapshotNo = 该活动已有快照数 + 1
+      const prev = await strapi.db.query(LEDGER_UID).count({ where: { activity: act.id } });
+      return strapi.db.query(LEDGER_UID).create({
+        data: {
+          activity: act.id,
+          activityDocumentId: act.documentId,
+          activityTitle: act.title,
+          snapshotNo: prev + 1,
+          source,
+          generatedAt: new Date(),
+          revenuePoints,
+          signinCostPoints,
+          referralCostPoints,
+          netPoints,
+          cashRevenue,
+          cashExpense,
+          cashNet,
+          summary,
+          detail,
+        },
+      });
     });
     return ledger;
   },
@@ -148,9 +152,14 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async generateAutoIfAbsent(activityId: string) {
     const act = await strapi.documents(ACTIVITY_UID).findOne({ documentId: activityId });
     if (!act) return null;
-    const hasAuto = await strapi.db.query(LEDGER_UID).count({ where: { activity: act.id, source: "auto" } });
-    if (hasAuto > 0) return null;
-    return this.generate(activityId, "auto");
+    // 并发硬化：auto 存在性检查与生成同处一个事务并锚点锁活动行（generate 内层事务复用本事务），
+    // 避免 close 自动与手动触发并发各插一张 auto 快照。
+    return strapi.db.transaction(async ({ trx }) => {
+      await trx("activities").where({ id: act.id }).forUpdate();
+      const hasAuto = await strapi.db.query(LEDGER_UID).count({ where: { activity: act.id, source: "auto" } });
+      if (hasAuto > 0) return null;
+      return this.generate(activityId, "auto");
+    });
   },
 
   /** 管理端标记快照已结算/回退未结（幂等） */

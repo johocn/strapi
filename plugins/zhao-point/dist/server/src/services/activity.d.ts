@@ -505,6 +505,10 @@ declare const _default: ({ strapi }: {
         activityId: number;
     }): Promise<{
         ok: boolean;
+        already: boolean;
+    } | {
+        ok: boolean;
+        already?: undefined;
     }>;
     /**
      * 递补：从候补队列取最旧的一个 waiting 转正为 active（复用"used_capacity<capacity 原子占位"法，
@@ -531,20 +535,17 @@ declare const _default: ({ strapi }: {
         manualReason?: string;
         operatorId?: number;
     }): Promise<{
-        ok: boolean;
-        reason: string;
+        ok: true;
         attendanceId: any;
-        point: any;
-    } | {
-        ok: boolean;
-        reason: string;
-        attendanceId?: undefined;
+        reason?: undefined;
         point?: undefined;
+    } | {
+        ok: false;
+        reason: string;
     } | {
         ok: boolean;
         attendanceId: any;
         point: boolean;
-        reason?: undefined;
     }>;
     /**
      * 签到场核销票据（C 端调用）。
@@ -566,20 +567,17 @@ declare const _default: ({ strapi }: {
         activityDocumentId: string;
         operatorUserId?: number;
     }): Promise<{
-        ok: boolean;
-        reason: string;
+        ok: true;
         attendanceId: any;
-        point: any;
-    } | {
-        ok: boolean;
-        reason: string;
-        attendanceId?: undefined;
+        reason?: undefined;
         point?: undefined;
+    } | {
+        ok: false;
+        reason: string;
     } | {
         ok: boolean;
         attendanceId: any;
         point: boolean;
-        reason?: undefined;
     }>;
     tourStory: typeof tourStory;
     tourChooseRole: typeof tourChooseRole;

@@ -3684,6 +3684,10 @@ declare const _default: {
                 activityId: number;
             }): Promise<{
                 ok: boolean;
+                already: boolean;
+            } | {
+                ok: boolean;
+                already?: undefined;
             }>;
             promoteWaiting(activityId: number): Promise<{
                 promoted: number;
@@ -3703,20 +3707,17 @@ declare const _default: {
                 manualReason?: string;
                 operatorId?: number;
             }): Promise<{
-                ok: boolean;
-                reason: string;
+                ok: true;
                 attendanceId: any;
-                point: any;
-            } | {
-                ok: boolean;
-                reason: string;
-                attendanceId?: undefined;
+                reason?: undefined;
                 point?: undefined;
+            } | {
+                ok: false;
+                reason: string;
             } | {
                 ok: boolean;
                 attendanceId: any;
                 point: boolean;
-                reason?: undefined;
             }>;
             issueCheckinTicket({ userId, activityDocumentId }: {
                 userId: number;
@@ -3730,20 +3731,17 @@ declare const _default: {
                 activityDocumentId: string;
                 operatorUserId?: number;
             }): Promise<{
-                ok: boolean;
-                reason: string;
+                ok: true;
                 attendanceId: any;
-                point: any;
-            } | {
-                ok: boolean;
-                reason: string;
-                attendanceId?: undefined;
+                reason?: undefined;
                 point?: undefined;
+            } | {
+                ok: false;
+                reason: string;
             } | {
                 ok: boolean;
                 attendanceId: any;
                 point: boolean;
-                reason?: undefined;
             }>;
             tourStory: (args: {
                 documentId: string;

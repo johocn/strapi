@@ -1,6 +1,7 @@
 import type { Core } from "@strapi/strapi";
 import { FormValidationError, validateFormData, collectFormData, collectQuestionnaire } from "./form";
 import { TICKET_TTL_MS, newTicketToken, relId, shouldExpire, validateTicket } from "./checkin-ticket";
+import { affectedCount, cancelOutcome } from "./activity-concurrency";
 
 const SIGNS_UID = "plugin::zhao-point.activity-signup";
 const ATT_UID = "plugin::zhao-point.activity-attendance";
@@ -350,6 +351,42 @@ export async function grantActivityPoints(strapi: any, userId: number, { loginAu
     // 关注奖励：不传 points 用规则默认 50；isOneTime=true 由 earnPoints 内部防重（已领抛 POINT_011，被 earnPointsSafe 吞掉）
     await earnPointsSafe(strapi, userId, "follow_official_account", 50, "关注公众号报名奖励", userChannelId);
   }
+}
+
+/**
+ * 单个候补转正的原子认领（事务内）：锚点锁活动行 → 复读状态 → 原子占席 → 扣费 → 置 active。
+ * 返回 promoted / stale / no_seat；积分与通知由调用方在事务外补偿执行。
+ * 锁序遵循 activities → activity_signups → up_users，避免与报名路径交叉死锁。
+ */
+async function promoteOneClaim(strapi: any, activityId: number, p: any, act: any) {
+  const upUserId = relId(p.user);
+  if (!Number.isFinite(upUserId)) throw new Error(`候补用户关系无法解析 (signup=${p?.id})`);
+  return strapi.db.transaction(async ({ trx }: any) => {
+    // 锚点锁：串行化本活动的递补与报名占位，避免两个并发 cancel 读到同一份候补列表后重复转正同一人
+    await trx("activities").where({ id: activityId }).forUpdate();
+    // 复读状态：并发调用可能已把该候补转正（READ COMMITTED 下能看见已提交的变更）
+    const fresh = await strapi.db.query(SIGNS_UID).findOne({ where: { id: p.id }, select: ["id", "status"] });
+    if (fresh?.status !== "waiting") return { status: "stale" as const };
+    const seat = await trx("activities")
+      .where("id", activityId)
+      .andWhere("used_capacity", "<", trx.raw("capacity"))
+      .increment("used_capacity", 1);
+    if (seat === 0) return { status: "no_seat" as const };
+    const resolved = await strapi.plugin("zhao-point").service("fee-service")
+      .resolveFee(act ?? { id: activityId, pointsCost: 0, feeCollectAt: "signup", pricingMode: "flat" }, upUserId);
+    const feeCollectAt = resolved.feeCollectAt || "signup";
+    const cost = resolved.cost || 0;
+    if (feeCollectAt === "signup" && cost > 0) {
+      const userChannelId = await resolveUserChannelId(strapi, upUserId);
+      // 扣费失败直接抛错：整笔事务回滚（占席一并归还），由调用方跳过该候选人
+      await strapi.plugin("zhao-point").service("point").deductPoints({ userId: upUserId, action: "activity_fee", points: cost, source: "activity", method: "activity_promote", remark: `候补转正:${act?.title ?? ''}`, orderId: `act:${act?.id ?? activityId}`, userChannelId });
+    }
+    await strapi.db.query(SIGNS_UID).update({
+      where: { id: p.id },
+      data: { status: "active", signupAt: new Date(), pointsCharged: feeCollectAt === "signup" ? cost : 0, feeTierId: resolved.tierId ?? null },
+    });
+    return { status: "promoted" as const, upUserId };
+  });
 }
 
 async function grantCourseTrial(strapi, userId: number, courseId: number) {
@@ -762,17 +799,52 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     else if (selectMode === "any") multiSelected = multiSelected.slice(0, selectN);
     const chosenRewardsIds = [...autoChosen, ...multiSelected];
     const unlockInfo = hasReward ? { loginAuth, subscribed, channelDone, conditions, chosenRewards: chosenRewardsIds } : undefined;
-    const dup = await strapi.db.query(SIGNS_UID).findOne({
-      where: { user: userId, activity: act.id, status: { $in: ["active", "waiting"] } },
-    });
-    if (dup) return { ok: false, reason: "already_signed_up" };
-    const knex = strapi.db.connection;
-    const reserved = await knex("activities").where("id", act.id).andWhere("used_capacity", "<", knex.raw("capacity")).increment("used_capacity", 1);
-    if (reserved === 0) {
-      // 名额已满 → 进入候补队列（不占用名额）
-      const sig = await strapi.db.query(SIGNS_UID).create({
-        data: { user: userId, activity: act.id, status: "waiting", signupAt: new Date(), ...(storedFormData ? { formData: storedFormData } : {}), ...(preQuestionnaireData && Object.keys(preQuestionnaireData).length ? { preQuestionnaireData } : {}), ...(unlockInfo ? { unlockInfo: { ...unlockInfo, chosenRewards: [] } } : {}) },
+    // 并发硬化：把「复读重复报名 → 名额占位 → 扣费 → 落库」折进一次事务，并锚点锁活动行，
+    // 串行化同一活动的并发报名（双击 / 多端），杜绝两条报名（含候补）与重复扣费。
+    // 锁序 activities → activity_signups → up_users；通知与发奖留在事务外（不持锁跨网络）。
+    const claim = await strapi.db.transaction(async ({ trx }) => {
+      await trx("activities").where({ id: act.id }).forUpdate();
+      const dup = await strapi.db.query(SIGNS_UID).findOne({
+        where: { user: userId, activity: act.id, status: { $in: ["active", "waiting"] } },
       });
+      if (dup) return { kind: "dup" as const };
+      const reserved = await trx("activities").where("id", act.id).andWhere("used_capacity", "<", trx.raw("capacity")).increment("used_capacity", 1);
+      if (reserved === 0) {
+        // 名额已满 → 进入候补队列（不占用名额）
+        const sig = await strapi.db.query(SIGNS_UID).create({
+          data: { user: userId, activity: act.id, status: "waiting", signupAt: new Date(), ...(storedFormData ? { formData: storedFormData } : {}), ...(preQuestionnaireData && Object.keys(preQuestionnaireData).length ? { preQuestionnaireData } : {}), ...(unlockInfo ? { unlockInfo: { ...unlockInfo, chosenRewards: [] } } : {}) },
+        });
+        return { kind: "waiting" as const, sig };
+      }
+      let resolved = await feeSvc().resolveFee(act, userId);
+      if (resolved.mode === "tier" && resolved.tierId && Number(resolved.tier?.quota || 0) > 0) {
+        let attempts = (Array.isArray(act.feeTiers) ? act.feeTiers.length : 0) + 1;
+        while (attempts-- > 0 && resolved.tierId) {
+          const usage = await feeSvc().tierUsage(act.id, resolved.tierId);
+          if (usage < Number(resolved.tier?.quota || 0)) break;
+          resolved = await feeSvc().resolveFee(act, userId, { excludeTierId: resolved.tierId });
+        }
+      }
+      const feeCollectAt = resolved.feeCollectAt || "signup";
+      const cost = resolved.cost || 0;
+      if (feeCollectAt === "signup" && cost > 0) {
+        const userChannelId = await resolveUserChannelId(strapi, userId);
+        // 扣费失败直接抛错：整笔事务回滚（名额占位一并归还），无需补偿 decrement
+        await strapi.plugin("zhao-point").service("point").deductPoints({ userId, action: "activity_fee", points: cost, source: "activity", method: "activity_signup", remark: `报名活动:${act.title}`, orderId: `act:${act.documentId}`, userChannelId });
+      }
+      const sig = await strapi.db.query(SIGNS_UID).create({ data: { user: userId, activity: act.id, status: "active", signupAt: new Date(), pointsCharged: feeCollectAt === "signup" ? cost : 0, feeTierId: resolved.tierId ?? null, ...(storedFormData ? { formData: storedFormData } : {}), ...(preQuestionnaireData && Object.keys(preQuestionnaireData).length ? { preQuestionnaireData } : {}), ...(unlockInfo ? { unlockInfo } : {}) } });
+      return { kind: "active" as const, sig };
+    }).catch((e: any) => {
+      if (e?.code) {
+        strapi.log.warn(`[zhao-point:activity] signup fee failed (user=${userId}): ${e.message}`);
+        return { kind: "insufficient" as const };
+      }
+      throw e;
+    });
+    if (claim.kind === "dup") return { ok: false, reason: "already_signed_up" };
+    if (claim.kind === "insufficient") return { ok: false, reason: "insufficient_points" };
+    if (claim.kind === "waiting") {
+      const sig = claim.sig;
       const waitCount = await strapi.db.query(SIGNS_UID).count({
         where: {
           activity: act.id,
@@ -802,27 +874,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       }
       return { ok: true, waitlisted: true, position: waitCount + 1, signupId: sig.id };
     }
-    let resolved = await feeSvc().resolveFee(act, userId);
-    if (resolved.mode === "tier" && resolved.tierId && Number(resolved.tier?.quota || 0) > 0) {
-      let attempts = (Array.isArray(act.feeTiers) ? act.feeTiers.length : 0) + 1;
-      while (attempts-- > 0 && resolved.tierId) {
-        const usage = await feeSvc().tierUsage(act.id, resolved.tierId);
-        if (usage < Number(resolved.tier?.quota || 0)) break;
-        resolved = await feeSvc().resolveFee(act, userId, { excludeTierId: resolved.tierId });
-      }
-    }
-    const feeCollectAt = resolved.feeCollectAt || "signup";
-    const cost = resolved.cost || 0;
-    if (feeCollectAt === "signup" && cost > 0) {
-      const userChannelId = await resolveUserChannelId(strapi, userId);
-      try {
-        await strapi.plugin("zhao-point").service("point").deductPoints({ userId, action: "activity_fee", points: cost, source: "activity", method: "activity_signup", remark: `报名活动:${act.title}`, orderId: `act:${act.documentId}`, userChannelId });
-      } catch (e) {
-        await strapi.db.connection("activities").where("id", act.id).decrement("used_capacity", 1);
-        return { ok: false, reason: "insufficient_points" };
-      }
-    }
-    const sig = await strapi.db.query(SIGNS_UID).create({ data: { user: userId, activity: act.id, status: "active", signupAt: new Date(), pointsCharged: feeCollectAt === "signup" ? cost : 0, feeTierId: resolved.tierId ?? null, ...(storedFormData ? { formData: storedFormData } : {}), ...(preQuestionnaireData && Object.keys(preQuestionnaireData).length ? { preQuestionnaireData } : {}), ...(unlockInfo ? { unlockInfo } : {}) } });
+    const sig = claim.sig;
     strapi.plugin("zhao-point").service("eco-hook")?.send({
       action: "join_activity",
       ssoId: userId,
@@ -1593,7 +1645,17 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       where: { user: userId, activity: activityId, status: { $in: ["active", "waiting"] } },
     });
     if (!signup) throw new Error("未报名");
-    await strapi.db.query(SIGNS_UID).update({ where: { id: signup.id }, data: { status: "cancelled" } });
+    // 并发硬化：用「条件更新」认领本次取消。两个并发 cancel 只有一个能把行改成 cancelled，
+    // 后到者计数为 0 → 直接返回，不重复释放名额/退款/递补。
+    // 注意 updateMany 返回 {count:N}，必须过 affectedCount 归一（切勿直接 Number）。
+    const active = affectedCount(await strapi.db.query(SIGNS_UID).updateMany({
+      where: { id: signup.id, status: "active" }, data: { status: "cancelled" },
+    }));
+    const waiting = active > 0 ? 0 : affectedCount(await strapi.db.query(SIGNS_UID).updateMany({
+      where: { id: signup.id, status: "waiting" }, data: { status: "cancelled" },
+    }));
+    const outcome = cancelOutcome({ active, waiting });
+    if (!outcome.proceed) return { ok: true, already: true }; // 已被并发取消，幂等返回
     // 取消确认：站内信 + 微信
     try {
       const act = await strapi.db.query(ACTIVITY_UID).findOne({ where: { id: activityId } });
@@ -1613,10 +1675,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     } catch (e: any) {
       strapi.log.warn(`[zhao-point:activity] cancel notify failed (user=${userId}): ${e.message}`);
     }
-    if (signup.status === "active") {
+    if (outcome.releaseSeat) {
       // 报名时收费（signup 模式）且已扣积分 → 取消退款
       const act = await strapi.db.query(ACTIVITY_UID).findOne({ where: { id: activityId } });
-      if (signup.pointsCharged > 0) {
+      if (outcome.refund && signup.pointsCharged > 0) {
         const userChannelId = await resolveUserChannelId(strapi, userId);
         try {
           await strapi.plugin("zhao-point").service("point").refundPoints({ userId, action: "activity_fee_refund", points: signup.pointsCharged, source: "activity", method: "activity_cancel", remark: `取消退费:${act?.title ?? ''}`, userChannelId });
@@ -1642,34 +1704,22 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       orderBy: [{ signupAt: "asc" }, { id: "asc" }],
       populate: ["user"],
     });
-    const knex = strapi.db.connection;
     const act = await strapi.db.query(ACTIVITY_UID).findOne({ where: { id: activityId } });
     let promoted = 0;
     for (const p of pending) {
       if (promoted >= 1) break; // 本次调用对应释放的一席，只转正一人
-      const claimed = await knex("activities")
-        .where("id", activityId)
-        .andWhere("used_capacity", "<", knex.raw("capacity"))
-        .increment("used_capacity", 1);
-      if (claimed === 0) break; // 无空位（并发已吃满），停止
-      const upUserId = p.user?.id ?? p.user;
-      const resolved = await feeSvc().resolveFee(act ?? { id: activityId, pointsCost: 0, feeCollectAt: "signup", pricingMode: "flat" }, upUserId);
-      const feeCollectAt = resolved.feeCollectAt || "signup";
-      const cost = resolved.cost || 0;
-      if (feeCollectAt === "signup" && cost > 0) {
-        const userChannelId = await resolveUserChannelId(strapi, upUserId);
-        try {
-          await strapi.plugin("zhao-point").service("point").deductPoints({ userId: upUserId, action: "activity_fee", points: cost, source: "activity", method: "activity_promote", remark: `候补转正:${act?.title ?? ''}`, orderId: `act:${act?.id ?? activityId}`, userChannelId });
-        } catch {
-          await knex("activities").where("id", activityId).decrement("used_capacity", 1);
-          continue;
-        }
+      let claimed: { status: "promoted"; upUserId: number } | { status: "stale" } | { status: "no_seat" };
+      try {
+        claimed = await promoteOneClaim(strapi, activityId, p, act);
+      } catch (e: any) {
+        strapi.log.warn(`[zhao-point:activity] promoteWaiting candidate ${p.id} skipped: ${e?.message}`);
+        continue; // 扣费失败等：顺延下一个候选人
       }
-      await strapi.db.query(SIGNS_UID).update({
-        where: { id: p.id },
-        data: { status: "active", signupAt: new Date(), pointsCharged: feeCollectAt === "signup" ? cost : 0, feeTierId: resolved.tierId ?? null },
-      });
-      // 候补转正补发分级积分：按转正当下达成项（表单/问卷取报名时存储值，登录/关注状态实时判定），与直接报名路径保持一致
+      if (claimed.status === "no_seat") break; // 无空位（并发已吃满），停止
+      if (claimed.status === "stale") continue; // 并发者已把该候补转正，顺延下一个
+      promoted++;
+      const upUserId = claimed.upUserId;
+      // 候补转正补发分级积分与通知放在事务外：失败不回滚已成立的转正
       try {
         const loginAuth = await hasWechatAuth(strapi, upUserId);
         const subscribed = await hasSubscribe(strapi, upUserId);
@@ -1681,8 +1731,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       } catch (e: any) {
         strapi.log.warn(`[zhao-point:activity] promote grantActivityPoints failed (user=${upUserId}): ${e.message}`);
       }
-      promoted++;
-      if (upUserId) await this.notifyPromoted(upUserId, activityId);
+      await this.notifyPromoted(upUserId, activityId);
     }
     return { promoted };
   },
@@ -1752,8 +1801,6 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     if (act.status !== "signup_open" && act.status !== "ongoing") throw new Error("活动未在进行中，无法签到");
     const signup = await strapi.db.query(SIGNS_UID).findOne({ where: { user: userId, activity: act.id, status: "active" } });
     if (!signup) throw new Error("尚未报名");
-    const existing = await strapi.db.query(ATT_UID).findOne({ where: { signup: signup.id } });
-    if (existing) return { ok: false, reason: "already_checked_in", attendanceId: existing.id, point: existing.pointsGranted };
 
     let geoPassed = true;
     if (method === "self" && act.geoEnforced && typeof lat === "number" && typeof lng === "number") {
@@ -1762,30 +1809,48 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     }
     // 到场收费（checkin 模式）
     const resolved = await feeSvc().resolveFee(act, userId);
-    if (resolved.feeCollectAt === "checkin" && (resolved.cost || 0) > 0) {
-      const userChannelId = await resolveUserChannelId(strapi, userId);
-      try {
-        await strapi.plugin("zhao-point").service("point").deductPoints({ userId, action: "activity_fee", points: resolved.cost, source: "activity", method: "activity_checkin", remark: `到场收费:${act.title}`, orderId: `act:${act.documentId}`, userChannelId });
-      } catch (e) {
-        return { ok: false, reason: "insufficient_points" };
-      }
-    }
-    const att = await strapi.db.query(ATT_UID).create({
-      data: {
-        signup: signup.id, method, checkinAt: new Date(), lat, lng, geoPassed, pointsGranted: false,
-        ...(manualReason ? { manualReason } : {}),
-        ...(operatorId ? { operatorId } : {}),
-      },
-    });
-    await strapi.db.query(SIGNS_UID).update({ where: { id: signup.id }, data: { attendedAt: new Date() } });
 
+    // 并发硬化：锁报名行串行化「同一报名」的并发签到（扫码端 + 自助端同时提交），
+    // 事务内复读到场记录做一次性认领，杜绝两条 activity_attendances 与 activity_attend 积分双发。
+    const claim = await strapi.db.transaction(async ({ trx }) => {
+      await trx("activity_signups").where({ id: signup.id }).forUpdate();
+      const existing = await strapi.db.query(ATT_UID).findOne({ where: { signup: signup.id } });
+      if (existing) return { ok: false as const, reason: "already_checked_in", attendanceId: existing.id, point: existing.pointsGranted };
+      if (resolved.feeCollectAt === "checkin" && (resolved.cost || 0) > 0) {
+        const userChannelId = await resolveUserChannelId(strapi, userId);
+        try {
+          await strapi.plugin("zhao-point").service("point").deductPoints({ userId, action: "activity_fee", points: resolved.cost, source: "activity", method: "activity_checkin", remark: `到场收费:${act.title}`, orderId: `act:${act.documentId}`, userChannelId });
+        } catch (e) {
+          // 抛出让事务回滚（无需补偿），与"未产生任何签到副作用"语义一致
+          throw e;
+        }
+      }
+      const att = await strapi.db.query(ATT_UID).create({
+        data: {
+          signup: signup.id, method, checkinAt: new Date(), lat, lng, geoPassed, pointsGranted: false,
+          ...(manualReason ? { manualReason } : {}),
+          ...(operatorId ? { operatorId } : {}),
+        },
+      });
+      await strapi.db.query(SIGNS_UID).update({ where: { id: signup.id }, data: { attendedAt: new Date() } });
+      return { ok: true as const, attendanceId: att.id };
+    }).catch((e: any) => {
+      if (e?.code) {
+        strapi.log.warn(`[zhao-point:activity] checkin fee failed (user=${userId}): ${e.message}`);
+        return { ok: false as const, reason: "insufficient_points" };
+      }
+      throw e;
+    });
+    if (!claim.ok) return claim;
+
+    // 积分与学习包授权放在事务外补偿执行：失败不阻断已成立的到场记录（保留既有韧性）
     await grantPoints(strapi, userId, "activity_attend", "活动到场签到");
-    await strapi.db.query(ATT_UID).update({ where: { id: att.id }, data: { pointsGranted: true } });
+    await strapi.db.query(ATT_UID).update({ where: { id: claim.attendanceId }, data: { pointsGranted: true } });
     // 专属学习包：课时所属课程授权
     for (const lesson of act.learningPackageLessons || []) {
       if (lesson?.course?.id) await grantCourseTrial(strapi, userId, lesson.course.id);
     }
-    return { ok: true, attendanceId: att.id, point: true };
+    return { ok: true, attendanceId: claim.attendanceId, point: true };
   },
 
   /**
