@@ -62,6 +62,7 @@ export type ExportSignup = {
   pointsCharged?: number | string | null;
   signupAt?: unknown;
   formData?: Record<string, unknown> | null;
+  preQuestionnaireData?: Record<string, unknown> | null;
   user?: { id?: number | string | null; nickname?: string | null; username?: string | null } | null;
 };
 
@@ -76,12 +77,22 @@ export function attendanceStatus(signup: ExportSignup, attendance?: ExportAttend
   return attendance ? "已到场" : "未到场";
 }
 
+/** 答卷值序列化：对象/数组 JSON.stringify，空值 → ""，其余 String()（结果一律再过 csvCell 转义） */
+function questionnaireCellText(value: unknown): string {
+  if (value === null || value === undefined) return "";
+  if (typeof value === "object") return JSON.stringify(value);
+  return String(value);
+}
+
 /**
  * 组装名单 CSV 文本（含 BOM 与 CRLF）。
  * 按 signups 入参顺序输出（调用方保证已按报名时间升序），一行一人。
+ * 列结构 = 9 固定列 + formConfig 动态列 + 问卷动态列（全部报名 preQuestionnaireData
+ * 各 key 的并集，按 key 首次出现顺序稳定排序；列名优先取问卷配置题目标题，否则用 key；无答卷不出列）。
  */
 export function buildSignupCsv(input: {
   formFields?: ExportFormField[] | null;
+  questionnaireFields?: ExportFormField[] | null;
   signups?: ExportSignup[] | null;
   attendanceBySignupId?: Record<string, ExportAttendance> | null;
 }): string {
@@ -89,7 +100,24 @@ export function buildSignupCsv(input: {
   const signups = Array.isArray(input.signups) ? input.signups : [];
   const attMap = input.attendanceBySignupId || {};
 
-  const headers = [...FIXED_HEADERS, ...fields.map((f) => f.label || f.key)];
+  // 问卷 key → 题目标题映射（活动 preQuestionnaire.fields 配置），缺配置的 key 回退用 key 本身
+  const qLabelByKey = new Map<string, string>();
+  for (const f of Array.isArray(input.questionnaireFields) ? input.questionnaireFields : []) {
+    if (f && f.key && !qLabelByKey.has(String(f.key))) qLabelByKey.set(String(f.key), String(f.label || f.key));
+  }
+  // 问卷列 key 并集，按首次出现顺序稳定排序
+  const qKeys: string[] = [];
+  for (const s of signups) {
+    const d = s.preQuestionnaireData;
+    if (!d || typeof d !== "object" || Array.isArray(d)) continue;
+    for (const k of Object.keys(d)) if (!qKeys.includes(k)) qKeys.push(k);
+  }
+
+  const headers = [
+    ...FIXED_HEADERS,
+    ...fields.map((f) => f.label || f.key),
+    ...qKeys.map((k) => qLabelByKey.get(k) || k),
+  ];
   const lines = [headers.map(csvCell).join(",")];
 
   signups.forEach((s, i) => {
@@ -108,6 +136,8 @@ export function buildSignupCsv(input: {
       s.pointsCharged ?? 0,
     ];
     for (const f of fields) row.push(formatCell(s.formData?.[f.key]));
+    const qData = s.preQuestionnaireData && typeof s.preQuestionnaireData === "object" && !Array.isArray(s.preQuestionnaireData) ? s.preQuestionnaireData : {};
+    for (const k of qKeys) row.push(questionnaireCellText(qData[k]));
     lines.push(row.map(csvCell).join(","));
   });
 

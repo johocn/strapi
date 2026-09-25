@@ -4180,11 +4180,30 @@ function attendanceStatus(signup, attendance) {
   if (signup?.status === "cancelled") return "已取消";
   return attendance ? "已到场" : "未到场";
 }
+function questionnaireCellText(value) {
+  if (value === null || value === void 0) return "";
+  if (typeof value === "object") return JSON.stringify(value);
+  return String(value);
+}
 function buildSignupCsv(input) {
   const fields2 = (Array.isArray(input.formFields) ? input.formFields : []).filter((f) => f && f.key);
   const signups = Array.isArray(input.signups) ? input.signups : [];
   const attMap = input.attendanceBySignupId || {};
-  const headers = [...FIXED_HEADERS, ...fields2.map((f) => f.label || f.key)];
+  const qLabelByKey = /* @__PURE__ */ new Map();
+  for (const f of Array.isArray(input.questionnaireFields) ? input.questionnaireFields : []) {
+    if (f && f.key && !qLabelByKey.has(String(f.key))) qLabelByKey.set(String(f.key), String(f.label || f.key));
+  }
+  const qKeys = [];
+  for (const s of signups) {
+    const d = s.preQuestionnaireData;
+    if (!d || typeof d !== "object" || Array.isArray(d)) continue;
+    for (const k of Object.keys(d)) if (!qKeys.includes(k)) qKeys.push(k);
+  }
+  const headers = [
+    ...FIXED_HEADERS,
+    ...fields2.map((f) => f.label || f.key),
+    ...qKeys.map((k) => qLabelByKey.get(k) || k)
+  ];
   const lines = [headers.map(csvCell).join(",")];
   signups.forEach((s, i) => {
     const att = attMap[String(s.id)];
@@ -4202,6 +4221,8 @@ function buildSignupCsv(input) {
       s.pointsCharged ?? 0
     ];
     for (const f of fields2) row.push(formatCell(s.formData?.[f.key]));
+    const qData = s.preQuestionnaireData && typeof s.preQuestionnaireData === "object" && !Array.isArray(s.preQuestionnaireData) ? s.preQuestionnaireData : {};
+    for (const k of qKeys) row.push(questionnaireCellText(qData[k]));
     lines.push(row.map(csvCell).join(","));
   });
   return `${CSV_BOM}${lines.join("\r\n")}\r
@@ -4907,8 +4928,10 @@ const activity = ({ strapi: strapi2 }) => {
           attendanceBySignupId[String(sid)] = { method: a.method, checkinAt: a.checkinAt };
         }
         const actFormConfig = act.formConfig;
+        const qCfg = act.preQuestionnaire || act.questionnaire;
         const csv = buildSignupCsv({
           formFields: (Array.isArray(actFormConfig) ? actFormConfig : []).filter((f) => f && f.key).map((f) => ({ key: String(f.key), label: String(f.label || f.key) })),
+          questionnaireFields: (qCfg && Array.isArray(qCfg.fields) ? qCfg.fields : []).filter((f) => f && f.key).map((f) => ({ key: String(f.key), label: String(f.label || f.key) })),
           signups,
           attendanceBySignupId
         });

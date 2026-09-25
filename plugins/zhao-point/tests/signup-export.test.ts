@@ -127,6 +127,81 @@ describe('活动名单导出纯逻辑', () => {
     expect(csv).toBe(`${CSV_BOM}"序号","用户ID","昵称","报名状态","到场状态","核销方式","报名时间","到场时间","扣除积分"\r\n`);
   });
 
+  test('buildSignupCsv：问卷答卷出列，列名取题目文本，对象/数组 JSON.stringify', () => {
+    const csv = buildSignupCsv({
+      formFields: [{ key: 'name', label: '姓名' }],
+      questionnaireFields: [
+        { key: 'interest', label: '最喜欢的内容' },
+        { key: 'times', label: '参与场次' },
+      ],
+      signups: [
+        {
+          id: 1,
+          status: 'active',
+          formData: { name: '张三' },
+          preQuestionnaireData: { interest: ['茶道', '香道'], times: 3 },
+          user: { id: 7, nickname: '小张' },
+        },
+      ],
+    });
+    const lines = csv.slice(1).split('\r\n');
+    expect(lines[0]).toBe(
+      '"序号","用户ID","昵称","报名状态","到场状态","核销方式","报名时间","到场时间","扣除积分","姓名","最喜欢的内容","参与场次"',
+    );
+    expect(lines[1]).toBe(
+      '"1","7","小张","已报名","未到场","","","","0","张三","[""茶道"",""香道""]","3"',
+    );
+  });
+
+  test('buildSignupCsv：无答卷不出问卷列（即使传了问卷字段配置）', () => {
+    const csv = buildSignupCsv({
+      questionnaireFields: [{ key: 'interest', label: '最喜欢的内容' }],
+      signups: [{ id: 1, status: 'active', formData: {}, user: { id: 2 } }],
+    });
+    const lines = csv.slice(1).split('\r\n');
+    expect(lines[0]).toBe(
+      '"序号","用户ID","昵称","报名状态","到场状态","核销方式","报名时间","到场时间","扣除积分"',
+    );
+  });
+
+  test('buildSignupCsv：答卷值含逗号/引号/换行不破坏列结构', () => {
+    const csv = buildSignupCsv({
+      signups: [
+        {
+          id: 1,
+          status: 'active',
+          preQuestionnaireData: { note: '第一行\n第二行,带逗号"带引号"' },
+          user: { id: 2 },
+        },
+      ],
+    });
+    const lines = csv.slice(1).split('\r\n');
+    expect(lines.length).toBe(3); // 换行被引号包裹，逻辑行仍为表头+1
+    expect(lines[0]).toContain('"note"');
+    expect(lines[1]).toContain('"第一行\n第二行,带逗号""带引号"""');
+  });
+
+  test('buildSignupCsv：问卷列取全部答卷 key 并集，按首次出现顺序稳定排序；无配置标题回退 key', () => {
+    const csv = buildSignupCsv({
+      questionnaireFields: [{ key: 'a', label: '题目A' }],
+      signups: [
+        { id: 1, status: 'active', preQuestionnaireData: { b: '乙1', a: '甲1' }, user: { id: 2 } },
+        { id: 2, status: 'active', preQuestionnaireData: { c: '丙2', a: '甲2' }, user: { id: 3 } },
+      ],
+    });
+    const lines = csv.slice(1).split('\r\n');
+    // 并集按首次出现顺序：signup1 的 b、a，再 signup2 的 c（非字母序）
+    expect(lines[0]).toBe(
+      '"序号","用户ID","昵称","报名状态","到场状态","核销方式","报名时间","到场时间","扣除积分","b","题目A","c"',
+    );
+    expect(lines[1]).toBe(
+      '"1","2","用户#2","已报名","未到场","","","","0","乙1","甲1",""',
+    );
+    expect(lines[2]).toBe(
+      '"2","3","用户#3","已报名","未到场","","","","0","","甲2","丙2"',
+    );
+  });
+
   test('buildSignupCsv：关系字段以 {id:N} 对象形态入参也能正确归位（防 NaN 透传）', () => {
     // 模拟 strapi 查询结果：signup.user 为对象、attendanceBySignupId 的键为字符串化 id
     const csv = buildSignupCsv({

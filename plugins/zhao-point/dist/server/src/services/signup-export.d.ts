@@ -25,6 +25,7 @@ export type ExportSignup = {
     pointsCharged?: number | string | null;
     signupAt?: unknown;
     formData?: Record<string, unknown> | null;
+    preQuestionnaireData?: Record<string, unknown> | null;
     user?: {
         id?: number | string | null;
         nickname?: string | null;
@@ -43,9 +44,12 @@ export declare function attendanceStatus(signup: ExportSignup, attendance?: Expo
 /**
  * 组装名单 CSV 文本（含 BOM 与 CRLF）。
  * 按 signups 入参顺序输出（调用方保证已按报名时间升序），一行一人。
+ * 列结构 = 9 固定列 + formConfig 动态列 + 问卷动态列（全部报名 preQuestionnaireData
+ * 各 key 的并集，按 key 首次出现顺序稳定排序；列名优先取问卷配置题目标题，否则用 key；无答卷不出列）。
  */
 export declare function buildSignupCsv(input: {
     formFields?: ExportFormField[] | null;
+    questionnaireFields?: ExportFormField[] | null;
     signups?: ExportSignup[] | null;
     attendanceBySignupId?: Record<string, ExportAttendance> | null;
 }): string;

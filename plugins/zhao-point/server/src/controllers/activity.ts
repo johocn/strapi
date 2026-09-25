@@ -708,8 +708,13 @@ function normalizePromoModules(promoModules: any): any[] | undefined {
       }
 
       const actFormConfig: any = (act as any).formConfig;
+      // 问卷列名数据源：活动前问卷字段配置（兼容旧配置回退 questionnaire），答卷 key 并集在 buildSignupCsv 内聚合
+      const qCfg: any = (act as any).preQuestionnaire || (act as any).questionnaire;
       const csv = buildSignupCsv({
         formFields: (Array.isArray(actFormConfig) ? actFormConfig : [])
+          .filter((f: any) => f && f.key)
+          .map((f: any) => ({ key: String(f.key), label: String(f.label || f.key) })),
+        questionnaireFields: (qCfg && Array.isArray(qCfg.fields) ? qCfg.fields : [])
           .filter((f: any) => f && f.key)
           .map((f: any) => ({ key: String(f.key), label: String(f.label || f.key) })),
         signups: signups as any,
