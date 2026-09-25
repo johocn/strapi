@@ -4738,13 +4738,18 @@ const activity = ({ strapi: strapi2 }) => {
         ctx.body = { error: e.message };
       }
     },
-    // GET /adm/activity-reviews （评价看板：列表 + 汇总；?activityDId= 可过滤）
+    // GET /adm/activity-reviews （评价看板：列表 + 汇总 + 趋势；?activityDId=&start=&end= 可过滤，start/end 按 reviewedAt）
     async adminReviews(ctx) {
       try {
-        const { page = "1", pageSize = "20", activityDId } = ctx.query;
+        const { page = "1", pageSize = "20", activityDId, start, end } = ctx.query;
         const filter = {
           $or: [{ rating: { $notNull: true } }, { review: { $notNull: true } }]
         };
+        if (start || end) {
+          filter.reviewedAt = {};
+          if (start) filter.reviewedAt.$gte = new Date(String(start)).toISOString();
+          if (end) filter.reviewedAt.$lte = new Date(String(end)).toISOString();
+        }
         if (activityDId) {
           const act = await strapi2.documents(ACTIVITY_UID$9).findOne({ documentId: activityDId });
           if (!act) {
@@ -38431,7 +38436,7 @@ const ACTIVITY_UID$3 = "plugin::zhao-point.activity";
 const SIGNS_UID$3 = "plugin::zhao-point.activity-signup";
 const REWARD_UID = "plugin::zhao-point.activity-referral-reward";
 const POINT_RECORD_UID = "plugin::zhao-point.point-record";
-const STATUS_LIST = ["draft", "signup_open", "ongoing", "ended"];
+const STATUS_LIST = ["draft", "signup_open", "ongoing", "ended", "archived"];
 const round2 = (n) => Math.round(n * 100) / 100;
 function indexBy(rows, key) {
   const m = /* @__PURE__ */ new Map();
@@ -38490,7 +38495,7 @@ const activityStats = ({ strapi: strapi2 }) => ({
     const computeStats = (signList, rewardList) => {
       const active = signList.filter((s) => s.status === "active");
       const attended = active.filter((s) => !!s.attendedAt);
-      const reviewed = signList.filter((s) => !!s.reviewedAt);
+      const reviewed = active.filter((s) => !!s.reviewedAt);
       const rated = reviewed.filter((s) => s.rating != null);
       const npsd = reviewed.filter((s) => s.nps != null);
       return {
@@ -38551,7 +38556,7 @@ const activityStats = ({ strapi: strapi2 }) => ({
     const actRows = standalone.map((a) => {
       const signList = signByAct.get(a.id) || [];
       const rewardList = rewardByAct.get(a.id) || [];
-      const reviewed = signList.filter((s) => !!s.reviewedAt);
+      const reviewed = signList.filter((s) => s.status === "active" && !!s.reviewedAt);
       const referrerMap = /* @__PURE__ */ new Map();
       for (const r of rewardList) {
         const uid = r.inviter?.id ?? r.inviter;
