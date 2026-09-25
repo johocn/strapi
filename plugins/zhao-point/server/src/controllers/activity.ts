@@ -882,13 +882,18 @@ function normalizePromoModules(promoModules: any): any[] | undefined {
     }
   },
 
-  // GET /adm/activity-reviews （评价看板：列表 + 汇总；?activityDId= 可过滤）
+  // GET /adm/activity-reviews （评价看板：列表 + 汇总 + 趋势；?activityDId=&start=&end= 可过滤，start/end 按 reviewedAt）
   async adminReviews(ctx: any) {
     try {
-      const { page = "1", pageSize = "20", activityDId } = ctx.query;
+      const { page = "1", pageSize = "20", activityDId, start, end } = ctx.query;
       const filter: any = {
         $or: [{ rating: { $notNull: true } }, { review: { $notNull: true } }],
       };
+      if (start || end) {
+        filter.reviewedAt = {};
+        if (start) filter.reviewedAt.$gte = new Date(String(start)).toISOString();
+        if (end) filter.reviewedAt.$lte = new Date(String(end)).toISOString();
+      }
       if (activityDId) {
         const act = await strapi.documents(ACTIVITY_UID).findOne({ documentId: activityDId });
         if (!act) { ctx.status = 404; ctx.body = { error: "活动不存在" }; return; }
