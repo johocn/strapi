@@ -1739,12 +1739,15 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     }
   },
 
-  async checkin({ userId, activityId, method, lat, lng }: {
-    userId: number; activityId: string; method: "worker_scan" | "self"; lat?: number; lng?: number;
+  async checkin({ userId, activityId, method, lat, lng, manualReason, operatorId }: {
+    userId: number; activityId: string; method: "worker_scan" | "self" | "manual"; lat?: number; lng?: number;
+    manualReason?: string; operatorId?: number;
   }) {
     const attSvc = this as any;
     const act = await strapi.documents("plugin::zhao-point.activity").findOne({ documentId: activityId, populate: { learningPackageLessons: { populate: { course: true } } } });
     if (!act) throw new Error("活动不存在");
+    // 服务端兜底：仅报名开放/进行中的活动可签到（此前只有前端限制）
+    if (act.status !== "signup_open" && act.status !== "ongoing") throw new Error("活动未在进行中，无法签到");
     const signup = await strapi.db.query(SIGNS_UID).findOne({ where: { user: userId, activity: act.id, status: "active" } });
     if (!signup) throw new Error("尚未报名");
     const existing = await strapi.db.query(ATT_UID).findOne({ where: { signup: signup.id } });
@@ -1766,7 +1769,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       }
     }
     const att = await strapi.db.query(ATT_UID).create({
-      data: { signup: signup.id, method, checkinAt: new Date(), lat, lng, geoPassed, pointsGranted: false },
+      data: {
+        signup: signup.id, method, checkinAt: new Date(), lat, lng, geoPassed, pointsGranted: false,
+        ...(manualReason ? { manualReason } : {}),
+        ...(operatorId ? { operatorId } : {}),
+      },
     });
     await strapi.db.query(SIGNS_UID).update({ where: { id: signup.id }, data: { attendedAt: new Date() } });
 
