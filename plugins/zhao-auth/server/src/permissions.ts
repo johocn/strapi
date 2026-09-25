@@ -45,6 +45,7 @@ export const MODULE_MANAGER_MAP: Record<string, string> = {
   sso: ROLES.SYSTEM_MANAGER,
   thirdParty: ROLES.SYSTEM_MANAGER,
   oss: ROLES.SYSTEM_MANAGER,
+  activity: ROLES.POINT_MANAGER,
 };
 
 export const ROLE_LABELS: Record<string, string> = {
@@ -309,6 +310,40 @@ export const PERMISSION_TREE: Record<string, PermissionItem> = {
         children: {
           "point.sign-in-record.read": { label: "查看", type: "button" },
           "point.sign-in-record.export": { label: "导出", type: "button" },
+        },
+      },
+    },
+  },
+  "menu.activity-center": {
+    label: "活动中心",
+    type: "menu",
+    children: {
+      "menu.activity": {
+        label: "线下活动",
+        type: "menu",
+        children: {
+          "activity.read": { label: "查看活动", type: "button" },
+          "activity.create": { label: "新建活动", type: "button" },
+          "activity.update": { label: "编辑活动", type: "button" },
+          "activity.delete": { label: "删除活动", type: "button" },
+        },
+      },
+      "menu.activity-series": {
+        label: "活动系列",
+        type: "menu",
+        children: {
+          "series.read": { label: "查看系列", type: "button" },
+          "series.create": { label: "新建系列", type: "button" },
+          "series.update": { label: "编辑系列", type: "button" },
+          "series.delete": { label: "删除系列", type: "button" },
+        },
+      },
+      "menu.activity-resource": {
+        label: "讲师/场地",
+        type: "menu",
+        children: {
+          "resource.read": { label: "查看资源", type: "button" },
+          "resource.write": { label: "编辑资源", type: "button" },
         },
       },
     },
@@ -1683,8 +1718,8 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
   [ROLES.STUDY_EDITOR]: centerEditorPermissions("menu.study-center").concat(["auth.admin-login"]),
   [ROLES.QUIZ_MANAGER]: centerPermissions("menu.quiz-center").concat(["auth.admin-login"]),
   [ROLES.QUIZ_EDITOR]: centerEditorPermissions("menu.quiz-center").concat(["auth.admin-login"]),
-  [ROLES.POINT_MANAGER]: centerPermissions("menu.point-center").concat(["auth.admin-login"]),
-  [ROLES.POINT_EDITOR]: centerEditorPermissions("menu.point-center").concat(["auth.admin-login"]),
+  [ROLES.POINT_MANAGER]: centerPermissions("menu.point-center").concat(centerPermissions("menu.activity-center"), ["auth.admin-login"]),
+  [ROLES.POINT_EDITOR]: centerEditorPermissions("menu.point-center").concat(centerEditorPermissions("menu.activity-center"), ["auth.admin-login"]),
   [ROLES.MARKETING_MANAGER]: centerPermissions("menu.marketing-center").concat(["auth.admin-login"]),
   [ROLES.MARKETING_EDITOR]: centerEditorPermissions("menu.marketing-center").concat(["auth.admin-login"]),
   [ROLES.SYSTEM_MANAGER]: centerPermissions("menu.system-center").concat(["auth.admin-login"]),
