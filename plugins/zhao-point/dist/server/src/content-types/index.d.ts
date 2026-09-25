@@ -1262,6 +1262,12 @@ declare const _default: {
                     type: string;
                     default: boolean;
                 };
+                manualReason: {
+                    type: string;
+                };
+                operatorId: {
+                    type: string;
+                };
             };
         };
     };
@@ -1519,6 +1525,67 @@ declare const _default: {
                     type: string;
                 };
                 createdAt: {
+                    type: string;
+                };
+            };
+        };
+    };
+    "activity-checkin-ticket": {
+        schema: {
+            kind: string;
+            collectionName: string;
+            info: {
+                singularName: string;
+                pluralName: string;
+                displayName: string;
+                description: string;
+            };
+            options: {
+                draftAndPublish: boolean;
+            };
+            pluginOptions: {
+                i18n: {
+                    localized: boolean;
+                };
+            };
+            attributes: {
+                token: {
+                    type: string;
+                    unique: boolean;
+                    private: boolean;
+                    required: boolean;
+                };
+                signup: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    required: boolean;
+                };
+                activity: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    required: boolean;
+                };
+                user: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    required: boolean;
+                };
+                status: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
+                expiresAt: {
+                    type: string;
+                    required: boolean;
+                };
+                usedAt: {
+                    type: string;
+                };
+                usedByUserId: {
                     type: string;
                 };
             };

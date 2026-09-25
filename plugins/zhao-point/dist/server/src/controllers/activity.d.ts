@@ -28,6 +28,7 @@ declare const _default: ({ strapi }: {
     adminSignups(ctx: any): Promise<void>;
     adminCancelSignup(ctx: any): Promise<void>;
     adminScanCheckin(ctx: any): Promise<void>;
+    checkinTicket(ctx: any): Promise<void>;
     adminAttendance(ctx: any): Promise<void>;
     review(ctx: any): Promise<void>;
     adminClose(ctx: any): Promise<void>;

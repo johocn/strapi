@@ -522,12 +522,49 @@ declare const _default: ({ strapi }: {
     notifyPromoted(upUserId: number, activityId: number): Promise<void>;
     /** 站内信发送助手：resolve sso-user → sso-msg.sendInApp；无 sso/失败降级不断链 */
     notifyInApp(upUserId: number, activityId: number, scene: string, params: Record<string, any>, dedupeKey: string): Promise<void>;
-    checkin({ userId, activityId, method, lat, lng }: {
+    checkin({ userId, activityId, method, lat, lng, manualReason, operatorId }: {
         userId: number;
         activityId: string;
-        method: "worker_scan" | "self";
+        method: "worker_scan" | "self" | "manual";
         lat?: number;
         lng?: number;
+        manualReason?: string;
+        operatorId?: number;
+    }): Promise<{
+        ok: boolean;
+        reason: string;
+        attendanceId: any;
+        point: any;
+    } | {
+        ok: boolean;
+        reason: string;
+        attendanceId?: undefined;
+        point?: undefined;
+    } | {
+        ok: boolean;
+        attendanceId: any;
+        point: boolean;
+        reason?: undefined;
+    }>;
+    /**
+     * 签到场核销票据（C 端调用）。
+     * 校验活动状态与 active 报名；同一报名已有未过期 pending 票则复用，过期票置 expired 后新建。
+     */
+    issueCheckinTicket({ userId, activityDocumentId }: {
+        userId: number;
+        activityDocumentId: string;
+    }): Promise<{
+        token: any;
+        expiresAt: any;
+    }>;
+    /**
+     * 核销票据（管理端工作人员扫码调用）。
+     * 验票全部通过后才调用 checkin()，失败路径不发放签到积分；成功后票据置 used 并记录核销人。
+     */
+    redeemCheckinTicket({ token, activityDocumentId, operatorUserId }: {
+        token: string;
+        activityDocumentId: string;
+        operatorUserId?: number;
     }): Promise<{
         ok: boolean;
         reason: string;

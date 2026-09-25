@@ -1243,12 +1243,41 @@ declare const _default: {
         }): Promise<number>;
         notifyPromoted(upUserId: number, activityId: number): Promise<void>;
         notifyInApp(upUserId: number, activityId: number, scene: string, params: Record<string, any>, dedupeKey: string): Promise<void>;
-        checkin({ userId, activityId, method, lat, lng }: {
+        checkin({ userId, activityId, method, lat, lng, manualReason, operatorId }: {
             userId: number;
             activityId: string;
-            method: "worker_scan" | "self";
+            method: "worker_scan" | "self" | "manual";
             lat?: number;
             lng?: number;
+            manualReason?: string;
+            operatorId?: number;
+        }): Promise<{
+            ok: boolean;
+            reason: string;
+            attendanceId: any;
+            point: any;
+        } | {
+            ok: boolean;
+            reason: string;
+            attendanceId?: undefined;
+            point?: undefined;
+        } | {
+            ok: boolean;
+            attendanceId: any;
+            point: boolean;
+            reason?: undefined;
+        }>;
+        issueCheckinTicket({ userId, activityDocumentId }: {
+            userId: number;
+            activityDocumentId: string;
+        }): Promise<{
+            token: any;
+            expiresAt: any;
+        }>;
+        redeemCheckinTicket({ token, activityDocumentId, operatorUserId }: {
+            token: string;
+            activityDocumentId: string;
+            operatorUserId?: number;
         }): Promise<{
             ok: boolean;
             reason: string;

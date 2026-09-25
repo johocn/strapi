@@ -565,6 +565,7 @@ declare const _default: {
             adminSignups(ctx: any): Promise<void>;
             adminCancelSignup(ctx: any): Promise<void>;
             adminScanCheckin(ctx: any): Promise<void>;
+            checkinTicket(ctx: any): Promise<void>;
             adminAttendance(ctx: any): Promise<void>;
             review(ctx: any): Promise<void>;
             adminClose(ctx: any): Promise<void>;
@@ -1920,6 +1921,12 @@ declare const _default: {
                         type: string;
                         default: boolean;
                     };
+                    manualReason: {
+                        type: string;
+                    };
+                    operatorId: {
+                        type: string;
+                    };
                 };
             };
         };
@@ -2177,6 +2184,67 @@ declare const _default: {
                         type: string;
                     };
                     createdAt: {
+                        type: string;
+                    };
+                };
+            };
+        };
+        "activity-checkin-ticket": {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                    description: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                pluginOptions: {
+                    i18n: {
+                        localized: boolean;
+                    };
+                };
+                attributes: {
+                    token: {
+                        type: string;
+                        unique: boolean;
+                        private: boolean;
+                        required: boolean;
+                    };
+                    signup: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        required: boolean;
+                    };
+                    activity: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        required: boolean;
+                    };
+                    user: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        required: boolean;
+                    };
+                    status: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    expiresAt: {
+                        type: string;
+                        required: boolean;
+                    };
+                    usedAt: {
+                        type: string;
+                    };
+                    usedByUserId: {
                         type: string;
                     };
                 };
@@ -3625,12 +3693,41 @@ declare const _default: {
             }): Promise<number>;
             notifyPromoted(upUserId: number, activityId: number): Promise<void>;
             notifyInApp(upUserId: number, activityId: number, scene: string, params: Record<string, any>, dedupeKey: string): Promise<void>;
-            checkin({ userId, activityId, method, lat, lng }: {
+            checkin({ userId, activityId, method, lat, lng, manualReason, operatorId }: {
                 userId: number;
                 activityId: string;
-                method: "worker_scan" | "self";
+                method: "worker_scan" | "self" | "manual";
                 lat?: number;
                 lng?: number;
+                manualReason?: string;
+                operatorId?: number;
+            }): Promise<{
+                ok: boolean;
+                reason: string;
+                attendanceId: any;
+                point: any;
+            } | {
+                ok: boolean;
+                reason: string;
+                attendanceId?: undefined;
+                point?: undefined;
+            } | {
+                ok: boolean;
+                attendanceId: any;
+                point: boolean;
+                reason?: undefined;
+            }>;
+            issueCheckinTicket({ userId, activityDocumentId }: {
+                userId: number;
+                activityDocumentId: string;
+            }): Promise<{
+                token: any;
+                expiresAt: any;
+            }>;
+            redeemCheckinTicket({ token, activityDocumentId, operatorUserId }: {
+                token: string;
+                activityDocumentId: string;
+                operatorUserId?: number;
             }): Promise<{
                 ok: boolean;
                 reason: string;
