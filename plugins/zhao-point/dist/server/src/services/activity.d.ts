@@ -544,8 +544,14 @@ declare const _default: ({ strapi }: {
         reason: string;
     } | {
         ok: boolean;
+        reason: string;
+        attendanceId: any;
+        point: any;
+    } | {
+        ok: boolean;
         attendanceId: any;
         point: boolean;
+        reason?: undefined;
     }>;
     /**
      * 签到场核销票据（C 端调用）。
@@ -576,8 +582,14 @@ declare const _default: ({ strapi }: {
         reason: string;
     } | {
         ok: boolean;
+        reason: string;
+        attendanceId: any;
+        point: any;
+    } | {
+        ok: boolean;
         attendanceId: any;
         point: boolean;
+        reason?: undefined;
     }>;
     tourStory: typeof tourStory;
     tourChooseRole: typeof tourChooseRole;

@@ -1,4 +1,4 @@
-import { affectedCount, cancelOutcome } from '../server/src/services/activity-concurrency';
+import { affectedCount, cancelOutcome, isUniqueViolation } from '../server/src/services/activity-concurrency';
 
 describe('活动并发判定纯逻辑', () => {
   describe('affectedCount', () => {
@@ -69,6 +69,44 @@ describe('活动并发判定纯逻辑', () => {
 
     test('active 与 waiting 不会同时计数（调用方串行判定），active 优先', () => {
       expect(cancelOutcome({ active: 2, waiting: 1 }).releaseSeat).toBe(true);
+    });
+  });
+
+  describe('isUniqueViolation', () => {
+    test('顶层 pg 错误码 23505', () => {
+      expect(isUniqueViolation({ code: '23505', constraint: 'activity_attendances_signup_lnk_suq' })).toBe(true);
+    });
+
+    test('knex 包装形态（original 持有 pg 错误）', () => {
+      expect(isUniqueViolation({ code: undefined, original: { code: '23505' } })).toBe(true);
+    });
+
+    test('Strapi 包装形态（details.original）', () => {
+      expect(isUniqueViolation({ message: 'insert failed', details: { original: { code: '23505' } } })).toBe(true);
+    });
+
+    test('cause 链包装形态', () => {
+      expect(isUniqueViolation({ cause: { cause: { code: '23505' } } })).toBe(true);
+    });
+
+    test('业务错误与普通错误不得误判', () => {
+      expect(isUniqueViolation({ code: 'POINT_011' })).toBe(false);
+      expect(isUniqueViolation(new Error('boom'))).toBe(false);
+      expect(isUniqueViolation(null)).toBe(false);
+      expect(isUniqueViolation(undefined)).toBe(false);
+      expect(isUniqueViolation('23505')).toBe(false);
+      expect(isUniqueViolation({ code: 23505 })).toBe(false);
+    });
+
+    test('环形引用不得死循环', () => {
+      const a: any = { code: 'X' };
+      const b: any = { original: a };
+      a.original = b;
+      expect(isUniqueViolation(a)).toBe(false);
+      const c: any = { code: '23505' };
+      const d: any = { original: c };
+      c.original = d;
+      expect(isUniqueViolation(d)).toBe(true);
     });
   });
 });

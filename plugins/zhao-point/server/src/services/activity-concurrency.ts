@@ -17,6 +17,24 @@ export function affectedCount(result: unknown): number {
   return 0;
 }
 
+/**
+ * 唯一约束冲突（Postgres 23505）识别。
+ * knex / Strapi 会把原始 pg 错误包进 `original` / `cause` / `details.original`，
+ * 只看顶层 `e.code` 会漏判；这里逐层下钻并去重，避免环形引用死循环。
+ */
+export function isUniqueViolation(err: unknown): boolean {
+  const seen = new Set<unknown>();
+  const stack: unknown[] = [err];
+  while (stack.length) {
+    const e = stack.shift() as Record<string, any> | null | undefined;
+    if (!e || typeof e !== "object" || seen.has(e)) continue;
+    seen.add(e);
+    if (e.code === "23505") return true;
+    stack.push(e.original, e.cause, e.parent, e.details?.original);
+  }
+  return false;
+}
+
 export interface CancelOutcome {
   /** 是否本次取消的赢家（并发后到者为 false，不得产生任何副作用） */
   proceed: boolean;

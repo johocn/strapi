@@ -2270,6 +2270,18 @@ function affectedCount(result) {
   }
   return 0;
 }
+function isUniqueViolation(err) {
+  const seen = /* @__PURE__ */ new Set();
+  const stack = [err];
+  while (stack.length) {
+    const e = stack.shift();
+    if (!e || typeof e !== "object" || seen.has(e)) continue;
+    seen.add(e);
+    if (e.code === "23505") return true;
+    stack.push(e.original, e.cause, e.parent, e.details?.original);
+  }
+  return false;
+}
 function cancelOutcome(counts) {
   const active = Number(counts?.active) || 0;
   const waiting = Number(counts?.waiting) || 0;
@@ -3922,19 +3934,27 @@ const activity$1 = ({ strapi: strapi2 }) => ({
           throw e;
         }
       }
-      const att = await strapi2.db.query(ATT_UID$2).create({
-        data: {
-          signup: signup.id,
-          method,
-          checkinAt: /* @__PURE__ */ new Date(),
-          lat,
-          lng,
-          geoPassed,
-          pointsGranted: false,
-          ...manualReason ? { manualReason } : {},
-          ...operatorId ? { operatorId } : {}
+      const att = await (async () => {
+        try {
+          return await strapi2.db.query(ATT_UID$2).create({
+            data: {
+              signup: signup.id,
+              method,
+              checkinAt: /* @__PURE__ */ new Date(),
+              lat,
+              lng,
+              geoPassed,
+              pointsGranted: false,
+              ...manualReason ? { manualReason } : {},
+              ...operatorId ? { operatorId } : {}
+            }
+          });
+        } catch (e) {
+          if (!isUniqueViolation(e)) throw e;
+          return null;
         }
-      });
+      })();
+      if (!att) return { ok: false, reason: "duplicate_attendance" };
       await strapi2.db.query(SIGNS_UID$6).update({ where: { id: signup.id }, data: { attendedAt: /* @__PURE__ */ new Date() } });
       return { ok: true, attendanceId: att.id };
     }).catch((e) => {
@@ -3944,6 +3964,11 @@ const activity$1 = ({ strapi: strapi2 }) => ({
       }
       throw e;
     });
+    if (!claim.ok && claim.reason === "duplicate_attendance") {
+      const dup = await strapi2.db.query(ATT_UID$2).findOne({ where: { signup: signup.id } });
+      strapi2.log.warn(`[zhao-point:activity] checkin 唯一索引兜底命中 (signup=${signup.id})`);
+      return { ok: false, reason: "already_checked_in", attendanceId: dup?.id, point: dup?.pointsGranted };
+    }
     if (!claim.ok) return claim;
     await grantPoints(strapi2, userId, "activity_attend", "活动到场签到");
     await strapi2.db.query(ATT_UID$2).update({ where: { id: claim.attendanceId }, data: { pointsGranted: true } });
@@ -36375,6 +36400,19 @@ const register = ({ strapi: strapi2 }) => {
   }
 };
 const RULE_UID = "plugin::zhao-point.point-rule";
+const ATT_LNK_TABLE = "activity_attendances_signup_lnk";
+const ATT_LNK_UNIQUE_INDEX = "activity_attendances_signup_lnk_suq";
+const ensureAttendanceUniqueIndex = async (strapi2) => {
+  const knex = strapi2.db.connection;
+  const dup = await knex(ATT_LNK_TABLE).select("activity_signup_id").groupBy("activity_signup_id").havingRaw("count(*) > 1").limit(5);
+  if (Array.isArray(dup) && dup.length > 0) {
+    const ids = dup.map((d) => d.activity_signup_id).join(",");
+    strapi2.log.warn(`[zhao-point] 到场链接存在重复 signup(${ids})，跳过唯一索引创建，请先人工核账`);
+    return;
+  }
+  await knex.raw(`CREATE UNIQUE INDEX IF NOT EXISTS ${ATT_LNK_UNIQUE_INDEX} ON ${ATT_LNK_TABLE} (activity_signup_id)`);
+  strapi2.log.info(`[zhao-point] 到场记录唯一索引已就绪 (${ATT_LNK_UNIQUE_INDEX})`);
+};
 const bootstrap = async ({ strapi: strapi2 }) => {
   strapi2.log.info("[zhao-point] 插件已加载，开始种子数据检查...");
   try {
@@ -36424,6 +36462,11 @@ const bootstrap = async ({ strapi: strapi2 }) => {
     if (actSvc?.drainDueActivities) await actSvc.drainDueActivities();
   } catch (err) {
     strapi2.log.warn(`[zhao-point] 启动 drain 失败: ${err.message}`);
+  }
+  try {
+    await ensureAttendanceUniqueIndex(strapi2);
+  } catch (err) {
+    strapi2.log.warn(`[zhao-point] 到场记录唯一索引创建失败: ${err.message}`);
   }
 };
 const destroy = ({ strapi: _strapi }) => {

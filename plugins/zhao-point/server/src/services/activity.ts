@@ -1,7 +1,7 @@
 import type { Core } from "@strapi/strapi";
 import { FormValidationError, validateFormData, collectFormData, collectQuestionnaire } from "./form";
 import { TICKET_TTL_MS, newTicketToken, relId, shouldExpire, validateTicket } from "./checkin-ticket";
-import { affectedCount, cancelOutcome } from "./activity-concurrency";
+import { affectedCount, cancelOutcome, isUniqueViolation } from "./activity-concurrency";
 
 const SIGNS_UID = "plugin::zhao-point.activity-signup";
 const ATT_UID = "plugin::zhao-point.activity-attendance";
@@ -1825,13 +1825,23 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
           throw e;
         }
       }
-      const att = await strapi.db.query(ATT_UID).create({
-        data: {
-          signup: signup.id, method, checkinAt: new Date(), lat, lng, geoPassed, pointsGranted: false,
-          ...(manualReason ? { manualReason } : {}),
-          ...(operatorId ? { operatorId } : {}),
-        },
-      });
+      const att = await (async () => {
+        try {
+          return await strapi.db.query(ATT_UID).create({
+            data: {
+              signup: signup.id, method, checkinAt: new Date(), lat, lng, geoPassed, pointsGranted: false,
+              ...(manualReason ? { manualReason } : {}),
+              ...(operatorId ? { operatorId } : {}),
+            },
+          });
+        } catch (e: any) {
+          // DB 级唯一索引（activity_signup_id）兜底命中：并发绕过了上面的复读。
+          // 此时本事务已被 PG 置为 aborted，只能回滚，故交由事务外复读已存在记录。
+          if (!isUniqueViolation(e)) throw e;
+          return null;
+        }
+      })();
+      if (!att) return { ok: false as const, reason: "duplicate_attendance" };
       await strapi.db.query(SIGNS_UID).update({ where: { id: signup.id }, data: { attendedAt: new Date() } });
       return { ok: true as const, attendanceId: att.id };
     }).catch((e: any) => {
@@ -1841,6 +1851,12 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       }
       throw e;
     });
+    if (!claim.ok && claim.reason === "duplicate_attendance") {
+      // 唯一索引兜底：事务已回滚，到事务外复读已存在的到场记录，按幂等成功处理
+      const dup = await strapi.db.query(ATT_UID).findOne({ where: { signup: signup.id } });
+      strapi.log.warn(`[zhao-point:activity] checkin 唯一索引兜底命中 (signup=${signup.id})`);
+      return { ok: false, reason: "already_checked_in", attendanceId: dup?.id, point: dup?.pointsGranted };
+    }
     if (!claim.ok) return claim;
 
     // 积分与学习包授权放在事务外补偿执行：失败不阻断已成立的到场记录（保留既有韧性）

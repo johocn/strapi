@@ -1265,8 +1265,14 @@ declare const _default: {
             reason: string;
         } | {
             ok: boolean;
+            reason: string;
+            attendanceId: any;
+            point: any;
+        } | {
+            ok: boolean;
             attendanceId: any;
             point: boolean;
+            reason?: undefined;
         }>;
         issueCheckinTicket({ userId, activityDocumentId }: {
             userId: number;
@@ -1289,8 +1295,14 @@ declare const _default: {
             reason: string;
         } | {
             ok: boolean;
+            reason: string;
+            attendanceId: any;
+            point: any;
+        } | {
+            ok: boolean;
             attendanceId: any;
             point: boolean;
+            reason?: undefined;
         }>;
         tourStory: (args: {
             documentId: string;

@@ -8,6 +8,12 @@
  * 切勿对返回值直接 Number()——对象会被算成 NaN，导致认领判定失效。
  */
 export declare function affectedCount(result: unknown): number;
+/**
+ * 唯一约束冲突（Postgres 23505）识别。
+ * knex / Strapi 会把原始 pg 错误包进 `original` / `cause` / `details.original`，
+ * 只看顶层 `e.code` 会漏判；这里逐层下钻并去重，避免环形引用死循环。
+ */
+export declare function isUniqueViolation(err: unknown): boolean;
 export interface CancelOutcome {
     /** 是否本次取消的赢家（并发后到者为 false，不得产生任何副作用） */
     proceed: boolean;

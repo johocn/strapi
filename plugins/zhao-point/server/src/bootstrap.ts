@@ -2,6 +2,33 @@ import type { Core } from "@strapi/strapi";
 
 const RULE_UID = "plugin::zhao-point.point-rule";
 
+// 进场记录（activity_attendances）与报名的多对一关系走 Strapi 链接表，
+// 该表自带 _uq(activity_attendance_id, activity_signup_id) 只保证「同一条链接不重复」，
+// 无法阻止同一 signup 挂两条 attendance，故需补一条单列唯一索引作为 DB 级最终防线。
+const ATT_LNK_TABLE = "activity_attendances_signup_lnk";
+const ATT_LNK_UNIQUE_INDEX = "activity_attendances_signup_lnk_suq";
+
+/**
+ * 幂等补建「一条报名至多一条到场记录」唯一索引。
+ * Strapi 不支持在关系字段上声明 unique，只能以幂等 DDL 兜底；
+ * 若已存在重复数据则只告警并跳过，绝不阻断启动（交由人工核账后重试）。
+ */
+const ensureAttendanceUniqueIndex = async (strapi: Core.Strapi) => {
+  const knex = strapi.db.connection;
+  const dup = await knex(ATT_LNK_TABLE)
+    .select("activity_signup_id")
+    .groupBy("activity_signup_id")
+    .havingRaw("count(*) > 1")
+    .limit(5);
+  if (Array.isArray(dup) && dup.length > 0) {
+    const ids = dup.map((d: any) => d.activity_signup_id).join(",");
+    strapi.log.warn(`[zhao-point] 到场链接存在重复 signup(${ids})，跳过唯一索引创建，请先人工核账`);
+    return;
+  }
+  await knex.raw(`CREATE UNIQUE INDEX IF NOT EXISTS ${ATT_LNK_UNIQUE_INDEX} ON ${ATT_LNK_TABLE} (activity_signup_id)`);
+  strapi.log.info(`[zhao-point] 到场记录唯一索引已就绪 (${ATT_LNK_UNIQUE_INDEX})`);
+};
+
 const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
   strapi.log.info("[zhao-point] 插件已加载，开始种子数据检查...");
 
@@ -63,6 +90,13 @@ const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
     if (actSvc?.drainDueActivities) await actSvc.drainDueActivities();
   } catch (err: any) {
     strapi.log.warn(`[zhao-point] 启动 drain 失败: ${err.message}`);
+  }
+
+  // 启动兜底：补建到场记录唯一索引（幂等 DDL）
+  try {
+    await ensureAttendanceUniqueIndex(strapi);
+  } catch (err: any) {
+    strapi.log.warn(`[zhao-point] 到场记录唯一索引创建失败: ${err.message}`);
   }
 };
 
