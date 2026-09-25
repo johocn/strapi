@@ -36413,6 +36413,17 @@ const register = ({ strapi: strapi2 }) => {
   } catch {
   }
 };
+const collectMissingRules = (increaseRules, decreaseRules, existingActions) => {
+  const existing = new Set(existingActions);
+  const missing = [];
+  for (const [action, rule] of Object.entries(increaseRules || {})) {
+    if (!existing.has(action)) missing.push({ action, category: "increase", rule });
+  }
+  for (const [action, rule] of Object.entries(decreaseRules || {})) {
+    if (!existing.has(action)) missing.push({ action, category: "decrease", rule });
+  }
+  return missing;
+};
 const RULE_UID = "plugin::zhao-point.point-rule";
 const ATT_TABLE = "activity_attendances";
 const ATT_LNK_TABLE = "activity_attendances_signup_lnk";
@@ -36483,6 +36494,17 @@ const ensureAttendanceColumnConstraints = async (strapi2) => {
     strapi2.log.info(`[zhao-point] method 值域约束已创建 (${ATT_METHOD_CHECK})`);
   }
 };
+const ensureTicketTokenNotNull = async (strapi2) => {
+  const knex = strapi2.db.connection;
+  const row = await knex(TICKET_TABLE).whereNull("token").count({ n: "*" }).first();
+  const n = Number(row?.n ?? 0) || 0;
+  if (n > 0) {
+    strapi2.log.warn(`[zhao-point] ${TICKET_TABLE}.token 有 ${n} 行空值，跳过 NOT NULL，请先人工核账`);
+    return;
+  }
+  await knex.raw(`ALTER TABLE ${TICKET_TABLE} ALTER COLUMN token SET NOT NULL`);
+  strapi2.log.info(`[zhao-point] 票据 token 已收紧为 NOT NULL (${TICKET_TABLE})`);
+};
 const bootstrap = async ({ strapi: strapi2 }) => {
   strapi2.log.info("[zhao-point] 插件已加载，开始种子数据检查...");
   try {
@@ -36509,43 +36531,40 @@ const bootstrap = async ({ strapi: strapi2 }) => {
     strapi2.log.warn(`[zhao-point] 报名唯一性兜底创建失败: ${err.message}`);
   }
   try {
-    const defaultConfig = strapi2.plugin("zhao-point").config("default");
-    if (!defaultConfig) return;
-    const allRules = {};
-    for (const [action, rule] of Object.entries(defaultConfig.increaseRules || {})) {
-      allRules[action] = { ...rule, category: "increase" };
-    }
-    for (const [action, rule] of Object.entries(defaultConfig.decreaseRules || {})) {
-      allRules[action] = { ...rule, category: "decrease" };
-    }
-    const existingRules = await strapi2.db.query(RULE_UID).findMany({
-      select: ["action"]
-    });
-    const existingActions = new Set(existingRules.map((r) => r.action));
-    let seeded = 0;
-    for (const [action, rule] of Object.entries(allRules)) {
-      if (existingActions.has(action)) continue;
-      await strapi2.db.query(RULE_UID).create({
-        data: {
-          action,
-          category: rule.category,
-          points: rule.points || 0,
-          enabled: true,
-          limitPerDay: rule.limitPerDay ?? 0,
-          limitPerUser: rule.limitPerUser ?? 0,
-          limitPerDayPerUser: rule.limitPerDayPerUser ?? 0,
-          isOneTime: rule.isOneTime ?? false,
-          description: rule.description || "",
-          taskGroup: rule.taskGroup || "other",
-          extraConfig: rule.extraConfig ? JSON.stringify(rule.extraConfig) : "{}"
-        }
-      });
-      seeded++;
-    }
-    if (seeded > 0) {
-      strapi2.log.info(`[zhao-point] 已种子 ${seeded} 条积分规则`);
+    await ensureTicketTokenNotNull(strapi2);
+  } catch (err) {
+    strapi2.log.warn(`[zhao-point] 票据 token 收紧失败: ${err.message}`);
+  }
+  try {
+    const increaseRules = strapi2.plugin("zhao-point").config("increaseRules");
+    const decreaseRules = strapi2.plugin("zhao-point").config("decreaseRules");
+    if (!increaseRules && !decreaseRules) {
+      strapi2.log.warn("[zhao-point] 未读到积分规则配置(increaseRules/decreaseRules 均空)，跳过种子");
     } else {
-      strapi2.log.info("[zhao-point] 积分规则已完整，无需种子");
+      const existingRules = await strapi2.db.query(RULE_UID).findMany({ select: ["action"] });
+      const missing = collectMissingRules(increaseRules, decreaseRules, existingRules.map((r) => r.action));
+      for (const { action, category, rule } of missing) {
+        await strapi2.db.query(RULE_UID).create({
+          data: {
+            action,
+            category,
+            points: rule.points || 0,
+            enabled: true,
+            limitPerDay: rule.limitPerDay ?? 0,
+            limitPerUser: rule.limitPerUser ?? 0,
+            limitPerDayPerUser: rule.limitPerDayPerUser ?? 0,
+            isOneTime: rule.isOneTime ?? false,
+            description: rule.description || "",
+            taskGroup: rule.taskGroup || "other",
+            extraConfig: rule.extraConfig ? JSON.stringify(rule.extraConfig) : "{}"
+          }
+        });
+      }
+      if (missing.length > 0) {
+        strapi2.log.info(`[zhao-point] 已种子 ${missing.length} 条积分规则: ${missing.map((m) => m.action).join(",")}`);
+      } else {
+        strapi2.log.info("[zhao-point] 积分规则已完整，无需种子");
+      }
     }
   } catch (err) {
     strapi2.log.warn(`[zhao-point] 种子数据失败: ${err.message}`);

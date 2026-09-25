@@ -1,4 +1,5 @@
 import type { Core } from "@strapi/strapi";
+import { collectMissingRules } from "./services/seed-rules";
 
 const RULE_UID = "plugin::zhao-point.point-rule";
 
@@ -117,6 +118,22 @@ const ensureAttendanceColumnConstraints = async (strapi: Core.Strapi) => {
   }
 };
 
+/**
+ * 幂等收紧票据 token 为 NOT NULL（一次性凭据防重放底线）。
+ * 有 NULL 行时告警跳过，不阻断启动。
+ */
+const ensureTicketTokenNotNull = async (strapi: Core.Strapi) => {
+  const knex = strapi.db.connection;
+  const row = await knex(TICKET_TABLE).whereNull("token").count({ n: "*" }).first();
+  const n = Number((row as any)?.n ?? 0) || 0;
+  if (n > 0) {
+    strapi.log.warn(`[zhao-point] ${TICKET_TABLE}.token 有 ${n} 行空值，跳过 NOT NULL，请先人工核账`);
+    return;
+  }
+  await knex.raw(`ALTER TABLE ${TICKET_TABLE} ALTER COLUMN token SET NOT NULL`);
+  strapi.log.info(`[zhao-point] 票据 token 已收紧为 NOT NULL (${TICKET_TABLE})`);
+};
+
 const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
   strapi.log.info("[zhao-point] 插件已加载，开始种子数据检查...");
 
@@ -157,52 +174,44 @@ const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
   }
 
   try {
-    const defaultConfig = strapi.plugin("zhao-point").config("default") as any;
-    if (!defaultConfig) return;
+    await ensureTicketTokenNotNull(strapi);
+  } catch (err: any) {
+    strapi.log.warn(`[zhao-point] 票据 token 收紧失败: ${err.message}`);
+  }
 
-    const allRules: Record<string, any> = {};
-
-    // 合并 increase 和 decrease 规则
-    for (const [action, rule] of Object.entries(defaultConfig.increaseRules || {})) {
-      allRules[action] = { ...(rule as any), category: "increase" };
-    }
-    for (const [action, rule] of Object.entries(defaultConfig.decreaseRules || {})) {
-      allRules[action] = { ...(rule as any), category: "decrease" };
-    }
-
-    // 查询已有规则的 action 列表
-    const existingRules = await strapi.db.query(RULE_UID).findMany({
-      select: ["action"],
-    });
-    const existingActions = new Set(existingRules.map((r: any) => r.action));
-
-    // Seed 缺失的规则
-    let seeded = 0;
-    for (const [action, rule] of Object.entries(allRules)) {
-      if (existingActions.has(action)) continue;
-
-      await strapi.db.query(RULE_UID).create({
-        data: {
-          action,
-          category: rule.category,
-          points: rule.points || 0,
-          enabled: true,
-          limitPerDay: rule.limitPerDay ?? 0,
-          limitPerUser: rule.limitPerUser ?? 0,
-          limitPerDayPerUser: rule.limitPerDayPerUser ?? 0,
-          isOneTime: rule.isOneTime ?? false,
-          description: rule.description || "",
-          taskGroup: rule.taskGroup || "other",
-          extraConfig: rule.extraConfig ? JSON.stringify(rule.extraConfig) : "{}",
-        },
-      });
-      seeded++;
-    }
-
-    if (seeded > 0) {
-      strapi.log.info(`[zhao-point] 已种子 ${seeded} 条积分规则`);
+  try {
+    // Strapi 5 plugins loader 会把 plugin.config 覆写为「已解包」的 default 导出
+    // （@strapi/core loaders/plugins applyUserConfig），config("default") 恒为 undefined，
+    // 必须直接读顶层键。
+    const increaseRules = strapi.plugin("zhao-point").config("increaseRules") as Record<string, any> | undefined;
+    const decreaseRules = strapi.plugin("zhao-point").config("decreaseRules") as Record<string, any> | undefined;
+    if (!increaseRules && !decreaseRules) {
+      strapi.log.warn("[zhao-point] 未读到积分规则配置(increaseRules/decreaseRules 均空)，跳过种子");
     } else {
-      strapi.log.info("[zhao-point] 积分规则已完整，无需种子");
+      const existingRules = await strapi.db.query(RULE_UID).findMany({ select: ["action"] });
+      const missing = collectMissingRules(increaseRules, decreaseRules, existingRules.map((r: any) => r.action));
+      for (const { action, category, rule } of missing) {
+        await strapi.db.query(RULE_UID).create({
+          data: {
+            action,
+            category,
+            points: rule.points || 0,
+            enabled: true,
+            limitPerDay: rule.limitPerDay ?? 0,
+            limitPerUser: rule.limitPerUser ?? 0,
+            limitPerDayPerUser: rule.limitPerDayPerUser ?? 0,
+            isOneTime: rule.isOneTime ?? false,
+            description: rule.description || "",
+            taskGroup: rule.taskGroup || "other",
+            extraConfig: rule.extraConfig ? JSON.stringify(rule.extraConfig) : "{}",
+          },
+        });
+      }
+      if (missing.length > 0) {
+        strapi.log.info(`[zhao-point] 已种子 ${missing.length} 条积分规则: ${missing.map((m) => m.action).join(",")}`);
+      } else {
+        strapi.log.info("[zhao-point] 积分规则已完整，无需种子");
+      }
     }
   } catch (err: any) {
     strapi.log.warn(`[zhao-point] 种子数据失败: ${err.message}`);
