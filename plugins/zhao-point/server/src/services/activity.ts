@@ -1,8 +1,10 @@
 import type { Core } from "@strapi/strapi";
 import { FormValidationError, validateFormData, collectFormData, collectQuestionnaire } from "./form";
+import { TICKET_TTL_MS, newTicketToken, shouldExpire, validateTicket } from "./checkin-ticket";
 
 const SIGNS_UID = "plugin::zhao-point.activity-signup";
 const ATT_UID = "plugin::zhao-point.activity-attendance";
+const TICKET_UID = "plugin::zhao-point.activity-checkin-ticket";
 const AUTH_UID = "plugin::zhao-course.user-course-auth";
 const ACTIVITY_UID = "plugin::zhao-point.activity";
 const MSG_UID = "plugin::zhao-point.activity-message";
@@ -1784,6 +1786,83 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       if (lesson?.course?.id) await grantCourseTrial(strapi, userId, lesson.course.id);
     }
     return { ok: true, attendanceId: att.id, point: true };
+  },
+
+  /**
+   * 签到场核销票据（C 端调用）。
+   * 校验活动状态与 active 报名；同一报名已有未过期 pending 票则复用，过期票置 expired 后新建。
+   */
+  async issueCheckinTicket({ userId, activityDocumentId }: { userId: number; activityDocumentId: string }) {
+    const act = await strapi.documents("plugin::zhao-point.activity").findOne({ documentId: activityDocumentId });
+    if (!act) throw new Error("活动不存在");
+    if (act.status !== "signup_open" && act.status !== "ongoing") throw new Error("活动未在进行中，无法出示核销码");
+    const signup = await strapi.db.query(SIGNS_UID).findOne({
+      where: { user: userId, activity: act.id, status: "active" },
+    });
+    if (!signup) throw new Error("尚未报名");
+
+    const now = Date.now();
+    const existing = await strapi.db.query(TICKET_UID).findOne({
+      where: { signup: signup.id, status: "pending" },
+      orderBy: { id: "desc" },
+    });
+    if (existing && !shouldExpire(existing, now)) {
+      return { token: existing.token, expiresAt: existing.expiresAt };
+    }
+    if (existing) {
+      await strapi.db.query(TICKET_UID).update({ where: { id: existing.id }, data: { status: "expired" } });
+    }
+    const expiresAt = new Date(now + TICKET_TTL_MS).toISOString();
+    const created = await strapi.db.query(TICKET_UID).create({
+      data: {
+        token: newTicketToken(),
+        signup: signup.id,
+        activity: act.id,
+        user: userId,
+        status: "pending",
+        expiresAt,
+      },
+    });
+    return { token: created.token, expiresAt: created.expiresAt };
+  },
+
+  /**
+   * 核销票据（管理端工作人员扫码调用）。
+   * 验票全部通过后才调用 checkin()，失败路径不发放签到积分；成功后票据置 used 并记录核销人。
+   */
+  async redeemCheckinTicket({ token, activityDocumentId, operatorUserId }: {
+    token: string; activityDocumentId: string; operatorUserId?: number;
+  }) {
+    const act = await strapi.documents("plugin::zhao-point.activity").findOne({ documentId: activityDocumentId });
+    if (!act) throw new Error("活动不存在");
+    const ticket = await strapi.db.query(TICKET_UID).findOne({
+      where: { token },
+      populate: { signup: true },
+    });
+    const check = validateTicket(ticket, { activityId: act.id });
+    if (!check.ok) {
+      if (ticket && check.code === "ticket_expired") {
+        await strapi.db.query(TICKET_UID).update({ where: { id: (ticket as any).id }, data: { status: "expired" } });
+      }
+      const err: any = new Error(check.message);
+      err.code = check.code;
+      err.status = check.httpStatus;
+      throw err;
+    }
+    const signup: any = (ticket as any).signup;
+    if (!signup || signup.status !== "active") {
+      const err: any = new Error("该报名已取消，无法签到");
+      err.code = "signup_inactive";
+      err.status = 400;
+      throw err;
+    }
+    const signupUserId = typeof signup.user === "object" && signup.user !== null ? signup.user.id : signup.user;
+    const result = await this.checkin({ userId: Number(signupUserId), activityId: activityDocumentId, method: "worker_scan" });
+    await strapi.db.query(TICKET_UID).update({
+      where: { id: (ticket as any).id },
+      data: { status: "used", usedAt: new Date(), usedByUserId: operatorUserId ?? null },
+    });
+    return result;
   },
   tourStory,
   tourChooseRole,
