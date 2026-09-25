@@ -356,6 +356,38 @@ declare const _default: {
                     taskGroup: string;
                     extraConfig: {};
                 };
+                activity_reward: {
+                    points: number;
+                    limitPerDay: number;
+                    isOneTime: boolean;
+                    description: string;
+                    taskGroup: string;
+                    extraConfig: {};
+                };
+                tour_checkin: {
+                    points: number;
+                    limitPerDay: number;
+                    isOneTime: boolean;
+                    description: string;
+                    taskGroup: string;
+                    extraConfig: {};
+                };
+                tour_main: {
+                    points: number;
+                    limitPerDay: number;
+                    isOneTime: boolean;
+                    description: string;
+                    taskGroup: string;
+                    extraConfig: {};
+                };
+                tour_finale: {
+                    points: number;
+                    limitPerDay: number;
+                    isOneTime: boolean;
+                    description: string;
+                    taskGroup: string;
+                    extraConfig: {};
+                };
             };
             decreaseRules: {
                 redeem_gift: {
@@ -2811,6 +2843,38 @@ declare const _default: {
                         extraConfig: {};
                     };
                     activity_share_reward: {
+                        points: number;
+                        limitPerDay: number;
+                        isOneTime: boolean;
+                        description: string;
+                        taskGroup: string;
+                        extraConfig: {};
+                    };
+                    activity_reward: {
+                        points: number;
+                        limitPerDay: number;
+                        isOneTime: boolean;
+                        description: string;
+                        taskGroup: string;
+                        extraConfig: {};
+                    };
+                    tour_checkin: {
+                        points: number;
+                        limitPerDay: number;
+                        isOneTime: boolean;
+                        description: string;
+                        taskGroup: string;
+                        extraConfig: {};
+                    };
+                    tour_main: {
+                        points: number;
+                        limitPerDay: number;
+                        isOneTime: boolean;
+                        description: string;
+                        taskGroup: string;
+                        extraConfig: {};
+                    };
+                    tour_finale: {
                         points: number;
                         limitPerDay: number;
                         isOneTime: boolean;

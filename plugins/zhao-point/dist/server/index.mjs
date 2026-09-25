@@ -63,7 +63,11 @@ const config$1 = {
       activity_signup_contact: { points: 20, limitPerDay: 0, isOneTime: false, description: "完善联系方式报名", taskGroup: "other", extraConfig: {} },
       activity_signup_survey: { points: 50, limitPerDay: 0, isOneTime: false, description: "回答问卷报名", taskGroup: "other", extraConfig: {} },
       activity_attend: { points: 20, limitPerDay: 0, isOneTime: false, description: "活动到场签到", taskGroup: "other", extraConfig: {} },
-      activity_share_reward: { points: 0, limitPerDay: 0, isOneTime: false, description: "活动分享裂变奖励(动态积分)", taskGroup: "other", extraConfig: {} }
+      activity_share_reward: { points: 0, limitPerDay: 0, isOneTime: false, description: "活动分享裂变奖励(动态积分)", taskGroup: "other", extraConfig: {} },
+      activity_reward: { points: 0, limitPerDay: 0, isOneTime: false, description: "活动奖励发放(动态积分)", taskGroup: "other", extraConfig: {} },
+      tour_checkin: { points: 10, limitPerDay: 0, isOneTime: false, description: "剧本打卡", taskGroup: "other", extraConfig: {} },
+      tour_main: { points: 50, limitPerDay: 0, isOneTime: false, description: "剧本谜底破解", taskGroup: "other", extraConfig: {} },
+      tour_finale: { points: 100, limitPerDay: 0, isOneTime: false, description: "剧本终章兑奖", taskGroup: "other", extraConfig: {} }
     },
     // 扣除积分规则 (category: decrease)
     decreaseRules: {
