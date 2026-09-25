@@ -1825,6 +1825,16 @@ declare const _default: {
                         relation: string;
                         target: string;
                     };
+                    activityId: {
+                        type: string;
+                        private: boolean;
+                        description: string;
+                    };
+                    userId: {
+                        type: string;
+                        private: boolean;
+                        description: string;
+                    };
                     status: {
                         type: string;
                         enum: string[];

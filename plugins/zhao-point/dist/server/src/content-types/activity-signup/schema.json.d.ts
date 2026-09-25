@@ -6,6 +6,8 @@ declare const _default: {
   "attributes": {
     "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::users-permissions.user" },
     "activity": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.activity" },
+    "activityId": { "type": "integer", "private": true, "description": "活动 id 冗余镜像，仅供「同一用户同一活动至多一条有效报名」的部分唯一索引使用，由报名链路写入，勿手工修改" },
+    "userId": { "type": "integer", "private": true, "description": "用户 id 冗余镜像，同上（关系落 lnk 表，DB 无法跨表建唯一约束）" },
     "status": { "type": "enumeration", "enum": ["active", "cancelled", "waiting"], "default": "active" },
     "pointsCharged": { "type": "integer", "default": 0 },
     "feeTierId": { "type": "string" },
