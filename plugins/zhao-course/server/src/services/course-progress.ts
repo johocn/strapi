@@ -243,7 +243,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
 
       const sop = strapi.plugin("zhao-sso").service("sso-sop");
       const sso = await sop.resolveSsoUserForUpUser(userId);
-      if (!sso) continue;
+      if (!sso) {
+        // 无 sso 映射 → 该学员本轮激活提醒跳过，必须可观测（否则静默漏发且无痕迹）
+        strapi.log.warn(`[course] 激活提醒跳过: up_users#${userId} 无 sso 映射`);
+        continue;
+      }
 
       const title = enrollment.course?.title || "";
       const results = await sop.trigger("course.activate", {

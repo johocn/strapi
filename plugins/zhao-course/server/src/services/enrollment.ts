@@ -86,6 +86,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       });
       const sop = strapi.plugin("zhao-sso").service("sso-sop");
       const sso = await sop.resolveSsoUserForUpUser(userId); // 按标识匹配, 匹配不到返回 null
+      if (!sso) {
+        // 无 sso 映射 → course.enrolled 课后SOP排期整体跳过，必须可观测（否则学员静默收不到课中提醒）
+        strapi.log.warn(`[course] course.enrolled 埋点跳过: up_users#${userId} 无 sso 映射`);
+      }
       if (sso) {
         await sop.trigger("course.enrolled", {
           user: sso.id,
@@ -114,6 +118,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         const sop = strapi.plugin("zhao-sso").service("sso-sop");
         const sso = await sop.resolveSsoUserForUpUser(userId);
         if (sso?.id) ssoId = String(sso.id);
+        else strapi.log.warn(`[course] 标记课程用户跳过: up_users#${userId} 无 sso_id 且无 sso 映射`);
       }
       if (ssoId) {
         const result = await strapi.plugin("zhao-course").service("vendure-profile").markAsCourseUser(ssoId);

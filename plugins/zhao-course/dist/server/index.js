@@ -2735,7 +2735,10 @@ const courseProgress = ({ strapi }) => {
         if (!lastStudyOk || !lastRemindOk) continue;
         const sop = strapi.plugin("zhao-sso").service("sso-sop");
         const sso = await sop.resolveSsoUserForUpUser(userId);
-        if (!sso) continue;
+        if (!sso) {
+          strapi.log.warn(`[course] 激活提醒跳过: up_users#${userId} 无 sso 映射`);
+          continue;
+        }
         const title = enrollment2.course?.title || "";
         const results = await sop.trigger("course.activate", {
           user: sso.id,
@@ -3072,6 +3075,9 @@ const enrollment = ({ strapi }) => {
       });
       const sop = strapi.plugin("zhao-sso").service("sso-sop");
       const sso = await sop.resolveSsoUserForUpUser(userId);
+      if (!sso) {
+        strapi.log.warn(`[course] course.enrolled 埋点跳过: up_users#${userId} 无 sso 映射`);
+      }
       if (sso) {
         await sop.trigger("course.enrolled", {
           user: sso.id,
@@ -3097,6 +3103,7 @@ const enrollment = ({ strapi }) => {
         const sop = strapi.plugin("zhao-sso").service("sso-sop");
         const sso = await sop.resolveSsoUserForUpUser(userId);
         if (sso?.id) ssoId = String(sso.id);
+        else strapi.log.warn(`[course] 标记课程用户跳过: up_users#${userId} 无 sso_id 且无 sso 映射`);
       }
       if (ssoId) {
         const result = await strapi.plugin("zhao-course").service("vendure-profile").markAsCourseUser(ssoId);
