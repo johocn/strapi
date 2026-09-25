@@ -18,8 +18,10 @@ const mockStrapi = {
 
 import ssoMsgFactory from "../server/src/services/sso-msg";
 
+// 注意：必须用 resetAllMocks 而非 clearAllMocks——后者不清空 mockResolvedValueOnce 队列，
+// 会导致用例间残留排队值互相污染（表现为「单独跑绿、连跑才红」的偶发失败）。
 describe("sso-msg sendJob", () => {
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => jest.resetAllMocks());
 
   it("模板缺 wx_template_id 时任务落 failed 而非卡死 sending", async () => {
     const svc = ssoMsgFactory({ strapi: mockStrapi as any });
@@ -51,7 +53,7 @@ describe("sso-msg sendJob", () => {
 });
 
 describe("sso-msg buildJob", () => {
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => jest.resetAllMocks());
 
   it("微信模板缺 wx_template_id 时拒绝落库", async () => {
     const svc = ssoMsgFactory({ strapi: mockStrapi as any });
