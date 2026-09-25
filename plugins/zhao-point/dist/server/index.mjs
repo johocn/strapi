@@ -4131,7 +4131,12 @@ const activity$1 = ({ strapi: strapi2 }) => ({
       err.status = 400;
       throw err;
     }
-    const result = await this.checkin({ userId: signupUserId, activityId: activityDocumentId, method: "worker_scan" });
+    const result = await this.checkin({
+      userId: signupUserId,
+      activityId: activityDocumentId,
+      method: "worker_scan",
+      operatorId: operatorUserId
+    });
     await strapi2.db.query(TICKET_UID).update({
       where: { id: ticket.id },
       data: { status: "used", usedAt: /* @__PURE__ */ new Date(), usedByUserId: operatorUserId ?? null }
@@ -36544,6 +36549,9 @@ const RULE_UID = "plugin::zhao-point.point-rule";
 const ATT_TABLE = "activity_attendances";
 const ATT_LNK_TABLE = "activity_attendances_signup_lnk";
 const ATT_METHOD_CHECK = "activity_attendances_method_check";
+const ATT_GEO_CHECK = "activity_attendances_geo_range_check";
+const ATT_OPERATOR_FK = "activity_attendances_operator_id_fk";
+const UP_USERS_TABLE = "up_users";
 const ATT_LNK_SIGNUP_INDEX = "activity_attendances_signup_lnk_suq";
 const ATT_LNK_ATTENDANCE_INDEX = "activity_attendances_signup_lnk_auq";
 const TICKET_TABLE = "activity_checkin_tickets";
@@ -36621,6 +36629,57 @@ const ensureTicketTokenNotNull = async (strapi2) => {
   await knex.raw(`ALTER TABLE ${TICKET_TABLE} ALTER COLUMN token SET NOT NULL`);
   strapi2.log.info(`[zhao-point] 票据 token 已收紧为 NOT NULL (${TICKET_TABLE})`);
 };
+const ensureAttendanceGeoAndOperatorConstraints = async (strapi2) => {
+  const knex = strapi2.db.connection;
+  const hasGeo = await knex("pg_constraint").where({ conname: ATT_GEO_CHECK }).first();
+  if (!hasGeo) {
+    const res = await knex.raw(
+      `SELECT count(*)::int AS n FROM ${ATT_TABLE}
+       WHERE (lat IS NOT NULL AND (lat < -90 OR lat > 90))
+          OR (lng IS NOT NULL AND (lng < -180 OR lng > 180))`
+    );
+    const n = Number(((res?.rows ?? res) || [])[0]?.n ?? 0);
+    if (n > 0) {
+      strapi2.log.warn(`[zhao-point] ${ATT_TABLE} 有 ${n} 行经纬度越界，跳过地理值域约束，请先人工核账`);
+    } else {
+      await knex.raw(
+        `ALTER TABLE ${ATT_TABLE} ADD CONSTRAINT ${ATT_GEO_CHECK} CHECK (
+           (lat IS NULL OR (lat >= -90 AND lat <= 90)) AND
+           (lng IS NULL OR (lng >= -180 AND lng <= 180))
+         )`
+      );
+      strapi2.log.info(`[zhao-point] 地理值域约束已创建 (${ATT_GEO_CHECK})`);
+    }
+  }
+  const hasFk = await knex("pg_constraint").where({ conname: ATT_OPERATOR_FK }).first();
+  if (!hasFk) {
+    const res = await knex.raw(
+      `SELECT count(*)::int AS n FROM ${ATT_TABLE} a
+       WHERE a.operator_id IS NOT NULL
+         AND NOT EXISTS (SELECT 1 FROM ${UP_USERS_TABLE} u WHERE u.id = a.operator_id)`
+    );
+    const n = Number(((res?.rows ?? res) || [])[0]?.n ?? 0);
+    if (n > 0) {
+      strapi2.log.warn(`[zhao-point] ${ATT_TABLE}.operator_id 有 ${n} 行悬空引用，跳过操作人外键，请先人工核账`);
+    } else {
+      await knex.raw(
+        `ALTER TABLE ${ATT_TABLE} ADD CONSTRAINT ${ATT_OPERATOR_FK}
+           FOREIGN KEY (operator_id) REFERENCES ${UP_USERS_TABLE}(id) ON DELETE SET NULL`
+      );
+      strapi2.log.info(`[zhao-point] 操作人外键已创建 (${ATT_OPERATOR_FK})`);
+    }
+  }
+};
+const checkLnkOrphans = async (strapi2) => {
+  const res = await strapi2.db.connection.raw(
+    `SELECT count(*)::int AS n FROM ${ATT_LNK_TABLE}
+     WHERE activity_signup_id IS NULL OR activity_attendance_id IS NULL`
+  );
+  const n = Number(((res?.rows ?? res) || [])[0]?.n ?? 0);
+  if (n > 0) {
+    strapi2.log.warn(`[zhao-point] ${ATT_LNK_TABLE} 存在 ${n} 行孤儿链接(半链接行)，正常关系写入不会产生，请人工核账`);
+  }
+};
 const healIdSequences = async (strapi2) => {
   const knex = strapi2.db.connection;
   const res = await knex.raw(`
@@ -36678,6 +36737,16 @@ const bootstrap = async ({ strapi: strapi2 }) => {
     await ensureTicketTokenNotNull(strapi2);
   } catch (err) {
     strapi2.log.warn(`[zhao-point] 票据 token 收紧失败: ${err.message}`);
+  }
+  try {
+    await ensureAttendanceGeoAndOperatorConstraints(strapi2);
+  } catch (err) {
+    strapi2.log.warn(`[zhao-point] 到场记录地理值域/操作人外键创建失败: ${err.message}`);
+  }
+  try {
+    await checkLnkOrphans(strapi2);
+  } catch (err) {
+    strapi2.log.warn(`[zhao-point] lnk 孤儿检测失败: ${err.message}`);
   }
   try {
     await healIdSequences(strapi2);
@@ -39046,6 +39115,10 @@ const feeService = ({ strapi: strapi2 }) => ({
           if (profile?.segment) segment = profile.segment;
           const rel = await strapi2.db.query(REF_UID$1).findOne({ where: { inviter: sso.id } });
           isPartner = !!rel;
+        } else {
+          strapi2.log.warn(
+            `[zhao-point:fee] 身份解析降级: up_users#${upUserId} 无 sso 映射，按最低档 C/非合伙人计价`
+          );
         }
       }
     } catch {

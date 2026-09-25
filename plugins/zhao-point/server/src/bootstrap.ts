@@ -16,6 +16,9 @@ const RULE_UID = "plugin::zhao-point.point-rule";
 const ATT_TABLE = "activity_attendances";
 const ATT_LNK_TABLE = "activity_attendances_signup_lnk";
 const ATT_METHOD_CHECK = "activity_attendances_method_check";
+const ATT_GEO_CHECK = "activity_attendances_geo_range_check";
+const ATT_OPERATOR_FK = "activity_attendances_operator_id_fk";
+const UP_USERS_TABLE = "up_users";
 const ATT_LNK_SIGNUP_INDEX = "activity_attendances_signup_lnk_suq";
 const ATT_LNK_ATTENDANCE_INDEX = "activity_attendances_signup_lnk_auq";
 const TICKET_TABLE = "activity_checkin_tickets";
@@ -135,6 +138,76 @@ const ensureTicketTokenNotNull = async (strapi: Core.Strapi) => {
 };
 
 /**
+ * 幂等补建到场记录的地理值域 CHECK 与操作人外键（列级 schema 不落库，详见文件头注释）。
+ * 逐项先查违例：有违例则告警跳过，绝不阻断启动（交人工核账后下一轮启动自动补建）。
+ * 说明：operator_id 仅在「手动核销」与「扫码核销」路径写入（adminScanCheckin/svc.redeemCheckinTicket），
+ * 值为 up_users.id（zhao-point 的 getUserId 口径）。
+ */
+const ensureAttendanceGeoAndOperatorConstraints = async (strapi: Core.Strapi) => {
+  const knex = strapi.db.connection;
+
+  // ① 经纬度值域：lat∈[-90,90]、lng∈[-180,180]；允许 NULL（C 端未授权定位时不上报）
+  const hasGeo = await knex("pg_constraint").where({ conname: ATT_GEO_CHECK }).first();
+  if (!hasGeo) {
+    const res: any = await knex.raw(
+      `SELECT count(*)::int AS n FROM ${ATT_TABLE}
+       WHERE (lat IS NOT NULL AND (lat < -90 OR lat > 90))
+          OR (lng IS NOT NULL AND (lng < -180 OR lng > 180))`
+    );
+    const n = Number(((res?.rows ?? res) || [])[0]?.n ?? 0);
+    if (n > 0) {
+      strapi.log.warn(`[zhao-point] ${ATT_TABLE} 有 ${n} 行经纬度越界，跳过地理值域约束，请先人工核账`);
+    } else {
+      await knex.raw(
+        `ALTER TABLE ${ATT_TABLE} ADD CONSTRAINT ${ATT_GEO_CHECK} CHECK (
+           (lat IS NULL OR (lat >= -90 AND lat <= 90)) AND
+           (lng IS NULL OR (lng >= -180 AND lng <= 180))
+         )`
+      );
+      strapi.log.info(`[zhao-point] 地理值域约束已创建 (${ATT_GEO_CHECK})`);
+    }
+  }
+
+  // ② 操作人外键：悬空引用会让审计链失真（Allowed NULL，仅约束非空值的引用有效性）
+  const hasFk = await knex("pg_constraint").where({ conname: ATT_OPERATOR_FK }).first();
+  if (!hasFk) {
+    const res: any = await knex.raw(
+      `SELECT count(*)::int AS n FROM ${ATT_TABLE} a
+       WHERE a.operator_id IS NOT NULL
+         AND NOT EXISTS (SELECT 1 FROM ${UP_USERS_TABLE} u WHERE u.id = a.operator_id)`
+    );
+    const n = Number(((res?.rows ?? res) || [])[0]?.n ?? 0);
+    if (n > 0) {
+      strapi.log.warn(`[zhao-point] ${ATT_TABLE}.operator_id 有 ${n} 行悬空引用，跳过操作人外键，请先人工核账`);
+    } else {
+      await knex.raw(
+        `ALTER TABLE ${ATT_TABLE} ADD CONSTRAINT ${ATT_OPERATOR_FK}
+           FOREIGN KEY (operator_id) REFERENCES ${UP_USERS_TABLE}(id) ON DELETE SET NULL`
+      );
+      strapi.log.info(`[zhao-point] 操作人外键已创建 (${ATT_OPERATOR_FK})`);
+    }
+  }
+};
+
+/**
+ * lnk 表半链接行检测（只告警，不改结构）。
+ * 结论：Strapi 全部 *_lnk 表的 FK 列默认可空（实测 activities_belongs_to_series_lnk.activity_id
+ * 亦为 nullable），对其强加 NOT NULL 属偏离平台约定，且每轮启动会被 schema sync 回滚、
+ * 需 bootstrap 反复重收紧 → 判为过度设计，仅保留可观测性告警。
+ * 正常关系写入不会产生半链接行，出现即说明存在直连 SQL 或手工操作。
+ */
+const checkLnkOrphans = async (strapi: Core.Strapi) => {
+  const res: any = await strapi.db.connection.raw(
+    `SELECT count(*)::int AS n FROM ${ATT_LNK_TABLE}
+     WHERE activity_signup_id IS NULL OR activity_attendance_id IS NULL`
+  );
+  const n = Number(((res?.rows ?? res) || [])[0]?.n ?? 0);
+  if (n > 0) {
+    strapi.log.warn(`[zhao-point] ${ATT_LNK_TABLE} 存在 ${n} 行孤儿链接(半链接行)，正常关系写入不会产生，请人工核账`);
+  }
+};
+
+/**
  * 启动期 ID 序列自愈：历史上存在显式 id 插入（导入/同步）导致 serial 序列落后于 max(id)，
  * 后续任何 insert 都会撞主键冲突（生产已实际发生：新用户注册 100% 失败）。
  * 幂等：仅当序列「下一个 nextval 会 <= max(id)」时 setval；每次启动巡检全部 public 表，修复明细打 warn。
@@ -213,6 +286,18 @@ const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
     await ensureTicketTokenNotNull(strapi);
   } catch (err: any) {
     strapi.log.warn(`[zhao-point] 票据 token 收紧失败: ${err.message}`);
+  }
+
+  try {
+    await ensureAttendanceGeoAndOperatorConstraints(strapi);
+  } catch (err: any) {
+    strapi.log.warn(`[zhao-point] 到场记录地理值域/操作人外键创建失败: ${err.message}`);
+  }
+
+  try {
+    await checkLnkOrphans(strapi);
+  } catch (err: any) {
+    strapi.log.warn(`[zhao-point] lnk 孤儿检测失败: ${err.message}`);
   }
 
   // 启动兜底：巡检并修复落后于 max(id) 的 ID 序列（防显式 id 插入导致的主键冲突复发）

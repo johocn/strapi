@@ -34,6 +34,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
           if (profile?.segment) segment = profile.segment;
           const rel = await strapi.db.query(REF_UID).findOne({ where: { inviter: sso.id } });
           isPartner = !!rel;
+        } else {
+          // 身份解析失败会按最低档 C 计价（档位/因子定价可能算错钱），必须可观测
+          strapi.log.warn(
+            `[zhao-point:fee] 身份解析降级: up_users#${upUserId} 无 sso 映射，按最低档 C/非合伙人计价`
+          );
         }
       }
     } catch { /* 身份解析失败按最低档兜底 */ }

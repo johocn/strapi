@@ -2003,7 +2003,13 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       err.status = 400;
       throw err;
     }
-    const result = await this.checkin({ userId: signupUserId, activityId: activityDocumentId, method: "worker_scan" });
+    // 操作人必须落到到场记录（与手动核销路径对齐），否则 operator_id 恒为 NULL、审计失真
+    const result = await this.checkin({
+      userId: signupUserId,
+      activityId: activityDocumentId,
+      method: "worker_scan",
+      operatorId: operatorUserId,
+    });
     await strapi.db.query(TICKET_UID).update({
       where: { id: (ticket as any).id },
       data: { status: "used", usedAt: new Date(), usedByUserId: operatorUserId ?? null },
