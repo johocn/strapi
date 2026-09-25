@@ -261,7 +261,7 @@ const kind$a = "collectionType";
 const collectionName$a = "activity_signups";
 const info$a = { "singularName": "activity-signup", "pluralName": "activity-signups", "displayName": "Activity Signup" };
 const options$a = { "draftAndPublish": false };
-const attributes$a = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::users-permissions.user" }, "activity": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.activity" }, "status": { "type": "enumeration", "enum": ["active", "cancelled", "waiting"], "default": "active" }, "pointsCharged": { "type": "integer", "default": 0 }, "feeTierId": { "type": "string" }, "signupAt": { "type": "datetime" }, "attendedAt": { "type": "datetime" }, "rating": { "type": "integer", "min": 1, "max": 5 }, "nps": { "type": "integer", "min": 0, "max": 10 }, "review": { "type": "text" }, "reviewedAt": { "type": "datetime" }, "reviewHidden": { "type": "boolean", "default": false }, "formData": { "type": "json" }, "unlockInfo": { "type": "json" }, "questionnaireData": { "type": "json" }, "preQuestionnaireData": { "type": "json" }, "tourProgress": { "type": "json", "description": "剧本游进度 {stations:[order],mainSolved,mainSolvedAt,finaleClaimed,claimedAt}" } };
+const attributes$a = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::users-permissions.user" }, "activity": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-point.activity" }, "activityId": { "type": "integer", "private": true, "description": "活动 id 冗余镜像，仅供「同一用户同一活动至多一条有效报名」的部分唯一索引使用，由报名链路写入，勿手工修改" }, "userId": { "type": "integer", "private": true, "description": "用户 id 冗余镜像，同上（关系落 lnk 表，DB 无法跨表建唯一约束）" }, "status": { "type": "enumeration", "enum": ["active", "cancelled", "waiting"], "default": "active" }, "pointsCharged": { "type": "integer", "default": 0 }, "feeTierId": { "type": "string" }, "signupAt": { "type": "datetime" }, "attendedAt": { "type": "datetime" }, "rating": { "type": "integer", "min": 1, "max": 5 }, "nps": { "type": "integer", "min": 0, "max": 10 }, "review": { "type": "text" }, "reviewedAt": { "type": "datetime" }, "reviewHidden": { "type": "boolean", "default": false }, "formData": { "type": "json" }, "unlockInfo": { "type": "json" }, "questionnaireData": { "type": "json" }, "preQuestionnaireData": { "type": "json" }, "tourProgress": { "type": "json", "description": "剧本游进度 {stations:[order],mainSolved,mainSolvedAt,finaleClaimed,claimedAt}" } };
 const activitySignup = {
   kind: kind$a,
   collectionName: collectionName$a,
@@ -3016,7 +3016,7 @@ const activity$1 = ({ strapi: strapi2 }) => ({
       const reserved = await trx("activities").where("id", act.id).andWhere("used_capacity", "<", trx.raw("capacity")).increment("used_capacity", 1);
       if (reserved === 0) {
         const sig3 = await strapi2.db.query(SIGNS_UID$6).create({
-          data: { user: userId, activity: act.id, status: "waiting", signupAt: /* @__PURE__ */ new Date(), ...storedFormData ? { formData: storedFormData } : {}, ...preQuestionnaireData && Object.keys(preQuestionnaireData).length ? { preQuestionnaireData } : {}, ...unlockInfo ? { unlockInfo: { ...unlockInfo, chosenRewards: [] } } : {} }
+          data: { user: userId, activity: act.id, activityId: act.id, userId, status: "waiting", signupAt: /* @__PURE__ */ new Date(), ...storedFormData ? { formData: storedFormData } : {}, ...preQuestionnaireData && Object.keys(preQuestionnaireData).length ? { preQuestionnaireData } : {}, ...unlockInfo ? { unlockInfo: { ...unlockInfo, chosenRewards: [] } } : {} }
         });
         return { kind: "waiting", sig: sig3 };
       }
@@ -3035,7 +3035,7 @@ const activity$1 = ({ strapi: strapi2 }) => ({
         const userChannelId = await resolveUserChannelId(strapi2, userId);
         await strapi2.plugin("zhao-point").service("point").deductPoints({ userId, action: "activity_fee", points: cost, source: "activity", method: "activity_signup", remark: `报名活动:${act.title}`, orderId: `act:${act.documentId}`, userChannelId });
       }
-      const sig2 = await strapi2.db.query(SIGNS_UID$6).create({ data: { user: userId, activity: act.id, status: "active", signupAt: /* @__PURE__ */ new Date(), pointsCharged: feeCollectAt === "signup" ? cost : 0, feeTierId: resolved.tierId ?? null, ...storedFormData ? { formData: storedFormData } : {}, ...preQuestionnaireData && Object.keys(preQuestionnaireData).length ? { preQuestionnaireData } : {}, ...unlockInfo ? { unlockInfo } : {} } });
+      const sig2 = await strapi2.db.query(SIGNS_UID$6).create({ data: { user: userId, activity: act.id, activityId: act.id, userId, status: "active", signupAt: /* @__PURE__ */ new Date(), pointsCharged: feeCollectAt === "signup" ? cost : 0, feeTierId: resolved.tierId ?? null, ...storedFormData ? { formData: storedFormData } : {}, ...preQuestionnaireData && Object.keys(preQuestionnaireData).length ? { preQuestionnaireData } : {}, ...unlockInfo ? { unlockInfo } : {} } });
       return { kind: "active", sig: sig2 };
     }).catch((e) => {
       if (e?.code) {
@@ -36421,6 +36421,30 @@ const ATT_LNK_SIGNUP_INDEX = "activity_attendances_signup_lnk_suq";
 const ATT_LNK_ATTENDANCE_INDEX = "activity_attendances_signup_lnk_auq";
 const TICKET_TABLE = "activity_checkin_tickets";
 const TICKET_TOKEN_INDEX = "activity_checkin_tickets_token_suq";
+const SIGNS_TABLE = "activity_signups";
+const SIGNS_ACTIVITY_USER_INDEX = "activity_signups_activity_user_uq";
+const ensureSignupUniqueGuard = async (strapi2) => {
+  const knex = strapi2.db.connection;
+  const dup = await knex(SIGNS_TABLE).whereIn("status", ["active", "waiting"]).whereNotNull("activity_id").whereNotNull("user_id").select("activity_id", "user_id").groupBy("activity_id", "user_id").havingRaw("count(*) > 1").limit(5);
+  if (Array.isArray(dup) && dup.length > 0) {
+    const pairs2 = dup.map((d) => `${d.activity_id}/${d.user_id}`).join(",");
+    strapi2.log.warn(`[zhao-point] ${SIGNS_TABLE} 存在重复有效报名(活动/用户=${pairs2})，跳过唯一索引，请先人工核账`);
+  } else {
+    await knex.raw(
+      `CREATE UNIQUE INDEX IF NOT EXISTS ${SIGNS_ACTIVITY_USER_INDEX} ON ${SIGNS_TABLE} (activity_id, user_id) WHERE status IN ('active', 'waiting')`
+    );
+    strapi2.log.info(`[zhao-point] 报名唯一性兜底已就绪 (${SIGNS_ACTIVITY_USER_INDEX})`);
+  }
+  const nullRow = await knex(SIGNS_TABLE).whereNull("activity_id").orWhereNull("user_id").count({ n: "*" }).first();
+  const nullCount = Number(nullRow?.n ?? 0) || 0;
+  if (nullCount > 0) {
+    strapi2.log.warn(`[zhao-point] ${SIGNS_TABLE} 有 ${nullCount} 行缺少 activity_id/user_id，跳过 NOT NULL，请先回填`);
+    return;
+  }
+  await knex.raw(`ALTER TABLE ${SIGNS_TABLE} ALTER COLUMN activity_id SET NOT NULL`);
+  await knex.raw(`ALTER TABLE ${SIGNS_TABLE} ALTER COLUMN user_id SET NOT NULL`);
+  strapi2.log.info(`[zhao-point] 报名镜像列已收紧为 NOT NULL (${SIGNS_TABLE}: activity_id/user_id)`);
+};
 const ensureUniqueIndex = async (strapi2, table, column, indexName) => {
   const knex = strapi2.db.connection;
   const dup = await knex(table).whereNotNull(column).select(column).groupBy(column).havingRaw("count(*) > 1").limit(5);
@@ -36478,6 +36502,11 @@ const bootstrap = async ({ strapi: strapi2 }) => {
     await ensureUniqueIndex(strapi2, TICKET_TABLE, "token", TICKET_TOKEN_INDEX);
   } catch (err) {
     strapi2.log.warn(`[zhao-point] 到场相关唯一索引创建失败: ${err.message}`);
+  }
+  try {
+    await ensureSignupUniqueGuard(strapi2);
+  } catch (err) {
+    strapi2.log.warn(`[zhao-point] 报名唯一性兜底创建失败: ${err.message}`);
   }
   try {
     const defaultConfig = strapi2.plugin("zhao-point").config("default");

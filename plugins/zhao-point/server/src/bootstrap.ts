@@ -19,6 +19,46 @@ const ATT_LNK_SIGNUP_INDEX = "activity_attendances_signup_lnk_suq";
 const ATT_LNK_ATTENDANCE_INDEX = "activity_attendances_signup_lnk_auq";
 const TICKET_TABLE = "activity_checkin_tickets";
 const TICKET_TOKEN_INDEX = "activity_checkin_tickets_token_suq";
+const SIGNS_TABLE = "activity_signups";
+const SIGNS_ACTIVITY_USER_INDEX = "activity_signups_activity_user_uq";
+
+/**
+ * 幂等补建「同一用户同一活动至多一条有效报名」的 DB 兜底。
+ * 关系落在 lnk 表，DB 无法跨表建唯一约束，故用 activity_id / user_id 冗余列
+ * （镜像关系目标 id，由 signup() 的报名链路写入）+ 部分唯一索引。
+ * 取消后重新报名会新建一行（signup() 只对 active/waiting 判重），故只约束 active/waiting；
+ * 日后新增 status 枚举值时必须同步复核该谓词。
+ */
+const ensureSignupUniqueGuard = async (strapi: Core.Strapi) => {
+  const knex = strapi.db.connection;
+  const dup = await knex(SIGNS_TABLE)
+    .whereIn("status", ["active", "waiting"])
+    .whereNotNull("activity_id")
+    .whereNotNull("user_id")
+    .select("activity_id", "user_id")
+    .groupBy("activity_id", "user_id")
+    .havingRaw("count(*) > 1")
+    .limit(5);
+  if (Array.isArray(dup) && dup.length > 0) {
+    const pairs = dup.map((d: any) => `${d.activity_id}/${d.user_id}`).join(",");
+    strapi.log.warn(`[zhao-point] ${SIGNS_TABLE} 存在重复有效报名(活动/用户=${pairs})，跳过唯一索引，请先人工核账`);
+  } else {
+    await knex.raw(
+      `CREATE UNIQUE INDEX IF NOT EXISTS ${SIGNS_ACTIVITY_USER_INDEX} ON ${SIGNS_TABLE} (activity_id, user_id) WHERE status IN ('active', 'waiting')`
+    );
+    strapi.log.info(`[zhao-point] 报名唯一性兜底已就绪 (${SIGNS_ACTIVITY_USER_INDEX})`);
+  }
+
+  const nullRow = await knex(SIGNS_TABLE).whereNull("activity_id").orWhereNull("user_id").count({ n: "*" }).first();
+  const nullCount = Number((nullRow as any)?.n ?? 0) || 0;
+  if (nullCount > 0) {
+    strapi.log.warn(`[zhao-point] ${SIGNS_TABLE} 有 ${nullCount} 行缺少 activity_id/user_id，跳过 NOT NULL，请先回填`);
+    return;
+  }
+  await knex.raw(`ALTER TABLE ${SIGNS_TABLE} ALTER COLUMN activity_id SET NOT NULL`);
+  await knex.raw(`ALTER TABLE ${SIGNS_TABLE} ALTER COLUMN user_id SET NOT NULL`);
+  strapi.log.info(`[zhao-point] 报名镜像列已收紧为 NOT NULL (${SIGNS_TABLE}: activity_id/user_id)`);
+};
 
 /**
  * 幂等补建单列唯一索引。
@@ -107,6 +147,13 @@ const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
     await ensureUniqueIndex(strapi, TICKET_TABLE, "token", TICKET_TOKEN_INDEX);
   } catch (err: any) {
     strapi.log.warn(`[zhao-point] 到场相关唯一索引创建失败: ${err.message}`);
+  }
+
+  try {
+    // 同一用户同一活动至多一条有效报名（部分唯一索引 + 冗余镜像列）
+    await ensureSignupUniqueGuard(strapi);
+  } catch (err: any) {
+    strapi.log.warn(`[zhao-point] 报名唯一性兜底创建失败: ${err.message}`);
   }
 
   try {

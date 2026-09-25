@@ -812,7 +812,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       if (reserved === 0) {
         // 名额已满 → 进入候补队列（不占用名额）
         const sig = await strapi.db.query(SIGNS_UID).create({
-          data: { user: userId, activity: act.id, status: "waiting", signupAt: new Date(), ...(storedFormData ? { formData: storedFormData } : {}), ...(preQuestionnaireData && Object.keys(preQuestionnaireData).length ? { preQuestionnaireData } : {}), ...(unlockInfo ? { unlockInfo: { ...unlockInfo, chosenRewards: [] } } : {}) },
+          data: { user: userId, activity: act.id, activityId: act.id, userId, status: "waiting", signupAt: new Date(), ...(storedFormData ? { formData: storedFormData } : {}), ...(preQuestionnaireData && Object.keys(preQuestionnaireData).length ? { preQuestionnaireData } : {}), ...(unlockInfo ? { unlockInfo: { ...unlockInfo, chosenRewards: [] } } : {}) },
         });
         return { kind: "waiting" as const, sig };
       }
@@ -832,7 +832,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         // 扣费失败直接抛错：整笔事务回滚（名额占位一并归还），无需补偿 decrement
         await strapi.plugin("zhao-point").service("point").deductPoints({ userId, action: "activity_fee", points: cost, source: "activity", method: "activity_signup", remark: `报名活动:${act.title}`, orderId: `act:${act.documentId}`, userChannelId });
       }
-      const sig = await strapi.db.query(SIGNS_UID).create({ data: { user: userId, activity: act.id, status: "active", signupAt: new Date(), pointsCharged: feeCollectAt === "signup" ? cost : 0, feeTierId: resolved.tierId ?? null, ...(storedFormData ? { formData: storedFormData } : {}), ...(preQuestionnaireData && Object.keys(preQuestionnaireData).length ? { preQuestionnaireData } : {}), ...(unlockInfo ? { unlockInfo } : {}) } });
+      const sig = await strapi.db.query(SIGNS_UID).create({ data: { user: userId, activity: act.id, activityId: act.id, userId, status: "active", signupAt: new Date(), pointsCharged: feeCollectAt === "signup" ? cost : 0, feeTierId: resolved.tierId ?? null, ...(storedFormData ? { formData: storedFormData } : {}), ...(preQuestionnaireData && Object.keys(preQuestionnaireData).length ? { preQuestionnaireData } : {}), ...(unlockInfo ? { unlockInfo } : {}) } });
       return { kind: "active" as const, sig };
     }).catch((e: any) => {
       if (e?.code) {
