@@ -998,7 +998,7 @@ const courseProgress$1 = ({ strapi }) => ({
         ctx.body = { error: "课程进度不存在" };
         return;
       }
-      if (courseProgress2.user.id !== userId) {
+      if (Number(courseProgress2.user?.id ?? courseProgress2.user) !== Number(userId)) {
         ctx.status = 403;
         ctx.body = { error: "只能领取自己的课程积分" };
         return;

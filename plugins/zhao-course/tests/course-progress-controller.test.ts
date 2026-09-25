@@ -195,6 +195,25 @@ describe("course-progress controller", () => {
       expect(ctx.body.error).toBe("只能领取自己的课程积分");
     });
 
+    it("user 为未 populate 的标量 id 时本人应可通过", async () => {
+      withAuth(jest.fn().mockResolvedValue({ authorized: true }));
+      mockService.findCourseProgressById.mockResolvedValue({
+        id: 1,
+        user: 42,
+        course: { documentId: "course-doc-1" },
+      });
+
+      const ctx = createMockCtx({
+        params: { documentId: "course-doc-1" },
+        state: { user: { id: 42 } },
+      });
+
+      await controller.claimPoints(ctx);
+
+      expect(mockService.claimPoints).toHaveBeenCalledWith(42, "course-doc-1");
+      expect(ctx.status).not.toBe(403);
+    });
+
     it("未授权访问应 ctx.throw 403", async () => {
       withAuth(jest.fn().mockResolvedValue({ authorized: false }));
 

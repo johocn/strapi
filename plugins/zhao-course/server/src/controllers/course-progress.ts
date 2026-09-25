@@ -105,7 +105,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         ctx.status = 404; ctx.body = { error: "课程进度不存在" }; return;
       }
 
-      if (courseProgress.user.id !== userId) {
+      if (Number(courseProgress.user?.id ?? courseProgress.user) !== Number(userId)) {
         ctx.status = 403; ctx.body = { error: "只能领取自己的课程积分" }; return;
       }
 
