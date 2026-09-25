@@ -45,6 +45,15 @@ export const PERMISSIONS: Record<string, PermissionEntry> = {
   "point-dashboard.read": { allowRoles: [ROLES.ADMIN, ROLES.CHANNEL_ADMIN, ROLES.PLUGIN_MANAGER] },
   "resource.read": { allowRoles: [ROLES.ADMIN, ROLES.CHANNEL_ADMIN, ROLES.PLUGIN_MANAGER] },
   "resource.write": { allowRoles: [ROLES.ADMIN, ROLES.CHANNEL_ADMIN] },
+  // 活动域（与 routes/content-api.ts 的路由权限码一一对应）
+  "activity.read": { allowRoles: [ROLES.ADMIN, ROLES.CHANNEL_ADMIN, ROLES.PLUGIN_MANAGER] },
+  "activity.create": { allowRoles: [ROLES.ADMIN, ROLES.CHANNEL_ADMIN, ROLES.PLUGIN_MANAGER] },
+  "activity.update": { allowRoles: [ROLES.ADMIN, ROLES.CHANNEL_ADMIN, ROLES.PLUGIN_MANAGER] },
+  "activity.delete": { allowRoles: [ROLES.ADMIN, ROLES.CHANNEL_ADMIN] },
+  "series.read": { allowRoles: [ROLES.ADMIN, ROLES.CHANNEL_ADMIN, ROLES.PLUGIN_MANAGER] },
+  "series.create": { allowRoles: [ROLES.ADMIN, ROLES.CHANNEL_ADMIN, ROLES.PLUGIN_MANAGER] },
+  "series.update": { allowRoles: [ROLES.ADMIN, ROLES.CHANNEL_ADMIN, ROLES.PLUGIN_MANAGER] },
+  "series.delete": { allowRoles: [ROLES.ADMIN, ROLES.CHANNEL_ADMIN] },
 };
 
 export default PERMISSIONS;
