@@ -503,22 +503,45 @@ function normalizePromoModules(promoModules: any): any[] | undefined {
   // ===== 管理员 =====
 
   // GET /adm/activities
+  // ?status=&search=（标题模糊）&venue=&lecturer=（资源 documentId）&category=&documentIds=&page=&pageSize=
+  // 返回 { data, meta: { pagination: { page, pageSize, total, pageCount } } }
   async adminList(ctx: any) {
     try {
       await activitySvc().drainDueActivities();
-      const { page = "1", pageSize = "20", status, ...rest } = ctx.query;
+      const { page = "1", pageSize = "20", status, search, venue, lecturer, category, ...rest } = ctx.query;
+      const pageNum = Math.max(1, parseInt(String(page), 10) || 1);
+      const size = Math.max(1, parseInt(String(pageSize), 10) || 20);
+
       const filters: any = {};
       if (status) filters.status = status;
+      if (search) filters.title = { $containsi: String(search) };
+      if (category) filters.category = { $eq: String(category) };
+      if (venue) filters.venue = { documentId: { $eq: String(venue) } };
+      if (lecturer) filters.lecturer = { documentId: { $eq: String(lecturer) } };
       const docIds = parseDocumentIds(ctx.query.documentIds);
       if (docIds.length) filters.documentId = { $in: docIds };
-      const result = await strapi.documents(ACTIVITY_UID).findMany({
+      const where = Object.keys(filters).length ? filters : undefined;
+
+      const rows = await strapi.documents(ACTIVITY_UID).findMany({
         ...rest,
-        filters: Object.keys(filters).length ? filters : undefined,
+        filters: where,
         populate: "*",
         sort: "startTime:desc",
-        pagination: { page: parseInt(page), pageSize: parseInt(pageSize) },
+        pagination: { page: pageNum, pageSize: size },
       });
-      ctx.body = wrapList(result);
+      const total = await strapi.documents(ACTIVITY_UID).count({ filters: where });
+
+      ctx.body = {
+        data: rows,
+        meta: {
+          pagination: {
+            page: pageNum,
+            pageSize: size,
+            total,
+            pageCount: Math.max(1, Math.ceil(total / size)),
+          },
+        },
+      };
     } catch (e: any) {
       ctx.status = (e as any).status || 400;
       ctx.body = { error: e.message };
