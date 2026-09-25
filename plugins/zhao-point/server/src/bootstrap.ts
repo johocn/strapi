@@ -32,6 +32,25 @@ const ensureAttendanceUniqueIndex = async (strapi: Core.Strapi) => {
 const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
   strapi.log.info("[zhao-point] 插件已加载，开始种子数据检查...");
 
+  // 与种子配置无关的启动兜底必须放在种子块的 early-return 之前，否则会被跳过：
+  // Strapi 5 的 plugins loader 会把 plugin.config 覆写为「已解包」的 default 导出
+  // （见 @strapi/core loaders/plugins applyUserConfig），故 config("default") 恒为
+  // undefined，种子块实际从不执行，其后的代码同样从不执行。
+  // 启动兜底：推进已到期但未流转的活动（懒加载流转的历史积压）
+  try {
+    const actSvc = strapi.plugin("zhao-point").service("activity");
+    if (actSvc?.drainDueActivities) await actSvc.drainDueActivities();
+  } catch (err: any) {
+    strapi.log.warn(`[zhao-point] 启动 drain 失败: ${err.message}`);
+  }
+
+  // 启动兜底：补建到场记录唯一索引（幂等 DDL）
+  try {
+    await ensureAttendanceUniqueIndex(strapi);
+  } catch (err: any) {
+    strapi.log.warn(`[zhao-point] 到场记录唯一索引创建失败: ${err.message}`);
+  }
+
   try {
     const defaultConfig = strapi.plugin("zhao-point").config("default") as any;
     if (!defaultConfig) return;
@@ -82,21 +101,6 @@ const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
     }
   } catch (err: any) {
     strapi.log.warn(`[zhao-point] 种子数据失败: ${err.message}`);
-  }
-
-  // 启动兜底：推进已到期但未流转的活动（懒加载流转的历史积压）
-  try {
-    const actSvc = strapi.plugin("zhao-point").service("activity");
-    if (actSvc?.drainDueActivities) await actSvc.drainDueActivities();
-  } catch (err: any) {
-    strapi.log.warn(`[zhao-point] 启动 drain 失败: ${err.message}`);
-  }
-
-  // 启动兜底：补建到场记录唯一索引（幂等 DDL）
-  try {
-    await ensureAttendanceUniqueIndex(strapi);
-  } catch (err: any) {
-    strapi.log.warn(`[zhao-point] 到场记录唯一索引创建失败: ${err.message}`);
   }
 };
 

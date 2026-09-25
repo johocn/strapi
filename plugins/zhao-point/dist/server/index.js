@@ -36430,6 +36430,17 @@ const ensureAttendanceUniqueIndex = async (strapi2) => {
 const bootstrap = async ({ strapi: strapi2 }) => {
   strapi2.log.info("[zhao-point] 插件已加载，开始种子数据检查...");
   try {
+    const actSvc = strapi2.plugin("zhao-point").service("activity");
+    if (actSvc?.drainDueActivities) await actSvc.drainDueActivities();
+  } catch (err) {
+    strapi2.log.warn(`[zhao-point] 启动 drain 失败: ${err.message}`);
+  }
+  try {
+    await ensureAttendanceUniqueIndex(strapi2);
+  } catch (err) {
+    strapi2.log.warn(`[zhao-point] 到场记录唯一索引创建失败: ${err.message}`);
+  }
+  try {
     const defaultConfig = strapi2.plugin("zhao-point").config("default");
     if (!defaultConfig) return;
     const allRules = {};
@@ -36470,17 +36481,6 @@ const bootstrap = async ({ strapi: strapi2 }) => {
     }
   } catch (err) {
     strapi2.log.warn(`[zhao-point] 种子数据失败: ${err.message}`);
-  }
-  try {
-    const actSvc = strapi2.plugin("zhao-point").service("activity");
-    if (actSvc?.drainDueActivities) await actSvc.drainDueActivities();
-  } catch (err) {
-    strapi2.log.warn(`[zhao-point] 启动 drain 失败: ${err.message}`);
-  }
-  try {
-    await ensureAttendanceUniqueIndex(strapi2);
-  } catch (err) {
-    strapi2.log.warn(`[zhao-point] 到场记录唯一索引创建失败: ${err.message}`);
   }
 };
 const destroy = ({ strapi: _strapi }) => {
