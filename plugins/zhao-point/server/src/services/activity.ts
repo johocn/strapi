@@ -868,6 +868,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
               payload: { activity: { name: act.title, startTime: act.startTime }, position: waitCount + 1 },
               schedules: [{ templateCode: "act_waitlisted", scene: "activity.waitlisted", dedupeKey: `activity:waitlisted:${userId}:${act.id}` }],
             });
+          } else {
+            strapi.log.warn(`[zhao-point:activity] waitlisted wx notify skip: no sso mapping for user=${userId}`);
           }
         }
       } catch (e: any) {
@@ -991,6 +993,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
           } catch (e: any) {
             strapi.log.warn(`[zhao-point:activity] sendNow act_confirm failed (user=${sso.id}): ${e.message}`);
           }
+        } else {
+          strapi.log.warn(`[zhao-point:activity] signup wx confirm skip: no sso mapping for user=${userId}`);
         }
       }
     } catch (e: any) {
@@ -1671,6 +1675,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
             payload: { activity: params },
             schedules: [{ templateCode: "act_cancelled", scene: "activity.cancelled", dedupeKey: `activity:cancelled:${userId}:${activityId}` }],
           });
+        } else {
+          strapi.log.warn(`[zhao-point:activity] cancel wx notify skip: no sso mapping for user=${userId}`);
         }
       }
     } catch (e: any) {
@@ -1752,16 +1758,25 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     return waitCount + 1;
   },
 
-  /** 递补转正即时通知：resolve sso 用户 → sso-msg.sendNow(act_promoted)，幂等；匹配不到/模板缺失降级不断链 */
+  /** 递补转正即时通知：站内信与微信按通道隔离，任一通道失败不得连坐另一通道。
+   *  根因备注：sso-msg.sendNow 在模板不存在时抛 SSO_MSG_TEMPLATE_404，模板 wx_template_id 为空时抛
+   *  SSO_MSG_JOB_500("任务缺少模板ID")——此前站内信位列同一 try 且排在微信之后，微信一抛站内信整条丢失。 */
   async notifyPromoted(upUserId: number, activityId: number) {
+    const act = await strapi.db.query("plugin::zhao-point.activity").findOne({ where: { id: activityId } });
+    if (!act) return;
+    const params = { name: act.title, startTime: act.startTime };
+    try {
+      await this.notifyInApp(upUserId, activityId, "activity.promoted", params, `activity:promoted:${upUserId}:${activityId}`);
+    } catch (e: any) {
+      strapi.log.warn(`[zhao-point:activity] promote inapp notify failed (user=${upUserId}): ${e.message}`);
+    }
     try {
       const sop = strapi.plugin("zhao-sso")?.service("sso-sop");
       const msg = strapi.plugin("zhao-sso")?.service("sso-msg");
-      const act = await strapi.db.query("plugin::zhao-point.activity").findOne({ where: { id: activityId } });
-      if (!sop || !msg || !act) return;
+      if (!sop || !msg) return;
       const sso = await sop.resolveSsoUserForUpUser(upUserId);
       if (!sso) {
-        strapi.log.warn(`[zhao-point:activity] promote notify skip: no sso for upUser=${upUserId}`);
+        strapi.log.warn(`[zhao-point:activity] promote wx notify skip: no sso mapping for upUser=${upUserId}`);
         return;
       }
       await msg.sendNow({
@@ -1771,9 +1786,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         params: { name: act.title, time: act.startTime },
         dedupeKey: `activity:promote:${upUserId}:${activityId}`,
       });
-      await this.notifyInApp(upUserId, activityId, "activity.promoted", { name: act.title, startTime: act.startTime }, `activity:promoted:${upUserId}:${activityId}`);
     } catch (e: any) {
-      strapi.log.warn(`[zhao-point:activity] promote notify failed (user=${upUserId}): ${e.message}`);
+      strapi.log.warn(`[zhao-point:activity] promote wx notify failed (user=${upUserId}): ${e.message}`);
     }
   },
 
@@ -1789,24 +1803,30 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     const scene = kind === "rescheduled" ? "activity.rescheduled" : "activity.cancelled";
     const templateCode = kind === "rescheduled" ? "act_rescheduled" : "act_cancelled";
     for (const userId of userIds) {
+      const dedupeKey = kind === "rescheduled"
+        ? `activity:rescheduled:${userId}:${activityId}`
+        : `activity:cancelled:${userId}:${activityId}`;
+      // 站内信与微信按通道隔离：任一通道失败不得连坐另一通道
       try {
-        const dedupeKey = kind === "rescheduled"
-          ? `activity:rescheduled:${userId}:${activityId}`
-          : `activity:cancelled:${userId}:${activityId}`;
         await this.notifyInApp(userId, activityId, scene, params, dedupeKey);
-        const sop = strapi.plugin("zhao-sso")?.service("sso-sop");
-        if (sop) {
-          const sso = await sop.resolveSsoUserForUpUser(userId);
-          if (sso) {
-            await sop.trigger(scene, {
-              user: sso.id,
-              payload: { activity: params },
-              schedules: [{ templateCode, scene, dedupeKey }],
-            });
-          }
-        }
       } catch (e: any) {
-        strapi.log.warn(`[zhao-point:activity] broadcast ${kind} notify failed (user=${userId}): ${e.message}`);
+        strapi.log.warn(`[zhao-point:activity] broadcast ${kind} inapp notify failed (user=${userId}): ${e.message}`);
+      }
+      try {
+        const sop = strapi.plugin("zhao-sso")?.service("sso-sop");
+        if (!sop) continue;
+        const sso = await sop.resolveSsoUserForUpUser(userId);
+        if (!sso) {
+          strapi.log.warn(`[zhao-point:activity] broadcast ${kind} wx notify skip: no sso mapping for user=${userId}`);
+          continue;
+        }
+        await sop.trigger(scene, {
+          user: sso.id,
+          payload: { activity: params },
+          schedules: [{ templateCode, scene, dedupeKey }],
+        });
+      } catch (e: any) {
+        strapi.log.warn(`[zhao-point:activity] broadcast ${kind} wx notify failed (user=${userId}): ${e.message}`);
       }
     }
     return userIds.length;
@@ -1819,7 +1839,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       const msg = strapi.plugin("zhao-sso")?.service("sso-msg");
       if (!sop || !msg) return;
       const sso = await sop.resolveSsoUserForUpUser(upUserId);
-      if (!sso) return;
+      if (!sso) {
+        strapi.log.warn(`[zhao-point:activity] inapp notify skip: no sso mapping for upUser=${upUserId} (${scene})`);
+        return;
+      }
       await msg.sendInApp({ user: sso.id, scene, params, dedupeKey });
     } catch (e: any) {
       strapi.log.warn(`[zhao-point:activity] sendInApp failed (${scene}, user=${upUserId}): ${e.message}`);

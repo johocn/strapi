@@ -522,7 +522,9 @@ declare const _default: ({ strapi }: {
         id: number;
         signupAt: Date | string;
     }): Promise<number>;
-    /** 递补转正即时通知：resolve sso 用户 → sso-msg.sendNow(act_promoted)，幂等；匹配不到/模板缺失降级不断链 */
+    /** 递补转正即时通知：站内信与微信按通道隔离，任一通道失败不得连坐另一通道。
+     *  根因备注：sso-msg.sendNow 在模板不存在时抛 SSO_MSG_TEMPLATE_404，模板 wx_template_id 为空时抛
+     *  SSO_MSG_JOB_500("任务缺少模板ID")——此前站内信位列同一 try 且排在微信之后，微信一抛站内信整条丢失。 */
     notifyPromoted(upUserId: number, activityId: number): Promise<void>;
     /** 管理端改期/取消群发：对该活动 active+waiting 报名用户去重逐人发站内信+微信（复用 notifyInApp 与既有模板机制）。
      *  供 adminUpdate 在更新成功后调用；单人失败只 warn 不阻断（不影响编辑接口返回）。改期微信模板未配置时仅站内信生效。 */
