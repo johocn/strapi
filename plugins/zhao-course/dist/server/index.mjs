@@ -2265,7 +2265,9 @@ const course = ({ strapi }) => {
         await syncTagIndex$1(strapi, TARGET_TYPE$1, result.documentId, extractTagIds$1(published));
         return published;
       }
-      await syncTagIndex$1(strapi, TARGET_TYPE$1, result.documentId, extractTagIds$1(result));
+      if (result?.documentId) {
+        await syncTagIndex$1(strapi, TARGET_TYPE$1, result.documentId, extractTagIds$1(result));
+      }
       return result;
     },
     async delete(documentId) {
@@ -2356,7 +2358,9 @@ const courseLesson = ({ strapi }) => ({
       data,
       populate: { course: true, images: true, attachments: true, thumbnail: true, tags: true, sequenceTag: true }
     });
-    await syncTagIndex(strapi, TARGET_TYPE, result.documentId, extractTagIds(result));
+    if (result?.documentId) {
+      await syncTagIndex(strapi, TARGET_TYPE, result.documentId, extractTagIds(result));
+    }
     return result;
   },
   async delete(documentId) {

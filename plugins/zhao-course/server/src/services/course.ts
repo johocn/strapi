@@ -321,7 +321,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         if (crossChannelEnabled && course.channelScope === "specific" && course.allowCrossChannel === true) return true;
         if (course.channelScope === "specific") {
           const courseChannelIds = Array.isArray(course.channelIds) ? course.channelIds : [];
-          return courseChannelIds.some(cid => guestMergedIds.some(mid => String(mid) === String(cid)));
+          return courseChannelIds.some((cid: any) => guestMergedIds.some(mid => String(mid) === String(cid)));
         }
         return false;
       });
@@ -336,7 +336,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         if (crossChannelEnabled && course.channelScope === "specific" && course.allowCrossChannel === true) return true;
         if (course.channelScope === "specific") {
           const courseChannelIds = Array.isArray(course.channelIds) ? course.channelIds : [];
-          return courseChannelIds.some(cid => mergedChannelIds.some(mid => String(mid) === String(cid)));
+          return courseChannelIds.some((cid: any) => mergedChannelIds.some(mid => String(mid) === String(cid)));
         }
         return false;
       });
@@ -479,7 +479,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         fields: ["documentId"],
       });
       const existingTagIds = new Set(existingTags.map((t: any) => t.documentId));
-      const missingIds = tagIds.filter(id => !existingTagIds.has(id));
+      const missingIds = tagIds.filter((id: any) => !existingTagIds.has(id));
       if (missingIds.length > 0) {
         const err: any = new Error(`标签不存在: ${missingIds.join(', ')}`);
         err.code = "COURSE_002";
@@ -507,7 +507,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       await syncTagIndex(strapi, TARGET_TYPE, result.documentId, extractTagIds(published));
       return published;
     }
-    await syncTagIndex(strapi, TARGET_TYPE, result.documentId, extractTagIds(result));
+    if (result?.documentId) {
+      await syncTagIndex(strapi, TARGET_TYPE, result.documentId, extractTagIds(result));
+    }
     return result;
   },
 

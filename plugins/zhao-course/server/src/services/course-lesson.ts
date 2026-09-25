@@ -87,7 +87,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       data,
       populate: { course: true, images: true, attachments: true, thumbnail: true, tags: true, sequenceTag: true },
     });
-    await syncTagIndex(strapi, TARGET_TYPE, result.documentId, extractTagIds(result));
+    if (result?.documentId) {
+      await syncTagIndex(strapi, TARGET_TYPE, result.documentId, extractTagIds(result));
+    }
     return result;
   },
 

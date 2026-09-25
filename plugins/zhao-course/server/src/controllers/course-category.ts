@@ -56,7 +56,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         if (ch.channelScope === "specific" && ch.allowCrossChannel === false) {
           const mergedChannelIds = ctx.state.mergedChannelIds || ctx.state.channelScope?.channelIds || [];
           const categoryChannelIds = Array.isArray(ch.channelIds) ? ch.channelIds : [];
-          const hasAccess = mergedChannelIds.some((mid: any) => categoryChannelIds.some(cid => String(mid) === String(cid)));
+          const hasAccess = mergedChannelIds.some((mid: any) => categoryChannelIds.some((cid: any) => String(mid) === String(cid)));
           if (!hasAccess) {
             ctx.status = 403;
             ctx.body = { error: "无权访问此分类" };

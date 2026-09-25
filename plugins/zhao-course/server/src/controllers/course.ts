@@ -101,7 +101,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       if (ch.channelScope === "specific" && ch.allowCrossChannel === false) {
         const mergedChannelIds = ctx.state.mergedChannelIds || ctx.state.channelScope?.channelIds || [];
         const courseChannelIds = Array.isArray(ch.channelIds) ? ch.channelIds : [];
-        const hasAccess = mergedChannelIds.some((mid: any) => courseChannelIds.some(cid => String(mid) === String(cid)));
+        const hasAccess = mergedChannelIds.some((mid: any) => courseChannelIds.some((cid: any) => String(mid) === String(cid)));
         if (!hasAccess) {
           return false;
         }
