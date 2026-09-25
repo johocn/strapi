@@ -61,7 +61,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async delete(ctx: any) {
     try {
       const { documentId } = ctx.params;
-      ctx.body = await strapi.plugin("zhao-course").service("lesson-progress").delete(documentId);
+      ctx.body = wrap(await strapi.plugin("zhao-course").service("lesson-progress").delete(documentId));
     } catch (err) {
       ctx.status = (err as any).status || 400; ctx.body = { error: (err as Error).message }; return;
     }

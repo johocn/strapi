@@ -138,7 +138,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
       const result = await strapi.plugin("zhao-course").service("course").create(data, { siteId: ctx.state?.siteId });
       ctx.status = 201;
-      ctx.body = result;
+      ctx.body = wrap(result);
     } catch (err) {
       ctx.status = (err as any).status || 400;
       ctx.body = { error: (err as Error).message };

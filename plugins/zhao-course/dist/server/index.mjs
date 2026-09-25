@@ -502,7 +502,7 @@ const course$1 = ({ strapi }) => ({
       }
       const result = await strapi.plugin("zhao-course").service("course").create(data, { siteId: ctx.state?.siteId });
       ctx.status = 201;
-      ctx.body = result;
+      ctx.body = wrap$6(result);
     } catch (err) {
       ctx.status = err.status || 400;
       ctx.body = { error: err.message };
@@ -1085,7 +1085,7 @@ const lessonProgress$1 = ({ strapi }) => ({
   async delete(ctx) {
     try {
       const { documentId } = ctx.params;
-      ctx.body = await strapi.plugin("zhao-course").service("lesson-progress").delete(documentId);
+      ctx.body = wrap$2(await strapi.plugin("zhao-course").service("lesson-progress").delete(documentId));
     } catch (err) {
       ctx.status = err.status || 400;
       ctx.body = { error: err.message };

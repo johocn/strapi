@@ -286,14 +286,14 @@ describe("course controller", () => {
     expect(ctx.body).toEqual({ error: "课程不存在" });
   });
 
-  it("create 应校验 title 并返回原始结果（未包裹信封）", async () => {
+  it("create 应校验 title 并以 { data, meta } 信封返回结果", async () => {
     const ctx = createMockCtx({ request: { body: { title: "新建课程" } } });
 
     await controller.create(ctx);
 
     expect(mockService.create).toHaveBeenCalledWith({ title: "新建课程" }, { siteId: undefined });
     expect(ctx.status).toBe(201);
-    expect(ctx.body).toEqual({ id: 1, title: "新建" });
+    expect(ctx.body).toEqual({ data: { id: 1, title: "新建" }, meta: {} });
   });
 
   it("create 缺少 title 时应返回 400", async () => {
