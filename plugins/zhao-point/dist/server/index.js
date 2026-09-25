@@ -2247,6 +2247,11 @@ const fail = (code, message, httpStatus = 400) => ({
   httpStatus,
   message
 });
+function relId(v) {
+  if (v === null || v === void 0) return NaN;
+  if (typeof v === "object") return Number(v.id);
+  return Number(v);
+}
 function validateTicket(ticket, opts) {
   const now = opts.now ?? Date.now();
   if (!ticket) return fail("invalid_token", "无效二维码");
@@ -2256,7 +2261,7 @@ function validateTicket(ticket, opts) {
   if (!Number.isFinite(exp) || exp <= now) {
     return fail("ticket_expired", "二维码已过期，请让用户刷新后重新出示");
   }
-  if (Number(ticket.activity) !== Number(opts.activityId)) {
+  if (relId(ticket.activity) !== Number(opts.activityId)) {
     return fail("ticket_activity_mismatch", "二维码不属于本活动");
   }
   return { ok: true };
@@ -3945,7 +3950,7 @@ const activity$1 = ({ strapi: strapi2 }) => ({
     if (!act) throw new Error("活动不存在");
     const ticket = await strapi2.db.query(TICKET_UID).findOne({
       where: { token },
-      populate: { signup: true }
+      populate: { signup: true, activity: true }
     });
     const check2 = validateTicket(ticket, { activityId: Number(act.id) });
     if (!check2.ok) {
@@ -4050,15 +4055,15 @@ const activity = ({ strapi: strapi2 }) => {
     return u.id || u.documentId;
   };
   const activitySvc = () => strapi2.plugin("zhao-point").service("activity");
-  function relId(v) {
+  function relId2(v) {
     if (!v) return void 0;
     if (typeof v === "number") return v;
-    if (Array.isArray(v)) return relId(v[0]);
+    if (Array.isArray(v)) return relId2(v[0]);
     if (typeof v === "string" && /^\d+$/.test(v)) return parseInt(v, 10);
     if (typeof v === "object") {
-      if (Array.isArray(v.connect) && v.connect.length) return relId(v.connect[0]);
+      if (Array.isArray(v.connect) && v.connect.length) return relId2(v.connect[0]);
       if (v.id != null) return Number(v.id);
-      if (v.documentId) return relId(v.documentId);
+      if (v.documentId) return relId2(v.documentId);
     }
     return void 0;
   }
@@ -4519,8 +4524,8 @@ const activity = ({ strapi: strapi2 }) => {
             throw new Error("promoContact 必须为对象或 null");
           }
         }
-        const lecturerId = relId(body.lecturer);
-        const venueId = relId(body.venue);
+        const lecturerId = relId2(body.lecturer);
+        const venueId = relId2(body.venue);
         if (body.startTime && body.endTime && (lecturerId || venueId)) {
           const chk = await strapi2.plugin("zhao-point").service("resource-schedule").check({
             start: body.startTime,
@@ -4573,8 +4578,8 @@ const activity = ({ strapi: strapi2 }) => {
         }
         const startTime = body.startTime ?? existing.startTime;
         const endTime = body.endTime ?? existing.endTime;
-        const lecturerId = relId(body.lecturer) ?? relId(existing.lecturer);
-        const venueId = relId(body.venue) ?? relId(existing.venue);
+        const lecturerId = relId2(body.lecturer) ?? relId2(existing.lecturer);
+        const venueId = relId2(body.venue) ?? relId2(existing.venue);
         const signupStart = body.signupStart ?? existing.signupStart;
         const signupEnd = body.signupEnd ?? existing.signupEnd;
         if (signupStart && signupEnd && new Date(signupEnd) <= new Date(signupStart)) {

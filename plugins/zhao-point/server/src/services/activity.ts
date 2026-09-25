@@ -1837,7 +1837,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     if (!act) throw new Error("活动不存在");
     const ticket = await strapi.db.query(TICKET_UID).findOne({
       where: { token },
-      populate: { signup: true },
+      populate: { signup: true, activity: true },
     });
     const check = validateTicket(ticket, { activityId: Number(act.id) });
     if (!check.ok) {

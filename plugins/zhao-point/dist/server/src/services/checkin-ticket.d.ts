@@ -31,7 +31,9 @@ export interface TicketCheck {
 export declare function validateTicket(ticket: {
     status?: string | null;
     expiresAt?: string | Date | null;
-    activity?: number | null;
+    activity?: number | string | {
+        id?: number | string;
+    } | null;
 } | null | undefined, opts: {
     activityId: number;
     now?: number;

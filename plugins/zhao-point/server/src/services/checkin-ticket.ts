@@ -55,11 +55,26 @@ const fail = (code: string, message: string, httpStatus = 400): TicketCheck => (
 });
 
 /**
+ * 关系字段归一：number | "7" | { id: 7 } | null → number（无法解析返回 NaN）。
+ * Strapi 的 db 层把 manyToOne 关系返回为对象（populate 与否都是对象），直接 Number() 会得 NaN，
+ * 故必须先取 id 再转数字，否则跨活动比对会恒不相等。
+ */
+function relId(v: unknown): number {
+  if (v === null || v === undefined) return NaN;
+  if (typeof v === "object") return Number((v as { id?: unknown }).id);
+  return Number(v);
+}
+
+/**
  * 核销前校验：状态 → 时效 → 活动归属。
  * 全部通过才允许调用 checkin()，因此任何失败路径都不会发放签到积分。
  */
 export function validateTicket(
-  ticket: { status?: string | null; expiresAt?: string | Date | null; activity?: number | null } | null | undefined,
+  ticket: {
+    status?: string | null;
+    expiresAt?: string | Date | null;
+    activity?: number | string | { id?: number | string } | null;
+  } | null | undefined,
   opts: { activityId: number; now?: number },
 ): TicketCheck {
   const now = opts.now ?? Date.now();
@@ -70,7 +85,7 @@ export function validateTicket(
   if (!Number.isFinite(exp) || exp <= now) {
     return fail("ticket_expired", "二维码已过期，请让用户刷新后重新出示");
   }
-  if (Number(ticket.activity) !== Number(opts.activityId)) {
+  if (relId(ticket.activity) !== Number(opts.activityId)) {
     return fail("ticket_activity_mismatch", "二维码不属于本活动");
   }
   return { ok: true };

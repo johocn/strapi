@@ -76,6 +76,20 @@ describe('到场核销票据纯逻辑', () => {
     expect(validateManualReason(' 实在没网 ')).toEqual({ ok: true }); // trim 后长度 4
   });
 
+  test('活动关系为对象时仍能正确比对（Strapi 关系字段回归）', () => {
+    const now = Date.now();
+    const future = new Date(now + 60_000).toISOString();
+    // Strapi db 层把 manyToOne 返回为 { id }，直接 Number() 会得 NaN 导致恒判不匹配
+    expect(validateTicket({ status: 'pending', expiresAt: future, activity: { id: 7 } }, { activityId: 7, now })).toEqual({ ok: true });
+    expect(
+      (validateTicket({ status: 'pending', expiresAt: future, activity: { id: 8 } }, { activityId: 7, now }) as any).code,
+    ).toBe('ticket_activity_mismatch');
+    expect(validateTicket({ status: 'pending', expiresAt: future, activity: '7' }, { activityId: 7, now })).toEqual({ ok: true });
+    expect(
+      (validateTicket({ status: 'pending', expiresAt: future, activity: null }, { activityId: 7, now }) as any).code,
+    ).toBe('ticket_activity_mismatch');
+  });
+
   test('shouldExpire 只对 pending 且已过期的票为真', () => {
     const now = Date.now();
     expect(shouldExpire({ status: 'pending', expiresAt: new Date(now - 1).toISOString() }, now)).toBe(true);
