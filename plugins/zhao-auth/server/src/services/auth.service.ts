@@ -78,6 +78,20 @@ async function alignUpUser(strapi: Core.Strapi, ssoId: number, decoded: Record<s
       updated_at: new Date(),
       published_at: new Date(),
     }).returning("id");
+    // 根因修复：显式 id 插入不推进 up_users 自增序列，会使后续自增 insert 撞主键
+    // （生产曾致新用户注册 100% 失败）。与 id 对齐铁律（sso_user.id === up_user.id）不冲突：
+    // 仅把序列前推到不低于 max(id)，绝不后退（避免回放未使用 id）。
+    try {
+      const seqRows: any = await knex.raw("SELECT pg_get_serial_sequence('up_users','id') AS seq");
+      const seq = (seqRows?.rows ?? seqRows)?.[0]?.seq;
+      if (seq) {
+        await knex.raw(
+          `SELECT setval('${seq}', GREATEST((SELECT COALESCE(max(id),0) FROM up_users), (SELECT last_value FROM ${seq})))`
+        );
+      }
+    } catch (e: any) {
+      strapi.log.warn(`[zhao-auth] up_users 序列前推失败 sso=${ssoId}: ${e?.message || e}`);
+    }
     strapi.log.info(`[zhao-auth] 懒对齐新建 up_users id=${rows?.[0] ?? ssoId} (sso_id=${ssoId}) invite_code=${realCode || `U${ssoId}`}`);
     return { id: rows?.[0] ?? ssoId };
   } catch (e: any) {

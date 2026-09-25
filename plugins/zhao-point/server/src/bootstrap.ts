@@ -134,6 +134,38 @@ const ensureTicketTokenNotNull = async (strapi: Core.Strapi) => {
   strapi.log.info(`[zhao-point] 票据 token 已收紧为 NOT NULL (${TICKET_TABLE})`);
 };
 
+/**
+ * 启动期 ID 序列自愈：历史上存在显式 id 插入（导入/同步）导致 serial 序列落后于 max(id)，
+ * 后续任何 insert 都会撞主键冲突（生产已实际发生：新用户注册 100% 失败）。
+ * 幂等：仅当 last_value < max(id) 时 setval；每次启动巡检全部 public 表，修复明细打 warn。
+ */
+const healIdSequences = async (strapi: Core.Strapi) => {
+  const knex = strapi.db.connection;
+  const res: any = await knex.raw(`
+    SELECT c.relname AS tbl,
+           pg_get_serial_sequence('public.' || quote_ident(c.relname), 'id') AS seq
+    FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE n.nspname = 'public' AND c.relkind = 'r'
+  `);
+  const list: Array<{ tbl: string; seq: string | null }> = (res?.rows ?? res) || [];
+  const healed: string[] = [];
+  for (const { tbl, seq } of list) {
+    if (!seq) continue;
+    const maxRes: any = await knex.raw("SELECT COALESCE(max(id), 0) AS mx FROM ??", [tbl]);
+    const mx = Number(((maxRes?.rows ?? maxRes) || [])[0]?.mx ?? 0);
+    const seqRes: any = await knex.raw(`SELECT last_value FROM ${seq}`);
+    const lv = Number(((seqRes?.rows ?? seqRes) || [])[0]?.last_value ?? 0);
+    if (lv < mx) {
+      await knex.raw("SELECT setval(?, ?)", [seq, mx]);
+      healed.push(`${tbl}:${lv}->${mx}`);
+    }
+  }
+  if (healed.length > 0) {
+    strapi.log.warn(`[zhao-point] 修复落后 ID 序列 ${healed.length} 个: ${healed.join(", ")}`);
+  }
+};
+
 const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
   strapi.log.info("[zhao-point] 插件已加载，开始种子数据检查...");
 
@@ -177,6 +209,13 @@ const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
     await ensureTicketTokenNotNull(strapi);
   } catch (err: any) {
     strapi.log.warn(`[zhao-point] 票据 token 收紧失败: ${err.message}`);
+  }
+
+  // 启动兜底：巡检并修复落后于 max(id) 的 ID 序列（防显式 id 插入导致的主键冲突复发）
+  try {
+    await healIdSequences(strapi);
+  } catch (err: any) {
+    strapi.log.warn(`[zhao-point] ID 序列自愈巡检失败: ${err.message}`);
   }
 
   try {

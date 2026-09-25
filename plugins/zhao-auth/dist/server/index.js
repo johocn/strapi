@@ -58,6 +58,17 @@ async function alignUpUser(strapi2, ssoId, decoded) {
       updated_at: /* @__PURE__ */ new Date(),
       published_at: /* @__PURE__ */ new Date()
     }).returning("id");
+    try {
+      const seqRows = await knex.raw("SELECT pg_get_serial_sequence('up_users','id') AS seq");
+      const seq = (seqRows?.rows ?? seqRows)?.[0]?.seq;
+      if (seq) {
+        await knex.raw(
+          `SELECT setval('${seq}', GREATEST((SELECT COALESCE(max(id),0) FROM up_users), (SELECT last_value FROM ${seq})))`
+        );
+      }
+    } catch (e) {
+      strapi2.log.warn(`[zhao-auth] up_users 序列前推失败 sso=${ssoId}: ${e?.message || e}`);
+    }
     strapi2.log.info(`[zhao-auth] 懒对齐新建 up_users id=${rows?.[0] ?? ssoId} (sso_id=${ssoId}) invite_code=${realCode || `U${ssoId}`}`);
     return { id: rows?.[0] ?? ssoId };
   } catch (e) {

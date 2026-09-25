@@ -36621,6 +36621,32 @@ const ensureTicketTokenNotNull = async (strapi2) => {
   await knex.raw(`ALTER TABLE ${TICKET_TABLE} ALTER COLUMN token SET NOT NULL`);
   strapi2.log.info(`[zhao-point] 票据 token 已收紧为 NOT NULL (${TICKET_TABLE})`);
 };
+const healIdSequences = async (strapi2) => {
+  const knex = strapi2.db.connection;
+  const res = await knex.raw(`
+    SELECT c.relname AS tbl,
+           pg_get_serial_sequence('public.' || quote_ident(c.relname), 'id') AS seq
+    FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE n.nspname = 'public' AND c.relkind = 'r'
+  `);
+  const list = (res?.rows ?? res) || [];
+  const healed = [];
+  for (const { tbl, seq: seq2 } of list) {
+    if (!seq2) continue;
+    const maxRes = await knex.raw("SELECT COALESCE(max(id), 0) AS mx FROM ??", [tbl]);
+    const mx = Number(((maxRes?.rows ?? maxRes) || [])[0]?.mx ?? 0);
+    const seqRes = await knex.raw(`SELECT last_value FROM ${seq2}`);
+    const lv = Number(((seqRes?.rows ?? seqRes) || [])[0]?.last_value ?? 0);
+    if (lv < mx) {
+      await knex.raw("SELECT setval(?, ?)", [seq2, mx]);
+      healed.push(`${tbl}:${lv}->${mx}`);
+    }
+  }
+  if (healed.length > 0) {
+    strapi2.log.warn(`[zhao-point] 修复落后 ID 序列 ${healed.length} 个: ${healed.join(", ")}`);
+  }
+};
 const bootstrap = async ({ strapi: strapi2 }) => {
   strapi2.log.info("[zhao-point] 插件已加载，开始种子数据检查...");
   try {
@@ -36650,6 +36676,11 @@ const bootstrap = async ({ strapi: strapi2 }) => {
     await ensureTicketTokenNotNull(strapi2);
   } catch (err) {
     strapi2.log.warn(`[zhao-point] 票据 token 收紧失败: ${err.message}`);
+  }
+  try {
+    await healIdSequences(strapi2);
+  } catch (err) {
+    strapi2.log.warn(`[zhao-point] ID 序列自愈巡检失败: ${err.message}`);
   }
   try {
     const increaseRules = strapi2.plugin("zhao-point").config("increaseRules");
