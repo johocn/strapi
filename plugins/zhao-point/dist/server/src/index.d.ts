@@ -3707,6 +3707,11 @@ declare const _default: {
                 signupAt: Date | string;
             }): Promise<number>;
             notifyPromoted(upUserId: number, activityId: number): Promise<void>;
+            broadcastAdminChange({ activityId, kind, act }: {
+                activityId: number;
+                kind: "rescheduled" | "cancelled";
+                act: any;
+            }): Promise<number>;
             notifyInApp(upUserId: number, activityId: number, scene: string, params: Record<string, any>, dedupeKey: string): Promise<void>;
             checkin({ userId, activityId, method, lat, lng, manualReason, operatorId }: {
                 userId: number;

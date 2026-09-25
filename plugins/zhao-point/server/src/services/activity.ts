@@ -2,6 +2,7 @@ import type { Core } from "@strapi/strapi";
 import { FormValidationError, validateFormData, collectFormData, collectQuestionnaire } from "./form";
 import { TICKET_TTL_MS, newTicketToken, relId, shouldExpire, validateTicket } from "./checkin-ticket";
 import { affectedCount, cancelOutcome, isUniqueViolation } from "./activity-concurrency";
+import { audienceFor } from "./activity-notice";
 
 const SIGNS_UID = "plugin::zhao-point.activity-signup";
 const ATT_UID = "plugin::zhao-point.activity-attendance";
@@ -1774,6 +1775,41 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     } catch (e: any) {
       strapi.log.warn(`[zhao-point:activity] promote notify failed (user=${upUserId}): ${e.message}`);
     }
+  },
+
+  /** 管理端改期/取消群发：对该活动 active+waiting 报名用户去重逐人发站内信+微信（复用 notifyInApp 与既有模板机制）。
+   *  供 adminUpdate 在更新成功后调用；单人失败只 warn 不阻断（不影响编辑接口返回）。改期微信模板未配置时仅站内信生效。 */
+  async broadcastAdminChange({ activityId, kind, act }: { activityId: number; kind: "rescheduled" | "cancelled"; act: any }) {
+    const signs = await strapi.db.query(SIGNS_UID).findMany({
+      where: { activity: activityId, status: { $in: ["active", "waiting"] } },
+      populate: ["user"],
+    });
+    const userIds = audienceFor(signs);
+    const params = { name: act?.title ?? "", startTime: act?.startTime ?? null };
+    const scene = kind === "rescheduled" ? "activity.rescheduled" : "activity.cancelled";
+    const templateCode = kind === "rescheduled" ? "act_rescheduled" : "act_cancelled";
+    for (const userId of userIds) {
+      try {
+        const dedupeKey = kind === "rescheduled"
+          ? `activity:rescheduled:${userId}:${activityId}`
+          : `activity:cancelled:${userId}:${activityId}`;
+        await this.notifyInApp(userId, activityId, scene, params, dedupeKey);
+        const sop = strapi.plugin("zhao-sso")?.service("sso-sop");
+        if (sop) {
+          const sso = await sop.resolveSsoUserForUpUser(userId);
+          if (sso) {
+            await sop.trigger(scene, {
+              user: sso.id,
+              payload: { activity: params },
+              schedules: [{ templateCode, scene, dedupeKey }],
+            });
+          }
+        }
+      } catch (e: any) {
+        strapi.log.warn(`[zhao-point:activity] broadcast ${kind} notify failed (user=${userId}): ${e.message}`);
+      }
+    }
+    return userIds.length;
   },
 
   /** 站内信发送助手：resolve sso-user → sso-msg.sendInApp；无 sso/失败降级不断链 */

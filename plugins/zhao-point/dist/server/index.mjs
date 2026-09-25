@@ -2291,6 +2291,35 @@ function cancelOutcome(counts) {
   const won = active > 0;
   return { proceed: true, notify: true, refund: won, releaseSeat: won, promoteWaitlist: won };
 }
+const TERMINAL_STATUSES = ["ended", "archived"];
+function normTime(v) {
+  if (v === void 0 || v === null || v === "") return null;
+  const t = new Date(v).getTime();
+  return Number.isNaN(t) ? null : t;
+}
+function detectStatusChange(oldAct, newAct) {
+  if (!oldAct || !newAct) return { kind: "none", changedFields: [] };
+  const changedFields = [];
+  if (normTime(oldAct.startTime) !== normTime(newAct.startTime)) changedFields.push("startTime");
+  if (normTime(oldAct.endTime) !== normTime(newAct.endTime)) changedFields.push("endTime");
+  const unpublished = !!oldAct.publishedAt && !newAct.publishedAt;
+  const oldStatus = oldAct.status ?? null;
+  const newStatus = newAct.status ?? null;
+  const toTerminal = oldStatus !== newStatus && TERMINAL_STATUSES.includes(newStatus);
+  if (unpublished) changedFields.push("publishedAt");
+  if (toTerminal) changedFields.push("status");
+  const kind2 = unpublished || toTerminal ? "cancelled" : changedFields.length > 0 ? "rescheduled" : "none";
+  return { kind: kind2, changedFields };
+}
+function audienceFor(signups) {
+  const ids = /* @__PURE__ */ new Set();
+  for (const s of Array.isArray(signups) ? signups : []) {
+    if (s?.status !== "active" && s?.status !== "waiting") continue;
+    const id = s.user?.id ?? s.user;
+    if (Number.isFinite(id)) ids.add(id);
+  }
+  return [...ids];
+}
 const SIGNS_UID$6 = "plugin::zhao-point.activity-signup";
 const ATT_UID$2 = "plugin::zhao-point.activity-attendance";
 const TICKET_UID = "plugin::zhao-point.activity-checkin-ticket";
@@ -3897,6 +3926,38 @@ const activity$1 = ({ strapi: strapi2 }) => ({
       strapi2.log.warn(`[zhao-point:activity] promote notify failed (user=${upUserId}): ${e.message}`);
     }
   },
+  /** 管理端改期/取消群发：对该活动 active+waiting 报名用户去重逐人发站内信+微信（复用 notifyInApp 与既有模板机制）。
+   *  供 adminUpdate 在更新成功后调用；单人失败只 warn 不阻断（不影响编辑接口返回）。改期微信模板未配置时仅站内信生效。 */
+  async broadcastAdminChange({ activityId, kind: kind2, act }) {
+    const signs = await strapi2.db.query(SIGNS_UID$6).findMany({
+      where: { activity: activityId, status: { $in: ["active", "waiting"] } },
+      populate: ["user"]
+    });
+    const userIds = audienceFor(signs);
+    const params = { name: act?.title ?? "", startTime: act?.startTime ?? null };
+    const scene = kind2 === "rescheduled" ? "activity.rescheduled" : "activity.cancelled";
+    const templateCode = kind2 === "rescheduled" ? "act_rescheduled" : "act_cancelled";
+    for (const userId of userIds) {
+      try {
+        const dedupeKey = kind2 === "rescheduled" ? `activity:rescheduled:${userId}:${activityId}` : `activity:cancelled:${userId}:${activityId}`;
+        await this.notifyInApp(userId, activityId, scene, params, dedupeKey);
+        const sop = strapi2.plugin("zhao-sso")?.service("sso-sop");
+        if (sop) {
+          const sso = await sop.resolveSsoUserForUpUser(userId);
+          if (sso) {
+            await sop.trigger(scene, {
+              user: sso.id,
+              payload: { activity: params },
+              schedules: [{ templateCode, scene, dedupeKey }]
+            });
+          }
+        }
+      } catch (e) {
+        strapi2.log.warn(`[zhao-point:activity] broadcast ${kind2} notify failed (user=${userId}): ${e.message}`);
+      }
+    }
+    return userIds.length;
+  },
   /** 站内信发送助手：resolve sso-user → sso-msg.sendInApp；无 sso/失败降级不断链 */
   async notifyInApp(upUserId, activityId, scene, params, dedupeKey) {
     try {
@@ -4761,6 +4822,19 @@ const activity = ({ strapi: strapi2 }) => {
           data: body
         });
         ctx.body = wrap$5(activity2);
+        try {
+          const change = detectStatusChange(existing, activity2);
+          if (change.kind !== "none") {
+            const users = await strapi2.plugin("zhao-point").service("activity").broadcastAdminChange({
+              activityId: activity2.id,
+              kind: change.kind,
+              act: activity2
+            });
+            strapi2.log.info(`[zhao-point:activity] adminUpdate broadcast ${change.kind} activity=${activity2.id} users=${users}`);
+          }
+        } catch (e) {
+          strapi2.log.warn(`[zhao-point:activity] adminUpdate broadcast failed (activity=${ctx.params.documentId}): ${e.message}`);
+        }
       } catch (e) {
         ctx.status = e.status || 400;
         ctx.body = { error: e.message };

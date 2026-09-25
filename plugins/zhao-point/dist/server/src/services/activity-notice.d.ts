@@ -1,0 +1,14 @@
+/** 改期/取消群发通知纯逻辑：状态变化判定 + 收件人集合。
+ *  activity.status 真实枚举为 draft/signup_open/ongoing/ended/archived（无 cancelled），
+ *  取消判定以「published_at 置空（下架）」与「status 流转为终态（ended/archived）」为准。 */
+export type ChangeKind = "rescheduled" | "cancelled" | "none";
+export interface StatusChange {
+    kind: ChangeKind;
+    changedFields: string[];
+}
+/** 视为活动终止（对已报名用户等同取消）的 status 枚举值 */
+export declare const TERMINAL_STATUSES: readonly ["ended", "archived"];
+/** 管理端编辑前后对比：时间变化→rescheduled；下架或流转终态→cancelled（取消优先）。新活动（无旧值）→none。 */
+export declare function detectStatusChange(oldAct: any, newAct: any): StatusChange;
+/** 收件人 = active+waiting 报名用户去重集合（兼容 user 对象与裸 id，过滤非法/缺失 id） */
+export declare function audienceFor(signups: any[]): number[];

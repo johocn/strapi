@@ -3,6 +3,7 @@ import type { Core } from "@strapi/strapi";
 import { FormValidationError } from "../services/form";
 import { PROMO_MODULE_TYPES, PROMO_TEMPLATES } from "../services/activity";
 import { decodeScanText, validateManualReason } from "../services/checkin-ticket";
+import { detectStatusChange } from "../services/activity-notice";
 import { buildSignupCsv } from "../services/signup-export";
 import { isRoleGateEnabled, mayAccessVisibleToRoles } from "../../../../zhao-common/server/src/utils/role-gate";
 import { resolveUserRoles } from "../../../../zhao-course/server/src/utils/role-gate";
@@ -638,6 +639,18 @@ function normalizePromoModules(promoModules: any): any[] | undefined {
         data: body,
       });
       ctx.body = wrap(activity);
+      // 改期/取消群发：更新成功后对比新旧值触发；任何通知失败只 warn，不影响编辑接口返回
+      try {
+        const change = detectStatusChange(existing, activity);
+        if (change.kind !== "none") {
+          const users = await strapi.plugin("zhao-point").service("activity").broadcastAdminChange({
+            activityId: activity.id, kind: change.kind, act: activity,
+          });
+          strapi.log.info(`[zhao-point:activity] adminUpdate broadcast ${change.kind} activity=${activity.id} users=${users}`);
+        }
+      } catch (e: any) {
+        strapi.log.warn(`[zhao-point:activity] adminUpdate broadcast failed (activity=${ctx.params.documentId}): ${e.message}`);
+      }
     } catch (e: any) {
       ctx.status = (e as any).status || 400;
       ctx.body = { error: e.message };
