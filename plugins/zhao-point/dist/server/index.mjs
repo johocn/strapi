@@ -3975,6 +3975,77 @@ const activity$1 = ({ strapi: strapi2 }) => ({
   tourAnswerMain,
   tourClaimFinale
 });
+const CSV_BOM = "\uFEFF";
+const SIGNUP_STATUS_TEXT = {
+  active: "已报名",
+  waiting: "候补中",
+  cancelled: "已取消"
+};
+const METHOD_TEXT = {
+  self: "自助核销",
+  worker_scan: "工作人员扫码",
+  manual: "手动核销"
+};
+const FIXED_HEADERS = [
+  "序号",
+  "用户ID",
+  "昵称",
+  "报名状态",
+  "到场状态",
+  "核销方式",
+  "报名时间",
+  "到场时间",
+  "扣除积分"
+];
+function formatCell(value) {
+  if (value === null || value === void 0) return "";
+  if (Array.isArray(value)) {
+    return value.map((v) => formatCell(v)).filter((s) => s !== "").join("、");
+  }
+  return String(value);
+}
+function csvCell(value) {
+  return `"${formatCell(value).replace(/"/g, '""')}"`;
+}
+function formatDateTimeCst(value) {
+  if (value === null || value === void 0 || value === "") return "";
+  const d = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(d.getTime())) return "";
+  const t = new Date(d.getTime() + 8 * 60 * 60 * 1e3);
+  const p = (n) => String(n).padStart(2, "0");
+  return `${t.getUTCFullYear()}-${p(t.getUTCMonth() + 1)}-${p(t.getUTCDate())} ${p(t.getUTCHours())}:${p(t.getUTCMinutes())}`;
+}
+function attendanceStatus(signup, attendance) {
+  if (signup?.status === "cancelled") return "已取消";
+  return attendance ? "已到场" : "未到场";
+}
+function buildSignupCsv(input) {
+  const fields2 = (Array.isArray(input.formFields) ? input.formFields : []).filter((f) => f && f.key);
+  const signups = Array.isArray(input.signups) ? input.signups : [];
+  const attMap = input.attendanceBySignupId || {};
+  const headers = [...FIXED_HEADERS, ...fields2.map((f) => f.label || f.key)];
+  const lines = [headers.map(csvCell).join(",")];
+  signups.forEach((s, i) => {
+    const att = attMap[String(s.id)];
+    const userId = s.user?.id ?? "";
+    const nick = s.user?.nickname || s.user?.username || (userId !== "" ? `用户#${userId}` : "");
+    const row = [
+      i + 1,
+      userId,
+      nick,
+      SIGNUP_STATUS_TEXT[String(s.status)] ?? formatCell(s.status),
+      attendanceStatus(s, att),
+      att ? METHOD_TEXT[String(att.method)] ?? formatCell(att.method) : "",
+      formatDateTimeCst(s.signupAt),
+      formatDateTimeCst(att?.checkinAt),
+      s.pointsCharged ?? 0
+    ];
+    for (const f of fields2) row.push(formatCell(s.formData?.[f.key]));
+    lines.push(row.map(csvCell).join(","));
+  });
+  return `${CSV_BOM}${lines.join("\r\n")}\r
+`;
+}
 async function isRoleGateEnabled(strapi2, siteDocId) {
   try {
     const s = strapi2.plugin("zhao-common")?.service("site-config");
@@ -4634,6 +4705,44 @@ const activity = ({ strapi: strapi2 }) => {
           orderBy: { signupAt: "desc" }
         });
         ctx.body = wrapList$1(rows);
+      } catch (e) {
+        ctx.status = e.status || 400;
+        ctx.body = { error: e.message };
+      }
+    },
+    // GET /adm/activities/:documentId/signups/export  名单导出（CSV，含到场状态）
+    // 一行一人；到场状态由到场记录推导（无记录=未到场，取消报名=已取消），不改数据模型。
+    async adminExportSignups(ctx) {
+      try {
+        const act = await strapi2.documents(ACTIVITY_UID$9).findOne({ documentId: ctx.params.documentId });
+        if (!act) {
+          ctx.status = 404;
+          ctx.body = { error: "活动不存在" };
+          return;
+        }
+        const signups = await strapi2.db.query(SIGNS_UID$5).findMany({
+          where: { activity: act.id },
+          populate: { user: true },
+          orderBy: { signupAt: "asc" }
+        });
+        const attRows = await strapi2.db.query(ATT_UID$1).findMany({ populate: { signup: true } });
+        const attendanceBySignupId = {};
+        for (const a of attRows) {
+          const sid = relId2(a.signup);
+          if (!Number.isFinite(sid)) continue;
+          attendanceBySignupId[String(sid)] = { method: a.method, checkinAt: a.checkinAt };
+        }
+        const actFormConfig = act.formConfig;
+        const csv = buildSignupCsv({
+          formFields: (Array.isArray(actFormConfig) ? actFormConfig : []).filter((f) => f && f.key).map((f) => ({ key: String(f.key), label: String(f.label || f.key) })),
+          signups,
+          attendanceBySignupId
+        });
+        const stamp = new Date(Date.now() + 8 * 3600 * 1e3).toISOString().slice(0, 10).replace(/-/g, "");
+        const named = encodeURIComponent(`活动名单_${act.title || "活动"}_${stamp}.csv`);
+        ctx.set("Content-Type", "text/csv; charset=utf-8");
+        ctx.set("Content-Disposition", `attachment; filename="signups.csv"; filename*=UTF-8''${named}`);
+        ctx.body = csv;
       } catch (e) {
         ctx.status = e.status || 400;
         ctx.body = { error: e.message };
@@ -39393,6 +39502,7 @@ const contentApi = () => ({
     channelScopeRoute("PUT", "/adm/activities/:documentId", "activity.adminUpdate", "activity.update"),
     channelScopeRoute("DELETE", "/adm/activities/:documentId", "activity.adminDelete", "activity.delete"),
     channelScopeRoute("GET", "/adm/activities/:documentId/signups", "activity.adminSignups", "activity.read"),
+    channelScopeRoute("GET", "/adm/activities/:documentId/signups/export", "activity.adminExportSignups", "activity.read"),
     channelScopeRoute("POST", "/adm/activities/:documentId/signups/:signupId/cancel", "activity.adminCancelSignup", "activity.update"),
     channelScopeRoute("POST", "/adm/activities/:documentId/scan-checkin", "activity.adminScanCheckin", "activity.update"),
     channelScopeRoute("GET", "/adm/activities/:documentId/attendance", "activity.adminAttendance", "activity.read"),

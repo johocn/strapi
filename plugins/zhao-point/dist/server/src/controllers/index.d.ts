@@ -103,6 +103,7 @@ declare const _default: {
         adminUpdate(ctx: any): Promise<void>;
         adminDelete(ctx: any): Promise<void>;
         adminSignups(ctx: any): Promise<void>;
+        adminExportSignups(ctx: any): Promise<void>;
         adminCancelSignup(ctx: any): Promise<void>;
         adminScanCheckin(ctx: any): Promise<void>;
         checkinTicket(ctx: any): Promise<void>;
