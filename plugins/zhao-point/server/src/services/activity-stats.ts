@@ -5,7 +5,7 @@ const SIGNS_UID = "plugin::zhao-point.activity-signup";
 const REWARD_UID = "plugin::zhao-point.activity-referral-reward";
 const POINT_RECORD_UID = "plugin::zhao-point.point-record";
 
-const STATUS_LIST = ["draft", "signup_open", "ongoing", "ended"];
+const STATUS_LIST = ["draft", "signup_open", "ongoing", "ended", "archived"];
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
@@ -65,7 +65,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     const computeStats = (signList: any[], rewardList: any[]) => {
       const active = signList.filter((s) => s.status === "active");
       const attended = active.filter((s) => !!s.attendedAt);
-      const reviewed = signList.filter((s) => !!s.reviewedAt);
+      // 评价只在有效报名内统计：与 signupCount/attendanceRate 口径一致，避免已取消报名污染均分/NPS
+      const reviewed = active.filter((s) => !!s.reviewedAt);
       const rated = reviewed.filter((s) => s.rating != null);
       const npsd = reviewed.filter((s) => s.nps != null);
       return {
@@ -132,7 +133,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     const actRows = standalone.map((a) => {
       const signList = signByAct.get(a.id) || [];
       const rewardList = rewardByAct.get(a.id) || [];
-      const reviewed = signList.filter((s) => !!s.reviewedAt);
+      const reviewed = signList.filter((s) => s.status === "active" && !!s.reviewedAt);
       // 裂变推荐按 inviter 聚合
       const referrerMap = new Map<number, any>();
       for (const r of rewardList) {
