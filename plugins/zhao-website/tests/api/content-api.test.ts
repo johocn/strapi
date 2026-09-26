@@ -12,6 +12,7 @@ function createMockCtx(overrides: Record<string, any> = {}): any {
   return {
     state: { siteId: 1 },
     request: { body: {}, query: {}, headers: {}, ip: "127.0.0.1" },
+    query: {},
     params: {},
     body: null,
     status: 200,
@@ -130,7 +131,7 @@ describe("Content API - article list/detail/featured/related", () => {
 
     await articleController.detail(ctx);
 
-    expect(articleService.findOne).toHaveBeenCalledWith(1, "test-slug");
+    expect(articleService.findOne).toHaveBeenCalledWith(1, "test-slug", undefined);
     expect(articleService.incrementViewCount).toHaveBeenCalledWith(1, "doc-1");
     expect(ctx.body).toEqual(expect.objectContaining({ title: "Test" }));
   });
@@ -140,7 +141,7 @@ describe("Content API - article list/detail/featured/related", () => {
 
     await articleController.featured(ctx);
 
-    expect(articleService.findFeatured).toHaveBeenCalledWith(1, 3);
+    expect(articleService.findFeatured).toHaveBeenCalledWith(1, 3, undefined);
     expect(ctx.body).toEqual([{ id: 2, title: "Featured" }]);
   });
 
@@ -149,11 +150,15 @@ describe("Content API - article list/detail/featured/related", () => {
 
     await articleController.related(ctx);
 
-    expect(articleService.findOne).toHaveBeenCalledWith(1, "test-slug");
+    expect(articleService.findOne).toHaveBeenCalledWith(1, "test-slug", undefined);
     expect(articleService.find).toHaveBeenCalledWith(1, expect.objectContaining({
+      page: 1,
+      pageSize: 5,
       tag: "tag-1",
       exclude: "doc-1",
+      locale: undefined,
     }));
+    expect(ctx.body).toEqual({ results: [{ id: 1, title: "Test" }] });
   });
 });
 

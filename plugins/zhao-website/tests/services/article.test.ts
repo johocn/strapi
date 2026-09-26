@@ -1,4 +1,5 @@
 import articleServiceFactory from "../../server/src/services/article";
+import contentFilterFactory from "../../server/src/services/content-filter";
 import { createMockStrapi } from "../helpers/mock-strapi";
 
 describe("Article Service", () => {
@@ -6,7 +7,17 @@ describe("Article Service", () => {
   let service: any;
 
   beforeEach(() => {
-    mockStrapi = createMockStrapi();
+    // article 服务依赖 content-filter.buildWhere 构建 where，这里接入真实过滤器
+    // （其 getFilters 走 zhao-common 的 site-config/site-template，统一返回 null → 落 DEFAULT_FILTERS）
+    mockStrapi = createMockStrapi({ getModel: jest.fn().mockReturnValue(undefined) });
+    const filterService = contentFilterFactory({ strapi: mockStrapi });
+    const commonService = {
+      getConfig: jest.fn().mockResolvedValue(null),
+      getMergedConfig: jest.fn().mockResolvedValue(null),
+    };
+    mockStrapi.plugin = jest.fn().mockReturnValue({
+      service: jest.fn((name: string) => (name === "content-filter" ? filterService : commonService)),
+    });
     service = articleServiceFactory({ strapi: mockStrapi });
   });
 
