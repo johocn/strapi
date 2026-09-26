@@ -28,7 +28,7 @@ describe("third-party-auth controllers siteId type fix", () => {
     await controller.authUrl(ctx);
 
     expect(authService.getAuthUrl).toHaveBeenCalledWith(
-      "wechat", "official_account", "http://r", "doc-abc", undefined
+      "wechat", "official_account", "http://r", "doc-abc", undefined, undefined
     );
   });
 
