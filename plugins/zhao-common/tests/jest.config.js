@@ -1,12 +1,12 @@
 /**
  * Jest config for zhao-common unit tests
  * Use .js to avoid ts-node dependency issues with Jest 30
- * ts-jest is resolved from root project's node_modules
+ * ts-jest / @strapi/strapi 从插件自身 node_modules 解析
  */
 const path = require("path");
 
 const PLUGIN_ROOT = path.resolve(__dirname, ".."); // E:\code\basic\plugins\zhao-common
-const ROOT_NODE_MODULES = path.resolve(__dirname, "../../../node_modules");
+const ROOT_NODE_MODULES = path.resolve(PLUGIN_ROOT, "node_modules");
 
 const config = {
   rootDir: PLUGIN_ROOT,

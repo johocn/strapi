@@ -275,7 +275,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         "shareDescription", "shareImage", "customerServiceUrl",
         "featureFlags", "domain", "template", "themeConfig",
       ]);
-      const RELATION_FIELDS = new Set([]);
+      const RELATION_FIELDS = new Set<string>([]);
       const CHANNELS_FIELD = "channels";
       const BLOCKED_FIELDS = new Set([
         "documentId", "createdAt", "updatedAt", "createdBy", "updatedBy",
@@ -365,7 +365,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         "shareDescription", "shareImage", "customerServiceUrl",
         "featureFlags", "domain", "template",
       ]);
-      const RELATION_FIELDS = new Set([]);
+      const RELATION_FIELDS = new Set<string>([]);
       const CHANNELS_FIELD = "channels";
 
       const NULLABLE_SITE_FIELDS = new Set([
@@ -519,7 +519,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         "shareDescription", "shareImage", "customerServiceUrl",
         "featureFlags", "domain", "template", "themeConfig",
       ]);
-      const RELATION_FIELDS = new Set([]);
+      const RELATION_FIELDS = new Set<string>([]);
       const CHANNELS_FIELD = "channels";
       const NULLABLE_SITE_FIELDS = new Set(["logo", "favicon", "shareImage"]);
       const BLOCKED_FIELDS = new Set([

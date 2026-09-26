@@ -14,7 +14,7 @@ describe("zhao-common routes configuration structure", () => {
     });
 
     it("should have content-api router with correct type", () => {
-      const contentApi = routesConfig["content-api"] as any;
+      const contentApi = (routesConfig["content-api"] as any)();
       expect(contentApi.type).toBe("content-api");
     });
 
