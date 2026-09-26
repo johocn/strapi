@@ -1,4 +1,4 @@
-import { OssProvider } from './interface';
+import { OssProvider, OssObjectStream } from './interface';
 import { FileUploadParams, UploadResult } from '../../types';
 export interface AliyunOssOptions {
     region: string;
@@ -34,6 +34,11 @@ export declare class AliyunOssProvider implements OssProvider {
      * ali-oss 的签名在本地计算，不发网络请求，可同步返回。
      */
     signUrl(key: string, expires?: number): string;
+    /**
+     * 流式读取对象内容（服务端代理转发用）。
+     * 走读写 client（可带内网 endpoint），避免公网回源流量。
+     */
+    getObjectStream(key: string): Promise<OssObjectStream>;
     private buildObjectKey;
     private getExtension;
     private ensureInitialized;

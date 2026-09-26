@@ -648,6 +648,19 @@ class AliyunOssProvider {
     const ttl = expires && expires > 0 ? expires : this.options.signedUrlExpires || 3600;
     return this.signClient.signatureUrl(key.replace(/^\//, ""), { expires: ttl });
   }
+  /**
+   * 流式读取对象内容（服务端代理转发用）。
+   * 走读写 client（可带内网 endpoint），避免公网回源流量。
+   */
+  async getObjectStream(key) {
+    this.ensureInitialized();
+    const result = await this.client.getStream(key.replace(/^\//, ""));
+    return {
+      stream: result.stream,
+      headers: result.res?.headers || {},
+      size: result.res?.size
+    };
+  }
   buildObjectKey(params) {
     const basePath = this.options.basePath || "uploads";
     const timestamp = Date.now();
@@ -729,6 +742,7 @@ const settingsController = ({ strapi }) => ({
     }
   }
 });
+const SHARE_PREFIX = "share/";
 const wrap = (data, meta = {}) => ({ data, meta });
 const wrapList = (result) => {
   if (result && typeof result === "object" && !Array.isArray(result) && "results" in result) {
@@ -1014,6 +1028,38 @@ const apiController = ({ strapi }) => ({
       return;
     }
     ctx.body = fs2.createReadStream(filePath, { start, end });
+  },
+  /**
+   * 公开读取分享图（微信分享缩略图必须匿名可访问且不能过期）
+   * 路径: /v1/share/<key>，key 必须落在 share/ 前缀内，其余前缀一律拒绝
+   */
+  async shareMedia(ctx) {
+    const key = String(ctx.params?.key || "").replace(/^\/+/, "");
+    if (!key.startsWith(SHARE_PREFIX)) {
+      ctx.status = 403;
+      ctx.body = { error: "仅允许访问 share/ 前缀的资源" };
+      return;
+    }
+    const provider = strapi.plugin("zhao-oss").service("provider-registry").getPrimaryProvider();
+    if (!provider) {
+      ctx.status = 503;
+      ctx.body = { error: "OSS 提供者未就绪" };
+      return;
+    }
+    try {
+      const { stream, headers, size } = await provider.getObjectStream(key);
+      const contentType = headers["content-type"] || "application/octet-stream";
+      const contentLength = headers["content-length"] || (size ? String(size) : "");
+      ctx.status = 200;
+      ctx.set("Content-Type", contentType);
+      ctx.set("Cache-Control", "public, max-age=86400");
+      if (contentLength) ctx.set("Content-Length", contentLength);
+      ctx.body = stream;
+    } catch (e) {
+      const notFound = e?.status === 404 || e?.code === "NoSuchKey";
+      ctx.status = notFound ? 404 : 502;
+      ctx.body = { error: notFound ? "分享图不存在" : "分享图读取失败" };
+    }
   }
 });
 const controllers = {
@@ -1084,6 +1130,13 @@ const api = () => ({
       method: "GET",
       path: "/v1/media/stream",
       handler: "api-controller.streamMedia",
+      config: { auth: false, policies: [] }
+    },
+    // 分享图公开读：仅放行 share/ 前缀，微信抓图要求绝对 https、匿名可访问且长期有效
+    {
+      method: "GET",
+      path: "/v1/share/:key(.*)",
+      handler: "api-controller.shareMedia",
       config: { auth: false, policies: [] }
     }
     // 说明：Strapi 路由 method 仅支持 GET/POST/PUT/PATCH/DELETE/ALL，

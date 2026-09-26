@@ -21,5 +21,10 @@ declare const _default: ({ strapi }: {
      * query: path(URL路径) + exp(过期秒级时间戳) + sig(HMAC 签名)
      */
     streamMedia(ctx: any): Promise<void>;
+    /**
+     * 公开读取分享图（微信分享缩略图必须匿名可访问且不能过期）
+     * 路径: /v1/share/<key>，key 必须落在 share/ 前缀内，其余前缀一律拒绝
+     */
+    shareMedia(ctx: any): Promise<void>;
 };
 export default _default;

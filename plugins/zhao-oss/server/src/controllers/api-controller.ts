@@ -1,5 +1,7 @@
 import type { Core } from "@strapi/strapi";
 
+const SHARE_PREFIX = "share/";
+
 const wrap = (data: any, meta: any = {}) => ({ data, meta });
 const wrapList = (result: any) => {
   if (result && typeof result === "object" && !Array.isArray(result) && "results" in result) {
@@ -266,5 +268,46 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     }
 
     ctx.body = fs.createReadStream(filePath, { start, end });
+  },
+
+  /**
+   * 公开读取分享图（微信分享缩略图必须匿名可访问且不能过期）
+   * 路径: /v1/share/<key>，key 必须落在 share/ 前缀内，其余前缀一律拒绝
+   */
+  async shareMedia(ctx: any) {
+    const key = String(ctx.params?.key || "").replace(/^\/+/, "");
+    if (!key.startsWith(SHARE_PREFIX)) {
+      ctx.status = 403;
+      ctx.body = { error: "仅允许访问 share/ 前缀的资源" };
+      return;
+    }
+
+    const provider = strapi
+      .plugin("zhao-oss")
+      .service("provider-registry")
+      .getPrimaryProvider();
+    if (!provider) {
+      ctx.status = 503;
+      ctx.body = { error: "OSS 提供者未就绪" };
+      return;
+    }
+
+    try {
+      const { stream, headers, size } = await provider.getObjectStream(key);
+      const contentType = headers["content-type"] || "application/octet-stream";
+      const contentLength = headers["content-length"] || (size ? String(size) : "");
+
+      ctx.status = 200;
+      ctx.set("Content-Type", contentType);
+      // 分享图地址与内容一一对应（换图需换 key），允许长缓存
+      ctx.set("Cache-Control", "public, max-age=86400");
+      if (contentLength) ctx.set("Content-Length", contentLength);
+
+      ctx.body = stream;
+    } catch (e: any) {
+      const notFound = e?.status === 404 || e?.code === "NoSuchKey";
+      ctx.status = notFound ? 404 : 502;
+      ctx.body = { error: notFound ? "分享图不存在" : "分享图读取失败" };
+    }
   },
 });

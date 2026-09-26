@@ -1,6 +1,6 @@
 import OSS from "ali-oss";
 import crypto from "crypto";
-import type { OssProvider } from "./interface";
+import type { OssProvider, OssObjectStream } from "./interface";
 import type { FileUploadParams, UploadResult } from "../../types";
 
 export interface AliyunOssOptions {
@@ -130,6 +130,20 @@ export class AliyunOssProvider implements OssProvider {
     this.ensureInitialized();
     const ttl = expires && expires > 0 ? expires : this.options.signedUrlExpires || 3600;
     return this.signClient.signatureUrl(key.replace(/^\//, ""), { expires: ttl });
+  }
+
+  /**
+   * 流式读取对象内容（服务端代理转发用）。
+   * 走读写 client（可带内网 endpoint），避免公网回源流量。
+   */
+  async getObjectStream(key: string): Promise<OssObjectStream> {
+    this.ensureInitialized();
+    const result = await this.client.getStream(key.replace(/^\//, ""));
+    return {
+      stream: result.stream,
+      headers: (result.res?.headers || {}) as Record<string, string>,
+      size: result.res?.size,
+    };
   }
 
   private buildObjectKey(params: FileUploadParams): string {

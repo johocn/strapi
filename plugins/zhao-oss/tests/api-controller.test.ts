@@ -21,11 +21,20 @@ const syncServiceMock = {
   checkSyncStatus: mockCheckSyncStatus,
 };
 
+const mockGetPrimaryProvider = jest.fn();
+const mockGetObjectStream = jest.fn();
+
+const registryServiceMock = {
+  getPrimaryProvider: mockGetPrimaryProvider,
+};
+
 const mockStrapi: any = {
   plugin: jest.fn().mockReturnValue({
-    service: jest.fn((name: string) =>
-      name === "media-service" ? mediaServiceMock : syncServiceMock
-    ),
+    service: jest.fn((name: string) => {
+      if (name === "media-service") return mediaServiceMock;
+      if (name === "provider-registry") return registryServiceMock;
+      return syncServiceMock;
+    }),
   }),
   log: { warn: jest.fn(), error: jest.fn(), info: jest.fn() },
 };
@@ -306,6 +315,93 @@ describe('api-controller 测试', () => {
       await controller.createFolder(ctx);
 
       expect(ctx.body).toEqual({ data: existing, meta: {} });
+    });
+  });
+
+  describe('shareMedia', () => {
+    const makeCtx = (key: string) => {
+      const headers: Record<string, string> = {};
+      return {
+        headers,
+        ctx: {
+          params: { key },
+          set: (k: string, v: string) => {
+            headers[k] = v;
+          },
+        } as any,
+      };
+    };
+
+    test('非 share/ 前缀直接 403，且不访问 OSS', async () => {
+      const { ctx } = makeCtx('uploads/2026/09/26/a.jpg');
+
+      await controller.shareMedia(ctx);
+
+      expect(ctx.status).toBe(403);
+      expect(ctx.body).toEqual({ error: '仅允许访问 share/ 前缀的资源' });
+      expect(mockGetPrimaryProvider).not.toHaveBeenCalled();
+    });
+
+    test('路径穿越到 share/ 之外的 key 被拒绝', async () => {
+      const { ctx } = makeCtx('/../uploads/a.jpg');
+      await controller.shareMedia(ctx);
+      expect(ctx.status).toBe(403);
+    });
+
+    test('provider 未就绪返回 503', async () => {
+      mockGetPrimaryProvider.mockReturnValue(undefined);
+      const { ctx } = makeCtx('share/poster/a.png');
+
+      await controller.shareMedia(ctx);
+
+      expect(ctx.status).toBe(503);
+    });
+
+    test('命中 share/ 前缀时流式返回并设置长缓存头，key 去掉前导斜杠', async () => {
+      const stream = { pipe: jest.fn() };
+      mockGetPrimaryProvider.mockReturnValue({ getObjectStream: mockGetObjectStream });
+      mockGetObjectStream.mockResolvedValue({
+        stream,
+        headers: { 'content-type': 'image/jpeg', 'content-length': '1234' },
+        size: 1234,
+      });
+
+      const { ctx, headers } = makeCtx('/share/poster/a.jpg');
+      await controller.shareMedia(ctx);
+
+      expect(mockGetObjectStream).toHaveBeenCalledWith('share/poster/a.jpg');
+      expect(ctx.status).toBe(200);
+      expect(ctx.body).toBe(stream);
+      expect(headers['Content-Type']).toBe('image/jpeg');
+      expect(headers['Cache-Control']).toBe('public, max-age=86400');
+      expect(headers['Content-Length']).toBe('1234');
+    });
+
+    test('云端缺 content-length 时用 res.size 兜底', async () => {
+      mockGetPrimaryProvider.mockReturnValue({ getObjectStream: mockGetObjectStream });
+      mockGetObjectStream.mockResolvedValue({ stream: {}, headers: {}, size: 88 });
+
+      const { ctx, headers } = makeCtx('share/a.png');
+      await controller.shareMedia(ctx);
+
+      expect(headers['Content-Type']).toBe('application/octet-stream');
+      expect(headers['Content-Length']).toBe('88');
+    });
+
+    test('对象不存在返回 404，其它错误返回 502', async () => {
+      mockGetPrimaryProvider.mockReturnValue({ getObjectStream: mockGetObjectStream });
+
+      mockGetObjectStream.mockRejectedValueOnce(
+        Object.assign(new Error('NoSuchKey'), { status: 404 })
+      );
+      const notFound = makeCtx('share/missing.png');
+      await controller.shareMedia(notFound.ctx);
+      expect(notFound.ctx.status).toBe(404);
+
+      mockGetObjectStream.mockRejectedValueOnce(new Error('network error'));
+      const failed = makeCtx('share/a.png');
+      await controller.shareMedia(failed.ctx);
+      expect(failed.ctx.status).toBe(502);
     });
   });
 });

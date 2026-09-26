@@ -39,6 +39,13 @@ export default () => ({
       handler: "api-controller.streamMedia",
       config: { auth: false, policies: [] },
     },
+    // 分享图公开读：仅放行 share/ 前缀，微信抓图要求绝对 https、匿名可访问且长期有效
+    {
+      method: "GET",
+      path: "/v1/share/:key(.*)",
+      handler: "api-controller.shareMedia",
+      config: { auth: false, policies: [] },
+    },
     // 说明：Strapi 路由 method 仅支持 GET/POST/PUT/PATCH/DELETE/ALL，
     // HEAD 请求由 Koa 自动匹配到 GET 路由（返回 200 无 body），无需单独注册
   ],

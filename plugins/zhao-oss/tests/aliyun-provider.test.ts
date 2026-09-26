@@ -10,6 +10,7 @@ interface FakeClient {
   delete: jest.Mock;
   list: jest.Mock;
   signatureUrl: jest.Mock;
+  getStream: jest.Mock;
 }
 
 let fakeClient: FakeClient;
@@ -30,6 +31,10 @@ beforeEach(() => {
       (key: string, opts: { expires: number }) =>
         `https://test-bucket.oss-cn-hangzhou.aliyuncs.com/${key}?Expires=${opts.expires}&Signature=sig`
     ),
+    getStream: jest.fn().mockResolvedValue({
+      stream: { pipe: jest.fn() },
+      res: { status: 200, size: 12, headers: { "content-type": "image/png" } },
+    }),
   };
   MockOSS.mockImplementation(() => fakeClient);
 });
@@ -147,6 +152,41 @@ describe("AliyunOssProvider", () => {
     it("未 initialize 就调用 signUrl 抛出未初始化错误", () => {
       const provider = new AliyunOssProvider();
       expect(() => provider.signUrl("a.jpg")).toThrow(
+        "Aliyun OSS provider not initialized. Call initialize() first."
+      );
+    });
+  });
+
+  describe("getObjectStream", () => {
+    it("委托读写 client 的 getStream，key 去前导斜杠，透出响应头与大小", async () => {
+      const provider = new AliyunOssProvider();
+      await provider.initialize({
+        ...baseOptions,
+        internalEndpoint: "oss-cn-hangzhou-internal.aliyuncs.com",
+      });
+
+      const result = await provider.getObjectStream("/share/poster/a.png");
+
+      expect(fakeClient.getStream).toHaveBeenCalledWith("share/poster/a.png");
+      expect(result.headers["content-type"]).toBe("image/png");
+      expect(result.size).toBe(12);
+      expect(result.stream).toBeDefined();
+    });
+
+    it("res 缺失时 headers 为空对象", async () => {
+      const provider = new AliyunOssProvider();
+      await provider.initialize({ ...baseOptions });
+
+      fakeClient.getStream.mockResolvedValueOnce({ stream: { pipe: jest.fn() }, res: undefined });
+
+      const result = await provider.getObjectStream("share/a.png");
+      expect(result.headers).toEqual({});
+      expect(result.size).toBeUndefined();
+    });
+
+    it("未 initialize 就调用抛出未初始化错误", async () => {
+      const provider = new AliyunOssProvider();
+      await expect(provider.getObjectStream("share/a.png")).rejects.toThrow(
         "Aliyun OSS provider not initialized. Call initialize() first."
       );
     });

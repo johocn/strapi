@@ -49,6 +49,7 @@ declare const _default: {
             repairFolders(ctx: any): Promise<void>;
             issueStreamToken(ctx: any): Promise<void>;
             streamMedia(ctx: any): Promise<void>;
+            shareMedia(ctx: any): Promise<void>;
         };
     };
     routes: {
