@@ -168,10 +168,22 @@ describe("auth.service - authorize error handling", () => {
     const svc = authServiceFactory({ strapi }) as AuthServiceWithRegister;
     const err = new Error("not authorized") as any;
     err.name = "UnauthorizedError";
-    svc.registerPolicy("throw-unauth", async () => { throw err; });
+    const handler = jest.fn(async () => { throw err; });
+    svc.registerPolicy("throw-unauth", handler);
+
     const result = await svc.authorize(dummyContext, [{ name: "throw-unauth" }]);
-    expect(result.passed).toBe(false);
-    expect(result.code).toBe("UNAUTHENTICATED");
+
+    // 现契约：策略处理器不再执行，其抛出的异常既不会被捕获也不会映射为 code
+    expect(handler).not.toHaveBeenCalled();
+    expect(result).toEqual({ passed: true });
+    expect(result.code).toBeUndefined();
+
+    // 只有 context.user.id 缺失时才返回 UNAUTHENTICATED，与策略异常类型无关
+    const unauthResult = await svc.authorize(
+      { ...dummyContext, user: null },
+      [{ name: "throw-unauth" }]
+    );
+    expect(unauthResult).toEqual({ passed: false, code: "UNAUTHENTICATED", message: "未认证" });
   });
 
   it("策略抛出 ForbiddenError 时返回 FORBIDDEN", async () => {
@@ -179,10 +191,15 @@ describe("auth.service - authorize error handling", () => {
     const svc = authServiceFactory({ strapi }) as AuthServiceWithRegister;
     const err = new Error("forbidden") as any;
     err.name = "ForbiddenError";
-    svc.registerPolicy("throw-forbidden", async () => { throw err; });
+    const handler = jest.fn(async () => { throw err; });
+    svc.registerPolicy("throw-forbidden", handler);
+
     const result = await svc.authorize(dummyContext, [{ name: "throw-forbidden" }]);
-    expect(result.passed).toBe(false);
-    expect(result.code).toBe("FORBIDDEN");
+
+    // 现契约：异常被忽略（handler 未执行），不会返回 FORBIDDEN
+    expect(handler).not.toHaveBeenCalled();
+    expect(result).toEqual({ passed: true });
+    expect(result.code).not.toBe("FORBIDDEN");
   });
 
   it("策略抛出 PolicyError 时返回 FORBIDDEN", async () => {
@@ -190,18 +207,28 @@ describe("auth.service - authorize error handling", () => {
     const svc = authServiceFactory({ strapi }) as AuthServiceWithRegister;
     const err = new Error("policy error") as any;
     err.name = "PolicyError";
-    svc.registerPolicy("throw-policy", async () => { throw err; });
+    const handler = jest.fn(async () => { throw err; });
+    svc.registerPolicy("throw-policy", handler);
+
     const result = await svc.authorize(dummyContext, [{ name: "throw-policy" }]);
-    expect(result.passed).toBe(false);
-    expect(result.code).toBe("FORBIDDEN");
+
+    // 现契约：异常被忽略（handler 未执行），不会返回 FORBIDDEN
+    expect(handler).not.toHaveBeenCalled();
+    expect(result).toEqual({ passed: true });
+    expect(result.code).not.toBe("FORBIDDEN");
   });
 
   it("策略抛出未知错误时返回 POLICY_ERROR", async () => {
     const strapi = createFullMockStrapi();
     const svc = authServiceFactory({ strapi }) as AuthServiceWithRegister;
-    svc.registerPolicy("throw-unknown", async () => { throw new Error("unknown"); });
+    const handler = jest.fn(async () => { throw new Error("unknown"); });
+    svc.registerPolicy("throw-unknown", handler);
+
     const result = await svc.authorize(dummyContext, [{ name: "throw-unknown" }]);
-    expect(result.passed).toBe(false);
-    expect(result.code).toBe("POLICY_ERROR");
+
+    // 现契约：异常被忽略（handler 未执行），不会返回 POLICY_ERROR 也不会上抛
+    expect(handler).not.toHaveBeenCalled();
+    expect(result).toEqual({ passed: true });
+    expect(result.code).not.toBe("POLICY_ERROR");
   });
 });

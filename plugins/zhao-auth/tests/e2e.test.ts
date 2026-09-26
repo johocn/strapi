@@ -55,35 +55,47 @@ describe("End-to-End Permission Tests", () => {
 
   describe("Role Assignment", () => {
     it("should assign channel-admin role to user", async () => {
-      const mockUser = { id: 1, roles: [{ name: "user" }] };
       const mockQuery = strapi.db.query as jest.Mock;
       const mockQueryResult = mockQuery();
-      
-      mockQueryResult.findOne
-        .mockResolvedValueOnce(mockUser)
-        .mockResolvedValueOnce({ ...mockUser, roles: [{ name: "user" }, { name: "channel-admin" }] });
+
+      const users: Record<number, any> = {
+        1: { id: 1, zhaoRoles: ["user"] },
+        2: { id: 2, zhaoRoles: ["admin"] },
+      };
+      mockQueryResult.findOne.mockImplementation(async (args: any) => users[args?.where?.id] ?? null);
       mockQueryResult.update.mockResolvedValueOnce({ success: true });
 
       const result = await roleManagementService.assignRole(1, "channel-admin", 2, "Promoted");
 
       expect(result.success).toBe(true);
+      expect(result.message).toBe("角色 channel-admin 分配成功");
       expect(result.user.roles).toContain("channel-admin");
     });
 
-    it("should prevent assigning invalid role", async () => {
-      await expect(
-        roleManagementService.assignRole(1, "super-admin", 1)
-      ).rejects.toThrow("不支持的角色类型");
+    it("should prevent assigning absolute core role", async () => {
+      const mockQuery = strapi.db.query as jest.Mock;
+      const mockQueryResult = mockQuery();
+
+      mockQueryResult.findOne.mockImplementation(async (args: any) =>
+        args?.where?.id === 1 ? { id: 1, zhaoRoles: ["instructor"] } : null
+      );
+
+      try {
+        await roleManagementService.assignRole(1, "admin", 1);
+        throw new Error("should have thrown");
+      } catch (error: any) {
+        expect(error.message).toBe("绝对基础角色 admin 不可手动分配");
+        expect(error.code).toBe("ABSOLUTE_CORE_ROLE");
+        expect(error.status).toBe(400);
+      }
     });
 
     it("should prevent duplicate role assignment", async () => {
-      const mockUser = { id: 1, roles: [{ name: "channel-admin" }] };
       const mockQuery = strapi.db.query as jest.Mock;
       const mockQueryResult = mockQuery();
-      mockQueryResult.findOne.mockResolvedValueOnce({ 
-        ...mockUser, 
-        roles: [{ name: "channel-admin" }] 
-      });
+      mockQueryResult.findOne.mockImplementation(async (args: any) =>
+        args?.where?.id === 1 ? { id: 1, zhaoRoles: ["channel-admin"] } : null
+      );
 
       await expect(
         roleManagementService.assignRole(1, "channel-admin", 1)
@@ -103,19 +115,22 @@ describe("End-to-End Permission Tests", () => {
 
   describe("Role Revocation", () => {
     it("should revoke role from user", async () => {
-      const mockUser = { id: 1, roles: [{ name: "user" }, { name: "channel-admin" }] };
       const mockQuery = strapi.db.query as jest.Mock;
       const mockQueryResult = mockQuery();
-      
-      mockQueryResult.findOne
-        .mockResolvedValueOnce({ ...mockUser })
-        .mockResolvedValueOnce({ id: 1, roles: [{ name: "user" }] });
+
+      const users: Record<number, any> = {
+        1: { id: 1, zhaoRoles: ["user", "channel-admin"] },
+        2: { id: 2, zhaoRoles: ["admin"] },
+      };
+      mockQueryResult.findOne.mockImplementation(async (args: any) => users[args?.where?.id] ?? null);
       mockQueryResult.update.mockResolvedValueOnce({ success: true });
 
       const result = await roleManagementService.revokeRole(1, "channel-admin", 2, "Demoted");
 
       expect(result.success).toBe(true);
+      expect(result.message).toBe("角色 channel-admin 撤销成功");
       expect(result.user.roles).not.toContain("channel-admin");
+      expect(result.user.roles).toEqual(["user"]);
     });
 
     it("should prevent revoking role user does not have", async () => {
@@ -130,10 +145,11 @@ describe("End-to-End Permission Tests", () => {
     });
 
     it("should prevent revoking last role", async () => {
-      const mockUser = { id: 1, roles: [{ name: "user" }] };
       const mockQuery = strapi.db.query as jest.Mock;
       const mockQueryResult = mockQuery();
-      mockQueryResult.findOne.mockResolvedValueOnce({ ...mockUser });
+      mockQueryResult.findOne.mockImplementation(async (args: any) =>
+        args?.where?.id === 1 ? { id: 1, zhaoRoles: ["user"] } : null
+      );
 
       await expect(
         roleManagementService.revokeRole(1, "user", 1)
@@ -144,44 +160,48 @@ describe("End-to-End Permission Tests", () => {
   describe("Batch Role Assignment", () => {
     it("should batch assign roles to multiple users", async () => {
       const userIds = [1, 2, 3];
-      
+
       const mockQuery = strapi.db.query as jest.Mock;
       const mockQueryResult = mockQuery();
-      
-      userIds.forEach(() => {
-        mockQueryResult.findOne.mockResolvedValueOnce({ 
-          id: 1, 
-          roles: [{ name: "user" }] 
-        });
-      });
+
+      const users: Record<number, any> = {
+        1: { id: 1, zhaoRoles: ["user"] },
+        2: { id: 2, zhaoRoles: ["user"] },
+        3: { id: 3, zhaoRoles: ["user"] },
+        99: { id: 99, zhaoRoles: ["admin"] },
+      };
+      mockQueryResult.findOne.mockImplementation(async (args: any) => users[args?.where?.id] ?? null);
       mockQueryResult.update.mockResolvedValue({ success: true });
 
       const result = await roleManagementService.batchAssignRoles(
         userIds,
         "instructor",
-        1,
+        99,
         "Batch promotion"
       );
 
       expect(result.success).toBe(true);
       expect(result.results).toHaveLength(3);
+      expect(result.results.map((r: any) => r.userId)).toEqual([1, 2, 3]);
       expect(result.results.every((r: any) => r.success)).toBe(true);
     });
 
     it("should handle partial batch failure", async () => {
       const mockQuery = strapi.db.query as jest.Mock;
       const mockQueryResult = mockQuery();
-      
-      mockQueryResult.findOne
-        .mockResolvedValueOnce({ id: 1, roles: [{ name: "user" }] })
-        .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce({ id: 3, roles: [{ name: "user" }] });
+
+      const users: Record<number, any> = {
+        1: { id: 1, zhaoRoles: ["user"] },
+        3: { id: 3, zhaoRoles: ["user"] },
+        99: { id: 99, zhaoRoles: ["admin"] },
+      };
+      mockQueryResult.findOne.mockImplementation(async (args: any) => users[args?.where?.id] ?? null);
       mockQueryResult.update.mockResolvedValue({ success: true });
 
       const result = await roleManagementService.batchAssignRoles(
         [1, 999, 3],
         "instructor",
-        1
+        99
       );
 
       expect(result.success).toBe(false);
@@ -192,25 +212,26 @@ describe("End-to-End Permission Tests", () => {
 
   describe("User Roles Retrieval", () => {
     it("should retrieve user roles", async () => {
-      const mockUser = {
-        id: 1,
-        email: "test@example.com",
-        username: "testuser",
-        roles: [
-          { id: 1, name: "user", description: "普通用户" },
-          { id: 2, name: "instructor", description: "讲师" },
-        ],
-      };
       const mockQuery = strapi.db.query as jest.Mock;
       const mockQueryResult = mockQuery();
-      mockQueryResult.findOne.mockResolvedValueOnce(mockUser);
+      mockQueryResult.findOne.mockImplementation(async (args: any) =>
+        args?.where?.id === 1
+          ? {
+              id: 1,
+              email: "test@example.com",
+              username: "testuser",
+              zhaoRoles: ["user", "instructor"],
+              role: { id: 4, description: "角色元数据" },
+            }
+          : null
+      );
 
       const result = await roleManagementService.getUserRoles(1);
 
       expect(result.user.id).toBe(1);
       expect(result.user.email).toBe("test@example.com");
       expect(result.roles).toHaveLength(2);
-      expect(result.roles[0].name).toBe("user");
+      expect(result.roles[0]).toEqual({ id: 4, name: "user", description: "角色元数据" });
       expect(result.roles[1].name).toBe("instructor");
     });
 
@@ -227,13 +248,14 @@ describe("End-to-End Permission Tests", () => {
 
   describe("Role Action Logging", () => {
     it("should log role assignment action", async () => {
-      const mockUser = { id: 1, roles: [{ name: "user" }] };
       const mockQuery = strapi.db.query as jest.Mock;
       const mockQueryResult = mockQuery();
-      
-      mockQueryResult.findOne
-        .mockResolvedValueOnce(mockUser)
-        .mockResolvedValueOnce({ ...mockUser, roles: [{ name: "user" }, { name: "channel-admin" }] });
+
+      const users: Record<number, any> = {
+        1: { id: 1, zhaoRoles: ["user"] },
+        2: { id: 2, zhaoRoles: ["admin"] },
+      };
+      mockQueryResult.findOne.mockImplementation(async (args: any) => users[args?.where?.id] ?? null);
       mockQueryResult.update.mockResolvedValueOnce({ success: true });
       mockQueryResult.create.mockResolvedValueOnce({ id: 1 });
 
@@ -247,19 +269,22 @@ describe("End-to-End Permission Tests", () => {
           data: expect.objectContaining({
             action: "assign",
             role: "channel-admin",
+            operatorId: 2,
+            targetUserId: 1,
           }),
         })
       );
     });
 
     it("should log role revocation action", async () => {
-      const mockUser = { id: 1, roles: [{ name: "user" }, { name: "channel-admin" }] };
       const mockQuery = strapi.db.query as jest.Mock;
       const mockQueryResult = mockQuery();
-      
-      mockQueryResult.findOne
-        .mockResolvedValueOnce({ ...mockUser })
-        .mockResolvedValueOnce({ id: 1, roles: [{ name: "user" }] });
+
+      const users: Record<number, any> = {
+        1: { id: 1, zhaoRoles: ["user", "channel-admin"] },
+        2: { id: 2, zhaoRoles: ["admin"] },
+      };
+      mockQueryResult.findOne.mockImplementation(async (args: any) => users[args?.where?.id] ?? null);
       mockQueryResult.update.mockResolvedValueOnce({ success: true });
       mockQueryResult.create.mockResolvedValueOnce({ id: 1 });
 
@@ -267,6 +292,16 @@ describe("End-to-End Permission Tests", () => {
 
       expect(strapi.log.info).toHaveBeenCalledWith(
         expect.stringContaining("Role action: revoke channel-admin")
+      );
+      expect(mockQueryResult.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            action: "revoke",
+            role: "channel-admin",
+            operatorId: 2,
+            targetUserId: 1,
+          }),
+        })
       );
     });
 

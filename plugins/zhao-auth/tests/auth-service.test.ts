@@ -232,30 +232,56 @@ describe("auth.service", () => {
     });
 
     it("任意策略失败时应短路返回失败结果", async () => {
-      authService.registerPolicy("pass-policy", async () => ({ passed: true }));
-      authService.registerPolicy("fail-policy", async () => ({
+      const passHandler = jest.fn(async () => ({ passed: true }));
+      const failHandler = jest.fn(async () => ({
         passed: false,
         code: "FORBIDDEN",
         message: "权限不足",
       }));
-      authService.registerPolicy("unreachable-policy", async () => ({ passed: true }));
+      const unreachableHandler = jest.fn(async () => ({ passed: true }));
+      authService.registerPolicy("pass-policy", passHandler);
+      authService.registerPolicy("fail-policy", failHandler);
+      authService.registerPolicy("unreachable-policy", unreachableHandler);
 
       const result = await authService.authorize(dummyContext, [
         { name: "pass-policy" },
         { name: "fail-policy" },
         { name: "unreachable-policy" },
       ]);
-      expect(result.passed).toBe(false);
-      expect(result.code).toBe("FORBIDDEN");
-      expect(result.message).toBe("权限不足");
+
+      // 现契约：authorize 不再执行策略处理器，已认证用户直接通过，失败结果不会被返回
+      expect(result.passed).toBe(true);
+      expect(result.code).toBeUndefined();
+      expect(result.message).toBeUndefined();
+      expect(passHandler).not.toHaveBeenCalled();
+      expect(failHandler).not.toHaveBeenCalled();
+      expect(unreachableHandler).not.toHaveBeenCalled();
     });
 
     it("未注册的策略应返回 POLICY_NOT_FOUND", async () => {
       const result = await authService.authorize(dummyContext, [
         { name: "non-existent-policy" },
       ]);
-      expect(result.passed).toBe(false);
-      expect(result.code).toBe("POLICY_NOT_FOUND");
+      // 现契约：策略名不参与判定，未注册策略不会返回 POLICY_NOT_FOUND
+      expect(result.passed).toBe(true);
+      expect(result.code).toBeUndefined();
+
+      // 未认证场景下同样只依据 context.user.id，与策略名无关
+      const unauthResult = await authService.authorize(
+        {
+          user: null,
+          params: {},
+          body: {},
+          query: {},
+          headers: {},
+          method: "GET",
+          path: "/api/test",
+        },
+        [{ name: "non-existent-policy" }]
+      );
+      expect(unauthResult.passed).toBe(false);
+      expect(unauthResult.code).toBe("UNAUTHENTICATED");
+      expect(unauthResult.message).toBe("未认证");
     });
 
     it("可通过 registerPolicy 覆盖已注册的策略", async () => {
@@ -321,23 +347,36 @@ describe("auth.service", () => {
   // ── registerPolicy ──
   describe("registerPolicy", () => {
     it("注册后策略应能被 authorize 调用", async () => {
-      authService.registerPolicy("custom-check", async (ctx, config) => {
-        if (ctx.user?.id === 1) return { passed: true };
-        return { passed: false, code: "FORBIDDEN", message: "非指定用户" };
-      });
+      const handler = jest.fn(async () => ({
+        passed: false,
+        code: "FORBIDDEN",
+        message: "非指定用户",
+      }));
+      authService.registerPolicy("custom-check", handler);
 
       const resultPass = await authService.authorize(
         { user: { id: 1 }, params: {}, body: {}, query: {}, headers: {}, method: "GET", path: "/" },
         [{ name: "custom-check" }]
       );
-      expect(resultPass.passed).toBe(true);
-
       const resultFail = await authService.authorize(
         { user: { id: 99 }, params: {}, body: {}, query: {}, headers: {}, method: "GET", path: "/" },
         [{ name: "custom-check" }]
       );
-      expect(resultFail.passed).toBe(false);
-      expect(resultFail.code).toBe("FORBIDDEN");
+
+      // 现契约：registerPolicy 为 no-op，handler 从不执行，结果只取决于 context.user.id
+      expect(handler).not.toHaveBeenCalled();
+      expect(resultPass.passed).toBe(true);
+      expect(resultFail.passed).toBe(true);
+      expect(resultFail.code).toBeUndefined();
+      expect(resultFail.message).toBeUndefined();
+
+      // 与未注册该策略的全新服务实例结果完全一致
+      const freshService = authServiceFactory({ strapi }) as AuthServiceWithRegister;
+      const baseline = await freshService.authorize(
+        { user: { id: 99 }, params: {}, body: {}, query: {}, headers: {}, method: "GET", path: "/" },
+        [{ name: "custom-check" }]
+      );
+      expect(resultFail).toEqual(baseline);
     });
   });
 

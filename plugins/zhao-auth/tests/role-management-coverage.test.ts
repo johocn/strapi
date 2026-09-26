@@ -151,10 +151,13 @@ describe("role-management.service - extractRoleNames branches", () => {
 
   afterEach(() => jest.clearAllMocks());
 
-  it("user.role 为单对象且含 name", async () => {
+  it("zhaoRoles 为字符串数组时提取角色名", async () => {
     const mockFindOne = jest.fn().mockResolvedValue({
       id: 1,
-      role: { name: "channel-admin" },
+      email: "a@b.com",
+      username: "u1",
+      zhaoRoles: ["channel-admin", "instructor"],
+      role: { id: 3, description: "角色元数据" },
     });
     const mockUpdate = jest.fn().mockResolvedValue({ id: 1 });
     (strapi as any).db.query = jest.fn((uid: string) => {
@@ -162,13 +165,18 @@ describe("role-management.service - extractRoleNames branches", () => {
       return { create: jest.fn(), findMany: jest.fn(), count: jest.fn() };
     });
     const result = await service.getUserRoles(1);
-    expect(result.roles.map((r: any) => r.name)).toContain("channel-admin");
+    expect(result.roles.map((r: any) => r.name)).toEqual(["channel-admin", "instructor"]);
+    expect(result.roles[0]).toEqual({ id: 3, name: "channel-admin", description: "角色元数据" });
   });
 
-  it("user.role 为单对象且含 type 无 name", async () => {
+  it("zhaoRoles 为对象数组时提取 role 字段", async () => {
     const mockFindOne = jest.fn().mockResolvedValue({
       id: 1,
-      role: { type: "plugin-manager" },
+      email: "a@b.com",
+      username: "u1",
+      zhaoRoles: [
+        { role: "plugin-manager", assignedByRole: "admin", assignedAt: "2024-01-01T00:00:00Z" },
+      ],
     });
     const mockUpdate = jest.fn().mockResolvedValue({ id: 1 });
     (strapi as any).db.query = jest.fn((uid: string) => {
@@ -176,7 +184,7 @@ describe("role-management.service - extractRoleNames branches", () => {
       return { create: jest.fn(), findMany: jest.fn(), count: jest.fn() };
     });
     const result = await service.getUserRoles(1);
-    expect(result.roles.map((r: any) => r.name)).toContain("plugin-manager");
+    expect(result.roles.map((r: any) => r.name)).toEqual(["plugin-manager"]);
   });
 
   it("user.role 为单对象且无 name/type", async () => {

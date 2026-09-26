@@ -41,21 +41,25 @@ describe("A3+A5: 角色数据模型不一致 + assignRole 未 populate roles", (
     jest.clearAllMocks();
   });
 
-  describe("assignRole 查询应 populate roles", () => {
-    it("查询用户时应 populate roles 关联", async () => {
+  describe("assignRole 查询应 populate role 并读取 zhaoRoles", () => {
+    it("查询用户时应 populate role 关联并 select zhaoRoles", async () => {
       const mockQuery = strapi.db.query as jest.Mock;
       const mockQueryResult = mockQuery();
 
-      mockQueryResult.findOne.mockResolvedValueOnce({
-        id: 1,
-        roles: [{ name: "user" }],
-      });
+      const users: Record<number, any> = {
+        1: { id: 1, zhaoRoles: ["user"] },
+        2: { id: 2, zhaoRoles: ["admin"] },
+      };
+      mockQueryResult.findOne.mockImplementation(async (args: any) => users[args?.where?.id] ?? null);
       mockQueryResult.update.mockResolvedValueOnce({ success: true });
 
       await roleManagementService.assignRole(1, "channel-admin", 2, "测试");
 
-      const findOneCall = mockQueryResult.findOne.mock.calls[0][0];
-      expect(findOneCall.populate).toContain("roles");
+      const targetCall = mockQueryResult.findOne.mock.calls.find(
+        (call: any) => call[0]?.where?.id === 1
+      );
+      expect(targetCall[0].populate).toContain("role");
+      expect(targetCall[0].select).toEqual(expect.arrayContaining(["id", "zhaoRoles"]));
     });
   });
 
@@ -64,43 +68,49 @@ describe("A3+A5: 角色数据模型不一致 + assignRole 未 populate roles", (
       const mockQuery = strapi.db.query as jest.Mock;
       const mockQueryResult = mockQuery();
 
-      const mockUser = {
-        id: 1,
-        email: "test@example.com",
-        username: "testuser",
-        roles: [
-          { id: 1, name: "user", type: "user" },
-          { id: 2, name: "channel-admin", type: "channel-admin" },
-        ],
-      };
-
-      mockQueryResult.findOne.mockResolvedValueOnce(mockUser);
+      mockQueryResult.findOne.mockImplementation(async (args: any) =>
+        args?.where?.id === 1
+          ? {
+              id: 1,
+              email: "test@example.com",
+              username: "testuser",
+              zhaoRoles: ["user", "channel-admin"],
+              role: { id: 9, description: "角色元数据" },
+            }
+          : null
+      );
 
       const result = await roleManagementService.getUserRoles(1);
 
-      expect(result.roles).toBeDefined();
+      expect(result.user).toEqual(
+        expect.objectContaining({ id: 1, email: "test@example.com", username: "testuser" })
+      );
       expect(Array.isArray(result.roles)).toBe(true);
-      expect(result.roles.length).toBe(2);
-      expect(result.roles.map((r: any) => r.name || r)).toEqual(
+      expect(result.roles).toHaveLength(2);
+      expect(result.roles.map((r: any) => r.name)).toEqual(
         expect.arrayContaining(["user", "channel-admin"])
       );
+      expect(result.roles[0]).toEqual({ id: 9, name: "user", description: "角色元数据" });
     });
   });
 
-  describe("assignRole 处理用户无 roles 字段的情况", () => {
-    it("用户记录无 roles 字段时不应崩溃", async () => {
+  describe("assignRole 处理用户无 zhaoRoles 字段的情况", () => {
+    it("用户记录无 zhaoRoles 字段时不应崩溃", async () => {
       const mockQuery = strapi.db.query as jest.Mock;
       const mockQueryResult = mockQuery();
 
-      mockQueryResult.findOne.mockResolvedValueOnce({
-        id: 1,
-      });
+      const users: Record<number, any> = {
+        1: { id: 1 },
+        2: { id: 2, zhaoRoles: ["admin"] },
+      };
+      mockQueryResult.findOne.mockImplementation(async (args: any) => users[args?.where?.id] ?? null);
       mockQueryResult.update.mockResolvedValueOnce({ success: true });
 
-      const result = await roleManagementService.assignRole(1, "user", 2, "测试");
+      const result = await roleManagementService.assignRole(1, "channel-admin", 2, "测试");
 
       expect(result.success).toBe(true);
-      expect(result.user.roles).toContain("user");
+      expect(result.message).toBe("角色 channel-admin 分配成功");
+      expect(result.user.roles).toEqual(["channel-admin"]);
     });
   });
 });
