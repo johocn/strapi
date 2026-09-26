@@ -13,7 +13,8 @@ describe("zhao-logistics Content Types", () => {
   ];
 
   test("应注册 8 个核心业务 CT", () => {
-    expect(Object.keys(contentTypes)).toHaveLength(8);
+    // 插件后续新增了 review/subscription 等 CT，此处只约束「核心 8 个必须注册」
+    expect(Object.keys(contentTypes).length).toBeGreaterThanOrEqual(expectedCTs.length);
     expectedCTs.forEach((ct) => {
       expect(contentTypes).toHaveProperty(ct);
     });

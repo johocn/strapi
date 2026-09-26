@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, jest } from "@jest/globals";
+import customerAggregatorFactory from "../server/src/services/customer-aggregator";
 
 const mockQuery = jest.fn();
 const mockStrapi: any = {
@@ -11,8 +12,7 @@ describe("customer-aggregator", () => {
   });
 
   it("upsert 已有档案时按 phone 匹配并更新空字段", async () => {
-    const factory = require("../server/src/services/customer-aggregator");
-    const svc = factory({ strapi: mockStrapi });
+    const svc = (customerAggregatorFactory as any)({ strapi: mockStrapi });
     const existing = { documentId: "p1", name: "旧名", contactPhone: "13800000000", contactEmail: null, customerType: "individual" };
     mockQuery.mockReturnValue({
       findOne: async () => existing,
@@ -23,8 +23,7 @@ describe("customer-aggregator", () => {
   });
 
   it("upsert 无匹配时创建新档案", async () => {
-    const factory = require("../server/src/services/customer-aggregator");
-    const svc = factory({ strapi: mockStrapi });
+    const svc = (customerAggregatorFactory as any)({ strapi: mockStrapi });
     mockQuery.mockReturnValue({
       findOne: async () => null,
       create: async (opts: any) => ({ documentId: "new", ...opts.data }),
@@ -35,8 +34,7 @@ describe("customer-aggregator", () => {
   });
 
   it("_computeStage 5 单以上为 vip", () => {
-    const factory = require("../server/src/services/customer-aggregator");
-    const svc = factory({ strapi: mockStrapi });
+    const svc = (customerAggregatorFactory as any)({ strapi: mockStrapi });
     expect(svc._computeStage(10, 5)).toBe("vip");
     expect(svc._computeStage(10, 2)).toBe("repeat");
     expect(svc._computeStage(5, 1)).toBe("active");

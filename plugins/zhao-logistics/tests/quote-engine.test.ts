@@ -18,8 +18,11 @@ describe("quote-engine", () => {
 
     it("应拒绝危险函数（非数学函数）", () => {
       const parser = new Parser();
-      expect(() => parser.parse("require('fs')")).toThrow();
-      expect(() => parser.parse("process.exit()")).toThrow();
+      // expr-eval 默认不注入任何宿主函数，危险调用会在求值期被拒（未定义变量）
+      expect(() => parser.parse("require('fs')").evaluate({})).toThrow();
+      expect(() => parser.parse("process.exit()").evaluate({})).toThrow();
+      // 成员访问在解析期即被拒
+      expect(() => parser.parse("x.constructor")).toThrow();
     });
   });
 
