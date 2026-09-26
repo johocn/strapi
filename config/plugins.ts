@@ -114,6 +114,8 @@ const config = ({ env }: Core.Config.Shared.ConfigParams): Core.Config.Plugin =>
                         cname: env("ALIYUN_OSS_CNAME"),
                         // 内网 Endpoint（可选）：ECS 与 Bucket 同地域时填 oss-cn-xxx-internal.aliyuncs.com
                         internalEndpoint: env("ALIYUN_OSS_INTERNAL_ENDPOINT"),
+                        // 私有桶签名 URL 有效期（秒），默认 3600
+                        signedUrlExpires: env.int("ALIYUN_OSS_SIGNED_URL_EXPIRES", 3600),
                     },
                 },
             ],

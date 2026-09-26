@@ -16,11 +16,16 @@ export interface AliyunOssOptions {
   secure?: boolean;
   /** 内网 Endpoint（可选，用于 ECS 内网访问） */
   internalEndpoint?: string;
+  /** 私有桶签名 URL 有效期（秒，默认 3600） */
+  signedUrlExpires?: number;
 }
 
 export class AliyunOssProvider implements OssProvider {
   readonly name = "aliyun";
+  /** 读写用 client（可走内网 endpoint） */
   private client!: OSS;
+  /** 出签专用 client：必须走公网域名，签名不能基于内网 endpoint 生成 */
+  private signClient!: OSS;
   private options!: AliyunOssOptions;
   private initialized = false;
 
@@ -34,16 +39,18 @@ export class AliyunOssProvider implements OssProvider {
       basePath: (options.basePath as string) || "uploads",
       secure: options.secure !== false,
       internalEndpoint: options.internalEndpoint as string,
+      signedUrlExpires: Number(options.signedUrlExpires) || 3600,
     };
 
-    const config: OSS.Options = {
+    const baseConfig: OSS.Options = {
       region: this.options.region,
       accessKeyId: this.options.accessKeyId,
       accessKeySecret: this.options.accessKeySecret,
       bucket: this.options.bucket,
       secure: this.options.secure,
-      refreshSTSTokenInterval: 300000,
     };
+
+    const config: OSS.Options = { ...baseConfig, refreshSTSTokenInterval: 300000 };
 
     if (this.options.cname) {
       config.endpoint = this.options.cname;
@@ -53,6 +60,15 @@ export class AliyunOssProvider implements OssProvider {
     }
 
     this.client = new OSS(config);
+
+    // 签名 client 不带 internalEndpoint：否则签出的地址是内网域名，浏览器无法访问
+    const signConfig: OSS.Options = { ...baseConfig };
+    if (this.options.cname) {
+      signConfig.endpoint = this.options.cname;
+      signConfig.cname = true;
+    }
+    this.signClient = new OSS(signConfig);
+
     this.initialized = true;
   }
 
@@ -68,6 +84,7 @@ export class AliyunOssProvider implements OssProvider {
     });
 
     return {
+      key,
       url: this.getUrl(key),
       etag: ((result.res?.headers as Record<string, string>)?.etag) || undefined,
       provider: this.name,
@@ -103,6 +120,16 @@ export class AliyunOssProvider implements OssProvider {
     // 使用 OSS 默认域名
     const protocol = this.options.secure ? "https" : "http";
     return `${protocol}://${this.options.bucket}.${this.options.region}.aliyuncs.com/${key}`;
+  }
+
+  /**
+   * 生成带签名的临时访问 URL（私有桶场景）。
+   * ali-oss 的签名在本地计算，不发网络请求，可同步返回。
+   */
+  signUrl(key: string, expires?: number): string {
+    this.ensureInitialized();
+    const ttl = expires && expires > 0 ? expires : this.options.signedUrlExpires || 3600;
+    return this.signClient.signatureUrl(key.replace(/^\//, ""), { expires: ttl });
   }
 
   private buildObjectKey(params: FileUploadParams): string {

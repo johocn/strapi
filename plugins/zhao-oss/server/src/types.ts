@@ -14,7 +14,9 @@ export interface OssProviderConfig {
 
 /** 上传结果 */
 export interface UploadResult {
-  /** 云端 URL */
+  /** 对象存储 key */
+  key: string;
+  /** 云端 URL（裸地址，不含签名） */
   url: string;
   /** ETag/文件哈希 */
   etag?: string;

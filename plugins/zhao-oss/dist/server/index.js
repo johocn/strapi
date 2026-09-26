@@ -571,16 +571,17 @@ class AliyunOssProvider {
       cname: options.cname,
       basePath: options.basePath || "uploads",
       secure: options.secure !== false,
-      internalEndpoint: options.internalEndpoint
+      internalEndpoint: options.internalEndpoint,
+      signedUrlExpires: Number(options.signedUrlExpires) || 3600
     };
-    const config2 = {
+    const baseConfig = {
       region: this.options.region,
       accessKeyId: this.options.accessKeyId,
       accessKeySecret: this.options.accessKeySecret,
       bucket: this.options.bucket,
-      secure: this.options.secure,
-      refreshSTSTokenInterval: 3e5
+      secure: this.options.secure
     };
+    const config2 = { ...baseConfig, refreshSTSTokenInterval: 3e5 };
     if (this.options.cname) {
       config2.endpoint = this.options.cname;
       config2.cname = true;
@@ -588,6 +589,12 @@ class AliyunOssProvider {
       config2.endpoint = this.options.internalEndpoint;
     }
     this.client = new OSS__default.default(config2);
+    const signConfig = { ...baseConfig };
+    if (this.options.cname) {
+      signConfig.endpoint = this.options.cname;
+      signConfig.cname = true;
+    }
+    this.signClient = new OSS__default.default(signConfig);
     this.initialized = true;
   }
   async upload(params) {
@@ -600,6 +607,7 @@ class AliyunOssProvider {
       }
     });
     return {
+      key,
       url: this.getUrl(key),
       etag: result.res?.headers?.etag || void 0,
       provider: this.name
@@ -630,6 +638,15 @@ class AliyunOssProvider {
     }
     const protocol = this.options.secure ? "https" : "http";
     return `${protocol}://${this.options.bucket}.${this.options.region}.aliyuncs.com/${key}`;
+  }
+  /**
+   * 生成带签名的临时访问 URL（私有桶场景）。
+   * ali-oss 的签名在本地计算，不发网络请求，可同步返回。
+   */
+  signUrl(key, expires) {
+    this.ensureInitialized();
+    const ttl = expires && expires > 0 ? expires : this.options.signedUrlExpires || 3600;
+    return this.signClient.signatureUrl(key.replace(/^\//, ""), { expires: ttl });
   }
   buildObjectKey(params) {
     const basePath = this.options.basePath || "uploads";
@@ -1405,6 +1422,18 @@ const syncService = ({ strapi }) => {
 };
 const urlResolver = ({ strapi }) => {
   const logger = strapi.plugin("zhao-common")?.service("logger") || strapi.log;
+  const signIfOssUrl = (url) => {
+    if (!url || url.startsWith("/")) return url;
+    try {
+      const registry = strapi.plugin("zhao-oss").service("provider-registry");
+      const provider = registry.getPrimaryProvider();
+      if (!provider) return url;
+      const key = decodeURIComponent(new URL(url).pathname.replace(/^\//, ""));
+      return key ? provider.signUrl(key) : url;
+    } catch {
+      return url;
+    }
+  };
   const urlResolver2 = {
     async resolveUrl(file) {
       try {
@@ -1414,22 +1443,22 @@ const urlResolver = ({ strapi }) => {
           where: { fileId: file.id }
         });
         if (!record || record.status !== "success" || !record.remoteUrl) {
-          return file.url;
+          return signIfOssUrl(file.url);
         }
         if (fallbackToLocal) {
           const registry = strapi.plugin("zhao-oss").service("provider-registry");
           const isHealthy = await registry.isPrimaryHealthy();
           if (!isHealthy) {
             logger.debug(`[zhao-oss] OSS unhealthy, using local URL for file ${file.id}`);
-            return file.url;
+            return signIfOssUrl(file.url);
           }
         }
-        return record.remoteUrl;
+        return signIfOssUrl(record.remoteUrl);
       } catch (err) {
         logger.debug(`[zhao-oss] URL resolution failed for file ${file.id}, using local`, {
           error: err.message
         });
-        return file.url;
+        return signIfOssUrl(file.url);
       }
     },
     async resolveUrls(files) {
@@ -1441,7 +1470,7 @@ const urlResolver = ({ strapi }) => {
         const enableUrlRewrite = pluginConfig?.enableUrlRewrite !== false;
         if (!enableUrlRewrite) {
           for (const file of files) {
-            result.set(file.id, file.url);
+            result.set(file.id, signIfOssUrl(file.url));
           }
           return result;
         }
@@ -1467,9 +1496,9 @@ const urlResolver = ({ strapi }) => {
         for (const file of files) {
           const record = recordMap.get(file.id);
           if (record && ossHealthy) {
-            result.set(file.id, record.remoteUrl);
+            result.set(file.id, signIfOssUrl(record.remoteUrl));
           } else {
-            result.set(file.id, file.url);
+            result.set(file.id, signIfOssUrl(file.url));
           }
         }
       } catch (err) {
@@ -1477,7 +1506,7 @@ const urlResolver = ({ strapi }) => {
           error: err.message
         });
         for (const file of files) {
-          result.set(file.id, file.url);
+          result.set(file.id, signIfOssUrl(file.url));
         }
       }
       return result;
@@ -1614,6 +1643,7 @@ const mediaService = ({ strapi }) => ({
       }
     }
     let ossUrl = null;
+    let ossPublicUrl = null;
     let ossStatus = "pending";
     let providerName = "zhao-oss-local";
     try {
@@ -1627,6 +1657,7 @@ const mediaService = ({ strapi }) => ({
           fileSize
         });
         ossUrl = result.url;
+        ossPublicUrl = provider.signUrl(result.key);
         ossStatus = "success";
         providerName = result.provider || "aliyun";
       }
@@ -1691,7 +1722,7 @@ const mediaService = ({ strapi }) => ({
       id: uploadFile.id,
       documentId: uploadFile.documentId,
       name: uploadFile.name,
-      url: ossUrl || localUrl,
+      url: ossPublicUrl || localUrl,
       hash: fileHash,
       ext,
       mime: mimeType,

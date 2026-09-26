@@ -9,6 +9,7 @@ interface FakeClient {
   put: jest.Mock;
   delete: jest.Mock;
   list: jest.Mock;
+  signatureUrl: jest.Mock;
 }
 
 let fakeClient: FakeClient;
@@ -25,6 +26,10 @@ beforeEach(() => {
     put: jest.fn().mockResolvedValue({ res: { headers: { etag: "etag-1" } } }),
     delete: jest.fn().mockResolvedValue({}),
     list: jest.fn().mockResolvedValue({ objects: [] }),
+    signatureUrl: jest.fn(
+      (key: string, opts: { expires: number }) =>
+        `https://test-bucket.oss-cn-hangzhou.aliyuncs.com/${key}?Expires=${opts.expires}&Signature=sig`
+    ),
   };
   MockOSS.mockImplementation(() => fakeClient);
 });
@@ -35,7 +40,8 @@ describe("AliyunOssProvider", () => {
       const provider = new AliyunOssProvider();
       await provider.initialize({ ...baseOptions });
 
-      expect(MockOSS).toHaveBeenCalledTimes(1);
+      // 两个 client：读写用（可带内网 endpoint）+ 出签用（必须公网）
+      expect(MockOSS).toHaveBeenCalledTimes(2);
       const config = MockOSS.mock.calls[0][0];
       expect(config).toMatchObject({
         region: "oss-cn-hangzhou",
@@ -104,6 +110,48 @@ describe("AliyunOssProvider", () => {
     });
   });
 
+  describe("signUrl", () => {
+    it("用签名 client 出签，key 去前导斜杠，默认 3600 秒", async () => {
+      const provider = new AliyunOssProvider();
+      await provider.initialize({ ...baseOptions });
+
+      const url = provider.signUrl("/uploads/2026/09/26/a.jpg");
+
+      expect(fakeClient.signatureUrl).toHaveBeenCalledWith("uploads/2026/09/26/a.jpg", {
+        expires: 3600,
+      });
+      expect(url).toContain("Expires=3600");
+    });
+
+    it("支持 signedUrlExpires 配置与调用时覆盖", async () => {
+      const provider = new AliyunOssProvider();
+      await provider.initialize({ ...baseOptions, signedUrlExpires: 120 });
+      provider.signUrl("a.jpg");
+      expect(fakeClient.signatureUrl).toHaveBeenLastCalledWith("a.jpg", { expires: 120 });
+
+      provider.signUrl("a.jpg", 60);
+      expect(fakeClient.signatureUrl).toHaveBeenLastCalledWith("a.jpg", { expires: 60 });
+    });
+
+    it("签名 client 不带 internalEndpoint，避免签出内网域名", async () => {
+      const provider = new AliyunOssProvider();
+      await provider.initialize({
+        ...baseOptions,
+        internalEndpoint: "oss-cn-hangzhou-internal.aliyuncs.com",
+      });
+
+      expect(MockOSS.mock.calls[0][0].endpoint).toBe("oss-cn-hangzhou-internal.aliyuncs.com");
+      expect(MockOSS.mock.calls[1][0].endpoint).toBeUndefined();
+    });
+
+    it("未 initialize 就调用 signUrl 抛出未初始化错误", () => {
+      const provider = new AliyunOssProvider();
+      expect(() => provider.signUrl("a.jpg")).toThrow(
+        "Aliyun OSS provider not initialized. Call initialize() first."
+      );
+    });
+  });
+
   describe("upload", () => {
     it("默认 basePath 为 uploads，透传 mime/Cache-Control，返回 URL 与 etag", async () => {
       const provider = new AliyunOssProvider();
@@ -124,6 +172,7 @@ describe("AliyunOssProvider", () => {
       expect(opts.headers["Cache-Control"]).toBe("public, max-age=31536000, immutable");
 
       expect(result).toEqual({
+        key,
         url: `https://test-bucket.oss-cn-hangzhou.aliyuncs.com/${key}`,
         etag: "etag-1",
         provider: "aliyun",

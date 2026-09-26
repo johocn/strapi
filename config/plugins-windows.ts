@@ -116,6 +116,7 @@ const config = ({ env }: Core.Config.Shared.ConfigParams): Core.Config.Plugin =>
                         region: env("ALIYUN_OSS_REGION"),
                         cname: env("ALIYUN_OSS_CNAME"),
                         internalEndpoint: env("ALIYUN_OSS_INTERNAL_ENDPOINT"),
+                        signedUrlExpires: env.int("ALIYUN_OSS_SIGNED_URL_EXPIRES", 3600),
                     },
                 },
             ],

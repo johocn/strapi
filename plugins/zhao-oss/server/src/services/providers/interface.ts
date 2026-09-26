@@ -20,6 +20,9 @@ export interface OssProvider {
   /** 检查服务健康状态 */
   checkHealth(): Promise<boolean>;
 
-  /** 获取文件访问 URL */
+  /** 获取文件访问 URL（裸地址，不含签名，可直接入库） */
   getUrl(key: string): string;
+
+  /** 生成带签名的临时访问 URL（私有桶场景，本地计算不发请求） */
+  signUrl(key: string, expires?: number): string;
 }

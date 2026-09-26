@@ -1,4 +1,4 @@
-﻿import type { Core } from "@strapi/strapi";
+import type { Core } from "@strapi/strapi";
 
 export interface UrlResolver {
   resolveUrl(file: { id: number; url: string }): Promise<string>;
@@ -7,6 +7,25 @@ export interface UrlResolver {
 
 export default ({ strapi }: { strapi: Core.Strapi }): UrlResolver => {
   const logger = strapi.plugin("zhao-common")?.service("logger") || strapi.log;
+
+  /**
+   * 私有桶读时签名：本地 URL 是相对路径（/static/...），绝对的必为 OSS 公网裸地址，
+   * 需要在响应前现签，避免把裸地址返回给前端造成 403。
+   */
+  const signIfOssUrl = (url: string): string => {
+    if (!url || url.startsWith("/")) return url;
+
+    try {
+      const registry = strapi.plugin("zhao-oss").service("provider-registry");
+      const provider = registry.getPrimaryProvider();
+      if (!provider) return url;
+
+      const key = decodeURIComponent(new URL(url).pathname.replace(/^\//, ""));
+      return key ? provider.signUrl(key) : url;
+    } catch {
+      return url;
+    }
+  };
 
   const urlResolver: UrlResolver = {
     async resolveUrl(file: { id: number; url: string }): Promise<string> {
@@ -19,7 +38,7 @@ export default ({ strapi }: { strapi: Core.Strapi }): UrlResolver => {
         });
 
         if (!record || record.status !== "success" || !record.remoteUrl) {
-          return file.url;
+          return signIfOssUrl(file.url);
         }
 
         if (fallbackToLocal) {
@@ -27,16 +46,16 @@ export default ({ strapi }: { strapi: Core.Strapi }): UrlResolver => {
           const isHealthy = await registry.isPrimaryHealthy();
           if (!isHealthy) {
             logger.debug(`[zhao-oss] OSS unhealthy, using local URL for file ${file.id}`);
-            return file.url;
+            return signIfOssUrl(file.url);
           }
         }
 
-        return record.remoteUrl;
+        return signIfOssUrl(record.remoteUrl);
       } catch (err) {
         logger.debug(`[zhao-oss] URL resolution failed for file ${file.id}, using local`, {
           error: (err as Error).message,
         });
-        return file.url;
+        return signIfOssUrl(file.url);
       }
     },
 
@@ -52,7 +71,7 @@ export default ({ strapi }: { strapi: Core.Strapi }): UrlResolver => {
 
         if (!enableUrlRewrite) {
           for (const file of files) {
-            result.set(file.id, file.url);
+            result.set(file.id, signIfOssUrl(file.url));
           }
           return result;
         }
@@ -82,9 +101,9 @@ export default ({ strapi }: { strapi: Core.Strapi }): UrlResolver => {
         for (const file of files) {
           const record = recordMap.get(file.id);
           if (record && ossHealthy) {
-            result.set(file.id, record.remoteUrl);
+            result.set(file.id, signIfOssUrl(record.remoteUrl));
           } else {
-            result.set(file.id, file.url);
+            result.set(file.id, signIfOssUrl(file.url));
           }
         }
       } catch (err) {
@@ -92,7 +111,7 @@ export default ({ strapi }: { strapi: Core.Strapi }): UrlResolver => {
           error: (err as Error).message,
         });
         for (const file of files) {
-          result.set(file.id, file.url);
+          result.set(file.id, signIfOssUrl(file.url));
         }
       }
 

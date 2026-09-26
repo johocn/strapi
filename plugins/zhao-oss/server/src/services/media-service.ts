@@ -186,6 +186,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     }
 
     let ossUrl: string | null = null;
+    // 响应给调用方的地址：私有桶下必须是签名 URL（入库仍用裸地址 ossUrl）
+    let ossPublicUrl: string | null = null;
     let ossStatus: "success" | "pending" = "pending";
     let providerName = "zhao-oss-local";
 
@@ -200,6 +202,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
           fileSize,
         });
         ossUrl = result.url;
+        ossPublicUrl = provider.signUrl(result.key);
         ossStatus = "success";
         providerName = result.provider || "aliyun";
       }
@@ -269,7 +272,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       id: uploadFile.id,
       documentId: uploadFile.documentId,
       name: uploadFile.name,
-      url: ossUrl || localUrl,
+      url: ossPublicUrl || localUrl,
       hash: fileHash,
       ext,
       mime: mimeType,
