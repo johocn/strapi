@@ -19,17 +19,25 @@
  * channel.getChannelDistributionStats(channelId)   → { stats: {...} }
  */
 
-import { setupStrapi, teardownStrapi, getStrapi } from "./helpers/strapi-setup";
+import {
+  setupStrapi,
+  teardownStrapi,
+  getStrapi,
+  describeDb,
+  hasTestDatabase,
+} from "./helpers/strapi-setup";
 import { seedTestData, cleanupTestData, TestFixtures } from "./fixtures/seed";
 
 let fixtures: TestFixtures;
 
 beforeAll(async () => {
+  if (!hasTestDatabase) return;
   await setupStrapi();
   fixtures = await seedTestData(getStrapi());
 });
 
 afterAll(async () => {
+  if (!hasTestDatabase) return;
   await cleanupTestData(getStrapi());
   await teardownStrapi();
 });
@@ -37,7 +45,7 @@ afterAll(async () => {
 // ==========================================
 // 模块一：渠道管理 CRUD
 // ==========================================
-describe("渠道管理 CRUD (Service层)", () => {
+describeDb("渠道管理 CRUD (Service层)", () => {
   describe("find(query) — 查询渠道列表", () => {
     test("应返回分页渠道列表（默认分页）", async () => {
       const strapi = getStrapi();
@@ -174,7 +182,7 @@ describe("渠道管理 CRUD (Service层)", () => {
 // ==========================================
 // 模块二：渠道网络与操作
 // ==========================================
-describe("渠道网络与操作 (Service层)", () => {
+describeDb("渠道网络与操作 (Service层)", () => {
   describe("createRoot(data) — 创建根渠道", () => {
     test("应创建 root 级别的根渠道", async () => {
       const strapi = getStrapi();

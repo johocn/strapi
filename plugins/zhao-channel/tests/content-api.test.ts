@@ -1,5 +1,11 @@
 import http from "http";
-import { setupStrapi, teardownStrapi, getStrapi } from "./helpers/strapi-setup";
+import {
+  setupStrapi,
+  teardownStrapi,
+  getStrapi,
+  describeDb,
+  hasTestDatabase,
+} from "./helpers/strapi-setup";
 import { seedTestData, cleanupTestData, TestFixtures } from "./fixtures/seed";
 import supertest from "supertest";
 
@@ -18,6 +24,7 @@ async function signToken(userId: number): Promise<string> {
 }
 
 beforeAll(async () => {
+  if (!hasTestDatabase) return;
   await setupStrapi();
   fixtures = await seedTestData(getStrapi());
   const strapi = getStrapi();
@@ -30,11 +37,12 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
+  if (!hasTestDatabase) return;
   await cleanupTestData(getStrapi());
   await teardownStrapi();
 });
 
-describe("Content API — 公开层端点", () => {
+describeDb("Content API — 公开层端点", () => {
   test("GET /v1/channel/public/:id — 获取公开信息", async () => {
     const res = await request.get(
       `${API}/v1/channel/public/${fixtures.channels[0].id}`
@@ -69,7 +77,7 @@ describe("Content API — 公开层端点", () => {
   });
 });
 
-describe("Content API — 用户层端点", () => {
+describeDb("Content API — 用户层端点", () => {
   test("GET /v1/my/channels — 应返回渠道列表", async () => {
     const res = await request
       .get(`${API}/v1/my/channels`)
@@ -131,7 +139,7 @@ describe("Content API — 用户层端点", () => {
   });
 });
 
-describe("Content API — 渠道成员层端点", () => {
+describeDb("Content API — 渠道成员层端点", () => {
   test("GET /v1/channel/:id — 应返回渠道详情", async () => {
     const res = await request
       .get(`${API}/v1/channel/${fixtures.channels[0].id}`)
@@ -162,7 +170,7 @@ describe("Content API — 渠道成员层端点", () => {
   });
 });
 
-describe("Content API — 渠道管理员层端点", () => {
+describeDb("Content API — 渠道管理员层端点", () => {
   test("POST /v1/admin/channel — 应创建新渠道", async () => {
     const res = await request
       .post(`${API}/v1/admin/channel`)
@@ -214,7 +222,7 @@ describe("Content API — 渠道管理员层端点", () => {
   });
 });
 
-describe("Content API — 渠道所有者层端点", () => {
+describeDb("Content API — 渠道所有者层端点", () => {
   test("DELETE /v1/admin/channel/:id — 应删除渠道", async () => {
     const strapi = getStrapi();
     const ch = await strapi.db.query("plugin::zhao-channel.channel").create({
@@ -242,7 +250,7 @@ describe("Content API — 渠道所有者层端点", () => {
   });
 });
 
-describe("Content API — 错误处理", () => {
+describeDb("Content API — 错误处理", () => {
   test("不存在的路由应返回 404", async () => {
     const res = await request.get(`${API}/v1/nonexistent-route`);
     expect(res.status).toBe(404);

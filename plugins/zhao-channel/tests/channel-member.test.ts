@@ -17,17 +17,25 @@
  * getMembers → 无成员渠道返回空数组
  */
 
-import { setupStrapi, teardownStrapi, getStrapi } from "./helpers/strapi-setup";
+import {
+  setupStrapi,
+  teardownStrapi,
+  getStrapi,
+  describeDb,
+  hasTestDatabase,
+} from "./helpers/strapi-setup";
 import { seedTestData, cleanupTestData, TestFixtures } from "./fixtures/seed";
 
 let fixtures: TestFixtures;
 
 beforeAll(async () => {
+  if (!hasTestDatabase) return;
   await setupStrapi();
   fixtures = await seedTestData(getStrapi());
 });
 
 afterAll(async () => {
+  if (!hasTestDatabase) return;
   await cleanupTestData(getStrapi());
   await teardownStrapi();
 });
@@ -35,7 +43,7 @@ afterAll(async () => {
 // ==========================================
 // 模块三：渠道成员管理
 // ==========================================
-describe("渠道成员管理 (Service层)", () => {
+describeDb("渠道成员管理 (Service层)", () => {
   describe("verifyInvitationCode(code) — 验证邀请码", () => {
     test("有效渠道邀请码应返回 valid=true 和渠道信息", async () => {
       const strapi = getStrapi();

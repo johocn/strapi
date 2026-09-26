@@ -1,19 +1,27 @@
-import { setupStrapi, teardownStrapi, getStrapi } from "./helpers/strapi-setup";
+import {
+  setupStrapi,
+  teardownStrapi,
+  getStrapi,
+  describeDb,
+  hasTestDatabase,
+} from "./helpers/strapi-setup";
 import { seedTestData, cleanupTestData, TestFixtures } from "./fixtures/seed";
 
 let fixtures: TestFixtures;
 
 beforeAll(async () => {
+  if (!hasTestDatabase) return;
   await setupStrapi();
   fixtures = await seedTestData(getStrapi());
 });
 
 afterAll(async () => {
+  if (!hasTestDatabase) return;
   await cleanupTestData(getStrapi());
   await teardownStrapi();
 });
 
-describe("渠道权限管理 (Service层)", () => {
+describeDb("渠道权限管理 (Service层)", () => {
   describe("grantChannelsToUser(userId, channelIds, grantedBy) — 给用户授权渠道", () => {
     test("应成功为用户授权一个或多个渠道", async () => {
       const strapi = getStrapi();

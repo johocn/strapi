@@ -10,17 +10,25 @@
  * 6. 跨渠道隔离检查（用户不能操作其他渠道的资源）
  */
 
-import { setupStrapi, teardownStrapi, getStrapi } from "./helpers/strapi-setup";
+import {
+  setupStrapi,
+  teardownStrapi,
+  getStrapi,
+  describeDb,
+  hasTestDatabase,
+} from "./helpers/strapi-setup";
 import { seedTestData, cleanupTestData, TestFixtures } from "./fixtures/seed";
 
 let fixtures: TestFixtures;
 
 beforeAll(async () => {
+  if (!hasTestDatabase) return;
   await setupStrapi();
   fixtures = await seedTestData(getStrapi());
 });
 
 afterAll(async () => {
+  if (!hasTestDatabase) return;
   await cleanupTestData(getStrapi());
   await teardownStrapi();
 });
@@ -28,7 +36,7 @@ afterAll(async () => {
 // ==========================================
 // 模块七：安全与异常边界
 // ==========================================
-describe("安全与异常处理", () => {
+describeDb("安全与异常处理", () => {
   // ---------- 1. 无效数据输入 ----------
   describe("无效数据输入", () => {
     test("create — 空名称应优雅处理", async () => {

@@ -1,8 +1,29 @@
+import { spawnSync } from "child_process";
 import http from "http";
 import path from "path";
 import type { Core } from "@strapi/strapi";
 
 let strapiInstance: Core.Strapi | null = null;
+
+/**
+ * 同步探测测试库连通性：集成套件依赖真实 PostgreSQL，
+ * 无库时整体跳过，避免上百用例逐个报 ECONNREFUSED。
+ */
+function isTestDatabaseAvailable(): boolean {
+  const host = process.env.DATABASE_HOST || "127.0.0.1";
+  const port = Number(process.env.DATABASE_PORT || 5432);
+  const probe = `const net=require("net");const s=net.connect({host:${JSON.stringify(host)},port:${port}});s.setTimeout(1000);s.on("connect",()=>{s.destroy();process.exit(0)});s.on("timeout",()=>process.exit(1));s.on("error",()=>process.exit(1));`;
+  try {
+    return spawnSync(process.execPath, ["-e", probe], { timeout: 3000 }).status === 0;
+  } catch {
+    return false;
+  }
+}
+
+/** 测试库是否可用（文件加载时同步探测一次） */
+export const hasTestDatabase = isTestDatabaseAvailable();
+
+export const describeDb = hasTestDatabase ? describe : describe.skip;
 
 function isAlive(instance: Core.Strapi): boolean {
   return global.strapi === instance;

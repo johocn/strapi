@@ -15,17 +15,25 @@
  * createForUser → 通过已有邀请关系的用户创建深度=2的链
  */
 
-import { setupStrapi, teardownStrapi, getStrapi } from "./helpers/strapi-setup";
+import {
+  setupStrapi,
+  teardownStrapi,
+  getStrapi,
+  describeDb,
+  hasTestDatabase,
+} from "./helpers/strapi-setup";
 import { seedTestData, cleanupTestData, TestFixtures } from "./fixtures/seed";
 
 let fixtures: TestFixtures;
 
 beforeAll(async () => {
+  if (!hasTestDatabase) return;
   await setupStrapi();
   fixtures = await seedTestData(getStrapi());
 });
 
 afterAll(async () => {
+  if (!hasTestDatabase) return;
   await cleanupTestData(getStrapi());
   await teardownStrapi();
 });
@@ -33,7 +41,7 @@ afterAll(async () => {
 // ==========================================
 // 模块五：用户邀请与分销
 // ==========================================
-describe("用户邀请与分销 (Service层)", () => {
+describeDb("用户邀请与分销 (Service层)", () => {
   describe("createForUser(userId, inviterCode?, inviteChannelId?) — 为用户创建邀请记录", () => {
     test("不传邀请码应创建有机注册记录（inviteMethod=organic）", async () => {
       const strapi = getStrapi();
