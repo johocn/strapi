@@ -1,16 +1,31 @@
-const mockDeleteFileCompletely = jest.fn().mockResolvedValue({ deleted: true });
-const mockCheckSyncStatus = jest.fn().mockResolvedValue({ status: 'success' });
-const mockGetPrimaryProvider = jest.fn();
+const mockUploadFile = jest.fn();
+const mockListFiles = jest.fn();
+const mockGetFolderTree = jest.fn();
+const mockCreateFolder = jest.fn();
+const mockFindFileById = jest.fn();
+const mockCanDeleteFile = jest.fn();
+const mockDeleteFileCompletely = jest.fn();
+const mockCheckSyncStatus = jest.fn();
+
+const mediaServiceMock = {
+  uploadFile: mockUploadFile,
+  listFiles: mockListFiles,
+  getFolderTree: mockGetFolderTree,
+  createFolder: mockCreateFolder,
+  findFileById: mockFindFileById,
+  canDeleteFile: mockCanDeleteFile,
+};
+
+const syncServiceMock = {
+  deleteFileCompletely: mockDeleteFileCompletely,
+  checkSyncStatus: mockCheckSyncStatus,
+};
 
 const mockStrapi: any = {
-  dirs: { static: { public: '/tmp/test-uploads' } },
-  db: { query: jest.fn() },
   plugin: jest.fn().mockReturnValue({
-    service: jest.fn().mockReturnValue({
-      getPrimaryProvider: mockGetPrimaryProvider,
-      deleteFileCompletely: mockDeleteFileCompletely,
-      checkSyncStatus: mockCheckSyncStatus,
-    }),
+    service: jest.fn((name: string) =>
+      name === "media-service" ? mediaServiceMock : syncServiceMock
+    ),
   }),
   log: { warn: jest.fn(), error: jest.fn(), info: jest.fn() },
 };
@@ -20,25 +35,6 @@ jest.mock('fs/promises', () => ({
   writeFile: jest.fn().mockResolvedValue(undefined),
   mkdir: jest.fn().mockResolvedValue(undefined),
 }));
-
-jest.mock('crypto', () => ({
-  createHash: jest.fn().mockReturnValue({
-    update: jest.fn().mockReturnValue({
-      digest: jest.fn().mockReturnValue('d41d8cd98f00b204e9800998ecf8427e'),
-    }),
-  }),
-}));
-
-jest.mock('path', () => ({
-  join: jest.fn().mockReturnValue('/tmp/test-uploads/course/covers/d41d8cd98f00b204e9800998ecf8427e.jpg'),
-}));
-
-const fullQueryMock = () => ({
-  create: jest.fn(),
-  findOne: jest.fn(),
-  findMany: jest.fn(),
-  count: jest.fn(),
-});
 
 describe('api-controller 测试', () => {
   let controller: any;
@@ -54,89 +50,85 @@ describe('api-controller 测试', () => {
       const ctx: any = { request: { files: {}, body: {} } };
       await controller.upload(ctx);
       expect(ctx.status).toBe(400);
-      expect(ctx.body.error).toBe('No files provided');
+      expect(ctx.body).toEqual({ error: 'No files provided' });
     });
 
-    test('OSS 上传成功时返回 OSS URL', async () => {
+    test('读取文件并调用 mediaService.uploadFile，返回包装结果', async () => {
+      const result = {
+        id: 1,
+        documentId: 'doc123',
+        name: 'test.jpg',
+        url: 'https://oss/test.jpg',
+        provider: 'aliyun',
+        folderPath: '/course/covers',
+      };
+      mockUploadFile.mockResolvedValue(result);
+
       const ctx: any = {
         request: {
-          files: { file: { path: '/tmp/test.jpg', name: 'test.jpg', type: 'image/jpeg', size: 1024 } },
-          body: { folder: '/course/covers' },
+          files: {
+            file: {
+              filepath: '/tmp/test.jpg',
+              originalFilename: 'test.jpg',
+              mimetype: 'image/jpeg',
+              size: 1024,
+            },
+          },
+          body: { data: { name: 'renamed.jpg', folder: '/course/covers', folderId: '7' } },
         },
       };
 
-      mockGetPrimaryProvider.mockReturnValue({
-        upload: jest.fn().mockResolvedValue({
-          url: 'https://test.oss-cn-beijing.aliyuncs.com/course/covers/test.jpg',
-          provider: 'aliyun',
-        }),
-      });
-
-      mockStrapi.db.query.mockReturnValue({
-        ...fullQueryMock(),
-        findOne: jest.fn().mockResolvedValue(null),
-        create: jest.fn().mockResolvedValue({
-          id: 1, documentId: 'doc123', name: 'test.jpg',
-        }),
-      });
-
       await controller.upload(ctx);
-      expect(ctx.body.provider_metadata.ossStatus).toBe('success');
-      expect(ctx.body.provider_metadata.ossUrl).toBeTruthy();
-      // 新增：OSS 成功时 url 仍为 OSS 完整 URL，不受 /static 影响
-      expect(ctx.body.url).toMatch(/^https?:\/\//);
-      // localUrl 也应带 /static 前缀（作为回退）
-      expect(ctx.body.provider_metadata.localUrl).toMatch(/^\/static\//);
+
+      expect(ctx.body).toEqual({ data: result, meta: {} });
+      expect(mockUploadFile).toHaveBeenCalledWith({
+        fileBuffer: expect.any(Buffer),
+        originalName: 'test.jpg',
+        customName: 'renamed.jpg',
+        mimeType: 'image/jpeg',
+        fileSize: 1024,
+        folderInput: '/course/covers',
+        folderIdInput: '7',
+      });
     });
 
-    test('OSS 上传失败时回退本地', async () => {
+    test('folder 缺省为 /general，name 缺省为 null', async () => {
+      mockUploadFile.mockResolvedValue({ id: 2 });
+
       const ctx: any = {
         request: {
-          files: { file: { path: '/tmp/test.jpg', name: 'test.jpg', type: 'image/jpeg', size: 1024 } },
-          body: { folder: '/course/covers' },
-        },
-      };
-
-      mockGetPrimaryProvider.mockReturnValue({
-        upload: jest.fn().mockRejectedValue(new Error('OSS connection failed')),
-      });
-
-      mockStrapi.db.query.mockReturnValue({
-        ...fullQueryMock(),
-        findOne: jest.fn().mockResolvedValue(null),
-        create: jest.fn().mockResolvedValue({
-          id: 2, documentId: 'doc456', name: 'test.jpg',
-        }),
-      });
-
-      await controller.upload(ctx);
-      expect(ctx.body.provider_metadata.ossStatus).toBe('pending');
-      expect(ctx.body.provider).toBe('zhao-oss-local');
-      // 新增：验证本地 URL 带 /static 前缀
-      expect(ctx.body.url).toMatch(/^\/static\//);
-      expect(ctx.body.provider_metadata.localUrl).toMatch(/^\/static\//);
-    });
-
-    test('默认 folderPath 为 /general', async () => {
-      const ctx: any = {
-        request: {
-          files: { file: { path: '/tmp/test.jpg', name: 'test.jpg', type: 'image/jpeg', size: 1024 } },
+          files: { file: { path: '/tmp/a.jpg', name: 'a.jpg', type: 'image/jpeg', size: 10 } },
           body: {},
         },
       };
 
-      mockGetPrimaryProvider.mockReturnValue(null);
+      await controller.upload(ctx);
 
-      mockStrapi.db.query.mockReturnValue({
-        ...fullQueryMock(),
-        findOne: jest.fn().mockResolvedValue(null),
-        create: jest.fn().mockResolvedValue({
-          id: 3, documentId: 'doc789', name: 'test.jpg',
-        }),
-      });
+      expect(mockUploadFile).toHaveBeenCalledWith(
+        expect.objectContaining({
+          originalName: 'a.jpg',
+          customName: null,
+          mimeType: 'image/jpeg',
+          folderInput: '/general',
+          folderIdInput: undefined,
+        })
+      );
+    });
+
+    test('uploadFile 抛错时透传 status 与错误信息', async () => {
+      mockUploadFile.mockRejectedValue(Object.assign(new Error('too large'), { status: 413 }));
+
+      const ctx: any = {
+        request: {
+          files: { file: { path: '/tmp/a.jpg', name: 'a.jpg', type: 'image/jpeg', size: 10 } },
+          body: {},
+        },
+      };
 
       await controller.upload(ctx);
-      expect(ctx.body.folderPath).toBe('/general');
+
+      expect(ctx.status).toBe(413);
+      expect(ctx.body).toEqual({ error: 'too large' });
     });
   });
 
@@ -145,90 +137,136 @@ describe('api-controller 测试', () => {
       const ctx: any = { params: {}, user: { id: 1, roles: ['admin'] } };
       await controller.deleteMedia(ctx);
       expect(ctx.status).toBe(400);
+      expect(ctx.body).toEqual({ error: 'fileId is required' });
     });
 
     test('无效 fileId 返回 400', async () => {
       const ctx: any = { params: { fileId: 'abc' }, user: { id: 1, roles: ['admin'] } };
       await controller.deleteMedia(ctx);
       expect(ctx.status).toBe(400);
+      expect(ctx.body).toEqual({ error: 'Invalid fileId' });
     });
 
     test('文件不存在返回 404', async () => {
-      mockStrapi.db.query.mockReturnValue({
-        ...fullQueryMock(),
-        findOne: jest.fn().mockResolvedValue(null),
-      });
+      mockFindFileById.mockResolvedValue(null);
 
       const ctx: any = { params: { fileId: '999' }, user: { id: 1, roles: ['admin'] } };
       await controller.deleteMedia(ctx);
+
       expect(ctx.status).toBe(404);
+      expect(ctx.body).toEqual({ error: 'File not found' });
+      expect(mockFindFileById).toHaveBeenCalledWith(999);
     });
 
-    test('admin 可删除任何文件', async () => {
-      mockStrapi.db.query.mockReturnValue({
-        ...fullQueryMock(),
-        findOne: jest.fn().mockResolvedValue({ id: 1, createdBy: 99 }),
-      });
+    test('无删除权限返回 403，并把 ctx.user 传给 canDeleteFile', async () => {
+      const user = { id: 2, roles: ['user'] };
+      mockFindFileById.mockResolvedValue({ id: 1, createdBy: 99 });
+      mockCanDeleteFile.mockResolvedValue(false);
 
-      const ctx: any = { params: { fileId: '1' }, user: { id: 1, roles: ['admin'] } };
+      const ctx: any = { params: { fileId: '1' }, user };
       await controller.deleteMedia(ctx);
-      expect(ctx.body.success).toBe(true);
-    });
 
-    test('非拥有者非管理员返回 403', async () => {
-      mockStrapi.db.query.mockReturnValue({
-        ...fullQueryMock(),
-        findOne: jest.fn().mockResolvedValue({ id: 1, createdBy: 99 }),
-      });
-
-      const ctx: any = { params: { fileId: '1' }, user: { id: 2, roles: ['user'] } };
-      await controller.deleteMedia(ctx);
       expect(ctx.status).toBe(403);
+      expect(ctx.body).toEqual({ error: '无权删除此媒体文件' });
+      expect(mockCanDeleteFile).toHaveBeenCalledWith(1, user);
+      expect(mockDeleteFileCompletely).not.toHaveBeenCalled();
     });
 
-    test('拥有者可删除自己的文件', async () => {
-      mockStrapi.db.query.mockReturnValue({
-        ...fullQueryMock(),
-        findOne: jest.fn().mockResolvedValue({ id: 1, createdBy: 1 }),
-      });
+    test('有权限时删除并返回成功包装结果', async () => {
+      const user = { id: 1, roles: ['admin'] };
+      mockFindFileById.mockResolvedValue({ id: 1, createdBy: 1 });
+      mockCanDeleteFile.mockResolvedValue(true);
+      mockDeleteFileCompletely.mockResolvedValue({ deleted: true });
 
-      const ctx: any = { params: { fileId: '1' }, user: { id: 1, roles: ['user'] } };
+      const ctx: any = { params: { fileId: '1' }, user };
       await controller.deleteMedia(ctx);
-      expect(ctx.body.success).toBe(true);
+
+      expect(mockDeleteFileCompletely).toHaveBeenCalledWith(1);
+      expect(ctx.body).toEqual({
+        data: { success: true, fileId: 1, details: { deleted: true } },
+        meta: {},
+      });
+    });
+
+    test('优先使用 ctx.state.user', async () => {
+      const stateUser = { id: 5, roles: ['channel-admin'] };
+      mockFindFileById.mockResolvedValue({ id: 1, createdBy: 99 });
+      mockCanDeleteFile.mockResolvedValue(true);
+      mockDeleteFileCompletely.mockResolvedValue({});
+
+      const ctx: any = {
+        params: { fileId: '1' },
+        user: { id: 2 },
+        state: { user: stateUser },
+      };
+      await controller.deleteMedia(ctx);
+
+      expect(mockCanDeleteFile).toHaveBeenCalledWith(1, stateUser);
     });
   });
 
   describe('mediaList', () => {
-    test('返回分页结构', async () => {
-      mockStrapi.db.query.mockReturnValue({
-        ...fullQueryMock(),
-        findMany: jest.fn().mockResolvedValue([
-          { id: 1, documentId: 'd1', name: 'test.jpg', url: 'https://oss/test.jpg', hash: 'abc', ext: '.jpg', mime: 'image/jpeg', size: 1024, provider: 'zhao-oss', folderPath: '/general', provider_metadata: {}, createdAt: '2024-01-01', updatedAt: '2024-01-01' },
-        ]),
-        count: jest.fn().mockResolvedValue(1),
-      });
+    test('把 {list,pagination} 归一为 {data, meta.pagination} 并透传 query', async () => {
+      const list = [{ id: 1, name: 'test.jpg' }];
+      const pagination = { page: 1, pageSize: 20, total: 1, pageCount: 1 };
+      mockListFiles.mockResolvedValue({ list, pagination });
 
-      const ctx: any = { query: { page: '1', pageSize: '20' } };
+      const user = { id: 1, roles: ['admin'] };
+      const ctx: any = { query: { page: '1', pageSize: '20' }, state: { user } };
       await controller.mediaList(ctx);
-      expect(ctx.body.list).toHaveLength(1);
-      expect(ctx.body.pagination.total).toBe(1);
+
+      expect(ctx.body).toEqual({ data: list, meta: { pagination } });
+      expect(mockListFiles).toHaveBeenCalledWith({
+        page: 1,
+        pageSize: 20,
+        folderPath: undefined,
+        mime: undefined,
+        search: undefined,
+        sort: 'createdAt:desc',
+        user,
+      });
+    });
+
+    test('把 {results,pagination} 归一为 {data, meta.pagination}', async () => {
+      const results = [{ id: 2 }];
+      const pagination = { page: 2, pageSize: 10, total: 11, pageCount: 2 };
+      mockListFiles.mockResolvedValue({ results, pagination });
+
+      const ctx: any = {
+        query: {
+          page: '2',
+          pageSize: '10',
+          folderPath: '/course',
+          mime: 'image',
+          search: 'a',
+          sort: 'name:asc',
+        },
+      };
+      await controller.mediaList(ctx);
+
+      expect(ctx.body).toEqual({ data: results, meta: { pagination } });
+      expect(mockListFiles).toHaveBeenCalledWith(
+        expect.objectContaining({
+          page: 2,
+          pageSize: 10,
+          folderPath: '/course',
+          mime: 'image',
+          search: 'a',
+          sort: 'name:asc',
+        })
+      );
     });
   });
 
   describe('getFolders', () => {
-    test('返回扁平文件夹列表', async () => {
-      mockStrapi.db.query.mockReturnValue({
-        ...fullQueryMock(),
-        findMany: jest.fn().mockResolvedValue([
-          { id: 1, documentId: 'f1', name: 'course', path: '/course' },
-          { id: 2, documentId: 'f2', name: 'covers', path: '/course/covers' },
-        ]),
-      });
+    test('返回包装后的文件夹列表', async () => {
+      const folders = [{ id: 1, documentId: 'f1', name: 'course', path: '/1', children: [] }];
+      mockGetFolderTree.mockResolvedValue(folders);
 
       const ctx: any = {};
       await controller.getFolders(ctx);
-      expect(ctx.body.folders).toBeDefined();
-      expect(Array.isArray(ctx.body.folders)).toBe(true);
+
+      expect(ctx.body).toEqual({ data: { folders }, meta: {} });
     });
   });
 
@@ -237,31 +275,37 @@ describe('api-controller 测试', () => {
       const ctx: any = { request: { body: {} } };
       await controller.createFolder(ctx);
       expect(ctx.status).toBe(400);
+      expect(ctx.body).toEqual({ error: 'Folder name is required' });
     });
 
-    test('创建顶级文件夹', async () => {
-      mockStrapi.db.query.mockReturnValue({
-        ...fullQueryMock(),
-        findOne: jest.fn().mockResolvedValue(null),
-        findMany: jest.fn().mockResolvedValue([{ pathId: 1 }]),
-        create: jest.fn().mockResolvedValue({ id: 3, documentId: 'f3', name: 'covers', path: '/covers' }),
-      });
+    test('创建顶级文件夹，parentId 缺省为 null', async () => {
+      const created = { id: 3, documentId: 'f3', name: 'covers', path: '/3' };
+      mockCreateFolder.mockResolvedValue(created);
 
-      const ctx: any = { request: { body: { name: 'covers', parentPath: '/' } } };
+      const ctx: any = { request: { body: { data: { name: 'covers' } } } };
       await controller.createFolder(ctx);
-      expect(ctx.body.path).toBe('/covers');
+
+      expect(mockCreateFolder).toHaveBeenCalledWith('covers', null);
+      expect(ctx.body).toEqual({ data: created, meta: {} });
+    });
+
+    test('传入 parentId 时透传给 createFolder', async () => {
+      mockCreateFolder.mockResolvedValue({ id: 4, name: 'covers', path: '/1/4' });
+
+      const ctx: any = { request: { body: { name: 'covers', parentId: 1 } } };
+      await controller.createFolder(ctx);
+
+      expect(mockCreateFolder).toHaveBeenCalledWith('covers', 1);
     });
 
     test('重复文件夹返回已有记录', async () => {
-      mockStrapi.db.query.mockReturnValue({
-        ...fullQueryMock(),
-        findOne: jest.fn().mockResolvedValue({ id: 1, documentId: 'f1', name: 'course', path: '/course' }),
-      });
+      const existing = { id: 1, documentId: 'f1', name: 'course', path: '/1' };
+      mockCreateFolder.mockResolvedValue(existing);
 
-      const ctx: any = { request: { body: { name: 'course', parentPath: '/' } } };
+      const ctx: any = { request: { body: { name: 'course' } } };
       await controller.createFolder(ctx);
-      expect(ctx.body.path).toBe('/course');
-      expect(ctx.body.id).toBe(1);
+
+      expect(ctx.body).toEqual({ data: existing, meta: {} });
     });
   });
 });
