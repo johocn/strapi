@@ -29,8 +29,8 @@ services:
       ENCRYPTION_KEY: "UbLtgUZfk3SWZ2KbjeJ6MQ=="
 
       ALIYUN_OSS_REGION: ""
-      ALIYUN_OSS_ACCESS_KEY: ""
-      ALIYUN_OSS_ACCESS_SECRET: ""
+      ALIYUN_OSS_ACCESS_KEY_ID: ""
+      ALIYUN_OSS_ACCESS_KEY_SECRET: ""
       ALIYUN_OSS_BUCKET: ""
       ALIYUN_OSS_CNAME: ""
     volumes:

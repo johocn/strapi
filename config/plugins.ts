@@ -108,7 +108,12 @@ const config = ({ env }: Core.Config.Shared.ConfigParams): Core.Config.Plugin =>
                         accessKeyId: env("ALIYUN_OSS_ACCESS_KEY_ID"),
                         accessKeySecret: env("ALIYUN_OSS_ACCESS_KEY_SECRET"),
                         bucket: env("ALIYUN_OSS_BUCKET"),
+                        // 区域必须带 oss- 前缀，如 oss-cn-hangzhou（SDK 与默认域名均按此约定拼接）
                         region: env("ALIYUN_OSS_REGION"),
+                        // 自定义域名/CDN（可选）：设置后返回的 URL 走该域名
+                        cname: env("ALIYUN_OSS_CNAME"),
+                        // 内网 Endpoint（可选）：ECS 与 Bucket 同地域时填 oss-cn-xxx-internal.aliyuncs.com
+                        internalEndpoint: env("ALIYUN_OSS_INTERNAL_ENDPOINT"),
                     },
                 },
             ],

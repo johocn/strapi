@@ -114,6 +114,8 @@ const config = ({ env }: Core.Config.Shared.ConfigParams): Core.Config.Plugin =>
                         accessKeySecret: env("ALIYUN_OSS_ACCESS_KEY_SECRET"),
                         bucket: env("ALIYUN_OSS_BUCKET"),
                         region: env("ALIYUN_OSS_REGION"),
+                        cname: env("ALIYUN_OSS_CNAME"),
+                        internalEndpoint: env("ALIYUN_OSS_INTERNAL_ENDPOINT"),
                     },
                 },
             ],
