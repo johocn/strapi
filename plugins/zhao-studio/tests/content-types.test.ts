@@ -1,31 +1,22 @@
-import { setupStrapi, teardownStrapi } from './helpers/strapi-setup';
+import contentTypes from '../server/src/content-types';
 
+/**
+ * 直接断言插件导出的 content-types 定义，不启动真实 Strapi 实例
+ * （单测环境无数据库连接，createStrapi().load() 无法完成注册）。
+ */
 describe('Content Types', () => {
-  let strapi: any;
+  test.each(['article-draft', 'collect-source', 'publish-platform'])(
+    '%s content type exists',
+    (name) => {
+      const contentType = (contentTypes as any)[name];
+      expect(contentType).toBeDefined();
+      expect(contentType.schema.kind).toBe('collectionType');
+    }
+  );
 
-  beforeAll(async () => {
-    strapi = await setupStrapi();
-  });
-
-  afterAll(async () => {
-    await teardownStrapi();
-  });
-
-  test('article-draft content type exists', () => {
-    const contentType = strapi.contentTypes['plugin::zhao-studio.article-draft'];
-    expect(contentType).toBeDefined();
-    expect(contentType.kind).toBe('collectionType');
-  });
-
-  test('collect-source content type exists', () => {
-    const contentType = strapi.contentTypes['plugin::zhao-studio.collect-source'];
-    expect(contentType).toBeDefined();
-    expect(contentType.kind).toBe('collectionType');
-  });
-
-  test('publish-platform content type exists', () => {
-    const contentType = strapi.contentTypes['plugin::zhao-studio.publish-platform'];
-    expect(contentType).toBeDefined();
-    expect(contentType.kind).toBe('collectionType');
+  test('每个 CT 的 singularName 与注册名一致', () => {
+    for (const [name, def] of Object.entries(contentTypes) as [string, any][]) {
+      expect(def.schema.info.singularName).toBe(name);
+    }
   });
 });
