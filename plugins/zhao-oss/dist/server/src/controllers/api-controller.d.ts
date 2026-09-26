@@ -23,7 +23,7 @@ declare const _default: ({ strapi }: {
     streamMedia(ctx: any): Promise<void>;
     /**
      * 公开读取分享图（微信分享缩略图必须匿名可访问且不能过期）
-     * 路径: /v1/share/<key>，key 必须落在 share/ 前缀内，其余前缀一律拒绝
+     * 路径: /v1/share/<相对路径>，对象 key 恒为 share/<相对路径>，结构上无法触达其它前缀
      */
     shareMedia(ctx: any): Promise<void>;
 };

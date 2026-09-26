@@ -272,15 +272,16 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
   /**
    * 公开读取分享图（微信分享缩略图必须匿名可访问且不能过期）
-   * 路径: /v1/share/<key>，key 必须落在 share/ 前缀内，其余前缀一律拒绝
+   * 路径: /v1/share/<相对路径>，对象 key 恒为 share/<相对路径>，结构上无法触达其它前缀
    */
   async shareMedia(ctx: any) {
-    const key = String(ctx.params?.key || "").replace(/^\/+/, "");
-    if (!key.startsWith(SHARE_PREFIX)) {
-      ctx.status = 403;
-      ctx.body = { error: "仅允许访问 share/ 前缀的资源" };
+    const relative = String(ctx.params?.key || "").replace(/^\/+/, "");
+    if (!relative || relative.split("/").includes("..")) {
+      ctx.status = 400;
+      ctx.body = { error: "非法的分享图路径" };
       return;
     }
+    const key = `${SHARE_PREFIX}${relative}`;
 
     const provider = strapi
       .plugin("zhao-oss")

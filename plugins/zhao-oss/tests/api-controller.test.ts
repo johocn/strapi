@@ -332,32 +332,33 @@ describe('api-controller 测试', () => {
       };
     };
 
-    test('非 share/ 前缀直接 403，且不访问 OSS', async () => {
-      const { ctx } = makeCtx('uploads/2026/09/26/a.jpg');
+    test('空路径返回 400，且不访问 OSS', async () => {
+      const { ctx } = makeCtx('');
 
       await controller.shareMedia(ctx);
 
-      expect(ctx.status).toBe(403);
-      expect(ctx.body).toEqual({ error: '仅允许访问 share/ 前缀的资源' });
+      expect(ctx.status).toBe(400);
+      expect(ctx.body).toEqual({ error: '非法的分享图路径' });
       expect(mockGetPrimaryProvider).not.toHaveBeenCalled();
     });
 
-    test('路径穿越到 share/ 之外的 key 被拒绝', async () => {
-      const { ctx } = makeCtx('/../uploads/a.jpg');
+    test('含 .. 段的路径返回 400', async () => {
+      const { ctx } = makeCtx('../uploads/a.jpg');
       await controller.shareMedia(ctx);
-      expect(ctx.status).toBe(403);
+      expect(ctx.status).toBe(400);
+      expect(mockGetPrimaryProvider).not.toHaveBeenCalled();
     });
 
     test('provider 未就绪返回 503', async () => {
       mockGetPrimaryProvider.mockReturnValue(undefined);
-      const { ctx } = makeCtx('share/poster/a.png');
+      const { ctx } = makeCtx('poster/a.png');
 
       await controller.shareMedia(ctx);
 
       expect(ctx.status).toBe(503);
     });
 
-    test('命中 share/ 前缀时流式返回并设置长缓存头，key 去掉前导斜杠', async () => {
+    test('流式返回 share/ 前缀下的对象并设置长缓存头', async () => {
       const stream = { pipe: jest.fn() };
       mockGetPrimaryProvider.mockReturnValue({ getObjectStream: mockGetObjectStream });
       mockGetObjectStream.mockResolvedValue({
@@ -366,7 +367,7 @@ describe('api-controller 测试', () => {
         size: 1234,
       });
 
-      const { ctx, headers } = makeCtx('/share/poster/a.jpg');
+      const { ctx, headers } = makeCtx('/poster/a.jpg');
       await controller.shareMedia(ctx);
 
       expect(mockGetObjectStream).toHaveBeenCalledWith('share/poster/a.jpg');
@@ -381,7 +382,7 @@ describe('api-controller 测试', () => {
       mockGetPrimaryProvider.mockReturnValue({ getObjectStream: mockGetObjectStream });
       mockGetObjectStream.mockResolvedValue({ stream: {}, headers: {}, size: 88 });
 
-      const { ctx, headers } = makeCtx('share/a.png');
+      const { ctx, headers } = makeCtx('a.png');
       await controller.shareMedia(ctx);
 
       expect(headers['Content-Type']).toBe('application/octet-stream');
@@ -394,12 +395,12 @@ describe('api-controller 测试', () => {
       mockGetObjectStream.mockRejectedValueOnce(
         Object.assign(new Error('NoSuchKey'), { status: 404 })
       );
-      const notFound = makeCtx('share/missing.png');
+      const notFound = makeCtx('missing.png');
       await controller.shareMedia(notFound.ctx);
       expect(notFound.ctx.status).toBe(404);
 
       mockGetObjectStream.mockRejectedValueOnce(new Error('network error'));
-      const failed = makeCtx('share/a.png');
+      const failed = makeCtx('a.png');
       await controller.shareMedia(failed.ctx);
       expect(failed.ctx.status).toBe(502);
     });

@@ -39,7 +39,7 @@ export default () => ({
       handler: "api-controller.streamMedia",
       config: { auth: false, policies: [] },
     },
-    // 分享图公开读：仅放行 share/ 前缀，微信抓图要求绝对 https、匿名可访问且长期有效
+    // 分享图公开读：路径即 share/ 前缀下的相对路径，微信抓图要求绝对 https、匿名可访问且长期有效
     {
       method: "GET",
       path: "/v1/share/:key(.*)",
