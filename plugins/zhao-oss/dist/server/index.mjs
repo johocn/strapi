@@ -6,18 +6,6 @@ import OSS from "ali-oss";
 import * as crypto from "crypto";
 import crypto__default from "crypto";
 import sharp from "sharp";
-const PERMISSIONS = {
-  "oss.file.upload": ["admin", "channel-admin", "course-manager", "instructor", "user"],
-  "oss.file.read": ["admin", "channel-admin", "course-manager", "instructor", "user"],
-  "oss.file.delete": ["admin", "channel-admin"],
-  "oss.folder.create": ["admin", "channel-admin", "course-manager"],
-  "oss.folder.read": ["admin", "channel-admin", "course-manager", "instructor", "user"],
-  "oss.settings.read": ["admin"],
-  "oss.settings.update": ["admin"],
-  "oss.sync.read": ["admin", "channel-admin"],
-  "oss.sync.create": ["admin", "channel-admin"],
-  "oss.sync.delete": ["admin"]
-};
 function extractMediaFiles(obj, collected = []) {
   if (!obj || typeof obj !== "object") return collected;
   if (Array.isArray(obj)) {
@@ -153,32 +141,6 @@ const bootstrap = async ({ strapi }) => {
     }
   } catch (err) {
     logger.warn("[zhao-oss] Default folders initialization failed", { error: err.message });
-  }
-  try {
-    const authService = strapi.plugin("zhao-auth").service("auth");
-    if (authService && typeof authService.registerPolicy === "function") {
-      const createHasOssPermission = (_strapiInstance) => {
-        return async (context, config2) => {
-          const user = context?.state?.user || context?.user;
-          if (!user || !user.roles || user.roles.length === 0) {
-            return { passed: false, code: "UNAUTHENTICATED", message: "未认证，请先登录" };
-          }
-          const permission = config2?.permission;
-          if (!permission) return { passed: true };
-          const allowedRoles = PERMISSIONS[permission] || [];
-          const userRoles = user.roles;
-          const hasPermission = allowedRoles.some((role) => userRoles.includes(role));
-          if (!hasPermission) {
-            return { passed: false, code: "FORBIDDEN_PERMISSION", message: `需要 ${permission} 权限` };
-          }
-          return { passed: true };
-        };
-      };
-      authService.registerPolicy("has-oss-permission", createHasOssPermission(strapi));
-      if (!isTest) logger.info("[zhao-oss] has-oss-permission 策略已注册到 zhao-auth");
-    }
-  } catch {
-    logger.warn("[zhao-oss] zhao-auth 插件未启用，Content API 权限策略未注册");
   }
   strapi.db?.lifecycles.subscribe({
     models: ["plugin::upload.file"],
@@ -621,7 +583,7 @@ class AliyunOssProvider {
       return `${protocol2}://${this.options.cname}/${key}`;
     }
     const protocol = this.options.secure ? "https" : "http";
-    return `${protocol}://${this.options.bucket}.oss-${this.options.region}.aliyuncs.com/${key}`;
+    return `${protocol}://${this.options.bucket}.${this.options.region}.aliyuncs.com/${key}`;
   }
   buildObjectKey(params) {
     const basePath = this.options.basePath || "uploads";

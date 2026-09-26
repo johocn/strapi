@@ -102,7 +102,7 @@ export class AliyunOssProvider implements OssProvider {
     }
     // 使用 OSS 默认域名
     const protocol = this.options.secure ? "https" : "http";
-    return `${protocol}://${this.options.bucket}.oss-${this.options.region}.aliyuncs.com/${key}`;
+    return `${protocol}://${this.options.bucket}.${this.options.region}.aliyuncs.com/${key}`;
   }
 
   private buildObjectKey(params: FileUploadParams): string {

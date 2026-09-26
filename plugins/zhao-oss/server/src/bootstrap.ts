@@ -1,6 +1,5 @@
 import type { Core } from "@strapi/strapi";
 import type { PluginConfig } from "./types";
-import PERMISSIONS from "./permissions";
 import * as fs from "fs/promises";
 import { createReadStream } from "fs";
 import * as path from "path";
@@ -162,37 +161,6 @@ const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
     logger.warn("[zhao-oss] Default folders initialization failed", { error: (err as Error).message });
   }
 
-  // 2.5 注册 has-oss-permission 策略到 zhao-auth
-  try {
-    const authService = strapi.plugin("zhao-auth").service("auth");
-    if (authService && typeof (authService as any).registerPolicy === "function") {
-      const createHasOssPermission = (_strapiInstance: any) => {
-        return async (context: any, config?: Record<string, unknown>): Promise<{ passed: boolean; code?: string; message?: string }> => {
-          const user = context?.state?.user || context?.user;
-          if (!user || !user.roles || user.roles.length === 0) {
-            return { passed: false, code: "UNAUTHENTICATED", message: "未认证，请先登录" };
-          }
-
-          const permission = config?.permission as string;
-          if (!permission) return { passed: true };
-
-          const allowedRoles = PERMISSIONS[permission] || [];
-          const userRoles = user.roles as string[];
-          const hasPermission = allowedRoles.some((role: string) => userRoles.includes(role));
-
-          if (!hasPermission) {
-            return { passed: false, code: "FORBIDDEN_PERMISSION", message: `需要 ${permission} 权限` };
-          }
-
-          return { passed: true };
-        };
-      };
-      (authService as any).registerPolicy("has-oss-permission", createHasOssPermission(strapi));
-      if (!isTest) logger.info("[zhao-oss] has-oss-permission 策略已注册到 zhao-auth");
-    }
-  } catch {
-    logger.warn("[zhao-oss] zhao-auth 插件未启用，Content API 权限策略未注册");
-  }
   // 3. 订阅 upload file 生命周期事件（仅写操作）
   strapi.db?.lifecycles.subscribe({
     models: ["plugin::upload.file"],

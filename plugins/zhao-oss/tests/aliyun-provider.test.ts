@@ -83,13 +83,13 @@ describe("AliyunOssProvider", () => {
       const httpsProvider = new AliyunOssProvider();
       await httpsProvider.initialize({ ...baseOptions });
       expect(httpsProvider.getUrl("a/b.jpg")).toBe(
-        "https://test-bucket.oss-oss-cn-hangzhou.aliyuncs.com/a/b.jpg"
+        "https://test-bucket.oss-cn-hangzhou.aliyuncs.com/a/b.jpg"
       );
 
       const httpProvider = new AliyunOssProvider();
       await httpProvider.initialize({ ...baseOptions, secure: false });
       expect(httpProvider.getUrl("a/b.jpg")).toBe(
-        "http://test-bucket.oss-oss-cn-hangzhou.aliyuncs.com/a/b.jpg"
+        "http://test-bucket.oss-cn-hangzhou.aliyuncs.com/a/b.jpg"
       );
     });
 
@@ -124,7 +124,7 @@ describe("AliyunOssProvider", () => {
       expect(opts.headers["Cache-Control"]).toBe("public, max-age=31536000, immutable");
 
       expect(result).toEqual({
-        url: `https://test-bucket.oss-oss-cn-hangzhou.aliyuncs.com/${key}`,
+        url: `https://test-bucket.oss-cn-hangzhou.aliyuncs.com/${key}`,
         etag: "etag-1",
         provider: "aliyun",
       });
