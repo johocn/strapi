@@ -1,0 +1,118 @@
+/* 促销活动海报模板（promo_share）落库到 zhao-studio 海报配置（幂等：按 code 查重，命中即跳过）
+ * 用法:
+ *   cd e:\code\basic
+ *   node scripts/seed-promo-share-poster.cjs                                    # 本地
+ *   API_BASE=https://h.joho.cn/api ZHAO_IDENTIFIER=zhao ZHAO_PASSWORD=a963963 node scripts/seed-promo-share-poster.cjs  # 生产
+ */
+const API_BASE = process.env.API_BASE || "http://127.0.0.1:1337/api";
+const IDENTIFIER = process.env.ZHAO_IDENTIFIER || "1117";
+const PASSWORD = process.env.ZHAO_PASSWORD || "a123456";
+
+const CODE = "promo_share";
+const GRADIENT = "#gradient:EF4444,F97316";
+
+const TEMPLATE = {
+  name: "促销活动海报",
+  code: CODE,
+  canvasWidth: 600,
+  canvasHeight: 1050,
+  backgroundColor: "#FFFFFF",
+  backgroundMode: "cover",
+  isActive: true,
+  isDefault: false,
+  requiredVariables: ["title", "main_image", "qr_code"],
+  optionalVariables: ["activity_time", "activity_venue", "goods_1", "goods_2", "goods_3", "goods_4"],
+  description: "促销活动分享海报（C 端 pages/activity/promo 使用）",
+};
+
+const ELEMENTS = [
+  { elementKey: "gradient_bar", elementName: "顶部渐变条", elementType: "shape", shapeType: "rect", isVariable: false, x: 0, y: 0, width: 600, height: 6, elementBgColor: GRADIENT, zIndex: 1, sortOrder: 1 },
+  { elementKey: "main_image", elementName: "主视觉图", elementType: "image", isVariable: true, variableName: "main_image", defaultValue: "", x: 30, y: 40, width: 540, height: 465, imageFit: "cover", borderRadius: 12, zIndex: 2, sortOrder: 2 },
+  { elementKey: "title", elementName: "活动标题", elementType: "text", isVariable: true, variableName: "title", defaultValue: "活动钜惠", x: 30, y: 530, width: 540, height: 44, fontSize: 34, fontColor: "#1F2937", fontWeight: "bold", textAlign: "left", lineHeight: 1.2, zIndex: 10, sortOrder: 3 },
+  { elementKey: "activity_time", elementName: "活动时间", elementType: "text", isVariable: true, variableName: "activity_time", defaultValue: "", x: 30, y: 592, width: 540, height: 32, fontSize: 24, fontColor: "#6B7280", textAlign: "left", lineHeight: 1.5, zIndex: 10, sortOrder: 4 },
+  { elementKey: "activity_venue", elementName: "活动场所", elementType: "text", isVariable: true, variableName: "activity_venue", defaultValue: "", x: 30, y: 632, width: 540, height: 32, fontSize: 24, fontColor: "#6B7280", textAlign: "left", lineHeight: 1.5, zIndex: 10, sortOrder: 5 },
+  { elementKey: "goods_1", elementName: "商品行1", elementType: "text", isVariable: true, variableName: "goods_1", defaultValue: "", x: 30, y: 678, width: 540, height: 32, fontSize: 22, fontColor: "#1F2937", textAlign: "left", lineHeight: 1.5, zIndex: 10, sortOrder: 6 },
+  { elementKey: "goods_2", elementName: "商品行2", elementType: "text", isVariable: true, variableName: "goods_2", defaultValue: "", x: 30, y: 713, width: 540, height: 32, fontSize: 22, fontColor: "#1F2937", textAlign: "left", lineHeight: 1.5, zIndex: 10, sortOrder: 7 },
+  { elementKey: "goods_3", elementName: "商品行3", elementType: "text", isVariable: true, variableName: "goods_3", defaultValue: "", x: 30, y: 748, width: 540, height: 32, fontSize: 22, fontColor: "#1F2937", textAlign: "left", lineHeight: 1.5, zIndex: 10, sortOrder: 8 },
+  { elementKey: "goods_4", elementName: "商品行4", elementType: "text", isVariable: true, variableName: "goods_4", defaultValue: "", x: 30, y: 783, width: 540, height: 32, fontSize: 22, fontColor: "#1F2937", textAlign: "left", lineHeight: 1.5, zIndex: 10, sortOrder: 9 },
+  { elementKey: "qr_code", elementName: "分享二维码", elementType: "qrcode", isVariable: true, variableName: "qr_code", qrContentMode: "direct", qrErrorLevel: "M", qrSize: 170, qrColor: "#000000", qrBgColor: "#FFFFFF", x: 215, y: 822, width: 170, height: 170, zIndex: 10, sortOrder: 10 },
+  { elementKey: "footer_text", elementName: "底部提示", elementType: "text", isVariable: false, content: "长按识别二维码 · 查看活动详情", x: 30, y: 1005, width: 540, height: 30, fontSize: 22, fontColor: "#9CA3AF", textAlign: "center", lineHeight: 1.5, zIndex: 10, sortOrder: 11 },
+];
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+async function api(method, p, { token, body } = {}) {
+  const headers = { "Content-Type": "application/json" };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  let r;
+  for (let i = 0; i < 15; i++) {
+    try {
+      r = await fetch(API_BASE + p, { method, headers, body: body ? JSON.stringify(body) : undefined });
+      break;
+    } catch (e) {
+      if (i === 14) return { status: 0, json: { netErr: e.message } };
+      await sleep(600);
+    }
+  }
+  let json = null;
+  try { json = await r.json(); } catch {}
+  return { status: r.status, json };
+}
+
+async function main() {
+  const login = await api("POST", "/zhao-auth/v1/login", { body: { identifier: IDENTIFIER, password: PASSWORD } });
+  if (login.status !== 200 || !login.json?.jwt) throw new Error("获取管理端 token 失败: " + JSON.stringify(login.json));
+  const token = login.json.jwt;
+
+  const listed = await api("GET", "/zhao-studio/v1/admin/poster-templates", { token });
+  if (listed.status !== 200) throw new Error("查询海报模板失败: " + JSON.stringify(listed.json));
+  const rows = listed.json?.data || listed.json || [];
+  const exist = Array.isArray(rows) ? rows.find((t) => t.code === CODE) : null;
+  if (exist && (exist.elements || []).length > 0) {
+    console.log(`✔ 已存在模板 ${CODE}（documentId=${exist.documentId}，元素 ${exist.elements.length} 个），跳过`);
+    return;
+  }
+
+  let docId = exist?.documentId;
+  if (exist) {
+    console.log(`· 模板 ${CODE} 已存在但元素为空（documentId=${docId}），补写元素`);
+  } else {
+    // site 关系必填：取首个 site-config（服务端 seed 同款做法）
+    const sites = await api("GET", "/zhao-common/v1/admin/config/sites", { token });
+    const siteRows = sites.json?.data || sites.json || [];
+    const siteId = Array.isArray(siteRows) ? (siteRows[0]?.documentId || siteRows[0]?.id) : null;
+    if (!siteId) throw new Error("未取到 site documentId: " + JSON.stringify(sites.json).slice(0, 300));
+
+    const created = await api("POST", "/zhao-studio/v1/admin/poster-templates", {
+      token,
+      body: { data: { ...TEMPLATE, site: siteId } },
+    });
+    if (created.status < 200 || created.status >= 300) throw new Error("创建模板失败: " + JSON.stringify(created.json));
+    docId = created.json?.data?.documentId || created.json?.documentId;
+    console.log("✔ 模板已创建:", CODE, "documentId =", docId);
+  }
+
+  const saved = await api("PUT", `/zhao-studio/v1/admin/poster-templates/${docId}/elements`, {
+    token,
+    body: { elements: ELEMENTS },
+  });
+  if (saved.status >= 200 && saved.status < 300) {
+    console.log(`✔ 元素已写入: ${ELEMENTS.length} 个（批量接口）`);
+    return;
+  }
+
+  // 兜底：生产仍跑旧版 batchSaveElements（relation 过滤用了 documentId 会 500），改用逐元素创建
+  console.warn("⚠ 批量写入失败，回退逐元素创建:", saved.status, JSON.stringify(saved.json).slice(0, 200));
+  for (const el of ELEMENTS) {
+    const one = await api("POST", "/zhao-studio/v1/admin/poster-elements", {
+      token,
+      body: { data: { ...el, posterTemplate: docId } },
+    });
+    if (one.status < 200 || one.status >= 300) {
+      throw new Error(`写入元素 ${el.elementKey} 失败: ` + JSON.stringify(one.json).slice(0, 300));
+    }
+  }
+  console.log(`✔ 元素已写入: ${ELEMENTS.length} 个（逐元素接口）`);
+}
+
+main().catch((e) => { console.error("❌ 海报模板落库失败:", e.message); process.exit(1); });

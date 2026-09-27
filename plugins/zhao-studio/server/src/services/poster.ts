@@ -1,5 +1,18 @@
 import type { Core } from '@strapi/strapi';
 
+// poster-element schema 可写字段白名单（用于过滤后台回传的完整记录）
+const POSTER_ELEMENT_FIELDS = [
+  'elementType', 'elementKey', 'elementName', 'sortOrder',
+  'isVariable', 'variableName', 'defaultValue', 'content',
+  'x', 'y', 'width', 'height', 'zIndex', 'rotation', 'opacity',
+  'fontSize', 'fontColor', 'fontWeight', 'fontFamily', 'textAlign', 'lineHeight', 'letterSpacing',
+  'borderRadius', 'borderWidth', 'borderColor', 'elementBgColor',
+  'imageFit',
+  'qrContentMode', 'qrBaseUrl', 'qrInviteParam', 'qrInviteSeparator', 'qrFallbackMode',
+  'qrErrorLevel', 'qrSize', 'qrColor', 'qrBgColor',
+  'shapeType',
+];
+
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
   // Public: Get template by code with elements
   async getTemplate(code: string) {
@@ -137,24 +150,31 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   },
 
   // Batch save elements for a template
+  // 入参是 documentId：关系过滤/清理必须用数值 id（v5 的 documentId 不能直接用于 relation where），
+  // 且后台回传的完整记录含 id/documentId/时间戳，必须按 schema 白名单过滤后再写入。
   async batchSaveElements(templateDocumentId: string, elements: any[]) {
-    // Delete existing elements
-    const existing = await strapi.documents('plugin::zhao-studio.poster-element').findMany({
-      filters: { posterTemplate: templateDocumentId },
-    });
-    
-    for (const el of existing || []) {
-      await strapi.documents('plugin::zhao-studio.poster-element').delete({
-        documentId: el.documentId,
+    const template = await strapi.documents('plugin::zhao-studio.poster-template').findOne({
+      documentId: templateDocumentId,
+      fields: ['id'],
+    }) as any;
+
+    if (template?.id) {
+      const existing = await strapi.db.query('plugin::zhao-studio.poster-element').findMany({
+        where: { posterTemplate: template.id },
       });
+      for (const el of existing || []) {
+        await strapi.db.query('plugin::zhao-studio.poster-element').delete({ where: { id: el.id } });
+      }
     }
 
     // Create new elements
     const created = [];
     for (const element of elements) {
-      const el = await strapi.documents('plugin::zhao-studio.poster-element').create({
-        data: { ...element, posterTemplate: templateDocumentId },
-      });
+      const data: Record<string, any> = { posterTemplate: templateDocumentId };
+      for (const key of POSTER_ELEMENT_FIELDS) {
+        if (element[key] !== undefined) data[key] = element[key];
+      }
+      const el = await strapi.documents('plugin::zhao-studio.poster-element').create({ data });
       created.push(el);
     }
 
