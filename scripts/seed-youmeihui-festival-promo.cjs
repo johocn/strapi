@@ -23,7 +23,8 @@ const PROMO_MODULES = [
     sort: 1,
     config: {
       title: "中秋好礼相送 · 国庆钜惠狂欢",
-      subtitle: "10.1—10.8 双节同庆 · 进店免费领西瓜",
+      // 新方案：highlight 为宣传重点（一句话卖点），日期/场地/费用由活动数据自动填充
+      highlight: "进店免费领西瓜",
       ...(COVER_URL ? { bgImage: COVER_URL } : {}),
     },
   },
