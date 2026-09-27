@@ -25,7 +25,7 @@ const PROMO_SHARE = {
     isActive: true,
     isDefault: false,
     requiredVariables: ["title", "main_image", "qr_code"],
-    optionalVariables: ["activity_start", "activity_end", "activity_venue", "goods_1", "goods_2", "goods_3", "goods_4"],
+    optionalVariables: ["activity_start", "activity_end", "activity_venue", "goods_1", "goods_2", "goods_3", "goods_4", "image_fallback_slogan", "image_fallback_sign", "image_fallback_primary", "image_fallback_accent"],
     description: "促销活动分享海报（C 端 pages/activity/promo 使用）",
   },
   elements: [
