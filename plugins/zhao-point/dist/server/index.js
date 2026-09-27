@@ -2434,20 +2434,52 @@ function normalizePromoModules(promoModules) {
   }
   return out.sort((a, b) => a.sort - b.sort);
 }
-async function resolvePromoContact(strapi2, activityContact, siteDocumentId) {
-  if (activityContact && typeof activityContact === "object" && !Array.isArray(activityContact)) {
-    if (Object.keys(activityContact).length) return activityContact;
+function isEmptyContactValue(v) {
+  if (v === void 0 || v === null) return true;
+  if (typeof v === "string") return v.trim() === "";
+  if (Array.isArray(v)) return v.length === 0;
+  return false;
+}
+function mergeContactField(activityValue, siteValue) {
+  if (isEmptyContactValue(activityValue)) return siteValue;
+  if (activityValue && typeof activityValue === "object" && !Array.isArray(activityValue)) {
+    const base = siteValue && typeof siteValue === "object" && !Array.isArray(siteValue) ? siteValue : {};
+    const sub = { ...base };
+    for (const [k, v] of Object.entries(activityValue)) {
+      if (!isEmptyContactValue(v)) sub[k] = v;
+    }
+    return sub;
   }
+  return activityValue;
+}
+async function readSitePromoContact(strapi2, siteDocumentId) {
   if (!siteDocumentId) return null;
   try {
     const siteSvc = strapi2.plugin("zhao-common")?.service("site-config");
     if (!siteSvc || typeof siteSvc.getConfig !== "function") return null;
     const config2 = await siteSvc.getConfig(siteDocumentId);
     const ec = config2?.extraConfig;
-    if (ec && typeof ec === "object" && !Array.isArray(ec) && ec.promoContact) return ec.promoContact;
+    if (ec && typeof ec === "object" && !Array.isArray(ec) && ec.promoContact && typeof ec.promoContact === "object" && !Array.isArray(ec.promoContact)) {
+      return ec.promoContact;
+    }
   } catch {
   }
   return null;
+}
+function mergePromoContact(activityContact, siteContact) {
+  const act = activityContact && typeof activityContact === "object" && !Array.isArray(activityContact) ? activityContact : null;
+  if (!act || !Object.keys(act).length) return siteContact;
+  if (!siteContact) return act;
+  const out = {};
+  for (const key of /* @__PURE__ */ new Set([...Object.keys(siteContact), ...Object.keys(act)])) {
+    const merged = mergeContactField(act[key], siteContact[key]);
+    if (merged !== void 0) out[key] = merged;
+  }
+  return out;
+}
+async function resolvePromoContact(strapi2, activityContact, siteDocumentId) {
+  const siteContact = await readSitePromoContact(strapi2, siteDocumentId);
+  return mergePromoContact(activityContact, siteContact);
 }
 function summarizeRewards(rewardConfig) {
   const rc = rewardConfig && typeof rewardConfig === "object" ? rewardConfig : {};

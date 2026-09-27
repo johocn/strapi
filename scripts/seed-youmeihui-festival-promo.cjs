@@ -72,7 +72,7 @@ const PAYLOAD = {
   venueName: "优美惠市集生鲜超市",
   lat: 43.635025,
   lng: 125.583775,
-  status: "ongoing",
+  status: "signup_open",
   promoTemplate: "sale",
   promoColors: {
     primary: "#EF4444",

@@ -105,22 +105,64 @@ function normalizePromoModules(promoModules: any): any[] | undefined {
   return out.sort((a, b) => a.sort - b.sort);
 }
 
-/** 读取合并后的联系方式：活动覆盖优先，否则读站点 extraConfig.promoContact */
-async function resolvePromoContact(strapi: any, activityContact: any, siteDocumentId?: string): Promise<any | null> {
-  if (activityContact && typeof activityContact === "object" && !Array.isArray(activityContact)) {
-    if (Object.keys(activityContact).length) return activityContact;
+/** 空值判定：undefined/null/空串/空数组视为未配置 */
+function isEmptyContactValue(v: any): boolean {
+  if (v === undefined || v === null) return true;
+  if (typeof v === "string") return v.trim() === "";
+  if (Array.isArray(v)) return v.length === 0;
+  return false;
+}
+
+/** 单字段合并：活动级非空优先；子对象（wechat/card）逐字段回落站点默认 */
+function mergeContactField(activityValue: any, siteValue: any): any {
+  if (isEmptyContactValue(activityValue)) return siteValue;
+  if (activityValue && typeof activityValue === "object" && !Array.isArray(activityValue)) {
+    const base = siteValue && typeof siteValue === "object" && !Array.isArray(siteValue) ? siteValue : {};
+    const sub: Record<string, any> = { ...base };
+    for (const [k, v] of Object.entries(activityValue)) {
+      if (!isEmptyContactValue(v)) sub[k] = v;
+    }
+    return sub;
   }
+  return activityValue;
+}
+
+/** 读取站点默认联系方式（extraConfig.promoContact） */
+async function readSitePromoContact(strapi: any, siteDocumentId?: string): Promise<any | null> {
   if (!siteDocumentId) return null;
   try {
     const siteSvc = strapi.plugin("zhao-common")?.service("site-config");
     if (!siteSvc || typeof siteSvc.getConfig !== "function") return null;
     const config = await siteSvc.getConfig(siteDocumentId);
     const ec = config?.extraConfig;
-    if (ec && typeof ec === "object" && !Array.isArray(ec) && ec.promoContact) return ec.promoContact;
+    if (ec && typeof ec === "object" && !Array.isArray(ec) && ec.promoContact
+      && typeof ec.promoContact === "object" && !Array.isArray(ec.promoContact)) {
+      return ec.promoContact;
+    }
   } catch {
-    /* 站点配置读取失败静默降级为无联系方式 */
+    /* 站点配置读取失败静默降级为无站点默认联系方式 */
   }
   return null;
+}
+
+/** 合并联系方式：活动级非空字段优先，空字段（含 wechat/card 子字段）回落站点默认 promoContact */
+function mergePromoContact(activityContact: any, siteContact: any): any | null {
+  const act = activityContact && typeof activityContact === "object" && !Array.isArray(activityContact)
+    ? activityContact : null;
+  if (!act || !Object.keys(act).length) return siteContact;
+  if (!siteContact) return act;
+  const out: Record<string, any> = {};
+  for (const key of new Set([...Object.keys(siteContact), ...Object.keys(act)])) {
+    const merged = mergeContactField((act as any)[key], (siteContact as any)[key]);
+    if (merged !== undefined) out[key] = merged;
+  }
+  return out;
+}
+
+/** 读取合并后的联系方式：活动覆盖优先，空字段回落站点 extraConfig.promoContact */
+async function resolvePromoContact(strapi: any, activityContact: any, siteDocumentId?: string): Promise<any | null> {
+  const siteContact = await readSitePromoContact(strapi, siteDocumentId);
+  return mergePromoContact(activityContact, siteContact);
 }
 
 /** 活动奖励摘要：供 rewards 模块与报名分流使用 */
