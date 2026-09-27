@@ -1,4 +1,4 @@
-/* 促销活动海报模板（promo_share）落库到 zhao-studio 海报配置（幂等：按 code 查重，命中即跳过）
+/* 促销活动海报模板（promo_share）落库到 zhao-studio 海报配置（幂等：按 code 查重，命中即全量更新（模板字段 + 元素重建））
  * 用法:
  *   cd e:\code\basic
  *   node scripts/seed-promo-share-poster.cjs                                    # 本地
@@ -21,7 +21,7 @@ const TEMPLATE = {
   isActive: true,
   isDefault: false,
   requiredVariables: ["title", "main_image", "qr_code"],
-  optionalVariables: ["activity_time", "activity_venue", "goods_1", "goods_2", "goods_3", "goods_4"],
+  optionalVariables: ["activity_start", "activity_end", "activity_venue", "goods_1", "goods_2", "goods_3", "goods_4"],
   description: "促销活动分享海报（C 端 pages/activity/promo 使用）",
 };
 
@@ -29,14 +29,15 @@ const ELEMENTS = [
   { elementKey: "gradient_bar", elementName: "顶部渐变条", elementType: "shape", shapeType: "rect", isVariable: false, x: 0, y: 0, width: 600, height: 6, elementBgColor: GRADIENT, zIndex: 1, sortOrder: 1 },
   { elementKey: "main_image", elementName: "主视觉图", elementType: "image", isVariable: true, variableName: "main_image", defaultValue: "", x: 30, y: 40, width: 540, height: 465, imageFit: "cover", borderRadius: 12, zIndex: 2, sortOrder: 2 },
   { elementKey: "title", elementName: "活动标题", elementType: "text", isVariable: true, variableName: "title", defaultValue: "活动钜惠", x: 30, y: 530, width: 540, height: 44, fontSize: 34, fontColor: "#1F2937", fontWeight: "bold", textAlign: "left", lineHeight: 1.2, zIndex: 10, sortOrder: 3 },
-  { elementKey: "activity_time", elementName: "活动时间", elementType: "text", isVariable: true, variableName: "activity_time", defaultValue: "", x: 30, y: 592, width: 540, height: 32, fontSize: 24, fontColor: "#6B7280", textAlign: "left", lineHeight: 1.5, zIndex: 10, sortOrder: 4 },
-  { elementKey: "activity_venue", elementName: "活动场所", elementType: "text", isVariable: true, variableName: "activity_venue", defaultValue: "", x: 30, y: 632, width: 540, height: 32, fontSize: 24, fontColor: "#6B7280", textAlign: "left", lineHeight: 1.5, zIndex: 10, sortOrder: 5 },
-  { elementKey: "goods_1", elementName: "商品行1", elementType: "text", isVariable: true, variableName: "goods_1", defaultValue: "", x: 30, y: 678, width: 540, height: 32, fontSize: 22, fontColor: "#1F2937", textAlign: "left", lineHeight: 1.5, zIndex: 10, sortOrder: 6 },
-  { elementKey: "goods_2", elementName: "商品行2", elementType: "text", isVariable: true, variableName: "goods_2", defaultValue: "", x: 30, y: 713, width: 540, height: 32, fontSize: 22, fontColor: "#1F2937", textAlign: "left", lineHeight: 1.5, zIndex: 10, sortOrder: 7 },
-  { elementKey: "goods_3", elementName: "商品行3", elementType: "text", isVariable: true, variableName: "goods_3", defaultValue: "", x: 30, y: 748, width: 540, height: 32, fontSize: 22, fontColor: "#1F2937", textAlign: "left", lineHeight: 1.5, zIndex: 10, sortOrder: 8 },
-  { elementKey: "goods_4", elementName: "商品行4", elementType: "text", isVariable: true, variableName: "goods_4", defaultValue: "", x: 30, y: 783, width: 540, height: 32, fontSize: 22, fontColor: "#1F2937", textAlign: "left", lineHeight: 1.5, zIndex: 10, sortOrder: 9 },
-  { elementKey: "qr_code", elementName: "分享二维码", elementType: "qrcode", isVariable: true, variableName: "qr_code", qrContentMode: "direct", qrErrorLevel: "M", qrSize: 170, qrColor: "#000000", qrBgColor: "#FFFFFF", x: 215, y: 822, width: 170, height: 170, zIndex: 10, sortOrder: 10 },
-  { elementKey: "footer_text", elementName: "底部提示", elementType: "text", isVariable: false, content: "长按识别二维码 · 查看活动详情", x: 30, y: 1005, width: 540, height: 30, fontSize: 22, fontColor: "#9CA3AF", textAlign: "center", lineHeight: 1.5, zIndex: 10, sortOrder: 11 },
+  { elementKey: "activity_start", elementName: "活动开始时间", elementType: "text", isVariable: true, variableName: "activity_start", defaultValue: "", x: 30, y: 582, width: 540, height: 28, fontSize: 24, fontColor: "#1F2937", textAlign: "left", lineHeight: 1.5, zIndex: 10, sortOrder: 4 },
+  { elementKey: "activity_end", elementName: "活动结束时间", elementType: "text", isVariable: true, variableName: "activity_end", defaultValue: "", x: 30, y: 614, width: 540, height: 28, fontSize: 24, fontColor: "#6B7280", textAlign: "left", lineHeight: 1.5, zIndex: 10, sortOrder: 5 },
+  { elementKey: "activity_venue", elementName: "活动场所", elementType: "text", isVariable: true, variableName: "activity_venue", defaultValue: "", x: 30, y: 654, width: 540, height: 28, fontSize: 24, fontColor: "#6B7280", textAlign: "left", lineHeight: 1.5, zIndex: 10, sortOrder: 6 },
+  { elementKey: "goods_1", elementName: "商品行1", elementType: "text", isVariable: true, variableName: "goods_1", defaultValue: "", x: 30, y: 692, width: 540, height: 26, fontSize: 22, fontColor: "#1F2937", textAlign: "left", lineHeight: 1.5, zIndex: 10, sortOrder: 7 },
+  { elementKey: "goods_2", elementName: "商品行2", elementType: "text", isVariable: true, variableName: "goods_2", defaultValue: "", x: 30, y: 720, width: 540, height: 26, fontSize: 22, fontColor: "#1F2937", textAlign: "left", lineHeight: 1.5, zIndex: 10, sortOrder: 8 },
+  { elementKey: "goods_3", elementName: "商品行3", elementType: "text", isVariable: true, variableName: "goods_3", defaultValue: "", x: 30, y: 748, width: 540, height: 26, fontSize: 22, fontColor: "#1F2937", textAlign: "left", lineHeight: 1.5, zIndex: 10, sortOrder: 9 },
+  { elementKey: "goods_4", elementName: "商品行4", elementType: "text", isVariable: true, variableName: "goods_4", defaultValue: "", x: 30, y: 776, width: 540, height: 26, fontSize: 22, fontColor: "#1F2937", textAlign: "left", lineHeight: 1.5, zIndex: 10, sortOrder: 10 },
+  { elementKey: "qr_code", elementName: "分享二维码", elementType: "qrcode", isVariable: true, variableName: "qr_code", qrContentMode: "direct", qrErrorLevel: "M", qrSize: 170, qrColor: "#000000", qrBgColor: "#FFFFFF", x: 215, y: 812, width: 170, height: 170, zIndex: 10, sortOrder: 11 },
+  { elementKey: "footer_text", elementName: "底部提示", elementType: "text", isVariable: false, content: "长按识别二维码 · 查看活动详情", x: 30, y: 994, width: 540, height: 30, fontSize: 22, fontColor: "#9CA3AF", textAlign: "center", lineHeight: 1.5, zIndex: 10, sortOrder: 12 },
 ];
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -68,14 +69,17 @@ async function main() {
   if (listed.status !== 200) throw new Error("查询海报模板失败: " + JSON.stringify(listed.json));
   const rows = listed.json?.data || listed.json || [];
   const exist = Array.isArray(rows) ? rows.find((t) => t.code === CODE) : null;
-  if (exist && (exist.elements || []).length > 0) {
-    console.log(`✔ 已存在模板 ${CODE}（documentId=${exist.documentId}，元素 ${exist.elements.length} 个），跳过`);
-    return;
-  }
 
   let docId = exist?.documentId;
   if (exist) {
-    console.log(`· 模板 ${CODE} 已存在但元素为空（documentId=${docId}），补写元素`);
+    const upd = await api("PUT", `/zhao-studio/v1/admin/poster-templates/${docId}`, {
+      token,
+      body: { data: TEMPLATE },
+    });
+    if (upd.status < 200 || upd.status >= 300) {
+      throw new Error("更新模板失败: " + JSON.stringify(upd.json).slice(0, 300));
+    }
+    console.log(`✔ 模板 ${CODE} 已更新（documentId=${docId}，元素 ${(exist.elements || []).length} 个 → 全量重建）`);
   } else {
     // site 关系必填：取首个 site-config（服务端 seed 同款做法）
     const sites = await api("GET", "/zhao-common/v1/admin/config/sites", { token });
