@@ -93,18 +93,17 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     const result: Array<{ hreflang: string; href: string }> = [];
 
     const buildUrl = (locale: string): string => {
-      const origin = new URL(siteUrl).origin;
-      const host = new URL(siteUrl).host;
+      const { origin, host, protocol } = new URL(siteUrl);
       const domainWithoutTld = host.split(".").slice(0, -1).join(".");
       switch (strategy) {
         case "subdirectory":
           return locale === defaultLocale ? siteUrl : `${origin}/${locale}`;
         case "subdomain":
-          return locale === defaultLocale ? siteUrl : `${origin.protocol}//${locale}.${host}`;
+          return locale === defaultLocale ? siteUrl : `${protocol}//${locale}.${host}`;
         case "tld":
           if (locale === defaultLocale) return siteUrl;
           const localeTld = locale.includes("-") ? locale.split("-")[1].toLowerCase() : locale.toLowerCase();
-          return `${origin.protocol}//${domainWithoutTld}.${localeTld}`;
+          return `${protocol}//${domainWithoutTld}.${localeTld}`;
         default:
           return siteUrl;
       }

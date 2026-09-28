@@ -102,13 +102,12 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     const result: Array<{ hreflang: string; href: string }> = [];
 
     const buildUrl = (locale: string, path: string): string => {
-      const origin = new URL(siteUrl).origin;
-      const host = new URL(siteUrl).host;
+      const { origin, host, protocol } = new URL(siteUrl);
       switch (strategy) {
         case "subdirectory":
           return locale === defaultLocale ? `${siteUrl}${path}` : `${origin}/${locale}${path}`;
         case "subdomain":
-          return locale === defaultLocale ? `${siteUrl}${path}` : `${origin.protocol}//${locale}.${host}${path}`;
+          return locale === defaultLocale ? `${siteUrl}${path}` : `${protocol}//${locale}.${host}${path}`;
         case "tld":
           return `${siteUrl}${path}`;
         default:
@@ -132,13 +131,12 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     const result: Array<{ hreflang: string; href: string }> = [];
 
     const buildUrl = (locale: string): string => {
-      const origin = new URL(siteUrl).origin;
-      const host = new URL(siteUrl).host;
+      const { origin, host, protocol } = new URL(siteUrl);
       switch (strategy) {
         case "subdirectory":
           return locale === defaultLocale ? `${siteUrl}${path}` : `${origin}/${locale}${path}`;
         case "subdomain":
-          return locale === defaultLocale ? `${siteUrl}${path}` : `${origin.protocol}//${locale}.${host}${path}`;
+          return locale === defaultLocale ? `${siteUrl}${path}` : `${protocol}//${locale}.${host}${path}`;
         default:
           return `${siteUrl}${path}`;
       }

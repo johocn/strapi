@@ -35952,13 +35952,12 @@ ${urls.join("\n")}
     const strategy = seoConfig2.hreflangStrategy || "subdirectory";
     const result = [];
     const buildUrl = (locale2, path) => {
-      const origin = new URL(siteUrl).origin;
-      const host = new URL(siteUrl).host;
+      const { origin, host, protocol } = new URL(siteUrl);
       switch (strategy) {
         case "subdirectory":
           return locale2 === defaultLocale ? `${siteUrl}${path}` : `${origin}/${locale2}${path}`;
         case "subdomain":
-          return locale2 === defaultLocale ? `${siteUrl}${path}` : `${origin.protocol}//${locale2}.${host}${path}`;
+          return locale2 === defaultLocale ? `${siteUrl}${path}` : `${protocol}//${locale2}.${host}${path}`;
         case "tld":
           return `${siteUrl}${path}`;
         default:
@@ -35979,13 +35978,12 @@ ${urls.join("\n")}
     const strategy = seoConfig2.hreflangStrategy || "subdirectory";
     const result = [];
     const buildUrl = (locale2) => {
-      const origin = new URL(siteUrl).origin;
-      const host = new URL(siteUrl).host;
+      const { origin, host, protocol } = new URL(siteUrl);
       switch (strategy) {
         case "subdirectory":
           return locale2 === defaultLocale ? `${siteUrl}${path}` : `${origin}/${locale2}${path}`;
         case "subdomain":
-          return locale2 === defaultLocale ? `${siteUrl}${path}` : `${origin.protocol}//${locale2}.${host}${path}`;
+          return locale2 === defaultLocale ? `${siteUrl}${path}` : `${protocol}//${locale2}.${host}${path}`;
         default:
           return `${siteUrl}${path}`;
       }
@@ -36358,18 +36356,17 @@ const seoMeta = ({ strapi: strapi2 }) => ({
     const strategy = seoConfig2.hreflangStrategy || "subdirectory";
     const result = [];
     const buildUrl = (locale2) => {
-      const origin = new URL(siteUrl).origin;
-      const host = new URL(siteUrl).host;
+      const { origin, host, protocol } = new URL(siteUrl);
       const domainWithoutTld = host.split(".").slice(0, -1).join(".");
       switch (strategy) {
         case "subdirectory":
           return locale2 === defaultLocale ? siteUrl : `${origin}/${locale2}`;
         case "subdomain":
-          return locale2 === defaultLocale ? siteUrl : `${origin.protocol}//${locale2}.${host}`;
+          return locale2 === defaultLocale ? siteUrl : `${protocol}//${locale2}.${host}`;
         case "tld":
           if (locale2 === defaultLocale) return siteUrl;
           const localeTld = locale2.includes("-") ? locale2.split("-")[1].toLowerCase() : locale2.toLowerCase();
-          return `${origin.protocol}//${domainWithoutTld}.${localeTld}`;
+          return `${protocol}//${domainWithoutTld}.${localeTld}`;
         default:
           return siteUrl;
       }
