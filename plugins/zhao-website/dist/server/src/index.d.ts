@@ -548,6 +548,7 @@ declare const _default: {
                 siteId: number;
                 entityType: string;
                 name: string;
+                slug?: string;
                 refTargetType: string;
                 refTargetId: string;
             }): Promise<any>;
