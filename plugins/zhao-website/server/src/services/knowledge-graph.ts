@@ -564,8 +564,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
   // ===== JSON-LD 导出 =====
   async exportGraph(siteId: number): Promise<any> {
+    // 派生实体是内容 CT 的内部节点，不进公开图谱
+    const scope = { deletedAt: null, status: true, sourceType: { $ne: "derived" } };
     const entities = await strapi.db.query(ENTITY_UID).findMany({
-      where: { $or: [{ site: siteId, deletedAt: null, status: true }, { site: null, deletedAt: null, status: true }] },
+      where: { $or: [{ site: siteId, ...scope }, { site: null, ...scope }] },
       populate: ["image"],
     });
     const relations = await strapi.db.query(RELATION_UID).findMany({

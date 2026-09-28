@@ -413,6 +413,17 @@ describe("Knowledge Graph Service", () => {
     expect(result["@graph"].length).toBeGreaterThan(0);
   });
 
+  test("exportGraph 实体查询排除派生实体（不进公开图谱）", async () => {
+    const queryMock = mockStrapi.db.query();
+
+    await service.exportGraph(1);
+
+    const where = queryMock.findMany.mock.calls[0][0].where;
+    for (const branch of where.$or) {
+      expect(branch).toEqual(expect.objectContaining({ sourceType: { $ne: "derived" } }));
+    }
+  });
+
   test("upsertEntityFromContent 创建实体时显式写入 slug（中文标题自动生成为空串）", async () => {
     const queryMock = mockStrapi.db.query();
 

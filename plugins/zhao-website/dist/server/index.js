@@ -35274,8 +35274,9 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
   },
   // ===== JSON-LD 导出 =====
   async exportGraph(siteId) {
+    const scope = { deletedAt: null, status: true, sourceType: { $ne: "derived" } };
     const entities = await strapi2.db.query(ENTITY_UID$1).findMany({
-      where: { $or: [{ site: siteId, deletedAt: null, status: true }, { site: null, deletedAt: null, status: true }] },
+      where: { $or: [{ site: siteId, ...scope }, { site: null, ...scope }] },
       populate: ["image"]
     });
     const relations = await strapi2.db.query(RELATION_UID).findMany({
