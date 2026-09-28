@@ -31519,6 +31519,7 @@ async function knowledgeGraphSync(targetType, rawContent) {
         siteId,
         entityType,
         name: content.title || content.name || content.question,
+        slug: content.slug,
         refTargetType: targetType,
         refTargetId: content.documentId
       });
@@ -34868,13 +34869,14 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
     });
   },
   async findEntityBySlug(siteId, slug) {
+    const where = { slug, deletedAt: null, status: true, sourceType: { $ne: "derived" } };
     const tenant = await strapi2.db.query(ENTITY_UID$1).findOne({
-      where: { site: siteId, slug, deletedAt: null, status: true },
+      where: { ...where, site: siteId },
       populate: ["image"]
     });
     if (tenant) return tenant;
     return strapi2.db.query(ENTITY_UID$1).findOne({
-      where: { site: null, slug, deletedAt: null, status: true },
+      where: { ...where, site: null },
       populate: ["image"]
     });
   },
@@ -34888,10 +34890,16 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
       refTargetType: params.refTargetType,
       refTargetId: params.refTargetId
     });
+    const slug = params.slug || `${params.refTargetType}-${params.refTargetId}`;
     if (existing) {
       return strapi2.db.query(ENTITY_UID$1).update({
         where: { id: existing.id },
-        data: { name: params.name, entityType: params.entityType }
+        data: {
+          name: params.name,
+          entityType: params.entityType,
+          // 只在遗留空 slug 时补写，不覆盖人工设定
+          ...existing.slug ? {} : { slug }
+        }
       });
     }
     return strapi2.db.query(ENTITY_UID$1).create({
@@ -34899,6 +34907,7 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
         site: params.siteId,
         entityType: params.entityType,
         name: params.name,
+        slug,
         refTargetType: params.refTargetType,
         refTargetId: params.refTargetId,
         sourceType: "derived"
@@ -35955,12 +35964,13 @@ const sitemap = ({ strapi: strapi2 }) => ({
     }
     if (!excludeTypes.includes("knowledge-entity")) {
       const filterService = strapi2.plugin("zhao-website").service("content-filter");
-      const where = await filterService.buildWhere(siteId, "plugin::zhao-website.knowledge-entity");
+      const where = await filterService.buildWhere(siteId, "plugin::zhao-website.knowledge-entity", { sourceType: { $ne: "derived" } });
       const items = await strapi2.db.query("plugin::zhao-website.knowledge-entity").findMany({
         where,
         orderBy: { publishedAt: "DESC" }
       });
       for (const item of items) {
+        if (!item.slug) continue;
         const lastmod = item.updatedAt || item.publishedAt;
         urls.push(this._urlEntry(siteUrl, `/knowledge/${item.slug}`, "0.6", "monthly", lastmod));
       }

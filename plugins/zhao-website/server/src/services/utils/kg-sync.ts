@@ -189,6 +189,7 @@ export async function knowledgeGraphSync(targetType: string, rawContent: any): P
         siteId,
         entityType,
         name: content.title || content.name || content.question,
+        slug: content.slug,
         refTargetType: targetType,
         refTargetId: content.documentId,
       });

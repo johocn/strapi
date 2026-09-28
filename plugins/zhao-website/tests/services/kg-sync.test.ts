@@ -196,6 +196,18 @@ describe("knowledgeGraphSync 表述型派生", () => {
     });
   });
 
+  test("派生实体 upsert 时带上内容 slug（中文标题自动生成会为空串）", async () => {
+    await knowledgeGraphSync("website-geo-article", makeContent({ slug: "career-lifelong-learning-plan" }));
+
+    expect(kgStub.upsertEntityFromContent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        siteId: 1,
+        slug: "career-lifelong-learning-plan",
+        refTargetType: "website-geo-article",
+      })
+    );
+  });
+
   test("缺少 site → warn 且不派生（siteId 为写入必需）", async () => {
     await knowledgeGraphSync("website-geo-article", makeContent({ site: undefined }));
 

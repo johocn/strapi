@@ -95,13 +95,15 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   },
 
   async findEntityBySlug(siteId: number, slug: string) {
+    // 派生实体是内容 CT 的内部节点，不对外提供实体页
+    const where = { slug, deletedAt: null, status: true, sourceType: { $ne: "derived" } };
     const tenant = await strapi.db.query(ENTITY_UID).findOne({
-      where: { site: siteId, slug, deletedAt: null, status: true },
+      where: { ...where, site: siteId },
       populate: ["image"],
     });
     if (tenant) return tenant;
     return strapi.db.query(ENTITY_UID).findOne({
-      where: { site: null, slug, deletedAt: null, status: true },
+      where: { ...where, site: null },
       populate: ["image"],
     });
   },
@@ -116,17 +118,25 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     siteId: number;
     entityType: string;
     name: string;
+    slug?: string;
     refTargetType: string;
     refTargetId: string;
   }) {
-    const existing = await this.findEntityByRef({
+    const existing: any = await this.findEntityByRef({
       refTargetType: params.refTargetType,
       refTargetId: params.refTargetId,
     });
+    // slug 为 uid(targetField=name)，中文标题自动生成结果为空串，须显式给出
+    const slug = params.slug || `${params.refTargetType}-${params.refTargetId}`;
     if (existing) {
       return strapi.db.query(ENTITY_UID).update({
         where: { id: existing.id },
-        data: { name: params.name, entityType: params.entityType },
+        data: {
+          name: params.name,
+          entityType: params.entityType,
+          // 只在遗留空 slug 时补写，不覆盖人工设定
+          ...(existing.slug ? {} : { slug }),
+        },
       });
     }
     return strapi.db.query(ENTITY_UID).create({
@@ -134,6 +144,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         site: params.siteId,
         entityType: params.entityType,
         name: params.name,
+        slug,
         refTargetType: params.refTargetType,
         refTargetId: params.refTargetId,
         sourceType: "derived",

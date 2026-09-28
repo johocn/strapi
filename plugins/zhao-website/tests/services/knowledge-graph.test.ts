@@ -412,4 +412,69 @@ describe("Knowledge Graph Service", () => {
     expect(Array.isArray(result["@graph"])).toBe(true);
     expect(result["@graph"].length).toBeGreaterThan(0);
   });
+
+  test("upsertEntityFromContent 创建实体时显式写入 slug（中文标题自动生成为空串）", async () => {
+    const queryMock = mockStrapi.db.query();
+
+    await service.upsertEntityFromContent({
+      siteId: 1,
+      entityType: "Article",
+      name: "职业没有一劳永逸：吉林职场人长期学习规划四步法",
+      slug: "career-lifelong-learning-plan",
+      refTargetType: "website-geo-article",
+      refTargetId: "doc-9",
+    });
+
+    expect(queryMock.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ slug: "career-lifelong-learning-plan", sourceType: "derived" }),
+      })
+    );
+  });
+
+  test("upsertEntityFromContent 缺 slug 时按 refTargetType-refTargetId 兜底", async () => {
+    const queryMock = mockStrapi.db.query();
+
+    await service.upsertEntityFromContent({
+      siteId: 1,
+      entityType: "Article",
+      name: "中文标题",
+      refTargetType: "website-geo-article",
+      refTargetId: "doc-9",
+    });
+
+    expect(queryMock.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ slug: "website-geo-article-doc-9" }) })
+    );
+  });
+
+  test("upsertEntityFromContent 已有 slug 时不覆盖，空 slug 时补写", async () => {
+    const queryMock = mockStrapi.db.query();
+
+    queryMock.findOne.mockResolvedValueOnce({ id: 5, slug: "keep-me" });
+    await service.upsertEntityFromContent({
+      siteId: 1, entityType: "DefinedTerm", name: "教育", slug: "education",
+      refTargetType: "website-geo-article", refTargetId: "doc-9",
+    });
+    expect(queryMock.update.mock.calls[0][0].data.slug).toBeUndefined();
+
+    queryMock.findOne.mockResolvedValueOnce({ id: 21, slug: "" });
+    await service.upsertEntityFromContent({
+      siteId: 1, entityType: "Article", name: "中文标题", slug: "career-plan",
+      refTargetType: "website-geo-article", refTargetId: "doc-9",
+    });
+    expect(queryMock.update.mock.calls[1][0].data.slug).toBe("career-plan");
+  });
+
+  test("findEntityBySlug 排除派生实体（不对外提供实体页）", async () => {
+    const queryMock = mockStrapi.db.query();
+
+    await service.findEntityBySlug(1, "career-plan");
+
+    expect(queryMock.findOne).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ slug: "career-plan", sourceType: { $ne: "derived" } }),
+      })
+    );
+  });
 });

@@ -69,12 +69,13 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     // 知识实体静态页 /knowledge/[slug]（strapi-site 构建期枚举；无 en 翻译，不附加 itemHreflang）
     if (!excludeTypes.includes("knowledge-entity")) {
       const filterService = strapi.plugin("zhao-website").service("content-filter");
-      const where = await filterService.buildWhere(siteId, "plugin::zhao-website.knowledge-entity");
+      const where = await filterService.buildWhere(siteId, "plugin::zhao-website.knowledge-entity", { sourceType: { $ne: "derived" } });
       const items = await strapi.db.query("plugin::zhao-website.knowledge-entity").findMany({
         where,
         orderBy: { publishedAt: "DESC" },
       });
       for (const item of items) {
+        if (!item.slug) continue;
         const lastmod = item.updatedAt || item.publishedAt;
         urls.push(this._urlEntry(siteUrl, `/knowledge/${item.slug}`, "0.6", "monthly", lastmod));
       }
