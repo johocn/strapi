@@ -2788,6 +2788,8 @@ declare const _default: {
         lifecycles: ({ strapi }: {
             strapi: import('@strapi/types/dist/core').Strapi;
         }) => {
+            afterCreate(event: any): Promise<void>;
+            afterUpdate(event: any): Promise<void>;
             beforeUpdate(event: any): Promise<void>;
             beforeCreate(event: any): Promise<void>;
         };

@@ -31248,7 +31248,79 @@ function auditGeoArticle(article2) {
   const pass = missing.every((m) => m.passed);
   return { pass, missing };
 }
+const ENTITY_TYPE_MAP = {
+  "website-article": "Article",
+  "website-geo-article": "Article",
+  "website-product": "Product",
+  "website-case": "CaseStudy",
+  "website-faq": "FAQ",
+  "website-tutorial": "HowTo",
+  "website-download": "CreativeWork",
+  "website-compliance": "CreativeWork"
+};
+const RELATION_FIELDS = {
+  "website-article": ["mainEntity", "mentionedEntities"],
+  "website-product": ["mainEntity", "mentionedEntities"],
+  "website-case": ["mainEntity", "mentionedEntities"],
+  "website-faq": ["mainEntity", "mentionedEntities"],
+  "website-tutorial": ["mainEntity", "mentionedEntities"],
+  "website-geo-article": ["mentionedEntities"],
+  "website-download": [],
+  "website-compliance": []
+};
+async function withRelations(targetType, content) {
+  const fields2 = RELATION_FIELDS[targetType] || [];
+  if (fields2.length === 0) return content;
+  if (Array.isArray(content.mentionedEntities) && content.mainEntity !== void 0) return content;
+  const uid = `plugin::zhao-website.${targetType.replace(/^website-/, "")}`;
+  const full = await strapi.db.query(uid).findOne({
+    where: { documentId: content.documentId },
+    populate: fields2
+  });
+  return full ? { ...content, ...full } : content;
+}
+async function knowledgeGraphSync(targetType, rawContent) {
+  if (!rawContent || !rawContent.documentId) return;
+  const kgService = strapi.plugin("zhao-website")?.service("knowledge-graph");
+  if (!kgService) return;
+  try {
+    const content = await withRelations(targetType, rawContent);
+    if (content.mainEntity && content.mainEntity.documentId) {
+    } else {
+      const entityType = ENTITY_TYPE_MAP[targetType] || "CreativeWork";
+      await kgService.upsertEntityFromContent({
+        siteId: content.site,
+        entityType,
+        name: content.title || content.name || content.question,
+        refTargetType: targetType,
+        refTargetId: content.documentId
+      });
+    }
+    if (Array.isArray(content.mentionedEntities) && content.mentionedEntities.length > 0) {
+      const subjectEntity = await kgService.findEntityByRef({
+        refTargetType: targetType,
+        refTargetId: content.documentId
+      });
+      if (subjectEntity) {
+        for (const mentioned of content.mentionedEntities) {
+          if (mentioned.documentId) {
+            await kgService.addRelation({
+              siteId: content.site,
+              subjectEntityId: subjectEntity.documentId,
+              predicate: "mentions",
+              objectEntityId: mentioned.documentId,
+              sourceType: "derived"
+            });
+          }
+        }
+      }
+    }
+  } catch (err) {
+    strapi.log.warn(`[zhao-website] kg-sync failed for ${targetType}`, err);
+  }
+}
 const UID$m = "plugin::zhao-website.geo-article";
+const TARGET_TYPE = "website-geo-article";
 const ApplicationError2 = ApplicationError$1;
 const POPULATE$1 = ["truthBasis", "mentionedEntities", "author"];
 function assertAuditPass(audit) {
@@ -31260,6 +31332,15 @@ function assertAuditPass(audit) {
   }
 }
 const geoArticleLifecycles = ({ strapi: strapi2 }) => ({
+  // 知识图谱同步（与其它 CT 一致：失败不阻塞内容编辑）
+  async afterCreate(event) {
+    await knowledgeGraphSync(TARGET_TYPE, event.result).catch(() => {
+    });
+  },
+  async afterUpdate(event) {
+    await knowledgeGraphSync(TARGET_TYPE, event.result).catch(() => {
+    });
+  },
   async beforeUpdate(event) {
     const { data, where } = event.params;
     if (!data || data.status !== "published") return;
@@ -32353,13 +32434,14 @@ const adminApi = () => ({
     channelScopeRoute("PUT", "/knowledge-graph/entities/global/:documentId", "knowledge-graph.updateGlobalEntity", "knowledge-entity.update-global"),
     channelScopeRoute("DELETE", "/knowledge-graph/entities/global/:documentId", "knowledge-graph.deleteGlobalEntity", "knowledge-entity.delete-global"),
     channelScopeRoute("GET", "/first-truths", "first-truth.find", "first-truth.read"),
+    // 静态子路径必须排在 /:documentId 之前，否则会被参数路由抢先匹配
+    channelScopeRoute("GET", "/first-truths/conflicts", "first-truth.conflicts", "first-truth.read"),
+    channelScopeRoute("GET", "/first-truths/export", "first-truth.exportFacts", "first-truth.read"),
     channelScopeRoute("GET", "/first-truths/:documentId", "first-truth.findOne", "first-truth.read"),
     channelScopeRoute("POST", "/first-truths", "first-truth.create", "first-truth.create"),
     channelScopeRoute("PUT", "/first-truths/:documentId", "first-truth.update", "first-truth.update"),
     channelScopeRoute("DELETE", "/first-truths/:documentId", "first-truth.delete", "first-truth.delete"),
     channelScopeRoute("POST", "/first-truths/:documentId/verify", "first-truth.verify", "first-truth.update"),
-    channelScopeRoute("GET", "/first-truths/conflicts", "first-truth.conflicts", "first-truth.read"),
-    channelScopeRoute("GET", "/first-truths/export", "first-truth.exportFacts", "first-truth.read"),
     // 全局真值路由
     channelScopeRoute("POST", "/first-truths/global", "first-truth.createGlobal", "first-truth.create-global"),
     channelScopeRoute("PUT", "/first-truths/global/:documentId", "first-truth.updateGlobal", "first-truth.update-global"),
@@ -32531,10 +32613,24 @@ async function firstTruthValidate(siteId, content) {
   });
   const conflicts = [];
   for (const truth of truths) {
-    if (fullText.includes(truth.claim)) ;
+    if (!truth.claim || !fullText.includes(truth.claim)) continue;
+    const canonical = truth.canonicalValue ? String(truth.canonicalValue) : "";
+    if (canonical && !fullText.includes(canonical)) {
+      conflicts.push({
+        claimKey: truth.claimKey,
+        claim: truth.claim,
+        expectedValue: canonical,
+        actualValue: "",
+        priority: truth.priority ?? 0
+      });
+    }
   }
-  const hasError = conflicts.some((c) => c.priority >= 80);
-  return { hasError, conflicts };
+  for (const c of conflicts) {
+    strapi.log.warn(
+      `[first-truth] 正文引用真值「${c.claimKey}」但未出现规范值「${c.expectedValue}」（priority=${c.priority}）`
+    );
+  }
+  return { hasError: false, conflicts };
 }
 const CATEGORY_UID = "plugin::zhao-website.article-category";
 async function resolveCategoryFilter(strapi2, siteId, category) {
@@ -34480,16 +34576,80 @@ const PREDICATE_DICTIONARY = {
     "numberOfEmployees",
     "contactPoint",
     "location",
-    "hasOfferCatalog"
+    "hasOfferCatalog",
+    "slogan",
+    "keywords",
+    "brand",
+    "knowsAbout",
+    "provides",
+    "sameAs"
   ],
-  Person: ["affiliation", "jobTitle", "worksFor", "alumniOf"],
-  Product: ["manufacturer", "brand", "offers", "aggregateRating", "category"],
-  Article: ["about", "mentions", "author", "publisher", "datePublished"],
-  CaseStudy: ["subjectOf", "about", "mentions"],
-  Event: ["organizer", "location", "startDate", "subEvent"],
-  FAQ: ["about", "mentions", "mainEntity"],
-  HowTo: ["about", "mentions", "hasStep"],
-  Download: ["about", "mentions", "fileFormat"]
+  Person: ["affiliation", "jobTitle", "worksFor", "alumniOf", "knowsAbout", "nationality", "sameAs"],
+  Product: [
+    "manufacturer",
+    "brand",
+    "offers",
+    "aggregateRating",
+    "category",
+    "material",
+    "additionalProperty",
+    "isRelatedTo",
+    "isSimilarTo"
+  ],
+  Service: [
+    "provider",
+    "areaServed",
+    "serviceType",
+    "hasOfferCatalog",
+    "offers",
+    "category",
+    "termsOfService",
+    "isRelatedTo"
+  ],
+  Place: ["containedInPlace", "containsPlace", "geo", "address", "areaServed", "openingHours"],
+  Event: ["organizer", "location", "startDate", "endDate", "subEvent", "superEvent", "performer", "about"],
+  CreativeWork: [
+    "about",
+    "mentions",
+    "author",
+    "publisher",
+    "datePublished",
+    "isPartOf",
+    "hasPart",
+    "keywords",
+    "isBasedOn"
+  ],
+  Article: [
+    "about",
+    "mentions",
+    "author",
+    "publisher",
+    "datePublished",
+    "articleSection",
+    "mainEntity",
+    "isPartOf",
+    "hasPart",
+    "keywords"
+  ],
+  CaseStudy: ["subjectOf", "about", "mentions", "author", "isPartOf"],
+  Offer: [
+    "itemOffered",
+    "price",
+    "priceCurrency",
+    "availability",
+    "seller",
+    "areaServed",
+    "validFrom",
+    "validThrough"
+  ],
+  Review: ["itemReviewed", "reviewRating", "author", "datePublished", "reviewBody"],
+  FAQ: ["about", "mentions", "mainEntity", "hasPart"],
+  HowTo: ["about", "mentions", "hasStep", "step", "tool", "supply", "totalTime"],
+  BreadcrumbList: ["itemListElement", "hasPart"],
+  Brand: ["logo", "slogan", "manufacturer", "aggregateRating", "sameAs"],
+  ContactPoint: ["contactType", "telephone", "email", "areaServed", "availableLanguage"],
+  QuantitativeValue: ["value", "unitText", "minValue", "maxValue"],
+  DefinedTerm: ["inDefinedTermSet", "termCode", "isPartOf", "sameAs"]
 };
 function isValidPredicate(entityType, predicate) {
   const list = PREDICATE_DICTIONARY[entityType] || [];
@@ -34501,7 +34661,7 @@ const HIERARCHICAL_PREDICATES = /* @__PURE__ */ new Set([
   "subEvent",
   "hasPart"
 ]);
-const ENTITY_UID = "plugin::zhao-website.knowledge-entity";
+const ENTITY_UID$1 = "plugin::zhao-website.knowledge-entity";
 const RELATION_UID = "plugin::zhao-website.knowledge-relation";
 const knowledgeGraph = ({ strapi: strapi2 }) => ({
   // ===== 实体 =====
@@ -34514,7 +34674,7 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
       filters2.$or[0].entityType = entityType;
       filters2.$or[1].entityType = entityType;
     }
-    return strapi2.db.query(ENTITY_UID).findMany({
+    return strapi2.db.query(ENTITY_UID$1).findMany({
       where: filters2,
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
@@ -34523,18 +34683,18 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
     });
   },
   async findEntityBySlug(siteId, slug) {
-    const tenant = await strapi2.db.query(ENTITY_UID).findOne({
+    const tenant = await strapi2.db.query(ENTITY_UID$1).findOne({
       where: { site: siteId, slug, deletedAt: null, status: true },
       populate: ["image"]
     });
     if (tenant) return tenant;
-    return strapi2.db.query(ENTITY_UID).findOne({
+    return strapi2.db.query(ENTITY_UID$1).findOne({
       where: { site: null, slug, deletedAt: null, status: true },
       populate: ["image"]
     });
   },
   async findEntityByRef(params) {
-    return strapi2.db.query(ENTITY_UID).findOne({
+    return strapi2.db.query(ENTITY_UID$1).findOne({
       where: { refTargetType: params.refTargetType, refTargetId: params.refTargetId, deletedAt: null }
     });
   },
@@ -34544,12 +34704,12 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
       refTargetId: params.refTargetId
     });
     if (existing) {
-      return strapi2.db.query(ENTITY_UID).update({
+      return strapi2.db.query(ENTITY_UID$1).update({
         where: { id: existing.id },
         data: { name: params.name, entityType: params.entityType }
       });
     }
-    return strapi2.db.query(ENTITY_UID).create({
+    return strapi2.db.query(ENTITY_UID$1).create({
       data: {
         site: params.siteId,
         entityType: params.entityType,
@@ -34561,12 +34721,12 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
     });
   },
   async createEntity(siteId, data) {
-    return strapi2.db.query(ENTITY_UID).create({
+    return strapi2.db.query(ENTITY_UID$1).create({
       data: { ...data, site: siteId }
     });
   },
   async updateEntity(siteId, documentId, data) {
-    const existing = await strapi2.db.query(ENTITY_UID).findOne({
+    const existing = await strapi2.db.query(ENTITY_UID$1).findOne({
       where: { site: siteId, documentId, deletedAt: null }
     });
     if (!existing) {
@@ -34574,17 +34734,17 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
       e.status = 404;
       throw e;
     }
-    return strapi2.db.query(ENTITY_UID).update({
+    return strapi2.db.query(ENTITY_UID$1).update({
       where: { id: existing.id },
       data
     });
   },
   async deleteEntity(siteId, documentId) {
-    const existing = await strapi2.db.query(ENTITY_UID).findOne({
+    const existing = await strapi2.db.query(ENTITY_UID$1).findOne({
       where: { site: siteId, documentId, deletedAt: null }
     });
     if (!existing) return null;
-    return strapi2.db.query(ENTITY_UID).update({
+    return strapi2.db.query(ENTITY_UID$1).update({
       where: { id: existing.id },
       data: { deletedAt: (/* @__PURE__ */ new Date()).toISOString() }
     });
@@ -34602,10 +34762,9 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
     }
     if (subjectEntityId) {
       const sid = await this._resolveEntityId(subjectEntityId);
-      if (sid) {
-        filters2.$or[0].subjectEntity = sid;
-        filters2.$or[1].subjectEntity = sid;
-      }
+      if (!sid) return [];
+      filters2.$or[0].subjectEntity = sid;
+      filters2.$or[1].subjectEntity = sid;
     }
     if (predicate) {
       filters2.$or[0].predicate = predicate;
@@ -34613,10 +34772,9 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
     }
     if (objectEntityId) {
       const oid = await this._resolveEntityId(objectEntityId);
-      if (oid) {
-        filters2.$or[0].objectEntity = oid;
-        filters2.$or[1].objectEntity = oid;
-      }
+      if (!oid) return [];
+      filters2.$or[0].objectEntity = oid;
+      filters2.$or[1].objectEntity = oid;
     }
     return strapi2.db.query(RELATION_UID).findMany({
       where: filters2,
@@ -34629,8 +34787,22 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
   async _resolveEntityId(ref) {
     if (typeof ref === "number" && Number.isInteger(ref)) return ref;
     if (/^\d+$/.test(String(ref))) return Number(ref);
-    const ent = await strapi2.db.query(ENTITY_UID).findOne({ where: { documentId: String(ref) } });
+    const ent = await strapi2.db.query(ENTITY_UID$1).findOne({ where: { documentId: String(ref) } });
     return ent ? ent.id : null;
+  },
+  /**
+   * 统一归一入口：lnk 列只接受数字 id，解析失败直接 400。
+   * 所有指向 subjectEntity/objectEntity/canonicalEntity 的过滤与写入都必须走这里。
+   */
+  async _requireEntityId(ref, label = "entityId") {
+    const id = await this._resolveEntityId(ref);
+    if (!id) {
+      const e = new Error(`${label} 无效`);
+      e.status = 400;
+      e.code = "ENTITY_NOT_FOUND";
+      throw e;
+    }
+    return id;
   },
   async addRelation(params) {
     if (params.objectEntityId && params.subjectEntityId === params.objectEntityId) {
@@ -34654,7 +34826,15 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
       e.code = "OBJECT_EMPTY";
       throw e;
     }
-    if (params.objectEntityId && HIERARCHICAL_PREDICATES.has(params.predicate)) {
+    const subjectId = await this._requireEntityId(params.subjectEntityId, "subjectEntityId");
+    const objectId = params.objectEntityId ? await this._requireEntityId(params.objectEntityId, "objectEntityId") : null;
+    if (objectId && subjectId === objectId) {
+      const e = new Error("Self-relation not allowed");
+      e.status = 400;
+      e.code = "SELF_RELATION";
+      throw e;
+    }
+    if (objectId && HIERARCHICAL_PREDICATES.has(params.predicate)) {
       const hasCycle = await this._detectCycle(params.subjectEntityId, params.objectEntityId, params.predicate);
       if (hasCycle) {
         const e = new Error("循环引用 not allowed for hierarchical predicate");
@@ -34663,18 +34843,19 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
         throw e;
       }
     }
-    const subjectEntity = await strapi2.db.query(ENTITY_UID).findOne({
-      where: { documentId: params.subjectEntityId }
+    const subjectEntity = await strapi2.db.query(ENTITY_UID$1).findOne({
+      where: { id: subjectId }
     });
     if (subjectEntity && !isValidPredicate(subjectEntity.entityType, params.predicate)) {
       strapi2.log.warn(`[kg] predicate "${params.predicate}" 不在 ${subjectEntity.entityType} 字典中`);
     }
-    if (params.objectEntityId) {
+    if (objectId) {
       const existing = await strapi2.db.query(RELATION_UID).findOne({
         where: {
-          subjectEntity: params.subjectEntityId,
+          site: params.siteId,
+          subjectEntity: subjectId,
           predicate: params.predicate,
-          objectEntity: params.objectEntityId,
+          objectEntity: objectId,
           deletedAt: null
         }
       });
@@ -34683,9 +34864,9 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
     return strapi2.db.query(RELATION_UID).create({
       data: {
         site: params.siteId,
-        subjectEntity: params.subjectEntityId,
+        subjectEntity: subjectId,
         predicate: params.predicate,
-        objectEntity: params.objectEntityId || null,
+        objectEntity: objectId,
         objectValue: params.objectValue || null,
         objectText: params.objectText || null,
         sourceType: params.sourceType || "manual"
@@ -34731,13 +34912,7 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
     }
     const payload = {};
     if (data.subjectEntityId !== void 0 && data.subjectEntityId !== null && data.subjectEntityId !== "") {
-      const subjectEntity = await this._resolveEntityId(data.subjectEntityId);
-      if (!subjectEntity) {
-        const e = new Error("subjectEntityId 无效");
-        e.status = 400;
-        throw e;
-      }
-      payload.subjectEntity = subjectEntity;
+      payload.subjectEntity = await this._requireEntityId(data.subjectEntityId, "subjectEntityId");
     }
     if (data.predicate !== void 0) payload.predicate = data.predicate;
     if (data.objectText !== void 0) payload.objectText = data.objectText;
@@ -34746,13 +34921,7 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
     if (data.verificationStatus !== void 0) payload.verificationStatus = data.verificationStatus;
     if (data.status !== void 0) payload.status = data.status === true || data.status === "true";
     if (data.objectEntityId !== void 0 && data.objectEntityId !== null && data.objectEntityId !== "") {
-      const objectEntity = await this._resolveEntityId(data.objectEntityId);
-      if (!objectEntity) {
-        const e = new Error("objectEntityId 无效");
-        e.status = 400;
-        throw e;
-      }
-      payload.objectEntity = objectEntity;
+      payload.objectEntity = await this._requireEntityId(data.objectEntityId, "objectEntityId");
     }
     if (payload.subjectEntity && payload.objectEntity && payload.subjectEntity === payload.objectEntity) {
       const e = new Error("Self-relation not allowed");
@@ -34769,7 +34938,7 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
       deletedAt: null,
       ...params.entityType ? { entityType: params.entityType } : {}
     };
-    const candidates = await strapi2.db.query(ENTITY_UID).findMany({
+    const candidates = await strapi2.db.query(ENTITY_UID$1).findMany({
       where: {
         $or: [
           { ...baseFilter, site: siteId },
@@ -34787,23 +34956,27 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
   },
   // ===== 同步与校验 =====
   async syncFromContent(targetType, content) {
-    const { knowledgeGraphSync } = await import("./kg-sync-DojemDpX.mjs");
     return knowledgeGraphSync(targetType, content);
   },
   async verifyAll(siteId) {
-    const entities = await strapi2.db.query(ENTITY_UID).findMany({
+    const entities = await strapi2.db.query(ENTITY_UID$1).findMany({
       where: { $or: [{ site: siteId, deletedAt: null }, { site: null, deletedAt: null }] }
     });
     let conflicts = 0;
     const report = [];
     for (const entity of entities) {
       const truths = await strapi2.db.query("plugin::zhao-website.first-truth-policy").findMany({
-        where: { $or: [{ site: siteId, canonicalEntity: entity.documentId, verificationStatus: "conflict" }, { site: null, canonicalEntity: entity.documentId, verificationStatus: "conflict" }] }
+        where: {
+          $or: [
+            { site: siteId, canonicalEntity: entity.id, verificationStatus: "conflict" },
+            { site: null, canonicalEntity: entity.id, verificationStatus: "conflict" }
+          ]
+        }
       });
       if (truths.length > 0) {
         conflicts += 1;
         report.push({ entityId: entity.documentId, conflictCount: truths.length });
-        await strapi2.db.query(ENTITY_UID).update({
+        await strapi2.db.query(ENTITY_UID$1).update({
           where: { id: entity.id },
           data: { verificationStatus: "conflict" }
         });
@@ -34813,7 +34986,7 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
   },
   // ===== JSON-LD 导出 =====
   async exportGraph(siteId) {
-    const entities = await strapi2.db.query(ENTITY_UID).findMany({
+    const entities = await strapi2.db.query(ENTITY_UID$1).findMany({
       where: { $or: [{ site: siteId, deletedAt: null, status: true }, { site: null, deletedAt: null, status: true }] },
       populate: ["image"]
     });
@@ -34874,12 +35047,23 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
     if (entity.image) jsonLd.image = entity.url;
     if (entity.properties) Object.assign(jsonLd, entity.properties);
     for (const rel of outgoing) {
+      let value;
       if (rel.objectEntity) {
-        jsonLd[rel.predicate] = { "@id": rel.objectEntity.slug || rel.objectEntity.documentId };
+        value = { "@id": rel.objectEntity.slug || rel.objectEntity.documentId };
       } else if (rel.objectValue) {
-        jsonLd[rel.predicate] = rel.objectValue;
+        value = rel.objectValue;
       } else if (rel.objectText) {
-        jsonLd[rel.predicate] = rel.objectText;
+        value = rel.objectText;
+      } else {
+        continue;
+      }
+      const current = jsonLd[rel.predicate];
+      if (current === void 0) {
+        jsonLd[rel.predicate] = value;
+      } else if (Array.isArray(current)) {
+        current.push(value);
+      } else {
+        jsonLd[rel.predicate] = [current, value];
       }
     }
     return jsonLd;
@@ -34984,6 +35168,7 @@ const aiContentSummary = ({ strapi: strapi2 }) => ({
   }
 });
 const UID$3 = "plugin::zhao-website.first-truth-policy";
+const ENTITY_UID = "plugin::zhao-website.knowledge-entity";
 const firstTruth = ({ strapi: strapi2 }) => ({
   async find(siteId, query = {}) {
     const { claimCategory, verificationStatus } = query;
@@ -35063,11 +35248,15 @@ const firstTruth = ({ strapi: strapi2 }) => ({
   async _markRelatedEntitiesPending(siteId, canonicalEntity) {
     if (!canonicalEntity) return;
     const entityId = canonicalEntity.documentId || canonicalEntity;
-    const entity = await strapi2.db.query("plugin::zhao-website.knowledge-entity").findOne({
+    const entity = siteId === null ? await strapi2.db.query(ENTITY_UID).findOne({
+      where: { site: null, documentId: entityId, deletedAt: null }
+    }) : await strapi2.db.query(ENTITY_UID).findOne({
       where: { site: siteId, documentId: entityId, deletedAt: null }
+    }) || await strapi2.db.query(ENTITY_UID).findOne({
+      where: { site: null, documentId: entityId, deletedAt: null }
     });
     if (entity) {
-      await strapi2.db.query("plugin::zhao-website.knowledge-entity").update({
+      await strapi2.db.query(ENTITY_UID).update({
         where: { id: entity.id },
         data: { verificationStatus: "pending" }
       });

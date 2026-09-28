@@ -14,9 +14,15 @@ export interface ValidationResult {
 }
 
 /**
- * 扫描内容文本，对比 first-truth-policy
- * - error 级（priority >= 80）→ 调用方应阻止发布
- * - warning 级（priority < 80）→ 调用方应允许发布但记录
+ * 扫描内容文本，对比 first-truth-policy。
+ *
+ * 诚实说明：当前只实现一条**可判定**规则 ——
+ *   正文原样引用了某条真值的 claim，却未出现其 canonicalValue（规范表述）
+ *   → 记一条 warning 并输出日志。
+ *
+ * 矛盾值拦截（error 级、priority>=80 阻止发布）需要真值提供"禁用值/替代值"清单，
+ * 而 first-truth-policy 目前没有该字段，因此 hasError 恒为 false，发布拦截行为不变。
+ * 待 forbiddenValues 字段落地后再启用 error 级。
  */
 export async function firstTruthValidate(
   siteId: number,
@@ -29,21 +35,32 @@ export async function firstTruthValidate(
     return { hasError: false, conflicts: [] };
   }
 
-  // 查询当前租户所有真值
+  // 查询当前租户所有启用的真值
   const truths = await strapi.db.query("plugin::zhao-website.first-truth-policy").findMany({
     where: { site: siteId, deletedAt: null, status: true },
   });
 
   const conflicts: ValidationResult["conflicts"] = [];
   for (const truth of truths) {
-    // 简化匹配：真值 claim 出现且 canonicalValue 未出现 → 可能缺失；claim 出现且矛盾值出现 → 冲突
-    // 一期仅做最简单的"包含"匹配（实际生产需 NLP）
-    if (fullText.includes(truth.claim)) {
-      // 进一步校验值是否匹配（这里仅占位，实际需根据 claimCategory 做精确匹配）
-      // 简化：总是认为匹配，不报冲突
+    if (!truth.claim || !fullText.includes(truth.claim)) continue;
+    const canonical = truth.canonicalValue ? String(truth.canonicalValue) : "";
+    // 引用了真值原句但没给出规范值 → 表述可能偏离第一真值
+    if (canonical && !fullText.includes(canonical)) {
+      conflicts.push({
+        claimKey: truth.claimKey,
+        claim: truth.claim,
+        expectedValue: canonical,
+        actualValue: "",
+        priority: truth.priority ?? 0,
+      });
     }
   }
 
-  const hasError = conflicts.some((c) => c.priority >= 80);
-  return { hasError, conflicts };
+  for (const c of conflicts) {
+    strapi.log.warn(
+      `[first-truth] 正文引用真值「${c.claimKey}」但未出现规范值「${c.expectedValue}」（priority=${c.priority}）`
+    );
+  }
+
+  return { hasError: false, conflicts };
 }

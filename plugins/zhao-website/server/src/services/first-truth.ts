@@ -1,6 +1,7 @@
 import type { Core } from "@strapi/strapi";
 
 const UID = "plugin::zhao-website.first-truth-policy";
+const ENTITY_UID = "plugin::zhao-website.knowledge-entity";
 
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async find(siteId: number | null, query: any = {}) {
@@ -81,11 +82,19 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async _markRelatedEntitiesPending(siteId: number | null, canonicalEntity: any) {
     if (!canonicalEntity) return;
     const entityId = canonicalEntity.documentId || canonicalEntity;
-    const entity = await strapi.db.query("plugin::zhao-website.knowledge-entity").findOne({
-      where: { site: siteId, documentId: entityId, deletedAt: null },
-    });
+    // 租户真值 → 优先租户实体，兜底全局实体；全局真值（siteId=null）只查全局实体
+    const entity = siteId === null
+      ? await strapi.db.query(ENTITY_UID).findOne({
+          where: { site: null, documentId: entityId, deletedAt: null },
+        })
+      : (await strapi.db.query(ENTITY_UID).findOne({
+          where: { site: siteId, documentId: entityId, deletedAt: null },
+        })) ||
+        (await strapi.db.query(ENTITY_UID).findOne({
+          where: { site: null, documentId: entityId, deletedAt: null },
+        }));
     if (entity) {
-      await strapi.db.query("plugin::zhao-website.knowledge-entity").update({
+      await strapi.db.query(ENTITY_UID).update({
         where: { id: entity.id },
         data: { verificationStatus: "pending" },
       });

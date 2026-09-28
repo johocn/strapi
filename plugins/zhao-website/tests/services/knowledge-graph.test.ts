@@ -50,6 +50,8 @@ describe("Knowledge Graph Service", () => {
   });
 
   test("addRelation 层级关系循环 → reject 循环引用", async () => {
+    // 归一化后 subject/object 需解析为不同数字 id，才不会被自引用校验先拦下
+    service._resolveEntityId = jest.fn(async (ref: any) => (ref === "doc-a" ? 1 : 2));
     // mock _detectCycle 返回 true
     service._detectCycle = jest.fn().mockResolvedValue(true);
 
@@ -61,6 +63,104 @@ describe("Knowledge Graph Service", () => {
         objectEntityId: "doc-b",
       })
     ).rejects.toThrow("循环引用");
+  });
+
+  test("addRelation 写入与幂等查询统一使用数字 id", async () => {
+    service._resolveEntityId = jest.fn(async (ref: any) => (ref === "doc-a" ? 11 : 22));
+    const queryMock = mockStrapi.db.query();
+    queryMock.findOne
+      .mockResolvedValueOnce({ id: 11, entityType: "Organization" }) // 谓词字典取 subject
+      .mockResolvedValueOnce(null); // 幂等查询未命中
+
+    await service.addRelation({
+      siteId: 1,
+      subjectEntityId: "doc-a",
+      predicate: "mentions",
+      objectEntityId: "doc-b",
+    });
+
+    expect(queryMock.findOne).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        where: expect.objectContaining({
+          site: 1,
+          subjectEntity: 11,
+          predicate: "mentions",
+          objectEntity: 22,
+        }),
+      })
+    );
+    expect(queryMock.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ subjectEntity: 11, objectEntity: 22 }),
+      })
+    );
+  });
+
+  test("addRelation 幂等命中 → 不重复写入", async () => {
+    service._resolveEntityId = jest.fn(async (ref: any) => (ref === "doc-a" ? 11 : 22));
+    const queryMock = mockStrapi.db.query();
+    queryMock.findOne
+      .mockResolvedValueOnce({ id: 11, entityType: "Organization" })
+      .mockResolvedValueOnce({ id: 77, predicate: "mentions" });
+
+    const result = await service.addRelation({
+      siteId: 1,
+      subjectEntityId: "doc-a",
+      predicate: "mentions",
+      objectEntityId: "doc-b",
+    });
+
+    expect(result).toEqual({ id: 77, predicate: "mentions" });
+    expect(queryMock.create).not.toHaveBeenCalled();
+  });
+
+  test("addRelation subject 解析不到 → 400 ENTITY_NOT_FOUND", async () => {
+    await expect(
+      service.addRelation({
+        siteId: 1,
+        subjectEntityId: "missing",
+        predicate: "mentions",
+        objectText: "x",
+      })
+    ).rejects.toMatchObject({ status: 400, code: "ENTITY_NOT_FOUND" });
+  });
+
+  test("_entityToJsonLd 同谓词多值合并为数组", () => {
+    const jsonLd = service._entityToJsonLd(
+      { documentId: "doc-a", name: "A", entityType: "Article", slug: "a" },
+      [
+        { predicate: "mentions", objectEntity: { slug: "b", documentId: "doc-b" } },
+        { predicate: "mentions", objectEntity: { slug: "c", documentId: "doc-c" } },
+        { predicate: "keywords", objectText: "k1" },
+      ]
+    );
+
+    expect(Array.isArray(jsonLd.mentions)).toBe(true);
+    expect(jsonLd.mentions).toHaveLength(2);
+    expect(jsonLd.keywords).toBe("k1");
+  });
+
+  test("verifyAll 按实体数字 id 查询冲突真值并置实体为 conflict", async () => {
+    const queryMock = mockStrapi.db.query();
+    queryMock.findMany
+      .mockResolvedValueOnce([{ id: 7, documentId: "doc-7" }]) // 实体
+      .mockResolvedValueOnce([{ id: 1 }]); // 冲突真值
+
+    const result = await service.verifyAll(1);
+
+    expect(result.conflicts).toBe(1);
+    expect(queryMock.findMany).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        where: expect.objectContaining({
+          $or: expect.arrayContaining([expect.objectContaining({ canonicalEntity: 7 })]),
+        }),
+      })
+    );
+    expect(queryMock.update).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 7 }, data: { verificationStatus: "conflict" } })
+    );
   });
 
   test("disambiguate 按 name+type 查询，返回 { entity, confidence }", async () => {

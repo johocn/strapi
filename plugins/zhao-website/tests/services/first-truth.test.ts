@@ -1,4 +1,5 @@
 import ftServiceFactory from "../../server/src/services/first-truth";
+import { firstTruthValidate } from "../../server/src/services/utils/first-truth-validate";
 import { createMockStrapi } from "../helpers/mock-strapi";
 
 describe("First Truth Service", () => {
@@ -78,5 +79,61 @@ describe("First Truth Service", () => {
         data: expect.objectContaining({ deletedAt: expect.any(String) }),
       })
     );
+  });
+
+  test("_markRelatedEntitiesPending 租户实体未命中时兜底全局实体", async () => {
+    const queryMock = mockStrapi.db.query();
+    queryMock.findOne
+      .mockResolvedValueOnce(null) // 租户实体
+      .mockResolvedValueOnce({ id: 9, documentId: "ent-9" }); // 全局实体
+
+    await service._markRelatedEntitiesPending(1, { documentId: "ent-9" });
+
+    expect(queryMock.findOne).toHaveBeenCalledTimes(2);
+    expect(queryMock.update).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 9 }, data: { verificationStatus: "pending" } })
+    );
+  });
+
+  test("_markRelatedEntitiesPending siteId=null 只查全局实体", async () => {
+    const queryMock = mockStrapi.db.query();
+    queryMock.findOne.mockResolvedValueOnce({ id: 9 });
+
+    await service._markRelatedEntitiesPending(null, { documentId: "ent-9" });
+
+    expect(queryMock.findOne).toHaveBeenCalledTimes(1);
+    expect(queryMock.findOne).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ site: null, documentId: "ent-9" }),
+      })
+    );
+  });
+
+  test("firstTruthValidate 命中 claim 但缺规范值 → 产出 warning 且不拦截", async () => {
+    const queryMock = mockStrapi.db.query();
+    queryMock.findMany.mockResolvedValueOnce([
+      { claimKey: "brand_slogan", claim: "让学习更有价值", canonicalValue: "让学习更有价值（joho.cn）", priority: 90 },
+    ]);
+
+    const result = await firstTruthValidate(1, { content: "我们的主张是让学习更有价值" });
+
+    expect(result.hasError).toBe(false);
+    expect(result.conflicts).toHaveLength(1);
+    expect(result.conflicts[0].claimKey).toBe("brand_slogan");
+    expect(mockStrapi.log.warn).toHaveBeenCalled();
+  });
+
+  test("firstTruthValidate 规范值已出现 → 无 warning", async () => {
+    const queryMock = mockStrapi.db.query();
+    queryMock.findMany.mockResolvedValueOnce([
+      { claimKey: "brand_slogan", claim: "让学习更有价值", canonicalValue: "让学习更有价值（joho.cn）", priority: 90 },
+    ]);
+
+    const result = await firstTruthValidate(1, {
+      content: "我们的主张是让学习更有价值（joho.cn），欢迎体验",
+    });
+
+    expect(result.hasError).toBe(false);
+    expect(result.conflicts).toHaveLength(0);
   });
 });

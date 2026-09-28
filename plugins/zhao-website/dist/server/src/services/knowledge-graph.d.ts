@@ -21,6 +21,11 @@ declare const _default: ({ strapi }: {
     findRelations(siteId: number, query?: any): Promise<any[]>;
     /** documentId/数字 id → 实体数字 id（关系过滤必须用数字 id） */
     _resolveEntityId(ref: string | number): Promise<number | null>;
+    /**
+     * 统一归一入口：lnk 列只接受数字 id，解析失败直接 400。
+     * 所有指向 subjectEntity/objectEntity/canonicalEntity 的过滤与写入都必须走这里。
+     */
+    _requireEntityId(ref: string | number, label?: string): Promise<number>;
     addRelation(params: {
         siteId: number;
         subjectEntityId: string;

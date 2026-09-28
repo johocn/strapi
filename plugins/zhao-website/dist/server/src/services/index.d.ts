@@ -369,6 +369,7 @@ declare const _default: {
         deleteEntity(siteId: number | null, documentId: string): Promise<any>;
         findRelations(siteId: number, query?: any): Promise<any[]>;
         _resolveEntityId(ref: string | number): Promise<number | null>;
+        _requireEntityId(ref: string | number, label?: string): Promise<number>;
         addRelation(params: {
             siteId: number;
             subjectEntityId: string;

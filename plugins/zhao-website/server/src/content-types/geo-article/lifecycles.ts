@@ -1,8 +1,10 @@
 import type { Core } from "@strapi/strapi";
 import { errors } from "@strapi/utils";
 import { auditGeoArticle } from "../../services/utils/geo-article-audit";
+import { knowledgeGraphSync } from "../../services/utils/kg-sync";
 
 const UID = "plugin::zhao-website.geo-article";
+const TARGET_TYPE = "website-geo-article";
 const ApplicationError = errors.ApplicationError;
 
 const POPULATE = ["truthBasis", "mentionedEntities", "author"];
@@ -17,6 +19,13 @@ function assertAuditPass(audit: { pass: boolean; missing: { passed: boolean }[] 
 }
 
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
+  // 知识图谱同步（与其它 CT 一致：失败不阻塞内容编辑）
+  async afterCreate(event: any) {
+    await knowledgeGraphSync(TARGET_TYPE, event.result).catch(() => {});
+  },
+  async afterUpdate(event: any) {
+    await knowledgeGraphSync(TARGET_TYPE, event.result).catch(() => {});
+  },
   async beforeUpdate(event: any) {
     const { data, where } = event.params;
     // 仅在"转为 published"时校验；已发布文章再次保存不拦截

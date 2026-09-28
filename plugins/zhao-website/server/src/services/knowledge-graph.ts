@@ -1,5 +1,6 @@
 import type { Core } from "@strapi/strapi";
 import { HIERARCHICAL_PREDICATES, isValidPredicate } from "./utils/predicate-dictionary";
+import { knowledgeGraphSync } from "./utils/kg-sync";
 
 const ENTITY_UID = "plugin::zhao-website.knowledge-entity";
 const RELATION_UID = "plugin::zhao-website.knowledge-relation";
@@ -114,12 +115,17 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     if (docId) { filters.$or[0].documentId = docId; filters.$or[1].documentId = docId; }
     if (subjectEntityId) {
       const sid = await this._resolveEntityId(subjectEntityId);
-      if (sid) { filters.$or[0].subjectEntity = sid; filters.$or[1].subjectEntity = sid; }
+      // 过滤条件解析不到实体时返回空集，避免静默退化为全量返回
+      if (!sid) return [];
+      filters.$or[0].subjectEntity = sid;
+      filters.$or[1].subjectEntity = sid;
     }
     if (predicate) { filters.$or[0].predicate = predicate; filters.$or[1].predicate = predicate; }
     if (objectEntityId) {
       const oid = await this._resolveEntityId(objectEntityId);
-      if (oid) { filters.$or[0].objectEntity = oid; filters.$or[1].objectEntity = oid; }
+      if (!oid) return [];
+      filters.$or[0].objectEntity = oid;
+      filters.$or[1].objectEntity = oid;
     }
     return strapi.db.query(RELATION_UID).findMany({
       where: filters,
@@ -137,6 +143,21 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     return ent ? ent.id : null;
   },
 
+  /**
+   * 统一归一入口：lnk 列只接受数字 id，解析失败直接 400。
+   * 所有指向 subjectEntity/objectEntity/canonicalEntity 的过滤与写入都必须走这里。
+   */
+  async _requireEntityId(ref: string | number, label = "entityId"): Promise<number> {
+    const id = await this._resolveEntityId(ref);
+    if (!id) {
+      const e: any = new Error(`${label} 无效`);
+      e.status = 400;
+      e.code = "ENTITY_NOT_FOUND";
+      throw e;
+    }
+    return id;
+  },
+
   async addRelation(params: {
     siteId: number;
     subjectEntityId: string;
@@ -146,7 +167,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     objectText?: string;
     sourceType?: string;
   }) {
-    // 校验自引用
+    // 自引用（documentId 层先拦一次，避免多余查询）
     if (params.objectEntityId && params.subjectEntityId === params.objectEntityId) {
       const e: any = new Error("Self-relation not allowed");
       e.status = 400;
@@ -169,9 +190,20 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       e.code = "OBJECT_EMPTY";
       throw e;
     }
+    // 统一归一为数字 id（lnk 列铁律）
+    const subjectId = await this._requireEntityId(params.subjectEntityId, "subjectEntityId");
+    const objectId = params.objectEntityId
+      ? await this._requireEntityId(params.objectEntityId, "objectEntityId")
+      : null;
+    if (objectId && subjectId === objectId) {
+      const e: any = new Error("Self-relation not allowed");
+      e.status = 400;
+      e.code = "SELF_RELATION";
+      throw e;
+    }
     // 层级关系循环引用检测
-    if (params.objectEntityId && HIERARCHICAL_PREDICATES.has(params.predicate)) {
-      const hasCycle = await this._detectCycle(params.subjectEntityId, params.objectEntityId, params.predicate);
+    if (objectId && HIERARCHICAL_PREDICATES.has(params.predicate)) {
+      const hasCycle = await this._detectCycle(params.subjectEntityId, params.objectEntityId as string, params.predicate);
       if (hasCycle) {
         const e: any = new Error("循环引用 not allowed for hierarchical predicate");
         e.status = 400;
@@ -182,19 +214,20 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     // 谓词字典 warning（不阻止）
     // 查询 subjectEntity 获取 entityType
     const subjectEntity = await strapi.db.query(ENTITY_UID).findOne({
-      where: { documentId: params.subjectEntityId },
+      where: { id: subjectId },
     });
     if (subjectEntity && !isValidPredicate(subjectEntity.entityType, params.predicate)) {
       strapi.log.warn(`[kg] predicate "${params.predicate}" 不在 ${subjectEntity.entityType} 字典中`);
     }
 
-    // 幂等 upsert（同 S+P+O）
-    if (params.objectEntityId) {
+    // 幂等 upsert（同 site + S + P + O）
+    if (objectId) {
       const existing = await strapi.db.query(RELATION_UID).findOne({
         where: {
-          subjectEntity: params.subjectEntityId,
+          site: params.siteId,
+          subjectEntity: subjectId,
           predicate: params.predicate,
-          objectEntity: params.objectEntityId,
+          objectEntity: objectId,
           deletedAt: null,
         },
       });
@@ -204,9 +237,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     return strapi.db.query(RELATION_UID).create({
       data: {
         site: params.siteId,
-        subjectEntity: params.subjectEntityId,
+        subjectEntity: subjectId,
         predicate: params.predicate,
-        objectEntity: params.objectEntityId || null,
+        objectEntity: objectId,
         objectValue: params.objectValue || null,
         objectText: params.objectText || null,
         sourceType: params.sourceType || "manual",
@@ -256,13 +289,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     }
     const payload: any = {};
     if (data.subjectEntityId !== undefined && data.subjectEntityId !== null && data.subjectEntityId !== "") {
-      const subjectEntity = await this._resolveEntityId(data.subjectEntityId);
-      if (!subjectEntity) {
-        const e: any = new Error("subjectEntityId 无效");
-        e.status = 400;
-        throw e;
-      }
-      payload.subjectEntity = subjectEntity;
+      payload.subjectEntity = await this._requireEntityId(data.subjectEntityId, "subjectEntityId");
     }
     if (data.predicate !== undefined) payload.predicate = data.predicate;
     if (data.objectText !== undefined) payload.objectText = data.objectText;
@@ -270,15 +297,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     if (data.confidence !== undefined) payload.confidence = Number(data.confidence);
     if (data.verificationStatus !== undefined) payload.verificationStatus = data.verificationStatus;
     if (data.status !== undefined) payload.status = data.status === true || data.status === "true";
-    // 可选：更新指向实体的客体（数字 id / 数字字符串 / documentId 均可，经 _resolveEntityId 解析）
+    // 可选：更新指向实体的客体（数字 id / 数字字符串 / documentId 均可，经 _requireEntityId 归一）
     if (data.objectEntityId !== undefined && data.objectEntityId !== null && data.objectEntityId !== "") {
-      const objectEntity = await this._resolveEntityId(data.objectEntityId);
-      if (!objectEntity) {
-        const e: any = new Error("objectEntityId 无效");
-        e.status = 400;
-        throw e;
-      }
-      payload.objectEntity = objectEntity;
+      payload.objectEntity = await this._requireEntityId(data.objectEntityId, "objectEntityId");
     }
     // 自引用校验（主体与客体同时更新且相同）
     if (payload.subjectEntity && payload.objectEntity && payload.subjectEntity === payload.objectEntity) {
@@ -318,8 +339,6 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
   // ===== 同步与校验 =====
   async syncFromContent(targetType: string, content: any): Promise<void> {
-    // 委托给 utils/kg-sync
-    const { knowledgeGraphSync } = await import("./utils/kg-sync");
     return knowledgeGraphSync(targetType, content);
   },
 
@@ -330,9 +349,14 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     let conflicts = 0;
     const report: any[] = [];
     for (const entity of entities) {
-      // 简化：检查是否有冲突的 first-truth
+      // canonicalEntity 是 lnk 列，必须用实体数字 id（documentId 字符串会类型不匹配）
       const truths = await strapi.db.query("plugin::zhao-website.first-truth-policy").findMany({
-        where: { $or: [{ site: siteId, canonicalEntity: entity.documentId, verificationStatus: "conflict" }, { site: null, canonicalEntity: entity.documentId, verificationStatus: "conflict" }] },
+        where: {
+          $or: [
+            { site: siteId, canonicalEntity: entity.id, verificationStatus: "conflict" },
+            { site: null, canonicalEntity: entity.id, verificationStatus: "conflict" },
+          ],
+        },
       });
       if (truths.length > 0) {
         conflicts += 1;
@@ -413,12 +437,24 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     if (entity.image) jsonLd.image = entity.url; // 简化
     if (entity.properties) Object.assign(jsonLd, entity.properties);
     for (const rel of outgoing) {
+      let value: any;
       if (rel.objectEntity) {
-        jsonLd[rel.predicate] = { "@id": rel.objectEntity.slug || rel.objectEntity.documentId };
+        value = { "@id": rel.objectEntity.slug || rel.objectEntity.documentId };
       } else if (rel.objectValue) {
-        jsonLd[rel.predicate] = rel.objectValue;
+        value = rel.objectValue;
       } else if (rel.objectText) {
-        jsonLd[rel.predicate] = rel.objectText;
+        value = rel.objectText;
+      } else {
+        continue;
+      }
+      // 同谓词多值合并为数组：直接赋值会让后一条覆盖前一条（mentions 等多值关系丢失）
+      const current = jsonLd[rel.predicate];
+      if (current === undefined) {
+        jsonLd[rel.predicate] = value;
+      } else if (Array.isArray(current)) {
+        current.push(value);
+      } else {
+        jsonLd[rel.predicate] = [current, value];
       }
     }
     return jsonLd;

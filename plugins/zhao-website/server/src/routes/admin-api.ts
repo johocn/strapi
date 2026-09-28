@@ -97,13 +97,14 @@ export default () => ({
     channelScopeRoute("PUT", "/knowledge-graph/entities/global/:documentId", "knowledge-graph.updateGlobalEntity", "knowledge-entity.update-global"),
     channelScopeRoute("DELETE", "/knowledge-graph/entities/global/:documentId", "knowledge-graph.deleteGlobalEntity", "knowledge-entity.delete-global"),
     channelScopeRoute("GET", "/first-truths", "first-truth.find", "first-truth.read"),
+    // 静态子路径必须排在 /:documentId 之前，否则会被参数路由抢先匹配
+    channelScopeRoute("GET", "/first-truths/conflicts", "first-truth.conflicts", "first-truth.read"),
+    channelScopeRoute("GET", "/first-truths/export", "first-truth.exportFacts", "first-truth.read"),
     channelScopeRoute("GET", "/first-truths/:documentId", "first-truth.findOne", "first-truth.read"),
     channelScopeRoute("POST", "/first-truths", "first-truth.create", "first-truth.create"),
     channelScopeRoute("PUT", "/first-truths/:documentId", "first-truth.update", "first-truth.update"),
     channelScopeRoute("DELETE", "/first-truths/:documentId", "first-truth.delete", "first-truth.delete"),
     channelScopeRoute("POST", "/first-truths/:documentId/verify", "first-truth.verify", "first-truth.update"),
-    channelScopeRoute("GET", "/first-truths/conflicts", "first-truth.conflicts", "first-truth.read"),
-    channelScopeRoute("GET", "/first-truths/export", "first-truth.exportFacts", "first-truth.read"),
     // 全局真值路由
     channelScopeRoute("POST", "/first-truths/global", "first-truth.createGlobal", "first-truth.create-global"),
     channelScopeRoute("PUT", "/first-truths/global/:documentId", "first-truth.updateGlobal", "first-truth.update-global"),
