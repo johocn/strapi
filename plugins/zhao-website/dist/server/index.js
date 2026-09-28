@@ -31399,13 +31399,14 @@ const RELATION_FIELDS = {
   "website-faq": ["mainEntity", "mentionedEntities"],
   "website-tutorial": ["mainEntity", "mentionedEntities"],
   // truthBasis 需带出 canonicalEntity，派生关系的主体取自真值的规范实体
-  "website-geo-article": ["mentionedEntities", { truthBasis: { populate: ["canonicalEntity"] } }],
+  // 注意：populate 不接受「字符串 + 对象」混合数组，须整体用对象形式
+  "website-geo-article": { mentionedEntities: true, truthBasis: { populate: ["canonicalEntity"] } },
   "website-download": [],
   "website-compliance": []
 };
 async function withRelations(targetType, content) {
-  const fields2 = RELATION_FIELDS[targetType] || [];
-  if (fields2.length === 0) return content;
+  const fields2 = RELATION_FIELDS[targetType];
+  if (!fields2 || Array.isArray(fields2) && fields2.length === 0) return content;
   if (Array.isArray(content.mentionedEntities) && content.mainEntity !== void 0) return content;
   const uid = `plugin::zhao-website.${targetType.replace(/^website-/, "")}`;
   const full = await strapi.db.query(uid).findOne({

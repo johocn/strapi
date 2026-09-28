@@ -17,14 +17,15 @@ const ENTITY_TYPE_MAP: Record<string, string> = {
 };
 
 // 各 CT 实际具备的关系字段（只在缺失时按此 populate，避免对不存在的关系字段 populate 报错）
-const RELATION_FIELDS: Record<string, any[]> = {
+const RELATION_FIELDS: Record<string, any[] | Record<string, any>> = {
   "website-article": ["mainEntity", "mentionedEntities"],
   "website-product": ["mainEntity", "mentionedEntities"],
   "website-case": ["mainEntity", "mentionedEntities"],
   "website-faq": ["mainEntity", "mentionedEntities"],
   "website-tutorial": ["mainEntity", "mentionedEntities"],
   // truthBasis 需带出 canonicalEntity，派生关系的主体取自真值的规范实体
-  "website-geo-article": ["mentionedEntities", { truthBasis: { populate: ["canonicalEntity"] } }],
+  // 注意：populate 不接受「字符串 + 对象」混合数组，须整体用对象形式
+  "website-geo-article": { mentionedEntities: true, truthBasis: { populate: ["canonicalEntity"] } },
   "website-download": [],
   "website-compliance": [],
 };
@@ -34,8 +35,8 @@ const RELATION_FIELDS: Record<string, any[]> = {
  * 关系已存在时直接返回，不产生额外查询。
  */
 async function withRelations(targetType: string, content: any): Promise<any> {
-  const fields = RELATION_FIELDS[targetType] || [];
-  if (fields.length === 0) return content;
+  const fields = RELATION_FIELDS[targetType];
+  if (!fields || (Array.isArray(fields) && fields.length === 0)) return content;
   if (Array.isArray(content.mentionedEntities) && content.mainEntity !== undefined) return content;
   const uid = `plugin::zhao-website.${targetType.replace(/^website-/, "")}`;
   const full = await strapi.db.query(uid).findOne({

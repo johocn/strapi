@@ -181,6 +181,20 @@ describe("knowledgeGraphSync 表述型派生", () => {
     expect((global as any).strapi.log.warn).toHaveBeenCalled();
   });
 
+  test("geo-article 回查 populate 使用对象形式（混合数组会被 Strapi 拒绝）", async () => {
+    await knowledgeGraphSync("website-geo-article", makeContent());
+
+    const queryFn = (global as any).strapi.db.query as jest.Mock;
+    const returnedQuery = queryFn.mock.results[0].value;
+    expect(returnedQuery.findOne).toHaveBeenCalled();
+    const args = returnedQuery.findOne.mock.calls[0][0];
+    expect(Array.isArray(args.populate)).toBe(false);
+    expect(args.populate).toEqual({
+      mentionedEntities: true,
+      truthBasis: { populate: ["canonicalEntity"] },
+    });
+  });
+
   test("非 geo-article 不触发表述型派生", async () => {
     await knowledgeGraphSync("website-article", makeContent());
 
