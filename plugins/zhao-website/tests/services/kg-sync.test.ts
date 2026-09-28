@@ -3,6 +3,7 @@ import { mapClaimToPredicate } from "../../server/src/services/utils/claim-predi
 import { createMockStrapi } from "../helpers/mock-strapi";
 
 const HTML = [
+  "<p>「一技傍身，吃遍天下」的时代正在过去。学习是指获取知识、技能或经验的过程。</p>",
   "<h2>一、引言</h2><p>无关内容</p>",
   "<h2>二、长期学习规划四步法</h2><p>学习是指<b>获取知识</b>、技能或经验的过程，贯穿人生各阶段。</p>",
   "<h2>三、结语</h2><p>无关内容</p>",
@@ -68,6 +69,11 @@ describe("extractSectionText", () => {
     expect(extractSectionText("", "任意")).toBeNull();
   });
 
+  test("保留段名『开篇』取首个 H2 之前的引言段", () => {
+    const text = extractSectionText(HTML, "开篇");
+    expect(text).toBe("「一技傍身，吃遍天下」的时代正在过去。学习是指获取知识、技能或经验的过程。");
+  });
+
   test("纯文本截断至 500 字", () => {
     const long = "甲".repeat(800);
     const text = extractSectionText(`<h2>标题</h2><p>${long}</p>`, "标题");
@@ -98,6 +104,32 @@ describe("knowledgeGraphSync 表述型派生", () => {
         objectText: "学习是指获取知识、技能或经验的过程，贯穿人生各阶段。",
         truthPolicyId: "truth-1",
         sourceType: "derived",
+      })
+    );
+  });
+
+  test("section='开篇' → 取引言段派生", async () => {
+    await knowledgeGraphSync(
+      "website-geo-article",
+      makeContent({
+        truthBasisSections: [{ claimKey: "domain_learning_def", section: "开篇" }],
+        truthBasis: [
+          {
+            documentId: "truth-13",
+            claimKey: "domain_learning_def",
+            canonicalEntity: { documentId: "ent-13", entityType: "DefinedTerm" },
+          },
+        ],
+      })
+    );
+
+    expect(kgStub.addRelation).toHaveBeenCalledTimes(1);
+    expect(kgStub.addRelation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        subjectEntityId: "ent-13",
+        predicate: "termCode",
+        objectText: "「一技傍身，吃遍天下」的时代正在过去。学习是指获取知识、技能或经验的过程。",
+        truthPolicyId: "truth-13",
       })
     );
   });

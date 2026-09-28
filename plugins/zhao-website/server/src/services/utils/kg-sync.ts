@@ -47,6 +47,9 @@ async function withRelations(targetType: string, content: any): Promise<any> {
 
 const MAX_OBJECT_TEXT = 500;
 
+// 保留段名：正文首个 H2 之前的引言段，无对应 H2 标题
+const PREAMBLE_SECTION = "开篇";
+
 /** 文本归一：去 HTML 标签 / 常见实体、空白压缩（保留原文标点，仅用于段落定位与存储） */
 function normalizePlain(v: any): string {
   return String(v ?? "")
@@ -65,12 +68,17 @@ function normalizePlain(v: any): string {
 
 /**
  * 按 H2 标题从 HTML 正文定位段落，返回去标签纯文本（截断 500 字）。
+ * 段名为保留值『开篇』时取首个 H2 之前的引言段。
  * 定位失败返回 null（调用方必须 warn，不可静默）。
  */
 export function extractSectionText(html: string, section: string): string | null {
   const target = normalizePlain(section);
   if (!html || !target) return null;
   const parts = String(html).split(/<h2[^>]*>/i);
+  if (target === PREAMBLE_SECTION) {
+    const head = normalizePlain(parts[0]);
+    return head ? head.slice(0, MAX_OBJECT_TEXT) : null;
+  }
   for (let i = 1; i < parts.length; i++) {
     const close = parts[i].search(/<\/h2\s*>/i);
     if (close === -1) continue;

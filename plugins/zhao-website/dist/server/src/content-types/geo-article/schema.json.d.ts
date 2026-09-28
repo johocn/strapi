@@ -110,7 +110,7 @@ declare const _default: {
     "truthBasisSections": {
       "type": "json",
       "default": [],
-      "description": "真值声明绑定正文段落：[{claimKey, section}]，section 为正文 H2 标题（如『二、长期学习规划四步法』）"
+      "description": "真值声明绑定正文段落：[{claimKey, section}]，section 为正文 H2 标题（如『二、长期学习规划四步法』）；保留段名『开篇』指首个 H2 之前的引言段"
     },
     "mentionedEntities": {
       "type": "relation", "relation": "manyToMany",
