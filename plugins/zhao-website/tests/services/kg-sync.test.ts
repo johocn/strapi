@@ -191,8 +191,17 @@ describe("knowledgeGraphSync 表述型派生", () => {
     expect(Array.isArray(args.populate)).toBe(false);
     expect(args.populate).toEqual({
       mentionedEntities: true,
+      site: true,
       truthBasis: { populate: ["canonicalEntity"] },
     });
+  });
+
+  test("缺少 site → warn 且不派生（siteId 为写入必需）", async () => {
+    await knowledgeGraphSync("website-geo-article", makeContent({ site: undefined }));
+
+    expect(kgStub.addRelation).not.toHaveBeenCalled();
+    expect(kgStub.upsertEntityFromContent).not.toHaveBeenCalled();
+    expect((global as any).strapi.log.warn).toHaveBeenCalled();
   });
 
   test("非 geo-article 不触发表述型派生", async () => {

@@ -31379,21 +31379,27 @@ const ENTITY_TYPE_MAP = {
   "website-compliance": "CreativeWork"
 };
 const RELATION_FIELDS = {
-  "website-article": ["mainEntity", "mentionedEntities"],
-  "website-product": ["mainEntity", "mentionedEntities"],
-  "website-case": ["mainEntity", "mentionedEntities"],
-  "website-faq": ["mainEntity", "mentionedEntities"],
-  "website-tutorial": ["mainEntity", "mentionedEntities"],
+  "website-article": ["mainEntity", "mentionedEntities", "site"],
+  "website-product": ["mainEntity", "mentionedEntities", "site"],
+  "website-case": ["mainEntity", "mentionedEntities", "site"],
+  "website-faq": ["mainEntity", "mentionedEntities", "site"],
+  "website-tutorial": ["mainEntity", "mentionedEntities", "site"],
   // truthBasis 需带出 canonicalEntity，派生关系的主体取自真值的规范实体
   // 注意：populate 不接受「字符串 + 对象」混合数组，须整体用对象形式
-  "website-geo-article": { mentionedEntities: true, truthBasis: { populate: ["canonicalEntity"] } },
+  "website-geo-article": { mentionedEntities: true, site: true, truthBasis: { populate: ["canonicalEntity"] } },
   "website-download": [],
   "website-compliance": []
 };
+function resolveSiteId(site) {
+  if (site && typeof site === "object") return site.id;
+  return site;
+}
 async function withRelations(targetType, content) {
   const fields2 = RELATION_FIELDS[targetType];
   if (!fields2 || Array.isArray(fields2) && fields2.length === 0) return content;
-  if (Array.isArray(content.mentionedEntities) && content.mainEntity !== void 0) return content;
+  if (Array.isArray(content.mentionedEntities) && content.mainEntity !== void 0 && content.site) {
+    return content;
+  }
   const uid = `plugin::zhao-website.${targetType.replace(/^website-/, "")}`;
   const full = await strapi.db.query(uid).findOne({
     where: { documentId: content.documentId },
@@ -31427,7 +31433,7 @@ function extractSectionText(html, section) {
   }
   return null;
 }
-async function syncTruthBasisRelations(content, kgService) {
+async function syncTruthBasisRelations(content, kgService, siteId) {
   const sections = Array.isArray(content.truthBasisSections) ? content.truthBasisSections : [];
   if (sections.length === 0) return;
   const truths = Array.isArray(content.truthBasis) ? content.truthBasis : [];
@@ -31472,7 +31478,7 @@ async function syncTruthBasisRelations(content, kgService) {
       continue;
     }
     await kgService.addRelation({
-      siteId: content.site,
+      siteId,
       subjectEntityId: entity.documentId,
       predicate,
       objectText,
@@ -31487,11 +31493,16 @@ async function knowledgeGraphSync(targetType, rawContent) {
   if (!kgService) return;
   try {
     const content = await withRelations(targetType, rawContent);
+    const siteId = resolveSiteId(content.site);
+    if (!siteId) {
+      strapi.log.warn(`[zhao-website] kg-sync: ${targetType} ${content.documentId} 缺少 site，跳过派生`);
+      return;
+    }
     if (content.mainEntity && content.mainEntity.documentId) {
     } else {
       const entityType = ENTITY_TYPE_MAP[targetType] || "CreativeWork";
       await kgService.upsertEntityFromContent({
-        siteId: content.site,
+        siteId,
         entityType,
         name: content.title || content.name || content.question,
         refTargetType: targetType,
@@ -31507,7 +31518,7 @@ async function knowledgeGraphSync(targetType, rawContent) {
         for (const mentioned of content.mentionedEntities) {
           if (mentioned.documentId) {
             await kgService.addRelation({
-              siteId: content.site,
+              siteId,
               subjectEntityId: subjectEntity.documentId,
               predicate: "mentions",
               objectEntityId: mentioned.documentId,
@@ -31518,7 +31529,7 @@ async function knowledgeGraphSync(targetType, rawContent) {
       }
     }
     if (targetType === "website-geo-article") {
-      await syncTruthBasisRelations(content, kgService);
+      await syncTruthBasisRelations(content, kgService, siteId);
     }
   } catch (err) {
     strapi.log.warn(`[zhao-website] kg-sync failed for ${targetType}`, err);

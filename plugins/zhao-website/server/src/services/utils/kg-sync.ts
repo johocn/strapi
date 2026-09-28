@@ -17,18 +17,25 @@ const ENTITY_TYPE_MAP: Record<string, string> = {
 };
 
 // 各 CT 实际具备的关系字段（只在缺失时按此 populate，避免对不存在的关系字段 populate 报错）
+// 统一带出 site：Query Engine 未 populate 时不返回 relation 字段，而派生写入需要 siteId
 const RELATION_FIELDS: Record<string, any[] | Record<string, any>> = {
-  "website-article": ["mainEntity", "mentionedEntities"],
-  "website-product": ["mainEntity", "mentionedEntities"],
-  "website-case": ["mainEntity", "mentionedEntities"],
-  "website-faq": ["mainEntity", "mentionedEntities"],
-  "website-tutorial": ["mainEntity", "mentionedEntities"],
+  "website-article": ["mainEntity", "mentionedEntities", "site"],
+  "website-product": ["mainEntity", "mentionedEntities", "site"],
+  "website-case": ["mainEntity", "mentionedEntities", "site"],
+  "website-faq": ["mainEntity", "mentionedEntities", "site"],
+  "website-tutorial": ["mainEntity", "mentionedEntities", "site"],
   // truthBasis 需带出 canonicalEntity，派生关系的主体取自真值的规范实体
   // 注意：populate 不接受「字符串 + 对象」混合数组，须整体用对象形式
-  "website-geo-article": { mentionedEntities: true, truthBasis: { populate: ["canonicalEntity"] } },
+  "website-geo-article": { mentionedEntities: true, site: true, truthBasis: { populate: ["canonicalEntity"] } },
   "website-download": [],
   "website-compliance": [],
 };
+
+/** site 可能是数字 id，也可能是 populate 后的对象，统一取数字 id */
+function resolveSiteId(site: any): number | undefined {
+  if (site && typeof site === "object") return site.id;
+  return site;
+}
 
 /**
  * 生命周期 event.result 不一定带关系数据，缺失时按 uid 回查一次。
@@ -37,7 +44,9 @@ const RELATION_FIELDS: Record<string, any[] | Record<string, any>> = {
 async function withRelations(targetType: string, content: any): Promise<any> {
   const fields = RELATION_FIELDS[targetType];
   if (!fields || (Array.isArray(fields) && fields.length === 0)) return content;
-  if (Array.isArray(content.mentionedEntities) && content.mainEntity !== undefined) return content;
+  if (Array.isArray(content.mentionedEntities) && content.mainEntity !== undefined && content.site) {
+    return content;
+  }
   const uid = `plugin::zhao-website.${targetType.replace(/^website-/, "")}`;
   const full = await strapi.db.query(uid).findOne({
     where: { documentId: content.documentId },
@@ -99,7 +108,7 @@ export function extractSectionText(html: string, section: string): string | null
  * 主体 = 真值 canonicalEntity，谓词 = claimKey 前缀映射，客体 = 正文段落纯文本（objectText）。
  * 写入即由 addRelation 自动与真值比对，无需额外比对入口。
  */
-async function syncTruthBasisRelations(content: any, kgService: any): Promise<void> {
+async function syncTruthBasisRelations(content: any, kgService: any, siteId: number): Promise<void> {
   const sections = Array.isArray(content.truthBasisSections) ? content.truthBasisSections : [];
   if (sections.length === 0) return;
   const truths = Array.isArray(content.truthBasis) ? content.truthBasis : [];
@@ -146,7 +155,7 @@ async function syncTruthBasisRelations(content: any, kgService: any): Promise<vo
       continue;
     }
     await kgService.addRelation({
-      siteId: content.site,
+      siteId,
       subjectEntityId: entity.documentId,
       predicate,
       objectText,
@@ -163,6 +172,13 @@ export async function knowledgeGraphSync(targetType: string, rawContent: any): P
   try {
     const content = await withRelations(targetType, rawContent);
 
+    // 派生写入均需 siteId；缺失时 warn 退出（不静默、不阻塞业务编辑）
+    const siteId = resolveSiteId(content.site);
+    if (!siteId) {
+      strapi.log.warn(`[zhao-website] kg-sync: ${targetType} ${content.documentId} 缺少 site，跳过派生`);
+      return;
+    }
+
     // 1. mainEntity 已显式关联 → 跳过派生
     if (content.mainEntity && content.mainEntity.documentId) {
       // 已有显式关联，不派生
@@ -170,7 +186,7 @@ export async function knowledgeGraphSync(targetType: string, rawContent: any): P
       // 自动创建或更新实体（幂等 upsert by refTargetType + refTargetId）
       const entityType = ENTITY_TYPE_MAP[targetType] || "CreativeWork";
       await (kgService as any).upsertEntityFromContent({
-        siteId: content.site,
+        siteId,
         entityType,
         name: content.title || content.name || content.question,
         refTargetType: targetType,
@@ -189,7 +205,7 @@ export async function knowledgeGraphSync(targetType: string, rawContent: any): P
         for (const mentioned of content.mentionedEntities) {
           if (mentioned.documentId) {
             await (kgService as any).addRelation({
-              siteId: content.site,
+              siteId,
               subjectEntityId: subjectEntity.documentId,
               predicate: "mentions",
               objectEntityId: mentioned.documentId,
@@ -202,7 +218,7 @@ export async function knowledgeGraphSync(targetType: string, rawContent: any): P
 
     // 3. truthBasisSections 派生表述型关系（主体取真值 canonicalEntity）
     if (targetType === "website-geo-article") {
-      await syncTruthBasisRelations(content, kgService);
+      await syncTruthBasisRelations(content, kgService, siteId);
     }
   } catch (err) {
     // 解耦设计：失败不阻塞业务 CT 编辑
