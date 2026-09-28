@@ -115,6 +115,35 @@ describe("Knowledge Graph Service", () => {
     expect(queryMock.create).not.toHaveBeenCalled();
   });
 
+  test("addRelation objectText 型关系幂等：同 site+S+P+text 命中 → 不重复写入", async () => {
+    service._resolveEntityId = jest.fn(async (ref: any) => (ref === "doc-a" ? 11 : null));
+    const queryMock = mockStrapi.db.query();
+    queryMock.findOne
+      .mockResolvedValueOnce({ id: 11, entityType: "Organization" }) // 谓词字典取 subject
+      .mockResolvedValueOnce({ id: 77, predicate: "slogan", objectText: "让学习更简单" }); // 幂等命中
+
+    const result = await service.addRelation({
+      siteId: 1,
+      subjectEntityId: "doc-a",
+      predicate: "slogan",
+      objectText: "让学习更简单",
+    });
+
+    expect(result).toEqual({ id: 77, predicate: "slogan", objectText: "让学习更简单" });
+    expect(queryMock.findOne).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        where: expect.objectContaining({
+          site: 1,
+          subjectEntity: 11,
+          predicate: "slogan",
+          objectText: "让学习更简单",
+        }),
+      })
+    );
+    expect(queryMock.create).not.toHaveBeenCalled();
+  });
+
   test("addRelation subject 解析不到 → 400 ENTITY_NOT_FOUND", async () => {
     await expect(
       service.addRelation({
@@ -133,6 +162,7 @@ describe("Knowledge Graph Service", () => {
     queryMock.findOne
       .mockResolvedValueOnce({ id: 11, entityType: "Organization" }) // 谓词字典取 subject
       .mockResolvedValueOnce({ id: 5, documentId: "truth-doc" }) // truthPolicyId 解析
+      .mockResolvedValueOnce(null) // 文本型幂等查询未命中
       .mockResolvedValueOnce({
         id: 5,
         claimKey: "employee_count",

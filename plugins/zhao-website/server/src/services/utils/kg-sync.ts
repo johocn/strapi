@@ -1,4 +1,6 @@
 import type { Core } from "@strapi/strapi";
+import { isValidPredicate } from "./predicate-dictionary";
+import { mapClaimToPredicate } from "./claim-predicate-map";
 
 declare const strapi: Core.Strapi;
 
@@ -15,13 +17,14 @@ const ENTITY_TYPE_MAP: Record<string, string> = {
 };
 
 // 各 CT 实际具备的关系字段（只在缺失时按此 populate，避免对不存在的关系字段 populate 报错）
-const RELATION_FIELDS: Record<string, string[]> = {
+const RELATION_FIELDS: Record<string, any[]> = {
   "website-article": ["mainEntity", "mentionedEntities"],
   "website-product": ["mainEntity", "mentionedEntities"],
   "website-case": ["mainEntity", "mentionedEntities"],
   "website-faq": ["mainEntity", "mentionedEntities"],
   "website-tutorial": ["mainEntity", "mentionedEntities"],
-  "website-geo-article": ["mentionedEntities"],
+  // truthBasis 需带出 canonicalEntity，派生关系的主体取自真值的规范实体
+  "website-geo-article": ["mentionedEntities", { truthBasis: { populate: ["canonicalEntity"] } }],
   "website-download": [],
   "website-compliance": [],
 };
@@ -40,6 +43,108 @@ async function withRelations(targetType: string, content: any): Promise<any> {
     populate: fields,
   });
   return full ? { ...content, ...full } : content;
+}
+
+const MAX_OBJECT_TEXT = 500;
+
+/** 文本归一：去 HTML 标签 / 常见实体、空白压缩（保留原文标点，仅用于段落定位与存储） */
+function normalizePlain(v: any): string {
+  return String(v ?? "")
+    // 块级闭合标签与换行折成空格，避免相邻段落粘连
+    .replace(/<\s*(br|\/p|\/li|\/div|\/h[1-6])\s*\/?>/gi, " ")
+    .replace(/<[^>]*>/g, "")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * 按 H2 标题从 HTML 正文定位段落，返回去标签纯文本（截断 500 字）。
+ * 定位失败返回 null（调用方必须 warn，不可静默）。
+ */
+export function extractSectionText(html: string, section: string): string | null {
+  const target = normalizePlain(section);
+  if (!html || !target) return null;
+  const parts = String(html).split(/<h2[^>]*>/i);
+  for (let i = 1; i < parts.length; i++) {
+    const close = parts[i].search(/<\/h2\s*>/i);
+    if (close === -1) continue;
+    const heading = normalizePlain(parts[i].slice(0, close));
+    if (!heading) continue;
+    if (heading === target || heading.includes(target) || target.includes(heading)) {
+      const body = parts[i].slice(close).replace(/<\/h2\s*>/i, "");
+      const text = normalizePlain(body);
+      return text ? text.slice(0, MAX_OBJECT_TEXT) : null;
+    }
+  }
+  return null;
+}
+
+/**
+ * 从 truthBasisSections 派生「表述型」知识关系：
+ * 主体 = 真值 canonicalEntity，谓词 = claimKey 前缀映射，客体 = 正文段落纯文本（objectText）。
+ * 写入即由 addRelation 自动与真值比对，无需额外比对入口。
+ */
+async function syncTruthBasisRelations(content: any, kgService: any): Promise<void> {
+  const sections = Array.isArray(content.truthBasisSections) ? content.truthBasisSections : [];
+  if (sections.length === 0) return;
+  const truths = Array.isArray(content.truthBasis) ? content.truthBasis : [];
+  if (truths.length === 0) {
+    strapi.log.warn(
+      `[zhao-website] kg-sync: geo-article ${content.documentId} 配置了 truthBasisSections 但未绑定 truthBasis`
+    );
+    return;
+  }
+  const truthByKey = new Map<string, any>();
+  for (const t of truths) {
+    if (t && t.claimKey) truthByKey.set(String(t.claimKey), t);
+  }
+
+  for (const item of sections) {
+    const claimKey = item && item.claimKey ? String(item.claimKey) : "";
+    const section = item && item.section ? String(item.section) : "";
+    if (!claimKey || !section) continue;
+
+    const predicate = mapClaimToPredicate(claimKey);
+    if (!predicate) {
+      strapi.log.warn(`[zhao-website] kg-sync: claimKey "${claimKey}" 无谓词映射，跳过`);
+      continue;
+    }
+    const truth = truthByKey.get(claimKey);
+    if (!truth) {
+      strapi.log.warn(`[zhao-website] kg-sync: claimKey "${claimKey}" 未在文章 truthBasis 中找到对应真值，跳过`);
+      continue;
+    }
+    const entity = truth.canonicalEntity;
+    if (!entity || !entity.documentId) {
+      strapi.log.warn(`[zhao-website] kg-sync: 真值 "${claimKey}" 未绑定 canonicalEntity，跳过`);
+      continue;
+    }
+    if (entity.entityType && !isValidPredicate(entity.entityType, predicate)) {
+      strapi.log.warn(
+        `[zhao-website] kg-sync: predicate "${predicate}" 不在 ${entity.entityType} 字典中（claimKey "${claimKey}"），跳过`
+      );
+      continue;
+    }
+    const objectText = extractSectionText(content.content, section);
+    if (!objectText) {
+      strapi.log.warn(`[zhao-website] kg-sync: 正文未定位到段落「${section}」（claimKey "${claimKey}"），跳过`);
+      continue;
+    }
+    await kgService.addRelation({
+      siteId: content.site,
+      subjectEntityId: entity.documentId,
+      predicate,
+      objectText,
+      truthPolicyId: truth.documentId,
+      sourceType: "derived",
+    });
+  }
 }
 
 export async function knowledgeGraphSync(targetType: string, rawContent: any): Promise<void> {
@@ -84,6 +189,11 @@ export async function knowledgeGraphSync(targetType: string, rawContent: any): P
           }
         }
       }
+    }
+
+    // 3. truthBasisSections 派生表述型关系（主体取真值 canonicalEntity）
+    if (targetType === "website-geo-article") {
+      await syncTruthBasisRelations(content, kgService);
     }
   } catch (err) {
     // 解耦设计：失败不阻塞业务 CT 编辑

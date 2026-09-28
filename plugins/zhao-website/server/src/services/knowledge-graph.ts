@@ -364,17 +364,20 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     // 真值绑定（lnk 列，只接受归一后的数字 id）
     const truthId = params.truthPolicyId ? await this._requireTruthId(params.truthPolicyId) : null;
 
-    // 幂等 upsert（同 site + S + P + O）
+    // 幂等 upsert（同 site + S + P + O；objectText 型关系以文本作为客体键）
+    const idempotentWhere: any = {
+      site: params.siteId,
+      subjectEntity: subjectId,
+      predicate: params.predicate,
+      deletedAt: null,
+    };
     if (objectId) {
-      const existing: any = await strapi.db.query(RELATION_UID).findOne({
-        where: {
-          site: params.siteId,
-          subjectEntity: subjectId,
-          predicate: params.predicate,
-          objectEntity: objectId,
-          deletedAt: null,
-        },
-      });
+      idempotentWhere.objectEntity = objectId;
+    } else if (hasText) {
+      idempotentWhere.objectText = params.objectText;
+    }
+    if (objectId || hasText) {
+      const existing: any = await strapi.db.query(RELATION_UID).findOne({ where: idempotentWhere });
       if (existing) {
         // 幂等命中时补绑真值（原关系可能未绑定）
         if (truthId && Number(existing.truthPolicy) !== Number(truthId)) {

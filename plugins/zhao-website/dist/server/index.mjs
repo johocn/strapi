@@ -31248,6 +31248,126 @@ function auditGeoArticle(article2) {
   const pass = missing.every((m) => m.passed);
   return { pass, missing };
 }
+const PREDICATE_DICTIONARY = {
+  Organization: [
+    "founder",
+    "foundingDate",
+    "legalName",
+    "areaServed",
+    "numberOfEmployees",
+    "contactPoint",
+    "location",
+    "hasOfferCatalog",
+    "slogan",
+    "keywords",
+    "brand",
+    "knowsAbout",
+    "provides",
+    "sameAs"
+  ],
+  Person: ["affiliation", "jobTitle", "worksFor", "alumniOf", "knowsAbout", "nationality", "sameAs"],
+  Product: [
+    "manufacturer",
+    "brand",
+    "offers",
+    "aggregateRating",
+    "category",
+    "material",
+    "additionalProperty",
+    "isRelatedTo",
+    "isSimilarTo"
+  ],
+  Service: [
+    "provider",
+    "areaServed",
+    "serviceType",
+    "hasOfferCatalog",
+    "offers",
+    "category",
+    "termsOfService",
+    "isRelatedTo"
+  ],
+  Place: ["containedInPlace", "containsPlace", "geo", "address", "areaServed", "openingHours"],
+  Event: ["organizer", "location", "startDate", "endDate", "subEvent", "superEvent", "performer", "about"],
+  CreativeWork: [
+    "about",
+    "mentions",
+    "author",
+    "publisher",
+    "datePublished",
+    "isPartOf",
+    "hasPart",
+    "keywords",
+    "isBasedOn"
+  ],
+  Article: [
+    "about",
+    "mentions",
+    "author",
+    "publisher",
+    "datePublished",
+    "articleSection",
+    "mainEntity",
+    "isPartOf",
+    "hasPart",
+    "keywords"
+  ],
+  CaseStudy: ["subjectOf", "about", "mentions", "author", "isPartOf"],
+  Offer: [
+    "itemOffered",
+    "price",
+    "priceCurrency",
+    "availability",
+    "seller",
+    "areaServed",
+    "validFrom",
+    "validThrough"
+  ],
+  Review: ["itemReviewed", "reviewRating", "author", "datePublished", "reviewBody"],
+  FAQ: ["about", "mentions", "mainEntity", "hasPart"],
+  HowTo: ["about", "mentions", "hasStep", "step", "tool", "supply", "totalTime"],
+  BreadcrumbList: ["itemListElement", "hasPart"],
+  Brand: ["logo", "slogan", "manufacturer", "aggregateRating", "sameAs"],
+  ContactPoint: ["contactType", "telephone", "email", "areaServed", "availableLanguage"],
+  QuantitativeValue: ["value", "unitText", "minValue", "maxValue"],
+  DefinedTerm: ["inDefinedTermSet", "termCode", "isPartOf", "sameAs"]
+};
+function isValidPredicate(entityType, predicate) {
+  const list = PREDICATE_DICTIONARY[entityType] || [];
+  return list.includes(predicate);
+}
+const HIERARCHICAL_PREDICATES = /* @__PURE__ */ new Set([
+  "parent",
+  "containsPlace",
+  "subEvent",
+  "hasPart"
+]);
+const CLAIM_PREDICATE_RULES = [
+  { prefix: "core_domain_", predicate: "termCode" },
+  // DefinedTerm.termCode
+  { prefix: "domain_", predicate: "termCode" },
+  // domain_*_def
+  { prefix: "brand_slogan_", predicate: "slogan" },
+  // Organization.slogan
+  { prefix: "core_keywords_", predicate: "keywords" },
+  // Organization.keywords
+  { prefix: "brand_domain_", predicate: "sameAs" },
+  // Organization.sameAs
+  { prefix: "area_served_", predicate: "areaServed" },
+  // Place / Service.areaServed
+  { prefix: "platform_positioning_", predicate: "serviceType" },
+  // Service.serviceType
+  { prefix: "service_scope_", predicate: "serviceType" }
+  // Service.serviceType
+];
+function mapClaimToPredicate(claimKey) {
+  const key = String(claimKey ?? "").trim();
+  if (!key) return null;
+  for (const rule of CLAIM_PREDICATE_RULES) {
+    if (key.startsWith(rule.prefix)) return rule.predicate;
+  }
+  return null;
+}
 const ENTITY_TYPE_MAP = {
   "website-article": "Article",
   "website-geo-article": "Article",
@@ -31264,7 +31384,8 @@ const RELATION_FIELDS = {
   "website-case": ["mainEntity", "mentionedEntities"],
   "website-faq": ["mainEntity", "mentionedEntities"],
   "website-tutorial": ["mainEntity", "mentionedEntities"],
-  "website-geo-article": ["mentionedEntities"],
+  // truthBasis 需带出 canonicalEntity，派生关系的主体取自真值的规范实体
+  "website-geo-article": ["mentionedEntities", { truthBasis: { populate: ["canonicalEntity"] } }],
   "website-download": [],
   "website-compliance": []
 };
@@ -31278,6 +31399,81 @@ async function withRelations(targetType, content) {
     populate: fields2
   });
   return full ? { ...content, ...full } : content;
+}
+const MAX_OBJECT_TEXT = 500;
+function normalizePlain(v) {
+  return String(v ?? "").replace(/<\s*(br|\/p|\/li|\/div|\/h[1-6])\s*\/?>/gi, " ").replace(/<[^>]*>/g, "").replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/&lt;/gi, "<").replace(/&gt;/gi, ">").replace(/&quot;/gi, '"').replace(/&#39;/gi, "'").replace(/\s+/g, " ").trim();
+}
+function extractSectionText(html, section) {
+  const target = normalizePlain(section);
+  if (!html || !target) return null;
+  const parts = String(html).split(/<h2[^>]*>/i);
+  for (let i = 1; i < parts.length; i++) {
+    const close = parts[i].search(/<\/h2\s*>/i);
+    if (close === -1) continue;
+    const heading = normalizePlain(parts[i].slice(0, close));
+    if (!heading) continue;
+    if (heading === target || heading.includes(target) || target.includes(heading)) {
+      const body = parts[i].slice(close).replace(/<\/h2\s*>/i, "");
+      const text = normalizePlain(body);
+      return text ? text.slice(0, MAX_OBJECT_TEXT) : null;
+    }
+  }
+  return null;
+}
+async function syncTruthBasisRelations(content, kgService) {
+  const sections = Array.isArray(content.truthBasisSections) ? content.truthBasisSections : [];
+  if (sections.length === 0) return;
+  const truths = Array.isArray(content.truthBasis) ? content.truthBasis : [];
+  if (truths.length === 0) {
+    strapi.log.warn(
+      `[zhao-website] kg-sync: geo-article ${content.documentId} 配置了 truthBasisSections 但未绑定 truthBasis`
+    );
+    return;
+  }
+  const truthByKey = /* @__PURE__ */ new Map();
+  for (const t of truths) {
+    if (t && t.claimKey) truthByKey.set(String(t.claimKey), t);
+  }
+  for (const item of sections) {
+    const claimKey = item && item.claimKey ? String(item.claimKey) : "";
+    const section = item && item.section ? String(item.section) : "";
+    if (!claimKey || !section) continue;
+    const predicate = mapClaimToPredicate(claimKey);
+    if (!predicate) {
+      strapi.log.warn(`[zhao-website] kg-sync: claimKey "${claimKey}" 无谓词映射，跳过`);
+      continue;
+    }
+    const truth = truthByKey.get(claimKey);
+    if (!truth) {
+      strapi.log.warn(`[zhao-website] kg-sync: claimKey "${claimKey}" 未在文章 truthBasis 中找到对应真值，跳过`);
+      continue;
+    }
+    const entity = truth.canonicalEntity;
+    if (!entity || !entity.documentId) {
+      strapi.log.warn(`[zhao-website] kg-sync: 真值 "${claimKey}" 未绑定 canonicalEntity，跳过`);
+      continue;
+    }
+    if (entity.entityType && !isValidPredicate(entity.entityType, predicate)) {
+      strapi.log.warn(
+        `[zhao-website] kg-sync: predicate "${predicate}" 不在 ${entity.entityType} 字典中（claimKey "${claimKey}"），跳过`
+      );
+      continue;
+    }
+    const objectText = extractSectionText(content.content, section);
+    if (!objectText) {
+      strapi.log.warn(`[zhao-website] kg-sync: 正文未定位到段落「${section}」（claimKey "${claimKey}"），跳过`);
+      continue;
+    }
+    await kgService.addRelation({
+      siteId: content.site,
+      subjectEntityId: entity.documentId,
+      predicate,
+      objectText,
+      truthPolicyId: truth.documentId,
+      sourceType: "derived"
+    });
+  }
 }
 async function knowledgeGraphSync(targetType, rawContent) {
   if (!rawContent || !rawContent.documentId) return;
@@ -31314,6 +31510,9 @@ async function knowledgeGraphSync(targetType, rawContent) {
           }
         }
       }
+    }
+    if (targetType === "website-geo-article") {
+      await syncTruthBasisRelations(content, kgService);
     }
   } catch (err) {
     strapi.log.warn(`[zhao-website] kg-sync failed for ${targetType}`, err);
@@ -34567,100 +34766,6 @@ const searchLog = ({ strapi: strapi2 }) => ({
     return { total: items.length, topKeywords: Object.entries(byKeyword).sort((a, b) => b[1] - a[1]).slice(0, 20) };
   }
 });
-const PREDICATE_DICTIONARY = {
-  Organization: [
-    "founder",
-    "foundingDate",
-    "legalName",
-    "areaServed",
-    "numberOfEmployees",
-    "contactPoint",
-    "location",
-    "hasOfferCatalog",
-    "slogan",
-    "keywords",
-    "brand",
-    "knowsAbout",
-    "provides",
-    "sameAs"
-  ],
-  Person: ["affiliation", "jobTitle", "worksFor", "alumniOf", "knowsAbout", "nationality", "sameAs"],
-  Product: [
-    "manufacturer",
-    "brand",
-    "offers",
-    "aggregateRating",
-    "category",
-    "material",
-    "additionalProperty",
-    "isRelatedTo",
-    "isSimilarTo"
-  ],
-  Service: [
-    "provider",
-    "areaServed",
-    "serviceType",
-    "hasOfferCatalog",
-    "offers",
-    "category",
-    "termsOfService",
-    "isRelatedTo"
-  ],
-  Place: ["containedInPlace", "containsPlace", "geo", "address", "areaServed", "openingHours"],
-  Event: ["organizer", "location", "startDate", "endDate", "subEvent", "superEvent", "performer", "about"],
-  CreativeWork: [
-    "about",
-    "mentions",
-    "author",
-    "publisher",
-    "datePublished",
-    "isPartOf",
-    "hasPart",
-    "keywords",
-    "isBasedOn"
-  ],
-  Article: [
-    "about",
-    "mentions",
-    "author",
-    "publisher",
-    "datePublished",
-    "articleSection",
-    "mainEntity",
-    "isPartOf",
-    "hasPart",
-    "keywords"
-  ],
-  CaseStudy: ["subjectOf", "about", "mentions", "author", "isPartOf"],
-  Offer: [
-    "itemOffered",
-    "price",
-    "priceCurrency",
-    "availability",
-    "seller",
-    "areaServed",
-    "validFrom",
-    "validThrough"
-  ],
-  Review: ["itemReviewed", "reviewRating", "author", "datePublished", "reviewBody"],
-  FAQ: ["about", "mentions", "mainEntity", "hasPart"],
-  HowTo: ["about", "mentions", "hasStep", "step", "tool", "supply", "totalTime"],
-  BreadcrumbList: ["itemListElement", "hasPart"],
-  Brand: ["logo", "slogan", "manufacturer", "aggregateRating", "sameAs"],
-  ContactPoint: ["contactType", "telephone", "email", "areaServed", "availableLanguage"],
-  QuantitativeValue: ["value", "unitText", "minValue", "maxValue"],
-  DefinedTerm: ["inDefinedTermSet", "termCode", "isPartOf", "sameAs"]
-};
-function isValidPredicate(entityType, predicate) {
-  const list = PREDICATE_DICTIONARY[entityType] || [];
-  return list.includes(predicate);
-}
-const HIERARCHICAL_PREDICATES = /* @__PURE__ */ new Set([
-  "parent",
-  "containsPlace",
-  "subEvent",
-  "hasPart"
-]);
 const ENTITY_UID$1 = "plugin::zhao-website.knowledge-entity";
 const RELATION_UID = "plugin::zhao-website.knowledge-relation";
 const TRUTH_UID = "plugin::zhao-website.first-truth-policy";
@@ -34962,16 +35067,19 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
       strapi2.log.warn(`[kg] predicate "${params.predicate}" 不在 ${subjectEntity.entityType} 字典中`);
     }
     const truthId = params.truthPolicyId ? await this._requireTruthId(params.truthPolicyId) : null;
+    const idempotentWhere = {
+      site: params.siteId,
+      subjectEntity: subjectId,
+      predicate: params.predicate,
+      deletedAt: null
+    };
     if (objectId) {
-      const existing = await strapi2.db.query(RELATION_UID).findOne({
-        where: {
-          site: params.siteId,
-          subjectEntity: subjectId,
-          predicate: params.predicate,
-          objectEntity: objectId,
-          deletedAt: null
-        }
-      });
+      idempotentWhere.objectEntity = objectId;
+    } else if (hasText) {
+      idempotentWhere.objectText = params.objectText;
+    }
+    if (objectId || hasText) {
+      const existing = await strapi2.db.query(RELATION_UID).findOne({ where: idempotentWhere });
       if (existing) {
         if (truthId && Number(existing.truthPolicy) !== Number(truthId)) {
           existing.truthPolicy = truthId;
