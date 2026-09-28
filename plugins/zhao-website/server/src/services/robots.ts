@@ -5,6 +5,9 @@ const AI_CRAWLER_LIST = [
   "meta-external-agent", "Amazonbot", "Bytespider", "Sogou web spider",
 ];
 
+// 本插件对外 GEO 出口前缀；AI 爬虫需直读，故须在 Disallow: /api 之外单独放行
+const GEO_API_PREFIX = "/api/zhao-website/v1/";
+
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async generate(siteId: number, siteUrl: string): Promise<string> {
     const seoConfig = await strapi.plugin("zhao-website").service("seo-config").get(siteId);
@@ -30,7 +33,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     }
 
     lines.push("User-agent: *", "Allow: /", "Disallow: /admin", "Disallow: /api");
+    // robots 规范按最长匹配优先：更长的 Allow 覆盖上面那条 Disallow: /api，仅放行本插件 GEO 出口
+    lines.push(`Allow: ${GEO_API_PREFIX}`);
     lines.push("", `Sitemap: ${siteUrl}/sitemap.xml`);
-    return lines.join("\n");
+    return lines.join("\n") + "\n";
   },
 });

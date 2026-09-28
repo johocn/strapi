@@ -35816,13 +35816,18 @@ const schemaBuilder = ({ strapi: strapi2 }) => ({
     };
   }
 });
+const GEO_API_PREFIX$1 = "/api/zhao-website/v1/";
+const GEO_ARTICLE_TYPES = ["geo-article", "geo-faq", "local-report", "local-comparison", "local-list"];
 const llmsTxt = ({ strapi: strapi2 }) => ({
   async generate(siteId, siteUrl) {
-    await strapi2.plugin("zhao-website").service("seo-config").get(siteId);
+    const seoConfig2 = await strapi2.plugin("zhao-website").service("seo-config").get(siteId);
     const brandInfo2 = await strapi2.plugin("zhao-website").service("brand-info").get(siteId);
     const filterService = strapi2.plugin("zhao-website").service("content-filter");
+    const siteConfig = await strapi2.db.query("plugin::zhao-common.site-config").findOne({
+      where: { id: siteId }
+    });
     const lines = [];
-    lines.push(`# ${brandInfo2?.companyName || "Website"}`);
+    lines.push(`# ${brandInfo2?.companyName || seoConfig2?.organizationName || siteConfig?.siteName || "Website"}`);
     if (brandInfo2?.slogan) lines.push(`> ${brandInfo2.slogan}`);
     lines.push("");
     if (brandInfo2?.description) {
@@ -35874,6 +35879,19 @@ const llmsTxt = ({ strapi: strapi2 }) => ({
     for (const c of compliances) {
       lines.push(`- [${c.title}](${siteUrl}/compliance/${c.slug})`);
     }
+    const geoArticles = await strapi2.db.query("plugin::zhao-website.geo-article").findMany({
+      where: await filterService.buildWhere(siteId, "plugin::zhao-website.geo-article"),
+      limit: 100,
+      orderBy: { publishedAt: "DESC" }
+    });
+    for (const type2 of GEO_ARTICLE_TYPES) {
+      const items = geoArticles.filter((a) => a.type === type2);
+      if (items.length === 0) continue;
+      lines.push("", `### ${type2}`);
+      for (const a of items) {
+        lines.push(`- [${a.title}](${siteUrl}/${a.type}/${a.slug}): ${a.metaDescription || ""}`);
+      }
+    }
     lines.push("");
     lines.push("## Facts");
     const facts = await strapi2.plugin("zhao-website").service("first-truth").find(siteId, { verificationStatus: "verified" });
@@ -35881,6 +35899,18 @@ const llmsTxt = ({ strapi: strapi2 }) => ({
       const sourceUrl = f.canonicalSourceUrl ? ` (source: ${f.canonicalSourceUrl})` : "";
       lines.push(`- ${f.claim}: ${f.canonicalValue}${sourceUrl}`);
     }
+    lines.push("");
+    lines.push("## Knowledge Graph");
+    const entities = await strapi2.db.query("plugin::zhao-website.knowledge-entity").findMany({
+      where: await filterService.buildWhere(siteId, "plugin::zhao-website.knowledge-entity", { sourceType: { $ne: "derived" } }),
+      orderBy: { name: "ASC" }
+    });
+    for (const e of entities) {
+      if (!e.slug) continue;
+      lines.push(`- [${e.name}](${siteUrl}/knowledge/${e.slug})${e.description ? `: ${e.description}` : ""}`);
+    }
+    lines.push(`- Graph: ${siteUrl}${GEO_API_PREFIX$1}knowledge-graph.json`);
+    lines.push(`- Facts: ${siteUrl}${GEO_API_PREFIX$1}facts.json`);
     lines.push("");
     lines.push("## Brand Voice");
     const voices = await strapi2.db.query("plugin::zhao-website.brand-voice").findMany({
@@ -36110,6 +36140,7 @@ const AI_CRAWLER_LIST$1 = [
   "Bytespider",
   "Sogou web spider"
 ];
+const GEO_API_PREFIX = "/api/zhao-website/v1/";
 const robots = ({ strapi: strapi2 }) => ({
   async generate(siteId, siteUrl) {
     const seoConfig2 = await strapi2.plugin("zhao-website").service("seo-config").get(siteId);
@@ -36132,8 +36163,9 @@ const robots = ({ strapi: strapi2 }) => ({
       }
     }
     lines.push("User-agent: *", "Allow: /", "Disallow: /admin", "Disallow: /api");
+    lines.push(`Allow: ${GEO_API_PREFIX}`);
     lines.push("", `Sitemap: ${siteUrl}/sitemap.xml`);
-    return lines.join("\n");
+    return lines.join("\n") + "\n";
   }
 });
 const searchEnginePush = ({ strapi: strapi2 }) => ({

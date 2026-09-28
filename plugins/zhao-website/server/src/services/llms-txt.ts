@@ -1,13 +1,23 @@
 import type { Core } from "@strapi/strapi";
 
+// 本插件对外 GEO 出口前缀（与 robots 放行路径保持一致）
+const GEO_API_PREFIX = "/api/zhao-website/v1/";
+
+// 站点主要内容载体 geo-article 的固定分组顺序（按 type 分节，顺序稳定便于 AI 解析）
+const GEO_ARTICLE_TYPES = ["geo-article", "geo-faq", "local-report", "local-comparison", "local-list"];
+
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async generate(siteId: number, siteUrl: string): Promise<string> {
     const seoConfig = await strapi.plugin("zhao-website").service("seo-config").get(siteId);
     const brandInfo = await strapi.plugin("zhao-website").service("brand-info").get(siteId);
     const filterService = strapi.plugin("zhao-website").service("content-filter");
+    // brand-info.companyName 常为空，逐级兜底到 seo-config / site-config，避免标题退化成 "Website"
+    const siteConfig = await strapi.db.query("plugin::zhao-common.site-config").findOne({
+      where: { id: siteId },
+    });
     const lines: string[] = [];
 
-    lines.push(`# ${brandInfo?.companyName || "Website"}`);
+    lines.push(`# ${brandInfo?.companyName || seoConfig?.organizationName || siteConfig?.siteName || "Website"}`);
     if (brandInfo?.slogan) lines.push(`> ${brandInfo.slogan}`);
     lines.push("");
 
@@ -68,6 +78,21 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       lines.push(`- [${c.title}](${siteUrl}/compliance/${c.slug})`);
     }
 
+    // geo-article 是站点主要内容载体，此前遗漏导致 ## Pages 为空；按 type 分节枚举
+    const geoArticles = await strapi.db.query("plugin::zhao-website.geo-article").findMany({
+      where: await filterService.buildWhere(siteId, "plugin::zhao-website.geo-article"),
+      limit: 100,
+      orderBy: { publishedAt: "DESC" },
+    });
+    for (const type of GEO_ARTICLE_TYPES) {
+      const items = geoArticles.filter((a: any) => a.type === type);
+      if (items.length === 0) continue;
+      lines.push("", `### ${type}`);
+      for (const a of items) {
+        lines.push(`- [${a.title}](${siteUrl}/${a.type}/${a.slug}): ${a.metaDescription || ""}`);
+      }
+    }
+
     lines.push("");
 
     lines.push("## Facts");
@@ -77,6 +102,20 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       lines.push(`- ${f.claim}: ${f.canonicalValue}${sourceUrl}`);
     }
 
+    lines.push("");
+    lines.push("## Knowledge Graph");
+    // 派生实体是内容 CT 的内部节点，不对外列出
+    const entities = await strapi.db.query("plugin::zhao-website.knowledge-entity").findMany({
+      where: await filterService.buildWhere(siteId, "plugin::zhao-website.knowledge-entity", { sourceType: { $ne: "derived" } }),
+      orderBy: { name: "ASC" },
+    });
+    for (const e of entities) {
+      if (!e.slug) continue;
+      lines.push(`- [${e.name}](${siteUrl}/knowledge/${e.slug})${e.description ? `: ${e.description}` : ""}`);
+    }
+    // 机器可读出口：实体图与第一真值清单
+    lines.push(`- Graph: ${siteUrl}${GEO_API_PREFIX}knowledge-graph.json`);
+    lines.push(`- Facts: ${siteUrl}${GEO_API_PREFIX}facts.json`);
     lines.push("");
     lines.push("## Brand Voice");
     const voices = await strapi.db.query("plugin::zhao-website.brand-voice").findMany({
