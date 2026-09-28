@@ -449,10 +449,14 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     }
     // 真值绑定/解绑（truthPolicyId=null 或 "" 表示解绑）
     if (data.truthPolicyId !== undefined) {
-      payload.truthPolicy =
-        data.truthPolicyId === null || data.truthPolicyId === ""
-          ? null
-          : await this._requireTruthId(data.truthPolicyId);
+      if (data.truthPolicyId === null || data.truthPolicyId === "") {
+        payload.truthPolicy = null;
+        // 解绑即复位校验标记，避免残留假 conflict（与未绑定关系的默认态一致）
+        if (data.verificationStatus === undefined) payload.verificationStatus = "verified";
+        payload.lastVerifiedAt = null;
+      } else {
+        payload.truthPolicy = await this._requireTruthId(data.truthPolicyId);
+      }
     }
     // 自引用校验（主体与客体同时更新且相同）
     if (payload.subjectEntity && payload.objectEntity && payload.subjectEntity === payload.objectEntity) {
@@ -462,13 +466,12 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       throw e;
     }
     const updated: any = await strapi.db.query(RELATION_UID).update({ where: { id: existing.id }, data: payload });
-    // 绑定、客体值任一变更 → 重比真值
-    if (
-      payload.truthPolicy !== undefined ||
+    // 绑定或客体值变更 → 重比真值（解绑后无客体可比，跳过）
+    const valueTouched =
       payload.objectValue !== undefined ||
       payload.objectText !== undefined ||
-      payload.objectEntity !== undefined
-    ) {
+      payload.objectEntity !== undefined;
+    if ((payload.truthPolicy !== undefined && payload.truthPolicy !== null) || valueTouched) {
       await this._safeCompareWithTruth({ ...existing, ...updated, ...payload, id: existing.id });
     }
     return updated;

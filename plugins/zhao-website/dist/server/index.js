@@ -35056,7 +35056,13 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
       payload.objectEntity = await this._requireEntityId(data.objectEntityId, "objectEntityId");
     }
     if (data.truthPolicyId !== void 0) {
-      payload.truthPolicy = data.truthPolicyId === null || data.truthPolicyId === "" ? null : await this._requireTruthId(data.truthPolicyId);
+      if (data.truthPolicyId === null || data.truthPolicyId === "") {
+        payload.truthPolicy = null;
+        if (data.verificationStatus === void 0) payload.verificationStatus = "verified";
+        payload.lastVerifiedAt = null;
+      } else {
+        payload.truthPolicy = await this._requireTruthId(data.truthPolicyId);
+      }
     }
     if (payload.subjectEntity && payload.objectEntity && payload.subjectEntity === payload.objectEntity) {
       const e = new Error("Self-relation not allowed");
@@ -35065,7 +35071,8 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
       throw e;
     }
     const updated = await strapi2.db.query(RELATION_UID).update({ where: { id: existing.id }, data: payload });
-    if (payload.truthPolicy !== void 0 || payload.objectValue !== void 0 || payload.objectText !== void 0 || payload.objectEntity !== void 0) {
+    const valueTouched = payload.objectValue !== void 0 || payload.objectText !== void 0 || payload.objectEntity !== void 0;
+    if (payload.truthPolicy !== void 0 && payload.truthPolicy !== null || valueTouched) {
       await this._safeCompareWithTruth({ ...existing, ...updated, ...payload, id: existing.id });
     }
     return updated;

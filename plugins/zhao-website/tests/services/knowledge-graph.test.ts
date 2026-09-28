@@ -221,6 +221,27 @@ describe("Knowledge Graph Service", () => {
     );
   });
 
+  test("updateRelation 解绑 truthPolicyId=null → 复位为 verified 且不重比", async () => {
+    const queryMock = mockStrapi.db.query();
+    queryMock.findOne.mockResolvedValueOnce({ id: 3, documentId: "rel-3", truthPolicy: 5, verificationStatus: "conflict" });
+
+    await service.updateRelation(1, "rel-3", { truthPolicyId: null });
+
+    expect(queryMock.update).toHaveBeenCalledTimes(1);
+    expect(queryMock.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 3 },
+        data: expect.objectContaining({
+          truthPolicy: null,
+          verificationStatus: "verified",
+          lastVerifiedAt: null,
+        }),
+      })
+    );
+    // 解绑后无客体可比，不应再查真值
+    expect(queryMock.findOne).toHaveBeenCalledTimes(1);
+  });
+
   test("updateRelation truthPolicyId 解析不到 → 400 TRUTH_NOT_FOUND", async () => {
     const queryMock = mockStrapi.db.query();
     queryMock.findOne
