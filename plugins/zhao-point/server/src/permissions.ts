@@ -54,6 +54,8 @@ export const PERMISSIONS: Record<string, PermissionEntry> = {
   "series.create": { allowRoles: [ROLES.ADMIN, ROLES.CHANNEL_ADMIN, ROLES.PLUGIN_MANAGER] },
   "series.update": { allowRoles: [ROLES.ADMIN, ROLES.CHANNEL_ADMIN, ROLES.PLUGIN_MANAGER] },
   "series.delete": { allowRoles: [ROLES.ADMIN, ROLES.CHANNEL_ADMIN] },
+  // 每周市集·选品调研（榜单查看）
+  "product-survey.read": { allowRoles: [ROLES.ADMIN, ROLES.CHANNEL_ADMIN, ROLES.PLUGIN_MANAGER] },
 };
 
 export default PERMISSIONS;

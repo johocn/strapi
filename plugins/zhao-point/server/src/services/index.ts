@@ -9,6 +9,7 @@ import seriesService from "./series-service";
 import calendarService from "./calendar-service";
 import feeService from "./fee-service";
 import activityStats from "./activity-stats";
+import productSurvey from "./product-survey";
 import form from "./form";
 import resourceSchedule from "./resource-schedule";
 import activityLedger from "./activity-ledger";
@@ -28,6 +29,7 @@ export default {
   "calendar-service": calendarService,
   "fee-service": feeService,
   "activity-stats": activityStats,
+  "product-survey": productSurvey,
   form,
   "resource-schedule": resourceSchedule,
   "activity-ledger": activityLedger,

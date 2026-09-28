@@ -4,6 +4,7 @@ import activity from "./activity";
 import series from "./series";
 import calendar from "./calendar";
 import activityStats from "./activity-stats";
+import productSurvey from "./product-survey";
 import fee from "./fee";
 import resource from "./resource";
 import ledger from "./ledger";
@@ -19,6 +20,7 @@ export default {
   series,
   calendar,
   "activity-stats": activityStats,
+  "product-survey": productSurvey,
   fee,
   resource,
   ledger,

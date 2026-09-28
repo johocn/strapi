@@ -1444,6 +1444,79 @@ declare const _default: {
             rows: any[];
         }>;
     };
+    "product-survey": ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        assertRoundKey(roundKey: any): string;
+        normalizeVotes(votes: any): Array<{
+            productId: string;
+            productName: string | null;
+            variantIds: string[] | null;
+            collectionLabel: string | null;
+        }>;
+        getMyVote({ channel, roundKey, userId }: {
+            channel: string;
+            roundKey: string;
+            userId: number;
+        }): Promise<{
+            channel: string;
+            roundKey: string;
+            votes: {
+                productId: any;
+                productName: any;
+                variantIds: any;
+                collectionLabel: any;
+            }[];
+            freeInput: any;
+        }>;
+        submit({ channel, roundKey, userId, source, votes, freeInput }: {
+            channel: string;
+            roundKey: string;
+            userId: number;
+            source?: string | null;
+            votes: any;
+            freeInput?: any;
+        }): Promise<{
+            channel: string;
+            roundKey: string;
+            votes: {
+                productId: any;
+                productName: any;
+                variantIds: any;
+                collectionLabel: any;
+            }[];
+            freeInput: any;
+        }>;
+        getBoard({ channel, roundKey, source, channelIds }: {
+            channel?: string;
+            roundKey: string;
+            source?: string;
+            channelIds?: string[] | null;
+        }): Promise<{
+            summary: {
+                participants: number;
+                votes: number;
+                products: number;
+            };
+            rows: {
+                productId: string;
+                productName: string;
+                collectionLabel: string;
+                voterCount: number;
+                ratio: number;
+                variantBreakdown: {
+                    variantId: string;
+                    count: number;
+                }[];
+                rank: number;
+            }[];
+            demands: {
+                userLabel: string;
+                text: any;
+                createdAt: any;
+            }[];
+        }>;
+    };
     form: ({ strapi }: {
         strapi: import('@strapi/types/dist/core').Strapi;
     }) => {

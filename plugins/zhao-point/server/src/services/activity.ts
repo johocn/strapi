@@ -17,7 +17,7 @@ const SSO_USER_UID = "plugin::zhao-sso.sso-user";
 export const PROMO_MODULE_TYPES = [
   "cover", "info", "rich", "highlights", "speakers", "agenda",
   "images", "rewards", "contact", "message", "faq", "custom", "floatContact",
-  "goods", "purpose", "notice",
+  "goods", "purpose", "notice", "survey",
 ] as const;
 
 /** 宣传页风格枚举 */

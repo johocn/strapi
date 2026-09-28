@@ -1606,6 +1606,105 @@ declare const _default: {
             };
         };
     };
+    "product-survey-vote": {
+        schema: {
+            kind: string;
+            collectionName: string;
+            info: {
+                singularName: string;
+                pluralName: string;
+                displayName: string;
+            };
+            options: {
+                draftAndPublish: boolean;
+            };
+            attributes: {
+                channel: {
+                    type: string;
+                    required: boolean;
+                    description: string;
+                };
+                roundKey: {
+                    type: string;
+                    required: boolean;
+                    description: string;
+                };
+                user: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                };
+                userId: {
+                    type: string;
+                    private: boolean;
+                    description: string;
+                };
+                productId: {
+                    type: string;
+                    required: boolean;
+                };
+                productName: {
+                    type: string;
+                };
+                variantIds: {
+                    type: string;
+                    description: string;
+                };
+                collectionLabel: {
+                    type: string;
+                    description: string;
+                };
+                source: {
+                    type: string;
+                    description: string;
+                };
+            };
+        };
+    };
+    "product-survey-demand": {
+        schema: {
+            kind: string;
+            collectionName: string;
+            info: {
+                singularName: string;
+                pluralName: string;
+                displayName: string;
+            };
+            options: {
+                draftAndPublish: boolean;
+            };
+            attributes: {
+                channel: {
+                    type: string;
+                    required: boolean;
+                    description: string;
+                };
+                roundKey: {
+                    type: string;
+                    required: boolean;
+                    description: string;
+                };
+                user: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                };
+                userId: {
+                    type: string;
+                    private: boolean;
+                    description: string;
+                };
+                text: {
+                    type: string;
+                    required: boolean;
+                };
+                source: {
+                    type: string;
+                    description: string;
+                };
+            };
+        };
+    };
     "tour-story": {
         schema: {
             kind: string;

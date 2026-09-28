@@ -611,6 +611,13 @@ declare const _default: {
         }) => {
             overview(ctx: any): Promise<void>;
         };
+        "product-survey": ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            myVote(ctx: any): Promise<void>;
+            submitVote(ctx: any): Promise<void>;
+            board(ctx: any): Promise<void>;
+        };
         fee: ({ strapi }: {
             strapi: import('@strapi/types/dist/core').Strapi;
         }) => {
@@ -2266,6 +2273,105 @@ declare const _default: {
                 };
             };
         };
+        "product-survey-vote": {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                attributes: {
+                    channel: {
+                        type: string;
+                        required: boolean;
+                        description: string;
+                    };
+                    roundKey: {
+                        type: string;
+                        required: boolean;
+                        description: string;
+                    };
+                    user: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                    };
+                    userId: {
+                        type: string;
+                        private: boolean;
+                        description: string;
+                    };
+                    productId: {
+                        type: string;
+                        required: boolean;
+                    };
+                    productName: {
+                        type: string;
+                    };
+                    variantIds: {
+                        type: string;
+                        description: string;
+                    };
+                    collectionLabel: {
+                        type: string;
+                        description: string;
+                    };
+                    source: {
+                        type: string;
+                        description: string;
+                    };
+                };
+            };
+        };
+        "product-survey-demand": {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                attributes: {
+                    channel: {
+                        type: string;
+                        required: boolean;
+                        description: string;
+                    };
+                    roundKey: {
+                        type: string;
+                        required: boolean;
+                        description: string;
+                    };
+                    user: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                    };
+                    userId: {
+                        type: string;
+                        private: boolean;
+                        description: string;
+                    };
+                    text: {
+                        type: string;
+                        required: boolean;
+                    };
+                    source: {
+                        type: string;
+                        description: string;
+                    };
+                };
+            };
+        };
         "tour-story": {
             schema: {
                 kind: string;
@@ -3908,6 +4014,79 @@ declare const _default: {
                     attendPointsGlobal: any;
                 };
                 rows: any[];
+            }>;
+        };
+        "product-survey": ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            assertRoundKey(roundKey: any): string;
+            normalizeVotes(votes: any): Array<{
+                productId: string;
+                productName: string | null;
+                variantIds: string[] | null;
+                collectionLabel: string | null;
+            }>;
+            getMyVote({ channel, roundKey, userId }: {
+                channel: string;
+                roundKey: string;
+                userId: number;
+            }): Promise<{
+                channel: string;
+                roundKey: string;
+                votes: {
+                    productId: any;
+                    productName: any;
+                    variantIds: any;
+                    collectionLabel: any;
+                }[];
+                freeInput: any;
+            }>;
+            submit({ channel, roundKey, userId, source, votes, freeInput }: {
+                channel: string;
+                roundKey: string;
+                userId: number;
+                source?: string | null;
+                votes: any;
+                freeInput?: any;
+            }): Promise<{
+                channel: string;
+                roundKey: string;
+                votes: {
+                    productId: any;
+                    productName: any;
+                    variantIds: any;
+                    collectionLabel: any;
+                }[];
+                freeInput: any;
+            }>;
+            getBoard({ channel, roundKey, source, channelIds }: {
+                channel?: string;
+                roundKey: string;
+                source?: string;
+                channelIds?: string[] | null;
+            }): Promise<{
+                summary: {
+                    participants: number;
+                    votes: number;
+                    products: number;
+                };
+                rows: {
+                    productId: string;
+                    productName: string;
+                    collectionLabel: string;
+                    voterCount: number;
+                    ratio: number;
+                    variantBreakdown: {
+                        variantId: string;
+                        count: number;
+                    }[];
+                    rank: number;
+                }[];
+                demands: {
+                    userLabel: string;
+                    text: any;
+                    createdAt: any;
+                }[];
             }>;
         };
         form: ({ strapi }: {

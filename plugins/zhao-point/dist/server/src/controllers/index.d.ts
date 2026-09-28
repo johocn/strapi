@@ -151,6 +151,13 @@ declare const _default: {
     }) => {
         overview(ctx: any): Promise<void>;
     };
+    "product-survey": ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        myVote(ctx: any): Promise<void>;
+        submitVote(ctx: any): Promise<void>;
+        board(ctx: any): Promise<void>;
+    };
     fee: ({ strapi }: {
         strapi: import('@strapi/types/dist/core').Strapi;
     }) => {

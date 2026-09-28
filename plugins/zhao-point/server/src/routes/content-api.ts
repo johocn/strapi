@@ -213,6 +213,11 @@ export default () => ({
     channelScopeRoute("GET", "/adm/lessons/temp-auth/list", "activity.adminListTempAuth", "activity.read"),
     channelScopeRoute("POST", "/adm/lessons/temp-auth", "activity.adminGrantTempLessonAuth", "activity.update"),
 
+    // ===== 每周市集·选品调研 =====
+    userRoute("GET", "/my/product-survey/vote", "product-survey.myVote"),
+    userRoute("POST", "/my/product-survey/vote", "product-survey.submitVote"),
+    channelScopeRoute("GET", "/product-survey/board", "product-survey.board", "product-survey.read"),
+
     // ===== 讲师/场地资源排期 =====
     channelScopeRoute("GET", "/adm/lecturers", "resource.lecturers.list", "resource.read"),
     channelScopeRoute("GET", "/adm/lecturers/:documentId", "resource.lecturers.findOne", "resource.read"),
