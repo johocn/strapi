@@ -26,6 +26,18 @@ declare const _default: ({ strapi }: {
      * 所有指向 subjectEntity/objectEntity/canonicalEntity 的过滤与写入都必须走这里。
      */
     _requireEntityId(ref: string | number, label?: string): Promise<number>;
+    /** documentId/数字 id → 真值数字 id */
+    _resolveTruthId(ref: string | number): Promise<number | null>;
+    /** 归一入口：truthPolicy 也是 lnk 列，只接受数字 id，解析失败 400 */
+    _requireTruthId(ref: string | number, label?: string): Promise<number>;
+    /**
+     * 关系值 vs 真值 canonicalValue 一致性校验 + 反向证据链落点。
+     * - 无绑定 / 真值停用或软删 / 客体为 objectEntity 指针 → 跳过，返回 null（不写标记）
+     * - 命中 → relation.verificationStatus = verified；不一致 → conflict
+     */
+    compareRelationWithTruth(relation: any): Promise<"verified" | "conflict" | null>;
+    /** 比对失败不阻塞写入，只告警 */
+    _safeCompareWithTruth(relation: any): Promise<"verified" | "conflict">;
     addRelation(params: {
         siteId: number;
         subjectEntityId: string;
@@ -34,6 +46,7 @@ declare const _default: ({ strapi }: {
         objectValue?: any;
         objectText?: string;
         sourceType?: string;
+        truthPolicyId?: string;
     }): Promise<any>;
     _detectCycle(subjectId: string, objectId: string, predicate: string, visited?: Set<string>): Promise<boolean>;
     deleteRelation(siteId: number, documentId: string): Promise<any>;

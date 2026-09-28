@@ -370,6 +370,10 @@ declare const _default: {
         findRelations(siteId: number, query?: any): Promise<any[]>;
         _resolveEntityId(ref: string | number): Promise<number | null>;
         _requireEntityId(ref: string | number, label?: string): Promise<number>;
+        _resolveTruthId(ref: string | number): Promise<number | null>;
+        _requireTruthId(ref: string | number, label?: string): Promise<number>;
+        compareRelationWithTruth(relation: any): Promise<"verified" | "conflict" | null>;
+        _safeCompareWithTruth(relation: any): Promise<"verified" | "conflict">;
         addRelation(params: {
             siteId: number;
             subjectEntityId: string;
@@ -378,6 +382,7 @@ declare const _default: {
             objectValue?: any;
             objectText?: string;
             sourceType?: string;
+            truthPolicyId?: string;
         }): Promise<any>;
         _detectCycle(subjectId: string, objectId: string, predicate: string, visited?: Set<string>): Promise<boolean>;
         deleteRelation(siteId: number, documentId: string): Promise<any>;
@@ -417,6 +422,7 @@ declare const _default: {
         findByClaimKey(siteId: number | null, claimKey: string): Promise<any>;
         create(siteId: number | null, data: any): Promise<any>;
         update(siteId: number | null, documentId: string, data: any): Promise<any>;
+        _revalidateEvidenceRelations(truthId: number): Promise<void>;
         _markRelatedEntitiesPending(siteId: number | null, canonicalEntity: any): Promise<void>;
         verify(siteId: number | null, documentId: string): Promise<any>;
         softDelete(siteId: number | null, documentId: string): Promise<any>;

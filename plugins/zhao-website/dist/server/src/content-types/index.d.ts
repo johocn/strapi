@@ -2059,6 +2059,12 @@ declare const _default: {
                     maxLength: number;
                     required: boolean;
                 };
+                truthPolicy: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    inversedBy: string;
+                };
                 objectEntity: {
                     type: string;
                     relation: string;
@@ -2287,6 +2293,12 @@ declare const _default: {
                 status: {
                     type: string;
                     default: boolean;
+                };
+                evidenceRelations: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    mappedBy: string;
                 };
                 geoArticles: {
                     type: string;

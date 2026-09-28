@@ -93,6 +93,12 @@
       "type": "boolean",
       "default": true
     },
+    "evidenceRelations": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-website.knowledge-relation",
+      "mappedBy": "truthPolicy"
+    },
     "geoArticles": {
       "type": "relation", "relation": "manyToMany",
       "target": "plugin::zhao-website.geo-article",

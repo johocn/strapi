@@ -126,6 +126,112 @@ describe("Knowledge Graph Service", () => {
     ).rejects.toMatchObject({ status: 400, code: "ENTITY_NOT_FOUND" });
   });
 
+  // ===== 关系 × 真值桥接 =====
+  test("addRelation 绑定 truthPolicyId → 归一为数字 id 且值命中写 verified", async () => {
+    service._resolveEntityId = jest.fn(async (ref: any) => (ref === "doc-a" ? 11 : null));
+    const queryMock = mockStrapi.db.query();
+    queryMock.findOne
+      .mockResolvedValueOnce({ id: 11, entityType: "Organization" }) // 谓词字典取 subject
+      .mockResolvedValueOnce({ id: 5, documentId: "truth-doc" }) // truthPolicyId 解析
+      .mockResolvedValueOnce({
+        id: 5,
+        claimKey: "employee_count",
+        canonicalValue: "200",
+        canonicalValueType: "text",
+      }); // compare 重新取真值
+    // 真实 Strapi 的 create 会回填写入字段
+    queryMock.create.mockResolvedValueOnce({ id: 1, documentId: "doc-1", objectText: "200", truthPolicy: 5 });
+
+    await service.addRelation({
+      siteId: 1,
+      subjectEntityId: "doc-a",
+      predicate: "mentions",
+      objectText: "200",
+      truthPolicyId: "truth-doc",
+    });
+
+    expect(queryMock.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ truthPolicy: 5, objectText: "200" }) })
+    );
+    expect(queryMock.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 1 },
+        data: expect.objectContaining({ verificationStatus: "verified" }),
+      })
+    );
+  });
+
+  test("compareRelationWithTruth 值不一致 → 写 conflict 并告警", async () => {
+    const queryMock = mockStrapi.db.query();
+    queryMock.findOne.mockResolvedValueOnce({
+      id: 5,
+      claimKey: "employee_count",
+      canonicalValue: "200",
+      canonicalValueType: "text",
+    });
+
+    const status = await service.compareRelationWithTruth({
+      id: 9,
+      truthPolicy: 5,
+      objectText: "180",
+    });
+
+    expect(status).toBe("conflict");
+    expect(queryMock.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 9 },
+        data: expect.objectContaining({ verificationStatus: "conflict" }),
+      })
+    );
+    expect(mockStrapi.log.warn).toHaveBeenCalled();
+  });
+
+  test("compareRelationWithTruth 无绑定 / 值为 objectEntity 指针 → null 且不写标记", async () => {
+    const queryMock = mockStrapi.db.query();
+
+    expect(await service.compareRelationWithTruth({ id: 9 })).toBeNull();
+    expect(await service.compareRelationWithTruth({ id: 9, truthPolicy: 5, objectEntity: { id: 3 } })).toBeNull();
+    expect(queryMock.update).not.toHaveBeenCalled();
+  });
+
+  test("compareRelationWithTruth 真值停用或软删 → 跳过不写标记", async () => {
+    const queryMock = mockStrapi.db.query();
+    queryMock.findOne.mockResolvedValueOnce(null);
+
+    const status = await service.compareRelationWithTruth({ id: 9, truthPolicy: 5, objectText: "180" });
+
+    expect(status).toBeNull();
+    expect(queryMock.update).not.toHaveBeenCalled();
+  });
+
+  test("compareRelationWithTruth number 类型按数值比较（'200' 与 200 视为一致）", async () => {
+    const queryMock = mockStrapi.db.query();
+    queryMock.findOne.mockResolvedValueOnce({
+      id: 5,
+      claimKey: "employee_count",
+      canonicalValue: "200",
+      canonicalValueType: "number",
+    });
+
+    const status = await service.compareRelationWithTruth({ id: 9, truthPolicy: 5, objectValue: 200 });
+
+    expect(status).toBe("verified");
+    expect(queryMock.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ verificationStatus: "verified" }) })
+    );
+  });
+
+  test("updateRelation truthPolicyId 解析不到 → 400 TRUTH_NOT_FOUND", async () => {
+    const queryMock = mockStrapi.db.query();
+    queryMock.findOne
+      .mockResolvedValueOnce({ id: 3, documentId: "rel-3" }) // 关系存在
+      .mockResolvedValueOnce(null); // 真值解析失败
+
+    await expect(
+      service.updateRelation(1, "rel-3", { truthPolicyId: "missing-truth" })
+    ).rejects.toMatchObject({ status: 400, code: "TRUTH_NOT_FOUND" });
+  });
+
   test("_entityToJsonLd 同谓词多值合并为数组", () => {
     const jsonLd = service._entityToJsonLd(
       { documentId: "doc-a", name: "A", entityType: "Article", slug: "a" },

@@ -33,6 +33,12 @@ declare const _default: {
       "maxLength": 100,
       "required": true
     },
+    "truthPolicy": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-website.first-truth-policy",
+      "inversedBy": "evidenceRelations"
+    },
     "objectEntity": {
       "type": "relation",
       "relation": "manyToOne",

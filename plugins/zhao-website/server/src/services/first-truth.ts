@@ -21,12 +21,12 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async findOne(siteId: number | null, documentId: string) {
     const tenant = await strapi.db.query(UID).findOne({
       where: { site: siteId, documentId, deletedAt: null },
-      populate: ["canonicalEntity"],
+      populate: ["canonicalEntity", "evidenceRelations"],
     });
     if (tenant) return tenant;
     return strapi.db.query(UID).findOne({
       where: { site: null, documentId, deletedAt: null },
-      populate: ["canonicalEntity"],
+      populate: ["canonicalEntity", "evidenceRelations"],
     });
   },
 
@@ -66,10 +66,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       throw e;
     }
     // 真值更新 → 关联 entity verificationStatus=pending
-    if (data.canonicalValue && data.canonicalValue !== existing.canonicalValue) {
-      await this._markRelatedEntitiesPending(siteId, existing.canonicalEntity);
-    }
-    return strapi.db.query(UID).update({
+    const valueChanged = !!data.canonicalValue && data.canonicalValue !== existing.canonicalValue;
+    const updated = await strapi.db.query(UID).update({
       where: { id: existing.id },
       data: {
         ...data,
@@ -77,6 +75,24 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         verificationStatus: data.verificationStatus || "verified",
       },
     });
+    if (valueChanged) {
+      await this._markRelatedEntitiesPending(siteId, existing.canonicalEntity);
+      // 证据链反向传导：重比所有绑定到本条真值的关系值
+      await this._revalidateEvidenceRelations(existing.id);
+    }
+    return updated;
+  },
+
+  /** 真值变更 → 重比绑定到它的关系（单条失败不阻塞） */
+  async _revalidateEvidenceRelations(truthId: number) {
+    const relations = await strapi.db.query("plugin::zhao-website.knowledge-relation").findMany({
+      where: { truthPolicy: truthId, deletedAt: null },
+      limit: 500,
+    });
+    const kg: any = strapi.plugin("zhao-website").service("knowledge-graph");
+    for (const relation of relations) {
+      await kg._safeCompareWithTruth(relation);
+    }
   },
 
   async _markRelatedEntitiesPending(siteId: number | null, canonicalEntity: any) {

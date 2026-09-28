@@ -334,7 +334,7 @@ const collectionName$7 = "zhao_website_knowledge_relations";
 const info$7 = { "singularName": "knowledge-relation", "pluralName": "knowledge-relations", "displayName": "知识图谱关系" };
 const options$7 = { "draftAndPublish": false };
 const pluginOptions$7 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": false } };
-const attributes$7 = { "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config", "required": true, "inversedBy": "website_knowledge_relations" }, "subjectEntity": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-website.knowledge-entity", "required": true, "inversedBy": "subjectRelations" }, "predicate": { "type": "string", "maxLength": 100, "required": true }, "objectEntity": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-website.knowledge-entity", "inversedBy": "objectRelations" }, "objectValue": { "type": "json" }, "objectText": { "type": "text" }, "sourceUrl": { "type": "string", "maxLength": 500 }, "sourceType": { "type": "enumeration", "enum": ["official", "derived", "manual", "inferred"], "default": "manual" }, "confidence": { "type": "decimal", "default": 1 }, "lastVerifiedAt": { "type": "datetime" }, "verificationStatus": { "type": "enumeration", "enum": ["verified", "pending", "outdated", "conflict"], "default": "verified" }, "status": { "type": "boolean", "default": true }, "deletedAt": { "type": "datetime", "default": null } };
+const attributes$7 = { "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config", "required": true, "inversedBy": "website_knowledge_relations" }, "subjectEntity": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-website.knowledge-entity", "required": true, "inversedBy": "subjectRelations" }, "predicate": { "type": "string", "maxLength": 100, "required": true }, "truthPolicy": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-website.first-truth-policy", "inversedBy": "evidenceRelations" }, "objectEntity": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-website.knowledge-entity", "inversedBy": "objectRelations" }, "objectValue": { "type": "json" }, "objectText": { "type": "text" }, "sourceUrl": { "type": "string", "maxLength": 500 }, "sourceType": { "type": "enumeration", "enum": ["official", "derived", "manual", "inferred"], "default": "manual" }, "confidence": { "type": "decimal", "default": 1 }, "lastVerifiedAt": { "type": "datetime" }, "verificationStatus": { "type": "enumeration", "enum": ["verified", "pending", "outdated", "conflict"], "default": "verified" }, "status": { "type": "boolean", "default": true }, "deletedAt": { "type": "datetime", "default": null } };
 const knowledgeRelation = {
   kind: kind$7,
   collectionName: collectionName$7,
@@ -362,7 +362,7 @@ const collectionName$5 = "zhao_website_first_truths";
 const info$5 = { "singularName": "first-truth-policy", "pluralName": "first-truth-policies", "displayName": "第一真值策略声明" };
 const options$5 = { "draftAndPublish": false };
 const pluginOptions$5 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": false } };
-const attributes$5 = { "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config", "required": false, "inversedBy": "website_first_truths" }, "claim": { "type": "string", "maxLength": 200, "required": true }, "claimKey": { "type": "string", "maxLength": 100, "required": true }, "claimCategory": { "type": "enumeration", "enum": ["business_license", "brand_claim", "technical_spec", "certification", "financial", "logistics_promise", "other"], "default": "brand_claim" }, "canonicalEntity": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-website.knowledge-entity", "inversedBy": "firstTruthPolicies" }, "canonicalValue": { "type": "text", "required": true }, "canonicalValueType": { "type": "enumeration", "enum": ["text", "number", "date", "url", "json"], "default": "text" }, "canonicalSourceUrl": { "type": "string", "maxLength": 500 }, "canonicalSourceType": { "type": "enumeration", "enum": ["government", "official_site", "third_party_verified", "internal"], "default": "official_site" }, "conflictResolution": { "type": "enumeration", "enum": ["latest", "earliest", "highest_confidence", "manual"], "default": "manual" }, "lastVerifiedAt": { "type": "datetime", "required": true }, "verificationStatus": { "type": "enumeration", "enum": ["verified", "pending", "outdated", "conflict"], "default": "verified" }, "conflictDetails": { "type": "json" }, "priority": { "type": "integer", "default": 100 }, "status": { "type": "boolean", "default": true }, "geoArticles": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.geo-article", "mappedBy": "truthBasis" }, "deletedAt": { "type": "datetime", "default": null } };
+const attributes$5 = { "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config", "required": false, "inversedBy": "website_first_truths" }, "claim": { "type": "string", "maxLength": 200, "required": true }, "claimKey": { "type": "string", "maxLength": 100, "required": true }, "claimCategory": { "type": "enumeration", "enum": ["business_license", "brand_claim", "technical_spec", "certification", "financial", "logistics_promise", "other"], "default": "brand_claim" }, "canonicalEntity": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-website.knowledge-entity", "inversedBy": "firstTruthPolicies" }, "canonicalValue": { "type": "text", "required": true }, "canonicalValueType": { "type": "enumeration", "enum": ["text", "number", "date", "url", "json"], "default": "text" }, "canonicalSourceUrl": { "type": "string", "maxLength": 500 }, "canonicalSourceType": { "type": "enumeration", "enum": ["government", "official_site", "third_party_verified", "internal"], "default": "official_site" }, "conflictResolution": { "type": "enumeration", "enum": ["latest", "earliest", "highest_confidence", "manual"], "default": "manual" }, "lastVerifiedAt": { "type": "datetime", "required": true }, "verificationStatus": { "type": "enumeration", "enum": ["verified", "pending", "outdated", "conflict"], "default": "verified" }, "conflictDetails": { "type": "json" }, "priority": { "type": "integer", "default": 100 }, "status": { "type": "boolean", "default": true }, "evidenceRelations": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.knowledge-relation", "mappedBy": "truthPolicy" }, "geoArticles": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.geo-article", "mappedBy": "truthBasis" }, "deletedAt": { "type": "datetime", "default": null } };
 const firstTruthPolicy = {
   kind: kind$5,
   collectionName: collectionName$5,
@@ -34663,6 +34663,52 @@ const HIERARCHICAL_PREDICATES = /* @__PURE__ */ new Set([
 ]);
 const ENTITY_UID$1 = "plugin::zhao-website.knowledge-entity";
 const RELATION_UID = "plugin::zhao-website.knowledge-relation";
+const TRUTH_UID = "plugin::zhao-website.first-truth-policy";
+function normalizeText(v) {
+  return String(v ?? "").replace(/[\uFF01-\uFF5E]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 65248)).replace(/\s+/g, " ").trim().toLowerCase();
+}
+function stableJson(v) {
+  if (v === null || typeof v !== "object") return JSON.stringify(v ?? null);
+  if (Array.isArray(v)) return `[${v.map(stableJson).join(",")}]`;
+  return `{${Object.keys(v).sort().map((k) => `${JSON.stringify(k)}:${stableJson(v[k])}`).join(",")}}`;
+}
+function relationScalarValue(relation) {
+  if (relation?.objectValue !== void 0 && relation?.objectValue !== null) {
+    return { kind: "value", value: relation.objectValue };
+  }
+  if (relation?.objectText !== void 0 && relation?.objectText !== null && relation.objectText !== "") {
+    return { kind: "text", value: relation.objectText };
+  }
+  return null;
+}
+function valuesMatch(valueType, actual, expected) {
+  switch (valueType) {
+    case "number": {
+      const a = Number(actual);
+      const b = Number(expected);
+      return Number.isFinite(a) && Number.isFinite(b) && a === b;
+    }
+    case "date": {
+      const a = Date.parse(String(actual));
+      const b = Date.parse(String(expected));
+      if (Number.isNaN(a) || Number.isNaN(b)) return normalizeText(actual) === normalizeText(expected);
+      return a === b;
+    }
+    case "url":
+      return normalizeText(actual).replace(/\/+$/, "") === normalizeText(expected).replace(/\/+$/, "");
+    case "json":
+      return stableJson(actual) === stableJson(typeof expected === "string" ? safeJsonParse(expected) : expected);
+    default:
+      return normalizeText(actual) === normalizeText(expected);
+  }
+}
+function safeJsonParse(v) {
+  try {
+    return JSON.parse(v);
+  } catch {
+    return v;
+  }
+}
 const knowledgeGraph = ({ strapi: strapi2 }) => ({
   // ===== 实体 =====
   async findEntities(siteId, query = {}) {
@@ -34780,7 +34826,7 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
       where: filters2,
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
-      populate: ["subjectEntity", "objectEntity"]
+      populate: ["subjectEntity", "objectEntity", "truthPolicy"]
     });
   },
   /** documentId/数字 id → 实体数字 id（关系过滤必须用数字 id） */
@@ -34803,6 +34849,64 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
       throw e;
     }
     return id;
+  },
+  /** documentId/数字 id → 真值数字 id */
+  async _resolveTruthId(ref) {
+    if (typeof ref === "number" && Number.isInteger(ref)) return ref;
+    if (/^\d+$/.test(String(ref))) return Number(ref);
+    const truth = await strapi2.db.query(TRUTH_UID).findOne({ where: { documentId: String(ref) } });
+    return truth ? truth.id : null;
+  },
+  /** 归一入口：truthPolicy 也是 lnk 列，只接受数字 id，解析失败 400 */
+  async _requireTruthId(ref, label = "truthPolicyId") {
+    const id = await this._resolveTruthId(ref);
+    if (!id) {
+      const e = new Error(`${label} 无效`);
+      e.status = 400;
+      e.code = "TRUTH_NOT_FOUND";
+      throw e;
+    }
+    return id;
+  },
+  /**
+   * 关系值 vs 真值 canonicalValue 一致性校验 + 反向证据链落点。
+   * - 无绑定 / 真值停用或软删 / 客体为 objectEntity 指针 → 跳过，返回 null（不写标记）
+   * - 命中 → relation.verificationStatus = verified；不一致 → conflict
+   */
+  async compareRelationWithTruth(relation) {
+    const truthRef = relation?.truthPolicy;
+    const truthId = truthRef && typeof truthRef === "object" ? truthRef.id : truthRef;
+    if (!truthId) return null;
+    const truth = await strapi2.db.query(TRUTH_UID).findOne({
+      where: { id: Number(truthId), deletedAt: null, status: true }
+    });
+    if (!truth) return null;
+    const expected = truth.canonicalValue;
+    if (expected === void 0 || expected === null || expected === "") return null;
+    const actual = relationScalarValue(relation);
+    if (!actual) return null;
+    const matched = valuesMatch(truth.canonicalValueType || "text", actual.value, expected);
+    const status = matched ? "verified" : "conflict";
+    await strapi2.db.query(RELATION_UID).update({
+      where: { id: relation.id },
+      data: { verificationStatus: status, lastVerifiedAt: (/* @__PURE__ */ new Date()).toISOString() }
+    });
+    if (!matched) {
+      strapi2.log.warn(
+        `[kg] 关系值偏离真值「${truth.claimKey}」: actual=${JSON.stringify(actual.value)} expected=${JSON.stringify(expected)}`
+      );
+    }
+    return status;
+  },
+  /** 比对失败不阻塞写入，只告警 */
+  async _safeCompareWithTruth(relation) {
+    if (!relation?.id) return null;
+    try {
+      return await this.compareRelationWithTruth(relation);
+    } catch (err) {
+      strapi2.log.warn(`[kg] 真值比对失败: ${err?.message}`);
+      return null;
+    }
   },
   async addRelation(params) {
     if (params.objectEntityId && params.subjectEntityId === params.objectEntityId) {
@@ -34849,6 +34953,7 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
     if (subjectEntity && !isValidPredicate(subjectEntity.entityType, params.predicate)) {
       strapi2.log.warn(`[kg] predicate "${params.predicate}" 不在 ${subjectEntity.entityType} 字典中`);
     }
+    const truthId = params.truthPolicyId ? await this._requireTruthId(params.truthPolicyId) : null;
     if (objectId) {
       const existing = await strapi2.db.query(RELATION_UID).findOne({
         where: {
@@ -34859,9 +34964,19 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
           deletedAt: null
         }
       });
-      if (existing) return existing;
+      if (existing) {
+        if (truthId && Number(existing.truthPolicy) !== Number(truthId)) {
+          existing.truthPolicy = truthId;
+          await strapi2.db.query(RELATION_UID).update({
+            where: { id: existing.id },
+            data: { truthPolicy: truthId }
+          });
+        }
+        await this._safeCompareWithTruth(existing);
+        return existing;
+      }
     }
-    return strapi2.db.query(RELATION_UID).create({
+    const created = await strapi2.db.query(RELATION_UID).create({
       data: {
         site: params.siteId,
         subjectEntity: subjectId,
@@ -34869,9 +34984,12 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
         objectEntity: objectId,
         objectValue: params.objectValue || null,
         objectText: params.objectText || null,
-        sourceType: params.sourceType || "manual"
+        sourceType: params.sourceType || "manual",
+        truthPolicy: truthId
       }
     });
+    await this._safeCompareWithTruth(truthId ? { ...created, truthPolicy: truthId } : created);
+    return created;
   },
   async _detectCycle(subjectId, objectId, predicate, visited = /* @__PURE__ */ new Set()) {
     if (subjectId === objectId) return true;
@@ -34923,13 +35041,20 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
     if (data.objectEntityId !== void 0 && data.objectEntityId !== null && data.objectEntityId !== "") {
       payload.objectEntity = await this._requireEntityId(data.objectEntityId, "objectEntityId");
     }
+    if (data.truthPolicyId !== void 0) {
+      payload.truthPolicy = data.truthPolicyId === null || data.truthPolicyId === "" ? null : await this._requireTruthId(data.truthPolicyId);
+    }
     if (payload.subjectEntity && payload.objectEntity && payload.subjectEntity === payload.objectEntity) {
       const e = new Error("Self-relation not allowed");
       e.status = 400;
       e.code = "SELF_RELATION";
       throw e;
     }
-    return strapi2.db.query(RELATION_UID).update({ where: { id: existing.id }, data: payload });
+    const updated = await strapi2.db.query(RELATION_UID).update({ where: { id: existing.id }, data: payload });
+    if (payload.truthPolicy !== void 0 || payload.objectValue !== void 0 || payload.objectText !== void 0 || payload.objectEntity !== void 0) {
+      await this._safeCompareWithTruth({ ...existing, ...updated, ...payload, id: existing.id });
+    }
+    return updated;
   },
   // ===== 消歧 =====
   async disambiguate(siteId, params) {
@@ -35003,11 +35128,11 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
     const entityId = await this._resolveEntityId(entity.documentId);
     const outgoing = await strapi2.db.query(RELATION_UID).findMany({
       where: { $or: [{ site: siteId, subjectEntity: entityId, deletedAt: null }, { site: null, subjectEntity: entityId, deletedAt: null }] },
-      populate: ["objectEntity"]
+      populate: ["objectEntity", "truthPolicy"]
     });
     const incoming = await strapi2.db.query(RELATION_UID).findMany({
       where: { $or: [{ site: siteId, objectEntity: entityId, deletedAt: null }, { site: null, objectEntity: entityId, deletedAt: null }] },
-      populate: ["subjectEntity"]
+      populate: ["subjectEntity", "truthPolicy"]
     });
     const articles = await this.findArticlesByEntity(siteId, entityId);
     return {
@@ -35018,12 +35143,17 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
         objectEntity: r.objectEntity ? { slug: r.objectEntity.slug, name: r.objectEntity.name, "@id": r.objectEntity.slug || r.objectEntity.documentId } : void 0,
         objectValue: r.objectValue,
         objectText: r.objectText,
-        sourceType: r.sourceType
+        sourceType: r.sourceType,
+        verificationStatus: r.verificationStatus,
+        // 证据链：该关系绑定到哪条第一真值
+        truthClaimKey: r.truthPolicy?.claimKey
       })),
       incoming: incoming.map((r) => ({
         predicate: r.predicate,
         subjectEntity: r.subjectEntity ? { slug: r.subjectEntity.slug, name: r.subjectEntity.name, "@id": r.subjectEntity.slug || r.subjectEntity.documentId } : void 0,
-        sourceType: r.sourceType
+        sourceType: r.sourceType,
+        verificationStatus: r.verificationStatus,
+        truthClaimKey: r.truthPolicy?.claimKey
       })),
       articles
     };
@@ -35192,12 +35322,12 @@ const firstTruth = ({ strapi: strapi2 }) => ({
   async findOne(siteId, documentId) {
     const tenant = await strapi2.db.query(UID$3).findOne({
       where: { site: siteId, documentId, deletedAt: null },
-      populate: ["canonicalEntity"]
+      populate: ["canonicalEntity", "evidenceRelations"]
     });
     if (tenant) return tenant;
     return strapi2.db.query(UID$3).findOne({
       where: { site: null, documentId, deletedAt: null },
-      populate: ["canonicalEntity"]
+      populate: ["canonicalEntity", "evidenceRelations"]
     });
   },
   async findByClaimKey(siteId, claimKey) {
@@ -35233,10 +35363,8 @@ const firstTruth = ({ strapi: strapi2 }) => ({
       e.status = 404;
       throw e;
     }
-    if (data.canonicalValue && data.canonicalValue !== existing.canonicalValue) {
-      await this._markRelatedEntitiesPending(siteId, existing.canonicalEntity);
-    }
-    return strapi2.db.query(UID$3).update({
+    const valueChanged = !!data.canonicalValue && data.canonicalValue !== existing.canonicalValue;
+    const updated = await strapi2.db.query(UID$3).update({
       where: { id: existing.id },
       data: {
         ...data,
@@ -35244,6 +35372,22 @@ const firstTruth = ({ strapi: strapi2 }) => ({
         verificationStatus: data.verificationStatus || "verified"
       }
     });
+    if (valueChanged) {
+      await this._markRelatedEntitiesPending(siteId, existing.canonicalEntity);
+      await this._revalidateEvidenceRelations(existing.id);
+    }
+    return updated;
+  },
+  /** 真值变更 → 重比绑定到它的关系（单条失败不阻塞） */
+  async _revalidateEvidenceRelations(truthId) {
+    const relations = await strapi2.db.query("plugin::zhao-website.knowledge-relation").findMany({
+      where: { truthPolicy: truthId, deletedAt: null },
+      limit: 500
+    });
+    const kg = strapi2.plugin("zhao-website").service("knowledge-graph");
+    for (const relation of relations) {
+      await kg._safeCompareWithTruth(relation);
+    }
   },
   async _markRelatedEntitiesPending(siteId, canonicalEntity) {
     if (!canonicalEntity) return;

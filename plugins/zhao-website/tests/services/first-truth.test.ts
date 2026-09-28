@@ -109,6 +109,36 @@ describe("First Truth Service", () => {
     );
   });
 
+  test("update 改 canonicalValue → 反向重比证据关系", async () => {
+    const compareMock = jest.fn().mockResolvedValue("conflict");
+    mockStrapi.plugin.mockReturnValue({
+      service: jest.fn().mockReturnValue({ _safeCompareWithTruth: compareMock }),
+    });
+    const queryMock = mockStrapi.db.query();
+    queryMock.findOne.mockResolvedValueOnce({ id: 5, canonicalValue: "2010", canonicalEntity: null });
+    queryMock.findMany.mockResolvedValueOnce([{ id: 9, truthPolicy: 5, objectText: "2011" }]);
+
+    await service.update(1, "doc-5", { canonicalValue: "2011" });
+
+    expect(queryMock.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { truthPolicy: 5, deletedAt: null } })
+    );
+    expect(compareMock).toHaveBeenCalledWith({ id: 9, truthPolicy: 5, objectText: "2011" });
+  });
+
+  test("update 未改 canonicalValue → 不触发重比", async () => {
+    const compareMock = jest.fn();
+    mockStrapi.plugin.mockReturnValue({
+      service: jest.fn().mockReturnValue({ _safeCompareWithTruth: compareMock }),
+    });
+    const queryMock = mockStrapi.db.query();
+    queryMock.findOne.mockResolvedValueOnce({ id: 5, canonicalValue: "2010", canonicalEntity: null });
+
+    await service.update(1, "doc-5", { claim: "新标题" });
+
+    expect(compareMock).not.toHaveBeenCalled();
+  });
+
   test("firstTruthValidate 命中 claim 但缺规范值 → 产出 warning 且不拦截", async () => {
     const queryMock = mockStrapi.db.query();
     queryMock.findMany.mockResolvedValueOnce([

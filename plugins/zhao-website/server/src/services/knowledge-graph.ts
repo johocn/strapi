@@ -4,6 +4,68 @@ import { knowledgeGraphSync } from "./utils/kg-sync";
 
 const ENTITY_UID = "plugin::zhao-website.knowledge-entity";
 const RELATION_UID = "plugin::zhao-website.knowledge-relation";
+const TRUTH_UID = "plugin::zhao-website.first-truth-policy";
+
+/** 文本归一：全角→半角、空白压缩、trim、小写（只用于 text 类型比对，不做模糊匹配） */
+function normalizeText(v: any): string {
+  return String(v ?? "")
+    .replace(/[\uFF01-\uFF5E]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0))
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+/** JSON 稳定序列化：对象键排序，保证键序不同不误判为差异 */
+function stableJson(v: any): string {
+  if (v === null || typeof v !== "object") return JSON.stringify(v ?? null);
+  if (Array.isArray(v)) return `[${v.map(stableJson).join(",")}]`;
+  return `{${Object.keys(v)
+    .sort()
+    .map((k) => `${JSON.stringify(k)}:${stableJson(v[k])}`)
+    .join(",")}}`;
+}
+
+/** 取出关系客体中的标量值：objectEntity 型关系不参与真值比对 */
+function relationScalarValue(relation: any): { kind: "value" | "text"; value: any } | null {
+  if (relation?.objectValue !== undefined && relation?.objectValue !== null) {
+    return { kind: "value", value: relation.objectValue };
+  }
+  if (relation?.objectText !== undefined && relation?.objectText !== null && relation.objectText !== "") {
+    return { kind: "text", value: relation.objectText };
+  }
+  return null;
+}
+
+/** 按 canonicalValueType 比较实际值与规范值 */
+function valuesMatch(valueType: string, actual: any, expected: any): boolean {
+  switch (valueType) {
+    case "number": {
+      const a = Number(actual);
+      const b = Number(expected);
+      return Number.isFinite(a) && Number.isFinite(b) && a === b;
+    }
+    case "date": {
+      const a = Date.parse(String(actual));
+      const b = Date.parse(String(expected));
+      if (Number.isNaN(a) || Number.isNaN(b)) return normalizeText(actual) === normalizeText(expected);
+      return a === b;
+    }
+    case "url":
+      return normalizeText(actual).replace(/\/+$/, "") === normalizeText(expected).replace(/\/+$/, "");
+    case "json":
+      return stableJson(actual) === stableJson(typeof expected === "string" ? safeJsonParse(expected) : expected);
+    default:
+      return normalizeText(actual) === normalizeText(expected);
+  }
+}
+
+function safeJsonParse(v: string): any {
+  try {
+    return JSON.parse(v);
+  } catch {
+    return v;
+  }
+}
 
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
   // ===== 实体 =====
@@ -131,7 +193,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       where: filters,
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
-      populate: ["subjectEntity", "objectEntity"],
+      populate: ["subjectEntity", "objectEntity", "truthPolicy"],
     });
   },
 
@@ -158,6 +220,72 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     return id;
   },
 
+  /** documentId/数字 id → 真值数字 id */
+  async _resolveTruthId(ref: string | number): Promise<number | null> {
+    if (typeof ref === "number" && Number.isInteger(ref)) return ref;
+    if (/^\d+$/.test(String(ref))) return Number(ref);
+    const truth = await strapi.db.query(TRUTH_UID).findOne({ where: { documentId: String(ref) } });
+    return truth ? truth.id : null;
+  },
+
+  /** 归一入口：truthPolicy 也是 lnk 列，只接受数字 id，解析失败 400 */
+  async _requireTruthId(ref: string | number, label = "truthPolicyId"): Promise<number> {
+    const id = await this._resolveTruthId(ref);
+    if (!id) {
+      const e: any = new Error(`${label} 无效`);
+      e.status = 400;
+      e.code = "TRUTH_NOT_FOUND";
+      throw e;
+    }
+    return id;
+  },
+
+  /**
+   * 关系值 vs 真值 canonicalValue 一致性校验 + 反向证据链落点。
+   * - 无绑定 / 真值停用或软删 / 客体为 objectEntity 指针 → 跳过，返回 null（不写标记）
+   * - 命中 → relation.verificationStatus = verified；不一致 → conflict
+   */
+  async compareRelationWithTruth(relation: any): Promise<"verified" | "conflict" | null> {
+    const truthRef = relation?.truthPolicy;
+    const truthId = truthRef && typeof truthRef === "object" ? truthRef.id : truthRef;
+    if (!truthId) return null;
+
+    const truth = await strapi.db.query(TRUTH_UID).findOne({
+      where: { id: Number(truthId), deletedAt: null, status: true },
+    });
+    if (!truth) return null;
+
+    const expected = truth.canonicalValue;
+    if (expected === undefined || expected === null || expected === "") return null;
+
+    const actual = relationScalarValue(relation);
+    if (!actual) return null;
+
+    const matched = valuesMatch(truth.canonicalValueType || "text", actual.value, expected);
+    const status = matched ? "verified" : "conflict";
+    await strapi.db.query(RELATION_UID).update({
+      where: { id: relation.id },
+      data: { verificationStatus: status, lastVerifiedAt: new Date().toISOString() },
+    });
+    if (!matched) {
+      strapi.log.warn(
+        `[kg] 关系值偏离真值「${truth.claimKey}」: actual=${JSON.stringify(actual.value)} expected=${JSON.stringify(expected)}`
+      );
+    }
+    return status;
+  },
+
+  /** 比对失败不阻塞写入，只告警 */
+  async _safeCompareWithTruth(relation: any) {
+    if (!relation?.id) return null;
+    try {
+      return await this.compareRelationWithTruth(relation);
+    } catch (err: any) {
+      strapi.log.warn(`[kg] 真值比对失败: ${err?.message}`);
+      return null;
+    }
+  },
+
   async addRelation(params: {
     siteId: number;
     subjectEntityId: string;
@@ -166,6 +294,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     objectValue?: any;
     objectText?: string;
     sourceType?: string;
+    truthPolicyId?: string;
   }) {
     // 自引用（documentId 层先拦一次，避免多余查询）
     if (params.objectEntityId && params.subjectEntityId === params.objectEntityId) {
@@ -220,9 +349,12 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       strapi.log.warn(`[kg] predicate "${params.predicate}" 不在 ${subjectEntity.entityType} 字典中`);
     }
 
+    // 真值绑定（lnk 列，只接受归一后的数字 id）
+    const truthId = params.truthPolicyId ? await this._requireTruthId(params.truthPolicyId) : null;
+
     // 幂等 upsert（同 site + S + P + O）
     if (objectId) {
-      const existing = await strapi.db.query(RELATION_UID).findOne({
+      const existing: any = await strapi.db.query(RELATION_UID).findOne({
         where: {
           site: params.siteId,
           subjectEntity: subjectId,
@@ -231,10 +363,21 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
           deletedAt: null,
         },
       });
-      if (existing) return existing;
+      if (existing) {
+        // 幂等命中时补绑真值（原关系可能未绑定）
+        if (truthId && Number(existing.truthPolicy) !== Number(truthId)) {
+          existing.truthPolicy = truthId;
+          await strapi.db.query(RELATION_UID).update({
+            where: { id: existing.id },
+            data: { truthPolicy: truthId },
+          });
+        }
+        await this._safeCompareWithTruth(existing);
+        return existing;
+      }
     }
 
-    return strapi.db.query(RELATION_UID).create({
+    const created: any = await strapi.db.query(RELATION_UID).create({
       data: {
         site: params.siteId,
         subjectEntity: subjectId,
@@ -243,8 +386,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         objectValue: params.objectValue || null,
         objectText: params.objectText || null,
         sourceType: params.sourceType || "manual",
+        truthPolicy: truthId,
       },
     });
+    await this._safeCompareWithTruth(truthId ? { ...created, truthPolicy: truthId } : created);
+    return created;
   },
 
   async _detectCycle(subjectId: string, objectId: string, predicate: string, visited = new Set<string>()): Promise<boolean> {
@@ -301,6 +447,13 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     if (data.objectEntityId !== undefined && data.objectEntityId !== null && data.objectEntityId !== "") {
       payload.objectEntity = await this._requireEntityId(data.objectEntityId, "objectEntityId");
     }
+    // 真值绑定/解绑（truthPolicyId=null 或 "" 表示解绑）
+    if (data.truthPolicyId !== undefined) {
+      payload.truthPolicy =
+        data.truthPolicyId === null || data.truthPolicyId === ""
+          ? null
+          : await this._requireTruthId(data.truthPolicyId);
+    }
     // 自引用校验（主体与客体同时更新且相同）
     if (payload.subjectEntity && payload.objectEntity && payload.subjectEntity === payload.objectEntity) {
       const e: any = new Error("Self-relation not allowed");
@@ -308,7 +461,17 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       e.code = "SELF_RELATION";
       throw e;
     }
-    return strapi.db.query(RELATION_UID).update({ where: { id: existing.id }, data: payload });
+    const updated: any = await strapi.db.query(RELATION_UID).update({ where: { id: existing.id }, data: payload });
+    // 绑定、客体值任一变更 → 重比真值
+    if (
+      payload.truthPolicy !== undefined ||
+      payload.objectValue !== undefined ||
+      payload.objectText !== undefined ||
+      payload.objectEntity !== undefined
+    ) {
+      await this._safeCompareWithTruth({ ...existing, ...updated, ...payload, id: existing.id });
+    }
+    return updated;
   },
 
   // ===== 消歧 =====
@@ -391,11 +554,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     const entityId = await this._resolveEntityId(entity.documentId);
     const outgoing = await strapi.db.query(RELATION_UID).findMany({
       where: { $or: [{ site: siteId, subjectEntity: entityId, deletedAt: null }, { site: null, subjectEntity: entityId, deletedAt: null }] },
-      populate: ["objectEntity"],
+      populate: ["objectEntity", "truthPolicy"],
     });
     const incoming = await strapi.db.query(RELATION_UID).findMany({
       where: { $or: [{ site: siteId, objectEntity: entityId, deletedAt: null }, { site: null, objectEntity: entityId, deletedAt: null }] },
-      populate: ["subjectEntity"],
+      populate: ["subjectEntity", "truthPolicy"],
     });
     const articles = await this.findArticlesByEntity(siteId, entityId);
     return {
@@ -407,11 +570,16 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         objectValue: r.objectValue,
         objectText: r.objectText,
         sourceType: r.sourceType,
+        verificationStatus: r.verificationStatus,
+        // 证据链：该关系绑定到哪条第一真值
+        truthClaimKey: r.truthPolicy?.claimKey,
       })),
       incoming: incoming.map((r: any) => ({
         predicate: r.predicate,
         subjectEntity: r.subjectEntity ? { slug: r.subjectEntity.slug, name: r.subjectEntity.name, "@id": r.subjectEntity.slug || r.subjectEntity.documentId } : undefined,
         sourceType: r.sourceType,
+        verificationStatus: r.verificationStatus,
+        truthClaimKey: r.truthPolicy?.claimKey,
       })),
       articles,
     };

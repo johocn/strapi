@@ -7,6 +7,8 @@ declare const _default: ({ strapi }: {
     findByClaimKey(siteId: number | null, claimKey: string): Promise<any>;
     create(siteId: number | null, data: any): Promise<any>;
     update(siteId: number | null, documentId: string, data: any): Promise<any>;
+    /** 真值变更 → 重比绑定到它的关系（单条失败不阻塞） */
+    _revalidateEvidenceRelations(truthId: number): Promise<void>;
     _markRelatedEntitiesPending(siteId: number | null, canonicalEntity: any): Promise<void>;
     verify(siteId: number | null, documentId: string): Promise<any>;
     softDelete(siteId: number | null, documentId: string): Promise<any>;
