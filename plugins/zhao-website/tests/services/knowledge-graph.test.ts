@@ -221,6 +221,59 @@ describe("Knowledge Graph Service", () => {
     );
   });
 
+  test("compareRelationWithTruth comparisonMode=contains → 段落包含规范值即 verified", async () => {
+    const queryMock = mockStrapi.db.query();
+    queryMock.findOne.mockResolvedValueOnce({
+      id: 5,
+      claimKey: "domain_learning_def",
+      canonicalValue: "获取知识、技能或经验的过程",
+      canonicalValueType: "text",
+      comparisonMode: "contains",
+    });
+
+    const status = await service.compareRelationWithTruth({
+      id: 9,
+      truthPolicy: 5,
+      objectText: "学习是指获取知识、技能或经验的过程，贯穿人生各阶段。",
+    });
+
+    expect(status).toBe("verified");
+  });
+
+  test("compareRelationWithTruth comparisonMode=contains 但段落未出现规范值 → conflict", async () => {
+    const queryMock = mockStrapi.db.query();
+    queryMock.findOne.mockResolvedValueOnce({
+      id: 5,
+      claimKey: "domain_learning_def",
+      canonicalValue: "获取知识、技能或经验的过程",
+      canonicalValueType: "text",
+      comparisonMode: "contains",
+    });
+
+    const status = await service.compareRelationWithTruth({
+      id: 9,
+      truthPolicy: 5,
+      objectText: "学习是一种提升自我的方式。",
+    });
+
+    expect(status).toBe("conflict");
+  });
+
+  test("comparisonMode=contains 不作用于非 text 类型（number 仍全等）", async () => {
+    const queryMock = mockStrapi.db.query();
+    queryMock.findOne.mockResolvedValueOnce({
+      id: 5,
+      claimKey: "employee_count",
+      canonicalValue: "200",
+      canonicalValueType: "number",
+      comparisonMode: "contains",
+    });
+
+    const status = await service.compareRelationWithTruth({ id: 9, truthPolicy: 5, objectText: "约200人" });
+
+    expect(status).toBe("conflict");
+  });
+
   test("updateRelation 解绑 truthPolicyId=null → 复位为 verified 且不重比", async () => {
     const queryMock = mockStrapi.db.query();
     queryMock.findOne.mockResolvedValueOnce({ id: 3, documentId: "rel-3", truthPolicy: 5, verificationStatus: "conflict" });

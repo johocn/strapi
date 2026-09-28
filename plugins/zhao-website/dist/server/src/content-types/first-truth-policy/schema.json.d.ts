@@ -59,6 +59,12 @@ declare const _default: {
       "enum": ["text", "number", "date", "url", "json"],
       "default": "text"
     },
+    "comparisonMode": {
+      "type": "enumeration",
+      "enum": ["exact", "contains"],
+      "default": "contains",
+      "description": "比对语义：exact=实际值须全等规范值（值型）；contains=实际值只需包含规范值（表述型，段落引用场景）"
+    },
     "canonicalSourceUrl": {
       "type": "string",
       "maxLength": 500

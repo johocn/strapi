@@ -362,7 +362,7 @@ const collectionName$5 = "zhao_website_first_truths";
 const info$5 = { "singularName": "first-truth-policy", "pluralName": "first-truth-policies", "displayName": "第一真值策略声明" };
 const options$5 = { "draftAndPublish": false };
 const pluginOptions$5 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": false } };
-const attributes$5 = { "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config", "required": false, "inversedBy": "website_first_truths" }, "claim": { "type": "string", "maxLength": 200, "required": true }, "claimKey": { "type": "string", "maxLength": 100, "required": true }, "claimCategory": { "type": "enumeration", "enum": ["business_license", "brand_claim", "technical_spec", "certification", "financial", "logistics_promise", "other"], "default": "brand_claim" }, "canonicalEntity": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-website.knowledge-entity", "inversedBy": "firstTruthPolicies" }, "canonicalValue": { "type": "text", "required": true }, "canonicalValueType": { "type": "enumeration", "enum": ["text", "number", "date", "url", "json"], "default": "text" }, "canonicalSourceUrl": { "type": "string", "maxLength": 500 }, "canonicalSourceType": { "type": "enumeration", "enum": ["government", "official_site", "third_party_verified", "internal"], "default": "official_site" }, "conflictResolution": { "type": "enumeration", "enum": ["latest", "earliest", "highest_confidence", "manual"], "default": "manual" }, "lastVerifiedAt": { "type": "datetime", "required": true }, "verificationStatus": { "type": "enumeration", "enum": ["verified", "pending", "outdated", "conflict"], "default": "verified" }, "conflictDetails": { "type": "json" }, "priority": { "type": "integer", "default": 100 }, "status": { "type": "boolean", "default": true }, "evidenceRelations": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.knowledge-relation", "mappedBy": "truthPolicy" }, "geoArticles": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.geo-article", "mappedBy": "truthBasis" }, "deletedAt": { "type": "datetime", "default": null } };
+const attributes$5 = { "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config", "required": false, "inversedBy": "website_first_truths" }, "claim": { "type": "string", "maxLength": 200, "required": true }, "claimKey": { "type": "string", "maxLength": 100, "required": true }, "claimCategory": { "type": "enumeration", "enum": ["business_license", "brand_claim", "technical_spec", "certification", "financial", "logistics_promise", "other"], "default": "brand_claim" }, "canonicalEntity": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-website.knowledge-entity", "inversedBy": "firstTruthPolicies" }, "canonicalValue": { "type": "text", "required": true }, "canonicalValueType": { "type": "enumeration", "enum": ["text", "number", "date", "url", "json"], "default": "text" }, "comparisonMode": { "type": "enumeration", "enum": ["exact", "contains"], "default": "contains", "description": "比对语义：exact=实际值须全等规范值（值型）；contains=实际值只需包含规范值（表述型，段落引用场景）" }, "canonicalSourceUrl": { "type": "string", "maxLength": 500 }, "canonicalSourceType": { "type": "enumeration", "enum": ["government", "official_site", "third_party_verified", "internal"], "default": "official_site" }, "conflictResolution": { "type": "enumeration", "enum": ["latest", "earliest", "highest_confidence", "manual"], "default": "manual" }, "lastVerifiedAt": { "type": "datetime", "required": true }, "verificationStatus": { "type": "enumeration", "enum": ["verified", "pending", "outdated", "conflict"], "default": "verified" }, "conflictDetails": { "type": "json" }, "priority": { "type": "integer", "default": 100 }, "status": { "type": "boolean", "default": true }, "evidenceRelations": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.knowledge-relation", "mappedBy": "truthPolicy" }, "geoArticles": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.geo-article", "mappedBy": "truthBasis" }, "deletedAt": { "type": "datetime", "default": null } };
 const firstTruthPolicy = {
   kind: kind$5,
   collectionName: collectionName$5,
@@ -34681,7 +34681,10 @@ function relationScalarValue(relation) {
   }
   return null;
 }
-function valuesMatch(valueType, actual, expected) {
+function valuesMatch(valueType, actual, expected, comparisonMode = "exact") {
+  if (comparisonMode === "contains" && valueType === "text") {
+    return normalizeText(actual).includes(normalizeText(expected));
+  }
   switch (valueType) {
     case "number": {
       const a = Number(actual);
@@ -34885,7 +34888,12 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
     if (expected === void 0 || expected === null || expected === "") return null;
     const actual = relationScalarValue(relation);
     if (!actual) return null;
-    const matched = valuesMatch(truth.canonicalValueType || "text", actual.value, expected);
+    const matched = valuesMatch(
+      truth.canonicalValueType || "text",
+      actual.value,
+      expected,
+      truth.comparisonMode || "exact"
+    );
     const status = matched ? "verified" : "conflict";
     await strapi2.db.query(RELATION_UID).update({
       where: { id: relation.id },

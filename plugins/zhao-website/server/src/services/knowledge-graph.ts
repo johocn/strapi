@@ -36,8 +36,15 @@ function relationScalarValue(relation: any): { kind: "value" | "text"; value: an
   return null;
 }
 
-/** 按 canonicalValueType 比较实际值与规范值 */
-function valuesMatch(valueType: string, actual: any, expected: any): boolean {
+/**
+ * 按 canonicalValueType 比较实际值与规范值。
+ * comparisonMode=contains 时，文本只判「包含」——表述型真值的规范值是长句，
+ * 实际值是整段正文，全等必然误报。
+ */
+function valuesMatch(valueType: string, actual: any, expected: any, comparisonMode = "exact"): boolean {
+  if (comparisonMode === "contains" && valueType === "text") {
+    return normalizeText(actual).includes(normalizeText(expected));
+  }
   switch (valueType) {
     case "number": {
       const a = Number(actual);
@@ -261,7 +268,12 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     const actual = relationScalarValue(relation);
     if (!actual) return null;
 
-    const matched = valuesMatch(truth.canonicalValueType || "text", actual.value, expected);
+    const matched = valuesMatch(
+      truth.canonicalValueType || "text",
+      actual.value,
+      expected,
+      truth.comparisonMode || "exact"
+    );
     const status = matched ? "verified" : "conflict";
     await strapi.db.query(RELATION_UID).update({
       where: { id: relation.id },

@@ -3004,6 +3004,12 @@ declare const _default: {
                         enum: string[];
                         default: string;
                     };
+                    comparisonMode: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                        description: string;
+                    };
                     canonicalSourceUrl: {
                         type: string;
                         maxLength: number;
