@@ -43,4 +43,9 @@ describe('Content Types', () => {
     const schema = contentTypes['article'].schema;
     expect(schema.options.draftAndPublish).toBe(false);
   });
+
+  test('first-truth-policy.claimCategory 含 terminology_definition（术语定义类真值）', () => {
+    const enums = contentTypes['first-truth-policy'].schema.attributes.claimCategory.enum;
+    expect(enums).toContain('terminology_definition');
+  });
 });
