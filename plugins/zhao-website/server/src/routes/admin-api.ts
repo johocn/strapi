@@ -97,6 +97,8 @@ export default () => ({
     channelScopeRoute("POST", "/knowledge-graph/relations/:documentId/submit", "knowledge-graph.submitRelation", "knowledge-relation.update"),
     channelScopeRoute("POST", "/knowledge-graph/relations/:documentId/approve", "knowledge-graph.approveRelation", "knowledge-relation.update"),
     channelScopeRoute("POST", "/knowledge-graph/relations/:documentId/reject", "knowledge-graph.rejectRelation", "knowledge-relation.update"),
+    channelScopeRoute("GET", "/knowledge-health/completeness", "knowledge-health.completeness", "knowledge-entity.read"),
+    channelScopeRoute("GET", "/knowledge-health/violations", "knowledge-health.violations", "knowledge-entity.read"),
     channelScopeRoute("GET", "/knowledge-audit-logs", "knowledge-graph.findAuditLogs", "knowledge-entity.read"),
     channelScopeRoute("GET", "/knowledge-graph/export", "knowledge-graph.exportGraph", "knowledge-entity.read"),
     // 全局实体路由

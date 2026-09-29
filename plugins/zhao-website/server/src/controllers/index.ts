@@ -26,6 +26,7 @@ import stats from "./admin-api/stats";
 import brandVoice from "./admin-api/brand-voice";
 import geoArticleAudit from "./admin-api/geo-article-audit";
 import geoArticleAdmin from "./admin-api/geo-article-admin";
+import adminKnowledgeHealth from "./admin-api/knowledge-health";
 
 const adminGeneric = Object.fromEntries(
   Object.entries(generic).map(([key, value]) => [`${key}-admin`, value])
@@ -63,4 +64,5 @@ export default {
   "brand-voice": brandVoice,
   "geo-article-audit": geoArticleAudit,
   "geoArticleAdmin": geoArticleAdmin,
+  "knowledge-health": adminKnowledgeHealth,
 };

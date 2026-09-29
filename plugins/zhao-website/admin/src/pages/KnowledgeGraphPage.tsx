@@ -242,6 +242,11 @@ const KnowledgeGraphPage = () => {
               </>
             ),
           },
+          {
+            key: 'health',
+            label: '完备度',
+            children: <KnowledgeHealthPanel />,
+          },
         ]}
       />
 
@@ -344,6 +349,88 @@ const KnowledgeGraphPage = () => {
         ) : null}
       </Modal>
     </Card>
+  );
+};
+
+const KnowledgeHealthPanel = () => {
+  const [data, setData] = useState<any>(null);
+  const [violations, setViolations] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const [c, v] = await Promise.all([
+        fetch(API.kgHealthCompleteness).then((r) => r.json()),
+        fetch(API.kgHealthViolations).then((r) => r.json()),
+      ]);
+      setData(c);
+      setViolations(Array.isArray(v) ? v : []);
+    } catch (err) {
+      message.error(`完备度加载失败: ${(err as Error).message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const exportCleanupList = () => {
+    const blob = new Blob([JSON.stringify({ completeness: data, violations }, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'knowledge-cleanup-list.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  if (!data && !loading) {
+    return <Button onClick={load}>加载完备度</Button>;
+  }
+
+  const gapRows = data
+    ? [
+        { key: 'missingSameAs', item: '实体缺 sameAs', count: data.entities.missingSameAs },
+        { key: 'missingDescription', item: '实体缺 description', count: data.entities.missingDescription },
+        { key: 'missingUrl', item: '实体缺 url', count: data.entities.missingUrl },
+        { key: 'missingIdentifier', item: '实体缺 identifier', count: data.entities.missingIdentifier },
+        { key: 'missingSourceUrl', item: '真值缺 sourceUrl', count: data.facts.missingSourceUrl },
+        { key: 'internalSourceCount', item: '真值来源 internal', count: data.facts.internalSourceCount },
+        { key: 'otherCategoryCount', item: '真值分类 other', count: data.facts.otherCategoryCount },
+        { key: 'unboundCanonicalEntity', item: '真值未绑规范实体', count: data.facts.unboundCanonicalEntity },
+        { key: 'contractViolations', item: '关系客体契约违规', count: data.relations.contractViolations },
+        { key: 'missingTruthPolicy', item: '引用关系未绑真值', count: data.relations.missingTruthPolicy },
+      ]
+    : [];
+
+  return (
+    <Space direction="vertical" style={{ width: '100%' }}>
+      <Space>
+        <Button onClick={load} loading={loading}>刷新</Button>
+        <Button icon={<ExportOutlined />} onClick={exportCleanupList} disabled={!data}>导出清理清单 JSON</Button>
+      </Space>
+      <Table
+        rowKey="key"
+        size="small"
+        pagination={false}
+        dataSource={gapRows}
+        columns={[
+          { title: '缺口项', dataIndex: 'item' },
+          { title: '数量', dataIndex: 'count' },
+        ]}
+      />
+      {data ? <div>空分类：{data.facts.emptyCategories.join(', ') || '无'}</div> : null}
+      <Table
+        rowKey="relationDocumentId"
+        size="small"
+        dataSource={violations}
+        columns={[
+          { title: '主体实体', dataIndex: 'subjectEntity' },
+          { title: '谓词', dataIndex: 'predicate' },
+          { title: '违规原因', dataIndex: 'reason' },
+          { title: '客体预览', dataIndex: 'objectPreview' },
+        ]}
+      />
+    </Space>
   );
 };
 

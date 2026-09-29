@@ -18,6 +18,8 @@ export const API = {
   kgDeleteRelation: (id: string) => `${ADMIN_BASE}/knowledge-graph/relations/${id}`,
   kgDisambiguate: `${ADMIN_BASE}/knowledge-graph/disambiguate`,
   kgExportGraph: `${ADMIN_BASE}/knowledge-graph/export`,
+  kgHealthCompleteness: `${ADMIN_BASE}/knowledge-health/completeness`,
+  kgHealthViolations: `${ADMIN_BASE}/knowledge-health/violations`,
   kgAuditLogs: (params: Record<string, any> = {}) =>
     `${ADMIN_BASE}/knowledge-audit-logs?${new URLSearchParams(params).toString()}`,
   kgEntityReview: (id: string, action: string) => `${ADMIN_BASE}/knowledge-graph/entities/${id}/${action}`,
