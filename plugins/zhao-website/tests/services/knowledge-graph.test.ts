@@ -488,4 +488,81 @@ describe("Knowledge Graph Service", () => {
       })
     );
   });
+
+  test("createEntity 写 create 流水并带操作人", async () => {
+    const queryMock = mockStrapi.db.query();
+    queryMock.create.mockResolvedValueOnce({ id: 1, documentId: "doc-1", name: "A", version: 1 });
+    const audit = mockStrapi.plugin("zhao-website").service("knowledge-audit");
+
+    await service.createEntity(1, { name: "A", entityType: "Organization" }, { id: 7, label: "alice" });
+
+    expect(audit.append).toHaveBeenCalledWith(
+      expect.objectContaining({
+        targetType: "entity", targetId: "doc-1", action: "create", strict: false,
+        actor: { id: 7, label: "alice" },
+      })
+    );
+  });
+
+  test("updateEntity version 递增且 diff 只含变更字段", async () => {
+    const queryMock = mockStrapi.db.query();
+    queryMock.findOne.mockResolvedValueOnce({ id: 3, documentId: "doc-3", name: "A", version: 2 });
+    queryMock.update.mockResolvedValueOnce({ id: 3, version: 3 });
+    const audit = mockStrapi.plugin("zhao-website").service("knowledge-audit");
+
+    await service.updateEntity(1, "doc-3", { name: "B" }, { id: 7, label: "alice" });
+
+    expect(queryMock.update).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 3 }, data: expect.objectContaining({ name: "B", version: 3 }) })
+    );
+    expect(audit.append).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: "update", version: 3,
+        changedFields: { name: { before: "A", after: "B" } },
+      })
+    );
+  });
+
+  test("deleteEntity 写 delete 流水", async () => {
+    const queryMock = mockStrapi.db.query();
+    queryMock.findOne.mockResolvedValueOnce({ id: 3, documentId: "doc-3" });
+    const audit = mockStrapi.plugin("zhao-website").service("knowledge-audit");
+
+    await service.deleteEntity(1, "doc-3", { id: 7, label: "alice" });
+
+    expect(audit.append).toHaveBeenCalledWith(
+      expect.objectContaining({ targetType: "entity", targetId: "doc-3", action: "delete" })
+    );
+  });
+
+  test("compareRelationWithTruth 状态变化才写 recheck 流水", async () => {
+    const queryMock = mockStrapi.db.query();
+    queryMock.findOne.mockResolvedValueOnce({
+      id: 5, claimKey: "k", canonicalValue: "200", canonicalValueType: "text",
+    });
+    const audit = mockStrapi.plugin("zhao-website").service("knowledge-audit");
+
+    await service.compareRelationWithTruth({
+      id: 9, documentId: "rel-9", site: 1, truthPolicy: 5, objectText: "180", verificationStatus: "verified",
+    });
+
+    expect(audit.append).toHaveBeenCalledWith(
+      expect.objectContaining({ targetType: "relation", targetId: "rel-9", action: "recheck", actorLabel: "system" })
+    );
+    expect(audit.append.mock.calls[0][0].actor).toBeNull();
+  });
+
+  test("compareRelationWithTruth 状态未变 → 不写流水", async () => {
+    const queryMock = mockStrapi.db.query();
+    queryMock.findOne.mockResolvedValueOnce({
+      id: 5, claimKey: "k", canonicalValue: "200", canonicalValueType: "text",
+    });
+    const audit = mockStrapi.plugin("zhao-website").service("knowledge-audit");
+
+    await service.compareRelationWithTruth({
+      id: 9, documentId: "rel-9", site: 1, truthPolicy: 5, objectText: "200", verificationStatus: "verified",
+    });
+
+    expect(audit.append).not.toHaveBeenCalled();
+  });
 });

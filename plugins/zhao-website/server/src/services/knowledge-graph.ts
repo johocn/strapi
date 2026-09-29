@@ -1,7 +1,8 @@
 import type { Core } from "@strapi/strapi";
 import { HIERARCHICAL_PREDICATES, isValidPredicate } from "./utils/predicate-dictionary";
 import { knowledgeGraphSync } from "./utils/kg-sync";
-import { stableJson } from "./utils/stable-json";
+import { stableJson, diffFields } from "./utils/stable-json";
+import { auditSafe } from "./knowledge-audit";
 
 const ENTITY_UID = "plugin::zhao-website.knowledge-entity";
 const RELATION_UID = "plugin::zhao-website.knowledge-relation";
@@ -143,14 +144,24 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     });
   },
 
-  async createEntity(siteId: number | null, data: any) {
-    return strapi.db.query(ENTITY_UID).create({
+  async createEntity(siteId: number | null, data: any, actor?: any) {
+    const created: any = await strapi.db.query(ENTITY_UID).create({
       data: { ...data, site: siteId },
     });
+    await auditSafe(strapi, {
+      siteId,
+      targetType: "entity",
+      targetId: created.documentId,
+      action: "create",
+      actor,
+      changedFields: diffFields({}, created),
+      version: created.version ?? 1,
+    });
+    return created;
   },
 
-  async updateEntity(siteId: number | null, documentId: string, data: any) {
-    const existing = await strapi.db.query(ENTITY_UID).findOne({
+  async updateEntity(siteId: number | null, documentId: string, data: any, actor?: any) {
+    const existing: any = await strapi.db.query(ENTITY_UID).findOne({
       where: { site: siteId, documentId, deletedAt: null },
     });
     if (!existing) {
@@ -158,21 +169,40 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       e.status = 404;
       throw e;
     }
-    return strapi.db.query(ENTITY_UID).update({
-      where: { id: existing.id },
-      data,
+    const version = (Number(existing.version) || 1) + 1;
+    const payload = { ...data, version };
+    const updated = await strapi.db.query(ENTITY_UID).update({ where: { id: existing.id }, data: payload });
+    await auditSafe(strapi, {
+      siteId,
+      targetType: "entity",
+      targetId: documentId,
+      action: "update",
+      actor,
+      changedFields: diffFields(existing, { ...existing, ...payload }),
+      version,
     });
+    return updated;
   },
 
-  async deleteEntity(siteId: number | null, documentId: string) {
-    const existing = await strapi.db.query(ENTITY_UID).findOne({
+  async deleteEntity(siteId: number | null, documentId: string, actor?: any) {
+    const existing: any = await strapi.db.query(ENTITY_UID).findOne({
       where: { site: siteId, documentId, deletedAt: null },
     });
     if (!existing) return null;
-    return strapi.db.query(ENTITY_UID).update({
+    const deletedAt = new Date().toISOString();
+    const updated = await strapi.db.query(ENTITY_UID).update({
       where: { id: existing.id },
-      data: { deletedAt: new Date().toISOString() },
+      data: { deletedAt },
     });
+    await auditSafe(strapi, {
+      siteId,
+      targetType: "entity",
+      targetId: documentId,
+      action: "delete",
+      actor,
+      changedFields: diffFields(existing, { ...existing, deletedAt }),
+    });
+    return updated;
   },
 
   // ===== 关系 =====
@@ -277,10 +307,24 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       truth.comparisonMode || "exact"
     );
     const status = matched ? "verified" : "conflict";
+    const statusChanged = relation.verificationStatus !== status;
     await strapi.db.query(RELATION_UID).update({
       where: { id: relation.id },
       data: { verificationStatus: status, lastVerifiedAt: new Date().toISOString() },
     });
+    if (statusChanged) {
+      await auditSafe(strapi, {
+        siteId: relation.site ?? null,
+        targetType: "relation",
+        targetId: relation.documentId,
+        action: "recheck",
+        actor: null,
+        actorLabel: "system",
+        changedFields: {
+          verificationStatus: { before: relation.verificationStatus ?? null, after: status },
+        },
+      });
+    }
     if (!matched) {
       strapi.log.warn(
         `[kg] 关系值偏离真值「${truth.claimKey}」: actual=${JSON.stringify(actual.value)} expected=${JSON.stringify(expected)}`
@@ -309,6 +353,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     objectText?: string;
     sourceType?: string;
     truthPolicyId?: string;
+    actor?: any;
   }) {
     // 自引用（documentId 层先拦一次，避免多余查询）
     if (params.objectEntityId && params.subjectEntityId === params.objectEntityId) {
@@ -406,6 +451,15 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         truthPolicy: truthId,
       },
     });
+    await auditSafe(strapi, {
+      siteId: params.siteId,
+      targetType: "relation",
+      targetId: created.documentId,
+      action: "create",
+      actor: params.actor,
+      changedFields: diffFields({}, created),
+      version: created.version ?? 1,
+    });
     await this._safeCompareWithTruth(truthId ? { ...created, truthPolicy: truthId } : created);
     return created;
   },
@@ -430,18 +484,28 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     return false;
   },
 
-  async deleteRelation(siteId: number, documentId: string) {
-    const existing = await strapi.db.query(RELATION_UID).findOne({
+  async deleteRelation(siteId: number, documentId: string, actor?: any) {
+    const existing: any = await strapi.db.query(RELATION_UID).findOne({
       where: { site: siteId, documentId, deletedAt: null },
     });
     if (!existing) return null;
-    return strapi.db.query(RELATION_UID).update({
+    const deletedAt = new Date().toISOString();
+    const updated = await strapi.db.query(RELATION_UID).update({
       where: { id: existing.id },
-      data: { deletedAt: new Date().toISOString() },
+      data: { deletedAt },
     });
+    await auditSafe(strapi, {
+      siteId,
+      targetType: "relation",
+      targetId: documentId,
+      action: "delete",
+      actor,
+      changedFields: diffFields(existing, { ...existing, deletedAt }),
+    });
+    return updated;
   },
 
-  async updateRelation(siteId: number, documentId: string, data: any) {
+  async updateRelation(siteId: number, documentId: string, data: any, actor?: any) {
     const existing = await strapi.db.query(RELATION_UID).findOne({
       where: { site: siteId, documentId, deletedAt: null },
     });
@@ -482,7 +546,18 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       e.code = "SELF_RELATION";
       throw e;
     }
+    const relVersion = (Number(existing.version) || 1) + 1;
+    payload.version = relVersion;
     const updated: any = await strapi.db.query(RELATION_UID).update({ where: { id: existing.id }, data: payload });
+    await auditSafe(strapi, {
+      siteId,
+      targetType: "relation",
+      targetId: documentId,
+      action: "update",
+      actor,
+      changedFields: diffFields(existing, { ...existing, ...payload }),
+      version: relVersion,
+    });
     // 绑定或客体值变更 → 重比真值（解绑后无客体可比，跳过）
     const valueTouched =
       payload.objectValue !== undefined ||
