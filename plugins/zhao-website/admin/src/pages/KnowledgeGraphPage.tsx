@@ -1,6 +1,6 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { Card, Tabs, Table, Button, Modal, Form, Input, Select, Space, message, Popconfirm, Tag } from 'antd';
-import { PlusOutlined, ExportOutlined, GlobalOutlined } from '@ant-design/icons';
+import { PlusOutlined, ExportOutlined, GlobalOutlined, HistoryOutlined } from '@ant-design/icons';
 import { useFetch, postJSON, putJSON, deleteJSON } from '../hooks/useFetch';
 import { API } from '../utils/api';
 
@@ -17,6 +17,41 @@ const KnowledgeGraphPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [globalMode, setGlobalMode] = useState(false);
   const [editingEntity, setEditingEntity] = useState<any>(null);
+
+  const [auditOpen, setAuditOpen] = useState(false);
+  const [auditTarget, setAuditTarget] = useState<{ targetType: string; targetId: string } | null>(null);
+  const [auditLogs, setAuditLogs] = useState<any[]>([]);
+  const [rejecting, setRejecting] = useState<any>(null);
+  const [rejectReason, setRejectReason] = useState('');
+
+  const openAudit = async (targetType: string, targetId: string) => {
+    setAuditTarget({ targetType, targetId });
+    setAuditOpen(true);
+    try {
+      const res = await fetch(API.kgAuditLogs({ targetType, targetId, pageSize: 50 })).then((r) => r.json());
+      setAuditLogs(res.results || []);
+    } catch (err) {
+      message.error(`流水加载失败: ${(err as Error).message}`);
+    }
+  };
+
+  const doReview = async (action: string, reason?: string) => {
+    if (!auditTarget) return;
+    const url = auditTarget.targetType === 'relation'
+      ? API.kgRelationReview(auditTarget.targetId, action)
+      : API.kgEntityReview(auditTarget.targetId, action);
+    try {
+      await postJSON(url, reason ? { reason } : {});
+      message.success('操作成功');
+      setRejecting(null);
+      setRejectReason('');
+      await openAudit(auditTarget.targetType, auditTarget.targetId);
+      refetchEntities();
+      refetchRelations();
+    } catch (err) {
+      message.error(`操作失败: ${(err as Error).message}`);
+    }
+  };
 
   const { data: entities, loading: loadingEntities, refetch: refetchEntities } = useFetch<any[]>(
     activeTab === 'entities' ? API.kgFindEntities(entityParams) : null
@@ -125,6 +160,7 @@ const KnowledgeGraphPage = () => {
       title: '操作',
       render: (_: any, record: any) => (
         <Space>
+          <Button type="link" size="small" icon={<HistoryOutlined />} onClick={() => openAudit('entity', record.documentId)}>历史</Button>
           <Button type="link" size="small" onClick={() => handleEditEntity(record)}>编辑</Button>
           <Popconfirm title="确认删除？" onConfirm={() => handleDeleteEntity(record)}>
             <Button type="link" danger size="small">删除</Button>
@@ -143,9 +179,12 @@ const KnowledgeGraphPage = () => {
     {
       title: '操作',
       render: (_: any, record: any) => (
-        <Popconfirm title="确认删除？" onConfirm={() => handleDeleteRelation(record.documentId)}>
-          <Button type="link" danger size="small">删除</Button>
-        </Popconfirm>
+        <Space>
+          <Button type="link" size="small" icon={<HistoryOutlined />} onClick={() => openAudit('relation', record.documentId)}>历史</Button>
+          <Popconfirm title="确认删除？" onConfirm={() => handleDeleteRelation(record.documentId)}>
+            <Button type="link" danger size="small">删除</Button>
+          </Popconfirm>
+        </Space>
       ),
     },
   ];
@@ -268,6 +307,41 @@ const KnowledgeGraphPage = () => {
         <pre style={{ maxHeight: 500, overflow: 'auto' }}>
           {exportData ? JSON.stringify(exportData, null, 2) : '加载中...'}
         </pre>
+      </Modal>
+
+      <Modal
+        title="变更与审核流水"
+        open={auditOpen}
+        onCancel={() => setAuditOpen(false)}
+        footer={
+          <Space>
+            <Button onClick={() => doReview('submit')}>提交审核</Button>
+            <Button type="primary" onClick={() => doReview('approve')}>通过</Button>
+            <Button danger onClick={() => setRejecting({})}>驳回</Button>
+          </Space>
+        }
+        width={800}
+      >
+        <Table
+          rowKey="id"
+          size="small"
+          dataSource={auditLogs}
+          pagination={false}
+          columns={[
+            { title: '时间', dataIndex: 'createdAt' },
+            { title: '动作', dataIndex: 'action' },
+            { title: '操作人', dataIndex: 'actorLabel', render: (v: any) => v || 'system' },
+            { title: '版本', dataIndex: 'version' },
+            { title: '理由', dataIndex: 'reason', render: (v: any) => v || '-' },
+            { title: '变更字段', dataIndex: 'changedFields', render: (v: any) => (v ? Object.keys(v).join(', ') : '-') },
+          ]}
+        />
+        {rejecting ? (
+          <Space direction="vertical" style={{ width: '100%', marginTop: 12 }}>
+            <Input.TextArea placeholder="驳回理由（必填）" value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} />
+            <Button danger onClick={() => doReview('reject', rejectReason)}>确认驳回</Button>
+          </Space>
+        ) : null}
       </Modal>
     </Card>
   );

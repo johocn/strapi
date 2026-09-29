@@ -18,6 +18,10 @@ export const API = {
   kgDeleteRelation: (id: string) => `${ADMIN_BASE}/knowledge-graph/relations/${id}`,
   kgDisambiguate: `${ADMIN_BASE}/knowledge-graph/disambiguate`,
   kgExportGraph: `${ADMIN_BASE}/knowledge-graph/export`,
+  kgAuditLogs: (params: Record<string, any> = {}) =>
+    `${ADMIN_BASE}/knowledge-audit-logs?${new URLSearchParams(params).toString()}`,
+  kgEntityReview: (id: string, action: string) => `${ADMIN_BASE}/knowledge-graph/entities/${id}/${action}`,
+  kgRelationReview: (id: string, action: string) => `${ADMIN_BASE}/knowledge-graph/relations/${id}/${action}`,
   // 全局实体
   kgCreateGlobalEntity: `${ADMIN_BASE}/knowledge-graph/entities/global`,
   kgUpdateGlobalEntity: (id: string) => `${ADMIN_BASE}/knowledge-graph/entities/global/${id}`,
@@ -30,6 +34,7 @@ export const API = {
   ftUpdate: (id: string) => `${ADMIN_BASE}/first-truths/${id}`,
   ftDelete: (id: string) => `${ADMIN_BASE}/first-truths/${id}`,
   ftVerify: (id: string) => `${ADMIN_BASE}/first-truths/${id}/verify`,
+  ftReview: (id: string, action: string) => `${ADMIN_BASE}/first-truths/${id}/${action}`,
   ftConflicts: `${ADMIN_BASE}/first-truths/conflicts`,
   ftExportFacts: `${ADMIN_BASE}/first-truths/export`,
   // 全局真值

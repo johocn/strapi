@@ -1,6 +1,6 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { Card, Tabs, Table, Button, Modal, Form, Input, Select, InputNumber, Space, message, Popconfirm, Alert, Tag } from 'antd';
-import { PlusOutlined, ExportOutlined, CheckCircleOutlined, WarningOutlined, GlobalOutlined } from '@ant-design/icons';
+import { PlusOutlined, ExportOutlined, CheckCircleOutlined, WarningOutlined, GlobalOutlined, HistoryOutlined } from '@ant-design/icons';
 import { useFetch, postJSON, putJSON, deleteJSON } from '../hooks/useFetch';
 import { API } from '../utils/api';
 
@@ -14,6 +14,37 @@ const FirstTruthPage = () => {
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
   const [globalMode, setGlobalMode] = useState(false);
+
+  const [auditOpen, setAuditOpen] = useState(false);
+  const [auditTargetId, setAuditTargetId] = useState<string | null>(null);
+  const [auditLogs, setAuditLogs] = useState<any[]>([]);
+  const [rejecting, setRejecting] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
+
+  const openAudit = async (targetId: string) => {
+    setAuditTargetId(targetId);
+    setAuditOpen(true);
+    try {
+      const res = await fetch(API.kgAuditLogs({ targetType: 'first-truth', targetId, pageSize: 50 })).then((r) => r.json());
+      setAuditLogs(res.results || []);
+    } catch (err) {
+      message.error(`流水加载失败: ${(err as Error).message}`);
+    }
+  };
+
+  const doReview = async (action: string, reason?: string) => {
+    if (!auditTargetId) return;
+    try {
+      await postJSON(API.ftReview(auditTargetId, action), reason ? { reason } : {});
+      message.success('操作成功');
+      setRejecting(false);
+      setRejectReason('');
+      await openAudit(auditTargetId);
+      refetchTruths();
+    } catch (err) {
+      message.error(`操作失败: ${(err as Error).message}`);
+    }
+  };
 
   const { data: truths, loading, refetch: refetchTruths } = useFetch<any[]>(API.ftFind(listParams));
   const { data: conflicts, loading: loadingConflicts } = useFetch<any[]>(
@@ -121,6 +152,7 @@ const FirstTruthPage = () => {
       title: '操作',
       render: (_: any, record: any) => (
         <Space>
+          <Button type="link" size="small" icon={<HistoryOutlined />} onClick={() => openAudit(record.documentId)}>历史</Button>
           <Button type="link" size="small" onClick={() => handleOpenEdit(record)}>编辑</Button>
           {record.verificationStatus !== 'verified' && (
             <Button type="link" size="small" icon={<CheckCircleOutlined />} onClick={() => handleVerify(record)}>
@@ -256,6 +288,41 @@ const FirstTruthPage = () => {
         <pre style={{ maxHeight: 500, overflow: 'auto' }}>
           {exportData ? JSON.stringify(exportData, null, 2) : '加载中...'}
         </pre>
+      </Modal>
+
+      <Modal
+        title="变更与审核流水"
+        open={auditOpen}
+        onCancel={() => setAuditOpen(false)}
+        footer={
+          <Space>
+            <Button onClick={() => doReview('submit')}>提交审核</Button>
+            <Button type="primary" onClick={() => doReview('approve')}>通过</Button>
+            <Button danger onClick={() => setRejecting(true)}>驳回</Button>
+          </Space>
+        }
+        width={800}
+      >
+        <Table
+          rowKey="id"
+          size="small"
+          dataSource={auditLogs}
+          pagination={false}
+          columns={[
+            { title: '时间', dataIndex: 'createdAt' },
+            { title: '动作', dataIndex: 'action' },
+            { title: '操作人', dataIndex: 'actorLabel', render: (v: any) => v || 'system' },
+            { title: '版本', dataIndex: 'version' },
+            { title: '理由', dataIndex: 'reason', render: (v: any) => v || '-' },
+            { title: '变更字段', dataIndex: 'changedFields', render: (v: any) => (v ? Object.keys(v).join(', ') : '-') },
+          ]}
+        />
+        {rejecting ? (
+          <Space direction="vertical" style={{ width: '100%', marginTop: 12 }}>
+            <Input.TextArea placeholder="驳回理由（必填）" value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} />
+            <Button danger onClick={() => doReview('reject', rejectReason)}>确认驳回</Button>
+          </Space>
+        ) : null}
       </Modal>
     </Card>
   );
