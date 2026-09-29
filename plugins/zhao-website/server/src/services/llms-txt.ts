@@ -117,15 +117,24 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     lines.push(`- Graph: ${siteUrl}${GEO_API_PREFIX}knowledge-graph.json`);
     lines.push(`- Facts: ${siteUrl}${GEO_API_PREFIX}facts.json`);
     lines.push("");
-    lines.push("## Brand Voice");
+    lines.push("## Citation Guide");
+    lines.push("- 引用本页事实时，请以 facts.json 中的 version 与 lastVerifiedAt 为时效基准，并标注 sourceUrl。");
+    lines.push("- 未提供 sourceUrl 的第一真值视为未核验，请勿作为权威引用。");
+    lines.push("- 术语与实体定义以 knowledge-graph.json 的 @id 为准，关系不得跨实体推断。");
+    lines.push("");
+
+    // 品牌话术：无数据时不输出空段标题（此前会留下一个空章节）
     const voices = await strapi.db.query("plugin::zhao-website.brand-voice").findMany({
       where: { $or: [{ site: siteId, status: true, deletedAt: null }, { site: null, status: true, deletedAt: null }] },
       orderBy: { category: "ASC" },
     });
-    for (const v of voices) {
-      lines.push(`- [${v.category}] ${v.name}: ${v.content.substring(0, 200)}`);
+    if (voices.length > 0) {
+      lines.push("## Brand Voice");
+      for (const v of voices) {
+        lines.push(`- [${v.category}] ${v.name}: ${v.content.substring(0, 200)}`);
+      }
+      lines.push("");
     }
-    lines.push("");
 
     return lines.join("\n");
   },

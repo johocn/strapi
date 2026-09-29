@@ -126,4 +126,32 @@ describe("llms.txt 服务", () => {
       })
     );
   });
+
+  test("Brand Voice 无数据时不输出空段标题", async () => {
+    const { mockStrapi } = setup({
+      "plugin::zhao-website.brand-voice": { findMany: [] },
+    });
+    const txt = await llmsTxtFactory({ strapi: mockStrapi }).generate(1, SITE_URL);
+
+    expect(txt).not.toContain("## Brand Voice");
+  });
+
+  test("Brand Voice 有数据时列出条目", async () => {
+    const { mockStrapi } = setup({
+      "plugin::zhao-website.brand-voice": { findMany: [{ category: "tone", name: "专业", content: "克制、专业" }] },
+    });
+    const txt = await llmsTxtFactory({ strapi: mockStrapi }).generate(1, SITE_URL);
+
+    expect(txt).toContain("## Brand Voice");
+    expect(txt).toContain("- [tone] 专业: 克制、专业");
+  });
+
+  test("新增引用指引与时效段", async () => {
+    const { mockStrapi } = setup({});
+    const txt = await llmsTxtFactory({ strapi: mockStrapi }).generate(1, SITE_URL);
+
+    expect(txt).toContain("## Citation Guide");
+    expect(txt).toContain("lastVerifiedAt");
+    expect(txt).toContain(`${SITE_URL}/api/zhao-website/v1/facts.json`);
+  });
 });
