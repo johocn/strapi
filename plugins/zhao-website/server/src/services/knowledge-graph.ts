@@ -1,5 +1,6 @@
 import type { Core } from "@strapi/strapi";
 import { HIERARCHICAL_PREDICATES, isValidPredicate } from "./utils/predicate-dictionary";
+import { getPredicateContract, validateObjectContract } from "./utils/predicate-contracts";
 import { knowledgeGraphSync } from "./utils/kg-sync";
 import { stableJson, diffFields } from "./utils/stable-json";
 import { auditSafe } from "./knowledge-audit";
@@ -449,6 +450,30 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     // 真值绑定（lnk 列，只接受归一后的数字 id）
     const truthId = params.truthPolicyId ? await this._requireTruthId(params.truthPolicyId) : null;
 
+    // 谓词客体契约校验：已登记契约 → 严格校验；字典内但未登记 → 告警放行
+    if (subjectEntity) {
+      const contract = getPredicateContract(subjectEntity.entityType, params.predicate);
+      const shape = {
+        hasEntity,
+        hasValue,
+        hasText,
+        textLength: hasText ? String(params.objectText).length : 0,
+      };
+      if (contract) {
+        const reason = validateObjectContract(subjectEntity.entityType, params.predicate, shape, truthId);
+        if (reason) {
+          const e: any = new Error(`关系客体不符合谓词契约：${reason}`);
+          e.status = 400;
+          e.code = "RELATION_OBJECT_CONTRACT_VIOLATION";
+          throw e;
+        }
+      } else if (isValidPredicate(subjectEntity.entityType, params.predicate)) {
+        strapi.log.warn(
+          `[kg] predicate "${params.predicate}" 未登记客体契约（contractUnregistered），已放行`
+        );
+      }
+    }
+
     // 幂等 upsert（同 site + S + P + O；objectText 型关系以文本作为客体键）
     const idempotentWhere: any = {
       site: params.siteId,
@@ -596,6 +621,37 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       e.status = 400;
       e.code = "SELF_RELATION";
       throw e;
+    }
+    // 客体形态相关字段变更 → 契约校验（与 addRelation 同口径）
+    const contractRelevant =
+      payload.predicate !== undefined ||
+      payload.objectEntity !== undefined ||
+      payload.objectValue !== undefined ||
+      payload.objectText !== undefined;
+    if (contractRelevant) {
+      const subjectForContract: any = payload.subjectEntity
+        ? await strapi.db.query(ENTITY_UID).findOne({ where: { id: payload.subjectEntity } })
+        : await strapi.db.query(ENTITY_UID).findOne({ where: { id: existing.subjectEntity } });
+      if (subjectForContract) {
+        const nextPredicate = payload.predicate ?? existing.predicate;
+        const nextEntity = payload.objectEntity !== undefined ? payload.objectEntity : existing.objectEntity;
+        const nextValue = payload.objectValue !== undefined ? payload.objectValue : existing.objectValue;
+        const nextText = payload.objectText !== undefined ? payload.objectText : existing.objectText;
+        const nextTruth = payload.truthPolicy !== undefined ? payload.truthPolicy : existing.truthPolicy;
+        const shape = {
+          hasEntity: nextEntity !== undefined && nextEntity !== null,
+          hasValue: nextValue !== undefined && nextValue !== null,
+          hasText: !!nextText,
+          textLength: nextText ? String(nextText).length : 0,
+        };
+        const reason = validateObjectContract(subjectForContract.entityType, nextPredicate, shape, nextTruth);
+        if (reason) {
+          const e: any = new Error(`关系客体不符合谓词契约：${reason}`);
+          e.status = 400;
+          e.code = "RELATION_OBJECT_CONTRACT_VIOLATION";
+          throw e;
+        }
+      }
     }
     const relVersion = (Number(existing.version) || 1) + 1;
     payload.version = relVersion;

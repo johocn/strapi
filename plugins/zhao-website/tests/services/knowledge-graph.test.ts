@@ -600,4 +600,64 @@ describe("Knowledge Graph Service", () => {
     expect(jsonLd.version).toBe(3);
     expect(jsonLd.dateModified).toBe("2026-09-29T00:00:00.000Z");
   });
+
+  test("addRelation 契约违规（termCode 挂超长文本）→ 400 RELATION_OBJECT_CONTRACT_VIOLATION", async () => {
+    service._resolveEntityId = jest.fn(async (ref: any) => (ref === "doc-term" ? 11 : null));
+    mockStrapi.db.query().findOne.mockResolvedValueOnce({ id: 11, entityType: "DefinedTerm" });
+
+    await expect(
+      service.addRelation({
+        siteId: 1,
+        subjectEntityId: "doc-term",
+        predicate: "termCode",
+        objectText: "甲".repeat(300),
+      })
+    ).rejects.toMatchObject({ status: 400, code: "RELATION_OBJECT_CONTRACT_VIOLATION" });
+  });
+
+  test("addRelation 契约通过（termCode 短文本）→ 正常写入", async () => {
+    service._resolveEntityId = jest.fn(async (ref: any) => (ref === "doc-term" ? 11 : null));
+    const queryMock = mockStrapi.db.query();
+    queryMock.findOne
+      .mockResolvedValueOnce({ id: 11, entityType: "DefinedTerm" })
+      .mockResolvedValueOnce(null);
+
+    await service.addRelation({
+      siteId: 1,
+      subjectEntityId: "doc-term",
+      predicate: "termCode",
+      objectText: "职业教育",
+    });
+
+    expect(queryMock.create).toHaveBeenCalled();
+  });
+
+  test("addRelation 未登记契约的字典谓词 → 仅告警不拒绝", async () => {
+    service._resolveEntityId = jest.fn(async (ref: any) => (ref === "doc-org" ? 11 : null));
+    const queryMock = mockStrapi.db.query();
+    queryMock.findOne
+      .mockResolvedValueOnce({ id: 11, entityType: "Organization" })
+      .mockResolvedValueOnce(null);
+
+    await service.addRelation({
+      siteId: 1,
+      subjectEntityId: "doc-org",
+      predicate: "brand",
+      objectText: "Joho",
+    });
+
+    expect(queryMock.create).toHaveBeenCalled();
+    expect(mockStrapi.log.warn).toHaveBeenCalledWith(expect.stringContaining("contractUnregistered"));
+  });
+
+  test("updateRelation 改谓词触发契约校验违规 → 400", async () => {
+    const queryMock = mockStrapi.db.query();
+    queryMock.findOne
+      .mockResolvedValueOnce({ id: 3, documentId: "rel-3", subjectEntity: 11, predicate: "mentions", objectText: "甲".repeat(300) }) // 关系存在（客体为超长文本）
+      .mockResolvedValueOnce({ id: 11, entityType: "DefinedTerm" }); // 主体实体
+
+    await expect(
+      service.updateRelation(1, "rel-3", { predicate: "termCode" })
+    ).rejects.toMatchObject({ status: 400, code: "RELATION_OBJECT_CONTRACT_VIOLATION" });
+  });
 });
