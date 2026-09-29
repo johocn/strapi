@@ -895,8 +895,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     if (entity.description) jsonLd.description = entity.description;
     if (entity.url) jsonLd.url = entity.url;
     if (entity.image) jsonLd.image = entity.url; // 简化
-    // sameAs：外部权威标识（Wikidata/维基百科等），供 AI 侧做实体对齐
+    // sameAs：外部权威标识（Wikidata/维基百科/企业信息页等），供 AI 侧做实体对齐
     if (entity.sameAs) jsonLd.sameAs = entity.sameAs;
+    // identifier：主体唯一标识（如统一社会信用代码）
+    if (entity.identifier) jsonLd.identifier = entity.identifier;
     if (entity.properties) Object.assign(jsonLd, entity.properties);
     const visibleOutgoing = outgoing.filter(
       (rel: any) => !this._isContractViolation(entity.entityType, rel)

@@ -825,6 +825,21 @@ describe("Knowledge Graph Service", () => {
     expect(jsonLd.sameAs).toBeUndefined();
   });
 
+  test("_entityToJsonLd 输出 identifier（统一社会信用代码等主体标识）", () => {
+    const jsonLd = service._entityToJsonLd({
+      documentId: "doc-org", name: "joho.cn", entityType: "Organization", slug: "joho-cn",
+      identifier: "91220112MA0Y3YQY0J",
+    });
+
+    expect(jsonLd.identifier).toBe("91220112MA0Y3YQY0J");
+  });
+
+  test("无 identifier 时不输出该字段", () => {
+    const jsonLd = service._entityToJsonLd({ documentId: "doc-a", name: "A", entityType: "Organization", slug: "a" });
+
+    expect(jsonLd.identifier).toBeUndefined();
+  });
+
   test("exportEntity 输出 subjectOf 指向解释文章（绝对 URL）", async () => {
     service.findEntityBySlug = jest.fn().mockResolvedValue({
       id: 1, documentId: "doc-term", name: "学习", entityType: "DefinedTerm", slug: "learning",
