@@ -32,6 +32,7 @@ import feed from "./feed";
 import redirect from "./redirect";
 import inviteTrace from "./invite-trace";
 import ecoHook from "./eco-hook";
+import knowledgeAudit from "./knowledge-audit";
 
 export default {
   "seo-config": seoConfig,
@@ -68,4 +69,5 @@ export default {
   "redirect": redirect,
   "invite-trace": inviteTrace,
   "eco-hook": ecoHook,
+  "knowledge-audit": knowledgeAudit,
 };

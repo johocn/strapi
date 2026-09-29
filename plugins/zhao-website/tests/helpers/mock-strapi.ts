@@ -30,7 +30,16 @@ export function createMockStrapi(overrides: Record<string, any> = {}) {
       connection: connectionMock,
     },
     plugin: jest.fn().mockReturnValue({
-      service: jest.fn().mockReturnValue({}),
+      service: jest.fn((name: string) =>
+        name === "knowledge-audit"
+          ? {
+              append: jest.fn().mockResolvedValue(null),
+              findByTarget: jest
+                .fn()
+                .mockResolvedValue({ results: [], pagination: { page: 1, pageSize: 20, total: 0 } }),
+            }
+          : {}
+      ),
     }),
     log: {
       info: jest.fn(),
@@ -80,7 +89,16 @@ export function createMockStrapiWithQuery(queryOverrides: Record<string, Partial
       },
     },
     plugin: jest.fn().mockReturnValue({
-      service: jest.fn().mockReturnValue({}),
+      service: jest.fn((name: string) =>
+        name === "knowledge-audit"
+          ? {
+              append: jest.fn().mockResolvedValue(null),
+              findByTarget: jest
+                .fn()
+                .mockResolvedValue({ results: [], pagination: { page: 1, pageSize: 20, total: 0 } }),
+            }
+          : {}
+      ),
     }),
     log: {
       info: jest.fn(),
