@@ -89,7 +89,13 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
   async findEntityBySlug(siteId: number, slug: string) {
     // 派生实体是内容 CT 的内部节点，不对外提供实体页
-    const where = { slug, deletedAt: null, status: true, sourceType: { $ne: "derived" } };
+    const where = {
+      slug,
+      deletedAt: null,
+      status: true,
+      sourceType: { $ne: "derived" },
+      verificationStatus: { $ne: "rejected" },
+    };
     const tenant = await strapi.db.query(ENTITY_UID).findOne({
       where: { ...where, site: siteId },
       populate: ["image"],
@@ -742,6 +748,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       "@id": entity.slug || entity.documentId,
       "name": entity.name,
     };
+    // 公开出口的合规字段：版本号 + 最后修改时间（不露操作人/理由）
+    jsonLd.version = entity.version ?? 1;
+    if (entity.updatedAt) jsonLd.dateModified = entity.updatedAt;
     if (entity.description) jsonLd.description = entity.description;
     if (entity.url) jsonLd.url = entity.url;
     if (entity.image) jsonLd.image = entity.url; // 简化
@@ -785,6 +794,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       priority: t.priority,
       lastVerifiedAt: t.lastVerifiedAt,
       verificationStatus: t.verificationStatus,
+      version: t.version,
     }));
   },
 });

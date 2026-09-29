@@ -565,4 +565,37 @@ describe("Knowledge Graph Service", () => {
 
     expect(audit.append).not.toHaveBeenCalled();
   });
+
+  test("findEntityBySlug 排除 rejected 实体", async () => {
+    const queryMock = mockStrapi.db.query();
+
+    await service.findEntityBySlug(1, "career-plan");
+
+    expect(queryMock.findOne).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ verificationStatus: { $ne: "rejected" } }),
+      })
+    );
+  });
+
+  test("exportFacts 每条带 version", async () => {
+    const queryMock = mockStrapi.db.query();
+    queryMock.findMany.mockResolvedValueOnce([
+      { claimKey: "k", claim: "c", canonicalValue: "v", canonicalValueType: "text", verificationStatus: "verified", version: 4 },
+    ]);
+
+    const facts = await service.exportFacts(1);
+
+    expect(facts[0].version).toBe(4);
+  });
+
+  test("_entityToJsonLd 输出 version 与 dateModified", () => {
+    const jsonLd = service._entityToJsonLd({
+      documentId: "doc-a", name: "A", entityType: "Organization", slug: "a",
+      version: 3, updatedAt: "2026-09-29T00:00:00.000Z",
+    });
+
+    expect(jsonLd.version).toBe(3);
+    expect(jsonLd.dateModified).toBe("2026-09-29T00:00:00.000Z");
+  });
 });
