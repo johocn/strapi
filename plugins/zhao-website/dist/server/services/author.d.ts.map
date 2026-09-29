@@ -1,0 +1,1 @@
+{"version":3,"file":"author.d.ts","sourceRoot":"","sources":["../../../server/src/services/author.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,IAAI,EAAE,MAAM,gBAAgB,CAAC;yBAI3B,YAAY;IAAE,MAAM,EAAE,IAAI,CAAC,MAAM,CAAA;CAAE;sBACzB,MAAM;yBAOH,MAAM,cAAc,MAAM;mBAMhC,MAAM,QAAQ,GAAG;mBAIjB,MAAM,cAAc,MAAM,QAAQ,GAAG;uBAUjC,MAAM,cAAc,MAAM;;AA5BrD,wBAoCG"}

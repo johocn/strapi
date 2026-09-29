@@ -1,0 +1,24 @@
+declare const _default: {
+    findEntities(ctx: any): Promise<void>;
+    createEntity(ctx: any): Promise<void>;
+    updateEntity(ctx: any): Promise<void>;
+    deleteEntity(ctx: any): Promise<void>;
+    findRelations(ctx: any): Promise<void>;
+    addRelation(ctx: any): Promise<void>;
+    deleteRelation(ctx: any): Promise<void>;
+    updateRelation(ctx: any): Promise<void>;
+    disambiguate(ctx: any): Promise<void>;
+    exportGraph(ctx: any): Promise<void>;
+    createGlobalEntity(ctx: any): Promise<void>;
+    updateGlobalEntity(ctx: any): Promise<void>;
+    deleteGlobalEntity(ctx: any): Promise<void>;
+    submitEntity(ctx: any): Promise<void>;
+    approveEntity(ctx: any): Promise<void>;
+    rejectEntity(ctx: any): Promise<void>;
+    submitRelation(ctx: any): Promise<void>;
+    approveRelation(ctx: any): Promise<void>;
+    rejectRelation(ctx: any): Promise<void>;
+    findAuditLogs(ctx: any): Promise<void>;
+};
+export default _default;
+//# sourceMappingURL=knowledge-graph.d.ts.map

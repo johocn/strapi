@@ -1,0 +1,74 @@
+declare const _default: {
+    article: {
+        list(ctx: any): Promise<void>;
+        detail(ctx: any): Promise<any>;
+        byCategory(ctx: any): Promise<void>;
+        featured(ctx: any): Promise<void>;
+        related(ctx: any): Promise<any>;
+    };
+    "geo-article": {
+        list(ctx: any): Promise<void>;
+        detail(ctx: any): Promise<any>;
+        featured(ctx: any): Promise<void>;
+    };
+    product: {
+        list(ctx: any): Promise<void>;
+        detail(ctx: any): Promise<any>;
+    };
+    case: {
+        list(ctx: any): Promise<void>;
+        detail(ctx: any): Promise<any>;
+    };
+    faq: {
+        list(ctx: any): Promise<void>;
+        detail(ctx: any): Promise<any>;
+        byCategory(ctx: any): Promise<void>;
+    };
+    tutorial: {
+        list(ctx: any): Promise<void>;
+        detail(ctx: any): Promise<any>;
+        byDifficulty(ctx: any): Promise<void>;
+    };
+    compliance: {
+        list(ctx: any): Promise<void>;
+        detail(ctx: any): Promise<any>;
+        byCategory(ctx: any): Promise<void>;
+    };
+    download: {
+        list(ctx: any): Promise<void>;
+        download(ctx: any): Promise<any>;
+    };
+    lead: {
+        submit(ctx: any): Promise<{
+            success: boolean;
+        } | undefined>;
+        track(ctx: any): Promise<any>;
+    };
+    "seo-output": {
+        sitemap(ctx: any): Promise<void>;
+        robots(ctx: any): Promise<void>;
+        llmsTxt(ctx: any): Promise<void>;
+        llmsFullTxt(ctx: any): Promise<void>;
+        manifest(ctx: any): Promise<void>;
+    };
+    "site-info": {
+        info(ctx: any): Promise<void>;
+    };
+    "seo-meta": {
+        meta(ctx: any): Promise<void>;
+    };
+    "knowledge-graph": {
+        exportGraph(ctx: any): Promise<void>;
+        exportEntity(ctx: any): Promise<void>;
+        exportFacts(ctx: any): Promise<void>;
+    };
+    feed: {
+        rss(ctx: any): Promise<void>;
+        atom(ctx: any): Promise<void>;
+    };
+    "invite-trace": {
+        track(ctx: any): Promise<any>;
+    };
+};
+export default _default;
+//# sourceMappingURL=index.d.ts.map

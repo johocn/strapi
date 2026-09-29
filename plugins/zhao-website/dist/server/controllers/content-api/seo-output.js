@@ -1,0 +1,70 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+async function getSiteUrl(siteId, fallbackHost) {
+    const siteConfig = await strapi.db.query("plugin::zhao-common.site-config").findOne({
+        where: { id: siteId },
+    });
+    // domain 存的是裸域名，需补协议成绝对 URL，否则 sitemap/llms-txt 里 new URL() 抛错
+    const domain = siteConfig?.domain;
+    return domain
+        ? /^https?:\/\//.test(domain)
+            ? domain
+            : `https://${domain}`
+        : `https://${fallbackHost}`;
+}
+exports.default = {
+    async sitemap(ctx) {
+        const siteId = ctx.state.siteId;
+        const siteUrl = await getSiteUrl(siteId, ctx.request.host);
+        const xml = await strapi.plugin("zhao-website").service("sitemap").generate(siteId, siteUrl);
+        ctx.type = "application/xml";
+        ctx.body = xml;
+    },
+    async robots(ctx) {
+        const siteId = ctx.state.siteId;
+        const siteUrl = await getSiteUrl(siteId, ctx.request.host);
+        const txt = await strapi.plugin("zhao-website").service("robots").generate(siteId, siteUrl);
+        ctx.type = "text/plain";
+        ctx.body = txt;
+    },
+    async llmsTxt(ctx) {
+        const siteId = ctx.state.siteId;
+        const siteUrl = await getSiteUrl(siteId, ctx.request.host);
+        const txt = await strapi.plugin("zhao-website").service("llms-txt").generate(siteId, siteUrl);
+        ctx.type = "text/plain";
+        ctx.body = txt;
+    },
+    async llmsFullTxt(ctx) {
+        const siteId = ctx.state.siteId;
+        const siteUrl = await getSiteUrl(siteId, ctx.request.host);
+        const txt = await strapi.plugin("zhao-website").service("llms-txt").generateFull(siteId, siteUrl);
+        ctx.type = "text/plain";
+        ctx.body = txt;
+    },
+    async manifest(ctx) {
+        const siteId = ctx.state.siteId;
+        const siteUrl = await getSiteUrl(siteId, ctx.request.host);
+        const brandInfo = await strapi.plugin("zhao-website").service("brand-info").find(siteId);
+        const seoConfig = await strapi.plugin("zhao-website").service("seo-config").find(siteId);
+        const icons = [];
+        if (brandInfo?.favicon?.url) {
+            icons.push({ src: `${siteUrl}${brandInfo.favicon.url}`, sizes: "192x192", type: "image/png" });
+        }
+        if (brandInfo?.logo?.url) {
+            icons.push({ src: `${siteUrl}${brandInfo.logo.url}`, sizes: "512x512", type: "image/png" });
+        }
+        ctx.body = {
+            name: brandInfo?.companyName || "",
+            short_name: brandInfo?.shortName || brandInfo?.companyName?.substring(0, 6) || "",
+            start_url: "/",
+            scope: "/",
+            display: "standalone",
+            orientation: "portrait",
+            background_color: "#ffffff",
+            theme_color: seoConfig?.extraConfig?.themeColor || "#000000",
+            categories: ["education", "productivity"],
+            icons,
+        };
+    },
+};
+//# sourceMappingURL=seo-output.js.map

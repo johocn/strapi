@@ -1,0 +1,3823 @@
+declare const _default: {
+    register: ({ strapi }: {
+        strapi: import("@strapi/types/dist/core").Strapi;
+    }) => void;
+    bootstrap: ({ strapi }: {
+        strapi: import("@strapi/types/dist/core").Strapi;
+    }) => Promise<void>;
+    config: {
+        default: {
+            eco: {
+                url: string;
+                secret: string;
+            };
+        };
+    };
+    controllers: {
+        "knowledge-graph": {
+            exportGraph(ctx: any): Promise<void>;
+            exportEntity(ctx: any): Promise<void>;
+            exportFacts(ctx: any): Promise<void>;
+            findEntities(ctx: any): Promise<void>;
+            createEntity(ctx: any): Promise<void>;
+            updateEntity(ctx: any): Promise<void>;
+            deleteEntity(ctx: any): Promise<void>;
+            findRelations(ctx: any): Promise<void>;
+            addRelation(ctx: any): Promise<void>;
+            deleteRelation(ctx: any): Promise<void>;
+            updateRelation(ctx: any): Promise<void>;
+            disambiguate(ctx: any): Promise<void>;
+            createGlobalEntity(ctx: any): Promise<void>;
+            updateGlobalEntity(ctx: any): Promise<void>;
+            deleteGlobalEntity(ctx: any): Promise<void>;
+            submitEntity(ctx: any): Promise<void>;
+            approveEntity(ctx: any): Promise<void>;
+            rejectEntity(ctx: any): Promise<void>;
+            submitRelation(ctx: any): Promise<void>;
+            approveRelation(ctx: any): Promise<void>;
+            rejectRelation(ctx: any): Promise<void>;
+            findAuditLogs(ctx: any): Promise<void>;
+        };
+        "first-truth": {
+            find(ctx: any): Promise<void>;
+            findOne(ctx: any): Promise<void>;
+            create(ctx: any): Promise<void>;
+            update(ctx: any): Promise<void>;
+            delete(ctx: any): Promise<void>;
+            verify(ctx: any): Promise<void>;
+            conflicts(ctx: any): Promise<void>;
+            exportFacts(ctx: any): Promise<void>;
+            createGlobal(ctx: any): Promise<void>;
+            updateGlobal(ctx: any): Promise<void>;
+            deleteGlobal(ctx: any): Promise<void>;
+            verifyGlobal(ctx: any): Promise<void>;
+            submit(ctx: any): Promise<void>;
+            approve(ctx: any): Promise<void>;
+            reject(ctx: any): Promise<void>;
+        };
+        "ai-content-summary": {
+            findAdmin(ctx: any): Promise<void>;
+            findByTarget(ctx: any): Promise<void>;
+            create(ctx: any): Promise<void>;
+            update(ctx: any): Promise<void>;
+            delete(ctx: any): Promise<void>;
+            regenerate(ctx: any): Promise<void>;
+        };
+        "studio-bridge": {
+            publishFromStudio(ctx: any): Promise<void>;
+        };
+        stats: {
+            overview(ctx: any): Promise<void>;
+            leadStats(ctx: any): Promise<void>;
+            searchStats(ctx: any): Promise<void>;
+        };
+        "brand-voice": {
+            resolve(ctx: any): Promise<void>;
+            listByCategory(ctx: any): Promise<void>;
+            createGlobal(ctx: any): Promise<void>;
+            updateGlobal(ctx: any): Promise<void>;
+            deleteGlobal(ctx: any): Promise<void>;
+            publicList(ctx: any): Promise<void>;
+            publicByCategory(ctx: any): Promise<void>;
+        };
+        "geo-article-audit": {
+            check(ctx: any): Promise<any>;
+        };
+        geoArticleAdmin: {
+            find(ctx: any): Promise<void>;
+            findOne(ctx: any): Promise<any>;
+            create(ctx: any): Promise<void>;
+            update(ctx: any): Promise<void>;
+            softDelete(ctx: any): Promise<void>;
+            publish(ctx: any): Promise<void>;
+            archive(ctx: any): Promise<void>;
+            batch(ctx: any): Promise<void>;
+        };
+        "knowledge-health": {
+            completeness(ctx: any): Promise<void>;
+            violations(ctx: any): Promise<void>;
+        };
+        article: {
+            list(ctx: any): Promise<void>;
+            detail(ctx: any): Promise<any>;
+            byCategory(ctx: any): Promise<void>;
+            featured(ctx: any): Promise<void>;
+            related(ctx: any): Promise<any>;
+        };
+        "geo-article": {
+            list(ctx: any): Promise<void>;
+            detail(ctx: any): Promise<any>;
+            featured(ctx: any): Promise<void>;
+        };
+        product: {
+            list(ctx: any): Promise<void>;
+            detail(ctx: any): Promise<any>;
+        };
+        case: {
+            list(ctx: any): Promise<void>;
+            detail(ctx: any): Promise<any>;
+        };
+        faq: {
+            list(ctx: any): Promise<void>;
+            detail(ctx: any): Promise<any>;
+            byCategory(ctx: any): Promise<void>;
+        };
+        tutorial: {
+            list(ctx: any): Promise<void>;
+            detail(ctx: any): Promise<any>;
+            byDifficulty(ctx: any): Promise<void>;
+        };
+        compliance: {
+            list(ctx: any): Promise<void>;
+            detail(ctx: any): Promise<any>;
+            byCategory(ctx: any): Promise<void>;
+        };
+        download: {
+            list(ctx: any): Promise<void>;
+            download(ctx: any): Promise<any>;
+        };
+        lead: {
+            submit(ctx: any): Promise<{
+                success: boolean;
+            } | undefined>;
+            track(ctx: any): Promise<any>;
+        };
+        "seo-output": {
+            sitemap(ctx: any): Promise<void>;
+            robots(ctx: any): Promise<void>;
+            llmsTxt(ctx: any): Promise<void>;
+            llmsFullTxt(ctx: any): Promise<void>;
+            manifest(ctx: any): Promise<void>;
+        };
+        "site-info": {
+            info(ctx: any): Promise<void>;
+        };
+        "seo-meta": {
+            meta(ctx: any): Promise<void>;
+        };
+        feed: {
+            rss(ctx: any): Promise<void>;
+            atom(ctx: any): Promise<void>;
+        };
+        "invite-trace": {
+            track(ctx: any): Promise<any>;
+        };
+        "article-admin": {
+            find(ctx: any): Promise<void>;
+            findOne(ctx: any): Promise<any>;
+            create(ctx: any): Promise<void>;
+            update(ctx: any): Promise<void>;
+            delete(ctx: any): Promise<void>;
+            publish(ctx: any): Promise<void>;
+            archive(ctx: any): Promise<void>;
+            batch(ctx: any): Promise<void>;
+        };
+        "seo-config-admin": {
+            find(ctx: any): Promise<void>;
+            update(ctx: any): Promise<void>;
+        };
+        "brand-info-admin": {
+            find(ctx: any): Promise<void>;
+            update(ctx: any): Promise<void>;
+        };
+    };
+    routes: {
+        "content-api": {
+            type: "content-api";
+            routes: {
+                method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
+                path: string;
+                handler: string;
+                config: {
+                    auth: boolean;
+                    policies: (string | {
+                        name: string;
+                        config: {
+                            action: string;
+                        };
+                    })[];
+                };
+            }[];
+        };
+    };
+    services: {
+        "seo-config": ({ strapi }: {
+            strapi: import("@strapi/types/dist/core").Strapi;
+        }) => {
+            ensureDefault(siteId: number): Promise<any>;
+            find(siteId: number): Promise<any>;
+            get(siteId: number): Promise<any>;
+            update(siteId: number, data: any): Promise<any>;
+            findPublic(siteId: number): Promise<any>;
+        };
+        "brand-info": ({ strapi }: {
+            strapi: import("@strapi/types/dist/core").Strapi;
+        }) => {
+            ensureDefault(siteId: number): Promise<any>;
+            find(siteId: number): Promise<any>;
+            get(siteId: number): Promise<any>;
+            update(siteId: number, data: any): Promise<any>;
+            findPublic(siteId: number): Promise<any>;
+        };
+        article: ({ strapi }: {
+            strapi: import("@strapi/types/dist/core").Strapi;
+        }) => {
+            find(siteId: number, query?: any): Promise<any[]>;
+            findOne(siteId: number, slug: string, locale?: string): Promise<any>;
+            findFeatured(siteId: number, limit?: number, locale?: string): Promise<any[]>;
+            search(siteId: number, keyword: string, page?: number, pageSize?: number): Promise<{
+                data: any[];
+                meta: {
+                    pagination: {
+                        page: number;
+                        pageSize: number;
+                        total: number;
+                        pageCount: number;
+                    };
+                };
+            }>;
+            findAdmin(siteId: number, query?: any): Promise<any[]>;
+            findOneAdmin(siteId: number, documentId: string): Promise<any>;
+            create(siteId: number, data: any): Promise<any>;
+            update(siteId: number, documentId: string, data: any): Promise<any>;
+            publish(siteId: number, documentId: string): Promise<any>;
+            unpublish(siteId: number, documentId: string): Promise<any>;
+            archive(siteId: number, documentId: string): Promise<any>;
+            softDelete(siteId: number, documentId: string): Promise<any>;
+            incrementViewCount(siteId: number, documentId: string): Promise<void>;
+        };
+        "geo-article": ({ strapi }: {
+            strapi: import("@strapi/types/dist/core").Strapi;
+        }) => {
+            find(siteId: number, query?: any): Promise<{
+                results: any[];
+                meta: {
+                    pagination: {
+                        page: number;
+                        pageSize: number;
+                        total: number;
+                        pageCount: number;
+                    };
+                };
+            }>;
+            findOne(siteId: number, slug: string, locale?: string): Promise<any>;
+            findFeatured(siteId: number, limit?: number, locale?: string, type?: string): Promise<any[]>;
+            findAdmin(siteId: number, query?: any): Promise<{
+                results: any[];
+                meta: {
+                    pagination: {
+                        page: number;
+                        pageSize: number;
+                        total: number;
+                        pageCount: number;
+                    };
+                };
+            }>;
+            findOneAdmin(siteId: number, documentId: string): Promise<any>;
+            create(siteId: number, data: any): Promise<any>;
+            update(siteId: number, documentId: string, data: any): Promise<any>;
+            publish(siteId: number, documentId: string): Promise<any>;
+            archive(siteId: number, documentId: string): Promise<any>;
+            softDelete(siteId: number, documentId: string): Promise<any>;
+            batch(siteId: number, body?: any): Promise<{
+                results: any[];
+            }>;
+        };
+        "article-category": ({ strapi }: {
+            strapi: import("@strapi/types/dist/core").Strapi;
+        }) => {
+            find(siteId: number): Promise<any[]>;
+            findTree(siteId: number): Promise<any[]>;
+            findAdmin(siteId: number): Promise<any[]>;
+            findOneAdmin(siteId: number, documentId: string): Promise<any>;
+            create(siteId: number, data: any): Promise<any>;
+            update(siteId: number, documentId: string, data: any): Promise<any>;
+            softDelete(siteId: number, documentId: string): Promise<any>;
+        };
+        author: ({ strapi }: {
+            strapi: import("@strapi/types/dist/core").Strapi;
+        }) => {
+            findAdmin(siteId: number): Promise<any[]>;
+            findOneAdmin(siteId: number, documentId: string): Promise<any>;
+            create(siteId: number, data: any): Promise<any>;
+            update(siteId: number, documentId: string, data: any): Promise<any>;
+            softDelete(siteId: number, documentId: string): Promise<any>;
+        };
+        product: ({ strapi }: {
+            strapi: import("@strapi/types/dist/core").Strapi;
+        }) => {
+            find(siteId: number, query?: any): Promise<any[]>;
+            findOne(siteId: number, slug: string): Promise<any>;
+            findFeatured(siteId: number, limit?: number): Promise<any[]>;
+            search(siteId: number, keyword: string, page?: number, pageSize?: number): Promise<{
+                data: any[];
+                meta: {
+                    pagination: {
+                        page: number;
+                        pageSize: number;
+                        total: number;
+                        pageCount: number;
+                    };
+                };
+            }>;
+            findAdmin(siteId: number, query?: any): Promise<any[]>;
+            findOneAdmin(siteId: number, documentId: string): Promise<any>;
+            create(siteId: number, data: any): Promise<any>;
+            update(siteId: number, documentId: string, data: any): Promise<any>;
+            publish(siteId: number, documentId: string): Promise<any>;
+            unpublish(siteId: number, documentId: string): Promise<any>;
+            archive(siteId: number, documentId: string): Promise<any>;
+            softDelete(siteId: number, documentId: string): Promise<any>;
+            incrementViewCount(siteId: number, documentId: string): Promise<void>;
+        };
+        case: ({ strapi }: {
+            strapi: import("@strapi/types/dist/core").Strapi;
+        }) => {
+            find(siteId: number, query?: any): Promise<any[]>;
+            findOne(siteId: number, slug: string): Promise<any>;
+            findFeatured(siteId: number, limit?: number): Promise<any[]>;
+            search(siteId: number, keyword: string, page?: number, pageSize?: number): Promise<{
+                data: any[];
+                meta: {
+                    pagination: {
+                        page: number;
+                        pageSize: number;
+                        total: number;
+                        pageCount: number;
+                    };
+                };
+            }>;
+            findAdmin(siteId: number, query?: any): Promise<any[]>;
+            findOneAdmin(siteId: number, documentId: string): Promise<any>;
+            create(siteId: number, data: any): Promise<any>;
+            update(siteId: number, documentId: string, data: any): Promise<any>;
+            publish(siteId: number, documentId: string): Promise<any>;
+            unpublish(siteId: number, documentId: string): Promise<any>;
+            archive(siteId: number, documentId: string): Promise<any>;
+            softDelete(siteId: number, documentId: string): Promise<any>;
+            incrementViewCount(siteId: number, documentId: string): Promise<void>;
+        };
+        compliance: ({ strapi }: {
+            strapi: import("@strapi/types/dist/core").Strapi;
+        }) => {
+            find(siteId: number, query?: any): Promise<any[]>;
+            findOne(siteId: number, slug: string): Promise<any>;
+            search(siteId: number, keyword: string, page?: number, pageSize?: number): Promise<{
+                data: any[];
+                meta: {
+                    pagination: {
+                        page: number;
+                        pageSize: number;
+                        total: number;
+                        pageCount: number;
+                    };
+                };
+            }>;
+            findAdmin(siteId: number, query?: any): Promise<any[]>;
+            findOneAdmin(siteId: number, documentId: string): Promise<any>;
+            create(siteId: number, data: any): Promise<any>;
+            update(siteId: number, documentId: string, data: any): Promise<any>;
+            publish(siteId: number, documentId: string): Promise<any>;
+            unpublish(siteId: number, documentId: string): Promise<any>;
+            archive(siteId: number, documentId: string): Promise<any>;
+            softDelete(siteId: number, documentId: string): Promise<any>;
+            incrementViewCount(siteId: number, documentId: string): Promise<void>;
+        };
+        faq: ({ strapi }: {
+            strapi: import("@strapi/types/dist/core").Strapi;
+        }) => {
+            find(siteId: number, query?: any): Promise<any[]>;
+            findOne(siteId: number, slug: string): Promise<any>;
+            findFeatured(siteId: number, limit?: number): Promise<any[]>;
+            search(siteId: number, keyword: string, page?: number, pageSize?: number): Promise<{
+                data: any[];
+                meta: {
+                    pagination: {
+                        page: number;
+                        pageSize: number;
+                        total: number;
+                        pageCount: number;
+                    };
+                };
+            }>;
+            findAdmin(siteId: number, query?: any): Promise<any[]>;
+            findOneAdmin(siteId: number, documentId: string): Promise<any>;
+            create(siteId: number, data: any): Promise<any>;
+            update(siteId: number, documentId: string, data: any): Promise<any>;
+            publish(siteId: number, documentId: string): Promise<any>;
+            unpublish(siteId: number, documentId: string): Promise<any>;
+            archive(siteId: number, documentId: string): Promise<any>;
+            softDelete(siteId: number, documentId: string): Promise<any>;
+            incrementViewCount(siteId: number, documentId: string): Promise<void>;
+        };
+        tutorial: ({ strapi }: {
+            strapi: import("@strapi/types/dist/core").Strapi;
+        }) => {
+            find(siteId: number, query?: any): Promise<any[]>;
+            findOne(siteId: number, slug: string): Promise<any>;
+            findFeatured(siteId: number, limit?: number): Promise<any[]>;
+            search(siteId: number, keyword: string, page?: number, pageSize?: number): Promise<{
+                data: any[];
+                meta: {
+                    pagination: {
+                        page: number;
+                        pageSize: number;
+                        total: number;
+                        pageCount: number;
+                    };
+                };
+            }>;
+            findAdmin(siteId: number, query?: any): Promise<any[]>;
+            findOneAdmin(siteId: number, documentId: string): Promise<any>;
+            create(siteId: number, data: any): Promise<any>;
+            update(siteId: number, documentId: string, data: any): Promise<any>;
+            publish(siteId: number, documentId: string): Promise<any>;
+            unpublish(siteId: number, documentId: string): Promise<any>;
+            archive(siteId: number, documentId: string): Promise<any>;
+            softDelete(siteId: number, documentId: string): Promise<any>;
+            incrementViewCount(siteId: number, documentId: string): Promise<void>;
+        };
+        download: ({ strapi }: {
+            strapi: import("@strapi/types/dist/core").Strapi;
+        }) => {
+            find(siteId: number, query?: any): Promise<any[]>;
+            findOne(siteId: number, slug: string): Promise<any>;
+            findFeatured(siteId: number, limit?: number): Promise<any[]>;
+            search(siteId: number, keyword: string, page?: number, pageSize?: number): Promise<{
+                data: any[];
+                meta: {
+                    pagination: {
+                        page: number;
+                        pageSize: number;
+                        total: number;
+                        pageCount: number;
+                    };
+                };
+            }>;
+            findAdmin(siteId: number, query?: any): Promise<any[]>;
+            findOneAdmin(siteId: number, documentId: string): Promise<any>;
+            create(siteId: number, data: any): Promise<any>;
+            update(siteId: number, documentId: string, data: any): Promise<any>;
+            publish(siteId: number, documentId: string): Promise<any>;
+            unpublish(siteId: number, documentId: string): Promise<any>;
+            archive(siteId: number, documentId: string): Promise<any>;
+            softDelete(siteId: number, documentId: string): Promise<any>;
+            incrementViewCount(siteId: number, documentId: string): Promise<void>;
+            incrementDownloadCount(siteId: number, documentId: string): Promise<void>;
+        };
+        lead: ({ strapi }: {
+            strapi: import("@strapi/types/dist/core").Strapi;
+        }) => {
+            createPublic(siteId: number, data: any, ctx: any): Promise<any>;
+            findMine(siteId: number, userId: number, query?: any): Promise<any[]>;
+            findAdmin(siteId: number, query?: any): Promise<any[]>;
+            findOneAdmin(siteId: number, documentId: string): Promise<any>;
+            update(siteId: number, documentId: string, data: any): Promise<any>;
+            assign(siteId: number, documentId: string, assignedToId: number): Promise<any>;
+            followUp(siteId: number, documentId: string, record: {
+                content: string;
+                result: string;
+            }): Promise<any>;
+            stats(siteId: number): Promise<{
+                total: number;
+                byStatus: any;
+                byType: any;
+            }>;
+            softDelete(siteId: number, documentId: string): Promise<any>;
+        };
+        "visit-log": ({ strapi }: {
+            strapi: import("@strapi/types/dist/core").Strapi;
+        }) => {
+            _getWriter(): import("./services/utils/async-writer").AsyncWriter;
+            enqueueCreate(siteId: number, data: any): Promise<void>;
+            findAdmin(siteId: number, query?: any): Promise<any[]>;
+            findMine(siteId: number, userId: number, query?: any): Promise<any[]>;
+            stats(siteId: number, days?: number): Promise<{
+                total: number;
+                byType: any;
+                days: number;
+            }>;
+            purgeOlderThan(days: number): Promise<number>;
+        };
+        gate: ({ strapi }: {
+            strapi: import("@strapi/types/dist/core").Strapi;
+        }) => {
+            countMsgClicks(campaigns: string[]): Promise<Record<string, number>>;
+            countActive(userId: number, since: Date | string): Promise<number>;
+            listArticleReads(userId: number, opts?: {
+                since?: Date | string;
+                limit?: number;
+            }): Promise<any[]>;
+            collectArticleCategories(userId: number, opts?: {
+                since?: Date | string;
+                limit?: number;
+            }): Promise<string[]>;
+            recommendArticles(interests: string[], limit?: number): Promise<any[]>;
+        };
+        interaction: ({ strapi }: {
+            strapi: import("@strapi/types/dist/core").Strapi;
+        }) => {
+            toggle(siteId: number, data: {
+                type: string;
+                targetType: string;
+                targetId: string;
+                visitorId: string;
+                userId?: number;
+                ctx?: any;
+            }): Promise<{
+                action: string;
+            }>;
+            check(siteId: number, params: {
+                type: string;
+                targetType: string;
+                targetId: string;
+                visitorId: string;
+            }): Promise<{
+                liked: boolean;
+            }>;
+            findAdmin(siteId: number, query?: any): Promise<any[]>;
+            stats(siteId: number, targetType: string, targetId: string): Promise<any>;
+            softDelete(siteId: number, documentId: string): Promise<any>;
+        };
+        "search-log": ({ strapi }: {
+            strapi: import("@strapi/types/dist/core").Strapi;
+        }) => {
+            _getWriter(): import("./services/utils/async-writer").AsyncWriter;
+            log(siteId: number, keyword: string, resultCount: number, ctx: any): Promise<void>;
+            findAdmin(siteId: number, query?: any): Promise<any[]>;
+            stats(siteId: number, days?: number): Promise<{
+                total: number;
+                topKeywords: [string, number][];
+            }>;
+        };
+        "knowledge-graph": ({ strapi }: {
+            strapi: import("@strapi/types/dist/core").Strapi;
+        }) => {
+            findEntities(siteId: number, query?: any): Promise<any[]>;
+            _resolveSiteUrl(siteId: number, siteUrl?: string): Promise<string>;
+            findEntityBySlug(siteId: number, slug: string): Promise<any>;
+            findEntityByRef(params: {
+                refTargetType: string;
+                refTargetId: string;
+            }): Promise<any>;
+            upsertEntityFromContent(params: {
+                siteId: number;
+                entityType: string;
+                name: string;
+                slug?: string;
+                refTargetType: string;
+                refTargetId: string;
+            }): Promise<any>;
+            createEntity(siteId: number | null, data: any, actor?: any): Promise<any>;
+            updateEntity(siteId: number | null, documentId: string, data: any, actor?: any): Promise<any>;
+            deleteEntity(siteId: number | null, documentId: string, actor?: any): Promise<any>;
+            submitEntity(siteId: number | null, documentId: string, actor?: any, reason?: string): Promise<any>;
+            approveEntity(siteId: number | null, documentId: string, actor?: any, reason?: string): Promise<any>;
+            rejectEntity(siteId: number | null, documentId: string, actor?: any, reason?: string): Promise<any>;
+            findRelations(siteId: number, query?: any): Promise<any[]>;
+            _resolveEntityId(ref: string | number): Promise<number | null>;
+            _requireEntityId(ref: string | number, label?: string): Promise<number>;
+            _resolveTruthId(ref: string | number): Promise<number | null>;
+            _requireTruthId(ref: string | number, label?: string): Promise<number>;
+            compareRelationWithTruth(relation: any): Promise<"verified" | "conflict" | null>;
+            _safeCompareWithTruth(relation: any): Promise<"verified" | "conflict" | null>;
+            addRelation(params: {
+                siteId: number;
+                subjectEntityId: string;
+                predicate: string;
+                objectEntityId?: string;
+                objectValue?: any;
+                objectText?: string;
+                evidenceText?: string;
+                sourceType?: string;
+                truthPolicyId?: string;
+                actor?: any;
+            }): Promise<any>;
+            _detectCycle(subjectId: string, objectId: string, predicate: string, visited?: Set<string>): Promise<boolean>;
+            deleteRelation(siteId: number, documentId: string, actor?: any): Promise<any>;
+            submitRelation(siteId: number | null, documentId: string, actor?: any, reason?: string): Promise<any>;
+            approveRelation(siteId: number | null, documentId: string, actor?: any, reason?: string): Promise<any>;
+            rejectRelation(siteId: number | null, documentId: string, actor?: any, reason?: string): Promise<any>;
+            updateRelation(siteId: number, documentId: string, data: any, actor?: any): Promise<any>;
+            disambiguate(siteId: number, params: {
+                name: string;
+                entityType?: string;
+            }): Promise<any | null>;
+            syncFromContent(targetType: string, content: any): Promise<void>;
+            verifyAll(siteId: number): Promise<{
+                total: number;
+                conflicts: number;
+                report: any[];
+            }>;
+            _isContractViolation(subjectEntityType: string | undefined, relation: any): boolean;
+            _dedupeCitations(relations: any[]): any[];
+            exportGraph(siteId: number, siteUrl?: string): Promise<any>;
+            exportEntity(siteId: number, slug: string, siteUrl?: string): Promise<any | null>;
+            findArticlesByEntity(siteId: number, entityId: number, limit?: number): Promise<any[]>;
+            _entityToJsonLd(entity: any, outgoing?: any[], incoming?: any[], siteUrl?: string): any;
+            exportFacts(siteId: number): Promise<any[]>;
+        };
+        "ai-content-summary": ({ strapi }: {
+            strapi: import("@strapi/types/dist/core").Strapi;
+        }) => {
+            findByTarget(siteId: number, targetType: string, targetId: string, summaryType?: string): Promise<any[]>;
+            findPublic(siteId: number, query?: any): Promise<any[]>;
+            findAdmin(siteId: number, query?: any): Promise<any[]>;
+            create(siteId: number, data: any): Promise<any>;
+            update(siteId: number, documentId: string, data: any): Promise<any>;
+            regenerate(siteId: number, documentId: string): Promise<any>;
+            softDelete(siteId: number, documentId: string): Promise<any>;
+        };
+        "first-truth": ({ strapi }: {
+            strapi: import("@strapi/types/dist/core").Strapi;
+        }) => {
+            find(siteId: number | null, query?: any): Promise<any[]>;
+            findOne(siteId: number | null, documentId: string): Promise<any>;
+            findByClaimKey(siteId: number | null, claimKey: string): Promise<any>;
+            create(siteId: number | null, data: any, actor?: any): Promise<any>;
+            update(siteId: number | null, documentId: string, data: any, actor?: any): Promise<any>;
+            _revalidateEvidenceRelations(truthId: number): Promise<void>;
+            _markRelatedEntitiesPending(siteId: number | null, canonicalEntity: any): Promise<void>;
+            verify(siteId: number | null, documentId: string, actor?: any, reason?: string): Promise<any>;
+            submit(siteId: number | null, documentId: string, actor?: any, reason?: string): Promise<any>;
+            approve(siteId: number | null, documentId: string, actor?: any, reason?: string): Promise<any>;
+            reject(siteId: number | null, documentId: string, actor?: any, reason?: string): Promise<any>;
+            softDelete(siteId: number | null, documentId: string, actor?: any): Promise<any>;
+            detectConflicts(siteId: number | null): Promise<any[]>;
+        };
+        "schema-builder": ({ strapi }: {
+            strapi: import("@strapi/types/dist/core").Strapi;
+        }) => {
+            buildOrganization(brandInfo: any, seoConfig: any): any;
+            buildLocalBusiness(brandInfo: any, seoConfig: any): any;
+            buildArticle(article: any, brandInfo: any): any;
+            buildProduct(product: any, brandInfo: any): any;
+            buildHowTo(tutorial: any): any;
+            buildFAQ(faqs: any[]): any;
+            buildVideo(tutorial: any): any;
+            buildBreadcrumb(items: Array<{
+                name: string;
+                url: string;
+            }>): any;
+            buildWebSite(seoConfig: any, siteUrl: string): any;
+        };
+        "llms-txt": ({ strapi }: {
+            strapi: import("@strapi/types/dist/core").Strapi;
+        }) => {
+            generate(siteId: number, siteUrl: string): Promise<string>;
+            generateFull(siteId: number, siteUrl: string): Promise<string>;
+        };
+        sitemap: ({ strapi }: {
+            strapi: import("@strapi/types/dist/core").Strapi;
+        }) => {
+            generate(siteId: number, siteUrl: string): Promise<string>;
+            _urlEntry(siteUrl: string, path: string, priority: string, changefreq: string, lastmod?: string, imageUrl?: string, hreflangEntries?: Array<{
+                hreflang: string;
+                href: string;
+            }>): string;
+            _buildHreflangEntries(seoConfig: any, siteUrl: string): Array<{
+                hreflang: string;
+                href: string;
+            }>;
+            _buildItemHreflang(seoConfig: any, siteUrl: string, path: string): Array<{
+                hreflang: string;
+                href: string;
+            }>;
+        };
+        "content-filter": ({ strapi }: {
+            strapi: import("@strapi/types/dist/core").Strapi;
+        }) => {
+            getFilters(siteId: number): Promise<Record<string, any>>;
+            buildWhere(siteId: number, uid: string, extra?: Record<string, any>, locale?: string): Promise<Record<string, any>>;
+            findMany(uid: string, siteId: number, params?: any): Promise<any[]>;
+            count(uid: string, siteId: number, params?: any): Promise<number>;
+        };
+        robots: ({ strapi }: {
+            strapi: import("@strapi/types/dist/core").Strapi;
+        }) => {
+            generate(siteId: number, siteUrl: string): Promise<string>;
+        };
+        "search-engine-push": ({ strapi }: {
+            strapi: import("@strapi/types/dist/core").Strapi;
+        }) => {
+            pushToBaidu(siteId: number, urls: string[]): Promise<any>;
+            pushToBing(siteId: number, urls: string[]): Promise<any>;
+            pushAll(siteId: number, urls: string[]): Promise<{
+                baidu: PromiseSettledResult<any>;
+                bing: PromiseSettledResult<any>;
+            }>;
+        };
+        "studio-bridge": ({ strapi }: {
+            strapi: import("@strapi/types/dist/core").Strapi;
+        }) => {
+            publishFromStudio(siteId: number, params: {
+                articleDraftDocumentId: string;
+                overrides?: any;
+            }): Promise<any>;
+        };
+        "brand-voice": ({ strapi }: {
+            strapi: import("@strapi/types/dist/core").Strapi;
+        }) => {
+            findAdmin(siteId: number | null, query?: any): Promise<any[]>;
+            findOneAdmin(siteId: number | null, documentId: string): Promise<any>;
+            create(siteId: number | null, data: any): Promise<any>;
+            update(siteId: number | null, documentId: string, data: any): Promise<any>;
+            softDelete(siteId: number | null, documentId: string): Promise<any>;
+            listByCategory(siteId: number | null, category: string): Promise<any[]>;
+            resolveVariables(siteId: number | null, documentId: string, variables: Record<string, string>): Promise<any>;
+            getRefContent(siteId: number | null, category: string): Promise<string>;
+        };
+        "seo-meta": ({ strapi }: {
+            strapi: import("@strapi/types/dist/core").Strapi;
+        }) => {
+            generate(siteId: number, requestHost: string): Promise<any>;
+            _buildHreflang(seoConfig: any, siteUrl: string): Array<{
+                hreflang: string;
+                href: string;
+            }>;
+            getAiCrawlerList(): string[];
+        };
+        cache: ({ strapi }: {
+            strapi: import("@strapi/types/dist/core").Strapi;
+        }) => {
+            get(key: string, ttl: number, generator: () => Promise<string>): Promise<string>;
+            invalidate(key?: string): void;
+        };
+        feed: ({ strapi }: {
+            strapi: import("@strapi/types/dist/core").Strapi;
+        }) => {
+            generateRSS(siteId: number, siteUrl: string): Promise<string>;
+            generateAtom(siteId: number, siteUrl: string): Promise<string>;
+        };
+        redirect: ({ strapi }: {
+            strapi: import("@strapi/types/dist/core").Strapi;
+        }) => {
+            match(siteId: number, requestPath: string): Promise<{
+                toUrl: string;
+                statusCode: number;
+            } | null>;
+        };
+        "invite-trace": ({ strapi }: {
+            strapi: import("@strapi/types/dist/core").Strapi;
+        }) => {
+            createPublic(data: any): Promise<any>;
+        };
+        "eco-hook": ({ strapi }: {
+            strapi: import("@strapi/types/dist/core").Strapi;
+        }) => {
+            send(opts: {
+                action: string;
+                ssoId?: string | number | null;
+                targetId?: string | number | null;
+                extra?: Record<string, unknown>;
+            }): Promise<void>;
+        };
+        "knowledge-audit": ({ strapi }: {
+            strapi: import("@strapi/types/dist/core").Strapi;
+        }) => {
+            append(params: {
+                siteId?: number | null;
+                targetType: "entity" | "relation" | "first-truth";
+                targetId: string;
+                action: "create" | "update" | "delete" | "submit" | "approve" | "reject" | "recheck";
+                actor?: {
+                    id?: number | string;
+                    label?: string;
+                } | null;
+                actorLabel?: string | null;
+                changedFields?: any;
+                reason?: string | null;
+                version?: number | null;
+                strict?: boolean;
+            }): Promise<any>;
+            findByTarget(siteId: number | null, targetType: string, targetId: string, { page, pageSize }?: {
+                page?: number;
+                pageSize?: number;
+            }): Promise<{
+                results: any[];
+                pagination: {
+                    page: number;
+                    pageSize: number;
+                    total: number;
+                };
+            }>;
+        };
+        "knowledge-health": ({ strapi }: {
+            strapi: import("@strapi/types/dist/core").Strapi;
+        }) => {
+            _shape(relation: any): {
+                hasEntity: boolean;
+                hasValue: boolean;
+                hasText: boolean;
+                textLength: number;
+            };
+            _violationReason(relation: any): string | null;
+            isCitable(fact: any): boolean;
+            completeness(siteId: number): Promise<{
+                entities: {
+                    total: number;
+                    missingSameAs: number;
+                    missingDescription: number;
+                    missingUrl: number;
+                    missingIdentifier: number;
+                };
+                facts: {
+                    total: number;
+                    missingSourceUrl: number;
+                    internalSourceCount: number;
+                    otherCategoryCount: number;
+                    unboundCanonicalEntity: number;
+                    emptyCategories: string[];
+                    unclassifiedOther: Array<{
+                        documentId: string;
+                        claimKey: string;
+                        claim: string;
+                    }>;
+                };
+                relations: {
+                    total: number;
+                    contractViolations: number;
+                    missingTruthPolicy: number;
+                };
+            }>;
+            violations(siteId: number): Promise<any[]>;
+        };
+    };
+    contentTypes: {
+        "seo-config": {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                pluginOptions: {
+                    "content-manager": {
+                        visible: boolean;
+                    };
+                    "content-type-builder": {
+                        visible: boolean;
+                    };
+                };
+                attributes: {
+                    site: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        required: boolean;
+                        inversedBy: string;
+                    };
+                    defaultTitle: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    titleTemplate: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    defaultDescription: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    defaultKeywords: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    ogImage: {
+                        type: string;
+                    };
+                    favicon: {
+                        type: string;
+                    };
+                    googleSiteVerification: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    baiduSiteVerification: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    bingSiteVerification: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    baiduAnalyticsId: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    googleAnalyticsId: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    customHeadCode: {
+                        type: string;
+                    };
+                    customBodyCode: {
+                        type: string;
+                    };
+                    enableSitemap: {
+                        type: string;
+                        default: boolean;
+                    };
+                    sitemapExcludeTypes: {
+                        type: string;
+                    };
+                    enableRobotsTxt: {
+                        type: string;
+                        default: boolean;
+                    };
+                    robotsContent: {
+                        type: string;
+                    };
+                    aiCrawlerPolicy: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    geoRegion: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    geoPlacename: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    geoPosition: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    geoICBM: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    defaultLocale: {
+                        type: string;
+                        maxLength: number;
+                        default: string;
+                    };
+                    alternateLocales: {
+                        type: string;
+                    };
+                    hreflangStrategy: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    organizationName: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    organizationLogo: {
+                        type: string;
+                    };
+                    organizationType: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    schemaSameAs: {
+                        type: string;
+                    };
+                    schemaContactPoint: {
+                        type: string;
+                    };
+                    icpNumber: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    publicSecurityRecord: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    allowedAiCrawlers: {
+                        type: string;
+                        default: never[];
+                    };
+                    twitterSite: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    twitterCreator: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    sogouSiteVerification: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    extraConfig: {
+                        type: string;
+                    };
+                    deletedAt: {
+                        type: string;
+                        default: null;
+                    };
+                    organizationAddress: {
+                        type: string;
+                    };
+                    organizationPhone: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    areaServed: {
+                        type: string;
+                    };
+                };
+            };
+        };
+        "brand-info": {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                pluginOptions: {
+                    i18n: {
+                        localized: boolean;
+                    };
+                    "content-manager": {
+                        visible: boolean;
+                    };
+                    "content-type-builder": {
+                        visible: boolean;
+                    };
+                };
+                attributes: {
+                    site: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        required: boolean;
+                        inversedBy: string;
+                    };
+                    companyName: {
+                        type: string;
+                        maxLength: number;
+                        required: boolean;
+                        localized: boolean;
+                    };
+                    shortName: {
+                        type: string;
+                        maxLength: number;
+                        localized: boolean;
+                    };
+                    slogan: {
+                        type: string;
+                        maxLength: number;
+                        localized: boolean;
+                    };
+                    logo: {
+                        type: string;
+                    };
+                    logoDark: {
+                        type: string;
+                    };
+                    favicon: {
+                        type: string;
+                    };
+                    description: {
+                        type: string;
+                        localized: boolean;
+                    };
+                    foundingDate: {
+                        type: string;
+                    };
+                    registeredAddress: {
+                        type: string;
+                        maxLength: number;
+                        localized: boolean;
+                    };
+                    officeAddress: {
+                        type: string;
+                        maxLength: number;
+                        localized: boolean;
+                    };
+                    contactPhone: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    contactEmail: {
+                        type: string;
+                    };
+                    serviceHotline: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    businessHours: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    wechatQrCode: {
+                        type: string;
+                    };
+                    wechatPublicAccount: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    miniProgramName: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    socialLinks: {
+                        type: string;
+                    };
+                    offices: {
+                        type: string;
+                        localized: boolean;
+                    };
+                    certificates: {
+                        type: string;
+                        localized: boolean;
+                    };
+                    legalRepresentative: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    registeredCapital: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    unifiedSocialCreditCode: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    businessScope: {
+                        type: string;
+                        localized: boolean;
+                    };
+                    mainEntity: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        inversedBy: string;
+                    };
+                    deletedAt: {
+                        type: string;
+                        default: null;
+                    };
+                };
+            };
+        };
+        article: {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                pluginOptions: {
+                    i18n: {
+                        localized: boolean;
+                    };
+                    "content-manager": {
+                        visible: boolean;
+                    };
+                    "content-type-builder": {
+                        visible: boolean;
+                    };
+                };
+                attributes: {
+                    site: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        required: boolean;
+                        inversedBy: string;
+                    };
+                    title: {
+                        type: string;
+                        maxLength: number;
+                        required: boolean;
+                        localized: boolean;
+                    };
+                    slug: {
+                        type: string;
+                        targetField: string;
+                        required: boolean;
+                        localized: boolean;
+                    };
+                    excerpt: {
+                        type: string;
+                        localized: boolean;
+                    };
+                    content: {
+                        type: string;
+                        required: boolean;
+                        localized: boolean;
+                    };
+                    coverImage: {
+                        type: string;
+                    };
+                    category: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        inversedBy: string;
+                    };
+                    tags: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        inversedBy: string;
+                    };
+                    author: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    authorTitle: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    isFeatured: {
+                        type: string;
+                        default: boolean;
+                    };
+                    isPinned: {
+                        type: string;
+                        default: boolean;
+                    };
+                    viewCount: {
+                        type: string;
+                        default: number;
+                    };
+                    likeCount: {
+                        type: string;
+                        default: number;
+                    };
+                    collectCount: {
+                        type: string;
+                        default: number;
+                    };
+                    shareCount: {
+                        type: string;
+                        default: number;
+                    };
+                    readingTime: {
+                        type: string;
+                    };
+                    wordCount: {
+                        type: string;
+                    };
+                    seoTitle: {
+                        type: string;
+                        maxLength: number;
+                        localized: boolean;
+                    };
+                    seoDescription: {
+                        type: string;
+                        maxLength: number;
+                        localized: boolean;
+                    };
+                    seoKeywords: {
+                        type: string;
+                        maxLength: number;
+                        localized: boolean;
+                    };
+                    canonicalUrl: {
+                        type: string;
+                        maxLength: number;
+                        localized: boolean;
+                    };
+                    ogTitle: {
+                        type: string;
+                        maxLength: number;
+                        localized: boolean;
+                    };
+                    ogDescription: {
+                        type: string;
+                        localized: boolean;
+                    };
+                    ogImage: {
+                        type: string;
+                    };
+                    ogType: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    twitterCard: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    schemaType: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    schemaJson: {
+                        type: string;
+                        localized: boolean;
+                    };
+                    allowIndex: {
+                        type: string;
+                        default: boolean;
+                    };
+                    noFollow: {
+                        type: string;
+                        default: boolean;
+                    };
+                    sitemapPriority: {
+                        type: string;
+                        default: number;
+                    };
+                    sitemapFrequency: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    sourceType: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    sourceUrl: {
+                        type: string;
+                    };
+                    sourceArticleDraft: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        inversedBy: string;
+                    };
+                    mainEntity: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        inversedBy: string;
+                    };
+                    mentionedEntities: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        inversedBy: string;
+                    };
+                    brandVoiceRef: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        inversedBy: string;
+                    };
+                    structuredData: {
+                        type: string;
+                    };
+                    status: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    publishedAt: {
+                        type: string;
+                    };
+                    deletedAt: {
+                        type: string;
+                        default: null;
+                    };
+                };
+            };
+        };
+        "article-category": {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                pluginOptions: {
+                    i18n: {
+                        localized: boolean;
+                    };
+                    "content-manager": {
+                        visible: boolean;
+                    };
+                    "content-type-builder": {
+                        visible: boolean;
+                    };
+                };
+                attributes: {
+                    site: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        required: boolean;
+                        inversedBy: string;
+                    };
+                    name: {
+                        type: string;
+                        maxLength: number;
+                        required: boolean;
+                        localized: boolean;
+                    };
+                    slug: {
+                        type: string;
+                        targetField: string;
+                        required: boolean;
+                        localized: boolean;
+                    };
+                    description: {
+                        type: string;
+                        localized: boolean;
+                    };
+                    parent: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        inversedBy: string;
+                    };
+                    children: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    articles: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    tutorials: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    faqs: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    downloads: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    products: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    order: {
+                        type: string;
+                        default: number;
+                    };
+                    seoTitle: {
+                        type: string;
+                        maxLength: number;
+                        localized: boolean;
+                    };
+                    seoDescription: {
+                        type: string;
+                        maxLength: number;
+                        localized: boolean;
+                    };
+                    status: {
+                        type: string;
+                        default: boolean;
+                    };
+                    deletedAt: {
+                        type: string;
+                        default: null;
+                    };
+                };
+            };
+        };
+        product: {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                pluginOptions: {
+                    i18n: {
+                        localized: boolean;
+                    };
+                    "content-manager": {
+                        visible: boolean;
+                    };
+                    "content-type-builder": {
+                        visible: boolean;
+                    };
+                };
+                attributes: {
+                    site: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        required: boolean;
+                        inversedBy: string;
+                    };
+                    name: {
+                        type: string;
+                        maxLength: number;
+                        required: boolean;
+                        localized: boolean;
+                    };
+                    slug: {
+                        type: string;
+                        targetField: string;
+                        required: boolean;
+                        localized: boolean;
+                    };
+                    tagline: {
+                        type: string;
+                        maxLength: number;
+                        localized: boolean;
+                    };
+                    description: {
+                        type: string;
+                        localized: boolean;
+                    };
+                    content: {
+                        type: string;
+                        localized: boolean;
+                    };
+                    coverImage: {
+                        type: string;
+                    };
+                    images: {
+                        type: string;
+                        multiple: boolean;
+                    };
+                    category: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        inversedBy: string;
+                    };
+                    tags: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        inversedBy: string;
+                    };
+                    features: {
+                        type: string;
+                        localized: boolean;
+                    };
+                    specifications: {
+                        type: string;
+                        localized: boolean;
+                    };
+                    scenarios: {
+                        type: string;
+                    };
+                    priceRange: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    priceUnit: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    isFeatured: {
+                        type: string;
+                        default: boolean;
+                    };
+                    viewCount: {
+                        type: string;
+                        default: number;
+                    };
+                    seoTitle: {
+                        type: string;
+                        maxLength: number;
+                        localized: boolean;
+                    };
+                    seoDescription: {
+                        type: string;
+                        maxLength: number;
+                        localized: boolean;
+                    };
+                    seoKeywords: {
+                        type: string;
+                        maxLength: number;
+                        localized: boolean;
+                    };
+                    canonicalUrl: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    ogImage: {
+                        type: string;
+                    };
+                    allowIndex: {
+                        type: string;
+                        default: boolean;
+                    };
+                    sitemapPriority: {
+                        type: string;
+                        default: number;
+                    };
+                    sitemapFrequency: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    mainEntity: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        inversedBy: string;
+                    };
+                    mentionedEntities: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        inversedBy: string;
+                    };
+                    cases: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    price: {
+                        type: string;
+                        default: number;
+                    };
+                    currency: {
+                        type: string;
+                        maxLength: number;
+                        default: string;
+                    };
+                    availability: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    brandVoiceRef: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                    };
+                    structuredData: {
+                        type: string;
+                    };
+                    status: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    publishedAt: {
+                        type: string;
+                    };
+                    deletedAt: {
+                        type: string;
+                        default: null;
+                    };
+                };
+            };
+        };
+        case: {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                pluginOptions: {
+                    i18n: {
+                        localized: boolean;
+                    };
+                    "content-manager": {
+                        visible: boolean;
+                    };
+                    "content-type-builder": {
+                        visible: boolean;
+                    };
+                };
+                attributes: {
+                    site: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        required: boolean;
+                        inversedBy: string;
+                    };
+                    title: {
+                        type: string;
+                        maxLength: number;
+                        required: boolean;
+                        localized: boolean;
+                    };
+                    slug: {
+                        type: string;
+                        targetField: string;
+                        required: boolean;
+                        localized: boolean;
+                    };
+                    clientName: {
+                        type: string;
+                        maxLength: number;
+                        required: boolean;
+                        localized: boolean;
+                    };
+                    clientLogo: {
+                        type: string;
+                    };
+                    clientIndustry: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    clientDescription: {
+                        type: string;
+                        localized: boolean;
+                    };
+                    challenge: {
+                        type: string;
+                        required: boolean;
+                        localized: boolean;
+                    };
+                    solution: {
+                        type: string;
+                        required: boolean;
+                        localized: boolean;
+                    };
+                    results: {
+                        type: string;
+                        required: boolean;
+                        localized: boolean;
+                    };
+                    testimonial: {
+                        type: string;
+                        localized: boolean;
+                    };
+                    testimonialAuthor: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    testimonialTitle: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    coverImage: {
+                        type: string;
+                    };
+                    images: {
+                        type: string;
+                        multiple: boolean;
+                    };
+                    tags: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        inversedBy: string;
+                    };
+                    relatedProducts: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        inversedBy: string;
+                    };
+                    isFeatured: {
+                        type: string;
+                        default: boolean;
+                    };
+                    viewCount: {
+                        type: string;
+                        default: number;
+                    };
+                    seoTitle: {
+                        type: string;
+                        maxLength: number;
+                        localized: boolean;
+                    };
+                    seoDescription: {
+                        type: string;
+                        maxLength: number;
+                        localized: boolean;
+                    };
+                    allowIndex: {
+                        type: string;
+                        default: boolean;
+                    };
+                    mainEntity: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        inversedBy: string;
+                    };
+                    mentionedEntities: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        inversedBy: string;
+                    };
+                    structuredData: {
+                        type: string;
+                    };
+                    status: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    publishedAt: {
+                        type: string;
+                    };
+                    deletedAt: {
+                        type: string;
+                        default: null;
+                    };
+                };
+            };
+        };
+        compliance: {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                pluginOptions: {
+                    i18n: {
+                        localized: boolean;
+                    };
+                    "content-manager": {
+                        visible: boolean;
+                    };
+                    "content-type-builder": {
+                        visible: boolean;
+                    };
+                };
+                attributes: {
+                    site: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        required: boolean;
+                        inversedBy: string;
+                    };
+                    title: {
+                        type: string;
+                        maxLength: number;
+                        required: boolean;
+                        localized: boolean;
+                    };
+                    slug: {
+                        type: string;
+                        targetField: string;
+                        required: boolean;
+                        localized: boolean;
+                    };
+                    category: {
+                        type: string;
+                        enum: string[];
+                        required: boolean;
+                    };
+                    content: {
+                        type: string;
+                        required: boolean;
+                        localized: boolean;
+                    };
+                    effectiveDate: {
+                        type: string;
+                    };
+                    expiryDate: {
+                        type: string;
+                    };
+                    tags: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        inversedBy: string;
+                    };
+                    isPinned: {
+                        type: string;
+                        default: boolean;
+                    };
+                    seoTitle: {
+                        type: string;
+                        maxLength: number;
+                        localized: boolean;
+                    };
+                    seoDescription: {
+                        type: string;
+                        maxLength: number;
+                        localized: boolean;
+                    };
+                    allowIndex: {
+                        type: string;
+                        default: boolean;
+                    };
+                    status: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    publishedAt: {
+                        type: string;
+                    };
+                    deletedAt: {
+                        type: string;
+                        default: null;
+                    };
+                };
+            };
+        };
+        faq: {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                pluginOptions: {
+                    i18n: {
+                        localized: boolean;
+                    };
+                    "content-manager": {
+                        visible: boolean;
+                    };
+                    "content-type-builder": {
+                        visible: boolean;
+                    };
+                };
+                attributes: {
+                    site: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        required: boolean;
+                        inversedBy: string;
+                    };
+                    question: {
+                        type: string;
+                        required: boolean;
+                        localized: boolean;
+                    };
+                    answer: {
+                        type: string;
+                        required: boolean;
+                        localized: boolean;
+                    };
+                    slug: {
+                        type: string;
+                        targetField: string;
+                        required: boolean;
+                    };
+                    category: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        inversedBy: string;
+                    };
+                    tags: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        inversedBy: string;
+                    };
+                    order: {
+                        type: string;
+                        default: number;
+                    };
+                    isFeatured: {
+                        type: string;
+                        default: boolean;
+                    };
+                    viewCount: {
+                        type: string;
+                        default: number;
+                    };
+                    mainEntity: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        inversedBy: string;
+                    };
+                    mentionedEntities: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        inversedBy: string;
+                    };
+                    status: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    publishedAt: {
+                        type: string;
+                    };
+                    deletedAt: {
+                        type: string;
+                        default: null;
+                    };
+                };
+            };
+        };
+        tutorial: {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                pluginOptions: {
+                    i18n: {
+                        localized: boolean;
+                    };
+                    "content-manager": {
+                        visible: boolean;
+                    };
+                    "content-type-builder": {
+                        visible: boolean;
+                    };
+                };
+                attributes: {
+                    site: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        required: boolean;
+                        inversedBy: string;
+                    };
+                    title: {
+                        type: string;
+                        maxLength: number;
+                        required: boolean;
+                        localized: boolean;
+                    };
+                    slug: {
+                        type: string;
+                        targetField: string;
+                        required: boolean;
+                        localized: boolean;
+                    };
+                    description: {
+                        type: string;
+                        localized: boolean;
+                    };
+                    coverImage: {
+                        type: string;
+                    };
+                    steps: {
+                        type: string;
+                        required: boolean;
+                        localized: boolean;
+                    };
+                    materials: {
+                        type: string;
+                    };
+                    estimatedTime: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    videoUrl: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    thumbnailUrl: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    brandVoiceRef: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                    };
+                    difficulty: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    result: {
+                        type: string;
+                        localized: boolean;
+                    };
+                    category: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        inversedBy: string;
+                    };
+                    tags: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        inversedBy: string;
+                    };
+                    order: {
+                        type: string;
+                        default: number;
+                    };
+                    isFeatured: {
+                        type: string;
+                        default: boolean;
+                    };
+                    viewCount: {
+                        type: string;
+                        default: number;
+                    };
+                    mainEntity: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        inversedBy: string;
+                    };
+                    mentionedEntities: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        inversedBy: string;
+                    };
+                    structuredData: {
+                        type: string;
+                    };
+                    status: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    publishedAt: {
+                        type: string;
+                    };
+                    deletedAt: {
+                        type: string;
+                        default: null;
+                    };
+                };
+            };
+        };
+        download: {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                pluginOptions: {
+                    i18n: {
+                        localized: boolean;
+                    };
+                    "content-manager": {
+                        visible: boolean;
+                    };
+                    "content-type-builder": {
+                        visible: boolean;
+                    };
+                };
+                attributes: {
+                    site: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        required: boolean;
+                        inversedBy: string;
+                    };
+                    name: {
+                        type: string;
+                        maxLength: number;
+                        required: boolean;
+                        localized: boolean;
+                    };
+                    description: {
+                        type: string;
+                        localized: boolean;
+                    };
+                    file: {
+                        type: string;
+                        required: boolean;
+                    };
+                    fileType: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    fileSize: {
+                        type: string;
+                    };
+                    category: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        inversedBy: string;
+                    };
+                    tags: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        inversedBy: string;
+                    };
+                    relatedContentType: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    relatedContentId: {
+                        type: string;
+                    };
+                    requireLead: {
+                        type: string;
+                        default: boolean;
+                    };
+                    downloadCount: {
+                        type: string;
+                        default: number;
+                    };
+                    isFeatured: {
+                        type: string;
+                        default: boolean;
+                    };
+                    order: {
+                        type: string;
+                        default: number;
+                    };
+                    status: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    publishedAt: {
+                        type: string;
+                    };
+                    deletedAt: {
+                        type: string;
+                        default: null;
+                    };
+                };
+            };
+        };
+        lead: {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                pluginOptions: {
+                    "content-manager": {
+                        visible: boolean;
+                    };
+                    "content-type-builder": {
+                        visible: boolean;
+                    };
+                };
+                attributes: {
+                    site: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        required: boolean;
+                        inversedBy: string;
+                    };
+                    type: {
+                        type: string;
+                        enum: string[];
+                        required: boolean;
+                    };
+                    contactName: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    contactPhone: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    contactEmail: {
+                        type: string;
+                    };
+                    contactCompany: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    contactTitle: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    message: {
+                        type: string;
+                    };
+                    sourceType: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    sourceId: {
+                        type: string;
+                    };
+                    referralCode: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    sourceUrl: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    downloadFileId: {
+                        type: string;
+                    };
+                    utmSource: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    utmMedium: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    utmCampaign: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    utmContent: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    utmTerm: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    referrer: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    userAgent: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    ipAddress: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    assignedTo: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                    };
+                    status: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    followUpRecords: {
+                        type: string;
+                    };
+                    remark: {
+                        type: string;
+                    };
+                    convertedAt: {
+                        type: string;
+                    };
+                    deletedAt: {
+                        type: string;
+                        default: null;
+                    };
+                };
+            };
+        };
+        "visit-log": {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                pluginOptions: {
+                    "content-manager": {
+                        visible: boolean;
+                    };
+                    "content-type-builder": {
+                        visible: boolean;
+                    };
+                };
+                attributes: {
+                    site: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        required: boolean;
+                        inversedBy: string;
+                    };
+                    type: {
+                        type: string;
+                        enum: string[];
+                        required: boolean;
+                    };
+                    pageUrl: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    pageTitle: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    targetType: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    targetId: {
+                        type: string;
+                    };
+                    referrer: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    referrerDomain: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    searchKeyword: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    utmSource: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    utmMedium: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    utmCampaign: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    userAgent: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    deviceType: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    browser: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    os: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    ipAddress: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    country: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    region: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    city: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    sessionId: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    visitorId: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    userId: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                    };
+                    dwellTime: {
+                        type: string;
+                    };
+                    scrollDepth: {
+                        type: string;
+                    };
+                    deletedAt: {
+                        type: string;
+                        default: null;
+                    };
+                };
+            };
+        };
+        interaction: {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                pluginOptions: {
+                    "content-manager": {
+                        visible: boolean;
+                    };
+                    "content-type-builder": {
+                        visible: boolean;
+                    };
+                };
+                attributes: {
+                    site: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        required: boolean;
+                        inversedBy: string;
+                    };
+                    type: {
+                        type: string;
+                        enum: string[];
+                        required: boolean;
+                    };
+                    targetType: {
+                        type: string;
+                        maxLength: number;
+                        required: boolean;
+                    };
+                    targetId: {
+                        type: string;
+                        required: boolean;
+                    };
+                    visitorId: {
+                        type: string;
+                        maxLength: number;
+                        required: boolean;
+                    };
+                    userId: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                    };
+                    ipAddress: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    userAgent: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    deletedAt: {
+                        type: string;
+                        default: null;
+                    };
+                };
+            };
+        };
+        "search-log": {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                pluginOptions: {
+                    "content-manager": {
+                        visible: boolean;
+                    };
+                    "content-type-builder": {
+                        visible: boolean;
+                    };
+                };
+                attributes: {
+                    site: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        required: boolean;
+                        inversedBy: string;
+                    };
+                    keyword: {
+                        type: string;
+                        maxLength: number;
+                        required: boolean;
+                    };
+                    resultCount: {
+                        type: string;
+                        default: number;
+                    };
+                    visitorId: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    ipAddress: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    deletedAt: {
+                        type: string;
+                        default: null;
+                    };
+                };
+            };
+        };
+        "knowledge-entity": {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                pluginOptions: {
+                    "content-manager": {
+                        visible: boolean;
+                    };
+                    "content-type-builder": {
+                        visible: boolean;
+                    };
+                };
+                attributes: {
+                    site: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        required: boolean;
+                        inversedBy: string;
+                    };
+                    entityType: {
+                        type: string;
+                        enum: string[];
+                        required: boolean;
+                    };
+                    name: {
+                        type: string;
+                        maxLength: number;
+                        required: boolean;
+                    };
+                    slug: {
+                        type: string;
+                        targetField: string;
+                        required: boolean;
+                    };
+                    identifier: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    description: {
+                        type: string;
+                    };
+                    sameAs: {
+                        type: string;
+                    };
+                    image: {
+                        type: string;
+                    };
+                    url: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    properties: {
+                        type: string;
+                    };
+                    refTargetType: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    refTargetId: {
+                        type: string;
+                    };
+                    confidence: {
+                        type: string;
+                        default: number;
+                    };
+                    sourceType: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    lastVerifiedAt: {
+                        type: string;
+                    };
+                    verificationStatus: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    version: {
+                        type: string;
+                        default: number;
+                    };
+                    verifiedBy: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                    };
+                    status: {
+                        type: string;
+                        default: boolean;
+                    };
+                    brandInfos: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    subjectRelations: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    objectRelations: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    faqMainEntities: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    faqMentions: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    tutorialMainEntities: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    tutorialMentions: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    articleMainEntities: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    articleMentions: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    firstTruthPolicies: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    productMainEntities: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    productMentions: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    caseMainEntities: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    caseMentions: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    geoArticleMentions: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    deletedAt: {
+                        type: string;
+                        default: null;
+                    };
+                };
+            };
+        };
+        "knowledge-relation": {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                pluginOptions: {
+                    "content-manager": {
+                        visible: boolean;
+                    };
+                    "content-type-builder": {
+                        visible: boolean;
+                    };
+                };
+                attributes: {
+                    site: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        required: boolean;
+                        inversedBy: string;
+                    };
+                    subjectEntity: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        required: boolean;
+                        inversedBy: string;
+                    };
+                    predicate: {
+                        type: string;
+                        maxLength: number;
+                        required: boolean;
+                    };
+                    truthPolicy: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        inversedBy: string;
+                    };
+                    objectEntity: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        inversedBy: string;
+                    };
+                    objectValue: {
+                        type: string;
+                    };
+                    objectText: {
+                        type: string;
+                    };
+                    evidenceText: {
+                        type: string;
+                        description: string;
+                    };
+                    sourceUrl: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    sourceType: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    confidence: {
+                        type: string;
+                        default: number;
+                    };
+                    lastVerifiedAt: {
+                        type: string;
+                    };
+                    verificationStatus: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    version: {
+                        type: string;
+                        default: number;
+                    };
+                    status: {
+                        type: string;
+                        default: boolean;
+                    };
+                    deletedAt: {
+                        type: string;
+                        default: null;
+                    };
+                };
+            };
+        };
+        "knowledge-audit-log": {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                pluginOptions: {
+                    "content-manager": {
+                        visible: boolean;
+                    };
+                    "content-type-builder": {
+                        visible: boolean;
+                    };
+                };
+                attributes: {
+                    site: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        required: boolean;
+                    };
+                    targetType: {
+                        type: string;
+                        enum: string[];
+                        required: boolean;
+                    };
+                    targetId: {
+                        type: string;
+                        required: boolean;
+                    };
+                    action: {
+                        type: string;
+                        enum: string[];
+                        required: boolean;
+                    };
+                    actorId: {
+                        type: string;
+                    };
+                    actorLabel: {
+                        type: string;
+                    };
+                    changedFields: {
+                        type: string;
+                    };
+                    reason: {
+                        type: string;
+                    };
+                    version: {
+                        type: string;
+                    };
+                    deletedAt: {
+                        type: string;
+                        default: null;
+                    };
+                };
+            };
+        };
+        "ai-content-summary": {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                pluginOptions: {
+                    "content-manager": {
+                        visible: boolean;
+                    };
+                    "content-type-builder": {
+                        visible: boolean;
+                    };
+                };
+                attributes: {
+                    site: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        required: boolean;
+                        inversedBy: string;
+                    };
+                    targetType: {
+                        type: string;
+                        maxLength: number;
+                        required: boolean;
+                    };
+                    targetId: {
+                        type: string;
+                        required: boolean;
+                    };
+                    summaryType: {
+                        type: string;
+                        enum: string[];
+                        required: boolean;
+                    };
+                    content: {
+                        type: string;
+                        required: boolean;
+                    };
+                    contentText: {
+                        type: string;
+                    };
+                    language: {
+                        type: string;
+                        maxLength: number;
+                        default: string;
+                    };
+                    version: {
+                        type: string;
+                        default: number;
+                    };
+                    generatedBy: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    aiProvider: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    aiModel: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    generatedAt: {
+                        type: string;
+                    };
+                    verifiedAt: {
+                        type: string;
+                    };
+                    verificationStatus: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    status: {
+                        type: string;
+                        default: boolean;
+                    };
+                    deletedAt: {
+                        type: string;
+                        default: null;
+                    };
+                };
+            };
+        };
+        "first-truth-policy": {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                pluginOptions: {
+                    "content-manager": {
+                        visible: boolean;
+                    };
+                    "content-type-builder": {
+                        visible: boolean;
+                    };
+                };
+                attributes: {
+                    site: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        required: boolean;
+                        inversedBy: string;
+                    };
+                    claim: {
+                        type: string;
+                        maxLength: number;
+                        required: boolean;
+                    };
+                    claimKey: {
+                        type: string;
+                        maxLength: number;
+                        required: boolean;
+                    };
+                    claimCategory: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    canonicalEntity: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        inversedBy: string;
+                    };
+                    canonicalValue: {
+                        type: string;
+                        required: boolean;
+                    };
+                    canonicalValueType: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    comparisonMode: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                        description: string;
+                    };
+                    canonicalSourceUrl: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    canonicalSourceType: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    conflictResolution: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    lastVerifiedAt: {
+                        type: string;
+                        required: boolean;
+                    };
+                    verificationStatus: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    version: {
+                        type: string;
+                        default: number;
+                    };
+                    conflictDetails: {
+                        type: string;
+                    };
+                    priority: {
+                        type: string;
+                        default: number;
+                    };
+                    status: {
+                        type: string;
+                        default: boolean;
+                    };
+                    evidenceRelations: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    geoArticles: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    deletedAt: {
+                        type: string;
+                        default: null;
+                    };
+                };
+            };
+        };
+        "brand-voice": {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                pluginOptions: {
+                    "content-manager": {
+                        visible: boolean;
+                    };
+                    "content-type-builder": {
+                        visible: boolean;
+                    };
+                };
+                attributes: {
+                    site: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        required: boolean;
+                        inversedBy: string;
+                    };
+                    name: {
+                        type: string;
+                        maxLength: number;
+                        required: boolean;
+                    };
+                    category: {
+                        type: string;
+                        enum: string[];
+                        required: boolean;
+                    };
+                    content: {
+                        type: string;
+                        required: boolean;
+                    };
+                    variables: {
+                        type: string;
+                    };
+                    status: {
+                        type: string;
+                        default: boolean;
+                    };
+                    tags: {
+                        type: string;
+                    };
+                    articles: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    deletedAt: {
+                        type: string;
+                        default: null;
+                    };
+                };
+            };
+        };
+        "redirect-rule": {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                pluginOptions: {
+                    "content-manager": {
+                        visible: boolean;
+                    };
+                    "content-type-builder": {
+                        visible: boolean;
+                    };
+                };
+                attributes: {
+                    site: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        inversedBy: string;
+                    };
+                    fromPath: {
+                        type: string;
+                        required: boolean;
+                        maxLength: number;
+                    };
+                    toUrl: {
+                        type: string;
+                        required: boolean;
+                        maxLength: number;
+                    };
+                    statusCode: {
+                        type: string;
+                        default: number;
+                    };
+                    isActive: {
+                        type: string;
+                        default: boolean;
+                    };
+                    deletedAt: {
+                        type: string;
+                        default: null;
+                    };
+                };
+            };
+        };
+        "invite-trace": {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                pluginOptions: {
+                    "content-manager": {
+                        visible: boolean;
+                    };
+                    "content-type-builder": {
+                        visible: boolean;
+                    };
+                };
+                attributes: {
+                    event: {
+                        type: string;
+                        enum: string[];
+                        required: boolean;
+                    };
+                    inviteCode: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    storedCode: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    channelInviteCode: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    inviterId: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    targetType: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    targetId: {
+                        type: string;
+                    };
+                    pagePath: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    loggedIn: {
+                        type: string;
+                        default: boolean;
+                    };
+                    success: {
+                        type: string;
+                        default: boolean;
+                    };
+                    detail: {
+                        type: string;
+                    };
+                    sessionId: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    visitorId: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    ipAddress: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    userAgent: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    userId: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                    };
+                };
+            };
+        };
+        "geo-article": {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                pluginOptions: {
+                    i18n: {
+                        localized: boolean;
+                    };
+                    "content-manager": {
+                        visible: boolean;
+                    };
+                    "content-type-builder": {
+                        visible: boolean;
+                    };
+                };
+                attributes: {
+                    site: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        required: boolean;
+                        inversedBy: string;
+                    };
+                    title: {
+                        type: string;
+                        maxLength: number;
+                        required: boolean;
+                        localized: boolean;
+                    };
+                    slug: {
+                        type: string;
+                        targetField: string;
+                        required: boolean;
+                        localized: boolean;
+                    };
+                    content: {
+                        type: string;
+                        required: boolean;
+                        localized: boolean;
+                        description: string;
+                    };
+                    type: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                        required: boolean;
+                    };
+                    faqQuestion: {
+                        type: string;
+                        maxLength: number;
+                        localized: boolean;
+                        description: string;
+                    };
+                    publishedAt: {
+                        type: string;
+                    };
+                    articleNo: {
+                        type: string;
+                        maxLength: number;
+                        unique: boolean;
+                        description: string;
+                    };
+                    authorName: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    authorBio: {
+                        type: string;
+                        description: string;
+                    };
+                    status: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    category: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                    };
+                    tags: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                    };
+                    sourceName: {
+                        type: string;
+                        maxLength: number;
+                        description: string;
+                    };
+                    sourceUrl: {
+                        type: string;
+                        maxLength: number;
+                        description: string;
+                    };
+                    sourcePublishedAt: {
+                        type: string;
+                        description: string;
+                    };
+                    serviceScope: {
+                        type: string;
+                        description: string;
+                    };
+                    businessData: {
+                        type: string;
+                        default: never[];
+                        description: string;
+                    };
+                    caseContent: {
+                        type: string;
+                        description: string;
+                    };
+                    internalLinks: {
+                        type: string;
+                        default: never[];
+                        description: string;
+                    };
+                    metaTitle: {
+                        type: string;
+                        maxLength: number;
+                        localized: boolean;
+                    };
+                    metaDescription: {
+                        type: string;
+                        maxLength: number;
+                        localized: boolean;
+                        description: string;
+                    };
+                    canonicalUrl: {
+                        type: string;
+                        maxLength: number;
+                        localized: boolean;
+                    };
+                    jsonLdType: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    coverImage: {
+                        type: string;
+                    };
+                    riskType: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                        required: boolean;
+                        description: string;
+                    };
+                    riskDisclaimer: {
+                        type: string;
+                        localized: boolean;
+                        description: string;
+                    };
+                    ctaType: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                        description: string;
+                    };
+                    leadFormEnabled: {
+                        type: string;
+                        default: boolean;
+                        description: string;
+                    };
+                    vendureProductListId: {
+                        type: string;
+                        maxLength: number;
+                        description: string;
+                    };
+                    readPoints: {
+                        type: string;
+                        default: number;
+                        description: string;
+                    };
+                    miniProgramPath: {
+                        type: string;
+                        maxLength: number;
+                        description: string;
+                    };
+                    reviewerName: {
+                        type: string;
+                        maxLength: number;
+                        description: string;
+                    };
+                    reviewedAt: {
+                        type: string;
+                        description: string;
+                    };
+                    reviewChecks: {
+                        type: string;
+                        default: {};
+                        description: string;
+                    };
+                    reviewNote: {
+                        type: string;
+                        description: string;
+                    };
+                    summaryPoints: {
+                        type: string;
+                        localized: boolean;
+                        description: string;
+                    };
+                    localTips: {
+                        type: string;
+                        localized: boolean;
+                        description: string;
+                    };
+                    infoBoundary: {
+                        type: string;
+                        localized: boolean;
+                        description: string;
+                    };
+                    allowIndex: {
+                        type: string;
+                        default: boolean;
+                    };
+                    noFollow: {
+                        type: string;
+                        default: boolean;
+                    };
+                    author: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        description: string;
+                    };
+                    editor: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        description: string;
+                    };
+                    reviewer: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        description: string;
+                    };
+                    truthBasis: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        description: string;
+                    };
+                    truthBasisSections: {
+                        type: string;
+                        default: never[];
+                        description: string;
+                    };
+                    mentionedEntities: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        description: string;
+                    };
+                    comparisonData: {
+                        type: string;
+                        default: never[];
+                        description: string;
+                    };
+                    listItems: {
+                        type: string;
+                        default: never[];
+                        description: string;
+                    };
+                    deletedAt: {
+                        type: string;
+                        default: null;
+                    };
+                };
+            };
+            lifecycles: ({ strapi }: {
+                strapi: import("@strapi/types/dist/core").Strapi;
+            }) => {
+                afterCreate(event: any): Promise<void>;
+                afterUpdate(event: any): Promise<void>;
+                beforeUpdate(event: any): Promise<void>;
+                beforeCreate(event: any): Promise<void>;
+            };
+        };
+        author: {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                pluginOptions: {
+                    "content-manager": {
+                        visible: boolean;
+                    };
+                    "content-type-builder": {
+                        visible: boolean;
+                    };
+                };
+                attributes: {
+                    site: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        required: boolean;
+                        inversedBy: string;
+                    };
+                    name: {
+                        type: string;
+                        maxLength: number;
+                        required: boolean;
+                    };
+                    slug: {
+                        type: string;
+                        targetField: string;
+                        required: boolean;
+                    };
+                    position: {
+                        type: string;
+                        maxLength: number;
+                        description: string;
+                    };
+                    bio: {
+                        type: string;
+                        description: string;
+                    };
+                    avatar: {
+                        type: string;
+                        multiple: boolean;
+                    };
+                    experienceYears: {
+                        type: string;
+                        description: string;
+                    };
+                    sameAs: {
+                        type: string;
+                        description: string;
+                    };
+                    status: {
+                        type: string;
+                        default: boolean;
+                    };
+                    deletedAt: {
+                        type: string;
+                        default: null;
+                    };
+                    geoArticles: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                };
+            };
+        };
+    };
+    policies: {
+        "has-website-permission": (config: {
+            action?: string;
+        }) => (ctx: any, next: any) => Promise<any>;
+    };
+};
+export default _default;
+//# sourceMappingURL=index.d.ts.map

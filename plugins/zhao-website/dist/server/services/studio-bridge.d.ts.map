@@ -1,0 +1,1 @@
+{"version":3,"file":"studio-bridge.d.ts","sourceRoot":"","sources":["../../../server/src/services/studio-bridge.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,IAAI,EAAE,MAAM,gBAAgB,CAAC;yBAE3B,YAAY;IAAE,MAAM,EAAE,IAAI,CAAC,MAAM,CAAA;CAAE;8BAEjB,MAAM,UAAU;QAC9C,sBAAsB,EAAE,MAAM,CAAC;QAC/B,SAAS,CAAC,EAAE,GAAG,CAAC;KACjB,GAAG,OAAO,CAAC,GAAG,CAAC;;AALlB,wBAyCG"}

@@ -1,0 +1,124 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const AI_CRAWLER_LIST = [
+    "GPTBot", "CCBot", "ClaudeBot", "PerplexityBot", "Google-Extended",
+    "meta-external-agent", "Amazonbot", "Bytespider", "Sogou web spider",
+];
+exports.default = ({ strapi }) => ({
+    async generate(siteId, requestHost) {
+        const seoConfig = await strapi.plugin("zhao-website").service("seo-config").get(siteId);
+        const brandInfo = await strapi.plugin("zhao-website").service("brand-info").get(siteId);
+        const schemaBuilder = strapi.plugin("zhao-website").service("schema-builder");
+        const siteConfig = await strapi.db.query("plugin::zhao-common.site-config").findOne({
+            where: { id: siteId },
+        });
+        // domain 存的是裸域名（如 localhost / v.joho.cn），需补协议成绝对 URL，
+        // 否则 canonical/og:image 非法，_buildHreflang 里 new URL() 直接抛错
+        const rawDomain = siteConfig?.domain;
+        const siteUrl = rawDomain
+            ? /^https?:\/\//.test(rawDomain)
+                ? rawDomain
+                : `https://${rawDomain}`
+            : `https://${requestHost}`;
+        const title = seoConfig?.defaultTitle || brandInfo?.companyName || "";
+        const description = seoConfig?.defaultDescription || brandInfo?.description || "";
+        const keywords = seoConfig?.defaultKeywords || "";
+        const og = {
+            "og:title": title,
+            "og:description": description,
+            "og:type": "website",
+            "og:site_name": brandInfo?.companyName || "",
+            "og:locale": (seoConfig?.defaultLocale || "zh-CN").replace("-", "_"),
+        };
+        if (seoConfig?.ogImage?.url)
+            og["og:image"] = `${siteUrl}${seoConfig.ogImage.url}`;
+        const twitter = {
+            "twitter:card": "summary_large_image",
+        };
+        if (seoConfig?.twitterSite)
+            twitter["twitter:site"] = seoConfig.twitterSite;
+        if (seoConfig?.twitterCreator)
+            twitter["twitter:creator"] = seoConfig.twitterCreator;
+        const geo = {};
+        if (seoConfig?.geoRegion)
+            geo["geo.region"] = seoConfig.geoRegion;
+        if (seoConfig?.geoPlacename)
+            geo["geo.placename"] = seoConfig.geoPlacename;
+        if (seoConfig?.geoPosition)
+            geo["geo.position"] = seoConfig.geoPosition;
+        if (seoConfig?.geoICBM)
+            geo["ICBM"] = seoConfig.geoICBM;
+        const hreflang = this._buildHreflang(seoConfig, siteUrl);
+        const verification = {};
+        if (seoConfig?.googleSiteVerification)
+            verification["google-site-verification"] = seoConfig.googleSiteVerification;
+        if (seoConfig?.baiduSiteVerification)
+            verification["baidu-site-verification"] = seoConfig.baiduSiteVerification;
+        if (seoConfig?.bingSiteVerification)
+            verification["bing-site-verification"] = seoConfig.bingSiteVerification;
+        if (seoConfig?.sogouSiteVerification)
+            verification["sogou_site_verification"] = seoConfig.sogouSiteVerification;
+        const structuredData = [];
+        if (seoConfig?.geoPosition) {
+            structuredData.push(schemaBuilder.buildLocalBusiness(brandInfo, seoConfig));
+        }
+        else {
+            structuredData.push(schemaBuilder.buildOrganization(brandInfo, seoConfig));
+        }
+        structuredData.push(schemaBuilder.buildWebSite(seoConfig, siteUrl));
+        return {
+            title,
+            titleTemplate: seoConfig?.titleTemplate || "",
+            description,
+            keywords,
+            canonical: siteUrl,
+            og,
+            twitter,
+            geo,
+            hreflang,
+            verification,
+            structuredData,
+            customHeadCode: seoConfig?.customHeadCode || "",
+            customBodyCode: seoConfig?.customBodyCode || "",
+            analytics: {
+                baiduAnalyticsId: seoConfig?.baiduAnalyticsId || "",
+                googleAnalyticsId: seoConfig?.googleAnalyticsId || "",
+            },
+        };
+    },
+    _buildHreflang(seoConfig, siteUrl) {
+        if (!seoConfig || seoConfig.hreflangStrategy === "none")
+            return [];
+        const defaultLocale = seoConfig.defaultLocale || "zh-CN";
+        const alternates = seoConfig.alternateLocales || [];
+        const strategy = seoConfig.hreflangStrategy || "subdirectory";
+        const result = [];
+        const buildUrl = (locale) => {
+            const { origin, host, protocol } = new URL(siteUrl);
+            const domainWithoutTld = host.split(".").slice(0, -1).join(".");
+            switch (strategy) {
+                case "subdirectory":
+                    return locale === defaultLocale ? siteUrl : `${origin}/${locale}`;
+                case "subdomain":
+                    return locale === defaultLocale ? siteUrl : `${protocol}//${locale}.${host}`;
+                case "tld":
+                    if (locale === defaultLocale)
+                        return siteUrl;
+                    const localeTld = locale.includes("-") ? locale.split("-")[1].toLowerCase() : locale.toLowerCase();
+                    return `${protocol}//${domainWithoutTld}.${localeTld}`;
+                default:
+                    return siteUrl;
+            }
+        };
+        result.push({ hreflang: defaultLocale, href: buildUrl(defaultLocale) });
+        for (const alt of alternates) {
+            result.push({ hreflang: alt, href: buildUrl(alt) });
+        }
+        result.push({ hreflang: "x-default", href: siteUrl });
+        return result;
+    },
+    getAiCrawlerList() {
+        return [...AI_CRAWLER_LIST];
+    },
+});
+//# sourceMappingURL=seo-meta.js.map
