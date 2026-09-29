@@ -130,6 +130,8 @@ const API = {
   kgDeleteRelation: (id) => `${ADMIN_BASE}/knowledge-graph/relations/${id}`,
   kgDisambiguate: `${ADMIN_BASE}/knowledge-graph/disambiguate`,
   kgExportGraph: `${ADMIN_BASE}/knowledge-graph/export`,
+  kgHealthCompleteness: `${ADMIN_BASE}/knowledge-health/completeness`,
+  kgHealthViolations: `${ADMIN_BASE}/knowledge-health/violations`,
   kgAuditLogs: (params = {}) => `${ADMIN_BASE}/knowledge-audit-logs?${new URLSearchParams(params).toString()}`,
   kgEntityReview: (id, action) => `${ADMIN_BASE}/knowledge-graph/entities/${id}/${action}`,
   kgRelationReview: (id, action) => `${ADMIN_BASE}/knowledge-graph/relations/${id}/${action}`,
@@ -542,6 +544,11 @@ const KnowledgeGraphPage = () => {
                 }
               )
             ] })
+          },
+          {
+            key: "health",
+            label: "完备度",
+            children: /* @__PURE__ */ jsxRuntime.jsx(KnowledgeHealthPanel, {})
           }
         ]
       }
@@ -638,6 +645,87 @@ const KnowledgeGraphPage = () => {
             /* @__PURE__ */ jsxRuntime.jsx(antd.Input.TextArea, { placeholder: "驳回理由（必填）", value: rejectReason, onChange: (e) => setRejectReason(e.target.value) }),
             /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { danger: true, onClick: () => doReview("reject", rejectReason), children: "确认驳回" })
           ] }) : null
+        ]
+      }
+    )
+  ] });
+};
+const KnowledgeHealthPanel = () => {
+  const [data, setData] = react.useState(null);
+  const [violations, setViolations] = react.useState([]);
+  const [loading, setLoading] = react.useState(false);
+  const load = async () => {
+    setLoading(true);
+    try {
+      const [c, v] = await Promise.all([
+        fetch(API.kgHealthCompleteness).then((r) => r.json()),
+        fetch(API.kgHealthViolations).then((r) => r.json())
+      ]);
+      setData(c);
+      setViolations(Array.isArray(v) ? v : []);
+    } catch (err) {
+      antd.message.error(`完备度加载失败: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+  const exportCleanupList = () => {
+    const blob = new Blob([JSON.stringify({ completeness: data, violations }, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "knowledge-cleanup-list.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+  if (!data && !loading) {
+    return /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { onClick: load, children: "加载完备度" });
+  }
+  const gapRows = data ? [
+    { key: "missingSameAs", item: "实体缺 sameAs", count: data.entities.missingSameAs },
+    { key: "missingDescription", item: "实体缺 description", count: data.entities.missingDescription },
+    { key: "missingUrl", item: "实体缺 url", count: data.entities.missingUrl },
+    { key: "missingIdentifier", item: "实体缺 identifier", count: data.entities.missingIdentifier },
+    { key: "missingSourceUrl", item: "真值缺 sourceUrl", count: data.facts.missingSourceUrl },
+    { key: "internalSourceCount", item: "真值来源 internal", count: data.facts.internalSourceCount },
+    { key: "otherCategoryCount", item: "真值分类 other", count: data.facts.otherCategoryCount },
+    { key: "unboundCanonicalEntity", item: "真值未绑规范实体", count: data.facts.unboundCanonicalEntity },
+    { key: "contractViolations", item: "关系客体契约违规", count: data.relations.contractViolations },
+    { key: "missingTruthPolicy", item: "引用关系未绑真值", count: data.relations.missingTruthPolicy }
+  ] : [];
+  return /* @__PURE__ */ jsxRuntime.jsxs(antd.Space, { direction: "vertical", style: { width: "100%" }, children: [
+    /* @__PURE__ */ jsxRuntime.jsxs(antd.Space, { children: [
+      /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { onClick: load, loading, children: "刷新" }),
+      /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { icon: /* @__PURE__ */ jsxRuntime.jsx(icons.ExportOutlined, {}), onClick: exportCleanupList, disabled: !data, children: "导出清理清单 JSON" })
+    ] }),
+    /* @__PURE__ */ jsxRuntime.jsx(
+      antd.Table,
+      {
+        rowKey: "key",
+        size: "small",
+        pagination: false,
+        dataSource: gapRows,
+        columns: [
+          { title: "缺口项", dataIndex: "item" },
+          { title: "数量", dataIndex: "count" }
+        ]
+      }
+    ),
+    data ? /* @__PURE__ */ jsxRuntime.jsxs("div", { children: [
+      "空分类：",
+      data.facts.emptyCategories.join(", ") || "无"
+    ] }) : null,
+    /* @__PURE__ */ jsxRuntime.jsx(
+      antd.Table,
+      {
+        rowKey: "relationDocumentId",
+        size: "small",
+        dataSource: violations,
+        columns: [
+          { title: "主体实体", dataIndex: "subjectEntity" },
+          { title: "谓词", dataIndex: "predicate" },
+          { title: "违规原因", dataIndex: "reason" },
+          { title: "客体预览", dataIndex: "objectPreview" }
         ]
       }
     )

@@ -78,6 +78,10 @@ declare const _default: {
         archive(ctx: any): Promise<void>;
         batch(ctx: any): Promise<void>;
     };
+    "knowledge-health": {
+        completeness(ctx: any): Promise<void>;
+        violations(ctx: any): Promise<void>;
+    };
     article: {
         list(ctx: any): Promise<void>;
         detail(ctx: any): Promise<any>;
@@ -127,6 +131,7 @@ declare const _default: {
         sitemap(ctx: any): Promise<void>;
         robots(ctx: any): Promise<void>;
         llmsTxt(ctx: any): Promise<void>;
+        llmsFullTxt(ctx: any): Promise<void>;
         manifest(ctx: any): Promise<void>;
     };
     "site-info": {

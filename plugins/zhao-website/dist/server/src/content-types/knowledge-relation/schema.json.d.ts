@@ -51,6 +51,10 @@ declare const _default: {
     "objectText": {
       "type": "text"
     },
+    "evidenceText": {
+      "type": "text",
+      "description": "段落举证原文：仅后台可见，不进任何公开出口"
+    },
     "sourceUrl": {
       "type": "string",
       "maxLength": 500

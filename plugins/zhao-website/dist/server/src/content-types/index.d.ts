@@ -2081,6 +2081,10 @@ declare const _default: {
                 objectText: {
                     type: string;
                 };
+                evidenceText: {
+                    type: string;
+                    description: string;
+                };
                 sourceUrl: {
                     type: string;
                     maxLength: number;

@@ -348,7 +348,7 @@ const collectionName$8 = "zhao_website_knowledge_relations";
 const info$8 = { "singularName": "knowledge-relation", "pluralName": "knowledge-relations", "displayName": "知识图谱关系" };
 const options$8 = { "draftAndPublish": false };
 const pluginOptions$8 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": false } };
-const attributes$8 = { "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config", "required": true, "inversedBy": "website_knowledge_relations" }, "subjectEntity": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-website.knowledge-entity", "required": true, "inversedBy": "subjectRelations" }, "predicate": { "type": "string", "maxLength": 100, "required": true }, "truthPolicy": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-website.first-truth-policy", "inversedBy": "evidenceRelations" }, "objectEntity": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-website.knowledge-entity", "inversedBy": "objectRelations" }, "objectValue": { "type": "json" }, "objectText": { "type": "text" }, "sourceUrl": { "type": "string", "maxLength": 500 }, "sourceType": { "type": "enumeration", "enum": ["official", "derived", "manual", "inferred"], "default": "manual" }, "confidence": { "type": "decimal", "default": 1 }, "lastVerifiedAt": { "type": "datetime" }, "verificationStatus": { "type": "enumeration", "enum": ["verified", "pending", "outdated", "conflict", "rejected"], "default": "verified" }, "version": { "type": "integer", "default": 1 }, "status": { "type": "boolean", "default": true }, "deletedAt": { "type": "datetime", "default": null } };
+const attributes$8 = { "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config", "required": true, "inversedBy": "website_knowledge_relations" }, "subjectEntity": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-website.knowledge-entity", "required": true, "inversedBy": "subjectRelations" }, "predicate": { "type": "string", "maxLength": 100, "required": true }, "truthPolicy": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-website.first-truth-policy", "inversedBy": "evidenceRelations" }, "objectEntity": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-website.knowledge-entity", "inversedBy": "objectRelations" }, "objectValue": { "type": "json" }, "objectText": { "type": "text" }, "evidenceText": { "type": "text", "description": "段落举证原文：仅后台可见，不进任何公开出口" }, "sourceUrl": { "type": "string", "maxLength": 500 }, "sourceType": { "type": "enumeration", "enum": ["official", "derived", "manual", "inferred"], "default": "manual" }, "confidence": { "type": "decimal", "default": 1 }, "lastVerifiedAt": { "type": "datetime" }, "verificationStatus": { "type": "enumeration", "enum": ["verified", "pending", "outdated", "conflict", "rejected"], "default": "verified" }, "version": { "type": "integer", "default": 1 }, "status": { "type": "boolean", "default": true }, "deletedAt": { "type": "datetime", "default": null } };
 const knowledgeRelation = {
   kind: kind$8,
   collectionName: collectionName$8,
@@ -390,7 +390,7 @@ const collectionName$5 = "zhao_website_first_truths";
 const info$5 = { "singularName": "first-truth-policy", "pluralName": "first-truth-policies", "displayName": "第一真值策略声明" };
 const options$5 = { "draftAndPublish": false };
 const pluginOptions$5 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": false } };
-const attributes$5 = { "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config", "required": false, "inversedBy": "website_first_truths" }, "claim": { "type": "string", "maxLength": 200, "required": true }, "claimKey": { "type": "string", "maxLength": 100, "required": true }, "claimCategory": { "type": "enumeration", "enum": ["business_license", "brand_claim", "technical_spec", "certification", "financial", "logistics_promise", "other"], "default": "brand_claim" }, "canonicalEntity": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-website.knowledge-entity", "inversedBy": "firstTruthPolicies" }, "canonicalValue": { "type": "text", "required": true }, "canonicalValueType": { "type": "enumeration", "enum": ["text", "number", "date", "url", "json"], "default": "text" }, "comparisonMode": { "type": "enumeration", "enum": ["exact", "contains"], "default": "contains", "description": "比对语义：exact=实际值须全等规范值（值型）；contains=实际值只需包含规范值（表述型，段落引用场景）" }, "canonicalSourceUrl": { "type": "string", "maxLength": 500 }, "canonicalSourceType": { "type": "enumeration", "enum": ["government", "official_site", "third_party_verified", "internal"], "default": "official_site" }, "conflictResolution": { "type": "enumeration", "enum": ["latest", "earliest", "highest_confidence", "manual"], "default": "manual" }, "lastVerifiedAt": { "type": "datetime", "required": true }, "verificationStatus": { "type": "enumeration", "enum": ["verified", "pending", "outdated", "conflict", "rejected"], "default": "verified" }, "version": { "type": "integer", "default": 1 }, "conflictDetails": { "type": "json" }, "priority": { "type": "integer", "default": 100 }, "status": { "type": "boolean", "default": true }, "evidenceRelations": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.knowledge-relation", "mappedBy": "truthPolicy" }, "geoArticles": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.geo-article", "mappedBy": "truthBasis" }, "deletedAt": { "type": "datetime", "default": null } };
+const attributes$5 = { "site": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-common.site-config", "required": false, "inversedBy": "website_first_truths" }, "claim": { "type": "string", "maxLength": 200, "required": true }, "claimKey": { "type": "string", "maxLength": 100, "required": true }, "claimCategory": { "type": "enumeration", "enum": ["business_license", "brand_claim", "technical_spec", "certification", "financial", "logistics_promise", "terminology_definition", "other"], "default": "brand_claim" }, "canonicalEntity": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-website.knowledge-entity", "inversedBy": "firstTruthPolicies" }, "canonicalValue": { "type": "text", "required": true }, "canonicalValueType": { "type": "enumeration", "enum": ["text", "number", "date", "url", "json"], "default": "text" }, "comparisonMode": { "type": "enumeration", "enum": ["exact", "contains"], "default": "contains", "description": "比对语义：exact=实际值须全等规范值（值型）；contains=实际值只需包含规范值（表述型，段落引用场景）" }, "canonicalSourceUrl": { "type": "string", "maxLength": 500 }, "canonicalSourceType": { "type": "enumeration", "enum": ["government", "official_site", "third_party_verified", "internal"], "default": "official_site" }, "conflictResolution": { "type": "enumeration", "enum": ["latest", "earliest", "highest_confidence", "manual"], "default": "manual" }, "lastVerifiedAt": { "type": "datetime", "required": true }, "verificationStatus": { "type": "enumeration", "enum": ["verified", "pending", "outdated", "conflict", "rejected"], "default": "verified" }, "version": { "type": "integer", "default": 1 }, "conflictDetails": { "type": "json" }, "priority": { "type": "integer", "default": 100 }, "status": { "type": "boolean", "default": true }, "evidenceRelations": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.knowledge-relation", "mappedBy": "truthPolicy" }, "geoArticles": { "type": "relation", "relation": "manyToMany", "target": "plugin::zhao-website.geo-article", "mappedBy": "truthBasis" }, "deletedAt": { "type": "datetime", "default": null } };
 const firstTruthPolicy = {
   kind: kind$5,
   collectionName: collectionName$5,
@@ -31276,126 +31276,6 @@ function auditGeoArticle(article2) {
   const pass = missing.every((m) => m.passed);
   return { pass, missing };
 }
-const PREDICATE_DICTIONARY = {
-  Organization: [
-    "founder",
-    "foundingDate",
-    "legalName",
-    "areaServed",
-    "numberOfEmployees",
-    "contactPoint",
-    "location",
-    "hasOfferCatalog",
-    "slogan",
-    "keywords",
-    "brand",
-    "knowsAbout",
-    "provides",
-    "sameAs"
-  ],
-  Person: ["affiliation", "jobTitle", "worksFor", "alumniOf", "knowsAbout", "nationality", "sameAs"],
-  Product: [
-    "manufacturer",
-    "brand",
-    "offers",
-    "aggregateRating",
-    "category",
-    "material",
-    "additionalProperty",
-    "isRelatedTo",
-    "isSimilarTo"
-  ],
-  Service: [
-    "provider",
-    "areaServed",
-    "serviceType",
-    "hasOfferCatalog",
-    "offers",
-    "category",
-    "termsOfService",
-    "isRelatedTo"
-  ],
-  Place: ["containedInPlace", "containsPlace", "geo", "address", "areaServed", "openingHours"],
-  Event: ["organizer", "location", "startDate", "endDate", "subEvent", "superEvent", "performer", "about"],
-  CreativeWork: [
-    "about",
-    "mentions",
-    "author",
-    "publisher",
-    "datePublished",
-    "isPartOf",
-    "hasPart",
-    "keywords",
-    "isBasedOn"
-  ],
-  Article: [
-    "about",
-    "mentions",
-    "author",
-    "publisher",
-    "datePublished",
-    "articleSection",
-    "mainEntity",
-    "isPartOf",
-    "hasPart",
-    "keywords"
-  ],
-  CaseStudy: ["subjectOf", "about", "mentions", "author", "isPartOf"],
-  Offer: [
-    "itemOffered",
-    "price",
-    "priceCurrency",
-    "availability",
-    "seller",
-    "areaServed",
-    "validFrom",
-    "validThrough"
-  ],
-  Review: ["itemReviewed", "reviewRating", "author", "datePublished", "reviewBody"],
-  FAQ: ["about", "mentions", "mainEntity", "hasPart"],
-  HowTo: ["about", "mentions", "hasStep", "step", "tool", "supply", "totalTime"],
-  BreadcrumbList: ["itemListElement", "hasPart"],
-  Brand: ["logo", "slogan", "manufacturer", "aggregateRating", "sameAs"],
-  ContactPoint: ["contactType", "telephone", "email", "areaServed", "availableLanguage"],
-  QuantitativeValue: ["value", "unitText", "minValue", "maxValue"],
-  DefinedTerm: ["inDefinedTermSet", "termCode", "isPartOf", "sameAs"]
-};
-function isValidPredicate(entityType, predicate) {
-  const list = PREDICATE_DICTIONARY[entityType] || [];
-  return list.includes(predicate);
-}
-const HIERARCHICAL_PREDICATES = /* @__PURE__ */ new Set([
-  "parent",
-  "containsPlace",
-  "subEvent",
-  "hasPart"
-]);
-const CLAIM_PREDICATE_RULES = [
-  { prefix: "core_domain_", predicate: "termCode" },
-  // DefinedTerm.termCode
-  { prefix: "domain_", predicate: "termCode" },
-  // domain_*_def
-  { prefix: "brand_slogan_", predicate: "slogan" },
-  // Organization.slogan
-  { prefix: "core_keywords_", predicate: "keywords" },
-  // Organization.keywords
-  { prefix: "brand_domain_", predicate: "sameAs" },
-  // Organization.sameAs
-  { prefix: "area_served_", predicate: "areaServed" },
-  // Place / Service.areaServed
-  { prefix: "platform_positioning_", predicate: "serviceType" },
-  // Service.serviceType
-  { prefix: "service_scope_", predicate: "serviceType" }
-  // Service.serviceType
-];
-function mapClaimToPredicate(claimKey) {
-  const key = String(claimKey ?? "").trim();
-  if (!key) return null;
-  for (const rule of CLAIM_PREDICATE_RULES) {
-    if (key.startsWith(rule.prefix)) return rule.predicate;
-  }
-  return null;
-}
 const ENTITY_TYPE_MAP = {
   "website-article": "Article",
   "website-geo-article": "Article",
@@ -31461,9 +31341,15 @@ function extractSectionText(html, section) {
   }
   return null;
 }
-async function syncTruthBasisRelations(content, kgService, siteId) {
+async function syncTruthBasisRelations(content, kgService, siteId, derivedEntity) {
   const sections = Array.isArray(content.truthBasisSections) ? content.truthBasisSections : [];
   if (sections.length === 0) return;
+  if (!derivedEntity?.documentId) {
+    strapi.log.warn(
+      `[zhao-website] kg-sync: geo-article ${content.documentId} 无派生实体，跳过引用关系派生`
+    );
+    return;
+  }
   const truths = Array.isArray(content.truthBasis) ? content.truthBasis : [];
   if (truths.length === 0) {
     strapi.log.warn(
@@ -31479,38 +31365,29 @@ async function syncTruthBasisRelations(content, kgService, siteId) {
     const claimKey = item && item.claimKey ? String(item.claimKey) : "";
     const section = item && item.section ? String(item.section) : "";
     if (!claimKey || !section) continue;
-    const predicate = mapClaimToPredicate(claimKey);
-    if (!predicate) {
-      strapi.log.warn(`[zhao-website] kg-sync: claimKey "${claimKey}" 无谓词映射，跳过`);
-      continue;
-    }
     const truth = truthByKey.get(claimKey);
     if (!truth) {
       strapi.log.warn(`[zhao-website] kg-sync: claimKey "${claimKey}" 未在文章 truthBasis 中找到对应真值，跳过`);
       continue;
     }
-    const entity = truth.canonicalEntity;
-    if (!entity || !entity.documentId) {
-      strapi.log.warn(`[zhao-website] kg-sync: 真值 "${claimKey}" 未绑定 canonicalEntity，跳过`);
-      continue;
-    }
-    if (entity.entityType && !isValidPredicate(entity.entityType, predicate)) {
-      strapi.log.warn(
-        `[zhao-website] kg-sync: predicate "${predicate}" 不在 ${entity.entityType} 字典中（claimKey "${claimKey}"），跳过`
-      );
-      continue;
-    }
-    const objectText = extractSectionText(content.content, section);
-    if (!objectText) {
+    const evidenceText = extractSectionText(content.content, section);
+    if (!evidenceText) {
       strapi.log.warn(`[zhao-website] kg-sync: 正文未定位到段落「${section}」（claimKey "${claimKey}"），跳过`);
+      continue;
+    }
+    const canonicalEntityId = truth.canonicalEntity?.documentId;
+    const canonicalValue = truth.canonicalValue;
+    if (!canonicalEntityId && (canonicalValue === void 0 || canonicalValue === null || canonicalValue === "")) {
+      strapi.log.warn(`[zhao-website] kg-sync: 真值 "${claimKey}" 既无 canonicalEntity 也无 canonicalValue，跳过`);
       continue;
     }
     await kgService.addRelation({
       siteId,
-      subjectEntityId: entity.documentId,
-      predicate,
-      objectText,
+      subjectEntityId: derivedEntity.documentId,
+      predicate: "cites",
+      ...canonicalEntityId ? { objectEntityId: canonicalEntityId } : { objectValue: canonicalValue },
       truthPolicyId: truth.documentId,
+      evidenceText,
       sourceType: "derived"
     });
   }
@@ -31526,10 +31403,11 @@ async function knowledgeGraphSync(targetType, rawContent) {
       strapi.log.warn(`[zhao-website] kg-sync: ${targetType} ${content.documentId} 缺少 site，跳过派生`);
       return;
     }
+    let derivedEntity = null;
     if (content.mainEntity && content.mainEntity.documentId) {
     } else {
       const entityType = ENTITY_TYPE_MAP[targetType] || "CreativeWork";
-      await kgService.upsertEntityFromContent({
+      derivedEntity = await kgService.upsertEntityFromContent({
         siteId,
         entityType,
         name: content.title || content.name || content.question,
@@ -31558,7 +31436,7 @@ async function knowledgeGraphSync(targetType, rawContent) {
       }
     }
     if (targetType === "website-geo-article") {
-      await syncTruthBasisRelations(content, kgService, siteId);
+      await syncTruthBasisRelations(content, kgService, siteId, derivedEntity);
     }
   } catch (err) {
     strapi.log.warn(`[zhao-website] kg-sync failed for ${targetType}`, err);
@@ -31941,6 +31819,13 @@ const seoOutput = {
     const siteId = ctx.state.siteId;
     const siteUrl = await getSiteUrl$1(siteId, ctx.request.host);
     const txt = await strapi.plugin("zhao-website").service("llms-txt").generate(siteId, siteUrl);
+    ctx.type = "text/plain";
+    ctx.body = txt;
+  },
+  async llmsFullTxt(ctx) {
+    const siteId = ctx.state.siteId;
+    const siteUrl = await getSiteUrl$1(siteId, ctx.request.host);
+    const txt = await strapi.plugin("zhao-website").service("llms-txt").generateFull(siteId, siteUrl);
     ctx.type = "text/plain";
     ctx.body = txt;
   },
@@ -32546,6 +32431,14 @@ const geoArticleAdmin = {
     ctx.body = await strapi.plugin("zhao-website").service("geo-article").batch(ctx.state.siteId, ctx.request.body);
   }
 };
+const adminKnowledgeHealth = {
+  async completeness(ctx) {
+    ctx.body = await strapi.plugin("zhao-website").service("knowledge-health").completeness(ctx.state.siteId);
+  },
+  async violations(ctx) {
+    ctx.body = await strapi.plugin("zhao-website").service("knowledge-health").violations(ctx.state.siteId);
+  }
+};
 const adminGeneric = Object.fromEntries(
   Object.entries(generic).map(([key, value]) => [`${key}-admin`, value])
 );
@@ -32579,7 +32472,8 @@ const controllers = {
   stats,
   "brand-voice": brandVoice$1,
   "geo-article-audit": geoArticleAudit,
-  "geoArticleAdmin": geoArticleAdmin
+  "geoArticleAdmin": geoArticleAdmin,
+  "knowledge-health": adminKnowledgeHealth
 };
 const publicRoute = (method, path, handler) => ({
   method,
@@ -32621,6 +32515,7 @@ const contentApi = () => ({
     publicRoute("GET", "/sitemap.xml", "seo-output.sitemap"),
     publicRoute("GET", "/robots.txt", "seo-output.robots"),
     publicRoute("GET", "/llms.txt", "seo-output.llmsTxt"),
+    publicRoute("GET", "/llms-full.txt", "seo-output.llmsFullTxt"),
     publicRoute("GET", "/manifest.json", "seo-output.manifest"),
     publicRoute("GET", "/site-info", "site-info.info"),
     publicRoute("GET", "/seo-meta", "seo-meta.meta"),
@@ -32726,6 +32621,8 @@ const adminApi = () => ({
     channelScopeRoute("POST", "/knowledge-graph/relations/:documentId/submit", "knowledge-graph.submitRelation", "knowledge-relation.update"),
     channelScopeRoute("POST", "/knowledge-graph/relations/:documentId/approve", "knowledge-graph.approveRelation", "knowledge-relation.update"),
     channelScopeRoute("POST", "/knowledge-graph/relations/:documentId/reject", "knowledge-graph.rejectRelation", "knowledge-relation.update"),
+    channelScopeRoute("GET", "/knowledge-health/completeness", "knowledge-health.completeness", "knowledge-entity.read"),
+    channelScopeRoute("GET", "/knowledge-health/violations", "knowledge-health.violations", "knowledge-entity.read"),
     channelScopeRoute("GET", "/knowledge-audit-logs", "knowledge-graph.findAuditLogs", "knowledge-entity.read"),
     channelScopeRoute("GET", "/knowledge-graph/export", "knowledge-graph.exportGraph", "knowledge-entity.read"),
     // 全局实体路由
@@ -34869,6 +34766,154 @@ const searchLog = ({ strapi: strapi2 }) => ({
     return { total: items.length, topKeywords: Object.entries(byKeyword).sort((a, b) => b[1] - a[1]).slice(0, 20) };
   }
 });
+const PREDICATE_DICTIONARY = {
+  Organization: [
+    "founder",
+    "foundingDate",
+    "legalName",
+    "areaServed",
+    "numberOfEmployees",
+    "contactPoint",
+    "location",
+    "hasOfferCatalog",
+    "slogan",
+    "keywords",
+    "brand",
+    "knowsAbout",
+    "provides",
+    "url",
+    "sameAs"
+  ],
+  Person: ["affiliation", "jobTitle", "worksFor", "alumniOf", "knowsAbout", "nationality", "sameAs"],
+  Product: [
+    "manufacturer",
+    "brand",
+    "offers",
+    "aggregateRating",
+    "category",
+    "material",
+    "additionalProperty",
+    "isRelatedTo",
+    "isSimilarTo"
+  ],
+  Service: [
+    "provider",
+    "areaServed",
+    "serviceType",
+    "hasOfferCatalog",
+    "offers",
+    "category",
+    "termsOfService",
+    "isRelatedTo"
+  ],
+  Place: ["containedInPlace", "containsPlace", "geo", "address", "areaServed", "openingHours"],
+  Event: ["organizer", "location", "startDate", "endDate", "subEvent", "superEvent", "performer", "about"],
+  CreativeWork: [
+    "about",
+    "mentions",
+    "author",
+    "publisher",
+    "datePublished",
+    "isPartOf",
+    "hasPart",
+    "keywords",
+    "isBasedOn",
+    "cites"
+  ],
+  Article: [
+    "about",
+    "mentions",
+    "author",
+    "publisher",
+    "datePublished",
+    "articleSection",
+    "mainEntity",
+    "isPartOf",
+    "hasPart",
+    "keywords",
+    "cites"
+  ],
+  CaseStudy: ["subjectOf", "about", "mentions", "author", "isPartOf"],
+  Offer: [
+    "itemOffered",
+    "price",
+    "priceCurrency",
+    "availability",
+    "seller",
+    "areaServed",
+    "validFrom",
+    "validThrough"
+  ],
+  Review: ["itemReviewed", "reviewRating", "author", "datePublished", "reviewBody"],
+  FAQ: ["about", "mentions", "mainEntity", "hasPart"],
+  HowTo: ["about", "mentions", "hasStep", "step", "tool", "supply", "totalTime"],
+  BreadcrumbList: ["itemListElement", "hasPart"],
+  Brand: ["logo", "slogan", "manufacturer", "aggregateRating", "sameAs"],
+  ContactPoint: ["contactType", "telephone", "email", "areaServed", "availableLanguage"],
+  QuantitativeValue: ["value", "unitText", "minValue", "maxValue"],
+  DefinedTerm: ["inDefinedTermSet", "termCode", "isPartOf", "sameAs"]
+};
+function isValidPredicate(entityType, predicate) {
+  const list = PREDICATE_DICTIONARY[entityType] || [];
+  return list.includes(predicate);
+}
+const HIERARCHICAL_PREDICATES = /* @__PURE__ */ new Set([
+  "parent",
+  "containsPlace",
+  "subEvent",
+  "hasPart"
+]);
+const PREDICATE_CONTRACTS = {
+  Organization: {
+    slogan: { objectKinds: ["value"], maxLength: 200 },
+    keywords: { objectKinds: ["value"], maxLength: 200 },
+    url: { objectKinds: ["value"], maxLength: 500 },
+    sameAs: { objectKinds: ["value"], maxLength: 500 },
+    areaServed: { objectKinds: ["entity", "value"], maxLength: 100 }
+  },
+  DefinedTerm: {
+    termCode: { objectKinds: ["value"], maxLength: 60 },
+    sameAs: { objectKinds: ["value"], maxLength: 500 },
+    inDefinedTermSet: { objectKinds: ["entity"] }
+  },
+  Service: {
+    serviceType: { objectKinds: ["value"], maxLength: 100 },
+    areaServed: { objectKinds: ["entity", "value"], maxLength: 100 }
+  },
+  Place: {
+    areaServed: { objectKinds: ["entity", "value"], maxLength: 100 }
+  },
+  Article: {
+    cites: { objectKinds: ["citation"] }
+  },
+  CreativeWork: {
+    cites: { objectKinds: ["citation"] }
+  }
+};
+function getPredicateContract(entityType, predicate) {
+  return PREDICATE_CONTRACTS[entityType]?.[predicate] ?? null;
+}
+function validateObjectContract(entityType, predicate, shape, truthPolicyId) {
+  const contract = getPredicateContract(entityType, predicate);
+  if (!contract) return null;
+  const kinds = contract.objectKinds;
+  const allowsEntity = kinds.includes("entity");
+  const allowsValue = kinds.includes("value");
+  const allowsCitation = kinds.includes("citation");
+  const entityOk = shape.hasEntity && (allowsEntity || allowsCitation);
+  const valueOk = shape.hasValue && (allowsValue || allowsCitation);
+  const textOk = shape.hasText && (allowsValue || allowsCitation) && (!contract.maxLength || shape.textLength <= contract.maxLength);
+  if (!entityOk && !valueOk && !textOk) {
+    if (shape.hasText && contract.maxLength && shape.textLength > contract.maxLength) {
+      return `objectText 长度 ${shape.textLength} 超出上限 ${contract.maxLength}`;
+    }
+    return `客体形态不符合契约（允许：${kinds.join("/")}）`;
+  }
+  if (allowsCitation && !truthPolicyId) {
+    return "citation 谓词必须绑定 truthPolicy";
+  }
+  return null;
+}
 function stableJson(v) {
   if (v === null || typeof v !== "object") return JSON.stringify(v ?? null);
   if (Array.isArray(v)) return `[${v.map(stableJson).join(",")}]`;
@@ -35000,9 +35045,14 @@ async function applyReview(strapi2, params) {
   });
   return updated;
 }
-const ENTITY_UID$1 = "plugin::zhao-website.knowledge-entity";
-const RELATION_UID = "plugin::zhao-website.knowledge-relation";
-const TRUTH_UID = "plugin::zhao-website.first-truth-policy";
+const ENTITY_UID$2 = "plugin::zhao-website.knowledge-entity";
+const RELATION_UID$1 = "plugin::zhao-website.knowledge-relation";
+const TRUTH_UID$1 = "plugin::zhao-website.first-truth-policy";
+function entityPublicId(entity, siteUrl) {
+  const slug = entity?.slug || entity?.documentId;
+  if (siteUrl && slug) return `${siteUrl}/knowledge/${slug}`;
+  return slug;
+}
 function normalizeText(v) {
   return String(v ?? "").replace(/[\uFF01-\uFF5E]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 65248)).replace(/\s+/g, " ").trim().toLowerCase();
 }
@@ -35057,13 +35107,20 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
       filters2.$or[0].entityType = entityType;
       filters2.$or[1].entityType = entityType;
     }
-    return strapi2.db.query(ENTITY_UID$1).findMany({
+    return strapi2.db.query(ENTITY_UID$2).findMany({
       where: filters2,
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
       orderBy: { updatedAt: "DESC" },
       populate: ["image"]
     });
+  },
+  /** 站点绝对 URL（site-config.domain 裸域名补协议）；缺失返回空串 */
+  async _resolveSiteUrl(siteId) {
+    const cfg = await strapi2.db.query("plugin::zhao-common.site-config").findOne({ where: { id: siteId } });
+    const domain = cfg?.domain;
+    if (!domain) return "";
+    return /^https?:\/\//.test(domain) ? domain : `https://${domain}`;
   },
   async findEntityBySlug(siteId, slug) {
     const where = {
@@ -35073,18 +35130,18 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
       sourceType: { $ne: "derived" },
       verificationStatus: { $ne: "rejected" }
     };
-    const tenant = await strapi2.db.query(ENTITY_UID$1).findOne({
+    const tenant = await strapi2.db.query(ENTITY_UID$2).findOne({
       where: { ...where, site: siteId },
       populate: ["image"]
     });
     if (tenant) return tenant;
-    return strapi2.db.query(ENTITY_UID$1).findOne({
+    return strapi2.db.query(ENTITY_UID$2).findOne({
       where: { ...where, site: null },
       populate: ["image"]
     });
   },
   async findEntityByRef(params) {
-    return strapi2.db.query(ENTITY_UID$1).findOne({
+    return strapi2.db.query(ENTITY_UID$2).findOne({
       where: { refTargetType: params.refTargetType, refTargetId: params.refTargetId, deletedAt: null }
     });
   },
@@ -35095,7 +35152,7 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
     });
     const slug = params.slug || `${params.refTargetType}-${params.refTargetId}`;
     if (existing) {
-      return strapi2.db.query(ENTITY_UID$1).update({
+      return strapi2.db.query(ENTITY_UID$2).update({
         where: { id: existing.id },
         data: {
           name: params.name,
@@ -35105,7 +35162,7 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
         }
       });
     }
-    return strapi2.db.query(ENTITY_UID$1).create({
+    return strapi2.db.query(ENTITY_UID$2).create({
       data: {
         site: params.siteId,
         entityType: params.entityType,
@@ -35118,7 +35175,7 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
     });
   },
   async createEntity(siteId, data, actor) {
-    const created = await strapi2.db.query(ENTITY_UID$1).create({
+    const created = await strapi2.db.query(ENTITY_UID$2).create({
       data: { ...data, site: siteId }
     });
     await auditSafe(strapi2, {
@@ -35133,7 +35190,7 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
     return created;
   },
   async updateEntity(siteId, documentId, data, actor) {
-    const existing = await strapi2.db.query(ENTITY_UID$1).findOne({
+    const existing = await strapi2.db.query(ENTITY_UID$2).findOne({
       where: { site: siteId, documentId, deletedAt: null }
     });
     if (!existing) {
@@ -35143,7 +35200,7 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
     }
     const version2 = (Number(existing.version) || 1) + 1;
     const payload = { ...data, version: version2 };
-    const updated = await strapi2.db.query(ENTITY_UID$1).update({ where: { id: existing.id }, data: payload });
+    const updated = await strapi2.db.query(ENTITY_UID$2).update({ where: { id: existing.id }, data: payload });
     await auditSafe(strapi2, {
       siteId,
       targetType: "entity",
@@ -35156,12 +35213,12 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
     return updated;
   },
   async deleteEntity(siteId, documentId, actor) {
-    const existing = await strapi2.db.query(ENTITY_UID$1).findOne({
+    const existing = await strapi2.db.query(ENTITY_UID$2).findOne({
       where: { site: siteId, documentId, deletedAt: null }
     });
     if (!existing) return null;
     const deletedAt = (/* @__PURE__ */ new Date()).toISOString();
-    const updated = await strapi2.db.query(ENTITY_UID$1).update({
+    const updated = await strapi2.db.query(ENTITY_UID$2).update({
       where: { id: existing.id },
       data: { deletedAt }
     });
@@ -35177,7 +35234,7 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
   },
   // ===== 审核动作（entity）=====
   async submitEntity(siteId, documentId, actor, reason) {
-    return applyReview(strapi2, { uid: ENTITY_UID$1, targetType: "entity", siteId, documentId, action: "submit", actor, reason });
+    return applyReview(strapi2, { uid: ENTITY_UID$2, targetType: "entity", siteId, documentId, action: "submit", actor, reason });
   },
   async approveEntity(siteId, documentId, actor, reason) {
     let verifiedBy = null;
@@ -35189,7 +35246,7 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
       if (adminUser) verifiedBy = adminUser.id;
     }
     return applyReview(strapi2, {
-      uid: ENTITY_UID$1,
+      uid: ENTITY_UID$2,
       targetType: "entity",
       siteId,
       documentId,
@@ -35200,7 +35257,7 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
     });
   },
   async rejectEntity(siteId, documentId, actor, reason) {
-    return applyReview(strapi2, { uid: ENTITY_UID$1, targetType: "entity", siteId, documentId, action: "reject", actor, reason });
+    return applyReview(strapi2, { uid: ENTITY_UID$2, targetType: "entity", siteId, documentId, action: "reject", actor, reason });
   },
   // ===== 关系 =====
   async findRelations(siteId, query = {}) {
@@ -35229,7 +35286,7 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
       filters2.$or[0].objectEntity = oid;
       filters2.$or[1].objectEntity = oid;
     }
-    return strapi2.db.query(RELATION_UID).findMany({
+    return strapi2.db.query(RELATION_UID$1).findMany({
       where: filters2,
       limit: Number(pageSize),
       offset: (Number(page) - 1) * Number(pageSize),
@@ -35240,7 +35297,7 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
   async _resolveEntityId(ref) {
     if (typeof ref === "number" && Number.isInteger(ref)) return ref;
     if (/^\d+$/.test(String(ref))) return Number(ref);
-    const ent = await strapi2.db.query(ENTITY_UID$1).findOne({ where: { documentId: String(ref) } });
+    const ent = await strapi2.db.query(ENTITY_UID$2).findOne({ where: { documentId: String(ref) } });
     return ent ? ent.id : null;
   },
   /**
@@ -35261,7 +35318,7 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
   async _resolveTruthId(ref) {
     if (typeof ref === "number" && Number.isInteger(ref)) return ref;
     if (/^\d+$/.test(String(ref))) return Number(ref);
-    const truth = await strapi2.db.query(TRUTH_UID).findOne({ where: { documentId: String(ref) } });
+    const truth = await strapi2.db.query(TRUTH_UID$1).findOne({ where: { documentId: String(ref) } });
     return truth ? truth.id : null;
   },
   /** 归一入口：truthPolicy 也是 lnk 列，只接受数字 id，解析失败 400 */
@@ -35284,7 +35341,7 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
     const truthRef = relation?.truthPolicy;
     const truthId = truthRef && typeof truthRef === "object" ? truthRef.id : truthRef;
     if (!truthId) return null;
-    const truth = await strapi2.db.query(TRUTH_UID).findOne({
+    const truth = await strapi2.db.query(TRUTH_UID$1).findOne({
       where: { id: Number(truthId), deletedAt: null, status: true }
     });
     if (!truth) return null;
@@ -35300,7 +35357,7 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
     );
     const status = matched ? "verified" : "conflict";
     const statusChanged = relation.verificationStatus !== status;
-    await strapi2.db.query(RELATION_UID).update({
+    await strapi2.db.query(RELATION_UID$1).update({
       where: { id: relation.id },
       data: { verificationStatus: status, lastVerifiedAt: (/* @__PURE__ */ new Date()).toISOString() }
     });
@@ -35373,30 +35430,54 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
         throw e;
       }
     }
-    const subjectEntity = await strapi2.db.query(ENTITY_UID$1).findOne({
+    const subjectEntity = await strapi2.db.query(ENTITY_UID$2).findOne({
       where: { id: subjectId }
     });
     if (subjectEntity && !isValidPredicate(subjectEntity.entityType, params.predicate)) {
       strapi2.log.warn(`[kg] predicate "${params.predicate}" 不在 ${subjectEntity.entityType} 字典中`);
     }
     const truthId = params.truthPolicyId ? await this._requireTruthId(params.truthPolicyId) : null;
+    if (subjectEntity) {
+      const contract = getPredicateContract(subjectEntity.entityType, params.predicate);
+      const shape = {
+        hasEntity,
+        hasValue,
+        hasText,
+        textLength: hasText ? String(params.objectText).length : 0
+      };
+      if (contract) {
+        const reason = validateObjectContract(subjectEntity.entityType, params.predicate, shape, truthId);
+        if (reason) {
+          const e = new Error(`关系客体不符合谓词契约：${reason}`);
+          e.status = 400;
+          e.code = "RELATION_OBJECT_CONTRACT_VIOLATION";
+          throw e;
+        }
+      } else if (isValidPredicate(subjectEntity.entityType, params.predicate)) {
+        strapi2.log.warn(
+          `[kg] predicate "${params.predicate}" 未登记客体契约（contractUnregistered），已放行`
+        );
+      }
+    }
     const idempotentWhere = {
       site: params.siteId,
       subjectEntity: subjectId,
       predicate: params.predicate,
       deletedAt: null
     };
-    if (objectId) {
+    if (truthId) {
+      idempotentWhere.truthPolicy = truthId;
+    } else if (objectId) {
       idempotentWhere.objectEntity = objectId;
     } else if (hasText) {
       idempotentWhere.objectText = params.objectText;
     }
-    if (objectId || hasText) {
-      const existing = await strapi2.db.query(RELATION_UID).findOne({ where: idempotentWhere });
+    if (truthId || objectId || hasText) {
+      const existing = await strapi2.db.query(RELATION_UID$1).findOne({ where: idempotentWhere });
       if (existing) {
         if (truthId && Number(existing.truthPolicy) !== Number(truthId)) {
           existing.truthPolicy = truthId;
-          await strapi2.db.query(RELATION_UID).update({
+          await strapi2.db.query(RELATION_UID$1).update({
             where: { id: existing.id },
             data: { truthPolicy: truthId }
           });
@@ -35405,7 +35486,7 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
         return existing;
       }
     }
-    const created = await strapi2.db.query(RELATION_UID).create({
+    const created = await strapi2.db.query(RELATION_UID$1).create({
       data: {
         site: params.siteId,
         subjectEntity: subjectId,
@@ -35413,6 +35494,7 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
         objectEntity: objectId,
         objectValue: params.objectValue || null,
         objectText: params.objectText || null,
+        evidenceText: params.evidenceText || null,
         sourceType: params.sourceType || "manual",
         truthPolicy: truthId
       }
@@ -35434,7 +35516,7 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
     if (visited.has(subjectId)) return false;
     visited.add(subjectId);
     const objectNumId = await this._resolveEntityId(objectId);
-    const outRelations = await strapi2.db.query(RELATION_UID).findMany({
+    const outRelations = await strapi2.db.query(RELATION_UID$1).findMany({
       where: { subjectEntity: objectNumId, predicate, deletedAt: null },
       populate: ["objectEntity"]
     });
@@ -35448,12 +35530,12 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
     return false;
   },
   async deleteRelation(siteId, documentId, actor) {
-    const existing = await strapi2.db.query(RELATION_UID).findOne({
+    const existing = await strapi2.db.query(RELATION_UID$1).findOne({
       where: { site: siteId, documentId, deletedAt: null }
     });
     if (!existing) return null;
     const deletedAt = (/* @__PURE__ */ new Date()).toISOString();
-    const updated = await strapi2.db.query(RELATION_UID).update({
+    const updated = await strapi2.db.query(RELATION_UID$1).update({
       where: { id: existing.id },
       data: { deletedAt }
     });
@@ -35469,16 +35551,16 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
   },
   // ===== 审核动作（relation）=====
   async submitRelation(siteId, documentId, actor, reason) {
-    return applyReview(strapi2, { uid: RELATION_UID, targetType: "relation", siteId, documentId, action: "submit", actor, reason });
+    return applyReview(strapi2, { uid: RELATION_UID$1, targetType: "relation", siteId, documentId, action: "submit", actor, reason });
   },
   async approveRelation(siteId, documentId, actor, reason) {
-    return applyReview(strapi2, { uid: RELATION_UID, targetType: "relation", siteId, documentId, action: "approve", actor, reason });
+    return applyReview(strapi2, { uid: RELATION_UID$1, targetType: "relation", siteId, documentId, action: "approve", actor, reason });
   },
   async rejectRelation(siteId, documentId, actor, reason) {
-    return applyReview(strapi2, { uid: RELATION_UID, targetType: "relation", siteId, documentId, action: "reject", actor, reason });
+    return applyReview(strapi2, { uid: RELATION_UID$1, targetType: "relation", siteId, documentId, action: "reject", actor, reason });
   },
   async updateRelation(siteId, documentId, data, actor) {
-    const existing = await strapi2.db.query(RELATION_UID).findOne({
+    const existing = await strapi2.db.query(RELATION_UID$1).findOne({
       where: { site: siteId, documentId, deletedAt: null }
     });
     if (!existing) {
@@ -35492,6 +35574,7 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
     }
     if (data.predicate !== void 0) payload.predicate = data.predicate;
     if (data.objectText !== void 0) payload.objectText = data.objectText;
+    if (data.evidenceText !== void 0) payload.evidenceText = data.evidenceText;
     if (data.objectValue !== void 0) payload.objectValue = data.objectValue;
     if (data.confidence !== void 0) payload.confidence = Number(data.confidence);
     if (data.verificationStatus !== void 0) payload.verificationStatus = data.verificationStatus;
@@ -35514,9 +35597,33 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
       e.code = "SELF_RELATION";
       throw e;
     }
+    const contractRelevant = payload.predicate !== void 0 || payload.objectEntity !== void 0 || payload.objectValue !== void 0 || payload.objectText !== void 0;
+    if (contractRelevant) {
+      const subjectForContract = payload.subjectEntity ? await strapi2.db.query(ENTITY_UID$2).findOne({ where: { id: payload.subjectEntity } }) : await strapi2.db.query(ENTITY_UID$2).findOne({ where: { id: existing.subjectEntity } });
+      if (subjectForContract) {
+        const nextPredicate = payload.predicate ?? existing.predicate;
+        const nextEntity = payload.objectEntity !== void 0 ? payload.objectEntity : existing.objectEntity;
+        const nextValue = payload.objectValue !== void 0 ? payload.objectValue : existing.objectValue;
+        const nextText = payload.objectText !== void 0 ? payload.objectText : existing.objectText;
+        const nextTruth = payload.truthPolicy !== void 0 ? payload.truthPolicy : existing.truthPolicy;
+        const shape = {
+          hasEntity: nextEntity !== void 0 && nextEntity !== null,
+          hasValue: nextValue !== void 0 && nextValue !== null,
+          hasText: !!nextText,
+          textLength: nextText ? String(nextText).length : 0
+        };
+        const reason = validateObjectContract(subjectForContract.entityType, nextPredicate, shape, nextTruth);
+        if (reason) {
+          const e = new Error(`关系客体不符合谓词契约：${reason}`);
+          e.status = 400;
+          e.code = "RELATION_OBJECT_CONTRACT_VIOLATION";
+          throw e;
+        }
+      }
+    }
     const relVersion = (Number(existing.version) || 1) + 1;
     payload.version = relVersion;
-    const updated = await strapi2.db.query(RELATION_UID).update({ where: { id: existing.id }, data: payload });
+    const updated = await strapi2.db.query(RELATION_UID$1).update({ where: { id: existing.id }, data: payload });
     await auditSafe(strapi2, {
       siteId,
       targetType: "relation",
@@ -35539,7 +35646,7 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
       deletedAt: null,
       ...params.entityType ? { entityType: params.entityType } : {}
     };
-    const candidates = await strapi2.db.query(ENTITY_UID$1).findMany({
+    const candidates = await strapi2.db.query(ENTITY_UID$2).findMany({
       where: {
         $or: [
           { ...baseFilter, site: siteId },
@@ -35560,7 +35667,7 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
     return knowledgeGraphSync(targetType, content);
   },
   async verifyAll(siteId) {
-    const entities = await strapi2.db.query(ENTITY_UID$1).findMany({
+    const entities = await strapi2.db.query(ENTITY_UID$2).findMany({
       where: { $or: [{ site: siteId, deletedAt: null }, { site: null, deletedAt: null }] }
     });
     let conflicts = 0;
@@ -35577,7 +35684,7 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
       if (truths.length > 0) {
         conflicts += 1;
         report.push({ entityId: entity.documentId, conflictCount: truths.length });
-        await strapi2.db.query(ENTITY_UID$1).update({
+        await strapi2.db.query(ENTITY_UID$2).update({
           where: { id: entity.id },
           data: { verificationStatus: "conflict" }
         });
@@ -35586,38 +35693,94 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
     return { total: entities.length, conflicts, report };
   },
   // ===== JSON-LD 导出 =====
+  /** 关系是否违反客体契约（读时隔离用；未登记契约或未知主体类型 → 不违规） */
+  _isContractViolation(subjectEntityType, relation) {
+    if (!subjectEntityType) return false;
+    if (!getPredicateContract(subjectEntityType, relation.predicate)) return false;
+    const hasText = !!relation.objectText;
+    const reason = validateObjectContract(
+      subjectEntityType,
+      relation.predicate,
+      {
+        hasEntity: !!relation.objectEntity,
+        hasValue: relation.objectValue !== void 0 && relation.objectValue !== null,
+        hasText,
+        textLength: hasText ? String(relation.objectText).length : 0
+      },
+      relation.truthPolicy
+    );
+    return !!reason;
+  },
+  /** cites 关系按 truthPolicy 去重，仅保留最新（updatedAt 最大）一条；其余关系原样保留 */
+  _dedupeCitations(relations) {
+    const latest = /* @__PURE__ */ new Map();
+    const others = [];
+    for (const r of relations) {
+      if (r.predicate !== "cites") {
+        others.push(r);
+        continue;
+      }
+      const truthRef = r.truthPolicy;
+      const key = String(truthRef && typeof truthRef === "object" ? truthRef.documentId ?? truthRef.id : truthRef ?? r.id);
+      const prev = latest.get(key);
+      if (!prev || String(r.updatedAt ?? "") > String(prev.updatedAt ?? "")) latest.set(key, r);
+    }
+    return [...others, ...latest.values()];
+  },
   async exportGraph(siteId) {
-    const scope = { deletedAt: null, status: true, sourceType: { $ne: "derived" } };
-    const entities = await strapi2.db.query(ENTITY_UID$1).findMany({
+    const scope = {
+      deletedAt: null,
+      status: true,
+      sourceType: { $ne: "derived" },
+      verificationStatus: { $ne: "rejected" }
+    };
+    const siteUrl = await this._resolveSiteUrl(siteId);
+    const entities = await strapi2.db.query(ENTITY_UID$2).findMany({
       where: { $or: [{ site: siteId, ...scope }, { site: null, ...scope }] },
       populate: ["image"]
     });
-    const relations = await strapi2.db.query(RELATION_UID).findMany({
+    const relations = await strapi2.db.query(RELATION_UID$1).findMany({
       where: { $or: [{ site: siteId, deletedAt: null, status: true }, { site: null, deletedAt: null, status: true }] },
       populate: ["subjectEntity", "objectEntity"]
     });
-    const graph = entities.map((e) => this._entityToJsonLd(e, relations.filter((r) => r.subjectEntity?.id === e.id)));
+    const graph = entities.map(
+      (e) => this._entityToJsonLd(e, relations.filter((r) => r.subjectEntity?.id === e.id), [], siteUrl)
+    );
     return { "@context": "https://schema.org", "@graph": graph };
   },
   async exportEntity(siteId, slug) {
     const entity = await this.findEntityBySlug(siteId, slug);
     if (!entity) return null;
+    const siteUrl = await this._resolveSiteUrl(siteId);
     const entityId = await this._resolveEntityId(entity.documentId);
-    const outgoing = await strapi2.db.query(RELATION_UID).findMany({
+    if (entityId === null) return null;
+    const outgoing = await strapi2.db.query(RELATION_UID$1).findMany({
       where: { $or: [{ site: siteId, subjectEntity: entityId, deletedAt: null }, { site: null, subjectEntity: entityId, deletedAt: null }] },
       populate: ["objectEntity", "truthPolicy"]
     });
-    const incoming = await strapi2.db.query(RELATION_UID).findMany({
+    const incoming = await strapi2.db.query(RELATION_UID$1).findMany({
       where: { $or: [{ site: siteId, objectEntity: entityId, deletedAt: null }, { site: null, objectEntity: entityId, deletedAt: null }] },
       populate: ["subjectEntity", "truthPolicy"]
     });
     const articles = await this.findArticlesByEntity(siteId, entityId);
+    const visibleOutgoing = this._dedupeCitations(
+      outgoing.filter((r) => !this._isContractViolation(entity.entityType, r))
+    );
+    const visibleIncoming = incoming.filter(
+      (r) => !this._isContractViolation(r.subjectEntity?.entityType, r)
+    );
+    const subjectOf = articles.filter((a) => a.slug && a.type).map((a) => ({
+      "@type": "Article",
+      "@id": `${siteUrl}/${a.type}/${a.slug}`,
+      name: a.title
+    }));
     return {
-      ...this._entityToJsonLd(entity, outgoing, incoming),
+      ...this._entityToJsonLd(entity, visibleOutgoing, visibleIncoming, siteUrl),
+      ...subjectOf.length > 0 ? { subjectOf } : {},
       // 前端实体页按 outgoing/incoming 数组渲染「知识关系」
-      outgoing: outgoing.map((r) => ({
+      outgoing: visibleOutgoing.map((r) => ({
         predicate: r.predicate,
-        objectEntity: r.objectEntity ? { slug: r.objectEntity.slug, name: r.objectEntity.name, "@id": r.objectEntity.slug || r.objectEntity.documentId } : void 0,
+        objectEntity: r.objectEntity ? { slug: r.objectEntity.slug, name: r.objectEntity.name, "@id": entityPublicId(r.objectEntity, siteUrl) } : void 0,
         objectValue: r.objectValue,
         objectText: r.objectText,
         sourceType: r.sourceType,
@@ -35625,9 +35788,9 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
         // 证据链：该关系绑定到哪条第一真值
         truthClaimKey: r.truthPolicy?.claimKey
       })),
-      incoming: incoming.map((r) => ({
+      incoming: visibleIncoming.map((r) => ({
         predicate: r.predicate,
-        subjectEntity: r.subjectEntity ? { slug: r.subjectEntity.slug, name: r.subjectEntity.name, "@id": r.subjectEntity.slug || r.subjectEntity.documentId } : void 0,
+        subjectEntity: r.subjectEntity ? { slug: r.subjectEntity.slug, name: r.subjectEntity.name, "@id": entityPublicId(r.subjectEntity, siteUrl) } : void 0,
         sourceType: r.sourceType,
         verificationStatus: r.verificationStatus,
         truthClaimKey: r.truthPolicy?.claimKey
@@ -35643,22 +35806,28 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
       limit
     });
   },
-  _entityToJsonLd(entity, outgoing = [], incoming = []) {
+  _entityToJsonLd(entity, outgoing = [], incoming = [], siteUrl) {
     const jsonLd = {
       "@type": entity.entityType,
-      "@id": entity.slug || entity.documentId,
+      "@id": entityPublicId(entity, siteUrl),
       "name": entity.name
     };
     jsonLd.version = entity.version ?? 1;
     if (entity.updatedAt) jsonLd.dateModified = entity.updatedAt;
+    jsonLd.verificationStatus = entity.verificationStatus ?? "verified";
+    jsonLd.confidence = entity.confidence ?? 1;
+    if (entity.lastVerifiedAt) jsonLd.lastVerifiedAt = entity.lastVerifiedAt;
     if (entity.description) jsonLd.description = entity.description;
     if (entity.url) jsonLd.url = entity.url;
     if (entity.image) jsonLd.image = entity.url;
     if (entity.properties) Object.assign(jsonLd, entity.properties);
-    for (const rel of outgoing) {
+    const visibleOutgoing = outgoing.filter(
+      (rel) => !this._isContractViolation(entity.entityType, rel)
+    );
+    for (const rel of visibleOutgoing) {
       let value;
       if (rel.objectEntity) {
-        value = { "@id": rel.objectEntity.slug || rel.objectEntity.documentId };
+        value = { "@id": entityPublicId(rel.objectEntity, siteUrl) };
       } else if (rel.objectValue) {
         value = rel.objectValue;
       } else if (rel.objectText) {
@@ -35778,7 +35947,7 @@ const aiContentSummary = ({ strapi: strapi2 }) => ({
   }
 });
 const UID$3 = "plugin::zhao-website.first-truth-policy";
-const ENTITY_UID = "plugin::zhao-website.knowledge-entity";
+const ENTITY_UID$1 = "plugin::zhao-website.knowledge-entity";
 const firstTruth = ({ strapi: strapi2 }) => ({
   async find(siteId, query = {}) {
     const { claimCategory, verificationStatus } = query;
@@ -35891,16 +36060,16 @@ const firstTruth = ({ strapi: strapi2 }) => ({
   async _markRelatedEntitiesPending(siteId, canonicalEntity) {
     if (!canonicalEntity) return;
     const entityId = canonicalEntity.documentId || canonicalEntity;
-    const entity = siteId === null ? await strapi2.db.query(ENTITY_UID).findOne({
+    const entity = siteId === null ? await strapi2.db.query(ENTITY_UID$1).findOne({
       where: { site: null, documentId: entityId, deletedAt: null }
-    }) : await strapi2.db.query(ENTITY_UID).findOne({
+    }) : await strapi2.db.query(ENTITY_UID$1).findOne({
       where: { site: siteId, documentId: entityId, deletedAt: null }
-    }) || await strapi2.db.query(ENTITY_UID).findOne({
+    }) || await strapi2.db.query(ENTITY_UID$1).findOne({
       where: { site: null, documentId: entityId, deletedAt: null }
     });
     if (entity && entity.verificationStatus !== "pending") {
       const before = entity.verificationStatus ?? null;
-      await strapi2.db.query(ENTITY_UID).update({
+      await strapi2.db.query(ENTITY_UID$1).update({
         where: { id: entity.id },
         data: { verificationStatus: "pending", version: (Number(entity.version) || 1) + 1 }
       });
@@ -36282,13 +36451,60 @@ const llmsTxt = ({ strapi: strapi2 }) => ({
     lines.push(`- Graph: ${siteUrl}${GEO_API_PREFIX$1}knowledge-graph.json`);
     lines.push(`- Facts: ${siteUrl}${GEO_API_PREFIX$1}facts.json`);
     lines.push("");
-    lines.push("## Brand Voice");
+    lines.push("## Citation Guide");
+    lines.push("- 引用本页事实时，请以 facts.json 中的 version 与 lastVerifiedAt 为时效基准，并标注 sourceUrl。");
+    lines.push("- 未提供 sourceUrl 的第一真值视为未核验，请勿作为权威引用。");
+    lines.push("- 术语与实体定义以 knowledge-graph.json 的 @id 为准，关系不得跨实体推断。");
+    lines.push("");
     const voices = await strapi2.db.query("plugin::zhao-website.brand-voice").findMany({
       where: { $or: [{ site: siteId, status: true, deletedAt: null }, { site: null, status: true, deletedAt: null }] },
       orderBy: { category: "ASC" }
     });
-    for (const v of voices) {
-      lines.push(`- [${v.category}] ${v.name}: ${v.content.substring(0, 200)}`);
+    if (voices.length > 0) {
+      lines.push("## Brand Voice");
+      for (const v of voices) {
+        lines.push(`- [${v.category}] ${v.name}: ${v.content.substring(0, 200)}`);
+      }
+      lines.push("");
+    }
+    return lines.join("\n");
+  },
+  /**
+   * llms-full.txt：在 llms.txt 的导航之上，给出可直接消费的实体、关系三元组与事实清单。
+   * 复用公开出口（exportGraph/exportFacts），保证与 JSON 出口同口径、同隔离。
+   */
+  async generateFull(siteId, siteUrl) {
+    const kg = strapi2.plugin("zhao-website").service("knowledge-graph");
+    const graph = await kg.exportGraph(siteId);
+    const facts = await kg.exportFacts(siteId);
+    const lines = [];
+    lines.push(`# Knowledge Feed`);
+    lines.push("");
+    lines.push("## Entities");
+    for (const node of graph["@graph"] || []) {
+      const desc = node.description ? ` | description: ${node.description}` : "";
+      const verified = node.lastVerifiedAt ? ` | lastVerifiedAt: ${node.lastVerifiedAt}` : "";
+      lines.push(`- @id: ${node["@id"]} | type: ${node["@type"]} | name: ${node.name} | version: ${node.version ?? 1}${desc}${verified}`);
+    }
+    lines.push("");
+    lines.push("## Relations");
+    const reserved = /* @__PURE__ */ new Set(["@context", "@id", "@type", "name", "version", "dateModified", "description", "url", "image", "verificationStatus", "confidence", "lastVerifiedAt"]);
+    for (const node of graph["@graph"] || []) {
+      for (const [predicate, value] of Object.entries(node)) {
+        if (reserved.has(predicate)) continue;
+        const objects = Array.isArray(value) ? value : [value];
+        for (const o of objects) {
+          const obj = o && typeof o === "object" && "@id" in o ? o["@id"] : o;
+          lines.push(`- ${node["@id"]} --${predicate}--> ${obj}`);
+        }
+      }
+    }
+    lines.push("");
+    lines.push("## Facts");
+    for (const f of facts) {
+      const source = f.sourceUrl ? `source: ${f.sourceUrl}` : "source: none";
+      const citable = f.sourceUrl || ["government", "official_site", "third_party_verified"].includes(f.sourceType);
+      lines.push(`- ${f.claim}: ${f.value} (${source}, citable: ${citable ? "yes" : "no"}, version: ${f.version ?? 1})`);
     }
     lines.push("");
     return lines.join("\n");
@@ -36311,10 +36527,11 @@ const GEO_TYPE_PREFIX = {
 const sitemap = ({ strapi: strapi2 }) => ({
   async generate(siteId, siteUrl) {
     const seoConfig2 = await strapi2.plugin("zhao-website").service("seo-config").get(siteId);
+    const siteConfig = await strapi2.db.query("plugin::zhao-common.site-config").findOne({ where: { id: siteId } });
     const excludeTypes = seoConfig2?.sitemapExcludeTypes || [];
     const urls = [];
     const hreflangEntries = this._buildHreflangEntries(seoConfig2, siteUrl);
-    urls.push(this._urlEntry(siteUrl, "/", "1.0", "daily", void 0, void 0, hreflangEntries));
+    urls.push(this._urlEntry(siteUrl, "/", "1.0", "daily", siteConfig?.updatedAt, void 0, hreflangEntries));
     for (const ct of INDEXABLE_CTS) {
       if (excludeTypes.includes(ct.uid.split(".").pop())) continue;
       const populate2 = [];
@@ -36530,6 +36747,11 @@ const robots = ({ strapi: strapi2 }) => ({
         if (!allowed.includes(bot)) {
           lines.push(`User-agent: ${bot}`, "Disallow: /");
         }
+      }
+    }
+    if (policy === "allow_all") {
+      for (const bot of AI_CRAWLER_LIST$1) {
+        lines.push(`User-agent: ${bot}`, "Allow: /");
       }
     }
     lines.push("User-agent: *", "Allow: /", "Disallow: /admin", "Disallow: /api");
@@ -36983,6 +37205,116 @@ const ecoHook = ({ strapi: strapi2 }) => ({
     }
   }
 });
+const ENTITY_UID = "plugin::zhao-website.knowledge-entity";
+const RELATION_UID = "plugin::zhao-website.knowledge-relation";
+const TRUTH_UID = "plugin::zhao-website.first-truth-policy";
+const CITABLE_SOURCE_TYPES = ["government", "official_site", "third_party_verified"];
+const ALL_CATEGORIES = [
+  "business_license",
+  "brand_claim",
+  "technical_spec",
+  "certification",
+  "financial",
+  "logistics_promise",
+  "terminology_definition",
+  "other"
+];
+const siteScope = (siteId) => ({
+  $or: [{ site: siteId, deletedAt: null }, { site: null, deletedAt: null }]
+});
+const knowledgeHealth = ({ strapi: strapi2 }) => ({
+  /** 关系客体形态快照（供契约校验） */
+  _shape(relation) {
+    const hasText = !!relation.objectText;
+    return {
+      hasEntity: !!relation.objectEntity,
+      hasValue: relation.objectValue !== void 0 && relation.objectValue !== null,
+      hasText,
+      textLength: hasText ? String(relation.objectText).length : 0
+    };
+  },
+  /** 已登记契约的关系违规原因；未登记返回 null */
+  _violationReason(relation) {
+    const entityType = relation.subjectEntity?.entityType;
+    if (!entityType) return null;
+    if (!getPredicateContract(entityType, relation.predicate)) return null;
+    return validateObjectContract(entityType, relation.predicate, this._shape(relation), relation.truthPolicy);
+  },
+  isCitable(fact) {
+    return !!fact?.canonicalSourceUrl || CITABLE_SOURCE_TYPES.includes(fact?.canonicalSourceType);
+  },
+  async completeness(siteId) {
+    const entities = await strapi2.db.query(ENTITY_UID).findMany({ where: siteScope(siteId) });
+    const facts = await strapi2.db.query(TRUTH_UID).findMany({
+      where: siteScope(siteId),
+      populate: ["canonicalEntity"]
+    });
+    const relations = await strapi2.db.query(RELATION_UID).findMany({
+      where: siteScope(siteId),
+      populate: ["subjectEntity", "objectEntity"]
+    });
+    const entityStats = { total: entities.length, missingSameAs: 0, missingDescription: 0, missingUrl: 0, missingIdentifier: 0 };
+    for (const e of entities) {
+      if (!e.sameAs || Array.isArray(e.sameAs) && e.sameAs.length === 0) entityStats.missingSameAs++;
+      if (!e.description) entityStats.missingDescription++;
+      if (!e.url) entityStats.missingUrl++;
+      if (!e.identifier) entityStats.missingIdentifier++;
+    }
+    const categoryCount = {};
+    for (const c of ALL_CATEGORIES) categoryCount[c] = 0;
+    const factStats = {
+      total: facts.length,
+      missingSourceUrl: 0,
+      internalSourceCount: 0,
+      otherCategoryCount: 0,
+      unboundCanonicalEntity: 0,
+      emptyCategories: [],
+      unclassifiedOther: []
+    };
+    for (const f of facts) {
+      if (!f.canonicalSourceUrl) factStats.missingSourceUrl++;
+      if (f.canonicalSourceType === "internal") factStats.internalSourceCount++;
+      if (f.claimCategory && categoryCount[f.claimCategory] !== void 0) categoryCount[f.claimCategory]++;
+      if (!f.canonicalEntity) factStats.unboundCanonicalEntity++;
+      if (f.claimCategory === "other") {
+        factStats.otherCategoryCount++;
+        factStats.unclassifiedOther.push({ documentId: f.documentId, claimKey: f.claimKey, claim: f.claim });
+      }
+    }
+    factStats.emptyCategories = ALL_CATEGORIES.filter((c) => categoryCount[c] === 0);
+    let contractViolations = 0;
+    let missingTruthPolicy = 0;
+    for (const r of relations) {
+      if (this._violationReason(r)) contractViolations++;
+      if (r.predicate === "cites" && !r.truthPolicy) missingTruthPolicy++;
+    }
+    return {
+      entities: entityStats,
+      facts: factStats,
+      relations: { total: relations.length, contractViolations, missingTruthPolicy }
+    };
+  },
+  async violations(siteId) {
+    const relations = await strapi2.db.query(RELATION_UID).findMany({
+      where: siteScope(siteId),
+      populate: ["subjectEntity", "objectEntity"]
+    });
+    const rows = [];
+    for (const r of relations) {
+      const reason = this._violationReason(r);
+      if (!reason) continue;
+      const preview = r.objectText ? String(r.objectText).slice(0, 80) : r.objectEntity?.name ?? (r.objectValue == null ? "" : String(r.objectValue));
+      rows.push({
+        relationDocumentId: r.documentId,
+        subjectEntity: r.subjectEntity?.name ?? "",
+        predicate: r.predicate,
+        reason,
+        objectPreview: preview
+      });
+    }
+    return rows;
+  }
+});
 const services = {
   "seo-config": seoConfig,
   "brand-info": brandInfo,
@@ -37018,7 +37350,8 @@ const services = {
   "redirect": redirect,
   "invite-trace": inviteTrace,
   "eco-hook": ecoHook,
-  "knowledge-audit": knowledgeAudit
+  "knowledge-audit": knowledgeAudit,
+  "knowledge-health": knowledgeHealth
 };
 const hasWebsitePermission = (config2) => {
   return async (ctx, next) => {

@@ -40,6 +40,7 @@ declare const _default: {
         "certification",
         "financial",
         "logistics_promise",
+        "terminology_definition",
         "other"
       ],
       "default": "brand_claim"

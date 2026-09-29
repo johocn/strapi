@@ -3,6 +3,8 @@ declare const _default: ({ strapi }: {
     strapi: Core.Strapi;
 }) => {
     findEntities(siteId: number, query?: any): Promise<any[]>;
+    /** 站点绝对 URL（site-config.domain 裸域名补协议）；缺失返回空串 */
+    _resolveSiteUrl(siteId: number): Promise<string>;
     findEntityBySlug(siteId: number, slug: string): Promise<any>;
     findEntityByRef(params: {
         refTargetType: string;
@@ -49,6 +51,7 @@ declare const _default: ({ strapi }: {
         objectEntityId?: string;
         objectValue?: any;
         objectText?: string;
+        evidenceText?: string;
         sourceType?: string;
         truthPolicyId?: string;
         actor?: any;
@@ -69,11 +72,15 @@ declare const _default: ({ strapi }: {
         conflicts: number;
         report: any[];
     }>;
+    /** 关系是否违反客体契约（读时隔离用；未登记契约或未知主体类型 → 不违规） */
+    _isContractViolation(subjectEntityType: string | undefined, relation: any): boolean;
+    /** cites 关系按 truthPolicy 去重，仅保留最新（updatedAt 最大）一条；其余关系原样保留 */
+    _dedupeCitations(relations: any[]): any[];
     exportGraph(siteId: number): Promise<any>;
     exportEntity(siteId: number, slug: string): Promise<any | null>;
     /** 实体 → 提及该实体的已发布 GEO 文章（entityId 为实体数字 id） */
     findArticlesByEntity(siteId: number, entityId: number, limit?: number): Promise<any[]>;
-    _entityToJsonLd(entity: any, outgoing?: any[], incoming?: any[]): any;
+    _entityToJsonLd(entity: any, outgoing?: any[], incoming?: any[], siteUrl?: string): any;
     exportFacts(siteId: number): Promise<any[]>;
 };
 export default _default;

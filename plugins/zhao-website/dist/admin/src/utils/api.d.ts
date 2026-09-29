@@ -12,6 +12,8 @@ export declare const API: {
     kgDeleteRelation: (id: string) => string;
     kgDisambiguate: string;
     kgExportGraph: string;
+    kgHealthCompleteness: string;
+    kgHealthViolations: string;
     kgAuditLogs: (params?: Record<string, any>) => string;
     kgEntityReview: (id: string, action: string) => string;
     kgRelationReview: (id: string, action: string) => string;

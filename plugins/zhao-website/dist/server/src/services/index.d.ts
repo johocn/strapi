@@ -352,6 +352,7 @@ declare const _default: {
         strapi: import('@strapi/types/dist/core').Strapi;
     }) => {
         findEntities(siteId: number, query?: any): Promise<any[]>;
+        _resolveSiteUrl(siteId: number): Promise<string>;
         findEntityBySlug(siteId: number, slug: string): Promise<any>;
         findEntityByRef(params: {
             refTargetType: string;
@@ -385,6 +386,7 @@ declare const _default: {
             objectEntityId?: string;
             objectValue?: any;
             objectText?: string;
+            evidenceText?: string;
             sourceType?: string;
             truthPolicyId?: string;
             actor?: any;
@@ -405,10 +407,12 @@ declare const _default: {
             conflicts: number;
             report: any[];
         }>;
+        _isContractViolation(subjectEntityType: string | undefined, relation: any): boolean;
+        _dedupeCitations(relations: any[]): any[];
         exportGraph(siteId: number): Promise<any>;
         exportEntity(siteId: number, slug: string): Promise<any | null>;
         findArticlesByEntity(siteId: number, entityId: number, limit?: number): Promise<any[]>;
-        _entityToJsonLd(entity: any, outgoing?: any[], incoming?: any[]): any;
+        _entityToJsonLd(entity: any, outgoing?: any[], incoming?: any[], siteUrl?: string): any;
         exportFacts(siteId: number): Promise<any[]>;
     };
     "ai-content-summary": ({ strapi }: {
@@ -459,6 +463,7 @@ declare const _default: {
         strapi: import('@strapi/types/dist/core').Strapi;
     }) => {
         generate(siteId: number, siteUrl: string): Promise<string>;
+        generateFull(siteId: number, siteUrl: string): Promise<string>;
     };
     sitemap: ({ strapi }: {
         strapi: import('@strapi/types/dist/core').Strapi;
@@ -594,6 +599,46 @@ declare const _default: {
                 total: number;
             };
         }>;
+    };
+    "knowledge-health": ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        _shape(relation: any): {
+            hasEntity: boolean;
+            hasValue: boolean;
+            hasText: boolean;
+            textLength: number;
+        };
+        _violationReason(relation: any): string | null;
+        isCitable(fact: any): boolean;
+        completeness(siteId: number): Promise<{
+            entities: {
+                total: number;
+                missingSameAs: number;
+                missingDescription: number;
+                missingUrl: number;
+                missingIdentifier: number;
+            };
+            facts: {
+                total: number;
+                missingSourceUrl: number;
+                internalSourceCount: number;
+                otherCategoryCount: number;
+                unboundCanonicalEntity: number;
+                emptyCategories: string[];
+                unclassifiedOther: Array<{
+                    documentId: string;
+                    claimKey: string;
+                    claim: string;
+                }>;
+            };
+            relations: {
+                total: number;
+                contractViolations: number;
+                missingTruthPolicy: number;
+            };
+        }>;
+        violations(siteId: number): Promise<any[]>;
     };
 };
 export default _default;
