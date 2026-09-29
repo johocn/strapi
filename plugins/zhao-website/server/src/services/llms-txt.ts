@@ -145,7 +145,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
    */
   async generateFull(siteId: number, siteUrl: string): Promise<string> {
     const kg: any = strapi.plugin("zhao-website").service("knowledge-graph");
-    const graph = await kg.exportGraph(siteId);
+    const graph = await kg.exportGraph(siteId, siteUrl);
     const facts = await kg.exportFacts(siteId);
     const lines: string[] = [];
 

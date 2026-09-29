@@ -779,6 +779,18 @@ describe("Knowledge Graph Service", () => {
     expect(result["@graph"][0]["@id"]).toBe("https://www.joho.cn/knowledge/ent-a");
   });
 
+  test("exportGraph 传入 siteUrl 时 @id 绝对化（site-config.domain 缺失也能兜底）", async () => {
+    const queryMock = mockStrapi.db.query();
+    queryMock.findOne.mockResolvedValueOnce(null); // site-config.domain 缺失
+    queryMock.findMany
+      .mockResolvedValueOnce([{ documentId: "doc-a", name: "A", entityType: "Organization", slug: "ent-a" }])
+      .mockResolvedValueOnce([]);
+
+    const result = await service.exportGraph(1, "www.joho.cn");
+
+    expect(result["@graph"][0]["@id"]).toBe("https://www.joho.cn/knowledge/ent-a");
+  });
+
   test("节点输出补 verificationStatus / confidence / lastVerifiedAt", () => {
     const jsonLd = service._entityToJsonLd({
       documentId: "doc-a", name: "A", entityType: "Organization", slug: "a",
@@ -812,6 +824,22 @@ describe("Knowledge Graph Service", () => {
     expect(result.subjectOf).toEqual([
       { "@type": "Article", "@id": "https://www.joho.cn/geo-article/career-learning", name: "长期学习规划" },
     ]);
+  });
+
+  test("exportEntity 传入 siteUrl 时 @id 与 subjectOf 绝对化（site-config.domain 缺失也能兜底）", async () => {
+    service.findEntityBySlug = jest.fn().mockResolvedValue({
+      id: 1, documentId: "doc-term", name: "学习", entityType: "DefinedTerm", slug: "learning",
+    });
+    service._resolveEntityId = jest.fn().mockResolvedValue(1);
+    service.findArticlesByEntity = jest.fn().mockResolvedValue([
+      { slug: "career-learning", title: "长期学习规划", type: "geo-article" },
+    ]);
+    mockStrapi.db.query().findMany.mockResolvedValue([]);
+
+    const result = await service.exportEntity(1, "learning", "www.joho.cn");
+
+    expect(result["@id"]).toBe("https://www.joho.cn/knowledge/learning");
+    expect(result.subjectOf[0]["@id"]).toBe("https://www.joho.cn/geo-article/career-learning");
   });
 
   test("无解释文章时不输出 subjectOf", async () => {

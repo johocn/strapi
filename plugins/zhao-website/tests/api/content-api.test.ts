@@ -240,6 +240,43 @@ describe("Content API - sitemap", () => {
   });
 });
 
+describe("Content API - knowledge graph", () => {
+  test("GET /knowledge-graph.json → 透传请求 Host 作 siteUrl 兜底", async () => {
+    const kgService = { exportGraph: jest.fn().mockResolvedValue({ "@graph": [] }) };
+    createMockStrapi({
+      plugin: jest.fn().mockReturnValue({ service: jest.fn().mockReturnValue(kgService) }),
+    });
+    const controller = require("../../server/src/controllers/content-api/knowledge-graph").default;
+    const ctx = createMockCtx({
+      state: { siteId: 1 },
+      params: { slug: "joho-cn" },
+      request: { host: "www.joho.cn", headers: {}, ip: "127.0.0.1", body: {}, query: {} },
+    });
+
+    await controller.exportGraph(ctx);
+
+    expect(kgService.exportGraph).toHaveBeenCalledWith(1, "www.joho.cn");
+    expect(ctx.body).toEqual({ "@graph": [] });
+  });
+
+  test("GET /knowledge-graph/:slug → exportEntity 透传 slug 与 Host", async () => {
+    const kgService = { exportEntity: jest.fn().mockResolvedValue({ "@id": "https://www.joho.cn/knowledge/joho-cn" }) };
+    createMockStrapi({
+      plugin: jest.fn().mockReturnValue({ service: jest.fn().mockReturnValue(kgService) }),
+    });
+    const controller = require("../../server/src/controllers/content-api/knowledge-graph").default;
+    const ctx = createMockCtx({
+      state: { siteId: 1 },
+      params: { slug: "joho-cn" },
+      request: { host: "www.joho.cn", headers: {}, ip: "127.0.0.1", body: {}, query: {} },
+    });
+
+    await controller.exportEntity(ctx);
+
+    expect(kgService.exportEntity).toHaveBeenCalledWith(1, "joho-cn", "www.joho.cn");
+  });
+});
+
 describe("Content API - llms-full.txt", () => {
   test("GET /llms-full.txt → service.llms-txt.generateFull", async () => {
     const llmsService = { generateFull: jest.fn().mockResolvedValue("# Full") };
