@@ -10,6 +10,13 @@ const ENTITY_UID = "plugin::zhao-website.knowledge-entity";
 const RELATION_UID = "plugin::zhao-website.knowledge-relation";
 const TRUTH_UID = "plugin::zhao-website.first-truth-policy";
 
+/** 实体公开 @id：优先绝对 URL（/knowledge/{slug}），无 siteUrl 时回退 slug */
+function entityPublicId(entity: any, siteUrl?: string): string {
+  const slug = entity?.slug || entity?.documentId;
+  if (siteUrl && slug) return `${siteUrl}/knowledge/${slug}`;
+  return slug;
+}
+
 /** 文本归一：全角→半角、空白压缩、trim、小写（只用于 text 类型比对，不做模糊匹配） */
 function normalizeText(v: any): string {
   return String(v ?? "")
@@ -86,6 +93,14 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       orderBy: { updatedAt: "DESC" },
       populate: ["image"],
     });
+  },
+
+  /** 站点绝对 URL（site-config.domain 裸域名补协议）；缺失返回空串 */
+  async _resolveSiteUrl(siteId: number): Promise<string> {
+    const cfg = await strapi.db.query("plugin::zhao-common.site-config").findOne({ where: { id: siteId } });
+    const domain = cfg?.domain;
+    if (!domain) return "";
+    return /^https?:\/\//.test(domain) ? domain : `https://${domain}`;
   },
 
   async findEntityBySlug(siteId: number, slug: string) {
@@ -762,8 +777,14 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   },
 
   async exportGraph(siteId: number): Promise<any> {
-    // 派生实体是内容 CT 的内部节点，不进公开图谱
-    const scope = { deletedAt: null, status: true, sourceType: { $ne: "derived" } };
+    // 派生实体是内容 CT 的内部节点，不进公开图谱；rejected 与另两个出口口径统一
+    const scope = {
+      deletedAt: null,
+      status: true,
+      sourceType: { $ne: "derived" },
+      verificationStatus: { $ne: "rejected" },
+    };
+    const siteUrl = await this._resolveSiteUrl(siteId);
     const entities = await strapi.db.query(ENTITY_UID).findMany({
       where: { $or: [{ site: siteId, ...scope }, { site: null, ...scope }] },
       populate: ["image"],
@@ -772,15 +793,19 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       where: { $or: [{ site: siteId, deletedAt: null, status: true }, { site: null, deletedAt: null, status: true }] },
       populate: ["subjectEntity", "objectEntity"],
     });
-    const graph = entities.map((e: any) => this._entityToJsonLd(e, relations.filter((r: any) => r.subjectEntity?.id === e.id)));
+    const graph = entities.map((e: any) =>
+      this._entityToJsonLd(e, relations.filter((r: any) => r.subjectEntity?.id === e.id), [], siteUrl)
+    );
     return { "@context": "https://schema.org", "@graph": graph };
   },
 
   async exportEntity(siteId: number, slug: string): Promise<any | null> {
     const entity = await this.findEntityBySlug(siteId, slug);
     if (!entity) return null;
+    const siteUrl = await this._resolveSiteUrl(siteId);
     // 关系过滤必须用实体数字 id（documentId 是字符串，直接过滤 lnk 列会报 integer 类型错误）
     const entityId = await this._resolveEntityId(entity.documentId);
+    if (entityId === null) return null;
     const outgoing = await strapi.db.query(RELATION_UID).findMany({
       where: { $or: [{ site: siteId, subjectEntity: entityId, deletedAt: null }, { site: null, subjectEntity: entityId, deletedAt: null }] },
       populate: ["objectEntity", "truthPolicy"],
@@ -795,11 +820,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       (r: any) => !this._isContractViolation(r.subjectEntity?.entityType, r)
     );
     return {
-      ...this._entityToJsonLd(entity, visibleOutgoing, visibleIncoming),
+      ...this._entityToJsonLd(entity, visibleOutgoing, visibleIncoming, siteUrl),
       // 前端实体页按 outgoing/incoming 数组渲染「知识关系」
       outgoing: visibleOutgoing.map((r: any) => ({
         predicate: r.predicate,
-        objectEntity: r.objectEntity ? { slug: r.objectEntity.slug, name: r.objectEntity.name, "@id": r.objectEntity.slug || r.objectEntity.documentId } : undefined,
+        objectEntity: r.objectEntity ? { slug: r.objectEntity.slug, name: r.objectEntity.name, "@id": entityPublicId(r.objectEntity, siteUrl) } : undefined,
         objectValue: r.objectValue,
         objectText: r.objectText,
         sourceType: r.sourceType,
@@ -809,7 +834,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       })),
       incoming: visibleIncoming.map((r: any) => ({
         predicate: r.predicate,
-        subjectEntity: r.subjectEntity ? { slug: r.subjectEntity.slug, name: r.subjectEntity.name, "@id": r.subjectEntity.slug || r.subjectEntity.documentId } : undefined,
+        subjectEntity: r.subjectEntity ? { slug: r.subjectEntity.slug, name: r.subjectEntity.name, "@id": entityPublicId(r.subjectEntity, siteUrl) } : undefined,
         sourceType: r.sourceType,
         verificationStatus: r.verificationStatus,
         truthClaimKey: r.truthPolicy?.claimKey,
@@ -827,15 +852,18 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     });
   },
 
-  _entityToJsonLd(entity: any, outgoing: any[] = [], incoming: any[] = []): any {
+  _entityToJsonLd(entity: any, outgoing: any[] = [], incoming: any[] = [], siteUrl?: string): any {
     const jsonLd: any = {
       "@type": entity.entityType,
-      "@id": entity.slug || entity.documentId,
+      "@id": entityPublicId(entity, siteUrl),
       "name": entity.name,
     };
     // 公开出口的合规字段：版本号 + 最后修改时间（不露操作人/理由）
     jsonLd.version = entity.version ?? 1;
     if (entity.updatedAt) jsonLd.dateModified = entity.updatedAt;
+    jsonLd.verificationStatus = entity.verificationStatus ?? "verified";
+    jsonLd.confidence = entity.confidence ?? 1;
+    if (entity.lastVerifiedAt) jsonLd.lastVerifiedAt = entity.lastVerifiedAt;
     if (entity.description) jsonLd.description = entity.description;
     if (entity.url) jsonLd.url = entity.url;
     if (entity.image) jsonLd.image = entity.url; // 简化
@@ -846,7 +874,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     for (const rel of visibleOutgoing) {
       let value: any;
       if (rel.objectEntity) {
-        value = { "@id": rel.objectEntity.slug || rel.objectEntity.documentId };
+        value = { "@id": entityPublicId(rel.objectEntity, siteUrl) };
       } else if (rel.objectValue) {
         value = rel.objectValue;
       } else if (rel.objectText) {

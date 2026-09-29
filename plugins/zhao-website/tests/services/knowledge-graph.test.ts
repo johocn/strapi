@@ -755,4 +755,43 @@ describe("Knowledge Graph Service", () => {
     expect(result.outgoing).toHaveLength(1);
     expect(result.outgoing[0].objectText).toBe("让学习更简单");
   });
+
+  test("exportGraph 过滤 rejected 实体（与另两个出口口径统一）", async () => {
+    const queryMock = mockStrapi.db.query();
+
+    await service.exportGraph(1);
+
+    const where = queryMock.findMany.mock.calls[0][0].where;
+    for (const branch of where.$or) {
+      expect(branch).toEqual(expect.objectContaining({ verificationStatus: { $ne: "rejected" } }));
+    }
+  });
+
+  test("exportGraph 节点 @id 为绝对 URL", async () => {
+    const queryMock = mockStrapi.db.query();
+    queryMock.findOne.mockResolvedValueOnce({ id: 1, domain: "www.joho.cn" }); // site-config
+    queryMock.findMany
+      .mockResolvedValueOnce([{ documentId: "doc-a", name: "A", entityType: "Organization", slug: "ent-a" }])
+      .mockResolvedValueOnce([]);
+
+    const result = await service.exportGraph(1);
+
+    expect(result["@graph"][0]["@id"]).toBe("https://www.joho.cn/knowledge/ent-a");
+  });
+
+  test("节点输出补 verificationStatus / confidence / lastVerifiedAt", () => {
+    const jsonLd = service._entityToJsonLd({
+      documentId: "doc-a", name: "A", entityType: "Organization", slug: "a",
+      verificationStatus: "pending", confidence: 0.8, lastVerifiedAt: "2026-09-01T00:00:00.000Z",
+    });
+
+    expect(jsonLd.verificationStatus).toBe("pending");
+    expect(jsonLd.confidence).toBe(0.8);
+    expect(jsonLd.lastVerifiedAt).toBe("2026-09-01T00:00:00.000Z");
+  });
+
+  test("无 siteUrl 时 @id 回退为 slug（单测/后台导出不受影响）", () => {
+    const jsonLd = service._entityToJsonLd({ documentId: "doc-a", name: "A", entityType: "Organization", slug: "a" });
+    expect(jsonLd["@id"]).toBe("a");
+  });
 });
