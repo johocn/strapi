@@ -660,4 +660,58 @@ describe("Knowledge Graph Service", () => {
       service.updateRelation(1, "rel-3", { predicate: "termCode" })
     ).rejects.toMatchObject({ status: 400, code: "RELATION_OBJECT_CONTRACT_VIOLATION" });
   });
+
+  test("addRelation 带 evidenceText → 落库但不进公开出口字段", async () => {
+    service._resolveEntityId = jest.fn(async (ref: any) => (ref === "doc-article" ? 11 : 22));
+    const queryMock = mockStrapi.db.query();
+    queryMock.findOne
+      .mockResolvedValueOnce({ id: 11, entityType: "Article" }) // subject
+      .mockResolvedValueOnce({ id: 5, documentId: "truth-doc" }) // truth
+      .mockResolvedValueOnce(null); // 幂等查询未命中
+
+    await service.addRelation({
+      siteId: 1,
+      subjectEntityId: "doc-article",
+      predicate: "cites",
+      objectEntityId: "doc-canonical",
+      truthPolicyId: "truth-doc",
+      evidenceText: "学习是指获取知识、技能或经验的过程。",
+      sourceType: "derived",
+    });
+
+    expect(queryMock.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          evidenceText: "学习是指获取知识、技能或经验的过程。",
+          truthPolicy: 5,
+        }),
+      })
+    );
+  });
+
+  test("addRelation 绑定 truthPolicy → 幂等键为 site+S+P+truthPolicy（非文本）", async () => {
+    service._resolveEntityId = jest.fn(async (ref: any) => (ref === "doc-article" ? 11 : 22));
+    const queryMock = mockStrapi.db.query();
+    queryMock.findOne
+      .mockResolvedValueOnce({ id: 11, entityType: "Article" })
+      .mockResolvedValueOnce({ id: 5, documentId: "truth-doc" })
+      .mockResolvedValueOnce(null);
+
+    await service.addRelation({
+      siteId: 1,
+      subjectEntityId: "doc-article",
+      predicate: "cites",
+      objectEntityId: "doc-canonical",
+      truthPolicyId: "truth-doc",
+      evidenceText: "段落",
+      sourceType: "derived",
+    });
+
+    expect(queryMock.findOne).toHaveBeenNthCalledWith(
+      3,
+      expect.objectContaining({
+        where: expect.objectContaining({ site: 1, subjectEntity: 11, predicate: "cites", truthPolicy: 5 }),
+      })
+    );
+  });
 });

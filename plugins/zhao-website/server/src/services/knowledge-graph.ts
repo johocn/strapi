@@ -390,6 +390,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     objectEntityId?: string;
     objectValue?: any;
     objectText?: string;
+    evidenceText?: string;
     sourceType?: string;
     truthPolicyId?: string;
     actor?: any;
@@ -481,12 +482,15 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       predicate: params.predicate,
       deletedAt: null,
     };
-    if (objectId) {
+    // 幂等键：绑定真值 → site+S+P+truthPolicy；否则按客体实体/文本
+    if (truthId) {
+      idempotentWhere.truthPolicy = truthId;
+    } else if (objectId) {
       idempotentWhere.objectEntity = objectId;
     } else if (hasText) {
       idempotentWhere.objectText = params.objectText;
     }
-    if (objectId || hasText) {
+    if (truthId || objectId || hasText) {
       const existing: any = await strapi.db.query(RELATION_UID).findOne({ where: idempotentWhere });
       if (existing) {
         // 幂等命中时补绑真值（原关系可能未绑定）
@@ -510,6 +514,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         objectEntity: objectId,
         objectValue: params.objectValue || null,
         objectText: params.objectText || null,
+        evidenceText: params.evidenceText || null,
         sourceType: params.sourceType || "manual",
         truthPolicy: truthId,
       },
@@ -596,6 +601,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     }
     if (data.predicate !== undefined) payload.predicate = data.predicate;
     if (data.objectText !== undefined) payload.objectText = data.objectText;
+    if (data.evidenceText !== undefined) payload.evidenceText = data.evidenceText;
     if (data.objectValue !== undefined) payload.objectValue = data.objectValue;
     if (data.confidence !== undefined) payload.confidence = Number(data.confidence);
     if (data.verificationStatus !== undefined) payload.verificationStatus = data.verificationStatus;
