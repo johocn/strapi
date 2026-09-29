@@ -56,4 +56,18 @@ export default {
     await strapi.plugin("zhao-website").service("knowledge-graph").deleteEntity(null, ctx.params.documentId, actorOf(ctx));
     ctx.body = { success: true };
   },
+  // ===== 审核动作 =====
+  async submitEntity(ctx: any) { ctx.body = await strapi.plugin("zhao-website").service("knowledge-graph").submitEntity(ctx.state.siteId, ctx.params.documentId, actorOf(ctx), ctx.request.body?.reason); },
+  async approveEntity(ctx: any) { ctx.body = await strapi.plugin("zhao-website").service("knowledge-graph").approveEntity(ctx.state.siteId, ctx.params.documentId, actorOf(ctx), ctx.request.body?.reason); },
+  async rejectEntity(ctx: any) { ctx.body = await strapi.plugin("zhao-website").service("knowledge-graph").rejectEntity(ctx.state.siteId, ctx.params.documentId, actorOf(ctx), ctx.request.body?.reason); },
+  async submitRelation(ctx: any) { ctx.body = await strapi.plugin("zhao-website").service("knowledge-graph").submitRelation(ctx.state.siteId, ctx.params.documentId, actorOf(ctx), ctx.request.body?.reason); },
+  async approveRelation(ctx: any) { ctx.body = await strapi.plugin("zhao-website").service("knowledge-graph").approveRelation(ctx.state.siteId, ctx.params.documentId, actorOf(ctx), ctx.request.body?.reason); },
+  async rejectRelation(ctx: any) { ctx.body = await strapi.plugin("zhao-website").service("knowledge-graph").rejectRelation(ctx.state.siteId, ctx.params.documentId, actorOf(ctx), ctx.request.body?.reason); },
+  // ===== 流水查询 =====
+  async findAuditLogs(ctx: any) {
+    const { targetType, targetId, page, pageSize } = ctx.query;
+    ctx.body = await strapi.plugin("zhao-website").service("knowledge-audit").findByTarget(
+      ctx.state.siteId, targetType, targetId, { page, pageSize }
+    );
+  },
 };

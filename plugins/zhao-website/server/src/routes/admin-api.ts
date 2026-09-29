@@ -91,6 +91,13 @@ export default () => ({
     channelScopeRoute("DELETE", "/knowledge-graph/relations/:documentId", "knowledge-graph.deleteRelation", "knowledge-relation.delete"),
     channelScopeRoute("PUT", "/knowledge-graph/relations/:documentId", "knowledge-graph.updateRelation", "knowledge-relation.update"),
     channelScopeRoute("POST", "/knowledge-graph/disambiguate", "knowledge-graph.disambiguate", "knowledge-entity.read"),
+    channelScopeRoute("POST", "/knowledge-graph/entities/:documentId/submit", "knowledge-graph.submitEntity", "knowledge-entity.update"),
+    channelScopeRoute("POST", "/knowledge-graph/entities/:documentId/approve", "knowledge-graph.approveEntity", "knowledge-entity.update"),
+    channelScopeRoute("POST", "/knowledge-graph/entities/:documentId/reject", "knowledge-graph.rejectEntity", "knowledge-entity.update"),
+    channelScopeRoute("POST", "/knowledge-graph/relations/:documentId/submit", "knowledge-graph.submitRelation", "knowledge-relation.update"),
+    channelScopeRoute("POST", "/knowledge-graph/relations/:documentId/approve", "knowledge-graph.approveRelation", "knowledge-relation.update"),
+    channelScopeRoute("POST", "/knowledge-graph/relations/:documentId/reject", "knowledge-graph.rejectRelation", "knowledge-relation.update"),
+    channelScopeRoute("GET", "/knowledge-audit-logs", "knowledge-graph.findAuditLogs", "knowledge-entity.read"),
     channelScopeRoute("GET", "/knowledge-graph/export", "knowledge-graph.exportGraph", "knowledge-entity.read"),
     // 全局实体路由
     channelScopeRoute("POST", "/knowledge-graph/entities/global", "knowledge-graph.createGlobalEntity", "knowledge-entity.create-global"),
@@ -105,6 +112,9 @@ export default () => ({
     channelScopeRoute("PUT", "/first-truths/:documentId", "first-truth.update", "first-truth.update"),
     channelScopeRoute("DELETE", "/first-truths/:documentId", "first-truth.delete", "first-truth.delete"),
     channelScopeRoute("POST", "/first-truths/:documentId/verify", "first-truth.verify", "first-truth.update"),
+    channelScopeRoute("POST", "/first-truths/:documentId/submit", "first-truth.submit", "first-truth.update"),
+    channelScopeRoute("POST", "/first-truths/:documentId/approve", "first-truth.approve", "first-truth.update"),
+    channelScopeRoute("POST", "/first-truths/:documentId/reject", "first-truth.reject", "first-truth.update"),
     // 全局真值路由
     channelScopeRoute("POST", "/first-truths/global", "first-truth.createGlobal", "first-truth.create-global"),
     channelScopeRoute("PUT", "/first-truths/global/:documentId", "first-truth.updateGlobal", "first-truth.update-global"),

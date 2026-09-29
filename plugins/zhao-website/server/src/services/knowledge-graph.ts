@@ -3,6 +3,7 @@ import { HIERARCHICAL_PREDICATES, isValidPredicate } from "./utils/predicate-dic
 import { knowledgeGraphSync } from "./utils/kg-sync";
 import { stableJson, diffFields } from "./utils/stable-json";
 import { auditSafe } from "./knowledge-audit";
+import { applyReview } from "./utils/review-actions";
 
 const ENTITY_UID = "plugin::zhao-website.knowledge-entity";
 const RELATION_UID = "plugin::zhao-website.knowledge-relation";
@@ -203,6 +204,37 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       changedFields: diffFields(existing, { ...existing, deletedAt }),
     });
     return updated;
+  },
+
+  // ===== 审核动作（entity）=====
+  async submitEntity(siteId: number | null, documentId: string, actor?: any, reason?: string) {
+    return applyReview(strapi, { uid: ENTITY_UID, targetType: "entity", siteId, documentId, action: "submit", actor, reason });
+  },
+
+  async approveEntity(siteId: number | null, documentId: string, actor?: any, reason?: string) {
+    // verifiedBy 指向 admin::user：仅当该 id 真实存在才写入，避免 FK 失败导致审核 500
+    let verifiedBy: number | null = null;
+    if (actor?.id != null) {
+      const adminUser = await strapi.db.query("admin::user").findOne({
+        where: { id: actor.id },
+        select: ["id"],
+      });
+      if (adminUser) verifiedBy = adminUser.id;
+    }
+    return applyReview(strapi, {
+      uid: ENTITY_UID,
+      targetType: "entity",
+      siteId,
+      documentId,
+      action: "approve",
+      actor,
+      reason,
+      extraData: verifiedBy ? { verifiedBy } : {},
+    });
+  },
+
+  async rejectEntity(siteId: number | null, documentId: string, actor?: any, reason?: string) {
+    return applyReview(strapi, { uid: ENTITY_UID, targetType: "entity", siteId, documentId, action: "reject", actor, reason });
   },
 
   // ===== 关系 =====
@@ -503,6 +535,19 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       changedFields: diffFields(existing, { ...existing, deletedAt }),
     });
     return updated;
+  },
+
+  // ===== 审核动作（relation）=====
+  async submitRelation(siteId: number | null, documentId: string, actor?: any, reason?: string) {
+    return applyReview(strapi, { uid: RELATION_UID, targetType: "relation", siteId, documentId, action: "submit", actor, reason });
+  },
+
+  async approveRelation(siteId: number | null, documentId: string, actor?: any, reason?: string) {
+    return applyReview(strapi, { uid: RELATION_UID, targetType: "relation", siteId, documentId, action: "approve", actor, reason });
+  },
+
+  async rejectRelation(siteId: number | null, documentId: string, actor?: any, reason?: string) {
+    return applyReview(strapi, { uid: RELATION_UID, targetType: "relation", siteId, documentId, action: "reject", actor, reason });
   },
 
   async updateRelation(siteId: number, documentId: string, data: any, actor?: any) {

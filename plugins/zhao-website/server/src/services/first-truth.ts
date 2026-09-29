@@ -1,6 +1,7 @@
 import type { Core } from "@strapi/strapi";
 import { diffFields } from "./utils/stable-json";
 import { auditSafe } from "./knowledge-audit";
+import { applyReview } from "./utils/review-actions";
 
 const UID = "plugin::zhao-website.first-truth-policy";
 const ENTITY_UID = "plugin::zhao-website.knowledge-entity";
@@ -148,17 +149,21 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     }
   },
 
-  async verify(siteId: number | null, documentId: string) {
-    const existing = await this.findOne(siteId, documentId);
-    if (!existing) {
-      const e: any = new Error("Truth not found");
-      e.status = 404;
-      throw e;
-    }
-    return strapi.db.query(UID).update({
-      where: { id: existing.id },
-      data: { verificationStatus: "verified", lastVerifiedAt: new Date().toISOString() },
-    });
+  /** 兼容旧契约：verify = approve 的别名 */
+  async verify(siteId: number | null, documentId: string, actor?: any, reason?: string) {
+    return this.approve(siteId, documentId, actor, reason);
+  },
+
+  async submit(siteId: number | null, documentId: string, actor?: any, reason?: string) {
+    return applyReview(strapi, { uid: UID, targetType: "first-truth", siteId, documentId, action: "submit", actor, reason });
+  },
+
+  async approve(siteId: number | null, documentId: string, actor?: any, reason?: string) {
+    return applyReview(strapi, { uid: UID, targetType: "first-truth", siteId, documentId, action: "approve", actor, reason });
+  },
+
+  async reject(siteId: number | null, documentId: string, actor?: any, reason?: string) {
+    return applyReview(strapi, { uid: UID, targetType: "first-truth", siteId, documentId, action: "reject", actor, reason });
   },
 
   async softDelete(siteId: number | null, documentId: string, actor?: any) {
