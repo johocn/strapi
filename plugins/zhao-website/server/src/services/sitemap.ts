@@ -20,12 +20,13 @@ const GEO_TYPE_PREFIX: Record<string, string> = {
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async generate(siteId: number, siteUrl: string): Promise<string> {
     const seoConfig = await strapi.plugin("zhao-website").service("seo-config").get(siteId);
+    const siteConfig = await strapi.db.query("plugin::zhao-common.site-config").findOne({ where: { id: siteId } });
     const excludeTypes = seoConfig?.sitemapExcludeTypes || [];
     const urls: string[] = [];
 
     const hreflangEntries = this._buildHreflangEntries(seoConfig, siteUrl);
 
-    urls.push(this._urlEntry(siteUrl, "/", "1.0", "daily", undefined, undefined, hreflangEntries));
+    urls.push(this._urlEntry(siteUrl, "/", "1.0", "daily", siteConfig?.updatedAt, undefined, hreflangEntries));
 
     for (const ct of INDEXABLE_CTS) {
       if (excludeTypes.includes(ct.uid.split(".").pop())) continue;

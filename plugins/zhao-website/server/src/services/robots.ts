@@ -32,6 +32,12 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       }
     }
 
+    // 显式声明主流 AI 爬虫可抓取（未列入 AI_CRAWLER_LIST 的仍受 User-agent: * 约束）
+    if (policy === "allow_all") {
+      for (const bot of AI_CRAWLER_LIST) {
+        lines.push(`User-agent: ${bot}`, "Allow: /");
+      }
+    }
     lines.push("User-agent: *", "Allow: /", "Disallow: /admin", "Disallow: /api");
     // robots 规范按最长匹配优先：更长的 Allow 覆盖上面那条 Disallow: /api，仅放行本插件 GEO 出口
     lines.push(`Allow: ${GEO_API_PREFIX}`);

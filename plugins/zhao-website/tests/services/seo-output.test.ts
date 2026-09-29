@@ -63,6 +63,26 @@ describe("robots 服务", () => {
 
     expect(txt).toBe("User-agent: *\nDisallow: /");
   });
+
+  test("allow_all 时显式声明主流 AI 爬虫允许抓取", async () => {
+    const { mockStrapi } = setup({}, { "seo-config": { get: jest.fn().mockResolvedValue({ enableRobotsTxt: true }) } });
+    const txt = await robotsFactory({ strapi: mockStrapi }).generate(1, SITE_URL);
+
+    expect(txt).toContain("User-agent: GPTBot\nAllow: /");
+    expect(txt).toContain("User-agent: ClaudeBot\nAllow: /");
+    expect(txt).toContain("User-agent: Google-Extended\nAllow: /");
+  });
+
+  test("sitemap 首页输出 lastmod", async () => {
+    const sitemapFactory = require("../../server/src/services/sitemap").default;
+    const { mockStrapi } = setup({
+      "plugin::zhao-common.site-config": { findOne: { id: 1, updatedAt: "2026-09-01T00:00:00.000Z" } },
+    });
+    const xml = await sitemapFactory({ strapi: mockStrapi }).generate(1, SITE_URL);
+
+    expect(xml).toContain("<loc>https://example.com/</loc>");
+    expect(xml).toContain("<lastmod>2026-09-01T00:00:00.000Z</lastmod>");
+  });
 });
 
 describe("llms.txt 服务", () => {
