@@ -3,8 +3,8 @@ declare const _default: ({ strapi }: {
     strapi: Core.Strapi;
 }) => {
     findEntities(siteId: number, query?: any): Promise<any[]>;
-    /** 站点绝对 URL（site-config.domain 裸域名补协议）；缺失返回空串 */
-    _resolveSiteUrl(siteId: number): Promise<string>;
+    /** 站点绝对 URL：优先入参（可为绝对 URL 或裸 Host，裸值补 https），否则取 site-config.domain；都缺失返回空串 */
+    _resolveSiteUrl(siteId: number, siteUrl?: string): Promise<string>;
     findEntityBySlug(siteId: number, slug: string): Promise<any>;
     findEntityByRef(params: {
         refTargetType: string;
@@ -76,8 +76,8 @@ declare const _default: ({ strapi }: {
     _isContractViolation(subjectEntityType: string | undefined, relation: any): boolean;
     /** cites 关系按 truthPolicy 去重，仅保留最新（updatedAt 最大）一条；其余关系原样保留 */
     _dedupeCitations(relations: any[]): any[];
-    exportGraph(siteId: number): Promise<any>;
-    exportEntity(siteId: number, slug: string): Promise<any | null>;
+    exportGraph(siteId: number, siteUrl?: string): Promise<any>;
+    exportEntity(siteId: number, slug: string, siteUrl?: string): Promise<any | null>;
     /** 实体 → 提及该实体的已发布 GEO 文章（entityId 为实体数字 id） */
     findArticlesByEntity(siteId: number, entityId: number, limit?: number): Promise<any[]>;
     _entityToJsonLd(entity: any, outgoing?: any[], incoming?: any[], siteUrl?: string): any;

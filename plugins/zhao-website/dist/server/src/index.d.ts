@@ -554,7 +554,7 @@ declare const _default: {
             strapi: import('@strapi/types/dist/core').Strapi;
         }) => {
             findEntities(siteId: number, query?: any): Promise<any[]>;
-            _resolveSiteUrl(siteId: number): Promise<string>;
+            _resolveSiteUrl(siteId: number, siteUrl?: string): Promise<string>;
             findEntityBySlug(siteId: number, slug: string): Promise<any>;
             findEntityByRef(params: {
                 refTargetType: string;
@@ -611,8 +611,8 @@ declare const _default: {
             }>;
             _isContractViolation(subjectEntityType: string | undefined, relation: any): boolean;
             _dedupeCitations(relations: any[]): any[];
-            exportGraph(siteId: number): Promise<any>;
-            exportEntity(siteId: number, slug: string): Promise<any | null>;
+            exportGraph(siteId: number, siteUrl?: string): Promise<any>;
+            exportEntity(siteId: number, slug: string, siteUrl?: string): Promise<any | null>;
             findArticlesByEntity(siteId: number, entityId: number, limit?: number): Promise<any[]>;
             _entityToJsonLd(entity: any, outgoing?: any[], incoming?: any[], siteUrl?: string): any;
             exportFacts(siteId: number): Promise<any[]>;

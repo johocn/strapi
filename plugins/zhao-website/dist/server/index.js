@@ -31957,14 +31957,14 @@ const feed$1 = {
 const contentKnowledgeGraph = {
   async exportGraph(ctx) {
     const siteId = ctx.state.siteId;
-    const data = await strapi.plugin("zhao-website").service("knowledge-graph").exportGraph(siteId);
+    const data = await strapi.plugin("zhao-website").service("knowledge-graph").exportGraph(siteId, ctx.request.host);
     ctx.type = "application/json";
     ctx.body = data;
   },
   async exportEntity(ctx) {
     const siteId = ctx.state.siteId;
     const slug = ctx.params.slug;
-    const data = await strapi.plugin("zhao-website").service("knowledge-graph").exportEntity(siteId, slug);
+    const data = await strapi.plugin("zhao-website").service("knowledge-graph").exportEntity(siteId, slug, ctx.request.host);
     if (!data) {
       ctx.status = 404;
       ctx.body = { error: "Entity not found" };
@@ -35115,12 +35115,11 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
       populate: ["image"]
     });
   },
-  /** 站点绝对 URL（site-config.domain 裸域名补协议）；缺失返回空串 */
-  async _resolveSiteUrl(siteId) {
-    const cfg = await strapi2.db.query("plugin::zhao-common.site-config").findOne({ where: { id: siteId } });
-    const domain = cfg?.domain;
-    if (!domain) return "";
-    return /^https?:\/\//.test(domain) ? domain : `https://${domain}`;
+  /** 站点绝对 URL：优先入参（可为绝对 URL 或裸 Host，裸值补 https），否则取 site-config.domain；都缺失返回空串 */
+  async _resolveSiteUrl(siteId, siteUrl) {
+    const source = siteUrl || (await strapi2.db.query("plugin::zhao-common.site-config").findOne({ where: { id: siteId } }))?.domain;
+    if (!source) return "";
+    return /^https?:\/\//.test(source) ? source : `https://${source}`;
   },
   async findEntityBySlug(siteId, slug) {
     const where = {
@@ -35727,14 +35726,14 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
     }
     return [...others, ...latest.values()];
   },
-  async exportGraph(siteId) {
+  async exportGraph(siteId, siteUrl) {
     const scope = {
       deletedAt: null,
       status: true,
       sourceType: { $ne: "derived" },
       verificationStatus: { $ne: "rejected" }
     };
-    const siteUrl = await this._resolveSiteUrl(siteId);
+    const baseUrl = await this._resolveSiteUrl(siteId, siteUrl);
     const entities = await strapi2.db.query(ENTITY_UID$2).findMany({
       where: { $or: [{ site: siteId, ...scope }, { site: null, ...scope }] },
       populate: ["image"]
@@ -35744,14 +35743,14 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
       populate: ["subjectEntity", "objectEntity"]
     });
     const graph = entities.map(
-      (e) => this._entityToJsonLd(e, relations.filter((r) => r.subjectEntity?.id === e.id), [], siteUrl)
+      (e) => this._entityToJsonLd(e, relations.filter((r) => r.subjectEntity?.id === e.id), [], baseUrl)
     );
     return { "@context": "https://schema.org", "@graph": graph };
   },
-  async exportEntity(siteId, slug) {
+  async exportEntity(siteId, slug, siteUrl) {
     const entity = await this.findEntityBySlug(siteId, slug);
     if (!entity) return null;
-    const siteUrl = await this._resolveSiteUrl(siteId);
+    const baseUrl = await this._resolveSiteUrl(siteId, siteUrl);
     const entityId = await this._resolveEntityId(entity.documentId);
     if (entityId === null) return null;
     const outgoing = await strapi2.db.query(RELATION_UID$1).findMany({
@@ -35771,16 +35770,16 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
     );
     const subjectOf = articles.filter((a) => a.slug && a.type).map((a) => ({
       "@type": "Article",
-      "@id": `${siteUrl}/${a.type}/${a.slug}`,
+      "@id": `${baseUrl}/${a.type}/${a.slug}`,
       name: a.title
     }));
     return {
-      ...this._entityToJsonLd(entity, visibleOutgoing, visibleIncoming, siteUrl),
+      ...this._entityToJsonLd(entity, visibleOutgoing, visibleIncoming, baseUrl),
       ...subjectOf.length > 0 ? { subjectOf } : {},
       // 前端实体页按 outgoing/incoming 数组渲染「知识关系」
       outgoing: visibleOutgoing.map((r) => ({
         predicate: r.predicate,
-        objectEntity: r.objectEntity ? { slug: r.objectEntity.slug, name: r.objectEntity.name, "@id": entityPublicId(r.objectEntity, siteUrl) } : void 0,
+        objectEntity: r.objectEntity ? { slug: r.objectEntity.slug, name: r.objectEntity.name, "@id": entityPublicId(r.objectEntity, baseUrl) } : void 0,
         objectValue: r.objectValue,
         objectText: r.objectText,
         sourceType: r.sourceType,
@@ -35790,7 +35789,7 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
       })),
       incoming: visibleIncoming.map((r) => ({
         predicate: r.predicate,
-        subjectEntity: r.subjectEntity ? { slug: r.subjectEntity.slug, name: r.subjectEntity.name, "@id": entityPublicId(r.subjectEntity, siteUrl) } : void 0,
+        subjectEntity: r.subjectEntity ? { slug: r.subjectEntity.slug, name: r.subjectEntity.name, "@id": entityPublicId(r.subjectEntity, baseUrl) } : void 0,
         sourceType: r.sourceType,
         verificationStatus: r.verificationStatus,
         truthClaimKey: r.truthPolicy?.claimKey
@@ -36475,7 +36474,7 @@ const llmsTxt = ({ strapi: strapi2 }) => ({
    */
   async generateFull(siteId, siteUrl) {
     const kg = strapi2.plugin("zhao-website").service("knowledge-graph");
-    const graph = await kg.exportGraph(siteId);
+    const graph = await kg.exportGraph(siteId, siteUrl);
     const facts = await kg.exportFacts(siteId);
     const lines = [];
     lines.push(`# Knowledge Feed`);
