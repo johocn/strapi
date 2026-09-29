@@ -714,4 +714,45 @@ describe("Knowledge Graph Service", () => {
       })
     );
   });
+
+  test("_entityToJsonLd 隔离契约违规关系（termCode 挂超长文本不进输出）", () => {
+    const jsonLd = service._entityToJsonLd(
+      { documentId: "doc-term", name: "学习", entityType: "DefinedTerm", slug: "learning" },
+      [
+        { predicate: "termCode", objectText: "甲".repeat(300) },
+        { predicate: "termCode", objectText: "职业教育" },
+      ]
+    );
+
+    expect(jsonLd.termCode).toBe("职业教育");
+  });
+
+  test("_entityToJsonLd 未登记契约的关系照常输出", () => {
+    const jsonLd = service._entityToJsonLd(
+      { documentId: "doc-a", name: "A", entityType: "Organization", slug: "a" },
+      [{ predicate: "brand", objectText: "任意长文本".repeat(50) }]
+    );
+
+    expect(jsonLd.brand).toBeDefined();
+  });
+
+  test("exportEntity 的 outgoing/incoming 不输出契约违规关系", async () => {
+    service.findEntityBySlug = jest.fn().mockResolvedValue({
+      id: 1, documentId: "doc-org", name: "Joho", entityType: "Organization", slug: "joho-cn",
+    });
+    service._resolveEntityId = jest.fn().mockResolvedValue(1);
+    service.findArticlesByEntity = jest.fn().mockResolvedValue([]);
+    const queryMock = mockStrapi.db.query();
+    queryMock.findMany
+      .mockResolvedValueOnce([
+        { documentId: "rel-1", predicate: "slogan", objectText: "让学习更简单" },
+        { documentId: "rel-2", predicate: "slogan", objectText: "长".repeat(300) },
+      ]) // outgoing
+      .mockResolvedValueOnce([]); // incoming
+
+    const result = await service.exportEntity(1, "joho-cn");
+
+    expect(result.outgoing).toHaveLength(1);
+    expect(result.outgoing[0].objectText).toBe("让学习更简单");
+  });
 });

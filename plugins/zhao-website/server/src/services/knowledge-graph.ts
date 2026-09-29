@@ -742,6 +742,25 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   },
 
   // ===== JSON-LD 导出 =====
+  /** 关系是否违反客体契约（读时隔离用；未登记契约或未知主体类型 → 不违规） */
+  _isContractViolation(subjectEntityType: string | undefined, relation: any): boolean {
+    if (!subjectEntityType) return false;
+    if (!getPredicateContract(subjectEntityType, relation.predicate)) return false;
+    const hasText = !!relation.objectText;
+    const reason = validateObjectContract(
+      subjectEntityType,
+      relation.predicate,
+      {
+        hasEntity: !!relation.objectEntity,
+        hasValue: relation.objectValue !== undefined && relation.objectValue !== null,
+        hasText,
+        textLength: hasText ? String(relation.objectText).length : 0,
+      },
+      relation.truthPolicy
+    );
+    return !!reason;
+  },
+
   async exportGraph(siteId: number): Promise<any> {
     // 派生实体是内容 CT 的内部节点，不进公开图谱
     const scope = { deletedAt: null, status: true, sourceType: { $ne: "derived" } };
@@ -771,10 +790,14 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       populate: ["subjectEntity", "truthPolicy"],
     });
     const articles = await this.findArticlesByEntity(siteId, entityId);
+    const visibleOutgoing = outgoing.filter((r: any) => !this._isContractViolation(entity.entityType, r));
+    const visibleIncoming = incoming.filter(
+      (r: any) => !this._isContractViolation(r.subjectEntity?.entityType, r)
+    );
     return {
-      ...this._entityToJsonLd(entity, outgoing, incoming),
+      ...this._entityToJsonLd(entity, visibleOutgoing, visibleIncoming),
       // 前端实体页按 outgoing/incoming 数组渲染「知识关系」
-      outgoing: outgoing.map((r: any) => ({
+      outgoing: visibleOutgoing.map((r: any) => ({
         predicate: r.predicate,
         objectEntity: r.objectEntity ? { slug: r.objectEntity.slug, name: r.objectEntity.name, "@id": r.objectEntity.slug || r.objectEntity.documentId } : undefined,
         objectValue: r.objectValue,
@@ -784,7 +807,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         // 证据链：该关系绑定到哪条第一真值
         truthClaimKey: r.truthPolicy?.claimKey,
       })),
-      incoming: incoming.map((r: any) => ({
+      incoming: visibleIncoming.map((r: any) => ({
         predicate: r.predicate,
         subjectEntity: r.subjectEntity ? { slug: r.subjectEntity.slug, name: r.subjectEntity.name, "@id": r.subjectEntity.slug || r.subjectEntity.documentId } : undefined,
         sourceType: r.sourceType,
@@ -817,7 +840,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     if (entity.url) jsonLd.url = entity.url;
     if (entity.image) jsonLd.image = entity.url; // 简化
     if (entity.properties) Object.assign(jsonLd, entity.properties);
-    for (const rel of outgoing) {
+    const visibleOutgoing = outgoing.filter(
+      (rel: any) => !this._isContractViolation(entity.entityType, rel)
+    );
+    for (const rel of visibleOutgoing) {
       let value: any;
       if (rel.objectEntity) {
         value = { "@id": rel.objectEntity.slug || rel.objectEntity.documentId };
