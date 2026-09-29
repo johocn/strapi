@@ -827,4 +827,39 @@ describe("Knowledge Graph Service", () => {
 
     expect(result.subjectOf).toBeUndefined();
   });
+
+  test("_dedupeCitations 同 truthPolicy 仅保留最新一条", () => {
+    const kept = service._dedupeCitations([
+      { id: 1, predicate: "cites", truthPolicy: { documentId: "t1" }, updatedAt: "2026-01-01T00:00:00.000Z", objectValue: "旧" },
+      { id: 2, predicate: "cites", truthPolicy: { documentId: "t1" }, updatedAt: "2026-09-01T00:00:00.000Z", objectValue: "新" },
+      { id: 3, predicate: "cites", truthPolicy: { documentId: "t2" }, updatedAt: "2026-01-01T00:00:00.000Z", objectValue: "另一真值" },
+      { id: 4, predicate: "mentions", objectEntity: { id: 9 } },
+    ]);
+
+    expect(kept.filter((r: any) => r.predicate === "cites")).toHaveLength(2);
+    expect(kept.some((r: any) => r.id === 2)).toBe(true);
+    expect(kept.some((r: any) => r.id === 1)).toBe(false);
+    expect(kept.some((r: any) => r.predicate === "mentions")).toBe(true);
+  });
+
+  test("exportEntity 的 outgoing 对 cites 限流", async () => {
+    service.findEntityBySlug = jest.fn().mockResolvedValue({
+      id: 1, documentId: "doc-art", name: "文章", entityType: "Article", slug: "career-learning",
+    });
+    service._resolveEntityId = jest.fn().mockResolvedValue(1);
+    service.findArticlesByEntity = jest.fn().mockResolvedValue([]);
+    service._resolveSiteUrl = jest.fn().mockResolvedValue("https://www.joho.cn");
+    const queryMock = mockStrapi.db.query();
+    queryMock.findMany
+      .mockResolvedValueOnce([
+        { id: 1, predicate: "cites", truthPolicy: { documentId: "t1" }, updatedAt: "2026-01-01T00:00:00.000Z", objectValue: "旧" },
+        { id: 2, predicate: "cites", truthPolicy: { documentId: "t1" }, updatedAt: "2026-09-01T00:00:00.000Z", objectValue: "新" },
+      ])
+      .mockResolvedValueOnce([]);
+
+    const result = await service.exportEntity(1, "career-learning");
+
+    expect(result.outgoing).toHaveLength(1);
+    expect(result.outgoing[0].objectValue).toBe("新");
+  });
 });

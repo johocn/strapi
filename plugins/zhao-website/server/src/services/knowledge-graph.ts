@@ -776,6 +776,23 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     return !!reason;
   },
 
+  /** cites 关系按 truthPolicy 去重，仅保留最新（updatedAt 最大）一条；其余关系原样保留 */
+  _dedupeCitations(relations: any[]): any[] {
+    const latest = new Map<string, any>();
+    const others: any[] = [];
+    for (const r of relations) {
+      if (r.predicate !== "cites") {
+        others.push(r);
+        continue;
+      }
+      const truthRef = r.truthPolicy;
+      const key = String(truthRef && typeof truthRef === "object" ? truthRef.documentId ?? truthRef.id : truthRef ?? r.id);
+      const prev = latest.get(key);
+      if (!prev || String(r.updatedAt ?? "") > String(prev.updatedAt ?? "")) latest.set(key, r);
+    }
+    return [...others, ...latest.values()];
+  },
+
   async exportGraph(siteId: number): Promise<any> {
     // 派生实体是内容 CT 的内部节点，不进公开图谱；rejected 与另两个出口口径统一
     const scope = {
@@ -815,7 +832,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       populate: ["subjectEntity", "truthPolicy"],
     });
     const articles = await this.findArticlesByEntity(siteId, entityId);
-    const visibleOutgoing = outgoing.filter((r: any) => !this._isContractViolation(entity.entityType, r));
+    const visibleOutgoing = this._dedupeCitations(
+      outgoing.filter((r: any) => !this._isContractViolation(entity.entityType, r))
+    );
     const visibleIncoming = incoming.filter(
       (r: any) => !this._isContractViolation(r.subjectEntity?.entityType, r)
     );
