@@ -1,6 +1,4 @@
 import type { Core } from "@strapi/strapi";
-import { isValidPredicate } from "./predicate-dictionary";
-import { mapClaimToPredicate } from "./claim-predicate-map";
 
 declare const strapi: Core.Strapi;
 
