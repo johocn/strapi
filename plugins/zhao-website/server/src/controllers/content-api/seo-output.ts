@@ -36,6 +36,14 @@ export default {
     ctx.body = txt;
   },
 
+  async llmsFullTxt(ctx: any) {
+    const siteId = ctx.state.siteId;
+    const siteUrl = await getSiteUrl(siteId, ctx.request.host);
+    const txt = await strapi.plugin("zhao-website").service("llms-txt").generateFull(siteId, siteUrl);
+    ctx.type = "text/plain";
+    ctx.body = txt;
+  },
+
   async manifest(ctx: any) {
     const siteId = ctx.state.siteId;
     const siteUrl = await getSiteUrl(siteId, ctx.request.host);

@@ -239,3 +239,23 @@ describe("Content API - sitemap", () => {
     expect(ctx.body).toContain("<?xml");
   });
 });
+
+describe("Content API - llms-full.txt", () => {
+  test("GET /llms-full.txt → service.llms-txt.generateFull", async () => {
+    const llmsService = { generateFull: jest.fn().mockResolvedValue("# Full") };
+    const mockStrapi = createMockStrapi({
+      plugin: jest.fn().mockReturnValue({ service: jest.fn().mockReturnValue(llmsService) }),
+    });
+    const controller = require("../../server/src/controllers/content-api/seo-output").default;
+    const ctx = createMockCtx({
+      state: { siteId: 1 },
+      request: { host: "example.com", headers: {}, ip: "127.0.0.1", body: {}, query: {} },
+    });
+
+    await controller.llmsFullTxt(ctx);
+
+    expect(llmsService.generateFull).toHaveBeenCalledWith(1, "https://example.com");
+    expect(ctx.body).toBe("# Full");
+    expect(ctx.type).toBe("text/plain");
+  });
+});

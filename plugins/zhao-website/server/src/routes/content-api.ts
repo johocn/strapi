@@ -41,6 +41,7 @@ export default () => ({
     publicRoute("GET", "/sitemap.xml", "seo-output.sitemap"),
     publicRoute("GET", "/robots.txt", "seo-output.robots"),
     publicRoute("GET", "/llms.txt", "seo-output.llmsTxt"),
+    publicRoute("GET", "/llms-full.txt", "seo-output.llmsFullTxt"),
     publicRoute("GET", "/manifest.json", "seo-output.manifest"),
     publicRoute("GET", "/site-info", "site-info.info"),
     publicRoute("GET", "/seo-meta", "seo-meta.meta"),

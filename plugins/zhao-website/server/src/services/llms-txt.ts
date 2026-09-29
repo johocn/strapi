@@ -138,4 +138,46 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
     return lines.join("\n");
   },
+
+  /**
+   * llms-full.txt：在 llms.txt 的导航之上，给出可直接消费的实体、关系三元组与事实清单。
+   * 复用公开出口（exportGraph/exportFacts），保证与 JSON 出口同口径、同隔离。
+   */
+  async generateFull(siteId: number, siteUrl: string): Promise<string> {
+    const kg: any = strapi.plugin("zhao-website").service("knowledge-graph");
+    const graph = await kg.exportGraph(siteId);
+    const facts = await kg.exportFacts(siteId);
+    const lines: string[] = [];
+
+    lines.push(`# Knowledge Feed`);
+    lines.push("");
+    lines.push("## Entities");
+    for (const node of graph["@graph"] || []) {
+      const desc = node.description ? ` | description: ${node.description}` : "";
+      const verified = node.lastVerifiedAt ? ` | lastVerifiedAt: ${node.lastVerifiedAt}` : "";
+      lines.push(`- @id: ${node["@id"]} | type: ${node["@type"]} | name: ${node.name} | version: ${node.version ?? 1}${desc}${verified}`);
+    }
+    lines.push("");
+    lines.push("## Relations");
+    const reserved = new Set(["@context", "@id", "@type", "name", "version", "dateModified", "description", "url", "image", "verificationStatus", "confidence", "lastVerifiedAt"]);
+    for (const node of graph["@graph"] || []) {
+      for (const [predicate, value] of Object.entries(node)) {
+        if (reserved.has(predicate)) continue;
+        const objects = Array.isArray(value) ? value : [value];
+        for (const o of objects) {
+          const obj = o && typeof o === "object" && "@id" in (o as any) ? (o as any)["@id"] : o;
+          lines.push(`- ${node["@id"]} --${predicate}--> ${obj}`);
+        }
+      }
+    }
+    lines.push("");
+    lines.push("## Facts");
+    for (const f of facts) {
+      const source = f.sourceUrl ? `source: ${f.sourceUrl}` : "source: none";
+      const citable = f.sourceUrl || ["government", "official_site", "third_party_verified"].includes(f.sourceType);
+      lines.push(`- ${f.claim}: ${f.value} (${source}, citable: ${citable ? "yes" : "no"}, version: ${f.version ?? 1})`);
+    }
+    lines.push("");
+    return lines.join("\n");
+  },
 });

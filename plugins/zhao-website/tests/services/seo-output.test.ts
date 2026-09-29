@@ -155,3 +155,29 @@ describe("llms.txt 服务", () => {
     expect(txt).toContain(`${SITE_URL}/api/zhao-website/v1/facts.json`);
   });
 });
+
+describe("llms-full.txt 服务", () => {
+  test("输出实体、关系与事实三段，事实带可引用标记", async () => {
+    const kg = {
+      exportGraph: jest.fn().mockResolvedValue({
+        "@graph": [
+          { "@id": "https://example.com/knowledge/learning", "@type": "DefinedTerm", name: "学习", version: 2, lastVerifiedAt: "2026-09-01T00:00:00.000Z", description: "获取知识的过程", cites: { "@id": "https://example.com/geo-article/x" } },
+        ],
+      }),
+      exportFacts: jest.fn().mockResolvedValue([
+        { claimKey: "k1", claim: "员工规模", value: "200", sourceUrl: "https://s", sourceType: "official_site", version: 1, lastVerifiedAt: "2026-09-01T00:00:00.000Z" },
+        { claimKey: "k2", claim: "内部口径", value: "x", sourceUrl: "", sourceType: "internal", version: 1 },
+      ]),
+    };
+    const { mockStrapi } = setup({}, { "knowledge-graph": kg });
+
+    const txt = await llmsTxtFactory({ strapi: mockStrapi }).generateFull(1, SITE_URL);
+
+    expect(txt).toContain("# ");
+    expect(txt).toContain("## Entities");
+    expect(txt).toContain("https://example.com/knowledge/learning");
+    expect(txt).toContain("## Facts");
+    expect(txt).toContain("citable: yes");
+    expect(txt).toContain("citable: no");
+  });
+});
