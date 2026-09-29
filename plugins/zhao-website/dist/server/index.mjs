@@ -35805,6 +35805,8 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
     if (entity.description) jsonLd.description = entity.description;
     if (entity.url) jsonLd.url = entity.url;
     if (entity.image) jsonLd.image = entity.url;
+    if (entity.sameAs) jsonLd.sameAs = entity.sameAs;
+    if (entity.identifier) jsonLd.identifier = entity.identifier;
     if (entity.properties) Object.assign(jsonLd, entity.properties);
     const visibleOutgoing = outgoing.filter(
       (rel) => !this._isContractViolation(entity.entityType, rel)

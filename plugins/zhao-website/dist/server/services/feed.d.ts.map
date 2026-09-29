@@ -1,1 +1,0 @@
-{"version":3,"file":"feed.d.ts","sourceRoot":"","sources":["../../../server/src/services/feed.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,IAAI,EAAE,MAAM,gBAAgB,CAAC;yBAE3B,YAAY;IAAE,MAAM,EAAE,IAAI,CAAC,MAAM,CAAA;CAAE;wBACvB,MAAM,WAAW,MAAM,GAAG,OAAO,CAAC,MAAM,CAAC;yBAiCxC,MAAM,WAAW,MAAM,GAAG,OAAO,CAAC,MAAM,CAAC;;AAlCtE,wBAiEG"}
