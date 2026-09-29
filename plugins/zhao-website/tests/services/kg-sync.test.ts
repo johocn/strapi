@@ -41,7 +41,7 @@ describe("claim-predicate-map", () => {
     expect(mapClaimToPredicate("core_domain_ai")).toBe("termCode");
     expect(mapClaimToPredicate("brand_slogan_main")).toBe("slogan");
     expect(mapClaimToPredicate("core_keywords_2026")).toBe("keywords");
-    expect(mapClaimToPredicate("brand_domain_official")).toBe("sameAs");
+    expect(mapClaimToPredicate("brand_domain_official")).toBe("url");
     expect(mapClaimToPredicate("area_served_changchun")).toBe("areaServed");
     expect(mapClaimToPredicate("platform_positioning_app")).toBe("serviceType");
     expect(mapClaimToPredicate("service_scope_local")).toBe("serviceType");
@@ -82,54 +82,76 @@ describe("extractSectionText", () => {
   });
 });
 
-describe("knowledgeGraphSync 表述型派生", () => {
+describe("knowledgeGraphSync 引用型派生", () => {
   let kgStub: any;
 
   beforeEach(() => {
     kgStub = makeKgStub();
+    kgStub.upsertEntityFromContent = jest.fn().mockResolvedValue({ id: 9, documentId: "art-1" });
     createMockStrapi({
       plugin: jest.fn().mockReturnValue({ service: jest.fn().mockReturnValue(kgStub) }),
     });
   });
 
-  test("geo-article：按 truthBasisSections 派生表述型关系（主体=canonicalEntity）", async () => {
+  test("geo-article：主体=文章派生实体，谓词=cites，客体=规范实体，段落进 evidenceText", async () => {
     await knowledgeGraphSync("website-geo-article", makeContent());
 
     expect(kgStub.addRelation).toHaveBeenCalledTimes(1);
     expect(kgStub.addRelation).toHaveBeenCalledWith(
       expect.objectContaining({
         siteId: 1,
-        subjectEntityId: "ent-1",
-        predicate: "termCode",
-        objectText: "学习是指获取知识、技能或经验的过程，贯穿人生各阶段。",
+        subjectEntityId: "art-1",
+        predicate: "cites",
+        objectEntityId: "ent-1",
         truthPolicyId: "truth-1",
+        evidenceText: "学习是指获取知识、技能或经验的过程，贯穿人生各阶段。",
         sourceType: "derived",
       })
     );
   });
 
-  test("section='开篇' → 取引言段派生", async () => {
+  test("段落文本不得进入属性谓词值域（反向用例）", async () => {
+    await knowledgeGraphSync("website-geo-article", makeContent());
+
+    const call = kgStub.addRelation.mock.calls[0][0];
+    expect(["slogan", "keywords", "termCode", "sameAs"]).not.toContain(call.predicate);
+    expect(call.objectText).toBeUndefined();
+    expect(call.evidenceText).toBeDefined();
+  });
+
+  test("真值无 canonicalEntity → 客体降级为 objectValue（规范值）", async () => {
+    await knowledgeGraphSync(
+      "website-geo-article",
+      makeContent({
+        truthBasis: [
+          { documentId: "truth-2", claimKey: "domain_learning_def", canonicalValue: "获取知识的过程" },
+        ],
+      })
+    );
+
+    expect(kgStub.addRelation).toHaveBeenCalledWith(
+      expect.objectContaining({ predicate: "cites", objectValue: "获取知识的过程" })
+    );
+    expect(kgStub.addRelation.mock.calls[0][0].objectEntityId).toBeUndefined();
+  });
+
+  test("section='开篇' → 取引言段作为 evidenceText", async () => {
     await knowledgeGraphSync(
       "website-geo-article",
       makeContent({
         truthBasisSections: [{ claimKey: "domain_learning_def", section: "开篇" }],
         truthBasis: [
-          {
-            documentId: "truth-13",
-            claimKey: "domain_learning_def",
-            canonicalEntity: { documentId: "ent-13", entityType: "DefinedTerm" },
-          },
+          { documentId: "truth-13", claimKey: "domain_learning_def", canonicalEntity: { documentId: "ent-13", entityType: "DefinedTerm" } },
         ],
       })
     );
 
-    expect(kgStub.addRelation).toHaveBeenCalledTimes(1);
     expect(kgStub.addRelation).toHaveBeenCalledWith(
       expect.objectContaining({
-        subjectEntityId: "ent-13",
-        predicate: "termCode",
-        objectText: "「一技傍身，吃遍天下」的时代正在过去。学习是指获取知识、技能或经验的过程。",
-        truthPolicyId: "truth-13",
+        subjectEntityId: "art-1",
+        predicate: "cites",
+        objectEntityId: "ent-13",
+        evidenceText: "「一技傍身，吃遍天下」的时代正在过去。学习是指获取知识、技能或经验的过程。",
       })
     );
   });
@@ -144,13 +166,13 @@ describe("knowledgeGraphSync 表述型派生", () => {
     expect((global as any).strapi.log.warn).toHaveBeenCalled();
   });
 
-  test("claimKey 无谓词映射 → warn 跳过", async () => {
+  test("claimKey 未在文章 truthBasis 中找到对应真值 → warn 跳过", async () => {
     await knowledgeGraphSync(
       "website-geo-article",
       makeContent({
         truthBasisSections: [{ claimKey: "unknown_claim", section: "一、引言" }],
         truthBasis: [
-          { documentId: "truth-9", claimKey: "unknown_claim", canonicalEntity: { documentId: "ent-9", entityType: "Organization" } },
+          { documentId: "truth-9", claimKey: "other_claim", canonicalEntity: { documentId: "ent-9", entityType: "Organization" } },
         ],
       })
     );
@@ -159,14 +181,11 @@ describe("knowledgeGraphSync 表述型派生", () => {
     expect((global as any).strapi.log.warn).toHaveBeenCalled();
   });
 
-  test("谓词不在 canonicalEntity.entityType 字典内 → warn 跳过", async () => {
+  test("真值既无 canonicalEntity 也无 canonicalValue → warn 跳过", async () => {
     await knowledgeGraphSync(
       "website-geo-article",
       makeContent({
-        truthBasisSections: [{ claimKey: "brand_slogan_main", section: "一、引言" }],
-        truthBasis: [
-          { documentId: "truth-2", claimKey: "brand_slogan_main", canonicalEntity: { documentId: "ent-2", entityType: "DefinedTerm" } },
-        ],
+        truthBasis: [{ documentId: "truth-3", claimKey: "domain_learning_def", canonicalValue: "" }],
       })
     );
 
@@ -216,7 +235,7 @@ describe("knowledgeGraphSync 表述型派生", () => {
     expect((global as any).strapi.log.warn).toHaveBeenCalled();
   });
 
-  test("非 geo-article 不触发表述型派生", async () => {
+  test("非 geo-article 不触发引用派生", async () => {
     await knowledgeGraphSync("website-article", makeContent());
 
     expect(kgStub.addRelation).not.toHaveBeenCalled();

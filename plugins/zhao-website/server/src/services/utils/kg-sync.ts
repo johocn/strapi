@@ -104,13 +104,25 @@ export function extractSectionText(html: string, section: string): string | null
 }
 
 /**
- * 从 truthBasisSections 派生「表述型」知识关系：
- * 主体 = 真值 canonicalEntity，谓词 = claimKey 前缀映射，客体 = 正文段落纯文本（objectText）。
- * 写入即由 addRelation 自动与真值比对，无需额外比对入口。
+ * 从 truthBasisSections 派生「引用型」关系：
+ * 主体 = 文章的派生实体，谓词 = cites，客体 = 真值规范实体（优先）或规范值；
+ * 段落原文写入 evidenceText（仅后台可见）。
+ * 幂等键由 addRelation 按 truthPolicy 去重。
  */
-async function syncTruthBasisRelations(content: any, kgService: any, siteId: number): Promise<void> {
+async function syncTruthBasisRelations(
+  content: any,
+  kgService: any,
+  siteId: number,
+  derivedEntity: any
+): Promise<void> {
   const sections = Array.isArray(content.truthBasisSections) ? content.truthBasisSections : [];
   if (sections.length === 0) return;
+  if (!derivedEntity?.documentId) {
+    strapi.log.warn(
+      `[zhao-website] kg-sync: geo-article ${content.documentId} 无派生实体，跳过引用关系派生`
+    );
+    return;
+  }
   const truths = Array.isArray(content.truthBasis) ? content.truthBasis : [];
   if (truths.length === 0) {
     strapi.log.warn(
@@ -128,38 +140,30 @@ async function syncTruthBasisRelations(content: any, kgService: any, siteId: num
     const section = item && item.section ? String(item.section) : "";
     if (!claimKey || !section) continue;
 
-    const predicate = mapClaimToPredicate(claimKey);
-    if (!predicate) {
-      strapi.log.warn(`[zhao-website] kg-sync: claimKey "${claimKey}" 无谓词映射，跳过`);
-      continue;
-    }
     const truth = truthByKey.get(claimKey);
     if (!truth) {
       strapi.log.warn(`[zhao-website] kg-sync: claimKey "${claimKey}" 未在文章 truthBasis 中找到对应真值，跳过`);
       continue;
     }
-    const entity = truth.canonicalEntity;
-    if (!entity || !entity.documentId) {
-      strapi.log.warn(`[zhao-website] kg-sync: 真值 "${claimKey}" 未绑定 canonicalEntity，跳过`);
-      continue;
-    }
-    if (entity.entityType && !isValidPredicate(entity.entityType, predicate)) {
-      strapi.log.warn(
-        `[zhao-website] kg-sync: predicate "${predicate}" 不在 ${entity.entityType} 字典中（claimKey "${claimKey}"），跳过`
-      );
-      continue;
-    }
-    const objectText = extractSectionText(content.content, section);
-    if (!objectText) {
+    const evidenceText = extractSectionText(content.content, section);
+    if (!evidenceText) {
       strapi.log.warn(`[zhao-website] kg-sync: 正文未定位到段落「${section}」（claimKey "${claimKey}"），跳过`);
       continue;
     }
+    const canonicalEntityId = truth.canonicalEntity?.documentId;
+    const canonicalValue = truth.canonicalValue;
+    if (!canonicalEntityId && (canonicalValue === undefined || canonicalValue === null || canonicalValue === "")) {
+      strapi.log.warn(`[zhao-website] kg-sync: 真值 "${claimKey}" 既无 canonicalEntity 也无 canonicalValue，跳过`);
+      continue;
+    }
+
     await kgService.addRelation({
       siteId,
-      subjectEntityId: entity.documentId,
-      predicate,
-      objectText,
+      subjectEntityId: derivedEntity.documentId,
+      predicate: "cites",
+      ...(canonicalEntityId ? { objectEntityId: canonicalEntityId } : { objectValue: canonicalValue }),
       truthPolicyId: truth.documentId,
+      evidenceText,
       sourceType: "derived",
     });
   }
@@ -179,13 +183,13 @@ export async function knowledgeGraphSync(targetType: string, rawContent: any): P
       return;
     }
 
-    // 1. mainEntity 已显式关联 → 跳过派生
+    // 1. mainEntity 已显式关联 → 跳过派生；否则 upsert 派生实体并留作引用关系主体
+    let derivedEntity: any = null;
     if (content.mainEntity && content.mainEntity.documentId) {
       // 已有显式关联，不派生
     } else {
-      // 自动创建或更新实体（幂等 upsert by refTargetType + refTargetId）
       const entityType = ENTITY_TYPE_MAP[targetType] || "CreativeWork";
-      await (kgService as any).upsertEntityFromContent({
+      derivedEntity = await (kgService as any).upsertEntityFromContent({
         siteId,
         entityType,
         name: content.title || content.name || content.question,
@@ -217,9 +221,9 @@ export async function knowledgeGraphSync(targetType: string, rawContent: any): P
       }
     }
 
-    // 3. truthBasisSections 派生表述型关系（主体取真值 canonicalEntity）
+    // 3. truthBasisSections 派生引用型关系（主体取文章派生实体）
     if (targetType === "website-geo-article") {
-      await syncTruthBasisRelations(content, kgService, siteId);
+      await syncTruthBasisRelations(content, kgService, siteId, derivedEntity);
     }
   } catch (err) {
     // 解耦设计：失败不阻塞业务 CT 编辑
