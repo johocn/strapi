@@ -19,7 +19,7 @@ const index = {
           subject: null
         }
       ],
-      Component: () => Promise.resolve().then(() => require("./App-ndDCNTKS.js")).then((mod) => ({ default: mod.default }))
+      Component: () => Promise.resolve().then(() => require("./App-CwFOl3Mq.js")).then((mod) => ({ default: mod.default }))
     });
     app.registerPlugin({
       id: pluginId,

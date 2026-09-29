@@ -12,5 +12,12 @@ declare const _default: {
     createGlobalEntity(ctx: any): Promise<void>;
     updateGlobalEntity(ctx: any): Promise<void>;
     deleteGlobalEntity(ctx: any): Promise<void>;
+    submitEntity(ctx: any): Promise<void>;
+    approveEntity(ctx: any): Promise<void>;
+    rejectEntity(ctx: any): Promise<void>;
+    submitRelation(ctx: any): Promise<void>;
+    approveRelation(ctx: any): Promise<void>;
+    rejectRelation(ctx: any): Promise<void>;
+    findAuditLogs(ctx: any): Promise<void>;
 };
 export default _default;

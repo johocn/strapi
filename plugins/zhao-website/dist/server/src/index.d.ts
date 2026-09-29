@@ -30,6 +30,13 @@ declare const _default: {
             createGlobalEntity(ctx: any): Promise<void>;
             updateGlobalEntity(ctx: any): Promise<void>;
             deleteGlobalEntity(ctx: any): Promise<void>;
+            submitEntity(ctx: any): Promise<void>;
+            approveEntity(ctx: any): Promise<void>;
+            rejectEntity(ctx: any): Promise<void>;
+            submitRelation(ctx: any): Promise<void>;
+            approveRelation(ctx: any): Promise<void>;
+            rejectRelation(ctx: any): Promise<void>;
+            findAuditLogs(ctx: any): Promise<void>;
         };
         "first-truth": {
             find(ctx: any): Promise<void>;
@@ -44,6 +51,9 @@ declare const _default: {
             updateGlobal(ctx: any): Promise<void>;
             deleteGlobal(ctx: any): Promise<void>;
             verifyGlobal(ctx: any): Promise<void>;
+            submit(ctx: any): Promise<void>;
+            approve(ctx: any): Promise<void>;
+            reject(ctx: any): Promise<void>;
         };
         "ai-content-summary": {
             findAdmin(ctx: any): Promise<void>;
@@ -552,9 +562,12 @@ declare const _default: {
                 refTargetType: string;
                 refTargetId: string;
             }): Promise<any>;
-            createEntity(siteId: number | null, data: any): Promise<any>;
-            updateEntity(siteId: number | null, documentId: string, data: any): Promise<any>;
-            deleteEntity(siteId: number | null, documentId: string): Promise<any>;
+            createEntity(siteId: number | null, data: any, actor?: any): Promise<any>;
+            updateEntity(siteId: number | null, documentId: string, data: any, actor?: any): Promise<any>;
+            deleteEntity(siteId: number | null, documentId: string, actor?: any): Promise<any>;
+            submitEntity(siteId: number | null, documentId: string, actor?: any, reason?: string): Promise<any>;
+            approveEntity(siteId: number | null, documentId: string, actor?: any, reason?: string): Promise<any>;
+            rejectEntity(siteId: number | null, documentId: string, actor?: any, reason?: string): Promise<any>;
             findRelations(siteId: number, query?: any): Promise<any[]>;
             _resolveEntityId(ref: string | number): Promise<number | null>;
             _requireEntityId(ref: string | number, label?: string): Promise<number>;
@@ -571,10 +584,14 @@ declare const _default: {
                 objectText?: string;
                 sourceType?: string;
                 truthPolicyId?: string;
+                actor?: any;
             }): Promise<any>;
             _detectCycle(subjectId: string, objectId: string, predicate: string, visited?: Set<string>): Promise<boolean>;
-            deleteRelation(siteId: number, documentId: string): Promise<any>;
-            updateRelation(siteId: number, documentId: string, data: any): Promise<any>;
+            deleteRelation(siteId: number, documentId: string, actor?: any): Promise<any>;
+            submitRelation(siteId: number | null, documentId: string, actor?: any, reason?: string): Promise<any>;
+            approveRelation(siteId: number | null, documentId: string, actor?: any, reason?: string): Promise<any>;
+            rejectRelation(siteId: number | null, documentId: string, actor?: any, reason?: string): Promise<any>;
+            updateRelation(siteId: number, documentId: string, data: any, actor?: any): Promise<any>;
             disambiguate(siteId: number, params: {
                 name: string;
                 entityType?: string;
@@ -608,12 +625,15 @@ declare const _default: {
             find(siteId: number | null, query?: any): Promise<any[]>;
             findOne(siteId: number | null, documentId: string): Promise<any>;
             findByClaimKey(siteId: number | null, claimKey: string): Promise<any>;
-            create(siteId: number | null, data: any): Promise<any>;
-            update(siteId: number | null, documentId: string, data: any): Promise<any>;
+            create(siteId: number | null, data: any, actor?: any): Promise<any>;
+            update(siteId: number | null, documentId: string, data: any, actor?: any): Promise<any>;
             _revalidateEvidenceRelations(truthId: number): Promise<void>;
             _markRelatedEntitiesPending(siteId: number | null, canonicalEntity: any): Promise<void>;
-            verify(siteId: number | null, documentId: string): Promise<any>;
-            softDelete(siteId: number | null, documentId: string): Promise<any>;
+            verify(siteId: number | null, documentId: string, actor?: any, reason?: string): Promise<any>;
+            submit(siteId: number | null, documentId: string, actor?: any, reason?: string): Promise<any>;
+            approve(siteId: number | null, documentId: string, actor?: any, reason?: string): Promise<any>;
+            reject(siteId: number | null, documentId: string, actor?: any, reason?: string): Promise<any>;
+            softDelete(siteId: number | null, documentId: string, actor?: any): Promise<any>;
             detectConflicts(siteId: number | null): Promise<any[]>;
         };
         "schema-builder": ({ strapi }: {
@@ -741,6 +761,36 @@ declare const _default: {
                 targetId?: string | number | null;
                 extra?: Record<string, unknown>;
             }): Promise<void>;
+        };
+        "knowledge-audit": ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            append(params: {
+                siteId?: number | null;
+                targetType: "entity" | "relation" | "first-truth";
+                targetId: string;
+                action: "create" | "update" | "delete" | "submit" | "approve" | "reject" | "recheck";
+                actor?: {
+                    id?: number | string;
+                    label?: string;
+                } | null;
+                actorLabel?: string | null;
+                changedFields?: any;
+                reason?: string | null;
+                version?: number | null;
+                strict?: boolean;
+            }): Promise<any>;
+            findByTarget(siteId: number | null, targetType: string, targetId: string, { page, pageSize }?: {
+                page?: number;
+                pageSize?: number;
+            }): Promise<{
+                results: any[];
+                pagination: {
+                    page: number;
+                    pageSize: number;
+                    total: number;
+                };
+            }>;
         };
     };
     contentTypes: {
@@ -2658,6 +2708,10 @@ declare const _default: {
                         enum: string[];
                         default: string;
                     };
+                    version: {
+                        type: string;
+                        default: number;
+                    };
                     verifiedBy: {
                         type: string;
                         relation: string;
@@ -2843,9 +2897,76 @@ declare const _default: {
                         enum: string[];
                         default: string;
                     };
+                    version: {
+                        type: string;
+                        default: number;
+                    };
                     status: {
                         type: string;
                         default: boolean;
+                    };
+                    deletedAt: {
+                        type: string;
+                        default: any;
+                    };
+                };
+            };
+        };
+        "knowledge-audit-log": {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                pluginOptions: {
+                    "content-manager": {
+                        visible: boolean;
+                    };
+                    "content-type-builder": {
+                        visible: boolean;
+                    };
+                };
+                attributes: {
+                    site: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        required: boolean;
+                    };
+                    targetType: {
+                        type: string;
+                        enum: string[];
+                        required: boolean;
+                    };
+                    targetId: {
+                        type: string;
+                        required: boolean;
+                    };
+                    action: {
+                        type: string;
+                        enum: string[];
+                        required: boolean;
+                    };
+                    actorId: {
+                        type: string;
+                    };
+                    actorLabel: {
+                        type: string;
+                    };
+                    changedFields: {
+                        type: string;
+                    };
+                    reason: {
+                        type: string;
+                    };
+                    version: {
+                        type: string;
                     };
                     deletedAt: {
                         type: string;
@@ -3033,6 +3154,10 @@ declare const _default: {
                         type: string;
                         enum: string[];
                         default: string;
+                    };
+                    version: {
+                        type: string;
+                        default: number;
                     };
                     conflictDetails: {
                         type: string;

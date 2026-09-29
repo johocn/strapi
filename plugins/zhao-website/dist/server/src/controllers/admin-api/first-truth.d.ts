@@ -11,5 +11,8 @@ declare const _default: {
     updateGlobal(ctx: any): Promise<void>;
     deleteGlobal(ctx: any): Promise<void>;
     verifyGlobal(ctx: any): Promise<void>;
+    submit(ctx: any): Promise<void>;
+    approve(ctx: any): Promise<void>;
+    reject(ctx: any): Promise<void>;
 };
 export default _default;

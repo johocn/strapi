@@ -130,6 +130,9 @@ const API = {
   kgDeleteRelation: (id) => `${ADMIN_BASE}/knowledge-graph/relations/${id}`,
   kgDisambiguate: `${ADMIN_BASE}/knowledge-graph/disambiguate`,
   kgExportGraph: `${ADMIN_BASE}/knowledge-graph/export`,
+  kgAuditLogs: (params = {}) => `${ADMIN_BASE}/knowledge-audit-logs?${new URLSearchParams(params).toString()}`,
+  kgEntityReview: (id, action) => `${ADMIN_BASE}/knowledge-graph/entities/${id}/${action}`,
+  kgRelationReview: (id, action) => `${ADMIN_BASE}/knowledge-graph/relations/${id}/${action}`,
   // 全局实体
   kgCreateGlobalEntity: `${ADMIN_BASE}/knowledge-graph/entities/global`,
   kgUpdateGlobalEntity: (id) => `${ADMIN_BASE}/knowledge-graph/entities/global/${id}`,
@@ -141,6 +144,7 @@ const API = {
   ftUpdate: (id) => `${ADMIN_BASE}/first-truths/${id}`,
   ftDelete: (id) => `${ADMIN_BASE}/first-truths/${id}`,
   ftVerify: (id) => `${ADMIN_BASE}/first-truths/${id}/verify`,
+  ftReview: (id, action) => `${ADMIN_BASE}/first-truths/${id}/${action}`,
   ftConflicts: `${ADMIN_BASE}/first-truths/conflicts`,
   ftExportFacts: `${ADMIN_BASE}/first-truths/export`,
   // 全局真值
@@ -341,6 +345,36 @@ const KnowledgeGraphPage = () => {
   const [submitting, setSubmitting] = react.useState(false);
   const [globalMode, setGlobalMode] = react.useState(false);
   const [editingEntity, setEditingEntity] = react.useState(null);
+  const [auditOpen, setAuditOpen] = react.useState(false);
+  const [auditTarget, setAuditTarget] = react.useState(null);
+  const [auditLogs, setAuditLogs] = react.useState([]);
+  const [rejecting, setRejecting] = react.useState(null);
+  const [rejectReason, setRejectReason] = react.useState("");
+  const openAudit = async (targetType, targetId) => {
+    setAuditTarget({ targetType, targetId });
+    setAuditOpen(true);
+    try {
+      const res = await fetch(API.kgAuditLogs({ targetType, targetId, pageSize: 50 })).then((r) => r.json());
+      setAuditLogs(res.results || []);
+    } catch (err) {
+      antd.message.error(`流水加载失败: ${err.message}`);
+    }
+  };
+  const doReview = async (action, reason) => {
+    if (!auditTarget) return;
+    const url = auditTarget.targetType === "relation" ? API.kgRelationReview(auditTarget.targetId, action) : API.kgEntityReview(auditTarget.targetId, action);
+    try {
+      await postJSON(url, reason ? { reason } : {});
+      antd.message.success("操作成功");
+      setRejecting(null);
+      setRejectReason("");
+      await openAudit(auditTarget.targetType, auditTarget.targetId);
+      refetchEntities();
+      refetchRelations();
+    } catch (err) {
+      antd.message.error(`操作失败: ${err.message}`);
+    }
+  };
   const { data: entities, loading: loadingEntities, refetch: refetchEntities } = useFetch(
     activeTab === "entities" ? API.kgFindEntities(entityParams) : null
   );
@@ -437,6 +471,7 @@ const KnowledgeGraphPage = () => {
     {
       title: "操作",
       render: (_, record) => /* @__PURE__ */ jsxRuntime.jsxs(antd.Space, { children: [
+        /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { type: "link", size: "small", icon: /* @__PURE__ */ jsxRuntime.jsx(icons.HistoryOutlined, {}), onClick: () => openAudit("entity", record.documentId), children: "历史" }),
         /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { type: "link", size: "small", onClick: () => handleEditEntity(record), children: "编辑" }),
         /* @__PURE__ */ jsxRuntime.jsx(antd.Popconfirm, { title: "确认删除？", onConfirm: () => handleDeleteEntity(record), children: /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { type: "link", danger: true, size: "small", children: "删除" }) })
       ] })
@@ -450,7 +485,10 @@ const KnowledgeGraphPage = () => {
     { title: "客体文本", dataIndex: "objectText", render: (v) => v ?? "-" },
     {
       title: "操作",
-      render: (_, record) => /* @__PURE__ */ jsxRuntime.jsx(antd.Popconfirm, { title: "确认删除？", onConfirm: () => handleDeleteRelation(record.documentId), children: /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { type: "link", danger: true, size: "small", children: "删除" }) })
+      render: (_, record) => /* @__PURE__ */ jsxRuntime.jsxs(antd.Space, { children: [
+        /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { type: "link", size: "small", icon: /* @__PURE__ */ jsxRuntime.jsx(icons.HistoryOutlined, {}), onClick: () => openAudit("relation", record.documentId), children: "历史" }),
+        /* @__PURE__ */ jsxRuntime.jsx(antd.Popconfirm, { title: "确认删除？", onConfirm: () => handleDeleteRelation(record.documentId), children: /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { type: "link", danger: true, size: "small", children: "删除" }) })
+      ] })
     }
   ];
   return /* @__PURE__ */ jsxRuntime.jsxs(antd.Card, { children: [
@@ -565,6 +603,43 @@ const KnowledgeGraphPage = () => {
         width: 700,
         children: /* @__PURE__ */ jsxRuntime.jsx("pre", { style: { maxHeight: 500, overflow: "auto" }, children: exportData ? JSON.stringify(exportData, null, 2) : "加载中..." })
       }
+    ),
+    /* @__PURE__ */ jsxRuntime.jsxs(
+      antd.Modal,
+      {
+        title: "变更与审核流水",
+        open: auditOpen,
+        onCancel: () => setAuditOpen(false),
+        footer: /* @__PURE__ */ jsxRuntime.jsxs(antd.Space, { children: [
+          /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { onClick: () => doReview("submit"), children: "提交审核" }),
+          /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { type: "primary", onClick: () => doReview("approve"), children: "通过" }),
+          /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { danger: true, onClick: () => setRejecting({}), children: "驳回" })
+        ] }),
+        width: 800,
+        children: [
+          /* @__PURE__ */ jsxRuntime.jsx(
+            antd.Table,
+            {
+              rowKey: "id",
+              size: "small",
+              dataSource: auditLogs,
+              pagination: false,
+              columns: [
+                { title: "时间", dataIndex: "createdAt" },
+                { title: "动作", dataIndex: "action" },
+                { title: "操作人", dataIndex: "actorLabel", render: (v) => v || "system" },
+                { title: "版本", dataIndex: "version" },
+                { title: "理由", dataIndex: "reason", render: (v) => v || "-" },
+                { title: "变更字段", dataIndex: "changedFields", render: (v) => v ? Object.keys(v).join(", ") : "-" }
+              ]
+            }
+          ),
+          rejecting ? /* @__PURE__ */ jsxRuntime.jsxs(antd.Space, { direction: "vertical", style: { width: "100%", marginTop: 12 }, children: [
+            /* @__PURE__ */ jsxRuntime.jsx(antd.Input.TextArea, { placeholder: "驳回理由（必填）", value: rejectReason, onChange: (e) => setRejectReason(e.target.value) }),
+            /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { danger: true, onClick: () => doReview("reject", rejectReason), children: "确认驳回" })
+          ] }) : null
+        ]
+      }
     )
   ] });
 };
@@ -578,6 +653,34 @@ const FirstTruthPage = () => {
   const [form] = antd.Form.useForm();
   const [submitting, setSubmitting] = react.useState(false);
   const [globalMode, setGlobalMode] = react.useState(false);
+  const [auditOpen, setAuditOpen] = react.useState(false);
+  const [auditTargetId, setAuditTargetId] = react.useState(null);
+  const [auditLogs, setAuditLogs] = react.useState([]);
+  const [rejecting, setRejecting] = react.useState(false);
+  const [rejectReason, setRejectReason] = react.useState("");
+  const openAudit = async (targetId) => {
+    setAuditTargetId(targetId);
+    setAuditOpen(true);
+    try {
+      const res = await fetch(API.kgAuditLogs({ targetType: "first-truth", targetId, pageSize: 50 })).then((r) => r.json());
+      setAuditLogs(res.results || []);
+    } catch (err) {
+      antd.message.error(`流水加载失败: ${err.message}`);
+    }
+  };
+  const doReview = async (action, reason) => {
+    if (!auditTargetId) return;
+    try {
+      await postJSON(API.ftReview(auditTargetId, action), reason ? { reason } : {});
+      antd.message.success("操作成功");
+      setRejecting(false);
+      setRejectReason("");
+      await openAudit(auditTargetId);
+      refetchTruths();
+    } catch (err) {
+      antd.message.error(`操作失败: ${err.message}`);
+    }
+  };
   const { data: truths, loading, refetch: refetchTruths } = useFetch(API.ftFind(listParams));
   const { data: conflicts, loading: loadingConflicts } = useFetch(
     activeTab === "conflicts" ? API.ftConflicts : null
@@ -669,6 +772,7 @@ const FirstTruthPage = () => {
     {
       title: "操作",
       render: (_, record) => /* @__PURE__ */ jsxRuntime.jsxs(antd.Space, { children: [
+        /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { type: "link", size: "small", icon: /* @__PURE__ */ jsxRuntime.jsx(icons.HistoryOutlined, {}), onClick: () => openAudit(record.documentId), children: "历史" }),
         /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { type: "link", size: "small", onClick: () => handleOpenEdit(record), children: "编辑" }),
         record.verificationStatus !== "verified" && /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { type: "link", size: "small", icon: /* @__PURE__ */ jsxRuntime.jsx(icons.CheckCircleOutlined, {}), onClick: () => handleVerify(record), children: "verify" }),
         /* @__PURE__ */ jsxRuntime.jsx(antd.Popconfirm, { title: "确认删除？", onConfirm: () => handleDelete(record), children: /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { type: "link", danger: true, size: "small", children: "删除" }) })
@@ -786,6 +890,43 @@ const FirstTruthPage = () => {
         footer: null,
         width: 700,
         children: /* @__PURE__ */ jsxRuntime.jsx("pre", { style: { maxHeight: 500, overflow: "auto" }, children: exportData ? JSON.stringify(exportData, null, 2) : "加载中..." })
+      }
+    ),
+    /* @__PURE__ */ jsxRuntime.jsxs(
+      antd.Modal,
+      {
+        title: "变更与审核流水",
+        open: auditOpen,
+        onCancel: () => setAuditOpen(false),
+        footer: /* @__PURE__ */ jsxRuntime.jsxs(antd.Space, { children: [
+          /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { onClick: () => doReview("submit"), children: "提交审核" }),
+          /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { type: "primary", onClick: () => doReview("approve"), children: "通过" }),
+          /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { danger: true, onClick: () => setRejecting(true), children: "驳回" })
+        ] }),
+        width: 800,
+        children: [
+          /* @__PURE__ */ jsxRuntime.jsx(
+            antd.Table,
+            {
+              rowKey: "id",
+              size: "small",
+              dataSource: auditLogs,
+              pagination: false,
+              columns: [
+                { title: "时间", dataIndex: "createdAt" },
+                { title: "动作", dataIndex: "action" },
+                { title: "操作人", dataIndex: "actorLabel", render: (v) => v || "system" },
+                { title: "版本", dataIndex: "version" },
+                { title: "理由", dataIndex: "reason", render: (v) => v || "-" },
+                { title: "变更字段", dataIndex: "changedFields", render: (v) => v ? Object.keys(v).join(", ") : "-" }
+              ]
+            }
+          ),
+          rejecting ? /* @__PURE__ */ jsxRuntime.jsxs(antd.Space, { direction: "vertical", style: { width: "100%", marginTop: 12 }, children: [
+            /* @__PURE__ */ jsxRuntime.jsx(antd.Input.TextArea, { placeholder: "驳回理由（必填）", value: rejectReason, onChange: (e) => setRejectReason(e.target.value) }),
+            /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { danger: true, onClick: () => doReview("reject", rejectReason), children: "确认驳回" })
+          ] }) : null
+        ]
       }
     )
   ] });

@@ -1913,6 +1913,10 @@ declare const _default: {
                     enum: string[];
                     default: string;
                 };
+                version: {
+                    type: string;
+                    default: number;
+                };
                 verifiedBy: {
                     type: string;
                     relation: string;
@@ -2098,9 +2102,76 @@ declare const _default: {
                     enum: string[];
                     default: string;
                 };
+                version: {
+                    type: string;
+                    default: number;
+                };
                 status: {
                     type: string;
                     default: boolean;
+                };
+                deletedAt: {
+                    type: string;
+                    default: any;
+                };
+            };
+        };
+    };
+    "knowledge-audit-log": {
+        schema: {
+            kind: string;
+            collectionName: string;
+            info: {
+                singularName: string;
+                pluralName: string;
+                displayName: string;
+            };
+            options: {
+                draftAndPublish: boolean;
+            };
+            pluginOptions: {
+                "content-manager": {
+                    visible: boolean;
+                };
+                "content-type-builder": {
+                    visible: boolean;
+                };
+            };
+            attributes: {
+                site: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    required: boolean;
+                };
+                targetType: {
+                    type: string;
+                    enum: string[];
+                    required: boolean;
+                };
+                targetId: {
+                    type: string;
+                    required: boolean;
+                };
+                action: {
+                    type: string;
+                    enum: string[];
+                    required: boolean;
+                };
+                actorId: {
+                    type: string;
+                };
+                actorLabel: {
+                    type: string;
+                };
+                changedFields: {
+                    type: string;
+                };
+                reason: {
+                    type: string;
+                };
+                version: {
+                    type: string;
                 };
                 deletedAt: {
                     type: string;
@@ -2288,6 +2359,10 @@ declare const _default: {
                     type: string;
                     enum: string[];
                     default: string;
+                };
+                version: {
+                    type: string;
+                    default: number;
                 };
                 conflictDetails: {
                     type: string;

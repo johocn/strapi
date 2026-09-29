@@ -85,8 +85,12 @@ declare const _default: {
     },
     "verificationStatus": {
       "type": "enumeration",
-      "enum": ["verified", "pending", "outdated", "conflict"],
+      "enum": ["verified", "pending", "outdated", "conflict", "rejected"],
       "default": "verified"
+    },
+    "version": {
+      "type": "integer",
+      "default": 1
     },
     "conflictDetails": {
       "type": "json"

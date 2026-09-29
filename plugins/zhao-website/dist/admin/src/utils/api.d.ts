@@ -12,6 +12,9 @@ export declare const API: {
     kgDeleteRelation: (id: string) => string;
     kgDisambiguate: string;
     kgExportGraph: string;
+    kgAuditLogs: (params?: Record<string, any>) => string;
+    kgEntityReview: (id: string, action: string) => string;
+    kgRelationReview: (id: string, action: string) => string;
     kgCreateGlobalEntity: string;
     kgUpdateGlobalEntity: (id: string) => string;
     kgDeleteGlobalEntity: (id: string) => string;
@@ -21,6 +24,7 @@ export declare const API: {
     ftUpdate: (id: string) => string;
     ftDelete: (id: string) => string;
     ftVerify: (id: string) => string;
+    ftReview: (id: string, action: string) => string;
     ftConflicts: string;
     ftExportFacts: string;
     ftCreateGlobal: string;

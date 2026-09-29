@@ -16,9 +16,12 @@ declare const _default: ({ strapi }: {
         refTargetType: string;
         refTargetId: string;
     }): Promise<any>;
-    createEntity(siteId: number | null, data: any): Promise<any>;
-    updateEntity(siteId: number | null, documentId: string, data: any): Promise<any>;
-    deleteEntity(siteId: number | null, documentId: string): Promise<any>;
+    createEntity(siteId: number | null, data: any, actor?: any): Promise<any>;
+    updateEntity(siteId: number | null, documentId: string, data: any, actor?: any): Promise<any>;
+    deleteEntity(siteId: number | null, documentId: string, actor?: any): Promise<any>;
+    submitEntity(siteId: number | null, documentId: string, actor?: any, reason?: string): Promise<any>;
+    approveEntity(siteId: number | null, documentId: string, actor?: any, reason?: string): Promise<any>;
+    rejectEntity(siteId: number | null, documentId: string, actor?: any, reason?: string): Promise<any>;
     findRelations(siteId: number, query?: any): Promise<any[]>;
     /** documentId/数字 id → 实体数字 id（关系过滤必须用数字 id） */
     _resolveEntityId(ref: string | number): Promise<number | null>;
@@ -48,10 +51,14 @@ declare const _default: ({ strapi }: {
         objectText?: string;
         sourceType?: string;
         truthPolicyId?: string;
+        actor?: any;
     }): Promise<any>;
     _detectCycle(subjectId: string, objectId: string, predicate: string, visited?: Set<string>): Promise<boolean>;
-    deleteRelation(siteId: number, documentId: string): Promise<any>;
-    updateRelation(siteId: number, documentId: string, data: any): Promise<any>;
+    deleteRelation(siteId: number, documentId: string, actor?: any): Promise<any>;
+    submitRelation(siteId: number | null, documentId: string, actor?: any, reason?: string): Promise<any>;
+    approveRelation(siteId: number | null, documentId: string, actor?: any, reason?: string): Promise<any>;
+    rejectRelation(siteId: number | null, documentId: string, actor?: any, reason?: string): Promise<any>;
+    updateRelation(siteId: number, documentId: string, data: any, actor?: any): Promise<any>;
     disambiguate(siteId: number, params: {
         name: string;
         entityType?: string;

@@ -15,6 +15,13 @@ declare const _default: {
         createGlobalEntity(ctx: any): Promise<void>;
         updateGlobalEntity(ctx: any): Promise<void>;
         deleteGlobalEntity(ctx: any): Promise<void>;
+        submitEntity(ctx: any): Promise<void>;
+        approveEntity(ctx: any): Promise<void>;
+        rejectEntity(ctx: any): Promise<void>;
+        submitRelation(ctx: any): Promise<void>;
+        approveRelation(ctx: any): Promise<void>;
+        rejectRelation(ctx: any): Promise<void>;
+        findAuditLogs(ctx: any): Promise<void>;
     };
     "first-truth": {
         find(ctx: any): Promise<void>;
@@ -29,6 +36,9 @@ declare const _default: {
         updateGlobal(ctx: any): Promise<void>;
         deleteGlobal(ctx: any): Promise<void>;
         verifyGlobal(ctx: any): Promise<void>;
+        submit(ctx: any): Promise<void>;
+        approve(ctx: any): Promise<void>;
+        reject(ctx: any): Promise<void>;
     };
     "ai-content-summary": {
         findAdmin(ctx: any): Promise<void>;
