@@ -1,6 +1,7 @@
 import type { Core } from "@strapi/strapi";
 import { HIERARCHICAL_PREDICATES, isValidPredicate } from "./utils/predicate-dictionary";
 import { knowledgeGraphSync } from "./utils/kg-sync";
+import { stableJson } from "./utils/stable-json";
 
 const ENTITY_UID = "plugin::zhao-website.knowledge-entity";
 const RELATION_UID = "plugin::zhao-website.knowledge-relation";
@@ -13,16 +14,6 @@ function normalizeText(v: any): string {
     .replace(/\s+/g, " ")
     .trim()
     .toLowerCase();
-}
-
-/** JSON 稳定序列化：对象键排序，保证键序不同不误判为差异 */
-function stableJson(v: any): string {
-  if (v === null || typeof v !== "object") return JSON.stringify(v ?? null);
-  if (Array.isArray(v)) return `[${v.map(stableJson).join(",")}]`;
-  return `{${Object.keys(v)
-    .sort()
-    .map((k) => `${JSON.stringify(k)}:${stableJson(v[k])}`)
-    .join(",")}}`;
 }
 
 /** 取出关系客体中的标量值：objectEntity 型关系不参与真值比对 */

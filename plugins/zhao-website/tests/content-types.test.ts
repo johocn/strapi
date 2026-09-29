@@ -12,8 +12,8 @@ const GLOBAL_CTS = ['invite-trace'];
 describe('Content Types', () => {
   const entries = Object.entries(contentTypes) as [string, any][];
 
-  test('zhao-website has 23 content types', () => {
-    expect(entries.length).toBe(23);
+  test('zhao-website has 24 content types', () => {
+    expect(entries.length).toBe(24);
   });
 
   test('每个 CT 的 singularName 与注册名一致，可按 uid 定位', () => {

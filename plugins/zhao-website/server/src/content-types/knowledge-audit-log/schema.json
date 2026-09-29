@@ -1,0 +1,57 @@
+{
+  "kind": "collectionType",
+  "collectionName": "zhao_website_knowledge_audit_logs",
+  "info": {
+    "singularName": "knowledge-audit-log",
+    "pluralName": "knowledge-audit-logs",
+    "displayName": "知识审计流水"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "content-manager": { "visible": false },
+    "content-type-builder": { "visible": false }
+  },
+  "attributes": {
+    "site": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-common.site-config",
+      "required": false
+    },
+    "targetType": {
+      "type": "enumeration",
+      "enum": ["entity", "relation", "first-truth"],
+      "required": true
+    },
+    "targetId": {
+      "type": "string",
+      "required": true
+    },
+    "action": {
+      "type": "enumeration",
+      "enum": ["create", "update", "delete", "submit", "approve", "reject", "recheck"],
+      "required": true
+    },
+    "actorId": {
+      "type": "string"
+    },
+    "actorLabel": {
+      "type": "string"
+    },
+    "changedFields": {
+      "type": "json"
+    },
+    "reason": {
+      "type": "text"
+    },
+    "version": {
+      "type": "integer"
+    },
+    "deletedAt": {
+      "type": "datetime",
+      "default": null
+    }
+  }
+}

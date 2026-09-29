@@ -14,6 +14,7 @@ import interaction from "./interaction/schema.json";
 import searchLog from "./search-log/schema.json";
 import knowledgeEntity from "./knowledge-entity/schema.json";
 import knowledgeRelation from "./knowledge-relation/schema.json";
+import knowledgeAuditLog from "./knowledge-audit-log/schema.json";
 import aiContentSummary from "./ai-content-summary/schema.json";
 import firstTruthPolicy from "./first-truth-policy/schema.json";
 import brandVoice from "./brand-voice/schema.json";
@@ -40,6 +41,7 @@ export default {
   "search-log": { schema: searchLog },
   "knowledge-entity": { schema: knowledgeEntity },
   "knowledge-relation": { schema: knowledgeRelation },
+  "knowledge-audit-log": { schema: knowledgeAuditLog },
   "ai-content-summary": { schema: aiContentSummary },
   "first-truth-policy": { schema: firstTruthPolicy },
   "brand-voice": { schema: brandVoice },
