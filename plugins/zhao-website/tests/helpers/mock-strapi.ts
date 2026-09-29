@@ -24,22 +24,22 @@ export function createMockStrapi(overrides: Record<string, any> = {}) {
     raw: jest.fn().mockResolvedValue({ rows: [] }),
   };
 
+  // service() 必须返回同一对象：auditSafe 内部会再次调用 service("knowledge-audit")，
+  // 若每次返回新对象，测试捕获的 append 与实际调用的 append 不是同一个 jest.fn，断言恒失败
+  const knowledgeAuditService = {
+    append: jest.fn().mockResolvedValue(null),
+    findByTarget: jest
+      .fn()
+      .mockResolvedValue({ results: [], pagination: { page: 1, pageSize: 20, total: 0 } }),
+  };
+
   const mockStrapi = {
     db: {
       query: queryFn,
       connection: connectionMock,
     },
     plugin: jest.fn().mockReturnValue({
-      service: jest.fn((name: string) =>
-        name === "knowledge-audit"
-          ? {
-              append: jest.fn().mockResolvedValue(null),
-              findByTarget: jest
-                .fn()
-                .mockResolvedValue({ results: [], pagination: { page: 1, pageSize: 20, total: 0 } }),
-            }
-          : {}
-      ),
+      service: jest.fn((name: string) => (name === "knowledge-audit" ? knowledgeAuditService : {})),
     }),
     log: {
       info: jest.fn(),

@@ -91,7 +91,10 @@ describe("First Truth Service", () => {
 
     expect(queryMock.findOne).toHaveBeenCalledTimes(2);
     expect(queryMock.update).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: 9 }, data: { verificationStatus: "pending" } })
+      expect.objectContaining({
+        where: { id: 9 },
+        data: expect.objectContaining({ verificationStatus: "pending", version: 2 }),
+      })
     );
   });
 
