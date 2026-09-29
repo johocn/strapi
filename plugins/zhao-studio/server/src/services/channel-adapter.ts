@@ -92,34 +92,31 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     };
   },
 
+  /**
+   * 公众号：委托 zhao-sso 已实现的微信图文协议（draft/add）建草稿，本插件不重复实现微信协议。
+   * 只建草稿、不自动发布；freepublish/submit 需人工确认草稿后由 zhao-sso 执行。
+   */
   async publishToWechat(article: any, account: any) {
-    const adapter = getPlatformAdapter('wechat');
-    const endpoint = account.config?.endpoint || adapter?.endpointTemplate;
+    const ssoArticle = strapi.plugin('zhao-sso')?.service('sso-wx-article') as any;
+    if (!ssoArticle?.create) {
+      throw new Error('公众号协议执行器不可用：请确认已启用 zhao-sso 插件');
+    }
 
-    const response = await axios.post(
-      endpoint,
-      {
-        articles: [{
-          title: article.title,
-          content: article.content,
-          thumb_media_id: account.config?.mediaId,
-          author: article.author,
-          digest: article.aiSummary || article.content.substring(0, 100),
-        }],
-      },
-      {
-        headers: {
-          'Authorization': `Bearer ${account.config?.apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        timeout: 30000,
-      }
-    );
+    const draft = await ssoArticle.create({
+      title: article.title,
+      author: article.author || article.sourceAuthor || '',
+      digest: article.aiSummary || String(article.content || '').substring(0, 100),
+      content: article.content || '',
+      thumb_media_id: account.config?.mediaId || '',
+      content_source_url: article.sourceUrl || '',
+    });
 
     return {
-      success: response.data.errcode === 0,
-      externalId: response.data.media_id,
-      error: response.data.errmsg,
+      success: true,
+      externalId: draft.draft_id,
+      draftId: draft.draft_id,
+      wxArticleId: draft.id,
+      createdDraft: true,
     };
   },
 

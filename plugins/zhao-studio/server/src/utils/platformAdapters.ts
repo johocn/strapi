@@ -39,8 +39,8 @@ export const platformAdapters: Record<string, PlatformAdapter> = {
     maxContentLength: 20000,
     supportsImage: true,
     supportsVideo: true,
-    requiresCover: false,
-    endpointTemplate: 'https://api.weixin.qq.com/cgi-bin/material/add_material',
+    requiresCover: true,
+    // 微信图文协议（draft/add、freepublish/submit）由 zhao-sso 执行，此处不再配置 endpoint
   },
   internal: {
     type: 'internal',

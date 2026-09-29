@@ -309,6 +309,12 @@ declare const _default: {
             } | {
                 success: boolean;
                 externalId: any;
+                draftId: any;
+                wxArticleId: any;
+                createdDraft: boolean;
+            } | {
+                success: boolean;
+                externalId: any;
                 accessUrl: string;
                 channelCode: any;
             }>;
@@ -325,7 +331,9 @@ declare const _default: {
             publishToWechat(article: any, account: any): Promise<{
                 success: boolean;
                 externalId: any;
-                error: any;
+                draftId: any;
+                wxArticleId: any;
+                createdDraft: boolean;
             }>;
             publishToInternal(article: any, account: any): Promise<{
                 success: boolean;

@@ -19781,7 +19781,8 @@ const publish = ({ strapi: strapi2 }) => ({
             account: account.documentId,
             externalId: result.externalId,
             status: result.success ? "success" : "failed",
-            error: result.error,
+            // 公众号仅建草稿：把阶段/草稿号写入 error 字段（沿用 zhao-sso 既有台账约定），便于后续人工确认
+            error: result.createdDraft ? JSON.stringify({ platform: "wechat", phase: "draft", draftId: result.draftId }) : result.error,
             publishedAt: /* @__PURE__ */ new Date()
           }
         });
@@ -19790,6 +19791,7 @@ const publish = ({ strapi: strapi2 }) => ({
           accountName: account.name,
           platform: account.platform?.type,
           success: result.success,
+          createdDraft: !!result.createdDraft,
           externalId: result.externalId,
           recordId: record.documentId,
           error: result.error
@@ -19814,7 +19816,7 @@ const publish = ({ strapi: strapi2 }) => ({
         });
       }
     }
-    const successCount = results.filter((r) => r.success).length;
+    const successCount = results.filter((r) => r.success && !r.createdDraft).length;
     if (successCount > 0) {
       await strapi2.documents("plugin::zhao-studio.article-draft").update({
         documentId: articleId,
@@ -19940,8 +19942,8 @@ const platformAdapters = {
     maxContentLength: 2e4,
     supportsImage: true,
     supportsVideo: true,
-    requiresCover: false,
-    endpointTemplate: "https://api.weixin.qq.com/cgi-bin/material/add_material"
+    requiresCover: true
+    // 微信图文协议（draft/add、freepublish/submit）由 zhao-sso 执行，此处不再配置 endpoint
   },
   internal: {
     type: "internal",
@@ -20113,32 +20115,29 @@ const channelAdapter = ({ strapi: strapi2 }) => ({
       error: response.data.message || response.data.error
     };
   },
+  /**
+   * 公众号：委托 zhao-sso 已实现的微信图文协议（draft/add）建草稿，本插件不重复实现微信协议。
+   * 只建草稿、不自动发布；freepublish/submit 需人工确认草稿后由 zhao-sso 执行。
+   */
   async publishToWechat(article, account) {
-    const adapter2 = getPlatformAdapter("wechat");
-    const endpoint = account.config?.endpoint || adapter2?.endpointTemplate;
-    const response = await axios.post(
-      endpoint,
-      {
-        articles: [{
-          title: article.title,
-          content: article.content,
-          thumb_media_id: account.config?.mediaId,
-          author: article.author,
-          digest: article.aiSummary || article.content.substring(0, 100)
-        }]
-      },
-      {
-        headers: {
-          "Authorization": `Bearer ${account.config?.apiKey}`,
-          "Content-Type": "application/json"
-        },
-        timeout: 3e4
-      }
-    );
+    const ssoArticle = strapi2.plugin("zhao-sso")?.service("sso-wx-article");
+    if (!ssoArticle?.create) {
+      throw new Error("公众号协议执行器不可用：请确认已启用 zhao-sso 插件");
+    }
+    const draft2 = await ssoArticle.create({
+      title: article.title,
+      author: article.author || article.sourceAuthor || "",
+      digest: article.aiSummary || String(article.content || "").substring(0, 100),
+      content: article.content || "",
+      thumb_media_id: account.config?.mediaId || "",
+      content_source_url: article.sourceUrl || ""
+    });
     return {
-      success: response.data.errcode === 0,
-      externalId: response.data.media_id,
-      error: response.data.errmsg
+      success: true,
+      externalId: draft2.draft_id,
+      draftId: draft2.draft_id,
+      wxArticleId: draft2.id,
+      createdDraft: true
     };
   },
   async publishToInternal(article, account) {

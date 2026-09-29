@@ -53,7 +53,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
               account: account.documentId,
               externalId: result.externalId,
               status: result.success ? 'success' : 'failed',
-              error: result.error,
+              // 公众号仅建草稿：把阶段/草稿号写入 error 字段（沿用 zhao-sso 既有台账约定），便于后续人工确认
+              error: result.createdDraft
+                ? JSON.stringify({ platform: 'wechat', phase: 'draft', draftId: result.draftId })
+                : result.error,
               publishedAt: new Date(),
             },
           });
@@ -63,6 +66,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
           accountName: account.name,
           platform: account.platform?.type,
           success: result.success,
+          createdDraft: !!result.createdDraft,
           externalId: result.externalId,
           recordId: record.documentId,
           error: result.error,
@@ -92,8 +96,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       }
     }
 
-    // 5. 更新文章状态
-    const successCount = results.filter((r) => r.success).length;
+    // 5. 更新文章状态：仅“真正发布成功”的渠道才置为 published；
+    // 公众号仅建草稿（createdDraft）不算已发布，文章保持 ready 待人工确认
+    const successCount = results.filter((r) => r.success && !r.createdDraft).length;
     if (successCount > 0) {
       await strapi.documents('plugin::zhao-studio.article-draft').update({
         documentId: articleId,
