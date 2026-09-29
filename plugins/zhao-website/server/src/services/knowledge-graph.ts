@@ -895,6 +895,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     if (entity.description) jsonLd.description = entity.description;
     if (entity.url) jsonLd.url = entity.url;
     if (entity.image) jsonLd.image = entity.url; // 简化
+    // sameAs：外部权威标识（Wikidata/维基百科等），供 AI 侧做实体对齐
+    if (entity.sameAs) jsonLd.sameAs = entity.sameAs;
     if (entity.properties) Object.assign(jsonLd, entity.properties);
     const visibleOutgoing = outgoing.filter(
       (rel: any) => !this._isContractViolation(entity.entityType, rel)

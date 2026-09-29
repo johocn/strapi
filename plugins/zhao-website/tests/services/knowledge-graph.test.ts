@@ -807,6 +807,24 @@ describe("Knowledge Graph Service", () => {
     expect(jsonLd["@id"]).toBe("a");
   });
 
+  test("_entityToJsonLd 输出 sameAs（json 列原样透出给 AI 侧）", () => {
+    const jsonLd = service._entityToJsonLd({
+      documentId: "doc-term", name: "教育", entityType: "DefinedTerm", slug: "education",
+      sameAs: ["https://www.wikidata.org/wiki/Q8434", "https://zh.wikipedia.org/wiki/教育"],
+    });
+
+    expect(jsonLd.sameAs).toEqual([
+      "https://www.wikidata.org/wiki/Q8434",
+      "https://zh.wikipedia.org/wiki/教育",
+    ]);
+  });
+
+  test("无 sameAs 时不输出该字段", () => {
+    const jsonLd = service._entityToJsonLd({ documentId: "doc-a", name: "A", entityType: "Organization", slug: "a" });
+
+    expect(jsonLd.sameAs).toBeUndefined();
+  });
+
   test("exportEntity 输出 subjectOf 指向解释文章（绝对 URL）", async () => {
     service.findEntityBySlug = jest.fn().mockResolvedValue({
       id: 1, documentId: "doc-term", name: "学习", entityType: "DefinedTerm", slug: "learning",
