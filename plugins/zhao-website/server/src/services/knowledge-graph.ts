@@ -819,8 +819,16 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     const visibleIncoming = incoming.filter(
       (r: any) => !this._isContractViolation(r.subjectEntity?.entityType, r)
     );
+    const subjectOf = articles
+      .filter((a: any) => a.slug && a.type)
+      .map((a: any) => ({
+        "@type": "Article",
+        "@id": `${siteUrl}/${a.type}/${a.slug}`,
+        name: a.title,
+      }));
     return {
       ...this._entityToJsonLd(entity, visibleOutgoing, visibleIncoming, siteUrl),
+      ...(subjectOf.length > 0 ? { subjectOf } : {}),
       // 前端实体页按 outgoing/incoming 数组渲染「知识关系」
       outgoing: visibleOutgoing.map((r: any) => ({
         predicate: r.predicate,
