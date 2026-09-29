@@ -33,6 +33,7 @@ import redirect from "./redirect";
 import inviteTrace from "./invite-trace";
 import ecoHook from "./eco-hook";
 import knowledgeAudit from "./knowledge-audit";
+import knowledgeHealth from "./knowledge-health";
 
 export default {
   "seo-config": seoConfig,
@@ -70,4 +71,5 @@ export default {
   "invite-trace": inviteTrace,
   "eco-hook": ecoHook,
   "knowledge-audit": knowledgeAudit,
+  "knowledge-health": knowledgeHealth,
 };
