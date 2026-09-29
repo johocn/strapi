@@ -35678,7 +35678,7 @@ const knowledgeGraph = ({ strapi: strapi2 }) => ({
       priority: t.priority,
       lastVerifiedAt: t.lastVerifiedAt,
       verificationStatus: t.verificationStatus,
-      version: t.version
+      version: t.version ?? 1
     }));
   }
 });

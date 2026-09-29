@@ -582,11 +582,13 @@ describe("Knowledge Graph Service", () => {
     const queryMock = mockStrapi.db.query();
     queryMock.findMany.mockResolvedValueOnce([
       { claimKey: "k", claim: "c", canonicalValue: "v", canonicalValueType: "text", verificationStatus: "verified", version: 4 },
+      { claimKey: "k2", claim: "c2", canonicalValue: "v2", canonicalValueType: "text", verificationStatus: "verified", version: null },
     ]);
 
     const facts = await service.exportFacts(1);
 
     expect(facts[0].version).toBe(4);
+    expect(facts[1].version).toBe(1);
   });
 
   test("_entityToJsonLd 输出 version 与 dateModified", () => {

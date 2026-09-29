@@ -794,7 +794,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       priority: t.priority,
       lastVerifiedAt: t.lastVerifiedAt,
       verificationStatus: t.verificationStatus,
-      version: t.version,
+      version: t.version ?? 1,
     }));
   },
 });
