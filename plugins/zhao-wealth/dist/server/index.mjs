@@ -13630,6 +13630,7 @@ const seedCompanies = [
   }
 ];
 const COMPANY_UID = "plugin::zhao-wealth.wealth-company";
+const isPrimaryInstance = !process.env.NODE_APP_INSTANCE || process.env.NODE_APP_INSTANCE === "0";
 async function initSeedCompanies(strapi) {
   try {
     const count = await strapi.db.query(COMPANY_UID).count({});
@@ -13660,83 +13661,85 @@ const bootstrap = async ({ strapi }) => {
   process.on("SIGINT", async () => {
     await destroyBrowser();
   });
-  strapi.cron.add({
-    "wealth-trading-day-check": {
-      task: ({ strapi: strapi2 }) => {
-        const today = /* @__PURE__ */ new Date();
-        const isTrading = isTradingDay(today);
-        strapi2.log.info(`[zhao-wealth] 交易日检查: ${today.toISOString().slice(0, 10)} ${isTrading ? "是交易日" : "非交易日"}`);
-      },
-      options: "0 8 * * *"
-    }
-  });
-  strapi.cron.add({
-    "wealth-collect-trigger": {
-      task: ({ strapi: strapi2 }) => {
-        const today = /* @__PURE__ */ new Date();
-        if (!isTradingDay(today)) {
-          strapi2.log.info("[zhao-wealth] 非交易日，跳过采集");
-          return;
-        }
-        const queue = getCollectQueue();
-        if (!queue) {
-          strapi2.log.warn("[zhao-wealth] 采集队列不可用（Redis 未就绪），跳过");
-          return;
-        }
-        queue.add("collect-all", {});
-        strapi2.log.info("[zhao-wealth] 18:00 采集任务已触发");
-      },
-      options: "0 18 * * *"
-    }
-  });
-  strapi.cron.add({
-    "wealth-calculate-trigger": {
-      task: async ({ strapi: strapi2 }) => {
-        const today = /* @__PURE__ */ new Date();
-        if (!isTradingDay(today)) {
-          strapi2.log.info("[zhao-wealth] 非交易日，跳过年化计算");
-          return;
-        }
-        const queue = getCalculateQueue();
-        if (!queue) {
-          strapi2.log.warn("[zhao-wealth] 计算队列不可用（Redis 未就绪），跳过");
-          return;
-        }
-        const products = await strapi2.db.query("plugin::zhao-wealth.wealth-product").findMany({
-          where: { status: true }
-        });
-        for (const product2 of products) {
-          queue.add("calculate-snapshot", { productId: product2.id });
-        }
-        strapi2.log.info(`[zhao-wealth] 20:00 年化计算任务已触发，${products.length}个产品`);
-      },
-      options: "0 20 * * *"
-    }
-  });
-  strapi.cron.add({
-    "wealth-risk-metric-trigger": {
-      task: async ({ strapi: strapi2 }) => {
-        const today = /* @__PURE__ */ new Date();
-        if (!isTradingDay(today)) {
-          strapi2.log.info("[zhao-wealth] 非交易日，跳过风险指标计算");
-          return;
-        }
-        const queue = getCalculateQueue();
-        if (!queue) {
-          strapi2.log.warn("[zhao-wealth] 计算队列不可用（Redis 未就绪），跳过风险指标计算");
-          return;
-        }
-        const products = await strapi2.db.query("plugin::zhao-wealth.wealth-product").findMany({
-          where: { status: true }
-        });
-        for (const product2 of products) {
-          queue.add("calculate-risk-metric", { productId: product2.id, snapshotDate: today });
-        }
-        strapi2.log.info(`[zhao-wealth] 20:30 风险指标计算任务已触发，${products.length}个产品`);
-      },
-      options: "30 20 * * *"
-    }
-  });
+  if (isPrimaryInstance) {
+    strapi.cron.add({
+      "wealth-trading-day-check": {
+        task: ({ strapi: strapi2 }) => {
+          const today = /* @__PURE__ */ new Date();
+          const isTrading = isTradingDay(today);
+          strapi2.log.info(`[zhao-wealth] 交易日检查: ${today.toISOString().slice(0, 10)} ${isTrading ? "是交易日" : "非交易日"}`);
+        },
+        options: "0 8 * * *"
+      }
+    });
+    strapi.cron.add({
+      "wealth-collect-trigger": {
+        task: ({ strapi: strapi2 }) => {
+          const today = /* @__PURE__ */ new Date();
+          if (!isTradingDay(today)) {
+            strapi2.log.info("[zhao-wealth] 非交易日，跳过采集");
+            return;
+          }
+          const queue = getCollectQueue();
+          if (!queue) {
+            strapi2.log.warn("[zhao-wealth] 采集队列不可用（Redis 未就绪），跳过");
+            return;
+          }
+          queue.add("collect-all", {});
+          strapi2.log.info("[zhao-wealth] 18:00 采集任务已触发");
+        },
+        options: "0 18 * * *"
+      }
+    });
+    strapi.cron.add({
+      "wealth-calculate-trigger": {
+        task: async ({ strapi: strapi2 }) => {
+          const today = /* @__PURE__ */ new Date();
+          if (!isTradingDay(today)) {
+            strapi2.log.info("[zhao-wealth] 非交易日，跳过年化计算");
+            return;
+          }
+          const queue = getCalculateQueue();
+          if (!queue) {
+            strapi2.log.warn("[zhao-wealth] 计算队列不可用（Redis 未就绪），跳过");
+            return;
+          }
+          const products = await strapi2.db.query("plugin::zhao-wealth.wealth-product").findMany({
+            where: { status: true }
+          });
+          for (const product2 of products) {
+            queue.add("calculate-snapshot", { productId: product2.id });
+          }
+          strapi2.log.info(`[zhao-wealth] 20:00 年化计算任务已触发，${products.length}个产品`);
+        },
+        options: "0 20 * * *"
+      }
+    });
+    strapi.cron.add({
+      "wealth-risk-metric-trigger": {
+        task: async ({ strapi: strapi2 }) => {
+          const today = /* @__PURE__ */ new Date();
+          if (!isTradingDay(today)) {
+            strapi2.log.info("[zhao-wealth] 非交易日，跳过风险指标计算");
+            return;
+          }
+          const queue = getCalculateQueue();
+          if (!queue) {
+            strapi2.log.warn("[zhao-wealth] 计算队列不可用（Redis 未就绪），跳过风险指标计算");
+            return;
+          }
+          const products = await strapi2.db.query("plugin::zhao-wealth.wealth-product").findMany({
+            where: { status: true }
+          });
+          for (const product2 of products) {
+            queue.add("calculate-risk-metric", { productId: product2.id, snapshotDate: today });
+          }
+          strapi2.log.info(`[zhao-wealth] 20:30 风险指标计算任务已触发，${products.length}个产品`);
+        },
+        options: "30 20 * * *"
+      }
+    });
+  }
   strapi.log.info("[zhao-wealth] 插件已启动");
 };
 const index = {
