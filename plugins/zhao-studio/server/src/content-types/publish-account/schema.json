@@ -46,6 +46,34 @@
     "lastPublishedAt": {
       "type": "datetime"
     },
+    "oauthAccessToken": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "oauthRefreshToken": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "oauthExpiresAt": {
+      "type": "datetime"
+    },
+    "oauthOpenId": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "oauthScope": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "oauthState": {
+      "type": "enumeration",
+      "enum": ["unauthorized", "authorized", "expired", "revoked"],
+      "default": "unauthorized",
+      "required": true
+    },
+    "lastRefreshAt": {
+      "type": "datetime"
+    },
     "createdAt": {
       "type": "datetime"
     },
