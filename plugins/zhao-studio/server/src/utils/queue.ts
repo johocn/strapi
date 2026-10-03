@@ -17,9 +17,13 @@ let schedulerQueue: Queue.Queue | null = null;
 
 async function probeBullSupport(): Promise<boolean> {
   try {
-    // 动态 require 避免类型编译期问题
+    const cfg = getRedisConfig();
+    // password 为空时不传 undefined
+    const cleanCfg: any = { host: cfg.host, port: cfg.port, db: cfg.db, maxRetriesPerRequest: 1 };
+    if (cfg.username) cleanCfg.username = cfg.username;
+    if (cfg.password) cleanCfg.password = cfg.password;
     const Redis = require('ioredis');
-    const redis = new Redis(getRedisConfig());
+    const redis = new Redis(cleanCfg);
     await redis.connect().catch(() => {});
     const result = await redis.eval('return 1', 0);
     try { await redis.quit(); } catch { /* ignore */ }
@@ -29,45 +33,59 @@ async function probeBullSupport(): Promise<boolean> {
   }
 }
 
+function getCleanRedisConfig(): any {
+  const cfg = getRedisConfig();
+  const clean: any = { host: cfg.host, port: cfg.port, db: cfg.db, maxRetriesPerRequest: 1 };
+  if (cfg.username) clean.username = cfg.username;
+  if (cfg.password) clean.password = cfg.password;
+  return clean;
+}
+
 export async function initStudioQueues(): Promise<{ publish: Queue.Queue | null; scheduler: Queue.Queue | null }> {
-  if (queuesAvailable === null) {
-    queuesAvailable = await probeBullSupport();
-  }
-  if (!queuesAvailable) return { publish: null, scheduler: null };
-
-  if (!publishQueue) {
-    try {
-      publishQueue = new Queue('studio-publish', {
-        redis: getRedisConfig(),
-        defaultJobOptions: {
-          attempts: 3,
-          backoff: { type: 'exponential', delay: 5000 },
-          removeOnComplete: 20,
-          removeOnFail: 10,
-        },
-      });
-    } catch {
-      publishQueue = null;
+  try {
+    if (queuesAvailable === null) {
+      queuesAvailable = await probeBullSupport();
     }
-  }
+    if (!queuesAvailable) return { publish: null, scheduler: null };
 
-  if (!schedulerQueue) {
-    try {
-      schedulerQueue = new Queue('studio-scheduler', {
-        redis: getRedisConfig(),
-        defaultJobOptions: {
-          attempts: 3,
-          backoff: { type: 'exponential', delay: 2000 },
-          removeOnComplete: 20,
-          removeOnFail: 10,
-        },
-      });
-    } catch {
-      schedulerQueue = null;
+    const redisCfg = getCleanRedisConfig();
+
+    if (!publishQueue) {
+      try {
+        publishQueue = new Queue('studio-publish', {
+          redis: redisCfg,
+          defaultJobOptions: {
+            attempts: 3,
+            backoff: { type: 'exponential', delay: 5000 },
+            removeOnComplete: 20,
+            removeOnFail: 10,
+          },
+        });
+      } catch {
+        publishQueue = null;
+      }
     }
-  }
 
-  return { publish: publishQueue, scheduler: schedulerQueue };
+    if (!schedulerQueue) {
+      try {
+        schedulerQueue = new Queue('studio-scheduler', {
+          redis: redisCfg,
+          defaultJobOptions: {
+            attempts: 3,
+            backoff: { type: 'exponential', delay: 2000 },
+            removeOnComplete: 20,
+            removeOnFail: 10,
+          },
+        });
+      } catch {
+        schedulerQueue = null;
+      }
+    }
+
+    return { publish: publishQueue, scheduler: schedulerQueue };
+  } catch {
+    return { publish: null, scheduler: null };
+  }
 }
 
 export function getPublishQueue(): Queue.Queue | null { return publishQueue; }

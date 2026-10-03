@@ -1,0 +1,535 @@
+declare const _default: {
+    collect: ({ strapi }: {
+        strapi: any;
+    }) => {
+        createTask(sourceId: string): Promise<any>;
+        fetchSelectedContent(taskId: string, selectedTitles: string[]): Promise<any[]>;
+        confirmImport(taskId: string, confirmedContents: any[]): Promise<{
+            imported: number;
+            articles: any[];
+        }>;
+    };
+    scraper: ({ strapi }: {
+        strapi: any;
+    }) => {
+        fetchTitles(sourceId: string): Promise<import("../utils/selectors").ScrapedTitle[]>;
+        fetchContent(url: string, sourceId: string): Promise<import("../utils/selectors").ScrapedContent>;
+    };
+    quality: ({ strapi }: {
+        strapi: any;
+    }) => {
+        calculateQuality(content: any): import("./quality").QualityScore;
+        isQualityAcceptable(score: import("./quality").QualityScore): boolean;
+        getQualityLevel(score: import("./quality").QualityScore): "high" | "medium" | "low";
+    };
+    'ai-assist': ({ strapi }: {
+        strapi: import("@strapi/types/dist/core").Strapi;
+    }) => {
+        callAI(params: {
+            prompt: string;
+            type: string;
+        }): Promise<any>;
+        callQwen(params: {
+            prompt: string;
+            type: string;
+        }, config: any, provider: any): Promise<any>;
+        callWenxin(params: {
+            prompt: string;
+            type: string;
+        }, config: any, provider: any): Promise<any>;
+        callHunyuan(params: {
+            prompt: string;
+            type: string;
+        }, config: any, provider: any): Promise<any>;
+        callSpark(params: {
+            prompt: string;
+            type: string;
+        }, config: any, provider: any): Promise<any>;
+        callCustom(params: {
+            prompt: string;
+            type: string;
+        }, config: any): Promise<any>;
+        generateSummary(articleId: string, options?: {
+            length?: number;
+        }): Promise<any>;
+        optimizeTitle(articleId: string, style: "formal" | "casual" | "shocking"): Promise<any>;
+        rewriteContent(articleId: string, tone: "formal" | "casual" | "humorous"): Promise<any>;
+        convertLanguage(articleId: string, target: "simplified" | "traditional"): Promise<any>;
+        chat(messages: Array<{
+            role: string;
+            content: string;
+        }>): Promise<{
+            content: any;
+            role: string;
+        }>;
+    };
+    publish: ({ strapi }: {
+        strapi: import("@strapi/types/dist/core").Strapi;
+    }) => {
+        publishArticle(articleId: string, accountIds: string[], opts?: {
+            scheduledAt?: Date;
+        }): Promise<any[]>;
+        listPlatforms(): Promise<import("@strapi/types/dist/modules/documents").AnyDocument[]>;
+        createPlatform(data: any): Promise<import("@strapi/types/dist/modules/documents").AnyDocument>;
+        updatePlatform(platformId: string, data: any): Promise<import("@strapi/types/dist/modules/documents").AnyDocument | null>;
+        deletePlatform(platformId: string): Promise<void>;
+        listAccounts(platformId?: string): Promise<import("@strapi/types/dist/modules/documents").AnyDocument[]>;
+        createAccount(data: any): Promise<import("@strapi/types/dist/modules/documents").AnyDocument>;
+        updateAccount(accountId: string, data: any): Promise<import("@strapi/types/dist/modules/documents").AnyDocument | null>;
+        deleteAccount(accountId: string): Promise<void>;
+        listRecords(filters?: {
+            articleId?: string;
+            platformId?: string;
+            accountId?: string;
+        }): Promise<import("@strapi/types/dist/modules/documents").AnyDocument[]>;
+        retryPublish(recordId: string): Promise<any>;
+        createSchedule(data: {
+            articleId: string;
+            accountIds: string[];
+            scheduledAt: string;
+            name?: string;
+        }): Promise<any[]>;
+        listSchedules(filters?: any): Promise<import("@strapi/types/dist/modules/documents").AnyDocument[]>;
+        findOneSchedule(id: string): Promise<import("@strapi/types/dist/modules/documents").AnyDocument | null>;
+        cancelSchedule(id: string): Promise<import("@strapi/types/dist/modules/documents").AnyDocument | null>;
+        getDouyinSchema(recordId: string): Promise<{
+            recordId: string;
+            schema: string;
+        }>;
+        previewPublish(articleId: string, accountIds: string[]): Promise<{
+            articleId: string;
+            articleTitle: any;
+            results: ({
+                accountId: any;
+                accountName: any;
+                platform: any;
+                adaptedTitle: any;
+                adaptedContentPreview: string;
+                contentLength: number;
+                error?: undefined;
+            } | {
+                accountId: any;
+                accountName: any;
+                platform: any;
+                error: any;
+                adaptedTitle?: undefined;
+                adaptedContentPreview?: undefined;
+                contentLength?: undefined;
+            })[];
+        }>;
+    };
+    'channel-adapter': ({ strapi }: {
+        strapi: import("@strapi/types/dist/core").Strapi;
+    }) => {
+        publish(article: any, account: any): Promise<{
+            success: boolean;
+            createdDraft: boolean;
+            draftId: any;
+            error: string;
+            externalId?: undefined;
+            publishId?: undefined;
+        } | {
+            success: boolean;
+            externalId: any;
+            publishId: any;
+            createdDraft?: undefined;
+            draftId?: undefined;
+            error?: undefined;
+        } | {
+            success: boolean;
+            publish_mode: string;
+            schema: string;
+        } | {
+            success: boolean;
+            externalId: any;
+            accessUrl: string;
+            channelCode: any;
+        } | {
+            success: any;
+            externalId: any;
+            error: any;
+        }>;
+        publishToToutiao(article: any, account: any, _accessToken?: string): Promise<never>;
+        publishToXiaohongshu(article: any, account: any, _accessToken?: string): Promise<never>;
+        publishToWechat(article: any, account: any, _accessToken?: string): Promise<{
+            success: boolean;
+            createdDraft: boolean;
+            draftId: any;
+            error: string;
+            externalId?: undefined;
+            publishId?: undefined;
+        } | {
+            success: boolean;
+            externalId: any;
+            publishId: any;
+            createdDraft?: undefined;
+            draftId?: undefined;
+            error?: undefined;
+        }>;
+        publishToInternal(article: any, account: any): Promise<{
+            success: boolean;
+            externalId: any;
+            accessUrl: string;
+            channelCode: any;
+        }>;
+        publishToCustom(article: any, account: any, _accessToken?: string): Promise<{
+            success: any;
+            externalId: any;
+            error: any;
+        }>;
+        generateDouyinShareSchema({ clientKey, ticket, videoPath, title, customCoverImageUrl, }: {
+            clientKey: string;
+            ticket: string;
+            videoPath?: string;
+            title: string;
+            customCoverImageUrl?: string;
+        }): string;
+        getDouyinTicket(clientKey: string, clientSecret: string): Promise<string>;
+        publishToDouyin(article: any, account: any, _accessToken?: string): Promise<{
+            success: boolean;
+            publish_mode: string;
+            schema: string;
+        }>;
+        adaptContent(content: any, platformType: string): Promise<any>;
+        checkExternalStatus(record: any): Promise<{
+            deleted: boolean;
+            status?: string;
+        }>;
+    };
+    'internal-api': ({ strapi }: {
+        strapi: import("@strapi/types/dist/core").Strapi;
+    }) => {
+        listArticles(filters: any): Promise<any[]>;
+        getArticle(articleId: string): Promise<any>;
+        searchArticles(query: string, filters: any): Promise<any[]>;
+        getCategories(): Promise<string[]>;
+        getChannels(): Promise<string[]>;
+    };
+    'status-sync': ({ strapi }: {
+        strapi: import("@strapi/types/dist/core").Strapi;
+    }) => {
+        syncPublishStatus(articleId: string): Promise<void>;
+        syncAllPendingRecords(): Promise<{
+            synced: number;
+            failed: number;
+        }>;
+        cleanupOldRecords(days: number): Promise<{
+            deleted: number;
+        }>;
+    };
+    analytics: ({ strapi }: {
+        strapi: import("@strapi/types/dist/core").Strapi;
+    }) => {
+        trackPageView(data: {
+            articleId: string;
+            sessionId: string;
+            userId?: string;
+            userAgent: string;
+            ip: string;
+            referrer: string;
+            screen: {
+                width: number;
+                height: number;
+            };
+            language: string;
+        }): Promise<import("@strapi/types/dist/modules/documents").AnyDocument>;
+        trackAdClick(data: {
+            adSlotId: string;
+            articleId?: string;
+            sessionId: string;
+            userId?: string;
+            userAgent: string;
+            ip: string;
+        }): Promise<import("@strapi/types/dist/modules/documents").AnyDocument>;
+        trackReadBehavior(data: {
+            articleId: string;
+            sessionId: string;
+            readDuration: number;
+            scrollDepth: number;
+        }): Promise<import("@strapi/types/dist/modules/documents").AnyDocument>;
+        trackUserRegister(data: {
+            sessionId: string;
+            userId: string;
+            registeredAt: Date;
+        }): Promise<import("@strapi/types/dist/modules/documents").AnyDocument>;
+        listAdSlots(): Promise<import("@strapi/types/dist/modules/documents").AnyDocument[]>;
+        createAdSlot(data: any): Promise<import("@strapi/types/dist/modules/documents").AnyDocument>;
+        updateAdSlot(id: string, data: any): Promise<any>;
+        deleteAdSlot(id: string): Promise<void>;
+        getOverview(params: {
+            startDate: Date;
+            endDate: Date;
+        }): Promise<{
+            pv: number;
+            uv: number;
+            clickCount: number;
+            clickRate: number;
+            avgReadDuration: number;
+        }>;
+        getArticleStats(params: {
+            articleId?: string;
+            startDate: Date;
+            endDate: Date;
+        }): Promise<import("@strapi/types/dist/modules/documents").AnyDocument[]>;
+        getAdSlotStats(params: {
+            adSlotId?: string;
+            startDate: Date;
+            endDate: Date;
+        }): Promise<import("@strapi/types/dist/modules/documents").AnyDocument[]>;
+        getDeviceStats(params: {
+            startDate: Date;
+            endDate: Date;
+        }): Promise<import("@strapi/types/dist/modules/documents").AnyDocument[]>;
+        getRegionStats(params: {
+            startDate: Date;
+            endDate: Date;
+        }): Promise<import("@strapi/types/dist/modules/documents").AnyDocument[]>;
+        getUserStats(params: {
+            startDate: Date;
+            endDate: Date;
+        }): Promise<{
+            registerCount: number;
+            registeredRatio: number;
+        }>;
+        cleanupOldLogs(days: number): Promise<{
+            deleted: number;
+        }>;
+    };
+    aggregation: ({ strapi }: {
+        strapi: import("@strapi/types/dist/core").Strapi;
+    }) => {
+        aggregateArticleDaily(date: Date): Promise<void>;
+        aggregateAdSlotDaily(date: Date): Promise<void>;
+        aggregateGlobalDaily(date: Date): Promise<void>;
+        aggregateDeviceDaily(date: Date): Promise<void>;
+        aggregateRegionDaily(date: Date): Promise<void>;
+        runDailyAggregation(): Promise<{
+            success: boolean;
+            date: Date;
+            error?: undefined;
+        } | {
+            success: boolean;
+            error: any;
+            date: Date;
+        }>;
+    };
+    'sync-event': ({ strapi }: {
+        strapi: import("@strapi/types/dist/core").Strapi;
+    }) => {
+        list(siteId: number, query?: any): Promise<any[]>;
+        findOne(siteId: number, documentId: string): Promise<any>;
+        resolve(siteId: number, documentId: string, body: any): Promise<any>;
+        createFromWebhook(payload: any): Promise<any>;
+    };
+    'promo-channel': ({ strapi }: {
+        strapi: import("@strapi/types/dist/core").Strapi;
+    }) => {
+        listChannels(opts: {
+            page: number;
+            pageSize: number;
+            scene?: string;
+        }): Promise<import("@strapi/types/dist/modules/documents").AnyDocument[]>;
+        getChannel(id: string): Promise<import("@strapi/types/dist/modules/documents").AnyDocument>;
+        createChannel(data: {
+            name: string;
+            code: string;
+            description?: string;
+            scene?: string;
+            budget?: number;
+            actualCost?: number;
+        }): Promise<import("@strapi/types/dist/modules/documents").AnyDocument>;
+        updateChannel(id: string, data: any): Promise<import("@strapi/types/dist/modules/documents").AnyDocument | null>;
+        deleteChannel(id: string): Promise<{
+            documentId: import("@strapi/types/dist/modules/documents").ID;
+            entries: import("@strapi/types/dist/modules/documents").Result<TContentTypeUID, TParams>[];
+        }>;
+        addPlatformConfig(channelId: string, data: {
+            platform: string;
+            promoPid?: string;
+            promoLink?: string;
+            isActive?: boolean;
+        }): Promise<import("@strapi/types/dist/modules/documents").AnyDocument>;
+        updatePlatformConfig(configId: string, data: any): Promise<import("@strapi/types/dist/modules/documents").AnyDocument | null>;
+        removePlatformConfig(configId: string): Promise<{
+            documentId: import("@strapi/types/dist/modules/documents").ID;
+            entries: import("@strapi/types/dist/modules/documents").Result<TContentTypeUID, TParams>[];
+        }>;
+    };
+    'promo-campaign': ({ strapi }: {
+        strapi: import("@strapi/types/dist/core").Strapi;
+    }) => {
+        listCampaigns(opts: {
+            page: number;
+            pageSize: number;
+            channelId?: string;
+            status?: boolean;
+        }): Promise<import("@strapi/types/dist/modules/documents").AnyDocument[]>;
+        getCampaign(id: string): Promise<import("@strapi/types/dist/modules/documents").AnyDocument>;
+        createCampaign(data: {
+            name: string;
+            code: string;
+            channel: string;
+            description?: string;
+            startAt: string;
+            endAt: string;
+            status?: boolean;
+            budget?: number;
+            actualCost?: number;
+        }): Promise<import("@strapi/types/dist/modules/documents").AnyDocument>;
+        updateCampaign(id: string, data: any): Promise<import("@strapi/types/dist/modules/documents").AnyDocument | null>;
+        deleteCampaign(id: string): Promise<{
+            documentId: import("@strapi/types/dist/modules/documents").ID;
+            entries: import("@strapi/types/dist/modules/documents").Result<TContentTypeUID, TParams>[];
+        }>;
+    };
+    'ab-test': ({ strapi }: {
+        strapi: import("@strapi/types/dist/core").Strapi;
+    }) => {
+        listExperiments: (opts: {
+            page: number;
+            pageSize: number;
+            channelId?: string;
+            campaignId?: string;
+            status?: string;
+        }) => Promise<import("@strapi/types/dist/modules/documents").AnyDocument[]>;
+        getExperiment: (id: string) => Promise<import("@strapi/types/dist/modules/documents").AnyDocument>;
+        createExperiment: (data: any) => Promise<import("@strapi/types/dist/modules/documents").AnyDocument>;
+        startExperiment: (id: string) => Promise<import("@strapi/types/dist/modules/documents").AnyDocument | null>;
+        stopExperiment: (id: string) => Promise<import("@strapi/types/dist/modules/documents").AnyDocument | null>;
+        pickVariant: (opts: {
+            channelId?: string;
+            campaignId?: string;
+        }) => Promise<any | null>;
+        getExperimentReport: (experimentId: string, opts: {
+            startDate: string;
+            endDate: string;
+        }) => Promise<{
+            experiment: {
+                documentId: string;
+                name: any;
+                status: any;
+            };
+            variants: any;
+        }>;
+    };
+    'channel-report': ({ strapi }: {
+        strapi: import("@strapi/types/dist/core").Strapi;
+    }) => {
+        getChannelReport(opts: {
+            channelCode: string;
+            startDate: string;
+            endDate: string;
+            groupBy?: "day" | "campaign" | "variant";
+        }): Promise<any>;
+        _resetCache(): void;
+    };
+    ad: ({ strapi }: {
+        strapi: import("@strapi/types/dist/core").Strapi;
+    }) => {
+        getZoneByPosition(position: string, siteDomain?: string, siteDocumentId?: string): Promise<{
+            zone: null;
+            contents: never[];
+        } | {
+            zone: import("@strapi/types/dist/modules/documents").AnyDocument;
+            contents: any;
+        }>;
+        getAllZones(siteDomain?: string, siteDocumentId?: string): Promise<any[]>;
+        listZones(filters?: any): Promise<import("@strapi/types/dist/modules/documents").AnyDocument[]>;
+        createZone(data: any): Promise<import("@strapi/types/dist/modules/documents").AnyDocument>;
+        findOneZone(documentId: string): Promise<import("@strapi/types/dist/modules/documents").AnyDocument | null>;
+        updateZone(documentId: string, data: any): Promise<import("@strapi/types/dist/modules/documents").AnyDocument | null>;
+        deleteZone(documentId: string): Promise<{
+            documentId: import("@strapi/types/dist/modules/documents").ID;
+            entries: import("@strapi/types/dist/modules/documents").Result<TContentTypeUID, TParams>[];
+        }>;
+        listContents(filters?: any): Promise<import("@strapi/types/dist/modules/documents").AnyDocument[]>;
+        createContent(data: any): Promise<import("@strapi/types/dist/modules/documents").AnyDocument>;
+        findOneContent(documentId: string): Promise<import("@strapi/types/dist/modules/documents").AnyDocument | null>;
+        updateContent(documentId: string, data: any): Promise<import("@strapi/types/dist/modules/documents").AnyDocument | null>;
+        deleteContent(documentId: string): Promise<{
+            documentId: import("@strapi/types/dist/modules/documents").ID;
+            entries: import("@strapi/types/dist/modules/documents").Result<TContentTypeUID, TParams>[];
+        }>;
+    };
+    poster: ({ strapi }: {
+        strapi: import("@strapi/types/dist/core").Strapi;
+    }) => {
+        getTemplate(code: string): Promise<any>;
+        resolveTemplate(code: string, variables: Record<string, any>): Promise<{
+            template: {
+                canvasWidth: any;
+                canvasHeight: any;
+                backgroundColor: any;
+                backgroundImage: any;
+                backgroundMode: any;
+            };
+            elements: any;
+        } | null>;
+        listTemplates(filters?: any): Promise<import("@strapi/types/dist/modules/documents").AnyDocument[]>;
+        createTemplate(data: any): Promise<import("@strapi/types/dist/modules/documents").AnyDocument>;
+        findOneTemplate(documentId: string): Promise<any>;
+        updateTemplate(documentId: string, data: any): Promise<import("@strapi/types/dist/modules/documents").AnyDocument | null>;
+        deleteTemplate(documentId: string): Promise<{
+            documentId: import("@strapi/types/dist/modules/documents").ID;
+            entries: import("@strapi/types/dist/modules/documents").Result<TContentTypeUID, TParams>[];
+        }>;
+        cloneTemplate(documentId: string): Promise<any>;
+        batchSaveElements(templateDocumentId: string, elements: any[]): Promise<import("@strapi/types/dist/modules/documents").AnyDocument[]>;
+        listElements(filters?: any): Promise<import("@strapi/types/dist/modules/documents").AnyDocument[]>;
+        createElement(data: any): Promise<import("@strapi/types/dist/modules/documents").AnyDocument>;
+        updateElement(documentId: string, data: any): Promise<import("@strapi/types/dist/modules/documents").AnyDocument | null>;
+        deleteElement(documentId: string): Promise<{
+            documentId: import("@strapi/types/dist/modules/documents").ID;
+            entries: import("@strapi/types/dist/modules/documents").Result<TContentTypeUID, TParams>[];
+        }>;
+        seedDefaultTemplate(): Promise<{
+            success: boolean;
+            reason: string;
+            templates?: undefined;
+        } | {
+            success: boolean;
+            templates: number;
+            reason?: undefined;
+        }>;
+    };
+    'oauth-manager': ({ strapi }: {
+        strapi: import("@strapi/types/dist/core").Strapi;
+    }) => {
+        getAuthorizeUrl(accountId: string): Promise<string>;
+        handleCallback(platformType: string, code: string, state: string): Promise<{
+            accountId: string;
+            oauthState: import("./auth").OAuthState;
+        }>;
+        ensureValidToken(accountId: string): Promise<string>;
+        batchRefreshExpiringTokens(): Promise<{
+            refreshed: number;
+            failed: number;
+        }>;
+        revokeAuthorization(accountId: string): Promise<void>;
+        getStatus(accountId: string): Promise<{
+            accountId: string;
+            accountName: any;
+            platformType: any;
+            oauthState: any;
+            oauthExpiresAt: any;
+            oauthOpenId: any;
+            lastRefreshAt: any;
+        }>;
+    };
+    scheduler: ({ strapi }: {
+        strapi: import("@strapi/types/dist/core").Strapi;
+    }) => {
+        registerSchedulers(): void;
+        scanAndTriggerSchedules(): Promise<void>;
+        refreshExpiringTokens(): Promise<void>;
+    };
+    'publish-queue': ({ strapi }: {
+        strapi: import("@strapi/types/dist/core").Strapi;
+    }) => {
+        enqueuePublish(data: import("../utils/queue").PublishJobData): Promise<string | null>;
+        registerProcessors(): void;
+        runStage(stage: "publish" | "adaptContent" | "validateContent" | "ensureOAuthToken" | "checkStatus" | "finalize", data: import("../utils/queue").PublishJobData, prev: any): Promise<any>;
+    };
+};
+export default _default;
+//# sourceMappingURL=index.d.ts.map

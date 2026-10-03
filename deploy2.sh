@@ -1,0 +1,27 @@
+#!/bin/bash
+cd /www/apps/strapi
+echo "=== PKG SCRIPTS ==="
+node -e "console.log(JSON.parse(require('fs').readFileSync('package.json','utf8')).scripts)"
+echo "=== DIST BEFORE ==="
+ls -la plugins/zhao-studio/dist/server/index.js 2>&1
+echo "=== GREP createSchedule BEFORE ==="
+grep -c 'createSchedule' plugins/zhao-studio/dist/server/index.js 2>&1 || echo "0 matches"
+echo "=== FULL BUILD ==="
+npm run build 2>&1 | tee /tmp/build.log
+echo "=== GREP createSchedule AFTER ==="
+grep -c 'createSchedule' plugins/zhao-studio/dist/server/index.js 2>&1 || echo "0 matches"
+echo "=== PM2 RESTART ==="
+pm2 restart strapi --update-env 2>&1 | tail -3
+echo "=== WAIT ==="
+for i in $(seq 1 20); do
+  sleep 5
+  code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:1337/_health 2>/dev/null)
+  echo "check $i: HTTP=$code"
+  [ "$code" = "200" ] && break
+done
+echo "=== TEST API ==="
+curl -s http://127.0.0.1:1337/api/zhao-studio/platforms 2>&1 | head -c 500
+echo ""
+echo "=== TEST SCHEDULES ==="
+curl -s http://127.0.0.1:1337/api/zhao-studio/admin/schedules 2>&1 | head -c 500
+echo ""
