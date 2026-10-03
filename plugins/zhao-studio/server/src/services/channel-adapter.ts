@@ -15,21 +15,28 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       throw new Error(validation.errors.join('; '));
     }
 
-    // 2. 根据平台类型调用对应发布方法
+    // 2. 准备发布凭证：OAuth 平台走 oauth-manager.ensureValidToken
+    //    internal/custom/toutiao/xiaohongshu 用 account.config.apiKey（兼容旧逻辑）
+    let accessToken: string | undefined;
+    const oauthPlatforms = ['wechat', 'douyin'];
+    if (oauthPlatforms.includes(platformType)) {
+      try {
+        const oauthManager = strapi.plugin('zhao-studio').service('oauth-manager');
+        accessToken = await oauthManager.ensureValidToken(account.documentId || account.id);
+      } catch (err: any) {
+        throw new Error(`平台 ${platformType} 需要 OAuth 授权，请在账号管理页完成授权后重试（${err.message}）`);
+      }
+    }
+
     try {
       switch (platformType) {
-        case 'toutiao':
-          return await this.publishToToutiao(article, account);
-        case 'xiaohongshu':
-          return await this.publishToXiaohongshu(article, account);
-        case 'wechat':
-          return await this.publishToWechat(article, account);
-        case 'internal':
-          return await this.publishToInternal(article, account);
-        case 'custom':
-          return await this.publishToCustom(article, account);
-        default:
-          throw new Error('未知的渠道类型');
+        case 'toutiao': return await this.publishToToutiao(article, account, accessToken);
+        case 'xiaohongshu': return await this.publishToXiaohongshu(article, account, accessToken);
+        case 'wechat': return await this.publishToWechat(article, account, accessToken);
+        case 'douyin': return await this.publishToDouyin(article, account, accessToken);
+        case 'internal': return await this.publishToInternal(article, account);
+        case 'custom': return await this.publishToCustom(article, account, accessToken);
+        default: throw new Error(`暂不支持的平台类型: ${platformType}`);
       }
     } catch (error: any) {
       const publishError = identifyPublishError(error, platformType);
@@ -37,7 +44,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     }
   },
 
-  async publishToToutiao(article: any, account: any) {
+  async publishToToutiao(article: any, account: any, _accessToken?: string) {
     const adapter = getPlatformAdapter('toutiao');
     const endpoint = account.config?.endpoint || adapter?.endpointTemplate;
 
@@ -64,7 +71,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     };
   },
 
-  async publishToXiaohongshu(article: any, account: any) {
+  async publishToXiaohongshu(article: any, account: any, _accessToken?: string) {
     const adapter = getPlatformAdapter('xiaohongshu');
     const endpoint = account.config?.endpoint || adapter?.endpointTemplate;
 
@@ -96,7 +103,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
    * 公众号：委托 zhao-sso 已实现的微信图文协议（draft/add）建草稿，本插件不重复实现微信协议。
    * 只建草稿、不自动发布；freepublish/submit 需人工确认草稿后由 zhao-sso 执行。
    */
-  async publishToWechat(article: any, account: any) {
+  async publishToWechat(article: any, account: any, _accessToken?: string) {
     const ssoArticle = strapi.plugin('zhao-sso')?.service('sso-wx-article') as any;
     if (!ssoArticle?.create) {
       throw new Error('公众号协议执行器不可用：请确认已启用 zhao-sso 插件');
@@ -141,7 +148,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     };
   },
 
-  async publishToCustom(article: any, account: any) {
+  async publishToCustom(article: any, account: any, _accessToken?: string) {
     const endpoint = account.config?.endpoint;
     if (!endpoint) {
       throw new Error('自定义渠道未配置endpoint');
@@ -170,6 +177,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       externalId: response.data.id || response.data.externalId,
       error: response.data.message || response.data.error,
     };
+  },
+
+  async publishToDouyin(article: any, account: any, _accessToken?: string) {
+    // 占位实现：P1 Task3 补 H5 schema 降级方案
+    throw new Error('publishToDouyin 待实现');
   },
 
   async adaptContent(content: any, platformType: string): Promise<any> {
