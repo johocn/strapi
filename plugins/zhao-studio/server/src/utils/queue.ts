@@ -42,50 +42,9 @@ function getCleanRedisConfig(): any {
 }
 
 export async function initStudioQueues(): Promise<{ publish: Queue.Queue | null; scheduler: Queue.Queue | null }> {
-  try {
-    if (queuesAvailable === null) {
-      queuesAvailable = await probeBullSupport();
-    }
-    if (!queuesAvailable) return { publish: null, scheduler: null };
-
-    const redisCfg = getCleanRedisConfig();
-
-    if (!publishQueue) {
-      try {
-        publishQueue = new Queue('studio-publish', {
-          redis: redisCfg,
-          defaultJobOptions: {
-            attempts: 3,
-            backoff: { type: 'exponential', delay: 5000 },
-            removeOnComplete: 20,
-            removeOnFail: 10,
-          },
-        });
-      } catch {
-        publishQueue = null;
-      }
-    }
-
-    if (!schedulerQueue) {
-      try {
-        schedulerQueue = new Queue('studio-scheduler', {
-          redis: redisCfg,
-          defaultJobOptions: {
-            attempts: 3,
-            backoff: { type: 'exponential', delay: 2000 },
-            removeOnComplete: 20,
-            removeOnFail: 10,
-          },
-        });
-      } catch {
-        schedulerQueue = null;
-      }
-    }
-
-    return { publish: publishQueue, scheduler: schedulerQueue };
-  } catch {
-    return { publish: null, scheduler: null };
-  }
+  // Bull v4 在 Node 22 上有 Lua script 加载 crash bug (ERR_INVALID_ARG_TYPE in Hash.update)
+  // 临时跳过，待 Bull 升级后恢复
+  return { publish: null, scheduler: null };
 }
 
 export function getPublishQueue(): Queue.Queue | null { return publishQueue; }
