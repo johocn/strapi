@@ -4,6 +4,60 @@
 
 import type { Core } from '@strapi/strapi';
 
+// ============ 内联 stealth patch（零外部依赖） ============
+// 标准反检测：navigator.webdriver + chrome 对象 + plugins 数组 + permissions + runtime 等
+// 注入时机：context 创建后、第一个 page 加载前，通过 addInitScript 保证在站点 JS 之前运行
+const STEALTH_JS = `
+() => {
+  // 1. navigator.webdriver → undefined（W3C 标准自动化检测标记）
+  Object.defineProperty(navigator, 'webdriver', { get: () => undefined, configurable: true });
+
+  // 2. 伪造 chrome 对象（部分站点检测 window.chrome.runtime）
+  if (!window.chrome) {
+    Object.defineProperty(window, 'chrome', {
+      value: { runtime: {}, loadTimes: () => ({ commitLoadTime: Date.now() / 1000 }) },
+      configurable: true,
+    });
+  } else if (!window.chrome.runtime) {
+    window.chrome.runtime = {};
+  }
+
+  // 3. 伪造 plugins 数组（headless 默认 plugins.length=0）
+  if (navigator.plugins.length === 0) {
+    const fakePlugins = [
+      { name: 'Chrome PDF Plugin', filename: 'internal-pdf-viewer', description: 'Portable Document Format' },
+      { name: 'Chrome PDF Viewer', filename: 'mhjfbmdgcfjbbpaeojofohoefgiehjai', description: '' },
+      { name: 'Native Client', filename: 'internal-nacl-plugin', description: '' },
+    ];
+    Object.defineProperty(navigator, 'plugins', {
+      get: () => fakePlugins,
+      configurable: true,
+    });
+  }
+
+  // 4. 伪造 permissions.query（headless notifications 默认 denied）
+  const origQuery = navigator.permissions?.query?.bind(navigator.permissions);
+  if (origQuery && !(navigator as any).__pwStealthPatched) {
+    navigator.permissions.query = (descriptor: any) =>
+      origQuery(descriptor).then((result: any) => {
+        if (descriptor.name === 'notifications' && result.state === 'denied') {
+          return { ...result, state: 'granted' };
+        }
+        return result;
+      });
+    (navigator as any).__pwStealthPatched = true;
+  }
+
+  // 5. 伪造 languages（部分站点检测 navigator.languages 只有 en-US）
+  if (navigator.languages.length < 2) {
+    Object.defineProperty(navigator, 'languages', {
+      get: () => ['zh-CN', 'zh', 'en-US', 'en'],
+      configurable: true,
+    });
+  }
+}
+`;
+
 export interface RpaCookie {
   name: string;
   value: string;
@@ -50,15 +104,6 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       const _pw = await import('playwright');
     } catch {
       throw new Error('RPA runtime 未安装。服务器需执行: npm i playwright && npx playwright install chromium');
-    }
-  },
-
-  async ensureStealth(): Promise<void> {
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      await import('playwright-stealth');
-    } catch {
-      strapi.log.warn('[zhao-studio] playwright-stealth 未安装，RPA 可能触发风控。建议: npm i playwright-stealth');
     }
   },
 
@@ -130,11 +175,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       }
     }
 
-    // stealth 反检测注入
-    try {
-      const stealth = await import('playwright-stealth');
-      await stealth.default(ctx as any);
-    } catch { /* playwright-stealth 可选，静默跳过 */ }
+    // stealth 反检测：内联 JS patch，零外部依赖
+    await ctx.addInitScript(STEALTH_JS);
 
     return ctx;
   },
