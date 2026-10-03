@@ -5,9 +5,7 @@ declare const _default: {
     bootstrap: ({ strapi }: {
         strapi: any;
     }) => Promise<void>;
-    destroy: ({ strapi }: {
-        strapi: any;
-    }) => void;
+    destroy: () => Promise<void>;
     config: {
         default: {
             ai: {

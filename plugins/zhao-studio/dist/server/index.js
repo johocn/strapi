@@ -29411,9 +29411,9 @@ const queue = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.definePropert
   getSchedulerQueue,
   initStudioQueues
 }, Symbol.toStringTag, { value: "Module" }));
-const destroy = ({ strapi: strapi2 }) => {
+const destroy = async () => {
   try {
-    closeStudioQueues();
+    await closeStudioQueues();
   } catch {
   }
 };
