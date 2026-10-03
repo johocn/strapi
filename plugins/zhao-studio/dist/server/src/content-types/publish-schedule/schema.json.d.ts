@@ -1,0 +1,59 @@
+declare const _default: {
+  "kind": "collectionType",
+  "collectionName": "zhao_publish_schedules",
+  "info": {
+    "singularName": "publish-schedule",
+    "pluralName": "publish-schedules",
+    "displayName": "定时发布任务",
+    "description": "预约发布，到点自动触发"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "content-manager": {
+      "visible": true
+    },
+    "content-type-builder": {
+      "visible": true
+    }
+  },
+  "attributes": {
+    "name": {
+      "type": "string"
+    },
+    "article": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-studio.article-draft"
+    },
+    "accountIds": {
+      "type": "json"
+    },
+    "scheduledAt": {
+      "type": "datetime",
+      "required": true
+    },
+    "triggeredAt": {
+      "type": "datetime"
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": ["scheduled", "triggered", "cancelled", "expired"],
+      "default": "scheduled"
+    },
+    "publishRecords": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-studio.publish-record"
+    },
+    "createdBy": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "admin::user"
+    }
+  }
+}
+;
+
+export default _default;

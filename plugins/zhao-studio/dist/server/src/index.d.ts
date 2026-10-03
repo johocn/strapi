@@ -61,10 +61,10 @@ declare const _default: {
             findOneAccount(ctx: any): Promise<void>;
             createSchedule(ctx: any): Promise<void>;
             listSchedules(ctx: any): Promise<void>;
-            findOneSchedule(ctx: any): Promise<void>;
+            findOneSchedule(ctx: any): Promise<any>;
             cancelSchedule(ctx: any): Promise<void>;
-            getDouyinSchema(ctx: any): Promise<void>;
-            previewPublish(ctx: any): Promise<void>;
+            getDouyinSchema(ctx: any): Promise<any>;
+            previewPublish(ctx: any): Promise<any>;
         };
         'internal-api': ({ strapi }: {
             strapi: import('@strapi/types/dist/core').Strapi;
@@ -350,36 +350,9 @@ declare const _default: {
         'channel-adapter': ({ strapi }: {
             strapi: import('@strapi/types/dist/core').Strapi;
         }) => {
-            publish(article: any, account: any): Promise<{
-                success: boolean;
-                createdDraft: boolean;
-                draftId: any;
-                error: string;
-                externalId?: undefined;
-                publishId?: undefined;
-            } | {
-                success: boolean;
-                externalId: any;
-                publishId: any;
-                createdDraft?: undefined;
-                draftId?: undefined;
-                error?: undefined;
-            } | {
-                success: boolean;
-                publish_mode: string;
-                schema: string;
-            } | {
-                success: boolean;
-                externalId: any;
-                accessUrl: string;
-                channelCode: any;
-            } | {
-                success: any;
-                externalId: any;
-                error: any;
-            }>;
-            publishToToutiao(article: any, account: any, _accessToken?: string): Promise<never>;
-            publishToXiaohongshu(article: any, account: any, _accessToken?: string): Promise<never>;
+            publish(article: any, account: any): Promise<any>;
+            publishToToutiao(article: any, account: any, _accessToken?: string): Promise<any>;
+            publishToXiaohongshu(article: any, account: any, _accessToken?: string): Promise<any>;
             publishToWechat(article: any, account: any, _accessToken?: string): Promise<{
                 success: boolean;
                 createdDraft: boolean;
@@ -748,7 +721,8 @@ declare const _default: {
         scheduler: ({ strapi }: {
             strapi: import('@strapi/types/dist/core').Strapi;
         }) => {
-            registerSchedulers(): void;
+            registerSchedulers(): Promise<void>;
+            closeWorker(): Promise<void>;
             scanAndTriggerSchedules(): Promise<void>;
             refreshExpiringTokens(): Promise<void>;
         };
@@ -757,7 +731,37 @@ declare const _default: {
         }) => {
             enqueuePublish(data: import('./utils/queue').PublishJobData): Promise<string | null>;
             registerProcessors(): void;
+            closeWorker(): Promise<void>;
             runStage(stage: "publish" | "adaptContent" | "validateContent" | "ensureOAuthToken" | "checkStatus" | "finalize", data: import('./utils/queue').PublishJobData, prev: any): Promise<any>;
+        };
+        'rpa-client': ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            ensurePlaywrightRuntime(): Promise<void>;
+            getCookies(accountId: string): Promise<import('./services/rpa-client').RpaCookie[]>;
+            saveCookies(accountId: string, cookies: import('./services/rpa-client').RpaCookie[]): Promise<void>;
+            isCookiesFresh(cookies: import('./services/rpa-client').RpaCookie[], maxAgeMs?: number): boolean;
+            launchBrowser(headless?: boolean): Promise<import('playwright-core').Browser>;
+            createContext(browser: any, cookies: import('./services/rpa-client').RpaCookie[], platform: import('./services/rpa-client').RpaPlatformConfig["platform"]): Promise<any>;
+            captureCookies(ctx: any, platform: import('./services/rpa-client').RpaPlatformConfig["platform"]): Promise<import('./services/rpa-client').RpaCookie[]>;
+            startLoginSession(platform: import('./services/rpa-client').RpaPlatformConfig["platform"], headless?: boolean): Promise<{
+                browser: import('playwright-core').Browser;
+                ctx: import('playwright-core').BrowserContext;
+                page: import('playwright-core').Page;
+                platform: "toutiao" | "xiaohongshu";
+            }>;
+            publishViaRPA(params: {
+                platform: import('./services/rpa-client').RpaPlatformConfig["platform"];
+                accountId: string;
+                title: string;
+                content: string;
+                coverImage?: string;
+            }): Promise<{
+                success: boolean;
+                externalId?: string;
+                url?: string;
+                error?: string;
+            }>;
         };
     };
     policies: {};
@@ -1139,6 +1143,14 @@ declare const _default: {
                     lastRefreshAt: {
                         type: string;
                     };
+                    rpaCookies: {
+                        type: string;
+                        description: string;
+                    };
+                    rpaCookiesAt: {
+                        type: string;
+                        description: string;
+                    };
                     createdAt: {
                         type: string;
                     };
@@ -1208,6 +1220,9 @@ declare const _default: {
                     error: {
                         type: string;
                     };
+                    errorCode: {
+                        type: string;
+                    };
                     retryCount: {
                         type: string;
                         default: number;
@@ -1222,6 +1237,64 @@ declare const _default: {
                         type: string;
                     };
                     abVariant: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                    };
+                };
+            };
+        };
+        'publish-schedule': {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                    description: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                pluginOptions: {
+                    "content-manager": {
+                        visible: boolean;
+                    };
+                    "content-type-builder": {
+                        visible: boolean;
+                    };
+                };
+                attributes: {
+                    name: {
+                        type: string;
+                    };
+                    article: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                    };
+                    accountIds: {
+                        type: string;
+                    };
+                    scheduledAt: {
+                        type: string;
+                        required: boolean;
+                    };
+                    triggeredAt: {
+                        type: string;
+                    };
+                    status: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    publishRecords: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                    };
+                    createdBy: {
                         type: string;
                         relation: string;
                         target: string;

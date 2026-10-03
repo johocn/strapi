@@ -14,6 +14,7 @@ declare const _default: ({ strapi }: {
 }) => {
     enqueuePublish(data: PublishJobData): Promise<string | null>;
     registerProcessors(): void;
+    closeWorker(): Promise<void>;
     runStage(stage: Stage, data: PublishJobData, prev: any): Promise<any>;
 };
 export default _default;

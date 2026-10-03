@@ -2,36 +2,9 @@ import { Core } from '../../../../../node_modules/@strapi/strapi';
 declare const _default: ({ strapi }: {
     strapi: Core.Strapi;
 }) => {
-    publish(article: any, account: any): Promise<{
-        success: boolean;
-        createdDraft: boolean;
-        draftId: any;
-        error: string;
-        externalId?: undefined;
-        publishId?: undefined;
-    } | {
-        success: boolean;
-        externalId: any;
-        publishId: any;
-        createdDraft?: undefined;
-        draftId?: undefined;
-        error?: undefined;
-    } | {
-        success: boolean;
-        publish_mode: string;
-        schema: string;
-    } | {
-        success: boolean;
-        externalId: any;
-        accessUrl: string;
-        channelCode: any;
-    } | {
-        success: any;
-        externalId: any;
-        error: any;
-    }>;
-    publishToToutiao(article: any, account: any, _accessToken?: string): Promise<never>;
-    publishToXiaohongshu(article: any, account: any, _accessToken?: string): Promise<never>;
+    publish(article: any, account: any): Promise<any>;
+    publishToToutiao(article: any, account: any, _accessToken?: string): Promise<any>;
+    publishToXiaohongshu(article: any, account: any, _accessToken?: string): Promise<any>;
     publishToWechat(article: any, account: any, _accessToken?: string): Promise<{
         success: boolean;
         createdDraft: boolean;

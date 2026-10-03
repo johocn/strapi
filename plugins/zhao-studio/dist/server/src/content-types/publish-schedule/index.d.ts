@@ -20,19 +20,22 @@ declare const _default: {
             };
         };
         attributes: {
+            name: {
+                type: string;
+            };
             article: {
                 type: string;
                 relation: string;
                 target: string;
-                inversedBy: string;
             };
-            account: {
+            accountIds: {
                 type: string;
-                relation: string;
-                target: string;
-                inversedBy: string;
             };
-            externalId: {
+            scheduledAt: {
+                type: string;
+                required: boolean;
+            };
+            triggeredAt: {
                 type: string;
             };
             status: {
@@ -40,41 +43,12 @@ declare const _default: {
                 enum: string[];
                 default: string;
             };
-            scheduledAt: {
+            publishRecords: {
                 type: string;
+                relation: string;
+                target: string;
             };
-            startedAt: {
-                type: string;
-            };
-            finishedAt: {
-                type: string;
-            };
-            jobId: {
-                type: string;
-            };
-            queueStage: {
-                type: string;
-            };
-            error: {
-                type: string;
-            };
-            errorCode: {
-                type: string;
-            };
-            retryCount: {
-                type: string;
-                default: number;
-            };
-            publishedAt: {
-                type: string;
-            };
-            createdAt: {
-                type: string;
-            };
-            updatedAt: {
-                type: string;
-            };
-            abVariant: {
+            createdBy: {
                 type: string;
                 relation: string;
                 target: string;

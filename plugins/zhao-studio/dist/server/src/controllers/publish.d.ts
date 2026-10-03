@@ -19,10 +19,10 @@ declare const _default: ({ strapi }: {
     findOneAccount(ctx: any): Promise<void>;
     createSchedule(ctx: any): Promise<void>;
     listSchedules(ctx: any): Promise<void>;
-    findOneSchedule(ctx: any): Promise<void>;
+    findOneSchedule(ctx: any): Promise<any>;
     cancelSchedule(ctx: any): Promise<void>;
-    getDouyinSchema(ctx: any): Promise<void>;
-    previewPublish(ctx: any): Promise<void>;
+    getDouyinSchema(ctx: any): Promise<any>;
+    previewPublish(ctx: any): Promise<any>;
 };
 export default _default;
 //# sourceMappingURL=publish.d.ts.map

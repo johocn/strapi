@@ -375,6 +375,14 @@ declare const _default: {
                 lastRefreshAt: {
                     type: string;
                 };
+                rpaCookies: {
+                    type: string;
+                    description: string;
+                };
+                rpaCookiesAt: {
+                    type: string;
+                    description: string;
+                };
                 createdAt: {
                     type: string;
                 };
@@ -444,6 +452,9 @@ declare const _default: {
                 error: {
                     type: string;
                 };
+                errorCode: {
+                    type: string;
+                };
                 retryCount: {
                     type: string;
                     default: number;
@@ -458,6 +469,64 @@ declare const _default: {
                     type: string;
                 };
                 abVariant: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                };
+            };
+        };
+    };
+    'publish-schedule': {
+        schema: {
+            kind: string;
+            collectionName: string;
+            info: {
+                singularName: string;
+                pluralName: string;
+                displayName: string;
+                description: string;
+            };
+            options: {
+                draftAndPublish: boolean;
+            };
+            pluginOptions: {
+                "content-manager": {
+                    visible: boolean;
+                };
+                "content-type-builder": {
+                    visible: boolean;
+                };
+            };
+            attributes: {
+                name: {
+                    type: string;
+                };
+                article: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                };
+                accountIds: {
+                    type: string;
+                };
+                scheduledAt: {
+                    type: string;
+                    required: boolean;
+                };
+                triggeredAt: {
+                    type: string;
+                };
+                status: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
+                publishRecords: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                };
+                createdBy: {
                     type: string;
                     relation: string;
                     target: string;

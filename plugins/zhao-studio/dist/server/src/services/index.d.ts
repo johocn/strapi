@@ -121,36 +121,9 @@ declare const _default: {
     'channel-adapter': ({ strapi }: {
         strapi: import('@strapi/types/dist/core').Strapi;
     }) => {
-        publish(article: any, account: any): Promise<{
-            success: boolean;
-            createdDraft: boolean;
-            draftId: any;
-            error: string;
-            externalId?: undefined;
-            publishId?: undefined;
-        } | {
-            success: boolean;
-            externalId: any;
-            publishId: any;
-            createdDraft?: undefined;
-            draftId?: undefined;
-            error?: undefined;
-        } | {
-            success: boolean;
-            publish_mode: string;
-            schema: string;
-        } | {
-            success: boolean;
-            externalId: any;
-            accessUrl: string;
-            channelCode: any;
-        } | {
-            success: any;
-            externalId: any;
-            error: any;
-        }>;
-        publishToToutiao(article: any, account: any, _accessToken?: string): Promise<never>;
-        publishToXiaohongshu(article: any, account: any, _accessToken?: string): Promise<never>;
+        publish(article: any, account: any): Promise<any>;
+        publishToToutiao(article: any, account: any, _accessToken?: string): Promise<any>;
+        publishToXiaohongshu(article: any, account: any, _accessToken?: string): Promise<any>;
         publishToWechat(article: any, account: any, _accessToken?: string): Promise<{
             success: boolean;
             createdDraft: boolean;
@@ -519,7 +492,8 @@ declare const _default: {
     scheduler: ({ strapi }: {
         strapi: import('@strapi/types/dist/core').Strapi;
     }) => {
-        registerSchedulers(): void;
+        registerSchedulers(): Promise<void>;
+        closeWorker(): Promise<void>;
         scanAndTriggerSchedules(): Promise<void>;
         refreshExpiringTokens(): Promise<void>;
     };
@@ -528,7 +502,37 @@ declare const _default: {
     }) => {
         enqueuePublish(data: import('../utils/queue').PublishJobData): Promise<string | null>;
         registerProcessors(): void;
+        closeWorker(): Promise<void>;
         runStage(stage: "publish" | "adaptContent" | "validateContent" | "ensureOAuthToken" | "checkStatus" | "finalize", data: import('../utils/queue').PublishJobData, prev: any): Promise<any>;
+    };
+    'rpa-client': ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        ensurePlaywrightRuntime(): Promise<void>;
+        getCookies(accountId: string): Promise<import('./rpa-client').RpaCookie[]>;
+        saveCookies(accountId: string, cookies: import('./rpa-client').RpaCookie[]): Promise<void>;
+        isCookiesFresh(cookies: import('./rpa-client').RpaCookie[], maxAgeMs?: number): boolean;
+        launchBrowser(headless?: boolean): Promise<import('playwright-core').Browser>;
+        createContext(browser: any, cookies: import('./rpa-client').RpaCookie[], platform: import('./rpa-client').RpaPlatformConfig["platform"]): Promise<any>;
+        captureCookies(ctx: any, platform: import('./rpa-client').RpaPlatformConfig["platform"]): Promise<import('./rpa-client').RpaCookie[]>;
+        startLoginSession(platform: import('./rpa-client').RpaPlatformConfig["platform"], headless?: boolean): Promise<{
+            browser: import('playwright-core').Browser;
+            ctx: import('playwright-core').BrowserContext;
+            page: import('playwright-core').Page;
+            platform: "toutiao" | "xiaohongshu";
+        }>;
+        publishViaRPA(params: {
+            platform: import('./rpa-client').RpaPlatformConfig["platform"];
+            accountId: string;
+            title: string;
+            content: string;
+            coverImage?: string;
+        }): Promise<{
+            success: boolean;
+            externalId?: string;
+            url?: string;
+            error?: string;
+        }>;
     };
 };
 export default _default;
