@@ -116,6 +116,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async createSchedule(ctx: any) {
     try {
       const { articleId, accountIds, scheduledAt, name } = ctx.request.body;
+      if (!scheduledAt) { ctx.throw(400, 'scheduledAt 必填'); return; }
+      const schedTime = new Date(scheduledAt).getTime();
+      if (isNaN(schedTime)) { ctx.throw(400, 'scheduledAt 格式无效'); return; }
+      if (schedTime <= Date.now()) { ctx.throw(400, 'scheduledAt 必须晚于当前时间'); return; }
       const publishService = strapi.plugin('zhao-studio').service('publish');
       const result = await publishService.createSchedule({ articleId, accountIds, scheduledAt, name });
       ctx.body = { data: result };
