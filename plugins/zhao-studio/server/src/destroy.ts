@@ -1,8 +1,8 @@
 import { closeStudioQueues } from './utils/queue';
 
-export default ({ strapi }: { strapi: any }) => {
+export default async () => {
   try {
-    closeStudioQueues();
+    await closeStudioQueues();
   } catch {
     // ignore
   }
