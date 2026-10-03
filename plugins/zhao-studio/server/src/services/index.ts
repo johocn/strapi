@@ -16,6 +16,7 @@ import channelReport from './channel-report';
 import ad from './ad';
 import poster from './poster';
 import oauthManager from './auth/oauth-manager';
+import scheduler from './scheduler';
 
 export default {
   collect,
@@ -36,4 +37,5 @@ export default {
   ad,
   'poster': poster,
   'oauth-manager': oauthManager,
+  scheduler,
 };
