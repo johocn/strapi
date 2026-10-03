@@ -7,6 +7,7 @@ interface PublishAccount {
   name: string;
   platformId?: string;
   platform?: { documentId?: string; name?: string };
+  platformName?: string;
   accountId?: string;
   accessToken?: string;
   refreshToken?: string;
@@ -23,16 +24,14 @@ export const usePublishAccounts = () => {
   const fetchAccounts = React.useCallback(async (platformId?: string) => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/accounts`);
+      const query = platformId ? `?platformId=${encodeURIComponent(platformId)}` : '';
+      const res = await fetch(`${API_BASE}/accounts${query}`);
       const json = await res.json();
-      let list = normalizeList<PublishAccount>(json || []);
-      // 前端过滤（按 platformId）
-      if (platformId) {
-        list = list.filter(a =>
-          a.platformId === platformId ||
-          a.platform?.documentId === platformId
-        );
-      }
+      // 接口返回 { data: [...] }；平台过滤交给后端（关系按 documentId 过滤）
+      const list = normalizeList<PublishAccount>(json?.data || []).map(a => ({
+        ...a,
+        platformName: a.platform?.name || a.platformName || '-',
+      }));
       setAccounts(list);
     } catch (err) {
       console.error('fetchAccounts error:', err);

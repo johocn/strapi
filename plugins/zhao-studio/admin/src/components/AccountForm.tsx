@@ -13,14 +13,22 @@ const AccountForm: React.FC<AccountFormProps> = ({ account, platforms = [], onSa
 
   React.useEffect(() => {
     if (account) {
-      form.setFieldsValue(account);
+      form.setFieldsValue({
+        name: account.name,
+        isActive: account.isActive,
+        // 模型里是 platform 关系，表单内部用 platformId 承载它的 documentId
+        platformId: account.platform?.documentId || account.platformId,
+      });
     } else {
       form.resetFields();
     }
   }, [account, form]);
 
   const handleSubmit = () => {
-    form.validateFields().then((values) => onSave(values));
+    form.validateFields().then(({ platformId, ...rest }) => {
+      // 必须转成关系字段名再提交：platformId 不是模型属性，后端会静默丢弃导致平台关联存不上
+      onSave({ ...rest, platform: platformId });
+    });
   };
 
   return (
@@ -33,15 +41,6 @@ const AccountForm: React.FC<AccountFormProps> = ({ account, platforms = [], onSa
           options={platforms.map((p) => ({ value: p.documentId || p.id, label: p.name }))}
           placeholder="选择平台"
         />
-      </Form.Item>
-      <Form.Item name="accountId" label="平台账号ID">
-        <Input />
-      </Form.Item>
-      <Form.Item name="accessToken" label="Access Token">
-        <Input.Password />
-      </Form.Item>
-      <Form.Item name="refreshToken" label="Refresh Token">
-        <Input.Password />
       </Form.Item>
       <Form.Item name="isActive" label="启用" valuePropName="checked" initialValue={true}>
         <Switch />

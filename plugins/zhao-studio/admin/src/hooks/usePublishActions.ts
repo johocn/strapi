@@ -12,7 +12,7 @@ export const usePublishActions = () => {
   const [loading, setLoading] = React.useState(false);
 
   // 批量发布：循环调用单文章发布接口
-  const publish = async ({ articleIds, platformId, accountId }: PublishParams) => {
+  const publish = async ({ articleIds, accountId }: PublishParams) => {
     setLoading(true);
     try {
       const results = await Promise.all(
@@ -20,7 +20,8 @@ export const usePublishActions = () => {
           fetch(`${API_BASE}/articles/${articleId}/publish`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ platformId, accountId }),
+            // 控制器读的是 accountIds 数组，传 accountId 会被忽略 → 必然发布失败
+            body: JSON.stringify({ accountIds: [accountId] }),
           })
         )
       );

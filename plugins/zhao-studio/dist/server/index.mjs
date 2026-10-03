@@ -20243,9 +20243,9 @@ const publish = ({ strapi: strapi2 }) => ({
   async listAccounts(platformId) {
     const filters2 = { isActive: true };
     if (platformId) {
-      filters2.platform = platformId;
+      filters2.platform = { documentId: platformId };
     }
-    const accounts = await strapi2.documents("plugin::zhao-studio.publish-account").findMany({ filters: filters2 });
+    const accounts = await strapi2.documents("plugin::zhao-studio.publish-account").findMany({ filters: filters2, populate: { platform: true } });
     return accounts;
   },
   async createAccount(data2) {
@@ -20266,16 +20266,20 @@ const publish = ({ strapi: strapi2 }) => ({
     const { articleId, platformId, accountId } = filters2;
     const queryFilters = {};
     if (articleId) {
-      queryFilters.article = articleId;
-    }
-    if (platformId) {
-      queryFilters.platform = platformId;
+      queryFilters.article = { documentId: articleId };
     }
     if (accountId) {
-      queryFilters.account = accountId;
+      queryFilters.account = { documentId: accountId };
+    }
+    if (platformId) {
+      const accounts = await strapi2.documents("plugin::zhao-studio.publish-account").findMany({ filters: { platform: { documentId: platformId } } });
+      const accountDocIds = accounts.map((a) => a.documentId);
+      if (accountDocIds.length === 0) return [];
+      queryFilters.account = { documentId: { $in: accountDocIds } };
     }
     const records = await strapi2.documents("plugin::zhao-studio.publish-record").findMany({
       filters: queryFilters,
+      populate: { account: { populate: { platform: true } } },
       sort: "publishedAt:desc"
     });
     return records;

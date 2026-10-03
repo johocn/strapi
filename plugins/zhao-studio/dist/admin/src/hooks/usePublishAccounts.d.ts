@@ -7,6 +7,7 @@ interface PublishAccount {
         documentId?: string;
         name?: string;
     };
+    platformName?: string;
     accountId?: string;
     accessToken?: string;
     refreshToken?: string;

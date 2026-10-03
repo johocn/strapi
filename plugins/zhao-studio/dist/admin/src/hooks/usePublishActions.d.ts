@@ -4,7 +4,7 @@ interface PublishParams {
     accountId: string;
 }
 export declare const usePublishActions: () => {
-    publish: ({ articleIds, platformId, accountId }: PublishParams) => Promise<void>;
+    publish: ({ articleIds, accountId }: PublishParams) => Promise<void>;
     publishArticle: (articleId: string, accountIds: string[]) => Promise<void>;
     loading: boolean;
 };

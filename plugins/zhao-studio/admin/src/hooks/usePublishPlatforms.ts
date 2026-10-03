@@ -24,7 +24,8 @@ export const usePublishPlatforms = () => {
     try {
       const res = await fetch(`${API_BASE}/platforms`);
       const json = await res.json();
-      setPlatforms(normalizeList<PublishPlatform>(json || []));
+      // 接口返回 { data: [...] }，不能直接当数组用（对对象调 .map 会抛错 → 列表恒空）
+      setPlatforms(normalizeList<PublishPlatform>(json?.data || []));
     } catch (err) {
       console.error('fetchPlatforms error:', err);
       setPlatforms([]);

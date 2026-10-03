@@ -19,7 +19,7 @@ const index = {
           subject: null
         }
       ],
-      Component: () => Promise.resolve().then(() => require("./App-aKUcLcEX.js")).then((mod) => ({ default: mod.default }))
+      Component: () => Promise.resolve().then(() => require("./App-Cv7sz5_C.js")).then((mod) => ({ default: mod.default }))
     });
     app.registerPlugin({
       id: pluginId,

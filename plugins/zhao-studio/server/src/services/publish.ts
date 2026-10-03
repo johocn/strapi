@@ -144,12 +144,13 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async listAccounts(platformId?: string) {
     const filters: any = { isActive: true };
     if (platformId) {
-      filters.platform = platformId;
+      // 关系过滤不能传 documentId 裸值：会被当成整型主键拼成 t.id = 'uuid' → 500
+      filters.platform = { documentId: platformId };
     }
 
     const accounts = await strapi
       .documents('plugin::zhao-studio.publish-account')
-      .findMany({ filters });
+      .findMany({ filters, populate: { platform: true } });
 
     return accounts;
   },
@@ -183,19 +184,26 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     const { articleId, platformId, accountId } = filters;
     const queryFilters: any = {};
     if (articleId) {
-      queryFilters.article = articleId;
-    }
-    if (platformId) {
-      queryFilters.platform = platformId;
+      queryFilters.article = { documentId: articleId };
     }
     if (accountId) {
-      queryFilters.account = accountId;
+      queryFilters.account = { documentId: accountId };
+    }
+    if (platformId) {
+      // publish-record 没有 platform 字段（旧代码写在 platform 上必然 400），平台维度经 account 关系绕一层
+      const accounts = await strapi
+        .documents('plugin::zhao-studio.publish-account')
+        .findMany({ filters: { platform: { documentId: platformId } } });
+      const accountDocIds = accounts.map((a: any) => a.documentId);
+      if (accountDocIds.length === 0) return [];
+      queryFilters.account = { documentId: { $in: accountDocIds } };
     }
 
     const records = await strapi
       .documents('plugin::zhao-studio.publish-record')
       .findMany({
         filters: queryFilters,
+        populate: { account: { populate: { platform: true } } },
         sort: 'publishedAt:desc',
       });
 

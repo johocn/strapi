@@ -12,7 +12,7 @@ interface PublishRecord {
   title?: string;
   platformName?: string;
   platform?: { documentId?: string; name?: string };
-  account?: { documentId?: string; name?: string };
+  account?: { documentId?: string; name?: string; platform?: { documentId?: string; name?: string } };
   status: string;
   publishedAt?: string;
   errorMessage?: string;
@@ -32,13 +32,15 @@ export const usePublishRecords = (params?: UsePublishRecordsParams) => {
       const url = `/api/zhao-studio/v1/admin/records${query.toString() ? '?' + query : ''}`;
       const res = await fetch(url);
       const json = await res.json();
-      const list: PublishRecord[] = json || [];
+      // 接口返回 { data: [...] }，不能直接当数组用（对对象调 .map 会抛错 → 列表恒空）
+      const list: PublishRecord[] = json?.data || [];
       // 字段标准化：展平嵌套对象 + 补 id
       const normalized = list.map(r => {
         const normalized = normalizeRecord<PublishRecord>(r);
         return {
           ...normalized,
-          platformName: r.platformName || r.platform?.name || '-',
+          // 记录上没有 platform 字段，平台名取 account.platform.name
+          platformName: r.platformName || r.account?.platform?.name || r.platform?.name || '-',
           errorMessage: r.errorMessage || r.error || '',
         };
       });

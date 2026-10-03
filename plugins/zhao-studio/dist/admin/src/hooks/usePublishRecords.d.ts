@@ -14,6 +14,10 @@ interface PublishRecord {
     account?: {
         documentId?: string;
         name?: string;
+        platform?: {
+            documentId?: string;
+            name?: string;
+        };
     };
     status: string;
     publishedAt?: string;
