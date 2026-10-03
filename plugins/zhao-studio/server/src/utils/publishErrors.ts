@@ -40,6 +40,22 @@ export const PublishErrors = {
     code: 'PUB_008',
     message: '网络连接失败，请稍后重试',
   },
+  OAUTH_TOKEN_EXPIRED: {
+    code: 'PUB_009',
+    message: '账号授权已失效，请重新授权',
+  },
+  OAUTH_REFRESH_FAILED: {
+    code: 'PUB_010',
+    message: 'OAuth token 续期失败',
+  },
+  PLATFORM_RATE_LIMITED: {
+    code: 'PUB_011',
+    message: '平台限流，请稍后再试',
+  },
+  PLATFORM_REJECTED: {
+    code: 'PUB_012',
+    message: '平台审核拒绝',
+  },
 };
 
 export function identifyPublishError(error: any, platform?: string): PublishError {
@@ -69,6 +85,22 @@ export function identifyPublishError(error: any, platform?: string): PublishErro
 
   if (error.message?.includes('network') || error.message?.includes('网络') || error.message?.includes('timeout')) {
     return PublishErrors.NETWORK_ERROR;
+  }
+
+  if (error.message?.includes('oauth') || error.message?.includes('token') || error.message?.includes('授权')) {
+    return { ...PublishErrors.OAUTH_TOKEN_EXPIRED, platform };
+  }
+
+  if (error.message?.includes('refresh')) {
+    return { ...PublishErrors.OAUTH_REFRESH_FAILED, platform };
+  }
+
+  if (error.message?.includes('429') || error.message?.includes('rate') || error.message?.includes('限流')) {
+    return { ...PublishErrors.PLATFORM_RATE_LIMITED, platform };
+  }
+
+  if (error.message?.includes('审核') || error.message?.includes('review') || error.message?.includes('audit')) {
+    return { ...PublishErrors.PLATFORM_REJECTED, platform };
   }
 
   return { ...PublishErrors.API_ERROR, platform };
