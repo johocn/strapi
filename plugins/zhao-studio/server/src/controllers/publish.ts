@@ -114,41 +114,60 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
   // ============ P2 定时发布 ============
   async createSchedule(ctx: any) {
-    const { articleId, accountIds, scheduledAt, name } = ctx.request.body;
-    const publishService = strapi.plugin('zhao-studio').service('publish');
-    const result = await publishService.createSchedule({ articleId, accountIds, scheduledAt, name });
-    ctx.body = { data: result };
+    try {
+      const { articleId, accountIds, scheduledAt, name } = ctx.request.body;
+      const publishService = strapi.plugin('zhao-studio').service('publish');
+      const result = await publishService.createSchedule({ articleId, accountIds, scheduledAt, name });
+      ctx.body = { data: result };
+    } catch (e: any) { ctx.throw(400, e.message); }
   },
 
   async listSchedules(ctx: any) {
-    const publishService = strapi.plugin('zhao-studio').service('publish');
-    const schedules = await publishService.listSchedules();
-    ctx.body = { data: schedules };
+    try {
+      const publishService = strapi.plugin('zhao-studio').service('publish');
+      const schedules = await publishService.listSchedules();
+      ctx.body = { data: schedules };
+    } catch (e: any) { ctx.throw(500, e.message); }
   },
 
   async findOneSchedule(ctx: any) {
-    const publishService = strapi.plugin('zhao-studio').service('publish');
-    const schedule = await publishService.findOneSchedule(ctx.params.id);
-    ctx.body = { data: schedule };
+    try {
+      const publishService = strapi.plugin('zhao-studio').service('publish');
+      const schedule = await publishService.findOneSchedule(ctx.params.id);
+      if (!schedule) return ctx.throw(404, '定时任务不存在');
+      ctx.body = { data: schedule };
+    } catch (e: any) { ctx.throw(400, e.message); }
   },
 
   async cancelSchedule(ctx: any) {
-    const publishService = strapi.plugin('zhao-studio').service('publish');
-    const schedule = await publishService.cancelSchedule(ctx.params.id);
-    ctx.body = { data: schedule };
+    try {
+      const publishService = strapi.plugin('zhao-studio').service('publish');
+      const schedule = await publishService.cancelSchedule(ctx.params.id);
+      ctx.body = { data: schedule };
+    } catch (e: any) { ctx.throw(400, e.message); }
   },
 
   // ============ P3 基础补齐 ============
   async getDouyinSchema(ctx: any) {
-    const publishService = strapi.plugin('zhao-studio').service('publish');
-    const result = await publishService.getDouyinSchema(ctx.params.recordId);
-    ctx.body = { data: result };
+    try {
+      const publishService = strapi.plugin('zhao-studio').service('publish');
+      const result = await publishService.getDouyinSchema(ctx.params.recordId);
+      ctx.body = { data: result };
+    } catch (e: any) {
+      if (e.message?.includes('不存在')) return ctx.throw(404, e.message);
+      ctx.throw(400, e.message);
+    }
   },
 
   async previewPublish(ctx: any) {
-    const { articleId, accountIds } = ctx.request.body;
-    const publishService = strapi.plugin('zhao-studio').service('publish');
-    const result = await publishService.previewPublish(articleId, accountIds);
-    ctx.body = { data: result };
+    try {
+      const { articleId, accountIds } = ctx.request.body;
+      const publishService = strapi.plugin('zhao-studio').service('publish');
+      const result = await publishService.previewPublish(articleId, accountIds);
+      ctx.body = { data: result };
+    } catch (e: any) {
+      if (e.message?.includes('不存在')) return ctx.throw(404, e.message);
+      ctx.throw(400, e.message);
+    }
   },
 });
