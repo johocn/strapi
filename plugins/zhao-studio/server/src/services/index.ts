@@ -18,6 +18,7 @@ import poster from './poster';
 import oauthManager from './auth/oauth-manager';
 import scheduler from './scheduler';
 import publishQueue from './publish-queue';
+import rpaClient from './rpa-client';
 
 export default {
   collect,
@@ -40,4 +41,5 @@ export default {
   'oauth-manager': oauthManager,
   scheduler,
   'publish-queue': publishQueue,
+  'rpa-client': rpaClient,
 };

@@ -47,15 +47,33 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   },
 
   async publishToToutiao(article: any, account: any, _accessToken?: string) {
-    // 头条内容发布 API 属于巨量引擎开放平台 (open.oceanengine.com) 的广告投放域，
-    // 不是内容开放平台；头条的内容侧发布能力暂未向第三方开放。
-    throw new Error('头条发布 API 暂未对外开放，需等待巨量引擎内容侧开放或采用 RPA 方案');
+    const rpaClient = strapi.plugin('zhao-studio').service('rpa-client');
+    const res = await rpaClient.publishViaRPA({
+      platform: 'toutiao',
+      accountId: account.documentId || account.id || account._id,
+      title: article.title || '',
+      content: article.content || article.aiSummary || '',
+      coverImage: account.config?.coverImage || undefined,
+    });
+    if (!res.success) {
+      throw new Error(res.error || '头条 RPA 发布失败');
+    }
+    return { success: true, ...res };
   },
 
   async publishToXiaohongshu(article: any, account: any, _accessToken?: string) {
-    // 小红书开放平台 (open.xiaohongshu.com) 目前只开放电商/商品/订单接口，
-    // 发布笔记 API 未开放，后续需采用 RPA (Appium 云手机) 方案。
-    throw new Error('小红书发布笔记 API 暂未对外开放，后续需 RPA 方案');
+    const rpaClient = strapi.plugin('zhao-studio').service('rpa-client');
+    const res = await rpaClient.publishViaRPA({
+      platform: 'xiaohongshu',
+      accountId: account.documentId || account.id || account._id,
+      title: article.title || '',
+      content: article.content || article.aiSummary || '',
+      coverImage: account.config?.coverImage || undefined,
+    });
+    if (!res.success) {
+      throw new Error(res.error || '小红书 RPA 发布失败');
+    }
+    return { success: true, ...res };
   },
 
   async publishToWechat(article: any, account: any, _accessToken?: string) {

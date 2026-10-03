@@ -74,6 +74,14 @@
     "lastRefreshAt": {
       "type": "datetime"
     },
+    "rpaCookies": {
+      "type": "text",
+      "description": "RPA 平台 (xiaohongshu/toutiao) 的 cookie JSON 数组"
+    },
+    "rpaCookiesAt": {
+      "type": "datetime",
+      "description": "RPA cookie 最后刷新时间，用于判断是否过期"
+    },
     "createdAt": {
       "type": "datetime"
     },
