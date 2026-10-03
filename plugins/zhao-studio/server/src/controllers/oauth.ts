@@ -8,7 +8,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       const { accountId } = ctx.params;
       const manager = strapi.plugin('zhao-studio').service('oauth-manager');
       const url = await manager.getAuthorizeUrl(accountId);
-      ctx.redirect(url); // 302 到平台授权页
+      // 返回 JSON 而非 302：授权路由带 admin 鉴权，浏览器直接跳转带不上 Authorization 头，
+      // 由前端拿到 url 后再 window.open / location 跳转。
+      ctx.body = { data: { url } };
     } catch (e: any) {
       ctx.status = 400;
       ctx.body = { ok: false, error: e.message };
