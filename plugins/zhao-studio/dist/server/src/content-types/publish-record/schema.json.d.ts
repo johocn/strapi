@@ -36,7 +36,7 @@ declare const _default: {
     },
     "status": {
       "type": "enumeration",
-      "enum": ["pending", "success", "failed"],
+      "enum": ["pending", "queued", "validating", "uploading_media", "publishing", "checking_status", "success", "partial_success", "failed"],
       "default": "pending"
     },
     "error": {

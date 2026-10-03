@@ -1,5 +1,24 @@
 "use strict";
 Object.defineProperties(exports, { __esModule: { value: true }, [Symbol.toStringTag]: { value: "Module" } });
+const crypto = require("crypto");
+function _interopNamespace(e) {
+  if (e && e.__esModule) return e;
+  const n = Object.create(null, { [Symbol.toStringTag]: { value: "Module" } });
+  if (e) {
+    for (const k in e) {
+      if (k !== "default") {
+        const d = Object.getOwnPropertyDescriptor(e, k);
+        Object.defineProperty(n, k, d.get ? d : {
+          enumerable: true,
+          get: () => e[k]
+        });
+      }
+    }
+  }
+  n.default = e;
+  return Object.freeze(n);
+}
+const crypto__namespace = /* @__PURE__ */ _interopNamespace(crypto);
 const actions = [
   {
     section: "plugins",
@@ -19838,14 +19857,14 @@ const publish = ({ strapi: strapi2 }) => ({
       try {
         const adaptedContent = await channelAdapter2.adaptContent(article, account.platform?.type || "custom");
         const result = await channelAdapter2.publish(adaptedContent, account);
+        const isSchemaOnly = result.publish_mode === "h5_share";
         const record = await strapi2.documents("plugin::zhao-studio.publish-record").create({
           data: {
             article: articleId,
             account: account.documentId,
-            externalId: result.externalId,
-            status: result.success ? "success" : "failed",
-            // 公众号仅建草稿：把阶段/草稿号写入 error 字段（沿用 zhao-sso 既有台账约定），便于后续人工确认
-            error: result.createdDraft ? JSON.stringify({ platform: "wechat", phase: "draft", draftId: result.draftId }) : result.error,
+            externalId: result.externalId || result.publishId,
+            status: isSchemaOnly ? "queued" : result.success ? "success" : "failed",
+            error: isSchemaOnly ? JSON.stringify({ platform: "douyin", phase: "h5_share", schema: result.schema }) : result.error,
             publishedAt: /* @__PURE__ */ new Date()
           }
         });
@@ -19854,8 +19873,11 @@ const publish = ({ strapi: strapi2 }) => ({
           accountName: account.name,
           platform: account.platform?.type,
           success: result.success,
-          createdDraft: !!result.createdDraft,
+          h5Share: isSchemaOnly,
+          h5ShareSchema: result.schema,
           externalId: result.externalId,
+          url: result.url,
+          publishId: result.publishId,
           recordId: record.documentId,
           error: result.error
         });
@@ -19879,7 +19901,7 @@ const publish = ({ strapi: strapi2 }) => ({
         });
       }
     }
-    const successCount = results.filter((r) => r.success && !r.createdDraft).length;
+    const successCount = results.filter((r) => r.success && !r.h5Share).length;
     if (successCount > 0) {
       await strapi2.documents("plugin::zhao-studio.article-draft").update({
         documentId: articleId,
@@ -20137,82 +20159,50 @@ const channelAdapter = ({ strapi: strapi2 }) => ({
     if (!validation.valid) {
       throw new Error(validation.errors.join("; "));
     }
+    let accessToken;
+    const oauthPlatforms = ["wechat", "douyin"];
+    if (oauthPlatforms.includes(platformType)) {
+      try {
+        const oauthManager2 = strapi2.plugin("zhao-studio").service("oauth-manager");
+        accessToken = await oauthManager2.ensureValidToken(account.documentId || account.id);
+      } catch (err) {
+        throw new Error(`平台 ${platformType} 需要 OAuth 授权，请在账号管理页完成授权后重试（${err.message}）`);
+      }
+    }
     try {
       switch (platformType) {
         case "toutiao":
-          return await this.publishToToutiao(article, account);
+          return await this.publishToToutiao(article, account, accessToken);
         case "xiaohongshu":
-          return await this.publishToXiaohongshu(article, account);
+          return await this.publishToXiaohongshu(article, account, accessToken);
         case "wechat":
-          return await this.publishToWechat(article, account);
+          return await this.publishToWechat(article, account, accessToken);
+        case "douyin":
+          return await this.publishToDouyin(article, account, accessToken);
         case "internal":
           return await this.publishToInternal(article, account);
         case "custom":
-          return await this.publishToCustom(article, account);
+          return await this.publishToCustom(article, account, accessToken);
+        case "bilibili":
+          throw new Error("bilibili 服务端发布 API 暂未接入，需调研 bilibili 开放平台能力");
         default:
-          throw new Error("未知的渠道类型");
+          throw new Error(`暂不支持的平台类型: ${platformType}`);
       }
     } catch (error) {
       const publishError = identifyPublishError(error, platformType);
       throw new Error(publishError.message);
     }
   },
-  async publishToToutiao(article, account) {
-    const adapter2 = getPlatformAdapter("toutiao");
-    const endpoint = account.config?.endpoint || adapter2?.endpointTemplate;
-    const response = await axios.post(
-      endpoint,
-      {
-        title: article.title,
-        content: article.content,
-        cover_image: article.coverImage
-      },
-      {
-        headers: {
-          "Authorization": `Bearer ${account.config?.apiKey}`,
-          "Content-Type": "application/json"
-        },
-        timeout: 3e4
-      }
-    );
-    return {
-      success: response.data.success || response.data.code === 0,
-      externalId: response.data.data?.article_id || response.data.article_id,
-      error: response.data.message || response.data.error
-    };
+  async publishToToutiao(article, account, _accessToken) {
+    throw new Error("头条发布 API 暂未对外开放，需等待巨量引擎内容侧开放或采用 RPA 方案");
   },
-  async publishToXiaohongshu(article, account) {
-    const adapter2 = getPlatformAdapter("xiaohongshu");
-    const endpoint = account.config?.endpoint || adapter2?.endpointTemplate;
-    const response = await axios.post(
-      endpoint,
-      {
-        title: article.title.substring(0, 20),
-        desc: article.content.substring(0, 1e3),
-        images: article.images || [],
-        cover: article.coverImage
-      },
-      {
-        headers: {
-          "Authorization": `Bearer ${account.config?.apiKey}`,
-          "Content-Type": "application/json"
-        },
-        timeout: 3e4
-      }
-    );
-    return {
-      success: response.data.success || response.data.code === 0,
-      externalId: response.data.data?.note_id || response.data.note_id,
-      error: response.data.message || response.data.error
-    };
+  async publishToXiaohongshu(article, account, _accessToken) {
+    throw new Error("小红书发布笔记 API 暂未对外开放，后续需 RPA 方案");
   },
-  /**
-   * 公众号：委托 zhao-sso 已实现的微信图文协议（draft/add）建草稿，本插件不重复实现微信协议。
-   * 只建草稿、不自动发布；freepublish/submit 需人工确认草稿后由 zhao-sso 执行。
-   */
-  async publishToWechat(article, account) {
+  async publishToWechat(article, account, _accessToken) {
     const ssoArticle = strapi2.plugin("zhao-sso")?.service("sso-wx-article");
-    if (!ssoArticle?.create) {
+    const ssoWx = strapi2.plugin("zhao-sso")?.service("sso-wechat");
+    if (!ssoArticle?.create || !ssoWx?.getAccessToken) {
       throw new Error("公众号协议执行器不可用：请确认已启用 zhao-sso 插件");
     }
     const draft2 = await ssoArticle.create({
@@ -20223,12 +20213,68 @@ const channelAdapter = ({ strapi: strapi2 }) => ({
       thumb_media_id: account.config?.mediaId || "",
       content_source_url: article.sourceUrl || ""
     });
+    const draftMediaId = draft2.draft_id;
+    if (!draftMediaId) {
+      return { success: true, createdDraft: true, draftId: draftMediaId, error: "草稿已建立但无法自动发布（需人工确认 media_id）" };
+    }
+    const wxToken = await ssoWx.getAccessToken("official_account");
+    if (!wxToken) {
+      return { success: true, createdDraft: true, draftId: draftMediaId, error: "草稿已建立但 access_token 不可用，无法自动发布" };
+    }
+    let submitRes;
+    try {
+      const resp = await axios.post(
+        `https://api.weixin.qq.com/cgi-bin/freepublish/submit?access_token=${wxToken}`,
+        { media_id: draftMediaId },
+        { headers: { "Content-Type": "application/json" }, timeout: 15e3 }
+      );
+      submitRes = resp.data;
+    } catch (err) {
+      return { success: true, createdDraft: true, draftId: draftMediaId, error: `草稿已建立但提交发布失败: ${err.message}` };
+    }
+    if (submitRes.errcode !== 0) {
+      return { success: true, createdDraft: true, draftId: draftMediaId, error: `freepublish/submit 失败 errcode=${submitRes.errcode} errmsg=${submitRes.errmsg}` };
+    }
+    const publishId = submitRes.publish_id;
+    const MAX_POLL = 10;
+    const POLL_INTERVAL_MS = 5e3;
+    let finalResult = null;
+    for (let i = 0; i < MAX_POLL; i++) {
+      await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
+      try {
+        const getResp = await axios.post(
+          `https://api.weixin.qq.com/cgi-bin/freepublish/get?access_token=${wxToken}`,
+          { publish_id: publishId },
+          { headers: { "Content-Type": "application/json" }, timeout: 15e3 }
+        );
+        const data2 = getResp.data;
+        if (data2.publish_status === 0) {
+          const articleUrl = data2.article_detail?.item?.[0]?.article_url;
+          const articleId = data2.article_id;
+          return {
+            success: true,
+            externalId: articleId,
+            url: articleUrl,
+            publishId
+          };
+        } else if (data2.publish_status === 2) {
+          return {
+            success: false,
+            error: `平台审核拒绝（freepublish_status=2）: ${JSON.stringify(data2)}`,
+            publishId
+          };
+        }
+        finalResult = data2;
+      } catch (err) {
+        continue;
+      }
+    }
     return {
       success: true,
-      externalId: draft2.draft_id,
-      draftId: draft2.draft_id,
-      wxArticleId: draft2.id,
-      createdDraft: true
+      externalId: publishId,
+      error: "发布已提交但轮询超时，需后续确认",
+      publishId,
+      finalPollStatus: finalResult?.publish_status
     };
   },
   async publishToInternal(article, account) {
@@ -20247,7 +20293,7 @@ const channelAdapter = ({ strapi: strapi2 }) => ({
       channelCode
     };
   },
-  async publishToCustom(article, account) {
+  async publishToCustom(article, account, _accessToken) {
     const endpoint = account.config?.endpoint;
     if (!endpoint) {
       throw new Error("自定义渠道未配置endpoint");
@@ -20273,6 +20319,73 @@ const channelAdapter = ({ strapi: strapi2 }) => ({
       success: response.data.success || response.data.code === 0,
       externalId: response.data.id || response.data.externalId,
       error: response.data.message || response.data.error
+    };
+  },
+  generateDouyinShareSchema({
+    clientKey,
+    ticket,
+    videoPath,
+    title,
+    customCoverImageUrl
+  }) {
+    const nonceStr = Math.random().toString(36).slice(2) + Date.now().toString(36);
+    const timestamp = Math.floor(Date.now() / 1e3).toString();
+    const kv = {
+      ticket,
+      timestamp,
+      nonce_str: nonceStr
+    };
+    const sortedKeys = Object.keys(kv).sort();
+    const queryStr = sortedKeys.map((k) => `${k}=${kv[k]}`).join("&");
+    const signature = crypto__namespace.createHash("md5").update(queryStr).digest("hex");
+    const params = new URLSearchParams({
+      share_type: "h5",
+      client_key: clientKey,
+      nonce_str: nonceStr,
+      timestamp,
+      signature,
+      title
+    });
+    if (videoPath) params.set("video_path", videoPath);
+    if (customCoverImageUrl) params.set("custom_cover_image_url", customCoverImageUrl);
+    return `snssdk1128://openplatform/share?${params.toString()}`;
+  },
+  async getDouyinTicket(clientKey, clientSecret) {
+    const tokenResp = await axios.post(
+      "https://open.douyin.com/oauth/client_token/",
+      { client_key: clientKey, client_secret: clientSecret, grant_type: "client_credential" },
+      { headers: { "Content-Type": "application/json" }, timeout: 1e4 }
+    );
+    const clientToken = tokenResp.data?.data?.access_token;
+    if (!clientToken) throw new Error(`douyin client_token 获取失败: ${JSON.stringify(tokenResp.data)}`);
+    const ticketResp = await axios.get("https://open.douyin.com/open/getticket/", {
+      headers: { "access-token": clientToken },
+      timeout: 1e4
+    });
+    const ticket = ticketResp.data?.data?.ticket;
+    if (!ticket) throw new Error(`douyin open_ticket 获取失败: ${JSON.stringify(ticketResp.data)}`);
+    return ticket;
+  },
+  async publishToDouyin(article, account, _accessToken) {
+    const cfg = strapi2.plugin("zhao-studio").config()?.publish?.platforms?.douyin || {};
+    const clientKey = cfg.clientKey || process.env.DOUYIN_CLIENT_KEY;
+    const clientSecret = cfg.clientSecret || process.env.DOUYIN_CLIENT_SECRET;
+    if (!clientKey || !clientSecret) {
+      throw new Error("未配置抖音 clientKey/clientSecret，无法生成分享 schema");
+    }
+    const ticket = await this.getDouyinTicket(clientKey, clientSecret);
+    const videoPath = article.videoPath || article.videoUrl || article.coverImage;
+    const schema2 = this.generateDouyinShareSchema({
+      clientKey,
+      ticket,
+      videoPath,
+      title: article.title || "",
+      customCoverImageUrl: article.coverImage
+    });
+    return {
+      success: true,
+      publish_mode: "h5_share",
+      schema: schema2
     };
   },
   async adaptContent(content, platformType) {
@@ -22381,7 +22494,7 @@ const collectionName$e = "zhao_publish_records";
 const info$e = { "singularName": "publish-record", "pluralName": "publish-records", "displayName": "发布记录", "description": "文章发布到账号的记录" };
 const options$e = { "draftAndPublish": false };
 const pluginOptions$e = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
-const attributes$e = { "article": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.article-draft", "inversedBy": "publishRecords" }, "account": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.publish-account", "inversedBy": "publishRecords" }, "externalId": { "type": "string" }, "status": { "type": "enumeration", "enum": ["pending", "success", "failed"], "default": "pending" }, "error": { "type": "text" }, "retryCount": { "type": "integer", "default": 0 }, "publishedAt": { "type": "datetime" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" }, "abVariant": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.ab-variant" } };
+const attributes$e = { "article": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.article-draft", "inversedBy": "publishRecords" }, "account": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.publish-account", "inversedBy": "publishRecords" }, "externalId": { "type": "string" }, "status": { "type": "enumeration", "enum": ["pending", "queued", "validating", "uploading_media", "publishing", "checking_status", "success", "partial_success", "failed"], "default": "pending" }, "error": { "type": "text" }, "retryCount": { "type": "integer", "default": 0 }, "publishedAt": { "type": "datetime" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" }, "abVariant": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.ab-variant" } };
 const schema$e = {
   kind: kind$e,
   collectionName: collectionName$e,
