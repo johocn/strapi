@@ -45,17 +45,18 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         const result = await channelAdapter.publish(adaptedContent, account);
 
         // 记录发布结果
+        // douyin h5_share：schema 生成成功但真正发布在前端用户扫码完成，状态标记 queued
+        const isSchemaOnly = result.publish_mode === 'h5_share';
         const record = await strapi
           .documents('plugin::zhao-studio.publish-record')
           .create({
             data: {
               article: articleId,
               account: account.documentId,
-              externalId: result.externalId,
-              status: result.success ? 'success' : 'failed',
-              // 公众号仅建草稿：把阶段/草稿号写入 error 字段（沿用 zhao-sso 既有台账约定），便于后续人工确认
-              error: result.createdDraft
-                ? JSON.stringify({ platform: 'wechat', phase: 'draft', draftId: result.draftId })
+              externalId: result.externalId || result.publishId,
+              status: isSchemaOnly ? 'queued' : (result.success ? 'success' : 'failed'),
+              error: isSchemaOnly
+                ? JSON.stringify({ platform: 'douyin', phase: 'h5_share', schema: result.schema })
                 : result.error,
               publishedAt: new Date(),
             },
@@ -66,8 +67,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
           accountName: account.name,
           platform: account.platform?.type,
           success: result.success,
-          createdDraft: !!result.createdDraft,
+          h5Share: isSchemaOnly,
+          h5ShareSchema: result.schema,
           externalId: result.externalId,
+          url: result.url,
+          publishId: result.publishId,
           recordId: record.documentId,
           error: result.error,
         });
@@ -96,9 +100,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       }
     }
 
-    // 5. 更新文章状态：仅“真正发布成功”的渠道才置为 published；
-    // 公众号仅建草稿（createdDraft）不算已发布，文章保持 ready 待人工确认
-    const successCount = results.filter((r) => r.success && !r.createdDraft).length;
+    // 5. 更新文章状态：仅"真正发布成功"的渠道才置为 published；
+    // douyin h5_share 是前端待处理的，不算已发布
+    const successCount = results.filter((r) => r.success && !r.h5Share).length;
     if (successCount > 0) {
       await strapi.documents('plugin::zhao-studio.article-draft').update({
         documentId: articleId,
