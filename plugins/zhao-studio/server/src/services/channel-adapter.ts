@@ -99,16 +99,14 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     };
   },
 
-  /**
-   * 公众号：委托 zhao-sso 已实现的微信图文协议（draft/add）建草稿，本插件不重复实现微信协议。
-   * 只建草稿、不自动发布；freepublish/submit 需人工确认草稿后由 zhao-sso 执行。
-   */
   async publishToWechat(article: any, account: any, _accessToken?: string) {
     const ssoArticle = strapi.plugin('zhao-sso')?.service('sso-wx-article') as any;
-    if (!ssoArticle?.create) {
+    const ssoWx = strapi.plugin('zhao-sso')?.service('sso-wechat') as any;
+    if (!ssoArticle?.create || !ssoWx?.getAccessToken) {
       throw new Error('公众号协议执行器不可用：请确认已启用 zhao-sso 插件');
     }
 
+    // Step A: 建草稿（委托 zhao-sso）
     const draft = await ssoArticle.create({
       title: article.title,
       author: article.author || article.sourceAuthor || '',
@@ -118,12 +116,80 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       content_source_url: article.sourceUrl || '',
     });
 
+    const draftMediaId = draft.draft_id;
+    if (!draftMediaId) {
+      return { success: true, createdDraft: true, draftId: draftMediaId, error: '草稿已建立但无法自动发布（需人工确认 media_id）' };
+    }
+
+    // Step B: 获取公众号级 access_token（zhao-sso 的 sso-wechat.getAccessToken，不走 OAuth）
+    const wxToken = await ssoWx.getAccessToken('official_account');
+    if (!wxToken) {
+      return { success: true, createdDraft: true, draftId: draftMediaId, error: '草稿已建立但 access_token 不可用，无法自动发布' };
+    }
+
+    // Step C: freepublish/submit 提交发布
+    let submitRes: any;
+    try {
+      const resp = await axios.post(
+        `https://api.weixin.qq.com/cgi-bin/freepublish/submit?access_token=${wxToken}`,
+        { media_id: draftMediaId },
+        { headers: { 'Content-Type': 'application/json' }, timeout: 15000 }
+      );
+      submitRes = resp.data;
+    } catch (err: any) {
+      return { success: true, createdDraft: true, draftId: draftMediaId, error: `草稿已建立但提交发布失败: ${err.message}` };
+    }
+
+    if (submitRes.errcode !== 0) {
+      return { success: true, createdDraft: true, draftId: draftMediaId, error: `freepublish/submit 失败 errcode=${submitRes.errcode} errmsg=${submitRes.errmsg}` };
+    }
+
+    const publishId = submitRes.publish_id;
+
+    // Step D: 轮询 freepublish/get（最多 10 次，每次 5 秒）
+    const MAX_POLL = 10;
+    const POLL_INTERVAL_MS = 5000;
+    let finalResult: any = null;
+
+    for (let i = 0; i < MAX_POLL; i++) {
+      await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL_MS));
+
+      try {
+        const getResp = await axios.post(
+          `https://api.weixin.qq.com/cgi-bin/freepublish/get?access_token=${wxToken}`,
+          { publish_id: publishId },
+          { headers: { 'Content-Type': 'application/json' }, timeout: 15000 }
+        );
+        const data = getResp.data;
+
+        if (data.publish_status === 0) {
+          const articleUrl = data.article_detail?.item?.[0]?.article_url;
+          const articleId = data.article_id;
+          return {
+            success: true,
+            externalId: articleId,
+            url: articleUrl,
+            publishId,
+          };
+        } else if (data.publish_status === 2) {
+          return {
+            success: false,
+            error: `平台审核拒绝（freepublish_status=2）: ${JSON.stringify(data)}`,
+            publishId,
+          };
+        }
+        finalResult = data;
+      } catch (err: any) {
+        continue;
+      }
+    }
+
     return {
       success: true,
-      externalId: draft.draft_id,
-      draftId: draft.draft_id,
-      wxArticleId: draft.id,
-      createdDraft: true,
+      externalId: publishId,
+      error: '发布已提交但轮询超时，需后续确认',
+      publishId,
+      finalPollStatus: finalResult?.publish_status,
     };
   },
 
