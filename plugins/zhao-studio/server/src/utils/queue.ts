@@ -1,19 +1,9 @@
 import { Queue, Worker } from 'bullmq';
 import Redis from 'ioredis';
-
-function getRedisConfig() {
-  return {
-    host: process.env.REDIS_HOST || 'localhost',
-    port: parseInt(process.env.REDIS_PORT || '6379', 10),
-    username: process.env.REDIS_USER || undefined,
-    password: process.env.REDIS_PASSWORD || undefined,
-    db: parseInt(process.env.REDIS_DB || '0', 10),
-    maxRetriesPerRequest: 1,
-  };
-}
+import { getRedisConnection } from './redis';
 
 function getCleanRedisConfig(): any {
-  const cfg = getRedisConfig();
+  const cfg = getRedisConnection();
   const clean: any = { host: cfg.host, port: cfg.port, db: cfg.db };
   // BullMQ requires maxRetriesPerRequest=null (Bull v4 default was 20)
   clean.maxRetriesPerRequest = null;
@@ -36,6 +26,8 @@ export async function initStudioQueues(): Promise<{ publish: Queue | null; sched
   try {
     const cfg = getCleanRedisConfig();
     redisClient = new Redis(cfg);
+    // 必须监听 error，否则连接失败时 ioredis 抛出 "Unhandled error event" 并持续重连刷屏
+    redisClient.on('error', () => { queuesAvailable = false; });
     await redisClient.ping();
     queuesAvailable = true;
 

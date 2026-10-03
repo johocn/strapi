@@ -304,18 +304,25 @@ async function seedNoticeData(strapi2) {
   strapi2.log.info("[zhao-studio] Notice data seed completed: 1 zone + 1 content");
   return { success: true, zoneId: zone.documentId, contents: 1 };
 }
-function getRedisConfig() {
+function getRedisConnection() {
   return {
     host: process.env.REDIS_HOST || "localhost",
     port: parseInt(process.env.REDIS_PORT || "6379", 10),
     username: process.env.REDIS_USER || void 0,
     password: process.env.REDIS_PASSWORD || void 0,
-    db: parseInt(process.env.REDIS_DB || "0", 10),
-    maxRetriesPerRequest: 1
+    db: parseInt(process.env.REDIS_DB || "0", 10)
+  };
+}
+function getRedisOptions() {
+  return {
+    ...getRedisConnection(),
+    lazyConnect: true,
+    maxRetriesPerRequest: 1,
+    retryStrategy: () => null
   };
 }
 function getCleanRedisConfig() {
-  const cfg = getRedisConfig();
+  const cfg = getRedisConnection();
   const clean = { host: cfg.host, port: cfg.port, db: cfg.db };
   clean.maxRetriesPerRequest = null;
   if (cfg.username) clean.username = cfg.username;
@@ -334,6 +341,9 @@ async function initStudioQueues() {
   try {
     const cfg = getCleanRedisConfig();
     redisClient = new Redis__default.default(cfg);
+    redisClient.on("error", () => {
+      queuesAvailable = false;
+    });
     await redisClient.ping();
     queuesAvailable = true;
     publishQueue$1 = new bullmq.Queue("studio-publish", { connection: redisClient });
@@ -22448,6 +22458,13 @@ const poster = ({ strapi: strapi2 }) => ({
 });
 const REDIS_NONCE_PREFIX = "zhao:studio:oauth:nonce:";
 const NONCE_TTL_SECONDS = 300;
+function createRedis() {
+  const Redis2 = require("ioredis");
+  const redis = new Redis2(getRedisOptions());
+  redis.on("error", () => {
+  });
+  return redis;
+}
 function encodeState(accountId, nonce) {
   return `${accountId}:${nonce}`;
 }
@@ -22460,24 +22477,31 @@ function decodeState(state) {
 function generateNonce() {
   return (Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 10) + Date.now().toString(36)).slice(0, 32);
 }
-async function validateAndConsumeNonce(strapi2, nonce) {
+async function issueNonce(strapi2, nonce) {
+  const redis = createRedis();
   try {
-    const Redis2 = require("ioredis");
-    const url = process.env.REDIS_URL || "redis://localhost:6379";
-    const redis = new Redis2(url, { lazyConnect: true });
+    await redis.connect();
+    await redis.set(`${REDIS_NONCE_PREFIX}${nonce}`, "1", "EX", NONCE_TTL_SECONDS);
+  } catch {
+    strapi2?.log?.warn?.("[zhao-studio] OAuth nonce 登记跳过（Redis 不可用）");
+  } finally {
+    redis.disconnect();
+  }
+}
+async function consumeNonce(strapi2, nonce) {
+  const redis = createRedis();
+  try {
     await redis.connect();
     const key = `${REDIS_NONCE_PREFIX}${nonce}`;
     const exists = await redis.exists(key);
-    if (exists) {
-      await redis.quit();
-      return false;
-    }
-    await redis.set(key, "1", "EX", NONCE_TTL_SECONDS);
-    await redis.quit();
+    if (!exists) return false;
+    await redis.del(key);
     return true;
   } catch {
     strapi2?.log?.warn?.("[zhao-studio] OAuth nonce 校验跳过（Redis 不可用）");
     return true;
+  } finally {
+    redis.disconnect();
   }
 }
 function computeExpiresAt(expiresInSeconds) {
@@ -22694,13 +22718,13 @@ const oauthManager = ({ strapi: strapi2 }) => ({
     if (!provider) throw new Error(`暂不支持的 OAuth 平台: ${platformType}`);
     const nonce = generateNonce();
     const state = encodeState(accountId, nonce);
-    await validateAndConsumeNonce(strapi2, nonce);
+    await issueNonce(strapi2, nonce);
     return provider.buildAuthorizeUrl(state);
   },
   async handleCallback(platformType, code, state) {
     const parsed = decodeState(state);
     if (!parsed) throw new Error("state 参数格式无效");
-    const nonceOk = await validateAndConsumeNonce(strapi2, parsed.nonce);
+    const nonceOk = await consumeNonce(strapi2, parsed.nonce);
     if (!nonceOk) throw new Error("OAuth state 校验失败（nonce 已使用）");
     const account = await strapi2.documents(ACCOUNT_UID).findOne({ documentId: parsed.accountId, populate: { platform: true } });
     if (!account) throw new Error("账号不存在");

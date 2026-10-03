@@ -2,7 +2,7 @@
 
 import type { Core } from '@strapi/strapi';
 import { getProvider } from './providers';
-import { encodeState, decodeState, generateNonce, validateAndConsumeNonce } from './utils';
+import { encodeState, decodeState, generateNonce, issueNonce, consumeNonce } from './utils';
 import type { OAuthState } from './types';
 
 const ACCOUNT_UID = 'plugin::zhao-studio.publish-account';
@@ -25,7 +25,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     const nonce = generateNonce();
     const state = encodeState(accountId, nonce);
 
-    await validateAndConsumeNonce(strapi, nonce);
+    await issueNonce(strapi, nonce);
 
     return provider.buildAuthorizeUrl(state);
   },
@@ -34,7 +34,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     const parsed = decodeState(state);
     if (!parsed) throw new Error('state 参数格式无效');
 
-    const nonceOk = await validateAndConsumeNonce(strapi, parsed.nonce);
+    const nonceOk = await consumeNonce(strapi, parsed.nonce);
     if (!nonceOk) throw new Error('OAuth state 校验失败（nonce 已使用）');
 
     const account = await strapi.documents(ACCOUNT_UID).findOne({ documentId: parsed.accountId, populate: { platform: true } });
