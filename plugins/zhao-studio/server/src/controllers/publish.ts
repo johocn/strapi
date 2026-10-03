@@ -111,4 +111,44 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       .findOne({ documentId: ctx.params.id });
     ctx.body = { data: account };
   },
+
+  // ============ P2 定时发布 ============
+  async createSchedule(ctx: any) {
+    const { articleId, accountIds, scheduledAt, name } = ctx.request.body;
+    const publishService = strapi.plugin('zhao-studio').service('publish');
+    const result = await publishService.createSchedule({ articleId, accountIds, scheduledAt, name });
+    ctx.body = { data: result };
+  },
+
+  async listSchedules(ctx: any) {
+    const publishService = strapi.plugin('zhao-studio').service('publish');
+    const schedules = await publishService.listSchedules();
+    ctx.body = { data: schedules };
+  },
+
+  async findOneSchedule(ctx: any) {
+    const publishService = strapi.plugin('zhao-studio').service('publish');
+    const schedule = await publishService.findOneSchedule(ctx.params.id);
+    ctx.body = { data: schedule };
+  },
+
+  async cancelSchedule(ctx: any) {
+    const publishService = strapi.plugin('zhao-studio').service('publish');
+    const schedule = await publishService.cancelSchedule(ctx.params.id);
+    ctx.body = { data: schedule };
+  },
+
+  // ============ P3 基础补齐 ============
+  async getDouyinSchema(ctx: any) {
+    const publishService = strapi.plugin('zhao-studio').service('publish');
+    const result = await publishService.getDouyinSchema(ctx.params.recordId);
+    ctx.body = { data: result };
+  },
+
+  async previewPublish(ctx: any) {
+    const { articleId, accountIds } = ctx.request.body;
+    const publishService = strapi.plugin('zhao-studio').service('publish');
+    const result = await publishService.previewPublish(articleId, accountIds);
+    ctx.body = { data: result };
+  },
 });
