@@ -2,7 +2,18 @@
 // RPA 基类：封装 Playwright 浏览器生命周期 + cookie 管理 + stealth 注入
 // 运行时动态 import playwright — 服务器没装也能正常启动 Strapi，仅在调 publish 时才检查
 
+import * as os from 'os';
 import type { Core } from '@strapi/strapi';
+import { getRpaDriver } from './rpa';
+import { dumpDebug } from './rpa/shared';
+import type { RpaPlatform } from './rpa/types';
+
+// 扫码登录会话（进程内持有，5 分钟过期）。key = accountId。
+const LOGIN_SESSIONS = new Map<
+  string,
+  { browser: any; ctx: any; page: any; platform: RpaPlatform; createdAt: number }
+>();
+const LOGIN_SESSION_TTL_MS = 5 * 60 * 1000;
 
 // ============ 内联 stealth patch（零外部依赖） ============
 // 标准反检测：navigator.webdriver + chrome 对象 + plugins 数组 + permissions + runtime 等
@@ -140,6 +151,40 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     return now < minExpires - maxAgeMs;
   },
 
+  async clearCookies(accountId: string): Promise<void> {
+    await this.saveCookies(accountId, []);
+  },
+
+  async getCookiesStatus(accountId: string) {
+    const acc = await strapi.documents('plugin::zhao-studio.publish-account').findOne({
+      documentId: accountId,
+      populate: ['platform'],
+    });
+    if (!acc) throw new Error('账号不存在');
+    const cookies = await this.getCookies(accountId);
+    return {
+      platformType: (acc as any).platform?.type || null,
+      hasCookies: cookies.length > 0,
+      cookieCount: cookies.length,
+      fresh: this.isCookiesFresh(cookies),
+      cookiesAt: (acc as any).rpaCookiesAt || null,
+    };
+  },
+
+  /** 解析账号对应的 RPA 平台，非 xiaohongshu/toutiao 直接报错 */
+  async resolveAccountPlatform(accountId: string): Promise<RpaPlatform> {
+    const acc = await strapi.documents('plugin::zhao-studio.publish-account').findOne({
+      documentId: accountId,
+      populate: ['platform'],
+    });
+    if (!acc) throw new Error('账号不存在');
+    const type = (acc as any).platform?.type;
+    if (type !== 'xiaohongshu' && type !== 'toutiao') {
+      throw new Error(`账号平台 ${type || '未知'} 不支持 RPA（仅 xiaohongshu / toutiao）`);
+    }
+    return type;
+  },
+
   // ============ 浏览器生命周期 ============
 
   async launchBrowser(headless = true) {
@@ -184,24 +229,76 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async captureCookies(ctx: any, platform: RpaPlatformConfig['platform']): Promise<RpaCookie[]> {
     const platformCfg = RPA_PLATFORMS[platform];
     const all = await ctx.cookies();
-    return all.filter(c => c.domain.includes(platformCfg.cookieDomain.replace(/^\./, '')));
+    return all.filter((c: any) => c.domain.includes(platformCfg.cookieDomain.replace(/^\./, '')));
   },
 
-  // ============ 登录（需要人工扫码） ============
+  // ============ 扫码登录会话 ============
 
-  async startLoginSession(platform: RpaPlatformConfig['platform'], headless = false) {
+  /** 关闭指定账号的登录会话（存在才关） */
+  async closeLoginSession(accountId: string): Promise<void> {
+    const s = LOGIN_SESSIONS.get(accountId);
+    if (!s) return;
+    LOGIN_SESSIONS.delete(accountId);
+    await s.ctx?.close().catch(() => {});
+    await s.browser?.close().catch(() => {});
+  },
+
+  /** 清理过期会话 */
+  async _sweepLoginSessions(): Promise<void> {
+    const now = Date.now();
+    for (const [accountId, s] of LOGIN_SESSIONS) {
+      if (now - s.createdAt > LOGIN_SESSION_TTL_MS) {
+        await this.closeLoginSession(accountId);
+      }
+    }
+  },
+
+  /**
+   * 开启扫码登录：起 headless 浏览器 → 打开平台登录页 → 截图二维码返回（dataURL）。
+   * 操作者扫码后调用 finishLoginSession 抓取并保存 cookie。
+   * ⚠️ 需真实浏览器环境（服务器装 playwright + chromium），当前无验证环境、选择器未实测。
+   */
+  async openLoginSession(accountId: string, headless = true) {
+    await this._sweepLoginSessions();
+    const platform = await this.resolveAccountPlatform(accountId);
+    await this.closeLoginSession(accountId);
+
     const platformCfg = RPA_PLATFORMS[platform];
     const browser = await this.launchBrowser(headless);
-    const ctx = await browser.newContext({ locale: 'zh-CN' });
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 }, locale: 'zh-CN' });
+    await ctx.addInitScript(STEALTH_JS);
     const page = await ctx.newPage();
-    await page.goto(platformCfg.loginUrl, { waitUntil: 'networkidle', timeout: 60000 });
+    await page.goto(platformCfg.loginUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
+    await page.waitForTimeout(2500); // 等二维码渲染
 
-    // 这里留给操作者扫码登录
-    // 返回 browser / ctx / page 引用，调用方应等待登录完成后再 saveCookies
-    return { browser, ctx, page, platform };
+    const buffer = await page.screenshot({ type: 'png' });
+    LOGIN_SESSIONS.set(accountId, { browser, ctx, page, platform, createdAt: Date.now() });
+
+    return {
+      platform,
+      loginUrl: platformCfg.loginUrl,
+      qrImage: `data:image/png;base64,${buffer.toString('base64')}`,
+      expiresInSec: Math.floor(LOGIN_SESSION_TTL_MS / 1000),
+      hint: '请用手机 App 扫码登录，完成后调用 finishLogin',
+    };
   },
 
-  // ============ 发布（骨架：子类 override） ============
+  /** 扫码完成后：抓取会话 cookie 持久化 */
+  async finishLoginSession(accountId: string) {
+    await this._sweepLoginSessions();
+    const s = LOGIN_SESSIONS.get(accountId);
+    if (!s) throw new Error('登录会话不存在或已过期，请重新获取二维码');
+
+    const cookies = await this.captureCookies(s.ctx, s.platform);
+    if (cookies.length === 0) {
+      throw new Error('未检测到登录态 cookie，请确认已在手机端完成扫码');
+    }
+    await this.saveCookies(accountId, cookies);
+    await this.closeLoginSession(accountId);
+    return { platform: s.platform, cookieCount: cookies.length };
+  },
+
+  // ============ 发布（驱动分发） ============
 
   async publishViaRPA(params: {
     platform: RpaPlatformConfig['platform'];
@@ -209,16 +306,18 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     title: string;
     content: string;
     coverImage?: string;
+    images?: string[];
   }): Promise<{ success: boolean; externalId?: string; url?: string; error?: string }> {
-    const { platform, accountId, title, content, coverImage } = params;
+    const { platform, accountId, title, content, coverImage, images } = params;
     const platformCfg = RPA_PLATFORMS[platform];
+    const driver = getRpaDriver(platform);
 
     // 1. 检查 cookie
     const cookies = await this.getCookies(accountId);
     if (!this.isCookiesFresh(cookies)) {
       return {
         success: false,
-        error: `RPA cookie 过期或未配置。请调用 POST /v1/admin/rpa/setup-cookies/${accountId} 完成扫码登录`,
+        error: `RPA cookie 过期或未配置。请调用 POST /v1/admin/rpa/login/${accountId} 获取二维码完成扫码登录`,
       };
     }
 
@@ -231,23 +330,15 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       // 3. 导航到发布页
       await page.goto(platformCfg.publishUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
 
-      // 4. 骨架抛明确错误 — 具体选择器 + 发布流程需要在真实浏览器里调试
-      // 子类 override 时实现以下逻辑:
-      //    a) 等待发布表单加载 (page.waitForSelector)
-      //    b) 填写标题 (page.fill)
-      //    c) 填正文 (page.fill / page.type)
-      //    d) 上传封面图 (page.setInputFiles)
-      //    e) 点击发布 (page.click)
-      //    f) 等待成功提示 (page.waitForSelector)
-      //    g) 提取 externalId / url
-      throw new Error(
-        `[RPA] ${platform} 发布流程骨架已就绪，但具体选择器需在真实浏览器调试后实现。` +
-        `cookie 已自动注入，浏览器已起。请 override publishViaRPA 子类方法。`
-      );
-
-      // return { success: true, externalId: '...', url: '...' };
+      // 4. 交给平台驱动：填写 → 上传 → 提交 → 成功校验
+      return await driver.publish(page, { title, content, coverImage, images }, os.tmpdir());
     } catch (err: any) {
-      return { success: false, error: err.message };
+      // 失败取证：截图 + DOM 落到 <tmp>/zhao-rpa-debug/，供真机调选择器
+      const shot = await dumpDebug(page, platform, 'publish-fail');
+      return {
+        success: false,
+        error: `RPA 发布失败: ${err.message}${shot ? `（现场已留存: ${shot}）` : ''}`,
+      };
     } finally {
       // 5. 刷新 cookie（发布可能触发 refresh token）
       try {

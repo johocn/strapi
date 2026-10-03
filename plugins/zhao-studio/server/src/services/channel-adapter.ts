@@ -54,6 +54,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       title: article.title || '',
       content: article.content || article.aiSummary || '',
       coverImage: account.config?.coverImage || undefined,
+      images: Array.isArray(account.config?.images) ? account.config.images : undefined,
     });
     if (!res.success) {
       throw new Error(res.error || '头条 RPA 发布失败');
@@ -69,6 +70,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       title: article.title || '',
       content: article.content || article.aiSummary || '',
       coverImage: account.config?.coverImage || undefined,
+      images: Array.isArray(account.config?.images) ? account.config.images : undefined,
     });
     if (!res.success) {
       throw new Error(res.error || '小红书 RPA 发布失败');

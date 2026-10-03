@@ -209,6 +209,16 @@ declare const _default: {
             getStatus(ctx: any): Promise<void>;
             revoke(ctx: any): Promise<void>;
         };
+        rpa: ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            getCookiesStatus(ctx: any): Promise<void>;
+            saveCookies(ctx: any): Promise<void>;
+            clearCookies(ctx: any): Promise<void>;
+            startLogin(ctx: any): Promise<void>;
+            finishLogin(ctx: any): Promise<void>;
+            cancelLogin(ctx: any): Promise<void>;
+        };
     };
     routes: {
         admin: {
@@ -741,14 +751,30 @@ declare const _default: {
             getCookies(accountId: string): Promise<import('./services/rpa-client').RpaCookie[]>;
             saveCookies(accountId: string, cookies: import('./services/rpa-client').RpaCookie[]): Promise<void>;
             isCookiesFresh(cookies: import('./services/rpa-client').RpaCookie[], maxAgeMs?: number): boolean;
+            clearCookies(accountId: string): Promise<void>;
+            getCookiesStatus(accountId: string): Promise<{
+                platformType: any;
+                hasCookies: boolean;
+                cookieCount: number;
+                fresh: boolean;
+                cookiesAt: any;
+            }>;
+            resolveAccountPlatform(accountId: string): Promise<import('./services/rpa').RpaPlatform>;
             launchBrowser(headless?: boolean): Promise<import('playwright-core').Browser>;
             createContext(browser: any, cookies: import('./services/rpa-client').RpaCookie[], platform: import('./services/rpa-client').RpaPlatformConfig["platform"]): Promise<any>;
             captureCookies(ctx: any, platform: import('./services/rpa-client').RpaPlatformConfig["platform"]): Promise<import('./services/rpa-client').RpaCookie[]>;
-            startLoginSession(platform: import('./services/rpa-client').RpaPlatformConfig["platform"], headless?: boolean): Promise<{
-                browser: import('playwright-core').Browser;
-                ctx: import('playwright-core').BrowserContext;
-                page: import('playwright-core').Page;
-                platform: "toutiao" | "xiaohongshu";
+            closeLoginSession(accountId: string): Promise<void>;
+            _sweepLoginSessions(): Promise<void>;
+            openLoginSession(accountId: string, headless?: boolean): Promise<{
+                platform: import('./services/rpa').RpaPlatform;
+                loginUrl: string;
+                qrImage: string;
+                expiresInSec: number;
+                hint: string;
+            }>;
+            finishLoginSession(accountId: string): Promise<{
+                platform: import('./services/rpa').RpaPlatform;
+                cookieCount: number;
             }>;
             publishViaRPA(params: {
                 platform: import('./services/rpa-client').RpaPlatformConfig["platform"];
@@ -756,6 +782,7 @@ declare const _default: {
                 title: string;
                 content: string;
                 coverImage?: string;
+                images?: string[];
             }): Promise<{
                 success: boolean;
                 externalId?: string;

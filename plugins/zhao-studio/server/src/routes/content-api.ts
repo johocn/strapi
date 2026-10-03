@@ -195,5 +195,13 @@ export default () => ({
     adminRoute('GET', '/oauth/status/:accountId', 'oauth.getStatus', 'zhao-studio.publish-account.manage'),
     adminRoute('POST', '/oauth/revoke/:accountId', 'oauth.revoke', 'zhao-studio.publish-account.manage'),
     publicRoute('GET', '/oauth/callback/:platformType', 'oauth.handleCallback'),
+
+    // ============ RPA cookie 录入链路（xiaohongshu / toutiao） ============
+    adminRoute('GET', '/rpa/cookies/:accountId', 'rpa.getCookiesStatus', 'zhao-studio.publish-account.manage'),
+    adminRoute('POST', '/rpa/cookies/:accountId', 'rpa.saveCookies', 'zhao-studio.publish-account.manage'),
+    adminRoute('DELETE', '/rpa/cookies/:accountId', 'rpa.clearCookies', 'zhao-studio.publish-account.manage'),
+    adminRoute('POST', '/rpa/login/:accountId', 'rpa.startLogin', 'zhao-studio.publish-account.manage'),
+    adminRoute('POST', '/rpa/login/:accountId/finish', 'rpa.finishLogin', 'zhao-studio.publish-account.manage'),
+    adminRoute('POST', '/rpa/login/:accountId/cancel', 'rpa.cancelLogin', 'zhao-studio.publish-account.manage'),
   ],
 });

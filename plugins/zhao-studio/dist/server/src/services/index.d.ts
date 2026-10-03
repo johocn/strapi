@@ -512,14 +512,30 @@ declare const _default: {
         getCookies(accountId: string): Promise<import('./rpa-client').RpaCookie[]>;
         saveCookies(accountId: string, cookies: import('./rpa-client').RpaCookie[]): Promise<void>;
         isCookiesFresh(cookies: import('./rpa-client').RpaCookie[], maxAgeMs?: number): boolean;
+        clearCookies(accountId: string): Promise<void>;
+        getCookiesStatus(accountId: string): Promise<{
+            platformType: any;
+            hasCookies: boolean;
+            cookieCount: number;
+            fresh: boolean;
+            cookiesAt: any;
+        }>;
+        resolveAccountPlatform(accountId: string): Promise<import('./rpa').RpaPlatform>;
         launchBrowser(headless?: boolean): Promise<import('playwright-core').Browser>;
         createContext(browser: any, cookies: import('./rpa-client').RpaCookie[], platform: import('./rpa-client').RpaPlatformConfig["platform"]): Promise<any>;
         captureCookies(ctx: any, platform: import('./rpa-client').RpaPlatformConfig["platform"]): Promise<import('./rpa-client').RpaCookie[]>;
-        startLoginSession(platform: import('./rpa-client').RpaPlatformConfig["platform"], headless?: boolean): Promise<{
-            browser: import('playwright-core').Browser;
-            ctx: import('playwright-core').BrowserContext;
-            page: import('playwright-core').Page;
-            platform: "toutiao" | "xiaohongshu";
+        closeLoginSession(accountId: string): Promise<void>;
+        _sweepLoginSessions(): Promise<void>;
+        openLoginSession(accountId: string, headless?: boolean): Promise<{
+            platform: import('./rpa').RpaPlatform;
+            loginUrl: string;
+            qrImage: string;
+            expiresInSec: number;
+            hint: string;
+        }>;
+        finishLoginSession(accountId: string): Promise<{
+            platform: import('./rpa').RpaPlatform;
+            cookieCount: number;
         }>;
         publishViaRPA(params: {
             platform: import('./rpa-client').RpaPlatformConfig["platform"];
@@ -527,6 +543,7 @@ declare const _default: {
             title: string;
             content: string;
             coverImage?: string;
+            images?: string[];
         }): Promise<{
             success: boolean;
             externalId?: string;

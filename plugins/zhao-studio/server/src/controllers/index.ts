@@ -15,6 +15,7 @@ import channelReport from './channel-report';
 import ad from './ad';
 import poster from './poster';
 import oauth from './oauth';
+import rpa from './rpa';
 
 export default {
   collect,
@@ -34,4 +35,5 @@ export default {
   ad,
   'poster': poster,
   oauth,
+  rpa,
 };

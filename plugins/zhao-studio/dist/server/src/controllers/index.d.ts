@@ -190,6 +190,16 @@ declare const _default: {
         getStatus(ctx: any): Promise<void>;
         revoke(ctx: any): Promise<void>;
     };
+    rpa: ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        getCookiesStatus(ctx: any): Promise<void>;
+        saveCookies(ctx: any): Promise<void>;
+        clearCookies(ctx: any): Promise<void>;
+        startLogin(ctx: any): Promise<void>;
+        finishLogin(ctx: any): Promise<void>;
+        cancelLogin(ctx: any): Promise<void>;
+    };
 };
 export default _default;
 //# sourceMappingURL=index.d.ts.map

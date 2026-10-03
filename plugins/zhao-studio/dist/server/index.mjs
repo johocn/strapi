@@ -1,6 +1,9 @@
 import { Queue, Worker } from "bullmq";
 import Redis from "ioredis";
 import * as crypto from "crypto";
+import * as os from "os";
+import * as fs from "fs";
+import * as path from "path";
 const actions = [
   {
     section: "plugins",
@@ -1444,6 +1447,83 @@ const oauth = ({ strapi: strapi2 }) => ({
     }
   }
 });
+const rpa = ({ strapi: strapi2 }) => ({
+  async getCookiesStatus(ctx) {
+    try {
+      const { accountId } = ctx.params;
+      const rpaClient2 = strapi2.plugin("zhao-studio").service("rpa-client");
+      const data2 = await rpaClient2.getCookiesStatus(accountId);
+      ctx.body = { ok: true, data: data2 };
+    } catch (e) {
+      ctx.status = 400;
+      ctx.body = { ok: false, error: e.message };
+    }
+  },
+  /** 手动录入：从浏览器 DevTools 复制的 cookie JSON 数组 */
+  async saveCookies(ctx) {
+    try {
+      const { accountId } = ctx.params;
+      const { cookies: cookies2 } = ctx.request.body || {};
+      if (!Array.isArray(cookies2)) {
+        ctx.status = 400;
+        ctx.body = { ok: false, error: "cookies 必须是数组" };
+        return;
+      }
+      const rpaClient2 = strapi2.plugin("zhao-studio").service("rpa-client");
+      await rpaClient2.saveCookies(accountId, cookies2);
+      ctx.body = { ok: true, data: { cookieCount: cookies2.length } };
+    } catch (e) {
+      ctx.status = 400;
+      ctx.body = { ok: false, error: e.message };
+    }
+  },
+  async clearCookies(ctx) {
+    try {
+      const { accountId } = ctx.params;
+      const rpaClient2 = strapi2.plugin("zhao-studio").service("rpa-client");
+      await rpaClient2.clearCookies(accountId);
+      ctx.body = { ok: true };
+    } catch (e) {
+      ctx.status = 400;
+      ctx.body = { ok: false, error: e.message };
+    }
+  },
+  /** 扫码登录：返回二维码截图（dataURL），会话在进程内保留 5 分钟 */
+  async startLogin(ctx) {
+    try {
+      const { accountId } = ctx.params;
+      const rpaClient2 = strapi2.plugin("zhao-studio").service("rpa-client");
+      const data2 = await rpaClient2.openLoginSession(accountId);
+      ctx.body = { ok: true, data: data2 };
+    } catch (e) {
+      ctx.status = 400;
+      ctx.body = { ok: false, error: e.message };
+    }
+  },
+  /** 扫码完成后抓取并保存 cookie */
+  async finishLogin(ctx) {
+    try {
+      const { accountId } = ctx.params;
+      const rpaClient2 = strapi2.plugin("zhao-studio").service("rpa-client");
+      const data2 = await rpaClient2.finishLoginSession(accountId);
+      ctx.body = { ok: true, data: data2 };
+    } catch (e) {
+      ctx.status = 400;
+      ctx.body = { ok: false, error: e.message };
+    }
+  },
+  async cancelLogin(ctx) {
+    try {
+      const { accountId } = ctx.params;
+      const rpaClient2 = strapi2.plugin("zhao-studio").service("rpa-client");
+      await rpaClient2.closeLoginSession(accountId);
+      ctx.body = { ok: true };
+    } catch (e) {
+      ctx.status = 400;
+      ctx.body = { ok: false, error: e.message };
+    }
+  }
+});
 const controllers = {
   collect: collect$1,
   draft,
@@ -1461,21 +1541,22 @@ const controllers = {
   "channel-report": channelReport$1,
   ad: ad$1,
   "poster": poster$1,
-  oauth
+  oauth,
+  rpa
 };
 const adminRoutes = () => ({
   type: "admin",
   routes: []
 });
-const publicRoute = (method, path, handler) => ({
+const publicRoute = (method, path2, handler) => ({
   method,
-  path: `/v1${path}`,
+  path: `/v1${path2}`,
   handler,
   config: { auth: false }
 });
-const adminRoute = (method, path, handler, permission) => ({
+const adminRoute = (method, path2, handler, permission) => ({
   method,
-  path: `/v1/admin${path}`,
+  path: `/v1/admin${path2}`,
   handler,
   config: {
     auth: false,
@@ -1628,7 +1709,14 @@ const contentApiRoutes = () => ({
     adminRoute("GET", "/oauth/authorize/:accountId", "oauth.getAuthorizeUrl", "zhao-studio.publish-account.manage"),
     adminRoute("GET", "/oauth/status/:accountId", "oauth.getStatus", "zhao-studio.publish-account.manage"),
     adminRoute("POST", "/oauth/revoke/:accountId", "oauth.revoke", "zhao-studio.publish-account.manage"),
-    publicRoute("GET", "/oauth/callback/:platformType", "oauth.handleCallback")
+    publicRoute("GET", "/oauth/callback/:platformType", "oauth.handleCallback"),
+    // ============ RPA cookie 录入链路（xiaohongshu / toutiao） ============
+    adminRoute("GET", "/rpa/cookies/:accountId", "rpa.getCookiesStatus", "zhao-studio.publish-account.manage"),
+    adminRoute("POST", "/rpa/cookies/:accountId", "rpa.saveCookies", "zhao-studio.publish-account.manage"),
+    adminRoute("DELETE", "/rpa/cookies/:accountId", "rpa.clearCookies", "zhao-studio.publish-account.manage"),
+    adminRoute("POST", "/rpa/login/:accountId", "rpa.startLogin", "zhao-studio.publish-account.manage"),
+    adminRoute("POST", "/rpa/login/:accountId/finish", "rpa.finishLogin", "zhao-studio.publish-account.manage"),
+    adminRoute("POST", "/rpa/login/:accountId/cancel", "rpa.cancelLogin", "zhao-studio.publish-account.manage")
   ]
 });
 const routes = {
@@ -2685,9 +2773,9 @@ function isVisitable(thing) {
 function removeBrackets(key) {
   return utils$1.endsWith(key, "[]") ? key.slice(0, -2) : key;
 }
-function renderKey(path, key, dots) {
-  if (!path) return key;
-  return path.concat(key).map(function each2(token, i) {
+function renderKey(path2, key, dots) {
+  if (!path2) return key;
+  return path2.concat(key).map(function each2(token, i) {
     token = removeBrackets(token);
     return !dots && i ? "[" + token + "]" : token;
   }).join(dots ? "." : "");
@@ -2767,13 +2855,13 @@ function toFormData$1(obj, formData, options2) {
       return currentValue;
     });
   }
-  function defaultVisitor(value, key, path) {
+  function defaultVisitor(value, key, path2) {
     let arr = value;
     if (utils$1.isReactNative(formData) && utils$1.isReactNativeBlob(value)) {
-      formData.append(renderKey(path, key, dots), convertValue(value));
+      formData.append(renderKey(path2, key, dots), convertValue(value));
       return false;
     }
-    if (value && !path && typeof value === "object") {
+    if (value && !path2 && typeof value === "object") {
       if (utils$1.endsWith(key, "{}")) {
         key = metaTokens ? key : key.slice(0, -2);
         value = stringifyWithDepthLimit(value, 1);
@@ -2792,7 +2880,7 @@ function toFormData$1(obj, formData, options2) {
     if (isVisitable(value)) {
       return true;
     }
-    formData.append(renderKey(path, key, dots), convertValue(value));
+    formData.append(renderKey(path2, key, dots), convertValue(value));
     return false;
   }
   const exposedHelpers = Object.assign(predicates, {
@@ -2800,17 +2888,17 @@ function toFormData$1(obj, formData, options2) {
     convertValue,
     isVisitable
   });
-  function build(value, path, depth = 0) {
+  function build(value, path2, depth = 0) {
     if (utils$1.isUndefined(value)) return;
     throwIfMaxDepthExceeded(depth);
     if (stack.indexOf(value) !== -1) {
-      throw new Error("Circular reference detected in " + path.join("."));
+      throw new Error("Circular reference detected in " + path2.join("."));
     }
     stack.push(value);
     utils$1.forEach(value, function each2(el, key) {
-      const result = !(utils$1.isUndefined(el) || el === null) && visitor.call(formData, el, utils$1.isString(key) ? key.trim() : key, path, exposedHelpers);
+      const result = !(utils$1.isUndefined(el) || el === null) && visitor.call(formData, el, utils$1.isString(key) ? key.trim() : key, path2, exposedHelpers);
       if (result === true) {
-        build(el, path ? path.concat(key) : [key], depth + 1);
+        build(el, path2 ? path2.concat(key) : [key], depth + 1);
       }
     });
     stack.pop();
@@ -2981,7 +3069,7 @@ const platform = {
 };
 function toURLEncodedForm(data2, options2) {
   return toFormData$1(data2, new platform.classes.URLSearchParams(), {
-    visitor: function(value, key, path, helpers) {
+    visitor: function(value, key, path2, helpers) {
       if (platform.isNode && utils$1.isBuffer(value)) {
         this.append(key, value.toString("base64"));
         return false;
@@ -3001,14 +3089,14 @@ function throwIfDepthExceeded(index2) {
   }
 }
 function parsePropPath(name) {
-  const path = [];
+  const path2 = [];
   const pattern = /\w+|\[(\w*)]/g;
   let match;
   while ((match = pattern.exec(name)) !== null) {
-    throwIfDepthExceeded(path.length);
-    path.push(match[0] === "[]" ? "" : match[1] || match[0]);
+    throwIfDepthExceeded(path2.length);
+    path2.push(match[0] === "[]" ? "" : match[1] || match[0]);
   }
-  return path;
+  return path2;
 }
 function arrayToObject(arr) {
   const obj = {};
@@ -3023,12 +3111,12 @@ function arrayToObject(arr) {
   return obj;
 }
 function formDataToJSON(formData) {
-  function buildPath(path, value, target, index2) {
+  function buildPath(path2, value, target, index2) {
     throwIfDepthExceeded(index2);
-    let name = path[index2++];
+    let name = path2[index2++];
     if (name === "__proto__") return true;
     const isNumericKey = Number.isFinite(+name);
-    const isLast = index2 >= path.length;
+    const isLast = index2 >= path2.length;
     name = !name && utils$1.isArray(target) ? target.length : name;
     if (isLast) {
       if (utils$1.hasOwnProp(target, name)) {
@@ -3041,7 +3129,7 @@ function formDataToJSON(formData) {
     if (!utils$1.hasOwnProp(target, name) || !utils$1.isObject(target[name])) {
       target[name] = [];
     }
-    const result = buildPath(path, value, target[name], index2);
+    const result = buildPath(path2, value, target[name], index2);
     if (result && utils$1.isArray(target[name])) {
       target[name] = arrayToObject(target[name]);
     }
@@ -3332,14 +3420,14 @@ const isURLSameOrigin = platform.hasStandardBrowserEnv ? /* @__PURE__ */ ((origi
 const cookies = platform.hasStandardBrowserEnv ? (
   // Standard browser envs support document.cookie
   {
-    write(name, value, expires, path, domain, secure, sameSite) {
+    write(name, value, expires, path2, domain, secure, sameSite) {
       if (typeof document === "undefined") return;
       const cookie = [`${name}=${encodeURIComponent(value)}`];
       if (utils$1.isNumber(expires)) {
         cookie.push(`expires=${new Date(expires).toUTCString()}`);
       }
-      if (utils$1.isString(path)) {
-        cookie.push(`path=${path}`);
+      if (utils$1.isString(path2)) {
+        cookie.push(`path=${path2}`);
       }
       if (utils$1.isString(domain)) {
         cookie.push(`domain=${domain}`);
@@ -20495,7 +20583,8 @@ const channelAdapter = ({ strapi: strapi2 }) => ({
       accountId: account.documentId || account.id || account._id,
       title: article.title || "",
       content: article.content || article.aiSummary || "",
-      coverImage: account.config?.coverImage || void 0
+      coverImage: account.config?.coverImage || void 0,
+      images: Array.isArray(account.config?.images) ? account.config.images : void 0
     });
     if (!res.success) {
       throw new Error(res.error || "头条 RPA 发布失败");
@@ -20509,7 +20598,8 @@ const channelAdapter = ({ strapi: strapi2 }) => ({
       accountId: account.documentId || account.id || account._id,
       title: article.title || "",
       content: article.content || article.aiSummary || "",
-      coverImage: account.config?.coverImage || void 0
+      coverImage: account.config?.coverImage || void 0,
+      images: Array.isArray(account.config?.images) ? account.config.images : void 0
     });
     if (!res.success) {
       throw new Error(res.error || "小红书 RPA 发布失败");
@@ -22987,6 +23077,169 @@ const publishQueue = ({ strapi: strapi2 }) => ({
     }
   }
 });
+async function step(name, fn) {
+  try {
+    return await fn();
+  } catch (err) {
+    throw new Error(`[RPA step:${name}] ${err?.message || err}`);
+  }
+}
+async function dumpDebug(page, platform2, label) {
+  try {
+    const dir = path.join(os.tmpdir(), "zhao-rpa-debug");
+    fs.mkdirSync(dir, { recursive: true });
+    const stamp = (/* @__PURE__ */ new Date()).toISOString().replace(/[:.]/g, "-");
+    const base = path.join(dir, `${platform2}-${label}-${stamp}`);
+    await page.screenshot({ path: `${base}.png`, fullPage: true });
+    const html2 = await page.content();
+    fs.writeFileSync(`${base}.html`, html2, "utf-8");
+    return `${base}.png`;
+  } catch {
+    return void 0;
+  }
+}
+async function toUploadPayload(src) {
+  const resp = await axios.get(src, { responseType: "arraybuffer", timeout: 3e4 });
+  const rawType = resp.headers["content-type"];
+  const mimeType = (typeof rawType === "string" ? rawType.split(";")[0] : "") || "image/jpeg";
+  const ext = mimeType.split("/")[1] || "jpg";
+  const name = `rpa-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  return { name, mimeType, buffer: Buffer.from(resp.data) };
+}
+function isLocalPath(src) {
+  return !/^https?:\/\//i.test(src);
+}
+const SELECTORS$1 = {
+  /** 发布页顶部「上传图文 / 上传视频」切换 */
+  imageTextTab: 'div.creator-tab:has-text("上传图文"), span:has-text("上传图文"), div:has-text("上传图文")',
+  /** 图片文件输入框 */
+  fileInput: 'input[type="file"]',
+  /** 标题输入（占位符含「标题」） */
+  titleInput: 'input[placeholder*="标题"], input.d-text, .title-input input',
+  /** 正文富文本编辑器（Quill） */
+  contentEditor: 'div.ql-editor, div[contenteditable="true"], #post-textarea',
+  /** 「发布」按钮 */
+  publishButton: 'button:has-text("发布"), div.publishBtn button, button.d-button.primary',
+  /** 发布成功标志：成功页或成功提示 */
+  successIndicator: "text=发布成功, text=笔记发布成功, text=发布完成"
+};
+async function uploadImages(page, images) {
+  if (!images?.length) return;
+  await step("uploadImages", async () => {
+    const input = page.locator(SELECTORS$1.fileInput).first();
+    await input.waitFor({ state: "attached", timeout: 2e4 });
+    const payloads = [];
+    for (const src of images) {
+      payloads.push(isLocalPath(src) ? src : await toUploadPayload(src));
+    }
+    await input.setInputFiles(payloads);
+    await page.waitForTimeout(4e3);
+  });
+}
+const driver$1 = {
+  platform: "xiaohongshu",
+  async publish(page, input, _workDir) {
+    await step("selectImageTextTab", async () => {
+      const tab = page.locator(SELECTORS$1.imageTextTab).first();
+      await tab.waitFor({ state: "visible", timeout: 3e4 });
+      await tab.click();
+    });
+    await uploadImages(page, input.images ?? (input.coverImage ? [input.coverImage] : void 0));
+    await step("fillTitle", async () => {
+      const title = page.locator(SELECTORS$1.titleInput).first();
+      await title.waitFor({ state: "visible", timeout: 2e4 });
+      await title.fill((input.title || "").slice(0, 20));
+    });
+    await step("fillContent", async () => {
+      const editor = page.locator(SELECTORS$1.contentEditor).first();
+      await editor.waitFor({ state: "visible", timeout: 2e4 });
+      await editor.click();
+      await editor.fill(input.content || "");
+    });
+    await step("clickPublish", async () => {
+      const btn = page.locator(SELECTORS$1.publishButton).last();
+      await btn.waitFor({ state: "visible", timeout: 2e4 });
+      await btn.click();
+    });
+    await step("awaitSuccess", async () => {
+      try {
+        await page.waitForURL(/publish\/success|note-manager/, { timeout: 3e4 });
+      } catch {
+        await page.locator(SELECTORS$1.successIndicator).first().waitFor({ state: "visible", timeout: 15e3 });
+      }
+    });
+    const url = page.url();
+    return {
+      success: true,
+      externalId: url.split("/").filter(Boolean).pop(),
+      url
+    };
+  }
+};
+const SELECTORS = {
+  /** 标题输入 */
+  titleInput: 'textarea[placeholder*="标题"], input[placeholder*="标题"], .article-title textarea',
+  /** 正文编辑器（ProseMirror 富文本） */
+  contentEditor: 'div.ProseMirror, div[contenteditable="true"], .ql-editor',
+  /** 「预览并发布 / 发布」按钮 */
+  publishButton: 'button:has-text("预览并发布"), button:has-text("发布"), .publish-btn button',
+  /** 二次确认弹层中的「确认发布」 */
+  confirmPublish: 'button:has-text("确认发布"), button:has-text("确定")',
+  /** 发布成功标志 */
+  successIndicator: "text=发布成功, text=已发布, text=发表成功"
+};
+const driver = {
+  platform: "toutiao",
+  async publish(page, input, _workDir) {
+    await step("fillTitle", async () => {
+      const title = page.locator(SELECTORS.titleInput).first();
+      await title.waitFor({ state: "visible", timeout: 3e4 });
+      await title.fill(input.title || "");
+    });
+    await step("fillContent", async () => {
+      const editor = page.locator(SELECTORS.contentEditor).first();
+      await editor.waitFor({ state: "visible", timeout: 2e4 });
+      await editor.click();
+      await editor.fill(input.content || "");
+    });
+    await step("clickPublish", async () => {
+      const btn = page.locator(SELECTORS.publishButton).first();
+      await btn.waitFor({ state: "visible", timeout: 2e4 });
+      await btn.click();
+    });
+    await step("confirmPublish", async () => {
+      const confirm = page.locator(SELECTORS.confirmPublish).first();
+      try {
+        await confirm.waitFor({ state: "visible", timeout: 5e3 });
+        await confirm.click();
+      } catch {
+      }
+    });
+    await step("awaitSuccess", async () => {
+      try {
+        await page.waitForURL(/graphic\/publish-success|content-manage|profile_v4/, { timeout: 3e4 });
+      } catch {
+        await page.locator(SELECTORS.successIndicator).first().waitFor({ state: "visible", timeout: 15e3 });
+      }
+    });
+    const url = page.url();
+    return {
+      success: true,
+      externalId: url.split("/").filter(Boolean).pop(),
+      url
+    };
+  }
+};
+const DRIVERS = { xiaohongshu: driver$1, toutiao: driver };
+function getRpaDriver(platform2) {
+  const driver2 = DRIVERS[platform2];
+  if (!driver2) {
+    throw new Error(`平台 ${platform2} 没有 RPA 驱动实现`);
+  }
+  return driver2;
+}
+const LOGIN_SESSIONS = /* @__PURE__ */ new Map();
+const LOGIN_SESSION_TTL_MS = 5 * 60 * 1e3;
 const STEALTH_JS = `
 () => {
   // 1. navigator.webdriver → undefined（W3C 标准自动化检测标记）
@@ -23088,6 +23341,37 @@ const rpaClient = ({ strapi: strapi2 }) => ({
     if (minExpires === Infinity) return true;
     return now < minExpires - maxAgeMs;
   },
+  async clearCookies(accountId) {
+    await this.saveCookies(accountId, []);
+  },
+  async getCookiesStatus(accountId) {
+    const acc = await strapi2.documents("plugin::zhao-studio.publish-account").findOne({
+      documentId: accountId,
+      populate: ["platform"]
+    });
+    if (!acc) throw new Error("账号不存在");
+    const cookies2 = await this.getCookies(accountId);
+    return {
+      platformType: acc.platform?.type || null,
+      hasCookies: cookies2.length > 0,
+      cookieCount: cookies2.length,
+      fresh: this.isCookiesFresh(cookies2),
+      cookiesAt: acc.rpaCookiesAt || null
+    };
+  },
+  /** 解析账号对应的 RPA 平台，非 xiaohongshu/toutiao 直接报错 */
+  async resolveAccountPlatform(accountId) {
+    const acc = await strapi2.documents("plugin::zhao-studio.publish-account").findOne({
+      documentId: accountId,
+      populate: ["platform"]
+    });
+    if (!acc) throw new Error("账号不存在");
+    const type = acc.platform?.type;
+    if (type !== "xiaohongshu" && type !== "toutiao") {
+      throw new Error(`账号平台 ${type || "未知"} 不支持 RPA（仅 xiaohongshu / toutiao）`);
+    }
+    return type;
+  },
   // ============ 浏览器生命周期 ============
   async launchBrowser(headless = true) {
     await this.ensurePlaywrightRuntime();
@@ -23126,24 +23410,75 @@ const rpaClient = ({ strapi: strapi2 }) => ({
     const all3 = await ctx.cookies();
     return all3.filter((c) => c.domain.includes(platformCfg.cookieDomain.replace(/^\./, "")));
   },
-  // ============ 登录（需要人工扫码） ============
-  async startLoginSession(platform2, headless = false) {
+  // ============ 扫码登录会话 ============
+  /** 关闭指定账号的登录会话（存在才关） */
+  async closeLoginSession(accountId) {
+    const s = LOGIN_SESSIONS.get(accountId);
+    if (!s) return;
+    LOGIN_SESSIONS.delete(accountId);
+    await s.ctx?.close().catch(() => {
+    });
+    await s.browser?.close().catch(() => {
+    });
+  },
+  /** 清理过期会话 */
+  async _sweepLoginSessions() {
+    const now = Date.now();
+    for (const [accountId, s] of LOGIN_SESSIONS) {
+      if (now - s.createdAt > LOGIN_SESSION_TTL_MS) {
+        await this.closeLoginSession(accountId);
+      }
+    }
+  },
+  /**
+   * 开启扫码登录：起 headless 浏览器 → 打开平台登录页 → 截图二维码返回（dataURL）。
+   * 操作者扫码后调用 finishLoginSession 抓取并保存 cookie。
+   * ⚠️ 需真实浏览器环境（服务器装 playwright + chromium），当前无验证环境、选择器未实测。
+   */
+  async openLoginSession(accountId, headless = true) {
+    await this._sweepLoginSessions();
+    const platform2 = await this.resolveAccountPlatform(accountId);
+    await this.closeLoginSession(accountId);
     const platformCfg = RPA_PLATFORMS[platform2];
     const browser = await this.launchBrowser(headless);
-    const ctx = await browser.newContext({ locale: "zh-CN" });
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 }, locale: "zh-CN" });
+    await ctx.addInitScript(STEALTH_JS);
     const page = await ctx.newPage();
-    await page.goto(platformCfg.loginUrl, { waitUntil: "networkidle", timeout: 6e4 });
-    return { browser, ctx, page, platform: platform2 };
+    await page.goto(platformCfg.loginUrl, { waitUntil: "domcontentloaded", timeout: 6e4 });
+    await page.waitForTimeout(2500);
+    const buffer = await page.screenshot({ type: "png" });
+    LOGIN_SESSIONS.set(accountId, { browser, ctx, page, platform: platform2, createdAt: Date.now() });
+    return {
+      platform: platform2,
+      loginUrl: platformCfg.loginUrl,
+      qrImage: `data:image/png;base64,${buffer.toString("base64")}`,
+      expiresInSec: Math.floor(LOGIN_SESSION_TTL_MS / 1e3),
+      hint: "请用手机 App 扫码登录，完成后调用 finishLogin"
+    };
   },
-  // ============ 发布（骨架：子类 override） ============
+  /** 扫码完成后：抓取会话 cookie 持久化 */
+  async finishLoginSession(accountId) {
+    await this._sweepLoginSessions();
+    const s = LOGIN_SESSIONS.get(accountId);
+    if (!s) throw new Error("登录会话不存在或已过期，请重新获取二维码");
+    const cookies2 = await this.captureCookies(s.ctx, s.platform);
+    if (cookies2.length === 0) {
+      throw new Error("未检测到登录态 cookie，请确认已在手机端完成扫码");
+    }
+    await this.saveCookies(accountId, cookies2);
+    await this.closeLoginSession(accountId);
+    return { platform: s.platform, cookieCount: cookies2.length };
+  },
+  // ============ 发布（驱动分发） ============
   async publishViaRPA(params) {
-    const { platform: platform2, accountId, title, content, coverImage } = params;
+    const { platform: platform2, accountId, title, content, coverImage, images } = params;
     const platformCfg = RPA_PLATFORMS[platform2];
+    const driver2 = getRpaDriver(platform2);
     const cookies2 = await this.getCookies(accountId);
     if (!this.isCookiesFresh(cookies2)) {
       return {
         success: false,
-        error: `RPA cookie 过期或未配置。请调用 POST /v1/admin/rpa/setup-cookies/${accountId} 完成扫码登录`
+        error: `RPA cookie 过期或未配置。请调用 POST /v1/admin/rpa/login/${accountId} 获取二维码完成扫码登录`
       };
     }
     const browser = await this.launchBrowser(true);
@@ -23151,11 +23486,13 @@ const rpaClient = ({ strapi: strapi2 }) => ({
     const page = await ctx.newPage();
     try {
       await page.goto(platformCfg.publishUrl, { waitUntil: "domcontentloaded", timeout: 3e4 });
-      throw new Error(
-        `[RPA] ${platform2} 发布流程骨架已就绪，但具体选择器需在真实浏览器调试后实现。cookie 已自动注入，浏览器已起。请 override publishViaRPA 子类方法。`
-      );
+      return await driver2.publish(page, { title, content, coverImage, images }, os.tmpdir());
     } catch (err) {
-      return { success: false, error: err.message };
+      const shot = await dumpDebug(page, platform2, "publish-fail");
+      return {
+        success: false,
+        error: `RPA 发布失败: ${err.message}${shot ? `（现场已留存: ${shot}）` : ""}`
+      };
     } finally {
       try {
         const freshCookies = await this.captureCookies(ctx, platform2);
