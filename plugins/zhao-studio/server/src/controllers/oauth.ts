@@ -1,11 +1,18 @@
 // server/src/controllers/oauth.ts
 
-export default {
+import type { Core } from '@strapi/strapi';
+
+export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async getAuthorizeUrl(ctx: any) {
-    const { accountId } = ctx.params;
-    const manager = ctx.plugin('zhao-studio').service('oauth-manager');
-    const url = await manager.getAuthorizeUrl(accountId);
-    ctx.redirect(url); // 302 到平台授权页
+    try {
+      const { accountId } = ctx.params;
+      const manager = strapi.plugin('zhao-studio').service('oauth-manager');
+      const url = await manager.getAuthorizeUrl(accountId);
+      ctx.redirect(url); // 302 到平台授权页
+    } catch (e: any) {
+      ctx.status = 400;
+      ctx.body = { ok: false, error: e.message };
+    }
   },
 
   async handleCallback(ctx: any) {
@@ -23,22 +30,37 @@ export default {
       return;
     }
 
-    const manager = ctx.plugin('zhao-studio').service('oauth-manager');
-    const result = await manager.handleCallback(platformType, code, state);
-    ctx.body = { ok: true, ...result };
+    try {
+      const manager = strapi.plugin('zhao-studio').service('oauth-manager');
+      const result = await manager.handleCallback(platformType, code, state);
+      ctx.body = { ok: true, ...result };
+    } catch (e: any) {
+      ctx.status = 400;
+      ctx.body = { ok: false, error: e.message };
+    }
   },
 
   async getStatus(ctx: any) {
-    const { accountId } = ctx.params;
-    const manager = ctx.plugin('zhao-studio').service('oauth-manager');
-    const status = await manager.getStatus(accountId);
-    ctx.body = { ok: true, data: status };
+    try {
+      const { accountId } = ctx.params;
+      const manager = strapi.plugin('zhao-studio').service('oauth-manager');
+      const status = await manager.getStatus(accountId);
+      ctx.body = { ok: true, data: status };
+    } catch (e: any) {
+      ctx.status = 400;
+      ctx.body = { ok: false, error: e.message };
+    }
   },
 
   async revoke(ctx: any) {
-    const { accountId } = ctx.params;
-    const manager = ctx.plugin('zhao-studio').service('oauth-manager');
-    await manager.revokeAuthorization(accountId);
-    ctx.body = { ok: true };
+    try {
+      const { accountId } = ctx.params;
+      const manager = strapi.plugin('zhao-studio').service('oauth-manager');
+      await manager.revokeAuthorization(accountId);
+      ctx.body = { ok: true };
+    } catch (e: any) {
+      ctx.status = 400;
+      ctx.body = { ok: false, error: e.message };
+    }
   },
-};
+});

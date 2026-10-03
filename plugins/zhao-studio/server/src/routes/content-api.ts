@@ -181,6 +181,9 @@ export default () => ({
     adminRoute('DELETE', '/poster-elements/:id', 'poster.deleteElement', 'zhao-studio.poster-element.manage'),
 
     // ============ OAuth 授权路由 ============
-    ...(require('./oauth').default() || []),
+    adminRoute('GET', '/oauth/authorize/:accountId', 'oauth.getAuthorizeUrl', 'zhao-studio.publish-account.manage'),
+    adminRoute('GET', '/oauth/status/:accountId', 'oauth.getStatus', 'zhao-studio.publish-account.manage'),
+    adminRoute('POST', '/oauth/revoke/:accountId', 'oauth.revoke', 'zhao-studio.publish-account.manage'),
+    publicRoute('GET', '/oauth/callback/:platformType', 'oauth.handleCallback'),
   ],
 });

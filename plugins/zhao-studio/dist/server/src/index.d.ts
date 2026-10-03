@@ -197,6 +197,14 @@ declare const _default: {
             updateElement(ctx: any): Promise<void>;
             deleteElement(ctx: any): Promise<void>;
         };
+        oauth: ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            getAuthorizeUrl(ctx: any): Promise<void>;
+            handleCallback(ctx: any): Promise<void>;
+            getStatus(ctx: any): Promise<void>;
+            revoke(ctx: any): Promise<void>;
+        };
     };
     routes: {
         admin: {
@@ -648,6 +656,30 @@ declare const _default: {
                 reason?: undefined;
             }>;
         };
+        'oauth-manager': ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            getAuthorizeUrl(accountId: string): Promise<string>;
+            handleCallback(platformType: string, code: string, state: string): Promise<{
+                accountId: string;
+                oauthState: import('./services/auth').OAuthState;
+            }>;
+            ensureValidToken(accountId: string): Promise<string>;
+            batchRefreshExpiringTokens(): Promise<{
+                refreshed: number;
+                failed: number;
+            }>;
+            revokeAuthorization(accountId: string): Promise<void>;
+            getStatus(accountId: string): Promise<{
+                accountId: string;
+                accountName: any;
+                platformType: any;
+                oauthState: any;
+                oauthExpiresAt: any;
+                oauthOpenId: any;
+                lastRefreshAt: any;
+            }>;
+        };
     };
     policies: {};
     middlewares: {};
@@ -998,6 +1030,34 @@ declare const _default: {
                         mappedBy: string;
                     };
                     lastPublishedAt: {
+                        type: string;
+                    };
+                    oauthAccessToken: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    oauthRefreshToken: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    oauthExpiresAt: {
+                        type: string;
+                    };
+                    oauthOpenId: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    oauthScope: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    oauthState: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                        required: boolean;
+                    };
+                    lastRefreshAt: {
                         type: string;
                     };
                     createdAt: {

@@ -347,6 +347,34 @@ declare const _default: {
                 lastPublishedAt: {
                     type: string;
                 };
+                oauthAccessToken: {
+                    type: string;
+                    maxLength: number;
+                };
+                oauthRefreshToken: {
+                    type: string;
+                    maxLength: number;
+                };
+                oauthExpiresAt: {
+                    type: string;
+                };
+                oauthOpenId: {
+                    type: string;
+                    maxLength: number;
+                };
+                oauthScope: {
+                    type: string;
+                    maxLength: number;
+                };
+                oauthState: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                    required: boolean;
+                };
+                lastRefreshAt: {
+                    type: string;
+                };
                 createdAt: {
                     type: string;
                 };

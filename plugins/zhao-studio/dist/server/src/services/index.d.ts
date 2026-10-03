@@ -431,6 +431,30 @@ declare const _default: {
             reason?: undefined;
         }>;
     };
+    'oauth-manager': ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        getAuthorizeUrl(accountId: string): Promise<string>;
+        handleCallback(platformType: string, code: string, state: string): Promise<{
+            accountId: string;
+            oauthState: import('./auth').OAuthState;
+        }>;
+        ensureValidToken(accountId: string): Promise<string>;
+        batchRefreshExpiringTokens(): Promise<{
+            refreshed: number;
+            failed: number;
+        }>;
+        revokeAuthorization(accountId: string): Promise<void>;
+        getStatus(accountId: string): Promise<{
+            accountId: string;
+            accountName: any;
+            platformType: any;
+            oauthState: any;
+            oauthExpiresAt: any;
+            oauthOpenId: any;
+            lastRefreshAt: any;
+        }>;
+    };
 };
 export default _default;
 //# sourceMappingURL=index.d.ts.map

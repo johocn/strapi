@@ -176,6 +176,14 @@ declare const _default: {
         updateElement(ctx: any): Promise<void>;
         deleteElement(ctx: any): Promise<void>;
     };
+    oauth: ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        getAuthorizeUrl(ctx: any): Promise<void>;
+        handleCallback(ctx: any): Promise<void>;
+        getStatus(ctx: any): Promise<void>;
+        revoke(ctx: any): Promise<void>;
+    };
 };
 export default _default;
 //# sourceMappingURL=index.d.ts.map

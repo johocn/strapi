@@ -37,6 +37,22 @@ export declare const PublishErrors: {
         code: string;
         message: string;
     };
+    OAUTH_TOKEN_EXPIRED: {
+        code: string;
+        message: string;
+    };
+    OAUTH_REFRESH_FAILED: {
+        code: string;
+        message: string;
+    };
+    PLATFORM_RATE_LIMITED: {
+        code: string;
+        message: string;
+    };
+    PLATFORM_REJECTED: {
+        code: string;
+        message: string;
+    };
 };
 export declare function identifyPublishError(error: any, platform?: string): PublishError;
 //# sourceMappingURL=publishErrors.d.ts.map

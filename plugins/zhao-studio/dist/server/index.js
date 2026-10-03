@@ -1196,6 +1196,63 @@ const poster$1 = ({ strapi: strapi2 }) => ({
     }
   }
 });
+const oauth = ({ strapi: strapi2 }) => ({
+  async getAuthorizeUrl(ctx) {
+    try {
+      const { accountId } = ctx.params;
+      const manager = strapi2.plugin("zhao-studio").service("oauth-manager");
+      const url = await manager.getAuthorizeUrl(accountId);
+      ctx.redirect(url);
+    } catch (e) {
+      ctx.status = 400;
+      ctx.body = { ok: false, error: e.message };
+    }
+  },
+  async handleCallback(ctx) {
+    const { platformType } = ctx.params;
+    const { code, state, error, error_description } = ctx.query;
+    if (error) {
+      ctx.body = { ok: false, error, error_description: error_description || "" };
+      ctx.status = 400;
+      return;
+    }
+    if (!code) {
+      ctx.body = { ok: false, error: "missing_code" };
+      ctx.status = 400;
+      return;
+    }
+    try {
+      const manager = strapi2.plugin("zhao-studio").service("oauth-manager");
+      const result = await manager.handleCallback(platformType, code, state);
+      ctx.body = { ok: true, ...result };
+    } catch (e) {
+      ctx.status = 400;
+      ctx.body = { ok: false, error: e.message };
+    }
+  },
+  async getStatus(ctx) {
+    try {
+      const { accountId } = ctx.params;
+      const manager = strapi2.plugin("zhao-studio").service("oauth-manager");
+      const status = await manager.getStatus(accountId);
+      ctx.body = { ok: true, data: status };
+    } catch (e) {
+      ctx.status = 400;
+      ctx.body = { ok: false, error: e.message };
+    }
+  },
+  async revoke(ctx) {
+    try {
+      const { accountId } = ctx.params;
+      const manager = strapi2.plugin("zhao-studio").service("oauth-manager");
+      await manager.revokeAuthorization(accountId);
+      ctx.body = { ok: true };
+    } catch (e) {
+      ctx.status = 400;
+      ctx.body = { ok: false, error: e.message };
+    }
+  }
+});
 const controllers = {
   collect: collect$1,
   draft,
@@ -1212,7 +1269,8 @@ const controllers = {
   "ab-test": abTest$1,
   "channel-report": channelReport$1,
   ad: ad$1,
-  "poster": poster$1
+  "poster": poster$1,
+  oauth
 };
 const adminRoutes = () => ({
   type: "admin",
@@ -1366,7 +1424,12 @@ const contentApiRoutes = () => ({
     adminRoute("GET", "/poster-elements", "poster.listElements", "zhao-studio.poster-element.manage"),
     adminRoute("POST", "/poster-elements", "poster.createElement", "zhao-studio.poster-element.manage"),
     adminRoute("PUT", "/poster-elements/:id", "poster.updateElement", "zhao-studio.poster-element.manage"),
-    adminRoute("DELETE", "/poster-elements/:id", "poster.deleteElement", "zhao-studio.poster-element.manage")
+    adminRoute("DELETE", "/poster-elements/:id", "poster.deleteElement", "zhao-studio.poster-element.manage"),
+    // ============ OAuth 授权路由 ============
+    adminRoute("GET", "/oauth/authorize/:accountId", "oauth.getAuthorizeUrl", "zhao-studio.publish-account.manage"),
+    adminRoute("GET", "/oauth/status/:accountId", "oauth.getStatus", "zhao-studio.publish-account.manage"),
+    adminRoute("POST", "/oauth/revoke/:accountId", "oauth.revoke", "zhao-studio.publish-account.manage"),
+    publicRoute("GET", "/oauth/callback/:platformType", "oauth.handleCallback")
   ]
 });
 const routes = {
@@ -19497,7 +19560,7 @@ const aiProviders = {
     temperature: 0.7
   }
 };
-function getProvider(providerId) {
+function getProvider$1(providerId) {
   return aiProviders[providerId];
 }
 const AIErrors = {
@@ -19540,7 +19603,7 @@ const aiAssist = ({ strapi: strapi2 }) => ({
     if (!config2?.enabled) {
       throw new Error("AI功能未启用");
     }
-    const provider = getProvider(config2.provider);
+    const provider = getProvider$1(config2.provider);
     if (!provider) {
       throw new Error("未知的AI服务提供商");
     }
@@ -20013,6 +20076,22 @@ const PublishErrors = {
   NETWORK_ERROR: {
     code: "PUB_008",
     message: "网络连接失败，请稍后重试"
+  },
+  OAUTH_TOKEN_EXPIRED: {
+    code: "PUB_009",
+    message: "账号授权已失效，请重新授权"
+  },
+  OAUTH_REFRESH_FAILED: {
+    code: "PUB_010",
+    message: "OAuth token 续期失败"
+  },
+  PLATFORM_RATE_LIMITED: {
+    code: "PUB_011",
+    message: "平台限流，请稍后再试"
+  },
+  PLATFORM_REJECTED: {
+    code: "PUB_012",
+    message: "平台审核拒绝"
   }
 };
 function identifyPublishError(error, platform2) {
@@ -20036,6 +20115,18 @@ function identifyPublishError(error, platform2) {
   }
   if (error.message?.includes("network") || error.message?.includes("网络") || error.message?.includes("timeout")) {
     return PublishErrors.NETWORK_ERROR;
+  }
+  if (error.message?.includes("oauth") || error.message?.includes("token") || error.message?.includes("授权")) {
+    return { ...PublishErrors.OAUTH_TOKEN_EXPIRED, platform: platform2 };
+  }
+  if (error.message?.includes("refresh")) {
+    return { ...PublishErrors.OAUTH_REFRESH_FAILED, platform: platform2 };
+  }
+  if (error.message?.includes("429") || error.message?.includes("rate") || error.message?.includes("限流")) {
+    return { ...PublishErrors.PLATFORM_RATE_LIMITED, platform: platform2 };
+  }
+  if (error.message?.includes("审核") || error.message?.includes("review") || error.message?.includes("audit")) {
+    return { ...PublishErrors.PLATFORM_REJECTED, platform: platform2 };
   }
   return { ...PublishErrors.API_ERROR, platform: platform2 };
 }
@@ -21821,6 +21912,373 @@ const poster = ({ strapi: strapi2 }) => ({
     return { success: true, templates: templates.length };
   }
 });
+const REDIS_NONCE_PREFIX = "zhao:studio:oauth:nonce:";
+const NONCE_TTL_SECONDS = 300;
+function encodeState(accountId, nonce) {
+  return `${accountId}:${nonce}`;
+}
+function decodeState(state) {
+  if (!state || typeof state !== "string") return null;
+  const idx = state.indexOf(":");
+  if (idx < 0) return null;
+  return { accountId: state.slice(0, idx), nonce: state.slice(idx + 1) };
+}
+function generateNonce() {
+  return (Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 10) + Date.now().toString(36)).slice(0, 32);
+}
+async function validateAndConsumeNonce(strapi2, nonce) {
+  try {
+    const Redis = require("ioredis");
+    const url = process.env.REDIS_URL || "redis://localhost:6379";
+    const redis = new Redis(url, { lazyConnect: true });
+    await redis.connect();
+    const key = `${REDIS_NONCE_PREFIX}${nonce}`;
+    const exists = await redis.exists(key);
+    if (exists) {
+      await redis.quit();
+      return false;
+    }
+    await redis.set(key, "1", "EX", NONCE_TTL_SECONDS);
+    await redis.quit();
+    return true;
+  } catch {
+    strapi2?.log?.warn?.("[zhao-studio] OAuth nonce 校验跳过（Redis 不可用）");
+    return true;
+  }
+}
+function computeExpiresAt(expiresInSeconds) {
+  return new Date(Date.now() + (expiresInSeconds - 60) * 1e3);
+}
+const wechatProvider = ({ strapi: strapi2 }) => ({
+  platformType: "wechat",
+  displayName: "微信公众号",
+  buildAuthorizeUrl(state) {
+    const appConfig = strapi2.plugin("zhao-sso").service("sso-oauth-config");
+    const cfg = appConfig.findByProviderAndAppType("wechat", "official_account");
+    if (!cfg) {
+      throw new Error("zhao-sso 未配置 wechat official_account OAuth");
+    }
+    const redirectUri = cfg.redirectUris && cfg.redirectUris[0] || process.env.WECHAT_REDIRECT_URI || "";
+    const scope = cfg.scope || "snsapi_userinfo";
+    const params = new URLSearchParams({
+      appid: cfg.appId,
+      redirect_uri: redirectUri,
+      response_type: "code",
+      scope,
+      state
+    });
+    return `https://open.weixin.qq.com/connect/oauth2/authorize?${params.toString()}#wechat_redirect`;
+  },
+  async exchangeToken(code) {
+    const cfg = await strapi2.plugin("zhao-sso").service("sso-oauth-config").findByProviderAndAppType("wechat", "official_account");
+    if (!cfg) throw new Error("zhao-sso 未配置 wechat official_account OAuth");
+    const url = "https://api.weixin.qq.com/sns/oauth2/access_token";
+    const params = {
+      appid: cfg.appId,
+      secret: cfg.appSecret,
+      code,
+      grant_type: "authorization_code"
+    };
+    const res = await axios.get(url, { params, timeout: 15e3 });
+    const data2 = res.data;
+    if (data2.errcode) {
+      throw new Error(`wechat exchangeToken 失败: errcode=${data2.errcode} errmsg=${data2.errmsg}`);
+    }
+    return {
+      accessToken: data2.access_token,
+      refreshToken: data2.refresh_token,
+      expiresAt: computeExpiresAt(data2.expires_in),
+      openId: data2.openid,
+      scope: data2.scope,
+      rawResponse: data2
+    };
+  },
+  async refreshToken(refreshToken) {
+    const cfg = await strapi2.plugin("zhao-sso").service("sso-oauth-config").findByProviderAndAppType("wechat", "official_account");
+    if (!cfg) throw new Error("zhao-sso 未配置 wechat official_account OAuth");
+    const url = "https://api.weixin.qq.com/sns/oauth2/refresh_token";
+    const params = {
+      appid: cfg.appId,
+      grant_type: "refresh_token",
+      refresh_token: refreshToken
+    };
+    const res = await axios.get(url, { params, timeout: 15e3 });
+    const data2 = res.data;
+    if (data2.errcode) {
+      throw new Error(`wechat refreshToken 失败: errcode=${data2.errcode} errmsg=${data2.errmsg}`);
+    }
+    return {
+      accessToken: data2.access_token,
+      refreshToken: data2.refresh_token,
+      expiresAt: computeExpiresAt(data2.expires_in),
+      rawResponse: data2
+    };
+  }
+});
+const douyinProvider = ({ strapi: strapi2 }) => ({
+  platformType: "douyin",
+  displayName: "抖音开放平台",
+  buildAuthorizeUrl(state) {
+    const cfg = strapi2.plugin("zhao-studio").config()?.publish?.platforms?.douyin || {};
+    const clientKey = cfg.clientKey || process.env.DOUYIN_CLIENT_KEY;
+    const redirectUri = cfg.redirectUri || process.env.DOUYIN_REDIRECT_URI || "";
+    if (!clientKey) throw new Error("zhao-studio 未配置 douyin clientKey");
+    const params = new URLSearchParams({
+      response_type: "code",
+      client_key: clientKey,
+      redirect_uri: redirectUri,
+      scope: "user_info,aweme.create",
+      state
+    });
+    return `https://open.douyin.com/platform/oauth/authorize?${params.toString()}`;
+  },
+  async exchangeToken(code) {
+    const cfg = strapi2.plugin("zhao-studio").config()?.publish?.platforms?.douyin || {};
+    const clientKey = cfg.clientKey || process.env.DOUYIN_CLIENT_KEY;
+    const clientSecret = cfg.clientSecret || process.env.DOUYIN_CLIENT_SECRET;
+    if (!clientKey || !clientSecret) throw new Error("zhao-studio 未配置 douyin clientKey/clientSecret");
+    const res = await axios.post(
+      "https://open.douyin.com/oauth/access_token/",
+      { client_key: clientKey, client_secret: clientSecret, code, grant_type: "authorization_code" },
+      { headers: { "Content-Type": "application/json" }, timeout: 15e3 }
+    );
+    const data2 = res.data?.data || res.data;
+    if (res.data?.message !== "success") {
+      throw new Error(`douyin exchangeToken 失败: ${res.data?.message || JSON.stringify(res.data)}`);
+    }
+    return {
+      accessToken: data2.access_token,
+      refreshToken: data2.refresh_token,
+      expiresAt: computeExpiresAt(data2.expires_in),
+      openId: data2.open_id,
+      scope: data2.scope,
+      rawResponse: data2
+    };
+  },
+  async refreshToken(refreshToken) {
+    const cfg = strapi2.plugin("zhao-studio").config()?.publish?.platforms?.douyin || {};
+    const clientKey = cfg.clientKey || process.env.DOUYIN_CLIENT_KEY;
+    const clientSecret = cfg.clientSecret || process.env.DOUYIN_CLIENT_SECRET;
+    if (!clientKey || !clientSecret) throw new Error("zhao-studio 未配置 douyin clientKey/clientSecret");
+    const res = await axios.post(
+      "https://open.douyin.com/oauth/refresh_token/",
+      { client_key: clientKey, client_secret: clientSecret, refresh_token: refreshToken, grant_type: "refresh_token" },
+      { headers: { "Content-Type": "application/json" }, timeout: 15e3 }
+    );
+    const data2 = res.data?.data || res.data;
+    if (res.data?.message !== "success") {
+      throw new Error(`douyin refreshToken 失败: ${res.data?.message || JSON.stringify(res.data)}`);
+    }
+    return {
+      accessToken: data2.access_token,
+      refreshToken: data2.refresh_token,
+      expiresAt: computeExpiresAt(data2.expires_in),
+      rawResponse: data2
+    };
+  }
+});
+const xiaohongshuProvider = ({ strapi: strapi2 }) => ({
+  platformType: "xiaohongshu",
+  displayName: "小红书开放平台",
+  buildAuthorizeUrl(state) {
+    const cfg = strapi2.plugin("zhao-studio").config()?.publish?.platforms?.xiaohongshu || {};
+    const clientId = cfg.clientId || process.env.XHS_CLIENT_ID;
+    const redirectUri = cfg.redirectUri || process.env.XHS_REDIRECT_URI || "";
+    if (!clientId) throw new Error("zhao-studio 未配置 xiaohongshu clientId");
+    const params = new URLSearchParams({
+      response_type: "code",
+      client_id: clientId,
+      redirect_uri: redirectUri,
+      scope: "user_info,note.create",
+      state
+    });
+    return `https://open.xiaohongshu.com/oauth/authorize?${params.toString()}`;
+  },
+  async exchangeToken(code) {
+    const cfg = strapi2.plugin("zhao-studio").config()?.publish?.platforms?.xiaohongshu || {};
+    const clientId = cfg.clientId || process.env.XHS_CLIENT_ID;
+    const clientSecret = cfg.clientSecret || process.env.XHS_CLIENT_SECRET;
+    if (!clientId || !clientSecret) throw new Error("zhao-studio 未配置 xiaohongshu clientId/clientSecret");
+    const res = await axios.post(
+      "https://open.xiaohongshu.com/oauth/access_token",
+      { client_id: clientId, client_secret: clientSecret, code, grant_type: "authorization_code" },
+      { headers: { "Content-Type": "application/json" }, timeout: 15e3 }
+    );
+    const data2 = res.data;
+    if (data2.code && data2.code !== 0) {
+      throw new Error(`xiaohongshu exchangeToken 失败: code=${data2.code} msg=${data2.msg}`);
+    }
+    return {
+      accessToken: data2.access_token,
+      refreshToken: data2.refresh_token,
+      expiresAt: computeExpiresAt(data2.expires_in),
+      openId: data2.open_id || data2.user_id,
+      scope: data2.scope || "",
+      rawResponse: data2
+    };
+  },
+  async refreshToken(refreshToken) {
+    const cfg = strapi2.plugin("zhao-studio").config()?.publish?.platforms?.xiaohongshu || {};
+    const clientId = cfg.clientId || process.env.XHS_CLIENT_ID;
+    const clientSecret = cfg.clientSecret || process.env.XHS_CLIENT_SECRET;
+    if (!clientId || !clientSecret) throw new Error("zhao-studio 未配置 xiaohongshu clientId/clientSecret");
+    const res = await axios.post(
+      "https://open.xiaohongshu.com/oauth/refresh_token",
+      { client_id: clientId, client_secret: clientSecret, refresh_token: refreshToken, grant_type: "refresh_token" },
+      { headers: { "Content-Type": "application/json" }, timeout: 15e3 }
+    );
+    const data2 = res.data;
+    if (data2.code && data2.code !== 0) {
+      throw new Error(`xiaohongshu refreshToken 失败: code=${data2.code} msg=${data2.msg}`);
+    }
+    return {
+      accessToken: data2.access_token,
+      refreshToken: data2.refresh_token,
+      expiresAt: computeExpiresAt(data2.expires_in),
+      rawResponse: data2
+    };
+  }
+});
+function getProvider(strapi2, platformType) {
+  const providers = {
+    wechat: wechatProvider({ strapi: strapi2 }),
+    douyin: douyinProvider({ strapi: strapi2 }),
+    xiaohongshu: xiaohongshuProvider({ strapi: strapi2 })
+  };
+  return providers[platformType] || null;
+}
+const ACCOUNT_UID = "plugin::zhao-studio.publish-account";
+const oauthManager = ({ strapi: strapi2 }) => ({
+  async getAuthorizeUrl(accountId) {
+    const account = await strapi2.documents(ACCOUNT_UID).findOne({ documentId: accountId, populate: { platform: true } });
+    if (!account) throw new Error("账号不存在");
+    const platformType = account.platform?.type;
+    if (!platformType) throw new Error("账号未关联平台");
+    const skipOAuth = ["internal", "custom"].includes(platformType);
+    if (skipOAuth) throw new Error(`平台 ${platformType} 不需要 OAuth 授权`);
+    const provider = getProvider(strapi2, platformType);
+    if (!provider) throw new Error(`暂不支持的 OAuth 平台: ${platformType}`);
+    const nonce = generateNonce();
+    const state = encodeState(accountId, nonce);
+    await validateAndConsumeNonce(strapi2, nonce);
+    return provider.buildAuthorizeUrl(state);
+  },
+  async handleCallback(platformType, code, state) {
+    const parsed = decodeState(state);
+    if (!parsed) throw new Error("state 参数格式无效");
+    const nonceOk = await validateAndConsumeNonce(strapi2, parsed.nonce);
+    if (!nonceOk) throw new Error("OAuth state 校验失败（nonce 已使用）");
+    const account = await strapi2.documents(ACCOUNT_UID).findOne({ documentId: parsed.accountId, populate: { platform: true } });
+    if (!account) throw new Error("账号不存在");
+    if (account.platform?.type !== platformType) throw new Error("平台类型不匹配");
+    const provider = getProvider(strapi2, platformType);
+    if (!provider) throw new Error(`暂不支持的 OAuth 平台: ${platformType}`);
+    const tokenResult = await provider.exchangeToken(code);
+    await strapi2.documents(ACCOUNT_UID).update({
+      documentId: parsed.accountId,
+      data: {
+        oauthAccessToken: tokenResult.accessToken,
+        oauthRefreshToken: tokenResult.refreshToken,
+        oauthExpiresAt: tokenResult.expiresAt,
+        oauthOpenId: tokenResult.openId,
+        oauthScope: tokenResult.scope,
+        oauthState: "authorized",
+        lastRefreshAt: /* @__PURE__ */ new Date()
+      }
+    });
+    strapi2.log.info(`[zhao-studio] OAuth 授权成功 account=${parsed.accountId} platform=${platformType} openId=${tokenResult.openId}`);
+    return { accountId: parsed.accountId, oauthState: "authorized" };
+  },
+  async ensureValidToken(accountId) {
+    const account = await strapi2.documents(ACCOUNT_UID).findOne({ documentId: accountId, populate: { platform: true } });
+    if (!account) throw new Error("账号不存在");
+    const platformType = account.platform?.type;
+    const skipOAuth = ["internal", "custom"].includes(platformType);
+    if (skipOAuth) {
+      const apiKey = account.config?.apiKey;
+      if (!apiKey) throw new Error(`${platformType} 平台未配置 apiKey`);
+      return apiKey;
+    }
+    if (account.oauthState !== "authorized") {
+      throw new Error("账号未完成 OAuth 授权（oauthState=" + account.oauthState + "）");
+    }
+    const expiresAt = account.oauthExpiresAt ? new Date(account.oauthExpiresAt).getTime() : 0;
+    if (expiresAt > Date.now() + 5 * 60 * 1e3) {
+      return account.oauthAccessToken;
+    }
+    strapi2.log.info(`[zhao-studio] OAuth token 即将过期，自动续期 account=${accountId}`);
+    const provider = getProvider(strapi2, platformType);
+    if (!provider) throw new Error(`暂不支持的 OAuth 平台: ${platformType}`);
+    const refreshResult = await provider.refreshToken(account.oauthRefreshToken);
+    await strapi2.documents(ACCOUNT_UID).update({
+      documentId: accountId,
+      data: {
+        oauthAccessToken: refreshResult.accessToken,
+        oauthRefreshToken: refreshResult.refreshToken || account.oauthRefreshToken,
+        oauthExpiresAt: refreshResult.expiresAt,
+        oauthState: "authorized",
+        lastRefreshAt: /* @__PURE__ */ new Date()
+      }
+    });
+    return refreshResult.accessToken;
+  },
+  async batchRefreshExpiringTokens() {
+    const now = /* @__PURE__ */ new Date();
+    const soon = new Date(now.getTime() + 10 * 60 * 1e3);
+    const accounts = await strapi2.documents(ACCOUNT_UID).findMany({
+      filters: {
+        oauthExpiresAt: { $lt: soon },
+        oauthState: "authorized",
+        isActive: true
+      },
+      populate: { platform: true }
+    });
+    let refreshed = 0;
+    let failed = 0;
+    for (const account of accounts) {
+      try {
+        await this.ensureValidToken(account.documentId);
+        refreshed++;
+      } catch (err) {
+        strapi2.log.error(`[zhao-studio] OAuth 批量续期失败 account=${account.documentId}: ${err.message}`);
+        await strapi2.documents(ACCOUNT_UID).update({
+          documentId: account.documentId,
+          data: { oauthState: "expired" }
+        });
+        failed++;
+      }
+    }
+    strapi2.log.info(`[zhao-studio] OAuth 批量续期完成 refreshed=${refreshed} failed=${failed}`);
+    return { refreshed, failed };
+  },
+  async revokeAuthorization(accountId) {
+    await strapi2.documents(ACCOUNT_UID).update({
+      documentId: accountId,
+      data: {
+        oauthAccessToken: null,
+        oauthRefreshToken: null,
+        oauthExpiresAt: null,
+        oauthOpenId: null,
+        oauthScope: null,
+        oauthState: "revoked"
+      }
+    });
+    strapi2.log.info(`[zhao-studio] OAuth 授权已吊销 account=${accountId}`);
+  },
+  async getStatus(accountId) {
+    const account = await strapi2.documents(ACCOUNT_UID).findOne({ documentId: accountId, populate: { platform: true } });
+    if (!account) throw new Error("账号不存在");
+    return {
+      accountId: account.documentId,
+      accountName: account.name,
+      platformType: account.platform?.type,
+      oauthState: account.oauthState,
+      oauthExpiresAt: account.oauthExpiresAt,
+      oauthOpenId: account.oauthOpenId,
+      lastRefreshAt: account.lastRefreshAt
+    };
+  }
+});
 const services = {
   collect,
   scraper,
@@ -21838,7 +22296,8 @@ const services = {
   "ab-test": abTest,
   "channel-report": channelReport,
   ad,
-  "poster": poster
+  "poster": poster,
+  "oauth-manager": oauthManager
 };
 const policies = {};
 const middlewares = {};
@@ -21907,7 +22366,7 @@ const collectionName$f = "zhao_publish_accounts";
 const info$f = { "singularName": "publish-account", "pluralName": "publish-accounts", "displayName": "发布账号", "description": "发布账号配置（一个平台可有多个账号）" };
 const options$f = { "draftAndPublish": false };
 const pluginOptions$f = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
-const attributes$f = { "name": { "type": "string", "required": true, "maxLength": 100 }, "platform": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.publish-platform", "inversedBy": "accounts" }, "config": { "type": "json" }, "isActive": { "type": "boolean", "default": true }, "publishRecords": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.publish-record", "mappedBy": "account" }, "lastPublishedAt": { "type": "datetime" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const attributes$f = { "name": { "type": "string", "required": true, "maxLength": 100 }, "platform": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.publish-platform", "inversedBy": "accounts" }, "config": { "type": "json" }, "isActive": { "type": "boolean", "default": true }, "publishRecords": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.publish-record", "mappedBy": "account" }, "lastPublishedAt": { "type": "datetime" }, "oauthAccessToken": { "type": "string", "maxLength": 1e3 }, "oauthRefreshToken": { "type": "string", "maxLength": 1e3 }, "oauthExpiresAt": { "type": "datetime" }, "oauthOpenId": { "type": "string", "maxLength": 200 }, "oauthScope": { "type": "string", "maxLength": 500 }, "oauthState": { "type": "enumeration", "enum": ["unauthorized", "authorized", "expired", "revoked"], "default": "unauthorized", "required": true }, "lastRefreshAt": { "type": "datetime" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
 const schema$f = {
   kind: kind$f,
   collectionName: collectionName$f,
