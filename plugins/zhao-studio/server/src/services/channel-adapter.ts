@@ -105,50 +105,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
     const publishId = submitRes.publish_id;
 
-    // Step D: 轮询 freepublish/get（最多 10 次，每次 5 秒）
-    const MAX_POLL = 10;
-    const POLL_INTERVAL_MS = 5000;
-    let finalResult: any = null;
-
-    for (let i = 0; i < MAX_POLL; i++) {
-      await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL_MS));
-
-      try {
-        const getResp = await axios.post(
-          `https://api.weixin.qq.com/cgi-bin/freepublish/get?access_token=${wxToken}`,
-          { publish_id: publishId },
-          { headers: { 'Content-Type': 'application/json' }, timeout: 15000 }
-        );
-        const data = getResp.data;
-
-        if (data.publish_status === 0) {
-          const articleUrl = data.article_detail?.item?.[0]?.article_url;
-          const articleId = data.article_id;
-          return {
-            success: true,
-            externalId: articleId,
-            url: articleUrl,
-            publishId,
-          };
-        } else if (data.publish_status === 2) {
-          return {
-            success: false,
-            error: `平台审核拒绝（freepublish_status=2）: ${JSON.stringify(data)}`,
-            publishId,
-          };
-        }
-        finalResult = data;
-      } catch (err: any) {
-        continue;
-      }
-    }
-
+    // Step D: 不再同步轮询 — 交给 Bull Flow checkStatus 阶段
     return {
       success: true,
       externalId: publishId,
-      error: '发布已提交但轮询超时，需后续确认',
       publishId,
-      finalPollStatus: finalResult?.publish_status,
     };
   },
 
