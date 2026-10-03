@@ -1,6 +1,7 @@
 // server/src/services/channel-adapter.ts
 
 import axios from 'axios';
+import * as crypto from 'crypto';
 import { getPlatformAdapter, validateContentForPlatform } from '../utils/platformAdapters';
 import { identifyPublishError } from '../utils/publishErrors';
 import type { Core } from '@strapi/strapi';
@@ -245,9 +246,88 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     };
   },
 
+  generateDouyinShareSchema({
+    clientKey,
+    ticket,
+    videoPath,
+    title,
+    customCoverImageUrl,
+  }: {
+    clientKey: string;
+    ticket: string;
+    videoPath?: string;
+    title: string;
+    customCoverImageUrl?: string;
+  }): string {
+    const nonceStr = Math.random().toString(36).slice(2) + Date.now().toString(36);
+    const timestamp = Math.floor(Date.now() / 1000).toString();
+
+    const kv: Record<string, string> = {
+      ticket,
+      timestamp,
+      nonce_str: nonceStr,
+    };
+    const sortedKeys = Object.keys(kv).sort();
+    const queryStr = sortedKeys.map(k => `${k}=${kv[k]}`).join('&');
+    const signature = crypto.createHash('md5').update(queryStr).digest('hex');
+
+    const params = new URLSearchParams({
+      share_type: 'h5',
+      client_key: clientKey,
+      nonce_str: nonceStr,
+      timestamp,
+      signature,
+      title,
+    });
+    if (videoPath) params.set('video_path', videoPath);
+    if (customCoverImageUrl) params.set('custom_cover_image_url', customCoverImageUrl);
+
+    return `snssdk1128://openplatform/share?${params.toString()}`;
+  },
+
+  async getDouyinTicket(clientKey: string, clientSecret: string): Promise<string> {
+    const tokenResp = await axios.post(
+      'https://open.douyin.com/oauth/client_token/',
+      { client_key: clientKey, client_secret: clientSecret, grant_type: 'client_credential' },
+      { headers: { 'Content-Type': 'application/json' }, timeout: 10000 }
+    );
+    const clientToken = tokenResp.data?.data?.access_token;
+    if (!clientToken) throw new Error(`douyin client_token 获取失败: ${JSON.stringify(tokenResp.data)}`);
+
+    const ticketResp = await axios.get('https://open.douyin.com/open/getticket/', {
+      headers: { 'access-token': clientToken },
+      timeout: 10000,
+    });
+    const ticket = ticketResp.data?.data?.ticket;
+    if (!ticket) throw new Error(`douyin open_ticket 获取失败: ${JSON.stringify(ticketResp.data)}`);
+    return ticket;
+  },
+
   async publishToDouyin(article: any, account: any, _accessToken?: string) {
-    // 占位实现：P1 Task3 补 H5 schema 降级方案
-    throw new Error('publishToDouyin 待实现');
+    // 抖音服务端 API (video.create.bind) 仅对党政/事业单位开放
+    // 普通企业主体降级方案：生成 H5 分享 schema URL，由用户在前端扫码唤起抖音 App 发布
+    const cfg = ((strapi as any).plugin('zhao-studio').config() as any)?.publish?.platforms?.douyin || {};
+    const clientKey = cfg.clientKey || process.env.DOUYIN_CLIENT_KEY;
+    const clientSecret = cfg.clientSecret || process.env.DOUYIN_CLIENT_SECRET;
+    if (!clientKey || !clientSecret) {
+      throw new Error('未配置抖音 clientKey/clientSecret，无法生成分享 schema');
+    }
+
+    const ticket = await this.getDouyinTicket(clientKey, clientSecret);
+    const videoPath = article.videoPath || article.videoUrl || article.coverImage;
+    const schema = this.generateDouyinShareSchema({
+      clientKey,
+      ticket,
+      videoPath,
+      title: article.title || '',
+      customCoverImageUrl: article.coverImage,
+    });
+
+    return {
+      success: true,
+      publish_mode: 'h5_share',
+      schema,
+    };
   },
 
   async adaptContent(content: any, platformType: string): Promise<any> {
