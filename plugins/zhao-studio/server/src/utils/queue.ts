@@ -14,7 +14,9 @@ function getRedisConfig() {
 
 function getCleanRedisConfig(): any {
   const cfg = getRedisConfig();
-  const clean: any = { host: cfg.host, port: cfg.port, db: cfg.db, maxRetriesPerRequest: 1 };
+  const clean: any = { host: cfg.host, port: cfg.port, db: cfg.db };
+  // BullMQ requires maxRetriesPerRequest=null (Bull v4 default was 20)
+  clean.maxRetriesPerRequest = null;
   if (cfg.username) clean.username = cfg.username;
   if (cfg.password) clean.password = cfg.password;
   return clean;
