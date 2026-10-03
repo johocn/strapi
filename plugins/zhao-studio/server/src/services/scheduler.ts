@@ -1,28 +1,54 @@
 import type { Core } from '@strapi/strapi';
-import { getSchedulerQueue } from '../utils/queue';
+import { Worker } from 'bullmq';
+import { getSchedulerQueue, getRedis, registerWorker } from '../utils/queue';
+
+let worker: Worker | null = null;
+let scanJobRegistered = false;
 
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
-  registerSchedulers() {
+  async registerSchedulers() {
     const queue = getSchedulerQueue();
-    if (!queue) return;
+    const redis = getRedis();
+    if (!queue || !redis) return;
 
-    queue.add(
-      'scan-and-trigger',
-      { type: 'scan' },
-      {
-        repeat: { cron: '* * * * *' },
-        attempts: 3,
-        backoff: { type: 'exponential', delay: 2000 },
-        removeOnComplete: 20,
-        removeOnFail: 10,
+    // BullMQ: 先清理旧的 scan-and-trigger repeatable（防重复注册）
+    try {
+      const existing = await queue.getRepeatableJobs();
+      for (const j of existing) {
+        if (j.id === 'scan-and-trigger') {
+          await queue.removeRepeatableByKey(j.key);
+        }
       }
-    );
+    } catch { /* ignore */ }
 
-    queue.process('scan-and-trigger', async () => {
-      await this.scanAndTriggerSchedules();
-      await this.refreshExpiringTokens();
-      return { ok: true };
+    await queue.add('scan-and-trigger', { type: 'scan' }, {
+      jobId: 'scan-and-trigger',
+      repeat: { cron: '* * * * *' },
+      attempts: 3,
+      backoff: { type: 'exponential', delay: 2000 },
+      removeOnComplete: 20,
+      removeOnFail: 10,
     });
+
+    if (!worker) {
+      worker = new Worker('studio-scheduler', async () => {
+        await this.scanAndTriggerSchedules();
+        await this.refreshExpiringTokens();
+        return { ok: true };
+      }, { connection: redis, concurrency: 1 });
+      registerWorker(worker);
+      strapi.log.info('[zhao-studio] BullMQ scheduler worker registered (cron=* * * * *)');
+    }
+
+    scanJobRegistered = true;
+  },
+
+  async closeWorker() {
+    if (worker) {
+      try { await worker.close(); } catch { /* ignore */ }
+      worker = null;
+    }
+    scanJobRegistered = false;
   },
 
   async scanAndTriggerSchedules() {
@@ -36,7 +62,6 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
     for (const schedule of pending) {
       try {
-        // accountIds 是 JSON 数组存 documentId
         const accountIds: string[] = Array.isArray((schedule as any).accountIds) ? (schedule as any).accountIds : [];
 
         for (const accId of accountIds) {

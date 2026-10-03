@@ -1,4 +1,5 @@
-import Queue from 'bull';
+import { Queue, Worker } from 'bullmq';
+import Redis from 'ioredis';
 
 function getRedisConfig() {
   return {
@@ -11,28 +12,6 @@ function getRedisConfig() {
   };
 }
 
-let queuesAvailable: boolean | null = null;
-let publishQueue: Queue.Queue | null = null;
-let schedulerQueue: Queue.Queue | null = null;
-
-async function probeBullSupport(): Promise<boolean> {
-  try {
-    const cfg = getRedisConfig();
-    // password 为空时不传 undefined
-    const cleanCfg: any = { host: cfg.host, port: cfg.port, db: cfg.db, maxRetriesPerRequest: 1 };
-    if (cfg.username) cleanCfg.username = cfg.username;
-    if (cfg.password) cleanCfg.password = cfg.password;
-    const Redis = require('ioredis');
-    const redis = new Redis(cleanCfg);
-    await redis.connect().catch(() => {});
-    const result = await redis.eval('return 1', 0);
-    try { await redis.quit(); } catch { /* ignore */ }
-    return result === 1;
-  } catch {
-    return false;
-  }
-}
-
 function getCleanRedisConfig(): any {
   const cfg = getRedisConfig();
   const clean: any = { host: cfg.host, port: cfg.port, db: cfg.db, maxRetriesPerRequest: 1 };
@@ -41,24 +20,48 @@ function getCleanRedisConfig(): any {
   return clean;
 }
 
-export async function initStudioQueues(): Promise<{ publish: Queue.Queue | null; scheduler: Queue.Queue | null }> {
-  // Bull v4 在 Node 22 上有 Lua script 加载 crash bug (ERR_INVALID_ARG_TYPE in Hash.update)
-  // 临时跳过，待 Bull 升级后恢复
-  return { publish: null, scheduler: null };
+let redisClient: Redis | null = null;
+let queuesAvailable: boolean | null = null;
+let publishQueue: Queue | null = null;
+let schedulerQueue: Queue | null = null;
+const registeredWorkers: { close: () => Promise<void> }[] = [];
+
+export async function initStudioQueues(): Promise<{ publish: Queue | null; scheduler: Queue | null }> {
+  if (queuesAvailable === false) {
+    return { publish: null, scheduler: null };
+  }
+
+  try {
+    const cfg = getCleanRedisConfig();
+    redisClient = new Redis(cfg);
+    await redisClient.ping();
+    queuesAvailable = true;
+
+    publishQueue = new Queue('studio-publish', { connection: redisClient });
+    schedulerQueue = new Queue('studio-scheduler', { connection: redisClient });
+
+    return { publish: publishQueue, scheduler: schedulerQueue };
+  } catch (err: any) {
+    queuesAvailable = false;
+    return { publish: null, scheduler: null };
+  }
 }
 
-export function getPublishQueue(): Queue.Queue | null { return publishQueue; }
-export function getSchedulerQueue(): Queue.Queue | null { return schedulerQueue; }
+export function getRedis() { return redisClient; }
+export function getPublishQueue(): Queue | null { return publishQueue; }
+export function getSchedulerQueue(): Queue | null { return schedulerQueue; }
+
+export function registerWorker(w: { close: () => Promise<void> }) {
+  registeredWorkers.push(w);
+}
 
 export async function closeStudioQueues() {
-  for (const q of [publishQueue, schedulerQueue]) {
-    if (q) {
-      try { await q.close(); } catch { /* ignore */ }
-    }
-  }
-  publishQueue = null;
-  schedulerQueue = null;
-  queuesAvailable = null;
+  for (const w of registeredWorkers) { try { await w.close(); } catch { /* ignore */ } }
+  registeredWorkers.length = 0;
+  if (publishQueue) { try { await publishQueue.close(); } catch { /* ignore */ } }
+  if (schedulerQueue) { try { await schedulerQueue.close(); } catch { /* ignore */ } }
+  if (redisClient) { try { await redisClient.quit(); } catch { /* ignore */ } }
+  publishQueue = null; schedulerQueue = null; redisClient = null; queuesAvailable = null;
 }
 
 export interface PublishJobData {

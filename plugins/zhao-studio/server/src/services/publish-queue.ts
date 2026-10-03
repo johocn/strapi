@@ -1,5 +1,6 @@
 import type { Core } from '@strapi/strapi';
-import { getPublishQueue, type PublishJobData } from '../utils/queue';
+import { Worker } from 'bullmq';
+import { getPublishQueue, getRedis, registerWorker, type PublishJobData } from '../utils/queue';
 
 export const STAGES = {
   VALIDATE: 'validateContent',
@@ -21,6 +22,8 @@ const STAGE_TO_STATUS: Record<Stage, string> = {
   [STAGES.FINALIZE]: 'success',
 };
 
+let worker: Worker | null = null;
+
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async enqueuePublish(data: PublishJobData): Promise<string | null> {
     const queue = getPublishQueue();
@@ -30,6 +33,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
     const job = await queue.add('publish-job', data, {
       jobId: data.publishRecordId,
+      attempts: 3,
+      backoff: { type: 'exponential', delay: 3000 },
+      removeOnComplete: 100,
+      removeOnFail: 50,
     });
 
     await strapi.documents('plugin::zhao-studio.publish-record').update({
@@ -41,10 +48,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   },
 
   registerProcessors() {
-    const queue = getPublishQueue();
-    if (!queue) return;
+    if (worker) return;
+    const redis = getRedis();
+    if (!redis) return;
 
-    queue.process('publish-job', 5, async (job) => {
+    const processor = async (job: any) => {
       const data: PublishJobData = job.data;
       const stages: Stage[] = [
         STAGES.VALIDATE,
@@ -95,7 +103,18 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       }).catch(() => {});
 
       return result;
-    });
+    };
+
+    worker = new Worker('studio-publish', processor, { connection: redis, concurrency: 5 });
+    registerWorker(worker);
+    strapi.log.info('[zhao-studio] BullMQ publish worker registered (concurrency=5)');
+  },
+
+  async closeWorker() {
+    if (worker) {
+      try { await worker.close(); } catch { /* ignore */ }
+      worker = null;
+    }
   },
 
   async runStage(stage: Stage, data: PublishJobData, prev: any): Promise<any> {
@@ -147,7 +166,6 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
             const MAX_POLL = 10;
             const POLL_MS = 5000;
-            let finalData: any = null;
 
             for (let i = 0; i < MAX_POLL; i++) {
               await new Promise(r => setTimeout(r, POLL_MS));
@@ -157,7 +175,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
                   { publish_id: prev.publishId },
                   { headers: { 'Content-Type': 'application/json' }, timeout: 15000 }
                 );
-                finalData = resp.data;
+                const finalData = resp.data;
                 if (finalData.publish_status === 0) {
                   const articleUrl = finalData.article_detail?.item?.[0]?.article_url;
                   const articleId = finalData.article_id;
