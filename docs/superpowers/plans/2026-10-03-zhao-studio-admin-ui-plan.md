@@ -73,6 +73,9 @@
 | 2026-10-03 | T5 新增「定时发布」页 + `pages.json` 路由 + dashboard 入口 | 已完成 |
 | 2026-10-03 | T6 发布中心预约发布（日期+时间+任务名）+ 逐篇预览浮层；修正多选文章只建首条预约的静默丢参（改为逐篇各建一条） | 已完成 |
 | 2026-10-03 | `npm run build:h5` 通过，产物含 `pages-studio-publish-schedule-list.*` | 已完成 |
+| 2026-10-03 | 部署：web 走 `deploy-h5.ps1` 到 h.joho.cn（SYNC_OK）；basic 本地重建 dist 后提交，服务器 `merge --ff-only` + `pm2 restart strapi`（HEAD `86be45bd81`） | 已完成 |
+| 2026-10-03 | 线上契约实测（`zhao` / `a963963`，`/api/zhao-auth/v1/admin/auth/local`）：`oauth/authorize/:id` 返回 **200 JSON**（不再是 302）；`schedules` / `records` / `platforms` / `accounts` 均 200；`publish/preview` 传不存在 articleId 返回业务 404「文章不存在」（路由存活） | 已完成 |
+| 2026-10-03 | **违规返工**：首次部署误在服务器 `rm -rf dist` + build（违反「2G 服务器禁止构建」），build 被 OOM kill、宿主 CPU 96.4% / RAM 90.8%。返工为本地 `NODE_OPTIONS=--max-old-space-size=2048 npm run build`（exit 0，含 admin bundle），dist 提交为 `86be45bd81`，服务器只 merge + restart；同步修正 `strapi-plugin-deploy-test` SKILL 中「在服务器构建」的错误指引 | 已完成 |
 
 **实施期修正的既有契约偏差**：
 - 重试可重试状态**实际只有 `failed`**（后端 `service.retryPublish` 硬校验），`rejected`/`partial_success` 会 400 —— 前端按钮仅对 `failed` 开放。
