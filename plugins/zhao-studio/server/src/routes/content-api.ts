@@ -179,5 +179,8 @@ export default () => ({
     adminRoute('POST', '/poster-elements', 'poster.createElement', 'zhao-studio.poster-element.manage'),
     adminRoute('PUT', '/poster-elements/:id', 'poster.updateElement', 'zhao-studio.poster-element.manage'),
     adminRoute('DELETE', '/poster-elements/:id', 'poster.deleteElement', 'zhao-studio.poster-element.manage'),
+
+    // ============ OAuth 授权路由 ============
+    ...(require('./oauth').default() || []),
   ],
 });

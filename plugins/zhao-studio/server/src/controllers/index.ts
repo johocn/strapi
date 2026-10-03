@@ -14,6 +14,7 @@ import abTest from './ab-test';
 import channelReport from './channel-report';
 import ad from './ad';
 import poster from './poster';
+import oauth from './oauth';
 
 export default {
   collect,
@@ -32,4 +33,5 @@ export default {
   'channel-report': channelReport,
   ad,
   'poster': poster,
+  oauth,
 };
