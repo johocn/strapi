@@ -281,7 +281,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     }
     return strapi.documents('plugin::zhao-studio.publish-schedule').update({
       documentId: id,
-      data: { status: 'cancelled' },
+      data: { status: 'cancelled' } as any,
     });
   },
 });
