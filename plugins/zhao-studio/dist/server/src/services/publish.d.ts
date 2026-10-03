@@ -28,6 +28,31 @@ declare const _default: ({ strapi }: {
     listSchedules(filters?: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument[]>;
     findOneSchedule(id: string): Promise<import('@strapi/types/dist/modules/documents').AnyDocument | null>;
     cancelSchedule(id: string): Promise<import('@strapi/types/dist/modules/documents').AnyDocument | null>;
+    getDouyinSchema(recordId: string): Promise<{
+        recordId: string;
+        schema: string;
+    }>;
+    previewPublish(articleId: string, accountIds: string[]): Promise<{
+        articleId: string;
+        articleTitle: any;
+        results: ({
+            accountId: any;
+            accountName: any;
+            platform: any;
+            adaptedTitle: any;
+            adaptedContentPreview: string;
+            contentLength: number;
+            error?: undefined;
+        } | {
+            accountId: any;
+            accountName: any;
+            platform: any;
+            error: any;
+            adaptedTitle?: undefined;
+            adaptedContentPreview?: undefined;
+            contentLength?: undefined;
+        })[];
+    }>;
 };
 export default _default;
 //# sourceMappingURL=publish.d.ts.map

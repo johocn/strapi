@@ -284,4 +284,60 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       data: { status: 'cancelled' } as any,
     });
   },
+
+  async getDouyinSchema(recordId: string) {
+    const record = await strapi.documents('plugin::zhao-studio.publish-record').findOne({ documentId: recordId });
+    if (!record) throw new Error('发布记录不存在');
+
+    let schema: string | null = null;
+    const err = (record as any).error;
+    if (err && typeof err === 'string') {
+      try {
+        const parsed = JSON.parse(err);
+        if (parsed.platform === 'douyin' && parsed.schema) schema = parsed.schema;
+      } catch { /* ignore */ }
+    }
+
+    if (!schema) {
+      throw new Error('该发布记录不是 douyin h5_share 模式或已过期');
+    }
+    return { recordId, schema };
+  },
+
+  async previewPublish(articleId: string, accountIds: string[]) {
+    const article = await strapi.documents('plugin::zhao-studio.article-draft').findOne({ documentId: articleId });
+    if (!article) throw new Error('文章不存在');
+
+    const accounts = await strapi.documents('plugin::zhao-studio.publish-account').findMany({
+      filters: { documentId: { $in: accountIds }, isActive: true },
+    });
+    if (accounts.length === 0) throw new Error('未找到有效账号');
+
+    const channelAdapter = strapi.plugin('zhao-studio').service('channel-adapter');
+    const results = [];
+
+    for (const account of accounts) {
+      const platformType = (account as any).platform?.type || 'custom';
+      try {
+        const adapted = await channelAdapter.adaptContent(article, platformType);
+        results.push({
+          accountId: (account as any).documentId,
+          accountName: (account as any).name,
+          platform: platformType,
+          adaptedTitle: adapted.title,
+          adaptedContentPreview: String(adapted.content || '').substring(0, 500),
+          contentLength: String(adapted.content || '').length,
+        });
+      } catch (err: any) {
+        results.push({
+          accountId: (account as any).documentId,
+          accountName: (account as any).name,
+          platform: platformType,
+          error: err.message,
+        });
+      }
+    }
+
+    return { articleId, articleTitle: (article as any).title, results };
+  },
 });

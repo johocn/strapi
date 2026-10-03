@@ -67,6 +67,10 @@ export default () => ({
     adminRoute('GET', '/schedules/:id', 'publish.findOneSchedule', 'zhao-studio.publish-record.manage'),
     adminRoute('POST', '/schedules/:id/cancel', 'publish.cancelSchedule', 'zhao-studio.publish.publish'),
 
+    // ============ P3 基础补齐 ============
+    adminRoute('GET', '/oauth/douyin-schema/:recordId', 'publish.getDouyinSchema', 'zhao-studio.publish-record.manage'),
+    adminRoute('POST', '/publish/preview', 'publish.previewPublish', 'zhao-studio.publish.publish'),
+
     adminRoute('GET', '/ai/config', 'ai.getConfig', 'zhao-studio.ai.manage'),
     adminRoute('POST', '/ai/config', 'ai.updateConfig', 'zhao-studio.ai.manage'),
     adminRoute('POST', '/ai/test', 'ai.testConnection', 'zhao-studio.ai.manage'),

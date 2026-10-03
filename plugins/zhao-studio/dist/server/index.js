@@ -30516,6 +30516,9 @@ const contentApiRoutes = () => ({
     adminRoute("GET", "/schedules", "publish.listSchedules", "zhao-studio.publish-record.manage"),
     adminRoute("GET", "/schedules/:id", "publish.findOneSchedule", "zhao-studio.publish-record.manage"),
     adminRoute("POST", "/schedules/:id/cancel", "publish.cancelSchedule", "zhao-studio.publish.publish"),
+    // ============ P3 基础补齐 ============
+    adminRoute("GET", "/oauth/douyin-schema/:recordId", "publish.getDouyinSchema", "zhao-studio.publish-record.manage"),
+    adminRoute("POST", "/publish/preview", "publish.previewPublish", "zhao-studio.publish.publish"),
     adminRoute("GET", "/ai/config", "ai.getConfig", "zhao-studio.ai.manage"),
     adminRoute("POST", "/ai/config", "ai.updateConfig", "zhao-studio.ai.manage"),
     adminRoute("POST", "/ai/test", "ai.testConnection", "zhao-studio.ai.manage"),
@@ -49228,6 +49231,55 @@ const publish = ({ strapi: strapi2 }) => ({
       documentId: id,
       data: { status: "cancelled" }
     });
+  },
+  async getDouyinSchema(recordId) {
+    const record = await strapi2.documents("plugin::zhao-studio.publish-record").findOne({ documentId: recordId });
+    if (!record) throw new Error("发布记录不存在");
+    let schema2 = null;
+    const err = record.error;
+    if (err && typeof err === "string") {
+      try {
+        const parsed = JSON.parse(err);
+        if (parsed.platform === "douyin" && parsed.schema) schema2 = parsed.schema;
+      } catch {
+      }
+    }
+    if (!schema2) {
+      throw new Error("该发布记录不是 douyin h5_share 模式或已过期");
+    }
+    return { recordId, schema: schema2 };
+  },
+  async previewPublish(articleId, accountIds) {
+    const article = await strapi2.documents("plugin::zhao-studio.article-draft").findOne({ documentId: articleId });
+    if (!article) throw new Error("文章不存在");
+    const accounts = await strapi2.documents("plugin::zhao-studio.publish-account").findMany({
+      filters: { documentId: { $in: accountIds }, isActive: true }
+    });
+    if (accounts.length === 0) throw new Error("未找到有效账号");
+    const channelAdapter2 = strapi2.plugin("zhao-studio").service("channel-adapter");
+    const results = [];
+    for (const account of accounts) {
+      const platformType = account.platform?.type || "custom";
+      try {
+        const adapted = await channelAdapter2.adaptContent(article, platformType);
+        results.push({
+          accountId: account.documentId,
+          accountName: account.name,
+          platform: platformType,
+          adaptedTitle: adapted.title,
+          adaptedContentPreview: String(adapted.content || "").substring(0, 500),
+          contentLength: String(adapted.content || "").length
+        });
+      } catch (err) {
+        results.push({
+          accountId: account.documentId,
+          accountName: account.name,
+          platform: platformType,
+          error: err.message
+        });
+      }
+    }
+    return { articleId, articleTitle: article.title, results };
   }
 });
 const platformAdapters = {
