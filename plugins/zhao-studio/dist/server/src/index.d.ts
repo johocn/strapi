@@ -291,7 +291,9 @@ declare const _default: {
         publish: ({ strapi }: {
             strapi: import('@strapi/types/dist/core').Strapi;
         }) => {
-            publishArticle(articleId: string, accountIds: string[]): Promise<any[]>;
+            publishArticle(articleId: string, accountIds: string[], opts?: {
+                scheduledAt?: Date;
+            }): Promise<any[]>;
             listPlatforms(): Promise<import('@strapi/types/dist/modules/documents').AnyDocument[]>;
             createPlatform(data: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
             updatePlatform(platformId: string, data: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument | null>;
@@ -316,27 +318,14 @@ declare const _default: {
                 draftId: any;
                 error: string;
                 externalId?: undefined;
-                url?: undefined;
                 publishId?: undefined;
-                finalPollStatus?: undefined;
             } | {
                 success: boolean;
                 externalId: any;
-                url: any;
                 publishId: any;
                 createdDraft?: undefined;
                 draftId?: undefined;
                 error?: undefined;
-                finalPollStatus?: undefined;
-            } | {
-                success: boolean;
-                error: string;
-                publishId: any;
-                createdDraft?: undefined;
-                draftId?: undefined;
-                externalId?: undefined;
-                url?: undefined;
-                finalPollStatus?: undefined;
             } | {
                 success: boolean;
                 publish_mode: string;
@@ -359,36 +348,14 @@ declare const _default: {
                 draftId: any;
                 error: string;
                 externalId?: undefined;
-                url?: undefined;
                 publishId?: undefined;
-                finalPollStatus?: undefined;
             } | {
                 success: boolean;
                 externalId: any;
-                url: any;
                 publishId: any;
                 createdDraft?: undefined;
                 draftId?: undefined;
                 error?: undefined;
-                finalPollStatus?: undefined;
-            } | {
-                success: boolean;
-                error: string;
-                publishId: any;
-                createdDraft?: undefined;
-                draftId?: undefined;
-                externalId?: undefined;
-                url?: undefined;
-                finalPollStatus?: undefined;
-            } | {
-                success: boolean;
-                externalId: any;
-                error: string;
-                publishId: any;
-                finalPollStatus: any;
-                createdDraft?: undefined;
-                draftId?: undefined;
-                url?: undefined;
             }>;
             publishToInternal(article: any, account: any): Promise<{
                 success: boolean;
@@ -739,6 +706,20 @@ declare const _default: {
                 oauthOpenId: any;
                 lastRefreshAt: any;
             }>;
+        };
+        scheduler: ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            registerSchedulers(): void;
+            scanAndTriggerSchedules(): Promise<void>;
+            refreshExpiringTokens(): Promise<void>;
+        };
+        'publish-queue': ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            enqueuePublish(data: import('./utils/queue').PublishJobData): Promise<string | null>;
+            registerProcessors(): void;
+            runStage(stage: "publish" | "adaptContent" | "validateContent" | "ensureOAuthToken" | "checkStatus" | "finalize", data: import('./utils/queue').PublishJobData, prev: any): Promise<any>;
         };
     };
     policies: {};
@@ -1170,6 +1151,21 @@ declare const _default: {
                         type: string;
                         enum: string[];
                         default: string;
+                    };
+                    scheduledAt: {
+                        type: string;
+                    };
+                    startedAt: {
+                        type: string;
+                    };
+                    finishedAt: {
+                        type: string;
+                    };
+                    jobId: {
+                        type: string;
+                    };
+                    queueStage: {
+                        type: string;
                     };
                     error: {
                         type: string;

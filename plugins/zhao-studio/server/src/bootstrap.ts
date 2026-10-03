@@ -1,4 +1,27 @@
 export default async ({ strapi }: { strapi: any }) => {
+  // === P2: Bull 队列初始化 ===
+  try {
+    const { initStudioQueues } = await import('./utils/queue');
+    const { publish, scheduler } = await initStudioQueues();
+    if (publish) {
+      const pqSvc = strapi.plugin('zhao-studio').service('publish-queue');
+      if (pqSvc?.registerProcessors) {
+        pqSvc.registerProcessors();
+        strapi.log.info('[zhao-studio] studio-publish queue processors registered');
+      }
+    }
+    if (scheduler) {
+      const schSvc = strapi.plugin('zhao-studio').service('scheduler');
+      if (schSvc?.registerSchedulers) {
+        schSvc.registerSchedulers();
+        strapi.log.info('[zhao-studio] studio-scheduler queue registered');
+      }
+    }
+  } catch (e: any) {
+    strapi.log.warn(`[zhao-studio] Bull queue init skipped: ${e.message}`);
+  }
+  // === end Bull ===
+
   // 依赖检查（仅 warn 不阻塞）
   const checkPlugin = (name: string) => {
     try {

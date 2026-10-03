@@ -17,6 +17,7 @@ import ad from './ad';
 import poster from './poster';
 import oauthManager from './auth/oauth-manager';
 import scheduler from './scheduler';
+import publishQueue from './publish-queue';
 
 export default {
   collect,
@@ -38,4 +39,5 @@ export default {
   'poster': poster,
   'oauth-manager': oauthManager,
   scheduler,
+  'publish-queue': publishQueue,
 };

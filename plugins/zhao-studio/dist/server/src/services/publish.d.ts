@@ -2,7 +2,9 @@ import { Core } from '../../../../../node_modules/@strapi/strapi';
 declare const _default: ({ strapi }: {
     strapi: Core.Strapi;
 }) => {
-    publishArticle(articleId: string, accountIds: string[]): Promise<any[]>;
+    publishArticle(articleId: string, accountIds: string[], opts?: {
+        scheduledAt?: Date;
+    }): Promise<any[]>;
     listPlatforms(): Promise<import('@strapi/types/dist/modules/documents').AnyDocument[]>;
     createPlatform(data: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
     updatePlatform(platformId: string, data: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument | null>;

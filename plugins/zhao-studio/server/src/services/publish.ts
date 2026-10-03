@@ -3,22 +3,14 @@
 import type { Core } from '@strapi/strapi';
 
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
-  async publishArticle(articleId: string, accountIds: string[]): Promise<any[]> {
-    // 1. 获取文章
+  async publishArticle(articleId: string, accountIds: string[], opts?: { scheduledAt?: Date }): Promise<any[]> {
     const article = await strapi
       .documents('plugin::zhao-studio.article-draft')
       .findOne({ documentId: articleId });
 
-    if (!article) {
-      throw new Error('文章不存在');
-    }
+    if (!article) throw new Error('文章不存在');
+    if (article.status !== 'ready') throw new Error('文章未准备好发布，请先完成编辑');
 
-    // 2. 验证文章状态
-    if (article.status !== 'ready') {
-      throw new Error('文章未准备好发布，请先完成编辑');
-    }
-
-    // 3. 获取账号列表
     const accounts = await strapi
       .documents('plugin::zhao-studio.publish-account')
       .findMany({
@@ -28,89 +20,87 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         },
       });
 
-    if (accounts.length === 0) {
-      throw new Error('未找到有效的发布账号');
+    if (accounts.length === 0) throw new Error('未找到有效的发布账号');
+
+    // 定时发布 → 创建 publish-schedule，由 scheduler 触发
+    if (opts?.scheduledAt) {
+      const schedule = await strapi.documents('plugin::zhao-studio.publish-schedule').create({
+        data: {
+          name: `定时发布 ${article.title || article.documentId} @ ${opts.scheduledAt.toISOString()}`,
+          article: article.documentId,
+          accountIds: accounts.map((a: any) => a.documentId || a.id),
+          scheduledAt: opts.scheduledAt,
+          status: 'scheduled',
+        },
+      });
+      return [{ trigger: 'scheduled', scheduleId: schedule.documentId, accountCount: accounts.length }];
     }
 
-    // 4. 执行发布（支持多账号）
+    // 立即发布 → 入 studio-publish 队列
+    const publishQueue = strapi.plugin('zhao-studio').service('publish-queue');
     const results = [];
-    const channelAdapter = strapi.plugin('zhao-studio').service('channel-adapter');
 
     for (const account of accounts) {
+      const accDocId = (account as any).documentId || (account as any).id;
+      const record = await strapi
+        .documents('plugin::zhao-studio.publish-record')
+        .create({ data: { article: articleId, account: accDocId, status: 'queued' } });
+
       try {
-        // 适配内容
-        const adaptedContent = await channelAdapter.adaptContent(article, account.platform?.type || 'custom');
-
-        // 发布到账号
-        const result = await channelAdapter.publish(adaptedContent, account);
-
-        // 记录发布结果
-        // douyin h5_share：schema 生成成功但真正发布在前端用户扫码完成，状态标记 queued
-        const isSchemaOnly = result.publish_mode === 'h5_share';
-        const record = await strapi
-          .documents('plugin::zhao-studio.publish-record')
-          .create({
-            data: {
-              article: articleId,
-              account: account.documentId,
-              externalId: result.externalId || result.publishId,
-              status: isSchemaOnly ? 'queued' : (result.success ? 'success' : 'failed'),
-              error: isSchemaOnly
-                ? JSON.stringify({ platform: 'douyin', phase: 'h5_share', schema: result.schema })
-                : result.error,
-              publishedAt: new Date(),
-            },
-          });
-
-        results.push({
-          accountId: account.documentId,
-          accountName: account.name,
-          platform: account.platform?.type,
-          success: result.success,
-          h5Share: isSchemaOnly,
-          h5ShareSchema: result.schema,
-          externalId: result.externalId,
-          url: result.url,
-          publishId: result.publishId,
-          recordId: record.documentId,
-          error: result.error,
+        await publishQueue.enqueuePublish({
+          articleId,
+          accountId: accDocId,
+          publishRecordId: record.documentId,
+          triggerSource: 'manual',
         });
-      } catch (error: any) {
-        // 记录失败
-        const record = await strapi
-          .documents('plugin::zhao-studio.publish-record')
-          .create({
-            data: {
-              article: articleId,
-              account: account.documentId,
-              status: 'failed',
-              error: error.message,
-              retryCount: 0,
-            },
-          });
-
         results.push({
-          accountId: account.documentId,
-          accountName: account.name,
-          platform: account.platform?.type,
-          success: false,
+          accountId: accDocId,
+          accountName: (account as any).name,
+          platform: (account as any).platform?.type,
+          success: true,
+          queued: true,
           recordId: record.documentId,
-          error: error.message,
         });
+      } catch (err: any) {
+        // 队列不可用 → 降级同步发布
+        strapi.log.warn(`[zhao-studio] queue unavailable, sync fallback for account=${accDocId}`);
+        try {
+          const channelAdapter = strapi.plugin('zhao-studio').service('channel-adapter');
+          const adapted = await channelAdapter.adaptContent(article, (account as any).platform?.type || 'custom');
+          const syncResult = await channelAdapter.publish(adapted, account);
+          await strapi.documents('plugin::zhao-studio.publish-record').update({
+            documentId: record.documentId,
+            data: {
+              status: syncResult.success ? 'success' : 'failed',
+              externalId: syncResult.externalId || syncResult.publishId,
+              error: syncResult.error,
+              finishedAt: new Date(),
+            } as any,
+          });
+          results.push({
+            accountId: accDocId,
+            accountName: (account as any).name,
+            platform: (account as any).platform?.type,
+            success: syncResult.success,
+            externalId: syncResult.externalId || syncResult.publishId,
+            error: syncResult.error,
+            recordId: record.documentId,
+          });
+        } catch (syncErr: any) {
+          await strapi.documents('plugin::zhao-studio.publish-record').update({
+            documentId: record.documentId,
+            data: { status: 'failed', error: syncErr.message, finishedAt: new Date() } as any,
+          });
+          results.push({
+            accountId: accDocId,
+            accountName: (account as any).name,
+            platform: (account as any).platform?.type,
+            success: false,
+            error: syncErr.message,
+            recordId: record.documentId,
+          });
+        }
       }
-    }
-
-    // 5. 更新文章状态：仅"真正发布成功"的渠道才置为 published；
-    // douyin h5_share 是前端待处理的，不算已发布
-    const successCount = results.filter((r) => r.success && !r.h5Share).length;
-    if (successCount > 0) {
-      await strapi.documents('plugin::zhao-studio.article-draft').update({
-        documentId: articleId,
-        data: {
-          status: 'published',
-          publishedAt: new Date(),
-        } as any,
-      });
     }
 
     return results;

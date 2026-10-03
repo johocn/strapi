@@ -1,3 +1,9 @@
+import { closeStudioQueues } from './utils/queue';
+
 export default ({ strapi }: { strapi: any }) => {
-  // Destroy logic
+  try {
+    closeStudioQueues();
+  } catch {
+    // ignore
+  }
 };

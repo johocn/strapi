@@ -426,6 +426,21 @@ declare const _default: {
                     enum: string[];
                     default: string;
                 };
+                scheduledAt: {
+                    type: string;
+                };
+                startedAt: {
+                    type: string;
+                };
+                finishedAt: {
+                    type: string;
+                };
+                jobId: {
+                    type: string;
+                };
+                queueStage: {
+                    type: string;
+                };
                 error: {
                     type: string;
                 };

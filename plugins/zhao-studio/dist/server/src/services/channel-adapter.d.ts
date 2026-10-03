@@ -8,27 +8,14 @@ declare const _default: ({ strapi }: {
         draftId: any;
         error: string;
         externalId?: undefined;
-        url?: undefined;
         publishId?: undefined;
-        finalPollStatus?: undefined;
     } | {
         success: boolean;
         externalId: any;
-        url: any;
         publishId: any;
         createdDraft?: undefined;
         draftId?: undefined;
         error?: undefined;
-        finalPollStatus?: undefined;
-    } | {
-        success: boolean;
-        error: string;
-        publishId: any;
-        createdDraft?: undefined;
-        draftId?: undefined;
-        externalId?: undefined;
-        url?: undefined;
-        finalPollStatus?: undefined;
     } | {
         success: boolean;
         publish_mode: string;
@@ -51,36 +38,14 @@ declare const _default: ({ strapi }: {
         draftId: any;
         error: string;
         externalId?: undefined;
-        url?: undefined;
         publishId?: undefined;
-        finalPollStatus?: undefined;
     } | {
         success: boolean;
         externalId: any;
-        url: any;
         publishId: any;
         createdDraft?: undefined;
         draftId?: undefined;
         error?: undefined;
-        finalPollStatus?: undefined;
-    } | {
-        success: boolean;
-        error: string;
-        publishId: any;
-        createdDraft?: undefined;
-        draftId?: undefined;
-        externalId?: undefined;
-        url?: undefined;
-        finalPollStatus?: undefined;
-    } | {
-        success: boolean;
-        externalId: any;
-        error: string;
-        publishId: any;
-        finalPollStatus: any;
-        createdDraft?: undefined;
-        draftId?: undefined;
-        url?: undefined;
     }>;
     publishToInternal(article: any, account: any): Promise<{
         success: boolean;

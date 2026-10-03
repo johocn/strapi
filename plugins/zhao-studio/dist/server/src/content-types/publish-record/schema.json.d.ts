@@ -39,6 +39,21 @@ declare const _default: {
       "enum": ["pending", "queued", "validating", "uploading_media", "publishing", "checking_status", "success", "partial_success", "failed"],
       "default": "pending"
     },
+    "scheduledAt": {
+      "type": "datetime"
+    },
+    "startedAt": {
+      "type": "datetime"
+    },
+    "finishedAt": {
+      "type": "datetime"
+    },
+    "jobId": {
+      "type": "string"
+    },
+    "queueStage": {
+      "type": "string"
+    },
     "error": {
       "type": "text"
     },
