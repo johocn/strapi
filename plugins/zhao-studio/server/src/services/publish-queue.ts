@@ -1,6 +1,7 @@
 import type { Core } from '@strapi/strapi';
 import { Worker } from 'bullmq';
 import { getPublishQueue, getRedis, registerWorker, type PublishJobData } from '../utils/queue';
+import { identifyPublishError } from '../utils/publishErrors';
 
 export const STAGES = {
   VALIDATE: 'validateContent',
@@ -29,6 +30,20 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     const queue = getPublishQueue();
     if (!queue) {
       throw new Error('发布队列不可用，请检查 Redis 连接');
+    }
+
+    // 幂等保护：同 article + account 在 24h 内已有 pending/queued/validating record → 拒绝
+    const inFlight = await strapi.documents('plugin::zhao-studio.publish-record').findMany({
+      filters: {
+        article: data.articleId,
+        account: data.accountId,
+        status: { $in: ['pending', 'queued', 'validating', 'uploading_media', 'publishing', 'checking_status'] },
+        createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString() },
+      },
+      limit: 1,
+    });
+    if (inFlight.length > 0) {
+      throw new Error(`该文章在24小时内已在此账号上有进行中的发布任务 (record=${inFlight[0].documentId})`);
     }
 
     const job = await queue.add('publish-job', data, {
@@ -76,17 +91,28 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
           result = await this.runStage(stage, data, result);
         } catch (err: any) {
           errorMsg = err.message || String(err);
-          strapi.log.error(`[zhao-studio] publish stage ${stage} failed: ${errorMsg}`);
+          const platformType = result.account?.platform?.type || 'custom';
+          const classified = identifyPublishError(err, platformType);
+          strapi.log.error(`[zhao-studio] publish stage ${stage} failed [${classified.code}]: ${errorMsg}`);
+
+          await strapi.documents('plugin::zhao-studio.publish-record').update({
+            documentId: data.publishRecordId,
+            data: {
+              status: classified.code === 'PUB_012' ? 'rejected' : 'failed',
+              errorCode: classified.code,
+              error: errorMsg,
+              finishedAt: new Date(),
+            } as any,
+          }).catch(() => {});
+
+          if (classified.code === 'PUB_009') {
+            try {
+              const oauthManager = strapi.plugin('zhao-studio').service('oauth-manager');
+              await oauthManager.revoke(data.accountId);
+            } catch { /* ignore revoke fail */ }
+          }
           break;
         }
-      }
-
-      if (errorMsg) {
-        await strapi.documents('plugin::zhao-studio.publish-record').update({
-          documentId: data.publishRecordId,
-          data: { status: 'failed', error: errorMsg, finishedAt: new Date() } as any,
-        }).catch(() => {});
-        throw new Error(errorMsg);
       }
 
       await strapi.documents('plugin::zhao-studio.publish-record').update({

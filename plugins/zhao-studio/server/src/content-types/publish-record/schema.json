@@ -36,7 +36,7 @@
     },
     "status": {
       "type": "enumeration",
-      "enum": ["pending", "queued", "validating", "uploading_media", "publishing", "checking_status", "success", "partial_success", "failed"],
+      "enum": ["pending", "queued", "validating", "uploading_media", "publishing", "checking_status", "success", "partial_success", "failed", "rejected"],
       "default": "pending"
     },
     "scheduledAt": {
@@ -56,6 +56,9 @@
     },
     "error": {
       "type": "text"
+    },
+    "errorCode": {
+      "type": "string"
     },
     "retryCount": {
       "type": "integer",
