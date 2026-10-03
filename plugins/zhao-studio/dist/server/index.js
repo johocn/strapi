@@ -1517,6 +1517,7 @@ const rpa = ({ strapi: strapi2 }) => ({
         return;
       }
       const rpaClient2 = strapi2.plugin("zhao-studio").service("rpa-client");
+      await rpaClient2.resolveAccountPlatform(accountId);
       await rpaClient2.saveCookies(accountId, cookies2);
       ctx.body = { ok: true, data: { cookieCount: cookies2.length } };
     } catch (e) {
@@ -1528,6 +1529,7 @@ const rpa = ({ strapi: strapi2 }) => ({
     try {
       const { accountId } = ctx.params;
       const rpaClient2 = strapi2.plugin("zhao-studio").service("rpa-client");
+      await rpaClient2.resolveAccountPlatform(accountId);
       await rpaClient2.clearCookies(accountId);
       ctx.body = { ok: true };
     } catch (e) {

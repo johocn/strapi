@@ -27,6 +27,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         return;
       }
       const rpaClient = strapi.plugin('zhao-studio').service('rpa-client');
+      await rpaClient.resolveAccountPlatform(accountId); // 校验账号存在且平台支持 RPA
       await rpaClient.saveCookies(accountId, cookies);
       ctx.body = { ok: true, data: { cookieCount: cookies.length } };
     } catch (e: any) {
@@ -39,6 +40,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     try {
       const { accountId } = ctx.params;
       const rpaClient = strapi.plugin('zhao-studio').service('rpa-client');
+      await rpaClient.resolveAccountPlatform(accountId);
       await rpaClient.clearCookies(accountId);
       ctx.body = { ok: true };
     } catch (e: any) {
