@@ -83,6 +83,15 @@ declare const _default: {
             accountId?: string;
         }): Promise<import('@strapi/types/dist/modules/documents').AnyDocument[]>;
         retryPublish(recordId: string): Promise<any>;
+        createSchedule(data: {
+            articleId: string;
+            accountIds: string[];
+            scheduledAt: string;
+            name?: string;
+        }): Promise<any[]>;
+        listSchedules(filters?: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument[]>;
+        findOneSchedule(id: string): Promise<import('@strapi/types/dist/modules/documents').AnyDocument | null>;
+        cancelSchedule(id: string): Promise<import('@strapi/types/dist/modules/documents').AnyDocument | null>;
     };
     'channel-adapter': ({ strapi }: {
         strapi: import('@strapi/types/dist/core').Strapi;

@@ -30478,6 +30478,11 @@ const contentApiRoutes = () => ({
     adminRoute("GET", "/records", "publish.listRecords", "zhao-studio.publish-record.manage"),
     adminRoute("POST", "/records/:recordId/retry", "publish.retryPublish", "zhao-studio.publish-record.manage"),
     adminRoute("POST", "/articles/:articleId/sync", "publish.syncStatus", "zhao-studio.publish-record.manage"),
+    // ============ 定时发布（P2 新增） ============
+    adminRoute("POST", "/schedules", "publish.createSchedule", "zhao-studio.publish.publish"),
+    adminRoute("GET", "/schedules", "publish.listSchedules", "zhao-studio.publish-record.manage"),
+    adminRoute("GET", "/schedules/:id", "publish.findOneSchedule", "zhao-studio.publish-record.manage"),
+    adminRoute("POST", "/schedules/:id/cancel", "publish.cancelSchedule", "zhao-studio.publish.publish"),
     adminRoute("GET", "/ai/config", "ai.getConfig", "zhao-studio.ai.manage"),
     adminRoute("POST", "/ai/config", "ai.updateConfig", "zhao-studio.ai.manage"),
     adminRoute("POST", "/ai/test", "ai.testConnection", "zhao-studio.ai.manage"),
@@ -49132,25 +49137,64 @@ const publish = ({ strapi: strapi2 }) => ({
     if (!record || record.status !== "failed") {
       throw new Error("只能重试失败的发布记录");
     }
-    const article = await strapi2.documents("plugin::zhao-studio.article-draft").findOne({ documentId: record.article?.documentId || record.article });
-    const account = await strapi2.documents("plugin::zhao-studio.publish-account").findOne({ documentId: record.account?.documentId || record.account });
-    if (!article || !account) {
-      throw new Error("文章或账号不存在");
+    const articleId = String(record.article?.documentId || record.article);
+    const accountId = String(record.account?.documentId || record.account);
+    try {
+      const publishQueue2 = strapi2.plugin("zhao-studio").service("publish-queue");
+      await strapi2.documents("plugin::zhao-studio.publish-record").update({
+        documentId: recordId,
+        data: { status: "queued", error: null, retryCount: (record.retryCount || 0) + 1 }
+      });
+      await publishQueue2.enqueuePublish({
+        articleId,
+        accountId,
+        publishRecordId: recordId,
+        triggerSource: "retry"
+      });
+      return { success: true, queued: true, recordId };
+    } catch {
+      const article = await strapi2.documents("plugin::zhao-studio.article-draft").findOne({ documentId: articleId });
+      const account = await strapi2.documents("plugin::zhao-studio.publish-account").findOne({ documentId: accountId });
+      if (!article || !account) throw new Error("文章或账号不存在");
+      const channelAdapter2 = strapi2.plugin("zhao-studio").service("channel-adapter");
+      const adaptedContent = await channelAdapter2.adaptContent(article, account.platform?.type || "custom");
+      const result = await channelAdapter2.publish(adaptedContent, account);
+      await strapi2.documents("plugin::zhao-studio.publish-record").update({
+        documentId: recordId,
+        data: {
+          status: result.success ? "success" : "failed",
+          externalId: result.externalId,
+          error: result.error,
+          retryCount: (record.retryCount || 0) + 1,
+          finishedAt: /* @__PURE__ */ new Date()
+        }
+      });
+      return result;
     }
-    const channelAdapter2 = strapi2.plugin("zhao-studio").service("channel-adapter");
-    const adaptedContent = await channelAdapter2.adaptContent(article, account.platform?.type || "custom");
-    const result = await channelAdapter2.publish(adaptedContent, account);
-    await strapi2.documents("plugin::zhao-studio.publish-record").update({
-      documentId: recordId,
-      data: {
-        status: result.success ? "success" : "failed",
-        externalId: result.externalId,
-        error: result.error,
-        retryCount: (record.retryCount || 0) + 1,
-        publishedAt: /* @__PURE__ */ new Date()
-      }
+  },
+  // ============ 定时发布（P2 新增） ============
+  async createSchedule(data2) {
+    return this.publishArticle(data2.articleId, data2.accountIds, { scheduledAt: new Date(data2.scheduledAt) });
+  },
+  async listSchedules(filters2 = {}) {
+    return strapi2.documents("plugin::zhao-studio.publish-schedule").findMany({
+      filters: { ...filters2 },
+      sort: "scheduledAt:desc"
     });
-    return result;
+  },
+  async findOneSchedule(id) {
+    return strapi2.documents("plugin::zhao-studio.publish-schedule").findOne({ documentId: id });
+  },
+  async cancelSchedule(id) {
+    const schedule = await strapi2.documents("plugin::zhao-studio.publish-schedule").findOne({ documentId: id });
+    if (!schedule) throw new Error("定时任务不存在");
+    if (schedule.status !== "scheduled") {
+      throw new Error(`只能取消 scheduled 状态的任务（当前状态: ${schedule.status}）`);
+    }
+    return strapi2.documents("plugin::zhao-studio.publish-schedule").update({
+      documentId: id,
+      data: { status: "cancelled" }
+    });
   }
 });
 const platformAdapters = {

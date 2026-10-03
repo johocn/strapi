@@ -61,6 +61,12 @@ export default () => ({
     adminRoute('POST', '/records/:recordId/retry', 'publish.retryPublish', 'zhao-studio.publish-record.manage'),
     adminRoute('POST', '/articles/:articleId/sync', 'publish.syncStatus', 'zhao-studio.publish-record.manage'),
 
+    // ============ 定时发布（P2 新增） ============
+    adminRoute('POST', '/schedules', 'publish.createSchedule', 'zhao-studio.publish.publish'),
+    adminRoute('GET', '/schedules', 'publish.listSchedules', 'zhao-studio.publish-record.manage'),
+    adminRoute('GET', '/schedules/:id', 'publish.findOneSchedule', 'zhao-studio.publish-record.manage'),
+    adminRoute('POST', '/schedules/:id/cancel', 'publish.cancelSchedule', 'zhao-studio.publish.publish'),
+
     adminRoute('GET', '/ai/config', 'ai.getConfig', 'zhao-studio.ai.manage'),
     adminRoute('POST', '/ai/config', 'ai.updateConfig', 'zhao-studio.ai.manage'),
     adminRoute('POST', '/ai/test', 'ai.testConnection', 'zhao-studio.ai.manage'),
