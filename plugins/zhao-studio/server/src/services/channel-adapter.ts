@@ -37,6 +37,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         case 'douyin': return await this.publishToDouyin(article, account, accessToken);
         case 'internal': return await this.publishToInternal(article, account);
         case 'custom': return await this.publishToCustom(article, account, accessToken);
+        case 'bilibili': throw new Error('bilibili 服务端发布 API 暂未接入，需调研 bilibili 开放平台能力');
         default: throw new Error(`暂不支持的平台类型: ${platformType}`);
       }
     } catch (error: any) {
@@ -46,58 +47,15 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   },
 
   async publishToToutiao(article: any, account: any, _accessToken?: string) {
-    const adapter = getPlatformAdapter('toutiao');
-    const endpoint = account.config?.endpoint || adapter?.endpointTemplate;
-
-    const response = await axios.post(
-      endpoint,
-      {
-        title: article.title,
-        content: article.content,
-        cover_image: article.coverImage,
-      },
-      {
-        headers: {
-          'Authorization': `Bearer ${account.config?.apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        timeout: 30000,
-      }
-    );
-
-    return {
-      success: response.data.success || response.data.code === 0,
-      externalId: response.data.data?.article_id || response.data.article_id,
-      error: response.data.message || response.data.error,
-    };
+    // 头条内容发布 API 属于巨量引擎开放平台 (open.oceanengine.com) 的广告投放域，
+    // 不是内容开放平台；头条的内容侧发布能力暂未向第三方开放。
+    throw new Error('头条发布 API 暂未对外开放，需等待巨量引擎内容侧开放或采用 RPA 方案');
   },
 
   async publishToXiaohongshu(article: any, account: any, _accessToken?: string) {
-    const adapter = getPlatformAdapter('xiaohongshu');
-    const endpoint = account.config?.endpoint || adapter?.endpointTemplate;
-
-    const response = await axios.post(
-      endpoint,
-      {
-        title: article.title.substring(0, 20),
-        desc: article.content.substring(0, 1000),
-        images: article.images || [],
-        cover: article.coverImage,
-      },
-      {
-        headers: {
-          'Authorization': `Bearer ${account.config?.apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        timeout: 30000,
-      }
-    );
-
-    return {
-      success: response.data.success || response.data.code === 0,
-      externalId: response.data.data?.note_id || response.data.note_id,
-      error: response.data.message || response.data.error,
-    };
+    // 小红书开放平台 (open.xiaohongshu.com) 目前只开放电商/商品/订单接口，
+    // 发布笔记 API 未开放，后续需采用 RPA (Appium 云手机) 方案。
+    throw new Error('小红书发布笔记 API 暂未对外开放，后续需 RPA 方案');
   },
 
   async publishToWechat(article: any, account: any, _accessToken?: string) {
