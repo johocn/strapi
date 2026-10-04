@@ -420,6 +420,18 @@ declare const _default: {
                     target: string;
                     inversedBy: string;
                 };
+                video: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    inversedBy: string;
+                };
+                gallery: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    inversedBy: string;
+                };
                 account: {
                     type: string;
                     relation: string;
@@ -502,6 +514,16 @@ declare const _default: {
                     type: string;
                 };
                 article: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                };
+                video: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                };
+                gallery: {
                     type: string;
                     relation: string;
                     target: string;

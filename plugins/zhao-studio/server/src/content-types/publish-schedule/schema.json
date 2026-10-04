@@ -27,6 +27,16 @@
       "relation": "manyToOne",
       "target": "plugin::zhao-studio.article-draft"
     },
+    "video": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-studio.publish-video"
+    },
+    "gallery": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-studio.publish-gallery"
+    },
     "accountIds": {
       "type": "json"
     },

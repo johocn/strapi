@@ -25,6 +25,18 @@ declare const _default: {
       "target": "plugin::zhao-studio.article-draft",
       "inversedBy": "publishRecords"
     },
+    "video": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-studio.publish-video",
+      "inversedBy": "publishRecords"
+    },
+    "gallery": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-studio.publish-gallery",
+      "inversedBy": "publishRecords"
+    },
     "account": {
       "type": "relation",
       "relation": "manyToOne",

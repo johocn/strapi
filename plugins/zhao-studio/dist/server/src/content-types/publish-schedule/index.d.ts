@@ -28,6 +28,16 @@ declare const _default: {
                 relation: string;
                 target: string;
             };
+            video: {
+                type: string;
+                relation: string;
+                target: string;
+            };
+            gallery: {
+                type: string;
+                relation: string;
+                target: string;
+            };
             accountIds: {
                 type: string;
             };
