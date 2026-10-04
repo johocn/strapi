@@ -106,11 +106,14 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
   // Admin CRUD for zones
   async listZones(query: any = {}) {
+    const defaults = { page: 1, pageSize: 20 };
+    const pagination = { ...defaults, ...(query.pagination || {}) };
+
     const findManyOpts: any = {
       filters: query.filters || {},
       populate: query.populate || { adContents: true, site: true },
       sort: query.sort || { sortOrder: 'asc' },
-      pagination: query.pagination || { page: 1, pageSize: 20 },
+      pagination,
     };
 
     // Strapi 5 documents.findMany 带 pagination 时返回 { records, meta }
@@ -119,8 +122,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
     const total = await strapi.documents('plugin::zhao-studio.ad-zone').count({ filters: findManyOpts.filters });
 
-    const page = Number(findManyOpts.pagination.page);
-    const pageSize = Number(findManyOpts.pagination.pageSize);
+    const page = Number(pagination.page);
+    const pageSize = Number(pagination.pageSize);
     return {
       records,
       meta: { pagination: { page, pageSize, total, pageCount: Math.ceil(total / pageSize) } },
@@ -148,11 +151,14 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
   // Admin CRUD for contents
   async listContents(query: any = {}) {
+    const defaults = { page: 1, pageSize: 20 };
+    const pagination = { ...defaults, ...(query.pagination || {}) };
+
     const findManyOpts: any = {
       filters: query.filters || {},
       populate: query.populate || { adZone: true, site: true },
       sort: query.sort || { priority: 'desc', sortOrder: 'asc' },
-      pagination: query.pagination || { page: 1, pageSize: 20 },
+      pagination,
     };
 
     // Strapi 5 documents.findMany 带 pagination 时返回 { records, meta }
@@ -161,8 +167,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
     const total = await strapi.documents('plugin::zhao-studio.ad-content').count({ filters: findManyOpts.filters });
 
-    const page = Number(findManyOpts.pagination.page);
-    const pageSize = Number(findManyOpts.pagination.pageSize);
+    const page = Number(pagination.page);
+    const pageSize = Number(pagination.pageSize);
     return {
       records,
       meta: { pagination: { page, pageSize, total, pageCount: Math.ceil(total / pageSize) } },
