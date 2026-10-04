@@ -326,10 +326,11 @@ declare const _default: {
         publish: ({ strapi }: {
             strapi: import('@strapi/types/dist/core').Strapi;
         }) => {
-            publishContent({ type, contentId, accountIds }: {
+            publishContent({ type, contentId, accountIds, scheduledAt }: {
                 type: "article" | "video" | "gallery";
                 contentId: string;
                 accountIds: string[];
+                scheduledAt?: Date;
             }): Promise<any[]>;
             publishArticle(articleId: string, accountIds: string[], opts?: {
                 scheduledAt?: Date;

@@ -3,10 +3,11 @@ type ContentType = 'article' | 'video' | 'gallery';
 declare const _default: ({ strapi }: {
     strapi: Core.Strapi;
 }) => {
-    publishContent({ type, contentId, accountIds }: {
+    publishContent({ type, contentId, accountIds, scheduledAt }: {
         type: ContentType;
         contentId: string;
         accountIds: string[];
+        scheduledAt?: Date;
     }): Promise<any[]>;
     publishArticle(articleId: string, accountIds: string[], opts?: {
         scheduledAt?: Date;

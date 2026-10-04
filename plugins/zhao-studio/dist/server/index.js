@@ -20332,14 +20332,24 @@ const CONTENT_UID$2 = {
   gallery: "plugin::zhao-studio.publish-gallery"
 };
 const publish = ({ strapi: strapi2 }) => ({
-  async publishContent({ type, contentId, accountIds: accountIds2 }) {
+  async publishContent({ type, contentId, accountIds: accountIds2, scheduledAt }) {
     const content = await strapi2.documents(CONTENT_UID$2[type]).findOne({ documentId: contentId });
     if (!content) throw new Error(`${type} 内容不存在: ${contentId}`);
     const accounts = await strapi2.documents("plugin::zhao-studio.publish-account").findMany({
-      filters: { documentId: { $in: accountIds2 }, isActive: true },
-      populate: { platform: true }
+      filters: { documentId: { $in: accountIds2 }, isActive: true }
     });
     if (accounts.length === 0) throw new Error("未找到有效的发布账号");
+    if (scheduledAt) {
+      const scheduleData = {
+        name: `${content.title || contentId} @ ${scheduledAt.toISOString()}`,
+        accountIds: accounts.map((a) => a.documentId || a.id),
+        scheduledAt,
+        status: "scheduled"
+      };
+      scheduleData[type] = contentId;
+      const schedule = await strapi2.documents("plugin::zhao-studio.publish-schedule").create({ data: scheduleData });
+      return [{ trigger: "scheduled", scheduleId: schedule.documentId, accountCount: accounts.length, contentType: type }];
+    }
     const results = [];
     const publishQueue2 = strapi2.plugin("zhao-studio").service("publish-queue");
     for (const account of accounts) {

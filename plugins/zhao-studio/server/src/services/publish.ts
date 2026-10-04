@@ -11,8 +11,8 @@ const CONTENT_UID = {
 } as const satisfies Record<ContentType, string>;
 
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
-  async publishContent({ type, contentId, accountIds }: {
-    type: ContentType; contentId: string; accountIds: string[];
+  async publishContent({ type, contentId, accountIds, scheduledAt }: {
+    type: ContentType; contentId: string; accountIds: string[]; scheduledAt?: Date;
   }): Promise<any[]> {
     const content: any = await strapi
       .documents(CONTENT_UID[type])
@@ -23,10 +23,23 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       .documents('plugin::zhao-studio.publish-account')
       .findMany({
         filters: { documentId: { $in: accountIds }, isActive: true },
-        populate: { platform: true },
       });
     if (accounts.length === 0) throw new Error('未找到有效的发布账号');
 
+    // 定时发布 → 创建 publish-schedule，关联对应内容列
+    if (scheduledAt) {
+      const scheduleData: any = {
+        name: `${content.title || contentId} @ ${scheduledAt.toISOString()}`,
+        accountIds: accounts.map((a: any) => a.documentId || a.id),
+        scheduledAt,
+        status: 'scheduled',
+      };
+      scheduleData[type] = contentId; // article / video / gallery 三列任选其一
+      const schedule = await strapi.documents('plugin::zhao-studio.publish-schedule').create({ data: scheduleData });
+      return [{ trigger: 'scheduled', scheduleId: schedule.documentId, accountCount: accounts.length, contentType: type }];
+    }
+
+    // 立即发布 → 入队 + sync fallback
     const results = [];
     const publishQueue = strapi.plugin('zhao-studio').service('publish-queue');
 
