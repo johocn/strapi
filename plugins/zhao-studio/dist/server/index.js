@@ -721,6 +721,82 @@ const publish$1 = ({ strapi: strapi2 }) => ({
     }
   }
 });
+const UID$2 = "plugin::zhao-studio.publish-video";
+const publishVideo$1 = ({ strapi: strapi2 }) => ({
+  async list(ctx) {
+    const query = { ...ctx.query };
+    const page = Number(query.pagination?.page) || 1;
+    const pageSize = Number(query.pagination?.pageSize) || 10;
+    const findManyRes = await strapi2.documents(UID$2).findMany({
+      ...query,
+      pagination: { page, pageSize },
+      sort: { createdAt: "desc" }
+    });
+    const records = Array.isArray(findManyRes) ? findManyRes : findManyRes?.records || [];
+    const total = await strapi2.documents(UID$2).count({ filters: query.filters || {} });
+    ctx.body = {
+      data: records,
+      meta: { pagination: { page, pageSize, total, pageCount: Math.ceil(total / pageSize) } }
+    };
+  },
+  async findOne(ctx) {
+    const record = await strapi2.documents(UID$2).findOne({ documentId: ctx.params.id });
+    ctx.body = { data: record };
+  },
+  async create(ctx) {
+    const { data: data2 } = ctx.request.body;
+    const record = await strapi2.documents(UID$2).create({ data: data2 });
+    ctx.body = { data: record };
+  },
+  async update(ctx) {
+    const { id } = ctx.params;
+    const { data: data2 } = ctx.request.body;
+    const record = await strapi2.documents(UID$2).update({ documentId: id, data: data2 });
+    ctx.body = { data: record };
+  },
+  async delete(ctx) {
+    await strapi2.documents(UID$2).delete({ documentId: ctx.params.id });
+    ctx.body = { data: { success: true } };
+  }
+});
+const UID$1 = "plugin::zhao-studio.publish-gallery";
+const publishGallery$1 = ({ strapi: strapi2 }) => ({
+  async list(ctx) {
+    const query = { ...ctx.query };
+    const page = Number(query.pagination?.page) || 1;
+    const pageSize = Number(query.pagination?.pageSize) || 10;
+    const findManyRes = await strapi2.documents(UID$1).findMany({
+      ...query,
+      pagination: { page, pageSize },
+      sort: { createdAt: "desc" }
+    });
+    const records = Array.isArray(findManyRes) ? findManyRes : findManyRes?.records || [];
+    const total = await strapi2.documents(UID$1).count({ filters: query.filters || {} });
+    ctx.body = {
+      data: records,
+      meta: { pagination: { page, pageSize, total, pageCount: Math.ceil(total / pageSize) } }
+    };
+  },
+  async findOne(ctx) {
+    const record = await strapi2.documents(UID$1).findOne({ documentId: ctx.params.id });
+    ctx.body = { data: record };
+  },
+  async create(ctx) {
+    const { data: data2 } = ctx.request.body;
+    const record = await strapi2.documents(UID$1).create({ data: data2 });
+    ctx.body = { data: record };
+  },
+  async update(ctx) {
+    const { id } = ctx.params;
+    const { data: data2 } = ctx.request.body;
+    const record = await strapi2.documents(UID$1).update({ documentId: id, data: data2 });
+    ctx.body = { data: record };
+  },
+  async delete(ctx) {
+    await strapi2.documents(UID$1).delete({ documentId: ctx.params.id });
+    ctx.body = { data: { success: true } };
+  }
+});
 const internalApi$1 = ({ strapi: strapi2 }) => ({
   async listArticles(ctx) {
     const { channel, category, tag, page, pageSize } = ctx.query;
@@ -1635,6 +1711,8 @@ const controllers = {
   collect: collect$1,
   draft,
   publish: publish$1,
+  "publish-video": publishVideo$1,
+  "publish-gallery": publishGallery$1,
   "internal-api": internalApi$1,
   ai,
   analytics: analytics$1,

@@ -1,6 +1,8 @@
 import collect from './collect';
 import draft from './draft';
 import publish from './publish';
+import publishVideo from './publish-video';
+import publishGallery from './publish-gallery';
 import internalApi from './internal-api';
 import ai from './ai';
 import analytics from './analytics';
@@ -21,6 +23,8 @@ export default {
   collect,
   draft,
   publish,
+  'publish-video': publishVideo,
+  'publish-gallery': publishGallery,
   'internal-api': internalApi,
   ai,
   analytics,

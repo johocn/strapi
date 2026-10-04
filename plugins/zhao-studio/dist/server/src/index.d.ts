@@ -69,6 +69,24 @@ declare const _default: {
             getDouyinSchema(ctx: any): Promise<any>;
             previewPublish(ctx: any): Promise<any>;
         };
+        'publish-video': ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            list(ctx: any): Promise<void>;
+            findOne(ctx: any): Promise<void>;
+            create(ctx: any): Promise<void>;
+            update(ctx: any): Promise<void>;
+            delete(ctx: any): Promise<void>;
+        };
+        'publish-gallery': ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            list(ctx: any): Promise<void>;
+            findOne(ctx: any): Promise<void>;
+            create(ctx: any): Promise<void>;
+            update(ctx: any): Promise<void>;
+            delete(ctx: any): Promise<void>;
+        };
         'internal-api': ({ strapi }: {
             strapi: import('@strapi/types/dist/core').Strapi;
         }) => {
