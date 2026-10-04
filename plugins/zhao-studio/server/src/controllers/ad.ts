@@ -43,8 +43,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async listZones(ctx: any) {
     try {
       const adService = strapi.plugin('zhao-studio').service('ad');
-      const zones = await adService.listZones(ctx.query.filters || {});
-      ctx.body = { data: zones };
+      const result = await adService.listZones(ctx.query);
+      ctx.body = { data: result.records, meta: result.meta };
     } catch (err: any) {
       ctx.status = 500;
       ctx.body = { error: { code: 'AD_500', message: err.message } };
@@ -109,8 +109,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async listContents(ctx: any) {
     try {
       const adService = strapi.plugin('zhao-studio').service('ad');
-      const contents = await adService.listContents(ctx.query.filters || {});
-      ctx.body = { data: contents };
+      const result = await adService.listContents(ctx.query);
+      ctx.body = { data: result.records, meta: result.meta };
     } catch (err: any) {
       ctx.status = 500;
       ctx.body = { error: { code: 'AD_500', message: err.message } };

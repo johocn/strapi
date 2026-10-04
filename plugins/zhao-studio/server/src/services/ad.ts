@@ -105,12 +105,23 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   },
 
   // Admin CRUD for zones
-  async listZones(filters: any = {}) {
-    return await strapi.documents('plugin::zhao-studio.ad-zone').findMany({
-      filters,
-      populate: { adContents: true, site: true },
-      sort: { sortOrder: 'asc' },
-    });
+  async listZones(query: any = {}) {
+    const findManyOpts: any = {
+      filters: query.filters || {},
+      populate: query.populate || { adContents: true, site: true },
+      sort: query.sort || { sortOrder: 'asc' },
+      pagination: query.pagination || { page: 1, pageSize: 20 },
+    };
+
+    const records = await strapi.documents('plugin::zhao-studio.ad-zone').findMany(findManyOpts);
+    const total = await strapi.documents('plugin::zhao-studio.ad-zone').count({ filters: findManyOpts.filters });
+
+    const page = Number(findManyOpts.pagination.page);
+    const pageSize = Number(findManyOpts.pagination.pageSize);
+    return {
+      records,
+      meta: { pagination: { page, pageSize, total, pageCount: Math.ceil(total / pageSize) } },
+    };
   },
 
   async createZone(data: any) {
@@ -133,12 +144,23 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   },
 
   // Admin CRUD for contents
-  async listContents(filters: any = {}) {
-    return await strapi.documents('plugin::zhao-studio.ad-content').findMany({
-      filters,
-      populate: { adZone: true, site: true },
-      sort: { priority: 'desc', sortOrder: 'asc' },
-    });
+  async listContents(query: any = {}) {
+    const findManyOpts: any = {
+      filters: query.filters || {},
+      populate: query.populate || { adZone: true, site: true },
+      sort: query.sort || { priority: 'desc', sortOrder: 'asc' },
+      pagination: query.pagination || { page: 1, pageSize: 20 },
+    };
+
+    const records = await strapi.documents('plugin::zhao-studio.ad-content').findMany(findManyOpts);
+    const total = await strapi.documents('plugin::zhao-studio.ad-content').count({ filters: findManyOpts.filters });
+
+    const page = Number(findManyOpts.pagination.page);
+    const pageSize = Number(findManyOpts.pagination.pageSize);
+    return {
+      records,
+      meta: { pagination: { page, pageSize, total, pageCount: Math.ceil(total / pageSize) } },
+    };
   },
 
   async createContent(data: any) {

@@ -1,15 +1,32 @@
+// server/src/controllers/stat-summary.ts
+
 export default ({ strapi }: { strapi: any }) => ({
   async list(ctx: any) {
-    const { summaryType, date } = ctx.query;
-    const filters: any = {};
-    if (summaryType) filters.summaryType = summaryType;
-    if (date) filters.date = date;
+    // 透传完整 Strapi ctx.query，同时兼容老的顶层参数写法（?summaryType=xxx）
+    const query = { ...ctx.query };
+    const topLevelFilters: Record<string, any> = {};
+    if (ctx.query.summaryType) topLevelFilters.summaryType = ctx.query.summaryType;
+    if (ctx.query.date) topLevelFilters.date = ctx.query.date;
 
-    const results = await strapi
+    if (Object.keys(topLevelFilters).length > 0) {
+      query.filters = { ...(query.filters || {}), ...topLevelFilters };
+    }
+
+    const records = await strapi
       .documents('plugin::zhao-studio.stat-summary')
-      .findMany({ filters });
+      .findMany(query);
 
-    ctx.body = { data: results };
+    const total = await strapi
+      .documents('plugin::zhao-studio.stat-summary')
+      .count({ filters: query.filters || {} });
+
+    const page = Number(query.pagination?.page) || 1;
+    const pageSize = Number(query.pagination?.pageSize) || 10;
+
+    ctx.body = {
+      data: records,
+      meta: { pagination: { page, pageSize, total, pageCount: Math.ceil(total / pageSize) } },
+    };
   },
 
   async findOne(ctx: any) {
