@@ -22590,7 +22590,6 @@ const wechatProvider = ({ strapi: strapi2 }) => ({
     const appId = acctCfg.appId || ssoCfg?.appId || "";
     if (!appId) throw new Error("wechat 未配置 appId（account.config.appId 或 zhao-sso）");
     const redirectUri = acctCfg.redirectUri || ssoCfg?.redirectUris && ssoCfg.redirectUris[0] || process.env.WECHAT_REDIRECT_URI || "";
-    if (!redirectUri) throw new Error("wechat 未配置 redirectUri");
     const scope = ssoCfg?.scope || "snsapi_userinfo";
     const params = new URLSearchParams({
       appid: appId,

@@ -22,7 +22,8 @@ export default ({ strapi }: { strapi: Core.Strapi }): IOAuthProvider => ({
       || (ssoCfg?.redirectUris && ssoCfg.redirectUris[0])
       || process.env.WECHAT_REDIRECT_URI
       || '';
-    if (!redirectUri) throw new Error('wechat 未配置 redirectUri');
+    // redirectUri 未配置时允许空（与修复前行为一致），由微信侧拒绝
+    // 运营后台后续可在 account.config.redirectUri 或 .env.WECHAT_REDIRECT_URI 配置
 
     const scope = (ssoCfg?.scope as string) || 'snsapi_userinfo';
 
