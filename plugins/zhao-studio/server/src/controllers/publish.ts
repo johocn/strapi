@@ -5,8 +5,8 @@ import type { Core } from '@strapi/strapi';
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async listPlatforms(ctx: any) {
     const publishService = strapi.plugin('zhao-studio').service('publish');
-    const platforms = await publishService.listPlatforms();
-    ctx.body = { data: platforms };
+    const result = await publishService.listPlatforms(ctx.query);
+    ctx.body = { data: result.records, meta: { pagination: result.pagination } };
   },
 
   async createPlatform(ctx: any) {
@@ -32,10 +32,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   },
 
   async listAccounts(ctx: any) {
-    const { platformId } = ctx.query;
     const publishService = strapi.plugin('zhao-studio').service('publish');
-    const accounts = await publishService.listAccounts(platformId);
-    ctx.body = { data: accounts };
+    const result = await publishService.listAccounts(ctx.query);
+    ctx.body = { data: result.records, meta: { pagination: result.pagination } };
   },
 
   async createAccount(ctx: any) {
@@ -71,10 +70,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   },
 
   async listRecords(ctx: any) {
-    const { articleId, platformId, accountId } = ctx.query;
     const publishService = strapi.plugin('zhao-studio').service('publish');
-    const records = await publishService.listRecords({ articleId, platformId, accountId });
-    ctx.body = { data: records };
+    const result = await publishService.listRecords(ctx.query);
+    ctx.body = { data: result.records, meta: { pagination: result.pagination } };
   },
 
   async retryPublish(ctx: any) {

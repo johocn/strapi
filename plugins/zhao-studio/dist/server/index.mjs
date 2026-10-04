@@ -487,8 +487,8 @@ const draft = ({ strapi: strapi2 }) => ({
 const publish$1 = ({ strapi: strapi2 }) => ({
   async listPlatforms(ctx) {
     const publishService = strapi2.plugin("zhao-studio").service("publish");
-    const platforms = await publishService.listPlatforms();
-    ctx.body = { data: platforms };
+    const result = await publishService.listPlatforms(ctx.query);
+    ctx.body = { data: result.records, meta: { pagination: result.pagination } };
   },
   async createPlatform(ctx) {
     const { data: data2 } = ctx.request.body;
@@ -510,10 +510,9 @@ const publish$1 = ({ strapi: strapi2 }) => ({
     ctx.body = { data: { success: true } };
   },
   async listAccounts(ctx) {
-    const { platformId } = ctx.query;
     const publishService = strapi2.plugin("zhao-studio").service("publish");
-    const accounts = await publishService.listAccounts(platformId);
-    ctx.body = { data: accounts };
+    const result = await publishService.listAccounts(ctx.query);
+    ctx.body = { data: result.records, meta: { pagination: result.pagination } };
   },
   async createAccount(ctx) {
     const { data: data2 } = ctx.request.body;
@@ -542,10 +541,9 @@ const publish$1 = ({ strapi: strapi2 }) => ({
     ctx.body = { data: results };
   },
   async listRecords(ctx) {
-    const { articleId, platformId, accountId } = ctx.query;
     const publishService = strapi2.plugin("zhao-studio").service("publish");
-    const records = await publishService.listRecords({ articleId, platformId, accountId });
-    ctx.body = { data: records };
+    const result = await publishService.listRecords(ctx.query);
+    ctx.body = { data: result.records, meta: { pagination: result.pagination } };
   },
   async retryPublish(ctx) {
     const { recordId } = ctx.params;
@@ -20220,11 +20218,23 @@ const publish = ({ strapi: strapi2 }) => ({
     }
     return results;
   },
-  async listPlatforms() {
-    const platforms = await strapi2.documents("plugin::zhao-studio.publish-platform").findMany({
-      filters: { isActive: true }
-    });
-    return platforms;
+  async listPlatforms(query = {}) {
+    const page = parseInt(query.pagination?.page) || 1;
+    const pageSize = parseInt(query.pagination?.pageSize) || 10;
+    const mergedFilters = query.filters ? { ...query.filters } : { isActive: true };
+    const findQuery = {
+      filters: mergedFilters,
+      pagination: { page, pageSize },
+      populate: query.populate || null,
+      sort: query.sort || "createdAt:desc"
+    };
+    Object.keys(findQuery).forEach((k) => findQuery[k] == null && delete findQuery[k]);
+    const platforms = await strapi2.documents("plugin::zhao-studio.publish-platform").findMany(findQuery);
+    const total = await strapi2.documents("plugin::zhao-studio.publish-platform").count({ filters: mergedFilters });
+    return {
+      records: platforms,
+      pagination: { page, pageSize, total, pageCount: Math.ceil(total / pageSize) }
+    };
   },
   async createPlatform(data2) {
     const platform2 = await strapi2.documents("plugin::zhao-studio.publish-platform").create({ data: data2 });
@@ -20240,13 +20250,32 @@ const publish = ({ strapi: strapi2 }) => ({
   async deletePlatform(platformId) {
     await strapi2.documents("plugin::zhao-studio.publish-platform").delete({ documentId: platformId });
   },
-  async listAccounts(platformId) {
-    const filters2 = { isActive: true };
-    if (platformId) {
-      filters2.platform = { documentId: platformId };
+  async listAccounts(query = {}) {
+    const page = parseInt(query.pagination?.page) || 1;
+    const pageSize = parseInt(query.pagination?.pageSize) || 10;
+    const mergedFilters = {};
+    if (query.platformId) {
+      mergedFilters.platform = { documentId: query.platformId };
     }
-    const accounts = await strapi2.documents("plugin::zhao-studio.publish-account").findMany({ filters: filters2, populate: { platform: true } });
-    return accounts;
+    if (query.filters) {
+      Object.assign(mergedFilters, query.filters);
+    }
+    if (mergedFilters.isActive === void 0) {
+      mergedFilters.isActive = true;
+    }
+    const populate = query.populate || { platform: true };
+    const findQuery = {
+      filters: mergedFilters,
+      pagination: { page, pageSize },
+      populate,
+      sort: query.sort || "createdAt:desc"
+    };
+    const accounts = await strapi2.documents("plugin::zhao-studio.publish-account").findMany(findQuery);
+    const total = await strapi2.documents("plugin::zhao-studio.publish-account").count({ filters: mergedFilters });
+    return {
+      records: accounts,
+      pagination: { page, pageSize, total, pageCount: Math.ceil(total / pageSize) }
+    };
   },
   async createAccount(data2) {
     const account = await strapi2.documents("plugin::zhao-studio.publish-account").create({ data: data2 });
@@ -20262,27 +20291,61 @@ const publish = ({ strapi: strapi2 }) => ({
   async deleteAccount(accountId) {
     await strapi2.documents("plugin::zhao-studio.publish-account").delete({ documentId: accountId });
   },
-  async listRecords(filters2 = {}) {
-    const { articleId, platformId, accountId } = filters2;
-    const queryFilters = {};
-    if (articleId) {
-      queryFilters.article = { documentId: articleId };
+  async listRecords(query = {}) {
+    const page = parseInt(query.pagination?.page) || 1;
+    const pageSize = parseInt(query.pagination?.pageSize) || 10;
+    const mergedFilters = {};
+    if (query.articleId) {
+      mergedFilters.article = { documentId: query.articleId };
     }
-    if (accountId) {
-      queryFilters.account = { documentId: accountId };
+    if (query.accountId) {
+      mergedFilters.account = { documentId: query.accountId };
+    }
+    if (query.filters) {
+      Object.assign(mergedFilters, query.filters);
+    }
+    let platformId;
+    if (query.platformId) {
+      platformId = query.platformId;
+    } else if (mergedFilters.account?.platform?.documentId) {
+      platformId = mergedFilters.account.platform.documentId;
+      delete mergedFilters.account.platform;
+      if (Object.keys(mergedFilters.account).length === 0) {
+        delete mergedFilters.account;
+      }
     }
     if (platformId) {
       const accounts = await strapi2.documents("plugin::zhao-studio.publish-account").findMany({ filters: { platform: { documentId: platformId } } });
       const accountDocIds = accounts.map((a) => a.documentId);
-      if (accountDocIds.length === 0) return [];
-      queryFilters.account = { documentId: { $in: accountDocIds } };
+      if (accountDocIds.length === 0) {
+        return { records: [], pagination: { page, pageSize, total: 0, pageCount: 0 } };
+      }
+      const existingAccountFilter = mergedFilters.account?.documentId;
+      if (existingAccountFilter?.$in) {
+        const intersected = accountDocIds.filter((id) => existingAccountFilter.$in.includes(id));
+        mergedFilters.account = { documentId: { $in: intersected } };
+      } else if (existingAccountFilter) {
+        if (!accountDocIds.includes(existingAccountFilter)) {
+          return { records: [], pagination: { page, pageSize, total: 0, pageCount: 0 } };
+        }
+        mergedFilters.account = { documentId: existingAccountFilter };
+      } else {
+        mergedFilters.account = { documentId: { $in: accountDocIds } };
+      }
     }
-    const records = await strapi2.documents("plugin::zhao-studio.publish-record").findMany({
-      filters: queryFilters,
-      populate: { account: { populate: { platform: true } } },
-      sort: "publishedAt:desc"
-    });
-    return records;
+    const populate = query.populate || { account: { populate: { platform: true } } };
+    const findQuery = {
+      filters: mergedFilters,
+      pagination: { page, pageSize },
+      populate,
+      sort: query.sort || "publishedAt:desc"
+    };
+    const records = await strapi2.documents("plugin::zhao-studio.publish-record").findMany(findQuery);
+    const total = await strapi2.documents("plugin::zhao-studio.publish-record").count({ filters: mergedFilters });
+    return {
+      records,
+      pagination: { page, pageSize, total, pageCount: Math.ceil(total / pageSize) }
+    };
   },
   async retryPublish(recordId) {
     const record = await strapi2.documents("plugin::zhao-studio.publish-record").findOne({ documentId: recordId });

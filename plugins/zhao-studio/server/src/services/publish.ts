@@ -106,14 +106,35 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     return results;
   },
 
-  async listPlatforms() {
+  async listPlatforms(query: any = {}) {
+    // Strapi 标准 pagination 解析
+    const page = parseInt(query.pagination?.page) || 1;
+    const pageSize = parseInt(query.pagination?.pageSize) || 10;
+
+    // 合并默认 filters（isActive 默认 true，但前端显式传 filters 时不强制覆盖）
+    const mergedFilters: any = query.filters ? { ...query.filters } : { isActive: true };
+
+    const findQuery: any = {
+      filters: mergedFilters,
+      pagination: { page, pageSize },
+      populate: query.populate || null,
+      sort: query.sort || 'createdAt:desc',
+    };
+    // 移除 null 值
+    Object.keys(findQuery).forEach(k => findQuery[k] == null && delete findQuery[k]);
+
     const platforms = await strapi
       .documents('plugin::zhao-studio.publish-platform')
-      .findMany({
-        filters: { isActive: true },
-      });
+      .findMany(findQuery);
 
-    return platforms;
+    const total = await strapi
+      .documents('plugin::zhao-studio.publish-platform')
+      .count({ filters: mergedFilters });
+
+    return {
+      records: platforms,
+      pagination: { page, pageSize, total, pageCount: Math.ceil(total / pageSize) },
+    };
   },
 
   async createPlatform(data: any) {
@@ -141,18 +162,46 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       .delete({ documentId: platformId });
   },
 
-  async listAccounts(platformId?: string) {
-    const filters: any = { isActive: true };
-    if (platformId) {
-      // 关系过滤不能传 documentId 裸值：会被当成整型主键拼成 t.id = 'uuid' → 500
-      filters.platform = { documentId: platformId };
+  async listAccounts(query: any = {}) {
+    const page = parseInt(query.pagination?.page) || 1;
+    const pageSize = parseInt(query.pagination?.pageSize) || 10;
+
+    // 合并 filters：默认 isActive=true + 前端标准 filters + 兼容老的 platformId 裸参数
+    const mergedFilters: any = {};
+    // 老的 platformId 兼容（query 顶层字段） → 转为关系过滤
+    if (query.platformId) {
+      mergedFilters.platform = { documentId: query.platformId };
     }
+    // 前端显式传的 filters（Strapi 标准）覆盖/补充
+    if (query.filters) {
+      Object.assign(mergedFilters, query.filters);
+    }
+    // 默认 isActive=true，但前端显式传了 isActive 就用前端的值
+    if (mergedFilters.isActive === undefined) {
+      mergedFilters.isActive = true;
+    }
+
+    const populate = query.populate || { platform: true };
+
+    const findQuery: any = {
+      filters: mergedFilters,
+      pagination: { page, pageSize },
+      populate,
+      sort: query.sort || 'createdAt:desc',
+    };
 
     const accounts = await strapi
       .documents('plugin::zhao-studio.publish-account')
-      .findMany({ filters, populate: { platform: true } });
+      .findMany(findQuery);
 
-    return accounts;
+    const total = await strapi
+      .documents('plugin::zhao-studio.publish-account')
+      .count({ filters: mergedFilters });
+
+    return {
+      records: accounts,
+      pagination: { page, pageSize, total, pageCount: Math.ceil(total / pageSize) },
+    };
   },
 
   async createAccount(data: any) {
@@ -180,34 +229,85 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       .delete({ documentId: accountId });
   },
 
-  async listRecords(filters: { articleId?: string; platformId?: string; accountId?: string } = {}) {
-    const { articleId, platformId, accountId } = filters;
-    const queryFilters: any = {};
-    if (articleId) {
-      queryFilters.article = { documentId: articleId };
+  async listRecords(query: any = {}) {
+    const page = parseInt(query.pagination?.page) || 1;
+    const pageSize = parseInt(query.pagination?.pageSize) || 10;
+
+    // 合并 filters：老的顶层参数 + 前端 Strapi 标准 filters
+    const mergedFilters: any = {};
+
+    // 老的 articleId / accountId 兼容 → 转为关系过滤
+    if (query.articleId) {
+      mergedFilters.article = { documentId: query.articleId };
     }
-    if (accountId) {
-      queryFilters.account = { documentId: accountId };
+    if (query.accountId) {
+      mergedFilters.account = { documentId: query.accountId };
+    }
+
+    // 新的 Strapi 标准 filters（前端发的 filters[status] / filters[externalId][$contains] / filters[account.documentId] 等）
+    if (query.filters) {
+      Object.assign(mergedFilters, query.filters);
+    }
+
+    // platformId 特殊处理：publish-record 没有 platform 字段，必须先查 account 再绕一层
+    // 兼容两种写法：query.platformId（老）或 mergedFilters.account.platform.documentId（新 Strapi 标准）
+    let platformId: string | undefined;
+    if (query.platformId) {
+      platformId = query.platformId;
+    } else if (mergedFilters.account?.platform?.documentId) {
+      platformId = mergedFilters.account.platform.documentId;
+      // 从 filters 里剔掉这个，避免 Strapi 尝试直接查不存在的 platform 字段导致 400
+      delete mergedFilters.account.platform;
+      if (Object.keys(mergedFilters.account).length === 0) {
+        delete mergedFilters.account;
+      }
     }
     if (platformId) {
-      // publish-record 没有 platform 字段（旧代码写在 platform 上必然 400），平台维度经 account 关系绕一层
       const accounts = await strapi
         .documents('plugin::zhao-studio.publish-account')
         .findMany({ filters: { platform: { documentId: platformId } } });
       const accountDocIds = accounts.map((a: any) => a.documentId);
-      if (accountDocIds.length === 0) return [];
-      queryFilters.account = { documentId: { $in: accountDocIds } };
+      if (accountDocIds.length === 0) {
+        // 没有匹配账号 → 直接返回空（不是空数组 findMany 会报 pagination 问题）
+        return { records: [], pagination: { page, pageSize, total: 0, pageCount: 0 } };
+      }
+      // accountId 已有则取交集（$in 先合并）
+      const existingAccountFilter = mergedFilters.account?.documentId;
+      if (existingAccountFilter?.$in) {
+        const intersected = accountDocIds.filter(id => existingAccountFilter.$in.includes(id));
+        mergedFilters.account = { documentId: { $in: intersected } };
+      } else if (existingAccountFilter) {
+        // 已有单 accountId，检查是否在 platform 下
+        if (!accountDocIds.includes(existingAccountFilter)) {
+          return { records: [], pagination: { page, pageSize, total: 0, pageCount: 0 } };
+        }
+        mergedFilters.account = { documentId: existingAccountFilter };
+      } else {
+        mergedFilters.account = { documentId: { $in: accountDocIds } };
+      }
     }
+
+    const populate = query.populate || { account: { populate: { platform: true } } };
+
+    const findQuery: any = {
+      filters: mergedFilters,
+      pagination: { page, pageSize },
+      populate,
+      sort: query.sort || 'publishedAt:desc',
+    };
 
     const records = await strapi
       .documents('plugin::zhao-studio.publish-record')
-      .findMany({
-        filters: queryFilters,
-        populate: { account: { populate: { platform: true } } },
-        sort: 'publishedAt:desc',
-      });
+      .findMany(findQuery);
 
-    return records;
+    const total = await strapi
+      .documents('plugin::zhao-studio.publish-record')
+      .count({ filters: mergedFilters });
+
+    return {
+      records,
+      pagination: { page, pageSize, total, pageCount: Math.ceil(total / pageSize) },
+    };
   },
 
   async retryPublish(recordId: string) {

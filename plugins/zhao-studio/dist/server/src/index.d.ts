@@ -308,19 +308,39 @@ declare const _default: {
             publishArticle(articleId: string, accountIds: string[], opts?: {
                 scheduledAt?: Date;
             }): Promise<any[]>;
-            listPlatforms(): Promise<import('@strapi/types/dist/modules/documents').AnyDocument[]>;
+            listPlatforms(query?: any): Promise<{
+                records: import('@strapi/types/dist/modules/documents').AnyDocument[];
+                pagination: {
+                    page: number;
+                    pageSize: number;
+                    total: number;
+                    pageCount: number;
+                };
+            }>;
             createPlatform(data: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
             updatePlatform(platformId: string, data: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument | null>;
             deletePlatform(platformId: string): Promise<void>;
-            listAccounts(platformId?: string): Promise<import('@strapi/types/dist/modules/documents').AnyDocument[]>;
+            listAccounts(query?: any): Promise<{
+                records: import('@strapi/types/dist/modules/documents').AnyDocument[];
+                pagination: {
+                    page: number;
+                    pageSize: number;
+                    total: number;
+                    pageCount: number;
+                };
+            }>;
             createAccount(data: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
             updateAccount(accountId: string, data: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument | null>;
             deleteAccount(accountId: string): Promise<void>;
-            listRecords(filters?: {
-                articleId?: string;
-                platformId?: string;
-                accountId?: string;
-            }): Promise<import('@strapi/types/dist/modules/documents').AnyDocument[]>;
+            listRecords(query?: any): Promise<{
+                records: import('@strapi/types/dist/modules/documents').AnyDocument[];
+                pagination: {
+                    page: number;
+                    pageSize: number;
+                    total: number;
+                    pageCount: number;
+                };
+            }>;
             retryPublish(recordId: string): Promise<any>;
             createSchedule(data: {
                 articleId: string;
