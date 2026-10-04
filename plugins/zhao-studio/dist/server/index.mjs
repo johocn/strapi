@@ -8097,7 +8097,7 @@ const procedure = /* @__PURE__ */ new Map([
 function isTraversal(token) {
   return !procedure.has(token.type);
 }
-const attributes$l = /* @__PURE__ */ new Map([
+const attributes$n = /* @__PURE__ */ new Map([
   [AttributeAction.Exists, 10],
   [AttributeAction.Equals, 8],
   [AttributeAction.Not, 7],
@@ -8124,7 +8124,7 @@ function getProcedure(token) {
   var _a2, _b;
   let proc = (_a2 = procedure.get(token.type)) !== null && _a2 !== void 0 ? _a2 : -1;
   if (token.type === SelectorType.Attribute) {
-    proc = (_b = attributes$l.get(token.action)) !== null && _b !== void 0 ? _b : 4;
+    proc = (_b = attributes$n.get(token.action)) !== null && _b !== void 0 ? _b : 4;
     if (token.action === AttributeAction.Equals && token.name === "id") {
       proc = 9;
     }
@@ -23684,12 +23684,42 @@ const services = {
 };
 const policies = {};
 const middlewares = {};
+const kind$m = "collectionType";
+const collectionName$m = "zhao_article_drafts";
+const info$m = { "singularName": "article-draft", "pluralName": "article-drafts", "displayName": "草稿文章", "description": "采集并加工后的草稿文章" };
+const options$m = { "draftAndPublish": true };
+const pluginOptions$m = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
+const attributes$m = { "title": { "type": "string", "required": true, "maxLength": 200 }, "content": { "type": "richtext", "required": true }, "sourceUrl": { "type": "string" }, "sourceTitle": { "type": "string" }, "sourcePublishedAt": { "type": "datetime" }, "sourceAuthor": { "type": "string" }, "category": { "type": "string" }, "status": { "type": "enumeration", "enum": ["draft", "processing", "ready", "published"], "default": "draft" }, "aiProcessed": { "type": "boolean", "default": false }, "aiSummary": { "type": "text" }, "aiOptimizedTitle": { "type": "string" }, "publishRecords": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.publish-record", "mappedBy": "article" }, "browserLogs": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.browser-log", "mappedBy": "article" }, "statSummaries": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.stat-summary", "mappedBy": "article" }, "websiteArticles": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.article", "mappedBy": "sourceArticleDraft" }, "syncEvents": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.sync-event", "mappedBy": "targetDraftId" }, "scope": { "type": "enumeration", "enum": ["current", "global", "tenant"], "default": "current" }, "scopeTenantId": { "type": "string" }, "publishedAt": { "type": "datetime" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const schema$m = {
+  kind: kind$m,
+  collectionName: collectionName$m,
+  info: info$m,
+  options: options$m,
+  pluginOptions: pluginOptions$m,
+  attributes: attributes$m
+};
+const articleDraft = { schema: schema$m };
+const kind$l = "collectionType";
+const collectionName$l = "zhao_collect_sources";
+const info$l = { "singularName": "collect-source", "pluralName": "collect-sources", "displayName": "采集源", "description": "内容采集源配置" };
+const options$l = { "draftAndPublish": false };
+const pluginOptions$l = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
+const attributes$l = { "name": { "type": "string", "required": true, "maxLength": 100 }, "url": { "type": "string", "required": true }, "type": { "type": "enumeration", "enum": ["template", "custom"], "default": "template" }, "template": { "type": "string" }, "titleSelector": { "type": "string" }, "contentSelector": { "type": "string" }, "authorSelector": { "type": "string" }, "dateSelector": { "type": "string" }, "isActive": { "type": "boolean", "default": true }, "tasks": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.collect-task", "mappedBy": "source" }, "lastCollectedAt": { "type": "datetime" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const schema$l = {
+  kind: kind$l,
+  collectionName: collectionName$l,
+  info: info$l,
+  options: options$l,
+  pluginOptions: pluginOptions$l,
+  attributes: attributes$l
+};
+const collectSource = { schema: schema$l };
 const kind$k = "collectionType";
-const collectionName$k = "zhao_article_drafts";
-const info$k = { "singularName": "article-draft", "pluralName": "article-drafts", "displayName": "草稿文章", "description": "采集并加工后的草稿文章" };
-const options$k = { "draftAndPublish": true };
+const collectionName$k = "zhao_collect_tasks";
+const info$k = { "singularName": "collect-task", "pluralName": "collect-tasks", "displayName": "采集任务", "description": "内容采集任务临时状态" };
+const options$k = { "draftAndPublish": false };
 const pluginOptions$k = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
-const attributes$k = { "title": { "type": "string", "required": true, "maxLength": 200 }, "content": { "type": "richtext", "required": true }, "sourceUrl": { "type": "string" }, "sourceTitle": { "type": "string" }, "sourcePublishedAt": { "type": "datetime" }, "sourceAuthor": { "type": "string" }, "category": { "type": "string" }, "status": { "type": "enumeration", "enum": ["draft", "processing", "ready", "published"], "default": "draft" }, "aiProcessed": { "type": "boolean", "default": false }, "aiSummary": { "type": "text" }, "aiOptimizedTitle": { "type": "string" }, "publishRecords": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.publish-record", "mappedBy": "article" }, "browserLogs": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.browser-log", "mappedBy": "article" }, "statSummaries": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.stat-summary", "mappedBy": "article" }, "websiteArticles": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.article", "mappedBy": "sourceArticleDraft" }, "syncEvents": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.sync-event", "mappedBy": "targetDraftId" }, "scope": { "type": "enumeration", "enum": ["current", "global", "tenant"], "default": "current" }, "scopeTenantId": { "type": "string" }, "publishedAt": { "type": "datetime" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const attributes$k = { "source": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.collect-source", "inversedBy": "tasks" }, "titles": { "type": "json" }, "selectedTitles": { "type": "json" }, "status": { "type": "enumeration", "enum": ["pending", "fetching_titles", "waiting_selection", "fetching_content", "completed", "failed"], "default": "pending" }, "error": { "type": "text" }, "retryCount": { "type": "integer", "default": 0 }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
 const schema$k = {
   kind: kind$k,
   collectionName: collectionName$k,
@@ -23698,13 +23728,13 @@ const schema$k = {
   pluginOptions: pluginOptions$k,
   attributes: attributes$k
 };
-const articleDraft = { schema: schema$k };
+const collectTask = { schema: schema$k };
 const kind$j = "collectionType";
-const collectionName$j = "zhao_collect_sources";
-const info$j = { "singularName": "collect-source", "pluralName": "collect-sources", "displayName": "采集源", "description": "内容采集源配置" };
+const collectionName$j = "zhao_publish_platforms";
+const info$j = { "singularName": "publish-platform", "pluralName": "publish-platforms", "displayName": "发布平台", "description": "发布平台类型配置" };
 const options$j = { "draftAndPublish": false };
 const pluginOptions$j = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
-const attributes$j = { "name": { "type": "string", "required": true, "maxLength": 100 }, "url": { "type": "string", "required": true }, "type": { "type": "enumeration", "enum": ["template", "custom"], "default": "template" }, "template": { "type": "string" }, "titleSelector": { "type": "string" }, "contentSelector": { "type": "string" }, "authorSelector": { "type": "string" }, "dateSelector": { "type": "string" }, "isActive": { "type": "boolean", "default": true }, "tasks": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.collect-task", "mappedBy": "source" }, "lastCollectedAt": { "type": "datetime" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const attributes$j = { "name": { "type": "string", "required": true, "maxLength": 100 }, "type": { "type": "enumeration", "enum": ["toutiao", "xiaohongshu", "wechat", "douyin", "bilibili", "taobao", "pdd", "douyin-ecom", "jd", "custom", "internal"], "required": true }, "category": { "type": "enumeration", "enum": ["content", "social", "ecommerce", "custom"], "required": true, "default": "content" }, "description": { "type": "text" }, "isActive": { "type": "boolean", "default": true }, "accounts": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.publish-account", "mappedBy": "platform" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
 const schema$j = {
   kind: kind$j,
   collectionName: collectionName$j,
@@ -23713,13 +23743,13 @@ const schema$j = {
   pluginOptions: pluginOptions$j,
   attributes: attributes$j
 };
-const collectSource = { schema: schema$j };
+const publishPlatform = { schema: schema$j };
 const kind$i = "collectionType";
-const collectionName$i = "zhao_collect_tasks";
-const info$i = { "singularName": "collect-task", "pluralName": "collect-tasks", "displayName": "采集任务", "description": "内容采集任务临时状态" };
+const collectionName$i = "zhao_publish_accounts";
+const info$i = { "singularName": "publish-account", "pluralName": "publish-accounts", "displayName": "发布账号", "description": "发布账号配置（一个平台可有多个账号）" };
 const options$i = { "draftAndPublish": false };
 const pluginOptions$i = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
-const attributes$i = { "source": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.collect-source", "inversedBy": "tasks" }, "titles": { "type": "json" }, "selectedTitles": { "type": "json" }, "status": { "type": "enumeration", "enum": ["pending", "fetching_titles", "waiting_selection", "fetching_content", "completed", "failed"], "default": "pending" }, "error": { "type": "text" }, "retryCount": { "type": "integer", "default": 0 }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const attributes$i = { "name": { "type": "string", "required": true, "maxLength": 100 }, "platform": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.publish-platform", "inversedBy": "accounts" }, "config": { "type": "json" }, "isActive": { "type": "boolean", "default": true }, "publishRecords": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.publish-record", "mappedBy": "account" }, "lastPublishedAt": { "type": "datetime" }, "oauthAccessToken": { "type": "string", "maxLength": 1e3 }, "oauthRefreshToken": { "type": "string", "maxLength": 1e3 }, "oauthExpiresAt": { "type": "datetime" }, "oauthOpenId": { "type": "string", "maxLength": 200 }, "oauthScope": { "type": "string", "maxLength": 500 }, "oauthState": { "type": "enumeration", "enum": ["unauthorized", "authorized", "expired", "revoked"], "default": "unauthorized", "required": true }, "lastRefreshAt": { "type": "datetime" }, "rpaCookies": { "type": "text", "description": "RPA 平台 (xiaohongshu/toutiao) 的 cookie JSON 数组" }, "rpaCookiesAt": { "type": "datetime", "description": "RPA cookie 最后刷新时间，用于判断是否过期" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
 const schema$i = {
   kind: kind$i,
   collectionName: collectionName$i,
@@ -23728,13 +23758,13 @@ const schema$i = {
   pluginOptions: pluginOptions$i,
   attributes: attributes$i
 };
-const collectTask = { schema: schema$i };
+const publishAccount = { schema: schema$i };
 const kind$h = "collectionType";
-const collectionName$h = "zhao_publish_platforms";
-const info$h = { "singularName": "publish-platform", "pluralName": "publish-platforms", "displayName": "发布平台", "description": "发布平台类型配置" };
+const collectionName$h = "zhao_publish_records";
+const info$h = { "singularName": "publish-record", "pluralName": "publish-records", "displayName": "发布记录", "description": "文章发布到账号的记录" };
 const options$h = { "draftAndPublish": false };
 const pluginOptions$h = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
-const attributes$h = { "name": { "type": "string", "required": true, "maxLength": 100 }, "type": { "type": "enumeration", "enum": ["toutiao", "xiaohongshu", "wechat", "douyin", "bilibili", "taobao", "pdd", "douyin-ecom", "jd", "custom", "internal"], "required": true }, "category": { "type": "enumeration", "enum": ["content", "social", "ecommerce", "custom"], "required": true, "default": "content" }, "description": { "type": "text" }, "isActive": { "type": "boolean", "default": true }, "accounts": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.publish-account", "mappedBy": "platform" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const attributes$h = { "article": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.article-draft", "inversedBy": "publishRecords" }, "video": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.publish-video", "inversedBy": "publishRecords" }, "gallery": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.publish-gallery", "inversedBy": "publishRecords" }, "account": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.publish-account", "inversedBy": "publishRecords" }, "externalId": { "type": "string" }, "status": { "type": "enumeration", "enum": ["pending", "queued", "validating", "uploading_media", "publishing", "checking_status", "success", "partial_success", "failed", "rejected"], "default": "pending" }, "scheduledAt": { "type": "datetime" }, "startedAt": { "type": "datetime" }, "finishedAt": { "type": "datetime" }, "jobId": { "type": "string" }, "queueStage": { "type": "string" }, "error": { "type": "text" }, "errorCode": { "type": "string" }, "retryCount": { "type": "integer", "default": 0 }, "publishedAt": { "type": "datetime" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" }, "abVariant": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.ab-variant" } };
 const schema$h = {
   kind: kind$h,
   collectionName: collectionName$h,
@@ -23743,13 +23773,13 @@ const schema$h = {
   pluginOptions: pluginOptions$h,
   attributes: attributes$h
 };
-const publishPlatform = { schema: schema$h };
+const publishRecord = { schema: schema$h };
 const kind$g = "collectionType";
-const collectionName$g = "zhao_publish_accounts";
-const info$g = { "singularName": "publish-account", "pluralName": "publish-accounts", "displayName": "发布账号", "description": "发布账号配置（一个平台可有多个账号）" };
+const collectionName$g = "zhao_publish_schedules";
+const info$g = { "singularName": "publish-schedule", "pluralName": "publish-schedules", "displayName": "定时发布任务", "description": "预约发布，到点自动触发" };
 const options$g = { "draftAndPublish": false };
 const pluginOptions$g = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
-const attributes$g = { "name": { "type": "string", "required": true, "maxLength": 100 }, "platform": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.publish-platform", "inversedBy": "accounts" }, "config": { "type": "json" }, "isActive": { "type": "boolean", "default": true }, "publishRecords": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.publish-record", "mappedBy": "account" }, "lastPublishedAt": { "type": "datetime" }, "oauthAccessToken": { "type": "string", "maxLength": 1e3 }, "oauthRefreshToken": { "type": "string", "maxLength": 1e3 }, "oauthExpiresAt": { "type": "datetime" }, "oauthOpenId": { "type": "string", "maxLength": 200 }, "oauthScope": { "type": "string", "maxLength": 500 }, "oauthState": { "type": "enumeration", "enum": ["unauthorized", "authorized", "expired", "revoked"], "default": "unauthorized", "required": true }, "lastRefreshAt": { "type": "datetime" }, "rpaCookies": { "type": "text", "description": "RPA 平台 (xiaohongshu/toutiao) 的 cookie JSON 数组" }, "rpaCookiesAt": { "type": "datetime", "description": "RPA cookie 最后刷新时间，用于判断是否过期" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const attributes$g = { "name": { "type": "string" }, "article": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.article-draft" }, "video": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.publish-video" }, "gallery": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.publish-gallery" }, "accountIds": { "type": "json" }, "scheduledAt": { "type": "datetime", "required": true }, "triggeredAt": { "type": "datetime" }, "status": { "type": "enumeration", "enum": ["scheduled", "triggered", "cancelled", "expired"], "default": "scheduled" }, "publishRecords": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.publish-record" }, "createdBy": { "type": "relation", "relation": "manyToOne", "target": "admin::user" } };
 const schema$g = {
   kind: kind$g,
   collectionName: collectionName$g,
@@ -23758,13 +23788,13 @@ const schema$g = {
   pluginOptions: pluginOptions$g,
   attributes: attributes$g
 };
-const publishAccount = { schema: schema$g };
+const publishSchedule = { schema: schema$g };
 const kind$f = "collectionType";
-const collectionName$f = "zhao_publish_records";
-const info$f = { "singularName": "publish-record", "pluralName": "publish-records", "displayName": "发布记录", "description": "文章发布到账号的记录" };
-const options$f = { "draftAndPublish": false };
+const collectionName$f = "zhao_publish_videos";
+const info$f = { "singularName": "publish-video", "pluralName": "publish-videos", "displayName": "短视频", "description": "待发布到各平台的短视频素材" };
+const options$f = { "draftAndPublish": true };
 const pluginOptions$f = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
-const attributes$f = { "article": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.article-draft", "inversedBy": "publishRecords" }, "video": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.publish-video", "inversedBy": "publishRecords" }, "gallery": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.publish-gallery", "inversedBy": "publishRecords" }, "account": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.publish-account", "inversedBy": "publishRecords" }, "externalId": { "type": "string" }, "status": { "type": "enumeration", "enum": ["pending", "queued", "validating", "uploading_media", "publishing", "checking_status", "success", "partial_success", "failed", "rejected"], "default": "pending" }, "scheduledAt": { "type": "datetime" }, "startedAt": { "type": "datetime" }, "finishedAt": { "type": "datetime" }, "jobId": { "type": "string" }, "queueStage": { "type": "string" }, "error": { "type": "text" }, "errorCode": { "type": "string" }, "retryCount": { "type": "integer", "default": 0 }, "publishedAt": { "type": "datetime" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" }, "abVariant": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.ab-variant" } };
+const attributes$f = { "title": { "type": "string", "required": true, "maxLength": 200 }, "videoUrl": { "type": "string", "required": true }, "coverImage": { "type": "string" }, "description": { "type": "text" }, "duration": { "type": "integer" }, "size": { "type": "integer" }, "tags": { "type": "json" }, "status": { "type": "enumeration", "enum": ["draft", "processing", "ready", "published"], "default": "draft" }, "publishRecords": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.publish-record", "mappedBy": "video" }, "scope": { "type": "enumeration", "enum": ["current", "global", "tenant"], "default": "current" }, "scopeTenantId": { "type": "string" }, "publishedAt": { "type": "datetime" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
 const schema$f = {
   kind: kind$f,
   collectionName: collectionName$f,
@@ -23773,13 +23803,13 @@ const schema$f = {
   pluginOptions: pluginOptions$f,
   attributes: attributes$f
 };
-const publishRecord = { schema: schema$f };
+const publishVideo = { schema: schema$f };
 const kind$e = "collectionType";
-const collectionName$e = "zhao_publish_schedules";
-const info$e = { "singularName": "publish-schedule", "pluralName": "publish-schedules", "displayName": "定时发布任务", "description": "预约发布，到点自动触发" };
-const options$e = { "draftAndPublish": false };
+const collectionName$e = "zhao_publish_galleries";
+const info$e = { "singularName": "publish-gallery", "pluralName": "publish-galleries", "displayName": "图集", "description": "待发布到各平台的多图素材" };
+const options$e = { "draftAndPublish": true };
 const pluginOptions$e = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
-const attributes$e = { "name": { "type": "string" }, "article": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.article-draft" }, "video": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.publish-video" }, "gallery": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.publish-gallery" }, "accountIds": { "type": "json" }, "scheduledAt": { "type": "datetime", "required": true }, "triggeredAt": { "type": "datetime" }, "status": { "type": "enumeration", "enum": ["scheduled", "triggered", "cancelled", "expired"], "default": "scheduled" }, "publishRecords": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.publish-record" }, "createdBy": { "type": "relation", "relation": "manyToOne", "target": "admin::user" } };
+const attributes$e = { "title": { "type": "string", "required": true, "maxLength": 200 }, "images": { "type": "json", "required": true }, "description": { "type": "text" }, "coverImage": { "type": "string" }, "tags": { "type": "json" }, "status": { "type": "enumeration", "enum": ["draft", "processing", "ready", "published"], "default": "draft" }, "publishRecords": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.publish-record", "mappedBy": "gallery" }, "scope": { "type": "enumeration", "enum": ["current", "global", "tenant"], "default": "current" }, "scopeTenantId": { "type": "string" }, "publishedAt": { "type": "datetime" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
 const schema$e = {
   kind: kind$e,
   collectionName: collectionName$e,
@@ -23788,7 +23818,7 @@ const schema$e = {
   pluginOptions: pluginOptions$e,
   attributes: attributes$e
 };
-const publishSchedule = { schema: schema$e };
+const publishGallery = { schema: schema$e };
 const kind$d = "collectionType";
 const collectionName$d = "zhao_knowledge_point_indices";
 const info$d = { "singularName": "knowledge-point-index", "pluralName": "knowledge-point-indices", "displayName": "知识点索引", "description": "文章与知识点的关联索引" };
@@ -24009,6 +24039,8 @@ const contentTypes = {
   "publish-account": publishAccount,
   "publish-record": publishRecord,
   "publish-schedule": publishSchedule,
+  "publish-video": publishVideo,
+  "publish-gallery": publishGallery,
   "knowledge-point-index": knowledgePointIndex,
   "ad-slot": adSlot,
   "browser-log": browserLog,

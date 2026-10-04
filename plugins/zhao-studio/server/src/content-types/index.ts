@@ -5,6 +5,8 @@ import publishPlatform from './publish-platform';
 import publishAccount from './publish-account';
 import publishRecord from './publish-record';
 import publishSchedule from './publish-schedule';
+import publishVideo from './publish-video';
+import publishGallery from './publish-gallery';
 import knowledgePointIndex from './knowledge-point-index';
 import adSlot from './ad-slot';
 import browserLog from './browser-log';
@@ -28,6 +30,8 @@ export default {
   'publish-account': publishAccount,
   'publish-record': publishRecord,
   'publish-schedule': publishSchedule,
+  'publish-video': publishVideo,
+  'publish-gallery': publishGallery,
   'knowledge-point-index': knowledgePointIndex,
   'ad-slot': adSlot,
   'browser-log': browserLog,

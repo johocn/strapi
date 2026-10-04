@@ -1,0 +1,72 @@
+declare const _default: {
+  "kind": "collectionType",
+  "collectionName": "zhao_publish_galleries",
+  "info": {
+    "singularName": "publish-gallery",
+    "pluralName": "publish-galleries",
+    "displayName": "图集",
+    "description": "待发布到各平台的多图素材"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {
+    "content-manager": {
+      "visible": true
+    },
+    "content-type-builder": {
+      "visible": true
+    }
+  },
+  "attributes": {
+    "title": {
+      "type": "string",
+      "required": true,
+      "maxLength": 200
+    },
+    "images": {
+      "type": "json",
+      "required": true
+    },
+    "description": {
+      "type": "text"
+    },
+    "coverImage": {
+      "type": "string"
+    },
+    "tags": {
+      "type": "json"
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": ["draft", "processing", "ready", "published"],
+      "default": "draft"
+    },
+    "publishRecords": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-studio.publish-record",
+      "mappedBy": "gallery"
+    },
+    "scope": {
+      "type": "enumeration",
+      "enum": ["current", "global", "tenant"],
+      "default": "current"
+    },
+    "scopeTenantId": {
+      "type": "string"
+    },
+    "publishedAt": {
+      "type": "datetime"
+    },
+    "createdAt": {
+      "type": "datetime"
+    },
+    "updatedAt": {
+      "type": "datetime"
+    }
+  }
+}
+;
+
+export default _default;
