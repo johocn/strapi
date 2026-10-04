@@ -146,13 +146,14 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   // ============ P2 定时发布 ============
   async createSchedule(ctx: any) {
     try {
-      const { articleId, accountIds, scheduledAt, name } = ctx.request.body;
+      const { articleId, videoId, galleryId, accountIds, scheduledAt, name } = ctx.request.body;
       if (!scheduledAt) { ctx.throw(400, 'scheduledAt 必填'); return; }
+      if (!articleId && !videoId && !galleryId) { ctx.throw(400, '必须提供 articleId / videoId / galleryId 之一'); return; }
       const schedTime = new Date(scheduledAt).getTime();
       if (isNaN(schedTime)) { ctx.throw(400, 'scheduledAt 格式无效'); return; }
       if (schedTime <= Date.now()) { ctx.throw(400, 'scheduledAt 必须晚于当前时间'); return; }
       const publishService = strapi.plugin('zhao-studio').service('publish');
-      const result = await publishService.createSchedule({ articleId, accountIds, scheduledAt, name });
+      const result = await publishService.createSchedule({ articleId, videoId, galleryId, accountIds, scheduledAt, name });
       ctx.body = { data: result };
     } catch (e: any) { ctx.throw(400, e.message); }
   },

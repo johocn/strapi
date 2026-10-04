@@ -464,14 +464,23 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     }
   },
 
-  // ============ 定时发布（P2 新增） ============
+  // ============ 定时发布 ============
   async createSchedule(data: {
-    articleId: string;
+    articleId?: string;
+    videoId?: string;
+    galleryId?: string;
     accountIds: string[];
     scheduledAt: string;
     name?: string;
   }) {
-    return this.publishArticle(data.articleId, data.accountIds, { scheduledAt: new Date(data.scheduledAt) });
+    // 推断 contentType + contentId
+    const { contentType, contentId } = (() => {
+      if (data.articleId) return { contentType: 'article' as const, contentId: data.articleId };
+      if (data.videoId) return { contentType: 'video' as const, contentId: data.videoId };
+      if (data.galleryId) return { contentType: 'gallery' as const, contentId: data.galleryId };
+      throw new Error('必须提供 articleId / videoId / galleryId 之一');
+    })();
+    return this.publishContent({ type: contentType, contentId, accountIds, scheduledAt: new Date(data.scheduledAt), name: data.name });
   },
 
   async listSchedules(filters: any = {}) {

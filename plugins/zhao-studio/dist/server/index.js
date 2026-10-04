@@ -582,36 +582,36 @@ const publish$1 = ({ strapi: strapi2 }) => ({
   },
   async publishArticle(ctx) {
     const { articleId } = ctx.params;
-    const { accountIds } = ctx.request.body;
+    const { accountIds: accountIds2 } = ctx.request.body;
     const publishService = strapi2.plugin("zhao-studio").service("publish");
-    const results = await publishService.publishArticle(articleId, accountIds);
+    const results = await publishService.publishArticle(articleId, accountIds2);
     ctx.body = { data: results };
   },
   async publishVideo(ctx) {
     const { videoId } = ctx.params;
-    const { accountIds } = ctx.request.body;
+    const { accountIds: accountIds2 } = ctx.request.body;
     const publishService = strapi2.plugin("zhao-studio").service("publish");
-    const results = await publishService.publishContent({ type: "video", contentId: videoId, accountIds });
+    const results = await publishService.publishContent({ type: "video", contentId: videoId, accountIds: accountIds2 });
     ctx.body = { data: results };
   },
   async publishGallery(ctx) {
     const { galleryId } = ctx.params;
-    const { accountIds } = ctx.request.body;
+    const { accountIds: accountIds2 } = ctx.request.body;
     const publishService = strapi2.plugin("zhao-studio").service("publish");
-    const results = await publishService.publishContent({ type: "gallery", contentId: galleryId, accountIds });
+    const results = await publishService.publishContent({ type: "gallery", contentId: galleryId, accountIds: accountIds2 });
     ctx.body = { data: results };
   },
   async publishContent(ctx) {
-    const { type, contentId, accountIds } = ctx.request.body;
+    const { type, contentId, accountIds: accountIds2 } = ctx.request.body;
     if (!["article", "video", "gallery"].includes(type)) {
       return ctx.throw(400, `不支持的 type: ${type}`);
     }
     if (!contentId) return ctx.throw(400, "contentId 必填");
-    if (!Array.isArray(accountIds) || accountIds.length === 0) {
+    if (!Array.isArray(accountIds2) || accountIds2.length === 0) {
       return ctx.throw(400, "accountIds 必须是非空数组");
     }
     const publishService = strapi2.plugin("zhao-studio").service("publish");
-    const results = await publishService.publishContent({ type, contentId, accountIds });
+    const results = await publishService.publishContent({ type, contentId, accountIds: accountIds2 });
     ctx.body = { data: results };
   },
   async listRecords(ctx) {
@@ -649,9 +649,13 @@ const publish$1 = ({ strapi: strapi2 }) => ({
   // ============ P2 定时发布 ============
   async createSchedule(ctx) {
     try {
-      const { articleId, accountIds, scheduledAt, name } = ctx.request.body;
+      const { articleId, videoId, galleryId, accountIds: accountIds2, scheduledAt, name } = ctx.request.body;
       if (!scheduledAt) {
         ctx.throw(400, "scheduledAt 必填");
+        return;
+      }
+      if (!articleId && !videoId && !galleryId) {
+        ctx.throw(400, "必须提供 articleId / videoId / galleryId 之一");
         return;
       }
       const schedTime = new Date(scheduledAt).getTime();
@@ -664,7 +668,7 @@ const publish$1 = ({ strapi: strapi2 }) => ({
         return;
       }
       const publishService = strapi2.plugin("zhao-studio").service("publish");
-      const result = await publishService.createSchedule({ articleId, accountIds, scheduledAt, name });
+      const result = await publishService.createSchedule({ articleId, videoId, galleryId, accountIds: accountIds2, scheduledAt, name });
       ctx.body = { data: result };
     } catch (e) {
       ctx.throw(400, e.message);
@@ -711,9 +715,9 @@ const publish$1 = ({ strapi: strapi2 }) => ({
   },
   async previewPublish(ctx) {
     try {
-      const { articleId, accountIds } = ctx.request.body;
+      const { articleId, accountIds: accountIds2 } = ctx.request.body;
       const publishService = strapi2.plugin("zhao-studio").service("publish");
-      const result = await publishService.previewPublish(articleId, accountIds);
+      const result = await publishService.previewPublish(articleId, accountIds2);
       ctx.body = { data: result };
     } catch (e) {
       if (e.message?.includes("不存在")) return ctx.throw(404, e.message);
@@ -20328,11 +20332,11 @@ const CONTENT_UID$2 = {
   gallery: "plugin::zhao-studio.publish-gallery"
 };
 const publish = ({ strapi: strapi2 }) => ({
-  async publishContent({ type, contentId, accountIds }) {
+  async publishContent({ type, contentId, accountIds: accountIds2 }) {
     const content = await strapi2.documents(CONTENT_UID$2[type]).findOne({ documentId: contentId });
     if (!content) throw new Error(`${type} 内容不存在: ${contentId}`);
     const accounts = await strapi2.documents("plugin::zhao-studio.publish-account").findMany({
-      filters: { documentId: { $in: accountIds }, isActive: true },
+      filters: { documentId: { $in: accountIds2 }, isActive: true },
       populate: { platform: true }
     });
     if (accounts.length === 0) throw new Error("未找到有效的发布账号");
@@ -20396,13 +20400,13 @@ const publish = ({ strapi: strapi2 }) => ({
     }
     return results;
   },
-  async publishArticle(articleId, accountIds, opts) {
+  async publishArticle(articleId, accountIds2, opts) {
     const article = await strapi2.documents("plugin::zhao-studio.article-draft").findOne({ documentId: articleId });
     if (!article) throw new Error("文章不存在");
     if (article.status !== "ready") throw new Error("文章未准备好发布，请先完成编辑");
     const accounts = await strapi2.documents("plugin::zhao-studio.publish-account").findMany({
       filters: {
-        documentId: { $in: accountIds },
+        documentId: { $in: accountIds2 },
         isActive: true
       }
     });
@@ -20658,9 +20662,15 @@ const publish = ({ strapi: strapi2 }) => ({
       return result;
     }
   },
-  // ============ 定时发布（P2 新增） ============
+  // ============ 定时发布 ============
   async createSchedule(data2) {
-    return this.publishArticle(data2.articleId, data2.accountIds, { scheduledAt: new Date(data2.scheduledAt) });
+    const { contentType, contentId } = (() => {
+      if (data2.articleId) return { contentType: "article", contentId: data2.articleId };
+      if (data2.videoId) return { contentType: "video", contentId: data2.videoId };
+      if (data2.galleryId) return { contentType: "gallery", contentId: data2.galleryId };
+      throw new Error("必须提供 articleId / videoId / galleryId 之一");
+    })();
+    return this.publishContent({ type: contentType, contentId, accountIds, scheduledAt: new Date(data2.scheduledAt), name: data2.name });
   },
   async listSchedules(filters2 = {}) {
     return strapi2.documents("plugin::zhao-studio.publish-schedule").findMany({
@@ -20699,11 +20709,11 @@ const publish = ({ strapi: strapi2 }) => ({
     }
     return { recordId, schema: schema2 };
   },
-  async previewPublish(articleId, accountIds) {
+  async previewPublish(articleId, accountIds2) {
     const article = await strapi2.documents("plugin::zhao-studio.article-draft").findOne({ documentId: articleId });
     if (!article) throw new Error("文章不存在");
     const accounts = await strapi2.documents("plugin::zhao-studio.publish-account").findMany({
-      filters: { documentId: { $in: accountIds }, isActive: true }
+      filters: { documentId: { $in: accountIds2 }, isActive: true }
     });
     if (accounts.length === 0) throw new Error("未找到有效账号");
     const channelAdapter2 = strapi2.plugin("zhao-studio").service("channel-adapter");
@@ -21245,15 +21255,15 @@ const internalApi = ({ strapi: strapi2 }) => ({
           status: "success"
         }
       });
-      const accountIds = [];
+      const accountIds2 = [];
       for (const record of channelRecords) {
         const account = await strapi2.documents("plugin::zhao-studio.publish-account").findOne({ documentId: record.account?.documentId || record.account });
         if (account && account.config?.channelCode === channel) {
-          accountIds.push(record.article?.documentId || record.article);
+          accountIds2.push(record.article?.documentId || record.article);
         }
       }
-      if (accountIds.length > 0) {
-        baseFilters.documentId = { $in: accountIds };
+      if (accountIds2.length > 0) {
+        baseFilters.documentId = { $in: accountIds2 };
       } else {
         return [];
       }
@@ -23310,8 +23320,8 @@ const scheduler = ({ strapi: strapi2 }) => ({
     });
     for (const schedule of pending) {
       try {
-        const accountIds = Array.isArray(schedule.accountIds) ? schedule.accountIds : [];
-        for (const accId of accountIds) {
+        const accountIds2 = Array.isArray(schedule.accountIds) ? schedule.accountIds : [];
+        for (const accId of accountIds2) {
           const record = await strapi2.documents("plugin::zhao-studio.publish-record").create({
             data: {
               article: schedule.article?.documentId || schedule.article,

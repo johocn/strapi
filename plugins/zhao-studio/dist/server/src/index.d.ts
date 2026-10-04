@@ -369,7 +369,9 @@ declare const _default: {
             }>;
             retryPublish(recordId: string): Promise<any>;
             createSchedule(data: {
-                articleId: string;
+                articleId?: string;
+                videoId?: string;
+                galleryId?: string;
                 accountIds: string[];
                 scheduledAt: string;
                 name?: string;
