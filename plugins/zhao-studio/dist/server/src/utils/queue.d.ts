@@ -11,10 +11,12 @@ export declare function registerWorker(w: {
     close: () => Promise<void>;
 }): void;
 export declare function closeStudioQueues(): Promise<void>;
+export type ContentType = 'article' | 'video' | 'gallery';
 export interface PublishJobData {
-    articleId: string;
+    articleId?: string;
     accountId: string;
     publishRecordId: string;
-    triggerSource: 'manual' | 'schedule';
+    triggerSource: 'manual' | 'schedule' | 'retry';
+    contentType?: ContentType;
 }
 //# sourceMappingURL=queue.d.ts.map

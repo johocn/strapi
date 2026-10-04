@@ -20275,14 +20275,14 @@ ${conversationPrompt}
     };
   }
 });
-const CONTENT_UID = {
+const CONTENT_UID$2 = {
   article: "plugin::zhao-studio.article-draft",
   video: "plugin::zhao-studio.publish-video",
   gallery: "plugin::zhao-studio.publish-gallery"
 };
 const publish = ({ strapi: strapi2 }) => ({
   async publishContent({ type, contentId, accountIds }) {
-    const content = await strapi2.documents(CONTENT_UID[type]).findOne({ documentId: contentId });
+    const content = await strapi2.documents(CONTENT_UID$2[type]).findOne({ documentId: contentId });
     if (!content) throw new Error(`${type} 内容不存在: ${contentId}`);
     const accounts = await strapi2.documents("plugin::zhao-studio.publish-account").findMany({
       filters: { documentId: { $in: accountIds }, isActive: true },
@@ -20290,19 +20290,62 @@ const publish = ({ strapi: strapi2 }) => ({
     });
     if (accounts.length === 0) throw new Error("未找到有效的发布账号");
     const results = [];
+    const publishQueue2 = strapi2.plugin("zhao-studio").service("publish-queue");
     for (const account of accounts) {
-      const recordData = { account: account.documentId, status: "queued" };
+      const accDocId = account.documentId;
+      const recordData = { account: accDocId, status: "queued" };
       recordData[type] = contentId;
       const record = await strapi2.documents("plugin::zhao-studio.publish-record").create({ data: recordData });
-      results.push({
-        accountId: account.documentId,
-        accountName: account.name,
-        platform: account.platform?.type,
-        success: true,
-        queued: true,
-        recordId: record.documentId,
-        contentType: type
-      });
+      try {
+        await publishQueue2.enqueuePublish({
+          contentType: type,
+          accountId: accDocId,
+          publishRecordId: record.documentId,
+          triggerSource: "manual"
+        });
+        results.push({
+          accountId: accDocId,
+          accountName: account.name,
+          platform: account.platform?.type,
+          success: true,
+          queued: true,
+          recordId: record.documentId,
+          contentType: type
+        });
+      } catch (err) {
+        strapi2.log.warn(`[zhao-studio] queue unavailable, sync fallback for content=${type} account=${accDocId}`);
+        try {
+          const channelAdapter2 = strapi2.plugin("zhao-studio").service("channel-adapter");
+          const syncResult = await channelAdapter2.publish(content, account, type);
+          await strapi2.documents("plugin::zhao-studio.publish-record").update({
+            documentId: record.documentId,
+            data: { status: "published", externalId: syncResult?.externalId || syncResult?.publishId }
+          });
+          results.push({
+            accountId: accDocId,
+            accountName: account.name,
+            platform: account.platform?.type,
+            success: true,
+            sync: true,
+            recordId: record.documentId,
+            contentType: type
+          });
+        } catch (syncErr) {
+          await strapi2.documents("plugin::zhao-studio.publish-record").update({
+            documentId: record.documentId,
+            data: { status: "failed", errorMessage: syncErr.message }
+          });
+          results.push({
+            accountId: accDocId,
+            accountName: account.name,
+            platform: account.platform?.type,
+            success: false,
+            error: syncErr.message,
+            recordId: record.documentId,
+            contentType: type
+          });
+        }
+      }
     }
     return results;
   },
@@ -20339,7 +20382,8 @@ const publish = ({ strapi: strapi2 }) => ({
           articleId,
           accountId: accDocId,
           publishRecordId: record.documentId,
-          triggerSource: "manual"
+          triggerSource: "manual",
+          contentType: "article"
         });
         results.push({
           accountId: accDocId,
@@ -20347,14 +20391,15 @@ const publish = ({ strapi: strapi2 }) => ({
           platform: account.platform?.type,
           success: true,
           queued: true,
-          recordId: record.documentId
+          recordId: record.documentId,
+          contentType: "article"
         });
       } catch (err) {
         strapi2.log.warn(`[zhao-studio] queue unavailable, sync fallback for account=${accDocId}`);
         try {
           const channelAdapter2 = strapi2.plugin("zhao-studio").service("channel-adapter");
           const adapted = await channelAdapter2.adaptContent(article, account.platform?.type || "custom");
-          const syncResult = await channelAdapter2.publish(adapted, account);
+          const syncResult = await channelAdapter2.publish(adapted, account, "article");
           await strapi2.documents("plugin::zhao-studio.publish-record").update({
             documentId: record.documentId,
             data: {
@@ -20525,7 +20570,12 @@ const publish = ({ strapi: strapi2 }) => ({
     if (!record || record.status !== "failed") {
       throw new Error("只能重试失败的发布记录");
     }
-    const articleId = String(record.article?.documentId || record.article);
+    const contentType = record.video?.documentId || record.video ? "video" : record.gallery?.documentId || record.gallery ? "gallery" : record.article?.documentId || record.article ? "article" : (() => {
+      throw new Error("publish-record 未关联任何内容，无法推断 contentType");
+    })();
+    const contentId = String(
+      record[contentType]?.documentId || record[contentType]
+    );
     const accountId = String(record.account?.documentId || record.account);
     try {
       const publishQueue2 = strapi2.plugin("zhao-studio").service("publish-queue");
@@ -20534,19 +20584,20 @@ const publish = ({ strapi: strapi2 }) => ({
         data: { status: "queued", error: null, retryCount: (record.retryCount || 0) + 1 }
       });
       await publishQueue2.enqueuePublish({
-        articleId,
+        articleId: contentType === "article" ? contentId : void 0,
         accountId,
         publishRecordId: recordId,
-        triggerSource: "retry"
+        triggerSource: "retry",
+        contentType
       });
-      return { success: true, queued: true, recordId };
+      return { success: true, queued: true, recordId, contentType };
     } catch {
-      const article = await strapi2.documents("plugin::zhao-studio.article-draft").findOne({ documentId: articleId });
+      const content = await strapi2.documents(CONTENT_UID$2[contentType]).findOne({ documentId: contentId });
       const account = await strapi2.documents("plugin::zhao-studio.publish-account").findOne({ documentId: accountId });
-      if (!article || !account) throw new Error("文章或账号不存在");
+      if (!content || !account) throw new Error("内容或账号不存在");
       const channelAdapter2 = strapi2.plugin("zhao-studio").service("channel-adapter");
-      const adaptedContent = await channelAdapter2.adaptContent(article, account.platform?.type || "custom");
-      const result = await channelAdapter2.publish(adaptedContent, account);
+      const adaptedContent = await channelAdapter2.adaptContent(content, account.platform?.type || "custom");
+      const result = await channelAdapter2.publish(adaptedContent, account, contentType);
       await strapi2.documents("plugin::zhao-studio.publish-record").update({
         documentId: recordId,
         data: {
@@ -20687,17 +20738,44 @@ const platformAdapters = {
 function getPlatformAdapter(type) {
   return platformAdapters[type];
 }
-function validateContentForPlatform(content, title, type) {
-  const adapter2 = getPlatformAdapter(type);
-  if (!adapter2) {
-    return { valid: false, errors: ["未知的平台类型"] };
-  }
+function detectContentType(content) {
+  if (!content) throw new Error("content 不能为空");
+  if (content.videoUrl) return "video";
+  if (Array.isArray(content.images) && content.images.length > 0) return "gallery";
+  if (content.content || content.aiSummary || content.sourceTitle || content.article) return "article";
+  throw new Error("无法识别 content 类型：缺少 videoUrl / images / article 字段");
+}
+const PLATFORM_CAPS = {
+  douyin: { article: true, video: true, gallery: true },
+  xiaohongshu: { article: true, video: true, gallery: true },
+  wechat: { article: true, video: true, gallery: true },
+  toutiao: { article: true, video: true, gallery: true },
+  bilibili: { article: false, video: true, gallery: false },
+  internal: { article: true, video: true, gallery: true },
+  custom: { article: true, video: true, gallery: true }
+};
+function validateContentForPlatform(content, contentType, platformType) {
   const errors = [];
-  if (title.length > adapter2.maxTitleLength) {
-    errors.push(`标题长度超过限制（最大${adapter2.maxTitleLength}字）`);
+  const caps = PLATFORM_CAPS[platformType] || {};
+  if (!caps[contentType]) {
+    errors.push(`平台 ${platformType} 暂不支持 ${contentType} 类型`);
+    return { valid: false, errors };
   }
-  if (content.length > adapter2.maxContentLength) {
-    errors.push(`内容长度超过限制（最大${adapter2.maxContentLength}字）`);
+  if (contentType === "video") {
+    if (!content.videoUrl) errors.push("video 类型必须提供 videoUrl");
+    if (!content.title) errors.push("video 类型必须提供 title");
+  }
+  if (contentType === "gallery") {
+    if (!Array.isArray(content.images) || content.images.length === 0) {
+      errors.push("gallery 类型必须提供非空 images[]");
+    }
+    if (platformType === "xiaohongshu" && Array.isArray(content.images) && content.images.length < 3) {
+      errors.push("小红书图集至少需要 3 张图片");
+    }
+    if (!content.title) errors.push("gallery 类型必须提供 title");
+  }
+  if (contentType === "article") {
+    if (!content.title) errors.push("article 类型必须提供 title");
   }
   return { valid: errors.length === 0, errors };
 }
@@ -20787,10 +20865,16 @@ function identifyPublishError(error, platform2) {
   }
   return { ...PublishErrors.API_ERROR, platform: platform2 };
 }
+const CONTENT_UID$1 = {
+  article: "plugin::zhao-studio.article-draft",
+  video: "plugin::zhao-studio.publish-video",
+  gallery: "plugin::zhao-studio.publish-gallery"
+};
 const channelAdapter = ({ strapi: strapi2 }) => ({
-  async publish(article, account) {
+  async publish(content, account, contentType) {
+    const resolvedType = contentType || detectContentType(content);
     const platformType = account.platform?.type || "custom";
-    const validation = validateContentForPlatform(article.content, article.title, platformType);
+    const validation = validateContentForPlatform(content, resolvedType, platformType);
     if (!validation.valid) {
       throw new Error(validation.errors.join("; "));
     }
@@ -20807,17 +20891,17 @@ const channelAdapter = ({ strapi: strapi2 }) => ({
     try {
       switch (platformType) {
         case "toutiao":
-          return await this.publishToToutiao(article, account, accessToken);
+          return await this.publishToToutiao(content, account, resolvedType, accessToken);
         case "xiaohongshu":
-          return await this.publishToXiaohongshu(article, account, accessToken);
+          return await this.publishToXiaohongshu(content, account, resolvedType, accessToken);
         case "wechat":
-          return await this.publishToWechat(article, account, accessToken);
+          return await this.publishToWechat(content, account, resolvedType, accessToken);
         case "douyin":
-          return await this.publishToDouyin(article, account, accessToken);
+          return await this.publishToDouyin(content, account, resolvedType, accessToken);
         case "internal":
-          return await this.publishToInternal(article, account);
+          return await this.publishToInternal(content, account, resolvedType);
         case "custom":
-          return await this.publishToCustom(article, account, accessToken);
+          return await this.publishToCustom(content, account, resolvedType, accessToken);
         case "bilibili":
           throw new Error("bilibili 服务端发布 API 暂未接入，需调研 bilibili 开放平台能力");
         default:
@@ -20828,57 +20912,66 @@ const channelAdapter = ({ strapi: strapi2 }) => ({
       throw new Error(publishError.message);
     }
   },
-  async publishToToutiao(article, account, _accessToken) {
+  async publishToToutiao(content, account, contentType, _accessToken) {
+    if (contentType !== "article") {
+      throw new Error(`头条 RPA 暂只支持 article 类型，当前 contentType=${contentType}`);
+    }
     const rpaClient2 = strapi2.plugin("zhao-studio").service("rpa-client");
     const res = await rpaClient2.publishViaRPA({
       platform: "toutiao",
       accountId: account.documentId || account.id || account._id,
-      title: article.title || "",
-      content: article.content || article.aiSummary || "",
+      title: content.title || "",
+      content: content.content || content.aiSummary || "",
       coverImage: account.config?.coverImage || void 0,
       images: Array.isArray(account.config?.images) ? account.config.images : void 0
     });
     if (!res.success) {
       throw new Error(res.error || "头条 RPA 发布失败");
     }
-    return { success: true, ...res };
+    return { success: true, ...res, contentType };
   },
-  async publishToXiaohongshu(article, account, _accessToken) {
+  async publishToXiaohongshu(content, account, contentType, _accessToken) {
+    if (contentType !== "article") {
+      throw new Error(`小红书 RPA 暂只支持 article 类型，当前 contentType=${contentType}`);
+    }
     const rpaClient2 = strapi2.plugin("zhao-studio").service("rpa-client");
     const res = await rpaClient2.publishViaRPA({
       platform: "xiaohongshu",
       accountId: account.documentId || account.id || account._id,
-      title: article.title || "",
-      content: article.content || article.aiSummary || "",
+      title: content.title || "",
+      content: content.content || content.aiSummary || "",
       coverImage: account.config?.coverImage || void 0,
       images: Array.isArray(account.config?.images) ? account.config.images : void 0
     });
     if (!res.success) {
       throw new Error(res.error || "小红书 RPA 发布失败");
     }
-    return { success: true, ...res };
+    return { success: true, ...res, contentType };
   },
-  async publishToWechat(article, account, _accessToken) {
+  async publishToWechat(content, account, contentType, _accessToken) {
+    if (contentType !== "article") {
+      throw new Error(`公众号 freepublish 暂只支持 article 类型，当前 contentType=${contentType}`);
+    }
     const ssoArticle = strapi2.plugin("zhao-sso")?.service("sso-wx-article");
     const ssoWx = strapi2.plugin("zhao-sso")?.service("sso-wechat");
     if (!ssoArticle?.create || !ssoWx?.getAccessToken) {
       throw new Error("公众号协议执行器不可用：请确认已启用 zhao-sso 插件");
     }
     const draft2 = await ssoArticle.create({
-      title: article.title,
-      author: article.author || article.sourceAuthor || "",
-      digest: article.aiSummary || String(article.content || "").substring(0, 100),
-      content: article.content || "",
+      title: content.title,
+      author: content.author || content.sourceAuthor || "",
+      digest: content.aiSummary || String(content.content || "").substring(0, 100),
+      content: content.content || "",
       thumb_media_id: account.config?.mediaId || "",
-      content_source_url: article.sourceUrl || ""
+      content_source_url: content.sourceUrl || ""
     });
     const draftMediaId = draft2.draft_id;
     if (!draftMediaId) {
-      return { success: true, createdDraft: true, draftId: draftMediaId, error: "草稿已建立但无法自动发布（需人工确认 media_id）" };
+      return { success: true, createdDraft: true, draftId: draftMediaId, error: "草稿已建立但无法自动发布（需人工确认 media_id）", contentType };
     }
     const wxToken = await ssoWx.getAccessToken("official_account");
     if (!wxToken) {
-      return { success: true, createdDraft: true, draftId: draftMediaId, error: "草稿已建立但 access_token 不可用，无法自动发布" };
+      return { success: true, createdDraft: true, draftId: draftMediaId, error: "草稿已建立但 access_token 不可用，无法自动发布", contentType };
     }
     let submitRes;
     try {
@@ -20889,35 +20982,83 @@ const channelAdapter = ({ strapi: strapi2 }) => ({
       );
       submitRes = resp.data;
     } catch (err) {
-      return { success: true, createdDraft: true, draftId: draftMediaId, error: `草稿已建立但提交发布失败: ${err.message}` };
+      return { success: true, createdDraft: true, draftId: draftMediaId, error: `草稿已建立但提交发布失败: ${err.message}`, contentType };
     }
     if (submitRes.errcode !== 0) {
-      return { success: true, createdDraft: true, draftId: draftMediaId, error: `freepublish/submit 失败 errcode=${submitRes.errcode} errmsg=${submitRes.errmsg}` };
+      return { success: true, createdDraft: true, draftId: draftMediaId, error: `freepublish/submit 失败 errcode=${submitRes.errcode} errmsg=${submitRes.errmsg}`, contentType };
     }
     const publishId = submitRes.publish_id;
     return {
       success: true,
       externalId: publishId,
-      publishId
+      publishId,
+      contentType
     };
   },
-  async publishToInternal(article, account) {
+  async publishToInternal(content, account, contentType) {
     const channelCode = account.config?.channelCode;
-    await strapi2.documents("plugin::zhao-studio.article-draft").update({
-      documentId: article.documentId,
+    const uid = CONTENT_UID$1[contentType];
+    if (!uid) {
+      throw new Error(`未知 contentType=${contentType}，无法映射 UID`);
+    }
+    await strapi2.documents(uid).update({
+      documentId: content.documentId,
       data: {
         status: "published",
         publishedAt: /* @__PURE__ */ new Date()
       }
     });
+    let accessUrl;
+    switch (contentType) {
+      case "article":
+        accessUrl = `/api/zhao-studio/articles/${content.documentId}`;
+        break;
+      case "video":
+        accessUrl = content.videoUrl || `/api/zhao-studio/videos/${content.documentId}`;
+        break;
+      case "gallery":
+        accessUrl = `/api/zhao-studio/galleries/${content.documentId}`;
+        break;
+      default:
+        accessUrl = "";
+    }
     return {
       success: true,
-      externalId: article.documentId,
-      accessUrl: `/api/zhao-studio/articles/${article.documentId}`,
-      channelCode
+      externalId: content.documentId,
+      accessUrl,
+      channelCode,
+      contentType
     };
   },
-  async publishToCustom(article, account, _accessToken) {
+  async publishToCustom(content, account, contentType, _accessToken) {
+    if (contentType === "video") {
+      const uid = CONTENT_UID$1.video;
+      await strapi2.documents(uid).update({
+        documentId: content.documentId,
+        data: { status: "published", publishedAt: /* @__PURE__ */ new Date() }
+      });
+      return {
+        success: true,
+        externalId: content.documentId,
+        accessUrl: content.videoUrl,
+        contentType,
+        custom: true
+      };
+    }
+    if (contentType === "gallery") {
+      const uid = CONTENT_UID$1.gallery;
+      await strapi2.documents(uid).update({
+        documentId: content.documentId,
+        data: { status: "published", publishedAt: /* @__PURE__ */ new Date() }
+      });
+      return {
+        success: true,
+        externalId: content.documentId,
+        accessUrl: `/api/zhao-studio/galleries/${content.documentId}`,
+        contentType,
+        custom: true
+      };
+    }
     const endpoint = account.config?.endpoint;
     if (!endpoint) {
       throw new Error("自定义渠道未配置endpoint");
@@ -20925,10 +21066,10 @@ const channelAdapter = ({ strapi: strapi2 }) => ({
     const response = await axios.post(
       endpoint,
       {
-        title: article.title,
-        content: article.content,
-        sourceUrl: article.sourceUrl,
-        author: article.author,
+        title: content.title,
+        content: content.content,
+        sourceUrl: content.sourceUrl,
+        author: content.author,
         publishedAt: /* @__PURE__ */ new Date()
       },
       {
@@ -20942,7 +21083,8 @@ const channelAdapter = ({ strapi: strapi2 }) => ({
     return {
       success: response.data.success || response.data.code === 0,
       externalId: response.data.id || response.data.externalId,
-      error: response.data.message || response.data.error
+      error: response.data.message || response.data.error,
+      contentType
     };
   },
   generateDouyinShareSchema({
@@ -20990,7 +21132,10 @@ const channelAdapter = ({ strapi: strapi2 }) => ({
     if (!ticket) throw new Error(`douyin open_ticket 获取失败: ${JSON.stringify(ticketResp.data)}`);
     return ticket;
   },
-  async publishToDouyin(article, account, _accessToken) {
+  async publishToDouyin(content, account, contentType, _accessToken) {
+    if (contentType !== "article") {
+      throw new Error(`douyin H5 分享 schema 暂只支持 article 类型，当前 contentType=${contentType}`);
+    }
     const cfg = strapi2.plugin("zhao-studio").config()?.publish?.platforms?.douyin || {};
     const clientKey = cfg.clientKey || process.env.DOUYIN_CLIENT_KEY;
     const clientSecret = cfg.clientSecret || process.env.DOUYIN_CLIENT_SECRET;
@@ -20998,18 +21143,19 @@ const channelAdapter = ({ strapi: strapi2 }) => ({
       throw new Error("未配置抖音 clientKey/clientSecret，无法生成分享 schema");
     }
     const ticket = await this.getDouyinTicket(clientKey, clientSecret);
-    const videoPath = article.videoPath || article.videoUrl || article.coverImage;
+    const videoPath = content.videoPath || content.videoUrl || content.coverImage;
     const schema2 = this.generateDouyinShareSchema({
       clientKey,
       ticket,
       videoPath,
-      title: article.title || "",
-      customCoverImageUrl: article.coverImage
+      title: content.title || "",
+      customCoverImageUrl: content.coverImage
     });
     return {
       success: true,
       publish_mode: "h5_share",
-      schema: schema2
+      schema: schema2,
+      contentType
     };
   },
   async adaptContent(content, platformType) {
@@ -21018,12 +21164,12 @@ const channelAdapter = ({ strapi: strapi2 }) => ({
       return content;
     }
     let adaptedTitle = content.title;
-    if (content.title.length > adapter2.maxTitleLength) {
-      adaptedTitle = content.title.substring(0, adapter2.maxTitleLength);
+    if (adaptedTitle && adaptedTitle.length > adapter2.maxTitleLength) {
+      adaptedTitle = adaptedTitle.substring(0, adapter2.maxTitleLength);
     }
     let adaptedContent = content.content;
-    if (content.content.length > adapter2.maxContentLength) {
-      adaptedContent = content.content.substring(0, adapter2.maxContentLength);
+    if (adaptedContent && adaptedContent.length > adapter2.maxContentLength) {
+      adaptedContent = adaptedContent.substring(0, adapter2.maxContentLength);
     }
     return {
       ...content,
@@ -23178,6 +23324,11 @@ const scheduler = ({ strapi: strapi2 }) => ({
     }
   }
 });
+const CONTENT_UID = {
+  article: "plugin::zhao-studio.article-draft",
+  video: "plugin::zhao-studio.publish-video",
+  gallery: "plugin::zhao-studio.publish-gallery"
+};
 const STAGES = {
   VALIDATE: "validateContent",
   ENSURE_TOKEN: "ensureOAuthToken",
@@ -23195,25 +23346,47 @@ const STAGE_TO_STATUS = {
   [STAGES.FINALIZE]: "success"
 };
 let worker = null;
+function inferContentTypeFromRecord(record) {
+  if (record?.video?.documentId || record?.video) return "video";
+  if (record?.gallery?.documentId || record?.gallery) return "gallery";
+  if (record?.article?.documentId || record?.article) return "article";
+  throw new Error("publish-record 未关联任何内容（article / video / gallery），无法推断 contentType");
+}
+function buildIdempotentFilter(contentType, contentId, accountId) {
+  const relField = contentType;
+  return {
+    [relField]: contentId,
+    account: accountId,
+    status: { $in: ["pending", "queued", "validating", "uploading_media", "publishing", "checking_status"] },
+    createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1e3).toISOString() }
+  };
+}
 const publishQueue = ({ strapi: strapi2 }) => ({
   async enqueuePublish(data2) {
     const queue2 = getPublishQueue();
     if (!queue2) {
       throw new Error("发布队列不可用，请检查 Redis 连接");
     }
+    const record = await strapi2.documents("plugin::zhao-studio.publish-record").findOne({ documentId: data2.publishRecordId });
+    if (!record) {
+      throw new Error(`publish-record 不存在: ${data2.publishRecordId}`);
+    }
+    const contentType = data2.contentType || inferContentTypeFromRecord(record);
+    const contentId = String(
+      record[contentType]?.documentId || record[contentType] || (contentType === "article" ? data2.articleId : void 0) || ""
+    );
+    if (!contentId) {
+      throw new Error(`publish-record 未关联 ${contentType} 内容`);
+    }
     const inFlight = await strapi2.documents("plugin::zhao-studio.publish-record").findMany({
-      filters: {
-        article: data2.articleId,
-        account: data2.accountId,
-        status: { $in: ["pending", "queued", "validating", "uploading_media", "publishing", "checking_status"] },
-        createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1e3).toISOString() }
-      },
+      filters: buildIdempotentFilter(contentType, contentId, data2.accountId),
       limit: 1
     });
     if (inFlight.length > 0) {
-      throw new Error(`该文章在24小时内已在此账号上有进行中的发布任务 (record=${inFlight[0].documentId})`);
+      throw new Error(`该${contentType}在24小时内已在此账号上有进行中的发布任务 (record=${inFlight[0].documentId})`);
     }
-    const job = await queue2.add("publish-job", data2, {
+    const jobData = { ...data2, contentType };
+    const job = await queue2.add("publish-job", jobData, {
       jobId: data2.publishRecordId,
       attempts: 3,
       backoff: { type: "exponential", delay: 3e3 },
@@ -23281,7 +23454,7 @@ const publishQueue = ({ strapi: strapi2 }) => ({
         data: {
           status: result.publish_mode === "h5_share" ? "queued" : "success",
           externalId: result.externalId || result.publishId,
-          url: result.url,
+          url: result.url || result.accessUrl,
           finishedAt: /* @__PURE__ */ new Date(),
           error: result.publish_mode === "h5_share" ? JSON.stringify({ platform: "douyin", phase: "h5_share", schema: result.schema }) : void 0
         }
@@ -23303,10 +23476,15 @@ const publishQueue = ({ strapi: strapi2 }) => ({
     }
   },
   async runStage(stage, data2, prev2) {
-    const { articleId, accountId, publishRecordId } = data2;
-    const article = await strapi2.documents("plugin::zhao-studio.article-draft").findOne({ documentId: articleId });
-    const account = await strapi2.documents("plugin::zhao-studio.publish-account").findOne({ documentId: accountId });
-    if (!article || !account) throw new Error(`文章或账号不存在 article=${articleId} account=${accountId}`);
+    const { accountId, publishRecordId } = data2;
+    const record = await strapi2.documents("plugin::zhao-studio.publish-record").findOne({ documentId: publishRecordId });
+    if (!record) throw new Error(`publish-record 不存在: ${publishRecordId}`);
+    const contentType = data2.contentType || inferContentTypeFromRecord(record);
+    const contentId = String(record[contentType]?.documentId || record[contentType] || "");
+    if (!contentId) throw new Error(`publish-record 未关联 ${contentType} 内容 (record=${publishRecordId})`);
+    const content = await strapi2.documents(CONTENT_UID[contentType]).findOne({ documentId: contentId });
+    const account = await strapi2.documents("plugin::zhao-studio.publish-account").findOne({ documentId: accountId, populate: { platform: true } });
+    if (!content || !account) throw new Error(`内容或账号不存在 content=${contentId} contentType=${contentType} account=${accountId}`);
     const platformType = account.platform?.type || "custom";
     const channelAdapter2 = strapi2.plugin("zhao-studio").service("channel-adapter");
     if (stage === STAGES.VALIDATE) {
@@ -23318,7 +23496,7 @@ const publishQueue = ({ strapi: strapi2 }) => ({
     }
     switch (stage) {
       case STAGES.VALIDATE:
-        return { ...prev2 };
+        return { ...prev2, contentType, content, account, platformType };
       case STAGES.ENSURE_TOKEN: {
         const oauthPlatforms = ["wechat", "douyin"];
         if (oauthPlatforms.includes(platformType)) {
@@ -23329,11 +23507,11 @@ const publishQueue = ({ strapi: strapi2 }) => ({
         return { ...prev2 };
       }
       case STAGES.ADAPT: {
-        const adapted = await channelAdapter2.adaptContent(article, platformType);
+        const adapted = await channelAdapter2.adaptContent(content, platformType);
         return { ...prev2, adaptedContent: adapted };
       }
       case STAGES.PUBLISH: {
-        const publishResult = await channelAdapter2.publish(prev2.adaptedContent, account);
+        const publishResult = await channelAdapter2.publish(prev2.adaptedContent, account, contentType);
         return { ...prev2, ...publishResult };
       }
       case STAGES.CHECK_STATUS: {
@@ -23355,8 +23533,8 @@ const publishQueue = ({ strapi: strapi2 }) => ({
                 const finalData = resp.data;
                 if (finalData.publish_status === 0) {
                   const articleUrl = finalData.article_detail?.item?.[0]?.article_url;
-                  const articleId2 = finalData.article_id;
-                  return { ...prev2, externalId: articleId2, url: articleUrl };
+                  const articleId = finalData.article_id;
+                  return { ...prev2, externalId: articleId, url: articleUrl };
                 } else if (finalData.publish_status === 2) {
                   throw new Error(`平台审核拒绝 (freepublish_status=2): ${JSON.stringify(finalData)}`);
                 }

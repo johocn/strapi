@@ -28,22 +28,66 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     if (accounts.length === 0) throw new Error('未找到有效的发布账号');
 
     const results = [];
+    const publishQueue = strapi.plugin('zhao-studio').service('publish-queue');
+
     for (const account of accounts) {
-      const recordData: any = { account: (account as any).documentId, status: 'queued' };
+      const accDocId = (account as any).documentId;
+      const recordData: any = { account: accDocId, status: 'queued' };
       recordData[type] = contentId;
       const record = await strapi
         .documents('plugin::zhao-studio.publish-record')
         .create({ data: recordData });
 
-      results.push({
-        accountId: (account as any).documentId,
-        accountName: (account as any).name,
-        platform: (account as any).platform?.type,
-        success: true,
-        queued: true,
-        recordId: record.documentId,
-        contentType: type,
-      });
+      try {
+        await publishQueue.enqueuePublish({
+          contentType: type,
+          accountId: accDocId,
+          publishRecordId: record.documentId,
+          triggerSource: 'manual',
+        });
+        results.push({
+          accountId: accDocId,
+          accountName: (account as any).name,
+          platform: (account as any).platform?.type,
+          success: true,
+          queued: true,
+          recordId: record.documentId,
+          contentType: type,
+        });
+      } catch (err: any) {
+        strapi.log.warn(`[zhao-studio] queue unavailable, sync fallback for content=${type} account=${accDocId}`);
+        try {
+          const channelAdapter = strapi.plugin('zhao-studio').service('channel-adapter');
+          const syncResult = await channelAdapter.publish(content, account, type);
+          await strapi.documents('plugin::zhao-studio.publish-record').update({
+            documentId: record.documentId,
+            data: { status: 'published', externalId: syncResult?.externalId || syncResult?.publishId } as any,
+          });
+          results.push({
+            accountId: accDocId,
+            accountName: (account as any).name,
+            platform: (account as any).platform?.type,
+            success: true,
+            sync: true,
+            recordId: record.documentId,
+            contentType: type,
+          });
+        } catch (syncErr: any) {
+          await strapi.documents('plugin::zhao-studio.publish-record').update({
+            documentId: record.documentId,
+            data: { status: 'failed', errorMessage: syncErr.message } as any,
+          });
+          results.push({
+            accountId: accDocId,
+            accountName: (account as any).name,
+            platform: (account as any).platform?.type,
+            success: false,
+            error: syncErr.message,
+            recordId: record.documentId,
+            contentType: type,
+          });
+        }
+      }
     }
     return results;
   },

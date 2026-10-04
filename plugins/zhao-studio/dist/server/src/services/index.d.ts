@@ -67,7 +67,7 @@ declare const _default: {
         strapi: import('@strapi/types/dist/core').Strapi;
     }) => {
         publishContent({ type, contentId, accountIds }: {
-            type: "video" | "gallery" | "article";
+            type: "article" | "video" | "gallery";
             contentId: string;
             accountIds: string[];
         }): Promise<any[]>;
@@ -146,34 +146,54 @@ declare const _default: {
     'channel-adapter': ({ strapi }: {
         strapi: import('@strapi/types/dist/core').Strapi;
     }) => {
-        publish(article: any, account: any): Promise<any>;
-        publishToToutiao(article: any, account: any, _accessToken?: string): Promise<any>;
-        publishToXiaohongshu(article: any, account: any, _accessToken?: string): Promise<any>;
-        publishToWechat(article: any, account: any, _accessToken?: string): Promise<{
+        publish(content: any, account: any, contentType?: "article" | "video" | "gallery"): Promise<any>;
+        publishToToutiao(content: any, account: any, contentType: "article" | "video" | "gallery", _accessToken?: string): Promise<any>;
+        publishToXiaohongshu(content: any, account: any, contentType: "article" | "video" | "gallery", _accessToken?: string): Promise<any>;
+        publishToWechat(content: any, account: any, contentType: "article" | "video" | "gallery", _accessToken?: string): Promise<{
             success: boolean;
             createdDraft: boolean;
             draftId: any;
             error: string;
+            contentType: "article";
             externalId?: undefined;
             publishId?: undefined;
         } | {
             success: boolean;
             externalId: any;
             publishId: any;
+            contentType: "article";
             createdDraft?: undefined;
             draftId?: undefined;
             error?: undefined;
         }>;
-        publishToInternal(article: any, account: any): Promise<{
+        publishToInternal(content: any, account: any, contentType: "article" | "video" | "gallery"): Promise<{
             success: boolean;
             externalId: any;
             accessUrl: string;
             channelCode: any;
+            contentType: "article" | "video" | "gallery";
         }>;
-        publishToCustom(article: any, account: any, _accessToken?: string): Promise<{
+        publishToCustom(content: any, account: any, contentType: "article" | "video" | "gallery", _accessToken?: string): Promise<{
+            success: boolean;
+            externalId: any;
+            accessUrl: any;
+            contentType: "video";
+            custom: boolean;
+            error?: undefined;
+        } | {
+            success: boolean;
+            externalId: any;
+            accessUrl: string;
+            contentType: "gallery";
+            custom: boolean;
+            error?: undefined;
+        } | {
             success: any;
             externalId: any;
             error: any;
+            contentType: "article";
+            accessUrl?: undefined;
+            custom?: undefined;
         }>;
         generateDouyinShareSchema({ clientKey, ticket, videoPath, title, customCoverImageUrl, }: {
             clientKey: string;
@@ -183,10 +203,11 @@ declare const _default: {
             customCoverImageUrl?: string;
         }): string;
         getDouyinTicket(clientKey: string, clientSecret: string): Promise<string>;
-        publishToDouyin(article: any, account: any, _accessToken?: string): Promise<{
+        publishToDouyin(content: any, account: any, contentType: "article" | "video" | "gallery", _accessToken?: string): Promise<{
             success: boolean;
             publish_mode: string;
             schema: string;
+            contentType: "article";
         }>;
         adaptContent(content: any, platformType: string): Promise<any>;
         checkExternalStatus(record: any): Promise<{
