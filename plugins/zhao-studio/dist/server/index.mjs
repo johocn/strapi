@@ -20319,7 +20319,7 @@ const publish = ({ strapi: strapi2 }) => ({
           const syncResult = await channelAdapter2.publish(content, account, type);
           await strapi2.documents("plugin::zhao-studio.publish-record").update({
             documentId: record.documentId,
-            data: { status: "published", externalId: syncResult?.externalId || syncResult?.publishId }
+            data: { status: "success", externalId: syncResult?.externalId || syncResult?.publishId }
           });
           results.push({
             accountId: accDocId,
@@ -20333,7 +20333,7 @@ const publish = ({ strapi: strapi2 }) => ({
         } catch (syncErr) {
           await strapi2.documents("plugin::zhao-studio.publish-record").update({
             documentId: record.documentId,
-            data: { status: "failed", errorMessage: syncErr.message }
+            data: { status: "failed", error: syncErr.message }
           });
           results.push({
             accountId: accDocId,
