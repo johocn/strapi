@@ -4,11 +4,11 @@ import type { Core } from '@strapi/strapi';
 
 type ContentType = 'article' | 'video' | 'gallery';
 
-const CONTENT_UID: Record<ContentType, string> = {
+const CONTENT_UID = {
   article: 'plugin::zhao-studio.article-draft',
   video: 'plugin::zhao-studio.publish-video',
   gallery: 'plugin::zhao-studio.publish-gallery',
-};
+} as const satisfies Record<ContentType, string>;
 
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async publishContent({ type, contentId, accountIds }: {
@@ -97,6 +97,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
           accountId: accDocId,
           publishRecordId: record.documentId,
           triggerSource: 'manual',
+          contentType: 'article',
         });
         results.push({
           accountId: accDocId,
@@ -105,6 +106,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
           success: true,
           queued: true,
           recordId: record.documentId,
+          contentType: 'article',
         });
       } catch (err: any) {
         // 队列不可用 → 降级同步发布
@@ -112,7 +114,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         try {
           const channelAdapter = strapi.plugin('zhao-studio').service('channel-adapter');
           const adapted = await channelAdapter.adaptContent(article, (account as any).platform?.type || 'custom');
-          const syncResult = await channelAdapter.publish(adapted, account);
+          const syncResult = await channelAdapter.publish(adapted, account, 'article');
           await strapi.documents('plugin::zhao-studio.publish-record').update({
             documentId: record.documentId,
             data: {
@@ -364,7 +366,19 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       throw new Error('只能重试失败的发布记录');
     }
 
-    const articleId = String(record.article?.documentId || record.article);
+    // 从 record 三列推断 contentType
+    const contentType: ContentType =
+      record.video?.documentId || record.video
+        ? 'video'
+        : record.gallery?.documentId || record.gallery
+          ? 'gallery'
+          : record.article?.documentId || record.article
+            ? 'article'
+            : (() => { throw new Error('publish-record 未关联任何内容，无法推断 contentType'); })();
+
+    const contentId = String(
+      (record as any)[contentType]?.documentId || (record as any)[contentType]
+    );
     const accountId = String(record.account?.documentId || record.account);
 
     // 队列可用 → 入队重试
@@ -375,21 +389,22 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         data: { status: 'queued', error: null, retryCount: (record.retryCount || 0) + 1 } as any,
       });
       await publishQueue.enqueuePublish({
-        articleId,
+        articleId: contentType === 'article' ? contentId : undefined,
         accountId,
         publishRecordId: recordId,
         triggerSource: 'retry',
+        contentType,
       });
-      return { success: true, queued: true, recordId };
+      return { success: true, queued: true, recordId, contentType };
     } catch {
       // 队列不可用 → 降级同步
-      const article = await strapi.documents('plugin::zhao-studio.article-draft').findOne({ documentId: articleId });
+      const content = await strapi.documents(CONTENT_UID[contentType]).findOne({ documentId: contentId });
       const account = await strapi.documents('plugin::zhao-studio.publish-account').findOne({ documentId: accountId });
-      if (!article || !account) throw new Error('文章或账号不存在');
+      if (!content || !account) throw new Error('内容或账号不存在');
 
       const channelAdapter = strapi.plugin('zhao-studio').service('channel-adapter');
-      const adaptedContent = await channelAdapter.adaptContent(article, account.platform?.type || 'custom');
-      const result = await channelAdapter.publish(adaptedContent, account);
+      const adaptedContent = await channelAdapter.adaptContent(content, account.platform?.type || 'custom');
+      const result = await channelAdapter.publish(adaptedContent, account, contentType);
 
       await strapi.documents('plugin::zhao-studio.publish-record').update({
         documentId: recordId,

@@ -1,7 +1,13 @@
 import type { Core } from '@strapi/strapi';
 import { Worker } from 'bullmq';
-import { getPublishQueue, getRedis, registerWorker, type PublishJobData } from '../utils/queue';
+import { getPublishQueue, getRedis, registerWorker, type PublishJobData, type ContentType } from '../utils/queue';
 import { identifyPublishError } from '../utils/publishErrors';
+
+const CONTENT_UID = {
+  article: 'plugin::zhao-studio.article-draft',
+  video: 'plugin::zhao-studio.publish-video',
+  gallery: 'plugin::zhao-studio.publish-gallery',
+} as const satisfies Record<ContentType, string>;
 
 export const STAGES = {
   VALIDATE: 'validateContent',
@@ -25,6 +31,25 @@ const STAGE_TO_STATUS: Record<Stage, string> = {
 
 let worker: Worker | null = null;
 
+/** 从 publish-record 三列推断 contentType */
+function inferContentTypeFromRecord(record: any): ContentType {
+  if (record?.video?.documentId || record?.video) return 'video';
+  if (record?.gallery?.documentId || record?.gallery) return 'gallery';
+  if (record?.article?.documentId || record?.article) return 'article';
+  throw new Error('publish-record 未关联任何内容（article / video / gallery），无法推断 contentType');
+}
+
+/** 构建幂等查询过滤条件：按 contentType 选对应的关系列 */
+function buildIdempotentFilter(contentType: ContentType, contentId: string, accountId: string) {
+  const relField = contentType; // 'article' | 'video' | 'gallery'，三个关系字段同名
+  return {
+    [relField]: contentId,
+    account: accountId,
+    status: { $in: ['pending', 'queued', 'validating', 'uploading_media', 'publishing', 'checking_status'] },
+    createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString() },
+  };
+}
+
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async enqueuePublish(data: PublishJobData): Promise<string | null> {
     const queue = getPublishQueue();
@@ -32,21 +57,35 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       throw new Error('发布队列不可用，请检查 Redis 连接');
     }
 
-    // 幂等保护：同 article + account 在 24h 内已有 pending/queued/validating record → 拒绝
+    // 先拿 publish-record 推断 contentType（payload 里可能带，也可能没带——record 一定有）
+    const record: any = await strapi
+      .documents('plugin::zhao-studio.publish-record')
+      .findOne({ documentId: data.publishRecordId });
+    if (!record) {
+      throw new Error(`publish-record 不存在: ${data.publishRecordId}`);
+    }
+    const contentType: ContentType = data.contentType || inferContentTypeFromRecord(record);
+    const contentId = String(
+      (record[contentType]?.documentId) || (record[contentType]) ||
+      (contentType === 'article' ? data.articleId : undefined) || ''
+    );
+    if (!contentId) {
+      throw new Error(`publish-record 未关联 ${contentType} 内容`);
+    }
+
+    // 幂等保护：同 content + account 在 24h 内已有 pending/queued/validating record → 拒绝
     const inFlight = await strapi.documents('plugin::zhao-studio.publish-record').findMany({
-      filters: {
-        article: data.articleId,
-        account: data.accountId,
-        status: { $in: ['pending', 'queued', 'validating', 'uploading_media', 'publishing', 'checking_status'] },
-        createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString() },
-      },
+      filters: buildIdempotentFilter(contentType, contentId, data.accountId),
       limit: 1,
     });
     if (inFlight.length > 0) {
-      throw new Error(`该文章在24小时内已在此账号上有进行中的发布任务 (record=${inFlight[0].documentId})`);
+      throw new Error(`该${contentType}在24小时内已在此账号上有进行中的发布任务 (record=${inFlight[0].documentId})`);
     }
 
-    const job = await queue.add('publish-job', data, {
+    // 把 contentType 回填进 job payload，让 worker 无需再查 record
+    const jobData: PublishJobData = { ...data, contentType };
+
+    const job = await queue.add('publish-job', jobData, {
       jobId: data.publishRecordId,
       attempts: 3,
       backoff: { type: 'exponential', delay: 3000 },
@@ -120,7 +159,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         data: {
           status: result.publish_mode === 'h5_share' ? 'queued' : 'success',
           externalId: result.externalId || result.publishId,
-          url: result.url,
+          url: result.url || result.accessUrl,
           finishedAt: new Date(),
           error: result.publish_mode === 'h5_share'
             ? JSON.stringify({ platform: 'douyin', phase: 'h5_share', schema: result.schema })
@@ -144,10 +183,24 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   },
 
   async runStage(stage: Stage, data: PublishJobData, prev: any): Promise<any> {
-    const { articleId, accountId, publishRecordId } = data;
-    const article = await strapi.documents('plugin::zhao-studio.article-draft').findOne({ documentId: articleId });
-    const account = await strapi.documents('plugin::zhao-studio.publish-account').findOne({ documentId: accountId });
-    if (!article || !account) throw new Error(`文章或账号不存在 article=${articleId} account=${accountId}`);
+    const { accountId, publishRecordId } = data;
+
+    // 1. 查 publish-record → 推断 contentType
+    const record: any = await strapi
+      .documents('plugin::zhao-studio.publish-record')
+      .findOne({ documentId: publishRecordId });
+    if (!record) throw new Error(`publish-record 不存在: ${publishRecordId}`);
+
+    const contentType: ContentType = data.contentType || inferContentTypeFromRecord(record);
+    const contentId = String(record[contentType]?.documentId || record[contentType] || '');
+    if (!contentId) throw new Error(`publish-record 未关联 ${contentType} 内容 (record=${publishRecordId})`);
+
+    // 2. 查对应内容
+    const content = await strapi.documents(CONTENT_UID[contentType]).findOne({ documentId: contentId });
+    const account = await strapi
+      .documents('plugin::zhao-studio.publish-account')
+      .findOne({ documentId: accountId, populate: { platform: true } });
+    if (!content || !account) throw new Error(`内容或账号不存在 content=${contentId} contentType=${contentType} account=${accountId}`);
 
     const platformType = account.platform?.type || 'custom';
     const channelAdapter = strapi.plugin('zhao-studio').service('channel-adapter');
@@ -161,7 +214,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
     switch (stage) {
       case STAGES.VALIDATE:
-        return { ...prev };
+        return { ...prev, contentType, content, account, platformType };
 
       case STAGES.ENSURE_TOKEN: {
         const oauthPlatforms = ['wechat', 'douyin'];
@@ -174,12 +227,12 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       }
 
       case STAGES.ADAPT: {
-        const adapted = await channelAdapter.adaptContent(article, platformType);
+        const adapted = await channelAdapter.adaptContent(content, platformType);
         return { ...prev, adaptedContent: adapted };
       }
 
       case STAGES.PUBLISH: {
-        const publishResult = await channelAdapter.publish(prev.adaptedContent, account);
+        const publishResult = await channelAdapter.publish(prev.adaptedContent, account, contentType);
         return { ...prev, ...publishResult };
       }
 

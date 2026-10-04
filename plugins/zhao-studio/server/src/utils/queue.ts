@@ -58,9 +58,12 @@ export async function closeStudioQueues() {
   publishQueue = null; schedulerQueue = null; redisClient = null; queuesAvailable = null;
 }
 
+export type ContentType = 'article' | 'video' | 'gallery';
+
 export interface PublishJobData {
-  articleId: string;
+  articleId?: string;
   accountId: string;
   publishRecordId: string;
-  triggerSource: 'manual' | 'schedule';
+  triggerSource: 'manual' | 'schedule' | 'retry';
+  contentType?: ContentType;
 }
