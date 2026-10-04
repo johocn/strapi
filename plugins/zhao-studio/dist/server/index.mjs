@@ -558,7 +558,10 @@ const publish$1 = ({ strapi: strapi2 }) => ({
     ctx.body = { data: { success: true } };
   },
   async findOne(ctx) {
-    const record = await strapi2.documents("plugin::zhao-studio.publish-record").findOne({ documentId: ctx.params.id });
+    const record = await strapi2.documents("plugin::zhao-studio.publish-record").findOne({
+      documentId: ctx.params.id,
+      populate: { account: { populate: { platform: true } }, article: true }
+    });
     ctx.body = { data: record };
   },
   async findOnePlatform(ctx) {

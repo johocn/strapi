@@ -92,7 +92,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async findOne(ctx: any) {
     const record = await strapi
       .documents('plugin::zhao-studio.publish-record')
-      .findOne({ documentId: ctx.params.id });
+      .findOne({
+        documentId: ctx.params.id,
+        populate: { account: { populate: { platform: true } }, article: true },
+      });
     ctx.body = { data: record };
   },
 
