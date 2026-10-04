@@ -20903,7 +20903,7 @@ const channelAdapter = ({ strapi: strapi2 }) => ({
         case "custom":
           return await this.publishToCustom(content, account, resolvedType, accessToken);
         case "bilibili":
-          throw new Error("bilibili 服务端发布 API 暂未接入，需调研 bilibili 开放平台能力");
+          throw new Error("bilibili 服务端发布 API 暂未接入，短视频/图集请先用 internal 渠道测试");
         default:
           throw new Error(`暂不支持的平台类型: ${platformType}`);
       }
