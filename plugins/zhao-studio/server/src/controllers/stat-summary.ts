@@ -12,16 +12,19 @@ export default ({ strapi }: { strapi: any }) => ({
       query.filters = { ...(query.filters || {}), ...topLevelFilters };
     }
 
-    const records = await strapi
+    const page = Number(query.pagination?.page) || 1;
+    const pageSize = Number(query.pagination?.pageSize) || 10;
+
+    // Strapi 5 documents.findMany 带 pagination 时返回 { records, meta }
+    const findManyRes: any = await strapi
       .documents('plugin::zhao-studio.stat-summary')
-      .findMany(query);
+      .findMany({ ...query, pagination: { page, pageSize } });
+
+    const records = Array.isArray(findManyRes) ? findManyRes : (findManyRes?.records || []);
 
     const total = await strapi
       .documents('plugin::zhao-studio.stat-summary')
       .count({ filters: query.filters || {} });
-
-    const page = Number(query.pagination?.page) || 1;
-    const pageSize = Number(query.pagination?.pageSize) || 10;
 
     ctx.body = {
       data: records,

@@ -113,7 +113,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       pagination: query.pagination || { page: 1, pageSize: 20 },
     };
 
-    const records = await strapi.documents('plugin::zhao-studio.ad-zone').findMany(findManyOpts);
+    // Strapi 5 documents.findMany 带 pagination 时返回 { records, meta }
+    const findManyRes: any = await strapi.documents('plugin::zhao-studio.ad-zone').findMany(findManyOpts);
+    const records = Array.isArray(findManyRes) ? findManyRes : (findManyRes?.records || []);
+
     const total = await strapi.documents('plugin::zhao-studio.ad-zone').count({ filters: findManyOpts.filters });
 
     const page = Number(findManyOpts.pagination.page);
@@ -152,7 +155,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       pagination: query.pagination || { page: 1, pageSize: 20 },
     };
 
-    const records = await strapi.documents('plugin::zhao-studio.ad-content').findMany(findManyOpts);
+    // Strapi 5 documents.findMany 带 pagination 时返回 { records, meta }
+    const findManyRes: any = await strapi.documents('plugin::zhao-studio.ad-content').findMany(findManyOpts);
+    const records = Array.isArray(findManyRes) ? findManyRes : (findManyRes?.records || []);
+
     const total = await strapi.documents('plugin::zhao-studio.ad-content').count({ filters: findManyOpts.filters });
 
     const page = Number(findManyOpts.pagination.page);

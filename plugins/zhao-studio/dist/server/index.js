@@ -938,14 +938,24 @@ const knowledgeIndex = ({ strapi: strapi2 }) => ({
 });
 const browserLog$1 = ({ strapi: strapi2 }) => ({
   async list(ctx) {
-    const { eventType, deviceType, city, sessionId } = ctx.query;
-    const filters2 = {};
-    if (eventType) filters2.eventType = eventType;
-    if (deviceType) filters2.deviceType = deviceType;
-    if (city) filters2.city = city;
-    if (sessionId) filters2.sessionId = sessionId;
-    const results = await strapi2.documents("plugin::zhao-studio.browser-log").findMany({ filters: filters2 });
-    ctx.body = { data: results };
+    const query = { ...ctx.query };
+    const topLevelFilters = {};
+    if (ctx.query.eventType) topLevelFilters.eventType = ctx.query.eventType;
+    if (ctx.query.deviceType) topLevelFilters.deviceType = ctx.query.deviceType;
+    if (ctx.query.city) topLevelFilters.city = ctx.query.city;
+    if (ctx.query.sessionId) topLevelFilters.sessionId = ctx.query.sessionId;
+    if (Object.keys(topLevelFilters).length > 0) {
+      query.filters = { ...query.filters || {}, ...topLevelFilters };
+    }
+    const page = Number(query.pagination?.page) || 1;
+    const pageSize = Number(query.pagination?.pageSize) || 10;
+    const findManyRes = await strapi2.documents("plugin::zhao-studio.browser-log").findMany({ ...query, pagination: { page, pageSize } });
+    const records = Array.isArray(findManyRes) ? findManyRes : findManyRes?.records || [];
+    const total = await strapi2.documents("plugin::zhao-studio.browser-log").count({ filters: query.filters || {} });
+    ctx.body = {
+      data: records,
+      meta: { pagination: { page, pageSize, total, pageCount: Math.ceil(total / pageSize) } }
+    };
   },
   async findOne(ctx) {
     const { id } = ctx.params;
@@ -955,12 +965,22 @@ const browserLog$1 = ({ strapi: strapi2 }) => ({
 });
 const statSummary$1 = ({ strapi: strapi2 }) => ({
   async list(ctx) {
-    const { summaryType, date } = ctx.query;
-    const filters2 = {};
-    if (summaryType) filters2.summaryType = summaryType;
-    if (date) filters2.date = date;
-    const results = await strapi2.documents("plugin::zhao-studio.stat-summary").findMany({ filters: filters2 });
-    ctx.body = { data: results };
+    const query = { ...ctx.query };
+    const topLevelFilters = {};
+    if (ctx.query.summaryType) topLevelFilters.summaryType = ctx.query.summaryType;
+    if (ctx.query.date) topLevelFilters.date = ctx.query.date;
+    if (Object.keys(topLevelFilters).length > 0) {
+      query.filters = { ...query.filters || {}, ...topLevelFilters };
+    }
+    const page = Number(query.pagination?.page) || 1;
+    const pageSize = Number(query.pagination?.pageSize) || 10;
+    const findManyRes = await strapi2.documents("plugin::zhao-studio.stat-summary").findMany({ ...query, pagination: { page, pageSize } });
+    const records = Array.isArray(findManyRes) ? findManyRes : findManyRes?.records || [];
+    const total = await strapi2.documents("plugin::zhao-studio.stat-summary").count({ filters: query.filters || {} });
+    ctx.body = {
+      data: records,
+      meta: { pagination: { page, pageSize, total, pageCount: Math.ceil(total / pageSize) } }
+    };
   },
   async findOne(ctx) {
     const { id } = ctx.params;
@@ -1151,8 +1171,8 @@ const ad$1 = ({ strapi: strapi2 }) => ({
   async listZones(ctx) {
     try {
       const adService = strapi2.plugin("zhao-studio").service("ad");
-      const zones = await adService.listZones(ctx.query.filters || {});
-      ctx.body = { data: zones };
+      const result = await adService.listZones(ctx.query);
+      ctx.body = { data: result.records, meta: result.meta };
     } catch (err) {
       ctx.status = 500;
       ctx.body = { error: { code: "AD_500", message: err.message } };
@@ -1212,8 +1232,8 @@ const ad$1 = ({ strapi: strapi2 }) => ({
   async listContents(ctx) {
     try {
       const adService = strapi2.plugin("zhao-studio").service("ad");
-      const contents2 = await adService.listContents(ctx.query.filters || {});
-      ctx.body = { data: contents2 };
+      const result = await adService.listContents(ctx.query);
+      ctx.body = { data: result.records, meta: result.meta };
     } catch (err) {
       ctx.status = 500;
       ctx.body = { error: { code: "AD_500", message: err.message } };
@@ -22178,12 +22198,22 @@ const ad = ({ strapi: strapi2 }) => ({
     });
   },
   // Admin CRUD for zones
-  async listZones(filters2 = {}) {
-    return await strapi2.documents("plugin::zhao-studio.ad-zone").findMany({
-      filters: filters2,
-      populate: { adContents: true, site: true },
-      sort: { sortOrder: "asc" }
-    });
+  async listZones(query = {}) {
+    const findManyOpts = {
+      filters: query.filters || {},
+      populate: query.populate || { adContents: true, site: true },
+      sort: query.sort || { sortOrder: "asc" },
+      pagination: query.pagination || { page: 1, pageSize: 20 }
+    };
+    const findManyRes = await strapi2.documents("plugin::zhao-studio.ad-zone").findMany(findManyOpts);
+    const records = Array.isArray(findManyRes) ? findManyRes : findManyRes?.records || [];
+    const total = await strapi2.documents("plugin::zhao-studio.ad-zone").count({ filters: findManyOpts.filters });
+    const page = Number(findManyOpts.pagination.page);
+    const pageSize = Number(findManyOpts.pagination.pageSize);
+    return {
+      records,
+      meta: { pagination: { page, pageSize, total, pageCount: Math.ceil(total / pageSize) } }
+    };
   },
   async createZone(data2) {
     return await strapi2.documents("plugin::zhao-studio.ad-zone").create({ data: data2 });
@@ -22201,12 +22231,22 @@ const ad = ({ strapi: strapi2 }) => ({
     return await strapi2.documents("plugin::zhao-studio.ad-zone").delete({ documentId });
   },
   // Admin CRUD for contents
-  async listContents(filters2 = {}) {
-    return await strapi2.documents("plugin::zhao-studio.ad-content").findMany({
-      filters: filters2,
-      populate: { adZone: true, site: true },
-      sort: { priority: "desc", sortOrder: "asc" }
-    });
+  async listContents(query = {}) {
+    const findManyOpts = {
+      filters: query.filters || {},
+      populate: query.populate || { adZone: true, site: true },
+      sort: query.sort || { priority: "desc", sortOrder: "asc" },
+      pagination: query.pagination || { page: 1, pageSize: 20 }
+    };
+    const findManyRes = await strapi2.documents("plugin::zhao-studio.ad-content").findMany(findManyOpts);
+    const records = Array.isArray(findManyRes) ? findManyRes : findManyRes?.records || [];
+    const total = await strapi2.documents("plugin::zhao-studio.ad-content").count({ filters: findManyOpts.filters });
+    const page = Number(findManyOpts.pagination.page);
+    const pageSize = Number(findManyOpts.pagination.pageSize);
+    return {
+      records,
+      meta: { pagination: { page, pageSize, total, pageCount: Math.ceil(total / pageSize) } }
+    };
   },
   async createContent(data2) {
     return await strapi2.documents("plugin::zhao-studio.ad-content").create({ data: data2 });

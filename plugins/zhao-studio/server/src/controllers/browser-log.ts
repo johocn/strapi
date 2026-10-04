@@ -1,5 +1,4 @@
-// server/src/controllers/browser-log.ts
-
+// server/src/controllers/browser-log.ts — fixed: extract records array from findMany return
 export default ({ strapi }: { strapi: any }) => ({
   async list(ctx: any) {
     // 透传完整 Strapi ctx.query，同时兼容老的顶层参数写法（?eventType=xxx）
@@ -14,16 +13,20 @@ export default ({ strapi }: { strapi: any }) => ({
       query.filters = { ...(query.filters || {}), ...topLevelFilters };
     }
 
-    const records = await strapi
+    const page = Number(query.pagination?.page) || 1;
+    const pageSize = Number(query.pagination?.pageSize) || 10;
+
+    // Strapi 5 documents.findMany 带 pagination 时返回 { records, meta }
+    // 不带 pagination 时返回数组。统一两种情况。
+    const findManyRes: any = await strapi
       .documents('plugin::zhao-studio.browser-log')
-      .findMany(query);
+      .findMany({ ...query, pagination: { page, pageSize } });
+
+    const records = Array.isArray(findManyRes) ? findManyRes : (findManyRes?.records || []);
 
     const total = await strapi
       .documents('plugin::zhao-studio.browser-log')
       .count({ filters: query.filters || {} });
-
-    const page = Number(query.pagination?.page) || 1;
-    const pageSize = Number(query.pagination?.pageSize) || 10;
 
     ctx.body = {
       data: records,
