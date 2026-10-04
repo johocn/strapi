@@ -4,9 +4,9 @@ export interface IOAuthProvider {
   readonly platformType: string;
   readonly displayName: string;
 
-  buildAuthorizeUrl(state: string): string;
+  buildAuthorizeUrl(state: string, accountId: string): string;
 
-  exchangeToken(code: string): Promise<{
+  exchangeToken(code: string, accountId: string): Promise<{
     accessToken: string;
     refreshToken: string;
     expiresAt: Date;
@@ -15,7 +15,7 @@ export interface IOAuthProvider {
     rawResponse: any;
   }>;
 
-  refreshToken(refreshToken: string): Promise<{
+  refreshToken(refreshToken: string, accountId: string): Promise<{
     accessToken: string;
     refreshToken?: string;
     expiresAt: Date;

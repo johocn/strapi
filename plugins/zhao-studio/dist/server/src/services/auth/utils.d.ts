@@ -28,4 +28,9 @@ export declare function consumeNonce(strapi: any, nonce: string): Promise<boolea
  * 计算 access_token 过期时间（秒数 → Date）
  */
 export declare function computeExpiresAt(expiresInSeconds: number): Date;
+/**
+ * 从 account 读取 config（支持 provider 从 per-account 配置取凭证）。
+ * account.config 在后端 json 类型字段里已是对象，不是 string。
+ */
+export declare function getAccountConfig(strapi: any, accountId: string): Promise<Record<string, any>>;
 //# sourceMappingURL=utils.d.ts.map

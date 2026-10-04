@@ -27,7 +27,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
     await issueNonce(strapi, nonce);
 
-    return provider.buildAuthorizeUrl(state);
+    return provider.buildAuthorizeUrl(state, accountId);
   },
 
   async handleCallback(platformType: string, code: string, state: string): Promise<{ accountId: string; oauthState: OAuthState }> {
@@ -44,7 +44,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     const provider = getProvider(strapi, platformType);
     if (!provider) throw new Error(`暂不支持的 OAuth 平台: ${platformType}`);
 
-    const tokenResult = await provider.exchangeToken(code);
+    const tokenResult = await provider.exchangeToken(code, parsed.accountId);
 
     await strapi.documents(ACCOUNT_UID).update({
       documentId: parsed.accountId,
@@ -90,7 +90,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     const provider = getProvider(strapi, platformType);
     if (!provider) throw new Error(`暂不支持的 OAuth 平台: ${platformType}`);
 
-    const refreshResult = await provider.refreshToken(account.oauthRefreshToken!);
+    const refreshResult = await provider.refreshToken(account.oauthRefreshToken!, accountId);
 
     await strapi.documents(ACCOUNT_UID).update({
       documentId: accountId,

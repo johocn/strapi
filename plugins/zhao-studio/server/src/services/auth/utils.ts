@@ -86,3 +86,13 @@ export async function consumeNonce(
 export function computeExpiresAt(expiresInSeconds: number): Date {
   return new Date(Date.now() + (expiresInSeconds - 60) * 1000);
 }
+
+/**
+ * 从 account 读取 config（支持 provider 从 per-account 配置取凭证）。
+ * account.config 在后端 json 类型字段里已是对象，不是 string。
+ */
+export async function getAccountConfig(strapi: any, accountId: string): Promise<Record<string, any>> {
+  const account = await strapi.documents('plugin::zhao-studio.publish-account')
+    .findOne({ documentId: accountId });
+  return (account?.config as Record<string, any>) || {};
+}

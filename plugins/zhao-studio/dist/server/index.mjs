@@ -22530,19 +22530,23 @@ async function consumeNonce(strapi2, nonce) {
 function computeExpiresAt(expiresInSeconds) {
   return new Date(Date.now() + (expiresInSeconds - 60) * 1e3);
 }
+async function getAccountConfig(strapi2, accountId) {
+  const account = await strapi2.documents("plugin::zhao-studio.publish-account").findOne({ documentId: accountId });
+  return account?.config || {};
+}
 const wechatProvider = ({ strapi: strapi2 }) => ({
   platformType: "wechat",
   displayName: "微信公众号",
-  buildAuthorizeUrl(state) {
-    const appConfig = strapi2.plugin("zhao-sso").service("sso-oauth-config");
-    const cfg = appConfig.findByProviderAndAppType("wechat", "official_account");
-    if (!cfg) {
-      throw new Error("zhao-sso 未配置 wechat official_account OAuth");
-    }
-    const redirectUri = cfg.redirectUris && cfg.redirectUris[0] || process.env.WECHAT_REDIRECT_URI || "";
-    const scope = cfg.scope || "snsapi_userinfo";
+  async buildAuthorizeUrl(state, accountId) {
+    const acctCfg = await getAccountConfig(strapi2, accountId);
+    const ssoCfg = strapi2.plugin("zhao-sso").service("sso-oauth-config").findByProviderAndAppType("wechat", "official_account");
+    const appId = acctCfg.appId || ssoCfg?.appId || "";
+    if (!appId) throw new Error("wechat 未配置 appId（account.config.appId 或 zhao-sso）");
+    const redirectUri = acctCfg.redirectUri || ssoCfg?.redirectUris && ssoCfg.redirectUris[0] || process.env.WECHAT_REDIRECT_URI || "";
+    if (!redirectUri) throw new Error("wechat 未配置 redirectUri");
+    const scope = ssoCfg?.scope || "snsapi_userinfo";
     const params = new URLSearchParams({
-      appid: cfg.appId,
+      appid: appId,
       redirect_uri: redirectUri,
       response_type: "code",
       scope,
@@ -22550,16 +22554,14 @@ const wechatProvider = ({ strapi: strapi2 }) => ({
     });
     return `https://open.weixin.qq.com/connect/oauth2/authorize?${params.toString()}#wechat_redirect`;
   },
-  async exchangeToken(code) {
-    const cfg = await strapi2.plugin("zhao-sso").service("sso-oauth-config").findByProviderAndAppType("wechat", "official_account");
-    if (!cfg) throw new Error("zhao-sso 未配置 wechat official_account OAuth");
+  async exchangeToken(code, accountId) {
+    const acctCfg = await getAccountConfig(strapi2, accountId);
+    const ssoCfg = strapi2.plugin("zhao-sso").service("sso-oauth-config").findByProviderAndAppType("wechat", "official_account");
+    const appId = acctCfg.appId || ssoCfg?.appId || "";
+    const appSecret = acctCfg.appSecret || ssoCfg?.appSecret || "";
+    if (!appId || !appSecret) throw new Error("wechat 未配置 appId/appSecret");
     const url = "https://api.weixin.qq.com/sns/oauth2/access_token";
-    const params = {
-      appid: cfg.appId,
-      secret: cfg.appSecret,
-      code,
-      grant_type: "authorization_code"
-    };
+    const params = { appid: appId, secret: appSecret, code, grant_type: "authorization_code" };
     const res = await axios.get(url, { params, timeout: 15e3 });
     const data2 = res.data;
     if (data2.errcode) {
@@ -22574,15 +22576,13 @@ const wechatProvider = ({ strapi: strapi2 }) => ({
       rawResponse: data2
     };
   },
-  async refreshToken(refreshToken) {
-    const cfg = await strapi2.plugin("zhao-sso").service("sso-oauth-config").findByProviderAndAppType("wechat", "official_account");
-    if (!cfg) throw new Error("zhao-sso 未配置 wechat official_account OAuth");
+  async refreshToken(refreshToken, accountId) {
+    const acctCfg = await getAccountConfig(strapi2, accountId);
+    const ssoCfg = strapi2.plugin("zhao-sso").service("sso-oauth-config").findByProviderAndAppType("wechat", "official_account");
+    const appId = acctCfg.appId || ssoCfg?.appId || "";
+    if (!appId) throw new Error("wechat 未配置 appId");
     const url = "https://api.weixin.qq.com/sns/oauth2/refresh_token";
-    const params = {
-      appid: cfg.appId,
-      grant_type: "refresh_token",
-      refresh_token: refreshToken
-    };
+    const params = { appid: appId, grant_type: "refresh_token", refresh_token: refreshToken };
     const res = await axios.get(url, { params, timeout: 15e3 });
     const data2 = res.data;
     if (data2.errcode) {
@@ -22596,14 +22596,18 @@ const wechatProvider = ({ strapi: strapi2 }) => ({
     };
   }
 });
+function globalDouyinCfg(strapi2) {
+  return strapi2.plugin("zhao-studio").config()?.publish?.platforms?.douyin || {};
+}
 const douyinProvider = ({ strapi: strapi2 }) => ({
   platformType: "douyin",
   displayName: "抖音开放平台",
-  buildAuthorizeUrl(state) {
-    const cfg = strapi2.plugin("zhao-studio").config()?.publish?.platforms?.douyin || {};
-    const clientKey = cfg.clientKey || process.env.DOUYIN_CLIENT_KEY;
-    const redirectUri = cfg.redirectUri || process.env.DOUYIN_REDIRECT_URI || "";
-    if (!clientKey) throw new Error("zhao-studio 未配置 douyin clientKey");
+  async buildAuthorizeUrl(state, accountId) {
+    const acctCfg = await getAccountConfig(strapi2, accountId);
+    const gCfg = globalDouyinCfg(strapi2);
+    const clientKey = acctCfg.clientKey || gCfg.clientKey || process.env.DOUYIN_CLIENT_KEY;
+    const redirectUri = acctCfg.redirectUri || gCfg.redirectUri || process.env.DOUYIN_REDIRECT_URI || "";
+    if (!clientKey) throw new Error("douyin 未配置 clientKey");
     const params = new URLSearchParams({
       response_type: "code",
       client_key: clientKey,
@@ -22613,11 +22617,12 @@ const douyinProvider = ({ strapi: strapi2 }) => ({
     });
     return `https://open.douyin.com/platform/oauth/authorize?${params.toString()}`;
   },
-  async exchangeToken(code) {
-    const cfg = strapi2.plugin("zhao-studio").config()?.publish?.platforms?.douyin || {};
-    const clientKey = cfg.clientKey || process.env.DOUYIN_CLIENT_KEY;
-    const clientSecret = cfg.clientSecret || process.env.DOUYIN_CLIENT_SECRET;
-    if (!clientKey || !clientSecret) throw new Error("zhao-studio 未配置 douyin clientKey/clientSecret");
+  async exchangeToken(code, accountId) {
+    const acctCfg = await getAccountConfig(strapi2, accountId);
+    const gCfg = globalDouyinCfg(strapi2);
+    const clientKey = acctCfg.clientKey || gCfg.clientKey || process.env.DOUYIN_CLIENT_KEY;
+    const clientSecret = acctCfg.clientSecret || gCfg.clientSecret || process.env.DOUYIN_CLIENT_SECRET;
+    if (!clientKey || !clientSecret) throw new Error("douyin 未配置 clientKey/clientSecret");
     const res = await axios.post(
       "https://open.douyin.com/oauth/access_token/",
       { client_key: clientKey, client_secret: clientSecret, code, grant_type: "authorization_code" },
@@ -22636,11 +22641,12 @@ const douyinProvider = ({ strapi: strapi2 }) => ({
       rawResponse: data2
     };
   },
-  async refreshToken(refreshToken) {
-    const cfg = strapi2.plugin("zhao-studio").config()?.publish?.platforms?.douyin || {};
-    const clientKey = cfg.clientKey || process.env.DOUYIN_CLIENT_KEY;
-    const clientSecret = cfg.clientSecret || process.env.DOUYIN_CLIENT_SECRET;
-    if (!clientKey || !clientSecret) throw new Error("zhao-studio 未配置 douyin clientKey/clientSecret");
+  async refreshToken(refreshToken, accountId) {
+    const acctCfg = await getAccountConfig(strapi2, accountId);
+    const gCfg = globalDouyinCfg(strapi2);
+    const clientKey = acctCfg.clientKey || gCfg.clientKey || process.env.DOUYIN_CLIENT_KEY;
+    const clientSecret = acctCfg.clientSecret || gCfg.clientSecret || process.env.DOUYIN_CLIENT_SECRET;
+    if (!clientKey || !clientSecret) throw new Error("douyin 未配置 clientKey/clientSecret");
     const res = await axios.post(
       "https://open.douyin.com/oauth/refresh_token/",
       { client_key: clientKey, client_secret: clientSecret, refresh_token: refreshToken, grant_type: "refresh_token" },
@@ -22658,14 +22664,18 @@ const douyinProvider = ({ strapi: strapi2 }) => ({
     };
   }
 });
+function globalXhsCfg(strapi2) {
+  return strapi2.plugin("zhao-studio").config()?.publish?.platforms?.xiaohongshu || {};
+}
 const xiaohongshuProvider = ({ strapi: strapi2 }) => ({
   platformType: "xiaohongshu",
   displayName: "小红书开放平台",
-  buildAuthorizeUrl(state) {
-    const cfg = strapi2.plugin("zhao-studio").config()?.publish?.platforms?.xiaohongshu || {};
-    const clientId = cfg.clientId || process.env.XHS_CLIENT_ID;
-    const redirectUri = cfg.redirectUri || process.env.XHS_REDIRECT_URI || "";
-    if (!clientId) throw new Error("zhao-studio 未配置 xiaohongshu clientId");
+  async buildAuthorizeUrl(state, accountId) {
+    const acctCfg = await getAccountConfig(strapi2, accountId);
+    const gCfg = globalXhsCfg(strapi2);
+    const clientId = acctCfg.clientId || gCfg.clientId || process.env.XHS_CLIENT_ID;
+    const redirectUri = acctCfg.redirectUri || gCfg.redirectUri || process.env.XHS_REDIRECT_URI || "";
+    if (!clientId) throw new Error("xiaohongshu 未配置 clientId");
     const params = new URLSearchParams({
       response_type: "code",
       client_id: clientId,
@@ -22675,11 +22685,12 @@ const xiaohongshuProvider = ({ strapi: strapi2 }) => ({
     });
     return `https://open.xiaohongshu.com/oauth/authorize?${params.toString()}`;
   },
-  async exchangeToken(code) {
-    const cfg = strapi2.plugin("zhao-studio").config()?.publish?.platforms?.xiaohongshu || {};
-    const clientId = cfg.clientId || process.env.XHS_CLIENT_ID;
-    const clientSecret = cfg.clientSecret || process.env.XHS_CLIENT_SECRET;
-    if (!clientId || !clientSecret) throw new Error("zhao-studio 未配置 xiaohongshu clientId/clientSecret");
+  async exchangeToken(code, accountId) {
+    const acctCfg = await getAccountConfig(strapi2, accountId);
+    const gCfg = globalXhsCfg(strapi2);
+    const clientId = acctCfg.clientId || gCfg.clientId || process.env.XHS_CLIENT_ID;
+    const clientSecret = acctCfg.clientSecret || gCfg.clientSecret || process.env.XHS_CLIENT_SECRET;
+    if (!clientId || !clientSecret) throw new Error("xiaohongshu 未配置 clientId/clientSecret");
     const res = await axios.post(
       "https://open.xiaohongshu.com/oauth/access_token",
       { client_id: clientId, client_secret: clientSecret, code, grant_type: "authorization_code" },
@@ -22698,11 +22709,12 @@ const xiaohongshuProvider = ({ strapi: strapi2 }) => ({
       rawResponse: data2
     };
   },
-  async refreshToken(refreshToken) {
-    const cfg = strapi2.plugin("zhao-studio").config()?.publish?.platforms?.xiaohongshu || {};
-    const clientId = cfg.clientId || process.env.XHS_CLIENT_ID;
-    const clientSecret = cfg.clientSecret || process.env.XHS_CLIENT_SECRET;
-    if (!clientId || !clientSecret) throw new Error("zhao-studio 未配置 xiaohongshu clientId/clientSecret");
+  async refreshToken(refreshToken, accountId) {
+    const acctCfg = await getAccountConfig(strapi2, accountId);
+    const gCfg = globalXhsCfg(strapi2);
+    const clientId = acctCfg.clientId || gCfg.clientId || process.env.XHS_CLIENT_ID;
+    const clientSecret = acctCfg.clientSecret || gCfg.clientSecret || process.env.XHS_CLIENT_SECRET;
+    if (!clientId || !clientSecret) throw new Error("xiaohongshu 未配置 clientId/clientSecret");
     const res = await axios.post(
       "https://open.xiaohongshu.com/oauth/refresh_token",
       { client_id: clientId, client_secret: clientSecret, refresh_token: refreshToken, grant_type: "refresh_token" },
@@ -22742,7 +22754,7 @@ const oauthManager = ({ strapi: strapi2 }) => ({
     const nonce = generateNonce();
     const state = encodeState(accountId, nonce);
     await issueNonce(strapi2, nonce);
-    return provider.buildAuthorizeUrl(state);
+    return provider.buildAuthorizeUrl(state, accountId);
   },
   async handleCallback(platformType, code, state) {
     const parsed = decodeState(state);
@@ -22754,7 +22766,7 @@ const oauthManager = ({ strapi: strapi2 }) => ({
     if (account.platform?.type !== platformType) throw new Error("平台类型不匹配");
     const provider = getProvider(strapi2, platformType);
     if (!provider) throw new Error(`暂不支持的 OAuth 平台: ${platformType}`);
-    const tokenResult = await provider.exchangeToken(code);
+    const tokenResult = await provider.exchangeToken(code, parsed.accountId);
     await strapi2.documents(ACCOUNT_UID).update({
       documentId: parsed.accountId,
       data: {
@@ -22790,7 +22802,7 @@ const oauthManager = ({ strapi: strapi2 }) => ({
     strapi2.log.info(`[zhao-studio] OAuth token 即将过期，自动续期 account=${accountId}`);
     const provider = getProvider(strapi2, platformType);
     if (!provider) throw new Error(`暂不支持的 OAuth 平台: ${platformType}`);
-    const refreshResult = await provider.refreshToken(account.oauthRefreshToken);
+    const refreshResult = await provider.refreshToken(account.oauthRefreshToken, accountId);
     await strapi2.documents(ACCOUNT_UID).update({
       documentId: accountId,
       data: {
