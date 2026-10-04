@@ -57,6 +57,23 @@ export default () => ({
     adminRoute('DELETE', '/accounts/:id', 'publish.deleteAccount', 'zhao-studio.publish-account.manage'),
 
     adminRoute('POST', '/articles/:articleId/publish', 'publish.publishArticle', 'zhao-studio.publish.publish'),
+    adminRoute('POST', '/videos/:videoId/publish', 'publish.publishVideo', 'zhao-studio.publish.publish'),
+    adminRoute('POST', '/galleries/:galleryId/publish', 'publish.publishGallery', 'zhao-studio.publish.publish'),
+    adminRoute('POST', '/publish/content', 'publish.publishContent', 'zhao-studio.publish.publish'),
+
+    // ============ publish-video CRUD ============
+    adminRoute('GET', '/publish-videos', 'publish-video.list', 'zhao-studio.publish-video.manage'),
+    adminRoute('GET', '/publish-videos/:id', 'publish-video.findOne', 'zhao-studio.publish-video.manage'),
+    adminRoute('POST', '/publish-videos', 'publish-video.create', 'zhao-studio.publish-video.manage'),
+    adminRoute('PUT', '/publish-videos/:id', 'publish-video.update', 'zhao-studio.publish-video.manage'),
+    adminRoute('DELETE', '/publish-videos/:id', 'publish-video.delete', 'zhao-studio.publish-video.manage'),
+
+    // ============ publish-gallery CRUD ============
+    adminRoute('GET', '/publish-galleries', 'publish-gallery.list', 'zhao-studio.publish-gallery.manage'),
+    adminRoute('GET', '/publish-galleries/:id', 'publish-gallery.findOne', 'zhao-studio.publish-gallery.manage'),
+    adminRoute('POST', '/publish-galleries', 'publish-gallery.create', 'zhao-studio.publish-gallery.manage'),
+    adminRoute('PUT', '/publish-galleries/:id', 'publish-gallery.update', 'zhao-studio.publish-gallery.manage'),
+    adminRoute('DELETE', '/publish-galleries/:id', 'publish-gallery.delete', 'zhao-studio.publish-gallery.manage'),
     adminRoute('GET', '/records', 'publish.listRecords', 'zhao-studio.publish-record.manage'),
     adminRoute('POST', '/records/:recordId/retry', 'publish.retryPublish', 'zhao-studio.publish-record.manage'),
     adminRoute('POST', '/articles/:articleId/sync', 'publish.syncStatus', 'zhao-studio.publish-record.manage'),

@@ -1,7 +1,13 @@
 import { Core } from '../../../../../node_modules/@strapi/strapi';
+type ContentType = 'article' | 'video' | 'gallery';
 declare const _default: ({ strapi }: {
     strapi: Core.Strapi;
 }) => {
+    publishContent({ type, contentId, accountIds }: {
+        type: ContentType;
+        contentId: string;
+        accountIds: string[];
+    }): Promise<any[]>;
     publishArticle(articleId: string, accountIds: string[], opts?: {
         scheduledAt?: Date;
     }): Promise<any[]>;

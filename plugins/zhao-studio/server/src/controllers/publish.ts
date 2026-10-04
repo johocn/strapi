@@ -69,6 +69,36 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     ctx.body = { data: results };
   },
 
+  async publishVideo(ctx: any) {
+    const { videoId } = ctx.params;
+    const { accountIds } = ctx.request.body;
+    const publishService = strapi.plugin('zhao-studio').service('publish');
+    const results = await publishService.publishContent({ type: 'video', contentId: videoId, accountIds });
+    ctx.body = { data: results };
+  },
+
+  async publishGallery(ctx: any) {
+    const { galleryId } = ctx.params;
+    const { accountIds } = ctx.request.body;
+    const publishService = strapi.plugin('zhao-studio').service('publish');
+    const results = await publishService.publishContent({ type: 'gallery', contentId: galleryId, accountIds });
+    ctx.body = { data: results };
+  },
+
+  async publishContent(ctx: any) {
+    const { type, contentId, accountIds } = ctx.request.body;
+    if (!['article', 'video', 'gallery'].includes(type)) {
+      return ctx.throw(400, `不支持的 type: ${type}`);
+    }
+    if (!contentId) return ctx.throw(400, 'contentId 必填');
+    if (!Array.isArray(accountIds) || accountIds.length === 0) {
+      return ctx.throw(400, 'accountIds 必须是非空数组');
+    }
+    const publishService = strapi.plugin('zhao-studio').service('publish');
+    const results = await publishService.publishContent({ type, contentId, accountIds });
+    ctx.body = { data: results };
+  },
+
   async listRecords(ctx: any) {
     const publishService = strapi.plugin('zhao-studio').service('publish');
     const result = await publishService.listRecords(ctx.query);
@@ -94,7 +124,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       .documents('plugin::zhao-studio.publish-record')
       .findOne({
         documentId: ctx.params.id,
-        populate: { account: { populate: { platform: true } }, article: true },
+        populate: { account: { populate: { platform: true } }, article: true, video: true, gallery: true },
       });
     ctx.body = { data: record };
   },

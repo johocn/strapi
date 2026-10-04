@@ -11,6 +11,9 @@ declare const _default: ({ strapi }: {
     updateAccount(ctx: any): Promise<void>;
     deleteAccount(ctx: any): Promise<void>;
     publishArticle(ctx: any): Promise<void>;
+    publishVideo(ctx: any): Promise<void>;
+    publishGallery(ctx: any): Promise<void>;
+    publishContent(ctx: any): Promise<any>;
     listRecords(ctx: any): Promise<void>;
     retryPublish(ctx: any): Promise<void>;
     syncStatus(ctx: any): Promise<void>;

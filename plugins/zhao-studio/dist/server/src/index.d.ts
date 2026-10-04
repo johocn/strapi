@@ -53,6 +53,9 @@ declare const _default: {
             updateAccount(ctx: any): Promise<void>;
             deleteAccount(ctx: any): Promise<void>;
             publishArticle(ctx: any): Promise<void>;
+            publishVideo(ctx: any): Promise<void>;
+            publishGallery(ctx: any): Promise<void>;
+            publishContent(ctx: any): Promise<any>;
             listRecords(ctx: any): Promise<void>;
             retryPublish(ctx: any): Promise<void>;
             syncStatus(ctx: any): Promise<void>;
@@ -305,6 +308,11 @@ declare const _default: {
         publish: ({ strapi }: {
             strapi: import('@strapi/types/dist/core').Strapi;
         }) => {
+            publishContent({ type, contentId, accountIds }: {
+                type: "video" | "gallery" | "article";
+                contentId: string;
+                accountIds: string[];
+            }): Promise<any[]>;
             publishArticle(articleId: string, accountIds: string[], opts?: {
                 scheduledAt?: Date;
             }): Promise<any[]>;

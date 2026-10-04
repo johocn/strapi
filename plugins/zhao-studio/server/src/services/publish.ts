@@ -2,7 +2,52 @@
 
 import type { Core } from '@strapi/strapi';
 
+type ContentType = 'article' | 'video' | 'gallery';
+
+const CONTENT_UID: Record<ContentType, string> = {
+  article: 'plugin::zhao-studio.article-draft',
+  video: 'plugin::zhao-studio.publish-video',
+  gallery: 'plugin::zhao-studio.publish-gallery',
+};
+
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
+  async publishContent({ type, contentId, accountIds }: {
+    type: ContentType; contentId: string; accountIds: string[];
+  }): Promise<any[]> {
+    const content: any = await strapi
+      .documents(CONTENT_UID[type])
+      .findOne({ documentId: contentId });
+    if (!content) throw new Error(`${type} 内容不存在: ${contentId}`);
+
+    const accounts = await strapi
+      .documents('plugin::zhao-studio.publish-account')
+      .findMany({
+        filters: { documentId: { $in: accountIds }, isActive: true },
+        populate: { platform: true },
+      });
+    if (accounts.length === 0) throw new Error('未找到有效的发布账号');
+
+    const results = [];
+    for (const account of accounts) {
+      const recordData: any = { account: (account as any).documentId, status: 'queued' };
+      recordData[type] = contentId;
+      const record = await strapi
+        .documents('plugin::zhao-studio.publish-record')
+        .create({ data: recordData });
+
+      results.push({
+        accountId: (account as any).documentId,
+        accountName: (account as any).name,
+        platform: (account as any).platform?.type,
+        success: true,
+        queued: true,
+        recordId: record.documentId,
+        contentType: type,
+      });
+    }
+    return results;
+  },
+
   async publishArticle(articleId: string, accountIds: string[], opts?: { scheduledAt?: Date }): Promise<any[]> {
     const article = await strapi
       .documents('plugin::zhao-studio.article-draft')

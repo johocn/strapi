@@ -540,6 +540,33 @@ const publish$1 = ({ strapi: strapi2 }) => ({
     const results = await publishService.publishArticle(articleId, accountIds);
     ctx.body = { data: results };
   },
+  async publishVideo(ctx) {
+    const { videoId } = ctx.params;
+    const { accountIds } = ctx.request.body;
+    const publishService = strapi2.plugin("zhao-studio").service("publish");
+    const results = await publishService.publishContent({ type: "video", contentId: videoId, accountIds });
+    ctx.body = { data: results };
+  },
+  async publishGallery(ctx) {
+    const { galleryId } = ctx.params;
+    const { accountIds } = ctx.request.body;
+    const publishService = strapi2.plugin("zhao-studio").service("publish");
+    const results = await publishService.publishContent({ type: "gallery", contentId: galleryId, accountIds });
+    ctx.body = { data: results };
+  },
+  async publishContent(ctx) {
+    const { type, contentId, accountIds } = ctx.request.body;
+    if (!["article", "video", "gallery"].includes(type)) {
+      return ctx.throw(400, `不支持的 type: ${type}`);
+    }
+    if (!contentId) return ctx.throw(400, "contentId 必填");
+    if (!Array.isArray(accountIds) || accountIds.length === 0) {
+      return ctx.throw(400, "accountIds 必须是非空数组");
+    }
+    const publishService = strapi2.plugin("zhao-studio").service("publish");
+    const results = await publishService.publishContent({ type, contentId, accountIds });
+    ctx.body = { data: results };
+  },
   async listRecords(ctx) {
     const publishService = strapi2.plugin("zhao-studio").service("publish");
     const result = await publishService.listRecords(ctx.query);
@@ -560,7 +587,7 @@ const publish$1 = ({ strapi: strapi2 }) => ({
   async findOne(ctx) {
     const record = await strapi2.documents("plugin::zhao-studio.publish-record").findOne({
       documentId: ctx.params.id,
-      populate: { account: { populate: { platform: true } }, article: true }
+      populate: { account: { populate: { platform: true } }, article: true, video: true, gallery: true }
     });
     ctx.body = { data: record };
   },
@@ -1631,6 +1658,21 @@ const contentApiRoutes = () => ({
     adminRoute("PUT", "/accounts/:id", "publish.updateAccount", "zhao-studio.publish-account.manage"),
     adminRoute("DELETE", "/accounts/:id", "publish.deleteAccount", "zhao-studio.publish-account.manage"),
     adminRoute("POST", "/articles/:articleId/publish", "publish.publishArticle", "zhao-studio.publish.publish"),
+    adminRoute("POST", "/videos/:videoId/publish", "publish.publishVideo", "zhao-studio.publish.publish"),
+    adminRoute("POST", "/galleries/:galleryId/publish", "publish.publishGallery", "zhao-studio.publish.publish"),
+    adminRoute("POST", "/publish/content", "publish.publishContent", "zhao-studio.publish.publish"),
+    // ============ publish-video CRUD ============
+    adminRoute("GET", "/publish-videos", "publish-video.list", "zhao-studio.publish-video.manage"),
+    adminRoute("GET", "/publish-videos/:id", "publish-video.findOne", "zhao-studio.publish-video.manage"),
+    adminRoute("POST", "/publish-videos", "publish-video.create", "zhao-studio.publish-video.manage"),
+    adminRoute("PUT", "/publish-videos/:id", "publish-video.update", "zhao-studio.publish-video.manage"),
+    adminRoute("DELETE", "/publish-videos/:id", "publish-video.delete", "zhao-studio.publish-video.manage"),
+    // ============ publish-gallery CRUD ============
+    adminRoute("GET", "/publish-galleries", "publish-gallery.list", "zhao-studio.publish-gallery.manage"),
+    adminRoute("GET", "/publish-galleries/:id", "publish-gallery.findOne", "zhao-studio.publish-gallery.manage"),
+    adminRoute("POST", "/publish-galleries", "publish-gallery.create", "zhao-studio.publish-gallery.manage"),
+    adminRoute("PUT", "/publish-galleries/:id", "publish-gallery.update", "zhao-studio.publish-gallery.manage"),
+    adminRoute("DELETE", "/publish-galleries/:id", "publish-gallery.delete", "zhao-studio.publish-gallery.manage"),
     adminRoute("GET", "/records", "publish.listRecords", "zhao-studio.publish-record.manage"),
     adminRoute("POST", "/records/:recordId/retry", "publish.retryPublish", "zhao-studio.publish-record.manage"),
     adminRoute("POST", "/articles/:articleId/sync", "publish.syncStatus", "zhao-studio.publish-record.manage"),
@@ -20155,7 +20197,37 @@ ${conversationPrompt}
     };
   }
 });
+const CONTENT_UID = {
+  article: "plugin::zhao-studio.article-draft",
+  video: "plugin::zhao-studio.publish-video",
+  gallery: "plugin::zhao-studio.publish-gallery"
+};
 const publish = ({ strapi: strapi2 }) => ({
+  async publishContent({ type, contentId, accountIds }) {
+    const content = await strapi2.documents(CONTENT_UID[type]).findOne({ documentId: contentId });
+    if (!content) throw new Error(`${type} 内容不存在: ${contentId}`);
+    const accounts = await strapi2.documents("plugin::zhao-studio.publish-account").findMany({
+      filters: { documentId: { $in: accountIds }, isActive: true },
+      populate: { platform: true }
+    });
+    if (accounts.length === 0) throw new Error("未找到有效的发布账号");
+    const results = [];
+    for (const account of accounts) {
+      const recordData = { account: account.documentId, status: "queued" };
+      recordData[type] = contentId;
+      const record = await strapi2.documents("plugin::zhao-studio.publish-record").create({ data: recordData });
+      results.push({
+        accountId: account.documentId,
+        accountName: account.name,
+        platform: account.platform?.type,
+        success: true,
+        queued: true,
+        recordId: record.documentId,
+        contentType: type
+      });
+    }
+    return results;
+  },
   async publishArticle(articleId, accountIds, opts) {
     const article = await strapi2.documents("plugin::zhao-studio.article-draft").findOne({ documentId: articleId });
     if (!article) throw new Error("文章不存在");

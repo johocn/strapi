@@ -66,6 +66,11 @@ declare const _default: {
     publish: ({ strapi }: {
         strapi: import('@strapi/types/dist/core').Strapi;
     }) => {
+        publishContent({ type, contentId, accountIds }: {
+            type: "video" | "gallery" | "article";
+            contentId: string;
+            accountIds: string[];
+        }): Promise<any[]>;
         publishArticle(articleId: string, accountIds: string[], opts?: {
             scheduledAt?: Date;
         }): Promise<any[]>;
