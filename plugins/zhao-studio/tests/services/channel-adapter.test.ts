@@ -1,5 +1,13 @@
 // tests/services/channel-adapter.test.ts
 
+// axios virtual mock — publishToWechat Step C freepublish/submit 会调
+jest.mock('axios', () => ({
+  default: {
+    post: jest.fn().mockResolvedValue({ data: { errcode: 0, publish_id: 'PUB_123' } }),
+  },
+  post: jest.fn().mockResolvedValue({ data: { errcode: 0, publish_id: 'PUB_123' } }),
+}), { virtual: true });
+
 import channelAdapterFactory from '../../server/src/services/channel-adapter';
 import { createMockStrapi } from '../helpers/mock-strapi';
 
@@ -49,6 +57,7 @@ describe('Channel Adapter Service - 公众号（委托 zhao-sso）', () => {
   let mockStrapi: any;
   let service: any;
   let ssoArticle: any;
+  let ssoWx: any;
 
   const article = {
     title: '长春市优佳商贸有限公司简介',
@@ -64,38 +73,48 @@ describe('Channel Adapter Service - 公众号（委托 zhao-sso）', () => {
 
   beforeEach(() => {
     ssoArticle = { create: jest.fn() };
+    ssoWx = { getAccessToken: jest.fn().mockResolvedValue('FAKE_TOKEN') };
+
     mockStrapi = createMockStrapi();
+    // zhao-sso 插件下两个子 service 都返回 mock 对象
     mockStrapi.plugin.mockImplementation((name: string) => ({
-      service: jest.fn().mockReturnValue(name === 'zhao-sso' ? ssoArticle : null),
+      service: jest.fn().mockImplementation((svcName: string) => {
+        if (name === 'zhao-sso' && svcName === 'sso-wx-article') return ssoArticle;
+        if (name === 'zhao-sso' && svcName === 'sso-wechat') return ssoWx;
+        return null;
+      }),
       config: jest.fn(),
     }));
     service = channelAdapterFactory({ strapi: mockStrapi });
   });
 
-  test('委托 zhao-sso 的 sso-wx-article.create 建草稿，不直连素材上传接口', async () => {
+  test('委托 zhao-sso 的 sso-wx-article.create 建草稿 → freepublish/submit 提交发布', async () => {
     ssoArticle.create.mockResolvedValue({ id: 7, draft_id: 'DRAFT_1', publish_state: 'draft' });
 
-    const result = await service.publishToWechat(article, account);
+    const result = await service.publishToWechat(article, account, 'article');
 
     expect(result.success).toBe(true);
-    expect(result.externalId).toBe('DRAFT_1');
-    expect(result.draftId).toBe('DRAFT_1');
-    expect(result.createdDraft).toBe(true);
-    expect(ssoArticle.create).toHaveBeenCalledWith({
-      title: article.title,
-      author: '优佳购物',
-      digest: '摘要',
-      content: '<p>正文</p>',
-      thumb_media_id: 'MEDIA_COVER',
-      content_source_url: 'https://www.joho.cn/about',
-    });
+    // Step D 返回的是 freepublish/submit 的 publish_id
+    expect(result.externalId).toBe('PUB_123');
+    expect(result.publishId).toBe('PUB_123');
+    // Step A 的调用参数
+    expect(ssoArticle.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: article.title,
+        author: '优佳购物',
+        digest: '摘要',
+        content: '<p>正文</p>',
+        thumb_media_id: 'MEDIA_COVER',
+        content_source_url: 'https://www.joho.cn/about',
+      }),
+    );
   });
 
   test('digest 无 aiSummary 时回退为正文字符前 100 字', async () => {
     ssoArticle.create.mockResolvedValue({ id: 7, draft_id: 'DRAFT_1' });
     const long = '<p>' + '字'.repeat(300) + '</p>';
 
-    await service.publishToWechat({ ...article, aiSummary: '', content: long, sourceAuthor: '' }, account);
+    await service.publishToWechat({ ...article, aiSummary: '', content: long, sourceAuthor: '' }, account, 'article');
 
     const arg = ssoArticle.create.mock.calls[0][0];
     expect(arg.digest).toHaveLength(100);
@@ -106,6 +125,6 @@ describe('Channel Adapter Service - 公众号（委托 zhao-sso）', () => {
   test('zhao-sso 协议执行器不可用时抛错', async () => {
     mockStrapi.plugin.mockReturnValue({ service: jest.fn().mockReturnValue(null), config: jest.fn() });
 
-    await expect(service.publishToWechat(article, account)).rejects.toThrow('zhao-sso');
+    await expect(service.publishToWechat(article, account, 'article')).rejects.toThrow('zhao-sso');
   });
 });
