@@ -23863,7 +23863,16 @@ const publishQueue = ({ strapi: strapi2 }) => ({
     if (!redis) return;
     const processor = async (job) => {
       const data2 = job.data;
-      strapi2.log.info(`[zhao-studio] Worker processing job name=${job.name} id=${job.id} record=${data2.publishRecordId} contentType=${data2.contentType}`);
+      strapi2.log.info(`[zhao-studio] Worker processing job name=${job.name} id=${job.id} record=${data2.publishRecordId} contentType=${data2.contentType} attempt=${job.attemptsMade}/${job.opts?.attempts ?? 3}`);
+      const currentRecord = await strapi2.documents("plugin::zhao-studio.publish-record").findOne({
+        documentId: data2.publishRecordId
+      }).catch(() => null);
+      const newRetryCount = (currentRecord?.retryCount || 0) + 1;
+      await strapi2.documents("plugin::zhao-studio.publish-record").update({
+        documentId: data2.publishRecordId,
+        data: { retryCount: newRetryCount }
+      }).catch(() => {
+      });
       const stages = [
         STAGES.VALIDATE,
         STAGES.ENSURE_TOKEN,
@@ -23874,6 +23883,7 @@ const publishQueue = ({ strapi: strapi2 }) => ({
       ];
       let result = {};
       let errorMsg = null;
+      let lastErr = null;
       for (const stage of stages) {
         try {
           strapi2.log.info(`[zhao-studio] → stage=${stage} updating queueStage...`);
@@ -23887,10 +23897,11 @@ const publishQueue = ({ strapi: strapi2 }) => ({
           strapi2.log.info(`[zhao-studio] ✓ stage=${stage} ok`);
         } catch (err) {
           errorMsg = err.message || String(err);
+          lastErr = err;
           const platformType = result.account?.platform?.type || "custom";
           const classified = identifyPublishError(err, platformType);
           console.error(`[WORKER-RAW] stage ${stage} failed:`, err);
-          strapi2.log.error(`[zhao-studio] publish stage ${stage} failed [${classified.code}]: ${errorMsg} ${err?.stack || ""}`);
+          strapi2.log.error(`[zhao-studio] publish stage ${stage} failed [${classified.code}] attempt=${job.attemptsMade}: ${errorMsg}`);
           await strapi2.documents("plugin::zhao-studio.publish-record").update({
             documentId: data2.publishRecordId,
             data: {
@@ -23908,20 +23919,27 @@ const publishQueue = ({ strapi: strapi2 }) => ({
             } catch {
             }
           }
+          if (classified.code !== "PUB_012" && newRetryCount < (job.opts?.attempts ?? 3)) {
+            strapi2.log.warn(`[zhao-studio] job will auto-retry (attempt ${newRetryCount}/${job.opts?.attempts ?? 3})`);
+            throw err;
+          }
+          strapi2.log.error(`[zhao-studio] job FAILED permanently after ${newRetryCount} attempts`);
           break;
         }
       }
-      await strapi2.documents("plugin::zhao-studio.publish-record").update({
-        documentId: data2.publishRecordId,
-        data: {
-          status: result.publish_mode === "h5_share" ? "queued" : "success",
-          externalId: result.externalId || result.publishId,
-          url: result.url || result.accessUrl,
-          finishedAt: /* @__PURE__ */ new Date(),
-          error: result.publish_mode === "h5_share" ? JSON.stringify({ platform: "douyin", phase: "h5_share", schema: result.schema }) : void 0
-        }
-      }).catch(() => {
-      });
+      if (!lastErr) {
+        await strapi2.documents("plugin::zhao-studio.publish-record").update({
+          documentId: data2.publishRecordId,
+          data: {
+            status: result.publish_mode === "h5_share" ? "queued" : "success",
+            externalId: result.externalId || result.publishId,
+            url: result.url || result.accessUrl,
+            finishedAt: /* @__PURE__ */ new Date(),
+            error: result.publish_mode === "h5_share" ? JSON.stringify({ platform: "douyin", phase: "h5_share", schema: result.schema }) : void 0
+          }
+        }).catch(() => {
+        });
+      }
       return result;
     };
     worker = new bullmq.Worker("studio-publish", processor, { connection: redis, concurrency: 5 });

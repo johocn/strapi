@@ -155,7 +155,18 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
     const processor = async (job: any) => {
       const data: PublishJobData = job.data;
-      strapi.log.info(`[zhao-studio] Worker processing job name=${job.name} id=${job.id} record=${data.publishRecordId} contentType=${data.contentType}`);
+      strapi.log.info(`[zhao-studio] Worker processing job name=${job.name} id=${job.id} record=${data.publishRecordId} contentType=${data.contentType} attempt=${job.attemptsMade}/${job.opts?.attempts ?? 3}`);
+
+      // 每次重试 retryCount++
+      const currentRecord = await strapi.documents('plugin::zhao-studio.publish-record').findOne({
+        documentId: data.publishRecordId,
+      }).catch(() => null);
+      const newRetryCount = (currentRecord?.retryCount || 0) + 1;
+      await strapi.documents('plugin::zhao-studio.publish-record').update({
+        documentId: data.publishRecordId,
+        data: { retryCount: newRetryCount } as any,
+      }).catch(() => {});
+
       const stages: Stage[] = [
         STAGES.VALIDATE,
         STAGES.ENSURE_TOKEN,
@@ -167,6 +178,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
       let result: any = {};
       let errorMsg: string | null = null;
+      let lastErr: any = null;
 
       for (const stage of stages) {
         try {
@@ -181,10 +193,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
           strapi.log.info(`[zhao-studio] ✓ stage=${stage} ok`);
         } catch (err: any) {
           errorMsg = err.message || String(err);
+          lastErr = err;
           const platformType = result.account?.platform?.type || 'custom';
           const classified = identifyPublishError(err, platformType);
           console.error(`[WORKER-RAW] stage ${stage} failed:`, err);
-          strapi.log.error(`[zhao-studio] publish stage ${stage} failed [${classified.code}]: ${errorMsg} ${err?.stack || ''}`);
+          strapi.log.error(`[zhao-studio] publish stage ${stage} failed [${classified.code}] attempt=${job.attemptsMade}: ${errorMsg}`);
 
           await strapi.documents('plugin::zhao-studio.publish-record').update({
             documentId: data.publishRecordId,
@@ -202,22 +215,33 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
               await oauthManager.revoke(data.accountId);
             } catch { /* ignore revoke fail */ }
           }
+
+          // 重新 throw 让 BullMQ 的 attempts 机制生效
+          // PUB_012 是业务逻辑拒绝（如平台审核拒绝），不应重试
+          if (classified.code !== 'PUB_012' && newRetryCount < (job.opts?.attempts ?? 3)) {
+            strapi.log.warn(`[zhao-studio] job will auto-retry (attempt ${newRetryCount}/${job.opts?.attempts ?? 3})`);
+            throw err;
+          }
+          strapi.log.error(`[zhao-studio] job FAILED permanently after ${newRetryCount} attempts`);
           break;
         }
       }
 
-      await strapi.documents('plugin::zhao-studio.publish-record').update({
-        documentId: data.publishRecordId,
-        data: {
-          status: result.publish_mode === 'h5_share' ? 'queued' : 'success',
-          externalId: result.externalId || result.publishId,
-          url: result.url || result.accessUrl,
-          finishedAt: new Date(),
-          error: result.publish_mode === 'h5_share'
-            ? JSON.stringify({ platform: 'douyin', phase: 'h5_share', schema: result.schema })
-            : undefined,
-        } as any,
-      }).catch(() => {});
+      // 只有成功走完所有 stage 才标记 success
+      if (!lastErr) {
+        await strapi.documents('plugin::zhao-studio.publish-record').update({
+          documentId: data.publishRecordId,
+          data: {
+            status: result.publish_mode === 'h5_share' ? 'queued' : 'success',
+            externalId: result.externalId || result.publishId,
+            url: result.url || result.accessUrl,
+            finishedAt: new Date(),
+            error: result.publish_mode === 'h5_share'
+              ? JSON.stringify({ platform: 'douyin', phase: 'h5_share', schema: result.schema })
+              : undefined,
+          } as any,
+        }).catch(() => {});
+      }
 
       return result;
     };
