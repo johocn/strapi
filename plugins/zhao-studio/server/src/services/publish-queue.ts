@@ -33,7 +33,7 @@ const STAGE_TO_STATUS: Record<Stage, string> = {
 let worker: Worker | null = null;
 
 /** 从 publish-record 三列推断 contentType */
-function inferContentTypeFromRecord(record: any): ContentType {
+export function inferContentTypeFromRecord(record: any): ContentType {
   if (record?.video?.documentId || record?.video) return 'video';
   if (record?.gallery?.documentId || record?.gallery) return 'gallery';
   if (record?.article?.documentId || record?.article) return 'article';
@@ -41,7 +41,7 @@ function inferContentTypeFromRecord(record: any): ContentType {
 }
 
 /** 构建幂等查询过滤条件：按 contentType 选对应的关系列 */
-function buildIdempotentFilter(contentType: ContentType, contentDocumentId: string, accountDocumentId: string) {
+export function buildIdempotentFilter(contentType: ContentType, contentDocumentId: string, accountDocumentId: string) {
   const relField = contentType;
   return {
     [relField]: { documentId: contentDocumentId },
