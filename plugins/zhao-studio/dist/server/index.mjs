@@ -170,6 +170,15 @@ async function closeStudioQueues() {
   redisClient = null;
   queuesAvailable = null;
 }
+const queue = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+  __proto__: null,
+  closeStudioQueues,
+  getPublishQueue,
+  getRedis,
+  getSchedulerQueue,
+  initStudioQueues,
+  registerWorker
+}, Symbol.toStringTag, { value: "Module" }));
 const bootstrap = async ({ strapi: strapi2 }) => {
   try {
     const { publish: publish2, scheduler: scheduler2 } = await initStudioQueues();
@@ -23328,19 +23337,19 @@ const oauthManager = ({ strapi: strapi2 }) => ({
 let worker$1 = null;
 const scheduler = ({ strapi: strapi2 }) => ({
   async registerSchedulers() {
-    const queue = getSchedulerQueue();
+    const queue2 = getSchedulerQueue();
     const redis = getRedis();
-    if (!queue || !redis) return;
+    if (!queue2 || !redis) return;
     try {
-      const existing = await queue.getRepeatableJobs();
+      const existing = await queue2.getRepeatableJobs();
       for (const j of existing) {
         if (j.id === "scan-and-trigger") {
-          await queue.removeRepeatableByKey(j.key);
+          await queue2.removeRepeatableByKey(j.key);
         }
       }
     } catch {
     }
-    await queue.add("scan-and-trigger", { type: "scan" }, {
+    await queue2.add("scan-and-trigger", { type: "scan" }, {
       jobId: "scan-and-trigger",
       repeat: { cron: "* * * * *" },
       attempts: 3,
@@ -23510,9 +23519,18 @@ function buildIdempotentFilter(contentType, contentDocumentId, accountDocumentId
 }
 const publishQueue = ({ strapi: strapi2 }) => ({
   async enqueuePublish(data2) {
-    const queue = getPublishQueue();
-    if (!queue) {
-      throw new Error("发布队列不可用，请检查 Redis 连接");
+    let queue$1 = getPublishQueue();
+    if (!queue$1) {
+      strapi2.log.warn("[zhao-studio] getPublishQueue() is null, retrying initStudioQueues()");
+      const { initStudioQueues: initStudioQueues2 } = await Promise.resolve().then(() => queue);
+      const { publish: publish2 } = await initStudioQueues2();
+      queue$1 = publish2 || getPublishQueue();
+      if (!queue$1) {
+        throw new Error("发布队列不可用，请检查 Redis 连接");
+      }
+      if (typeof worker === "undefined" || !worker) {
+        this.registerProcessors();
+      }
     }
     const record = await strapi2.documents("plugin::zhao-studio.publish-record").findOne({ documentId: data2.publishRecordId, populate: ["video", "gallery", "article", "account"] });
     if (!record) {
@@ -23533,7 +23551,7 @@ const publishQueue = ({ strapi: strapi2 }) => ({
       throw new Error(`该${contentType}在24小时内已在此账号上有进行中的发布任务 (record=${inFlight[0].documentId})`);
     }
     const jobData = { ...data2, contentType };
-    const job = await queue.add("publish-job", jobData, {
+    const job = await queue$1.add("publish-job", jobData, {
       jobId: data2.publishRecordId,
       attempts: 3,
       backoff: { type: "exponential", delay: 3e3 },

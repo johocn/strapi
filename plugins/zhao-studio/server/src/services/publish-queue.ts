@@ -40,11 +40,11 @@ function inferContentTypeFromRecord(record: any): ContentType {
 }
 
 /** 构建幂等查询过滤条件：按 contentType 选对应的关系列 */
-function buildIdempotentFilter(contentType: ContentType, contentId: string, accountId: string) {
-  const relField = contentType; // 'article' | 'video' | 'gallery'，三个关系字段同名
+function buildIdempotentFilter(contentType: ContentType, contentDocumentId: string, accountDocumentId: string) {
+  const relField = contentType;
   return {
-    [relField]: contentId,
-    account: accountId,
+    [relField]: { documentId: contentDocumentId },
+    account: { documentId: accountDocumentId },
     status: { $in: ['pending', 'queued', 'validating', 'uploading_media', 'publishing', 'checking_status'] },
     createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString() },
   };
@@ -52,15 +52,26 @@ function buildIdempotentFilter(contentType: ContentType, contentId: string, acco
 
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async enqueuePublish(data: PublishJobData): Promise<string | null> {
-    const queue = getPublishQueue();
+    let queue = getPublishQueue();
     if (!queue) {
-      throw new Error('发布队列不可用，请检查 Redis 连接');
+      // bootstrap 可能因 module scope 问题没初始化成功，主动重试一次
+      strapi.log.warn('[zhao-studio] getPublishQueue() is null, retrying initStudioQueues()');
+      const { initStudioQueues } = await import('../utils/queue');
+      const { publish } = await initStudioQueues();
+      queue = publish || getPublishQueue();
+      if (!queue) {
+        throw new Error('发布队列不可用，请检查 Redis 连接');
+      }
+      // 确保 Worker 也启动
+      if (typeof worker === 'undefined' || !worker) {
+        this.registerProcessors();
+      }
     }
 
     // 先拿 publish-record 推断 contentType（payload 里可能带，也可能没带——record 一定有）
     const record: any = await strapi
       .documents('plugin::zhao-studio.publish-record')
-      .findOne({ documentId: data.publishRecordId });
+      .findOne({ documentId: data.publishRecordId, populate: ['video', 'gallery', 'article', 'account'] });
     if (!record) {
       throw new Error(`publish-record 不存在: ${data.publishRecordId}`);
     }
@@ -188,7 +199,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     // 1. 查 publish-record → 推断 contentType
     const record: any = await strapi
       .documents('plugin::zhao-studio.publish-record')
-      .findOne({ documentId: publishRecordId });
+      .findOne({ documentId: publishRecordId, populate: ['video', 'gallery', 'article', 'account'] });
     if (!record) throw new Error(`publish-record 不存在: ${publishRecordId}`);
 
     const contentType: ContentType = data.contentType || inferContentTypeFromRecord(record);
