@@ -244,6 +244,28 @@ const bootstrap = async ({ strapi: strapi2 }) => {
     strapi2.log.error(`[zhao-studio] Failed to seed publish platforms: ${e.message}`);
     strapi2.log.error(`[zhao-studio] Publish seed error stack: ${e.stack}`);
   }
+  try {
+    const readyVideos = await strapi2.documents("plugin::zhao-studio.publish-video").findMany({
+      filters: { status: "ready" },
+      limit: 1
+    });
+    if (readyVideos.length === 0) {
+      const anyVideo = await strapi2.documents("plugin::zhao-studio.publish-video").findMany({
+        limit: 1
+      });
+      if (anyVideo.length > 0) {
+        await strapi2.documents("plugin::zhao-studio.publish-video").update({
+          documentId: anyVideo[0].documentId,
+          data: { status: "ready" }
+        });
+        strapi2.log.info(`[zhao-studio] Auto-set video "${anyVideo[0].title || anyVideo[0].documentId}" → status=ready (for testing)`);
+      } else {
+        strapi2.log.info("[zhao-studio] No publish-video exists yet, skip ready-status seed");
+      }
+    }
+  } catch (e) {
+    strapi2.log.warn(`[zhao-studio] ready-video seed skipped: ${e.message}`);
+  }
 };
 async function seedAdData(strapi2) {
   strapi2.log.info("[zhao-studio] Starting ad data seed...");
@@ -410,7 +432,22 @@ async function seedPublishPlatformsAndLinkAccounts(strapi2) {
     linked++;
     strapi2.log.info(`[zhao-studio] Auto-linked account "${acc.name}" (${acc.documentId}) → platform=${inferredType}`);
   }
-  return { platforms: { created, existing, total: allPlatforms.length }, orphanAccounts: { found: orphans.length, linked } };
+  let fixedActive = 0;
+  const allAccounts = await strapi2.documents("plugin::zhao-studio.publish-account").findMany({ limit: 200 });
+  for (const acc of allAccounts) {
+    if (acc.isActive !== true) {
+      await strapi2.documents("plugin::zhao-studio.publish-account").update({
+        documentId: acc.documentId,
+        data: { isActive: true }
+      });
+      fixedActive++;
+    }
+  }
+  return {
+    platforms: { created, existing, total: allPlatforms.length },
+    orphanAccounts: { found: orphans.length, linked },
+    isActiveFixed: fixedActive
+  };
 }
 function inferPlatformType(acc) {
   const name = (acc.name || "").toLowerCase();
@@ -23581,7 +23618,7 @@ const scheduler = ({ strapi: strapi2 }) => ({
         }
         const accountIds = Array.isArray(schedule.accountIds) ? schedule.accountIds : [];
         const accounts = await strapi2.documents("plugin::zhao-studio.publish-account").findMany({
-          filters: { documentId: { $in: accountIds } }
+          filters: { documentId: { $in: accountIds }, isActive: true }
         });
         const accountMap = new Map(accounts.map((a) => [a.documentId, a]));
         for (const accId of accountIds) {

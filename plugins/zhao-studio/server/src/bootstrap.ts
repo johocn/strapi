@@ -77,6 +77,30 @@ export default async ({ strapi }: { strapi: any }) => {
     strapi.log.error(`[zhao-studio] Failed to seed publish platforms: ${e.message}`);
     strapi.log.error(`[zhao-studio] Publish seed error stack: ${e.stack}`);
   }
+
+  // Ensure at least 1 publish-video in "ready" status (for E2E / scheduler testing)
+  try {
+    const readyVideos = await strapi.documents('plugin::zhao-studio.publish-video').findMany({
+      filters: { status: 'ready' },
+      limit: 1,
+    });
+    if (readyVideos.length === 0) {
+      const anyVideo = await strapi.documents('plugin::zhao-studio.publish-video').findMany({
+        limit: 1,
+      });
+      if (anyVideo.length > 0) {
+        await strapi.documents('plugin::zhao-studio.publish-video').update({
+          documentId: anyVideo[0].documentId,
+          data: { status: 'ready' } as any,
+        });
+        strapi.log.info(`[zhao-studio] Auto-set video "${anyVideo[0].title || anyVideo[0].documentId}" → status=ready (for testing)`);
+      } else {
+        strapi.log.info('[zhao-studio] No publish-video exists yet, skip ready-status seed');
+      }
+    }
+  } catch (e: any) {
+    strapi.log.warn(`[zhao-studio] ready-video seed skipped: ${e.message}`);
+  }
 };
 
 /**
@@ -299,7 +323,25 @@ async function seedPublishPlatformsAndLinkAccounts(strapi: any) {
     strapi.log.info(`[zhao-studio] Auto-linked account "${acc.name}" (${acc.documentId}) → platform=${inferredType}`);
   }
 
-  return { platforms: { created, existing, total: allPlatforms.length }, orphanAccounts: { found: orphans.length, linked } };
+  // 3. 幂等修复：所有 isActive !== true 的 account → isActive=true
+  //    (老数据可能在 schema default 加之前创建，导致 is_active=false)
+  let fixedActive = 0;
+  const allAccounts = await strapi.documents('plugin::zhao-studio.publish-account').findMany({ limit: 200 });
+  for (const acc of allAccounts) {
+    if (acc.isActive !== true) {
+      await strapi.documents('plugin::zhao-studio.publish-account').update({
+        documentId: acc.documentId,
+        data: { isActive: true } as any,
+      });
+      fixedActive++;
+    }
+  }
+
+  return {
+    platforms: { created, existing, total: allPlatforms.length },
+    orphanAccounts: { found: orphans.length, linked },
+    isActiveFixed: fixedActive,
+  };
 }
 
 function inferPlatformType(acc: any): string {

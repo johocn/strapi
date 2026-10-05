@@ -110,7 +110,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         const accounts = await strapi
           .documents('plugin::zhao-studio.publish-account')
           .findMany({
-            filters: { documentId: { $in: accountIds } },
+            filters: { documentId: { $in: accountIds }, isActive: true },
           });
         const accountMap = new Map(accounts.map((a: any) => [a.documentId, a]));
 
