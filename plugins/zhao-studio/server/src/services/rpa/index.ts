@@ -3,9 +3,10 @@
 
 import xiaohongshu from './xiaohongshu';
 import toutiao from './toutiao';
+import bilibili from './bilibili';
 import type { RpaDriver, RpaPlatform } from './types';
 
-const DRIVERS: Record<RpaPlatform, RpaDriver> = { xiaohongshu, toutiao };
+const DRIVERS: Record<RpaPlatform, RpaDriver> = { xiaohongshu, toutiao, bilibili };
 
 export function getRpaDriver(platform: string): RpaDriver {
   const driver = DRIVERS[platform as RpaPlatform];
@@ -15,5 +16,5 @@ export function getRpaDriver(platform: string): RpaDriver {
   return driver;
 }
 
-export { xiaohongshu, toutiao };
+export { xiaohongshu, toutiao, bilibili };
 export * from './types';
