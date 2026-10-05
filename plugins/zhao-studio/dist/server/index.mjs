@@ -237,6 +237,13 @@ const bootstrap = async ({ strapi: strapi2 }) => {
     strapi2.log.error(`[zhao-studio] Failed to seed notice data: ${e.message}`);
     strapi2.log.error(`[zhao-studio] Notice seed error stack: ${e.stack}`);
   }
+  try {
+    const pubResult = await seedPublishPlatformsAndLinkAccounts(strapi2);
+    strapi2.log.info(`[zhao-studio] Publish seed result: ${JSON.stringify(pubResult)}`);
+  } catch (e) {
+    strapi2.log.error(`[zhao-studio] Failed to seed publish platforms: ${e.message}`);
+    strapi2.log.error(`[zhao-studio] Publish seed error stack: ${e.stack}`);
+  }
 };
 async function seedAdData(strapi2) {
   strapi2.log.info("[zhao-studio] Starting ad data seed...");
@@ -352,6 +359,70 @@ async function seedNoticeData(strapi2) {
   strapi2.log.info("[zhao-studio] Notice content created: 首页公告 (html)");
   strapi2.log.info("[zhao-studio] Notice data seed completed: 1 zone + 1 content");
   return { success: true, zoneId: zone.documentId, contents: 1 };
+}
+async function seedPublishPlatformsAndLinkAccounts(strapi2) {
+  strapi2.log.info("[zhao-studio] Starting publish-platforms seed + account auto-link...");
+  const PLATFORM_SEEDS = [
+    { type: "wechat", name: "微信公众号", category: "content" },
+    { type: "douyin", name: "抖音", category: "content" },
+    { type: "xiaohongshu", name: "小红书", category: "content" },
+    { type: "toutiao", name: "头条", category: "content" },
+    { type: "bilibili", name: "B站", category: "content" },
+    { type: "internal", name: "内部渠道", category: "custom" },
+    { type: "custom", name: "自定义", category: "custom" }
+  ];
+  const created = [];
+  const existing = [];
+  for (const seed of PLATFORM_SEEDS) {
+    const found = await strapi2.documents("plugin::zhao-studio.publish-platform").findMany({
+      filters: { type: seed.type },
+      limit: 1
+    });
+    if (found.length === 0) {
+      const p = await strapi2.documents("plugin::zhao-studio.publish-platform").create({ data: { ...seed, isActive: true } });
+      created.push(seed.type);
+      strapi2.log.info(`[zhao-studio] Seed platform ${seed.type} → ${p.documentId}`);
+    } else {
+      existing.push(seed.type);
+    }
+  }
+  const allPlatforms = await strapi2.documents("plugin::zhao-studio.publish-platform").findMany({ limit: 50 });
+  const typeToDocId = {};
+  for (const p of allPlatforms) {
+    if (p.type) typeToDocId[p.type] = p.documentId;
+  }
+  const orphans = await strapi2.documents("plugin::zhao-studio.publish-account").findMany({
+    filters: { platform: null },
+    limit: 50
+  });
+  let linked = 0;
+  for (const acc of orphans) {
+    const inferredType = inferPlatformType(acc);
+    const targetDocId = typeToDocId[inferredType];
+    if (!targetDocId) {
+      strapi2.log.warn(`[zhao-studio] Cannot find platform doc for type=${inferredType}, skip linking account=${acc.documentId}`);
+      continue;
+    }
+    await strapi2.documents("plugin::zhao-studio.publish-account").update({
+      documentId: acc.documentId,
+      data: { platform: { connect: [{ documentId: targetDocId }] } }
+    });
+    linked++;
+    strapi2.log.info(`[zhao-studio] Auto-linked account "${acc.name}" (${acc.documentId}) → platform=${inferredType}`);
+  }
+  return { platforms: { created, existing, total: allPlatforms.length }, orphanAccounts: { found: orphans.length, linked } };
+}
+function inferPlatformType(acc) {
+  const name = (acc.name || "").toLowerCase();
+  const cfg = acc.config || {};
+  if (/公众号|微信|wechat/i.test(name)) return "wechat";
+  if (/douyin|抖音/i.test(name)) return "douyin";
+  if (/xiaohongshu|小红书/i.test(name)) return "xiaohongshu";
+  if (/toutiao|头条/i.test(name)) return "toutiao";
+  if (/bilibili|b站|b站/i.test(name)) return "bilibili";
+  if (/internal|内部|e2e/i.test(name)) return "internal";
+  if (cfg.appId || cfg.mediaId) return "wechat";
+  return "internal";
 }
 const destroy = async () => {
   try {
