@@ -6,6 +6,7 @@ import {
   CONTENT_UID,
   createPublishRecord,
   inferContentTypeFromScheduleLnk,
+  dbQuery,
   type ContentType,
 } from '../utils/publish-helpers';
 
@@ -30,7 +31,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
     await queue.add('scan-and-trigger', { type: 'scan' }, {
       jobId: 'scan-and-trigger',
-      repeat: { cron: '* * * * *' },
+      repeat: { pattern: '* * * * *' },
       attempts: 3,
       backoff: { type: 'exponential', delay: 2000 },
       removeOnComplete: 20,
@@ -90,7 +91,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
           const lnkCol = contentType === 'article' ? 'article_draft_id' : `publish_${contentType}_id`;
           const lnkTable = `zhao_publish_schedules_${contentType}_lnk`;
           const contentTable = contentType === 'article' ? 'zhao_article_drafts' : `zhao_publish_${contentType}s`;
-          const rows: any[] = await strapi.db.connection.query(
+          const rows: any[] = await dbQuery(strapi,
             `SELECT c.document_id FROM ${lnkTable} lnk JOIN ${contentTable} c ON c.id = lnk.${lnkCol} WHERE lnk.publish_schedule_id = $1 LIMIT 1`,
             [(schedule as any).id],
           ).catch(() => []);
@@ -100,6 +101,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
           strapi.log.error(`[zhao-studio] schedule ${schedule.documentId} ${contentType} documentId 缺失（populate 和 lnk 表都查不到）`);
           continue;
         }
+        // @ts-expect-error Strapi Core types
         const content: any = await strapi.documents(CONTENT_UID[contentType]).findOne({ documentId: contentDocumentId });
         if (!content) {
           strapi.log.error(`[zhao-studio] schedule ${schedule.documentId} ${contentType} ${contentDocumentId} 不存在`);

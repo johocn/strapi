@@ -1,7 +1,7 @@
 export interface IOAuthProvider {
     readonly platformType: string;
     readonly displayName: string;
-    buildAuthorizeUrl(state: string, accountId: string): string;
+    buildAuthorizeUrl(state: string, accountId: string): Promise<string>;
     exchangeToken(code: string, accountId: string): Promise<{
         accessToken: string;
         refreshToken: string;

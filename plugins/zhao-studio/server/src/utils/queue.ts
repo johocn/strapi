@@ -1,6 +1,7 @@
 import { Queue, Worker } from 'bullmq';
 import Redis from 'ioredis';
 import { getRedisConnection } from './redis';
+import type { ContentType } from './publish-helpers';
 
 function getCleanRedisConfig(): any {
   const cfg = getRedisConnection();
@@ -57,8 +58,6 @@ export async function closeStudioQueues() {
   if (redisClient) { try { await redisClient.quit(); } catch { /* ignore */ } }
   publishQueue = null; schedulerQueue = null; redisClient = null; queuesAvailable = null;
 }
-
-export type ContentType = 'article' | 'video' | 'gallery';
 
 export interface PublishJobData {
   articleId?: string;

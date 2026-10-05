@@ -1,5 +1,6 @@
 import { Queue } from 'bullmq';
 import { default as Redis } from 'ioredis';
+import { ContentType } from './publish-helpers';
 export declare function initStudioQueues(): Promise<{
     publish: Queue | null;
     scheduler: Queue | null;
@@ -11,7 +12,6 @@ export declare function registerWorker(w: {
     close: () => Promise<void>;
 }): void;
 export declare function closeStudioQueues(): Promise<void>;
-export type ContentType = 'article' | 'video' | 'gallery';
 export interface PublishJobData {
     articleId?: string;
     accountId: string;

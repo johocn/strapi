@@ -3,9 +3,18 @@
 
 import type { Core } from '@strapi/strapi';
 
-export type ContentType = 'article' | 'video' | 'gallery';
+export type ContentType = 'article' | 'video' | 'gallery' | (string & {});
 
-export const CONTENT_UID: Record<ContentType, string> = {
+/**
+ * Strapi 5 strapi.db.connection 类型是 Knex，但实际 Postgres driver 有原生 .query()
+ * 用这个 helper 绕过 Knex 类型定义，运行时行为一致
+ */
+export function dbQuery(strapi: Core.Strapi, sql: string, params?: any[]): Promise<any[]> {
+  const conn: any = (strapi.db as any).connection;
+  return conn.query(sql, params);
+}
+
+export const CONTENT_UID: Record<string, string> = {
   article: 'plugin::zhao-studio.article-draft',
   video: 'plugin::zhao-studio.publish-video',
   gallery: 'plugin::zhao-studio.publish-gallery',
@@ -37,12 +46,12 @@ export function contentLnkCol(type: ContentType): string {
 export async function insertScheduleLnk(
   strapi: Core.Strapi,
   contentType: ContentType,
-  scheduleNumId: number,
-  contentNumId: number,
+  scheduleNumId: number | string,
+  contentNumId: number | string,
 ): Promise<void> {
   const lnkTable = `zhao_publish_schedules_${contentType}_lnk`;
   try {
-    await strapi.db.connection.query(
+    await dbQuery(strapi,
       `INSERT INTO ${lnkTable} (publish_schedule_id, ${contentLnkCol(contentType)}) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
       [scheduleNumId, contentNumId],
     );
@@ -57,19 +66,19 @@ export async function insertScheduleLnk(
 export async function insertRecordLnks(
   strapi: Core.Strapi,
   contentType: ContentType,
-  recordNumId: number,
-  contentNumId: number,
-  accountNumId: number,
+  recordNumId: number | string,
+  contentNumId: number | string,
+  accountNumId: number | string,
 ): Promise<void> {
   try {
     // content lnk
     const clnkTable = `zhao_publish_records_${contentType}_lnk`;
-    await strapi.db.connection.query(
+    await dbQuery(strapi,
       `INSERT INTO ${clnkTable} (publish_record_id, ${contentLnkCol(contentType)}) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
       [recordNumId, contentNumId],
     );
     // account lnk
-    await strapi.db.connection.query(
+    await dbQuery(strapi,
       `INSERT INTO zhao_publish_records_account_lnk (publish_record_id, publish_account_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
       [recordNumId, accountNumId],
     );
@@ -81,7 +90,7 @@ export async function insertRecordLnks(
 /**
  * Strapi populate 在 plugin CT 上不可靠 → 直接查 lnk 表推断 contentType
  */
-export async function inferContentTypeFromLnk(strapi: Core.Strapi, recordNumId: number): Promise<ContentType | null> {
+export async function inferContentTypeFromLnk(strapi: Core.Strapi, recordNumId: number | string): Promise<ContentType | null> {
   try {
     const tables: { ct: ContentType; table: string }[] = [
       { ct: 'video', table: 'zhao_publish_records_video_lnk' },
@@ -89,7 +98,7 @@ export async function inferContentTypeFromLnk(strapi: Core.Strapi, recordNumId: 
       { ct: 'article', table: 'zhao_publish_records_article_lnk' },
     ];
     for (const { ct, table } of tables) {
-      const rows: any[] = await strapi.db.connection.query(
+      const rows: any[] = await dbQuery(strapi,
         `SELECT 1 FROM ${table} WHERE publish_record_id = $1 LIMIT 1`,
         [recordNumId],
       );
@@ -102,7 +111,7 @@ export async function inferContentTypeFromLnk(strapi: Core.Strapi, recordNumId: 
 /**
  * Strapi populate 在 plugin CT 上不可靠 → 直接查 schedule lnk 表推断 contentType
  */
-export async function inferContentTypeFromScheduleLnk(strapi: Core.Strapi, scheduleNumId: number): Promise<ContentType | null> {
+export async function inferContentTypeFromScheduleLnk(strapi: Core.Strapi, scheduleNumId: number | string): Promise<ContentType | null> {
   try {
     const tables: { ct: ContentType; table: string }[] = [
       { ct: 'video', table: 'zhao_publish_schedules_video_lnk' },
@@ -110,7 +119,7 @@ export async function inferContentTypeFromScheduleLnk(strapi: Core.Strapi, sched
       { ct: 'article', table: 'zhao_publish_schedules_article_lnk' },
     ];
     for (const { ct, table } of tables) {
-      const rows: any[] = await strapi.db.connection.query(
+      const rows: any[] = await dbQuery(strapi,
         `SELECT 1 FROM ${table} WHERE publish_schedule_id = $1 LIMIT 1`,
         [scheduleNumId],
       );
@@ -127,7 +136,7 @@ export async function inferContentTypeFromScheduleLnk(strapi: Core.Strapi, sched
 export async function resolveContentFromLnk(
   strapi: Core.Strapi,
   contentType: ContentType,
-  recordNumId: number,
+  recordNumId: number | string,
 ): Promise<{ contentNumId: number; contentDocumentId: string } | null> {
   try {
     const lnkTable = `zhao_publish_records_${contentType}_lnk`;
@@ -138,7 +147,7 @@ export async function resolveContentFromLnk(
       article: 'zhao_article_drafts',
     };
     const contentTable = contentTableMap[contentType];
-    const rows: any[] = await strapi.db.connection.query(
+    const rows: any[] = await dbQuery(strapi,
       `SELECT c.id, c.document_id FROM ${lnkTable} lnk JOIN ${contentTable} c ON c.id = lnk.${col} WHERE lnk.publish_record_id = $1 LIMIT 1`,
       [recordNumId],
     );

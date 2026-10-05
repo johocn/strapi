@@ -11,9 +11,9 @@ export const bilibili: RpaDriver = {
     const hasVideo = !!input.videoUrl;
 
     if (hasVideo) {
-      return await this.publishVideo(page, input, workDir);
+      return await this.publishVideo!(page, input, workDir);
     } else {
-      return await this.publishArticle(page, input);
+      return await this.publishArticle!(page, input);
     }
   },
 

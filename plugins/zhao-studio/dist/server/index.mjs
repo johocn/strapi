@@ -20393,6 +20393,10 @@ ${conversationPrompt}
     };
   }
 });
+function dbQuery(strapi2, sql, params) {
+  const conn = strapi2.db.connection;
+  return conn.query(sql, params);
+}
 const CONTENT_UID$2 = {
   article: "plugin::zhao-studio.article-draft",
   video: "plugin::zhao-studio.publish-video",
@@ -20412,7 +20416,8 @@ function contentLnkCol(type) {
 async function insertScheduleLnk(strapi2, contentType, scheduleNumId, contentNumId) {
   const lnkTable = `zhao_publish_schedules_${contentType}_lnk`;
   try {
-    await strapi2.db.connection.query(
+    await dbQuery(
+      strapi2,
       `INSERT INTO ${lnkTable} (publish_schedule_id, ${contentLnkCol(contentType)}) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
       [scheduleNumId, contentNumId]
     );
@@ -20423,11 +20428,13 @@ async function insertScheduleLnk(strapi2, contentType, scheduleNumId, contentNum
 async function insertRecordLnks(strapi2, contentType, recordNumId, contentNumId, accountNumId) {
   try {
     const clnkTable = `zhao_publish_records_${contentType}_lnk`;
-    await strapi2.db.connection.query(
+    await dbQuery(
+      strapi2,
       `INSERT INTO ${clnkTable} (publish_record_id, ${contentLnkCol(contentType)}) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
       [recordNumId, contentNumId]
     );
-    await strapi2.db.connection.query(
+    await dbQuery(
+      strapi2,
       `INSERT INTO zhao_publish_records_account_lnk (publish_record_id, publish_account_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
       [recordNumId, accountNumId]
     );
@@ -20443,7 +20450,8 @@ async function inferContentTypeFromLnk(strapi2, recordNumId) {
       { ct: "article", table: "zhao_publish_records_article_lnk" }
     ];
     for (const { ct, table } of tables) {
-      const rows = await strapi2.db.connection.query(
+      const rows = await dbQuery(
+        strapi2,
         `SELECT 1 FROM ${table} WHERE publish_record_id = $1 LIMIT 1`,
         [recordNumId]
       );
@@ -20461,7 +20469,8 @@ async function inferContentTypeFromScheduleLnk(strapi2, scheduleNumId) {
       { ct: "article", table: "zhao_publish_schedules_article_lnk" }
     ];
     for (const { ct, table } of tables) {
-      const rows = await strapi2.db.connection.query(
+      const rows = await dbQuery(
+        strapi2,
         `SELECT 1 FROM ${table} WHERE publish_schedule_id = $1 LIMIT 1`,
         [scheduleNumId]
       );
@@ -20481,7 +20490,8 @@ async function resolveContentFromLnk(strapi2, contentType, recordNumId) {
       article: "zhao_article_drafts"
     };
     const contentTable = contentTableMap[contentType];
-    const rows = await strapi2.db.connection.query(
+    const rows = await dbQuery(
+      strapi2,
       `SELECT c.id, c.document_id FROM ${lnkTable} lnk JOIN ${contentTable} c ON c.id = lnk.${col} WHERE lnk.publish_record_id = $1 LIMIT 1`,
       [recordNumId]
     );
@@ -23548,7 +23558,7 @@ const scheduler = ({ strapi: strapi2 }) => ({
     }
     await queue2.add("scan-and-trigger", { type: "scan" }, {
       jobId: "scan-and-trigger",
-      repeat: { cron: "* * * * *" },
+      repeat: { pattern: "* * * * *" },
       attempts: 3,
       backoff: { type: "exponential", delay: 2e3 },
       removeOnComplete: 20,
@@ -23601,7 +23611,8 @@ const scheduler = ({ strapi: strapi2 }) => ({
           const lnkCol = contentType === "article" ? "article_draft_id" : `publish_${contentType}_id`;
           const lnkTable = `zhao_publish_schedules_${contentType}_lnk`;
           const contentTable = contentType === "article" ? "zhao_article_drafts" : `zhao_publish_${contentType}s`;
-          const rows = await strapi2.db.connection.query(
+          const rows = await dbQuery(
+            strapi2,
             `SELECT c.document_id FROM ${lnkTable} lnk JOIN ${contentTable} c ON c.id = lnk.${lnkCol} WHERE lnk.publish_schedule_id = $1 LIMIT 1`,
             [schedule.id]
           ).catch(() => []);

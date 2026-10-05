@@ -15,6 +15,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     type: ContentType; contentId: string; accountIds: string[]; scheduledAt?: Date;
   }): Promise<any[]> {
     const content: any = await strapi
+      // @ts-expect-error Strapi Core types: documents(uid: string) works at runtime
       .documents(CONTENT_UID[type])
       .findOne({ documentId: contentId });
     if (!content) throw new Error(`${type} 内容不存在: ${contentId}`);
@@ -495,6 +496,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       return { success: true, queued: true, recordId, contentType };
     } catch {
       // 队列不可用 → 降级同步
+      // @ts-expect-error Strapi Core types
       const content = await strapi.documents(CONTENT_UID[contentType]).findOne({ documentId: contentId });
       const account = await strapi.documents('plugin::zhao-studio.publish-account').findOne({ documentId: accountId });
       if (!content || !account) throw new Error('内容或账号不存在');

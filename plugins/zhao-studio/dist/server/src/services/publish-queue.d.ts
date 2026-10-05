@@ -1,5 +1,6 @@
 import { Core } from '../../../../../node_modules/@strapi/strapi';
-import { PublishJobData, ContentType } from '../utils/queue';
+import { PublishJobData } from '../utils/queue';
+import { ContentType } from '../utils/publish-helpers';
 export declare const STAGES: {
     readonly VALIDATE: "validateContent";
     readonly ENSURE_TOKEN: "ensureOAuthToken";

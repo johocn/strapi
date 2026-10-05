@@ -23,5 +23,9 @@ export interface RpaDriver {
      * @param workDir 可写的临时目录，用于下载远程图片等中间产物
      */
     publish(page: any, input: RpaPublishInput, workDir: string): Promise<RpaPublishOutput>;
+    /** 视频投稿子类方法（bilibili 内部通过 this.publishVideo 调用） */
+    publishVideo?(page: any, input: RpaPublishInput, workDir: string): Promise<RpaPublishOutput>;
+    /** 图文投稿子类方法 */
+    publishArticle?(page: any, input: RpaPublishInput, workDir?: string): Promise<RpaPublishOutput>;
 }
 //# sourceMappingURL=types.d.ts.map

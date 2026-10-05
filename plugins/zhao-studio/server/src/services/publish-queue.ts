@@ -1,14 +1,14 @@
 import type { Core } from '@strapi/strapi';
 import { Worker } from 'bullmq';
-import { getPublishQueue, getRedis, registerWorker, type PublishJobData, type ContentType } from '../utils/queue';
+import { getPublishQueue, getRedis, registerWorker, type PublishJobData } from '../utils/queue';
 import { identifyPublishError } from '../utils/publishErrors';
-import { inferContentTypeFromLnk, resolveContentFromLnk } from '../utils/publish-helpers';
+import { inferContentTypeFromLnk, resolveContentFromLnk, type ContentType } from '../utils/publish-helpers';
 
-const CONTENT_UID = {
+const CONTENT_UID: Record<string, string> = {
   article: 'plugin::zhao-studio.article-draft',
   video: 'plugin::zhao-studio.publish-video',
   gallery: 'plugin::zhao-studio.publish-gallery',
-} as const satisfies Record<ContentType, string>;
+};
 
 export const STAGES = {
   VALIDATE: 'validateContent',
@@ -284,6 +284,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     if (!contentId) throw new Error(`publish-record ${publishRecordId} 未关联 ${contentType} 内容（populate 和 lnk 表都查不到）`);
 
     // 2. 查对应内容
+    // @ts-expect-error Strapi Core types
     const content = await strapi.documents(CONTENT_UID[contentType]).findOne({ documentId: contentId });
     const account = await strapi
       .documents('plugin::zhao-studio.publish-account')
