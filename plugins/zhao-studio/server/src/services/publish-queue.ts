@@ -300,6 +300,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         return { ...prev, ...publishResult };
       }
 
+      // RPA 平台（toutiao/xhs/bilibili）publish 成功即 final → pass-through
+      // OAuth server API 平台（wechat）需轮询 freepublish/get 确认 → 走下面逻辑
       case STAGES.CHECK_STATUS: {
         if (platformType === 'wechat' && prev.publishId) {
           const ssoWx = strapi.plugin('zhao-sso')?.service('sso-wechat') as any;
