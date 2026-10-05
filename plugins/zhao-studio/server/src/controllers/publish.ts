@@ -105,11 +105,23 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     ctx.body = { data: result.records, meta: { pagination: result.pagination } };
   },
 
-  async retryPublish(ctx: any) {
+  async getRecordDetail(ctx: any) {
     const { recordId } = ctx.params;
     const publishService = strapi.plugin('zhao-studio').service('publish');
-    const result = await publishService.retryPublish(recordId);
-    ctx.body = { data: result };
+    const record = await publishService.getRecordDetail(recordId);
+    if (!record) return ctx.throw(404, '发布记录不存在');
+    ctx.body = { data: record };
+  },
+
+  async retryPublish(ctx: any) {
+    const { recordId } = ctx.params;
+    try {
+      const publishService = strapi.plugin('zhao-studio').service('publish');
+      const result = await publishService.retryPublish(recordId);
+      ctx.body = { data: result };
+    } catch (e: any) {
+      ctx.throw(400, e.message);
+    }
   },
 
   async syncStatus(ctx: any) {
@@ -161,15 +173,15 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async listSchedules(ctx: any) {
     try {
       const publishService = strapi.plugin('zhao-studio').service('publish');
-      const schedules = await publishService.listSchedules();
-      ctx.body = { data: schedules };
+      const result = await publishService.listSchedules(ctx.query);
+      ctx.body = { data: result.list, meta: { pagination: result.pagination } };
     } catch (e: any) { ctx.throw(500, e.message); }
   },
 
   async findOneSchedule(ctx: any) {
     try {
       const publishService = strapi.plugin('zhao-studio').service('publish');
-      const schedule = await publishService.findOneSchedule(ctx.params.id);
+      const schedule = await publishService.findOneSchedule(ctx.params.id, ctx.query.populate);
       if (!schedule) return ctx.throw(404, '定时任务不存在');
       ctx.body = { data: schedule };
     } catch (e: any) { ctx.throw(400, e.message); }

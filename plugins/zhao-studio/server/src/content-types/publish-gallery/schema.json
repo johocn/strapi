@@ -48,6 +48,12 @@
       "target": "plugin::zhao-studio.publish-record",
       "mappedBy": "gallery"
     },
+    "publishSchedules": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-studio.publish-schedule",
+      "mappedBy": "gallery"
+    },
     "scope": {
       "type": "enumeration",
       "enum": ["current", "global", "tenant"],

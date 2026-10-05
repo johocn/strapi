@@ -75,6 +75,7 @@ export default () => ({
     adminRoute('PUT', '/publish-galleries/:id', 'publish-gallery.update', 'zhao-studio.publish-gallery.manage'),
     adminRoute('DELETE', '/publish-galleries/:id', 'publish-gallery.delete', 'zhao-studio.publish-gallery.manage'),
     adminRoute('GET', '/records', 'publish.listRecords', 'zhao-studio.publish-record.manage'),
+    adminRoute('GET', '/records/:recordId', 'publish.getRecordDetail', 'zhao-studio.publish-record.manage'),
     adminRoute('POST', '/records/:recordId/retry', 'publish.retryPublish', 'zhao-studio.publish-record.manage'),
     adminRoute('POST', '/articles/:articleId/sync', 'publish.syncStatus', 'zhao-studio.publish-record.manage'),
 

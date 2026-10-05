@@ -25,17 +25,20 @@
     "article": {
       "type": "relation",
       "relation": "manyToOne",
-      "target": "plugin::zhao-studio.article-draft"
+      "target": "plugin::zhao-studio.article-draft",
+      "inversedBy": "publishSchedules"
     },
     "video": {
       "type": "relation",
       "relation": "manyToOne",
-      "target": "plugin::zhao-studio.publish-video"
+      "target": "plugin::zhao-studio.publish-video",
+      "inversedBy": "publishSchedules"
     },
     "gallery": {
       "type": "relation",
       "relation": "manyToOne",
-      "target": "plugin::zhao-studio.publish-gallery"
+      "target": "plugin::zhao-studio.publish-gallery",
+      "inversedBy": "publishSchedules"
     },
     "accountIds": {
       "type": "json"
