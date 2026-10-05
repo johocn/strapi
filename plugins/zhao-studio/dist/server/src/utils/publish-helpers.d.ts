@@ -14,6 +14,18 @@ export declare function insertScheduleLnk(strapi: Core.Strapi, contentType: Cont
  */
 export declare function insertRecordLnks(strapi: Core.Strapi, contentType: ContentType, recordNumId: number, contentNumId: number, accountNumId: number): Promise<void>;
 /**
+ * Strapi populate 在 plugin CT 上不可靠 → 直接查 lnk 表推断 contentType
+ */
+export declare function inferContentTypeFromLnk(strapi: Core.Strapi, recordNumId: number): Promise<ContentType | null>;
+/**
+ * Strapi populate 拿不到 content 关系 → 直接查 lnk + content 表
+ * 返回 { contentNumId, contentDocumentId } 或 null
+ */
+export declare function resolveContentFromLnk(strapi: Core.Strapi, contentType: ContentType, recordNumId: number): Promise<{
+    contentNumId: number;
+    contentDocumentId: string;
+} | null>;
+/**
  * 创建 publish-record + 手动插 lnk 表（解决 Strapi plugin CT connect 不可靠问题）
  */
 export declare function createPublishRecord(strapi: Core.Strapi, contentType: ContentType, contentDocumentId: string, contentNumId: number, accountDocumentId: string, accountNumId: number, extraData?: Record<string, any>): Promise<any>;

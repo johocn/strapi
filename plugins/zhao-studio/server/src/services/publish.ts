@@ -5,6 +5,8 @@ import {
   CONTENT_UID,
   insertScheduleLnk,
   createPublishRecord,
+  inferContentTypeFromLnk,
+  resolveContentFromLnk,
   type ContentType,
 } from '../utils/publish-helpers';
 
@@ -456,19 +458,24 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       throw new Error(`当前状态 ${record.status} 不可重试，仅 failed/rejected/partial_success 可重试`);
     }
 
-    // 从 record 三列推断 contentType
-    const contentType: ContentType =
-      record.video?.documentId || record.video
-        ? 'video'
-        : record.gallery?.documentId || record.gallery
-          ? 'gallery'
-          : record.article?.documentId || record.article
-            ? 'article'
-            : (() => { throw new Error('publish-record 未关联任何内容，无法推断 contentType'); })();
+    // 从 record 三列推断 contentType（带 DB lnk fallback）
+    let contentType: ContentType | null =
+      record.video?.documentId || record.video ? 'video'
+      : record.gallery?.documentId || record.gallery ? 'gallery'
+      : record.article?.documentId || record.article ? 'article'
+      : null;
+    if (!contentType) {
+      contentType = await inferContentTypeFromLnk(strapi, record.id);
+    }
+    if (!contentType) {
+      throw new Error(`publish-record ${record.documentId} 无法推断 contentType（populate 和 lnk 表都无关联）`);
+    }
 
-    const contentId = String(
-      (record as any)[contentType]?.documentId || (record as any)[contentType]
-    );
+    let contentId = String((record as any)[contentType]?.documentId || (record as any)[contentType] || '');
+    if (!contentId) {
+      const lnkRef = await resolveContentFromLnk(strapi, contentType, record.id);
+      contentId = lnkRef?.contentDocumentId || '';
+    }
     const accountId = String(record.account?.documentId || record.account);
 
     // 队列可用 → 入队重试

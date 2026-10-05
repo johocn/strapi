@@ -20327,6 +20327,45 @@ async function insertRecordLnks(strapi2, contentType, recordNumId, contentNumId,
     strapi2.log.warn("[zhao-studio] record lnk insert failed:", e.message);
   }
 }
+async function inferContentTypeFromLnk(strapi2, recordNumId) {
+  try {
+    const tables = [
+      { ct: "video", table: "zhao_publish_records_video_lnk" },
+      { ct: "gallery", table: "zhao_publish_records_gallery_lnk" },
+      { ct: "article", table: "zhao_publish_records_article_lnk" }
+    ];
+    for (const { ct, table } of tables) {
+      const rows = await strapi2.db.connection.query(
+        `SELECT 1 FROM ${table} WHERE publish_record_id = $1 LIMIT 1`,
+        [recordNumId]
+      );
+      if (rows.length > 0) return ct;
+    }
+  } catch {
+  }
+  return null;
+}
+async function resolveContentFromLnk(strapi2, contentType, recordNumId) {
+  try {
+    const lnkTable = `zhao_publish_records_${contentType}_lnk`;
+    const col = contentLnkCol(contentType);
+    const contentTableMap = {
+      video: "zhao_publish_videos",
+      gallery: "zhao_publish_galleries",
+      article: "zhao_article_drafts"
+    };
+    const contentTable = contentTableMap[contentType];
+    const rows = await strapi2.db.connection.query(
+      `SELECT c.id, c.document_id FROM ${lnkTable} lnk JOIN ${contentTable} c ON c.id = lnk.${col} WHERE lnk.publish_record_id = $1 LIMIT 1`,
+      [recordNumId]
+    );
+    if (rows.length > 0) {
+      return { contentNumId: rows[0].id, contentDocumentId: rows[0].document_id };
+    }
+  } catch {
+  }
+  return null;
+}
 async function createPublishRecord(strapi2, contentType, contentDocumentId, contentNumId, accountDocumentId, accountNumId, extraData = {}) {
   const recordData = {
     account: { connect: [{ documentId: accountDocumentId }] },
@@ -20670,12 +20709,18 @@ const publish = ({ strapi: strapi2 }) => ({
     if (!RETRYABLE.has(record.status)) {
       throw new Error(`当前状态 ${record.status} 不可重试，仅 failed/rejected/partial_success 可重试`);
     }
-    const contentType = record.video?.documentId || record.video ? "video" : record.gallery?.documentId || record.gallery ? "gallery" : record.article?.documentId || record.article ? "article" : (() => {
-      throw new Error("publish-record 未关联任何内容，无法推断 contentType");
-    })();
-    const contentId = String(
-      record[contentType]?.documentId || record[contentType]
-    );
+    let contentType = record.video?.documentId || record.video ? "video" : record.gallery?.documentId || record.gallery ? "gallery" : record.article?.documentId || record.article ? "article" : null;
+    if (!contentType) {
+      contentType = await inferContentTypeFromLnk(strapi2, record.id);
+    }
+    if (!contentType) {
+      throw new Error(`publish-record ${record.documentId} 无法推断 contentType（populate 和 lnk 表都无关联）`);
+    }
+    let contentId = String(record[contentType]?.documentId || record[contentType] || "");
+    if (!contentId) {
+      const lnkRef = await resolveContentFromLnk(strapi2, contentType, record.id);
+      contentId = lnkRef?.contentDocumentId || "";
+    }
     const accountId = String(record.account?.documentId || record.account);
     try {
       const publishQueue2 = strapi2.plugin("zhao-studio").service("publish-queue");
@@ -23536,12 +23581,26 @@ const publishQueue = ({ strapi: strapi2 }) => ({
     if (!record) {
       throw new Error(`publish-record 不存在: ${data2.publishRecordId}`);
     }
-    const contentType = data2.contentType || inferContentTypeFromRecord(record);
-    const contentId = String(
+    let contentType = data2.contentType || null;
+    if (!contentType) {
+      try {
+        contentType = inferContentTypeFromRecord(record);
+      } catch {
+        contentType = await inferContentTypeFromLnk(strapi2, record.id);
+      }
+    }
+    if (!contentType) {
+      throw new Error(`publish-record ${data2.publishRecordId} 无法推断 contentType（populate 和 lnk 表都无关联）`);
+    }
+    let contentId = String(
       record[contentType]?.documentId || record[contentType] || (contentType === "article" ? data2.articleId : void 0) || ""
     );
     if (!contentId) {
-      throw new Error(`publish-record 未关联 ${contentType} 内容`);
+      const lnkRef = await resolveContentFromLnk(strapi2, contentType, record.id);
+      contentId = lnkRef?.contentDocumentId || "";
+    }
+    if (!contentId) {
+      throw new Error(`publish-record ${data2.publishRecordId} 未关联 ${contentType} 内容（populate 和 lnk 表都查不到）`);
     }
     const inFlight = await strapi2.documents("plugin::zhao-studio.publish-record").findMany({
       filters: {
@@ -23668,9 +23727,21 @@ const publishQueue = ({ strapi: strapi2 }) => ({
     strapi2.log.info(`[zhao-studio] runStage ENTER stage=${stage} record=${publishRecordId} account=${accountId} contentType=${data2.contentType}`);
     const record = await strapi2.documents("plugin::zhao-studio.publish-record").findOne({ documentId: publishRecordId, populate: ["video", "gallery", "article", "account"] });
     if (!record) throw new Error(`publish-record 不存在: ${publishRecordId}`);
-    const contentType = data2.contentType || inferContentTypeFromRecord(record);
-    const contentId = String(record[contentType]?.documentId || record[contentType] || "");
-    if (!contentId) throw new Error(`publish-record 未关联 ${contentType} 内容 (record=${publishRecordId})`);
+    let contentType = data2.contentType || null;
+    if (!contentType) {
+      try {
+        contentType = inferContentTypeFromRecord(record);
+      } catch {
+        contentType = await inferContentTypeFromLnk(strapi2, record.id);
+      }
+    }
+    if (!contentType) throw new Error(`publish-record ${publishRecordId} 无法推断 contentType（populate 和 lnk 表都无关联）`);
+    let contentId = String(record[contentType]?.documentId || record[contentType] || "");
+    if (!contentId) {
+      const lnkRef = await resolveContentFromLnk(strapi2, contentType, record.id);
+      contentId = lnkRef?.contentDocumentId || "";
+    }
+    if (!contentId) throw new Error(`publish-record ${publishRecordId} 未关联 ${contentType} 内容（populate 和 lnk 表都查不到）`);
     const content = await strapi2.documents(CONTENT_UID[contentType]).findOne({ documentId: contentId });
     const account = await strapi2.documents("plugin::zhao-studio.publish-account").findOne({ documentId: accountId, populate: { platform: true } });
     if (!content || !account) throw new Error(`内容或账号不存在 content=${contentId} contentType=${contentType} account=${accountId}`);

@@ -2,6 +2,7 @@ import type { Core } from '@strapi/strapi';
 import { Worker } from 'bullmq';
 import { getPublishQueue, getRedis, registerWorker, type PublishJobData, type ContentType } from '../utils/queue';
 import { identifyPublishError } from '../utils/publishErrors';
+import { inferContentTypeFromLnk, resolveContentFromLnk } from '../utils/publish-helpers';
 
 const CONTENT_UID = {
   article: 'plugin::zhao-studio.article-draft',
@@ -75,13 +76,29 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     if (!record) {
       throw new Error(`publish-record 不存在: ${data.publishRecordId}`);
     }
-    const contentType: ContentType = data.contentType || inferContentTypeFromRecord(record);
-    const contentId = String(
+
+    // contentType 推断：优先 job payload → populate 关系 → lnk 表直接查
+    let contentType: ContentType | null = data.contentType || null;
+    if (!contentType) {
+      try { contentType = inferContentTypeFromRecord(record); } catch {
+        contentType = await inferContentTypeFromLnk(strapi, record.id);
+      }
+    }
+    if (!contentType) {
+      throw new Error(`publish-record ${data.publishRecordId} 无法推断 contentType（populate 和 lnk 表都无关联）`);
+    }
+
+    // contentId 解析：优先 populate → articleId payload → lnk 表直接查
+    let contentId: string = String(
       (record[contentType]?.documentId) || (record[contentType]) ||
       (contentType === 'article' ? data.articleId : undefined) || ''
     );
     if (!contentId) {
-      throw new Error(`publish-record 未关联 ${contentType} 内容`);
+      const lnkRef = await resolveContentFromLnk(strapi, contentType, record.id);
+      contentId = lnkRef?.contentDocumentId || '';
+    }
+    if (!contentId) {
+      throw new Error(`publish-record ${data.publishRecordId} 未关联 ${contentType} 内容（populate 和 lnk 表都查不到）`);
     }
 
     // 幂等保护：同 content + account 在 24h 内已有 pending/queued/validating record → 拒绝
@@ -221,15 +238,26 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     const { accountId, publishRecordId } = data;
     strapi.log.info(`[zhao-studio] runStage ENTER stage=${stage} record=${publishRecordId} account=${accountId} contentType=${data.contentType}`);
 
-    // 1. 查 publish-record → 推断 contentType
+    // 1. 查 publish-record → 推断 contentType（带 DB lnk fallback）
     const record: any = await strapi
       .documents('plugin::zhao-studio.publish-record')
       .findOne({ documentId: publishRecordId, populate: ['video', 'gallery', 'article', 'account'] });
     if (!record) throw new Error(`publish-record 不存在: ${publishRecordId}`);
 
-    const contentType: ContentType = data.contentType || inferContentTypeFromRecord(record);
-    const contentId = String(record[contentType]?.documentId || record[contentType] || '');
-    if (!contentId) throw new Error(`publish-record 未关联 ${contentType} 内容 (record=${publishRecordId})`);
+    let contentType: ContentType | null = data.contentType || null;
+    if (!contentType) {
+      try { contentType = inferContentTypeFromRecord(record); } catch {
+        contentType = await inferContentTypeFromLnk(strapi, record.id);
+      }
+    }
+    if (!contentType) throw new Error(`publish-record ${publishRecordId} 无法推断 contentType（populate 和 lnk 表都无关联）`);
+
+    let contentId: string = String(record[contentType]?.documentId || record[contentType] || '');
+    if (!contentId) {
+      const lnkRef = await resolveContentFromLnk(strapi, contentType, record.id);
+      contentId = lnkRef?.contentDocumentId || '';
+    }
+    if (!contentId) throw new Error(`publish-record ${publishRecordId} 未关联 ${contentType} 内容（populate 和 lnk 表都查不到）`);
 
     // 2. 查对应内容
     const content = await strapi.documents(CONTENT_UID[contentType]).findOne({ documentId: contentId });
