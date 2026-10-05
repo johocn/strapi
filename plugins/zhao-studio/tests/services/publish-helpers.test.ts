@@ -8,7 +8,7 @@ import {
   resolveContentFromLnk,
   CONTENT_UID,
   contentLnkCol,
-  type ContentType,
+  ContentType,
 } from '../../server/src/utils/publish-helpers';
 
 function makeMockStrapi(resultsList: any[][] = []) {

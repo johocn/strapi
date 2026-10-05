@@ -10,13 +10,13 @@ export function detectContentType(content: any): 'article' | 'video' | 'gallery'
 }
 
 const PLATFORM_CAPS: Record<string, Record<string, boolean>> = {
-  douyin: { article: true, video: true, gallery: true },
-  xiaohongshu: { article: true, video: true, gallery: true },
-  wechat: { article: true, video: true, gallery: true },
-  toutiao: { article: true, video: true, gallery: true },
-  bilibili: { article: false, video: true, gallery: false },
-  internal: { article: true, video: true, gallery: true },
-  custom: { article: true, video: true, gallery: true },
+  toutiao:     { article: true,  video: false, gallery: false }, // RPA 框架 input 是图文设计
+  xiaohongshu: { article: true,  video: false, gallery: false }, // 同上
+  douyin:      { article: true,  video: false, gallery: false }, // OAuth server API 只有 article；video/gallery 走 h5_share 手动扫码
+  bilibili:    { article: true,  video: true,  gallery: false }, // 本次补 RPA driver：专栏 + 视频投稿
+  wechat:      { article: true,  video: false, gallery: false }, // freepublish 只支持 article
+  internal:    { article: true,  video: true,  gallery: true },  // 直接更新 status
+  custom:      { article: true,  video: true,  gallery: true },  // 自定义接口透传
 }
 
 export function validateContentForPlatform(
