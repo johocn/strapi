@@ -88,9 +88,21 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     const inFlight = await strapi.documents('plugin::zhao-studio.publish-record').findMany({
       filters: buildIdempotentFilter(contentType, contentId, data.accountId),
       limit: 1,
+      sort: { createdAt: 'desc' },
     });
     if (inFlight.length > 0) {
-      throw new Error(`该${contentType}在24小时内已在此账号上有进行中的发布任务 (record=${inFlight[0].documentId})`);
+      const existing = inFlight[0];
+      const ageMin = (Date.now() - new Date(existing.createdAt).getTime()) / 60000;
+      if (ageMin > 30) {
+        // 僵尸 record（超过 30min 还卡在进行中）→ 强制标记 failed，放行新发布
+        strapi.log.warn(`[zhao-studio] 发现超时僵尸 record=${existing.documentId} (${ageMin.toFixed(0)}min), 标记 failed 放行`);
+        await strapi.documents('plugin::zhao-studio.publish-record').update({
+          documentId: existing.documentId,
+          data: { status: 'failed', error: '超时自动清理（超过30分钟未完成）' } as any,
+        }).catch(() => {});
+      } else {
+        throw new Error(`该${contentType}在24小时内已在此账号上有进行中的发布任务 (record=${existing.documentId})`);
+      }
     }
 
     // 把 contentType 回填进 job payload，让 worker 无需再查 record

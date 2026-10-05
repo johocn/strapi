@@ -23545,10 +23545,22 @@ const publishQueue = ({ strapi: strapi2 }) => ({
     }
     const inFlight = await strapi2.documents("plugin::zhao-studio.publish-record").findMany({
       filters: buildIdempotentFilter(contentType, contentId, data2.accountId),
-      limit: 1
+      limit: 1,
+      sort: { createdAt: "desc" }
     });
     if (inFlight.length > 0) {
-      throw new Error(`该${contentType}在24小时内已在此账号上有进行中的发布任务 (record=${inFlight[0].documentId})`);
+      const existing = inFlight[0];
+      const ageMin = (Date.now() - new Date(existing.createdAt).getTime()) / 6e4;
+      if (ageMin > 30) {
+        strapi2.log.warn(`[zhao-studio] 发现超时僵尸 record=${existing.documentId} (${ageMin.toFixed(0)}min), 标记 failed 放行`);
+        await strapi2.documents("plugin::zhao-studio.publish-record").update({
+          documentId: existing.documentId,
+          data: { status: "failed", error: "超时自动清理（超过30分钟未完成）" }
+        }).catch(() => {
+        });
+      } else {
+        throw new Error(`该${contentType}在24小时内已在此账号上有进行中的发布任务 (record=${existing.documentId})`);
+      }
     }
     const jobData = { ...data2, contentType };
     const job = await queue$1.add("publish-job", jobData, {
