@@ -35,10 +35,10 @@ describe('Publish Service', () => {
   });
 });
 
-describe('Publish Service - 公众号仅建草稿', () => {
+describe('Publish Service - sync fallback（队列不可用时降级）', () => {
   const article = { documentId: 'a1', status: 'ready', title: '标题', content: '<p>正文</p>' };
 
-  function setup(publishResult: any) {
+  function setup(syncResult: any) {
     const mockStrapi = createMockStrapi();
     const draftDoc = {
       findOne: jest.fn().mockResolvedValue(article),
@@ -49,7 +49,10 @@ describe('Publish Service - 公众号仅建草稿', () => {
         { documentId: 'acc-1', name: '优佳购物', platform: { type: 'wechat' } },
       ]),
     };
-    const recordDoc = { create: jest.fn().mockResolvedValue({ documentId: 'rec-1' }) };
+    const recordDoc = {
+      create: jest.fn().mockResolvedValue({ documentId: 'rec-1' }),
+      update: jest.fn().mockResolvedValue({}),
+    };
     mockStrapi.documents.mockImplementation((uid: string) => {
       if (uid === 'plugin::zhao-studio.article-draft') return draftDoc;
       if (uid === 'plugin::zhao-studio.publish-account') return accountDoc;
@@ -57,45 +60,84 @@ describe('Publish Service - 公众号仅建草稿', () => {
     });
     const channelAdapter = {
       adaptContent: jest.fn(async (a: any) => a),
-      publish: jest.fn().mockResolvedValue(publishResult),
+      publish: jest.fn().mockResolvedValue(syncResult),
     };
     mockStrapi.plugin.mockReturnValue({
-      service: jest.fn().mockReturnValue(channelAdapter),
+      service: jest.fn().mockImplementation((name: string) => {
+        if (name === 'channel-adapter') return channelAdapter;
+        // publish-queue 返回不带 enqueuePublish 的对象 → 触发 sync fallback
+        return {};
+      }),
       config: jest.fn(),
     });
-    return { mockStrapi, draftDoc, recordDoc, service: publishFactory({ strapi: mockStrapi }) };
+    return { mockStrapi, draftDoc, recordDoc, channelAdapter, service: publishFactory({ strapi: mockStrapi }) };
   }
 
-  test('仅建草稿（createdDraft）时文章状态不置为 published，保持 ready', async () => {
-    const { draftDoc, recordDoc, service } = setup({
+  test('sync fallback 成功时 record.update status=success + externalId 回写', async () => {
+    const { recordDoc, channelAdapter, service } = setup({
       success: true,
-      externalId: 'DRAFT_1',
-      draftId: 'DRAFT_1',
-      createdDraft: true,
+      externalId: 'pub-1',
+      publishId: 'PUB_1',
+      contentType: 'article',
     });
 
     const results = await service.publishArticle('a1', ['acc-1']);
 
-    expect(results[0].createdDraft).toBe(true);
-    expect(draftDoc.update).not.toHaveBeenCalled();
-    expect(recordDoc.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({
-        externalId: 'DRAFT_1',
-        status: 'success',
-        error: expect.stringContaining('"phase":"draft"'),
+    // sync fallback result 没有 createdDraft — 它只做 channelAdapter.publish，
+    // 不处理公众号 freepublish 的 createdDraft 中间状态
+    expect(results[0].success).toBe(true);
+    expect(results[0].externalId).toBe('pub-1');
+
+    // record.update 被调用来更新 publish-record 状态
+    expect(recordDoc.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        documentId: 'rec-1',
+        data: expect.objectContaining({ status: 'success', externalId: 'pub-1', finishedAt: expect.any(Date) }),
       }),
-    });
+    );
+    // channelAdapter 两个方法都被调了（sync fallback 路径）
+    expect(channelAdapter.adaptContent).toHaveBeenCalled();
+    expect(channelAdapter.publish).toHaveBeenCalled();
   });
 
-  test('真正发布成功时文章状态置为 published', async () => {
-    const { draftDoc, service } = setup({ success: true, externalId: 'pub-1' });
-
-    const results = await service.publishArticle('a1', ['acc-1']);
-
-    expect(results[0].createdDraft).toBe(false);
-    expect(draftDoc.update).toHaveBeenCalledWith({
-      documentId: 'a1',
-      data: expect.objectContaining({ status: 'published' }),
+  test('sync fallback 失败（channelAdapter.publish 抛错）→ record.update status=failed', async () => {
+    const { recordDoc, service } = setup({});
+    // 让 publish 抛错
+    require('../../server/src/services/publish'); // 确保 module 加载
+    // 直接 mock channelAdapter.publish 在调用时抛
+    const factory = require('../../server/src/services/publish').default;
+    const mockStrapi = createMockStrapi();
+    const draftDoc = { findOne: jest.fn().mockResolvedValue(article), update: jest.fn().mockResolvedValue({}) };
+    const accountDoc = { findMany: jest.fn().mockResolvedValue([{ documentId: 'acc-1', platform: { type: 'wechat' } }]) };
+    const recordDoc2 = { create: jest.fn().mockResolvedValue({ documentId: 'rec-2' }), update: jest.fn().mockResolvedValue({}) };
+    mockStrapi.documents.mockImplementation((uid: string) => {
+      if (uid === 'plugin::zhao-studio.article-draft') return draftDoc;
+      if (uid === 'plugin::zhao-studio.publish-account') return accountDoc;
+      return recordDoc2;
     });
+    const channelAdapter = {
+      adaptContent: jest.fn(async (a: any) => a),
+      publish: jest.fn().mockRejectedValue(new Error('RPA driver timeout')),
+    };
+    mockStrapi.plugin.mockReturnValue({
+      service: jest.fn().mockImplementation((name: string) => {
+        if (name === 'channel-adapter') return channelAdapter;
+        return {}; // publish-queue 空对象触发 sync fallback
+      }),
+      config: jest.fn(),
+    });
+
+    const svc = factory({ strapi: mockStrapi });
+    const results = await svc.publishArticle('a1', ['acc-1']);
+
+    expect(results[0].success).toBe(false);
+    expect(results[0].error).toBe('RPA driver timeout');
+    // record.update 写 failed
+    expect(recordDoc2.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        documentId: 'rec-2',
+        data: expect.objectContaining({ status: 'failed', error: 'RPA driver timeout', finishedAt: expect.any(Date) }),
+      }),
+    );
   });
 });
