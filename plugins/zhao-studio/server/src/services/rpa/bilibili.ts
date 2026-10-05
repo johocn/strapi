@@ -1,15 +1,22 @@
 // server/src/services/rpa/bilibili.ts
 // bilibili RPA driver — 图文专栏 + 视频投稿
-// ⚠️ 选择器需真实浏览器环境实测，当前是通用占位结构 + TODO 标记
+// ⚠️ 选择器未在真实浏览器环境实测，当前阶段标记为不可用，调用直接 throw。
+//    真机调试入口：server 装 playwright + chromium 后，用 rpa-client.openLoginSession 扫码登录，
+//    对照 member.bilibili.com 真实 DOM 填写 SELECTORS，然后去掉下方 USE_REAL_DRIVER = false 守卫。
 
 import type { RpaDriver, RpaPublishInput, RpaPublishOutput } from './types';
+
+// TODO: 真机实测后改为 true
+const USE_REAL_DRIVER = false;
 
 export const bilibili: RpaDriver = {
   platform: 'bilibili',
 
   async publish(page: any, input: RpaPublishInput, workDir: string): Promise<RpaPublishOutput> {
+    if (!USE_REAL_DRIVER) {
+      throw new Error('bilibili RPA 驱动尚未在真实浏览器验证（选择器 TODO），暂不可用');
+    }
     const hasVideo = !!input.videoUrl;
-
     if (hasVideo) {
       return await this.publishVideo!(page, input, workDir);
     } else {
@@ -17,66 +24,12 @@ export const bilibili: RpaDriver = {
     }
   },
 
-  // ─── 视频投稿 ───
-
-  async publishVideo(page: any, input: RpaPublishInput, _workDir: string): Promise<RpaPublishOutput> {
-    // 当前页已在 RPA_PLATFORMS.publishUrl（member.bilibili.com 视频上传页）
-    // TODO: 选择器需实测 bilibili 创作中心视频上传 DOM
-
-    // 1. 等上传区域渲染
-    // const uploadInput = page.locator('input[type="file"]');
-    // await uploadInput.setInputFiles(videoLocalPath);
-    // await page.waitForSelector('.upload-progress:has-text("100%")', { timeout: 120000 });
-
-    // 2. 填标题
-    // await page.fill('input[placeholder="填写作品标题"]', input.title);
-
-    // 3. 填简介（可选）
-    // if (input.content) await page.fill('textarea[placeholder="填写作品简介"]', input.content);
-
-    // 4. 点发布
-    // await page.click('button:has-text("发布")');
-    // await page.waitForURL('**/video/**', { timeout: 30000 });
-
-    // 5. 取 bvid
-    // const url = page.url();
-    // const match = url.match(/bvid=([^&/]+)/) || url.match(/\/BV[\w]+/);
-
-    return {
-      success: true,
-      externalId: 'bilibili-bvid-TODO-selector-needed',
-      url: '',
-    };
+  async publishVideo(_page: any, _input: RpaPublishInput, _workDir: string): Promise<RpaPublishOutput> {
+    throw new Error('bilibili RPA publishVideo 选择器待实测');
   },
 
-  // ─── 图文专栏 ───
-
-  async publishArticle(page: any, input: RpaPublishInput): Promise<RpaPublishOutput> {
-    // bilibili RPA_PLATFORMS.publishUrl 默认是视频上传页
-    // 图文专栏入口：从创作中心点"专栏"tab → https://member.bilibili.com/platform/article/frame.html
-    // TODO: 实际导航需实测
-
-    // await page.goto('https://member.bilibili.com/platform/article/frame.html', { waitUntil: 'domcontentloaded', timeout: 30000 });
-
-    // 1. 填标题
-    // await page.fill('input.article-title-input', input.title);
-
-    // 2. 填正文（markdown 或富文本）
-    // await page.fill('.editor-content', input.content);
-
-    // 3. 点发布
-    // await page.click('button:has-text("发布")');
-    // await page.waitForSelector('.article-publish-success', { timeout: 30000 });
-
-    // 4. 取 articleId
-    // const url = page.url();
-    // const match = url.match(/\/(\d{10,})\//);
-
-    return {
-      success: true,
-      externalId: 'bilibili-article-id-TODO-selector-needed',
-      url: '',
-    };
+  async publishArticle(_page: any, _input: RpaPublishInput, _workDir?: string): Promise<RpaPublishOutput> {
+    throw new Error('bilibili RPA publishArticle 选择器待实测');
   },
 };
 

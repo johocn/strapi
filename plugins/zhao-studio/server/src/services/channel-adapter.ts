@@ -393,14 +393,50 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async checkExternalStatus(record: any): Promise<{ deleted: boolean; status?: string }> {
     const account = await strapi
       .documents('plugin::zhao-studio.publish-account')
-      .findOne({ documentId: record.account?.documentId || record.account });
+      .findOne({ documentId: record.account?.documentId || record.account, populate: { platform: true } });
 
-    if (!account || account.platform?.type === 'internal') {
+    if (!account) return { deleted: false };
+
+    const platformType = account.platform?.type;
+    if (!platformType || platformType === 'internal' || platformType === 'custom') {
       return { deleted: false };
     }
 
-    // 简化实现：默认返回未删除状态
-    // 实际需要调用各平台API检查文章状态
-    return { deleted: false, status: 'published' };
+    // ============ wechat: freepublish/getarticle 按 article_id 查 ============
+    if (platformType === 'wechat' && record.externalId) {
+      try {
+        const ssoWx = strapi.plugin('zhao-sso')?.service('sso-wechat') as any;
+        if (!ssoWx?.getAccessToken) {
+          strapi.log.warn('[zhao-studio] checkExternalStatus wechat: zhao-sso 不可用，跳过');
+          return { deleted: false };
+        }
+        const wxToken = await ssoWx.getAccessToken('official_account');
+        if (!wxToken) return { deleted: false };
+
+        const resp = await axios.get(
+          `https://api.weixin.qq.com/cgi-bin/freepublish/getarticle`,
+          { params: { access_token: wxToken, article_id: record.externalId }, timeout: 15000 }
+        );
+        const data = resp.data;
+        // errcode 40007 = invalid article_id（文章不存在/被删）
+        if (data.errcode === 40007) {
+          return { deleted: true, status: 'wechat_article_deleted' };
+        }
+        if (data.errcode && data.errcode !== 0) {
+          strapi.log.warn(`[zhao-studio] checkExternalStatus wechat: errcode=${data.errcode} errmsg=${data.errmsg}`);
+          return { deleted: false };
+        }
+        // 返回正常 article JSON → 未删除
+        return { deleted: false, status: 'published' };
+      } catch (err: any) {
+        strapi.log.warn(`[zhao-studio] checkExternalStatus wechat: ${err.message}`);
+        return { deleted: false };
+      }
+    }
+
+    // ============ RPA 平台 + douyin: 无可用定期复查 API ============
+    // 头条/小红书/bilibili 需登录态+页面 DOM 解析，RPA 成本太高暂不实现
+    // douyin 是 H5 share schema，没有外部可查状态
+    return { deleted: false };
   },
 });

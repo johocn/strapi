@@ -21508,11 +21508,40 @@ const channelAdapter = ({ strapi: strapi2 }) => ({
     };
   },
   async checkExternalStatus(record) {
-    const account = await strapi2.documents("plugin::zhao-studio.publish-account").findOne({ documentId: record.account?.documentId || record.account });
-    if (!account || account.platform?.type === "internal") {
+    const account = await strapi2.documents("plugin::zhao-studio.publish-account").findOne({ documentId: record.account?.documentId || record.account, populate: { platform: true } });
+    if (!account) return { deleted: false };
+    const platformType = account.platform?.type;
+    if (!platformType || platformType === "internal" || platformType === "custom") {
       return { deleted: false };
     }
-    return { deleted: false, status: "published" };
+    if (platformType === "wechat" && record.externalId) {
+      try {
+        const ssoWx = strapi2.plugin("zhao-sso")?.service("sso-wechat");
+        if (!ssoWx?.getAccessToken) {
+          strapi2.log.warn("[zhao-studio] checkExternalStatus wechat: zhao-sso 不可用，跳过");
+          return { deleted: false };
+        }
+        const wxToken = await ssoWx.getAccessToken("official_account");
+        if (!wxToken) return { deleted: false };
+        const resp = await axios.get(
+          `https://api.weixin.qq.com/cgi-bin/freepublish/getarticle`,
+          { params: { access_token: wxToken, article_id: record.externalId }, timeout: 15e3 }
+        );
+        const data2 = resp.data;
+        if (data2.errcode === 40007) {
+          return { deleted: true, status: "wechat_article_deleted" };
+        }
+        if (data2.errcode && data2.errcode !== 0) {
+          strapi2.log.warn(`[zhao-studio] checkExternalStatus wechat: errcode=${data2.errcode} errmsg=${data2.errmsg}`);
+          return { deleted: false };
+        }
+        return { deleted: false, status: "published" };
+      } catch (err) {
+        strapi2.log.warn(`[zhao-studio] checkExternalStatus wechat: ${err.message}`);
+        return { deleted: false };
+      }
+    }
+    return { deleted: false };
   }
 });
 const internalApi = ({ strapi: strapi2 }) => ({
@@ -24179,28 +24208,15 @@ const driver = {
 const bilibili = {
   platform: "bilibili",
   async publish(page, input, workDir) {
-    const hasVideo = !!input.videoUrl;
-    if (hasVideo) {
-      return await this.publishVideo(page, input, workDir);
-    } else {
-      return await this.publishArticle(page, input);
+    {
+      throw new Error("bilibili RPA 驱动尚未在真实浏览器验证（选择器 TODO），暂不可用");
     }
   },
-  // ─── 视频投稿 ───
-  async publishVideo(page, input, _workDir) {
-    return {
-      success: true,
-      externalId: "bilibili-bvid-TODO-selector-needed",
-      url: ""
-    };
+  async publishVideo(_page, _input, _workDir) {
+    throw new Error("bilibili RPA publishVideo 选择器待实测");
   },
-  // ─── 图文专栏 ───
-  async publishArticle(page, input) {
-    return {
-      success: true,
-      externalId: "bilibili-article-id-TODO-selector-needed",
-      url: ""
-    };
+  async publishArticle(_page, _input, _workDir) {
+    throw new Error("bilibili RPA publishArticle 选择器待实测");
   }
 };
 const DRIVERS = { xiaohongshu: driver$1, toutiao: driver, bilibili };
