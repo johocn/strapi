@@ -121,6 +121,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       removeOnComplete: 100,
       removeOnFail: 50,
     });
+    strapi.log.info(`[zhao-studio] enqueuePublish OK queue=studio-publish jobId=${job.id} record=${data.publishRecordId}`);
 
     await strapi.documents('plugin::zhao-studio.publish-record').update({
       documentId: data.publishRecordId,
@@ -137,6 +138,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
     const processor = async (job: any) => {
       const data: PublishJobData = job.data;
+      strapi.log.info(`[zhao-studio] Worker processing job name=${job.name} id=${job.id} record=${data.publishRecordId} contentType=${data.contentType}`);
       const stages: Stage[] = [
         STAGES.VALIDATE,
         STAGES.ENSURE_TOKEN,
