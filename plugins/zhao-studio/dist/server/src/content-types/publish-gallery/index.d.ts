@@ -49,6 +49,12 @@ declare const _default: {
                 target: string;
                 mappedBy: string;
             };
+            publishSchedules: {
+                type: string;
+                relation: string;
+                target: string;
+                mappedBy: string;
+            };
             scope: {
                 type: string;
                 enum: string[];

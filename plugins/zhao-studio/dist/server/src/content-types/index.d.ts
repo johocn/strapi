@@ -66,6 +66,12 @@ declare const _default: {
                     target: string;
                     mappedBy: string;
                 };
+                publishSchedules: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    mappedBy: string;
+                };
                 browserLogs: {
                     type: string;
                     relation: string;
@@ -517,16 +523,19 @@ declare const _default: {
                     type: string;
                     relation: string;
                     target: string;
+                    inversedBy: string;
                 };
                 video: {
                     type: string;
                     relation: string;
                     target: string;
+                    inversedBy: string;
                 };
                 gallery: {
                     type: string;
                     relation: string;
                     target: string;
+                    inversedBy: string;
                 };
                 accountIds: {
                     type: string;
@@ -613,6 +622,12 @@ declare const _default: {
                     target: string;
                     mappedBy: string;
                 };
+                publishSchedules: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    mappedBy: string;
+                };
                 scope: {
                     type: string;
                     enum: string[];
@@ -679,6 +694,12 @@ declare const _default: {
                     default: string;
                 };
                 publishRecords: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                    mappedBy: string;
+                };
+                publishSchedules: {
                     type: string;
                     relation: string;
                     target: string;

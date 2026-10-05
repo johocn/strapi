@@ -64,6 +64,12 @@ declare const _default: {
       "target": "plugin::zhao-studio.publish-record",
       "mappedBy": "article"
     },
+    "publishSchedules": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-studio.publish-schedule",
+      "mappedBy": "article"
+    },
     "browserLogs": {
       "type": "relation",
       "relation": "oneToMany",

@@ -27,16 +27,19 @@ declare const _default: {
                 type: string;
                 relation: string;
                 target: string;
+                inversedBy: string;
             };
             video: {
                 type: string;
                 relation: string;
                 target: string;
+                inversedBy: string;
             };
             gallery: {
                 type: string;
                 relation: string;
                 target: string;
+                inversedBy: string;
             };
             accountIds: {
                 type: string;

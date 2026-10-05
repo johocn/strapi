@@ -52,54 +52,49 @@ const os__namespace = /* @__PURE__ */ _interopNamespace(os);
 const fs__namespace = /* @__PURE__ */ _interopNamespace(fs);
 const path__namespace = /* @__PURE__ */ _interopNamespace(path);
 const actions = [
-  {
-    section: "plugins",
-    displayName: "Read",
-    uid: "read",
-    pluginName: "zhao-studio"
-  },
-  {
-    section: "plugins",
-    displayName: "Create",
-    uid: "create",
-    pluginName: "zhao-studio"
-  },
-  {
-    section: "plugins",
-    displayName: "Update",
-    uid: "update",
-    pluginName: "zhao-studio"
-  },
-  {
-    section: "plugins",
-    displayName: "Delete",
-    uid: "delete",
-    pluginName: "zhao-studio"
-  },
-  {
-    section: "plugins",
-    displayName: "Ad Zone Manage",
-    uid: "ad-zone.manage",
-    pluginName: "zhao-studio"
-  },
-  {
-    section: "plugins",
-    displayName: "Ad Content Manage",
-    uid: "ad-content.manage",
-    pluginName: "zhao-studio"
-  },
-  {
-    section: "plugins",
-    displayName: "Poster Template Manage",
-    uid: "poster-template.manage",
-    pluginName: "zhao-studio"
-  },
-  {
-    section: "plugins",
-    displayName: "Poster Element Manage",
-    uid: "poster-element.manage",
-    pluginName: "zhao-studio"
-  }
+  // === 基础 CRUD ===
+  { section: "plugins", displayName: "Read", uid: "read", pluginName: "zhao-studio" },
+  { section: "plugins", displayName: "Create", uid: "create", pluginName: "zhao-studio" },
+  { section: "plugins", displayName: "Update", uid: "update", pluginName: "zhao-studio" },
+  { section: "plugins", displayName: "Delete", uid: "delete", pluginName: "zhao-studio" },
+  // === 采集模块 ===
+  { section: "plugins", displayName: "Collect Source Manage", uid: "collect-source.manage", pluginName: "zhao-studio" },
+  { section: "plugins", displayName: "Collect Task Manage", uid: "collect-task.manage", pluginName: "zhao-studio" },
+  // === 发布模块 ===
+  { section: "plugins", displayName: "Publish Platform Manage", uid: "publish-platform.manage", pluginName: "zhao-studio" },
+  { section: "plugins", displayName: "Publish Account Manage", uid: "publish-account.manage", pluginName: "zhao-studio" },
+  { section: "plugins", displayName: "Publish Video Manage", uid: "publish-video.manage", pluginName: "zhao-studio" },
+  { section: "plugins", displayName: "Publish Gallery Manage", uid: "publish-gallery.manage", pluginName: "zhao-studio" },
+  { section: "plugins", displayName: "Publish Record Manage", uid: "publish-record.manage", pluginName: "zhao-studio" },
+  { section: "plugins", displayName: "Publish Action", uid: "publish.publish", pluginName: "zhao-studio" },
+  // === 文章草稿 ===
+  { section: "plugins", displayName: "Article Draft Manage", uid: "article-draft.manage", pluginName: "zhao-studio" },
+  // === 知识库 ===
+  { section: "plugins", displayName: "Knowledge Index Manage", uid: "knowledge-index.manage", pluginName: "zhao-studio" },
+  // === 统计 ===
+  { section: "plugins", displayName: "Stat Summary View", uid: "stat-summary.view", pluginName: "zhao-studio" },
+  { section: "plugins", displayName: "Browser Log View", uid: "browser-log.view", pluginName: "zhao-studio" },
+  // === AI ===
+  { section: "plugins", displayName: "AI Manage", uid: "ai.manage", pluginName: "zhao-studio" },
+  // === 广告 ===
+  { section: "plugins", displayName: "Ad Zone Manage", uid: "ad-zone.manage", pluginName: "zhao-studio" },
+  { section: "plugins", displayName: "Ad Content Manage", uid: "ad-content.manage", pluginName: "zhao-studio" },
+  { section: "plugins", displayName: "Ad Slot Manage", uid: "ad-slot.manage", pluginName: "zhao-studio" },
+  // === 海报 ===
+  { section: "plugins", displayName: "Poster Template Manage", uid: "poster-template.manage", pluginName: "zhao-studio" },
+  { section: "plugins", displayName: "Poster Element Manage", uid: "poster-element.manage", pluginName: "zhao-studio" },
+  // === 同步事件 ===
+  { section: "plugins", displayName: "Sync Event Manage", uid: "sync-event.manage", pluginName: "zhao-studio" },
+  { section: "plugins", displayName: "Sync Event Resolve", uid: "sync-event.resolve", pluginName: "zhao-studio" },
+  // === 推广渠道 ===
+  { section: "plugins", displayName: "Promo Channel Manage", uid: "promo-channel.manage", pluginName: "zhao-studio" },
+  { section: "plugins", displayName: "Promo Campaign Manage", uid: "promo-campaign.manage", pluginName: "zhao-studio" },
+  // === A/B 测试 ===
+  { section: "plugins", displayName: "AB Experiment Manage", uid: "ab-experiment.manage", pluginName: "zhao-studio" },
+  { section: "plugins", displayName: "AB Experiment Start", uid: "ab-experiment.start", pluginName: "zhao-studio" },
+  { section: "plugins", displayName: "AB Experiment Stop", uid: "ab-experiment.stop", pluginName: "zhao-studio" },
+  // === 渠道报表 ===
+  { section: "plugins", displayName: "Channel Report View", uid: "channel-report.view", pluginName: "zhao-studio" }
 ];
 const permissions = { actions };
 const register = ({ strapi: strapi2 }) => {
@@ -582,36 +577,36 @@ const publish$1 = ({ strapi: strapi2 }) => ({
   },
   async publishArticle(ctx) {
     const { articleId } = ctx.params;
-    const { accountIds: accountIds2 } = ctx.request.body;
+    const { accountIds } = ctx.request.body;
     const publishService = strapi2.plugin("zhao-studio").service("publish");
-    const results = await publishService.publishArticle(articleId, accountIds2);
+    const results = await publishService.publishArticle(articleId, accountIds);
     ctx.body = { data: results };
   },
   async publishVideo(ctx) {
     const { videoId } = ctx.params;
-    const { accountIds: accountIds2 } = ctx.request.body;
+    const { accountIds } = ctx.request.body;
     const publishService = strapi2.plugin("zhao-studio").service("publish");
-    const results = await publishService.publishContent({ type: "video", contentId: videoId, accountIds: accountIds2 });
+    const results = await publishService.publishContent({ type: "video", contentId: videoId, accountIds });
     ctx.body = { data: results };
   },
   async publishGallery(ctx) {
     const { galleryId } = ctx.params;
-    const { accountIds: accountIds2 } = ctx.request.body;
+    const { accountIds } = ctx.request.body;
     const publishService = strapi2.plugin("zhao-studio").service("publish");
-    const results = await publishService.publishContent({ type: "gallery", contentId: galleryId, accountIds: accountIds2 });
+    const results = await publishService.publishContent({ type: "gallery", contentId: galleryId, accountIds });
     ctx.body = { data: results };
   },
   async publishContent(ctx) {
-    const { type, contentId, accountIds: accountIds2 } = ctx.request.body;
+    const { type, contentId, accountIds } = ctx.request.body;
     if (!["article", "video", "gallery"].includes(type)) {
       return ctx.throw(400, `不支持的 type: ${type}`);
     }
     if (!contentId) return ctx.throw(400, "contentId 必填");
-    if (!Array.isArray(accountIds2) || accountIds2.length === 0) {
+    if (!Array.isArray(accountIds) || accountIds.length === 0) {
       return ctx.throw(400, "accountIds 必须是非空数组");
     }
     const publishService = strapi2.plugin("zhao-studio").service("publish");
-    const results = await publishService.publishContent({ type, contentId, accountIds: accountIds2 });
+    const results = await publishService.publishContent({ type, contentId, accountIds });
     ctx.body = { data: results };
   },
   async listRecords(ctx) {
@@ -619,11 +614,22 @@ const publish$1 = ({ strapi: strapi2 }) => ({
     const result = await publishService.listRecords(ctx.query);
     ctx.body = { data: result.records, meta: { pagination: result.pagination } };
   },
-  async retryPublish(ctx) {
+  async getRecordDetail(ctx) {
     const { recordId } = ctx.params;
     const publishService = strapi2.plugin("zhao-studio").service("publish");
-    const result = await publishService.retryPublish(recordId);
-    ctx.body = { data: result };
+    const record = await publishService.getRecordDetail(recordId);
+    if (!record) return ctx.throw(404, "发布记录不存在");
+    ctx.body = { data: record };
+  },
+  async retryPublish(ctx) {
+    const { recordId } = ctx.params;
+    try {
+      const publishService = strapi2.plugin("zhao-studio").service("publish");
+      const result = await publishService.retryPublish(recordId);
+      ctx.body = { data: result };
+    } catch (e) {
+      ctx.throw(400, e.message);
+    }
   },
   async syncStatus(ctx) {
     const { articleId } = ctx.params;
@@ -649,7 +655,7 @@ const publish$1 = ({ strapi: strapi2 }) => ({
   // ============ P2 定时发布 ============
   async createSchedule(ctx) {
     try {
-      const { articleId, videoId, galleryId, accountIds: accountIds2, scheduledAt, name } = ctx.request.body;
+      const { articleId, videoId, galleryId, accountIds, scheduledAt, name } = ctx.request.body;
       if (!scheduledAt) {
         ctx.throw(400, "scheduledAt 必填");
         return;
@@ -668,7 +674,7 @@ const publish$1 = ({ strapi: strapi2 }) => ({
         return;
       }
       const publishService = strapi2.plugin("zhao-studio").service("publish");
-      const result = await publishService.createSchedule({ articleId, videoId, galleryId, accountIds: accountIds2, scheduledAt, name });
+      const result = await publishService.createSchedule({ articleId, videoId, galleryId, accountIds, scheduledAt, name });
       ctx.body = { data: result };
     } catch (e) {
       ctx.throw(400, e.message);
@@ -677,8 +683,8 @@ const publish$1 = ({ strapi: strapi2 }) => ({
   async listSchedules(ctx) {
     try {
       const publishService = strapi2.plugin("zhao-studio").service("publish");
-      const schedules = await publishService.listSchedules();
-      ctx.body = { data: schedules };
+      const result = await publishService.listSchedules(ctx.query);
+      ctx.body = { data: result.list, meta: { pagination: result.pagination } };
     } catch (e) {
       ctx.throw(500, e.message);
     }
@@ -686,7 +692,7 @@ const publish$1 = ({ strapi: strapi2 }) => ({
   async findOneSchedule(ctx) {
     try {
       const publishService = strapi2.plugin("zhao-studio").service("publish");
-      const schedule = await publishService.findOneSchedule(ctx.params.id);
+      const schedule = await publishService.findOneSchedule(ctx.params.id, ctx.query.populate);
       if (!schedule) return ctx.throw(404, "定时任务不存在");
       ctx.body = { data: schedule };
     } catch (e) {
@@ -715,9 +721,9 @@ const publish$1 = ({ strapi: strapi2 }) => ({
   },
   async previewPublish(ctx) {
     try {
-      const { articleId, accountIds: accountIds2 } = ctx.request.body;
+      const { articleId, accountIds } = ctx.request.body;
       const publishService = strapi2.plugin("zhao-studio").service("publish");
-      const result = await publishService.previewPublish(articleId, accountIds2);
+      const result = await publishService.previewPublish(articleId, accountIds);
       ctx.body = { data: result };
     } catch (e) {
       if (e.message?.includes("不存在")) return ctx.throw(404, e.message);
@@ -1803,6 +1809,7 @@ const contentApiRoutes = () => ({
     adminRoute("PUT", "/publish-galleries/:id", "publish-gallery.update", "zhao-studio.publish-gallery.manage"),
     adminRoute("DELETE", "/publish-galleries/:id", "publish-gallery.delete", "zhao-studio.publish-gallery.manage"),
     adminRoute("GET", "/records", "publish.listRecords", "zhao-studio.publish-record.manage"),
+    adminRoute("GET", "/records/:recordId", "publish.getRecordDetail", "zhao-studio.publish-record.manage"),
     adminRoute("POST", "/records/:recordId/retry", "publish.retryPublish", "zhao-studio.publish-record.manage"),
     adminRoute("POST", "/articles/:articleId/sync", "publish.syncStatus", "zhao-studio.publish-record.manage"),
     // ============ 定时发布（P2 新增） ============
@@ -20331,12 +20338,63 @@ const CONTENT_UID$2 = {
   video: "plugin::zhao-studio.publish-video",
   gallery: "plugin::zhao-studio.publish-gallery"
 };
+function detectContentType$1(doc) {
+  if (!doc) return null;
+  if (doc.video?.documentId || doc.video) return "video";
+  if (doc.gallery?.documentId || doc.gallery) return "gallery";
+  if (doc.article?.documentId || doc.article) return "article";
+  return null;
+}
+function contentLnkCol(type) {
+  if (type === "article") return "article_draft_id";
+  return `publish_${type}_id`;
+}
+async function insertScheduleLnk(strapi2, contentType, scheduleNumId, contentNumId) {
+  const lnkTable = `zhao_publish_schedules_${contentType}_lnk`;
+  try {
+    await strapi2.db.connection.query(
+      `INSERT INTO ${lnkTable} (publish_schedule_id, ${contentLnkCol(contentType)}) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+      [scheduleNumId, contentNumId]
+    );
+  } catch (e) {
+    strapi2.log.warn(`[zhao-studio] schedule lnk insert (${lnkTable}) failed:`, e.message);
+  }
+}
+async function insertRecordLnks(strapi2, contentType, recordNumId, contentNumId, accountNumId) {
+  try {
+    const clnkTable = `zhao_publish_records_${contentType}_lnk`;
+    await strapi2.db.connection.query(
+      `INSERT INTO ${clnkTable} (publish_record_id, ${contentLnkCol(contentType)}) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+      [recordNumId, contentNumId]
+    );
+    await strapi2.db.connection.query(
+      `INSERT INTO zhao_publish_records_account_lnk (publish_record_id, publish_account_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+      [recordNumId, accountNumId]
+    );
+  } catch (e) {
+    strapi2.log.warn("[zhao-studio] record lnk insert failed:", e.message);
+  }
+}
+async function createPublishRecord(strapi2, contentType, contentDocumentId, contentNumId, accountDocumentId, accountNumId, extraData = {}) {
+  const recordData = {
+    account: { connect: [{ documentId: accountDocumentId }] },
+    status: "queued",
+    ...extraData
+  };
+  recordData[contentType] = { connect: [{ documentId: contentDocumentId }] };
+  const record = await strapi2.documents("plugin::zhao-studio.publish-record").create({ data: recordData });
+  await insertRecordLnks(strapi2, contentType, record.id, contentNumId, accountNumId);
+  return record;
+}
 const publish = ({ strapi: strapi2 }) => ({
-  async publishContent({ type, contentId, accountIds: accountIds2, scheduledAt }) {
+  async publishContent({ type, contentId, accountIds, scheduledAt }) {
     const content = await strapi2.documents(CONTENT_UID$2[type]).findOne({ documentId: contentId });
     if (!content) throw new Error(`${type} 内容不存在: ${contentId}`);
+    if (type !== "article" && content.status && content.status !== "ready") {
+      throw new Error(`${type === "video" ? "视频" : "图集"}状态为「${content.status}」，仅 ready 状态可发布`);
+    }
     const accounts = await strapi2.documents("plugin::zhao-studio.publish-account").findMany({
-      filters: { documentId: { $in: accountIds2 }, isActive: true }
+      filters: { documentId: { $in: accountIds }, isActive: true }
     });
     if (accounts.length === 0) throw new Error("未找到有效的发布账号");
     if (scheduledAt) {
@@ -20346,17 +20404,23 @@ const publish = ({ strapi: strapi2 }) => ({
         scheduledAt,
         status: "scheduled"
       };
-      scheduleData[type] = contentId;
+      scheduleData[type] = { connect: [{ documentId: contentId }] };
       const schedule = await strapi2.documents("plugin::zhao-studio.publish-schedule").create({ data: scheduleData });
+      await insertScheduleLnk(strapi2, type, schedule.id, content.id);
       return [{ trigger: "scheduled", scheduleId: schedule.documentId, accountCount: accounts.length, contentType: type }];
     }
     const results = [];
     const publishQueue2 = strapi2.plugin("zhao-studio").service("publish-queue");
     for (const account of accounts) {
       const accDocId = account.documentId;
-      const recordData = { account: accDocId, status: "queued" };
-      recordData[type] = contentId;
-      const record = await strapi2.documents("plugin::zhao-studio.publish-record").create({ data: recordData });
+      const record = await createPublishRecord(
+        strapi2,
+        type,
+        contentId,
+        content.id,
+        accDocId,
+        account.id
+      );
       try {
         await publishQueue2.enqueuePublish({
           contentType: type,
@@ -20410,13 +20474,13 @@ const publish = ({ strapi: strapi2 }) => ({
     }
     return results;
   },
-  async publishArticle(articleId, accountIds2, opts) {
+  async publishArticle(articleId, accountIds, opts) {
     const article = await strapi2.documents("plugin::zhao-studio.article-draft").findOne({ documentId: articleId });
     if (!article) throw new Error("文章不存在");
     if (article.status !== "ready") throw new Error("文章未准备好发布，请先完成编辑");
     const accounts = await strapi2.documents("plugin::zhao-studio.publish-account").findMany({
       filters: {
-        documentId: { $in: accountIds2 },
+        documentId: { $in: accountIds },
         isActive: true
       }
     });
@@ -20425,7 +20489,7 @@ const publish = ({ strapi: strapi2 }) => ({
       const schedule = await strapi2.documents("plugin::zhao-studio.publish-schedule").create({
         data: {
           name: `定时发布 ${article.title || article.documentId} @ ${opts.scheduledAt.toISOString()}`,
-          article: article.documentId,
+          article: { connect: [{ documentId: article.documentId }] },
           accountIds: accounts.map((a) => a.documentId || a.id),
           scheduledAt: opts.scheduledAt,
           status: "scheduled"
@@ -20437,7 +20501,7 @@ const publish = ({ strapi: strapi2 }) => ({
     const results = [];
     for (const account of accounts) {
       const accDocId = account.documentId || account.id;
-      const record = await strapi2.documents("plugin::zhao-studio.publish-record").create({ data: { article: articleId, account: accDocId, status: "queued" } });
+      const record = await strapi2.documents("plugin::zhao-studio.publish-record").create({ data: { article: { connect: [{ documentId: articleId }] }, account: { connect: [{ documentId: accDocId }] }, status: "queued" } });
       try {
         await publishQueue2.enqueuePublish({
           articleId,
@@ -20612,7 +20676,12 @@ const publish = ({ strapi: strapi2 }) => ({
         mergedFilters.account = { documentId: { $in: accountDocIds } };
       }
     }
-    const populate = query.populate || { account: { populate: { platform: true } } };
+    const populate = query.populate || {
+      account: { populate: { platform: true } },
+      video: true,
+      gallery: true,
+      article: true
+    };
     const findQuery = {
       filters: mergedFilters,
       pagination: { page, pageSize },
@@ -20620,16 +20689,34 @@ const publish = ({ strapi: strapi2 }) => ({
       sort: query.sort || "publishedAt:desc"
     };
     const records = await strapi2.documents("plugin::zhao-studio.publish-record").findMany(findQuery);
+    const contentType = query.contentType || query["filters[contentType]"];
+    let filteredRecords = records;
+    if (contentType === "video") filteredRecords = records.filter((r) => !!r.video);
+    else if (contentType === "gallery") filteredRecords = records.filter((r) => !!r.gallery);
+    else if (contentType === "article") filteredRecords = records.filter((r) => !!r.article);
     const total = await strapi2.documents("plugin::zhao-studio.publish-record").count({ filters: mergedFilters });
     return {
-      records,
+      records: filteredRecords,
       pagination: { page, pageSize, total, pageCount: Math.ceil(total / pageSize) }
     };
   },
+  async getRecordDetail(recordId) {
+    return strapi2.documents("plugin::zhao-studio.publish-record").findOne({
+      documentId: recordId,
+      populate: {
+        account: { populate: { platform: true } },
+        video: true,
+        gallery: true,
+        article: true
+      }
+    });
+  },
   async retryPublish(recordId) {
     const record = await strapi2.documents("plugin::zhao-studio.publish-record").findOne({ documentId: recordId });
-    if (!record || record.status !== "failed") {
-      throw new Error("只能重试失败的发布记录");
+    if (!record) throw new Error("发布记录不存在");
+    const RETRYABLE = /* @__PURE__ */ new Set(["failed", "rejected", "partial_success"]);
+    if (!RETRYABLE.has(record.status)) {
+      throw new Error(`当前状态 ${record.status} 不可重试，仅 failed/rejected/partial_success 可重试`);
     }
     const contentType = record.video?.documentId || record.video ? "video" : record.gallery?.documentId || record.gallery ? "gallery" : record.article?.documentId || record.article ? "article" : (() => {
       throw new Error("publish-record 未关联任何内容，无法推断 contentType");
@@ -20680,16 +20767,33 @@ const publish = ({ strapi: strapi2 }) => ({
       if (data2.galleryId) return { contentType: "gallery", contentId: data2.galleryId };
       throw new Error("必须提供 articleId / videoId / galleryId 之一");
     })();
-    return this.publishContent({ type: contentType, contentId, accountIds, scheduledAt: new Date(data2.scheduledAt), name: data2.name });
+    return this.publishContent({ type: contentType, contentId, accountIds: data2.accountIds, scheduledAt: new Date(data2.scheduledAt) });
   },
-  async listSchedules(filters2 = {}) {
-    return strapi2.documents("plugin::zhao-studio.publish-schedule").findMany({
-      filters: { ...filters2 },
-      sort: "scheduledAt:desc"
+  async listSchedules(query = {}) {
+    const page = parseInt(query.pagination?.page || query["pagination[page]"]) || 1;
+    const pageSize = parseInt(query.pagination?.pageSize || query["pagination[pageSize]"]) || 10;
+    const filters2 = {};
+    if (query.status || query["filters[status]"]) {
+      filters2.status = query.status || query["filters[status]"];
+    }
+    const list = await strapi2.documents("plugin::zhao-studio.publish-schedule").findMany({
+      filters: filters2,
+      sort: "scheduledAt:desc",
+      populate: ["video", "gallery", "article"],
+      pagination: { page, pageSize }
     });
+    const total = await strapi2.documents("plugin::zhao-studio.publish-schedule").count({ filters: filters2 });
+    return {
+      list,
+      pagination: { page, pageSize, total, pageCount: Math.ceil(total / pageSize) }
+    };
   },
-  async findOneSchedule(id) {
-    return strapi2.documents("plugin::zhao-studio.publish-schedule").findOne({ documentId: id });
+  async findOneSchedule(id, populate) {
+    const defaultPopulate = ["video", "gallery", "article"];
+    return strapi2.documents("plugin::zhao-studio.publish-schedule").findOne({
+      documentId: id,
+      populate: populate || defaultPopulate
+    });
   },
   async cancelSchedule(id) {
     const schedule = await strapi2.documents("plugin::zhao-studio.publish-schedule").findOne({ documentId: id });
@@ -20719,11 +20823,11 @@ const publish = ({ strapi: strapi2 }) => ({
     }
     return { recordId, schema: schema2 };
   },
-  async previewPublish(articleId, accountIds2) {
+  async previewPublish(articleId, accountIds) {
     const article = await strapi2.documents("plugin::zhao-studio.article-draft").findOne({ documentId: articleId });
     if (!article) throw new Error("文章不存在");
     const accounts = await strapi2.documents("plugin::zhao-studio.publish-account").findMany({
-      filters: { documentId: { $in: accountIds2 }, isActive: true }
+      filters: { documentId: { $in: accountIds }, isActive: true }
     });
     if (accounts.length === 0) throw new Error("未找到有效账号");
     const channelAdapter2 = strapi2.plugin("zhao-studio").service("channel-adapter");
@@ -21265,15 +21369,15 @@ const internalApi = ({ strapi: strapi2 }) => ({
           status: "success"
         }
       });
-      const accountIds2 = [];
+      const accountIds = [];
       for (const record of channelRecords) {
         const account = await strapi2.documents("plugin::zhao-studio.publish-account").findOne({ documentId: record.account?.documentId || record.account });
         if (account && account.config?.channelCode === channel) {
-          accountIds2.push(record.article?.documentId || record.article);
+          accountIds.push(record.article?.documentId || record.article);
         }
       }
-      if (accountIds2.length > 0) {
-        baseFilters.documentId = { $in: accountIds2 };
+      if (accountIds.length > 0) {
+        baseFilters.documentId = { $in: accountIds };
       } else {
         return [];
       }
@@ -23326,32 +23430,65 @@ const scheduler = ({ strapi: strapi2 }) => ({
       filters: {
         status: "scheduled",
         scheduledAt: { $lte: now }
-      }
+      },
+      populate: ["video", "gallery", "article"]
     });
     for (const schedule of pending) {
       try {
-        const accountIds2 = Array.isArray(schedule.accountIds) ? schedule.accountIds : [];
-        for (const accId of accountIds2) {
-          const record = await strapi2.documents("plugin::zhao-studio.publish-record").create({
-            data: {
-              article: schedule.article?.documentId || schedule.article,
-              account: accId,
-              status: "queued",
-              scheduledAt: schedule.scheduledAt
+        const contentType = detectContentType$1(schedule);
+        if (!contentType) {
+          strapi2.log.error(`[zhao-studio] schedule ${schedule.documentId} 未关联任何内容，跳过`);
+          continue;
+        }
+        const contentRel = schedule[contentType];
+        const contentDocumentId = typeof contentRel === "string" ? contentRel : contentRel?.documentId;
+        if (!contentDocumentId) {
+          strapi2.log.error(`[zhao-studio] schedule ${schedule.documentId} ${contentType} documentId 缺失`);
+          continue;
+        }
+        const content = await strapi2.documents(CONTENT_UID$2[contentType]).findOne({ documentId: contentDocumentId });
+        if (!content) {
+          strapi2.log.error(`[zhao-studio] schedule ${schedule.documentId} ${contentType} ${contentDocumentId} 不存在`);
+          continue;
+        }
+        const accountIds = Array.isArray(schedule.accountIds) ? schedule.accountIds : [];
+        const accounts = await strapi2.documents("plugin::zhao-studio.publish-account").findMany({
+          filters: { documentId: { $in: accountIds } }
+        });
+        const accountMap = new Map(accounts.map((a) => [a.documentId, a]));
+        for (const accId of accountIds) {
+          try {
+            const account = accountMap.get(accId);
+            if (!account) {
+              strapi2.log.warn(`[zhao-studio] schedule ${schedule.documentId} account ${accId} 不存在，跳过`);
+              continue;
             }
-          });
-          const publishQueue2 = strapi2.plugin("zhao-studio").service("publish-queue");
-          await publishQueue2.enqueuePublish({
-            articleId: String(schedule.article?.documentId || schedule.article),
-            accountId: accId,
-            publishRecordId: record.documentId,
-            triggerSource: "schedule"
-          });
+            const record = await createPublishRecord(
+              strapi2,
+              contentType,
+              content.documentId,
+              content.id,
+              account.documentId,
+              account.id,
+              { scheduledAt: schedule.scheduledAt }
+            );
+            const publishQueue2 = strapi2.plugin("zhao-studio").service("publish-queue");
+            await publishQueue2.enqueuePublish({
+              contentType,
+              articleId: contentType === "article" ? content.documentId : void 0,
+              accountId: account.documentId,
+              publishRecordId: record.documentId,
+              triggerSource: "schedule"
+            });
+          } catch (err) {
+            strapi2.log.warn(`[zhao-studio] schedule ${schedule.documentId} account ${accId} enqueue failed: ${err.message}`);
+          }
         }
         await strapi2.documents("plugin::zhao-studio.publish-schedule").update({
           documentId: schedule.documentId,
           data: { status: "triggered", triggeredAt: /* @__PURE__ */ new Date() }
         });
+        strapi2.log.info(`[zhao-studio] schedule ${schedule.documentId} triggered (${contentType}, ${accountIds.length} accounts)`);
       } catch (err) {
         strapi2.log.error(`[zhao-studio] schedule trigger failed schedule=${schedule.documentId}: ${err.message}`);
       }
@@ -23419,11 +23556,11 @@ function inferContentTypeFromRecord(record) {
   if (record?.article?.documentId || record?.article) return "article";
   throw new Error("publish-record 未关联任何内容（article / video / gallery），无法推断 contentType");
 }
-function buildIdempotentFilter(contentType, contentId, accountId) {
+function buildIdempotentFilter(contentType, contentDocumentId, accountDocumentId) {
   const relField = contentType;
   return {
-    [relField]: contentId,
-    account: accountId,
+    [relField]: { documentId: contentDocumentId },
+    account: { documentId: accountDocumentId },
     status: { $in: ["pending", "queued", "validating", "uploading_media", "publishing", "checking_status"] },
     createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1e3).toISOString() }
   };
@@ -23434,7 +23571,7 @@ const publishQueue = ({ strapi: strapi2 }) => ({
     if (!queue2) {
       throw new Error("发布队列不可用，请检查 Redis 连接");
     }
-    const record = await strapi2.documents("plugin::zhao-studio.publish-record").findOne({ documentId: data2.publishRecordId });
+    const record = await strapi2.documents("plugin::zhao-studio.publish-record").findOne({ documentId: data2.publishRecordId, populate: ["video", "gallery", "article", "account"] });
     if (!record) {
       throw new Error(`publish-record 不存在: ${data2.publishRecordId}`);
     }
@@ -23544,7 +23681,7 @@ const publishQueue = ({ strapi: strapi2 }) => ({
   },
   async runStage(stage, data2, prev2) {
     const { accountId, publishRecordId } = data2;
-    const record = await strapi2.documents("plugin::zhao-studio.publish-record").findOne({ documentId: publishRecordId });
+    const record = await strapi2.documents("plugin::zhao-studio.publish-record").findOne({ documentId: publishRecordId, populate: ["video", "gallery", "article", "account"] });
     if (!record) throw new Error(`publish-record 不存在: ${publishRecordId}`);
     const contentType = data2.contentType || inferContentTypeFromRecord(record);
     const contentId = String(record[contentType]?.documentId || record[contentType] || "");
@@ -24084,7 +24221,7 @@ const collectionName$m = "zhao_article_drafts";
 const info$m = { "singularName": "article-draft", "pluralName": "article-drafts", "displayName": "草稿文章", "description": "采集并加工后的草稿文章" };
 const options$m = { "draftAndPublish": true };
 const pluginOptions$m = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
-const attributes$m = { "title": { "type": "string", "required": true, "maxLength": 200 }, "content": { "type": "richtext", "required": true }, "sourceUrl": { "type": "string" }, "sourceTitle": { "type": "string" }, "sourcePublishedAt": { "type": "datetime" }, "sourceAuthor": { "type": "string" }, "category": { "type": "string" }, "status": { "type": "enumeration", "enum": ["draft", "processing", "ready", "published"], "default": "draft" }, "aiProcessed": { "type": "boolean", "default": false }, "aiSummary": { "type": "text" }, "aiOptimizedTitle": { "type": "string" }, "publishRecords": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.publish-record", "mappedBy": "article" }, "browserLogs": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.browser-log", "mappedBy": "article" }, "statSummaries": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.stat-summary", "mappedBy": "article" }, "websiteArticles": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.article", "mappedBy": "sourceArticleDraft" }, "syncEvents": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.sync-event", "mappedBy": "targetDraftId" }, "scope": { "type": "enumeration", "enum": ["current", "global", "tenant"], "default": "current" }, "scopeTenantId": { "type": "string" }, "publishedAt": { "type": "datetime" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const attributes$m = { "title": { "type": "string", "required": true, "maxLength": 200 }, "content": { "type": "richtext", "required": true }, "sourceUrl": { "type": "string" }, "sourceTitle": { "type": "string" }, "sourcePublishedAt": { "type": "datetime" }, "sourceAuthor": { "type": "string" }, "category": { "type": "string" }, "status": { "type": "enumeration", "enum": ["draft", "processing", "ready", "published"], "default": "draft" }, "aiProcessed": { "type": "boolean", "default": false }, "aiSummary": { "type": "text" }, "aiOptimizedTitle": { "type": "string" }, "publishRecords": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.publish-record", "mappedBy": "article" }, "publishSchedules": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.publish-schedule", "mappedBy": "article" }, "browserLogs": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.browser-log", "mappedBy": "article" }, "statSummaries": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.stat-summary", "mappedBy": "article" }, "websiteArticles": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.article", "mappedBy": "sourceArticleDraft" }, "syncEvents": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.sync-event", "mappedBy": "targetDraftId" }, "scope": { "type": "enumeration", "enum": ["current", "global", "tenant"], "default": "current" }, "scopeTenantId": { "type": "string" }, "publishedAt": { "type": "datetime" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
 const schema$m = {
   kind: kind$m,
   collectionName: collectionName$m,
@@ -24174,7 +24311,7 @@ const collectionName$g = "zhao_publish_schedules";
 const info$g = { "singularName": "publish-schedule", "pluralName": "publish-schedules", "displayName": "定时发布任务", "description": "预约发布，到点自动触发" };
 const options$g = { "draftAndPublish": false };
 const pluginOptions$g = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
-const attributes$g = { "name": { "type": "string" }, "article": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.article-draft" }, "video": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.publish-video" }, "gallery": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.publish-gallery" }, "accountIds": { "type": "json" }, "scheduledAt": { "type": "datetime", "required": true }, "triggeredAt": { "type": "datetime" }, "status": { "type": "enumeration", "enum": ["scheduled", "triggered", "cancelled", "expired"], "default": "scheduled" }, "publishRecords": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.publish-record" }, "createdBy": { "type": "relation", "relation": "manyToOne", "target": "admin::user" } };
+const attributes$g = { "name": { "type": "string" }, "article": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.article-draft", "inversedBy": "publishSchedules" }, "video": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.publish-video", "inversedBy": "publishSchedules" }, "gallery": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.publish-gallery", "inversedBy": "publishSchedules" }, "accountIds": { "type": "json" }, "scheduledAt": { "type": "datetime", "required": true }, "triggeredAt": { "type": "datetime" }, "status": { "type": "enumeration", "enum": ["scheduled", "triggered", "cancelled", "expired"], "default": "scheduled" }, "publishRecords": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.publish-record" }, "createdBy": { "type": "relation", "relation": "manyToOne", "target": "admin::user" } };
 const schema$g = {
   kind: kind$g,
   collectionName: collectionName$g,
@@ -24189,7 +24326,7 @@ const collectionName$f = "zhao_publish_videos";
 const info$f = { "singularName": "publish-video", "pluralName": "publish-videos", "displayName": "短视频", "description": "待发布到各平台的短视频素材" };
 const options$f = { "draftAndPublish": true };
 const pluginOptions$f = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
-const attributes$f = { "title": { "type": "string", "required": true, "maxLength": 200 }, "videoUrl": { "type": "string", "required": true }, "coverImage": { "type": "string" }, "description": { "type": "text" }, "duration": { "type": "integer" }, "size": { "type": "integer" }, "tags": { "type": "json" }, "status": { "type": "enumeration", "enum": ["draft", "processing", "ready", "published"], "default": "draft" }, "publishRecords": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.publish-record", "mappedBy": "video" }, "scope": { "type": "enumeration", "enum": ["current", "global", "tenant"], "default": "current" }, "scopeTenantId": { "type": "string" }, "publishedAt": { "type": "datetime" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const attributes$f = { "title": { "type": "string", "required": true, "maxLength": 200 }, "videoUrl": { "type": "string", "required": true }, "coverImage": { "type": "string" }, "description": { "type": "text" }, "duration": { "type": "integer" }, "size": { "type": "integer" }, "tags": { "type": "json" }, "status": { "type": "enumeration", "enum": ["draft", "processing", "ready", "published"], "default": "draft" }, "publishRecords": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.publish-record", "mappedBy": "video" }, "publishSchedules": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.publish-schedule", "mappedBy": "video" }, "scope": { "type": "enumeration", "enum": ["current", "global", "tenant"], "default": "current" }, "scopeTenantId": { "type": "string" }, "publishedAt": { "type": "datetime" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
 const schema$f = {
   kind: kind$f,
   collectionName: collectionName$f,
@@ -24204,7 +24341,7 @@ const collectionName$e = "zhao_publish_galleries";
 const info$e = { "singularName": "publish-gallery", "pluralName": "publish-galleries", "displayName": "图集", "description": "待发布到各平台的多图素材" };
 const options$e = { "draftAndPublish": true };
 const pluginOptions$e = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
-const attributes$e = { "title": { "type": "string", "required": true, "maxLength": 200 }, "images": { "type": "json", "required": true }, "description": { "type": "text" }, "coverImage": { "type": "string" }, "tags": { "type": "json" }, "status": { "type": "enumeration", "enum": ["draft", "processing", "ready", "published"], "default": "draft" }, "publishRecords": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.publish-record", "mappedBy": "gallery" }, "scope": { "type": "enumeration", "enum": ["current", "global", "tenant"], "default": "current" }, "scopeTenantId": { "type": "string" }, "publishedAt": { "type": "datetime" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
+const attributes$e = { "title": { "type": "string", "required": true, "maxLength": 200 }, "images": { "type": "json", "required": true }, "description": { "type": "text" }, "coverImage": { "type": "string" }, "tags": { "type": "json" }, "status": { "type": "enumeration", "enum": ["draft", "processing", "ready", "published"], "default": "draft" }, "publishRecords": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.publish-record", "mappedBy": "gallery" }, "publishSchedules": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-studio.publish-schedule", "mappedBy": "gallery" }, "scope": { "type": "enumeration", "enum": ["current", "global", "tenant"], "default": "current" }, "scopeTenantId": { "type": "string" }, "publishedAt": { "type": "datetime" }, "createdAt": { "type": "datetime" }, "updatedAt": { "type": "datetime" } };
 const schema$e = {
   kind: kind$e,
   collectionName: collectionName$e,

@@ -1,4 +1,4 @@
-declare const _default: {
+{
   "kind": "collectionType",
   "collectionName": "zhao_publish_schedules",
   "info": {
@@ -67,6 +67,3 @@ declare const _default: {
     }
   }
 }
-;
-
-export default _default;

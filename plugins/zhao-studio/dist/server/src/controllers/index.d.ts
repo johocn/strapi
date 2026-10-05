@@ -38,6 +38,7 @@ declare const _default: {
         publishGallery(ctx: any): Promise<void>;
         publishContent(ctx: any): Promise<any>;
         listRecords(ctx: any): Promise<void>;
+        getRecordDetail(ctx: any): Promise<any>;
         retryPublish(ctx: any): Promise<void>;
         syncStatus(ctx: any): Promise<void>;
         findOne(ctx: any): Promise<void>;

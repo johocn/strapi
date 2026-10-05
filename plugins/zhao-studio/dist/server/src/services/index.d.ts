@@ -67,7 +67,7 @@ declare const _default: {
         strapi: import('@strapi/types/dist/core').Strapi;
     }) => {
         publishContent({ type, contentId, accountIds, scheduledAt }: {
-            type: "article" | "video" | "gallery";
+            type: import('../utils/publish-helpers').ContentType;
             contentId: string;
             accountIds: string[];
             scheduledAt?: Date;
@@ -108,6 +108,7 @@ declare const _default: {
                 pageCount: number;
             };
         }>;
+        getRecordDetail(recordId: string): Promise<import('@strapi/types/dist/modules/documents').AnyDocument | null>;
         retryPublish(recordId: string): Promise<any>;
         createSchedule(data: {
             articleId?: string;
@@ -117,8 +118,16 @@ declare const _default: {
             scheduledAt: string;
             name?: string;
         }): Promise<any[]>;
-        listSchedules(filters?: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument[]>;
-        findOneSchedule(id: string): Promise<import('@strapi/types/dist/modules/documents').AnyDocument | null>;
+        listSchedules(query?: any): Promise<{
+            list: import('@strapi/types/dist/modules/documents').AnyDocument[];
+            pagination: {
+                page: number;
+                pageSize: number;
+                total: number;
+                pageCount: number;
+            };
+        }>;
+        findOneSchedule(id: string, populate?: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument | null>;
         cancelSchedule(id: string): Promise<import('@strapi/types/dist/modules/documents').AnyDocument | null>;
         getDouyinSchema(recordId: string): Promise<{
             recordId: string;

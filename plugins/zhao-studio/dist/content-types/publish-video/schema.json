@@ -1,11 +1,11 @@
-declare const _default: {
+{
   "kind": "collectionType",
-  "collectionName": "zhao_publish_galleries",
+  "collectionName": "zhao_publish_videos",
   "info": {
-    "singularName": "publish-gallery",
-    "pluralName": "publish-galleries",
-    "displayName": "图集",
-    "description": "待发布到各平台的多图素材"
+    "singularName": "publish-video",
+    "pluralName": "publish-videos",
+    "displayName": "短视频",
+    "description": "待发布到各平台的短视频素材"
   },
   "options": {
     "draftAndPublish": true
@@ -24,15 +24,21 @@ declare const _default: {
       "required": true,
       "maxLength": 200
     },
-    "images": {
-      "type": "json",
+    "videoUrl": {
+      "type": "string",
       "required": true
+    },
+    "coverImage": {
+      "type": "string"
     },
     "description": {
       "type": "text"
     },
-    "coverImage": {
-      "type": "string"
+    "duration": {
+      "type": "integer"
+    },
+    "size": {
+      "type": "integer"
     },
     "tags": {
       "type": "json"
@@ -46,13 +52,13 @@ declare const _default: {
       "type": "relation",
       "relation": "oneToMany",
       "target": "plugin::zhao-studio.publish-record",
-      "mappedBy": "gallery"
+      "mappedBy": "video"
     },
     "publishSchedules": {
       "type": "relation",
       "relation": "oneToMany",
       "target": "plugin::zhao-studio.publish-schedule",
-      "mappedBy": "gallery"
+      "mappedBy": "video"
     },
     "scope": {
       "type": "enumeration",
@@ -73,6 +79,3 @@ declare const _default: {
     }
   }
 }
-;
-
-export default _default;

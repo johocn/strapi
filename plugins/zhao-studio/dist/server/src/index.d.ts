@@ -57,6 +57,7 @@ declare const _default: {
             publishGallery(ctx: any): Promise<void>;
             publishContent(ctx: any): Promise<any>;
             listRecords(ctx: any): Promise<void>;
+            getRecordDetail(ctx: any): Promise<any>;
             retryPublish(ctx: any): Promise<void>;
             syncStatus(ctx: any): Promise<void>;
             findOne(ctx: any): Promise<void>;
@@ -327,7 +328,7 @@ declare const _default: {
             strapi: import('@strapi/types/dist/core').Strapi;
         }) => {
             publishContent({ type, contentId, accountIds, scheduledAt }: {
-                type: "article" | "video" | "gallery";
+                type: import('./utils/publish-helpers').ContentType;
                 contentId: string;
                 accountIds: string[];
                 scheduledAt?: Date;
@@ -368,6 +369,7 @@ declare const _default: {
                     pageCount: number;
                 };
             }>;
+            getRecordDetail(recordId: string): Promise<import('@strapi/types/dist/modules/documents').AnyDocument | null>;
             retryPublish(recordId: string): Promise<any>;
             createSchedule(data: {
                 articleId?: string;
@@ -377,8 +379,16 @@ declare const _default: {
                 scheduledAt: string;
                 name?: string;
             }): Promise<any[]>;
-            listSchedules(filters?: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument[]>;
-            findOneSchedule(id: string): Promise<import('@strapi/types/dist/modules/documents').AnyDocument | null>;
+            listSchedules(query?: any): Promise<{
+                list: import('@strapi/types/dist/modules/documents').AnyDocument[];
+                pagination: {
+                    page: number;
+                    pageSize: number;
+                    total: number;
+                    pageCount: number;
+                };
+            }>;
+            findOneSchedule(id: string, populate?: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument | null>;
             cancelSchedule(id: string): Promise<import('@strapi/types/dist/modules/documents').AnyDocument | null>;
             getDouyinSchema(recordId: string): Promise<{
                 recordId: string;
@@ -951,6 +961,12 @@ declare const _default: {
                         target: string;
                         mappedBy: string;
                     };
+                    publishSchedules: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
                     browserLogs: {
                         type: string;
                         relation: string;
@@ -1402,16 +1418,19 @@ declare const _default: {
                         type: string;
                         relation: string;
                         target: string;
+                        inversedBy: string;
                     };
                     video: {
                         type: string;
                         relation: string;
                         target: string;
+                        inversedBy: string;
                     };
                     gallery: {
                         type: string;
                         relation: string;
                         target: string;
+                        inversedBy: string;
                     };
                     accountIds: {
                         type: string;
@@ -1498,6 +1517,12 @@ declare const _default: {
                         target: string;
                         mappedBy: string;
                     };
+                    publishSchedules: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
                     scope: {
                         type: string;
                         enum: string[];
@@ -1564,6 +1589,12 @@ declare const _default: {
                         default: string;
                     };
                     publishRecords: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    publishSchedules: {
                         type: string;
                         relation: string;
                         target: string;

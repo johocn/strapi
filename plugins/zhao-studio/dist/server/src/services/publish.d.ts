@@ -1,5 +1,5 @@
 import { Core } from '../../../../../node_modules/@strapi/strapi';
-type ContentType = 'article' | 'video' | 'gallery';
+import { ContentType } from '../utils/publish-helpers';
 declare const _default: ({ strapi }: {
     strapi: Core.Strapi;
 }) => {
@@ -45,6 +45,7 @@ declare const _default: ({ strapi }: {
             pageCount: number;
         };
     }>;
+    getRecordDetail(recordId: string): Promise<import('@strapi/types/dist/modules/documents').AnyDocument | null>;
     retryPublish(recordId: string): Promise<any>;
     createSchedule(data: {
         articleId?: string;
@@ -54,8 +55,16 @@ declare const _default: ({ strapi }: {
         scheduledAt: string;
         name?: string;
     }): Promise<any[]>;
-    listSchedules(filters?: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument[]>;
-    findOneSchedule(id: string): Promise<import('@strapi/types/dist/modules/documents').AnyDocument | null>;
+    listSchedules(query?: any): Promise<{
+        list: import('@strapi/types/dist/modules/documents').AnyDocument[];
+        pagination: {
+            page: number;
+            pageSize: number;
+            total: number;
+            pageCount: number;
+        };
+    }>;
+    findOneSchedule(id: string, populate?: any): Promise<import('@strapi/types/dist/modules/documents').AnyDocument | null>;
     cancelSchedule(id: string): Promise<import('@strapi/types/dist/modules/documents').AnyDocument | null>;
     getDouyinSchema(recordId: string): Promise<{
         recordId: string;

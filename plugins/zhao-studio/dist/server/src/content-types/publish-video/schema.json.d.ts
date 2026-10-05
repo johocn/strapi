@@ -54,6 +54,12 @@ declare const _default: {
       "target": "plugin::zhao-studio.publish-record",
       "mappedBy": "video"
     },
+    "publishSchedules": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-studio.publish-schedule",
+      "mappedBy": "video"
+    },
     "scope": {
       "type": "enumeration",
       "enum": ["current", "global", "tenant"],
