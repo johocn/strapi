@@ -82,7 +82,7 @@ export interface RpaCookie {
 
 export interface RpaPlatformConfig {
   /** 平台标识，跟 channel-adapter platformType 对齐 */
-  platform: 'xiaohongshu' | 'toutiao';
+  platform: 'xiaohongshu' | 'toutiao' | 'bilibili';
   /** 平台发布入口 URL（工作台/创作中心） */
   publishUrl: string;
   /** 登录入口 URL（首次扫码） */
@@ -103,6 +103,12 @@ export const RPA_PLATFORMS: Record<RpaPlatformConfig['platform'], RpaPlatformCon
     publishUrl: 'https://mp.toutiao.com/profile_v4/graphic/publish',
     loginUrl: 'https://mp.toutiao.com/login',
     cookieDomain: '.toutiao.com',
+  },
+  bilibili: {
+    platform: 'bilibili',
+    publishUrl: 'https://member.bilibili.com/platform/upload/video/frame.html',
+    loginUrl: 'https://passport.bilibili.com/login',
+    cookieDomain: '.bilibili.com',
   },
 };
 
@@ -179,8 +185,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     });
     if (!acc) throw new Error('账号不存在');
     const type = (acc as any).platform?.type;
-    if (type !== 'xiaohongshu' && type !== 'toutiao') {
-      throw new Error(`账号平台 ${type || '未知'} 不支持 RPA（仅 xiaohongshu / toutiao）`);
+    if (type !== 'xiaohongshu' && type !== 'toutiao' && type !== 'bilibili') {
+      throw new Error(`账号平台 ${type || '未知'} 不支持 RPA（仅 xiaohongshu / toutiao / bilibili）`);
     }
     return type;
   },
@@ -307,8 +313,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     content: string;
     coverImage?: string;
     images?: string[];
+    videoUrl?: string;
   }): Promise<{ success: boolean; externalId?: string; url?: string; error?: string }> {
-    const { platform, accountId, title, content, coverImage, images } = params;
+    const { platform, accountId, title, content, coverImage, images, videoUrl } = params;
     const platformCfg = RPA_PLATFORMS[platform];
     const driver = getRpaDriver(platform);
 
@@ -331,7 +338,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       await page.goto(platformCfg.publishUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
 
       // 4. 交给平台驱动：填写 → 上传 → 提交 → 成功校验
-      return await driver.publish(page, { title, content, coverImage, images }, os.tmpdir());
+      return await driver.publish(page, { title, content, coverImage, images, videoUrl }, os.tmpdir());
     } catch (err: any) {
       // 失败取证：截图 + DOM 落到 <tmp>/zhao-rpa-debug/，供真机调选择器
       const shot = await dumpDebug(page, platform, 'publish-fail');

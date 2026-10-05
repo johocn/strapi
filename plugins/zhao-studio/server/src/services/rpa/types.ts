@@ -1,7 +1,7 @@
 // server/src/services/rpa/types.ts
 // RPA 平台驱动契约：每个平台一个 driver，rpa-client 负责浏览器生命周期 + 分发。
 
-export type RpaPlatform = 'xiaohongshu' | 'toutiao';
+export type RpaPlatform = 'xiaohongshu' | 'toutiao' | 'bilibili';
 
 export interface RpaPublishInput {
   title: string;
@@ -10,6 +10,8 @@ export interface RpaPublishInput {
   coverImage?: string;
   /** 配图 URL 列表（图文平台必填至少 1 张） */
   images?: string[];
+  /** bilibili 视频投稿场景：视频文件 URL（rpa-client 会下载到临时目录再 setInputFiles） */
+  videoUrl?: string;
 }
 
 export interface RpaPublishOutput {
