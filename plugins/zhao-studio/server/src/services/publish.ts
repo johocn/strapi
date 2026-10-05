@@ -75,7 +75,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
           contentType: type,
         });
       } catch (err: any) {
-        strapi.log.warn(`[zhao-studio] queue unavailable, sync fallback for content=${type} account=${accDocId}`);
+        strapi.log.warn(`[zhao-studio] queue unavailable (${err?.message || err}), sync fallback for content=${type} account=${accDocId}`);
         try {
           const channelAdapter = strapi.plugin('zhao-studio').service('channel-adapter');
           const syncResult = await channelAdapter.publish(content, account, type);
@@ -174,7 +174,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         });
       } catch (err: any) {
         // 队列不可用 → 降级同步发布
-        strapi.log.warn(`[zhao-studio] queue unavailable, sync fallback for account=${accDocId}`);
+        strapi.log.warn(`[zhao-studio] queue unavailable (${err?.message || err}), sync fallback for account=${accDocId}`);
         try {
           const channelAdapter = strapi.plugin('zhao-studio').service('channel-adapter');
           const adapted = await channelAdapter.adaptContent(article, (account as any).platform?.type || 'custom');

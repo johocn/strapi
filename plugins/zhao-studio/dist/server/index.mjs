@@ -20390,7 +20390,7 @@ const publish = ({ strapi: strapi2 }) => ({
           contentType: type
         });
       } catch (err) {
-        strapi2.log.warn(`[zhao-studio] queue unavailable, sync fallback for content=${type} account=${accDocId}`);
+        strapi2.log.warn(`[zhao-studio] queue unavailable (${err?.message || err}), sync fallback for content=${type} account=${accDocId}`);
         try {
           const channelAdapter2 = strapi2.plugin("zhao-studio").service("channel-adapter");
           const syncResult = await channelAdapter2.publish(content, account, type);
@@ -20472,7 +20472,7 @@ const publish = ({ strapi: strapi2 }) => ({
           contentType: "article"
         });
       } catch (err) {
-        strapi2.log.warn(`[zhao-studio] queue unavailable, sync fallback for account=${accDocId}`);
+        strapi2.log.warn(`[zhao-studio] queue unavailable (${err?.message || err}), sync fallback for account=${accDocId}`);
         try {
           const channelAdapter2 = strapi2.plugin("zhao-studio").service("channel-adapter");
           const adapted = await channelAdapter2.adaptContent(article, account.platform?.type || "custom");
