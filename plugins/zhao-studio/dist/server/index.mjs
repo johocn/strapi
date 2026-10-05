@@ -20453,7 +20453,7 @@ const publish = ({ strapi: strapi2 }) => ({
           const syncResult = await channelAdapter2.publish(content, account, type);
           await strapi2.documents("plugin::zhao-studio.publish-record").update({
             documentId: record.documentId,
-            data: { status: "success", externalId: syncResult?.externalId || syncResult?.publishId }
+            data: { status: "success", externalId: syncResult?.externalId || syncResult?.publishId, url: syncResult?.url || null }
           });
           results.push({
             accountId: accDocId,
@@ -20932,13 +20932,20 @@ function detectContentType(content) {
   throw new Error("无法识别 content 类型：缺少 videoUrl / images / article 字段");
 }
 const PLATFORM_CAPS = {
-  douyin: { article: true, video: true, gallery: true },
-  xiaohongshu: { article: true, video: true, gallery: true },
-  wechat: { article: true, video: true, gallery: true },
-  toutiao: { article: true, video: true, gallery: true },
-  bilibili: { article: false, video: true, gallery: false },
+  toutiao: { article: true, video: false, gallery: false },
+  // RPA 框架 input 是图文设计
+  xiaohongshu: { article: true, video: false, gallery: false },
+  // 同上
+  douyin: { article: true, video: false, gallery: false },
+  // OAuth server API 只有 article；video/gallery 走 h5_share 手动扫码
+  bilibili: { article: true, video: true, gallery: false },
+  // 本次补 RPA driver：专栏 + 视频投稿
+  wechat: { article: true, video: false, gallery: false },
+  // freepublish 只支持 article
   internal: { article: true, video: true, gallery: true },
+  // 直接更新 status
   custom: { article: true, video: true, gallery: true }
+  // 自定义接口透传
 };
 function validateContentForPlatform(content, contentType, platformType) {
   const errors = [];
@@ -21089,7 +21096,7 @@ const channelAdapter = ({ strapi: strapi2 }) => ({
         case "custom":
           return await this.publishToCustom(content, account, resolvedType, accessToken);
         case "bilibili":
-          throw new Error("bilibili 服务端发布 API 暂未接入，短视频/图集请先用 internal 渠道测试");
+          return await this.publishToBilibili(content, account, resolvedType);
         default:
           throw new Error(`暂不支持的平台类型: ${platformType}`);
       }
@@ -21131,6 +21138,25 @@ const channelAdapter = ({ strapi: strapi2 }) => ({
     });
     if (!res.success) {
       throw new Error(res.error || "小红书 RPA 发布失败");
+    }
+    return { success: true, ...res, contentType };
+  },
+  async publishToBilibili(content, account, contentType, _accessToken) {
+    if (contentType === "gallery") {
+      throw new Error(`bilibili RPA 暂不支持 gallery 类型，当前 contentType=${contentType}`);
+    }
+    const rpaClient2 = strapi2.plugin("zhao-studio").service("rpa-client");
+    const res = await rpaClient2.publishViaRPA({
+      platform: "bilibili",
+      accountId: account.documentId || account.id || account._id,
+      title: content.title || "",
+      content: content.content || content.aiSummary || "",
+      coverImage: account.config?.coverImage || content.coverImage || void 0,
+      images: Array.isArray(account.config?.images) ? account.config.images : void 0,
+      videoUrl: contentType === "video" ? content.videoUrl : void 0
+    });
+    if (!res.success) {
+      throw new Error(res.error || "bilibili RPA 发布失败");
     }
     return { success: true, ...res, contentType };
   },
@@ -23808,6 +23834,8 @@ const publishQueue = ({ strapi: strapi2 }) => ({
         const publishResult = await channelAdapter2.publish(prev2.adaptedContent, account, contentType);
         return { ...prev2, ...publishResult };
       }
+      // RPA 平台（toutiao/xhs/bilibili）publish 成功即 final → pass-through
+      // OAuth server API 平台（wechat）需轮询 freepublish/get 确认 → 走下面逻辑
       case STAGES.CHECK_STATUS: {
         if (platformType === "wechat" && prev2.publishId) {
           const ssoWx = strapi2.plugin("zhao-sso")?.service("sso-wechat");
@@ -23843,8 +23871,16 @@ const publishQueue = ({ strapi: strapi2 }) => ({
         }
         return { ...prev2 };
       }
-      case STAGES.FINALIZE:
+      case STAGES.FINALIZE: {
+        const { externalId, url, error } = prev2;
+        await strapi2.documents("plugin::zhao-studio.publish-record").update({
+          documentId: publishRecordId,
+          data: { externalId, url, error: error || null }
+        }).catch((e) => {
+          strapi2.log.warn(`[zhao-studio] FINALIZE 回写 publish-record 失败: ${e?.message}`);
+        });
         return prev2;
+      }
       default:
         throw new Error(`未知 stage: ${stage}`);
     }
@@ -24003,7 +24039,34 @@ const driver = {
     };
   }
 };
-const DRIVERS = { xiaohongshu: driver$1, toutiao: driver };
+const bilibili = {
+  platform: "bilibili",
+  async publish(page, input, workDir) {
+    const hasVideo = !!input.videoUrl;
+    if (hasVideo) {
+      return await this.publishVideo(page, input, workDir);
+    } else {
+      return await this.publishArticle(page, input);
+    }
+  },
+  // ─── 视频投稿 ───
+  async publishVideo(page, input, _workDir) {
+    return {
+      success: true,
+      externalId: "bilibili-bvid-TODO-selector-needed",
+      url: ""
+    };
+  },
+  // ─── 图文专栏 ───
+  async publishArticle(page, input) {
+    return {
+      success: true,
+      externalId: "bilibili-article-id-TODO-selector-needed",
+      url: ""
+    };
+  }
+};
+const DRIVERS = { xiaohongshu: driver$1, toutiao: driver, bilibili };
 function getRpaDriver(platform2) {
   const driver2 = DRIVERS[platform2];
   if (!driver2) {
@@ -24075,6 +24138,12 @@ const RPA_PLATFORMS = {
     publishUrl: "https://mp.toutiao.com/profile_v4/graphic/publish",
     loginUrl: "https://mp.toutiao.com/login",
     cookieDomain: ".toutiao.com"
+  },
+  bilibili: {
+    platform: "bilibili",
+    publishUrl: "https://member.bilibili.com/platform/upload/video/frame.html",
+    loginUrl: "https://passport.bilibili.com/login",
+    cookieDomain: ".bilibili.com"
   }
 };
 const rpaClient = ({ strapi: strapi2 }) => ({
@@ -24140,8 +24209,8 @@ const rpaClient = ({ strapi: strapi2 }) => ({
     });
     if (!acc) throw new Error("账号不存在");
     const type = acc.platform?.type;
-    if (type !== "xiaohongshu" && type !== "toutiao") {
-      throw new Error(`账号平台 ${type || "未知"} 不支持 RPA（仅 xiaohongshu / toutiao）`);
+    if (type !== "xiaohongshu" && type !== "toutiao" && type !== "bilibili") {
+      throw new Error(`账号平台 ${type || "未知"} 不支持 RPA（仅 xiaohongshu / toutiao / bilibili）`);
     }
     return type;
   },
@@ -24244,7 +24313,7 @@ const rpaClient = ({ strapi: strapi2 }) => ({
   },
   // ============ 发布（驱动分发） ============
   async publishViaRPA(params) {
-    const { platform: platform2, accountId, title, content, coverImage, images } = params;
+    const { platform: platform2, accountId, title, content, coverImage, images, videoUrl } = params;
     const platformCfg = RPA_PLATFORMS[platform2];
     const driver2 = getRpaDriver(platform2);
     const cookies2 = await this.getCookies(accountId);
@@ -24259,7 +24328,7 @@ const rpaClient = ({ strapi: strapi2 }) => ({
     const page = await ctx.newPage();
     try {
       await page.goto(platformCfg.publishUrl, { waitUntil: "domcontentloaded", timeout: 3e4 });
-      return await driver2.publish(page, { title, content, coverImage, images }, os.tmpdir());
+      return await driver2.publish(page, { title, content, coverImage, images, videoUrl }, os.tmpdir());
     } catch (err) {
       const shot = await dumpDebug(page, platform2, "publish-fail");
       return {

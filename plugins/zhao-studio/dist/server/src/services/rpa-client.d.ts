@@ -12,7 +12,7 @@ export interface RpaCookie {
 }
 export interface RpaPlatformConfig {
     /** 平台标识，跟 channel-adapter platformType 对齐 */
-    platform: 'xiaohongshu' | 'toutiao';
+    platform: 'xiaohongshu' | 'toutiao' | 'bilibili';
     /** 平台发布入口 URL（工作台/创作中心） */
     publishUrl: string;
     /** 登录入口 URL（首次扫码） */
@@ -69,6 +69,7 @@ declare const _default: ({ strapi }: {
         content: string;
         coverImage?: string;
         images?: string[];
+        videoUrl?: string;
     }): Promise<{
         success: boolean;
         externalId?: string;

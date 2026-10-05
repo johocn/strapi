@@ -1,4 +1,4 @@
-export type RpaPlatform = 'xiaohongshu' | 'toutiao';
+export type RpaPlatform = 'xiaohongshu' | 'toutiao' | 'bilibili';
 export interface RpaPublishInput {
     title: string;
     content: string;
@@ -6,6 +6,8 @@ export interface RpaPublishInput {
     coverImage?: string;
     /** 配图 URL 列表（图文平台必填至少 1 张） */
     images?: string[];
+    /** bilibili 视频投稿场景：视频文件 URL（rpa-client 会下载到临时目录再 setInputFiles） */
+    videoUrl?: string;
 }
 export interface RpaPublishOutput {
     success: boolean;

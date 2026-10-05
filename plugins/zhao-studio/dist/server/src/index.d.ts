@@ -422,6 +422,7 @@ declare const _default: {
             publish(content: any, account: any, contentType?: "article" | "video" | "gallery"): Promise<any>;
             publishToToutiao(content: any, account: any, contentType: "article" | "video" | "gallery", _accessToken?: string): Promise<any>;
             publishToXiaohongshu(content: any, account: any, contentType: "article" | "video" | "gallery", _accessToken?: string): Promise<any>;
+            publishToBilibili(content: any, account: any, contentType: "article" | "video" | "gallery", _accessToken?: string): Promise<any>;
             publishToWechat(content: any, account: any, contentType: "article" | "video" | "gallery", _accessToken?: string): Promise<{
                 success: boolean;
                 createdDraft: boolean;
@@ -883,6 +884,7 @@ declare const _default: {
                 content: string;
                 coverImage?: string;
                 images?: string[];
+                videoUrl?: string;
             }): Promise<{
                 success: boolean;
                 externalId?: string;

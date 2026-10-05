@@ -6,6 +6,7 @@ declare const _default: ({ strapi }: {
     publish(content: any, account: any, contentType?: ContentType): Promise<any>;
     publishToToutiao(content: any, account: any, contentType: ContentType, _accessToken?: string): Promise<any>;
     publishToXiaohongshu(content: any, account: any, contentType: ContentType, _accessToken?: string): Promise<any>;
+    publishToBilibili(content: any, account: any, contentType: ContentType, _accessToken?: string): Promise<any>;
     publishToWechat(content: any, account: any, contentType: ContentType, _accessToken?: string): Promise<{
         success: boolean;
         createdDraft: boolean;
