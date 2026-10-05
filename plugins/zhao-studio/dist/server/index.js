@@ -23659,7 +23659,8 @@ const publishQueue = ({ strapi: strapi2 }) => ({
           errorMsg = err.message || String(err);
           const platformType = result.account?.platform?.type || "custom";
           const classified = identifyPublishError(err, platformType);
-          strapi2.log.error(`[zhao-studio] publish stage ${stage} failed [${classified.code}]: ${errorMsg}`);
+          console.error(`[WORKER-RAW] stage ${stage} failed:`, err);
+          strapi2.log.error(`[zhao-studio] publish stage ${stage} failed [${classified.code}]: ${errorMsg} ${err?.stack || ""}`);
           await strapi2.documents("plugin::zhao-studio.publish-record").update({
             documentId: data2.publishRecordId,
             data: {

@@ -163,7 +163,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
           errorMsg = err.message || String(err);
           const platformType = result.account?.platform?.type || 'custom';
           const classified = identifyPublishError(err, platformType);
-          strapi.log.error(`[zhao-studio] publish stage ${stage} failed [${classified.code}]: ${errorMsg}`);
+          console.error(`[WORKER-RAW] stage ${stage} failed:`, err);
+          strapi.log.error(`[zhao-studio] publish stage ${stage} failed [${classified.code}]: ${errorMsg} ${err?.stack || ''}`);
 
           await strapi.documents('plugin::zhao-studio.publish-record').update({
             documentId: data.publishRecordId,
