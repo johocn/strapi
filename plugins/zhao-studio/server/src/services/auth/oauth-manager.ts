@@ -69,6 +69,14 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     if (!account) throw new Error('账号不存在');
 
     const platformType = account.platform?.type;
+
+    // wechat freepublish 链路走 sso-wechat.getAccessToken('official_account')
+    // 用 appId+appSecret 换公众号 access_token，不需要用户 OAuth
+    // 直接返回公众号配置的标识，实际 token 在 publish/轮询时由 channel-adapter 内部获取
+    if (platformType === 'wechat') {
+      return 'wechat-official-account-token-via-appid-secret';
+    }
+
     const skipOAuth = ['internal', 'custom'].includes(platformType);
 
     if (skipOAuth) {

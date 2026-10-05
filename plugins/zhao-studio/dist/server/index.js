@@ -23531,6 +23531,9 @@ const oauthManager = ({ strapi: strapi2 }) => ({
     const account = await strapi2.documents(ACCOUNT_UID).findOne({ documentId: accountId, populate: { platform: true } });
     if (!account) throw new Error("账号不存在");
     const platformType = account.platform?.type;
+    if (platformType === "wechat") {
+      return "wechat-official-account-token-via-appid-secret";
+    }
     const skipOAuth = ["internal", "custom"].includes(platformType);
     if (skipOAuth) {
       const apiKey = account.config?.apiKey;
