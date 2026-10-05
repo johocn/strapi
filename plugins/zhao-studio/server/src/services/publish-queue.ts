@@ -153,12 +153,15 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
       for (const stage of stages) {
         try {
+          strapi.log.info(`[zhao-studio] → stage=${stage} updating queueStage...`);
           await strapi.documents('plugin::zhao-studio.publish-record').update({
             documentId: data.publishRecordId,
             data: { queueStage: stage, status: STAGE_TO_STATUS[stage] } as any,
           }).catch(() => {});
 
+          strapi.log.info(`[zhao-studio] → stage=${stage} calling runStage...`);
           result = await this.runStage(stage, data, result);
+          strapi.log.info(`[zhao-studio] ✓ stage=${stage} ok`);
         } catch (err: any) {
           errorMsg = err.message || String(err);
           const platformType = result.account?.platform?.type || 'custom';
@@ -216,6 +219,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
   async runStage(stage: Stage, data: PublishJobData, prev: any): Promise<any> {
     const { accountId, publishRecordId } = data;
+    strapi.log.info(`[zhao-studio] runStage ENTER stage=${stage} record=${publishRecordId} account=${accountId} contentType=${data.contentType}`);
 
     // 1. 查 publish-record → 推断 contentType
     const record: any = await strapi

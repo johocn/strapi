@@ -23602,12 +23602,15 @@ const publishQueue = ({ strapi: strapi2 }) => ({
       let errorMsg = null;
       for (const stage of stages) {
         try {
+          strapi2.log.info(`[zhao-studio] → stage=${stage} updating queueStage...`);
           await strapi2.documents("plugin::zhao-studio.publish-record").update({
             documentId: data2.publishRecordId,
             data: { queueStage: stage, status: STAGE_TO_STATUS[stage] }
           }).catch(() => {
           });
+          strapi2.log.info(`[zhao-studio] → stage=${stage} calling runStage...`);
           result = await this.runStage(stage, data2, result);
+          strapi2.log.info(`[zhao-studio] ✓ stage=${stage} ok`);
         } catch (err) {
           errorMsg = err.message || String(err);
           const platformType = result.account?.platform?.type || "custom";
@@ -23662,6 +23665,7 @@ const publishQueue = ({ strapi: strapi2 }) => ({
   },
   async runStage(stage, data2, prev2) {
     const { accountId, publishRecordId } = data2;
+    strapi2.log.info(`[zhao-studio] runStage ENTER stage=${stage} record=${publishRecordId} account=${accountId} contentType=${data2.contentType}`);
     const record = await strapi2.documents("plugin::zhao-studio.publish-record").findOne({ documentId: publishRecordId, populate: ["video", "gallery", "article", "account"] });
     if (!record) throw new Error(`publish-record 不存在: ${publishRecordId}`);
     const contentType = data2.contentType || inferContentTypeFromRecord(record);
