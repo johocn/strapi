@@ -83,7 +83,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
           const syncResult = await channelAdapter.publish(content, account, type);
           await strapi.documents('plugin::zhao-studio.publish-record').update({
             documentId: record.documentId,
-            data: { status: 'success', externalId: syncResult?.externalId || syncResult?.publishId } as any,
+            data: { status: 'success', externalId: syncResult?.externalId || syncResult?.publishId, url: syncResult?.url || null } as any,
           });
           results.push({
             accountId: accDocId,

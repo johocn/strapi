@@ -338,8 +338,16 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         return { ...prev };
       }
 
-      case STAGES.FINALIZE:
+      case STAGES.FINALIZE: {
+        const { externalId, url, error } = prev;
+        await strapi.documents('plugin::zhao-studio.publish-record').update({
+          documentId: publishRecordId,
+          data: { externalId, url, error: error || null } as any,
+        }).catch((e: any) => {
+          strapi.log.warn(`[zhao-studio] FINALIZE 回写 publish-record 失败: ${e?.message}`);
+        });
         return prev;
+      }
 
       default:
         throw new Error(`未知 stage: ${stage}`);
