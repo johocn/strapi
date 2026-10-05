@@ -77,10 +77,102 @@ const register = ({ strapi: strapi2 }) => {
   } catch {
   }
 };
+function getRedisConnection() {
+  return {
+    host: process.env.REDIS_HOST || "localhost",
+    port: parseInt(process.env.REDIS_PORT || "6379", 10),
+    username: process.env.REDIS_USER || void 0,
+    password: process.env.REDIS_PASSWORD || void 0,
+    db: parseInt(process.env.REDIS_DB || "0", 10)
+  };
+}
+function getRedisOptions() {
+  return {
+    ...getRedisConnection(),
+    lazyConnect: true,
+    maxRetriesPerRequest: 1,
+    retryStrategy: () => null
+  };
+}
+function getCleanRedisConfig() {
+  const cfg = getRedisConnection();
+  const clean = { host: cfg.host, port: cfg.port, db: cfg.db };
+  clean.maxRetriesPerRequest = null;
+  if (cfg.username) clean.username = cfg.username;
+  if (cfg.password) clean.password = cfg.password;
+  return clean;
+}
+let redisClient = null;
+let queuesAvailable = null;
+let publishQueue$1 = null;
+let schedulerQueue = null;
+const registeredWorkers = [];
+async function initStudioQueues() {
+  if (queuesAvailable === false) {
+    return { publish: null, scheduler: null };
+  }
+  try {
+    const cfg = getCleanRedisConfig();
+    redisClient = new Redis(cfg);
+    redisClient.on("error", () => {
+      queuesAvailable = false;
+    });
+    await redisClient.ping();
+    queuesAvailable = true;
+    publishQueue$1 = new Queue("studio-publish", { connection: redisClient });
+    schedulerQueue = new Queue("studio-scheduler", { connection: redisClient });
+    return { publish: publishQueue$1, scheduler: schedulerQueue };
+  } catch (err) {
+    queuesAvailable = false;
+    return { publish: null, scheduler: null };
+  }
+}
+function getRedis() {
+  return redisClient;
+}
+function getPublishQueue() {
+  return publishQueue$1;
+}
+function getSchedulerQueue() {
+  return schedulerQueue;
+}
+function registerWorker(w) {
+  registeredWorkers.push(w);
+}
+async function closeStudioQueues() {
+  for (const w of registeredWorkers) {
+    try {
+      await w.close();
+    } catch {
+    }
+  }
+  registeredWorkers.length = 0;
+  if (publishQueue$1) {
+    try {
+      await publishQueue$1.close();
+    } catch {
+    }
+  }
+  if (schedulerQueue) {
+    try {
+      await schedulerQueue.close();
+    } catch {
+    }
+  }
+  if (redisClient) {
+    try {
+      await redisClient.quit();
+    } catch {
+    }
+  }
+  publishQueue$1 = null;
+  schedulerQueue = null;
+  redisClient = null;
+  queuesAvailable = null;
+}
 const bootstrap = async ({ strapi: strapi2 }) => {
   try {
-    const { initStudioQueues: initStudioQueues2 } = await Promise.resolve().then(() => queue);
-    const { publish: publish2, scheduler: scheduler2 } = await initStudioQueues2();
+    const { publish: publish2, scheduler: scheduler2 } = await initStudioQueues();
     if (publish2) {
       const pqSvc = strapi2.plugin("zhao-studio").service("publish-queue");
       if (pqSvc?.registerProcessors) {
@@ -252,108 +344,6 @@ async function seedNoticeData(strapi2) {
   strapi2.log.info("[zhao-studio] Notice data seed completed: 1 zone + 1 content");
   return { success: true, zoneId: zone.documentId, contents: 1 };
 }
-function getRedisConnection() {
-  return {
-    host: process.env.REDIS_HOST || "localhost",
-    port: parseInt(process.env.REDIS_PORT || "6379", 10),
-    username: process.env.REDIS_USER || void 0,
-    password: process.env.REDIS_PASSWORD || void 0,
-    db: parseInt(process.env.REDIS_DB || "0", 10)
-  };
-}
-function getRedisOptions() {
-  return {
-    ...getRedisConnection(),
-    lazyConnect: true,
-    maxRetriesPerRequest: 1,
-    retryStrategy: () => null
-  };
-}
-function getCleanRedisConfig() {
-  const cfg = getRedisConnection();
-  const clean = { host: cfg.host, port: cfg.port, db: cfg.db };
-  clean.maxRetriesPerRequest = null;
-  if (cfg.username) clean.username = cfg.username;
-  if (cfg.password) clean.password = cfg.password;
-  return clean;
-}
-let redisClient = null;
-let queuesAvailable = null;
-let publishQueue$1 = null;
-let schedulerQueue = null;
-const registeredWorkers = [];
-async function initStudioQueues() {
-  if (queuesAvailable === false) {
-    return { publish: null, scheduler: null };
-  }
-  try {
-    const cfg = getCleanRedisConfig();
-    redisClient = new Redis(cfg);
-    redisClient.on("error", () => {
-      queuesAvailable = false;
-    });
-    await redisClient.ping();
-    queuesAvailable = true;
-    publishQueue$1 = new Queue("studio-publish", { connection: redisClient });
-    schedulerQueue = new Queue("studio-scheduler", { connection: redisClient });
-    return { publish: publishQueue$1, scheduler: schedulerQueue };
-  } catch (err) {
-    queuesAvailable = false;
-    return { publish: null, scheduler: null };
-  }
-}
-function getRedis() {
-  return redisClient;
-}
-function getPublishQueue() {
-  return publishQueue$1;
-}
-function getSchedulerQueue() {
-  return schedulerQueue;
-}
-function registerWorker(w) {
-  registeredWorkers.push(w);
-}
-async function closeStudioQueues() {
-  for (const w of registeredWorkers) {
-    try {
-      await w.close();
-    } catch {
-    }
-  }
-  registeredWorkers.length = 0;
-  if (publishQueue$1) {
-    try {
-      await publishQueue$1.close();
-    } catch {
-    }
-  }
-  if (schedulerQueue) {
-    try {
-      await schedulerQueue.close();
-    } catch {
-    }
-  }
-  if (redisClient) {
-    try {
-      await redisClient.quit();
-    } catch {
-    }
-  }
-  publishQueue$1 = null;
-  schedulerQueue = null;
-  redisClient = null;
-  queuesAvailable = null;
-}
-const queue = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
-  __proto__: null,
-  closeStudioQueues,
-  getPublishQueue,
-  getRedis,
-  getSchedulerQueue,
-  initStudioQueues,
-  registerWorker
-}, Symbol.toStringTag, { value: "Module" }));
 const destroy = async () => {
   try {
     await closeStudioQueues();
@@ -23338,19 +23328,19 @@ const oauthManager = ({ strapi: strapi2 }) => ({
 let worker$1 = null;
 const scheduler = ({ strapi: strapi2 }) => ({
   async registerSchedulers() {
-    const queue2 = getSchedulerQueue();
+    const queue = getSchedulerQueue();
     const redis = getRedis();
-    if (!queue2 || !redis) return;
+    if (!queue || !redis) return;
     try {
-      const existing = await queue2.getRepeatableJobs();
+      const existing = await queue.getRepeatableJobs();
       for (const j of existing) {
         if (j.id === "scan-and-trigger") {
-          await queue2.removeRepeatableByKey(j.key);
+          await queue.removeRepeatableByKey(j.key);
         }
       }
     } catch {
     }
-    await queue2.add("scan-and-trigger", { type: "scan" }, {
+    await queue.add("scan-and-trigger", { type: "scan" }, {
       jobId: "scan-and-trigger",
       repeat: { cron: "* * * * *" },
       attempts: 3,
@@ -23520,8 +23510,8 @@ function buildIdempotentFilter(contentType, contentDocumentId, accountDocumentId
 }
 const publishQueue = ({ strapi: strapi2 }) => ({
   async enqueuePublish(data2) {
-    const queue2 = getPublishQueue();
-    if (!queue2) {
+    const queue = getPublishQueue();
+    if (!queue) {
       throw new Error("发布队列不可用，请检查 Redis 连接");
     }
     const record = await strapi2.documents("plugin::zhao-studio.publish-record").findOne({ documentId: data2.publishRecordId, populate: ["video", "gallery", "article", "account"] });
@@ -23543,7 +23533,7 @@ const publishQueue = ({ strapi: strapi2 }) => ({
       throw new Error(`该${contentType}在24小时内已在此账号上有进行中的发布任务 (record=${inFlight[0].documentId})`);
     }
     const jobData = { ...data2, contentType };
-    const job = await queue2.add("publish-job", jobData, {
+    const job = await queue.add("publish-job", jobData, {
       jobId: data2.publishRecordId,
       attempts: 3,
       backoff: { type: "exponential", delay: 3e3 },

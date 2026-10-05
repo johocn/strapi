@@ -1,7 +1,8 @@
+import { initStudioQueues, getRedis } from './utils/queue';
+
 export default async ({ strapi }: { strapi: any }) => {
   // === P2: Bull 队列初始化 ===
   try {
-    const { initStudioQueues } = await import('./utils/queue');
     const { publish, scheduler } = await initStudioQueues();
     if (publish) {
       const pqSvc = strapi.plugin('zhao-studio').service('publish-queue');
