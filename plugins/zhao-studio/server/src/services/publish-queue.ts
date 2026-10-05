@@ -85,8 +85,14 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     }
 
     // 幂等保护：同 content + account 在 24h 内已有 pending/queued/validating record → 拒绝
+    // 排除自身（createPublishRecord 已先创建了 status=queued 的当前 record）
     const inFlight = await strapi.documents('plugin::zhao-studio.publish-record').findMany({
-      filters: buildIdempotentFilter(contentType, contentId, data.accountId),
+      filters: {
+        $and: [
+          buildIdempotentFilter(contentType, contentId, data.accountId),
+          { documentId: { $ne: data.publishRecordId } },
+        ],
+      },
       limit: 1,
       sort: { createdAt: 'desc' },
     });

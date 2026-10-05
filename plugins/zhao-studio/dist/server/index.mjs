@@ -23544,7 +23544,12 @@ const publishQueue = ({ strapi: strapi2 }) => ({
       throw new Error(`publish-record 未关联 ${contentType} 内容`);
     }
     const inFlight = await strapi2.documents("plugin::zhao-studio.publish-record").findMany({
-      filters: buildIdempotentFilter(contentType, contentId, data2.accountId),
+      filters: {
+        $and: [
+          buildIdempotentFilter(contentType, contentId, data2.accountId),
+          { documentId: { $ne: data2.publishRecordId } }
+        ]
+      },
       limit: 1,
       sort: { createdAt: "desc" }
     });
