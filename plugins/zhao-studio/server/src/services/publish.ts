@@ -1,14 +1,12 @@
 // server/src/services/publish.ts
 
 import type { Core } from '@strapi/strapi';
-
-type ContentType = 'article' | 'video' | 'gallery';
-
-const CONTENT_UID = {
-  article: 'plugin::zhao-studio.article-draft',
-  video: 'plugin::zhao-studio.publish-video',
-  gallery: 'plugin::zhao-studio.publish-gallery',
-} as const satisfies Record<ContentType, string>;
+import {
+  CONTENT_UID,
+  insertScheduleLnk,
+  createPublishRecord,
+  type ContentType,
+} from '../utils/publish-helpers';
 
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async publishContent({ type, contentId, accountIds, scheduledAt }: {
@@ -18,6 +16,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       .documents(CONTENT_UID[type])
       .findOne({ documentId: contentId });
     if (!content) throw new Error(`${type} 内容不存在: ${contentId}`);
+
+    // 内容必须已准备好发布（对齐 publishArticle 的 status 校验）
+    if (type !== 'article' && content.status && content.status !== 'ready') {
+      throw new Error(`${type === 'video' ? '视频' : '图集'}状态为「${content.status}」，仅 ready 状态可发布`);
+    }
 
     const accounts = await strapi
       .documents('plugin::zhao-studio.publish-account')
@@ -34,8 +37,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         scheduledAt,
         status: 'scheduled',
       };
-      scheduleData[type] = contentId; // article / video / gallery 三列任选其一
+      scheduleData[type] = { connect: [{ documentId: contentId }] };
       const schedule = await strapi.documents('plugin::zhao-studio.publish-schedule').create({ data: scheduleData });
+      await insertScheduleLnk(strapi, type, schedule.id, content.id);
       return [{ trigger: 'scheduled', scheduleId: schedule.documentId, accountCount: accounts.length, contentType: type }];
     }
 
@@ -45,11 +49,14 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
     for (const account of accounts) {
       const accDocId = (account as any).documentId;
-      const recordData: any = { account: accDocId, status: 'queued' };
-      recordData[type] = contentId;
-      const record = await strapi
-        .documents('plugin::zhao-studio.publish-record')
-        .create({ data: recordData });
+      const record: any = await createPublishRecord(
+        strapi,
+        type,
+        contentId,
+        content.id,
+        accDocId,
+        (account as any).id,
+      );
 
       try {
         await publishQueue.enqueuePublish({
@@ -129,7 +136,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       const schedule = await strapi.documents('plugin::zhao-studio.publish-schedule').create({
         data: {
           name: `定时发布 ${article.title || article.documentId} @ ${opts.scheduledAt.toISOString()}`,
-          article: article.documentId,
+          article: { connect: [{ documentId: article.documentId }] },
           accountIds: accounts.map((a: any) => a.documentId || a.id),
           scheduledAt: opts.scheduledAt,
           status: 'scheduled',
@@ -146,7 +153,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       const accDocId = (account as any).documentId || (account as any).id;
       const record = await strapi
         .documents('plugin::zhao-studio.publish-record')
-        .create({ data: { article: articleId, account: accDocId, status: 'queued' } });
+        .create({ data: { article: { connect: [{ documentId: articleId }] }, account: { connect: [{ documentId: accDocId }] }, status: 'queued' } });
 
       try {
         await publishQueue.enqueuePublish({
@@ -391,7 +398,12 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       }
     }
 
-    const populate = query.populate || { account: { populate: { platform: true } } };
+    const populate = query.populate || {
+      account: { populate: { platform: true } },
+      video: true,
+      gallery: true,
+      article: true,
+    };
 
     const findQuery: any = {
       filters: mergedFilters,
@@ -404,14 +416,33 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       .documents('plugin::zhao-studio.publish-record')
       .findMany(findQuery);
 
+    // contentType 手动 filter（Strapi relation $ne null 语法不稳）
+    const contentType = query.contentType || query['filters[contentType]'];
+    let filteredRecords = records;
+    if (contentType === 'video') filteredRecords = records.filter((r: any) => !!r.video);
+    else if (contentType === 'gallery') filteredRecords = records.filter((r: any) => !!r.gallery);
+    else if (contentType === 'article') filteredRecords = records.filter((r: any) => !!r.article);
+
     const total = await strapi
       .documents('plugin::zhao-studio.publish-record')
       .count({ filters: mergedFilters });
 
     return {
-      records,
+      records: filteredRecords,
       pagination: { page, pageSize, total, pageCount: Math.ceil(total / pageSize) },
     };
+  },
+
+  async getRecordDetail(recordId: string) {
+    return strapi.documents('plugin::zhao-studio.publish-record').findOne({
+      documentId: recordId,
+      populate: {
+        account: { populate: { platform: true } },
+        video: true,
+        gallery: true,
+        article: true,
+      },
+    });
   },
 
   async retryPublish(recordId: string) {
@@ -419,8 +450,10 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       .documents('plugin::zhao-studio.publish-record')
       .findOne({ documentId: recordId });
 
-    if (!record || record.status !== 'failed') {
-      throw new Error('只能重试失败的发布记录');
+    if (!record) throw new Error('发布记录不存在');
+    const RETRYABLE = new Set(['failed', 'rejected', 'partial_success']);
+    if (!RETRYABLE.has(record.status)) {
+      throw new Error(`当前状态 ${record.status} 不可重试，仅 failed/rejected/partial_success 可重试`);
     }
 
     // 从 record 三列推断 contentType
@@ -493,18 +526,35 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       if (data.galleryId) return { contentType: 'gallery' as const, contentId: data.galleryId };
       throw new Error('必须提供 articleId / videoId / galleryId 之一');
     })();
-    return this.publishContent({ type: contentType, contentId, accountIds, scheduledAt: new Date(data.scheduledAt), name: data.name });
+    return this.publishContent({ type: contentType, contentId, accountIds: data.accountIds, scheduledAt: new Date(data.scheduledAt) });
   },
 
-  async listSchedules(filters: any = {}) {
-    return strapi.documents('plugin::zhao-studio.publish-schedule').findMany({
-      filters: { ...filters },
+  async listSchedules(query: any = {}) {
+    const page = parseInt(query.pagination?.page || query['pagination[page]']) || 1;
+    const pageSize = parseInt(query.pagination?.pageSize || query['pagination[pageSize]']) || 10;
+    const filters: any = {};
+    if (query.status || query['filters[status]']) {
+      filters.status = query.status || query['filters[status]'];
+    }
+    const list = await strapi.documents('plugin::zhao-studio.publish-schedule').findMany({
+      filters,
       sort: 'scheduledAt:desc',
+      populate: ['video', 'gallery', 'article'],
+      pagination: { page, pageSize },
     });
+    const total = await strapi.documents('plugin::zhao-studio.publish-schedule').count({ filters });
+    return {
+      list,
+      pagination: { page, pageSize, total, pageCount: Math.ceil(total / pageSize) },
+    };
   },
 
-  async findOneSchedule(id: string) {
-    return strapi.documents('plugin::zhao-studio.publish-schedule').findOne({ documentId: id });
+  async findOneSchedule(id: string, populate?: any) {
+    const defaultPopulate = ['video', 'gallery', 'article'];
+    return strapi.documents('plugin::zhao-studio.publish-schedule').findOne({
+      documentId: id,
+      populate: populate || defaultPopulate,
+    });
   },
 
   async cancelSchedule(id: string) {
