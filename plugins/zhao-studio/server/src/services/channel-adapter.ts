@@ -47,7 +47,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         case 'douyin': return await this.publishToDouyin(content, account, resolvedType, accessToken);
         case 'internal': return await this.publishToInternal(content, account, resolvedType);
         case 'custom': return await this.publishToCustom(content, account, resolvedType, accessToken);
-        case 'bilibili': throw new Error('bilibili 服务端发布 API 暂未接入，短视频/图集请先用 internal 渠道测试');
+        case 'bilibili': return await this.publishToBilibili(content, account, resolvedType);
         default: throw new Error(`暂不支持的平台类型: ${platformType}`);
       }
     } catch (error: any) {
@@ -90,6 +90,26 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     });
     if (!res.success) {
       throw new Error(res.error || '小红书 RPA 发布失败');
+    }
+    return { success: true, ...res, contentType };
+  },
+
+  async publishToBilibili(content: any, account: any, contentType: ContentType, _accessToken?: string) {
+    if (contentType === 'gallery') {
+      throw new Error(`bilibili RPA 暂不支持 gallery 类型，当前 contentType=${contentType}`);
+    }
+    const rpaClient = strapi.plugin('zhao-studio').service('rpa-client');
+    const res = await rpaClient.publishViaRPA({
+      platform: 'bilibili',
+      accountId: account.documentId || account.id || account._id,
+      title: content.title || '',
+      content: content.content || content.aiSummary || '',
+      coverImage: account.config?.coverImage || content.coverImage || undefined,
+      images: Array.isArray(account.config?.images) ? account.config.images : undefined,
+      videoUrl: contentType === 'video' ? content.videoUrl : undefined,
+    });
+    if (!res.success) {
+      throw new Error(res.error || 'bilibili RPA 发布失败');
     }
     return { success: true, ...res, contentType };
   },
