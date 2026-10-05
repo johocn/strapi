@@ -18,6 +18,10 @@ export declare function insertRecordLnks(strapi: Core.Strapi, contentType: Conte
  */
 export declare function inferContentTypeFromLnk(strapi: Core.Strapi, recordNumId: number): Promise<ContentType | null>;
 /**
+ * Strapi populate 在 plugin CT 上不可靠 → 直接查 schedule lnk 表推断 contentType
+ */
+export declare function inferContentTypeFromScheduleLnk(strapi: Core.Strapi, scheduleNumId: number): Promise<ContentType | null>;
+/**
  * Strapi populate 拿不到 content 关系 → 直接查 lnk + content 表
  * 返回 { contentNumId, contentDocumentId } 或 null
  */

@@ -100,6 +100,27 @@ export async function inferContentTypeFromLnk(strapi: Core.Strapi, recordNumId: 
 }
 
 /**
+ * Strapi populate 在 plugin CT 上不可靠 → 直接查 schedule lnk 表推断 contentType
+ */
+export async function inferContentTypeFromScheduleLnk(strapi: Core.Strapi, scheduleNumId: number): Promise<ContentType | null> {
+  try {
+    const tables: { ct: ContentType; table: string }[] = [
+      { ct: 'video', table: 'zhao_publish_schedules_video_lnk' },
+      { ct: 'gallery', table: 'zhao_publish_schedules_gallery_lnk' },
+      { ct: 'article', table: 'zhao_publish_schedules_article_lnk' },
+    ];
+    for (const { ct, table } of tables) {
+      const rows: any[] = await strapi.db.connection.query(
+        `SELECT 1 FROM ${table} WHERE publish_schedule_id = $1 LIMIT 1`,
+        [scheduleNumId],
+      );
+      if (rows.length > 0) return ct;
+    }
+  } catch { /* ignore */ }
+  return null;
+}
+
+/**
  * Strapi populate 拿不到 content 关系 → 直接查 lnk + content 表
  * 返回 { contentNumId, contentDocumentId } 或 null
  */

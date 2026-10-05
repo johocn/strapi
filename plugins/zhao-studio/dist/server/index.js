@@ -20392,6 +20392,24 @@ async function inferContentTypeFromLnk(strapi2, recordNumId) {
   }
   return null;
 }
+async function inferContentTypeFromScheduleLnk(strapi2, scheduleNumId) {
+  try {
+    const tables = [
+      { ct: "video", table: "zhao_publish_schedules_video_lnk" },
+      { ct: "gallery", table: "zhao_publish_schedules_gallery_lnk" },
+      { ct: "article", table: "zhao_publish_schedules_article_lnk" }
+    ];
+    for (const { ct, table } of tables) {
+      const rows = await strapi2.db.connection.query(
+        `SELECT 1 FROM ${table} WHERE publish_schedule_id = $1 LIMIT 1`,
+        [scheduleNumId]
+      );
+      if (rows.length > 0) return ct;
+    }
+  } catch {
+  }
+  return null;
+}
 async function resolveContentFromLnk(strapi2, contentType, recordNumId) {
   try {
     const lnkTable = `zhao_publish_records_${contentType}_lnk`;
@@ -23479,15 +23497,31 @@ const scheduler = ({ strapi: strapi2 }) => ({
     });
     for (const schedule of pending) {
       try {
-        const contentType = detectContentType$1(schedule);
+        let contentType = detectContentType$1(schedule);
         if (!contentType) {
-          strapi2.log.error(`[zhao-studio] schedule ${schedule.documentId} 未关联任何内容，跳过`);
+          contentType = await inferContentTypeFromScheduleLnk(strapi2, schedule.id);
+        }
+        if (!contentType) {
+          strapi2.log.error(`[zhao-studio] schedule ${schedule.documentId} 未关联任何内容（populate 和 lnk 表都无），跳过`);
           continue;
         }
+        let contentDocumentId;
         const contentRel = schedule[contentType];
-        const contentDocumentId = typeof contentRel === "string" ? contentRel : contentRel?.documentId;
+        if (contentRel) {
+          contentDocumentId = typeof contentRel === "string" ? contentRel : contentRel?.documentId;
+        }
         if (!contentDocumentId) {
-          strapi2.log.error(`[zhao-studio] schedule ${schedule.documentId} ${contentType} documentId 缺失`);
+          const lnkCol = contentType === "article" ? "article_draft_id" : `publish_${contentType}_id`;
+          const lnkTable = `zhao_publish_schedules_${contentType}_lnk`;
+          const contentTable = contentType === "article" ? "zhao_article_drafts" : `zhao_publish_${contentType}s`;
+          const rows = await strapi2.db.connection.query(
+            `SELECT c.document_id FROM ${lnkTable} lnk JOIN ${contentTable} c ON c.id = lnk.${lnkCol} WHERE lnk.publish_schedule_id = $1 LIMIT 1`,
+            [schedule.id]
+          ).catch(() => []);
+          contentDocumentId = rows[0]?.document_id;
+        }
+        if (!contentDocumentId) {
+          strapi2.log.error(`[zhao-studio] schedule ${schedule.documentId} ${contentType} documentId 缺失（populate 和 lnk 表都查不到）`);
           continue;
         }
         const content = await strapi2.documents(CONTENT_UID$2[contentType]).findOne({ documentId: contentDocumentId });
