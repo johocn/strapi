@@ -6,15 +6,19 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const axios_1 = __importDefault(require("axios"));
 const utils_1 = require("../utils");
+function globalDouyinCfg(strapi) {
+    return strapi.plugin('zhao-studio').config()?.publish?.platforms?.douyin || {};
+}
 exports.default = ({ strapi }) => ({
     platformType: 'douyin',
     displayName: '抖音开放平台',
-    buildAuthorizeUrl(state) {
-        const cfg = strapi.plugin('zhao-studio').config()?.publish?.platforms?.douyin || {};
-        const clientKey = cfg.clientKey || process.env.DOUYIN_CLIENT_KEY;
-        const redirectUri = cfg.redirectUri || process.env.DOUYIN_REDIRECT_URI || '';
+    async buildAuthorizeUrl(state, accountId) {
+        const acctCfg = await (0, utils_1.getAccountConfig)(strapi, accountId);
+        const gCfg = globalDouyinCfg(strapi);
+        const clientKey = acctCfg.clientKey || gCfg.clientKey || process.env.DOUYIN_CLIENT_KEY;
+        const redirectUri = acctCfg.redirectUri || gCfg.redirectUri || process.env.DOUYIN_REDIRECT_URI || '';
         if (!clientKey)
-            throw new Error('zhao-studio 未配置 douyin clientKey');
+            throw new Error('douyin 未配置 clientKey');
         const params = new URLSearchParams({
             response_type: 'code',
             client_key: clientKey,
@@ -24,12 +28,13 @@ exports.default = ({ strapi }) => ({
         });
         return `https://open.douyin.com/platform/oauth/authorize?${params.toString()}`;
     },
-    async exchangeToken(code) {
-        const cfg = strapi.plugin('zhao-studio').config()?.publish?.platforms?.douyin || {};
-        const clientKey = cfg.clientKey || process.env.DOUYIN_CLIENT_KEY;
-        const clientSecret = cfg.clientSecret || process.env.DOUYIN_CLIENT_SECRET;
+    async exchangeToken(code, accountId) {
+        const acctCfg = await (0, utils_1.getAccountConfig)(strapi, accountId);
+        const gCfg = globalDouyinCfg(strapi);
+        const clientKey = acctCfg.clientKey || gCfg.clientKey || process.env.DOUYIN_CLIENT_KEY;
+        const clientSecret = acctCfg.clientSecret || gCfg.clientSecret || process.env.DOUYIN_CLIENT_SECRET;
         if (!clientKey || !clientSecret)
-            throw new Error('zhao-studio 未配置 douyin clientKey/clientSecret');
+            throw new Error('douyin 未配置 clientKey/clientSecret');
         const res = await axios_1.default.post('https://open.douyin.com/oauth/access_token/', { client_key: clientKey, client_secret: clientSecret, code, grant_type: 'authorization_code' }, { headers: { 'Content-Type': 'application/json' }, timeout: 15000 });
         const data = res.data?.data || res.data;
         if (res.data?.message !== 'success') {
@@ -44,12 +49,13 @@ exports.default = ({ strapi }) => ({
             rawResponse: data,
         };
     },
-    async refreshToken(refreshToken) {
-        const cfg = strapi.plugin('zhao-studio').config()?.publish?.platforms?.douyin || {};
-        const clientKey = cfg.clientKey || process.env.DOUYIN_CLIENT_KEY;
-        const clientSecret = cfg.clientSecret || process.env.DOUYIN_CLIENT_SECRET;
+    async refreshToken(refreshToken, accountId) {
+        const acctCfg = await (0, utils_1.getAccountConfig)(strapi, accountId);
+        const gCfg = globalDouyinCfg(strapi);
+        const clientKey = acctCfg.clientKey || gCfg.clientKey || process.env.DOUYIN_CLIENT_KEY;
+        const clientSecret = acctCfg.clientSecret || gCfg.clientSecret || process.env.DOUYIN_CLIENT_SECRET;
         if (!clientKey || !clientSecret)
-            throw new Error('zhao-studio 未配置 douyin clientKey/clientSecret');
+            throw new Error('douyin 未配置 clientKey/clientSecret');
         const res = await axios_1.default.post('https://open.douyin.com/oauth/refresh_token/', { client_key: clientKey, client_secret: clientSecret, refresh_token: refreshToken, grant_type: 'refresh_token' }, { headers: { 'Content-Type': 'application/json' }, timeout: 15000 });
         const data = res.data?.data || res.data;
         if (res.data?.message !== 'success') {

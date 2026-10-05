@@ -6,15 +6,19 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const axios_1 = __importDefault(require("axios"));
 const utils_1 = require("../utils");
+function globalXhsCfg(strapi) {
+    return strapi.plugin('zhao-studio').config()?.publish?.platforms?.xiaohongshu || {};
+}
 exports.default = ({ strapi }) => ({
     platformType: 'xiaohongshu',
     displayName: '小红书开放平台',
-    buildAuthorizeUrl(state) {
-        const cfg = strapi.plugin('zhao-studio').config()?.publish?.platforms?.xiaohongshu || {};
-        const clientId = cfg.clientId || process.env.XHS_CLIENT_ID;
-        const redirectUri = cfg.redirectUri || process.env.XHS_REDIRECT_URI || '';
+    async buildAuthorizeUrl(state, accountId) {
+        const acctCfg = await (0, utils_1.getAccountConfig)(strapi, accountId);
+        const gCfg = globalXhsCfg(strapi);
+        const clientId = acctCfg.clientId || gCfg.clientId || process.env.XHS_CLIENT_ID;
+        const redirectUri = acctCfg.redirectUri || gCfg.redirectUri || process.env.XHS_REDIRECT_URI || '';
         if (!clientId)
-            throw new Error('zhao-studio 未配置 xiaohongshu clientId');
+            throw new Error('xiaohongshu 未配置 clientId');
         const params = new URLSearchParams({
             response_type: 'code',
             client_id: clientId,
@@ -24,12 +28,13 @@ exports.default = ({ strapi }) => ({
         });
         return `https://open.xiaohongshu.com/oauth/authorize?${params.toString()}`;
     },
-    async exchangeToken(code) {
-        const cfg = strapi.plugin('zhao-studio').config()?.publish?.platforms?.xiaohongshu || {};
-        const clientId = cfg.clientId || process.env.XHS_CLIENT_ID;
-        const clientSecret = cfg.clientSecret || process.env.XHS_CLIENT_SECRET;
+    async exchangeToken(code, accountId) {
+        const acctCfg = await (0, utils_1.getAccountConfig)(strapi, accountId);
+        const gCfg = globalXhsCfg(strapi);
+        const clientId = acctCfg.clientId || gCfg.clientId || process.env.XHS_CLIENT_ID;
+        const clientSecret = acctCfg.clientSecret || gCfg.clientSecret || process.env.XHS_CLIENT_SECRET;
         if (!clientId || !clientSecret)
-            throw new Error('zhao-studio 未配置 xiaohongshu clientId/clientSecret');
+            throw new Error('xiaohongshu 未配置 clientId/clientSecret');
         const res = await axios_1.default.post('https://open.xiaohongshu.com/oauth/access_token', { client_id: clientId, client_secret: clientSecret, code, grant_type: 'authorization_code' }, { headers: { 'Content-Type': 'application/json' }, timeout: 15000 });
         const data = res.data;
         if (data.code && data.code !== 0) {
@@ -44,12 +49,13 @@ exports.default = ({ strapi }) => ({
             rawResponse: data,
         };
     },
-    async refreshToken(refreshToken) {
-        const cfg = strapi.plugin('zhao-studio').config()?.publish?.platforms?.xiaohongshu || {};
-        const clientId = cfg.clientId || process.env.XHS_CLIENT_ID;
-        const clientSecret = cfg.clientSecret || process.env.XHS_CLIENT_SECRET;
+    async refreshToken(refreshToken, accountId) {
+        const acctCfg = await (0, utils_1.getAccountConfig)(strapi, accountId);
+        const gCfg = globalXhsCfg(strapi);
+        const clientId = acctCfg.clientId || gCfg.clientId || process.env.XHS_CLIENT_ID;
+        const clientSecret = acctCfg.clientSecret || gCfg.clientSecret || process.env.XHS_CLIENT_SECRET;
         if (!clientId || !clientSecret)
-            throw new Error('zhao-studio 未配置 xiaohongshu clientId/clientSecret');
+            throw new Error('xiaohongshu 未配置 clientId/clientSecret');
         const res = await axios_1.default.post('https://open.xiaohongshu.com/oauth/refresh_token', { client_id: clientId, client_secret: clientSecret, refresh_token: refreshToken, grant_type: 'refresh_token' }, { headers: { 'Content-Type': 'application/json' }, timeout: 15000 });
         const data = res.data;
         if (data.code && data.code !== 0) {

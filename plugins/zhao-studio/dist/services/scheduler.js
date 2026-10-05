@@ -1,23 +1,54 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+const bullmq_1 = require("bullmq");
 const queue_1 = require("../utils/queue");
+const publish_helpers_1 = require("../utils/publish-helpers");
+let worker = null;
+let scanJobRegistered = false;
 exports.default = ({ strapi }) => ({
-    registerSchedulers() {
+    async registerSchedulers() {
         const queue = (0, queue_1.getSchedulerQueue)();
-        if (!queue)
+        const redis = (0, queue_1.getRedis)();
+        if (!queue || !redis)
             return;
-        queue.add('scan-and-trigger', { type: 'scan' }, {
+        // BullMQ: 先清理旧的 scan-and-trigger repeatable（防重复注册）
+        try {
+            const existing = await queue.getRepeatableJobs();
+            for (const j of existing) {
+                if (j.id === 'scan-and-trigger') {
+                    await queue.removeRepeatableByKey(j.key);
+                }
+            }
+        }
+        catch { /* ignore */ }
+        await queue.add('scan-and-trigger', { type: 'scan' }, {
+            jobId: 'scan-and-trigger',
             repeat: { cron: '* * * * *' },
             attempts: 3,
             backoff: { type: 'exponential', delay: 2000 },
             removeOnComplete: 20,
             removeOnFail: 10,
         });
-        queue.process('scan-and-trigger', async () => {
-            await this.scanAndTriggerSchedules();
-            await this.refreshExpiringTokens();
-            return { ok: true };
-        });
+        if (!worker) {
+            worker = new bullmq_1.Worker('studio-scheduler', async () => {
+                await this.scanAndTriggerSchedules();
+                await this.refreshExpiringTokens();
+                return { ok: true };
+            }, { connection: redis, concurrency: 1 });
+            (0, queue_1.registerWorker)(worker);
+            strapi.log.info('[zhao-studio] BullMQ scheduler worker registered (cron=* * * * *)');
+        }
+        scanJobRegistered = true;
+    },
+    async closeWorker() {
+        if (worker) {
+            try {
+                await worker.close();
+            }
+            catch { /* ignore */ }
+            worker = null;
+        }
+        scanJobRegistered = false;
     },
     async scanAndTriggerSchedules() {
         const now = new Date();
@@ -26,32 +57,75 @@ exports.default = ({ strapi }) => ({
                 status: 'scheduled',
                 scheduledAt: { $lte: now },
             },
+            populate: ['video', 'gallery', 'article'],
         });
         for (const schedule of pending) {
             try {
-                // accountIds 是 JSON 数组存 documentId
+                // 1. 动态推断 contentType（populate 拿不到时 fallback schedule lnk 表）
+                let contentType = (0, publish_helpers_1.detectContentType)(schedule);
+                if (!contentType) {
+                    contentType = await (0, publish_helpers_1.inferContentTypeFromScheduleLnk)(strapi, schedule.id);
+                }
+                if (!contentType) {
+                    strapi.log.error(`[zhao-studio] schedule ${schedule.documentId} 未关联任何内容（populate 和 lnk 表都无），跳过`);
+                    continue;
+                }
+                // 2. 读取内容 documentId（populate 拿不到时 fallback schedule lnk 表直接查 content）
+                let contentDocumentId;
+                const contentRel = schedule[contentType];
+                if (contentRel) {
+                    contentDocumentId = typeof contentRel === 'string' ? contentRel : contentRel?.documentId;
+                }
+                if (!contentDocumentId) {
+                    const lnkCol = contentType === 'article' ? 'article_draft_id' : `publish_${contentType}_id`;
+                    const lnkTable = `zhao_publish_schedules_${contentType}_lnk`;
+                    const contentTable = contentType === 'article' ? 'zhao_article_drafts' : `zhao_publish_${contentType}s`;
+                    const rows = await strapi.db.connection.query(`SELECT c.document_id FROM ${lnkTable} lnk JOIN ${contentTable} c ON c.id = lnk.${lnkCol} WHERE lnk.publish_schedule_id = $1 LIMIT 1`, [schedule.id]).catch(() => []);
+                    contentDocumentId = rows[0]?.document_id;
+                }
+                if (!contentDocumentId) {
+                    strapi.log.error(`[zhao-studio] schedule ${schedule.documentId} ${contentType} documentId 缺失（populate 和 lnk 表都查不到）`);
+                    continue;
+                }
+                const content = await strapi.documents(publish_helpers_1.CONTENT_UID[contentType]).findOne({ documentId: contentDocumentId });
+                if (!content) {
+                    strapi.log.error(`[zhao-studio] schedule ${schedule.documentId} ${contentType} ${contentDocumentId} 不存在`);
+                    continue;
+                }
                 const accountIds = Array.isArray(schedule.accountIds) ? schedule.accountIds : [];
+                const accounts = await strapi
+                    .documents('plugin::zhao-studio.publish-account')
+                    .findMany({
+                    filters: { documentId: { $in: accountIds } },
+                });
+                const accountMap = new Map(accounts.map((a) => [a.documentId, a]));
+                // 3. 遍历账号：创建 record → 插 lnk → enqueue
                 for (const accId of accountIds) {
-                    const record = await strapi.documents('plugin::zhao-studio.publish-record').create({
-                        data: {
-                            article: schedule.article?.documentId || schedule.article,
-                            account: accId,
-                            status: 'queued',
-                            scheduledAt: schedule.scheduledAt,
-                        },
-                    });
-                    const publishQueue = strapi.plugin('zhao-studio').service('publish-queue');
-                    await publishQueue.enqueuePublish({
-                        articleId: String(schedule.article?.documentId || schedule.article),
-                        accountId: accId,
-                        publishRecordId: record.documentId,
-                        triggerSource: 'schedule',
-                    });
+                    try {
+                        const account = accountMap.get(accId);
+                        if (!account) {
+                            strapi.log.warn(`[zhao-studio] schedule ${schedule.documentId} account ${accId} 不存在，跳过`);
+                            continue;
+                        }
+                        const record = await (0, publish_helpers_1.createPublishRecord)(strapi, contentType, content.documentId, content.id, account.documentId, account.id, { scheduledAt: schedule.scheduledAt });
+                        const publishQueue = strapi.plugin('zhao-studio').service('publish-queue');
+                        await publishQueue.enqueuePublish({
+                            contentType,
+                            articleId: contentType === 'article' ? content.documentId : undefined,
+                            accountId: account.documentId,
+                            publishRecordId: record.documentId,
+                            triggerSource: 'schedule',
+                        });
+                    }
+                    catch (err) {
+                        strapi.log.warn(`[zhao-studio] schedule ${schedule.documentId} account ${accId} enqueue failed: ${err.message}`);
+                    }
                 }
                 await strapi.documents('plugin::zhao-studio.publish-schedule').update({
                     documentId: schedule.documentId,
                     data: { status: 'triggered', triggeredAt: new Date() },
                 });
+                strapi.log.info(`[zhao-studio] schedule ${schedule.documentId} triggered (${contentType}, ${accountIds.length} accounts)`);
             }
             catch (err) {
                 strapi.log.error(`[zhao-studio] schedule trigger failed schedule=${schedule.documentId}: ${err.message}`);

@@ -6,6 +6,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const collect_1 = __importDefault(require("./collect"));
 const draft_1 = __importDefault(require("./draft"));
 const publish_1 = __importDefault(require("./publish"));
+const publish_video_1 = __importDefault(require("./publish-video"));
+const publish_gallery_1 = __importDefault(require("./publish-gallery"));
 const internal_api_1 = __importDefault(require("./internal-api"));
 const ai_1 = __importDefault(require("./ai"));
 const analytics_1 = __importDefault(require("./analytics"));
@@ -20,10 +22,13 @@ const channel_report_1 = __importDefault(require("./channel-report"));
 const ad_1 = __importDefault(require("./ad"));
 const poster_1 = __importDefault(require("./poster"));
 const oauth_1 = __importDefault(require("./oauth"));
+const rpa_1 = __importDefault(require("./rpa"));
 exports.default = {
     collect: collect_1.default,
     draft: draft_1.default,
     publish: publish_1.default,
+    'publish-video': publish_video_1.default,
+    'publish-gallery': publish_gallery_1.default,
     'internal-api': internal_api_1.default,
     ai: ai_1.default,
     analytics: analytics_1.default,
@@ -38,5 +43,6 @@ exports.default = {
     ad: ad_1.default,
     'poster': poster_1.default,
     oauth: oauth_1.default,
+    rpa: rpa_1.default,
 };
 //# sourceMappingURL=index.js.map

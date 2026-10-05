@@ -4,93 +4,85 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.initStudioQueues = initStudioQueues;
+exports.getRedis = getRedis;
 exports.getPublishQueue = getPublishQueue;
 exports.getSchedulerQueue = getSchedulerQueue;
+exports.registerWorker = registerWorker;
 exports.closeStudioQueues = closeStudioQueues;
-const bull_1 = __importDefault(require("bull"));
-function getRedisConfig() {
-    return {
-        host: process.env.REDIS_HOST || 'localhost',
-        port: parseInt(process.env.REDIS_PORT || '6379', 10),
-        username: process.env.REDIS_USER || undefined,
-        password: process.env.REDIS_PASSWORD || undefined,
-        db: parseInt(process.env.REDIS_DB || '0', 10),
-        maxRetriesPerRequest: 1,
-    };
+const bullmq_1 = require("bullmq");
+const ioredis_1 = __importDefault(require("ioredis"));
+const redis_1 = require("./redis");
+function getCleanRedisConfig() {
+    const cfg = (0, redis_1.getRedisConnection)();
+    const clean = { host: cfg.host, port: cfg.port, db: cfg.db };
+    // BullMQ requires maxRetriesPerRequest=null (Bull v4 default was 20)
+    clean.maxRetriesPerRequest = null;
+    if (cfg.username)
+        clean.username = cfg.username;
+    if (cfg.password)
+        clean.password = cfg.password;
+    return clean;
 }
+let redisClient = null;
 let queuesAvailable = null;
 let publishQueue = null;
 let schedulerQueue = null;
-async function probeBullSupport() {
-    try {
-        // 动态 require 避免类型编译期问题
-        const Redis = require('ioredis');
-        const redis = new Redis(getRedisConfig());
-        await redis.connect().catch(() => { });
-        const result = await redis.eval('return 1', 0);
-        try {
-            await redis.quit();
-        }
-        catch { /* ignore */ }
-        return result === 1;
-    }
-    catch {
-        return false;
-    }
-}
+const registeredWorkers = [];
 async function initStudioQueues() {
-    if (queuesAvailable === null) {
-        queuesAvailable = await probeBullSupport();
-    }
-    if (!queuesAvailable)
+    if (queuesAvailable === false) {
         return { publish: null, scheduler: null };
-    if (!publishQueue) {
-        try {
-            publishQueue = new bull_1.default('studio-publish', {
-                redis: getRedisConfig(),
-                defaultJobOptions: {
-                    attempts: 3,
-                    backoff: { type: 'exponential', delay: 5000 },
-                    removeOnComplete: 20,
-                    removeOnFail: 10,
-                },
-            });
-        }
-        catch {
-            publishQueue = null;
-        }
     }
-    if (!schedulerQueue) {
-        try {
-            schedulerQueue = new bull_1.default('studio-scheduler', {
-                redis: getRedisConfig(),
-                defaultJobOptions: {
-                    attempts: 3,
-                    backoff: { type: 'exponential', delay: 2000 },
-                    removeOnComplete: 20,
-                    removeOnFail: 10,
-                },
-            });
-        }
-        catch {
-            schedulerQueue = null;
-        }
+    try {
+        const cfg = getCleanRedisConfig();
+        redisClient = new ioredis_1.default(cfg);
+        // 必须监听 error，否则连接失败时 ioredis 抛出 "Unhandled error event" 并持续重连刷屏
+        redisClient.on('error', () => { queuesAvailable = false; });
+        await redisClient.ping();
+        queuesAvailable = true;
+        publishQueue = new bullmq_1.Queue('studio-publish', { connection: redisClient });
+        schedulerQueue = new bullmq_1.Queue('studio-scheduler', { connection: redisClient });
+        return { publish: publishQueue, scheduler: schedulerQueue };
     }
-    return { publish: publishQueue, scheduler: schedulerQueue };
+    catch (err) {
+        queuesAvailable = false;
+        return { publish: null, scheduler: null };
+    }
 }
+function getRedis() { return redisClient; }
 function getPublishQueue() { return publishQueue; }
 function getSchedulerQueue() { return schedulerQueue; }
+function registerWorker(w) {
+    registeredWorkers.push(w);
+}
 async function closeStudioQueues() {
-    for (const q of [publishQueue, schedulerQueue]) {
-        if (q) {
-            try {
-                await q.close();
-            }
-            catch { /* ignore */ }
+    for (const w of registeredWorkers) {
+        try {
+            await w.close();
         }
+        catch { /* ignore */ }
+    }
+    registeredWorkers.length = 0;
+    if (publishQueue) {
+        try {
+            await publishQueue.close();
+        }
+        catch { /* ignore */ }
+    }
+    if (schedulerQueue) {
+        try {
+            await schedulerQueue.close();
+        }
+        catch { /* ignore */ }
+    }
+    if (redisClient) {
+        try {
+            await redisClient.quit();
+        }
+        catch { /* ignore */ }
     }
     publishQueue = null;
     schedulerQueue = null;
+    redisClient = null;
     queuesAvailable = null;
 }
 //# sourceMappingURL=queue.js.map

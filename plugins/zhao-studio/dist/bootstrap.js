@@ -1,43 +1,10 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
 Object.defineProperty(exports, "__esModule", { value: true });
+const queue_1 = require("./utils/queue");
 exports.default = async ({ strapi }) => {
     // === P2: Bull 队列初始化 ===
     try {
-        const { initStudioQueues } = await Promise.resolve().then(() => __importStar(require('./utils/queue')));
-        const { publish, scheduler } = await initStudioQueues();
+        const { publish, scheduler } = await (0, queue_1.initStudioQueues)();
         if (publish) {
             const pqSvc = strapi.plugin('zhao-studio').service('publish-queue');
             if (pqSvc?.registerProcessors) {
@@ -103,6 +70,15 @@ exports.default = async ({ strapi }) => {
     catch (e) {
         strapi.log.error(`[zhao-studio] Failed to seed notice data: ${e.message}`);
         strapi.log.error(`[zhao-studio] Notice seed error stack: ${e.stack}`);
+    }
+    // Seed publish-platforms + auto-link orphan accounts (platform=null)
+    try {
+        const pubResult = await seedPublishPlatformsAndLinkAccounts(strapi);
+        strapi.log.info(`[zhao-studio] Publish seed result: ${JSON.stringify(pubResult)}`);
+    }
+    catch (e) {
+        strapi.log.error(`[zhao-studio] Failed to seed publish platforms: ${e.message}`);
+        strapi.log.error(`[zhao-studio] Publish seed error stack: ${e.stack}`);
     }
 };
 /**
@@ -236,5 +212,96 @@ async function seedNoticeData(strapi) {
     strapi.log.info('[zhao-studio] Notice content created: 首页公告 (html)');
     strapi.log.info('[zhao-studio] Notice data seed completed: 1 zone + 1 content');
     return { success: true, zoneId: zone.documentId, contents: 1 };
+}
+/**
+ * Seed publish-platforms (wechat/douyin/xiaohongshu/toutiao/bilibili/internal/custom)
+ * + auto-link orphan accounts whose platform is null.
+ * Idempotent: skips existing platforms; only touches accounts with platform=null.
+ *
+ * Account → platform inference rules (heuristic, ordered):
+ *   1. name contains "公众号" / "微信"            → wechat
+ *   2. name contains "抖音" / "douyin"            → douyin
+ *   3. name contains "小红书" / "xiaohongshu"     → xiaohongshu
+ *   4. name contains "头条" / "toutiao"          → toutiao
+ *   5. name contains "bilibili" / "b站" / "B站"   → bilibili
+ *   6. name contains "internal" / "内部" / "E2E"  → internal
+ *   7. config.appId / config.mediaId present       → wechat (公众号 config 特征)
+ *   8. fallback → internal
+ */
+async function seedPublishPlatformsAndLinkAccounts(strapi) {
+    strapi.log.info('[zhao-studio] Starting publish-platforms seed + account auto-link...');
+    // 1. Ensure all 7 platform types exist
+    const PLATFORM_SEEDS = [
+        { type: 'wechat', name: '微信公众号', category: 'content' },
+        { type: 'douyin', name: '抖音', category: 'content' },
+        { type: 'xiaohongshu', name: '小红书', category: 'content' },
+        { type: 'toutiao', name: '头条', category: 'content' },
+        { type: 'bilibili', name: 'B站', category: 'content' },
+        { type: 'internal', name: '内部渠道', category: 'custom' },
+        { type: 'custom', name: '自定义', category: 'custom' },
+    ];
+    const created = [];
+    const existing = [];
+    for (const seed of PLATFORM_SEEDS) {
+        const found = await strapi.documents('plugin::zhao-studio.publish-platform').findMany({
+            filters: { type: seed.type },
+            limit: 1,
+        });
+        if (found.length === 0) {
+            const p = await strapi.documents('plugin::zhao-studio.publish-platform').create({ data: { ...seed, isActive: true } });
+            created.push(seed.type);
+            strapi.log.info(`[zhao-studio] Seed platform ${seed.type} → ${p.documentId}`);
+        }
+        else {
+            existing.push(seed.type);
+        }
+    }
+    // Build map: type → documentId
+    const allPlatforms = await strapi.documents('plugin::zhao-studio.publish-platform').findMany({ limit: 50 });
+    const typeToDocId = {};
+    for (const p of allPlatforms) {
+        if (p.type)
+            typeToDocId[p.type] = p.documentId;
+    }
+    // 2. Find orphan accounts (platform=null) + link
+    const orphans = await strapi.documents('plugin::zhao-studio.publish-account').findMany({
+        filters: { platform: null },
+        limit: 50,
+    });
+    let linked = 0;
+    for (const acc of orphans) {
+        const inferredType = inferPlatformType(acc);
+        const targetDocId = typeToDocId[inferredType];
+        if (!targetDocId) {
+            strapi.log.warn(`[zhao-studio] Cannot find platform doc for type=${inferredType}, skip linking account=${acc.documentId}`);
+            continue;
+        }
+        await strapi.documents('plugin::zhao-studio.publish-account').update({
+            documentId: acc.documentId,
+            data: { platform: { connect: [{ documentId: targetDocId }] } },
+        });
+        linked++;
+        strapi.log.info(`[zhao-studio] Auto-linked account "${acc.name}" (${acc.documentId}) → platform=${inferredType}`);
+    }
+    return { platforms: { created, existing, total: allPlatforms.length }, orphanAccounts: { found: orphans.length, linked } };
+}
+function inferPlatformType(acc) {
+    const name = (acc.name || '').toLowerCase();
+    const cfg = acc.config || {};
+    if (/公众号|微信|wechat/i.test(name))
+        return 'wechat';
+    if (/douyin|抖音/i.test(name))
+        return 'douyin';
+    if (/xiaohongshu|小红书/i.test(name))
+        return 'xiaohongshu';
+    if (/toutiao|头条/i.test(name))
+        return 'toutiao';
+    if (/bilibili|b站|b站/i.test(name))
+        return 'bilibili';
+    if (/internal|内部|e2e/i.test(name))
+        return 'internal';
+    if (cfg.appId || cfg.mediaId)
+        return 'wechat';
+    return 'internal';
 }
 //# sourceMappingURL=bootstrap.js.map

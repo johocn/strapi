@@ -1,81 +1,81 @@
 {
-  "kind": "collectionType",
-  "collectionName": "zhao_publish_videos",
-  "info": {
-    "singularName": "publish-video",
-    "pluralName": "publish-videos",
-    "displayName": "短视频",
-    "description": "待发布到各平台的短视频素材"
-  },
-  "options": {
-    "draftAndPublish": true
-  },
-  "pluginOptions": {
-    "content-manager": {
-      "visible": true
+    "kind": "collectionType",
+    "collectionName": "zhao_publish_videos",
+    "info": {
+        "singularName": "publish-video",
+        "pluralName": "publish-videos",
+        "displayName": "短视频",
+        "description": "待发布到各平台的短视频素材"
     },
-    "content-type-builder": {
-      "visible": true
+    "options": {
+        "draftAndPublish": true
+    },
+    "pluginOptions": {
+        "content-manager": {
+            "visible": true
+        },
+        "content-type-builder": {
+            "visible": true
+        }
+    },
+    "attributes": {
+        "title": {
+            "type": "string",
+            "required": true,
+            "maxLength": 200
+        },
+        "videoUrl": {
+            "type": "string",
+            "required": true
+        },
+        "coverImage": {
+            "type": "string"
+        },
+        "description": {
+            "type": "text"
+        },
+        "duration": {
+            "type": "integer"
+        },
+        "size": {
+            "type": "integer"
+        },
+        "tags": {
+            "type": "json"
+        },
+        "status": {
+            "type": "enumeration",
+            "enum": ["draft", "processing", "ready", "published"],
+            "default": "draft"
+        },
+        "publishRecords": {
+            "type": "relation",
+            "relation": "oneToMany",
+            "target": "plugin::zhao-studio.publish-record",
+            "mappedBy": "video"
+        },
+        "publishSchedules": {
+            "type": "relation",
+            "relation": "oneToMany",
+            "target": "plugin::zhao-studio.publish-schedule",
+            "mappedBy": "video"
+        },
+        "scope": {
+            "type": "enumeration",
+            "enum": ["current", "global", "tenant"],
+            "default": "current"
+        },
+        "scopeTenantId": {
+            "type": "string"
+        },
+        "publishedAt": {
+            "type": "datetime"
+        },
+        "createdAt": {
+            "type": "datetime"
+        },
+        "updatedAt": {
+            "type": "datetime"
+        }
     }
-  },
-  "attributes": {
-    "title": {
-      "type": "string",
-      "required": true,
-      "maxLength": 200
-    },
-    "videoUrl": {
-      "type": "string",
-      "required": true
-    },
-    "coverImage": {
-      "type": "string"
-    },
-    "description": {
-      "type": "text"
-    },
-    "duration": {
-      "type": "integer"
-    },
-    "size": {
-      "type": "integer"
-    },
-    "tags": {
-      "type": "json"
-    },
-    "status": {
-      "type": "enumeration",
-      "enum": ["draft", "processing", "ready", "published"],
-      "default": "draft"
-    },
-    "publishRecords": {
-      "type": "relation",
-      "relation": "oneToMany",
-      "target": "plugin::zhao-studio.publish-record",
-      "mappedBy": "video"
-    },
-    "publishSchedules": {
-      "type": "relation",
-      "relation": "oneToMany",
-      "target": "plugin::zhao-studio.publish-schedule",
-      "mappedBy": "video"
-    },
-    "scope": {
-      "type": "enumeration",
-      "enum": ["current", "global", "tenant"],
-      "default": "current"
-    },
-    "scopeTenantId": {
-      "type": "string"
-    },
-    "publishedAt": {
-      "type": "datetime"
-    },
-    "createdAt": {
-      "type": "datetime"
-    },
-    "updatedAt": {
-      "type": "datetime"
-    }
-  }
 }

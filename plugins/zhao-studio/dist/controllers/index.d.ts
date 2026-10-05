@@ -34,7 +34,11 @@ declare const _default: {
         updateAccount(ctx: any): Promise<void>;
         deleteAccount(ctx: any): Promise<void>;
         publishArticle(ctx: any): Promise<void>;
+        publishVideo(ctx: any): Promise<void>;
+        publishGallery(ctx: any): Promise<void>;
+        publishContent(ctx: any): Promise<any>;
         listRecords(ctx: any): Promise<void>;
+        getRecordDetail(ctx: any): Promise<any>;
         retryPublish(ctx: any): Promise<void>;
         syncStatus(ctx: any): Promise<void>;
         findOne(ctx: any): Promise<void>;
@@ -42,10 +46,28 @@ declare const _default: {
         findOneAccount(ctx: any): Promise<void>;
         createSchedule(ctx: any): Promise<void>;
         listSchedules(ctx: any): Promise<void>;
-        findOneSchedule(ctx: any): Promise<void>;
+        findOneSchedule(ctx: any): Promise<any>;
         cancelSchedule(ctx: any): Promise<void>;
-        getDouyinSchema(ctx: any): Promise<void>;
-        previewPublish(ctx: any): Promise<void>;
+        getDouyinSchema(ctx: any): Promise<any>;
+        previewPublish(ctx: any): Promise<any>;
+    };
+    'publish-video': ({ strapi }: {
+        strapi: import("@strapi/types/dist/core").Strapi;
+    }) => {
+        list(ctx: any): Promise<void>;
+        findOne(ctx: any): Promise<void>;
+        create(ctx: any): Promise<void>;
+        update(ctx: any): Promise<void>;
+        delete(ctx: any): Promise<void>;
+    };
+    'publish-gallery': ({ strapi }: {
+        strapi: import("@strapi/types/dist/core").Strapi;
+    }) => {
+        list(ctx: any): Promise<void>;
+        findOne(ctx: any): Promise<void>;
+        create(ctx: any): Promise<void>;
+        update(ctx: any): Promise<void>;
+        delete(ctx: any): Promise<void>;
     };
     'internal-api': ({ strapi }: {
         strapi: import("@strapi/types/dist/core").Strapi;
@@ -189,6 +211,16 @@ declare const _default: {
         handleCallback(ctx: any): Promise<void>;
         getStatus(ctx: any): Promise<void>;
         revoke(ctx: any): Promise<void>;
+    };
+    rpa: ({ strapi }: {
+        strapi: import("@strapi/types/dist/core").Strapi;
+    }) => {
+        getCookiesStatus(ctx: any): Promise<void>;
+        saveCookies(ctx: any): Promise<void>;
+        clearCookies(ctx: any): Promise<void>;
+        startLogin(ctx: any): Promise<void>;
+        finishLogin(ctx: any): Promise<void>;
+        cancelLogin(ctx: any): Promise<void>;
     };
 };
 export default _default;

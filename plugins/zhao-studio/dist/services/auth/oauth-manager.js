@@ -20,14 +20,14 @@ exports.default = ({ strapi }) => ({
             throw new Error(`暂不支持的 OAuth 平台: ${platformType}`);
         const nonce = (0, utils_1.generateNonce)();
         const state = (0, utils_1.encodeState)(accountId, nonce);
-        await (0, utils_1.validateAndConsumeNonce)(strapi, nonce);
-        return provider.buildAuthorizeUrl(state);
+        await (0, utils_1.issueNonce)(strapi, nonce);
+        return provider.buildAuthorizeUrl(state, accountId);
     },
     async handleCallback(platformType, code, state) {
         const parsed = (0, utils_1.decodeState)(state);
         if (!parsed)
             throw new Error('state 参数格式无效');
-        const nonceOk = await (0, utils_1.validateAndConsumeNonce)(strapi, parsed.nonce);
+        const nonceOk = await (0, utils_1.consumeNonce)(strapi, parsed.nonce);
         if (!nonceOk)
             throw new Error('OAuth state 校验失败（nonce 已使用）');
         const account = await strapi.documents(ACCOUNT_UID).findOne({ documentId: parsed.accountId, populate: { platform: true } });
@@ -38,7 +38,7 @@ exports.default = ({ strapi }) => ({
         const provider = (0, providers_1.getProvider)(strapi, platformType);
         if (!provider)
             throw new Error(`暂不支持的 OAuth 平台: ${platformType}`);
-        const tokenResult = await provider.exchangeToken(code);
+        const tokenResult = await provider.exchangeToken(code, parsed.accountId);
         await strapi.documents(ACCOUNT_UID).update({
             documentId: parsed.accountId,
             data: {
@@ -77,7 +77,7 @@ exports.default = ({ strapi }) => ({
         const provider = (0, providers_1.getProvider)(strapi, platformType);
         if (!provider)
             throw new Error(`暂不支持的 OAuth 平台: ${platformType}`);
-        const refreshResult = await provider.refreshToken(account.oauthRefreshToken);
+        const refreshResult = await provider.refreshToken(account.oauthRefreshToken, accountId);
         await strapi.documents(ACCOUNT_UID).update({
             documentId: accountId,
             data: {

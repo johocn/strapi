@@ -11,7 +11,11 @@ declare const _default: ({ strapi }: {
     updateAccount(ctx: any): Promise<void>;
     deleteAccount(ctx: any): Promise<void>;
     publishArticle(ctx: any): Promise<void>;
+    publishVideo(ctx: any): Promise<void>;
+    publishGallery(ctx: any): Promise<void>;
+    publishContent(ctx: any): Promise<any>;
     listRecords(ctx: any): Promise<void>;
+    getRecordDetail(ctx: any): Promise<any>;
     retryPublish(ctx: any): Promise<void>;
     syncStatus(ctx: any): Promise<void>;
     findOne(ctx: any): Promise<void>;
@@ -19,10 +23,10 @@ declare const _default: ({ strapi }: {
     findOneAccount(ctx: any): Promise<void>;
     createSchedule(ctx: any): Promise<void>;
     listSchedules(ctx: any): Promise<void>;
-    findOneSchedule(ctx: any): Promise<void>;
+    findOneSchedule(ctx: any): Promise<any>;
     cancelSchedule(ctx: any): Promise<void>;
-    getDouyinSchema(ctx: any): Promise<void>;
-    previewPublish(ctx: any): Promise<void>;
+    getDouyinSchema(ctx: any): Promise<any>;
+    previewPublish(ctx: any): Promise<any>;
 };
 export default _default;
 //# sourceMappingURL=publish.d.ts.map

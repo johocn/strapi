@@ -14,12 +14,23 @@ export declare function decodeState(state: string): {
  */
 export declare function generateNonce(): string;
 /**
- * 校验 nonce：已用过或过期返回 false
- * 使用宿主 Redis 存储（REDIS_URL 环境变量）
+ * 登记 nonce（授权阶段调用）：写入 Redis 并带 TTL。
+ * 与 consumeNonce 分开是必须的 —— 授权阶段只是「发放」，回调阶段才「消费」；
+ * 若授权阶段就当成消费，回调时同一 nonce 必然被判为已用过。
  */
-export declare function validateAndConsumeNonce(strapi: any, nonce: string): Promise<boolean>;
+export declare function issueNonce(strapi: any, nonce: string): Promise<void>;
+/**
+ * 校验并消费 nonce（回调阶段调用）：存在则删除并返回 true；不存在（过期/重放）返回 false。
+ * Redis 不可用时返回 true（fail-open，保持原行为：不因缓存故障阻塞授权流程）。
+ */
+export declare function consumeNonce(strapi: any, nonce: string): Promise<boolean>;
 /**
  * 计算 access_token 过期时间（秒数 → Date）
  */
 export declare function computeExpiresAt(expiresInSeconds: number): Date;
+/**
+ * 从 account 读取 config（支持 provider 从 per-account 配置取凭证）。
+ * account.config 在后端 json 类型字段里已是对象，不是 string。
+ */
+export declare function getAccountConfig(strapi: any, accountId: string): Promise<Record<string, any>>;
 //# sourceMappingURL=utils.d.ts.map

@@ -1,32 +1,70 @@
 import type { Core } from '@strapi/strapi';
+import { type ContentType } from '../utils/publish-helpers';
 declare const _default: ({ strapi }: {
     strapi: Core.Strapi;
 }) => {
+    publishContent({ type, contentId, accountIds, scheduledAt }: {
+        type: ContentType;
+        contentId: string;
+        accountIds: string[];
+        scheduledAt?: Date;
+    }): Promise<any[]>;
     publishArticle(articleId: string, accountIds: string[], opts?: {
         scheduledAt?: Date;
     }): Promise<any[]>;
-    listPlatforms(): Promise<import("@strapi/types/dist/modules/documents").AnyDocument[]>;
+    listPlatforms(query?: any): Promise<{
+        records: import("@strapi/types/dist/modules/documents").AnyDocument[];
+        pagination: {
+            page: number;
+            pageSize: number;
+            total: number;
+            pageCount: number;
+        };
+    }>;
     createPlatform(data: any): Promise<import("@strapi/types/dist/modules/documents").AnyDocument>;
     updatePlatform(platformId: string, data: any): Promise<import("@strapi/types/dist/modules/documents").AnyDocument | null>;
     deletePlatform(platformId: string): Promise<void>;
-    listAccounts(platformId?: string): Promise<import("@strapi/types/dist/modules/documents").AnyDocument[]>;
+    listAccounts(query?: any): Promise<{
+        records: import("@strapi/types/dist/modules/documents").AnyDocument[];
+        pagination: {
+            page: number;
+            pageSize: number;
+            total: number;
+            pageCount: number;
+        };
+    }>;
     createAccount(data: any): Promise<import("@strapi/types/dist/modules/documents").AnyDocument>;
     updateAccount(accountId: string, data: any): Promise<import("@strapi/types/dist/modules/documents").AnyDocument | null>;
     deleteAccount(accountId: string): Promise<void>;
-    listRecords(filters?: {
-        articleId?: string;
-        platformId?: string;
-        accountId?: string;
-    }): Promise<import("@strapi/types/dist/modules/documents").AnyDocument[]>;
+    listRecords(query?: any): Promise<{
+        records: import("@strapi/types/dist/modules/documents").AnyDocument[];
+        pagination: {
+            page: number;
+            pageSize: number;
+            total: number;
+            pageCount: number;
+        };
+    }>;
+    getRecordDetail(recordId: string): Promise<import("@strapi/types/dist/modules/documents").AnyDocument | null>;
     retryPublish(recordId: string): Promise<any>;
     createSchedule(data: {
-        articleId: string;
+        articleId?: string;
+        videoId?: string;
+        galleryId?: string;
         accountIds: string[];
         scheduledAt: string;
         name?: string;
     }): Promise<any[]>;
-    listSchedules(filters?: any): Promise<import("@strapi/types/dist/modules/documents").AnyDocument[]>;
-    findOneSchedule(id: string): Promise<import("@strapi/types/dist/modules/documents").AnyDocument | null>;
+    listSchedules(query?: any): Promise<{
+        list: import("@strapi/types/dist/modules/documents").AnyDocument[];
+        pagination: {
+            page: number;
+            pageSize: number;
+            total: number;
+            pageCount: number;
+        };
+    }>;
+    findOneSchedule(id: string, populate?: any): Promise<import("@strapi/types/dist/modules/documents").AnyDocument | null>;
     cancelSchedule(id: string): Promise<import("@strapi/types/dist/modules/documents").AnyDocument | null>;
     getDouyinSchema(recordId: string): Promise<{
         recordId: string;

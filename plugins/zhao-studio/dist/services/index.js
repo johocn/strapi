@@ -23,6 +23,7 @@ const poster_1 = __importDefault(require("./poster"));
 const oauth_manager_1 = __importDefault(require("./auth/oauth-manager"));
 const scheduler_1 = __importDefault(require("./scheduler"));
 const publish_queue_1 = __importDefault(require("./publish-queue"));
+const rpa_client_1 = __importDefault(require("./rpa-client"));
 exports.default = {
     collect: collect_1.default,
     scraper: scraper_1.default,
@@ -44,5 +45,6 @@ exports.default = {
     'oauth-manager': oauth_manager_1.default,
     scheduler: scheduler_1.default,
     'publish-queue': publish_queue_1.default,
+    'rpa-client': rpa_client_1.default,
 };
 //# sourceMappingURL=index.js.map

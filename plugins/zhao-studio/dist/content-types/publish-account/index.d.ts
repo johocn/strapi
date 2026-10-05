@@ -75,6 +75,14 @@ declare const _default: {
             lastRefreshAt: {
                 type: string;
             };
+            rpaCookies: {
+                type: string;
+                description: string;
+            };
+            rpaCookiesAt: {
+                type: string;
+                description: string;
+            };
             createdAt: {
                 type: string;
             };

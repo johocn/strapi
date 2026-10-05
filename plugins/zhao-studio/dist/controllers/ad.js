@@ -35,8 +35,8 @@ exports.default = ({ strapi }) => ({
     async listZones(ctx) {
         try {
             const adService = strapi.plugin('zhao-studio').service('ad');
-            const zones = await adService.listZones(ctx.query.filters || {});
-            ctx.body = { data: zones };
+            const result = await adService.listZones(ctx.query);
+            ctx.body = { data: result.records, meta: result.meta };
         }
         catch (err) {
             ctx.status = 500;
@@ -101,8 +101,8 @@ exports.default = ({ strapi }) => ({
     async listContents(ctx) {
         try {
             const adService = strapi.plugin('zhao-studio').service('ad');
-            const contents = await adService.listContents(ctx.query.filters || {});
-            ctx.body = { data: contents };
+            const result = await adService.listContents(ctx.query);
+            ctx.body = { data: result.records, meta: result.meta };
         }
         catch (err) {
             ctx.status = 500;

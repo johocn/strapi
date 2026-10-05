@@ -1,0 +1,1 @@
+{"version":3,"file":"publish-video.d.ts","sourceRoot":"","sources":["../../server/src/controllers/publish-video.ts"],"names":[],"mappings":"AAEA,OAAO,KAAK,EAAE,IAAI,EAAE,MAAM,gBAAgB,CAAC;yBAI3B,YAAY;IAAE,MAAM,EAAE,IAAI,CAAC,MAAM,CAAA;CAAE;cACjC,GAAG;iBAmBA,GAAG;gBAKJ,GAAG;gBAMH,GAAG;gBAOH,GAAG;;AAtCvB,wBA0CG"}

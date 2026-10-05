@@ -2,7 +2,8 @@ import type { Core } from '@strapi/strapi';
 declare const _default: ({ strapi }: {
     strapi: Core.Strapi;
 }) => {
-    registerSchedulers(): void;
+    registerSchedulers(): Promise<void>;
+    closeWorker(): Promise<void>;
     scanAndTriggerSchedules(): Promise<void>;
     refreshExpiringTokens(): Promise<void>;
 };

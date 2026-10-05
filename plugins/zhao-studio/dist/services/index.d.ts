@@ -66,31 +66,68 @@ declare const _default: {
     publish: ({ strapi }: {
         strapi: import("@strapi/types/dist/core").Strapi;
     }) => {
+        publishContent({ type, contentId, accountIds, scheduledAt }: {
+            type: import("../utils/publish-helpers").ContentType;
+            contentId: string;
+            accountIds: string[];
+            scheduledAt?: Date;
+        }): Promise<any[]>;
         publishArticle(articleId: string, accountIds: string[], opts?: {
             scheduledAt?: Date;
         }): Promise<any[]>;
-        listPlatforms(): Promise<import("@strapi/types/dist/modules/documents").AnyDocument[]>;
+        listPlatforms(query?: any): Promise<{
+            records: import("@strapi/types/dist/modules/documents").AnyDocument[];
+            pagination: {
+                page: number;
+                pageSize: number;
+                total: number;
+                pageCount: number;
+            };
+        }>;
         createPlatform(data: any): Promise<import("@strapi/types/dist/modules/documents").AnyDocument>;
         updatePlatform(platformId: string, data: any): Promise<import("@strapi/types/dist/modules/documents").AnyDocument | null>;
         deletePlatform(platformId: string): Promise<void>;
-        listAccounts(platformId?: string): Promise<import("@strapi/types/dist/modules/documents").AnyDocument[]>;
+        listAccounts(query?: any): Promise<{
+            records: import("@strapi/types/dist/modules/documents").AnyDocument[];
+            pagination: {
+                page: number;
+                pageSize: number;
+                total: number;
+                pageCount: number;
+            };
+        }>;
         createAccount(data: any): Promise<import("@strapi/types/dist/modules/documents").AnyDocument>;
         updateAccount(accountId: string, data: any): Promise<import("@strapi/types/dist/modules/documents").AnyDocument | null>;
         deleteAccount(accountId: string): Promise<void>;
-        listRecords(filters?: {
-            articleId?: string;
-            platformId?: string;
-            accountId?: string;
-        }): Promise<import("@strapi/types/dist/modules/documents").AnyDocument[]>;
+        listRecords(query?: any): Promise<{
+            records: import("@strapi/types/dist/modules/documents").AnyDocument[];
+            pagination: {
+                page: number;
+                pageSize: number;
+                total: number;
+                pageCount: number;
+            };
+        }>;
+        getRecordDetail(recordId: string): Promise<import("@strapi/types/dist/modules/documents").AnyDocument | null>;
         retryPublish(recordId: string): Promise<any>;
         createSchedule(data: {
-            articleId: string;
+            articleId?: string;
+            videoId?: string;
+            galleryId?: string;
             accountIds: string[];
             scheduledAt: string;
             name?: string;
         }): Promise<any[]>;
-        listSchedules(filters?: any): Promise<import("@strapi/types/dist/modules/documents").AnyDocument[]>;
-        findOneSchedule(id: string): Promise<import("@strapi/types/dist/modules/documents").AnyDocument | null>;
+        listSchedules(query?: any): Promise<{
+            list: import("@strapi/types/dist/modules/documents").AnyDocument[];
+            pagination: {
+                page: number;
+                pageSize: number;
+                total: number;
+                pageCount: number;
+            };
+        }>;
+        findOneSchedule(id: string, populate?: any): Promise<import("@strapi/types/dist/modules/documents").AnyDocument | null>;
         cancelSchedule(id: string): Promise<import("@strapi/types/dist/modules/documents").AnyDocument | null>;
         getDouyinSchema(recordId: string): Promise<{
             recordId: string;
@@ -121,61 +158,55 @@ declare const _default: {
     'channel-adapter': ({ strapi }: {
         strapi: import("@strapi/types/dist/core").Strapi;
     }) => {
-        publish(article: any, account: any): Promise<{
+        publish(content: any, account: any, contentType?: "article" | "video" | "gallery"): Promise<any>;
+        publishToToutiao(content: any, account: any, contentType: "article" | "video" | "gallery", _accessToken?: string): Promise<any>;
+        publishToXiaohongshu(content: any, account: any, contentType: "article" | "video" | "gallery", _accessToken?: string): Promise<any>;
+        publishToBilibili(content: any, account: any, contentType: "article" | "video" | "gallery", _accessToken?: string): Promise<any>;
+        publishToWechat(content: any, account: any, contentType: "article" | "video" | "gallery", _accessToken?: string): Promise<{
             success: boolean;
             createdDraft: boolean;
             draftId: any;
             error: string;
+            contentType: "article";
             externalId?: undefined;
             publishId?: undefined;
         } | {
             success: boolean;
             externalId: any;
             publishId: any;
-            createdDraft?: undefined;
-            draftId?: undefined;
-            error?: undefined;
-        } | {
-            success: boolean;
-            publish_mode: string;
-            schema: string;
-        } | {
-            success: boolean;
-            externalId: any;
-            accessUrl: string;
-            channelCode: any;
-        } | {
-            success: any;
-            externalId: any;
-            error: any;
-        }>;
-        publishToToutiao(article: any, account: any, _accessToken?: string): Promise<never>;
-        publishToXiaohongshu(article: any, account: any, _accessToken?: string): Promise<never>;
-        publishToWechat(article: any, account: any, _accessToken?: string): Promise<{
-            success: boolean;
-            createdDraft: boolean;
-            draftId: any;
-            error: string;
-            externalId?: undefined;
-            publishId?: undefined;
-        } | {
-            success: boolean;
-            externalId: any;
-            publishId: any;
+            contentType: "article";
             createdDraft?: undefined;
             draftId?: undefined;
             error?: undefined;
         }>;
-        publishToInternal(article: any, account: any): Promise<{
+        publishToInternal(content: any, account: any, contentType: "article" | "video" | "gallery"): Promise<{
             success: boolean;
             externalId: any;
             accessUrl: string;
             channelCode: any;
+            contentType: "article" | "video" | "gallery";
         }>;
-        publishToCustom(article: any, account: any, _accessToken?: string): Promise<{
+        publishToCustom(content: any, account: any, contentType: "article" | "video" | "gallery", _accessToken?: string): Promise<{
+            success: boolean;
+            externalId: any;
+            accessUrl: any;
+            contentType: "video";
+            custom: boolean;
+            error?: undefined;
+        } | {
+            success: boolean;
+            externalId: any;
+            accessUrl: string;
+            contentType: "gallery";
+            custom: boolean;
+            error?: undefined;
+        } | {
             success: any;
             externalId: any;
             error: any;
+            contentType: "article";
+            accessUrl?: undefined;
+            custom?: undefined;
         }>;
         generateDouyinShareSchema({ clientKey, ticket, videoPath, title, customCoverImageUrl, }: {
             clientKey: string;
@@ -185,10 +216,11 @@ declare const _default: {
             customCoverImageUrl?: string;
         }): string;
         getDouyinTicket(clientKey: string, clientSecret: string): Promise<string>;
-        publishToDouyin(article: any, account: any, _accessToken?: string): Promise<{
+        publishToDouyin(content: any, account: any, contentType: "article" | "video" | "gallery", _accessToken?: string): Promise<{
             success: boolean;
             publish_mode: string;
             schema: string;
+            contentType: "article";
         }>;
         adaptContent(content: any, platformType: string): Promise<any>;
         checkExternalStatus(record: any): Promise<{
@@ -434,7 +466,17 @@ declare const _default: {
             contents: any;
         }>;
         getAllZones(siteDomain?: string, siteDocumentId?: string): Promise<any[]>;
-        listZones(filters?: any): Promise<import("@strapi/types/dist/modules/documents").AnyDocument[]>;
+        listZones(query?: any): Promise<{
+            records: any;
+            meta: {
+                pagination: {
+                    page: number;
+                    pageSize: number;
+                    total: number;
+                    pageCount: number;
+                };
+            };
+        }>;
         createZone(data: any): Promise<import("@strapi/types/dist/modules/documents").AnyDocument>;
         findOneZone(documentId: string): Promise<import("@strapi/types/dist/modules/documents").AnyDocument | null>;
         updateZone(documentId: string, data: any): Promise<import("@strapi/types/dist/modules/documents").AnyDocument | null>;
@@ -442,7 +484,17 @@ declare const _default: {
             documentId: import("@strapi/types/dist/modules/documents").ID;
             entries: import("@strapi/types/dist/modules/documents").Result<TContentTypeUID, TParams>[];
         }>;
-        listContents(filters?: any): Promise<import("@strapi/types/dist/modules/documents").AnyDocument[]>;
+        listContents(query?: any): Promise<{
+            records: any;
+            meta: {
+                pagination: {
+                    page: number;
+                    pageSize: number;
+                    total: number;
+                    pageCount: number;
+                };
+            };
+        }>;
         createContent(data: any): Promise<import("@strapi/types/dist/modules/documents").AnyDocument>;
         findOneContent(documentId: string): Promise<import("@strapi/types/dist/modules/documents").AnyDocument | null>;
         updateContent(documentId: string, data: any): Promise<import("@strapi/types/dist/modules/documents").AnyDocument | null>;
@@ -519,7 +571,8 @@ declare const _default: {
     scheduler: ({ strapi }: {
         strapi: import("@strapi/types/dist/core").Strapi;
     }) => {
-        registerSchedulers(): void;
+        registerSchedulers(): Promise<void>;
+        closeWorker(): Promise<void>;
         scanAndTriggerSchedules(): Promise<void>;
         refreshExpiringTokens(): Promise<void>;
     };
@@ -528,7 +581,55 @@ declare const _default: {
     }) => {
         enqueuePublish(data: import("../utils/queue").PublishJobData): Promise<string | null>;
         registerProcessors(): void;
+        closeWorker(): Promise<void>;
         runStage(stage: "publish" | "adaptContent" | "validateContent" | "ensureOAuthToken" | "checkStatus" | "finalize", data: import("../utils/queue").PublishJobData, prev: any): Promise<any>;
+    };
+    'rpa-client': ({ strapi }: {
+        strapi: import("@strapi/types/dist/core").Strapi;
+    }) => {
+        ensurePlaywrightRuntime(): Promise<void>;
+        getCookies(accountId: string): Promise<import("./rpa-client").RpaCookie[]>;
+        saveCookies(accountId: string, cookies: import("./rpa-client").RpaCookie[]): Promise<void>;
+        isCookiesFresh(cookies: import("./rpa-client").RpaCookie[], maxAgeMs?: number): boolean;
+        clearCookies(accountId: string): Promise<void>;
+        getCookiesStatus(accountId: string): Promise<{
+            platformType: any;
+            hasCookies: boolean;
+            cookieCount: number;
+            fresh: boolean;
+            cookiesAt: any;
+        }>;
+        resolveAccountPlatform(accountId: string): Promise<import("./rpa").RpaPlatform>;
+        launchBrowser(headless?: boolean): Promise<import("playwright-core").Browser>;
+        createContext(browser: any, cookies: import("./rpa-client").RpaCookie[], platform: import("./rpa-client").RpaPlatformConfig["platform"]): Promise<any>;
+        captureCookies(ctx: any, platform: import("./rpa-client").RpaPlatformConfig["platform"]): Promise<import("./rpa-client").RpaCookie[]>;
+        closeLoginSession(accountId: string): Promise<void>;
+        _sweepLoginSessions(): Promise<void>;
+        openLoginSession(accountId: string, headless?: boolean): Promise<{
+            platform: import("./rpa").RpaPlatform;
+            loginUrl: string;
+            qrImage: string;
+            expiresInSec: number;
+            hint: string;
+        }>;
+        finishLoginSession(accountId: string): Promise<{
+            platform: import("./rpa").RpaPlatform;
+            cookieCount: number;
+        }>;
+        publishViaRPA(params: {
+            platform: import("./rpa-client").RpaPlatformConfig["platform"];
+            accountId: string;
+            title: string;
+            content: string;
+            coverImage?: string;
+            images?: string[];
+            videoUrl?: string;
+        }): Promise<{
+            success: boolean;
+            externalId?: string;
+            url?: string;
+            error?: string;
+        }>;
     };
 };
 export default _default;

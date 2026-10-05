@@ -104,12 +104,25 @@ exports.default = ({ strapi }) => ({
         });
     },
     // Admin CRUD for zones
-    async listZones(filters = {}) {
-        return await strapi.documents('plugin::zhao-studio.ad-zone').findMany({
-            filters,
-            populate: { adContents: true, site: true },
-            sort: { sortOrder: 'asc' },
-        });
+    async listZones(query = {}) {
+        const defaults = { page: 1, pageSize: 20 };
+        const pagination = { ...defaults, ...(query.pagination || {}) };
+        const findManyOpts = {
+            filters: query.filters || {},
+            populate: query.populate || { adContents: true, site: true },
+            sort: query.sort || { sortOrder: 'asc' },
+            pagination,
+        };
+        // Strapi 5 documents.findMany 带 pagination 时返回 { records, meta }
+        const findManyRes = await strapi.documents('plugin::zhao-studio.ad-zone').findMany(findManyOpts);
+        const records = Array.isArray(findManyRes) ? findManyRes : (findManyRes?.records || []);
+        const total = await strapi.documents('plugin::zhao-studio.ad-zone').count({ filters: findManyOpts.filters });
+        const page = Number(pagination.page);
+        const pageSize = Number(pagination.pageSize);
+        return {
+            records,
+            meta: { pagination: { page, pageSize, total, pageCount: Math.ceil(total / pageSize) } },
+        };
     },
     async createZone(data) {
         return await strapi.documents('plugin::zhao-studio.ad-zone').create({ data });
@@ -127,12 +140,25 @@ exports.default = ({ strapi }) => ({
         return await strapi.documents('plugin::zhao-studio.ad-zone').delete({ documentId });
     },
     // Admin CRUD for contents
-    async listContents(filters = {}) {
-        return await strapi.documents('plugin::zhao-studio.ad-content').findMany({
-            filters,
-            populate: { adZone: true, site: true },
-            sort: { priority: 'desc', sortOrder: 'asc' },
-        });
+    async listContents(query = {}) {
+        const defaults = { page: 1, pageSize: 20 };
+        const pagination = { ...defaults, ...(query.pagination || {}) };
+        const findManyOpts = {
+            filters: query.filters || {},
+            populate: query.populate || { adZone: true, site: true },
+            sort: query.sort || { priority: 'desc', sortOrder: 'asc' },
+            pagination,
+        };
+        // Strapi 5 documents.findMany 带 pagination 时返回 { records, meta }
+        const findManyRes = await strapi.documents('plugin::zhao-studio.ad-content').findMany(findManyOpts);
+        const records = Array.isArray(findManyRes) ? findManyRes : (findManyRes?.records || []);
+        const total = await strapi.documents('plugin::zhao-studio.ad-content').count({ filters: findManyOpts.filters });
+        const page = Number(pagination.page);
+        const pageSize = Number(pagination.pageSize);
+        return {
+            records,
+            meta: { pagination: { page, pageSize, total, pageCount: Math.ceil(total / pageSize) } },
+        };
     },
     async createContent(data) {
         return await strapi.documents('plugin::zhao-studio.ad-content').create({ data });

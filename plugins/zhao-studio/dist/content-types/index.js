@@ -9,6 +9,9 @@ const collect_task_1 = __importDefault(require("./collect-task"));
 const publish_platform_1 = __importDefault(require("./publish-platform"));
 const publish_account_1 = __importDefault(require("./publish-account"));
 const publish_record_1 = __importDefault(require("./publish-record"));
+const publish_schedule_1 = __importDefault(require("./publish-schedule"));
+const publish_video_1 = __importDefault(require("./publish-video"));
+const publish_gallery_1 = __importDefault(require("./publish-gallery"));
 const knowledge_point_index_1 = __importDefault(require("./knowledge-point-index"));
 const ad_slot_1 = __importDefault(require("./ad-slot"));
 const browser_log_1 = __importDefault(require("./browser-log"));
@@ -30,6 +33,9 @@ exports.default = {
     'publish-platform': publish_platform_1.default,
     'publish-account': publish_account_1.default,
     'publish-record': publish_record_1.default,
+    'publish-schedule': publish_schedule_1.default,
+    'publish-video': publish_video_1.default,
+    'publish-gallery': publish_gallery_1.default,
     'knowledge-point-index': knowledge_point_index_1.default,
     'ad-slot': ad_slot_1.default,
     'browser-log': browser_log_1.default,
