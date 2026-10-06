@@ -203,6 +203,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         '--disable-blink-features=AutomationControlled',
         '--disable-dev-shm-usage',
         '--disable-gpu',
+        '--single-process',
       ],
     });
     return browser;

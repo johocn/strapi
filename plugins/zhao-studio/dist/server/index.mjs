@@ -24380,7 +24380,8 @@ const rpaClient = ({ strapi: strapi2 }) => ({
         "--no-sandbox",
         "--disable-blink-features=AutomationControlled",
         "--disable-dev-shm-usage",
-        "--disable-gpu"
+        "--disable-gpu",
+        "--single-process"
       ]
     });
     return browser;
