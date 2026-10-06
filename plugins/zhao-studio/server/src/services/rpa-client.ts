@@ -89,6 +89,8 @@ export interface RpaPlatformConfig {
   loginUrl: string;
   /** cookie 所属 domain（判断 cookie 是否属于本平台） */
   cookieDomain: string;
+  /** 登录页「切到扫码登录」入口选择器；缺省用文字匹配（/扫码|二维码/） */
+  qrTabSelector?: string;
 }
 
 export const RPA_PLATFORMS: Record<RpaPlatformConfig['platform'], RpaPlatformConfig> = {
@@ -97,6 +99,8 @@ export const RPA_PLATFORMS: Record<RpaPlatformConfig['platform'], RpaPlatformCon
     publishUrl: 'https://creator.xiaohongshu.com/publish/publish',
     loginUrl: 'https://creator.xiaohongshu.com/login',
     cookieDomain: '.xiaohongshu.com',
+    // 登录页默认短信登录 tab，扫码入口是右上角 base64 图标（无文字）
+    qrTabSelector: '.login-box-container img',
   },
   toutiao: {
     platform: 'toutiao',
@@ -277,9 +281,12 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     const page = await ctx.newPage();
     await page.goto(platformCfg.loginUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
     await page.waitForTimeout(1500);
-    // 小红书等平台登录页默认是账密 tab，需切到扫码登录；默认即扫码的平台点不到会静默跳过
+    // 小红书等平台登录页默认是账密/短信 tab，需切到扫码登录；默认即扫码的平台点不到会静默跳过
     try {
-      await page.getByText(/扫码|二维码/).first().click({ timeout: 4000 });
+      const tab = platformCfg.qrTabSelector
+        ? page.locator(platformCfg.qrTabSelector).first()
+        : page.getByText(/扫码|二维码/).first();
+      await tab.click({ timeout: 4000 });
       await page.waitForTimeout(2000); // 等二维码渲染
     } catch { /* already on QR tab */ }
 

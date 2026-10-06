@@ -24334,7 +24334,9 @@ const RPA_PLATFORMS = {
     platform: "xiaohongshu",
     publishUrl: "https://creator.xiaohongshu.com/publish/publish",
     loginUrl: "https://creator.xiaohongshu.com/login",
-    cookieDomain: ".xiaohongshu.com"
+    cookieDomain: ".xiaohongshu.com",
+    // 登录页默认短信登录 tab，扫码入口是右上角 base64 图标（无文字）
+    qrTabSelector: ".login-box-container img"
   },
   toutiao: {
     platform: "toutiao",
@@ -24493,7 +24495,8 @@ const rpaClient = ({ strapi: strapi2 }) => ({
     await page.goto(platformCfg.loginUrl, { waitUntil: "domcontentloaded", timeout: 6e4 });
     await page.waitForTimeout(1500);
     try {
-      await page.getByText(/扫码|二维码/).first().click({ timeout: 4e3 });
+      const tab = platformCfg.qrTabSelector ? page.locator(platformCfg.qrTabSelector).first() : page.getByText(/扫码|二维码/).first();
+      await tab.click({ timeout: 4e3 });
       await page.waitForTimeout(2e3);
     } catch {
     }

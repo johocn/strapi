@@ -19,6 +19,8 @@ export interface RpaPlatformConfig {
     loginUrl: string;
     /** cookie 所属 domain（判断 cookie 是否属于本平台） */
     cookieDomain: string;
+    /** 登录页「切到扫码登录」入口选择器；缺省用文字匹配（/扫码|二维码/） */
+    qrTabSelector?: string;
 }
 export declare const RPA_PLATFORMS: Record<RpaPlatformConfig['platform'], RpaPlatformConfig>;
 declare const _default: ({ strapi }: {
