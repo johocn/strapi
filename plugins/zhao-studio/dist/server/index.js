@@ -24491,7 +24491,12 @@ const rpaClient = ({ strapi: strapi2 }) => ({
     await ctx.addInitScript(STEALTH_JS);
     const page = await ctx.newPage();
     await page.goto(platformCfg.loginUrl, { waitUntil: "domcontentloaded", timeout: 6e4 });
-    await page.waitForTimeout(2500);
+    await page.waitForTimeout(1500);
+    try {
+      await page.getByText(/扫码|二维码/).first().click({ timeout: 4e3 });
+      await page.waitForTimeout(2e3);
+    } catch {
+    }
     const buffer = await page.screenshot({ type: "png" });
     LOGIN_SESSIONS.set(accountId, { browser, ctx, page, platform: platform2, createdAt: Date.now() });
     return {

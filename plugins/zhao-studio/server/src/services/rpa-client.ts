@@ -276,7 +276,12 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     await ctx.addInitScript(STEALTH_JS);
     const page = await ctx.newPage();
     await page.goto(platformCfg.loginUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
-    await page.waitForTimeout(2500); // 等二维码渲染
+    await page.waitForTimeout(1500);
+    // 小红书等平台登录页默认是账密 tab，需切到扫码登录；默认即扫码的平台点不到会静默跳过
+    try {
+      await page.getByText(/扫码|二维码/).first().click({ timeout: 4000 });
+      await page.waitForTimeout(2000); // 等二维码渲染
+    } catch { /* already on QR tab */ }
 
     const buffer = await page.screenshot({ type: 'png' });
     LOGIN_SESSIONS.set(accountId, { browser, ctx, page, platform, createdAt: Date.now() });
