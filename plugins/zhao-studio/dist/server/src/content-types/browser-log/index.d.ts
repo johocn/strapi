@@ -124,6 +124,12 @@ declare const _default: {
             promoChannelCode: {
                 type: string;
             };
+            inviteCode: {
+                type: string;
+            };
+            appCode: {
+                type: string;
+            };
         };
     };
 };

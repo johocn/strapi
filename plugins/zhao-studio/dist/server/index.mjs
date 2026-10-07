@@ -981,6 +981,16 @@ const analytics$1 = ({ strapi: strapi2 }) => ({
     const log = await analyticsService.trackPageView(data2);
     ctx.body = { data: log };
   },
+  // 邀请链接打开埋点：ip 用服务端视角取（ctx.request.ip），避免客户端伪造
+  async trackInviteView(ctx) {
+    const { data: data2 } = ctx.request.body;
+    const analyticsService = strapi2.plugin("zhao-studio").service("analytics");
+    const log = await analyticsService.trackInviteView({
+      ...data2,
+      ip: ctx.request.ip
+    });
+    ctx.body = { data: log };
+  },
   async trackAdClick(ctx) {
     const { data: data2 } = ctx.request.body;
     const analyticsService = strapi2.plugin("zhao-studio").service("analytics");
@@ -1832,6 +1842,7 @@ const contentApiRoutes = () => ({
     publicRoute("GET", "/categories", "internal-api.getCategories"),
     publicRoute("GET", "/channels", "internal-api.getChannels"),
     publicRoute("POST", "/analytics/page-view", "analytics.trackPageView"),
+    publicRoute("POST", "/analytics/invite-view", "analytics.trackInviteView"),
     publicRoute("POST", "/analytics/ad-click", "analytics.trackAdClick"),
     publicRoute("POST", "/analytics/read-behavior", "analytics.trackReadBehavior"),
     publicRoute("POST", "/analytics/user-register", "analytics.trackUserRegister"),
@@ -21903,6 +21914,39 @@ const analytics = ({ strapi: strapi2 }) => ({
     });
     return log;
   },
+  // 邀请链接打开埋点（SSO 登录页带 invite_code 时上报）：
+  // 与 page-view 分口径（eventType='invite-view'），用于统计每码打开数并
+  // 与 sso_invite_usages（注册转化）拼接「打开 → 注册」漏斗；appCode 区分来源应用
+  async trackInviteView(data2) {
+    const uaInfo = parseUserAgent(data2.userAgent);
+    const ipInfo = await parseIpLocation(data2.ip);
+    const referrerDomain = extractReferrerDomain(data2.referrer);
+    const log = await strapi2.documents("plugin::zhao-studio.browser-log").create({
+      data: {
+        eventType: "invite-view",
+        sessionId: data2.sessionId,
+        userAgent: data2.userAgent,
+        platform: uaInfo.platform,
+        browser: uaInfo.browser,
+        browserVersion: uaInfo.browserVersion,
+        os: uaInfo.os,
+        osVersion: uaInfo.osVersion,
+        deviceType: uaInfo.deviceType,
+        screenWidth: data2.screen?.width,
+        screenHeight: data2.screen?.height,
+        language: data2.language,
+        ip: data2.ip,
+        country: ipInfo.country,
+        city: ipInfo.city,
+        referrer: data2.referrer,
+        referrerDomain,
+        inviteCode: data2.inviteCode || "",
+        appCode: data2.appCode || "",
+        timestamp: /* @__PURE__ */ new Date()
+      }
+    });
+    return log;
+  },
   async trackAdClick(data2) {
     const adSlot2 = await strapi2.documents("plugin::zhao-studio.ad-slot").findOne({ documentId: data2.adSlotId });
     if (!adSlot2 || !adSlot2.isActive) {
@@ -24837,7 +24881,7 @@ const collectionName$b = "zhao_browser_logs";
 const info$b = { "singularName": "browser-log", "pluralName": "browser-logs", "displayName": "浏览器日志", "description": "用户浏览器信息和行为日志" };
 const options$b = { "draftAndPublish": false };
 const pluginOptions$b = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
-const attributes$b = { "eventType": { "type": "enumeration", "enum": ["page-view", "ad-click", "scroll", "read-duration", "user-register"], "required": true }, "article": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.article-draft" }, "adSlot": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.ad-slot" }, "user": { "type": "relation", "relation": "manyToOne", "target": "admin::user" }, "userId": { "type": "string" }, "sessionId": { "type": "string", "required": true }, "isRegistered": { "type": "boolean", "default": false }, "registeredAt": { "type": "datetime" }, "userAgent": { "type": "string" }, "platform": { "type": "string" }, "browser": { "type": "string" }, "browserVersion": { "type": "string" }, "os": { "type": "string" }, "osVersion": { "type": "string" }, "deviceType": { "type": "enumeration", "enum": ["desktop", "mobile", "tablet"], "default": "desktop" }, "screenWidth": { "type": "integer" }, "screenHeight": { "type": "integer" }, "language": { "type": "string" }, "ip": { "type": "string" }, "country": { "type": "string" }, "city": { "type": "string" }, "referrer": { "type": "string" }, "referrerDomain": { "type": "string" }, "abVariant": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.ab-variant" }, "readDuration": { "type": "integer", "default": 0 }, "scrollDepth": { "type": "integer", "default": 0 }, "timestamp": { "type": "datetime", "required": true }, "createdAt": { "type": "datetime" }, "promoChannelCode": { "type": "string" } };
+const attributes$b = { "eventType": { "type": "enumeration", "enum": ["page-view", "ad-click", "scroll", "read-duration", "user-register", "invite-view"], "required": true }, "article": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.article-draft" }, "adSlot": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.ad-slot" }, "user": { "type": "relation", "relation": "manyToOne", "target": "admin::user" }, "userId": { "type": "string" }, "sessionId": { "type": "string", "required": true }, "isRegistered": { "type": "boolean", "default": false }, "registeredAt": { "type": "datetime" }, "userAgent": { "type": "string" }, "platform": { "type": "string" }, "browser": { "type": "string" }, "browserVersion": { "type": "string" }, "os": { "type": "string" }, "osVersion": { "type": "string" }, "deviceType": { "type": "enumeration", "enum": ["desktop", "mobile", "tablet"], "default": "desktop" }, "screenWidth": { "type": "integer" }, "screenHeight": { "type": "integer" }, "language": { "type": "string" }, "ip": { "type": "string" }, "country": { "type": "string" }, "city": { "type": "string" }, "referrer": { "type": "string" }, "referrerDomain": { "type": "string" }, "abVariant": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.ab-variant" }, "readDuration": { "type": "integer", "default": 0 }, "scrollDepth": { "type": "integer", "default": 0 }, "timestamp": { "type": "datetime", "required": true }, "createdAt": { "type": "datetime" }, "promoChannelCode": { "type": "string" }, "inviteCode": { "type": "string" }, "appCode": { "type": "string" } };
 const schema$b = {
   kind: kind$b,
   collectionName: collectionName$b,

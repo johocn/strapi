@@ -113,6 +113,7 @@ declare const _default: {
             strapi: import('@strapi/types/dist/core').Strapi;
         }) => {
             trackPageView(ctx: any): Promise<void>;
+            trackInviteView(ctx: any): Promise<void>;
             trackAdClick(ctx: any): Promise<void>;
             trackReadBehavior(ctx: any): Promise<void>;
             trackUserRegister(ctx: any): Promise<void>;
@@ -526,6 +527,19 @@ declare const _default: {
                 };
                 language: string;
                 abVariant?: string;
+            }): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
+            trackInviteView(data: {
+                inviteCode?: string;
+                appCode?: string;
+                sessionId: string;
+                userAgent: string;
+                ip: string;
+                referrer: string;
+                screen: {
+                    width: number;
+                    height: number;
+                };
+                language: string;
             }): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
             trackAdClick(data: {
                 adSlotId: string;
@@ -1873,6 +1887,12 @@ declare const _default: {
                         type: string;
                     };
                     promoChannelCode: {
+                        type: string;
+                    };
+                    inviteCode: {
+                        type: string;
+                    };
+                    appCode: {
                         type: string;
                     };
                 };

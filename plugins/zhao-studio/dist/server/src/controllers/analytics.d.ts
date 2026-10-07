@@ -3,6 +3,7 @@ declare const _default: ({ strapi }: {
     strapi: Core.Strapi;
 }) => {
     trackPageView(ctx: any): Promise<void>;
+    trackInviteView(ctx: any): Promise<void>;
     trackAdClick(ctx: any): Promise<void>;
     trackReadBehavior(ctx: any): Promise<void>;
     trackUserRegister(ctx: any): Promise<void>;

@@ -21,7 +21,7 @@ declare const _default: {
   "attributes": {
     "eventType": {
       "type": "enumeration",
-      "enum": ["page-view", "ad-click", "scroll", "read-duration", "user-register"],
+      "enum": ["page-view", "ad-click", "scroll", "read-duration", "user-register", "invite-view"],
       "required": true
     },
     "article": {
@@ -71,7 +71,9 @@ declare const _default: {
     "scrollDepth": { "type": "integer", "default": 0 },
     "timestamp": { "type": "datetime", "required": true },
     "createdAt": { "type": "datetime" },
-    "promoChannelCode": { "type": "string" }
+    "promoChannelCode": { "type": "string" },
+    "inviteCode": { "type": "string" },
+    "appCode": { "type": "string" }
   }
 };
 

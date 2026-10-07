@@ -12,6 +12,19 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     ctx.body = { data: log };
   },
 
+  // 邀请链接打开埋点：ip 用服务端视角取（ctx.request.ip），避免客户端伪造
+  async trackInviteView(ctx: any) {
+    const { data } = ctx.request.body;
+
+    const analyticsService = strapi.plugin('zhao-studio').service('analytics');
+    const log = await analyticsService.trackInviteView({
+      ...data,
+      ip: ctx.request.ip,
+    });
+
+    ctx.body = { data: log };
+  },
+
   async trackAdClick(ctx: any) {
     const { data } = ctx.request.body;
 

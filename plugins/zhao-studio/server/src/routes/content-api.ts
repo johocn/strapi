@@ -31,6 +31,7 @@ export default () => ({
     publicRoute('GET', '/categories', 'internal-api.getCategories'),
     publicRoute('GET', '/channels', 'internal-api.getChannels'),
     publicRoute('POST', '/analytics/page-view', 'analytics.trackPageView'),
+    publicRoute('POST', '/analytics/invite-view', 'analytics.trackInviteView'),
     publicRoute('POST', '/analytics/ad-click', 'analytics.trackAdClick'),
     publicRoute('POST', '/analytics/read-behavior', 'analytics.trackReadBehavior'),
     publicRoute('POST', '/analytics/user-register', 'analytics.trackUserRegister'),

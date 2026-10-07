@@ -83,6 +83,51 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     return log;
   },
 
+  // 邀请链接打开埋点（SSO 登录页带 invite_code 时上报）：
+  // 与 page-view 分口径（eventType='invite-view'），用于统计每码打开数并
+  // 与 sso_invite_usages（注册转化）拼接「打开 → 注册」漏斗；appCode 区分来源应用
+  async trackInviteView(data: {
+    inviteCode?: string;
+    appCode?: string;
+    sessionId: string;
+    userAgent: string;
+    ip: string;
+    referrer: string;
+    screen: { width: number; height: number };
+    language: string;
+  }) {
+    const uaInfo = parseUserAgent(data.userAgent);
+    const ipInfo = await parseIpLocation(data.ip);
+    const referrerDomain = extractReferrerDomain(data.referrer);
+
+    const log = await strapi.documents('plugin::zhao-studio.browser-log').create({
+      data: {
+        eventType: 'invite-view',
+        sessionId: data.sessionId,
+        userAgent: data.userAgent,
+        platform: uaInfo.platform,
+        browser: uaInfo.browser,
+        browserVersion: uaInfo.browserVersion,
+        os: uaInfo.os,
+        osVersion: uaInfo.osVersion,
+        deviceType: uaInfo.deviceType,
+        screenWidth: data.screen?.width,
+        screenHeight: data.screen?.height,
+        language: data.language,
+        ip: data.ip,
+        country: ipInfo.country,
+        city: ipInfo.city,
+        referrer: data.referrer,
+        referrerDomain,
+        inviteCode: data.inviteCode || '',
+        appCode: data.appCode || '',
+        timestamp: new Date(),
+      },
+    });
+
+    return log;
+  },
+
   async trackAdClick(data: {
     adSlotId: string;
     articleId?: string;

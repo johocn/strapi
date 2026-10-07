@@ -16,6 +16,19 @@ declare const _default: ({ strapi }: {
         language: string;
         abVariant?: string;
     }): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
+    trackInviteView(data: {
+        inviteCode?: string;
+        appCode?: string;
+        sessionId: string;
+        userAgent: string;
+        ip: string;
+        referrer: string;
+        screen: {
+            width: number;
+            height: number;
+        };
+        language: string;
+    }): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
     trackAdClick(data: {
         adSlotId: string;
         articleId?: string;
