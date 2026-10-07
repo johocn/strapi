@@ -45,6 +45,28 @@ const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
       { name: "time6", key: "meetingTime" },
     ]},
     { code: "admin_notify", name: "手动SOP待办管理员微信提醒", desc: "生成手动SOP待办时推送给管理员" },
+    // ===== 外卖订单类模板（服务间 API /v1/msg/template-send 使用，wxTemplateId 由运营在公众号申请后后台填入） =====
+    // 字段映射：character_string1=订单号 thing1=状态/文案（≤20字符） time2=时间；与 Vendure campus-notify params 键对应
+    { code: "waimai_order_created", name: "外卖订单下单成功", desc: "用户支付成功后推送", wxTemplateFields: [
+      { name: "character_string1", key: "orderCode" },
+      { name: "thing1", key: "status" },
+      { name: "time2", key: "time" },
+    ]},
+    { code: "waimai_order_paid_reminder", name: "外卖订单待付款提醒", desc: "支付超时前提醒（+10min）", wxTemplateFields: [
+      { name: "character_string1", key: "orderCode" },
+      { name: "thing1", key: "status" },
+      { name: "time2", key: "time" },
+    ]},
+    { code: "waimai_order_cancelled", name: "外卖订单取消通知", desc: "订单取消/超时关单后推送", wxTemplateFields: [
+      { name: "character_string1", key: "orderCode" },
+      { name: "thing1", key: "status" },
+      { name: "time2", key: "time" },
+    ]},
+    { code: "waimai_after_sales", name: "外卖售后进度通知", desc: "售后状态变更推送", wxTemplateFields: [
+      { name: "character_string1", key: "orderCode" },
+      { name: "thing1", key: "status" },
+      { name: "time2", key: "time" },
+    ]},
   ];
   for (const t of DEFAULT_SOP_TEMPLATES) {
     let tpl = await strapi.db.query(TEMPLATE_UID_ACT).findOne({ where: { code: t.code } });

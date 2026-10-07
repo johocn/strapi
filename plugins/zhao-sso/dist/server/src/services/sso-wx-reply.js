@@ -1,0 +1,101 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const REPLY_UID = "plugin::zhao-sso.sso-wx-reply";
+exports.default = ({ strapi }) => {
+    function throwErr(code, status, message) {
+        const e = new Error(message);
+        e.code = code;
+        e.status = status;
+        throw e;
+    }
+    async function list(filters = {}) {
+        const page = Number(filters.page || 1);
+        const pageSize = Number(filters.pageSize || 20);
+        const where = {};
+        if (filters.trigger)
+            where.trigger = filters.trigger;
+        if (filters.match)
+            where.match = { $contains: filters.match };
+        const rows = await strapi.db.query(REPLY_UID).findMany({
+            where,
+            orderBy: { sort: "asc", createdAt: "asc" },
+            limit: pageSize,
+            offset: (page - 1) * pageSize,
+        });
+        const total = await strapi.db.query(REPLY_UID).count({ where });
+        return { data: rows, meta: { pagination: { page, pageSize, total } } };
+    }
+    async function findOne(id) {
+        const row = await strapi.db.query(REPLY_UID).findOne({ where: { id } });
+        if (!row)
+            throwErr("SSO_WX_REPLY_404", 404, "回复规则不存在");
+        return row;
+    }
+    async function create(data) {
+        return strapi.db.query(REPLY_UID).create({
+            data: {
+                trigger: data.trigger || "keyword",
+                match: data.match !== undefined ? data.match : null,
+                reply_type: data.reply_type || "text",
+                text: data.text !== undefined ? data.text : null,
+                title: data.title !== undefined ? data.title : null,
+                desc: data.desc !== undefined ? data.desc : null,
+                pic_url: data.pic_url !== undefined ? data.pic_url : null,
+                link_url: data.link_url !== undefined ? data.link_url : null,
+                media_id: data.media_id !== undefined ? data.media_id : null,
+                music_url: data.music_url !== undefined ? data.music_url : null,
+                hq_music_url: data.hq_music_url !== undefined ? data.hq_music_url : null,
+                thumb_media_id: data.thumb_media_id !== undefined ? data.thumb_media_id : null,
+                articles: data.articles !== undefined ? data.articles : null,
+                sort: data.sort !== undefined ? data.sort : 0,
+                enabled: data.enabled !== undefined ? data.enabled : true,
+            },
+        });
+    }
+    async function update(id, data) {
+        const updateData = {};
+        const keys = ["trigger", "match", "reply_type", "text", "title", "desc", "pic_url", "link_url", "media_id", "music_url", "hq_music_url", "thumb_media_id", "articles", "sort", "enabled"];
+        for (const k of keys)
+            if (data[k] !== undefined)
+                updateData[k] = data[k];
+        return strapi.db.query(REPLY_UID).update({ where: { id }, data: updateData });
+    }
+    async function remove(id) {
+        return strapi.db.query(REPLY_UID).delete({ where: { id } });
+    }
+    return {
+        list,
+        findOne,
+        create,
+        update,
+        remove,
+        /** 命中关键字规则：关键字精确命中 → 未命中取 fallback 兜底；均无返回 null */
+        async matchText(content) {
+            const text = (content || "").trim();
+            if (!text)
+                return null;
+            const kw = await strapi.db.query(REPLY_UID).findMany({
+                where: { trigger: "keyword", match: text, enabled: true },
+                limit: 1,
+            });
+            if (kw[0])
+                return kw[0];
+            const fb = await strapi.db.query(REPLY_UID).findMany({
+                where: { trigger: "fallback", enabled: true },
+                orderBy: { sort: "asc", createdAt: "asc" },
+                limit: 1,
+            });
+            return fb[0] || null;
+        },
+        /** 命中关注欢迎语规则（取未启用顺序的首条） */
+        async findWelcome() {
+            const rows = await strapi.db.query(REPLY_UID).findMany({
+                where: { trigger: "welcome", enabled: true },
+                orderBy: { sort: "asc", createdAt: "asc" },
+                limit: 1,
+            });
+            return rows[0] || null;
+        },
+    };
+};
+//# sourceMappingURL=sso-wx-reply.js.map

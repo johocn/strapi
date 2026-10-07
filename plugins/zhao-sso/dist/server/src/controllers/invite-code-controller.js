@@ -1,0 +1,191 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const UID = "plugin::zhao-sso.sso-invite-code";
+exports.default = ({ strapi }) => ({
+    // 邀请漏斗聚合：每码「打开数（zhao-studio browser_logs, eventType=invite-view）
+    // → 注册数（sso_invite_usages）」+ 转化率；appCode 过滤区分来源应用；
+    // 另返回 daily 按日聚合（观察期趋势），日期窗口默认近 30 天
+    async funnel(ctx) {
+        var _a;
+        try {
+            const { appCode, startDate, endDate } = ctx.query;
+            const dateFilter = {};
+            if (startDate)
+                dateFilter.$gte = `${startDate}T00:00:00.000Z`;
+            if (endDate)
+                dateFilter.$lte = `${endDate}T23:59:59.999Z`;
+            const hasDateWindow = Boolean(startDate || endDate);
+            const codeWhere = {};
+            if (appCode)
+                codeWhere.app_code = appCode;
+            const codes = await strapi.db.query(UID).findMany({
+                where: codeWhere,
+                select: ["id", "code", "app_code"],
+            });
+            const codeIds = codes.map((c) => c.id);
+            const logWhere = { eventType: "invite-view" };
+            if (appCode)
+                logWhere.appCode = appCode;
+            if (hasDateWindow)
+                logWhere.createdAt = dateFilter;
+            const logs = await strapi.db
+                .query("plugin::zhao-studio.browser-log")
+                .findMany({ where: logWhere, select: ["inviteCode", "createdAt"] });
+            const usageWhere = {};
+            if (codeIds.length > 0)
+                usageWhere.invite_code = { id: { $in: codeIds } };
+            if (hasDateWindow)
+                usageWhere.used_at = dateFilter;
+            const usages = await strapi.db
+                .query("plugin::zhao-sso.sso-invite-usage")
+                .findMany({
+                where: usageWhere,
+                select: ["app_code", "used_at"],
+                populate: { invite_code: { select: ["code"] } },
+            });
+            // 打开数按码聚合（关联日志 inviteCode 字符串）
+            const openMap = new Map();
+            let lastOpenAt = null;
+            for (const log of logs) {
+                if (!log.inviteCode)
+                    continue;
+                openMap.set(log.inviteCode, (openMap.get(log.inviteCode) || 0) + 1);
+                if (!lastOpenAt || new Date(log.createdAt) > new Date(lastOpenAt)) {
+                    lastOpenAt = log.createdAt;
+                }
+            }
+            // 注册数按码聚合
+            const regMap = new Map();
+            for (const u of usages) {
+                const code = (_a = u.invite_code) === null || _a === void 0 ? void 0 : _a.code;
+                if (code)
+                    regMap.set(code, (regMap.get(code) || 0) + 1);
+            }
+            const rows = codes
+                .map((c) => {
+                const opens = openMap.get(c.code) || 0;
+                const registers = regMap.get(c.code) || 0;
+                return {
+                    code: c.code,
+                    appCode: c.app_code,
+                    opens,
+                    registers,
+                    conversionRate: opens > 0 ? Number(((registers / opens) * 100).toFixed(1)) : null,
+                };
+            })
+                .sort((a, b) => b.opens - a.opens || b.registers - a.registers);
+            const totalOpens = rows.reduce((s, r) => s + r.opens, 0);
+            const totalRegisters = rows.reduce((s, r) => s + r.registers, 0);
+            // 按日聚合（基于当前过滤窗口的全量记录；不设窗口时默认近 30 天趋势）
+            const dayMap = new Map();
+            const bump = (iso, key) => {
+                const day = String(iso).slice(0, 10);
+                const cur = dayMap.get(day) || { opens: 0, registers: 0 };
+                cur[key] += 1;
+                dayMap.set(day, cur);
+            };
+            for (const log of logs)
+                bump(log.createdAt, "opens");
+            for (const u of usages)
+                bump(u.used_at, "registers");
+            const daily = Array.from(dayMap.entries())
+                .map(([date, v]) => ({ date, ...v }))
+                .sort((a, b) => a.date.localeCompare(b.date));
+            ctx.body = {
+                data: {
+                    summary: {
+                        totalOpens,
+                        totalRegisters,
+                        conversionRate: totalOpens > 0 ? Number(((totalRegisters / totalOpens) * 100).toFixed(1)) : null,
+                        lastOpenAt,
+                    },
+                    daily,
+                    rows,
+                },
+            };
+        }
+        catch (e) {
+            ctx.status = e.status || 400;
+            ctx.body = { error: e.message };
+        }
+    },
+    async list(ctx) {
+        try {
+            const { page = 1, pageSize = 20, ...filters } = ctx.query;
+            const pageNum = Number(page);
+            const pageSizeNum = Number(pageSize);
+            const results = await strapi.documents(UID).findMany({
+                filters,
+                populate: "*",
+                sort: { createdAt: "desc" },
+                limit: pageSizeNum,
+                start: (pageNum - 1) * pageSizeNum,
+            });
+            const total = await strapi.db.query(UID).count({ where: filters });
+            ctx.body = {
+                data: results,
+                meta: { pagination: { page: pageNum, pageSize: pageSizeNum, total } },
+            };
+        }
+        catch (e) {
+            ctx.status = e.status || 400;
+            ctx.body = { error: e.message };
+        }
+    },
+    async create(ctx) {
+        var _a;
+        try {
+            const data = ((_a = ctx.request.body) === null || _a === void 0 ? void 0 : _a.data) || ctx.request.body;
+            const result = await strapi.documents(UID).create({ data, populate: "*" });
+            ctx.body = { data: result };
+        }
+        catch (e) {
+            ctx.status = e.status || 400;
+            ctx.body = { error: e.message };
+        }
+    },
+    async delete(ctx) {
+        try {
+            const { id } = ctx.params;
+            const result = await strapi.documents(UID).delete({ documentId: id });
+            ctx.body = { data: result };
+        }
+        catch (e) {
+            ctx.status = e.status || 400;
+            ctx.body = { error: e.message };
+        }
+    },
+    async validate(ctx) {
+        try {
+            const { id } = ctx.params;
+            const code = await strapi.documents(UID).findOne({ documentId: id });
+            if (!code) {
+                ctx.body = { valid: false, reason: "邀请码不存在" };
+                return;
+            }
+            if (!code.is_active) {
+                ctx.body = { valid: false, reason: "邀请码未启用" };
+                return;
+            }
+            const now = new Date();
+            if (code.valid_from && new Date(code.valid_from) > now) {
+                ctx.body = { valid: false, reason: "邀请码尚未生效" };
+                return;
+            }
+            if (code.valid_until && new Date(code.valid_until) < now) {
+                ctx.body = { valid: false, reason: "邀请码已过期" };
+                return;
+            }
+            if (code.max_uses != null && code.use_count >= code.max_uses) {
+                ctx.body = { valid: false, reason: "邀请码已达使用上限" };
+                return;
+            }
+            ctx.body = { valid: true };
+        }
+        catch (e) {
+            ctx.status = e.status || 400;
+            ctx.body = { error: e.message };
+        }
+    },
+});
+//# sourceMappingURL=invite-code-controller.js.map

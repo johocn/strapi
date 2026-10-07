@@ -1,4 +1,5 @@
 import type { Core } from "@strapi/strapi";
+import bcrypt from "bcryptjs";
 
 const TEMPLATE_UID = "plugin::zhao-sso.msg-template";
 const JOB_UID = "plugin::zhao-sso.msg-job";
@@ -126,6 +127,32 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
           templateCode,
           params,
           link,
+        });
+        return { data: job };
+      });
+    },
+
+    /** 服务间单发（app_code+app_secret 鉴权）：供 Vendure 等业务后端调用，触达目标由 SSO 按绑定表解析 openid */
+    async apiSend(ctx: any) {
+      await wrap(ctx, async () => {
+        const { app_code, app_secret, sso_user_id, template_code, params, link, scene, dedupe_key } =
+          ctx.request.body;
+        if (!app_code || !app_secret || !sso_user_id || !template_code) {
+          throw { status: 400, message: "app_code, app_secret, sso_user_id, template_code 必填" };
+        }
+        const oauthService = strapi.plugin("zhao-sso").service("sso-oauth");
+        const app = await oauthService.findApp(app_code);
+        if (!app || !app.is_active) throw { status: 404, message: "应用不存在或已禁用" };
+        if (!bcrypt.compareSync(app_secret, app.app_secret)) throw { status: 401, message: "app_secret 验证失败" };
+        const user = await strapi.plugin("zhao-sso").service("sso-user").findById(Number(sso_user_id));
+        if (!user) throw { status: 404, message: "SSO 用户不存在" };
+        const job = await svc().sendNow({
+          user: Number(sso_user_id),
+          scene: scene || "api",
+          templateCode: template_code,
+          params: params || {},
+          link,
+          dedupeKey: dedupe_key,
         });
         return { data: job };
       });

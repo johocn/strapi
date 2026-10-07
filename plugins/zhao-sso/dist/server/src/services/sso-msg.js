@@ -1,0 +1,332 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const wechat_template_1 = require("./channel/wechat-template");
+const MSG_TEMPLATE_UID = "plugin::zhao-sso.msg-template";
+const MSG_JOB_UID = "plugin::zhao-sso.msg-job";
+const BINDING_UID = "plugin::zhao-sso.sso-third-party-binding";
+const VERSION_UID = "plugin::zhao-sso.msg-template-version";
+const MAX_RETRY = 3;
+const RETRY_DELAY_MS = 5 * 60 * 1000; // 5 分钟后重试
+/** 按权重加权随机选版本；weight<=0 剔除 */
+function pickVersion(versions) {
+    const pool = (versions || []).filter((v) => (v.weight || 0) > 0);
+    if (!pool.length)
+        return null;
+    const total = pool.reduce((s, v) => s + (v.weight || 0), 0);
+    let r = Math.random() * total;
+    for (const v of pool) {
+        r -= v.weight || 0;
+        if (r <= 0)
+            return v;
+    }
+    return pool[pool.length - 1];
+}
+/** link 追加 utm 归因参数（utm_source=msg&utm_campaign=code&utm_content=jobId） */
+function appendUtm(link, code, jobId) {
+    if (!link)
+        return link;
+    const sep = link.includes("?") ? "&" : "?";
+    return `${link}${sep}utm_source=msg&utm_campaign=${encodeURIComponent(code)}&utm_content=${jobId}`;
+}
+exports.default = ({ strapi }) => {
+    function throwErr(code, status, message) {
+        const e = new Error(message);
+        e.code = code;
+        e.status = status;
+        throw e;
+    }
+    // 通道注册表（后续扩展短信/企微/APP 时在此新增）
+    function resolveChannel(provider) {
+        const channels = {
+            wechat: (0, wechat_template_1.createWechatTemplateChannel)({ strapi }),
+        };
+        const ch = channels[provider];
+        if (!ch)
+            throwErr("SSO_MSG_400", 400, `不支持的通道 provider=${provider}`);
+        return ch;
+    }
+    /** 解析模板渲染参数：由 params + template.wxTemplateFields 映射成 {微信字段名:{value}} */
+    function renderData(params, wxTemplateFields) {
+        const data = {};
+        const list = Array.isArray(wxTemplateFields) ? wxTemplateFields : [];
+        for (const f of list) {
+            const key = f.key;
+            const val = params === null || params === void 0 ? void 0 : params[key];
+            if (val === null || val === undefined)
+                continue;
+            data[f.name] = { value: String(val) };
+        }
+        return data;
+    }
+    async function resolveToTarget(userId, provider) {
+        if (provider === "wechat") {
+            // 说明：按 provider 拉最近绑定后在内存过滤 userId，绕开 Strapi 对关系 where(user=数字id)+orderBy 的编译缺陷(Undefined binding t2.id)
+            const bindings = await strapi.db.query(BINDING_UID).findMany({
+                where: { provider: "wechat" },
+                orderBy: { id: "DESC" },
+                limit: 100,
+                populate: { user: true }, // 填充 user 关系，供下方内存过滤 userId 使用
+            });
+            const b = bindings.find((x) => x.user === userId || (x.user && x.user.id === userId));
+            return (b === null || b === void 0 ? void 0 : b.provider_user_id) || null;
+        }
+        return null;
+    }
+    return {
+        /**
+         * 构建消息任务(pending)。幂等：同 dedupeKey 已有未终态任务则跳过。
+         * @param opts { user, scene, templateCode, params, link, scheduledAt?, dedupeKey? }
+         */
+        async buildJob(opts) {
+            const { user, scene, templateCode, params = {}, link, scheduledAt, dedupeKey } = opts;
+            const template = await strapi.db.query(MSG_TEMPLATE_UID).findOne({
+                where: { code: templateCode, isEnabled: true },
+            });
+            if (!template)
+                throwErr("SSO_MSG_TEMPLATE_404", 404, `消息模板未找到或未启用: ${templateCode}`);
+            // AB 版本选择：有 active 版本按权重随机选并固化；无则回退模板本体（link 兼容 opts.link）
+            const versions = await strapi.db.query(VERSION_UID).findMany({
+                where: { template: template.id, status: "active" },
+            });
+            const picked = pickVersion(versions);
+            let useWxTemplateId = template.wxTemplateId;
+            let useWxTemplateFields = template.wxTemplateFields;
+            let useLink = template.link || link;
+            if (picked) {
+                useWxTemplateId = picked.wxTemplateId || template.wxTemplateId;
+                useWxTemplateFields = picked.wxTemplateFields || template.wxTemplateFields;
+                useLink = picked.link || template.link || link;
+            }
+            const provider = template.provider || "wechat";
+            // 前置校验：微信通道必须有模板ID。若放行落库，任务会在发送阶段抛错并永久卡死 sending，
+            // 且 buildJob 的幂等判定会把 sending 视为未终态 → 该 dedupeKey 被永久占死。
+            // 调用方(trigger/notifyAdmins/dispatchManualTodo)均已 try/catch，故此处抛错是可见且安全的。
+            if (provider === "wechat" && !useWxTemplateId) {
+                throwErr("SSO_MSG_TEMPLATE_400", 400, `模板 ${templateCode} 缺少微信模板ID(wx_template_id)，拒绝创建消息任务`);
+            }
+            const key = dedupeKey || `${scene}:${user}`;
+            // 幂等：存在任意未终态 job 则跳过
+            const existing = await strapi.db.query(MSG_JOB_UID).findOne({
+                where: { dedupeKey: key },
+            });
+            if (existing && existing.status !== "sent" && existing.status !== "failed" && existing.status !== "cancelled") {
+                return { job: existing, skipped: true };
+            }
+            const toTarget = await resolveToTarget(user, provider);
+            const jobData = {
+                user: user,
+                scene,
+                provider,
+                params,
+                link: null, // link 占位，创建后用 job.id 追加 utm 再更新
+                version: picked ? picked.id : null,
+                status: "pending",
+                retryCount: 0,
+                dedupeKey: key,
+                template: template.id,
+            };
+            if (toTarget)
+                jobData.toTarget = toTarget;
+            if (scheduledAt)
+                jobData.scheduledAt = scheduledAt;
+            const job = await strapi.db.query(MSG_JOB_UID).create({ data: jobData });
+            // utm 归因：用 job.id 回填 link（版本/模板/opts.link 任一存在即追加）
+            if (useLink && (job === null || job === void 0 ? void 0 : job.id)) {
+                const finalLink = appendUtm(useLink, picked ? picked.code : template.code, job.id);
+                await strapi.db.query(MSG_JOB_UID).update({ where: { id: job.id }, data: { link: finalLink } });
+                job.link = finalLink;
+            }
+            return { job, skipped: false };
+        },
+        /**
+         * 站内信：直接落一条 provider=inapp、status=sent、sentAt=now 的 msg-job，
+         * 即时可见、幂等（同 dedupeKey 已存在且非 failed/cancelled 则跳过），不经过 cron 待发队列。
+         * @param opts { user, scene, params, link?, dedupeKey? }
+         */
+        async sendInApp(opts) {
+            const { user, scene, params = {}, link, dedupeKey } = opts;
+            const key = dedupeKey || `inapp:${scene}:${user}`;
+            const existing = await strapi.db.query(MSG_JOB_UID).findOne({
+                where: { dedupeKey: key },
+            });
+            if (existing && existing.status !== "failed" && existing.status !== "cancelled") {
+                return { job: existing, skipped: true };
+            }
+            const job = await strapi.db.query(MSG_JOB_UID).create({
+                data: {
+                    user,
+                    scene,
+                    provider: "inapp",
+                    params,
+                    link: link || null,
+                    status: "sent",
+                    sentAt: new Date(),
+                    dedupeKey: key,
+                },
+            });
+            return { job, skipped: false };
+        },
+        /**
+         * 立即构建并发送（手动/单发）——同步执行，返回发送结果。
+         */
+        async sendNow(opts) {
+            const { job } = await this.buildJob(opts);
+            if (!job)
+                throwErr("SSO_MSG_500", 500, "创建任务失败");
+            return this.sendJob(job.id);
+        },
+        /**
+         * 发送指定 job（含重试上限），落库回执。
+         * 不变量：job 一旦进入 status="sending" 就不得再抛错——否则永久卡死 sending，
+         * 且 buildJob 的幂等判定会把 sending 视为未终态，该 dedupeKey 被永久占死。
+         * 故渠道/模板ID/触达目标三项解析与校验一律前置，任一失败即置 failed 终态返回。
+         */
+        async sendJob(jobId) {
+            var _a, _b, _c, _d, _e, _f;
+            const job = await strapi.db.query(MSG_JOB_UID).findOne({
+                where: { id: jobId },
+                populate: { template: true, version: true, user: true },
+            });
+            if (!job)
+                throwErr("SSO_MSG_JOB_404", 404, "消息任务不存在");
+            if (job.status === "sent")
+                return job;
+            if (!job.template)
+                throwErr("SSO_MSG_JOB_500", 500, "任务缺少模板");
+            if (job.status === "failed" && job.retryCount >= MAX_RETRY)
+                return job;
+            /** 终态化：任何前置校验失败都不留 sending 悬案（failed 为终态，dedupeKey 随之释放） */
+            const fail = async (reason, message, extra = {}) => {
+                strapi.log.warn(`[zhao-sso:msg] job ${job.id} 置 failed(${reason}): ${message}`);
+                await strapi.db.query(MSG_JOB_UID).update({
+                    where: { id: job.id },
+                    data: { status: "failed", result: { reason, message, ...extra } },
+                });
+                return this.getJob(job.id);
+            };
+            // 触达频控：按用户每日上限 + 场景冷却在发送前拦截，超限置终态 quota_limited
+            const qUserId = typeof job.user === "number" ? job.user : (_a = job.user) === null || _a === void 0 ? void 0 : _a.id;
+            const quota = await strapi
+                .plugin("zhao-sso")
+                .service("sso-quota")
+                .evaluate({ userId: qUserId, scene: job.scene, templateId: (_b = job.template) === null || _b === void 0 ? void 0 : _b.id });
+            if (!quota.allowed) {
+                strapi.log.warn(`[zhao-sso:msg] sent blocked by quota (user=${qUserId}, scene=${job.scene}): ${quota.reason}`);
+                await strapi.db.query(MSG_JOB_UID).update({
+                    where: { id: job.id },
+                    data: { status: "quota_limited", result: { reason: quota.reason, scene: job.scene, detail: quota.detail || null } },
+                });
+                return this.getJob(job.id);
+            }
+            // 前置 1：渠道可用性
+            let channel;
+            try {
+                channel = resolveChannel(job.provider);
+            }
+            catch (e) {
+                return fail("unsupported_provider", (e === null || e === void 0 ? void 0 : e.message) || String(e), { provider: job.provider });
+            }
+            // 前置 2：模板ID（版本优先取内容，无版本或字段为空回退模板本体）
+            const wxFields = ((_c = job.version) === null || _c === void 0 ? void 0 : _c.wxTemplateFields) || job.template.wxTemplateFields;
+            const wxTemplateId = ((_d = job.version) === null || _d === void 0 ? void 0 : _d.wxTemplateId) || job.template.wxTemplateId;
+            if (!wxTemplateId) {
+                return fail("missing_wx_template_id", "任务缺少模板ID", { template: ((_e = job.template) === null || _e === void 0 ? void 0 : _e.code) || null });
+            }
+            const data = renderData(job.params || {}, wxFields);
+            // 前置 3：触达目标(openid)
+            let toTarget = job.toTarget;
+            if (!toTarget) {
+                toTarget = await resolveToTarget(job.user, job.provider);
+                if (toTarget) {
+                    await strapi.db.query(MSG_JOB_UID).update({ where: { id: job.id }, data: { toTarget } });
+                }
+            }
+            if (!toTarget) {
+                return fail("no_target", "未解析到触达目标(openid)");
+            }
+            // 至此全部前置校验通过，才允许进入 sending
+            await strapi.db.query(MSG_JOB_UID).update({ where: { id: job.id }, data: { status: "sending" } });
+            try {
+                const res = await channel.send({
+                    openid: toTarget,
+                    templateId: wxTemplateId,
+                    url: job.link || undefined,
+                    data,
+                });
+                await strapi.db.query(MSG_JOB_UID).update({
+                    where: { id: job.id },
+                    data: { status: "sent", wxMsgId: String(res.msgId), sentAt: new Date(), result: res.raw || null },
+                });
+                // 发送成功 → 版本计数（失败/重试不累加）
+                if ((_f = job.version) === null || _f === void 0 ? void 0 : _f.id) {
+                    await strapi.db.query(VERSION_UID).update({
+                        where: { id: job.version.id },
+                        data: { sentCount: (job.version.sentCount || 0) + 1, successCount: (job.version.successCount || 0) + 1, lastUsedAt: new Date() },
+                    });
+                }
+            }
+            catch (e) {
+                const retryCount = (job.retryCount || 0) + 1;
+                const retryable = retryCount <= MAX_RETRY && (e === null || e === void 0 ? void 0 : e.code) !== "SSO_MSG_NOT_SUBSCRIBE";
+                await strapi.db.query(MSG_JOB_UID).update({
+                    where: { id: job.id },
+                    data: {
+                        status: retryable ? "pending" : "failed",
+                        retryCount,
+                        nextRetryAt: retryable ? new Date(Date.now() + RETRY_DELAY_MS) : null,
+                        result: { error: e.message, code: e.code || null },
+                    },
+                });
+            }
+            return this.getJob(job.id);
+        },
+        async getJob(jobId) {
+            const job = await strapi.db.query(MSG_JOB_UID).findOne({
+                where: { id: jobId },
+                populate: { template: true, user: true },
+            });
+            if (!job)
+                throwErr("SSO_MSG_JOB_404", 404, "消息任务不存在");
+            return job;
+        },
+        /** 拉取待发送任务（供 cron 进程调度）。dueOnly=true 时只取已到发送时间的任务 */
+        async listPendingJobsForSend(limit = 50, dueOnly = false) {
+            const now = new Date();
+            const where = { status: "pending" };
+            if (dueOnly) {
+                where.$or = [
+                    { scheduledAt: null },
+                    { scheduledAt: { $lte: now } },
+                    { nextRetryAt: { $lte: now } },
+                ];
+            }
+            return strapi.db.query(MSG_JOB_UID).findMany({
+                where,
+                populate: { template: true },
+                orderBy: { scheduledAt: "ASC" },
+                limit,
+            });
+        },
+        /** 查询/刷新用户公众号关注状态，落库到 sso-third-party-binding.subscribe */
+        async refreshSubscribe(userId, appType = "official_account") {
+            const binding = await strapi.db.query(BINDING_UID).findOne({
+                where: { provider: "wechat", user: userId },
+                orderBy: { id: "DESC" },
+            });
+            if (!binding)
+                throwErr("SSO_MSG_BINDING_404", 404, "该用户无微信绑定，无法查询关注状态");
+            const wechatSvc = strapi.plugin("zhao-sso").service("sso-wechat");
+            const subscribe = (await wechatSvc.querySubscribe(binding.provider_user_id, binding.provider, appType)) || 0;
+            await strapi.db.query(BINDING_UID).update({
+                where: { id: binding.id },
+                data: {
+                    subscribe,
+                    subscribe_at: new Date(),
+                    subscribe_check_at: new Date(),
+                },
+            });
+            return subscribe;
+        },
+    };
+};
+//# sourceMappingURL=sso-msg.js.map
