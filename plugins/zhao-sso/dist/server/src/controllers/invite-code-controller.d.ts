@@ -2,6 +2,7 @@ import { Core } from '@strapi/strapi';
 declare const _default: ({ strapi }: {
     strapi: Core.Strapi;
 }) => {
+    funnel(ctx: any): Promise<void>;
     list(ctx: any): Promise<void>;
     create(ctx: any): Promise<void>;
     delete(ctx: any): Promise<void>;

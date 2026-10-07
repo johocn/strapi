@@ -1532,6 +1532,7 @@ declare const _default: {
         "invite-code": ({ strapi }: {
             strapi: import('@strapi/types/dist/core').Strapi;
         }) => {
+            funnel(ctx: any): Promise<void>;
             list(ctx: any): Promise<void>;
             create(ctx: any): Promise<void>;
             delete(ctx: any): Promise<void>;

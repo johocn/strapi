@@ -2165,6 +2165,71 @@ const roleController = ({ strapi }) => ({
 });
 const UID$3 = "plugin::zhao-sso.sso-invite-code";
 const inviteCodeController = ({ strapi }) => ({
+  // 邀请漏斗聚合：每码「打开数（zhao-studio browser_logs, eventType=invite-view）
+  // → 注册数（sso_invite_usages）」+ 转化率；appCode 过滤区分来源应用
+  async funnel(ctx) {
+    try {
+      const { appCode } = ctx.query;
+      const codeWhere = {};
+      if (appCode) codeWhere.app_code = appCode;
+      const codes = await strapi.db.query(UID$3).findMany({
+        where: codeWhere,
+        select: ["id", "code", "app_code"]
+      });
+      const codeIds = codes.map((c) => c.id);
+      const logWhere = { eventType: "invite-view" };
+      if (appCode) logWhere.appCode = appCode;
+      const logs = await strapi.db.query("plugin::zhao-studio.browser-log").findMany({ where: logWhere, select: ["inviteCode", "createdAt"] });
+      const usageWhere = {};
+      if (codeIds.length > 0) usageWhere.invite_code = { id: { $in: codeIds } };
+      const usages = await strapi.db.query("plugin::zhao-sso.sso-invite-usage").findMany({
+        where: usageWhere,
+        select: ["app_code"],
+        populate: { invite_code: { select: ["code"] } }
+      });
+      const openMap = /* @__PURE__ */ new Map();
+      let lastOpenAt = null;
+      for (const log of logs) {
+        if (!log.inviteCode) continue;
+        openMap.set(log.inviteCode, (openMap.get(log.inviteCode) || 0) + 1);
+        if (!lastOpenAt || new Date(log.createdAt) > new Date(lastOpenAt)) {
+          lastOpenAt = log.createdAt;
+        }
+      }
+      const regMap = /* @__PURE__ */ new Map();
+      for (const u of usages) {
+        const code = u.invite_code?.code;
+        if (code) regMap.set(code, (regMap.get(code) || 0) + 1);
+      }
+      const rows = codes.map((c) => {
+        const opens = openMap.get(c.code) || 0;
+        const registers = regMap.get(c.code) || 0;
+        return {
+          code: c.code,
+          appCode: c.app_code,
+          opens,
+          registers,
+          conversionRate: opens > 0 ? Number((registers / opens * 100).toFixed(1)) : null
+        };
+      }).sort((a, b) => b.opens - a.opens || b.registers - a.registers);
+      const totalOpens = rows.reduce((s, r) => s + r.opens, 0);
+      const totalRegisters = rows.reduce((s, r) => s + r.registers, 0);
+      ctx.body = {
+        data: {
+          summary: {
+            totalOpens,
+            totalRegisters,
+            conversionRate: totalOpens > 0 ? Number((totalRegisters / totalOpens * 100).toFixed(1)) : null,
+            lastOpenAt
+          },
+          rows
+        }
+      };
+    } catch (e) {
+      ctx.status = e.status || 400;
+      ctx.body = { error: e.message };
+    }
+  },
   async list(ctx) {
     try {
       const { page = 1, pageSize = 20, ...filters } = ctx.query;
@@ -3587,6 +3652,7 @@ const admin = () => ({
     adminRoute("DELETE", "/user-app-roles/:id", "role.delete", "sso.user-app-role.delete"),
     // 邀请码
     adminRoute("GET", "/invite-codes", "invite-code.list", "sso.invite-code.read"),
+    adminRoute("GET", "/invite-funnel", "invite-code.funnel", "sso.invite-code.read"),
     adminRoute("POST", "/invite-codes", "invite-code.create", "sso.invite-code.create"),
     adminRoute("DELETE", "/invite-codes/:id", "invite-code.delete", "sso.invite-code.delete"),
     adminRoute("POST", "/invite-codes/:id/validate", "invite-code.validate", "sso.invite-code.validate"),

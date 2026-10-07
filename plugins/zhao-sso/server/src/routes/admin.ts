@@ -78,6 +78,7 @@ export default () => ({
 
     // 邀请码
     adminRoute("GET", "/invite-codes", "invite-code.list", "sso.invite-code.read"),
+    adminRoute("GET", "/invite-funnel", "invite-code.funnel", "sso.invite-code.read"),
     adminRoute("POST", "/invite-codes", "invite-code.create", "sso.invite-code.create"),
     adminRoute("DELETE", "/invite-codes/:id", "invite-code.delete", "sso.invite-code.delete"),
     adminRoute("POST", "/invite-codes/:id/validate", "invite-code.validate", "sso.invite-code.validate"),
