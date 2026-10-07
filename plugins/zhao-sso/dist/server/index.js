@@ -1483,7 +1483,14 @@ const userController = ({ strapi }) => ({
       } catch (e) {
         strapi.log.warn(`[user-controller] 获取 ownInviteCode 失败: ${e?.message || e}`);
       }
-      ctx.body = { ...user, ownInviteCode };
+      let wxOpenid = "";
+      try {
+        const binding = await strapi.db.query("plugin::zhao-sso.sso-third-party-binding").findOne({ where: { user: user.id, provider: "wechat" }, orderBy: { id: "desc" }, select: ["provider_user_id"] });
+        wxOpenid = binding?.provider_user_id || "";
+      } catch (e) {
+        strapi.log.warn(`[user-controller] 获取 wechat openid 失败: ${e?.message || e}`);
+      }
+      ctx.body = { ...user, ownInviteCode, openid: wxOpenid };
     } catch (e) {
       ctx.status = e.status || 400;
       ctx.body = { error: e.message };

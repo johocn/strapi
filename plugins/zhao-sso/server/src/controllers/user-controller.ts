@@ -37,7 +37,24 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         strapi.log.warn(`[user-controller] 获取 ownInviteCode 失败: ${e?.message || e}`);
       }
 
-      ctx.body = { ...user, ownInviteCode };
+      // 附加本人微信公众号 openid（sso_third_party_bindings.provider='wechat' 的最新绑定）
+      // 供 Vendure sso 认证链透传写入 Customer.customFields.wechatOpenid，
+      // 全链路统一 zhao-sso 公众号后 openid 与模板消息发送方同号可用。
+      let wxOpenid = "";
+      try {
+        const binding = await strapi.db
+          .query("plugin::zhao-sso.sso-third-party-binding")
+          .findOne({
+            where: { user: user.id, provider: "wechat" },
+            orderBy: { id: "desc" },
+            select: ["provider_user_id"],
+          });
+        wxOpenid = binding?.provider_user_id || "";
+      } catch (e: any) {
+        strapi.log.warn(`[user-controller] 获取 wechat openid 失败: ${e?.message || e}`);
+      }
+
+      ctx.body = { ...user, ownInviteCode, openid: wxOpenid };
     } catch (e: any) {
       ctx.status = (e as any).status || 400; ctx.body = { error: e.message };
     }
