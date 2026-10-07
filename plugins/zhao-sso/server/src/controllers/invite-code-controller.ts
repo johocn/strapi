@@ -36,7 +36,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         .query("plugin::zhao-sso.sso-invite-usage")
         .findMany({
           where: usageWhere,
-          select: ["app_code"],
+          select: ["app_code", "used_at"],
           populate: { invite_code: { select: ["code"] } },
         });
 
