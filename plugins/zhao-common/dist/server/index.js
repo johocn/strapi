@@ -2167,6 +2167,7 @@ const PAGE_TIMEOUT = 3e4;
 const MAX_PAGES = Math.max(1, Number(process.env.PLAYWRIGHT_MAX_PAGES || 2));
 const IDLE_CLOSE_MS = Math.max(6e4, Number(process.env.PLAYWRIGHT_IDLE_CLOSE_MS || 10 * 6e4));
 const MIN_FREE_MB = Math.max(0, Number(process.env.PLAYWRIGHT_MIN_FREE_MB ?? 500));
+const EXTRA_ARGS = (process.env.PLAYWRIGHT_EXTRA_ARGS || "").split(/\s+/).filter(Boolean);
 const DEFAULT_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36";
 let browser = null;
 let initPromise = null;
@@ -2215,7 +2216,7 @@ async function initBrowser() {
       const executablePath = detectChromePath();
       const launchOptions = {
         headless: process.platform !== "win32",
-        args: ["--disable-blink-features=AutomationControlled", "--no-sandbox", "--disable-dev-shm-usage"],
+        args: ["--disable-blink-features=AutomationControlled", "--no-sandbox", "--disable-dev-shm-usage", ...EXTRA_ARGS],
         ...executablePath ? { executablePath } : {}
       };
       browser = await playwright.chromium.launch(launchOptions);
@@ -2233,7 +2234,7 @@ async function initBrowser() {
   })();
   return initPromise;
 }
-async function createPage(opts) {
+async function acquireSlot() {
   if (activePages >= MAX_PAGES) {
     await new Promise((resolve) => waiters.push(resolve));
   } else {
@@ -2243,6 +2244,45 @@ async function createPage(opts) {
     clearTimeout(idleTimer);
     idleTimer = null;
   }
+}
+async function openContext(opts) {
+  await acquireSlot();
+  if (!browser) browser = await initBrowser();
+  if (!browser) {
+    releaseSlot();
+    return null;
+  }
+  let context;
+  try {
+    context = await browser.newContext({
+      userAgent: opts?.userAgent || DEFAULT_UA,
+      ...opts?.locale ? { locale: opts.locale } : {},
+      ...opts?.viewport ? { viewport: opts.viewport } : {}
+    });
+    if (opts?.cookies?.length) {
+      await context.addCookies(opts.cookies);
+    }
+    for (const script of opts?.initScripts ?? []) {
+      await context.addInitScript(script);
+    }
+    return {
+      context,
+      close: async () => {
+        try {
+          await context.close();
+        } catch {
+        }
+        releaseSlot();
+        armIdleTimer();
+      }
+    };
+  } catch (error) {
+    releaseSlot();
+    throw error;
+  }
+}
+async function createPage(opts) {
+  await acquireSlot();
   if (!browser) browser = await initBrowser();
   if (!browser) {
     releaseSlot();
@@ -2302,6 +2342,7 @@ function stats() {
 }
 const browserManager = ({ strapi: strapi2 }) => ({
   createPage,
+  openContext,
   closePage,
   shutdown,
   stats

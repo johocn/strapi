@@ -600,8 +600,14 @@ declare const _default: {
             cookiesAt: any;
         }>;
         resolveAccountPlatform(accountId: string): Promise<import('./rpa').RpaPlatform>;
+        getSharedBrowserSvc(): any | null;
+        acquireContext(opts?: {
+            cookies?: import('./rpa-client').RpaCookie[];
+        }): Promise<{
+            ctx: any;
+            release: () => Promise<void>;
+        }>;
         launchBrowser(headless?: boolean): Promise<import('playwright-core').Browser>;
-        createContext(browser: any, cookies: import('./rpa-client').RpaCookie[], platform: import('./rpa-client').RpaPlatformConfig["platform"]): Promise<any>;
         captureCookies(ctx: any, platform: import('./rpa-client').RpaPlatformConfig["platform"]): Promise<import('./rpa-client').RpaCookie[]>;
         closeLoginSession(accountId: string): Promise<void>;
         _sweepLoginSessions(): Promise<void>;

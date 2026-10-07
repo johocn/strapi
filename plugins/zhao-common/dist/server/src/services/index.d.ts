@@ -210,6 +210,16 @@ declare const _default: {
             storageState?: any;
             userAgent?: string;
         }) => Promise<import('playwright-core').Page | null>;
+        openContext: (opts?: {
+            cookies?: any[];
+            initScripts?: string[];
+            userAgent?: string;
+            locale?: string;
+            viewport?: {
+                width: number;
+                height: number;
+            };
+        }) => Promise<import('./browser-manager').ContextHandle | null>;
         closePage: (page: import('playwright-core').Page) => Promise<void>;
         shutdown: (reason?: string) => Promise<void>;
         stats: () => {

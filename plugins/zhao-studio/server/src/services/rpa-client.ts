@@ -9,11 +9,17 @@ import { dumpDebug } from './rpa/shared';
 import type { RpaPlatform } from './rpa/types';
 
 // 扫码登录会话（进程内持有，5 分钟过期）。key = accountId。
+// release：槽位归还钩子——共享模式下关 Context 并归还 zhao-common 并发闸槽位；本地兜底模式下连带关闭 Browser
 const LOGIN_SESSIONS = new Map<
   string,
-  { browser: any; ctx: any; page: any; platform: RpaPlatform; createdAt: number }
+  { ctx: any; page: any; release: () => Promise<void>; platform: RpaPlatform; createdAt: number }
 >();
 const LOGIN_SESSION_TTL_MS = 5 * 60 * 1000;
+
+// RPA 统一指纹（与共享 manager 默认 UA 解耦，保持平台侧已验证的 Chrome/120 指纹）
+const RPA_UA =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+const RPA_VIEWPORT = { width: 1280, height: 800 };
 
 // ============ 内联 stealth patch（零外部依赖） ============
 // 标准反检测：navigator.webdriver + chrome 对象 + plugins 数组 + permissions + runtime 等
@@ -197,6 +203,54 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
   // ============ 浏览器生命周期 ============
 
+  /** zhao-common 共享 browser-manager 服务（方案A：全进程唯一 Browser 单例，四道闸门） */
+  getSharedBrowserSvc(): any | null {
+    return (strapi as any).plugin?.('zhao-common')?.service?.('browser-manager') ?? null;
+  },
+
+  /**
+   * 获取一个可用 Context：优先走 zhao-common 共享 Browser 单例（内存守门/并发闸统一管理），
+   * 仅当 zhao-common 服务整体不可用时才本地 launch 兜底。共享服务返回 null（内存守门降级/
+   * 启动失败）时直接抛错——绝不能绕过内存守门再起独立浏览器，否则 OOM 防线失效。
+   * opts.cookies: 平台登录态（domain 过滤后由调用方传入，共享模式 addCookies 注入）
+   */
+  async acquireContext(opts?: {
+    cookies?: RpaCookie[];
+  }): Promise<{ ctx: any; release: () => Promise<void> }> {
+    const shared = this.getSharedBrowserSvc();
+    if (shared && typeof shared.openContext === 'function') {
+      const handle = await shared.openContext({
+        ...(opts?.cookies?.length ? { cookies: opts.cookies } : {}),
+        userAgent: RPA_UA,
+        locale: 'zh-CN',
+        viewport: RPA_VIEWPORT,
+        initScripts: [STEALTH_JS],
+      });
+      if (!handle) {
+        throw new Error(
+          '共享浏览器不可用（内存守门降级或启动失败），请稍后重试或检查服务器可用内存（zhao-common browser-manager）'
+        );
+      }
+      return { ctx: handle.context, release: handle.close };
+    }
+
+    // 本地兜底：zhao-common browser-manager 服务不存在（插件未启用）时自行 launch
+    strapi.log.warn('[zhao-studio] zhao-common browser-manager 不可用，RPA 本地 launch 兜底（建议启用 zhao-common 共享浏览器）');
+    const browser = await this.launchBrowser(true);
+    const ctx = await browser.newContext({ viewport: RPA_VIEWPORT, userAgent: RPA_UA, locale: 'zh-CN' });
+    if (opts?.cookies?.length) {
+      await ctx.addCookies(opts.cookies);
+    }
+    await ctx.addInitScript(STEALTH_JS);
+    return {
+      ctx,
+      release: async () => {
+        await ctx.close().catch(() => {});
+        await browser.close().catch(() => {});
+      },
+    };
+  },
+
   async launchBrowser(headless = true) {
     await this.ensurePlaywrightRuntime();
     const { chromium } = await import('playwright');
@@ -213,30 +267,6 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     return browser;
   },
 
-  async createContext(browser: any, cookies: RpaCookie[], platform: RpaPlatformConfig['platform']) {
-    const ctx = await browser.newContext({
-      viewport: { width: 1280, height: 800 },
-      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      locale: 'zh-CN',
-    });
-
-    // 注入 cookie
-    if (cookies.length > 0) {
-      const platformCfg = RPA_PLATFORMS[platform];
-      const domainCookies = cookies.filter(c =>
-        c.domain && platformCfg.cookieDomain.includes(c.domain.replace(/^\./, ''))
-      );
-      if (domainCookies.length > 0) {
-        await ctx.addCookies(domainCookies);
-      }
-    }
-
-    // stealth 反检测：内联 JS patch，零外部依赖
-    await ctx.addInitScript(STEALTH_JS);
-
-    return ctx;
-  },
-
   async captureCookies(ctx: any, platform: RpaPlatformConfig['platform']): Promise<RpaCookie[]> {
     const platformCfg = RPA_PLATFORMS[platform];
     const all = await ctx.cookies();
@@ -245,13 +275,12 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
   // ============ 扫码登录会话 ============
 
-  /** 关闭指定账号的登录会话（存在才关） */
+  /** 关闭指定账号的登录会话（存在才关）：关 Context 并归还槽位/关闭兜底 Browser */
   async closeLoginSession(accountId: string): Promise<void> {
     const s = LOGIN_SESSIONS.get(accountId);
     if (!s) return;
     LOGIN_SESSIONS.delete(accountId);
-    await s.ctx?.close().catch(() => {});
-    await s.browser?.close().catch(() => {});
+    await s.release?.().catch(() => {});
   },
 
   /** 清理过期会话 */
@@ -265,8 +294,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   },
 
   /**
-   * 开启扫码登录：起 headless 浏览器 → 打开平台登录页 → 截图二维码返回（dataURL）。
+   * 开启扫码登录：取 Context（共享 Browser 单例优先）→ 打开平台登录页 → 截图二维码返回（dataURL）。
    * 操作者扫码后调用 finishLoginSession 抓取并保存 cookie。
+   * headless 参数仅为兼容旧签名保留：共享模式下 Browser 由 zhao-common 统一管理（Linux 恒 headless）。
    * ⚠️ 需真实浏览器环境（服务器装 playwright + chromium），当前无验证环境、选择器未实测。
    */
   async openLoginSession(accountId: string, headless = true) {
@@ -275,9 +305,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     await this.closeLoginSession(accountId);
 
     const platformCfg = RPA_PLATFORMS[platform];
-    const browser = await this.launchBrowser(headless);
-    const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 }, locale: 'zh-CN' });
-    await ctx.addInitScript(STEALTH_JS);
+    const { ctx, release } = await this.acquireContext();
     const page = await ctx.newPage();
     await page.goto(platformCfg.loginUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
     await page.waitForTimeout(1500);
@@ -291,7 +319,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     } catch { /* already on QR tab */ }
 
     const buffer = await page.screenshot({ type: 'png' });
-    LOGIN_SESSIONS.set(accountId, { browser, ctx, page, platform, createdAt: Date.now() });
+    LOGIN_SESSIONS.set(accountId, { ctx, page, release, platform, createdAt: Date.now() });
 
     return {
       platform,
@@ -341,9 +369,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       };
     }
 
-    // 2. 启动浏览器
-    const browser = await this.launchBrowser(true);
-    const ctx = await this.createContext(browser, cookies, platform);
+    // 2. 获取 Context（共享 Browser 单例优先；cookies 按 domain 过滤后注入）
+    const platformCfgCookies = cookies.filter(c =>
+      c.domain && platformCfg.cookieDomain.includes(c.domain.replace(/^\./, ''))
+    );
+    const { ctx, release } = await this.acquireContext({ cookies: platformCfgCookies });
     const page = await ctx.newPage();
 
     try {
@@ -367,8 +397,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
           await this.saveCookies(accountId, freshCookies);
         }
       } catch { /* ignore cookie refresh fail */ }
-      await ctx.close().catch(() => {});
-      await browser.close().catch(() => {});
+      await release().catch(() => {});
     }
   },
 });

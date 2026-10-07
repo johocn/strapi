@@ -24232,6 +24232,8 @@ function getRpaDriver(platform2) {
 }
 const LOGIN_SESSIONS = /* @__PURE__ */ new Map();
 const LOGIN_SESSION_TTL_MS = 5 * 60 * 1e3;
+const RPA_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+const RPA_VIEWPORT = { width: 1280, height: 800 };
 const STEALTH_JS = `
 () => {
   // 1. navigator.webdriver → undefined（W3C 标准自动化检测标记）
@@ -24373,6 +24375,50 @@ const rpaClient = ({ strapi: strapi2 }) => ({
     return type;
   },
   // ============ 浏览器生命周期 ============
+  /** zhao-common 共享 browser-manager 服务（方案A：全进程唯一 Browser 单例，四道闸门） */
+  getSharedBrowserSvc() {
+    return strapi2.plugin?.("zhao-common")?.service?.("browser-manager") ?? null;
+  },
+  /**
+   * 获取一个可用 Context：优先走 zhao-common 共享 Browser 单例（内存守门/并发闸统一管理），
+   * 仅当 zhao-common 服务整体不可用时才本地 launch 兜底。共享服务返回 null（内存守门降级/
+   * 启动失败）时直接抛错——绝不能绕过内存守门再起独立浏览器，否则 OOM 防线失效。
+   * opts.cookies: 平台登录态（domain 过滤后由调用方传入，共享模式 addCookies 注入）
+   */
+  async acquireContext(opts) {
+    const shared = this.getSharedBrowserSvc();
+    if (shared && typeof shared.openContext === "function") {
+      const handle = await shared.openContext({
+        ...opts?.cookies?.length ? { cookies: opts.cookies } : {},
+        userAgent: RPA_UA,
+        locale: "zh-CN",
+        viewport: RPA_VIEWPORT,
+        initScripts: [STEALTH_JS]
+      });
+      if (!handle) {
+        throw new Error(
+          "共享浏览器不可用（内存守门降级或启动失败），请稍后重试或检查服务器可用内存（zhao-common browser-manager）"
+        );
+      }
+      return { ctx: handle.context, release: handle.close };
+    }
+    strapi2.log.warn("[zhao-studio] zhao-common browser-manager 不可用，RPA 本地 launch 兜底（建议启用 zhao-common 共享浏览器）");
+    const browser = await this.launchBrowser(true);
+    const ctx = await browser.newContext({ viewport: RPA_VIEWPORT, userAgent: RPA_UA, locale: "zh-CN" });
+    if (opts?.cookies?.length) {
+      await ctx.addCookies(opts.cookies);
+    }
+    await ctx.addInitScript(STEALTH_JS);
+    return {
+      ctx,
+      release: async () => {
+        await ctx.close().catch(() => {
+        });
+        await browser.close().catch(() => {
+        });
+      }
+    };
+  },
   async launchBrowser(headless = true) {
     await this.ensurePlaywrightRuntime();
     const { chromium } = await import("playwright");
@@ -24388,38 +24434,18 @@ const rpaClient = ({ strapi: strapi2 }) => ({
     });
     return browser;
   },
-  async createContext(browser, cookies2, platform2) {
-    const ctx = await browser.newContext({
-      viewport: { width: 1280, height: 800 },
-      userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      locale: "zh-CN"
-    });
-    if (cookies2.length > 0) {
-      const platformCfg = RPA_PLATFORMS[platform2];
-      const domainCookies = cookies2.filter(
-        (c) => c.domain && platformCfg.cookieDomain.includes(c.domain.replace(/^\./, ""))
-      );
-      if (domainCookies.length > 0) {
-        await ctx.addCookies(domainCookies);
-      }
-    }
-    await ctx.addInitScript(STEALTH_JS);
-    return ctx;
-  },
   async captureCookies(ctx, platform2) {
     const platformCfg = RPA_PLATFORMS[platform2];
     const all3 = await ctx.cookies();
     return all3.filter((c) => c.domain.includes(platformCfg.cookieDomain.replace(/^\./, "")));
   },
   // ============ 扫码登录会话 ============
-  /** 关闭指定账号的登录会话（存在才关） */
+  /** 关闭指定账号的登录会话（存在才关）：关 Context 并归还槽位/关闭兜底 Browser */
   async closeLoginSession(accountId) {
     const s = LOGIN_SESSIONS.get(accountId);
     if (!s) return;
     LOGIN_SESSIONS.delete(accountId);
-    await s.ctx?.close().catch(() => {
-    });
-    await s.browser?.close().catch(() => {
+    await s.release?.().catch(() => {
     });
   },
   /** 清理过期会话 */
@@ -24432,8 +24458,9 @@ const rpaClient = ({ strapi: strapi2 }) => ({
     }
   },
   /**
-   * 开启扫码登录：起 headless 浏览器 → 打开平台登录页 → 截图二维码返回（dataURL）。
+   * 开启扫码登录：取 Context（共享 Browser 单例优先）→ 打开平台登录页 → 截图二维码返回（dataURL）。
    * 操作者扫码后调用 finishLoginSession 抓取并保存 cookie。
+   * headless 参数仅为兼容旧签名保留：共享模式下 Browser 由 zhao-common 统一管理（Linux 恒 headless）。
    * ⚠️ 需真实浏览器环境（服务器装 playwright + chromium），当前无验证环境、选择器未实测。
    */
   async openLoginSession(accountId, headless = true) {
@@ -24441,9 +24468,7 @@ const rpaClient = ({ strapi: strapi2 }) => ({
     const platform2 = await this.resolveAccountPlatform(accountId);
     await this.closeLoginSession(accountId);
     const platformCfg = RPA_PLATFORMS[platform2];
-    const browser = await this.launchBrowser(headless);
-    const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 }, locale: "zh-CN" });
-    await ctx.addInitScript(STEALTH_JS);
+    const { ctx, release } = await this.acquireContext();
     const page = await ctx.newPage();
     await page.goto(platformCfg.loginUrl, { waitUntil: "domcontentloaded", timeout: 6e4 });
     await page.waitForTimeout(1500);
@@ -24454,7 +24479,7 @@ const rpaClient = ({ strapi: strapi2 }) => ({
     } catch {
     }
     const buffer = await page.screenshot({ type: "png" });
-    LOGIN_SESSIONS.set(accountId, { browser, ctx, page, platform: platform2, createdAt: Date.now() });
+    LOGIN_SESSIONS.set(accountId, { ctx, page, release, platform: platform2, createdAt: Date.now() });
     return {
       platform: platform2,
       loginUrl: platformCfg.loginUrl,
@@ -24488,8 +24513,10 @@ const rpaClient = ({ strapi: strapi2 }) => ({
         error: `RPA cookie 过期或未配置。请调用 POST /v1/admin/rpa/login/${accountId} 获取二维码完成扫码登录`
       };
     }
-    const browser = await this.launchBrowser(true);
-    const ctx = await this.createContext(browser, cookies2, platform2);
+    const platformCfgCookies = cookies2.filter(
+      (c) => c.domain && platformCfg.cookieDomain.includes(c.domain.replace(/^\./, ""))
+    );
+    const { ctx, release } = await this.acquireContext({ cookies: platformCfgCookies });
     const page = await ctx.newPage();
     try {
       await page.goto(platformCfg.publishUrl, { waitUntil: "domcontentloaded", timeout: 3e4 });
@@ -24508,9 +24535,7 @@ const rpaClient = ({ strapi: strapi2 }) => ({
         }
       } catch {
       }
-      await ctx.close().catch(() => {
-      });
-      await browser.close().catch(() => {
+      await release().catch(() => {
       });
     }
   }
