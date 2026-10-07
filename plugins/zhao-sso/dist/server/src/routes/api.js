@@ -24,9 +24,10 @@ exports.default = () => ({
         },
         {
             // 服务间单发（Vendure 等业务后端）：body 自带 app_code+app_secret，经 bcrypt 校验，不走 admin JWT
+            // 注意：handler 的 controller 段是注册键名 message（见 controllers/index.ts），不是文件名
             method: "POST",
             path: "/v1/msg/template-send",
-            handler: "message-controller.apiSend",
+            handler: "message.apiSend",
             config: { auth: false },
         },
         {
