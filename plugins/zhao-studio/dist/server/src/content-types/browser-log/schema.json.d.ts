@@ -62,6 +62,11 @@ declare const _default: {
     "city": { "type": "string" },
     "referrer": { "type": "string" },
     "referrerDomain": { "type": "string" },
+    "abVariant": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-studio.ab-variant"
+    },
     "readDuration": { "type": "integer", "default": 0 },
     "scrollDepth": { "type": "integer", "default": 0 },
     "timestamp": { "type": "datetime", "required": true },

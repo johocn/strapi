@@ -49,6 +49,18 @@ declare const _default: {
             description: {
                 type: string;
             };
+            shareTitle: {
+                type: string;
+            };
+            shareDesc: {
+                type: string;
+            };
+            shareImage: {
+                type: string;
+            };
+            shareLink: {
+                type: string;
+            };
         };
     };
 };

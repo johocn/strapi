@@ -21845,6 +21845,18 @@ function extractReferrerDomain(referrer) {
     return "";
   }
 }
+const resolveVariantId = async (strapi2, documentId) => {
+  if (!documentId) return null;
+  try {
+    const vs = await strapi2.documents("plugin::zhao-studio.ab-variant").findMany({
+      filters: { documentId },
+      limit: 1
+    });
+    return vs?.[0]?.id ?? null;
+  } catch {
+    return null;
+  }
+};
 const analytics = ({ strapi: strapi2 }) => ({
   async trackPageView(data2) {
     const uaInfo = parseUserAgent(data2.userAgent);
@@ -21885,6 +21897,7 @@ const analytics = ({ strapi: strapi2 }) => ({
         referrer: data2.referrer,
         referrerDomain,
         promoChannelCode,
+        abVariant: await resolveVariantId(strapi2, data2.abVariant),
         timestamp: /* @__PURE__ */ new Date()
       }
     });
@@ -21913,7 +21926,7 @@ const analytics = ({ strapi: strapi2 }) => ({
       data: {
         eventType: "ad-click",
         article: data2.articleId,
-        adSlot: data2.adSlotId,
+        adSlot: adSlot2.id,
         sessionId: data2.sessionId,
         userId: data2.userId,
         isRegistered: !!data2.userId,
@@ -21928,6 +21941,7 @@ const analytics = ({ strapi: strapi2 }) => ({
         country: ipInfo.country,
         city: ipInfo.city,
         promoChannelCode,
+        abVariant: await resolveVariantId(strapi2, data2.abVariant),
         timestamp: /* @__PURE__ */ new Date()
       }
     });
@@ -22459,7 +22473,7 @@ const promoChannel$1 = ({ strapi: strapi2 }) => {
     }
   };
 };
-const CAMPAIGN_UID = "plugin::zhao-studio.promo-campaign";
+const CAMPAIGN_UID$1 = "plugin::zhao-studio.promo-campaign";
 const promoCampaign$1 = ({ strapi: strapi2 }) => {
   const throwErr = (code, message) => {
     const err = new Error(message);
@@ -22471,7 +22485,7 @@ const promoCampaign$1 = ({ strapi: strapi2 }) => {
       const filters2 = {};
       if (opts.channelId) filters2.channel = opts.channelId;
       if (opts.status !== void 0) filters2.status = opts.status;
-      return strapi2.documents(CAMPAIGN_UID).findMany({
+      return strapi2.documents(CAMPAIGN_UID$1).findMany({
         filters: filters2,
         start: (opts.page - 1) * opts.pageSize,
         limit: opts.pageSize,
@@ -22479,7 +22493,7 @@ const promoCampaign$1 = ({ strapi: strapi2 }) => {
       });
     },
     async getCampaign(id) {
-      const campaigns = await strapi2.documents(CAMPAIGN_UID).findMany({
+      const campaigns = await strapi2.documents(CAMPAIGN_UID$1).findMany({
         filters: { documentId: id },
         populate: { channel: true, experiments: { populate: { variants: true } } }
       });
@@ -22492,23 +22506,24 @@ const promoCampaign$1 = ({ strapi: strapi2 }) => {
       if (!data2.channel) {
         throwErr("STUDIO_PROMO_CAMPAIGN_CHANNEL_REQUIRED", "活动必须关联渠道");
       }
-      const existing = await strapi2.documents(CAMPAIGN_UID).findMany({
+      const existing = await strapi2.documents(CAMPAIGN_UID$1).findMany({
         filters: { code: data2.code }
       });
       if (existing && existing.length > 0) {
         throwErr("STUDIO_PROMO_CAMPAIGN_CODE_DUPLICATE", "活动 code 重复");
       }
-      return strapi2.documents(CAMPAIGN_UID).create({ data: data2 });
+      return strapi2.documents(CAMPAIGN_UID$1).create({ data: data2 });
     },
     async updateCampaign(id, data2) {
-      return strapi2.documents(CAMPAIGN_UID).update({ documentId: id, data: data2 });
+      return strapi2.documents(CAMPAIGN_UID$1).update({ documentId: id, data: data2 });
     },
     async deleteCampaign(id) {
-      return strapi2.documents(CAMPAIGN_UID).delete({ documentId: id });
+      return strapi2.documents(CAMPAIGN_UID$1).delete({ documentId: id });
     }
   };
 };
 const EXPERIMENT_UID = "plugin::zhao-studio.ab-experiment";
+const CAMPAIGN_UID = "plugin::zhao-studio.promo-campaign";
 const CLICK_EVENT_UID$1 = "plugin::zhao-track.click-event";
 const ORDER_UID$1 = "plugin::zhao-track.order";
 const abTest = ({ strapi: strapi2 }) => {
@@ -22537,11 +22552,24 @@ const abTest = ({ strapi: strapi2 }) => {
     }
     return experiments[0];
   };
+  const resolveCampaignId = async (idOrCode) => {
+    const byId = await strapi2.documents(CAMPAIGN_UID).findMany({
+      filters: { documentId: idOrCode },
+      limit: 1
+    });
+    if (byId && byId.length > 0) return byId[0].documentId;
+    const byCode = await strapi2.documents(CAMPAIGN_UID).findMany({
+      filters: { code: idOrCode },
+      limit: 1
+    });
+    if (byCode && byCode.length > 0) return byCode[0].documentId;
+    return null;
+  };
   return {
     listExperiments: async (opts) => {
       const filters2 = {};
-      if (opts.channelId) filters2.channel = opts.channelId;
-      if (opts.campaignId) filters2.campaign = opts.campaignId;
+      if (opts.channelId) filters2.channel = { documentId: opts.channelId };
+      if (opts.campaignId) filters2.campaign = { documentId: opts.campaignId };
       if (opts.status) filters2.status = opts.status;
       return strapi2.documents(EXPERIMENT_UID).findMany({
         filters: filters2,
@@ -22575,8 +22603,12 @@ const abTest = ({ strapi: strapi2 }) => {
     },
     pickVariant: async (opts) => {
       const filters2 = { status: "running" };
-      if (opts.campaignId) filters2.campaign = opts.campaignId;
-      if (opts.channelId) filters2.channel = opts.channelId;
+      if (opts.campaignId) {
+        const campaignId = await resolveCampaignId(opts.campaignId);
+        if (!campaignId) return null;
+        filters2.campaign = { documentId: campaignId };
+      }
+      if (opts.channelId) filters2.channel = { documentId: opts.channelId };
       const experiments = await strapi2.documents(EXPERIMENT_UID).findMany({
         filters: filters2,
         populate: { variants: true },
@@ -22597,14 +22629,14 @@ const abTest = ({ strapi: strapi2 }) => {
       for (const vid of variantIds) {
         const clicks = await strapi2.documents(CLICK_EVENT_UID$1).findMany({
           filters: {
-            abVariant: vid,
+            abVariant: { documentId: vid },
             clickedAt: { $gte: opts.startDate, $lte: opts.endDate }
           }
         });
         clicksByVariant[vid] = clicks ? clicks.length : 0;
         const orders = await strapi2.documents(ORDER_UID$1).findMany({
           filters: {
-            matchedClick: { abVariant: vid },
+            matchedClick: { abVariant: { documentId: vid } },
             transactedAt: { $gte: opts.startDate, $lte: opts.endDate }
           }
         });
@@ -22666,6 +22698,76 @@ const channelReport = ({ strapi: strapi2 }) => {
         throwErr("STUDIO_PROMO_CHANNEL_NOT_FOUND", "推广渠道不存在");
       }
       const channel = channels[0];
+      if (opts.groupBy === "variant") {
+        const campaignIds2 = (channel.campaigns || []).map((c) => c.documentId);
+        const variants = [];
+        for (const c of channel.campaigns || []) {
+          for (const e of c.experiments || []) {
+            for (const v of e.variants || []) {
+              variants.push({ ...v, campaignCode: c.code, campaignName: c.name });
+            }
+          }
+        }
+        const byVariant = await Promise.all(
+          variants.map(async (v) => {
+            const impLogs = await strapi2.documents(BROWSER_LOG_UID).findMany({
+              filters: {
+                abVariant: { documentId: v.documentId },
+                promoChannelCode: opts.channelCode,
+                eventType: "page-view",
+                timestamp: { $gte: opts.startDate, $lte: opts.endDate }
+              }
+            });
+            const impressions2 = impLogs ? impLogs.length : 0;
+            let clicks = 0;
+            let orders2 = 0;
+            let matchedCommission2 = 0;
+            if (campaignIds2.length > 0) {
+              const clk = await strapi2.documents(CLICK_EVENT_UID).findMany({
+                filters: {
+                  abVariant: { documentId: v.documentId },
+                  promoCampaign: { documentId: { $in: campaignIds2 } },
+                  clickedAt: { $gte: opts.startDate, $lte: opts.endDate }
+                }
+              });
+              clicks = clk ? clk.length : 0;
+              const ords = await strapi2.documents(ORDER_UID).findMany({
+                filters: {
+                  matchedClick: { abVariant: { documentId: v.documentId } },
+                  transactedAt: { $gte: opts.startDate, $lte: opts.endDate }
+                }
+              });
+              orders2 = ords ? ords.length : 0;
+              for (const o of ords || []) {
+                const comm = Number(o.commission) || 0;
+                if (o.attributionQuality && o.attributionQuality !== "unmatched") {
+                  matchedCommission2 += comm;
+                }
+              }
+            }
+            const ctr = impressions2 > 0 ? Number((clicks / impressions2 * 100).toFixed(2)) : 0;
+            return {
+              variantId: v.documentId,
+              variantName: v.name,
+              campaignCode: v.campaignCode,
+              campaignName: v.campaignName,
+              weight: v.weight,
+              impressions: impressions2,
+              clicks,
+              ctr,
+              orders: orders2,
+              matchedCommission: Number(matchedCommission2.toFixed(2))
+            };
+          })
+        );
+        const variantReport = {
+          channel: { code: channel.code, name: channel.name, scene: channel.scene },
+          groupBy: "variant",
+          byVariant
+        };
+        setCache(cacheKey, variantReport);
+        return variantReport;
+      }
       const browserLogs = await strapi2.documents(BROWSER_LOG_UID).findMany({
         filters: {
           promoChannelCode: opts.channelCode,
@@ -22683,14 +22785,14 @@ const channelReport = ({ strapi: strapi2 }) => {
       if (campaignIds.length > 0) {
         const clicks = await strapi2.documents(CLICK_EVENT_UID).findMany({
           filters: {
-            promoCampaign: { $in: campaignIds },
+            promoCampaign: { documentId: { $in: campaignIds } },
             clickedAt: { $gte: opts.startDate, $lte: opts.endDate }
           }
         });
         couponClicks = clicks ? clicks.length : 0;
         const orderList = await strapi2.documents(ORDER_UID).findMany({
           filters: {
-            promoCampaign: { $in: campaignIds },
+            promoCampaign: { documentId: { $in: campaignIds } },
             transactedAt: { $gte: opts.startDate, $lte: opts.endDate }
           }
         });
@@ -24735,7 +24837,7 @@ const collectionName$b = "zhao_browser_logs";
 const info$b = { "singularName": "browser-log", "pluralName": "browser-logs", "displayName": "浏览器日志", "description": "用户浏览器信息和行为日志" };
 const options$b = { "draftAndPublish": false };
 const pluginOptions$b = { "content-manager": { "visible": true }, "content-type-builder": { "visible": true } };
-const attributes$b = { "eventType": { "type": "enumeration", "enum": ["page-view", "ad-click", "scroll", "read-duration", "user-register"], "required": true }, "article": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.article-draft" }, "adSlot": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.ad-slot" }, "user": { "type": "relation", "relation": "manyToOne", "target": "admin::user" }, "userId": { "type": "string" }, "sessionId": { "type": "string", "required": true }, "isRegistered": { "type": "boolean", "default": false }, "registeredAt": { "type": "datetime" }, "userAgent": { "type": "string" }, "platform": { "type": "string" }, "browser": { "type": "string" }, "browserVersion": { "type": "string" }, "os": { "type": "string" }, "osVersion": { "type": "string" }, "deviceType": { "type": "enumeration", "enum": ["desktop", "mobile", "tablet"], "default": "desktop" }, "screenWidth": { "type": "integer" }, "screenHeight": { "type": "integer" }, "language": { "type": "string" }, "ip": { "type": "string" }, "country": { "type": "string" }, "city": { "type": "string" }, "referrer": { "type": "string" }, "referrerDomain": { "type": "string" }, "readDuration": { "type": "integer", "default": 0 }, "scrollDepth": { "type": "integer", "default": 0 }, "timestamp": { "type": "datetime", "required": true }, "createdAt": { "type": "datetime" }, "promoChannelCode": { "type": "string" } };
+const attributes$b = { "eventType": { "type": "enumeration", "enum": ["page-view", "ad-click", "scroll", "read-duration", "user-register"], "required": true }, "article": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.article-draft" }, "adSlot": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.ad-slot" }, "user": { "type": "relation", "relation": "manyToOne", "target": "admin::user" }, "userId": { "type": "string" }, "sessionId": { "type": "string", "required": true }, "isRegistered": { "type": "boolean", "default": false }, "registeredAt": { "type": "datetime" }, "userAgent": { "type": "string" }, "platform": { "type": "string" }, "browser": { "type": "string" }, "browserVersion": { "type": "string" }, "os": { "type": "string" }, "osVersion": { "type": "string" }, "deviceType": { "type": "enumeration", "enum": ["desktop", "mobile", "tablet"], "default": "desktop" }, "screenWidth": { "type": "integer" }, "screenHeight": { "type": "integer" }, "language": { "type": "string" }, "ip": { "type": "string" }, "country": { "type": "string" }, "city": { "type": "string" }, "referrer": { "type": "string" }, "referrerDomain": { "type": "string" }, "abVariant": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.ab-variant" }, "readDuration": { "type": "integer", "default": 0 }, "scrollDepth": { "type": "integer", "default": 0 }, "timestamp": { "type": "datetime", "required": true }, "createdAt": { "type": "datetime" }, "promoChannelCode": { "type": "string" } };
 const schema$b = {
   kind: kind$b,
   collectionName: collectionName$b,
@@ -24842,7 +24944,7 @@ const collectionName$4 = "zhao_ab_variants";
 const info$4 = { "singularName": "ab-variant", "pluralName": "ab-variants", "displayName": "AB变体", "description": "A/B 测试变体" };
 const options$4 = { "draftAndPublish": false };
 const pluginOptions$4 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": false } };
-const attributes$4 = { "experiment": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.ab-experiment", "inversedBy": "variants" }, "name": { "type": "string", "required": true, "maxLength": 100 }, "weight": { "type": "integer", "required": true, "default": 1 }, "article": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.article-draft" }, "coupon": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-deal.coupon" }, "description": { "type": "text" } };
+const attributes$4 = { "experiment": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.ab-experiment", "inversedBy": "variants" }, "name": { "type": "string", "required": true, "maxLength": 100 }, "weight": { "type": "integer", "required": true, "default": 1 }, "article": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-studio.article-draft" }, "coupon": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-deal.coupon" }, "description": { "type": "text" }, "shareTitle": { "type": "string" }, "shareDesc": { "type": "text" }, "shareImage": { "type": "string" }, "shareLink": { "type": "string" } };
 const schema$4 = {
   kind: kind$4,
   collectionName: collectionName$4,

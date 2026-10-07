@@ -947,6 +947,11 @@ declare const _default: {
                 referrerDomain: {
                     type: string;
                 };
+                abVariant: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                };
                 readDuration: {
                     type: string;
                     default: number;
@@ -1423,6 +1428,18 @@ declare const _default: {
                     target: string;
                 };
                 description: {
+                    type: string;
+                };
+                shareTitle: {
+                    type: string;
+                };
+                shareDesc: {
+                    type: string;
+                };
+                shareImage: {
+                    type: string;
+                };
+                shareLink: {
                     type: string;
                 };
             };

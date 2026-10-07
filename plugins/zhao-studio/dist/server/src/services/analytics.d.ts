@@ -3,7 +3,7 @@ declare const _default: ({ strapi }: {
     strapi: Core.Strapi;
 }) => {
     trackPageView(data: {
-        articleId: string;
+        articleId?: string;
         sessionId: string;
         userId?: string;
         userAgent: string;
@@ -14,6 +14,7 @@ declare const _default: ({ strapi }: {
             height: number;
         };
         language: string;
+        abVariant?: string;
     }): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
     trackAdClick(data: {
         adSlotId: string;
@@ -22,6 +23,7 @@ declare const _default: ({ strapi }: {
         userId?: string;
         userAgent: string;
         ip: string;
+        abVariant?: string;
     }): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
     trackReadBehavior(data: {
         articleId: string;

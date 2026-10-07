@@ -31,7 +31,11 @@ declare const _default: {
       "relation": "manyToOne",
       "target": "plugin::zhao-deal.coupon"
     },
-    "description": { "type": "text" }
+    "description": { "type": "text" },
+    "shareTitle": { "type": "string" },
+    "shareDesc": { "type": "text" },
+    "shareImage": { "type": "string" },
+    "shareLink": { "type": "string" }
   }
 }
 ;

@@ -61,7 +61,8 @@ const click = ({ strapi }) => ({
       const body = ctx.request.body?.data || ctx.request.body;
       const orchestrator = strapi.plugin("zhao-track").service("click-orchestrator");
       const result = await orchestrator.orchestrate({
-        couponId: String(body.couponId),
+        couponId: body.couponId ? String(body.couponId) : void 0,
+        abVariantId: body.abVariantId ? String(body.abVariantId) : void 0,
         sourceTagId: body.sourceTagId,
         deviceFingerprint: body.deviceFingerprint,
         utm: body.utm,
@@ -356,7 +357,7 @@ const sourceResolver = ({ strapi }) => {
             limit: 1
           });
           if (campaigns && campaigns.length > 0) {
-            matchedCampaignId = campaigns[0].documentId;
+            matchedCampaignId = String(campaigns[0].id);
             matchedChannelId = campaigns[0].channel?.documentId;
           } else {
             const channels = await strapi.documents("plugin::zhao-studio.promo-channel").findMany({
@@ -390,6 +391,7 @@ const sourceResolver = ({ strapi }) => {
         if (opts.utm.utmSource) filters.utmSource = opts.utm.utmSource;
         if (opts.utm.utmMedium) filters.utmMedium = opts.utm.utmMedium;
         if (opts.utm.utmCampaign) filters.utmCampaign = opts.utm.utmCampaign;
+        if (opts.deviceFingerprint) filters.deviceFingerprint = opts.deviceFingerprint;
         const tags = await strapi.documents(SOURCE_TAG_UID).findMany({
           filters,
           populate: { promoCampaign: { populate: { channel: true } } }
@@ -427,7 +429,7 @@ const sourceResolver = ({ strapi }) => {
           return { tag, isNew: false };
         }
       }
-      const tagId = `utm_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      const tagId = opts.deviceFingerprint || `utm_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
       const now = /* @__PURE__ */ new Date();
       const newTag = await strapi.documents(SOURCE_TAG_UID).create({
         data: {
@@ -517,28 +519,26 @@ const PLATFORM_TYPE_MAP = {
 const clickOrchestrator = ({ strapi }) => {
   return {
     async orchestrate(req) {
-      if (!req.couponId) {
-        const err = new Error("couponId 必填");
-        err.code = "TRACK_SOURCE_INVALID";
-        throw err;
+      let coupon = null;
+      if (req.couponId) {
+        const coupons = await strapi.documents(COUPON_UID).findMany({
+          filters: { couponId: req.couponId },
+          populate: { platform: true, product: true }
+        });
+        if (!coupons || coupons.length === 0) {
+          const err = new Error("优惠券不存在");
+          err.code = "DEAL_COUPON_NOT_FOUND";
+          throw err;
+        }
+        coupon = coupons[0];
       }
-      const coupons = await strapi.documents(COUPON_UID).findMany({
-        filters: { couponId: req.couponId },
-        populate: { platform: true, product: true }
-      });
-      if (!coupons || coupons.length === 0) {
-        const err = new Error("优惠券不存在");
-        err.code = "DEAL_COUPON_NOT_FOUND";
-        throw err;
-      }
-      const coupon = coupons[0];
       if (!req.sourceTagId && !(req.utm && (req.utm.utmSource || req.utm.utmMedium))) {
         const err = new Error("sourceTagId 或 utm 至少一个");
         err.code = "TRACK_SOURCE_INVALID";
         throw err;
       }
       const rateLimiter2 = strapi.plugin("zhao-track").service("rate-limiter");
-      const rateCheck = await rateLimiter2.checkAndRecord(req.deviceFingerprint, req.couponId);
+      const rateCheck = await rateLimiter2.checkAndRecord(req.deviceFingerprint, req.couponId || "share-open");
       if (!rateCheck.allowed) {
         const err = new Error("点击频率超限");
         err.code = "TRACK_CLICK_RATE_LIMITED";
@@ -552,53 +552,64 @@ const clickOrchestrator = ({ strapi }) => {
         referer: req.referer
       });
       let abVariant = null;
-      try {
-        const abTest = strapi.plugin("zhao-studio")?.service("ab-test");
-        if (abTest) {
-          abVariant = await abTest.pickVariant({
-            campaignId: tag.promoCampaign?.documentId,
-            channelId: tag.promoCampaign?.channel?.documentId
-          });
-        }
-      } catch (err) {
-        strapi.log.warn(`[click] ab-test pickVariant failed: ${err.message}`);
-      }
-      let promoPid = "";
-      const channelId = tag.promoCampaign?.channel?.documentId;
-      if (channelId && coupon.platform?.code) {
+      if (req.abVariantId) {
+        const vs = await strapi.documents("plugin::zhao-studio.ab-variant").findMany({
+          filters: { documentId: req.abVariantId },
+          limit: 1
+        });
+        abVariant = vs && vs.length > 0 ? vs[0] : null;
+      } else {
         try {
-          const configs = await strapi.documents(CHANNEL_CONFIG_UID$1).findMany({
-            filters: { channel: channelId, platform: { type: PLATFORM_TYPE_MAP[coupon.platform?.code] || coupon.platform?.code } },
-            limit: 1
-          });
-          if (configs && configs.length > 0) {
-            promoPid = configs[0].promoPid || "";
+          const abTest = strapi.plugin("zhao-studio")?.service("ab-test");
+          if (abTest) {
+            abVariant = await abTest.pickVariant({
+              campaignId: tag.promoCampaign?.documentId,
+              channelId: tag.promoCampaign?.channel?.documentId
+            });
           }
         } catch (err) {
-          strapi.log.warn(`[click] ChannelPlatformConfig lookup failed: ${err.message}`);
+          strapi.log.warn(`[click] ab-test pickVariant failed: ${err.message}`);
         }
       }
-      let resolvedLink = coupon.promoLink;
-      try {
-        const dealPlugin = strapi.plugin("zhao-deal");
-        if (!dealPlugin) {
-          strapi.log.warn("[click] zhao-deal plugin not enabled, using original promoLink");
-        } else {
-          const registry = dealPlugin.service("adapterRegistry");
-          if (!registry) {
-            strapi.log.warn("[click] adapterRegistry service not available, using original promoLink");
-          } else {
-            const adapter = registry.get(coupon.platform?.code);
-            const result = await adapter.transformLink({
-              promoLink: coupon.promoLink,
-              promoChannelId: promoPid,
-              sourceTagId: tag.tagId
+      let promoPid = "";
+      let resolvedLink = "";
+      if (coupon) {
+        const channelId = tag.promoCampaign?.channel?.documentId;
+        if (channelId && coupon.platform?.code) {
+          try {
+            const configs = await strapi.documents(CHANNEL_CONFIG_UID$1).findMany({
+              filters: { channel: channelId, platform: { type: PLATFORM_TYPE_MAP[coupon.platform?.code] || coupon.platform?.code } },
+              limit: 1
             });
-            resolvedLink = result.resolvedLink;
+            if (configs && configs.length > 0) {
+              promoPid = configs[0].promoPid || "";
+            }
+          } catch (err) {
+            strapi.log.warn(`[click] ChannelPlatformConfig lookup failed: ${err.message}`);
           }
         }
-      } catch (err) {
-        strapi.log.warn(`[click] transformLink failed, using original promoLink: ${err.message}`);
+        resolvedLink = coupon.promoLink;
+        try {
+          const dealPlugin = strapi.plugin("zhao-deal");
+          if (!dealPlugin) {
+            strapi.log.warn("[click] zhao-deal plugin not enabled, using original promoLink");
+          } else {
+            const registry = dealPlugin.service("adapterRegistry");
+            if (!registry) {
+              strapi.log.warn("[click] adapterRegistry service not available, using original promoLink");
+            } else {
+              const adapter = registry.get(coupon.platform?.code);
+              const result = await adapter.transformLink({
+                promoLink: coupon.promoLink,
+                promoChannelId: promoPid,
+                sourceTagId: tag.tagId
+              });
+              resolvedLink = result.resolvedLink;
+            }
+          }
+        } catch (err) {
+          strapi.log.warn(`[click] transformLink failed, using original promoLink: ${err.message}`);
+        }
       }
       let browser = "", os = "", device = "";
       if (req.userAgent) {
@@ -612,11 +623,11 @@ const clickOrchestrator = ({ strapi }) => {
       }
       const clickEvent2 = await strapi.documents(CLICK_EVENT_UID$1).create({
         data: {
-          coupon: coupon.documentId,
-          sourceTag: tag.documentId,
-          promoCampaign: tag.promoCampaign?.documentId || null,
+          coupon: coupon?.id || null,
+          sourceTag: tag.id,
+          promoCampaign: tag.promoCampaign?.id || null,
           promoPid,
-          abVariant: abVariant?.documentId || null,
+          abVariant: abVariant?.id || null,
           deviceFingerprint: req.deviceFingerprint,
           clickedAt: /* @__PURE__ */ new Date(),
           ip: req.ip,
@@ -631,12 +642,12 @@ const clickOrchestrator = ({ strapi }) => {
       return {
         clickId: clickEvent2.documentId,
         resolvedLink,
-        coupon: {
+        coupon: coupon ? {
           documentId: coupon.documentId,
           couponId: coupon.couponId,
           amountDesc: coupon.amountDesc,
           product: coupon.product
-        }
+        } : null
       };
     }
   };

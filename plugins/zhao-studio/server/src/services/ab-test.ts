@@ -1,6 +1,7 @@
 import type { Core } from '@strapi/strapi';
 
 const EXPERIMENT_UID = 'plugin::zhao-studio.ab-experiment';
+const CAMPAIGN_UID = 'plugin::zhao-studio.promo-campaign';
 const CLICK_EVENT_UID = 'plugin::zhao-track.click-event';
 const ORDER_UID = 'plugin::zhao-track.order';
 
@@ -33,11 +34,27 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     return experiments[0];
   };
 
+  // 活动可能是 documentId 或 code（游戏端传 code），统一解析为 documentId
+  const resolveCampaignId = async (idOrCode: string): Promise<string | null> => {
+    const byId = await strapi.documents(CAMPAIGN_UID).findMany({
+      filters: { documentId: idOrCode },
+      limit: 1,
+    });
+    if (byId && byId.length > 0) return byId[0].documentId;
+    const byCode = await strapi.documents(CAMPAIGN_UID).findMany({
+      filters: { code: idOrCode },
+      limit: 1,
+    });
+    if (byCode && byCode.length > 0) return byCode[0].documentId;
+    return null;
+  };
+
   return {
     listExperiments: async (opts: { page: number; pageSize: number; channelId?: string; campaignId?: string; status?: string }) => {
       const filters: any = {};
-      if (opts.channelId) filters.channel = opts.channelId;
-      if (opts.campaignId) filters.campaign = opts.campaignId;
+      // v5 关联过滤必须用 { documentId } 形式，直接传 documentId 字符串会被当作整型主键
+      if (opts.channelId) filters.channel = { documentId: opts.channelId };
+      if (opts.campaignId) filters.campaign = { documentId: opts.campaignId };
       if (opts.status) filters.status = opts.status;
       return strapi.documents(EXPERIMENT_UID).findMany({
         filters,
@@ -76,8 +93,12 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
 
     pickVariant: async (opts: { channelId?: string; campaignId?: string }): Promise<any | null> => {
       const filters: any = { status: 'running' };
-      if (opts.campaignId) filters.campaign = opts.campaignId;
-      if (opts.channelId) filters.channel = opts.channelId;
+      if (opts.campaignId) {
+        const campaignId = await resolveCampaignId(opts.campaignId);
+        if (!campaignId) return null; // 活动不存在，调用方降级为默认文案
+        filters.campaign = { documentId: campaignId };
+      }
+      if (opts.channelId) filters.channel = { documentId: opts.channelId };
       const experiments = await strapi.documents(EXPERIMENT_UID).findMany({
         filters,
         populate: { variants: true },
@@ -101,7 +122,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       for (const vid of variantIds) {
         const clicks = await strapi.documents(CLICK_EVENT_UID).findMany({
           filters: {
-            abVariant: vid,
+            abVariant: { documentId: vid },
             clickedAt: { $gte: opts.startDate, $lte: opts.endDate },
           },
         });
@@ -109,7 +130,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
 
         const orders = await strapi.documents(ORDER_UID).findMany({
           filters: {
-            matchedClick: { abVariant: vid },
+            matchedClick: { abVariant: { documentId: vid } },
             transactedAt: { $gte: opts.startDate, $lte: opts.endDate },
           },
         });

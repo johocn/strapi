@@ -514,7 +514,7 @@ declare const _default: {
             strapi: import('@strapi/types/dist/core').Strapi;
         }) => {
             trackPageView(data: {
-                articleId: string;
+                articleId?: string;
                 sessionId: string;
                 userId?: string;
                 userAgent: string;
@@ -525,6 +525,7 @@ declare const _default: {
                     height: number;
                 };
                 language: string;
+                abVariant?: string;
             }): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
             trackAdClick(data: {
                 adSlotId: string;
@@ -533,6 +534,7 @@ declare const _default: {
                 userId?: string;
                 userAgent: string;
                 ip: string;
+                abVariant?: string;
             }): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
             trackReadBehavior(data: {
                 articleId: string;
@@ -1850,6 +1852,11 @@ declare const _default: {
                     referrerDomain: {
                         type: string;
                     };
+                    abVariant: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                    };
                     readDuration: {
                         type: string;
                         default: number;
@@ -2326,6 +2333,18 @@ declare const _default: {
                         target: string;
                     };
                     description: {
+                        type: string;
+                    };
+                    shareTitle: {
+                        type: string;
+                    };
+                    shareDesc: {
+                        type: string;
+                    };
+                    shareImage: {
+                        type: string;
+                    };
+                    shareLink: {
                         type: string;
                     };
                 };

@@ -24,7 +24,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
             limit: 1,
           });
           if (campaigns && campaigns.length > 0) {
-            matchedCampaignId = campaigns[0].documentId;
+            // v5 create 的关联字段只接受数值 id
+            matchedCampaignId = String(campaigns[0].id);
             matchedChannelId = campaigns[0].channel?.documentId;
           } else {
             const channels = await strapi.documents("plugin::zhao-studio.promo-channel").findMany({
@@ -56,12 +57,14 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         }
       }
 
-      // 2. 按 utm 组合查询
+      // 2. 按 utm 组合查询（限同设备：utm 组合对所有打开者都相同，
+      //    跨设备共享会让后续 click 归因到别人的 tag 上，campaign 统计失真）
       if (opts.utm && (opts.utm.utmSource || opts.utm.utmMedium || opts.utm.utmCampaign)) {
         const filters: any = {};
         if (opts.utm.utmSource) filters.utmSource = opts.utm.utmSource;
         if (opts.utm.utmMedium) filters.utmMedium = opts.utm.utmMedium;
         if (opts.utm.utmCampaign) filters.utmCampaign = opts.utm.utmCampaign;
+        if (opts.deviceFingerprint) filters.deviceFingerprint = opts.deviceFingerprint;
         const tags = await strapi.documents(SOURCE_TAG_UID).findMany({
           filters,
           populate: { promoCampaign: { populate: { channel: true } } },
@@ -102,8 +105,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         }
       }
 
-      // 4. 创建新 SourceTag
-      const tagId = `utm_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      // 4. 创建新 SourceTag（带 deviceFingerprint 时直接以其为 tagId，
+      //    保证后续 click 的 sourceTagId 能命中设备自有 tag，campaign 归因闭环）
+      const tagId = opts.deviceFingerprint || `utm_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
       const now = new Date();
       const newTag = await strapi.documents(SOURCE_TAG_UID).create({
         data: {

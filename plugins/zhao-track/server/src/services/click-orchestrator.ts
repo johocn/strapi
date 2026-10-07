@@ -13,7 +13,8 @@ const PLATFORM_TYPE_MAP: Record<string, string> = {
 };
 
 export interface ClickRequest {
-  couponId: string;
+  couponId?: string;
+  abVariantId?: string;
   sourceTagId?: string;
   deviceFingerprint: string;
   utm?: { utmSource?: string; utmMedium?: string; utmCampaign?: string; utmContent?: string; utmTerm?: string };
@@ -25,22 +26,20 @@ export interface ClickRequest {
 export default ({ strapi }: { strapi: Core.Strapi }) => {
   return {
     async orchestrate(req: ClickRequest) {
-      // 1. 校验 couponId
-      if (!req.couponId) {
-        const err: any = new Error("couponId 必填");
-        err.code = "TRACK_SOURCE_INVALID";
-        throw err;
+      // 1. 校验 couponId（分享裂变场景可不带优惠券，仅做 A/B 归因）
+      let coupon: any = null;
+      if (req.couponId) {
+        const coupons = await strapi.documents(COUPON_UID).findMany({
+          filters: { couponId: req.couponId },
+          populate: { platform: true, product: true },
+        });
+        if (!coupons || coupons.length === 0) {
+          const err: any = new Error("优惠券不存在");
+          err.code = "DEAL_COUPON_NOT_FOUND";
+          throw err;
+        }
+        coupon = coupons[0];
       }
-      const coupons = await strapi.documents(COUPON_UID).findMany({
-        filters: { couponId: req.couponId },
-        populate: { platform: true, product: true },
-      });
-      if (!coupons || coupons.length === 0) {
-        const err: any = new Error("优惠券不存在");
-        err.code = "DEAL_COUPON_NOT_FOUND";
-        throw err;
-      }
-      const coupon = coupons[0];
 
       // 2. 校验来源
       if (!req.sourceTagId && !(req.utm && (req.utm.utmSource || req.utm.utmMedium))) {
@@ -49,9 +48,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         throw err;
       }
 
-      // 3. 频率限制
+      // 3. 频率限制（无 coupon 时以固定 key 限流）
       const rateLimiter = strapi.plugin("zhao-track").service("rate-limiter");
-      const rateCheck = await rateLimiter.checkAndRecord(req.deviceFingerprint, req.couponId);
+      const rateCheck = await rateLimiter.checkAndRecord(req.deviceFingerprint, req.couponId || "share-open");
       if (!rateCheck.allowed) {
         const err: any = new Error("点击频率超限");
         err.code = "TRACK_CLICK_RATE_LIMITED";
@@ -67,59 +66,71 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         referer: req.referer,
       });
 
-      // 步骤 4.5: A/B 变体选择
+      // 步骤 4.5: A/B 变体选择（传入 abVariantId 则直接归因，否则按活动自动 pick）
       let abVariant: any = null;
-      try {
-        const abTest = strapi.plugin("zhao-studio")?.service("ab-test");
-        if (abTest) {
-          abVariant = await abTest.pickVariant({
-            campaignId: tag.promoCampaign?.documentId,
-            channelId: tag.promoCampaign?.channel?.documentId,
-          });
+      if (req.abVariantId) {
+        // v5 create 关联只接受数值 id：documentId 先解析为实体
+        const vs = await strapi.documents("plugin::zhao-studio.ab-variant").findMany({
+          filters: { documentId: req.abVariantId },
+          limit: 1,
+        });
+        abVariant = vs && vs.length > 0 ? vs[0] : null;
+      } else {
+        try {
+          const abTest = strapi.plugin("zhao-studio")?.service("ab-test");
+          if (abTest) {
+            abVariant = await abTest.pickVariant({
+              campaignId: tag.promoCampaign?.documentId,
+              channelId: tag.promoCampaign?.channel?.documentId,
+            });
+          }
+        } catch (err: any) {
+          strapi.log.warn(`[click] ab-test pickVariant failed: ${err.message}`);
         }
-      } catch (err: any) {
-        strapi.log.warn(`[click] ab-test pickVariant failed: ${err.message}`);
       }
 
       // 步骤 5a: 从 ChannelPlatformConfig 获取 promoPid（替代原 tag.promoChannelId）
       let promoPid = "";
-      const channelId = tag.promoCampaign?.channel?.documentId;
-      if (channelId && coupon.platform?.code) {
+      let resolvedLink = "";
+      if (coupon) {
+        const channelId = tag.promoCampaign?.channel?.documentId;
+        if (channelId && coupon.platform?.code) {
+          try {
+            const configs = await strapi.documents(CHANNEL_CONFIG_UID).findMany({
+              filters: { channel: channelId, platform: { type: PLATFORM_TYPE_MAP[coupon.platform?.code] || coupon.platform?.code } },
+              limit: 1,
+            });
+            if (configs && configs.length > 0) {
+              promoPid = configs[0].promoPid || "";
+            }
+          } catch (err: any) {
+            strapi.log.warn(`[click] ChannelPlatformConfig lookup failed: ${err.message}`);
+          }
+        }
+
+        // 5. 调 zhao-deal adapter 置换链接（三层 try-catch 容错）
+        resolvedLink = coupon.promoLink;
         try {
-          const configs = await strapi.documents(CHANNEL_CONFIG_UID).findMany({
-            filters: { channel: channelId, platform: { type: PLATFORM_TYPE_MAP[coupon.platform?.code] || coupon.platform?.code } },
-            limit: 1,
-          });
-          if (configs && configs.length > 0) {
-            promoPid = configs[0].promoPid || "";
+          const dealPlugin = strapi.plugin("zhao-deal");
+          if (!dealPlugin) {
+            strapi.log.warn("[click] zhao-deal plugin not enabled, using original promoLink");
+          } else {
+            const registry = (dealPlugin as any).service("adapterRegistry");
+            if (!registry) {
+              strapi.log.warn("[click] adapterRegistry service not available, using original promoLink");
+            } else {
+              const adapter = registry.get(coupon.platform?.code);
+              const result = await adapter.transformLink({
+                promoLink: coupon.promoLink,
+                promoChannelId: promoPid,
+                sourceTagId: tag.tagId,
+              });
+              resolvedLink = result.resolvedLink;
+            }
           }
         } catch (err: any) {
-          strapi.log.warn(`[click] ChannelPlatformConfig lookup failed: ${err.message}`);
+          strapi.log.warn(`[click] transformLink failed, using original promoLink: ${err.message}`);
         }
-      }
-
-      // 5. 调 zhao-deal adapter 置换链接（三层 try-catch 容错）
-      let resolvedLink = coupon.promoLink;
-      try {
-        const dealPlugin = strapi.plugin("zhao-deal");
-        if (!dealPlugin) {
-          strapi.log.warn("[click] zhao-deal plugin not enabled, using original promoLink");
-        } else {
-          const registry = (dealPlugin as any).service("adapterRegistry");
-          if (!registry) {
-            strapi.log.warn("[click] adapterRegistry service not available, using original promoLink");
-          } else {
-            const adapter = registry.get(coupon.platform?.code);
-            const result = await adapter.transformLink({
-              promoLink: coupon.promoLink,
-              promoChannelId: promoPid,
-              sourceTagId: tag.tagId,
-            });
-            resolvedLink = result.resolvedLink;
-          }
-        }
-      } catch (err: any) {
-        strapi.log.warn(`[click] transformLink failed, using original promoLink: ${err.message}`);
       }
 
       // 6. UA 解析
@@ -133,14 +144,14 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         } catch { /* 留空 */ }
       }
 
-      // 7. 写入 ClickEvent
+      // 7. 写入 ClickEvent（v5 关联字段一律传数值 id）
       const clickEvent = await strapi.documents(CLICK_EVENT_UID).create({
         data: {
-          coupon: coupon.documentId,
-          sourceTag: tag.documentId,
-          promoCampaign: tag.promoCampaign?.documentId || null,
+          coupon: coupon?.id || null,
+          sourceTag: tag.id,
+          promoCampaign: tag.promoCampaign?.id || null,
           promoPid,
-          abVariant: abVariant?.documentId || null,
+          abVariant: abVariant?.id || null,
           deviceFingerprint: req.deviceFingerprint,
           clickedAt: new Date(),
           ip: req.ip,
@@ -154,12 +165,14 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       return {
         clickId: clickEvent.documentId,
         resolvedLink,
-        coupon: {
-          documentId: coupon.documentId,
-          couponId: coupon.couponId,
-          amountDesc: coupon.amountDesc,
-          product: coupon.product,
-        },
+        coupon: coupon
+          ? {
+              documentId: coupon.documentId,
+              couponId: coupon.couponId,
+              amountDesc: coupon.amountDesc,
+              product: coupon.product,
+            }
+          : null,
       };
     },
   };

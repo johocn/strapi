@@ -253,7 +253,7 @@ declare const _default: {
         strapi: import('@strapi/types/dist/core').Strapi;
     }) => {
         trackPageView(data: {
-            articleId: string;
+            articleId?: string;
             sessionId: string;
             userId?: string;
             userAgent: string;
@@ -264,6 +264,7 @@ declare const _default: {
                 height: number;
             };
             language: string;
+            abVariant?: string;
         }): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
         trackAdClick(data: {
             adSlotId: string;
@@ -272,6 +273,7 @@ declare const _default: {
             userId?: string;
             userAgent: string;
             ip: string;
+            abVariant?: string;
         }): Promise<import('@strapi/types/dist/modules/documents').AnyDocument>;
         trackReadBehavior(data: {
             articleId: string;

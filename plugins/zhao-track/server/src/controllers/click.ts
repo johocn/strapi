@@ -8,7 +8,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       const body = ctx.request.body?.data || ctx.request.body;
       const orchestrator = strapi.plugin("zhao-track").service("click-orchestrator");
       const result = await orchestrator.orchestrate({
-        couponId: String(body.couponId),
+        couponId: body.couponId ? String(body.couponId) : undefined,
+        abVariantId: body.abVariantId ? String(body.abVariantId) : undefined,
         sourceTagId: body.sourceTagId,
         deviceFingerprint: body.deviceFingerprint,
         utm: body.utm,

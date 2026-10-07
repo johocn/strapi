@@ -51,6 +51,81 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       }
       const channel = channels[0];
 
+      // 按文案变体分组：曝光 / 点击 / CTR / 转化，用于对比哪条文案更好
+      if (opts.groupBy === 'variant') {
+        const campaignIds = (channel.campaigns || []).map((c: any) => c.documentId);
+        const variants: any[] = [];
+        for (const c of (channel.campaigns || [])) {
+          for (const e of (c.experiments || [])) {
+            for (const v of (e.variants || [])) {
+              variants.push({ ...v, campaignCode: c.code, campaignName: c.name });
+            }
+          }
+        }
+        const byVariant = await Promise.all(
+          variants.map(async (v: any) => {
+            const impLogs = await strapi.documents(BROWSER_LOG_UID).findMany({
+              filters: {
+                abVariant: { documentId: v.documentId },
+                promoChannelCode: opts.channelCode,
+                eventType: 'page-view',
+                timestamp: { $gte: opts.startDate, $lte: opts.endDate },
+              },
+            });
+            const impressions = impLogs ? impLogs.length : 0;
+
+            let clicks = 0;
+            let orders = 0;
+            let matchedCommission = 0;
+            if (campaignIds.length > 0) {
+              const clk = await strapi.documents(CLICK_EVENT_UID).findMany({
+                filters: {
+                  abVariant: { documentId: v.documentId },
+                  promoCampaign: { documentId: { $in: campaignIds } },
+                  clickedAt: { $gte: opts.startDate, $lte: opts.endDate },
+                },
+              });
+              clicks = clk ? clk.length : 0;
+              const ords = await strapi.documents(ORDER_UID).findMany({
+                filters: {
+                  matchedClick: { abVariant: { documentId: v.documentId } },
+                  transactedAt: { $gte: opts.startDate, $lte: opts.endDate },
+                },
+              });
+              orders = ords ? ords.length : 0;
+              for (const o of (ords || [])) {
+                const comm = Number(o.commission) || 0;
+                if (o.attributionQuality && o.attributionQuality !== 'unmatched') {
+                  matchedCommission += comm;
+                }
+              }
+            }
+
+            const ctr = impressions > 0 ? Number(((clicks / impressions) * 100).toFixed(2)) : 0;
+            return {
+              variantId: v.documentId,
+              variantName: v.name,
+              campaignCode: v.campaignCode,
+              campaignName: v.campaignName,
+              weight: v.weight,
+              impressions,
+              clicks,
+              ctr,
+              orders,
+              matchedCommission: Number(matchedCommission.toFixed(2)),
+            };
+          }),
+        );
+
+        const variantReport = {
+          channel: { code: channel.code, name: channel.name, scene: channel.scene },
+          groupBy: 'variant',
+          byVariant,
+        };
+        setCache(cacheKey, variantReport);
+        return variantReport;
+      }
+
       // 内容侧：browser-log
       const browserLogs = await strapi.documents(BROWSER_LOG_UID).findMany({
         filters: {
@@ -73,7 +148,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       if (campaignIds.length > 0) {
         const clicks = await strapi.documents(CLICK_EVENT_UID).findMany({
           filters: {
-            promoCampaign: { $in: campaignIds },
+            promoCampaign: { documentId: { $in: campaignIds } },
             clickedAt: { $gte: opts.startDate, $lte: opts.endDate },
           },
         });
@@ -81,7 +156,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
 
         const orderList = await strapi.documents(ORDER_UID).findMany({
           filters: {
-            promoCampaign: { $in: campaignIds },
+            promoCampaign: { documentId: { $in: campaignIds } },
             transactedAt: { $gte: opts.startDate, $lte: opts.endDate },
           },
         });

@@ -1,6 +1,7 @@
 import { Core } from '@strapi/strapi';
 export interface ClickRequest {
-    couponId: string;
+    couponId?: string;
+    abVariantId?: string;
     sourceTagId?: string;
     deviceFingerprint: string;
     utm?: {
@@ -19,9 +20,9 @@ declare const _default: ({ strapi }: {
 }) => {
     orchestrate(req: ClickRequest): Promise<{
         clickId: string;
-        resolvedLink: any;
+        resolvedLink: string;
         coupon: {
-            documentId: string;
+            documentId: any;
             couponId: any;
             amountDesc: any;
             product: any;

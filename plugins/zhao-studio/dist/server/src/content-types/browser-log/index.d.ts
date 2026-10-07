@@ -101,6 +101,11 @@ declare const _default: {
             referrerDomain: {
                 type: string;
             };
+            abVariant: {
+                type: string;
+                relation: string;
+                target: string;
+            };
             readDuration: {
                 type: string;
                 default: number;

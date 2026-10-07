@@ -5,9 +5,21 @@ import { parseUserAgent } from '../utils/userAgentParser';
 import { parseIpLocation, extractReferrerDomain } from '../utils/ipLocationParser';
 import { identifyAnalyticsError } from '../utils/analyticsErrors';
 
+// v5 documents.create 的关联字段只接受数值 id，需先把 documentId 解析为 id
+const resolveVariantId = async (strapi: Core.Strapi, documentId?: string): Promise<number | null> => {
+  if (!documentId) return null;
+  try {
+    const vs = await strapi.documents('plugin::zhao-studio.ab-variant').findMany({
+      filters: { documentId },
+      limit: 1,
+    });
+    return vs?.[0]?.id ?? null;
+  } catch { return null; }
+};
+
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async trackPageView(data: {
-    articleId: string;
+    articleId?: string;
     sessionId: string;
     userId?: string;
     userAgent: string;
@@ -15,6 +27,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     referrer: string;
     screen: { width: number; height: number };
     language: string;
+    abVariant?: string;
   }) {
     // 解析浏览器信息
     const uaInfo = parseUserAgent(data.userAgent);
@@ -62,6 +75,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         referrer: data.referrer,
         referrerDomain,
         promoChannelCode,
+        abVariant: await resolveVariantId(strapi, data.abVariant),
         timestamp: new Date(),
       },
     });
@@ -76,6 +90,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     userId?: string;
     userAgent: string;
     ip: string;
+    abVariant?: string;
   }) {
     // 验证广告位
     const adSlot = await strapi
@@ -110,7 +125,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       data: {
         eventType: 'ad-click',
         article: data.articleId,
-        adSlot: data.adSlotId,
+        adSlot: adSlot.id,
         sessionId: data.sessionId,
         userId: data.userId,
         isRegistered: !!data.userId,
@@ -125,6 +140,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         country: ipInfo.country,
         city: ipInfo.city,
         promoChannelCode,
+        abVariant: await resolveVariantId(strapi, data.abVariant),
         timestamp: new Date(),
       },
     });

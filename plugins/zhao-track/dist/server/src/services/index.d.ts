@@ -20,9 +20,9 @@ declare const _default: {
     }) => {
         orchestrate(req: import('./click-orchestrator').ClickRequest): Promise<{
             clickId: string;
-            resolvedLink: any;
+            resolvedLink: string;
             coupon: {
-                documentId: string;
+                documentId: any;
                 couponId: any;
                 amountDesc: any;
                 product: any;
