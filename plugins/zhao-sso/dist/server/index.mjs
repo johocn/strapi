@@ -86,28 +86,49 @@ var bootstrap = async ({ strapi }) => {
       { name: "time6", key: "meetingTime" }
     ] },
     { code: "admin_notify", name: "\u624B\u52A8SOP\u5F85\u529E\u7BA1\u7406\u5458\u5FAE\u4FE1\u63D0\u9192", desc: "\u751F\u6210\u624B\u52A8SOP\u5F85\u529E\u65F6\u63A8\u9001\u7ED9\u7BA1\u7406\u5458" },
-    // ===== 外卖订单类模板（服务间 API /v1/msg/template-send 使用，wxTemplateId 由运营在公众号申请后后台填入） =====
-    // 字段映射：character_string1=订单号 thing1=状态/文案（≤20字符） time2=时间；与 Vendure campus-notify params 键对应
-    { code: "waimai_order_created", name: "\u5916\u5356\u8BA2\u5355\u4E0B\u5355\u6210\u529F", desc: "\u7528\u6237\u652F\u4ED8\u6210\u529F\u540E\u63A8\u9001", wxTemplateFields: [
+    // ===== 外卖订单类模板（服务间 API /v1/msg/template-send 使用） =====
+    // wxTemplateId/wxTemplateFields 按公众号实际申领模板配置（2026-10-08 经 get_all_private_template 核对）：
+    // 购买成功通知/订单取消通知/售后工单处理提醒；待付款提醒模板未申领（ID 留空，发送前置拦截不生效）。
+    // params 键与 Vendure campus-notify 对应：orderCode/itemName/amount/payMethod/refundAmount/afterSaleType
+    {
+      code: "waimai_order_created",
+      name: "\u5916\u5356\u8BA2\u5355\u4E0B\u5355\u6210\u529F",
+      desc: "\u7528\u6237\u652F\u4ED8\u6210\u529F\u540E\u63A8\u9001\uFF08\u5FAE\u4FE1\u6A21\u677F\uFF1A\u8D2D\u4E70\u6210\u529F\u901A\u77E5\uFF09",
+      wxTemplateId: "1WxNQnpfKUhKL_uDhIodrkRHYO_iRKEmAekQ05VyiHE",
+      wxTemplateFields: [
+        { name: "character_string5", key: "orderCode" },
+        { name: "thing1", key: "itemName" },
+        { name: "amount2", key: "amount" },
+        { name: "phrase3", key: "payMethod" }
+      ]
+    },
+    { code: "waimai_order_paid_reminder", name: "\u5916\u5356\u8BA2\u5355\u5F85\u4ED8\u6B3E\u63D0\u9192", desc: "\u652F\u4ED8\u8D85\u65F6\u524D\u63D0\u9192\uFF08+10min\uFF09\uFF1B\u5FAE\u4FE1\u6A21\u677F\u672A\u7533\u9886\uFF0CID \u540E\u8865", wxTemplateFields: [
       { name: "character_string1", key: "orderCode" },
       { name: "thing1", key: "status" },
       { name: "time2", key: "time" }
     ] },
-    { code: "waimai_order_paid_reminder", name: "\u5916\u5356\u8BA2\u5355\u5F85\u4ED8\u6B3E\u63D0\u9192", desc: "\u652F\u4ED8\u8D85\u65F6\u524D\u63D0\u9192\uFF08+10min\uFF09", wxTemplateFields: [
-      { name: "character_string1", key: "orderCode" },
-      { name: "thing1", key: "status" },
-      { name: "time2", key: "time" }
-    ] },
-    { code: "waimai_order_cancelled", name: "\u5916\u5356\u8BA2\u5355\u53D6\u6D88\u901A\u77E5", desc: "\u8BA2\u5355\u53D6\u6D88/\u8D85\u65F6\u5173\u5355\u540E\u63A8\u9001", wxTemplateFields: [
-      { name: "character_string1", key: "orderCode" },
-      { name: "thing1", key: "status" },
-      { name: "time2", key: "time" }
-    ] },
-    { code: "waimai_after_sales", name: "\u5916\u5356\u552E\u540E\u8FDB\u5EA6\u901A\u77E5", desc: "\u552E\u540E\u72B6\u6001\u53D8\u66F4\u63A8\u9001", wxTemplateFields: [
-      { name: "character_string1", key: "orderCode" },
-      { name: "thing1", key: "status" },
-      { name: "time2", key: "time" }
-    ] }
+    {
+      code: "waimai_order_cancelled",
+      name: "\u5916\u5356\u8BA2\u5355\u53D6\u6D88\u901A\u77E5",
+      desc: "\u8BA2\u5355\u53D6\u6D88/\u8D85\u65F6\u5173\u5355\u540E\u63A8\u9001\uFF08\u5FAE\u4FE1\u6A21\u677F\uFF1A\u8BA2\u5355\u53D6\u6D88\u901A\u77E5\uFF09",
+      wxTemplateId: "OlQRYWzHYtbvNsIiyM4SBR09h41JgXqmNFlprjRunVY",
+      wxTemplateFields: [
+        { name: "character_string1", key: "orderCode" },
+        { name: "thing3", key: "itemName" },
+        { name: "amount4", key: "refundAmount" }
+      ]
+    },
+    {
+      code: "waimai_after_sales",
+      name: "\u5916\u5356\u552E\u540E\u8FDB\u5EA6\u901A\u77E5",
+      desc: "\u552E\u540E\u72B6\u6001\u53D8\u66F4\u63A8\u9001\uFF08\u5FAE\u4FE1\u6A21\u677F\uFF1A\u552E\u540E\u5DE5\u5355\u5904\u7406\u63D0\u9192\uFF09",
+      wxTemplateId: "iQrVX8ZHuCtgQ2R8VzC6MThyRhJXCViIUKAki6IrUnw",
+      wxTemplateFields: [
+        { name: "character_string9", key: "orderCode" },
+        { name: "thing17", key: "itemName" },
+        { name: "phrase11", key: "afterSaleType" }
+      ]
+    }
   ];
   for (const t of DEFAULT_SOP_TEMPLATES) {
     let tpl = await strapi.db.query(TEMPLATE_UID_ACT).findOne({ where: { code: t.code } });

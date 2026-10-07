@@ -45,27 +45,33 @@ const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
       { name: "time6", key: "meetingTime" },
     ]},
     { code: "admin_notify", name: "手动SOP待办管理员微信提醒", desc: "生成手动SOP待办时推送给管理员" },
-    // ===== 外卖订单类模板（服务间 API /v1/msg/template-send 使用，wxTemplateId 由运营在公众号申请后后台填入） =====
-    // 字段映射：character_string1=订单号 thing1=状态/文案（≤20字符） time2=时间；与 Vendure campus-notify params 键对应
-    { code: "waimai_order_created", name: "外卖订单下单成功", desc: "用户支付成功后推送", wxTemplateFields: [
+    // ===== 外卖订单类模板（服务间 API /v1/msg/template-send 使用） =====
+    // wxTemplateId/wxTemplateFields 按公众号实际申领模板配置（2026-10-08 经 get_all_private_template 核对）：
+    // 购买成功通知/订单取消通知/售后工单处理提醒；待付款提醒模板未申领（ID 留空，发送前置拦截不生效）。
+    // params 键与 Vendure campus-notify 对应：orderCode/itemName/amount/payMethod/refundAmount/afterSaleType
+    { code: "waimai_order_created", name: "外卖订单下单成功", desc: "用户支付成功后推送（微信模板：购买成功通知）",
+      wxTemplateId: "1WxNQnpfKUhKL_uDhIodrkRHYO_iRKEmAekQ05VyiHE", wxTemplateFields: [
+      { name: "character_string5", key: "orderCode" },
+      { name: "thing1", key: "itemName" },
+      { name: "amount2", key: "amount" },
+      { name: "phrase3", key: "payMethod" },
+    ]},
+    { code: "waimai_order_paid_reminder", name: "外卖订单待付款提醒", desc: "支付超时前提醒（+10min）；微信模板未申领，ID 后补", wxTemplateFields: [
       { name: "character_string1", key: "orderCode" },
       { name: "thing1", key: "status" },
       { name: "time2", key: "time" },
     ]},
-    { code: "waimai_order_paid_reminder", name: "外卖订单待付款提醒", desc: "支付超时前提醒（+10min）", wxTemplateFields: [
+    { code: "waimai_order_cancelled", name: "外卖订单取消通知", desc: "订单取消/超时关单后推送（微信模板：订单取消通知）",
+      wxTemplateId: "OlQRYWzHYtbvNsIiyM4SBR09h41JgXqmNFlprjRunVY", wxTemplateFields: [
       { name: "character_string1", key: "orderCode" },
-      { name: "thing1", key: "status" },
-      { name: "time2", key: "time" },
+      { name: "thing3", key: "itemName" },
+      { name: "amount4", key: "refundAmount" },
     ]},
-    { code: "waimai_order_cancelled", name: "外卖订单取消通知", desc: "订单取消/超时关单后推送", wxTemplateFields: [
-      { name: "character_string1", key: "orderCode" },
-      { name: "thing1", key: "status" },
-      { name: "time2", key: "time" },
-    ]},
-    { code: "waimai_after_sales", name: "外卖售后进度通知", desc: "售后状态变更推送", wxTemplateFields: [
-      { name: "character_string1", key: "orderCode" },
-      { name: "thing1", key: "status" },
-      { name: "time2", key: "time" },
+    { code: "waimai_after_sales", name: "外卖售后进度通知", desc: "售后状态变更推送（微信模板：售后工单处理提醒）",
+      wxTemplateId: "iQrVX8ZHuCtgQ2R8VzC6MThyRhJXCViIUKAki6IrUnw", wxTemplateFields: [
+      { name: "character_string9", key: "orderCode" },
+      { name: "thing17", key: "itemName" },
+      { name: "phrase11", key: "afterSaleType" },
     ]},
   ];
   for (const t of DEFAULT_SOP_TEMPLATES) {
