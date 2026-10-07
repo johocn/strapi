@@ -2190,10 +2190,15 @@ const roleController = ({ strapi }) => ({
 const UID$3 = "plugin::zhao-sso.sso-invite-code";
 const inviteCodeController = ({ strapi }) => ({
   // 邀请漏斗聚合：每码「打开数（zhao-studio browser_logs, eventType=invite-view）
-  // → 注册数（sso_invite_usages）」+ 转化率；appCode 过滤区分来源应用
+  // → 注册数（sso_invite_usages）」+ 转化率；appCode 过滤区分来源应用；
+  // 另返回 daily 按日聚合（观察期趋势），日期窗口默认近 30 天
   async funnel(ctx) {
     try {
-      const { appCode } = ctx.query;
+      const { appCode, startDate, endDate } = ctx.query;
+      const dateFilter = {};
+      if (startDate) dateFilter.$gte = `${startDate}T00:00:00.000Z`;
+      if (endDate) dateFilter.$lte = `${endDate}T23:59:59.999Z`;
+      const hasDateWindow = Boolean(startDate || endDate);
       const codeWhere = {};
       if (appCode) codeWhere.app_code = appCode;
       const codes = await strapi.db.query(UID$3).findMany({
@@ -2203,9 +2208,11 @@ const inviteCodeController = ({ strapi }) => ({
       const codeIds = codes.map((c) => c.id);
       const logWhere = { eventType: "invite-view" };
       if (appCode) logWhere.appCode = appCode;
+      if (hasDateWindow) logWhere.createdAt = dateFilter;
       const logs = await strapi.db.query("plugin::zhao-studio.browser-log").findMany({ where: logWhere, select: ["inviteCode", "createdAt"] });
       const usageWhere = {};
       if (codeIds.length > 0) usageWhere.invite_code = { id: { $in: codeIds } };
+      if (hasDateWindow) usageWhere.used_at = dateFilter;
       const usages = await strapi.db.query("plugin::zhao-sso.sso-invite-usage").findMany({
         where: usageWhere,
         select: ["app_code"],
@@ -2238,6 +2245,16 @@ const inviteCodeController = ({ strapi }) => ({
       }).sort((a, b) => b.opens - a.opens || b.registers - a.registers);
       const totalOpens = rows.reduce((s, r) => s + r.opens, 0);
       const totalRegisters = rows.reduce((s, r) => s + r.registers, 0);
+      const dayMap = /* @__PURE__ */ new Map();
+      const bump = (iso, key) => {
+        const day = String(iso).slice(0, 10);
+        const cur = dayMap.get(day) || { opens: 0, registers: 0 };
+        cur[key] += 1;
+        dayMap.set(day, cur);
+      };
+      for (const log of logs) bump(log.createdAt, "opens");
+      for (const u of usages) bump(u.used_at, "registers");
+      const daily = Array.from(dayMap.entries()).map(([date, v]) => ({ date, ...v })).sort((a, b) => a.date.localeCompare(b.date));
       ctx.body = {
         data: {
           summary: {
@@ -2246,6 +2263,7 @@ const inviteCodeController = ({ strapi }) => ({
             conversionRate: totalOpens > 0 ? Number((totalRegisters / totalOpens * 100).toFixed(1)) : null,
             lastOpenAt
           },
+          daily,
           rows
         }
       };

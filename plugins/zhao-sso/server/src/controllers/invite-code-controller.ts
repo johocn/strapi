@@ -4,10 +4,16 @@ const UID = "plugin::zhao-sso.sso-invite-code";
 
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
   // 邀请漏斗聚合：每码「打开数（zhao-studio browser_logs, eventType=invite-view）
-  // → 注册数（sso_invite_usages）」+ 转化率；appCode 过滤区分来源应用
+  // → 注册数（sso_invite_usages）」+ 转化率；appCode 过滤区分来源应用；
+  // 另返回 daily 按日聚合（观察期趋势），日期窗口默认近 30 天
   async funnel(ctx: any) {
     try {
-      const { appCode } = ctx.query;
+      const { appCode, startDate, endDate } = ctx.query;
+      const dateFilter: Record<string, unknown> = {};
+      if (startDate) dateFilter.$gte = `${startDate}T00:00:00.000Z`;
+      if (endDate) dateFilter.$lte = `${endDate}T23:59:59.999Z`;
+      const hasDateWindow = Boolean(startDate || endDate);
+
       const codeWhere: Record<string, unknown> = {};
       if (appCode) codeWhere.app_code = appCode;
       const codes = await strapi.db.query(UID).findMany({
@@ -18,12 +24,14 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
       const logWhere: Record<string, unknown> = { eventType: "invite-view" };
       if (appCode) logWhere.appCode = appCode;
+      if (hasDateWindow) logWhere.createdAt = dateFilter;
       const logs = await strapi.db
         .query("plugin::zhao-studio.browser-log")
         .findMany({ where: logWhere, select: ["inviteCode", "createdAt"] });
 
       const usageWhere: Record<string, unknown> = {};
       if (codeIds.length > 0) usageWhere.invite_code = { id: { $in: codeIds } };
+      if (hasDateWindow) usageWhere.used_at = dateFilter;
       const usages = await strapi.db
         .query("plugin::zhao-sso.sso-invite-usage")
         .findMany({
@@ -65,6 +73,21 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
       const totalOpens = rows.reduce((s: number, r: any) => s + r.opens, 0);
       const totalRegisters = rows.reduce((s: number, r: any) => s + r.registers, 0);
+
+      // 按日聚合（基于当前过滤窗口的全量记录；不设窗口时默认近 30 天趋势）
+      const dayMap = new Map<string, { opens: number; registers: number }>();
+      const bump = (iso: string, key: "opens" | "registers") => {
+        const day = String(iso).slice(0, 10);
+        const cur = dayMap.get(day) || { opens: 0, registers: 0 };
+        cur[key] += 1;
+        dayMap.set(day, cur);
+      };
+      for (const log of logs) bump(log.createdAt, "opens");
+      for (const u of usages) bump(u.used_at, "registers");
+      const daily = Array.from(dayMap.entries())
+        .map(([date, v]) => ({ date, ...v }))
+        .sort((a, b) => a.date.localeCompare(b.date));
+
       ctx.body = {
         data: {
           summary: {
@@ -74,6 +97,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
               totalOpens > 0 ? Number(((totalRegisters / totalOpens) * 100).toFixed(1)) : null,
             lastOpenAt,
           },
+          daily,
           rows,
         },
       };
