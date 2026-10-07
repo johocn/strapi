@@ -205,5 +205,22 @@ declare const _default: {
             useDbQuery?: boolean;
         }): Promise<any>;
     };
+    "browser-manager": ({ strapi }: any) => {
+        createPage: (opts?: {
+            storageState?: any;
+            userAgent?: string;
+        }) => Promise<import('playwright-core').Page | null>;
+        closePage: (page: import('playwright-core').Page) => Promise<void>;
+        shutdown: (reason?: string) => Promise<void>;
+        stats: () => {
+            browserUp: boolean;
+            activePages: number;
+            queued: number;
+            maxPages: number;
+            minFreeMB: number;
+            idleCloseMs: number;
+            memAvailableMB: number;
+        };
+    };
 };
 export default _default;

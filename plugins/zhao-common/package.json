@@ -41,6 +41,9 @@
     "@strapi/sdk-plugin": "^6.1.0",
     "@strapi/strapi": "^5.45.0"
   },
+  "dependencies": {
+    "playwright": "^1.61.1"
+  },
   "strapi": {
     "kind": "plugin",
     "name": "zhao-common",

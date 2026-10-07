@@ -10,6 +10,7 @@ import migrationRunner from "./migration-runner";
 import seedRunner from "./seed-runner";
 import globalConfig from "./global-config";
 import dbHelper from "./db-helper";
+import browserManager from "./browser-manager";
 
 export default {
   logger,
@@ -24,4 +25,5 @@ export default {
   "seed-runner": seedRunner,
   "global-config": globalConfig,
   "db-helper": dbHelper,
+  "browser-manager": browserManager,
 };

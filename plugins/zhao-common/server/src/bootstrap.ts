@@ -100,6 +100,17 @@ const addDeletedAtFilter = (event: any) => {
 };
 
 const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
+  // 共享浏览器管理服务（browser-manager）：进程退出时回收 Playwright Browser 子进程
+  // （浏览器本体惰性启动，见 services/browser-manager.ts；此处仅注册清理钩子）
+  const browserManager = strapi.plugin("zhao-common")?.service?.("browser-manager");
+  if (browserManager && typeof browserManager.shutdown === "function") {
+    const cleanupBrowser = () => {
+      void browserManager.shutdown("process-exit");
+    };
+    process.once("SIGTERM", cleanupBrowser);
+    process.once("SIGINT", cleanupBrowser);
+  }
+
   try {
     const migrationService = strapi.plugin("zhao-common").service("migration-runner");
     if (migrationService && typeof migrationService.runAllMigrations === "function") {

@@ -3,7 +3,7 @@
 import jobs from './jobs';
 import { isTradingDay } from './utils';
 import { getCollectQueue, getCalculateQueue } from './jobs/queue-setup';
-import { initBrowser, destroyBrowser } from './playwright-manager';
+import { setBrowserGateway } from './playwright-manager';
 import seedCompanies from './data/wealth-companies.json';
 
 const COMPANY_UID = 'plugin::zhao-wealth.wealth-company';
@@ -32,20 +32,22 @@ export default async ({ strapi }) => {
   // 初始化队列任务
   await jobs({ strapi });
 
-  // 初始化 Playwright Browser 单例
-  const pwBrowser = await initBrowser();
-  if (pwBrowser) {
-    strapi.log.info('[zhao-wealth] Playwright Browser 已就绪');
+  // 浏览器网关注入：Playwright 实现已上移 zhao-common browser-manager 共享服务
+  // （惰性启动 + 并发闸 + 空闲回收 + 内存守门，与多媒体中心共用同一 Browser 单例）。
+  // 此处只注入引用，绝不启动浏览器——原 eager initBrowser 曾在 1.8GB 服务器上
+  // 每次 strapi 启动拉起 chromium 导致 OOM 循环（2026-10-07 事故，pm2 ↺508）。
+  const browserSvc = strapi.plugin('zhao-common')?.service?.('browser-manager');
+  if (browserSvc) {
+    setBrowserGateway(browserSvc);
+    strapi.log.info('[zhao-wealth] browser 网关已注入（zhao-common browser-manager）');
   } else {
-    strapi.log.warn('[zhao-wealth] Playwright Browser 不可用，采集功能将降级');
+    strapi.log.warn('[zhao-wealth] zhao-common browser-manager 不可用，采集功能将降级');
   }
 
   // 初始化理财公司种子数据（表空时导入）
   await initSeedCompanies(strapi);
 
-  // 注册销毁钩子
-  process.on('SIGTERM', async () => { await destroyBrowser(); });
-  process.on('SIGINT', async () => { await destroyBrowser(); });
+  // 进程退出时的浏览器清理由 zhao-common bootstrap 统一注册（SIGTERM/SIGINT）
 
   // 注册 Cron 定时任务（仅 0 号实例，避免多实例重复触发）
   if (isPrimaryInstance) {

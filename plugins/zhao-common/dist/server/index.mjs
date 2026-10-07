@@ -1,5 +1,7 @@
-import fs from "fs";
+import fs, { readFileSync, existsSync } from "fs";
 import path from "path";
+import { chromium } from "playwright";
+import os from "os";
 const hasTenantAccessLoose = async (policyContext, config2, { strapi: strapi2 }) => {
   const user = policyContext.state?.user;
   if (!user?.id) {
@@ -297,6 +299,14 @@ const addDeletedAtFilter = (event) => {
   params.where.deletedAt = null;
 };
 const bootstrap = async ({ strapi: strapi2 }) => {
+  const browserManager2 = strapi2.plugin("zhao-common")?.service?.("browser-manager");
+  if (browserManager2 && typeof browserManager2.shutdown === "function") {
+    const cleanupBrowser = () => {
+      void browserManager2.shutdown("process-exit");
+    };
+    process.once("SIGTERM", cleanupBrowser);
+    process.once("SIGINT", cleanupBrowser);
+  }
   try {
     const migrationService = strapi2.plugin("zhao-common").service("migration-runner");
     if (migrationService && typeof migrationService.runAllMigrations === "function") {
@@ -2119,6 +2129,177 @@ const dbHelper = ({ strapi: strapi2 }) => ({
     throw new Error("findSmart 需要 documentId 或 where 参数");
   }
 });
+const LINUX_CHROME_PATHS = [
+  "/usr/bin/google-chrome",
+  "/usr/bin/google-chrome-stable",
+  "/usr/bin/chromium-browser",
+  "/usr/bin/chromium",
+  "/snap/bin/chromium"
+];
+const WINDOWS_CHROME_PATHS = [
+  "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+  "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+  // 动态匹配当前用户（LOCALAPPDATA 在 Windows 上指向 %USERPROFILE%\AppData\Local）
+  ...process.env.LOCALAPPDATA ? [`${process.env.LOCALAPPDATA}\\Google\\Chrome\\Application\\chrome.exe`] : ["C:\\Users\\Administrator\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe"],
+  // Edge 作为备选（Chromium 内核，Playwright 兼容）
+  "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+  "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe"
+];
+function detectChromePath() {
+  const envPath = process.env.PLAYWRIGHT_CHROME_PATH;
+  if (envPath) {
+    if (existsSync(envPath)) return envPath;
+    console.warn(`[zhao-common] PLAYWRIGHT_CHROME_PATH=${envPath} 不存在，将尝试其他路径`);
+  }
+  const paths = process.platform === "win32" ? WINDOWS_CHROME_PATHS : LINUX_CHROME_PATHS;
+  for (const p of paths) {
+    if (existsSync(p)) return p;
+  }
+  return void 0;
+}
+const PAGE_TIMEOUT = 3e4;
+const MAX_PAGES = Math.max(1, Number(process.env.PLAYWRIGHT_MAX_PAGES || 2));
+const IDLE_CLOSE_MS = Math.max(6e4, Number(process.env.PLAYWRIGHT_IDLE_CLOSE_MS || 10 * 6e4));
+const MIN_FREE_MB = Math.max(0, Number(process.env.PLAYWRIGHT_MIN_FREE_MB ?? 500));
+const DEFAULT_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36";
+let browser = null;
+let initPromise = null;
+let initFailed = false;
+let activePages = 0;
+const waiters = [];
+let idleTimer = null;
+function memAvailableMB() {
+  try {
+    if (process.platform === "linux") {
+      const m = readFileSync("/proc/meminfo", "utf8").match(/MemAvailable:\s+(\d+) kB/);
+      if (m) return Math.round(Number(m[1]) / 1024);
+    }
+  } catch {
+  }
+  return Math.round(os.freemem() / 1024 / 1024);
+}
+function releaseSlot() {
+  const next = waiters.shift();
+  if (next) next();
+  else activePages = Math.max(0, activePages - 1);
+}
+function armIdleTimer() {
+  if (idleTimer) {
+    clearTimeout(idleTimer);
+    idleTimer = null;
+  }
+  if (!browser || activePages > 0) return;
+  idleTimer = setTimeout(() => {
+    idleTimer = null;
+    void shutdown("idle");
+  }, IDLE_CLOSE_MS);
+}
+async function initBrowser() {
+  if (browser) return browser;
+  if (initFailed) return null;
+  if (initPromise) return initPromise;
+  initPromise = (async () => {
+    const freeMB = memAvailableMB();
+    if (freeMB < MIN_FREE_MB) {
+      console.warn(`[zhao-common] browser-manager 内存守门：可用 ${freeMB}MB < 阈值 ${MIN_FREE_MB}MB，本次降级跳过`);
+      initPromise = null;
+      return null;
+    }
+    try {
+      const executablePath = detectChromePath();
+      const launchOptions = {
+        headless: process.platform !== "win32",
+        args: ["--disable-blink-features=AutomationControlled", "--no-sandbox", "--disable-dev-shm-usage"],
+        ...executablePath ? { executablePath } : {}
+      };
+      browser = await chromium.launch(launchOptions);
+      console.log(`[zhao-common] browser-manager 浏览器已启动（${executablePath ?? "playwright 自带 chromium"}，启动时可用内存 ${freeMB}MB）`);
+      return browser;
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      console.error(`[zhao-common] browser-manager 浏览器启动失败: ${msg}`);
+      console.error("[zhao-common] 修复指引: npx playwright install-deps chromium && npx playwright install chromium，");
+      console.error("  或安装系统 Chrome，或在 .env 设置 PLAYWRIGHT_CHROME_PATH（采集为可选功能，不影响主流程）");
+      initFailed = true;
+      initPromise = null;
+      return null;
+    }
+  })();
+  return initPromise;
+}
+async function createPage(opts) {
+  if (activePages >= MAX_PAGES) {
+    await new Promise((resolve) => waiters.push(resolve));
+  } else {
+    activePages++;
+  }
+  if (idleTimer) {
+    clearTimeout(idleTimer);
+    idleTimer = null;
+  }
+  if (!browser) browser = await initBrowser();
+  if (!browser) {
+    releaseSlot();
+    return null;
+  }
+  try {
+    const context = await browser.newContext({
+      userAgent: opts?.userAgent || DEFAULT_UA,
+      ...opts?.storageState ? { storageState: opts.storageState } : {}
+    });
+    const page = await context.newPage();
+    page.setDefaultTimeout(PAGE_TIMEOUT);
+    return page;
+  } catch (error) {
+    releaseSlot();
+    throw error;
+  }
+}
+async function closePage(page) {
+  try {
+    const context = page.context();
+    await page.close();
+    await context.close();
+  } catch {
+  }
+  releaseSlot();
+  armIdleTimer();
+}
+async function shutdown(reason = "manual") {
+  if (idleTimer) {
+    clearTimeout(idleTimer);
+    idleTimer = null;
+  }
+  while (waiters.length) waiters.shift()();
+  activePages = 0;
+  if (browser) {
+    try {
+      await browser.close();
+    } catch {
+    }
+    browser = null;
+    initPromise = null;
+    initFailed = false;
+    console.log(`[zhao-common] browser-manager 浏览器已关闭（${reason}）`);
+  }
+}
+function stats() {
+  return {
+    browserUp: !!browser,
+    activePages,
+    queued: waiters.length,
+    maxPages: MAX_PAGES,
+    minFreeMB: MIN_FREE_MB,
+    idleCloseMs: IDLE_CLOSE_MS,
+    memAvailableMB: memAvailableMB()
+  };
+}
+const browserManager = ({ strapi: strapi2 }) => ({
+  createPage,
+  closePage,
+  shutdown,
+  stats
+});
 const services = {
   logger,
   "error-handler": errorHandler,
@@ -2131,7 +2312,8 @@ const services = {
   "migration-runner": migrationRunner,
   "seed-runner": seedRunner,
   "global-config": globalConfig$2,
-  "db-helper": dbHelper
+  "db-helper": dbHelper,
+  "browser-manager": browserManager
 };
 const kind$2 = "collectionType";
 const collectionName$2 = "zhao_site_configs";

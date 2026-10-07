@@ -1,8 +1,6 @@
 import Redis from "ioredis";
 import axios from "axios";
 import Queue from "bull";
-import { chromium } from "playwright";
-import { existsSync } from "fs";
 import crypto from "crypto";
 const kind$g = "collectionType";
 const collectionName$g = "wealth_companies";
@@ -7449,108 +7447,19 @@ class CbhbCollector extends BaseCollector {
     }
   }
 }
-const LINUX_CHROME_PATHS = [
-  "/usr/bin/google-chrome",
-  "/usr/bin/google-chrome-stable",
-  "/usr/bin/chromium-browser",
-  "/usr/bin/chromium",
-  "/snap/bin/chromium"
-];
-const WINDOWS_CHROME_PATHS = [
-  "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
-  "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
-  // 动态匹配当前用户（LOCALAPPDATA 在 Windows 上指向 %USERPROFILE%\AppData\Local）
-  ...process.env.LOCALAPPDATA ? [`${process.env.LOCALAPPDATA}\\Google\\Chrome\\Application\\chrome.exe`] : ["C:\\Users\\Administrator\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe"],
-  // Edge 作为备选（Chromium 内核，Playwright 兼容）
-  "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
-  "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe"
-];
-function detectChromePath() {
-  const envPath = process.env.PLAYWRIGHT_CHROME_PATH;
-  if (envPath) {
-    if (existsSync(envPath)) return envPath;
-    console.warn(`[zhao-wealth] PLAYWRIGHT_CHROME_PATH=${envPath} 不存在，将尝试其他路径`);
-  }
-  const paths = process.platform === "win32" ? WINDOWS_CHROME_PATHS : LINUX_CHROME_PATHS;
-  for (const p of paths) {
-    if (existsSync(p)) return p;
-  }
-  return void 0;
+let gateway = null;
+function setBrowserGateway(svc) {
+  gateway = svc;
 }
-const PAGE_TIMEOUT = 3e4;
-let browser = null;
-let initPromise = null;
-let initFailed = false;
-async function initBrowser() {
-  if (browser) return browser;
-  if (initFailed) return null;
-  if (initPromise) return initPromise;
-  initPromise = (async () => {
-    try {
-      const executablePath = detectChromePath();
-      const launchOptions = {
-        headless: process.platform !== "win32",
-        args: ["--disable-blink-features=AutomationControlled", "--no-sandbox"],
-        ...executablePath ? { executablePath } : {}
-      };
-      if (executablePath) {
-        console.log(`[zhao-wealth] Playwright 使用 Chrome: ${executablePath}`);
-      } else {
-        console.log("[zhao-wealth] 未找到系统 Chrome，尝试使用 Playwright 自带 chromium");
-      }
-      browser = await chromium.launch(launchOptions);
-      console.log("[zhao-wealth] Playwright Browser 已启动");
-      return browser;
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : String(error);
-      console.error(`[zhao-wealth] Playwright Browser 启动失败: ${msg}`);
-      console.error("[zhao-wealth] 修复指引（任选其一）:");
-      console.error("  方案1: 安装 Playwright 自带 chromium（推荐，自带依赖检测）");
-      console.error("    npx playwright install-deps chromium  # 安装系统依赖库（需 root）");
-      console.error("    npx playwright install chromium       # 下载 chromium 二进制");
-      console.error("  方案2: 安装系统 Chrome");
-      console.error("    CentOS/RHEL: yum install -y google-chrome-stable");
-      console.error("    Ubuntu/Debian: apt install -y chromium-browser");
-      console.error("  方案3: 在 .env 中设置 PLAYWRIGHT_CHROME_PATH 指向 Chrome 路径");
-      console.error("  注: 采集功能可选，不影响 Strapi 主功能；修复后重启 Strapi 即可");
-      initFailed = true;
-      initPromise = null;
-      return null;
-    }
-  })();
-  return initPromise;
-}
-async function createPage() {
-  if (!browser) {
-    browser = await initBrowser();
+async function createPage(opts) {
+  if (!gateway) {
+    console.error("[zhao-wealth] browser 网关未注入（zhao-common browser-manager 不可用），采集功能降级");
+    return null;
   }
-  if (!browser) return null;
-  const context = await browser.newContext({
-    userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36"
-  });
-  const page = await context.newPage();
-  page.setDefaultTimeout(PAGE_TIMEOUT);
-  return page;
+  return gateway.createPage(opts);
 }
 async function closePage(page) {
-  try {
-    const context = page.context();
-    await page.close();
-    await context.close();
-  } catch {
-  }
-}
-async function destroyBrowser() {
-  if (browser) {
-    try {
-      await browser.close();
-    } catch {
-    }
-    browser = null;
-    initPromise = null;
-    initFailed = false;
-    console.log("[zhao-wealth] Playwright Browser 已关闭");
-  }
+  if (gateway) await gateway.closePage(page);
 }
 const CW_DETAIL_URL = "https://xinxipilu.chinawealth.com.cn/queryMenu/prodType/prodTypeDetail";
 const CW_RISK_MAP = {
@@ -13648,19 +13557,14 @@ async function initSeedCompanies(strapi) {
 }
 const bootstrap = async ({ strapi }) => {
   await jobs({ strapi });
-  const pwBrowser = await initBrowser();
-  if (pwBrowser) {
-    strapi.log.info("[zhao-wealth] Playwright Browser 已就绪");
+  const browserSvc = strapi.plugin("zhao-common")?.service?.("browser-manager");
+  if (browserSvc) {
+    setBrowserGateway(browserSvc);
+    strapi.log.info("[zhao-wealth] browser 网关已注入（zhao-common browser-manager）");
   } else {
-    strapi.log.warn("[zhao-wealth] Playwright Browser 不可用，采集功能将降级");
+    strapi.log.warn("[zhao-wealth] zhao-common browser-manager 不可用，采集功能将降级");
   }
   await initSeedCompanies(strapi);
-  process.on("SIGTERM", async () => {
-    await destroyBrowser();
-  });
-  process.on("SIGINT", async () => {
-    await destroyBrowser();
-  });
   if (isPrimaryInstance) {
     strapi.cron.add({
       "wealth-trading-day-check": {
