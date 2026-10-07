@@ -17,6 +17,10 @@ import StatsBasicPage from './StatsBasicPage';
 import StatsAdvancedPage from './StatsAdvancedPage';
 import StatsProPage from './StatsProPage';
 import SyncEventPage from './SyncEventPage';
+import ChannelReportPage from './ChannelReportPage';
+import { installZhaoAuthFetch } from '../utils/http';
+
+installZhaoAuthFetch();
 
 const App = () => (
   <ConfigProvider prefixCls="zs" iconPrefixCls="zs-icon" locale={zhCN}>
@@ -36,6 +40,7 @@ const App = () => (
           <Route path="/stats/basic" element={<StatsBasicPage />} />
           <Route path="/stats/advanced" element={<StatsAdvancedPage />} />
           <Route path="/stats/pro" element={<StatsProPage />} />
+          <Route path="/channel-report" element={<ChannelReportPage />} />
           <Route path="/sync-events" element={<SyncEventPage />} />
           <Route path="*" element={<div>404</div>} />
         </Routes>

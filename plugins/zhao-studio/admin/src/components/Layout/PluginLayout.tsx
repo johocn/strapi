@@ -30,6 +30,7 @@ const menuConfig: MenuConfigItem[] = [
   { key: 'stats/basic', icon: <BarChartOutlined />, label: '基础统计', permission: 'zhao-studio.stat-summary.view' },
   { key: 'stats/advanced', icon: <BarChartOutlined />, label: '高级统计', permission: 'zhao-studio.stat-summary.view' },
   { key: 'stats/pro', icon: <BarChartOutlined />, label: '专业统计', permission: 'zhao-studio.stat-summary.view' },
+  { key: 'channel-report', icon: <BarChartOutlined />, label: '渠道报表', permission: 'zhao-studio.channel-report.view' },
   { key: 'platforms', icon: <SettingOutlined />, label: '平台配置', permission: 'zhao-studio.publish-platform.manage' },
   { key: 'accounts', icon: <SettingOutlined />, label: '账号配置', permission: 'zhao-studio.publish-account.manage' },
   { key: 'ad-slots', icon: <SettingOutlined />, label: '广告位配置', permission: 'zhao-studio.ad-slot.manage' },

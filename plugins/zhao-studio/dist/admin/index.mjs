@@ -17,7 +17,7 @@ const index = {
           subject: null
         }
       ],
-      Component: () => import("./App-DYOrPMdx.mjs").then((mod) => ({ default: mod.default }))
+      Component: () => import("./App-CKs0nfq0.mjs").then((mod) => ({ default: mod.default }))
     });
     app.registerPlugin({
       id: pluginId,

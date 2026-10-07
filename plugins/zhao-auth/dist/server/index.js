@@ -4968,8 +4968,34 @@ const isAuthenticated = async (policyContext, config2, { strapi: strapi2 }) => {
           }
         }
       } catch (ssoErr) {
+        try {
+          const adminSecret = strapi2.config.get("admin.auth.secret");
+          if (typeof adminSecret === "string" && adminSecret) {
+            const payload = require("jsonwebtoken").verify(token, adminSecret);
+            if (payload?.id) {
+              const adminUser = await strapi2.db.query("admin::user").findOne({
+                where: { id: payload.id }
+              });
+              if (adminUser) {
+                const user = {
+                  id: adminUser.id,
+                  documentId: adminUser.documentId,
+                  username: adminUser.username,
+                  email: adminUser.email,
+                  isAdminPanel: true,
+                  roles: ["admin"],
+                  zhaoRoles: ["admin"]
+                };
+                ctx.state.user = user;
+                ctx.user = user;
+                return true;
+              }
+            }
+          }
+        } catch (_adminErr) {
+        }
+        reject401();
       }
-      reject401();
     }
   } catch (e) {
     if (e && e.status === 401) throw e;

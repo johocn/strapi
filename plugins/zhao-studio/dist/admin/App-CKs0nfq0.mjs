@@ -1,5 +1,5 @@
 import { jsx, jsxs, Fragment } from "react/jsx-runtime";
-import { Layout, Menu, Card, Typography, Tag as Tag$1, Space, Row, Col, Form, Input, Select, Switch, Button, List, Checkbox, Modal, Divider, message, Spin, Table, Tabs, Popconfirm, InputNumber, DatePicker, Empty, Collapse, Radio, Descriptions, ConfigProvider } from "antd";
+import { Layout, Menu, Card, Typography, Tag as Tag$1, Space, Row, Col, Form, Input, Select, Switch, Button, List, Checkbox, Modal, Divider, message, Spin, Table, Tabs, Popconfirm, InputNumber, DatePicker, Empty, Collapse, Radio, Descriptions, Alert, ConfigProvider } from "antd";
 import zhCN from "antd/locale/zh_CN";
 import { useNavigate, useLocation, NavLink, useParams, Routes, Route } from "react-router-dom";
 import * as React from "react";
@@ -75,6 +75,7 @@ const menuConfig = [
   { key: "stats/basic", icon: /* @__PURE__ */ jsx(BarChartOutlined, {}), label: "基础统计", permission: "zhao-studio.stat-summary.view" },
   { key: "stats/advanced", icon: /* @__PURE__ */ jsx(BarChartOutlined, {}), label: "高级统计", permission: "zhao-studio.stat-summary.view" },
   { key: "stats/pro", icon: /* @__PURE__ */ jsx(BarChartOutlined, {}), label: "专业统计", permission: "zhao-studio.stat-summary.view" },
+  { key: "channel-report", icon: /* @__PURE__ */ jsx(BarChartOutlined, {}), label: "渠道报表", permission: "zhao-studio.channel-report.view" },
   { key: "platforms", icon: /* @__PURE__ */ jsx(SettingOutlined, {}), label: "平台配置", permission: "zhao-studio.publish-platform.manage" },
   { key: "accounts", icon: /* @__PURE__ */ jsx(SettingOutlined, {}), label: "账号配置", permission: "zhao-studio.publish-account.manage" },
   { key: "ad-slots", icon: /* @__PURE__ */ jsx(SettingOutlined, {}), label: "广告位配置", permission: "zhao-studio.ad-slot.manage" },
@@ -117,7 +118,7 @@ function formatNumber$1(num) {
 function formatPercent(value) {
   return `${value.toFixed(1)}%`;
 }
-const { Text: Text$g, Title: Title$f } = Typography;
+const { Text: Text$h, Title: Title$g } = Typography;
 const OverviewCard = ({ title, value, change, unit = "", type: type2 = "number" }) => {
   const formatValue = () => {
     if (type2 === "percent") {
@@ -148,20 +149,20 @@ const OverviewCard = ({ title, value, change, unit = "", type: type2 = "number" 
     ] });
   };
   return /* @__PURE__ */ jsxs(Card, { children: [
-    /* @__PURE__ */ jsx(Text$g, { type: "secondary", children: title }),
-    /* @__PURE__ */ jsx(Title$f, { level: 3, style: { marginTop: 8, marginBottom: 8 }, children: formatValue() }),
+    /* @__PURE__ */ jsx(Text$h, { type: "secondary", children: title }),
+    /* @__PURE__ */ jsx(Title$g, { level: 3, style: { marginTop: 8, marginBottom: 8 }, children: formatValue() }),
     getChangeTag()
   ] });
 };
-const { Title: Title$e, Paragraph: Paragraph$1, Text: Text$f } = Typography;
+const { Title: Title$f, Paragraph: Paragraph$1, Text: Text$g } = Typography;
 const HomePage = () => {
   return /* @__PURE__ */ jsxs(Space, { direction: "vertical", size: "large", style: { width: "100%" }, children: [
     /* @__PURE__ */ jsxs(Card, { children: [
-      /* @__PURE__ */ jsx(Title$e, { level: 2, children: "内容工作室" }),
+      /* @__PURE__ */ jsx(Title$f, { level: 2, children: "内容工作室" }),
       /* @__PURE__ */ jsx(Paragraph$1, { type: "secondary", children: "定向采集 → 二次加工 → 多渠道分发 → C端展示 → 广告转化统计" })
     ] }),
     /* @__PURE__ */ jsxs("div", { children: [
-      /* @__PURE__ */ jsx(Title$e, { level: 4, children: "今日概览" }),
+      /* @__PURE__ */ jsx(Title$f, { level: 4, children: "今日概览" }),
       /* @__PURE__ */ jsxs(Row, { gutter: [16, 16], children: [
         /* @__PURE__ */ jsx(Col, { xs: 24, sm: 12, md: 6, children: /* @__PURE__ */ jsx(OverviewCard, { title: "采集文章", value: 0, change: 0 }) }),
         /* @__PURE__ */ jsx(Col, { xs: 24, sm: 12, md: 6, children: /* @__PURE__ */ jsx(OverviewCard, { title: "发布文章", value: 0, change: 0 }) }),
@@ -421,7 +422,7 @@ const SourceConfig = ({ source, onSave, onCancel }) => {
     ] }) })
   ] });
 };
-const { Title: Title$d } = Typography;
+const { Title: Title$e } = Typography;
 const TitleSelector = ({ titles, onSelectionChange, onFetchContent }) => {
   const [selected, setSelected] = React__default.useState([]);
   const handleToggle = (title) => {
@@ -469,7 +470,7 @@ const TitleSelector = ({ titles, onSelectionChange, onFetchContent }) => {
     }
   );
 };
-const { Title: Title$c, Paragraph, Text: Text$e } = Typography;
+const { Title: Title$d, Paragraph, Text: Text$f } = Typography;
 const ContentPreview = ({ contents, onConfirm, onCancel }) => {
   const [excluded, setExcluded] = React__default.useState([]);
   const handleToggle = (title) => {
@@ -515,15 +516,15 @@ const ContentPreview = ({ contents, onConfirm, onCancel }) => {
                 List.Item.Meta,
                 {
                   title: /* @__PURE__ */ jsxs(Space, { children: [
-                    /* @__PURE__ */ jsx(Text$e, { strong: true, children: item.title }),
+                    /* @__PURE__ */ jsx(Text$f, { strong: true, children: item.title }),
                     excluded.includes(item.title) && /* @__PURE__ */ jsx(Tag$1, { color: "error", children: "已排除" })
                   ] }),
                   description: /* @__PURE__ */ jsxs(Fragment, { children: [
-                    item.author && /* @__PURE__ */ jsxs(Text$e, { type: "secondary", children: [
+                    item.author && /* @__PURE__ */ jsxs(Text$f, { type: "secondary", children: [
                       "作者: ",
                       item.author
                     ] }),
-                    item.date && /* @__PURE__ */ jsxs(Text$e, { type: "secondary", children: [
+                    item.date && /* @__PURE__ */ jsxs(Text$f, { type: "secondary", children: [
                       " 日期: ",
                       item.date
                     ] }),
@@ -572,7 +573,7 @@ const PermissionButton = ({
   if (!allowed && hideIfNoPermission) return null;
   return /* @__PURE__ */ jsx(Button, { ...rest, disabled: disabled || !allowed });
 };
-const { Title: Title$b, Text: Text$d } = Typography;
+const { Title: Title$c, Text: Text$e } = Typography;
 const CollectPage = () => {
   const {
     sources,
@@ -627,8 +628,8 @@ const CollectPage = () => {
   };
   return /* @__PURE__ */ jsx(PermissionGate, { action: "zhao-studio.collect-source.manage", children: /* @__PURE__ */ jsxs(Space, { direction: "vertical", size: "large", style: { width: "100%" }, children: [
     /* @__PURE__ */ jsxs("div", { children: [
-      /* @__PURE__ */ jsx(Title$b, { level: 3, children: "采集管理" }),
-      /* @__PURE__ */ jsx(Text$d, { type: "secondary", children: "定向采集内容" })
+      /* @__PURE__ */ jsx(Title$c, { level: 3, children: "采集管理" }),
+      /* @__PURE__ */ jsx(Text$e, { type: "secondary", children: "定向采集内容" })
     ] }),
     step === "list" && /* @__PURE__ */ jsx(
       Card,
@@ -652,11 +653,11 @@ const CollectPage = () => {
                   List.Item.Meta,
                   {
                     title: /* @__PURE__ */ jsxs(Space, { children: [
-                      /* @__PURE__ */ jsx(Text$d, { strong: true, children: source.name }),
+                      /* @__PURE__ */ jsx(Text$e, { strong: true, children: source.name }),
                       /* @__PURE__ */ jsx(Tag$1, { color: source.type === "template" ? "success" : "warning", children: source.type === "template" ? "模板" : "自定义" }),
                       /* @__PURE__ */ jsx(Tag$1, { color: source.isActive ? "success" : "error", children: source.isActive ? "启用" : "禁用" })
                     ] }),
-                    description: /* @__PURE__ */ jsx(Text$d, { type: "secondary", children: source.url })
+                    description: /* @__PURE__ */ jsx(Text$e, { type: "secondary", children: source.url })
                   }
                 )
               }
@@ -795,7 +796,7 @@ const AIConfigForm = ({ config: config2, onSave, onCancel }) => {
     ] }) })
   ] });
 };
-const { Title: Title$a, Text: Text$c } = Typography;
+const { Title: Title$b, Text: Text$d } = Typography;
 const AIConfigPage = () => {
   const { config: config2, loading, updateConfig } = useAIConfig();
   if (loading && !config2) {
@@ -803,8 +804,8 @@ const AIConfigPage = () => {
   }
   return /* @__PURE__ */ jsx(PermissionGate, { action: "zhao-studio.article-draft.manage", children: /* @__PURE__ */ jsxs(Space, { direction: "vertical", size: "large", style: { width: "100%" }, children: [
     /* @__PURE__ */ jsxs("div", { children: [
-      /* @__PURE__ */ jsx(Title$a, { level: 3, children: "AI 配置" }),
-      /* @__PURE__ */ jsx(Text$c, { type: "secondary", children: "配置 AI 服务商参数" })
+      /* @__PURE__ */ jsx(Title$b, { level: 3, children: "AI 配置" }),
+      /* @__PURE__ */ jsx(Text$d, { type: "secondary", children: "配置 AI 服务商参数" })
     ] }),
     /* @__PURE__ */ jsx(Card, { title: "配置详情", children: /* @__PURE__ */ jsx(
       AIConfigForm,
@@ -865,7 +866,7 @@ const usePublishRecords = (params) => {
   }, [fetchRecords]);
   return { records, loading, refetch: fetchRecords };
 };
-const { Text: Text$b } = Typography;
+const { Text: Text$c } = Typography;
 const PublishRecordList = ({ platformId, accountId }) => {
   const { records, loading } = usePublishRecords({ platformId, accountId });
   const columns = [
@@ -900,7 +901,7 @@ const PublishRecordList = ({ platformId, accountId }) => {
       title: "错误信息",
       dataIndex: "errorMessage",
       key: "errorMessage",
-      render: (msg) => msg ? /* @__PURE__ */ jsx(Text$b, { type: "danger", children: msg }) : "-"
+      render: (msg) => msg ? /* @__PURE__ */ jsx(Text$c, { type: "danger", children: msg }) : "-"
     }
   ];
   return /* @__PURE__ */ jsx(
@@ -1143,7 +1144,7 @@ const PublishPanel = ({ articleIds }) => {
     }
   );
 };
-const { Title: Title$9, Text: Text$a } = Typography;
+const { Title: Title$a, Text: Text$b } = Typography;
 const PublishPage = () => {
   const [selectedArticleIds, setSelectedArticleIds] = React__default.useState([]);
   const [articles, setArticles] = React__default.useState([]);
@@ -1175,8 +1176,8 @@ const PublishPage = () => {
   ];
   return /* @__PURE__ */ jsx(PermissionGate, { action: "zhao-studio.publish-record.manage", children: /* @__PURE__ */ jsxs(Space, { direction: "vertical", size: "large", style: { width: "100%" }, children: [
     /* @__PURE__ */ jsxs("div", { children: [
-      /* @__PURE__ */ jsx(Title$9, { level: 3, children: "内容发布" }),
-      /* @__PURE__ */ jsx(Text$a, { type: "secondary", children: "多渠道内容分发" })
+      /* @__PURE__ */ jsx(Title$a, { level: 3, children: "内容发布" }),
+      /* @__PURE__ */ jsx(Text$b, { type: "secondary", children: "多渠道内容分发" })
     ] }),
     /* @__PURE__ */ jsx(Card, { title: "待发布文章", children: /* @__PURE__ */ jsx(
       Table,
@@ -1222,7 +1223,7 @@ const PlatformForm = ({ platform: platform2, onSave, onCancel }) => {
     ] }) })
   ] });
 };
-const { Title: Title$8, Text: Text$9 } = Typography;
+const { Title: Title$9, Text: Text$a } = Typography;
 const PlatformConfigPage = () => {
   const { platforms, loading, createPlatform, updatePlatform, deletePlatform } = usePublishPlatforms();
   const [showModal, setShowModal] = React__default.useState(false);
@@ -1264,8 +1265,8 @@ const PlatformConfigPage = () => {
   ];
   return /* @__PURE__ */ jsx(PermissionGate, { action: "zhao-studio.publish-platform.manage", children: /* @__PURE__ */ jsxs(Space, { direction: "vertical", size: "large", style: { width: "100%" }, children: [
     /* @__PURE__ */ jsxs("div", { children: [
-      /* @__PURE__ */ jsx(Title$8, { level: 3, children: "平台配置" }),
-      /* @__PURE__ */ jsx(Text$9, { type: "secondary", children: "管理发布平台" })
+      /* @__PURE__ */ jsx(Title$9, { level: 3, children: "平台配置" }),
+      /* @__PURE__ */ jsx(Text$a, { type: "secondary", children: "管理发布平台" })
     ] }),
     /* @__PURE__ */ jsx(
       Card,
@@ -1345,7 +1346,7 @@ const AccountForm = ({ account, platforms = [], onSave, onCancel }) => {
     ] }) })
   ] });
 };
-const { Title: Title$7, Text: Text$8 } = Typography;
+const { Title: Title$8, Text: Text$9 } = Typography;
 const AccountConfigPage = () => {
   const { accounts, loading, createAccount, updateAccount, deleteAccount } = usePublishAccounts();
   const { platforms } = usePublishPlatforms();
@@ -1393,8 +1394,8 @@ const AccountConfigPage = () => {
   ];
   return /* @__PURE__ */ jsx(PermissionGate, { action: "zhao-studio.publish-account.manage", children: /* @__PURE__ */ jsxs(Space, { direction: "vertical", size: "large", style: { width: "100%" }, children: [
     /* @__PURE__ */ jsxs("div", { children: [
-      /* @__PURE__ */ jsx(Title$7, { level: 3, children: "账号配置" }),
-      /* @__PURE__ */ jsx(Text$8, { type: "secondary", children: "管理各平台的发布账号" })
+      /* @__PURE__ */ jsx(Title$8, { level: 3, children: "账号配置" }),
+      /* @__PURE__ */ jsx(Text$9, { type: "secondary", children: "管理各平台的发布账号" })
     ] }),
     /* @__PURE__ */ jsx(
       Card,
@@ -1564,7 +1565,7 @@ const AdSlotForm = ({ slot, onSave, onCancel }) => {
     ] }) })
   ] });
 };
-const { Title: Title$6, Text: Text$7 } = Typography;
+const { Title: Title$7, Text: Text$8 } = Typography;
 const AdSlotConfigPage = () => {
   const { slots, loading, createSlot, updateSlot, deleteSlot } = useAdSlots();
   const [showModal, setShowModal] = React__default.useState(false);
@@ -1607,8 +1608,8 @@ const AdSlotConfigPage = () => {
   ];
   return /* @__PURE__ */ jsx(PermissionGate, { action: "zhao-studio.ad-slot.manage", children: /* @__PURE__ */ jsxs(Space, { direction: "vertical", size: "large", style: { width: "100%" }, children: [
     /* @__PURE__ */ jsxs("div", { children: [
-      /* @__PURE__ */ jsx(Title$6, { level: 3, children: "广告位配置" }),
-      /* @__PURE__ */ jsx(Text$7, { type: "secondary", children: "管理广告位" })
+      /* @__PURE__ */ jsx(Title$7, { level: 3, children: "广告位配置" }),
+      /* @__PURE__ */ jsx(Text$8, { type: "secondary", children: "管理广告位" })
     ] }),
     /* @__PURE__ */ jsx(
       Card,
@@ -1751,7 +1752,7 @@ const useAdZones = () => {
   }, [fetchZones]);
   return { zones, loading, createZone, updateZone, deleteZone, fetchZones };
 };
-const { Title: Title$5, Text: Text$6 } = Typography;
+const { Title: Title$6, Text: Text$7 } = Typography;
 const POSITION_OPTIONS$1 = [
   { value: "home-banner", label: "首页Banner" },
   { value: "home-sidebar", label: "首页侧边栏" },
@@ -1868,8 +1869,8 @@ const AdZonePage = () => {
   ];
   return /* @__PURE__ */ jsx(PermissionGate, { action: "zhao-studio.ad-zone.manage", children: /* @__PURE__ */ jsxs(Space, { direction: "vertical", size: "large", style: { width: "100%" }, children: [
     /* @__PURE__ */ jsxs("div", { children: [
-      /* @__PURE__ */ jsx(Title$5, { level: 3, children: "广告区域管理" }),
-      /* @__PURE__ */ jsx(Text$6, { type: "secondary", children: "管理广告投放区域及展示配置" })
+      /* @__PURE__ */ jsx(Title$6, { level: 3, children: "广告区域管理" }),
+      /* @__PURE__ */ jsx(Text$7, { type: "secondary", children: "管理广告投放区域及展示配置" })
     ] }),
     /* @__PURE__ */ jsx(
       Card,
@@ -21063,7 +21064,7 @@ function surrogateHigh$1(ch) {
 function codePointSize$1(code) {
   return code < 65536 ? 1 : 2;
 }
-let Text$5 = class Text {
+let Text$6 = class Text {
   /**
   Get the line description around the given position.
   */
@@ -21212,7 +21213,7 @@ let Text$5 = class Text {
     return text.length <= 32 ? new TextLeaf(text) : TextNode.from(TextLeaf.split(text, []));
   }
 };
-class TextLeaf extends Text$5 {
+class TextLeaf extends Text$6 {
   constructor(text, length = textLength(text)) {
     super();
     this.text = text;
@@ -21294,7 +21295,7 @@ class TextLeaf extends Text$5 {
     return target;
   }
 }
-class TextNode extends Text$5 {
+class TextNode extends Text$6 {
   constructor(children, length) {
     super();
     this.children = children;
@@ -21424,7 +21425,7 @@ class TextNode extends Text$5 {
     return chunked.length == 1 ? chunked[0] : new TextNode(chunked, length);
   }
 }
-Text$5.empty = /* @__PURE__ */ new TextLeaf([""], 0);
+Text$6.empty = /* @__PURE__ */ new TextLeaf([""], 0);
 function textLength(text) {
   let length = -1;
   for (let line of text)
@@ -21585,7 +21586,7 @@ class LineCursor {
   }
 }
 if (typeof Symbol != "undefined") {
-  Text$5.prototype[Symbol.iterator] = function() {
+  Text$6.prototype[Symbol.iterator] = function() {
     return this.iter();
   };
   RawTextCursor.prototype[Symbol.iterator] = PartialTextCursor.prototype[Symbol.iterator] = LineCursor.prototype[Symbol.iterator] = function() {
@@ -21850,8 +21851,8 @@ class ChangeSet extends ChangeDesc {
         sections[i3 + 1] = len;
         let index2 = i3 >> 1;
         while (inserted.length < index2)
-          inserted.push(Text$5.empty);
-        inserted.push(len ? doc2.slice(pos, pos + len) : Text$5.empty);
+          inserted.push(Text$6.empty);
+        inserted.push(len ? doc2.slice(pos, pos + len) : Text$6.empty);
       }
       pos += len;
     }
@@ -21984,7 +21985,7 @@ class ChangeSet extends ChangeDesc {
         let { from, to: to2 = from, insert: insert2 } = spec;
         if (from > to2 || from < 0 || to2 > length)
           throw new RangeError(`Invalid change range ${from} to ${to2} (in doc of length ${length})`);
-        let insText = !insert2 ? Text$5.empty : typeof insert2 == "string" ? Text$5.of(insert2.split(lineSep || DefaultSplit)) : insert2;
+        let insText = !insert2 ? Text$6.empty : typeof insert2 == "string" ? Text$6.of(insert2.split(lineSep || DefaultSplit)) : insert2;
         let insLen = insText.length;
         if (from == to2 && insLen == 0)
           return;
@@ -22025,8 +22026,8 @@ class ChangeSet extends ChangeDesc {
         sections.push(part[0], 0);
       } else {
         while (inserted.length < i3)
-          inserted.push(Text$5.empty);
-        inserted[i3] = Text$5.of(part.slice(1));
+          inserted.push(Text$6.empty);
+        inserted[i3] = Text$6.of(part.slice(1));
         sections.push(part[0], inserted[i3].length);
       }
     }
@@ -22061,7 +22062,7 @@ function addInsert(values, sections, value) {
     values[values.length - 1] = values[values.length - 1].append(value);
   } else {
     while (values.length < index2)
-      values.push(Text$5.empty);
+      values.push(Text$6.empty);
     values.push(value);
   }
 }
@@ -22073,7 +22074,7 @@ function iterChanges(desc, f2, individual) {
       posA += len;
       posB += len;
     } else {
-      let endA = posA, endB = posB, text = Text$5.empty;
+      let endA = posA, endB = posB, text = Text$6.empty;
       for (; ; ) {
         endA += len;
         endB += ins;
@@ -22207,11 +22208,11 @@ class SectionIter {
   }
   get text() {
     let { inserted } = this.set, index2 = this.i - 2 >> 1;
-    return index2 >= inserted.length ? Text$5.empty : inserted[index2];
+    return index2 >= inserted.length ? Text$6.empty : inserted[index2];
   }
   textBit(len) {
     let { inserted } = this.set, index2 = this.i - 2 >> 1;
-    return index2 >= inserted.length && !len ? Text$5.empty : inserted[index2].slice(this.off, len == null ? void 0 : this.off + len);
+    return index2 >= inserted.length && !len ? Text$6.empty : inserted[index2].slice(this.off, len == null ? void 0 : this.off + len);
   }
   forward(len) {
     if (len == this.len)
@@ -23405,7 +23406,7 @@ class EditorState {
   [`Text`](https://codemirror.net/6/docs/ref/#state.Text) instance from the given string.
   */
   toText(string2) {
-    return Text$5.of(string2.split(this.facet(EditorState.lineSeparator) || DefaultSplit));
+    return Text$6.of(string2.split(this.facet(EditorState.lineSeparator) || DefaultSplit));
   }
   /**
   Return the given range of the document as a string.
@@ -23472,7 +23473,7 @@ class EditorState {
   */
   static create(config2 = {}) {
     let configuration = Configuration.resolve(config2.extensions || [], /* @__PURE__ */ new Map());
-    let doc2 = config2.doc instanceof Text$5 ? config2.doc : Text$5.of((config2.doc || "").split(configuration.staticFacet(EditorState.lineSeparator) || DefaultSplit));
+    let doc2 = config2.doc instanceof Text$6 ? config2.doc : Text$6.of((config2.doc || "").split(configuration.staticFacet(EditorState.lineSeparator) || DefaultSplit));
     let selection2 = !config2.selection ? EditorSelection.single(0) : config2.selection instanceof EditorSelection ? config2.selection : EditorSelection.single(config2.selection.anchor, config2.selection.head);
     checkSelection(selection2, doc2.length);
     if (!configuration.staticFacet(allowMultipleSelections))
@@ -26570,10 +26571,10 @@ class WidgetTile extends Tile {
   }
   get overrideDOMText() {
     if (!this.length)
-      return Text$5.empty;
+      return Text$6.empty;
     let { root } = this;
     if (!root)
-      return Text$5.empty;
+      return Text$6.empty;
     let start = this.posAtStart;
     return root.view.state.doc.slice(start, start + this.length);
   }
@@ -26601,7 +26602,7 @@ class WidgetBufferTile extends Tile {
     return true;
   }
   get overrideDOMText() {
-    return Text$5.empty;
+    return Text$6.empty;
   }
   coordsIn(pos) {
     return this.dom.getBoundingClientRect();
@@ -28577,7 +28578,7 @@ function applyDOMChange(view, domChange) {
       change = {
         from: sel.from,
         to: sel.to,
-        insert: Text$5.of(domChange.text.slice(sel.from - from, selEnd).split(LineBreakPlaceholder))
+        insert: Text$6.of(domChange.text.slice(sel.from - from, selEnd).split(LineBreakPlaceholder))
       };
     } else if (diff = findDiff(cmp, domChange.text, preferredPos - from, preferredSide)) {
       if (browser.chrome && lastKey == 13 && diff.toB == diff.from + 2 && domChange.text.slice(diff.from, diff.toB) == LineBreakPlaceholder + LineBreakPlaceholder)
@@ -28585,7 +28586,7 @@ function applyDOMChange(view, domChange) {
       change = {
         from: from + diff.from,
         to: from + diff.toA,
-        insert: Text$5.of(domChange.text.slice(diff.from, diff.toB).split(LineBreakPlaceholder))
+        insert: Text$6.of(domChange.text.slice(diff.from, diff.toB).split(LineBreakPlaceholder))
       };
     }
   } else if (newSel && (!view.hasFocus && state.facet(editable) || sameSelPos(newSel, sel))) {
@@ -28596,7 +28597,7 @@ function applyDOMChange(view, domChange) {
   if ((browser.mac || browser.android) && change && change.from == change.to && change.from == sel.head - 1 && /^\. ?$/.test(change.insert.toString()) && view.contentDOM.getAttribute("autocorrect") == "off") {
     if (newSel && change.insert.length == 2)
       newSel = EditorSelection.single(newSel.main.anchor - 1, newSel.main.head - 1);
-    change = { from: change.from, to: change.to, insert: Text$5.of([change.insert.toString().replace(".", " ")]) };
+    change = { from: change.from, to: change.to, insert: Text$6.of([change.insert.toString().replace(".", " ")]) };
   } else if (state.doc.lineAt(sel.from).to < sel.to && view.docView.lineHasWidget(sel.to) && view.inputState.insertingTextAt > Date.now() - 50) {
     change = {
       from: sel.from,
@@ -28606,7 +28607,7 @@ function applyDOMChange(view, domChange) {
   } else if (browser.chrome && change && change.from == change.to && change.from == sel.head && change.insert.toString() == "\n " && view.lineWrapping) {
     if (newSel)
       newSel = EditorSelection.single(newSel.main.anchor - 1, newSel.main.head - 1);
-    change = { from: sel.from, to: sel.to, insert: Text$5.of([" "]) };
+    change = { from: sel.from, to: sel.to, insert: Text$6.of([" "]) };
   }
   if (change) {
     return applyDOMChangeInner(view, change, newSel, lastKey);
@@ -29526,7 +29527,7 @@ function clearHeightChangeFlag() {
 class HeightOracle {
   constructor(lineWrapping) {
     this.lineWrapping = lineWrapping;
-    this.doc = Text$5.empty;
+    this.doc = Text$6.empty;
     this.heightSamples = {};
     this.lineHeight = 14;
     this.charWidth = 7;
@@ -30352,7 +30353,7 @@ class ViewState {
     let guessWrapping = state.facet(contentAttributes).some((v3) => typeof v3 != "function" && v3.class == "cm-lineWrapping");
     this.heightOracle = new HeightOracle(guessWrapping);
     this.stateDeco = staticDeco(state);
-    this.heightMap = HeightMap.empty().applyChanges(this.stateDeco, Text$5.empty, this.heightOracle.setDoc(state.doc), [new ChangedRange(0, 0, 0, state.doc.length)]);
+    this.heightMap = HeightMap.empty().applyChanges(this.stateDeco, Text$6.empty, this.heightOracle.setDoc(state.doc), [new ChangedRange(0, 0, 0, state.doc.length)]);
     for (let i3 = 0; i3 < 2; i3++) {
       this.viewport = this.getViewport(0, null);
       if (!this.updateForViewport())
@@ -30503,7 +30504,7 @@ class ViewState {
       clearHeightChangeFlag();
       for (let vp2 of this.viewports) {
         let heights = vp2.from == this.viewport.from ? lineHeights : view.docView.measureVisibleLineHeights(vp2);
-        this.heightMap = (refresh ? HeightMap.empty().applyChanges(this.stateDeco, Text$5.empty, this.heightOracle, [new ChangedRange(0, 0, 0, view.state.doc.length)]) : this.heightMap).updateHeight(oracle, 0, refresh, new MeasuredHeights(vp2.from, heights));
+        this.heightMap = (refresh ? HeightMap.empty().applyChanges(this.stateDeco, Text$6.empty, this.heightOracle, [new ChangedRange(0, 0, 0, view.state.doc.length)]) : this.heightMap).updateHeight(oracle, 0, refresh, new MeasuredHeights(vp2.from, heights));
       }
       if (heightChangeFlag)
         result |= 2;
@@ -31657,10 +31658,10 @@ class EditContextManager {
       let change = {
         from: diff.from + from,
         to: diff.toA + from,
-        insert: Text$5.of(e3.text.slice(diff.from, diff.toB).split("\n"))
+        insert: Text$6.of(e3.text.slice(diff.from, diff.toB).split("\n"))
       };
       if ((browser.mac || browser.android) && change.from == head - 1 && /^\. ?$/.test(e3.text) && view.contentDOM.getAttribute("autocorrect") == "off")
-        change = { from, to: to2, insert: Text$5.of([e3.text.replace(".", " ")]) };
+        change = { from, to: to2, insert: Text$6.of([e3.text.replace(".", " ")]) };
       this.pendingContextChange = change;
       if (!view.state.readOnly) {
         let newLen = this.to - this.from + (change.to - change.from + change.insert.length);
@@ -37690,7 +37691,7 @@ const splitLine = ({ state, dispatch }) => {
     return false;
   let changes = state.changeByRange((range2) => {
     return {
-      changes: { from: range2.from, to: range2.to, insert: Text$5.of(["", ""]) },
+      changes: { from: range2.from, to: range2.to, insert: Text$6.of(["", ""]) },
       range: EditorSelection.cursor(range2.from)
     };
   });
@@ -37841,7 +37842,7 @@ function newlineAndIndent(atEof) {
       if (explode)
         insert2.push(indentString(state, cx.lineIndent(line.from, -1)));
       return {
-        changes: { from, to: to2, insert: Text$5.of(insert2) },
+        changes: { from, to: to2, insert: Text$6.of(insert2) },
         range: EditorSelection.cursor(from + 1 + insert2[1].length)
       };
     });
@@ -92240,7 +92241,7 @@ const useAdContents = (params) => {
   }, [fetchContents]);
   return { contents, loading, createContent, updateContent, deleteContent, fetchContents };
 };
-const { Title: Title$4, Text: Text$4 } = Typography;
+const { Title: Title$5, Text: Text$5 } = Typography;
 const { TextArea: TextArea$1 } = Input;
 const CONTENT_TYPE_OPTIONS = [
   { value: "single-image", label: "单图" },
@@ -92426,8 +92427,8 @@ const AdContentPage = () => {
   ];
   return /* @__PURE__ */ jsx(PermissionGate, { action: "zhao-studio.ad-content.manage", children: /* @__PURE__ */ jsxs(Space, { direction: "vertical", size: "large", style: { width: "100%" }, children: [
     /* @__PURE__ */ jsxs("div", { children: [
-      /* @__PURE__ */ jsx(Title$4, { level: 3, children: "广告内容管理" }),
-      /* @__PURE__ */ jsx(Text$4, { type: "secondary", children: "管理广告内容素材及展示样式" })
+      /* @__PURE__ */ jsx(Title$5, { level: 3, children: "广告内容管理" }),
+      /* @__PURE__ */ jsx(Text$5, { type: "secondary", children: "管理广告内容素材及展示样式" })
     ] }),
     /* @__PURE__ */ jsx(
       Card,
@@ -92538,7 +92539,7 @@ const AdContentPage = () => {
           /* @__PURE__ */ jsxs(Tabs.TabPane, { tab: "素材", children: [
             ["single-image", "multi-image", "slideshow"].includes(contentType) && /* @__PURE__ */ jsxs("div", { children: [
               /* @__PURE__ */ jsxs("div", { style: { marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }, children: [
-                /* @__PURE__ */ jsxs(Text$4, { strong: true, children: [
+                /* @__PURE__ */ jsxs(Text$5, { strong: true, children: [
                   "图片列表（",
                   imageList.length,
                   "）"
@@ -92679,7 +92680,7 @@ const AdContentPage = () => {
               ] })
             ] }),
             contentType === "html" && /* @__PURE__ */ jsx(Form.Item, { name: "htmlContent", label: "HTML内容", children: /* @__PURE__ */ jsx(TextArea$1, { rows: 8, placeholder: "自定义HTML代码" }) }),
-            !contentType && /* @__PURE__ */ jsx(Text$4, { type: "secondary", children: '请先在"基本信息"中选择内容类型' })
+            !contentType && /* @__PURE__ */ jsx(Text$5, { type: "secondary", children: '请先在"基本信息"中选择内容类型' })
           ] }, "media"),
           /* @__PURE__ */ jsxs(Tabs.TabPane, { tab: "链接", children: [
             /* @__PURE__ */ jsx(Form.Item, { name: "linkType", label: "链接类型", initialValue: "none", children: /* @__PURE__ */ jsx(Select, { options: LINK_TYPE_OPTIONS }) }),
@@ -92694,7 +92695,7 @@ const AdContentPage = () => {
               /* @__PURE__ */ jsx(Form.Item, { name: "borderRadius", label: "圆角(px)", children: /* @__PURE__ */ jsx(InputNumber, { min: 0, placeholder: "如 8" }) })
             ] }),
             /* @__PURE__ */ jsx(Form.Item, { name: "backgroundColor", label: "背景色", children: /* @__PURE__ */ jsx(Input, { placeholder: "如 #ffffff" }) }),
-            /* @__PURE__ */ jsx(Text$4, { strong: true, children: "幻灯片设置" }),
+            /* @__PURE__ */ jsx(Text$5, { strong: true, children: "幻灯片设置" }),
             /* @__PURE__ */ jsxs("div", { style: { marginTop: 12 }, children: [
               /* @__PURE__ */ jsxs(Space, { style: { display: "flex" }, children: [
                 /* @__PURE__ */ jsx(Form.Item, { name: "slideshowAutoplay", label: "自动播放", valuePropName: "checked", initialValue: true, children: /* @__PURE__ */ jsx(Switch, {}) }),
@@ -92708,7 +92709,7 @@ const AdContentPage = () => {
                 /* @__PURE__ */ jsx(Form.Item, { name: "slideshowPauseOnHover", label: "悬停暂停", valuePropName: "checked", initialValue: true, children: /* @__PURE__ */ jsx(Switch, {}) })
               ] })
             ] }),
-            /* @__PURE__ */ jsx(Text$4, { strong: true, children: "其他设置" }),
+            /* @__PURE__ */ jsx(Text$5, { strong: true, children: "其他设置" }),
             /* @__PURE__ */ jsx("div", { style: { marginTop: 12 }, children: /* @__PURE__ */ jsxs(Space, { style: { display: "flex" }, children: [
               /* @__PURE__ */ jsx(Form.Item, { name: "closeDelay", label: "关闭延迟(ms)", children: /* @__PURE__ */ jsx(InputNumber, { min: 0, placeholder: "如 5000" }) }),
               /* @__PURE__ */ jsx(Form.Item, { name: "showCountdown", label: "显示倒计时", valuePropName: "checked", initialValue: false, children: /* @__PURE__ */ jsx(Switch, {}) })
@@ -92857,7 +92858,7 @@ const usePosterTemplates = () => {
     fetchTemplates
   };
 };
-const { Title: Title$3, Text: Text$3 } = Typography;
+const { Title: Title$4, Text: Text$4 } = Typography;
 const { TextArea } = Input;
 const ELEMENT_TYPE_OPTIONS = [
   { value: "text", label: "文本" },
@@ -93307,7 +93308,7 @@ const PosterTemplatePage = () => {
       /* @__PURE__ */ jsxs("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" }, children: [
         /* @__PURE__ */ jsxs(Space, { children: [
           /* @__PURE__ */ jsx(Button, { icon: /* @__PURE__ */ jsx(ArrowLeftOutlined, {}), onClick: handleBackToList, children: "返回列表" }),
-          /* @__PURE__ */ jsxs(Title$3, { level: 4, style: { margin: 0 }, children: [
+          /* @__PURE__ */ jsxs(Title$4, { level: 4, style: { margin: 0 }, children: [
             "编辑海报模板: ",
             currentTemplate.name
           ] })
@@ -93339,7 +93340,7 @@ const PosterTemplatePage = () => {
           ] }) }),
           /* @__PURE__ */ jsxs(Card, { title: "画布预览", size: "small", children: [
             /* @__PURE__ */ jsx("div", { style: { display: "flex", justifyContent: "center" }, children: renderPreview() }),
-            /* @__PURE__ */ jsxs(Text$3, { type: "secondary", style: { fontSize: 12 }, children: [
+            /* @__PURE__ */ jsxs(Text$4, { type: "secondary", style: { fontSize: 12 }, children: [
               "缩放比例: ",
               Math.round(previewScale * 100),
               "% (实际: ",
@@ -93433,8 +93434,8 @@ const PosterTemplatePage = () => {
   }
   return /* @__PURE__ */ jsx(PermissionGate, { action: "zhao-studio.poster-template.manage", children: /* @__PURE__ */ jsxs(Space, { direction: "vertical", size: "large", style: { width: "100%" }, children: [
     /* @__PURE__ */ jsxs("div", { children: [
-      /* @__PURE__ */ jsx(Title$3, { level: 3, children: "海报模板管理" }),
-      /* @__PURE__ */ jsx(Text$3, { type: "secondary", children: "管理海报模板及元素坐标配置" })
+      /* @__PURE__ */ jsx(Title$4, { level: 3, children: "海报模板管理" }),
+      /* @__PURE__ */ jsx(Text$4, { type: "secondary", children: "管理海报模板及元素坐标配置" })
     ] }),
     /* @__PURE__ */ jsx(
       Card,
@@ -93639,19 +93640,19 @@ const useStats = ({ type: type2 }) => {
   }, [type2]);
   return { stats, chartData, loading };
 };
-const { Title: Title$2, Text: Text$2 } = Typography;
+const { Title: Title$3, Text: Text$3 } = Typography;
 const { RangePicker: RangePicker$2 } = DatePicker;
 const StatsBasicPage = () => {
   const { stats, chartData, loading } = useStats({ type: "basic" });
   const [dateRange, setDateRange] = React__default.useState();
   return /* @__PURE__ */ jsx(PermissionGate, { action: "zhao-studio.stat-summary.view", children: /* @__PURE__ */ jsxs(Space, { direction: "vertical", size: "large", style: { width: "100%" }, children: [
     /* @__PURE__ */ jsxs("div", { children: [
-      /* @__PURE__ */ jsx(Title$2, { level: 3, children: "基础统计" }),
-      /* @__PURE__ */ jsx(Text$2, { type: "secondary", children: "文章浏览量、发布量等基础指标" })
+      /* @__PURE__ */ jsx(Title$3, { level: 3, children: "基础统计" }),
+      /* @__PURE__ */ jsx(Text$3, { type: "secondary", children: "文章浏览量、发布量等基础指标" })
     ] }),
     /* @__PURE__ */ jsxs(Card, { children: [
       /* @__PURE__ */ jsxs(Space, { style: { marginBottom: 16 }, children: [
-        /* @__PURE__ */ jsx(Text$2, { children: "时间范围：" }),
+        /* @__PURE__ */ jsx(Text$3, { children: "时间范围：" }),
         /* @__PURE__ */ jsx(RangePicker$2, { onChange: setDateRange })
       ] }),
       /* @__PURE__ */ jsxs(Row, { gutter: [16, 16], children: [
@@ -93661,18 +93662,18 @@ const StatsBasicPage = () => {
     ] })
   ] }) });
 };
-const { Title: Title$1, Text: Text$1 } = Typography;
+const { Title: Title$2, Text: Text$2 } = Typography;
 const { RangePicker: RangePicker$1 } = DatePicker;
 const StatsAdvancedPage = () => {
   const { stats, chartData, loading } = useStats({ type: "advanced" });
   return /* @__PURE__ */ jsx(PermissionGate, { action: "zhao-studio.stat-summary.view", children: /* @__PURE__ */ jsxs(Space, { direction: "vertical", size: "large", style: { width: "100%" }, children: [
     /* @__PURE__ */ jsxs("div", { children: [
-      /* @__PURE__ */ jsx(Title$1, { level: 3, children: "高级统计" }),
-      /* @__PURE__ */ jsx(Text$1, { type: "secondary", children: "多维度数据分析" })
+      /* @__PURE__ */ jsx(Title$2, { level: 3, children: "高级统计" }),
+      /* @__PURE__ */ jsx(Text$2, { type: "secondary", children: "多维度数据分析" })
     ] }),
     /* @__PURE__ */ jsxs(Card, { children: [
       /* @__PURE__ */ jsxs(Space, { style: { marginBottom: 16 }, children: [
-        /* @__PURE__ */ jsx(Text$1, { children: "时间范围：" }),
+        /* @__PURE__ */ jsx(Text$2, { children: "时间范围：" }),
         /* @__PURE__ */ jsx(RangePicker$1, {})
       ] }),
       /* @__PURE__ */ jsx(
@@ -93698,21 +93699,21 @@ const StatsAdvancedPage = () => {
     ] })
   ] }) });
 };
-const { Title, Text: Text2 } = Typography;
+const { Title: Title$1, Text: Text$1 } = Typography;
 const { RangePicker } = DatePicker;
 const StatsProPage = () => {
   const { stats, chartData, loading } = useStats({ type: "pro" });
   const [chartType, setChartType] = React__default.useState("line");
   return /* @__PURE__ */ jsx(PermissionGate, { action: "zhao-studio.stat-summary.view", children: /* @__PURE__ */ jsxs(Space, { direction: "vertical", size: "large", style: { width: "100%" }, children: [
     /* @__PURE__ */ jsxs("div", { children: [
-      /* @__PURE__ */ jsx(Title, { level: 3, children: "专业统计" }),
-      /* @__PURE__ */ jsx(Text2, { type: "secondary", children: "完整业务数据分析" })
+      /* @__PURE__ */ jsx(Title$1, { level: 3, children: "专业统计" }),
+      /* @__PURE__ */ jsx(Text$1, { type: "secondary", children: "完整业务数据分析" })
     ] }),
     /* @__PURE__ */ jsxs(Card, { children: [
       /* @__PURE__ */ jsxs(Space, { style: { marginBottom: 16 }, children: [
-        /* @__PURE__ */ jsx(Text2, { children: "时间范围：" }),
+        /* @__PURE__ */ jsx(Text$1, { children: "时间范围：" }),
         /* @__PURE__ */ jsx(RangePicker, {}),
-        /* @__PURE__ */ jsx(Text2, { children: "图表类型：" }),
+        /* @__PURE__ */ jsx(Text$1, { children: "图表类型：" }),
         /* @__PURE__ */ jsx(
           Select,
           {
@@ -93924,6 +93925,236 @@ function SyncEventPage() {
     ] }) })
   ] }) });
 }
+let installed = false;
+function installZhaoAuthFetch() {
+  if (installed || typeof window === "undefined") return;
+  const originalFetch = window.fetch.bind(window);
+  window.fetch = (input, init) => {
+    try {
+      const url = typeof input === "string" ? input : input?.url || "";
+      if (url.includes("/api/zhao-")) {
+        const token = window.localStorage.getItem("jwtToken");
+        if (token) {
+          const headers = new Headers(init?.headers || (typeof input !== "string" ? input?.headers : void 0));
+          if (!headers.has("Authorization")) headers.set("Authorization", `Bearer ${token}`);
+          return originalFetch(input, { ...init, headers, credentials: init?.credentials || "include" });
+        }
+      }
+    } catch {
+    }
+    return originalFetch(input, init);
+  };
+  installed = true;
+}
+const BASE = "/api/zhao-studio/v1/admin";
+async function apiFetch(path, init) {
+  const headers = new Headers(init?.headers);
+  const token = typeof window !== "undefined" ? window.localStorage.getItem("jwtToken") : null;
+  if (token && !headers.has("Authorization")) headers.set("Authorization", `Bearer ${token}`);
+  const res = await fetch(`${BASE}${path}`, { ...init, headers, credentials: "include" });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`请求失败 ${res.status}: ${text.slice(0, 200)}`);
+  }
+  return res.json();
+}
+const promoApi = {
+  /** 渠道列表（下拉选择用） */
+  async listChannels() {
+    const res = await apiFetch("/channels?pageSize=100");
+    return (res.data || []).map((c3) => ({
+      documentId: c3.documentId,
+      code: c3.code,
+      name: c3.name,
+      scene: c3.scene
+    }));
+  },
+  /** 渠道报表：groupBy = variant | day | campaign */
+  async getChannelReport(params) {
+    const query = new URLSearchParams(params).toString();
+    const res = await apiFetch(`/channel-report?${query}`);
+    return res.data;
+  }
+};
+const { Title, Text: Text2 } = Typography;
+const fmt = (d3) => d3.toISOString().slice(0, 10);
+const defaultRange = () => {
+  const end = /* @__PURE__ */ new Date();
+  const start = new Date(Date.now() - 6 * 864e5);
+  return [`${fmt(start)}T00:00:00.000Z`, `${fmt(end)}T23:59:59.999Z`];
+};
+const ChannelReportPage = () => {
+  const [channels, setChannels] = useState([]);
+  const [channelCode, setChannelCode] = useState("xxl-wechat");
+  const [range2, setRange] = useState(defaultRange);
+  const [groupBy, setGroupBy] = useState("variant");
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  useEffect(() => {
+    promoApi.listChannels().then(setChannels).catch(() => setChannels([]));
+  }, []);
+  const load = useCallback(async () => {
+    if (!channelCode) return;
+    setLoading(true);
+    setError(null);
+    try {
+      setData(await promoApi.getChannelReport({ channelCode, startDate: range2[0], endDate: range2[1], groupBy }));
+    } catch (e3) {
+      setError(e3?.message || "加载失败");
+    } finally {
+      setLoading(false);
+    }
+  }, [channelCode, range2, groupBy]);
+  useEffect(() => {
+    load();
+  }, [load]);
+  const variantRows = data?.byVariant || [];
+  const leadId = useMemo(() => {
+    let best = null;
+    for (const r4 of variantRows) {
+      if (r4.impressions > 0 && (!best || r4.ctr > (variantRows.find((x3) => x3.variantId === best)?.ctr ?? -1))) {
+        best = r4.variantId;
+      }
+    }
+    return best;
+  }, [variantRows]);
+  const maxCtr = Math.max(1, ...variantRows.map((r4) => r4.ctr));
+  const variantColumns = [
+    {
+      title: "文案变体",
+      dataIndex: "variantName",
+      render: (_2, r4) => /* @__PURE__ */ jsxs(Space, { size: 6, children: [
+        /* @__PURE__ */ jsx("span", { style: { fontWeight: 600 }, children: r4.variantName }),
+        r4.variantId === leadId && /* @__PURE__ */ jsx(Tag$1, { color: "green", children: "领先" })
+      ] })
+    },
+    { title: "活动", dataIndex: "campaignName", render: (v3) => /* @__PURE__ */ jsx(Text2, { type: "secondary", children: v3 }) },
+    { title: "曝光", dataIndex: "impressions", align: "right", render: (v3) => v3.toLocaleString() },
+    { title: "点击(打开)", dataIndex: "clicks", align: "right", render: (v3) => v3.toLocaleString() },
+    {
+      title: "CTR",
+      dataIndex: "ctr",
+      align: "right",
+      render: (v3, r4) => /* @__PURE__ */ jsx("span", { style: { fontFamily: "monospace", fontWeight: 700, color: r4.variantId === leadId ? "#0f7b5f" : void 0 }, children: r4.impressions > 0 ? `${v3.toFixed(2)}%` : "—" })
+    },
+    {
+      title: "CTR 相对",
+      key: "bar",
+      width: 160,
+      render: (_2, r4) => /* @__PURE__ */ jsx("div", { style: { background: "rgba(128,128,128,.12)", height: 6, borderRadius: 999, overflow: "hidden" }, children: /* @__PURE__ */ jsx(
+        "div",
+        {
+          style: {
+            width: `${Math.round(r4.ctr / maxCtr * 100)}%`,
+            height: "100%",
+            borderRadius: 999,
+            background: r4.variantId === leadId ? "#0f7b5f" : "#2f6fb2"
+          }
+        }
+      ) })
+    },
+    { title: "订单", dataIndex: "orders", align: "right" },
+    { title: "有效佣金", dataIndex: "matchedCommission", align: "right", render: (v3) => Number(v3 || 0).toFixed(2) }
+  ];
+  const campaignColumns = [
+    { title: "活动", dataIndex: "campaign", key: "campaign" },
+    { title: "Code", dataIndex: "code", key: "code", render: (v3) => /* @__PURE__ */ jsx(Text2, { code: true, children: v3 }) }
+  ];
+  return /* @__PURE__ */ jsx(PermissionGate, { action: "zhao-studio.channel-report.view", children: /* @__PURE__ */ jsxs(Space, { direction: "vertical", size: "large", style: { width: "100%" }, children: [
+    /* @__PURE__ */ jsxs("div", { children: [
+      /* @__PURE__ */ jsx(Title, { level: 3, children: "渠道报表" }),
+      /* @__PURE__ */ jsx(Text2, { type: "secondary", children: "推广渠道效果与 A/B 文案变体对比（判优指标：CTR = 点击(打开) / 曝光）" })
+    ] }),
+    /* @__PURE__ */ jsx(Card, { size: "small", children: /* @__PURE__ */ jsxs(Space, { wrap: true, children: [
+      /* @__PURE__ */ jsx(Text2, { children: "渠道：" }),
+      /* @__PURE__ */ jsx(
+        Select,
+        {
+          style: { minWidth: 220 },
+          value: channelCode,
+          onChange: setChannelCode,
+          options: channels.map((c3) => ({ value: c3.code, label: `${c3.name}（${c3.code}）` })),
+          showSearch: true,
+          optionFilterProp: "label"
+        }
+      ),
+      /* @__PURE__ */ jsx(Text2, { children: "日期：" }),
+      /* @__PURE__ */ jsx(
+        "input",
+        {
+          type: "date",
+          value: range2[0].slice(0, 10),
+          onChange: (e3) => setRange([`${e3.target.value}T00:00:00.000Z`, range2[1]]),
+          style: { padding: 4, border: "1px solid #d9d9d9", borderRadius: 6 }
+        }
+      ),
+      /* @__PURE__ */ jsx("span", { children: "~" }),
+      /* @__PURE__ */ jsx(
+        "input",
+        {
+          type: "date",
+          value: range2[1].slice(0, 10),
+          onChange: (e3) => setRange([range2[0], `${e3.target.value}T23:59:59.999Z`]),
+          style: { padding: 4, border: "1px solid #d9d9d9", borderRadius: 6 }
+        }
+      )
+    ] }) }),
+    error && /* @__PURE__ */ jsx(Alert, { type: "error", showIcon: true, message: error }),
+    /* @__PURE__ */ jsxs(Card, { size: "small", children: [
+      /* @__PURE__ */ jsx(
+        Tabs,
+        {
+          activeKey: groupBy,
+          onChange: (k2) => setGroupBy(k2),
+          items: [
+            { key: "variant", label: "变体对比", children: null },
+            { key: "day", label: "按日", children: null },
+            { key: "campaign", label: "按活动", children: null }
+          ]
+        }
+      ),
+      /* @__PURE__ */ jsxs(Spin, { spinning: loading, children: [
+        groupBy === "variant" && /* @__PURE__ */ jsx(
+          Table,
+          {
+            rowKey: "variantId",
+            size: "middle",
+            columns: variantColumns,
+            dataSource: variantRows,
+            pagination: false,
+            rowClassName: (r4) => r4.variantId === leadId ? "ant-table-row-selected" : "",
+            locale: { emptyText: "所选渠道与日期范围内暂无变体数据" }
+          }
+        ),
+        groupBy !== "variant" && /* @__PURE__ */ jsxs(Fragment, { children: [
+          data?.funnel && /* @__PURE__ */ jsxs(Space, { wrap: true, size: "large", style: { marginBottom: 16 }, children: [
+            ["impressions", "adClicks", "couponClicks", "orders", "paidOrders"].map((k2) => /* @__PURE__ */ jsxs("div", { children: [
+              /* @__PURE__ */ jsx(Text2, { type: "secondary", style: { fontSize: 12 }, children: k2 }),
+              /* @__PURE__ */ jsx("div", { style: { fontFamily: "monospace", fontWeight: 700, fontSize: 18 }, children: data.funnel[k2] ?? 0 })
+            ] }, k2)),
+            data.revenue && /* @__PURE__ */ jsxs("div", { children: [
+              /* @__PURE__ */ jsx(Text2, { type: "secondary", style: { fontSize: 12 }, children: "ROI" }),
+              /* @__PURE__ */ jsx("div", { style: { fontFamily: "monospace", fontWeight: 700, fontSize: 18 }, children: Number(data.roi || 0).toFixed(2) })
+            ] })
+          ] }),
+          /* @__PURE__ */ jsx(
+            Table,
+            {
+              rowKey: "code",
+              size: "middle",
+              columns: campaignColumns,
+              dataSource: data?.byCampaign || [],
+              pagination: false,
+              locale: { emptyText: "暂无活动数据" }
+            }
+          )
+        ] })
+      ] })
+    ] })
+  ] }) });
+};
+installZhaoAuthFetch();
 const App = () => /* @__PURE__ */ jsx(ConfigProvider, { prefixCls: "zs", iconPrefixCls: "zs-icon", locale: zhCN, children: /* @__PURE__ */ jsx(PermissionsProvider, { children: /* @__PURE__ */ jsx(PluginLayout, { children: /* @__PURE__ */ jsxs(Routes, { children: [
   /* @__PURE__ */ jsx(Route, { path: "/", element: /* @__PURE__ */ jsx(HomePage, {}) }),
   /* @__PURE__ */ jsx(Route, { path: "/collect", element: /* @__PURE__ */ jsx(CollectPage, {}) }),
@@ -93938,6 +94169,7 @@ const App = () => /* @__PURE__ */ jsx(ConfigProvider, { prefixCls: "zs", iconPre
   /* @__PURE__ */ jsx(Route, { path: "/stats/basic", element: /* @__PURE__ */ jsx(StatsBasicPage, {}) }),
   /* @__PURE__ */ jsx(Route, { path: "/stats/advanced", element: /* @__PURE__ */ jsx(StatsAdvancedPage, {}) }),
   /* @__PURE__ */ jsx(Route, { path: "/stats/pro", element: /* @__PURE__ */ jsx(StatsProPage, {}) }),
+  /* @__PURE__ */ jsx(Route, { path: "/channel-report", element: /* @__PURE__ */ jsx(ChannelReportPage, {}) }),
   /* @__PURE__ */ jsx(Route, { path: "/sync-events", element: /* @__PURE__ */ jsx(SyncEventPage, {}) }),
   /* @__PURE__ */ jsx(Route, { path: "*", element: /* @__PURE__ */ jsx("div", { children: "404" }) })
 ] }) }) }) });

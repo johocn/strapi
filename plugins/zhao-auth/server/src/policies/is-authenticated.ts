@@ -81,9 +81,38 @@ const isAuthenticated = async (policyContext: any, config: any, { strapi }: { st
           }
         }
       } catch (ssoErr) {
-        // SSO 验证也失败 → 视为未认证
+        // SSO 验证也失败 → 尝试 Strapi admin 面板 JWT（admin.auth.secret 验签）
+        // 供 zhao-studio 插件 admin 页面（同源 fetch 带 admin token）调用 zhao-auth 鉴权接口
+        try {
+          const adminSecret = strapi.config.get("admin.auth.secret");
+          if (typeof adminSecret === "string" && adminSecret) {
+            const payload: any = require("jsonwebtoken").verify(token, adminSecret);
+            if (payload?.id) {
+              const adminUser: any = await strapi.db.query("admin::user").findOne({
+                where: { id: payload.id },
+              });
+              if (adminUser) {
+                // admin 面板用户直接视为 admin 角色（与 has-permission 的 zhaoRoles 放行一致）
+                const user = {
+                  id: adminUser.id,
+                  documentId: adminUser.documentId,
+                  username: adminUser.username,
+                  email: adminUser.email,
+                  isAdminPanel: true,
+                  roles: ["admin"],
+                  zhaoRoles: ["admin"],
+                };
+                ctx.state.user = user;
+                ctx.user = user;
+                return true;
+              }
+            }
+          }
+        } catch (_adminErr) {
+          // 不是合法 admin token
+        }
+        reject401();
       }
-      reject401();
     }
   } catch (e: any) {
     if (e && e.status === 401) throw e;
