@@ -38,6 +38,7 @@ export default () => ({
     publicRoute("GET", "/downloads/:slug", "download.download"),
     publicRoute("POST", "/leads/submit", "lead.submit"),
     publicRoute("POST", "/interactions/track", "lead.track"),
+    publicRoute("GET", "/interactions/stats", "lead.interactionStats"),
     publicRoute("GET", "/sitemap.xml", "seo-output.sitemap"),
     publicRoute("GET", "/robots.txt", "seo-output.robots"),
     publicRoute("GET", "/llms.txt", "seo-output.llmsTxt"),

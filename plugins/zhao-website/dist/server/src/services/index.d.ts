@@ -334,6 +334,10 @@ declare const _default: {
             liked: boolean;
         }>;
         findAdmin(siteId: number, query?: any): Promise<any[]>;
+        ranking(siteId: number, targetType: string, type?: string): Promise<{
+            targetId: string;
+            count: number;
+        }[]>;
         stats(siteId: number, targetType: string, targetId: string): Promise<any>;
         softDelete(siteId: number, documentId: string): Promise<any>;
     };

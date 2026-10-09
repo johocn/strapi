@@ -43,6 +43,7 @@ declare const _default: {
             success: boolean;
         }>;
         track(ctx: any): Promise<any>;
+        interactionStats(ctx: any): Promise<any>;
     };
     "seo-output": {
         sitemap(ctx: any): Promise<void>;

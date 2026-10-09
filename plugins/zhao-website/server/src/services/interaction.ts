@@ -68,6 +68,30 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     });
   },
 
+  /**
+   * 排行榜聚合：同 targetType 下按 targetId 分组计数（供公开统计接口使用）
+   * - 只统计 deletedAt: null（取消是软删除，不过滤会票数虚高）
+   * - 按 visitorId 去重（前端清缓存换新 id 后可能产生重复行，兜底防御）
+   */
+  async ranking(siteId: number, targetType: string, type?: string) {
+    const items = (await strapi.db.query(UID).findMany({
+      where: { site: siteId, targetType, deletedAt: null, ...(type ? { type } : {}) },
+      select: ["targetId", "visitorId"],
+    })) as { targetId: string; visitorId: string }[];
+
+    const seen = new Set<string>();
+    const counts = new Map<string, number>();
+    for (const item of items) {
+      const key = `${item.targetId}::${item.visitorId}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      counts.set(item.targetId, (counts.get(item.targetId) || 0) + 1);
+    }
+    return Array.from(counts.entries())
+      .map(([targetId, count]) => ({ targetId, count }))
+      .sort((a, b) => b.count - a.count);
+  },
+
   async stats(siteId: number, targetType: string, targetId: string) {
     const counts: any = {};
     for (const type of ["like", "collect", "share"]) {

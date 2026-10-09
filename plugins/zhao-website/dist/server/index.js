@@ -31786,7 +31786,28 @@ const lead$1 = {
         ctx
         // service 内部用 ctx.request.ip / userAgent
       });
+      strapi.log.info(`[lead.track] ok action=${result.action} site=${siteId}`);
       ctx.body = { success: true, action: result.action };
+    } catch (err) {
+      strapi.log.error(`[lead.track] error: ${err?.stack || err.message}`);
+      ctx.status = err.status || 500;
+      ctx.body = { error: err.message };
+    }
+  },
+  /** 公开统计：GET /interactions/stats?targetType=game-favorite → { data: [{ targetId, count }] } */
+  async interactionStats(ctx) {
+    const siteId = ctx.state.siteId;
+    const targetType = ctx.query.targetType;
+    if (!targetType) {
+      return ctx.badRequest("Missing required query: targetType");
+    }
+    try {
+      const rows = await strapi.plugin("zhao-website").service("interaction").ranking(
+        siteId,
+        String(targetType),
+        ctx.query.type ? String(ctx.query.type) : void 0
+      );
+      ctx.body = { data: rows };
     } catch (err) {
       ctx.status = err.status || 500;
       ctx.body = { error: err.message };
@@ -32512,6 +32533,7 @@ const contentApi = () => ({
     publicRoute("GET", "/downloads/:slug", "download.download"),
     publicRoute("POST", "/leads/submit", "lead.submit"),
     publicRoute("POST", "/interactions/track", "lead.track"),
+    publicRoute("GET", "/interactions/stats", "lead.interactionStats"),
     publicRoute("GET", "/sitemap.xml", "seo-output.sitemap"),
     publicRoute("GET", "/robots.txt", "seo-output.robots"),
     publicRoute("GET", "/llms.txt", "seo-output.llmsTxt"),
@@ -34699,6 +34721,26 @@ const interaction = ({ strapi: strapi2 }) => ({
       offset: (Number(page) - 1) * Number(pageSize),
       orderBy: { createdAt: "DESC" }
     });
+  },
+  /**
+   * 排行榜聚合：同 targetType 下按 targetId 分组计数（供公开统计接口使用）
+   * - 只统计 deletedAt: null（取消是软删除，不过滤会票数虚高）
+   * - 按 visitorId 去重（前端清缓存换新 id 后可能产生重复行，兜底防御）
+   */
+  async ranking(siteId, targetType, type2) {
+    const items = await strapi2.db.query(UID$6).findMany({
+      where: { site: siteId, targetType, deletedAt: null, ...type2 ? { type: type2 } : {} },
+      select: ["targetId", "visitorId"]
+    });
+    const seen = /* @__PURE__ */ new Set();
+    const counts = /* @__PURE__ */ new Map();
+    for (const item of items) {
+      const key = `${item.targetId}::${item.visitorId}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      counts.set(item.targetId, (counts.get(item.targetId) || 0) + 1);
+    }
+    return Array.from(counts.entries()).map(([targetId, count]) => ({ targetId, count })).sort((a, b) => b.count - a.count);
   },
   async stats(siteId, targetType, targetId) {
     const counts = {};

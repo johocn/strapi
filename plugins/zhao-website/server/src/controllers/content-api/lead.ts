@@ -36,7 +36,29 @@ export default {
         userId,
         ctx, // service 内部用 ctx.request.ip / userAgent
       });
+      strapi.log.info(`[lead.track] ok action=${result.action} site=${siteId}`);
       ctx.body = { success: true, action: result.action };
+    } catch (err) {
+      strapi.log.error(`[lead.track] error: ${(err as any)?.stack || (err as Error).message}`);
+      ctx.status = (err as any).status || 500;
+      ctx.body = { error: (err as Error).message };
+    }
+  },
+
+  /** 公开统计：GET /interactions/stats?targetType=game-favorite → { data: [{ targetId, count }] } */
+  async interactionStats(ctx: any) {
+    const siteId = ctx.state.siteId;
+    const targetType = ctx.query.targetType;
+    if (!targetType) {
+      return ctx.badRequest("Missing required query: targetType");
+    }
+    try {
+      const rows = await strapi.plugin("zhao-website").service("interaction").ranking(
+        siteId,
+        String(targetType),
+        ctx.query.type ? String(ctx.query.type) : undefined,
+      );
+      ctx.body = { data: rows };
     } catch (err) {
       ctx.status = (err as any).status || 500;
       ctx.body = { error: (err as Error).message };
