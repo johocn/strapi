@@ -1,0 +1,38 @@
+{
+  "kind": "collectionType",
+  "collectionName": "jianghu_event_copies",
+  "info": {
+    "singularName": "jianghu-event-copy",
+    "pluralName": "jianghu-event-copies",
+    "displayName": "江湖事件文案",
+    "description": "校园江湖事件文案（h.joho.cn 运营编辑并上架，Vendure 侧实时拉取 active=true 的一条）"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "title": {
+      "type": "string",
+      "required": true,
+      "maxLength": 200
+    },
+    "desc": {
+      "type": "text"
+    },
+    "bannerImage": {
+      "type": "media",
+      "multiple": false,
+      "required": false,
+      "allowedTypes": ["images"]
+    },
+    "rewardText": {
+      "type": "string",
+      "maxLength": 200
+    },
+    "active": {
+      "type": "boolean",
+      "required": true,
+      "default": true
+    }
+  }
+}
