@@ -23,10 +23,13 @@ const readDocumentIdRaw = async (strapi: any, uid: string, id: number | string):
     const meta: any = strapi.db.metadata.get(uid);
     const column = meta?.attributes?.documentId?.columnName || "document_id";
     const table = meta?.tableName;
+    strapi.log.info(`[zhao-search] raw 查询准备 uid=${uid} table=${table} column=${column} id=${id}`);
     if (!table) return null;
     const row = await strapi.db.connection(table).where(column, id).first(column);
+    strapi.log.info(`[zhao-search] raw 查询结果 row=${JSON.stringify(row)}`);
     return row?.[column] ?? null;
-  } catch {
+  } catch (e: any) {
+    strapi.log.error(`[zhao-search] raw 查询异常 uid=${uid} id=${id}: ${e?.message || e}`);
     return null;
   }
 };
@@ -45,6 +48,7 @@ const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
     async afterUpdate(event: any) {
       if (!WATCHED.includes(event.model.uid)) return;
       const entry = event.result;
+      strapi.log.info(`[zhao-search] afterUpdate uid=${event.model.uid} hasResult=${entry != null} whereId=${event?.params?.where?.id}`);
       if (!entry) {
         // 软删除场景：zhao-common 的全局软删过滤会让 db.update 收尾 findOne 查不到刚软删的行，
         // 导致 event.result 为 null。兜底：raw 读取 documentId，从索引移除该文档。

@@ -158,10 +158,13 @@ const readDocumentIdRaw = async (strapi, uid, id) => {
     const meta = strapi.db.metadata.get(uid);
     const column = meta?.attributes?.documentId?.columnName || "document_id";
     const table = meta?.tableName;
+    strapi.log.info(`[zhao-search] raw 查询准备 uid=${uid} table=${table} column=${column} id=${id}`);
     if (!table) return null;
     const row = await strapi.db.connection(table).where(column, id).first(column);
+    strapi.log.info(`[zhao-search] raw 查询结果 row=${JSON.stringify(row)}`);
     return row?.[column] ?? null;
-  } catch {
+  } catch (e) {
+    strapi.log.error(`[zhao-search] raw 查询异常 uid=${uid} id=${id}: ${e?.message || e}`);
     return null;
   }
 };
@@ -176,6 +179,7 @@ const bootstrap = async ({ strapi }) => {
     async afterUpdate(event) {
       if (!WATCHED.includes(event.model.uid)) return;
       const entry = event.result;
+      strapi.log.info(`[zhao-search] afterUpdate uid=${event.model.uid} hasResult=${entry != null} whereId=${event?.params?.where?.id}`);
       if (!entry) {
         const id = event?.params?.where?.id;
         if (id == null) return;
