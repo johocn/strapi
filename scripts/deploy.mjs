@@ -123,11 +123,13 @@ ssh(
     `rm -rf ${STAGING}`
 );
 
-// 4) 校验远端 dist 已就位，然后 pm2 重启（进程由 ecosystem.config.cjs 管理，
-//    环境变量（DATABASE_*、NODE_ENV 等）已在其中定义，重启时维持，勿额外覆盖）
+// 4) 校验远端 dist 已就位，然后错峰重启（safe-restart.sh：停 vendure+nshop → strapi 以
+//    ecosystem.config.cjs 为准重建 → 等健康 → 回起 vendure → nshop，全程约 2-3 分钟。
+//    勿改回 pm2 restart 直拉——vendure 运行中启动 strapi 会顶穿 2G 内存被 OOM 杀，
+//    且 bootstrap 全量索引让重启变死循环，详见 safe-restart.sh 头部注释）
 ssh(`test -f ${REMOTE_DIR}/dist/build/index.html && echo "[deploy] 远端 admin 产物已就位"`);
 if (!SKIP_RESTART) {
-  ssh(`cd ${REMOTE_DIR} && pm2 restart ${APP_NAME} --update-env`);
+  ssh(`cd ${REMOTE_DIR} && bash scripts/safe-restart.sh`);
 } else {
   console.log("\n[deploy] 已设置 SKIP_RESTART=1，跳过重启。");
 }
@@ -136,4 +138,4 @@ if (!SKIP_RESTART) {
 ssh(`pm2 status ${APP_NAME}`);
 
 console.log(`\n[deploy] 完成。服务器：${target} 目录 ${REMOTE_DIR}，进程 ${APP_NAME}`);
-console.log(`[deploy] 验证：curl -s -o /dev/null -w '%{http_code}' http://localhost:1337/admin/`);
+console.log(`[deploy] 验证：curl -s -o /dev/null -w '%{http_code}' http://localhost:1337/（任意 HTTP 响应即健康；production 下 /admin 返回 404 属正常，不能作判据）`);
