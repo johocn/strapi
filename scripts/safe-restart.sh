@@ -8,7 +8,12 @@
 # 铁律：绝不在 vendure 运行中启动 strapi。
 #
 # 流程：停 vendure+nshop → strapi 以 ecosystem.config.cjs 为准重建（含 crash-loop 防护参数）
-#       → 轮询健康 → 回起 vendure（等健康）→ 回起 nshop → pm2 save
+#       → 轮询健康 → settle（等 bootstrap 全量索引内存峰值回落）→ 回起 vendure（等健康）→ 回起 nshop → pm2 save
+#
+# 关键实测（2026-10-14）：strapi 端口 ~28s 即开始响应，但 bootstrap 全量索引继续灌内存、
+# 峰值 ~690MB 在其后——健康探测通过后立即回起 vendure 会被顶爆（曾三连 OOM）。
+# settle 默认 90s，端口响应 + settle ≈ 120s，与「strapi 独启等 100-110s 再回起」的历史安全经验吻合。
+# 可用环境变量覆盖：STRAPI_SETTLE=120 bash scripts/safe-restart.sh
 #
 # 用法（服务器，admin 用户登录 shell）：bash /www/apps/strapi/scripts/safe-restart.sh
 # deploy.mjs 部署默认走本脚本；vendure/nshop 自身的部署/重启不受此铁律约束，勿混用。
@@ -21,6 +26,7 @@ STRAPI_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 STRAPI_URL="http://127.0.0.1:1337"
 VENDURE_URL="http://127.0.0.1:3020/admin-api"
 STRAPI_TIMEOUT=300
+STRAPI_SETTLE="${STRAPI_SETTLE:-90}"
 VENDURE_TIMEOUT=120
 POLL_INTERVAL=5
 
@@ -47,31 +53,41 @@ wait_up() { # $1=名称 $2=探测函数名 $3=超时秒
   return 1
 }
 
-echo "=== 1/5 停 vendure + nshop（释放内存给 strapi 启动）==="
+echo "=== 1/6 停 vendure + nshop（释放内存给 strapi 启动）==="
 pm2 stop vendure nshop 2>/dev/null || true
 
-echo "=== 2/5 重建 strapi（以 ecosystem.config.cjs 为准，含 crash-loop 防护参数）==="
+echo "=== 2/6 重建 strapi（以 ecosystem.config.cjs 为准，含 crash-loop 防护参数）==="
 pm2 delete strapi 2>/dev/null || true
 if ! pm2 start "$STRAPI_DIR/ecosystem.config.cjs"; then
   echo "[FATAL] strapi 启动失败（检查 ecosystem.config.cjs 语法：node -e \"require('$STRAPI_DIR/ecosystem.config.cjs')\"）"
   exit 1
 fi
 
-echo "=== 3/5 等待 strapi 健康（最长 ${STRAPI_TIMEOUT}s，bootstrap 全量索引约 110s）==="
+echo "=== 3/6 等待 strapi 健康（最长 ${STRAPI_TIMEOUT}s）==="
 if ! wait_up strapi strapi_up "$STRAPI_TIMEOUT"; then
   pm2 logs strapi --lines 30 --nostream
   echo "[HINT] vendure/nshop 保持停止；排查后手动回起：pm2 start vendure nshop"
   exit 1
 fi
 
-echo "=== 4/5 回起 vendure ==="
+echo "=== 4/6 settle ${STRAPI_SETTLE}s：等 bootstrap 全量索引内存峰值回落 ==="
+sleep "$STRAPI_SETTLE"
+if ! strapi_up; then
+  echo "[FATAL] settle 期间 strapi 失去响应（疑似启动期崩溃，参见 crash-loop 防护）"
+  pm2 logs strapi --lines 30 --nostream
+  echo "[HINT] vendure/nshop 保持停止；排查后手动回起：pm2 start vendure nshop"
+  exit 1
+fi
+free -m | awk 'NR==2{print "  内存:",$3"MB used /",$7"MB available"}'
+
+echo "=== 5/6 回起 vendure ==="
 pm2 start vendure
 if ! wait_up vendure vendure_up "$VENDURE_TIMEOUT"; then
   echo "[HINT] strapi 已健康；vendure 异常请单独排查：pm2 logs vendure"
   exit 1
 fi
 
-echo "=== 5/5 回起 nshop + pm2 save ==="
+echo "=== 6/6 回起 nshop + pm2 save ==="
 pm2 start nshop
 pm2 save
 
