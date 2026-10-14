@@ -16,6 +16,21 @@ const extractEntryId = (event: any) => {
   );
 };
 
+// 软删行被 zhao-common 全局过滤（beforeFindOne 注入 deletedAt:null）拦截后，
+// db.query.findOne 读不到该行 → 用 knex 直连（不经过 lifecycles）读取 documentId
+const readDocumentIdRaw = async (strapi: any, uid: string, id: number | string): Promise<string | null> => {
+  try {
+    const meta: any = strapi.db.metadata.get(uid);
+    const column = meta?.attributes?.documentId?.columnName || "document_id";
+    const table = meta?.tableName;
+    if (!table) return null;
+    const row = await strapi.db.connection(table).where(column, id).first(column);
+    return row?.[column] ?? null;
+  } catch {
+    return null;
+  }
+};
+
 const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
   strapi.log.info("[zhao-search] 插件已加载");
 
@@ -29,22 +44,19 @@ const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
     },
     async afterUpdate(event: any) {
       if (!WATCHED.includes(event.model.uid)) return;
-      // 诊断日志（软删未移除排查）：记录 afterUpdate 的 result 形态与 params 关键项
-      strapi.log.info(
-        `[zhao-search] afterUpdate ${event.model.uid} result=${JSON.stringify({
-          id: event.result?.id,
-          documentId: event.result?.documentId,
-          locale: event.result?.locale,
-          status: event.result?.status,
-          publishedAt: event.result?.publishedAt,
-          deletedAt: event.result?.deletedAt,
-        })} keys=${event.result ? Object.keys(event.result).join(",") : "NULL"}` +
-          ` where=${JSON.stringify(event?.params?.where ?? null)}` +
-          ` filters=${JSON.stringify(event?.params?.filters ?? null)}` +
-          ` select=${JSON.stringify(event?.params?.select ?? null)}` +
-          ` populate=${event?.params?.populate ? "yes" : "no"}`,
-      );
-      await contentSync().syncOne(event.model.uid, event.result);
+      const entry = event.result;
+      if (!entry) {
+        // 软删除场景：zhao-common 的全局软删过滤会让 db.update 收尾 findOne 查不到刚软删的行，
+        // 导致 event.result 为 null。兜底：raw 读取 documentId，从索引移除该文档。
+        const id = event?.params?.where?.id;
+        if (id == null) return;
+        const documentId = await readDocumentIdRaw(strapi, event.model.uid, id);
+        if (!documentId) return;
+        strapi.log.info(`[zhao-search] afterUpdate result 为空（软删过滤），按 documentId 移除索引 ${documentId}`);
+        await contentSync().removeOne(event.model.uid, documentId);
+        return;
+      }
+      await contentSync().syncOne(event.model.uid, entry);
     },
     async afterDelete(event: any) {
       if (!WATCHED.includes(event.model.uid)) return;

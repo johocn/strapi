@@ -153,6 +153,18 @@ const extractEntryId = (event) => {
   const where = event?.params?.where ?? {};
   return where.documentId ?? where.id ?? event?.params?.documentId ?? event?.result?.documentId ?? event?.result?.id;
 };
+const readDocumentIdRaw = async (strapi, uid, id) => {
+  try {
+    const meta = strapi.db.metadata.get(uid);
+    const column = meta?.attributes?.documentId?.columnName || "document_id";
+    const table = meta?.tableName;
+    if (!table) return null;
+    const row = await strapi.db.connection(table).where(column, id).first(column);
+    return row?.[column] ?? null;
+  } catch {
+    return null;
+  }
+};
 const bootstrap = async ({ strapi }) => {
   strapi.log.info("[zhao-search] 插件已加载");
   const contentSync2 = () => strapi.plugin("zhao-search").service("content-sync");
@@ -163,17 +175,17 @@ const bootstrap = async ({ strapi }) => {
     },
     async afterUpdate(event) {
       if (!WATCHED.includes(event.model.uid)) return;
-      strapi.log.info(
-        `[zhao-search] afterUpdate ${event.model.uid} result=${JSON.stringify({
-          id: event.result?.id,
-          documentId: event.result?.documentId,
-          locale: event.result?.locale,
-          status: event.result?.status,
-          publishedAt: event.result?.publishedAt,
-          deletedAt: event.result?.deletedAt
-        })} keys=${event.result ? Object.keys(event.result).join(",") : "NULL"} where=${JSON.stringify(event?.params?.where ?? null)} filters=${JSON.stringify(event?.params?.filters ?? null)} select=${JSON.stringify(event?.params?.select ?? null)} populate=${event?.params?.populate ? "yes" : "no"}`
-      );
-      await contentSync2().syncOne(event.model.uid, event.result);
+      const entry = event.result;
+      if (!entry) {
+        const id = event?.params?.where?.id;
+        if (id == null) return;
+        const documentId = await readDocumentIdRaw(strapi, event.model.uid, id);
+        if (!documentId) return;
+        strapi.log.info(`[zhao-search] afterUpdate result 为空（软删过滤），按 documentId 移除索引 ${documentId}`);
+        await contentSync2().removeOne(event.model.uid, documentId);
+        return;
+      }
+      await contentSync2().syncOne(event.model.uid, entry);
     },
     async afterDelete(event) {
       if (!WATCHED.includes(event.model.uid)) return;
