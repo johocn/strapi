@@ -165,6 +165,16 @@ const bootstrap = async ({ strapi }) => {
     },
     async afterUpdate(event) {
       if (!WATCHED.includes(event.model.uid)) return;
+      strapi.log.info(
+        `[zhao-search] afterUpdate ${event.model.uid} result=${JSON.stringify({
+          id: event.result?.id,
+          documentId: event.result?.documentId,
+          locale: event.result?.locale,
+          status: event.result?.status,
+          publishedAt: event.result?.publishedAt,
+          deletedAt: event.result?.deletedAt
+        })} keys=${event.result ? Object.keys(event.result).join(",") : "NULL"}`
+      );
       await contentSync2().syncOne(event.model.uid, event.result);
     },
     async afterDelete(event) {

@@ -29,6 +29,17 @@ const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
     },
     async afterUpdate(event: any) {
       if (!WATCHED.includes(event.model.uid)) return;
+      // 诊断日志（软删未移除排查）：记录 afterUpdate 的 result 形态与 keys
+      strapi.log.info(
+        `[zhao-search] afterUpdate ${event.model.uid} result=${JSON.stringify({
+          id: event.result?.id,
+          documentId: event.result?.documentId,
+          locale: event.result?.locale,
+          status: event.result?.status,
+          publishedAt: event.result?.publishedAt,
+          deletedAt: event.result?.deletedAt,
+        })} keys=${event.result ? Object.keys(event.result).join(",") : "NULL"}`,
+      );
       await contentSync().syncOne(event.model.uid, event.result);
     },
     async afterDelete(event: any) {
