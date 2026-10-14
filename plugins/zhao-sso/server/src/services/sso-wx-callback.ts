@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import axios from "axios";
 import type { Core } from "@strapi/strapi";
 import { parseXml, buildXml } from "../utils/wechat-xml";
 
@@ -113,6 +114,47 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         return `<xml>${head()}<MsgType><![CDATA[transfer_customer_service]]></MsgType></xml>`;
       default:
         return buildTextReply(openid, toUser, rule.text || "");
+    }
+  }
+
+  /**
+   * 转调 vendure 购物助手决策接口（POST /shop-api/wechat-assistant/handle）：
+   * 关键字规则未命中的文本消息交给购物助手处理（商品搜索/下单决策），
+   * 返回组装好的被动回复 XML；未配置 WX_ASSISTANT_URL / 超时 / 异常 / 不处理返回 null。
+   * 受微信回调 5 秒窗口约束：超时 3.5s，转调失败不阻塞回调（返回 success 静默）。
+   */
+  async function askShoppingAssistant(
+    text: string,
+    openid: string,
+    toUser: string,
+    msgId?: string,
+    createTime?: string,
+  ): Promise<string | null> {
+    const url = process.env.WX_ASSISTANT_URL;
+    if (!url) return null;
+    const secret = process.env.ZHAO_SEARCH_SHARED_SECRET;
+    try {
+      const resp = await axios.post(
+        url,
+        {
+          openid,
+          text,
+          msgId: msgId || undefined,
+          createTime: createTime ? Number(createTime) || undefined : undefined,
+        },
+        { timeout: 3500, headers: secret ? { "x-zhao-secret": secret } : {} },
+      );
+      const data = resp?.data || {};
+      if (data.kind === "news" && Array.isArray(data.articles) && data.articles.length) {
+        return buildReplyXml({ reply_type: "news", articles: data.articles.slice(0, 8) }, openid, toUser);
+      }
+      if (data.kind === "text" && typeof data.content === "string" && data.content) {
+        return buildTextReply(openid, toUser, data.content);
+      }
+      return null;
+    } catch (e: any) {
+      strapi.log.warn(`[zhao-sso:wx-callback] shopping assistant call failed: ${e.message}`);
+      return null;
     }
   }
 
@@ -248,6 +290,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         if (rule && ruleUsable(rule)) {
           return buildReplyXml(rule, openid, toUser);
         }
+        // 关键字规则未命中 → 转调 vendure 购物助手（搜索/下单，返回被动回复 XML）
+        const assistantXml = await askShoppingAssistant(text, openid, toUser, msg.MsgId, msg.CreateTime);
+        if (assistantXml) return assistantXml;
         return "success";
       }
 

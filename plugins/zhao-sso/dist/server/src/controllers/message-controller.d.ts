@@ -13,6 +13,8 @@ declare const _default: ({ strapi }: {
     getJob(ctx: any): Promise<void>;
     /** 手动单发：立即 buildJob + sendJob */
     sendNow(ctx: any): Promise<void>;
+    /** 服务间单发（app_code+app_secret 鉴权）：供 Vendure 等业务后端调用，触达目标由 SSO 按绑定表解析 openid */
+    apiSend(ctx: any): Promise<void>;
     /** 批量发送：按用户 id 列表 or 筛选，逐个 buildJob+sendJob */
     sendBatch(ctx: any): Promise<void>;
     /** 失败重试 */

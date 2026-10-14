@@ -1,43 +1,38 @@
-var __create = Object.create;
-var __defProp = Object.defineProperty;
-var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
-var __getOwnPropNames = Object.getOwnPropertyNames;
-var __getProtoOf = Object.getPrototypeOf;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __export = (target, all) => {
-  for (var name in all)
-    __defProp(target, name, { get: all[name], enumerable: true });
-};
-var __copyProps = (to, from, except, desc) => {
-  if (from && typeof from === "object" || typeof from === "function") {
-    for (let key of __getOwnPropNames(from))
-      if (!__hasOwnProp.call(to, key) && key !== except)
-        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+"use strict";
+Object.defineProperties(exports, { __esModule: { value: true }, [Symbol.toStringTag]: { value: "Module" } });
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const uuid = require("uuid");
+const crypto = require("crypto");
+const axios = require("axios");
+const fs = require("fs/promises");
+const _interopDefault = (e) => e && e.__esModule ? e : { default: e };
+function _interopNamespace(e) {
+  if (e && e.__esModule) return e;
+  const n = Object.create(null, { [Symbol.toStringTag]: { value: "Module" } });
+  if (e) {
+    for (const k in e) {
+      if (k !== "default") {
+        const d = Object.getOwnPropertyDescriptor(e, k);
+        Object.defineProperty(n, k, d.get ? d : {
+          enumerable: true,
+          get: () => e[k]
+        });
+      }
+    }
   }
-  return to;
-};
-var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
-  // If the importer is in node compatibility mode or this is not an ESM
-  // file that has been converted to a CommonJS file using a Babel-
-  // compatible transform (i.e. "__esModule" has not been set), then set
-  // "default" to the CommonJS "module.exports" for node compatibility.
-  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
-  mod
-));
-var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
-
-// server/src/index.ts
-var index_exports = {};
-__export(index_exports, {
-  default: () => index_default
-});
-module.exports = __toCommonJS(index_exports);
-
-// server/src/policies/sso-authenticated.ts
-var ssoAuthenticated = async (policyContext, config, { strapi }) => {
+  n.default = e;
+  return Object.freeze(n);
+}
+const bcrypt__default = /* @__PURE__ */ _interopDefault(bcrypt);
+const jwt__default = /* @__PURE__ */ _interopDefault(jwt);
+const crypto__namespace = /* @__PURE__ */ _interopNamespace(crypto);
+const axios__default = /* @__PURE__ */ _interopDefault(axios);
+const fs__default = /* @__PURE__ */ _interopDefault(fs);
+const ssoAuthenticated = async (policyContext, config2, { strapi }) => {
   const authHeader = policyContext.request?.headers?.authorization;
   const reject401 = () => {
-    const err = new Error("\u672A\u767B\u5F55\u6216\u767B\u5F55\u5DF2\u8FC7\u671F");
+    const err = new Error("未登录或登录已过期");
     err.status = 401;
     throw err;
   };
@@ -68,67 +63,60 @@ var ssoAuthenticated = async (policyContext, config, { strapi }) => {
     reject401();
   }
 };
-var sso_authenticated_default = ssoAuthenticated;
-
-// server/src/register.ts
-var register = ({ strapi }) => {
+const register = ({ strapi }) => {
   const policyRegistry = strapi.get("policies");
   policyRegistry.add("plugin::zhao-sso", {
-    "sso-authenticated": sso_authenticated_default
+    "sso-authenticated": ssoAuthenticated
   });
   strapi.log.info("[zhao-sso] Plugin registered, policies added to registry");
 };
-var register_default = register;
-
-// server/src/bootstrap.ts
-var import_bcryptjs = __toESM(require("bcryptjs"));
-var bootstrap = async ({ strapi }) => {
+const bootstrap = async ({ strapi }) => {
   strapi.log.info("[zhao-sso] Plugin bootstrapped");
   try {
     const userSvc = strapi.service("plugin::zhao-sso.sso-user");
     await userSvc?.syncSequence?.();
   } catch (e) {
-    strapi.log.warn(`[zhao-sso] \u542F\u52A8\u5E8F\u5217\u81EA\u68C0\u5931\u8D25: ${e?.message}`);
+    strapi.log.warn(`[zhao-sso] 启动序列自检失败: ${e?.message}`);
   }
   const TEMPLATE_UID_ACT = "plugin::zhao-sso.msg-template";
   const VERSION_UID_ACT = "plugin::zhao-sso.msg-template-version";
   const DEFAULT_SOP_TEMPLATES = [
     // act_confirm 绑定「会议报名成功通知」模板；字段映射与 signup 埋点 params 对应（const12 会议资料为常量不填）
-    { code: "act_confirm", name: "\u6D3B\u52A8\u62A5\u540D\u6210\u529F\u786E\u8BA4", desc: "\u62A5\u540D\u6210\u529F\u7ACB\u5373\u53D1\u9001", wxTemplateId: "EBB10k3Lpl-u8su8dFeK5Y_E8F88hn93FTzhtXeAsgQ", wxTemplateFields: [
+    { code: "act_confirm", name: "活动报名成功确认", desc: "报名成功立即发送", wxTemplateId: "EBB10k3Lpl-u8su8dFeK5Y_E8F88hn93FTzhtXeAsgQ", wxTemplateFields: [
       { name: "thing2", key: "activityName" },
       { name: "thing4", key: "activityLocation" },
       { name: "time6", key: "meetingTime" }
     ] },
     // 以下 4 个活动提醒模板：wxTemplateId 需运营在公众号申请后于后台 msg-template 填入；这里先预填与 act_confirm 一致的字段结构（字段 key 可按实际申请到的微信模板在后台微调），让后台填好 ID 后即可点发，无需重建 dist 改代码。
-    { code: "act_before", name: "\u6D3B\u52A8\u5F00\u59CB\u524D\u63D0\u9192", desc: "\u6D3B\u52A8\u5F00\u59CB\u524D 24h \u63D0\u9192", wxTemplateFields: [
+    { code: "act_before", name: "活动开始前提醒", desc: "活动开始前 24h 提醒", wxTemplateFields: [
       { name: "thing2", key: "activityName" },
       { name: "thing4", key: "activityLocation" },
       { name: "time6", key: "meetingTime" }
     ] },
-    { code: "act_receipt", name: "\u6D3B\u52A8\u7ED3\u675F\u56DE\u6267\uFF08\u611F\u8C22+\u8BC4\u4EF7\u9080\u8BF7\uFF09", desc: "\u6D3B\u52A8\u7ED3\u675F\u5230\u573A\u7528\u6237\u56DE\u6267", wxTemplateFields: [
+    { code: "act_receipt", name: "活动结束回执（感谢+评价邀请）", desc: "活动结束到场用户回执", wxTemplateFields: [
       { name: "thing2", key: "activityName" },
       { name: "thing4", key: "activityLocation" },
       { name: "time6", key: "meetingTime" }
     ] },
-    { code: "act_repurchase", name: "\u590D\u8D2D/\u8F6C\u4ECB\u9080\u8BF7", desc: "\u6D3B\u52A8\u7ED3\u675F\u5230\u573A\u7528\u6237\u6B21\u65E5\u590D\u8D2D/\u8F6C\u4ECB\u89E6\u8FBE", wxTemplateFields: [
+    { code: "act_repurchase", name: "复购/转介邀请", desc: "活动结束到场用户次日复购/转介触达", wxTemplateFields: [
       { name: "thing2", key: "activityName" },
       { name: "thing4", key: "activityLocation" },
       { name: "time6", key: "meetingTime" }
     ] },
-    { code: "act_noshow_revisit", name: "\u672A\u5230\u573A\u633D\u56DE", desc: "\u6D3B\u52A8\u7ED3\u675F\u672A\u5230\u573A\u7528\u6237\u6B21\u65E5\u633D\u56DE", wxTemplateFields: [
+    { code: "act_noshow_revisit", name: "未到场挽回", desc: "活动结束未到场用户次日挽回", wxTemplateFields: [
       { name: "thing2", key: "activityName" },
       { name: "thing4", key: "activityLocation" },
       { name: "time6", key: "meetingTime" }
     ] },
-    { code: "admin_notify", name: "\u624B\u52A8SOP\u5F85\u529E\u7BA1\u7406\u5458\u5FAE\u4FE1\u63D0\u9192", desc: "\u751F\u6210\u624B\u52A8SOP\u5F85\u529E\u65F6\u63A8\u9001\u7ED9\u7BA1\u7406\u5458" },
+    { code: "admin_notify", name: "手动SOP待办管理员微信提醒", desc: "生成手动SOP待办时推送给管理员" },
     // ===== 外卖订单类模板（服务间 API /v1/msg/template-send 使用） =====
     // wxTemplateId/wxTemplateFields 按公众号实际申领模板配置（2026-10-08 经 get_all_private_template 核对）：
     // 购买成功通知/订单取消通知/售后工单处理提醒；待付款提醒模板未申领（ID 留空，发送前置拦截不生效）。
     // params 键与 Vendure campus-notify 对应：orderCode/itemName/amount/payMethod/refundAmount/afterSaleType
     {
       code: "waimai_order_created",
-      name: "\u5916\u5356\u8BA2\u5355\u4E0B\u5355\u6210\u529F",
-      desc: "\u7528\u6237\u652F\u4ED8\u6210\u529F\u540E\u63A8\u9001\uFF08\u5FAE\u4FE1\u6A21\u677F\uFF1A\u8D2D\u4E70\u6210\u529F\u901A\u77E5\uFF09",
+      name: "外卖订单下单成功",
+      desc: "用户支付成功后推送（微信模板：购买成功通知）",
       wxTemplateId: "1WxNQnpfKUhKL_uDhIodrkRHYO_iRKEmAekQ05VyiHE",
       wxTemplateFields: [
         { name: "character_string5", key: "orderCode" },
@@ -137,15 +125,15 @@ var bootstrap = async ({ strapi }) => {
         { name: "phrase3", key: "payMethod" }
       ]
     },
-    { code: "waimai_order_paid_reminder", name: "\u5916\u5356\u8BA2\u5355\u5F85\u4ED8\u6B3E\u63D0\u9192", desc: "\u652F\u4ED8\u8D85\u65F6\u524D\u63D0\u9192\uFF08+10min\uFF09\uFF1B\u5FAE\u4FE1\u6A21\u677F\u672A\u7533\u9886\uFF0CID \u540E\u8865", wxTemplateFields: [
+    { code: "waimai_order_paid_reminder", name: "外卖订单待付款提醒", desc: "支付超时前提醒（+10min）；微信模板未申领，ID 后补", wxTemplateFields: [
       { name: "character_string1", key: "orderCode" },
       { name: "thing1", key: "status" },
       { name: "time2", key: "time" }
     ] },
     {
       code: "waimai_order_cancelled",
-      name: "\u5916\u5356\u8BA2\u5355\u53D6\u6D88\u901A\u77E5",
-      desc: "\u8BA2\u5355\u53D6\u6D88/\u8D85\u65F6\u5173\u5355\u540E\u63A8\u9001\uFF08\u5FAE\u4FE1\u6A21\u677F\uFF1A\u8BA2\u5355\u53D6\u6D88\u901A\u77E5\uFF09",
+      name: "外卖订单取消通知",
+      desc: "订单取消/超时关单后推送（微信模板：订单取消通知）",
       wxTemplateId: "OlQRYWzHYtbvNsIiyM4SBR09h41JgXqmNFlprjRunVY",
       wxTemplateFields: [
         { name: "character_string1", key: "orderCode" },
@@ -155,8 +143,8 @@ var bootstrap = async ({ strapi }) => {
     },
     {
       code: "waimai_after_sales",
-      name: "\u5916\u5356\u552E\u540E\u8FDB\u5EA6\u901A\u77E5",
-      desc: "\u552E\u540E\u72B6\u6001\u53D8\u66F4\u63A8\u9001\uFF08\u5FAE\u4FE1\u6A21\u677F\uFF1A\u552E\u540E\u5DE5\u5355\u5904\u7406\u63D0\u9192\uFF09",
+      name: "外卖售后进度通知",
+      desc: "售后状态变更推送（微信模板：售后工单处理提醒）",
       wxTemplateId: "iQrVX8ZHuCtgQ2R8VzC6MThyRhJXCViIUKAki6IrUnw",
       wxTemplateFields: [
         { name: "character_string9", key: "orderCode" },
@@ -168,7 +156,7 @@ var bootstrap = async ({ strapi }) => {
   for (const t of DEFAULT_SOP_TEMPLATES) {
     let tpl = await strapi.db.query(TEMPLATE_UID_ACT).findOne({ where: { code: t.code } });
     if (!tpl) {
-      tpl = await strapi.db.query(TEMPLATE_UID_ACT).create({ data: { code: t.code, name: t.name, provider: "wechat", content: "\uFF08shenglin SOP \u6A21\u677F\uFF09", isEnabled: true, description: t.desc, wxTemplateId: t.wxTemplateId || null, wxTemplateFields: t.wxTemplateFields || null } });
+      tpl = await strapi.db.query(TEMPLATE_UID_ACT).create({ data: { code: t.code, name: t.name, provider: "wechat", content: "（shenglin SOP 模板）", isEnabled: true, description: t.desc, wxTemplateId: t.wxTemplateId || null, wxTemplateFields: t.wxTemplateFields || null } });
       strapi.log.info(`[zhao-sso] SOP template seeded: ${t.code}`);
     } else {
       const patch = {};
@@ -187,10 +175,10 @@ var bootstrap = async ({ strapi }) => {
   }
   const rawSecret = process.env.SSO_DEFAULT_APP_SECRET;
   if (!rawSecret) {
-    strapi.log.warn("[zhao-sso] SSO_DEFAULT_APP_SECRET \u672A\u914D\u7F6E,\u8DF3\u8FC7\u9ED8\u8BA4\u5E94\u7528\u521B\u5EFA(\u8BF7\u5728 .env \u4E2D\u8BBE\u7F6E)");
+    strapi.log.warn("[zhao-sso] SSO_DEFAULT_APP_SECRET 未配置,跳过默认应用创建(请在 .env 中设置)");
     return;
   }
-  const hashedSecret = await import_bcryptjs.default.hash(rawSecret, 10);
+  const hashedSecret = await bcrypt__default.default.hash(rawSecret, 10);
   const courseApp = await strapi.db.query("plugin::zhao-sso.sso-app").findOne({
     where: { app_code: "course" }
   });
@@ -198,7 +186,7 @@ var bootstrap = async ({ strapi }) => {
     await strapi.db.query("plugin::zhao-sso.sso-app").create({
       data: {
         app_code: "course",
-        app_name: "\u8BFE\u7A0B\u5E94\u7528",
+        app_name: "课程应用",
         app_secret: hashedSecret,
         redirect_uris: ["http://localhost:*"],
         allowed_grant_types: ["authorization_code", "refresh_token"],
@@ -214,7 +202,7 @@ var bootstrap = async ({ strapi }) => {
     await strapi.db.query("plugin::zhao-sso.sso-app").create({
       data: {
         app_code: "default",
-        app_name: "\u9ED8\u8BA4\u5E94\u7528",
+        app_name: "默认应用",
         app_secret: hashedSecret,
         redirect_uris: ["http://localhost:*"],
         allowed_grant_types: ["authorization_code", "refresh_token"],
@@ -230,7 +218,7 @@ var bootstrap = async ({ strapi }) => {
     await strapi.db.query("plugin::zhao-sso.sso-app").create({
       data: {
         app_code: "wealth",
-        app_name: "\u7406\u8D22\u5E94\u7528",
+        app_name: "理财应用",
         app_secret: hashedSecret,
         redirect_uris: ["http://localhost:*"],
         allowed_grant_types: ["authorization_code", "refresh_token"],
@@ -246,7 +234,7 @@ var bootstrap = async ({ strapi }) => {
     await strapi.db.query("plugin::zhao-sso.sso-app").create({
       data: {
         app_code: "e-joho-app",
-        app_name: "E-Joho \u5E94\u7528",
+        app_name: "E-Joho 应用",
         app_secret: hashedSecret,
         redirect_uris: ["http://localhost:*"],
         allowed_grant_types: ["authorization_code", "refresh_token"],
@@ -256,8 +244,8 @@ var bootstrap = async ({ strapi }) => {
     strapi.log.info("[zhao-sso] Default app created (app_code=e-joho-app)");
   }
   const vendureApps = [
-    { app_code: "vendure-default", app_name: "Vendure \u5546\u57CE\u9ED8\u8BA4\u79DF\u6237", rawSecret: "default-app-secret" },
-    { app_code: "vendure-shop-a", app_name: "Vendure \u5546\u57CE shop-a \u79DF\u6237", rawSecret: "shop-a-app-secret" }
+    { app_code: "vendure-default", app_name: "Vendure 商城默认租户", rawSecret: "default-app-secret" },
+    { app_code: "vendure-shop-a", app_name: "Vendure 商城 shop-a 租户", rawSecret: "shop-a-app-secret" }
   ];
   const vendureRedirectUris = ["https://e.joho.cn/*", "http://localhost:*"];
   for (const { app_code, app_name, rawSecret: rawSecret2 } of vendureApps) {
@@ -275,7 +263,7 @@ var bootstrap = async ({ strapi }) => {
         strapi.log.info(`[zhao-sso] Vendure app redirect_uris updated (app_code=${app_code})`);
       }
     } else {
-      const vendureSecret = await import_bcryptjs.default.hash(rawSecret2, 10);
+      const vendureSecret = await bcrypt__default.default.hash(rawSecret2, 10);
       await strapi.db.query("plugin::zhao-sso.sso-app").create({
         data: {
           app_code,
@@ -313,11 +301,11 @@ var bootstrap = async ({ strapi }) => {
       strapi.log.info(`[zhao-sso] youshop app redirect_uris updated (app_code=${YOUSHOP_APP_CODE})`);
     }
   } else {
-    const youshopSecret = await import_bcryptjs.default.hash("youshop-app-secret", 10);
+    const youshopSecret = await bcrypt__default.default.hash("youshop-app-secret", 10);
     await strapi.db.query("plugin::zhao-sso.sso-app").create({
       data: {
         app_code: YOUSHOP_APP_CODE,
-        app_name: "Vendure \u5546\u57CE youshop \u79DF\u6237",
+        app_name: "Vendure 商城 youshop 租户",
         app_secret: youshopSecret,
         redirect_uris: YOUSHOP_REDIRECT_URIS,
         allowed_grant_types: ["authorization_code", "refresh_token"],
@@ -328,10 +316,10 @@ var bootstrap = async ({ strapi }) => {
   }
   const RULE_UID2 = "plugin::zhao-sso.sop-rule";
   const DEFAULT_SOP_RULES = [
-    { code: "act_confirm", name: "\u6D3B\u52A8\u62A5\u540D\u6210\u529F\u786E\u8BA4", source: "event", event: "activity.signup", templateCode: "act_confirm", scene: "activity.confirm", delayMinutes: 0, enabled: true, description: "\u62A5\u540D\u6210\u529F\u7ACB\u5373\u53D1\u9001" },
-    { code: "act_before", name: "\u6D3B\u52A8\u5F00\u59CB\u524D\u63D0\u9192", source: "event", event: "activity.signup", templateCode: "act_before", scene: "activity.before", delayMinutes: 0, enabled: true, description: "\u4E1A\u52A1\u6309\u6D3B\u52A8\u5F00\u59CB\u65F6\u95F4\u6392\u671F\u8986\u76D6\u5B9A\u65F6" },
-    { code: "act_noshow_revisit", name: "\u672A\u5230\u573A\u56DE\u8BBF", source: "event", event: "activity.closed", templateCode: "act_noshow_revisit", scene: "activity.noshow", delayMinutes: 0, enabled: true, description: "\u6D3B\u52A8\u7ED3\u675F\u540E\u5BF9\u672A\u7B7E\u5230\u8005\u56DE\u8BBF" },
-    { code: "course_d7", name: "\u8BFE\u540E7\u5929SOP", source: "event", event: "course.enrolled", templateCode: "course_d7", scene: "course.d7", delayMinutes: 0, enabled: true, description: "\u8D2D\u8BFE/\u62A5\u540D\u540E\u6309 1/3/7 \u5929\u6392\u671F\u53D1\u9001" }
+    { code: "act_confirm", name: "活动报名成功确认", source: "event", event: "activity.signup", templateCode: "act_confirm", scene: "activity.confirm", delayMinutes: 0, enabled: true, description: "报名成功立即发送" },
+    { code: "act_before", name: "活动开始前提醒", source: "event", event: "activity.signup", templateCode: "act_before", scene: "activity.before", delayMinutes: 0, enabled: true, description: "业务按活动开始时间排期覆盖定时" },
+    { code: "act_noshow_revisit", name: "未到场回访", source: "event", event: "activity.closed", templateCode: "act_noshow_revisit", scene: "activity.noshow", delayMinutes: 0, enabled: true, description: "活动结束后对未签到者回访" },
+    { code: "course_d7", name: "课后7天SOP", source: "event", event: "course.enrolled", templateCode: "course_d7", scene: "course.d7", delayMinutes: 0, enabled: true, description: "购课/报名后按 1/3/7 天排期发送" }
   ];
   for (const rule of DEFAULT_SOP_RULES) {
     const existing = await strapi.db.query(RULE_UID2).findOne({ where: { code: rule.code } });
@@ -353,10 +341,7 @@ var bootstrap = async ({ strapi }) => {
     }
   }
 };
-var bootstrap_default = bootstrap;
-
-// server/src/config.ts
-var config_default = {
+const config = {
   default: {
     jwt: {
       algorithm: "HS256",
@@ -387,826 +372,444 @@ var config_default = {
     }
   }
 };
-
-// server/src/content-types/sso-user/schema.json
-var schema_default = {
-  kind: "collectionType",
-  collectionName: "sso_users",
-  info: {
-    singularName: "sso-user",
-    pluralName: "sso-users",
-    displayName: "SSO User"
-  },
-  options: { draftAndPublish: false },
-  attributes: {
-    uuid: { type: "string", unique: true, required: true },
-    username: { type: "string", unique: true },
-    mobile: { type: "string", unique: true },
-    email: { type: "email", unique: true },
-    password_hash: { type: "string" },
-    avatar_url: { type: "string" },
-    nickname: { type: "string" },
-    status: { type: "enumeration", enum: ["active", "blocked", "inactive", "virtual"], default: "active", required: true },
-    register_channel: { type: "string" },
-    last_login_channel: { type: "string" },
-    invite_code_used: { type: "string" },
-    invited_by: { type: "integer" },
-    utm_source: { type: "string" },
-    utm_medium: { type: "string" },
-    utm_campaign: { type: "string" },
-    last_login_at: { type: "datetime" },
-    login_count: { type: "integer", default: 0, required: true },
-    password_changed_at: { type: "datetime" },
-    third_party_bindings: { type: "relation", relation: "oneToMany", target: "plugin::zhao-sso.sso-third-party-binding", mappedBy: "user" }
-  }
+const kind$r = "collectionType";
+const collectionName$r = "sso_users";
+const info$r = { "singularName": "sso-user", "pluralName": "sso-users", "displayName": "SSO User" };
+const options$r = { "draftAndPublish": false };
+const attributes$r = { "uuid": { "type": "string", "unique": true, "required": true }, "username": { "type": "string", "unique": true }, "mobile": { "type": "string", "unique": true }, "email": { "type": "email", "unique": true }, "password_hash": { "type": "string" }, "avatar_url": { "type": "string" }, "nickname": { "type": "string" }, "status": { "type": "enumeration", "enum": ["active", "blocked", "inactive", "virtual"], "default": "active", "required": true }, "register_channel": { "type": "string" }, "last_login_channel": { "type": "string" }, "invite_code_used": { "type": "string" }, "invited_by": { "type": "integer" }, "utm_source": { "type": "string" }, "utm_medium": { "type": "string" }, "utm_campaign": { "type": "string" }, "last_login_at": { "type": "datetime" }, "login_count": { "type": "integer", "default": 0, "required": true }, "password_changed_at": { "type": "datetime" }, "third_party_bindings": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-sso.sso-third-party-binding", "mappedBy": "user" } };
+const schema$r = {
+  kind: kind$r,
+  collectionName: collectionName$r,
+  info: info$r,
+  options: options$r,
+  attributes: attributes$r
 };
-
-// server/src/content-types/sso-user/index.ts
-var sso_user_default = { schema: schema_default };
-
-// server/src/content-types/sso-third-party-binding/schema.json
-var schema_default2 = {
-  kind: "collectionType",
-  collectionName: "sso_third_party_bindings",
-  info: {
-    singularName: "sso-third-party-binding",
-    pluralName: "sso-third-party-bindings",
-    displayName: "SSO Third Party Binding"
-  },
-  options: { draftAndPublish: false },
-  attributes: {
-    user: { type: "relation", relation: "manyToOne", target: "plugin::zhao-sso.sso-user", inversedBy: "third_party_bindings" },
-    provider: { type: "string", required: true },
-    provider_user_id: { type: "string", required: true },
-    provider_union_id: { type: "string" },
-    provider_nickname: { type: "string" },
-    provider_avatar: { type: "string" },
-    provider_data: { type: "json" },
-    bound_at: { type: "datetime", required: true },
-    subscribe: { type: "integer" },
-    subscribe_at: { type: "datetime" },
-    subscribe_check_at: { type: "datetime" }
-  }
+const ssoUser$1 = { schema: schema$r };
+const kind$q = "collectionType";
+const collectionName$q = "sso_third_party_bindings";
+const info$q = { "singularName": "sso-third-party-binding", "pluralName": "sso-third-party-bindings", "displayName": "SSO Third Party Binding" };
+const options$q = { "draftAndPublish": false };
+const attributes$q = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user", "inversedBy": "third_party_bindings" }, "provider": { "type": "string", "required": true }, "provider_user_id": { "type": "string", "required": true }, "provider_union_id": { "type": "string" }, "provider_nickname": { "type": "string" }, "provider_avatar": { "type": "string" }, "provider_data": { "type": "json" }, "bound_at": { "type": "datetime", "required": true }, "subscribe": { "type": "integer" }, "subscribe_at": { "type": "datetime" }, "subscribe_check_at": { "type": "datetime" } };
+const schema$q = {
+  kind: kind$q,
+  collectionName: collectionName$q,
+  info: info$q,
+  options: options$q,
+  attributes: attributes$q
 };
-
-// server/src/content-types/sso-third-party-binding/index.ts
-var sso_third_party_binding_default = { schema: schema_default2 };
-
-// server/src/content-types/sso-app/schema.json
-var schema_default3 = {
-  kind: "collectionType",
-  collectionName: "sso_apps",
-  info: {
-    singularName: "sso-app",
-    pluralName: "sso-apps",
-    displayName: "SSO App"
-  },
-  options: { draftAndPublish: false },
-  attributes: {
-    app_code: { type: "string", unique: true, required: true },
-    app_name: { type: "string", required: true },
-    app_secret: { type: "string", required: true },
-    redirect_uris: { type: "json", required: true },
-    allowed_grant_types: { type: "json", required: true },
-    is_active: { type: "boolean", default: true, required: true },
-    description: { type: "string" }
-  }
+const ssoThirdPartyBinding = { schema: schema$q };
+const kind$p = "collectionType";
+const collectionName$p = "sso_apps";
+const info$p = { "singularName": "sso-app", "pluralName": "sso-apps", "displayName": "SSO App" };
+const options$p = { "draftAndPublish": false };
+const attributes$p = { "app_code": { "type": "string", "unique": true, "required": true }, "app_name": { "type": "string", "required": true }, "app_secret": { "type": "string", "required": true }, "redirect_uris": { "type": "json", "required": true }, "allowed_grant_types": { "type": "json", "required": true }, "is_active": { "type": "boolean", "default": true, "required": true }, "description": { "type": "string" } };
+const schema$p = {
+  kind: kind$p,
+  collectionName: collectionName$p,
+  info: info$p,
+  options: options$p,
+  attributes: attributes$p
 };
-
-// server/src/content-types/sso-app/index.ts
-var sso_app_default = { schema: schema_default3 };
-
-// server/src/content-types/sso-channel/schema.json
-var schema_default4 = {
-  kind: "collectionType",
-  collectionName: "sso_channels",
-  info: {
-    singularName: "sso-channel",
-    pluralName: "sso-channels",
-    displayName: "SSO Channel"
-  },
-  options: { draftAndPublish: false },
-  attributes: {
-    channel_code: { type: "string", unique: true, required: true },
-    channel_name: { type: "string", required: true },
-    channel_type: { type: "string", required: true },
-    utm_template: { type: "json" },
-    is_active: { type: "boolean", default: true, required: true },
-    description: { type: "string" }
-  }
+const ssoApp$1 = { schema: schema$p };
+const kind$o = "collectionType";
+const collectionName$o = "sso_channels";
+const info$o = { "singularName": "sso-channel", "pluralName": "sso-channels", "displayName": "SSO Channel" };
+const options$o = { "draftAndPublish": false };
+const attributes$o = { "channel_code": { "type": "string", "unique": true, "required": true }, "channel_name": { "type": "string", "required": true }, "channel_type": { "type": "string", "required": true }, "utm_template": { "type": "json" }, "is_active": { "type": "boolean", "default": true, "required": true }, "description": { "type": "string" } };
+const schema$o = {
+  kind: kind$o,
+  collectionName: collectionName$o,
+  info: info$o,
+  options: options$o,
+  attributes: attributes$o
 };
-
-// server/src/content-types/sso-channel/index.ts
-var sso_channel_default = { schema: schema_default4 };
-
-// server/src/content-types/sso-auth-code/schema.json
-var schema_default5 = {
-  kind: "collectionType",
-  collectionName: "sso_auth_codes",
-  info: {
-    singularName: "sso-auth-code",
-    pluralName: "sso-auth-codes",
-    displayName: "SSO Auth Code"
-  },
-  options: { draftAndPublish: false },
-  attributes: {
-    code: { type: "string", unique: true, required: true },
-    user: { type: "relation", relation: "manyToOne", target: "plugin::zhao-sso.sso-user" },
-    app_code: { type: "string", required: true },
-    redirect_uri: { type: "text", required: true },
-    channel_code: { type: "string" },
-    invite_code: { type: "string" },
-    scopes: { type: "json" },
-    is_new: { type: "boolean", default: false },
-    expires_at: { type: "datetime", required: true },
-    used: { type: "boolean", default: false, required: true }
-  }
+const ssoChannel$1 = { schema: schema$o };
+const kind$n = "collectionType";
+const collectionName$n = "sso_auth_codes";
+const info$n = { "singularName": "sso-auth-code", "pluralName": "sso-auth-codes", "displayName": "SSO Auth Code" };
+const options$n = { "draftAndPublish": false };
+const attributes$n = { "code": { "type": "string", "unique": true, "required": true }, "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user" }, "app_code": { "type": "string", "required": true }, "redirect_uri": { "type": "text", "required": true }, "channel_code": { "type": "string" }, "invite_code": { "type": "string" }, "scopes": { "type": "json" }, "is_new": { "type": "boolean", "default": false }, "expires_at": { "type": "datetime", "required": true }, "used": { "type": "boolean", "default": false, "required": true } };
+const schema$n = {
+  kind: kind$n,
+  collectionName: collectionName$n,
+  info: info$n,
+  options: options$n,
+  attributes: attributes$n
 };
-
-// server/src/content-types/sso-auth-code/index.ts
-var sso_auth_code_default = { schema: schema_default5 };
-
-// server/src/content-types/sso-token/schema.json
-var schema_default6 = {
-  kind: "collectionType",
-  collectionName: "sso_tokens",
-  info: {
-    singularName: "sso-token",
-    pluralName: "sso-tokens",
-    displayName: "SSO Token"
-  },
-  options: { draftAndPublish: false },
-  attributes: {
-    user: { type: "relation", relation: "manyToOne", target: "plugin::zhao-sso.sso-user" },
-    app_code: { type: "string", required: true },
-    access_token_jti: { type: "text", unique: true, required: true },
-    refresh_token: { type: "text", unique: true, required: true },
-    refresh_expires_at: { type: "datetime", required: true },
-    revoked: { type: "boolean", default: false, required: true },
-    revoked_at: { type: "datetime" },
-    channel_code: { type: "string" }
-  }
+const ssoAuthCode = { schema: schema$n };
+const kind$m = "collectionType";
+const collectionName$m = "sso_tokens";
+const info$m = { "singularName": "sso-token", "pluralName": "sso-tokens", "displayName": "SSO Token" };
+const options$m = { "draftAndPublish": false };
+const attributes$m = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user" }, "app_code": { "type": "string", "required": true }, "access_token_jti": { "type": "text", "unique": true, "required": true }, "refresh_token": { "type": "text", "unique": true, "required": true }, "refresh_expires_at": { "type": "datetime", "required": true }, "revoked": { "type": "boolean", "default": false, "required": true }, "revoked_at": { "type": "datetime" }, "channel_code": { "type": "string" } };
+const schema$m = {
+  kind: kind$m,
+  collectionName: collectionName$m,
+  info: info$m,
+  options: options$m,
+  attributes: attributes$m
 };
-
-// server/src/content-types/sso-token/index.ts
-var sso_token_default = { schema: schema_default6 };
-
-// server/src/content-types/sso-user-app-role/schema.json
-var schema_default7 = {
-  kind: "collectionType",
-  collectionName: "sso_user_app_roles",
-  info: {
-    singularName: "sso-user-app-role",
-    pluralName: "sso-user-app-roles",
-    displayName: "SSO User App Role"
-  },
-  options: { draftAndPublish: false },
-  attributes: {
-    user: { type: "relation", relation: "manyToOne", target: "plugin::zhao-sso.sso-user" },
-    app_code: { type: "string", required: true },
-    role: { type: "string", required: true }
-  }
+const ssoToken = { schema: schema$m };
+const kind$l = "collectionType";
+const collectionName$l = "sso_user_app_roles";
+const info$l = { "singularName": "sso-user-app-role", "pluralName": "sso-user-app-roles", "displayName": "SSO User App Role" };
+const options$l = { "draftAndPublish": false };
+const attributes$l = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user" }, "app_code": { "type": "string", "required": true }, "role": { "type": "string", "required": true } };
+const schema$l = {
+  kind: kind$l,
+  collectionName: collectionName$l,
+  info: info$l,
+  options: options$l,
+  attributes: attributes$l
 };
-
-// server/src/content-types/sso-user-app-role/index.ts
-var sso_user_app_role_default = { schema: schema_default7 };
-
-// server/src/content-types/sso-login-log/schema.json
-var schema_default8 = {
-  kind: "collectionType",
-  collectionName: "sso_login_logs",
-  info: {
-    singularName: "sso-login-log",
-    pluralName: "sso-login-logs",
-    displayName: "SSO Login Log"
-  },
-  options: { draftAndPublish: false },
-  attributes: {
-    user: { type: "relation", relation: "manyToOne", target: "plugin::zhao-sso.sso-user" },
-    login_type: { type: "string", required: true },
-    provider: { type: "string" },
-    channel_code: { type: "string" },
-    app_code: { type: "string" },
-    ip: { type: "string" },
-    user_agent: { type: "string" },
-    success: { type: "boolean", required: true },
-    fail_reason: { type: "string" }
-  }
+const ssoUserAppRole = { schema: schema$l };
+const kind$k = "collectionType";
+const collectionName$k = "sso_login_logs";
+const info$k = { "singularName": "sso-login-log", "pluralName": "sso-login-logs", "displayName": "SSO Login Log" };
+const options$k = { "draftAndPublish": false };
+const attributes$k = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user" }, "login_type": { "type": "string", "required": true }, "provider": { "type": "string" }, "channel_code": { "type": "string" }, "app_code": { "type": "string" }, "ip": { "type": "string" }, "user_agent": { "type": "string" }, "success": { "type": "boolean", "required": true }, "fail_reason": { "type": "string" } };
+const schema$k = {
+  kind: kind$k,
+  collectionName: collectionName$k,
+  info: info$k,
+  options: options$k,
+  attributes: attributes$k
 };
-
-// server/src/content-types/sso-login-log/index.ts
-var sso_login_log_default = { schema: schema_default8 };
-
-// server/src/content-types/sso-invite-code/schema.json
-var schema_default9 = {
-  kind: "collectionType",
-  collectionName: "sso_invite_codes",
-  info: {
-    singularName: "sso-invite-code",
-    pluralName: "sso-invite-codes",
-    displayName: "SSO Invite Code"
-  },
-  options: { draftAndPublish: false },
-  attributes: {
-    code: { type: "string", unique: true, required: true },
-    app_code: { type: "string", required: true },
-    creator: { type: "relation", relation: "manyToOne", target: "plugin::zhao-sso.sso-user" },
-    invite_type: { type: "enumeration", enum: ["system", "user_campaign"], required: true },
-    max_uses: { type: "integer" },
-    use_count: { type: "integer", default: 0, required: true },
-    per_user_limit: { type: "integer", default: 1, required: true },
-    valid_from: { type: "datetime" },
-    valid_until: { type: "datetime" },
-    bonus_tags: { type: "json" },
-    is_active: { type: "boolean", default: true, required: true }
-  }
+const ssoLoginLog$1 = { schema: schema$k };
+const kind$j = "collectionType";
+const collectionName$j = "sso_invite_codes";
+const info$j = { "singularName": "sso-invite-code", "pluralName": "sso-invite-codes", "displayName": "SSO Invite Code" };
+const options$j = { "draftAndPublish": false };
+const attributes$j = { "code": { "type": "string", "unique": true, "required": true }, "app_code": { "type": "string", "required": true }, "creator": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user" }, "invite_type": { "type": "enumeration", "enum": ["system", "user_campaign"], "required": true }, "max_uses": { "type": "integer" }, "use_count": { "type": "integer", "default": 0, "required": true }, "per_user_limit": { "type": "integer", "default": 1, "required": true }, "valid_from": { "type": "datetime" }, "valid_until": { "type": "datetime" }, "bonus_tags": { "type": "json" }, "is_active": { "type": "boolean", "default": true, "required": true } };
+const schema$j = {
+  kind: kind$j,
+  collectionName: collectionName$j,
+  info: info$j,
+  options: options$j,
+  attributes: attributes$j
 };
-
-// server/src/content-types/sso-invite-code/index.ts
-var sso_invite_code_default = { schema: schema_default9 };
-
-// server/src/content-types/sso-invite-usage/schema.json
-var schema_default10 = {
-  kind: "collectionType",
-  collectionName: "sso_invite_usages",
-  info: {
-    singularName: "sso-invite-usage",
-    pluralName: "sso-invite-usages",
-    displayName: "SSO Invite Usage"
-  },
-  options: { draftAndPublish: false },
-  attributes: {
-    invite_code: { type: "relation", relation: "manyToOne", target: "plugin::zhao-sso.sso-invite-code" },
-    user: { type: "relation", relation: "manyToOne", target: "plugin::zhao-sso.sso-user" },
-    channel_code: { type: "string" },
-    app_code: { type: "string" },
-    used_at: { type: "datetime", required: true }
-  }
+const ssoInviteCode = { schema: schema$j };
+const kind$i = "collectionType";
+const collectionName$i = "sso_invite_usages";
+const info$i = { "singularName": "sso-invite-usage", "pluralName": "sso-invite-usages", "displayName": "SSO Invite Usage" };
+const options$i = { "draftAndPublish": false };
+const attributes$i = { "invite_code": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-invite-code" }, "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user" }, "channel_code": { "type": "string" }, "app_code": { "type": "string" }, "used_at": { "type": "datetime", "required": true } };
+const schema$i = {
+  kind: kind$i,
+  collectionName: collectionName$i,
+  info: info$i,
+  options: options$i,
+  attributes: attributes$i
 };
-
-// server/src/content-types/sso-invite-usage/index.ts
-var sso_invite_usage_default = { schema: schema_default10 };
-
-// server/src/content-types/sso-referral-relation/schema.json
-var schema_default11 = {
-  kind: "collectionType",
-  collectionName: "sso_referral_relations",
-  info: {
-    singularName: "sso-referral-relation",
-    pluralName: "sso-referral-relations",
-    displayName: "SSO Referral Relation"
-  },
-  options: { draftAndPublish: false },
-  attributes: {
-    inviter: { type: "relation", relation: "manyToOne", target: "plugin::zhao-sso.sso-user" },
-    invitee: { type: "relation", relation: "manyToOne", target: "plugin::zhao-sso.sso-user" },
-    invite_code: { type: "relation", relation: "manyToOne", target: "plugin::zhao-sso.sso-invite-code" },
-    level: { type: "integer", required: true },
-    channel_code: { type: "string" }
-  }
+const ssoInviteUsage = { schema: schema$i };
+const kind$h = "collectionType";
+const collectionName$h = "sso_referral_relations";
+const info$h = { "singularName": "sso-referral-relation", "pluralName": "sso-referral-relations", "displayName": "SSO Referral Relation" };
+const options$h = { "draftAndPublish": false };
+const attributes$h = { "inviter": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user" }, "invitee": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user" }, "invite_code": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-invite-code" }, "level": { "type": "integer", "required": true }, "channel_code": { "type": "string" } };
+const schema$h = {
+  kind: kind$h,
+  collectionName: collectionName$h,
+  info: info$h,
+  options: options$h,
+  attributes: attributes$h
 };
-
-// server/src/content-types/sso-referral-relation/index.ts
-var sso_referral_relation_default = { schema: schema_default11 };
-
-// server/src/content-types/sso-invite-stats/schema.json
-var schema_default12 = {
-  kind: "collectionType",
-  collectionName: "sso_invite_stats",
-  info: {
-    singularName: "sso-invite-stats",
-    pluralName: "sso-invite-stats",
-    displayName: "SSO Invite Stats"
-  },
-  options: { draftAndPublish: false },
-  attributes: {
-    invite_code: { type: "relation", relation: "oneToOne", target: "plugin::zhao-sso.sso-invite-code" },
-    total_invites: { type: "integer", required: true },
-    active_invites: { type: "integer", required: true },
-    last_invited_at: { type: "datetime" }
-  }
+const ssoReferralRelation = { schema: schema$h };
+const kind$g = "collectionType";
+const collectionName$g = "sso_invite_stats";
+const info$g = { "singularName": "sso-invite-stats", "pluralName": "sso-invite-stats", "displayName": "SSO Invite Stats" };
+const options$g = { "draftAndPublish": false };
+const attributes$g = { "invite_code": { "type": "relation", "relation": "oneToOne", "target": "plugin::zhao-sso.sso-invite-code" }, "total_invites": { "type": "integer", "required": true }, "active_invites": { "type": "integer", "required": true }, "last_invited_at": { "type": "datetime" } };
+const schema$g = {
+  kind: kind$g,
+  collectionName: collectionName$g,
+  info: info$g,
+  options: options$g,
+  attributes: attributes$g
 };
-
-// server/src/content-types/sso-invite-stats/index.ts
-var sso_invite_stats_default = { schema: schema_default12 };
-
-// server/src/content-types/sso-oauth-config/schema.json
-var schema_default13 = {
-  kind: "collectionType",
-  collectionName: "sso_oauth_configs",
-  info: {
-    singularName: "sso-oauth-config",
-    pluralName: "sso-oauth-configs",
-    displayName: "SSO OAuth Config"
-  },
-  options: { draftAndPublish: false },
-  attributes: {
-    name: { type: "string", required: true },
-    provider: { type: "string", required: true },
-    app_type: {
-      type: "enumeration",
-      required: true,
-      enum: ["official_account", "open_platform", "mini_program", "app", "default"],
-      default: "default"
-    },
-    app_id: { type: "string", required: true },
-    app_secret: { type: "string", required: true },
-    scope: { type: "string" },
-    extra_config: { type: "json" },
-    redirect_uris: { type: "json" },
-    is_enabled: { type: "boolean", default: true, required: true },
-    description: { type: "string" }
-  }
+const ssoInviteStats = { schema: schema$g };
+const kind$f = "collectionType";
+const collectionName$f = "sso_oauth_configs";
+const info$f = { "singularName": "sso-oauth-config", "pluralName": "sso-oauth-configs", "displayName": "SSO OAuth Config" };
+const options$f = { "draftAndPublish": false };
+const attributes$f = { "name": { "type": "string", "required": true }, "provider": { "type": "string", "required": true }, "app_type": { "type": "enumeration", "required": true, "enum": ["official_account", "open_platform", "mini_program", "app", "default"], "default": "default" }, "app_id": { "type": "string", "required": true }, "app_secret": { "type": "string", "required": true }, "scope": { "type": "string" }, "extra_config": { "type": "json" }, "redirect_uris": { "type": "json" }, "is_enabled": { "type": "boolean", "default": true, "required": true }, "description": { "type": "string" } };
+const schema$f = {
+  kind: kind$f,
+  collectionName: collectionName$f,
+  info: info$f,
+  options: options$f,
+  attributes: attributes$f
 };
-
-// server/src/content-types/sso-oauth-config/index.ts
-var sso_oauth_config_default = {
-  schema: schema_default13
+const ssoOauthConfig$1 = {
+  schema: schema$f
 };
-
-// server/src/content-types/sso-sms-code/schema.json
-var schema_default14 = {
-  kind: "collectionType",
-  collectionName: "sso_sms_codes",
-  info: {
-    singularName: "sso-sms-code",
-    pluralName: "sso-sms-codes",
-    displayName: "SSO SMS Code"
-  },
-  options: { draftAndPublish: false },
-  attributes: {
-    mobile: { type: "string", required: true },
-    code: { type: "string", required: true },
-    scene: { type: "string", default: "login", required: true },
-    expires_at: { type: "datetime", required: true },
-    used: { type: "boolean", default: false, required: true },
-    ip: { type: "string" },
-    provider: { type: "string", default: "mock" }
-  }
+const kind$e = "collectionType";
+const collectionName$e = "sso_sms_codes";
+const info$e = { "singularName": "sso-sms-code", "pluralName": "sso-sms-codes", "displayName": "SSO SMS Code" };
+const options$e = { "draftAndPublish": false };
+const attributes$e = { "mobile": { "type": "string", "required": true }, "code": { "type": "string", "required": true }, "scene": { "type": "string", "default": "login", "required": true }, "expires_at": { "type": "datetime", "required": true }, "used": { "type": "boolean", "default": false, "required": true }, "ip": { "type": "string" }, "provider": { "type": "string", "default": "mock" } };
+const schema$e = {
+  kind: kind$e,
+  collectionName: collectionName$e,
+  info: info$e,
+  options: options$e,
+  attributes: attributes$e
 };
-
-// server/src/content-types/sso-sms-code/index.ts
-var sso_sms_code_default = {
-  schema: schema_default14
+const ssoSmsCode = {
+  schema: schema$e
 };
-
-// server/src/content-types/msg-template/schema.json
-var schema_default15 = {
-  kind: "collectionType",
-  collectionName: "sso_msg_templates",
-  info: {
-    singularName: "msg-template",
-    pluralName: "msg-templates",
-    displayName: "SSO Msg Template"
-  },
-  options: { draftAndPublish: false },
-  attributes: {
-    code: { type: "string", unique: true, required: true },
-    name: { type: "string", required: true },
-    provider: { type: "string", default: "wechat", required: true },
-    wxTemplateId: { type: "string" },
-    wxTemplateFields: { type: "json" },
-    content: { type: "text" },
-    isEnabled: { type: "boolean", default: true, required: true },
-    description: { type: "text" },
-    dailyCap: { type: "integer" },
-    cooldownMinutes: { type: "integer" }
-  }
+const kind$d = "collectionType";
+const collectionName$d = "sso_msg_templates";
+const info$d = { "singularName": "msg-template", "pluralName": "msg-templates", "displayName": "SSO Msg Template" };
+const options$d = { "draftAndPublish": false };
+const attributes$d = { "code": { "type": "string", "unique": true, "required": true }, "name": { "type": "string", "required": true }, "provider": { "type": "string", "default": "wechat", "required": true }, "wxTemplateId": { "type": "string" }, "wxTemplateFields": { "type": "json" }, "content": { "type": "text" }, "isEnabled": { "type": "boolean", "default": true, "required": true }, "description": { "type": "text" }, "dailyCap": { "type": "integer" }, "cooldownMinutes": { "type": "integer" } };
+const schema$d = {
+  kind: kind$d,
+  collectionName: collectionName$d,
+  info: info$d,
+  options: options$d,
+  attributes: attributes$d
 };
-
-// server/src/content-types/msg-template/index.ts
-var msg_template_default = {
-  schema: schema_default15
+const msgTemplate = {
+  schema: schema$d
 };
-
-// server/src/content-types/msg-template-version/schema.json
-var schema_default16 = {
-  kind: "collectionType",
-  collectionName: "sso_msg_template_versions",
-  info: { singularName: "msg-template-version", pluralName: "msg-template-versions", displayName: "SSO Msg Template Version" },
-  options: { draftAndPublish: false },
-  attributes: {
-    template: { type: "relation", relation: "manyToOne", target: "plugin::zhao-sso.msg-template", required: true },
-    code: { type: "string", required: true },
-    name: { type: "string" },
-    wxTemplateId: { type: "string" },
-    wxTemplateFields: { type: "json" },
-    content: { type: "text" },
-    link: { type: "string" },
-    weight: { type: "integer", default: 1 },
-    status: { type: "enumeration", enum: ["draft", "active"], default: "draft", required: true },
-    sentCount: { type: "integer", default: 0 },
-    successCount: { type: "integer", default: 0 },
-    clickCount: { type: "integer", default: 0 },
-    lastUsedAt: { type: "datetime" }
-  }
+const kind$c = "collectionType";
+const collectionName$c = "sso_msg_template_versions";
+const info$c = { "singularName": "msg-template-version", "pluralName": "msg-template-versions", "displayName": "SSO Msg Template Version" };
+const options$c = { "draftAndPublish": false };
+const attributes$c = { "template": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.msg-template", "required": true }, "code": { "type": "string", "required": true }, "name": { "type": "string" }, "wxTemplateId": { "type": "string" }, "wxTemplateFields": { "type": "json" }, "content": { "type": "text" }, "link": { "type": "string" }, "weight": { "type": "integer", "default": 1 }, "status": { "type": "enumeration", "enum": ["draft", "active"], "default": "draft", "required": true }, "sentCount": { "type": "integer", "default": 0 }, "successCount": { "type": "integer", "default": 0 }, "clickCount": { "type": "integer", "default": 0 }, "lastUsedAt": { "type": "datetime" } };
+const schema$c = {
+  kind: kind$c,
+  collectionName: collectionName$c,
+  info: info$c,
+  options: options$c,
+  attributes: attributes$c
 };
-
-// server/src/content-types/msg-template-version/index.ts
-var msg_template_version_default = {
-  schema: schema_default16
+const msgTemplateVersion = {
+  schema: schema$c
 };
-
-// server/src/content-types/msg-job/schema.json
-var schema_default17 = {
-  kind: "collectionType",
-  collectionName: "sso_msg_jobs",
-  info: {
-    singularName: "msg-job",
-    pluralName: "msg-jobs",
-    displayName: "SSO Msg Job"
-  },
-  options: { draftAndPublish: false },
-  attributes: {
-    user: { type: "relation", relation: "manyToOne", target: "plugin::zhao-sso.sso-user" },
-    scene: { type: "string", required: true },
-    template: { type: "relation", relation: "manyToOne", target: "plugin::zhao-sso.msg-template" },
-    version: { type: "relation", relation: "manyToOne", target: "plugin::zhao-sso.msg-template-version" },
-    provider: { type: "string", default: "wechat", required: true },
-    toTarget: { type: "string" },
-    params: { type: "json" },
-    link: { type: "string" },
-    status: { type: "enumeration", enum: ["pending", "sending", "sent", "failed", "cancelled", "quota_limited"], default: "pending", required: true },
-    retryCount: { type: "integer", default: 0 },
-    nextRetryAt: { type: "datetime" },
-    wxMsgId: { type: "string" },
-    result: { type: "json" },
-    scheduledAt: { type: "datetime" },
-    sentAt: { type: "datetime" },
-    dedupeKey: { type: "string", unique: true },
-    readAt: { type: "datetime" },
-    followStatus: { type: "enumeration", enum: ["none", "followed", "deal"], default: "none" },
-    followRemark: { type: "text" }
-  }
+const kind$b = "collectionType";
+const collectionName$b = "sso_msg_jobs";
+const info$b = { "singularName": "msg-job", "pluralName": "msg-jobs", "displayName": "SSO Msg Job" };
+const options$b = { "draftAndPublish": false };
+const attributes$b = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user" }, "scene": { "type": "string", "required": true }, "template": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.msg-template" }, "version": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.msg-template-version" }, "provider": { "type": "string", "default": "wechat", "required": true }, "toTarget": { "type": "string" }, "params": { "type": "json" }, "link": { "type": "string" }, "status": { "type": "enumeration", "enum": ["pending", "sending", "sent", "failed", "cancelled", "quota_limited"], "default": "pending", "required": true }, "retryCount": { "type": "integer", "default": 0 }, "nextRetryAt": { "type": "datetime" }, "wxMsgId": { "type": "string" }, "result": { "type": "json" }, "scheduledAt": { "type": "datetime" }, "sentAt": { "type": "datetime" }, "dedupeKey": { "type": "string", "unique": true }, "readAt": { "type": "datetime" }, "followStatus": { "type": "enumeration", "enum": ["none", "followed", "deal"], "default": "none" }, "followRemark": { "type": "text" } };
+const schema$b = {
+  kind: kind$b,
+  collectionName: collectionName$b,
+  info: info$b,
+  options: options$b,
+  attributes: attributes$b
 };
-
-// server/src/content-types/msg-job/index.ts
-var msg_job_default = {
-  schema: schema_default17
+const msgJob = {
+  schema: schema$b
 };
-
-// server/src/content-types/sop-rule/schema.json
-var schema_default18 = {
-  kind: "collectionType",
-  collectionName: "sso_sop_rules",
-  info: {
-    singularName: "sop-rule",
-    pluralName: "sop-rules",
-    displayName: "SSO SOP Rule"
-  },
-  options: { draftAndPublish: false },
-  attributes: {
-    code: { type: "string", unique: true, required: true },
-    name: { type: "string", required: true },
-    source: { type: "enumeration", enum: ["event", "cron"], default: "event", required: true },
-    event: { type: "string" },
-    cronExpression: { type: "string" },
-    templateCode: { type: "string" },
-    scene: { type: "string", required: true },
-    delayMinutes: { type: "integer", default: 0 },
-    link: { type: "text" },
-    paramsTemplate: { type: "json" },
-    enabled: { type: "boolean", default: true, required: true },
-    description: { type: "text" },
-    conversionWindowDays: { type: "integer" }
-  }
+const kind$a = "collectionType";
+const collectionName$a = "sso_sop_rules";
+const info$a = { "singularName": "sop-rule", "pluralName": "sop-rules", "displayName": "SSO SOP Rule" };
+const options$a = { "draftAndPublish": false };
+const attributes$a = { "code": { "type": "string", "unique": true, "required": true }, "name": { "type": "string", "required": true }, "source": { "type": "enumeration", "enum": ["event", "cron"], "default": "event", "required": true }, "event": { "type": "string" }, "cronExpression": { "type": "string" }, "templateCode": { "type": "string" }, "scene": { "type": "string", "required": true }, "delayMinutes": { "type": "integer", "default": 0 }, "link": { "type": "text" }, "paramsTemplate": { "type": "json" }, "enabled": { "type": "boolean", "default": true, "required": true }, "description": { "type": "text" }, "conversionWindowDays": { "type": "integer" } };
+const schema$a = {
+  kind: kind$a,
+  collectionName: collectionName$a,
+  info: info$a,
+  options: options$a,
+  attributes: attributes$a
 };
-
-// server/src/content-types/sop-rule/index.ts
-var sop_rule_default = {
-  schema: schema_default18
+const sopRule = {
+  schema: schema$a
 };
-
-// server/src/content-types/manual-sop-todo/schema.json
-var schema_default19 = {
-  kind: "collectionType",
-  collectionName: "sso_sop_manual_todos",
-  info: { singularName: "manual-sop-todo", pluralName: "manual-sop-todos", displayName: "SSO Manual SOP Todo" },
-  options: { draftAndPublish: false },
-  attributes: {
-    code: { type: "string", required: true },
-    title: { type: "string", required: true },
-    scene: { type: "string", required: true },
-    templateCode: { type: "string" },
-    link: { type: "text" },
-    audience: { type: "json" },
-    paramsTemplate: { type: "json" },
-    status: { type: "enumeration", enum: ["open", "done", "skipped"], default: "open", required: true },
-    doneAt: { type: "datetime" },
-    sentCount: { type: "integer", default: 0 },
-    description: { type: "text" }
-  }
+const kind$9 = "collectionType";
+const collectionName$9 = "sso_sop_manual_todos";
+const info$9 = { "singularName": "manual-sop-todo", "pluralName": "manual-sop-todos", "displayName": "SSO Manual SOP Todo" };
+const options$9 = { "draftAndPublish": false };
+const attributes$9 = { "code": { "type": "string", "required": true }, "title": { "type": "string", "required": true }, "scene": { "type": "string", "required": true }, "templateCode": { "type": "string" }, "link": { "type": "text" }, "audience": { "type": "json" }, "paramsTemplate": { "type": "json" }, "status": { "type": "enumeration", "enum": ["open", "done", "skipped"], "default": "open", "required": true }, "doneAt": { "type": "datetime" }, "sentCount": { "type": "integer", "default": 0 }, "description": { "type": "text" } };
+const schema$9 = {
+  kind: kind$9,
+  collectionName: collectionName$9,
+  info: info$9,
+  options: options$9,
+  attributes: attributes$9
 };
-
-// server/src/content-types/manual-sop-todo/index.ts
-var manual_sop_todo_default = {
-  schema: schema_default19
+const manualSopTodo = {
+  schema: schema$9
 };
-
-// server/src/content-types/sso-user-profile/schema.json
-var schema_default20 = {
-  kind: "collectionType",
-  collectionName: "sso_user_profiles",
-  info: { singularName: "sso-user-profile", pluralName: "sso-user-profiles", displayName: "SSO User Profile" },
-  options: { draftAndPublish: false },
-  attributes: {
-    user: { type: "relation", relation: "manyToOne", target: "plugin::zhao-sso.sso-user" },
-    segment: { type: "enumeration", enum: ["S", "A", "B", "C"], default: "C", required: true },
-    segmentScore: { type: "integer", default: 0 },
-    segmentReason: { type: "text" },
-    dimensions: { type: "json", default: {} },
-    lastCalculatedAt: { type: "datetime" }
-  }
+const kind$8 = "collectionType";
+const collectionName$8 = "sso_user_profiles";
+const info$8 = { "singularName": "sso-user-profile", "pluralName": "sso-user-profiles", "displayName": "SSO User Profile" };
+const options$8 = { "draftAndPublish": false };
+const attributes$8 = { "user": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user" }, "segment": { "type": "enumeration", "enum": ["S", "A", "B", "C"], "default": "C", "required": true }, "segmentScore": { "type": "integer", "default": 0 }, "segmentReason": { "type": "text" }, "dimensions": { "type": "json", "default": {} }, "lastCalculatedAt": { "type": "datetime" } };
+const schema$8 = {
+  kind: kind$8,
+  collectionName: collectionName$8,
+  info: info$8,
+  options: options$8,
+  attributes: attributes$8
 };
-
-// server/src/content-types/sso-user-profile/index.ts
-var sso_user_profile_default = {
-  schema: schema_default20
+const ssoUserProfile = {
+  schema: schema$8
 };
-
-// server/src/content-types/sso-follow-up/schema.json
-var schema_default21 = {
-  kind: "collectionType",
-  collectionName: "sso_follow_ups",
-  info: { singularName: "sso-follow-up", pluralName: "sso-follow-ups", displayName: "SSO Follow Up" },
-  options: { draftAndPublish: false },
-  attributes: {
-    partner: { type: "relation", relation: "manyToOne", target: "plugin::zhao-sso.sso-user", required: true },
-    customer: { type: "relation", relation: "manyToOne", target: "plugin::zhao-sso.sso-user", required: true },
-    content: { type: "text", required: true },
-    status: { type: "enumeration", enum: ["todo", "done", "cancelled"], default: "todo", required: true },
-    nextFollowAt: { type: "datetime" }
-  }
+const kind$7 = "collectionType";
+const collectionName$7 = "sso_follow_ups";
+const info$7 = { "singularName": "sso-follow-up", "pluralName": "sso-follow-ups", "displayName": "SSO Follow Up" };
+const options$7 = { "draftAndPublish": false };
+const attributes$7 = { "partner": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user", "required": true }, "customer": { "type": "relation", "relation": "manyToOne", "target": "plugin::zhao-sso.sso-user", "required": true }, "content": { "type": "text", "required": true }, "status": { "type": "enumeration", "enum": ["todo", "done", "cancelled"], "default": "todo", "required": true }, "nextFollowAt": { "type": "datetime" } };
+const schema$7 = {
+  kind: kind$7,
+  collectionName: collectionName$7,
+  info: info$7,
+  options: options$7,
+  attributes: attributes$7
 };
-
-// server/src/content-types/sso-follow-up/index.ts
-var sso_follow_up_default = {
-  schema: schema_default21
+const ssoFollowUp = {
+  schema: schema$7
 };
-
-// server/src/content-types/sso-quota-config/schema.json
-var schema_default22 = {
-  kind: "collectionType",
-  collectionName: "sso_quota_configs",
-  info: {
-    singularName: "sso-quota-config",
-    pluralName: "sso-quota-configs",
-    displayName: "SSO Quota Config"
-  },
-  options: { draftAndPublish: false },
-  attributes: {
-    maxDailyPerUser: { type: "integer", default: 10 },
-    cooldownMinutes: { type: "integer", default: 120 }
-  }
+const kind$6 = "collectionType";
+const collectionName$6 = "sso_quota_configs";
+const info$6 = { "singularName": "sso-quota-config", "pluralName": "sso-quota-configs", "displayName": "SSO Quota Config" };
+const options$6 = { "draftAndPublish": false };
+const attributes$6 = { "maxDailyPerUser": { "type": "integer", "default": 10 }, "cooldownMinutes": { "type": "integer", "default": 120 } };
+const schema$6 = {
+  kind: kind$6,
+  collectionName: collectionName$6,
+  info: info$6,
+  options: options$6,
+  attributes: attributes$6
 };
-
-// server/src/content-types/sso-quota-config/index.ts
-var sso_quota_config_default = {
-  schema: schema_default22
+const ssoQuotaConfig = {
+  schema: schema$6
 };
-
-// server/src/content-types/sso-wx-event/schema.json
-var schema_default23 = {
-  kind: "collectionType",
-  collectionName: "sso_wx_events",
-  info: {
-    singularName: "sso-wx-event",
-    pluralName: "sso-wx-events",
-    displayName: "SSO WeChat Event"
-  },
-  options: { draftAndPublish: false },
-  attributes: {
-    openid: { type: "string", required: true },
-    event: {
-      type: "enumeration",
-      required: true,
-      enum: ["subscribe", "unsubscribe", "SCAN", "CLICK", "text", "other"]
-    },
-    event_key: { type: "string" },
-    scene_key: { type: "string" },
-    payload: { type: "json" },
-    openid_bound: { type: "boolean", default: false }
-  }
+const kind$5 = "collectionType";
+const collectionName$5 = "sso_wx_events";
+const info$5 = { "singularName": "sso-wx-event", "pluralName": "sso-wx-events", "displayName": "SSO WeChat Event" };
+const options$5 = { "draftAndPublish": false };
+const attributes$5 = { "openid": { "type": "string", "required": true }, "event": { "type": "enumeration", "required": true, "enum": ["subscribe", "unsubscribe", "SCAN", "CLICK", "text", "other"] }, "event_key": { "type": "string" }, "scene_key": { "type": "string" }, "payload": { "type": "json" }, "openid_bound": { "type": "boolean", "default": false } };
+const schema$5 = {
+  kind: kind$5,
+  collectionName: collectionName$5,
+  info: info$5,
+  options: options$5,
+  attributes: attributes$5
 };
-
-// server/src/content-types/sso-wx-event/index.ts
-var sso_wx_event_default = {
-  schema: schema_default23
+const ssoWxEvent = {
+  schema: schema$5
 };
-
-// server/src/content-types/sso-wx-qrcode/schema.json
-var schema_default24 = {
-  kind: "collectionType",
-  collectionName: "sso_wx_qrcodes",
-  info: {
-    singularName: "sso-wx-qrcode",
-    pluralName: "sso-wx-qrcodes",
-    displayName: "SSO WeChat QRCode"
-  },
-  options: { draftAndPublish: false },
-  attributes: {
-    scene_key: { type: "string", required: true, unique: true },
-    title: { type: "string" },
-    kind: {
-      type: "enumeration",
-      required: true,
-      enum: ["temporary", "permanent"],
-      default: "temporary"
-    },
-    expire_seconds: { type: "integer", default: 2592e3 },
-    ticket: { type: "text" },
-    wx_url: { type: "text" },
-    qrcode_url: { type: "text" },
-    remark: { type: "text" }
-  }
+const kind$4 = "collectionType";
+const collectionName$4 = "sso_wx_qrcodes";
+const info$4 = { "singularName": "sso-wx-qrcode", "pluralName": "sso-wx-qrcodes", "displayName": "SSO WeChat QRCode" };
+const options$4 = { "draftAndPublish": false };
+const attributes$4 = { "scene_key": { "type": "string", "required": true, "unique": true }, "title": { "type": "string" }, "kind": { "type": "enumeration", "required": true, "enum": ["temporary", "permanent"], "default": "temporary" }, "expire_seconds": { "type": "integer", "default": 2592e3 }, "ticket": { "type": "text" }, "wx_url": { "type": "text" }, "qrcode_url": { "type": "text" }, "remark": { "type": "text" } };
+const schema$4 = {
+  kind: kind$4,
+  collectionName: collectionName$4,
+  info: info$4,
+  options: options$4,
+  attributes: attributes$4
 };
-
-// server/src/content-types/sso-wx-qrcode/index.ts
-var sso_wx_qrcode_default = {
-  schema: schema_default24
+const ssoWxQrcode$1 = {
+  schema: schema$4
 };
-
-// server/src/content-types/sso-wx-menu/schema.json
-var schema_default25 = {
-  kind: "collectionType",
-  collectionName: "sso_wx_menus",
-  info: {
-    singularName: "sso-wx-menu",
-    pluralName: "sso-wx-menus",
-    displayName: "SSO WeChat Menu"
-  },
-  options: { draftAndPublish: false },
-  attributes: {
-    name: { type: "string", required: true },
-    menu_json: { type: "json", required: true },
-    enabled: { type: "boolean", default: true },
-    publish_state: {
-      type: "enumeration",
-      enum: ["local", "published", "failed"],
-      default: "local"
-    },
-    last_publish_at: { type: "datetime" },
-    last_error: { type: "text" }
-  }
+const kind$3 = "collectionType";
+const collectionName$3 = "sso_wx_menus";
+const info$3 = { "singularName": "sso-wx-menu", "pluralName": "sso-wx-menus", "displayName": "SSO WeChat Menu" };
+const options$3 = { "draftAndPublish": false };
+const attributes$3 = { "name": { "type": "string", "required": true }, "menu_json": { "type": "json", "required": true }, "enabled": { "type": "boolean", "default": true }, "publish_state": { "type": "enumeration", "enum": ["local", "published", "failed"], "default": "local" }, "last_publish_at": { "type": "datetime" }, "last_error": { "type": "text" } };
+const schema$3 = {
+  kind: kind$3,
+  collectionName: collectionName$3,
+  info: info$3,
+  options: options$3,
+  attributes: attributes$3
 };
-
-// server/src/content-types/sso-wx-menu/index.ts
-var sso_wx_menu_default = {
-  schema: schema_default25
+const ssoWxMenu$1 = {
+  schema: schema$3
 };
-
-// server/src/content-types/sso-wx-reply/schema.json
-var schema_default26 = {
-  kind: "collectionType",
-  collectionName: "sso_wx_replies",
-  info: {
-    singularName: "sso-wx-reply",
-    pluralName: "sso-wx-replies",
-    displayName: "SSO WeChat Reply"
-  },
-  options: { draftAndPublish: false },
-  attributes: {
-    trigger: {
-      type: "enumeration",
-      enum: ["welcome", "fallback", "keyword"],
-      default: "keyword",
-      required: true
-    },
-    match: { type: "string", unique: true },
-    reply_type: {
-      type: "enumeration",
-      enum: ["text", "image", "voice", "video", "music", "news", "transfer", "article"],
-      default: "text"
-    },
-    text: { type: "text" },
-    title: { type: "string" },
-    desc: { type: "string" },
-    pic_url: { type: "string" },
-    link_url: { type: "string" },
-    media_id: { type: "string" },
-    music_url: { type: "string" },
-    hq_music_url: { type: "string" },
-    thumb_media_id: { type: "string" },
-    articles: { type: "json" },
-    sort: { type: "integer", default: 0 },
-    enabled: { type: "boolean", default: true }
-  }
+const kind$2 = "collectionType";
+const collectionName$2 = "sso_wx_replies";
+const info$2 = { "singularName": "sso-wx-reply", "pluralName": "sso-wx-replies", "displayName": "SSO WeChat Reply" };
+const options$2 = { "draftAndPublish": false };
+const attributes$2 = { "trigger": { "type": "enumeration", "enum": ["welcome", "fallback", "keyword"], "default": "keyword", "required": true }, "match": { "type": "string", "unique": true }, "reply_type": { "type": "enumeration", "enum": ["text", "image", "voice", "video", "music", "news", "transfer", "article"], "default": "text" }, "text": { "type": "text" }, "title": { "type": "string" }, "desc": { "type": "string" }, "pic_url": { "type": "string" }, "link_url": { "type": "string" }, "media_id": { "type": "string" }, "music_url": { "type": "string" }, "hq_music_url": { "type": "string" }, "thumb_media_id": { "type": "string" }, "articles": { "type": "json" }, "sort": { "type": "integer", "default": 0 }, "enabled": { "type": "boolean", "default": true } };
+const schema$2 = {
+  kind: kind$2,
+  collectionName: collectionName$2,
+  info: info$2,
+  options: options$2,
+  attributes: attributes$2
 };
-
-// server/src/content-types/sso-wx-reply/index.ts
-var sso_wx_reply_default = {
-  schema: schema_default26
+const ssoWxReply$1 = {
+  schema: schema$2
 };
-
-// server/src/content-types/sso-wx-material/schema.json
-var schema_default27 = {
-  kind: "collectionType",
-  collectionName: "sso_wx_materials",
-  info: {
-    singularName: "sso-wx-material",
-    pluralName: "sso-wx-materials",
-    displayName: "SSO WeChat Material"
-  },
-  options: { draftAndPublish: false },
-  attributes: {
-    type: {
-      type: "enumeration",
-      enum: ["image", "voice", "video", "thumb"],
-      required: true
-    },
-    name: { type: "string" },
-    media_id: { type: "string" },
-    wx_url: { type: "string" },
-    remark: { type: "text" }
-  }
+const kind$1 = "collectionType";
+const collectionName$1 = "sso_wx_materials";
+const info$1 = { "singularName": "sso-wx-material", "pluralName": "sso-wx-materials", "displayName": "SSO WeChat Material" };
+const options$1 = { "draftAndPublish": false };
+const attributes$1 = { "type": { "type": "enumeration", "enum": ["image", "voice", "video", "thumb"], "required": true }, "name": { "type": "string" }, "media_id": { "type": "string" }, "wx_url": { "type": "string" }, "remark": { "type": "text" } };
+const schema$1 = {
+  kind: kind$1,
+  collectionName: collectionName$1,
+  info: info$1,
+  options: options$1,
+  attributes: attributes$1
 };
-
-// server/src/content-types/sso-wx-material/index.ts
-var sso_wx_material_default = {
-  schema: schema_default27
+const ssoWxMaterial$1 = {
+  schema: schema$1
 };
-
-// server/src/content-types/sso-wx-article/schema.json
-var schema_default28 = {
-  kind: "collectionType",
-  collectionName: "sso_wx_articles",
-  info: {
-    singularName: "sso-wx-article",
-    pluralName: "sso-wx-articles",
-    displayName: "SSO WeChat Article"
-  },
-  options: { draftAndPublish: false },
-  attributes: {
-    draft_id: { type: "string" },
-    title: { type: "string", required: true },
-    author: { type: "string" },
-    digest: { type: "string" },
-    content: { type: "text" },
-    thumb_media_id: { type: "string" },
-    pic_url: { type: "string" },
-    content_source_url: { type: "string" },
-    show_cover_pic: { type: "boolean", default: true },
-    publish_state: {
-      type: "enumeration",
-      enum: ["draft", "publishing", "published", "failed"],
-      default: "draft"
-    },
-    publish_id: { type: "string" },
-    wx_published_at: { type: "datetime" },
-    last_error: { type: "text" }
-  }
+const kind = "collectionType";
+const collectionName = "sso_wx_articles";
+const info = { "singularName": "sso-wx-article", "pluralName": "sso-wx-articles", "displayName": "SSO WeChat Article" };
+const options = { "draftAndPublish": false };
+const attributes = { "draft_id": { "type": "string" }, "title": { "type": "string", "required": true }, "author": { "type": "string" }, "digest": { "type": "string" }, "content": { "type": "text" }, "thumb_media_id": { "type": "string" }, "pic_url": { "type": "string" }, "content_source_url": { "type": "string" }, "show_cover_pic": { "type": "boolean", "default": true }, "publish_state": { "type": "enumeration", "enum": ["draft", "publishing", "published", "failed"], "default": "draft" }, "publish_id": { "type": "string" }, "wx_published_at": { "type": "datetime" }, "last_error": { "type": "text" } };
+const schema = {
+  kind,
+  collectionName,
+  info,
+  options,
+  attributes
 };
-
-// server/src/content-types/sso-wx-article/index.ts
-var sso_wx_article_default = {
-  schema: schema_default28
+const ssoWxArticle$1 = {
+  schema
 };
-
-// server/src/content-types/index.ts
-var content_types_default = {
-  "sso-user": sso_user_default,
-  "sso-third-party-binding": sso_third_party_binding_default,
-  "sso-app": sso_app_default,
-  "sso-channel": sso_channel_default,
-  "sso-auth-code": sso_auth_code_default,
-  "sso-token": sso_token_default,
-  "sso-user-app-role": sso_user_app_role_default,
-  "sso-login-log": sso_login_log_default,
-  "sso-invite-code": sso_invite_code_default,
-  "sso-invite-usage": sso_invite_usage_default,
-  "sso-referral-relation": sso_referral_relation_default,
-  "sso-invite-stats": sso_invite_stats_default,
-  "sso-oauth-config": sso_oauth_config_default,
-  "sso-sms-code": sso_sms_code_default,
-  "msg-template": msg_template_default,
-  "msg-template-version": msg_template_version_default,
-  "msg-job": msg_job_default,
-  "sop-rule": sop_rule_default,
-  "manual-sop-todo": manual_sop_todo_default,
-  "sso-user-profile": sso_user_profile_default,
-  "sso-follow-up": sso_follow_up_default,
-  "sso-quota-config": sso_quota_config_default,
-  "sso-wx-event": sso_wx_event_default,
-  "sso-wx-qrcode": sso_wx_qrcode_default,
-  "sso-wx-menu": sso_wx_menu_default,
-  "sso-wx-reply": sso_wx_reply_default,
-  "sso-wx-material": sso_wx_material_default,
-  "sso-wx-article": sso_wx_article_default
+const contentTypes = {
+  "sso-user": ssoUser$1,
+  "sso-third-party-binding": ssoThirdPartyBinding,
+  "sso-app": ssoApp$1,
+  "sso-channel": ssoChannel$1,
+  "sso-auth-code": ssoAuthCode,
+  "sso-token": ssoToken,
+  "sso-user-app-role": ssoUserAppRole,
+  "sso-login-log": ssoLoginLog$1,
+  "sso-invite-code": ssoInviteCode,
+  "sso-invite-usage": ssoInviteUsage,
+  "sso-referral-relation": ssoReferralRelation,
+  "sso-invite-stats": ssoInviteStats,
+  "sso-oauth-config": ssoOauthConfig$1,
+  "sso-sms-code": ssoSmsCode,
+  "msg-template": msgTemplate,
+  "msg-template-version": msgTemplateVersion,
+  "msg-job": msgJob,
+  "sop-rule": sopRule,
+  "manual-sop-todo": manualSopTodo,
+  "sso-user-profile": ssoUserProfile,
+  "sso-follow-up": ssoFollowUp,
+  "sso-quota-config": ssoQuotaConfig,
+  "sso-wx-event": ssoWxEvent,
+  "sso-wx-qrcode": ssoWxQrcode$1,
+  "sso-wx-menu": ssoWxMenu$1,
+  "sso-wx-reply": ssoWxReply$1,
+  "sso-wx-material": ssoWxMaterial$1,
+  "sso-wx-article": ssoWxArticle$1
 };
-
-// server/src/controllers/auth-controller.ts
-var auth_controller_default = ({ strapi }) => ({
+const authController = ({ strapi }) => ({
   async login(ctx) {
     const body = ctx.request.body?.data || ctx.request.body;
     const { type, identifier, password, code, app_code, channel_code, invite_code } = body;
     if (!type) {
       ctx.status = 400;
-      ctx.body = { error: "type \u5FC5\u586B" };
+      ctx.body = { error: "type 必填" };
       return;
     }
     if (!app_code) {
       ctx.status = 400;
-      ctx.body = { error: "app_code \u5FC5\u586B" };
+      ctx.body = { error: "app_code 必填" };
       return;
     }
     const authService = strapi.plugin("zhao-sso").service("sso-auth");
@@ -1233,7 +836,7 @@ var auth_controller_default = ({ strapi }) => ({
     const { mobile, scene } = body;
     if (!mobile) {
       ctx.status = 400;
-      ctx.body = { error: "mobile \u5FC5\u586B" };
+      ctx.body = { error: "mobile 必填" };
       return;
     }
     const smsService = strapi.plugin("zhao-sso").service("sso-sms");
@@ -1249,7 +852,7 @@ var auth_controller_default = ({ strapi }) => ({
     const body = ctx.request.body?.data || ctx.request.body;
     if (!body.app_code) {
       ctx.status = 400;
-      ctx.body = { error: "app_code \u5FC5\u586B" };
+      ctx.body = { error: "app_code 必填" };
       return;
     }
     const authService = strapi.plugin("zhao-sso").service("sso-auth");
@@ -1278,7 +881,7 @@ var auth_controller_default = ({ strapi }) => ({
     const token = ctx.state.ssoToken;
     if (!token) {
       ctx.status = 401;
-      ctx.body = { error: "\u672A\u63D0\u4F9B Token" };
+      ctx.body = { error: "未提供 Token" };
       return;
     }
     const authService = strapi.plugin("zhao-sso").service("sso-auth");
@@ -1295,7 +898,7 @@ var auth_controller_default = ({ strapi }) => ({
     const { refresh_token } = body;
     if (!refresh_token) {
       ctx.status = 400;
-      ctx.body = { error: "refresh_token \u5FC5\u586B" };
+      ctx.body = { error: "refresh_token 必填" };
       return;
     }
     const authService = strapi.plugin("zhao-sso").service("sso-auth");
@@ -1311,7 +914,7 @@ var auth_controller_default = ({ strapi }) => ({
     const token = ctx.state.ssoToken;
     if (!token) {
       ctx.status = 401;
-      ctx.body = { error: "\u672A\u63D0\u4F9B Token" };
+      ctx.body = { error: "未提供 Token" };
       return;
     }
     const authService = strapi.plugin("zhao-sso").service("sso-auth");
@@ -1324,22 +927,20 @@ var auth_controller_default = ({ strapi }) => ({
     }
   }
 });
-
-// server/src/controllers/oauth-controller.ts
-var oauth_controller_default = ({ strapi }) => ({
+const oauthController = ({ strapi }) => ({
   async authorize(ctx) {
     try {
       const { app_code, redirect_uri, response_type, state, channel_code } = ctx.query;
       if (!app_code || !redirect_uri || response_type !== "code") {
         ctx.status = 400;
-        ctx.body = { error: "app_code, redirect_uri, response_type=code \u5FC5\u586B" };
+        ctx.body = { error: "app_code, redirect_uri, response_type=code 必填" };
         return;
       }
-      const ssoUser = ctx.state.ssoUser;
-      if (ssoUser) {
+      const ssoUser2 = ctx.state.ssoUser;
+      if (ssoUser2) {
         const oauthService = strapi.plugin("zhao-sso").service("sso-oauth");
         const code = await oauthService.generateAuthCode({
-          userId: ssoUser.sub,
+          userId: ssoUser2.sub,
           appCode: app_code,
           redirectUri: redirect_uri,
           channelCode: channel_code
@@ -1368,7 +969,7 @@ var oauth_controller_default = ({ strapi }) => ({
     if (grant_type === "authorization_code") {
       if (!code || !app_code || !app_secret || !redirect_uri) {
         ctx.status = 400;
-        ctx.body = { error: "code, app_code, app_secret, redirect_uri \u5FC5\u586B" };
+        ctx.body = { error: "code, app_code, app_secret, redirect_uri 必填" };
         return;
       }
       const oauthService = strapi.plugin("zhao-sso").service("sso-oauth");
@@ -1400,7 +1001,7 @@ var oauth_controller_default = ({ strapi }) => ({
       const { refresh_token } = body;
       if (!refresh_token) {
         ctx.status = 400;
-        ctx.body = { error: "refresh_token \u5FC5\u586B" };
+        ctx.body = { error: "refresh_token 必填" };
         return;
       }
       const authService = strapi.plugin("zhao-sso").service("sso-auth");
@@ -1414,7 +1015,7 @@ var oauth_controller_default = ({ strapi }) => ({
       return;
     }
     ctx.status = 400;
-    ctx.body = { error: "\u4E0D\u652F\u6301\u7684 grant_type" };
+    ctx.body = { error: "不支持的 grant_type" };
     return;
   },
   /**
@@ -1432,7 +1033,7 @@ var oauth_controller_default = ({ strapi }) => ({
     const { code, app_code, redirect_uri } = body;
     if (!code || !app_code || !redirect_uri) {
       ctx.status = 400;
-      ctx.body = { error: "code, app_code, redirect_uri \u5FC5\u586B" };
+      ctx.body = { error: "code, app_code, redirect_uri 必填" };
       return;
     }
     const oauthService = strapi.plugin("zhao-sso").service("sso-oauth");
@@ -1441,12 +1042,12 @@ var oauth_controller_default = ({ strapi }) => ({
       const app = await oauthService.findApp(app_code);
       if (!app || !app.is_active) {
         ctx.status = 404;
-        ctx.body = { error: "\u5E94\u7528\u4E0D\u5B58\u5728\u6216\u5DF2\u7981\u7528" };
+        ctx.body = { error: "应用不存在或已禁用" };
         return;
       }
       if (!oauthService.validateRedirectUri(app, redirect_uri)) {
         ctx.status = 400;
-        ctx.body = { error: "redirect_uri \u4E0D\u5728\u767D\u540D\u5355" };
+        ctx.body = { error: "redirect_uri 不在白名单" };
         return;
       }
       const { userId, channelCode, isNew } = await oauthService.exchangeCodeInternal({
@@ -1482,14 +1083,14 @@ var oauth_controller_default = ({ strapi }) => ({
       redirectUri = redirect_uri;
       if (!redirectUri) {
         ctx.status = 400;
-        ctx.body = { error: "redirect_uri \u5FC5\u586B" };
+        ctx.body = { error: "redirect_uri 必填" };
         return;
       }
       const oauthService = strapi.plugin("zhao-sso").service("sso-oauth");
       const app = await oauthService.findApp(app_code || "course");
       if (!app || !app.is_active) {
         ctx.status = 404;
-        ctx.body = { error: "\u5E94\u7528\u4E0D\u5B58\u5728\u6216\u5DF2\u7981\u7528" };
+        ctx.body = { error: "应用不存在或已禁用" };
         return;
       }
       const userAgent = ctx.request.headers["user-agent"] || "";
@@ -1506,7 +1107,7 @@ var oauth_controller_default = ({ strapi }) => ({
         const loginConfig = await wechatService.getWechatLoginConfig(appType);
         const allowedScopes = loginConfig?.oauthScopes || [];
         if (allowedScopes.length > 0 && !allowedScopes.includes(scope)) {
-          throw new Error(`\u4E0D\u652F\u6301\u7684 scope: ${scope}`);
+          throw new Error(`不支持的 scope: ${scope}`);
         }
       }
       state = Buffer.from(JSON.stringify({
@@ -1522,7 +1123,7 @@ var oauth_controller_default = ({ strapi }) => ({
       const callbackUrl = `https://${host}/api/zhao-sso/v1/auth/wechat/callback`;
       const ssoHost = process.env.SSO_HOST || ctx.request.host;
       if (host !== ssoHost) {
-        strapi.log.warn(`[zhao-sso] callbackUrl host \u4E0D\u5339\u914D: ${host} != ${ssoHost}\uFF0C\u5FAE\u4FE1\u56DE\u8C03\u5C06\u56DE SSO \u670D\u52A1\u5668`);
+        strapi.log.warn(`[zhao-sso] callbackUrl host 不匹配: ${host} != ${ssoHost}，微信回调将回 SSO 服务器`);
       }
       const url = await wechatService.getAuthorizeUrl(state, appType, scope, callbackUrl);
       ctx.redirect(url);
@@ -1540,7 +1141,7 @@ var oauth_controller_default = ({ strapi }) => ({
     const { code, state } = ctx.query;
     if (!code) {
       ctx.status = 400;
-      ctx.body = { error: "\u5FAE\u4FE1\u6388\u6743\u7801\u7F3A\u5931" };
+      ctx.body = { error: "微信授权码缺失" };
       return;
     }
     let stateData = {};
@@ -1551,7 +1152,7 @@ var oauth_controller_default = ({ strapi }) => ({
     const redirectUri = stateData.redirect_uri;
     if (!redirectUri) {
       ctx.status = 400;
-      ctx.body = { error: "state \u4E2D redirect_uri \u7F3A\u5931" };
+      ctx.body = { error: "state 中 redirect_uri 缺失" };
       return;
     }
     const wechatService = strapi.plugin("zhao-sso").service("sso-wechat");
@@ -1566,19 +1167,19 @@ var oauth_controller_default = ({ strapi }) => ({
             appCode: stateData.app_code || "course",
             channelCode: stateData.channel_code
           });
-          if (invRes.skip) strapi.log.info(`[zhao-sso] \u5FAE\u4FE1\u56DE\u8C03\u5206\u9500\u5173\u7CFB\u5DF2\u5B58\u5728\uFF0C\u8DF3\u8FC7: userId=${userId}`);
-          else strapi.log.info(`[zhao-sso] \u5FAE\u4FE1\u56DE\u8C03\u5206\u9500\u5173\u7CFB: ${invRes.message}`);
+          if (invRes.skip) strapi.log.info(`[zhao-sso] 微信回调分销关系已存在，跳过: userId=${userId}`);
+          else strapi.log.info(`[zhao-sso] 微信回调分销关系: ${invRes.message}`);
         } catch (ie) {
-          strapi.log.warn(`[zhao-sso] \u5FAE\u4FE1\u56DE\u8C03\u5EFA\u7ACBsso\u5206\u9500\u5173\u7CFB\u5F02\u5E38: ${ie.message}`);
+          strapi.log.warn(`[zhao-sso] 微信回调建立sso分销关系异常: ${ie.message}`);
         }
       }
       try {
-        const channelSync = strapi.plugin("zhao-sso").service("channel-sync").getSync();
-        if (channelSync) {
-          await channelSync.syncUserInvite(userId, stateData.invite_code, stateData.channel_code);
+        const channelSync2 = strapi.plugin("zhao-sso").service("channel-sync").getSync();
+        if (channelSync2) {
+          await channelSync2.syncUserInvite(userId, stateData.invite_code, stateData.channel_code);
         }
       } catch (ce) {
-        strapi.log.warn(`[zhao-sso] \u5FAE\u4FE1\u56DE\u8C03\u6E20\u9053\u540C\u6B65\u5931\u8D25: ${ce.message}`);
+        strapi.log.warn(`[zhao-sso] 微信回调渠道同步失败: ${ce.message}`);
       }
       const appCode = stateData.app_code || "course";
       const authCode = await oauthService.generateAuthCode({
@@ -1601,7 +1202,7 @@ var oauth_controller_default = ({ strapi }) => ({
     const { app_code, identifier, password, redirect_uri, state, invite_code, channel_code, scopes } = body;
     if (!app_code || !identifier || !password || !redirect_uri) {
       ctx.status = 400;
-      ctx.body = { error: "app_code, identifier, password, redirect_uri \u5FC5\u586B" };
+      ctx.body = { error: "app_code, identifier, password, redirect_uri 必填" };
       return;
     }
     const authService = strapi.plugin("zhao-sso").service("sso-auth");
@@ -1637,14 +1238,14 @@ var oauth_controller_default = ({ strapi }) => ({
       const { code, appCode, inviteCode, channelCode } = body;
       if (!code || !appCode) {
         ctx.status = 400;
-        ctx.body = { error: "invalid_request", error_description: "code \u548C appCode \u5FC5\u586B" };
+        ctx.body = { error: "invalid_request", error_description: "code 和 appCode 必填" };
         return;
       }
       const oauthService = strapi.plugin("zhao-sso").service("sso-oauth");
       const app = await oauthService.findApp(appCode);
       if (!app || !app.is_active) {
         ctx.status = 404;
-        ctx.body = { error: "app_not_found", error_description: "\u5E94\u7528\u4E0D\u5B58\u5728\u6216\u5DF2\u7981\u7528" };
+        ctx.body = { error: "app_not_found", error_description: "应用不存在或已禁用" };
         return;
       }
       const wechatService = strapi.plugin("zhao-sso").service("sso-wechat");
@@ -1657,26 +1258,26 @@ var oauth_controller_default = ({ strapi }) => ({
             appCode,
             channelCode
           });
-          if (invRes.skip) strapi.log.info(`[zhao-sso] \u5C0F\u7A0B\u5E8F\u767B\u5F55\u5206\u9500\u5173\u7CFB\u5DF2\u5B58\u5728\uFF0C\u8DF3\u8FC7: userId=${userId}`);
-          else strapi.log.info(`[zhao-sso] \u5C0F\u7A0B\u5E8F\u767B\u5F55\u5206\u9500\u5173\u7CFB: ${invRes.message}`);
+          if (invRes.skip) strapi.log.info(`[zhao-sso] 小程序登录分销关系已存在，跳过: userId=${userId}`);
+          else strapi.log.info(`[zhao-sso] 小程序登录分销关系: ${invRes.message}`);
         } catch (ie) {
-          strapi.log.warn(`[zhao-sso] \u5C0F\u7A0B\u5E8F\u767B\u5F55\u5EFA\u7ACBsso\u5206\u9500\u5173\u7CFB\u5F02\u5E38: ${ie.message}`);
+          strapi.log.warn(`[zhao-sso] 小程序登录建立sso分销关系异常: ${ie.message}`);
         }
       }
       try {
-        const channelSync = strapi.plugin("zhao-sso").service("channel-sync").getSync();
-        if (channelSync) {
-          await channelSync.syncUserInvite(userId, inviteCode, channelCode);
+        const channelSync2 = strapi.plugin("zhao-sso").service("channel-sync").getSync();
+        if (channelSync2) {
+          await channelSync2.syncUserInvite(userId, inviteCode, channelCode);
         }
       } catch (ce) {
-        strapi.log.warn(`[zhao-sso] \u5C0F\u7A0B\u5E8F\u767B\u5F55\u6E20\u9053\u540C\u6B65\u5931\u8D25: ${ce.message}`);
+        strapi.log.warn(`[zhao-sso] 小程序登录渠道同步失败: ${ce.message}`);
       }
       const authService = strapi.plugin("zhao-sso").service("sso-auth");
       const userService = strapi.plugin("zhao-sso").service("sso-user");
       const user = await userService.findById(userId);
       if (!user) {
         ctx.status = 404;
-        ctx.body = { error: "user_not_found", error_description: "\u7528\u6237\u4E0D\u5B58\u5728" };
+        ctx.body = { error: "user_not_found", error_description: "用户不存在" };
         return;
       }
       try {
@@ -1692,7 +1293,7 @@ var oauth_controller_default = ({ strapi }) => ({
           success: true
         });
       } catch (le) {
-        strapi.log.warn(`[zhao-sso] \u5C0F\u7A0B\u5E8F\u767B\u5F55\u65E5\u5FD7\u5199\u5165\u5931\u8D25: ${le.message}`);
+        strapi.log.warn(`[zhao-sso] 小程序登录日志写入失败: ${le.message}`);
       }
       const roles = await authService.getUserRoles(user.id, appCode);
       const tokenPair = await strapi.plugin("zhao-sso").service("sso-jwt").signTokenPair({
@@ -1714,32 +1315,32 @@ var oauth_controller_default = ({ strapi }) => ({
       const { code, appCode, inviteCode, channelCode } = body;
       if (!code || !appCode) {
         ctx.status = 400;
-        ctx.body = { error: "invalid_request", error_description: "code \u548C appCode \u5FC5\u586B" };
+        ctx.body = { error: "invalid_request", error_description: "code 和 appCode 必填" };
         return;
       }
       const oauthService = strapi.plugin("zhao-sso").service("sso-oauth");
       const app = await oauthService.findApp(appCode);
       if (!app || !app.is_active) {
         ctx.status = 404;
-        ctx.body = { error: "app_not_found", error_description: "\u5E94\u7528\u4E0D\u5B58\u5728\u6216\u5DF2\u7981\u7528" };
+        ctx.body = { error: "app_not_found", error_description: "应用不存在或已禁用" };
         return;
       }
       const wechatService = strapi.plugin("zhao-sso").service("sso-wechat");
       const { userId, isNew } = await wechatService.handleCallback(code, "app");
       try {
-        const channelSync = strapi.plugin("zhao-sso").service("channel-sync").getSync();
-        if (channelSync) {
-          await channelSync.syncUserInvite(userId, inviteCode, channelCode);
+        const channelSync2 = strapi.plugin("zhao-sso").service("channel-sync").getSync();
+        if (channelSync2) {
+          await channelSync2.syncUserInvite(userId, inviteCode, channelCode);
         }
       } catch (ce) {
-        strapi.log.warn(`[zhao-sso] App \u767B\u5F55\u5206\u9500\u540C\u6B65\u5931\u8D25: ${ce.message}`);
+        strapi.log.warn(`[zhao-sso] App 登录分销同步失败: ${ce.message}`);
       }
       const authService = strapi.plugin("zhao-sso").service("sso-auth");
       const userService = strapi.plugin("zhao-sso").service("sso-user");
       const user = await userService.findById(userId);
       if (!user) {
         ctx.status = 404;
-        ctx.body = { error: "user_not_found", error_description: "\u7528\u6237\u4E0D\u5B58\u5728" };
+        ctx.body = { error: "user_not_found", error_description: "用户不存在" };
         return;
       }
       try {
@@ -1755,7 +1356,7 @@ var oauth_controller_default = ({ strapi }) => ({
           success: true
         });
       } catch (le) {
-        strapi.log.warn(`[zhao-sso] App \u767B\u5F55\u65E5\u5FD7\u5199\u5165\u5931\u8D25: ${le.message}`);
+        strapi.log.warn(`[zhao-sso] App 登录日志写入失败: ${le.message}`);
       }
       const roles = await authService.getUserRoles(user.id, appCode);
       const tokenPair = await strapi.plugin("zhao-sso").service("sso-jwt").signTokenPair({
@@ -1777,7 +1378,7 @@ var oauth_controller_default = ({ strapi }) => ({
       const { url, appType } = body;
       if (!url) {
         ctx.status = 400;
-        ctx.body = { error: "invalid_request", error_description: "url \u5FC5\u586B" };
+        ctx.body = { error: "invalid_request", error_description: "url 必填" };
         return;
       }
       const wechatService = strapi.plugin("zhao-sso").service("sso-wechat");
@@ -1792,12 +1393,12 @@ var oauth_controller_default = ({ strapi }) => ({
     try {
       const { appType } = ctx.query;
       const wechatService = strapi.plugin("zhao-sso").service("sso-wechat");
-      const config = await wechatService.getWechatLoginConfig(appType || "official_account");
+      const config2 = await wechatService.getWechatLoginConfig(appType || "official_account");
       ctx.body = {
-        enabled: config?.enabled ?? false,
+        enabled: config2?.enabled ?? false,
         appType: appType || "official_account",
-        oauthScopes: config?.oauthScopes || [],
-        appId: config?.appId || null
+        oauthScopes: config2?.oauthScopes || [],
+        appId: config2?.appId || null
       };
     } catch (e) {
       ctx.status = e.status || 400;
@@ -1809,14 +1410,14 @@ var oauth_controller_default = ({ strapi }) => ({
       const { app_code, channel_code, invite_code, redirect_uri } = ctx.query;
       if (!redirect_uri) {
         ctx.status = 400;
-        ctx.body = { error: "redirect_uri \u5FC5\u586B" };
+        ctx.body = { error: "redirect_uri 必填" };
         return;
       }
       const oauthService = strapi.plugin("zhao-sso").service("sso-oauth");
       const app = await oauthService.findApp(app_code || "course");
       if (!app || !app.is_active) {
         ctx.status = 404;
-        ctx.body = { error: "\u5E94\u7528\u4E0D\u5B58\u5728\u6216\u5DF2\u7981\u7528" };
+        ctx.body = { error: "应用不存在或已禁用" };
         return;
       }
       const alipayService = strapi.plugin("zhao-sso").service("sso-alipay");
@@ -1837,7 +1438,7 @@ var oauth_controller_default = ({ strapi }) => ({
     const { auth_code, state } = ctx.query;
     if (!auth_code) {
       ctx.status = 400;
-      ctx.body = { error: "\u652F\u4ED8\u5B9D\u6388\u6743\u7801\u7F3A\u5931" };
+      ctx.body = { error: "支付宝授权码缺失" };
       return;
     }
     let stateData = {};
@@ -1848,7 +1449,7 @@ var oauth_controller_default = ({ strapi }) => ({
     const redirectUri = stateData.redirect_uri;
     if (!redirectUri) {
       ctx.status = 400;
-      ctx.body = { error: "state \u4E2D redirect_uri \u7F3A\u5931" };
+      ctx.body = { error: "state 中 redirect_uri 缺失" };
       return;
     }
     const alipayService = strapi.plugin("zhao-sso").service("sso-alipay");
@@ -1864,19 +1465,19 @@ var oauth_controller_default = ({ strapi }) => ({
             appCode: stateData.app_code || "course",
             channelCode: stateData.channel_code
           });
-          if (invRes.skip) strapi.log.info(`[zhao-sso] alipay \u5206\u9500\u5173\u7CFB\u5DF2\u5B58\u5728\uFF0C\u8DF3\u8FC7: userId=${userId}`);
-          else strapi.log.info(`[zhao-sso] alipay \u5206\u9500\u5173\u7CFB: ${invRes.message}`);
+          if (invRes.skip) strapi.log.info(`[zhao-sso] alipay 分销关系已存在，跳过: userId=${userId}`);
+          else strapi.log.info(`[zhao-sso] alipay 分销关系: ${invRes.message}`);
         } catch (ie) {
-          strapi.log.warn(`[zhao-sso] alipay \u5EFA\u7ACBsso\u5206\u9500\u5173\u7CFB\u5F02\u5E38: ${ie.message}`);
+          strapi.log.warn(`[zhao-sso] alipay 建立sso分销关系异常: ${ie.message}`);
         }
       }
       try {
-        const channelSync = strapi.plugin("zhao-sso").service("channel-sync").getSync();
-        if (channelSync) {
-          await channelSync.syncUserInvite(userId, stateData.invite_code || "", stateData.channel_code || "");
+        const channelSync2 = strapi.plugin("zhao-sso").service("channel-sync").getSync();
+        if (channelSync2) {
+          await channelSync2.syncUserInvite(userId, stateData.invite_code || "", stateData.channel_code || "");
         }
       } catch (e) {
-        strapi.log.warn(`[zhao-sso] alipay \u6E20\u9053\u540C\u6B65\u5931\u8D25: ${e.message}`);
+        strapi.log.warn(`[zhao-sso] alipay 渠道同步失败: ${e.message}`);
       }
       const authCode = await oauthService.generateAuthCode({
         userId,
@@ -1894,22 +1495,20 @@ var oauth_controller_default = ({ strapi }) => ({
     }
   }
 });
-
-// server/src/controllers/user-controller.ts
-var user_controller_default = ({ strapi }) => ({
+const userController = ({ strapi }) => ({
   async me(ctx) {
     try {
-      const ssoUser = ctx.state.ssoUser;
-      if (!ssoUser) {
+      const ssoUser2 = ctx.state.ssoUser;
+      if (!ssoUser2) {
         ctx.status = 401;
-        ctx.body = { error: "\u672A\u8BA4\u8BC1" };
+        ctx.body = { error: "未认证" };
         return;
       }
       const userService = strapi.plugin("zhao-sso").service("sso-user");
-      const user = await userService.findByUuid(ssoUser.sub);
+      const user = await userService.findByUuid(ssoUser2.sub);
       if (!user) {
         ctx.status = 404;
-        ctx.body = { error: "\u7528\u6237\u4E0D\u5B58\u5728" };
+        ctx.body = { error: "用户不存在" };
         return;
       }
       let ownInviteCode = "";
@@ -1925,7 +1524,7 @@ var user_controller_default = ({ strapi }) => ({
           }
         }
       } catch (e) {
-        strapi.log.warn(`[user-controller] \u83B7\u53D6 ownInviteCode \u5931\u8D25: ${e?.message || e}`);
+        strapi.log.warn(`[user-controller] 获取 ownInviteCode 失败: ${e?.message || e}`);
       }
       let wxOpenid = "";
       try {
@@ -1936,7 +1535,7 @@ var user_controller_default = ({ strapi }) => ({
         });
         wxOpenid = binding?.provider_user_id || "";
       } catch (e) {
-        strapi.log.warn(`[user-controller] \u83B7\u53D6 wechat openid \u5931\u8D25: ${e?.message || e}`);
+        strapi.log.warn(`[user-controller] 获取 wechat openid 失败: ${e?.message || e}`);
       }
       ctx.body = { ...user, ownInviteCode, openid: wxOpenid };
     } catch (e) {
@@ -1946,33 +1545,33 @@ var user_controller_default = ({ strapi }) => ({
   },
   async bind(ctx) {
     try {
-      const ssoUser = ctx.state.ssoUser;
-      if (!ssoUser) {
+      const ssoUser2 = ctx.state.ssoUser;
+      if (!ssoUser2) {
         ctx.status = 401;
-        ctx.body = { error: "\u672A\u8BA4\u8BC1" };
+        ctx.body = { error: "未认证" };
         return;
       }
       const body = ctx.request.body?.data || ctx.request.body;
       const { type, identifier, password, provider_data } = body;
       const userService = strapi.plugin("zhao-sso").service("sso-user");
-      const user = await userService.findByUuid(ssoUser.sub);
+      const user = await userService.findByUuid(ssoUser2.sub);
       if (!user) {
         ctx.status = 404;
-        ctx.body = { error: "\u7528\u6237\u4E0D\u5B58\u5728" };
+        ctx.body = { error: "用户不存在" };
         return;
       }
       if (type === "mobile" || type === "email" || type === "username") {
         await userService.bindContact(user.id, type, identifier, password);
-        ctx.body = { success: true, message: `\u5DF2\u7ED1\u5B9A ${type}` };
+        ctx.body = { success: true, message: `已绑定 ${type}` };
         return;
       }
       if (type === "third_party" && provider_data) {
         await userService.bindThirdParty(user.id, provider_data);
-        ctx.body = { success: true, message: "\u5DF2\u7ED1\u5B9A\u7B2C\u4E09\u65B9\u8D26\u53F7" };
+        ctx.body = { success: true, message: "已绑定第三方账号" };
         return;
       }
       ctx.status = 400;
-      ctx.body = { error: "\u4E0D\u652F\u6301\u7684\u7ED1\u5B9A\u7C7B\u578B" };
+      ctx.body = { error: "不支持的绑定类型" };
     } catch (e) {
       ctx.status = e.status || 400;
       ctx.body = { error: e.message };
@@ -1980,23 +1579,23 @@ var user_controller_default = ({ strapi }) => ({
   },
   async unbind(ctx) {
     try {
-      const ssoUser = ctx.state.ssoUser;
-      if (!ssoUser) {
+      const ssoUser2 = ctx.state.ssoUser;
+      if (!ssoUser2) {
         ctx.status = 401;
-        ctx.body = { error: "\u672A\u8BA4\u8BC1" };
+        ctx.body = { error: "未认证" };
         return;
       }
       const body = ctx.request.body?.data || ctx.request.body;
       const { provider } = body;
       if (!provider) {
         ctx.status = 400;
-        ctx.body = { error: "provider \u5FC5\u586B" };
+        ctx.body = { error: "provider 必填" };
         return;
       }
-      const user = await strapi.plugin("zhao-sso").service("sso-user").findByUuid(ssoUser.sub);
+      const user = await strapi.plugin("zhao-sso").service("sso-user").findByUuid(ssoUser2.sub);
       if (!user) {
         ctx.status = 404;
-        ctx.body = { error: "\u7528\u6237\u4E0D\u5B58\u5728" };
+        ctx.body = { error: "用户不存在" };
         return;
       }
       await strapi.plugin("zhao-sso").service("sso-user").unbindThirdParty(user.id, provider);
@@ -2008,30 +1607,30 @@ var user_controller_default = ({ strapi }) => ({
   },
   async changePassword(ctx) {
     try {
-      const ssoUser = ctx.state.ssoUser;
-      if (!ssoUser) {
+      const ssoUser2 = ctx.state.ssoUser;
+      if (!ssoUser2) {
         ctx.status = 401;
-        ctx.body = { error: "\u672A\u8BA4\u8BC1" };
+        ctx.body = { error: "未认证" };
         return;
       }
       const body = ctx.request.body?.data || ctx.request.body;
       const { old_password, new_password } = body;
       if (!old_password || !new_password) {
         ctx.status = 400;
-        ctx.body = { error: "old_password \u548C new_password \u5FC5\u586B" };
+        ctx.body = { error: "old_password 和 new_password 必填" };
         return;
       }
       const userService = strapi.plugin("zhao-sso").service("sso-user");
-      const user = await userService.findByUuid(ssoUser.sub);
+      const user = await userService.findByUuid(ssoUser2.sub);
       if (!user) {
         ctx.status = 404;
-        ctx.body = { error: "\u7528\u6237\u4E0D\u5B58\u5728" };
+        ctx.body = { error: "用户不存在" };
         return;
       }
       const valid = await userService.verifyPassword(user, old_password);
       if (!valid) {
         ctx.status = 400;
-        ctx.body = { error: "\u65E7\u5BC6\u7801\u9519\u8BEF" };
+        ctx.body = { error: "旧密码错误" };
         return;
       }
       await userService.changePassword(user.id, new_password);
@@ -2044,24 +1643,24 @@ var user_controller_default = ({ strapi }) => ({
   /** 自助修改本人昵称（个人中心入口） */
   async updateProfile(ctx) {
     try {
-      const ssoUser = ctx.state.ssoUser;
-      if (!ssoUser) {
+      const ssoUser2 = ctx.state.ssoUser;
+      if (!ssoUser2) {
         ctx.status = 401;
-        ctx.body = { error: "\u672A\u8BA4\u8BC1" };
+        ctx.body = { error: "未认证" };
         return;
       }
       const body = ctx.request.body?.data || ctx.request.body;
       const nickname = typeof body.nickname === "string" ? body.nickname.trim() : "";
       if (!nickname) {
         ctx.status = 400;
-        ctx.body = { error: "\u6635\u79F0\u4E0D\u80FD\u4E3A\u7A7A" };
+        ctx.body = { error: "昵称不能为空" };
         return;
       }
       const userService = strapi.plugin("zhao-sso").service("sso-user");
-      const user = await userService.findByUuid(ssoUser.sub);
+      const user = await userService.findByUuid(ssoUser2.sub);
       if (!user) {
         ctx.status = 404;
-        ctx.body = { error: "\u7528\u6237\u4E0D\u5B58\u5728" };
+        ctx.body = { error: "用户不存在" };
         return;
       }
       ctx.body = await userService.updateNickname(user.id, nickname);
@@ -2071,16 +1670,14 @@ var user_controller_default = ({ strapi }) => ({
     }
   }
 });
-
-// server/src/controllers/channel-controller.ts
-var channel_controller_default = ({ strapi }) => ({
+const channelController = ({ strapi }) => ({
   async track(ctx) {
     try {
       const body = ctx.request.body?.data || ctx.request.body;
       const { channel_code, utm_source, utm_medium, utm_campaign } = body;
       if (!channel_code) {
         ctx.status = 400;
-        ctx.body = { error: "channel_code \u5FC5\u586B" };
+        ctx.body = { error: "channel_code 必填" };
         return;
       }
       const channelService = strapi.plugin("zhao-sso").service("sso-channel");
@@ -2091,7 +1688,7 @@ var channel_controller_default = ({ strapi }) => ({
       });
       if (!result) {
         ctx.status = 404;
-        ctx.body = { error: "\u6E20\u9053\u4E0D\u5B58\u5728" };
+        ctx.body = { error: "渠道不存在" };
         return;
       }
       ctx.body = { success: true, channel: result.channel, utm: result.utm };
@@ -2101,9 +1698,7 @@ var channel_controller_default = ({ strapi }) => ({
     }
   }
 });
-
-// server/src/controllers/admin-controller.ts
-var admin_controller_default = ({ strapi }) => ({
+const adminController = ({ strapi }) => ({
   async dashboard(ctx) {
     try {
       const userService = strapi.plugin("zhao-sso").service("sso-user");
@@ -2160,7 +1755,7 @@ var admin_controller_default = ({ strapi }) => ({
       const user = await userService.findOneWithBindings(parseInt(id));
       if (!user) {
         ctx.status = 404;
-        ctx.body = { error: "\u7528\u6237\u4E0D\u5B58\u5728" };
+        ctx.body = { error: "用户不存在" };
         return;
       }
       ctx.body = user;
@@ -2229,7 +1824,7 @@ var admin_controller_default = ({ strapi }) => ({
       const app = await appService.findOne(parseInt(id));
       if (!app) {
         ctx.status = 404;
-        ctx.body = { error: "\u5E94\u7528\u4E0D\u5B58\u5728" };
+        ctx.body = { error: "应用不存在" };
         return;
       }
       ctx.body = { data: app };
@@ -2245,7 +1840,7 @@ var admin_controller_default = ({ strapi }) => ({
       const app = await appService.findOne(parseInt(id));
       if (!app) {
         ctx.status = 404;
-        ctx.body = { error: "\u5E94\u7528\u4E0D\u5B58\u5728" };
+        ctx.body = { error: "应用不存在" };
         return;
       }
       await appService.delete(parseInt(id));
@@ -2327,23 +1922,21 @@ var admin_controller_default = ({ strapi }) => ({
     }
   }
 });
-
-// server/src/controllers/token-controller.ts
-var UID = "plugin::zhao-sso.sso-token";
-var token_controller_default = ({ strapi }) => ({
+const UID$8 = "plugin::zhao-sso.sso-token";
+const tokenController = ({ strapi }) => ({
   async list(ctx) {
     try {
       const { page = 1, pageSize = 20, ...filters } = ctx.query;
       const pageNum = Number(page);
       const pageSizeNum = Number(pageSize);
-      const results = await strapi.documents(UID).findMany({
+      const results = await strapi.documents(UID$8).findMany({
         filters,
         populate: "*",
         sort: { createdAt: "desc" },
         limit: pageSizeNum,
         start: (pageNum - 1) * pageSizeNum
       });
-      const total = await strapi.db.query(UID).count({ where: filters });
+      const total = await strapi.db.query(UID$8).count({ where: filters });
       ctx.body = {
         data: results,
         meta: { pagination: { page: pageNum, pageSize: pageSizeNum, total } }
@@ -2356,10 +1949,10 @@ var token_controller_default = ({ strapi }) => ({
   async findOne(ctx) {
     try {
       const { id } = ctx.params;
-      const result = await strapi.documents(UID).findOne({ documentId: id, populate: "*" });
+      const result = await strapi.documents(UID$8).findOne({ documentId: id, populate: "*" });
       if (!result) {
         ctx.status = 404;
-        ctx.body = { error: "Token \u4E0D\u5B58\u5728" };
+        ctx.body = { error: "Token 不存在" };
         return;
       }
       ctx.body = { data: result };
@@ -2371,7 +1964,7 @@ var token_controller_default = ({ strapi }) => ({
   async delete(ctx) {
     try {
       const { id } = ctx.params;
-      const result = await strapi.documents(UID).delete({ documentId: id });
+      const result = await strapi.documents(UID$8).delete({ documentId: id });
       ctx.body = { data: result };
     } catch (e) {
       ctx.status = e.status || 400;
@@ -2379,23 +1972,21 @@ var token_controller_default = ({ strapi }) => ({
     }
   }
 });
-
-// server/src/controllers/auth-code-controller.ts
-var UID2 = "plugin::zhao-sso.sso-auth-code";
-var auth_code_controller_default = ({ strapi }) => ({
+const UID$7 = "plugin::zhao-sso.sso-auth-code";
+const authCodeController = ({ strapi }) => ({
   async list(ctx) {
     try {
       const { page = 1, pageSize = 20, ...filters } = ctx.query;
       const pageNum = Number(page);
       const pageSizeNum = Number(pageSize);
-      const results = await strapi.documents(UID2).findMany({
+      const results = await strapi.documents(UID$7).findMany({
         filters,
         populate: "*",
         sort: { createdAt: "desc" },
         limit: pageSizeNum,
         start: (pageNum - 1) * pageSizeNum
       });
-      const total = await strapi.db.query(UID2).count({ where: filters });
+      const total = await strapi.db.query(UID$7).count({ where: filters });
       ctx.body = {
         data: results,
         meta: { pagination: { page: pageNum, pageSize: pageSizeNum, total } }
@@ -2408,10 +1999,10 @@ var auth_code_controller_default = ({ strapi }) => ({
   async findOne(ctx) {
     try {
       const { id } = ctx.params;
-      const result = await strapi.documents(UID2).findOne({ documentId: id, populate: "*" });
+      const result = await strapi.documents(UID$7).findOne({ documentId: id, populate: "*" });
       if (!result) {
         ctx.status = 404;
-        ctx.body = { error: "\u6388\u6743\u7801\u4E0D\u5B58\u5728" };
+        ctx.body = { error: "授权码不存在" };
         return;
       }
       ctx.body = { data: result };
@@ -2423,7 +2014,7 @@ var auth_code_controller_default = ({ strapi }) => ({
   async delete(ctx) {
     try {
       const { id } = ctx.params;
-      const result = await strapi.documents(UID2).delete({ documentId: id });
+      const result = await strapi.documents(UID$7).delete({ documentId: id });
       ctx.body = { data: result };
     } catch (e) {
       ctx.status = e.status || 400;
@@ -2431,23 +2022,21 @@ var auth_code_controller_default = ({ strapi }) => ({
     }
   }
 });
-
-// server/src/controllers/binding-controller.ts
-var UID3 = "plugin::zhao-sso.sso-third-party-binding";
-var binding_controller_default = ({ strapi }) => ({
+const UID$6 = "plugin::zhao-sso.sso-third-party-binding";
+const bindingController = ({ strapi }) => ({
   async list(ctx) {
     try {
       const { pagination = {}, ...restFilters } = ctx.query;
       const pageNum = Number(pagination.page || 1);
       const pageSizeNum = Number(pagination.pageSize || 20);
-      const results = await strapi.documents(UID3).findMany({
+      const results = await strapi.documents(UID$6).findMany({
         filters: restFilters,
         populate: "*",
         sort: { createdAt: "desc" },
         limit: pageSizeNum,
         start: (pageNum - 1) * pageSizeNum
       });
-      const total = await strapi.db.query(UID3).count({ where: restFilters });
+      const total = await strapi.db.query(UID$6).count({ where: restFilters });
       ctx.body = {
         data: results,
         meta: { pagination: { page: pageNum, pageSize: pageSizeNum, total } }
@@ -2460,10 +2049,10 @@ var binding_controller_default = ({ strapi }) => ({
   async findOne(ctx) {
     try {
       const { id } = ctx.params;
-      const result = await strapi.documents(UID3).findOne({ documentId: id, populate: "*" });
+      const result = await strapi.documents(UID$6).findOne({ documentId: id, populate: "*" });
       if (!result) {
         ctx.status = 404;
-        ctx.body = { error: "\u7ED1\u5B9A\u8BB0\u5F55\u4E0D\u5B58\u5728" };
+        ctx.body = { error: "绑定记录不存在" };
         return;
       }
       ctx.body = { data: result };
@@ -2475,7 +2064,7 @@ var binding_controller_default = ({ strapi }) => ({
   async create(ctx) {
     try {
       const data = ctx.request.body?.data || ctx.request.body;
-      const result = await strapi.documents(UID3).create({ data, populate: "*" });
+      const result = await strapi.documents(UID$6).create({ data, populate: "*" });
       ctx.body = { data: result };
     } catch (e) {
       ctx.status = e.status || 400;
@@ -2486,7 +2075,7 @@ var binding_controller_default = ({ strapi }) => ({
     try {
       const { id } = ctx.params;
       const data = ctx.request.body?.data || ctx.request.body;
-      const result = await strapi.documents(UID3).update({ documentId: id, data, populate: "*" });
+      const result = await strapi.documents(UID$6).update({ documentId: id, data, populate: "*" });
       ctx.body = { data: result };
     } catch (e) {
       ctx.status = e.status || 400;
@@ -2496,7 +2085,7 @@ var binding_controller_default = ({ strapi }) => ({
   async delete(ctx) {
     try {
       const { id } = ctx.params;
-      const result = await strapi.documents(UID3).delete({ documentId: id });
+      const result = await strapi.documents(UID$6).delete({ documentId: id });
       ctx.body = { data: result };
     } catch (e) {
       ctx.status = e.status || 400;
@@ -2504,30 +2093,28 @@ var binding_controller_default = ({ strapi }) => ({
     }
   }
 });
-
-// server/src/controllers/oauth-config-controller.ts
-var UID4 = "plugin::zhao-sso.sso-oauth-config";
-var sanitize = (doc) => {
+const UID$5 = "plugin::zhao-sso.sso-oauth-config";
+const sanitize$1 = (doc) => {
   if (!doc) return doc;
   const { app_secret, ...rest } = doc;
   return rest;
 };
-var oauth_config_controller_default = ({ strapi }) => ({
+const oauthConfigController = ({ strapi }) => ({
   async list(ctx) {
     try {
       const { pagination = {}, ...restFilters } = ctx.query;
       const pageNum = Number(pagination.page || 1);
       const pageSizeNum = Number(pagination.pageSize || 20);
-      const results = await strapi.documents(UID4).findMany({
+      const results = await strapi.documents(UID$5).findMany({
         filters: restFilters,
         populate: "*",
         sort: { createdAt: "desc" },
         limit: pageSizeNum,
         start: (pageNum - 1) * pageSizeNum
       });
-      const total = await strapi.db.query(UID4).count({ where: restFilters });
+      const total = await strapi.db.query(UID$5).count({ where: restFilters });
       ctx.body = {
-        data: (results || []).map(sanitize),
+        data: (results || []).map(sanitize$1),
         meta: { pagination: { page: pageNum, pageSize: pageSizeNum, total } }
       };
     } catch (e) {
@@ -2538,13 +2125,13 @@ var oauth_config_controller_default = ({ strapi }) => ({
   async findOne(ctx) {
     try {
       const { id } = ctx.params;
-      const result = await strapi.documents(UID4).findOne({ documentId: id, populate: "*" });
+      const result = await strapi.documents(UID$5).findOne({ documentId: id, populate: "*" });
       if (!result) {
         ctx.status = 404;
-        ctx.body = { error: "OAuth \u914D\u7F6E\u4E0D\u5B58\u5728" };
+        ctx.body = { error: "OAuth 配置不存在" };
         return;
       }
-      ctx.body = { data: sanitize(result) };
+      ctx.body = { data: sanitize$1(result) };
     } catch (e) {
       ctx.status = e.status || 400;
       ctx.body = { error: e.message };
@@ -2553,8 +2140,8 @@ var oauth_config_controller_default = ({ strapi }) => ({
   async create(ctx) {
     try {
       const data = ctx.request.body?.data || ctx.request.body;
-      const result = await strapi.documents(UID4).create({ data });
-      ctx.body = { data: sanitize(result) };
+      const result = await strapi.documents(UID$5).create({ data });
+      ctx.body = { data: sanitize$1(result) };
     } catch (e) {
       strapi.log.error(`[zhao-sso] create oauth-config error: ${e?.stack || e?.message || e}`);
       ctx.status = e.status || 400;
@@ -2565,8 +2152,8 @@ var oauth_config_controller_default = ({ strapi }) => ({
     try {
       const { id } = ctx.params;
       const data = ctx.request.body?.data || ctx.request.body;
-      const result = await strapi.documents(UID4).update({ documentId: id, data, populate: "*" });
-      ctx.body = { data: sanitize(result) };
+      const result = await strapi.documents(UID$5).update({ documentId: id, data, populate: "*" });
+      ctx.body = { data: sanitize$1(result) };
     } catch (e) {
       ctx.status = e.status || 400;
       ctx.body = { error: e.message };
@@ -2575,31 +2162,29 @@ var oauth_config_controller_default = ({ strapi }) => ({
   async delete(ctx) {
     try {
       const { id } = ctx.params;
-      const result = await strapi.documents(UID4).delete({ documentId: id });
-      ctx.body = { data: sanitize(result) };
+      const result = await strapi.documents(UID$5).delete({ documentId: id });
+      ctx.body = { data: sanitize$1(result) };
     } catch (e) {
       ctx.status = e.status || 400;
       ctx.body = { error: e.message };
     }
   }
 });
-
-// server/src/controllers/role-controller.ts
-var UID5 = "plugin::zhao-sso.sso-user-app-role";
-var role_controller_default = ({ strapi }) => ({
+const UID$4 = "plugin::zhao-sso.sso-user-app-role";
+const roleController = ({ strapi }) => ({
   async list(ctx) {
     try {
       const { page = 1, pageSize = 20, ...filters } = ctx.query;
       const pageNum = Number(page);
       const pageSizeNum = Number(pageSize);
-      const results = await strapi.documents(UID5).findMany({
+      const results = await strapi.documents(UID$4).findMany({
         filters,
         populate: "*",
         sort: { createdAt: "desc" },
         limit: pageSizeNum,
         start: (pageNum - 1) * pageSizeNum
       });
-      const total = await strapi.db.query(UID5).count({ where: filters });
+      const total = await strapi.db.query(UID$4).count({ where: filters });
       ctx.body = {
         data: results,
         meta: { pagination: { page: pageNum, pageSize: pageSizeNum, total } }
@@ -2612,10 +2197,10 @@ var role_controller_default = ({ strapi }) => ({
   async findOne(ctx) {
     try {
       const { id } = ctx.params;
-      const result = await strapi.documents(UID5).findOne({ documentId: id, populate: "*" });
+      const result = await strapi.documents(UID$4).findOne({ documentId: id, populate: "*" });
       if (!result) {
         ctx.status = 404;
-        ctx.body = { error: "\u7528\u6237\u5E94\u7528\u89D2\u8272\u4E0D\u5B58\u5728" };
+        ctx.body = { error: "用户应用角色不存在" };
         return;
       }
       ctx.body = { data: result };
@@ -2627,7 +2212,7 @@ var role_controller_default = ({ strapi }) => ({
   async create(ctx) {
     try {
       const data = ctx.request.body?.data || ctx.request.body;
-      const result = await strapi.documents(UID5).create({ data, populate: "*" });
+      const result = await strapi.documents(UID$4).create({ data, populate: "*" });
       ctx.body = { data: result };
     } catch (e) {
       ctx.status = e.status || 400;
@@ -2638,7 +2223,7 @@ var role_controller_default = ({ strapi }) => ({
     try {
       const { id } = ctx.params;
       const data = ctx.request.body?.data || ctx.request.body;
-      const result = await strapi.documents(UID5).update({ documentId: id, data, populate: "*" });
+      const result = await strapi.documents(UID$4).update({ documentId: id, data, populate: "*" });
       ctx.body = { data: result };
     } catch (e) {
       ctx.status = e.status || 400;
@@ -2648,7 +2233,7 @@ var role_controller_default = ({ strapi }) => ({
   async delete(ctx) {
     try {
       const { id } = ctx.params;
-      const result = await strapi.documents(UID5).delete({ documentId: id });
+      const result = await strapi.documents(UID$4).delete({ documentId: id });
       ctx.body = { data: result };
     } catch (e) {
       ctx.status = e.status || 400;
@@ -2656,10 +2241,8 @@ var role_controller_default = ({ strapi }) => ({
     }
   }
 });
-
-// server/src/controllers/invite-code-controller.ts
-var UID6 = "plugin::zhao-sso.sso-invite-code";
-var invite_code_controller_default = ({ strapi }) => ({
+const UID$3 = "plugin::zhao-sso.sso-invite-code";
+const inviteCodeController = ({ strapi }) => ({
   // 邀请漏斗聚合：每码「打开数（zhao-studio browser_logs, eventType=invite-view）
   // → 注册数（sso_invite_usages）」+ 转化率；appCode 过滤区分来源应用；
   // 另返回 daily 按日聚合（观察期趋势），日期窗口默认近 30 天
@@ -2672,7 +2255,7 @@ var invite_code_controller_default = ({ strapi }) => ({
       const hasDateWindow = Boolean(startDate || endDate);
       const codeWhere = {};
       if (appCode) codeWhere.app_code = appCode;
-      const codes = await strapi.db.query(UID6).findMany({
+      const codes = await strapi.db.query(UID$3).findMany({
         where: codeWhere,
         select: ["id", "code", "app_code"]
       });
@@ -2748,14 +2331,14 @@ var invite_code_controller_default = ({ strapi }) => ({
       const { page = 1, pageSize = 20, ...filters } = ctx.query;
       const pageNum = Number(page);
       const pageSizeNum = Number(pageSize);
-      const results = await strapi.documents(UID6).findMany({
+      const results = await strapi.documents(UID$3).findMany({
         filters,
         populate: "*",
         sort: { createdAt: "desc" },
         limit: pageSizeNum,
         start: (pageNum - 1) * pageSizeNum
       });
-      const total = await strapi.db.query(UID6).count({ where: filters });
+      const total = await strapi.db.query(UID$3).count({ where: filters });
       ctx.body = {
         data: results,
         meta: { pagination: { page: pageNum, pageSize: pageSizeNum, total } }
@@ -2768,7 +2351,7 @@ var invite_code_controller_default = ({ strapi }) => ({
   async create(ctx) {
     try {
       const data = ctx.request.body?.data || ctx.request.body;
-      const result = await strapi.documents(UID6).create({ data, populate: "*" });
+      const result = await strapi.documents(UID$3).create({ data, populate: "*" });
       ctx.body = { data: result };
     } catch (e) {
       ctx.status = e.status || 400;
@@ -2778,7 +2361,7 @@ var invite_code_controller_default = ({ strapi }) => ({
   async delete(ctx) {
     try {
       const { id } = ctx.params;
-      const result = await strapi.documents(UID6).delete({ documentId: id });
+      const result = await strapi.documents(UID$3).delete({ documentId: id });
       ctx.body = { data: result };
     } catch (e) {
       ctx.status = e.status || 400;
@@ -2788,26 +2371,26 @@ var invite_code_controller_default = ({ strapi }) => ({
   async validate(ctx) {
     try {
       const { id } = ctx.params;
-      const code = await strapi.documents(UID6).findOne({ documentId: id });
+      const code = await strapi.documents(UID$3).findOne({ documentId: id });
       if (!code) {
-        ctx.body = { valid: false, reason: "\u9080\u8BF7\u7801\u4E0D\u5B58\u5728" };
+        ctx.body = { valid: false, reason: "邀请码不存在" };
         return;
       }
       if (!code.is_active) {
-        ctx.body = { valid: false, reason: "\u9080\u8BF7\u7801\u672A\u542F\u7528" };
+        ctx.body = { valid: false, reason: "邀请码未启用" };
         return;
       }
       const now = /* @__PURE__ */ new Date();
       if (code.valid_from && new Date(code.valid_from) > now) {
-        ctx.body = { valid: false, reason: "\u9080\u8BF7\u7801\u5C1A\u672A\u751F\u6548" };
+        ctx.body = { valid: false, reason: "邀请码尚未生效" };
         return;
       }
       if (code.valid_until && new Date(code.valid_until) < now) {
-        ctx.body = { valid: false, reason: "\u9080\u8BF7\u7801\u5DF2\u8FC7\u671F" };
+        ctx.body = { valid: false, reason: "邀请码已过期" };
         return;
       }
       if (code.max_uses != null && code.use_count >= code.max_uses) {
-        ctx.body = { valid: false, reason: "\u9080\u8BF7\u7801\u5DF2\u8FBE\u4F7F\u7528\u4E0A\u9650" };
+        ctx.body = { valid: false, reason: "邀请码已达使用上限" };
         return;
       }
       ctx.body = { valid: true };
@@ -2817,23 +2400,21 @@ var invite_code_controller_default = ({ strapi }) => ({
     }
   }
 });
-
-// server/src/controllers/invite-usage-controller.ts
-var UID7 = "plugin::zhao-sso.sso-invite-usage";
-var invite_usage_controller_default = ({ strapi }) => ({
+const UID$2 = "plugin::zhao-sso.sso-invite-usage";
+const inviteUsageController = ({ strapi }) => ({
   async list(ctx) {
     try {
       const { page = 1, pageSize = 20, ...filters } = ctx.query;
       const pageNum = Number(page);
       const pageSizeNum = Number(pageSize);
-      const results = await strapi.documents(UID7).findMany({
+      const results = await strapi.documents(UID$2).findMany({
         filters,
         populate: "*",
         sort: { createdAt: "desc" },
         limit: pageSizeNum,
         start: (pageNum - 1) * pageSizeNum
       });
-      const total = await strapi.db.query(UID7).count({ where: filters });
+      const total = await strapi.db.query(UID$2).count({ where: filters });
       ctx.body = {
         data: results,
         meta: { pagination: { page: pageNum, pageSize: pageSizeNum, total } }
@@ -2846,7 +2427,7 @@ var invite_usage_controller_default = ({ strapi }) => ({
   async delete(ctx) {
     try {
       const { id } = ctx.params;
-      const result = await strapi.documents(UID7).delete({ documentId: id });
+      const result = await strapi.documents(UID$2).delete({ documentId: id });
       ctx.body = { data: result };
     } catch (e) {
       ctx.status = e.status || 400;
@@ -2854,23 +2435,21 @@ var invite_usage_controller_default = ({ strapi }) => ({
     }
   }
 });
-
-// server/src/controllers/referral-controller.ts
-var UID8 = "plugin::zhao-sso.sso-referral-relation";
-var referral_controller_default = ({ strapi }) => ({
+const UID$1 = "plugin::zhao-sso.sso-referral-relation";
+const referralController = ({ strapi }) => ({
   async list(ctx) {
     try {
       const { page = 1, pageSize = 20, ...filters } = ctx.query;
       const pageNum = Number(page);
       const pageSizeNum = Number(pageSize);
-      const results = await strapi.documents(UID8).findMany({
+      const results = await strapi.documents(UID$1).findMany({
         filters,
         populate: "*",
         sort: { createdAt: "desc" },
         limit: pageSizeNum,
         start: (pageNum - 1) * pageSizeNum
       });
-      const total = await strapi.db.query(UID8).count({ where: filters });
+      const total = await strapi.db.query(UID$1).count({ where: filters });
       ctx.body = {
         data: results,
         meta: { pagination: { page: pageNum, pageSize: pageSizeNum, total } }
@@ -2883,7 +2462,7 @@ var referral_controller_default = ({ strapi }) => ({
   async delete(ctx) {
     try {
       const { id } = ctx.params;
-      const result = await strapi.documents(UID8).delete({ documentId: id });
+      const result = await strapi.documents(UID$1).delete({ documentId: id });
       ctx.body = { data: result };
     } catch (e) {
       ctx.status = e.status || 400;
@@ -2891,23 +2470,21 @@ var referral_controller_default = ({ strapi }) => ({
     }
   }
 });
-
-// server/src/controllers/sms-code-controller.ts
-var UID9 = "plugin::zhao-sso.sso-sms-code";
-var sms_code_controller_default = ({ strapi }) => ({
+const UID = "plugin::zhao-sso.sso-sms-code";
+const smsCodeController = ({ strapi }) => ({
   async list(ctx) {
     try {
       const { page = 1, pageSize = 20, ...filters } = ctx.query;
       const pageNum = Number(page);
       const pageSizeNum = Number(pageSize);
-      const results = await strapi.documents(UID9).findMany({
+      const results = await strapi.documents(UID).findMany({
         filters,
         populate: "*",
         sort: { createdAt: "desc" },
         limit: pageSizeNum,
         start: (pageNum - 1) * pageSizeNum
       });
-      const total = await strapi.db.query(UID9).count({ where: filters });
+      const total = await strapi.db.query(UID).count({ where: filters });
       ctx.body = {
         data: results,
         meta: { pagination: { page: pageNum, pageSize: pageSizeNum, total } }
@@ -2920,7 +2497,7 @@ var sms_code_controller_default = ({ strapi }) => ({
   async delete(ctx) {
     try {
       const { id } = ctx.params;
-      const result = await strapi.documents(UID9).delete({ documentId: id });
+      const result = await strapi.documents(UID).delete({ documentId: id });
       ctx.body = { data: result };
     } catch (e) {
       ctx.status = e.status || 400;
@@ -2928,12 +2505,9 @@ var sms_code_controller_default = ({ strapi }) => ({
     }
   }
 });
-
-// server/src/controllers/message-controller.ts
-var import_bcryptjs2 = __toESM(require("bcryptjs"));
-var TEMPLATE_UID = "plugin::zhao-sso.msg-template";
-var JOB_UID = "plugin::zhao-sso.msg-job";
-var message_controller_default = ({ strapi }) => {
+const TEMPLATE_UID$1 = "plugin::zhao-sso.msg-template";
+const JOB_UID$2 = "plugin::zhao-sso.msg-job";
+const messageController = ({ strapi }) => {
   const svc = () => strapi.plugin("zhao-sso").service("sso-msg");
   async function wrap(ctx, fn) {
     try {
@@ -2950,32 +2524,32 @@ var message_controller_default = ({ strapi }) => {
         const { page = 1, pageSize = 20, ...filters } = ctx.query;
         const pageNum = Number(page);
         const pageSizeNum = Number(pageSize);
-        const results = await strapi.documents(TEMPLATE_UID).findMany({
+        const results = await strapi.documents(TEMPLATE_UID$1).findMany({
           filters,
           sort: { createdAt: "desc" },
           limit: pageSizeNum,
           start: (pageNum - 1) * pageSizeNum
         });
-        const total = await strapi.db.query(TEMPLATE_UID).count({ where: filters });
+        const total = await strapi.db.query(TEMPLATE_UID$1).count({ where: filters });
         return { data: results, meta: { pagination: { page: pageNum, pageSize: pageSizeNum, total } } };
       });
     },
     async getTemplate(ctx) {
       await wrap(ctx, async () => {
-        const result = await strapi.documents(TEMPLATE_UID).findOne({ documentId: ctx.params.id });
-        if (!result) throw { status: 404, message: "\u6A21\u677F\u4E0D\u5B58\u5728" };
+        const result = await strapi.documents(TEMPLATE_UID$1).findOne({ documentId: ctx.params.id });
+        if (!result) throw { status: 404, message: "模板不存在" };
         return { data: result };
       });
     },
     async createTemplate(ctx) {
       await wrap(ctx, async () => {
-        const result = await strapi.documents(TEMPLATE_UID).create({ data: ctx.request.body });
+        const result = await strapi.documents(TEMPLATE_UID$1).create({ data: ctx.request.body });
         return { data: result };
       });
     },
     async updateTemplate(ctx) {
       await wrap(ctx, async () => {
-        const result = await strapi.documents(TEMPLATE_UID).update({
+        const result = await strapi.documents(TEMPLATE_UID$1).update({
           documentId: ctx.params.id,
           data: ctx.request.body
         });
@@ -2984,7 +2558,7 @@ var message_controller_default = ({ strapi }) => {
     },
     async deleteTemplate(ctx) {
       await wrap(ctx, async () => {
-        const result = await strapi.documents(TEMPLATE_UID).delete({ documentId: ctx.params.id });
+        const result = await strapi.documents(TEMPLATE_UID$1).delete({ documentId: ctx.params.id });
         return { data: result };
       });
     },
@@ -3014,24 +2588,24 @@ var message_controller_default = ({ strapi }) => {
         for (const k of ["status", "scene", "provider"]) {
           if (rest[k]) filters[k] = rest[k];
         }
-        const results = await strapi.documents(JOB_UID).findMany({
+        const results = await strapi.documents(JOB_UID$2).findMany({
           filters,
           populate: ["template", "user", "version"],
           sort: { createdAt: "desc" },
           limit: pageSizeNum,
           start: (pageNum - 1) * pageSizeNum
         });
-        const total = await strapi.db.query(JOB_UID).count({ where: filters });
+        const total = await strapi.db.query(JOB_UID$2).count({ where: filters });
         return { data: results, meta: { pagination: { page: pageNum, pageSize: pageSizeNum, total } } };
       });
     },
     async getJob(ctx) {
       await wrap(ctx, async () => {
-        const result = await strapi.documents(JOB_UID).findOne({
+        const result = await strapi.documents(JOB_UID$2).findOne({
           documentId: ctx.params.id,
           populate: ["template", "user", "version"]
         });
-        if (!result) throw { status: 404, message: "\u4EFB\u52A1\u4E0D\u5B58\u5728" };
+        if (!result) throw { status: 404, message: "任务不存在" };
         return { data: result };
       });
     },
@@ -3054,14 +2628,14 @@ var message_controller_default = ({ strapi }) => {
       await wrap(ctx, async () => {
         const { app_code, app_secret, sso_user_id, template_code, params, link, scene, dedupe_key } = ctx.request.body;
         if (!app_code || !app_secret || !sso_user_id || !template_code) {
-          throw { status: 400, message: "app_code, app_secret, sso_user_id, template_code \u5FC5\u586B" };
+          throw { status: 400, message: "app_code, app_secret, sso_user_id, template_code 必填" };
         }
         const oauthService = strapi.plugin("zhao-sso").service("sso-oauth");
         const app = await oauthService.findApp(app_code);
-        if (!app || !app.is_active) throw { status: 404, message: "\u5E94\u7528\u4E0D\u5B58\u5728\u6216\u5DF2\u7981\u7528" };
-        if (!import_bcryptjs2.default.compareSync(app_secret, app.app_secret)) throw { status: 401, message: "app_secret \u9A8C\u8BC1\u5931\u8D25" };
+        if (!app || !app.is_active) throw { status: 404, message: "应用不存在或已禁用" };
+        if (!bcrypt__default.default.compareSync(app_secret, app.app_secret)) throw { status: 401, message: "app_secret 验证失败" };
         const user = await strapi.plugin("zhao-sso").service("sso-user").findById(Number(sso_user_id));
-        if (!user) throw { status: 404, message: "SSO \u7528\u6237\u4E0D\u5B58\u5728" };
+        if (!user) throw { status: 404, message: "SSO 用户不存在" };
         const job = await svc().sendNow({
           user: Number(sso_user_id),
           scene: scene || "api",
@@ -3078,7 +2652,7 @@ var message_controller_default = ({ strapi }) => {
       await wrap(ctx, async () => {
         const { userIds = [], templateCode, params, link, scene, userId } = ctx.request.body;
         const ids = Array.isArray(userIds) && userIds.length ? userIds : userId ? [userId] : [];
-        if (!ids.length) throw { status: 400, message: "\u672A\u6307\u5B9A\u76EE\u6807\u7528\u6237" };
+        if (!ids.length) throw { status: 400, message: "未指定目标用户" };
         const results = [];
         for (const uid of ids) {
           results.push(
@@ -3091,12 +2665,12 @@ var message_controller_default = ({ strapi }) => {
     /** 失败重试 */
     async retryJob(ctx) {
       await wrap(ctx, async () => {
-        const { retryCount } = await strapi.db.query(JOB_UID).findOne({
+        const { retryCount } = await strapi.db.query(JOB_UID$2).findOne({
           where: { id: ctx.params.id },
           select: ["retryCount"]
         });
         if (retryCount !== void 0 && retryCount >= 3) {
-          throw { status: 400, message: "\u91CD\u8BD5\u6B21\u6570\u5DF2\u8FBE\u4E0A\u9650" };
+          throw { status: 400, message: "重试次数已达上限" };
         }
         const job = await svc().sendJob(ctx.params.id);
         return { data: job };
@@ -3111,10 +2685,8 @@ var message_controller_default = ({ strapi }) => {
     }
   };
 };
-
-// server/src/controllers/sop-controller.ts
-var RULE_UID = "plugin::zhao-sso.sop-rule";
-var sop_controller_default = ({ strapi }) => {
+const RULE_UID = "plugin::zhao-sso.sop-rule";
+const sopController = ({ strapi }) => {
   async function wrap(ctx, fn) {
     try {
       ctx.body = await fn();
@@ -3157,10 +2729,8 @@ var sop_controller_default = ({ strapi }) => {
     }
   };
 };
-
-// server/src/controllers/profile-controller.ts
-var PROFILE_UID = "plugin::zhao-sso.sso-user-profile";
-var profile_controller_default = ({ strapi }) => {
+const PROFILE_UID$1 = "plugin::zhao-sso.sso-user-profile";
+const profileController = ({ strapi }) => {
   async function wrap(ctx, fn) {
     try {
       ctx.body = await fn();
@@ -3177,14 +2747,14 @@ var profile_controller_default = ({ strapi }) => {
         const start = (Number(page) - 1) * limit;
         const where = {};
         if (segment) where.segment = { $eq: segment };
-        const results = await strapi.db.query(PROFILE_UID).findMany({
+        const results = await strapi.db.query(PROFILE_UID$1).findMany({
           where,
           populate: { user: true },
           orderBy: { segmentScore: "DESC" },
           limit,
           offset: start
         });
-        const total = await strapi.db.query(PROFILE_UID).count({ where });
+        const total = await strapi.db.query(PROFILE_UID$1).count({ where });
         return { data: results, meta: { pagination: { page: Number(page), pageSize: limit, total } } };
       });
     },
@@ -3202,11 +2772,9 @@ var profile_controller_default = ({ strapi }) => {
     }
   };
 };
-
-// server/src/controllers/partner-controller.ts
-var REF_UID = "plugin::zhao-sso.sso-referral-relation";
-var FOLLOW_UID = "plugin::zhao-sso.sso-follow-up";
-var partner_controller_default = ({ strapi }) => {
+const REF_UID = "plugin::zhao-sso.sso-referral-relation";
+const FOLLOW_UID = "plugin::zhao-sso.sso-follow-up";
+const partnerController = ({ strapi }) => {
   async function wrap(ctx, fn) {
     try {
       ctx.body = await fn();
@@ -3216,15 +2784,15 @@ var partner_controller_default = ({ strapi }) => {
     }
   }
   const me = async (ctx) => {
-    const ssoUser = ctx.state?.ssoUser;
-    if (!ssoUser?.sub) return null;
-    const user = await strapi.plugin("zhao-sso").service("sso-user").findByUuid(ssoUser.sub);
+    const ssoUser2 = ctx.state?.ssoUser;
+    if (!ssoUser2?.sub) return null;
+    const user = await strapi.plugin("zhao-sso").service("sso-user").findByUuid(ssoUser2.sub);
     return user?.id ?? null;
   };
   async function assertCustomer(partnerId, customerId) {
     const rel = await strapi.db.query(REF_UID).findOne({ where: { inviter: partnerId, invitee: customerId } });
     if (!rel) {
-      const e = new Error("\u65E0\u6743\u67E5\u770B\u8BE5\u5BA2\u6237");
+      const e = new Error("无权查看该客户");
       e.status = 403;
       throw e;
     }
@@ -3236,7 +2804,7 @@ var partner_controller_default = ({ strapi }) => {
         const partnerId = await me(ctx);
         if (!partnerId) {
           ctx.status = 401;
-          return { error: "\u672A\u767B\u5F55" };
+          return { error: "未登录" };
         }
         const svc = strapi.plugin("zhao-sso").service("sso-profile");
         const rels = await strapi.db.query(REF_UID).findMany({ where: { inviter: partnerId }, populate: ["invitee"] });
@@ -3255,7 +2823,7 @@ var partner_controller_default = ({ strapi }) => {
         const partnerId = await me(ctx);
         if (!partnerId) {
           ctx.status = 401;
-          return { error: "\u672A\u767B\u5F55" };
+          return { error: "未登录" };
         }
         await assertCustomer(partnerId, Number(ctx.params.id));
         const svc = strapi.plugin("zhao-sso").service("sso-profile");
@@ -3267,13 +2835,13 @@ var partner_controller_default = ({ strapi }) => {
         const partnerId = await me(ctx);
         if (!partnerId) {
           ctx.status = 401;
-          return { error: "\u672A\u767B\u5F55" };
+          return { error: "未登录" };
         }
         const customerId = Number(ctx.params.id);
         await assertCustomer(partnerId, customerId);
         const { templateCode, params = {}, link } = ctx.request?.body || {};
         if (!templateCode) {
-          const e = new Error("\u7F3A\u5C11 templateCode");
+          const e = new Error("缺少 templateCode");
           e.status = 400;
           throw e;
         }
@@ -3287,7 +2855,7 @@ var partner_controller_default = ({ strapi }) => {
         const partnerId = await me(ctx);
         if (!partnerId) {
           ctx.status = 401;
-          return { error: "\u672A\u767B\u5F55" };
+          return { error: "未登录" };
         }
         const rows = await strapi.db.query(FOLLOW_UID).findMany({ where: { partner: partnerId }, orderBy: { id: "DESC" }, limit: 100 });
         return { data: rows };
@@ -3298,11 +2866,11 @@ var partner_controller_default = ({ strapi }) => {
         const partnerId = await me(ctx);
         if (!partnerId) {
           ctx.status = 401;
-          return { error: "\u672A\u767B\u5F55" };
+          return { error: "未登录" };
         }
         const { customer, content, status = "todo", nextFollowAt } = ctx.request?.body || {};
         if (!customer || !content) {
-          const e = new Error("\u7F3A\u5C11 customer/content");
+          const e = new Error("缺少 customer/content");
           e.status = 400;
           throw e;
         }
@@ -3316,12 +2884,12 @@ var partner_controller_default = ({ strapi }) => {
         const partnerId = await me(ctx);
         if (!partnerId) {
           ctx.status = 401;
-          return { error: "\u672A\u767B\u5F55" };
+          return { error: "未登录" };
         }
         const row = await strapi.db.query(FOLLOW_UID).findOne({ where: { id: Number(ctx.params.id), partner: partnerId } });
         if (!row) {
           ctx.status = 403;
-          return { error: "\u65E0\u6743\u64CD\u4F5C" };
+          return { error: "无权操作" };
         }
         const updated = await strapi.db.query(FOLLOW_UID).update({ where: { id: row.id }, data: ctx.request?.body || {} });
         return { data: updated };
@@ -3329,12 +2897,10 @@ var partner_controller_default = ({ strapi }) => {
     }
   };
 };
-
-// server/src/controllers/msg-version-controller.ts
-var VERSION_UID = "plugin::zhao-sso.msg-template-version";
-var TEMPLATE_UID2 = "plugin::zhao-sso.msg-template";
-var JOB_UID2 = "plugin::zhao-sso.msg-job";
-var msg_version_controller_default = ({ strapi }) => {
+const VERSION_UID$1 = "plugin::zhao-sso.msg-template-version";
+const TEMPLATE_UID = "plugin::zhao-sso.msg-template";
+const JOB_UID$1 = "plugin::zhao-sso.msg-job";
+const msgVersionController = ({ strapi }) => {
   async function wrap(ctx, fn) {
     try {
       ctx.body = await fn();
@@ -3346,12 +2912,12 @@ var msg_version_controller_default = ({ strapi }) => {
   async function resolveTemplate(templateId) {
     const num = Number(templateId);
     if (Number.isInteger(num) && num > 0) {
-      const t2 = await strapi.db.query(TEMPLATE_UID2).findOne({ where: { id: num } });
+      const t2 = await strapi.db.query(TEMPLATE_UID).findOne({ where: { id: num } });
       if (t2) return t2.id;
     }
-    const t = await strapi.db.query(TEMPLATE_UID2).findOne({ where: { documentId: templateId } });
+    const t = await strapi.db.query(TEMPLATE_UID).findOne({ where: { documentId: templateId } });
     if (!t) {
-      const e = new Error("\u6A21\u677F\u4E0D\u5B58\u5728");
+      const e = new Error("模板不存在");
       e.status = 404;
       throw e;
     }
@@ -3361,7 +2927,7 @@ var msg_version_controller_default = ({ strapi }) => {
     async list(ctx) {
       await wrap(ctx, async () => {
         const templateId = await resolveTemplate(ctx.params.templateId);
-        const rows = await strapi.db.query(VERSION_UID).findMany({
+        const rows = await strapi.db.query(VERSION_UID$1).findMany({
           where: { template: templateId },
           orderBy: { id: "DESC" }
         });
@@ -3375,7 +2941,7 @@ var msg_version_controller_default = ({ strapi }) => {
       await wrap(ctx, async () => {
         const templateId = await resolveTemplate(ctx.params.templateId);
         const data = ctx.request?.body || {};
-        const row = await strapi.db.query(VERSION_UID).create({
+        const row = await strapi.db.query(VERSION_UID$1).create({
           data: { ...data, template: templateId, sentCount: 0, successCount: 0, clickCount: 0 }
         });
         return { data: row };
@@ -3383,7 +2949,7 @@ var msg_version_controller_default = ({ strapi }) => {
     },
     async update(ctx) {
       await wrap(ctx, async () => {
-        const row = await strapi.db.query(VERSION_UID).update({
+        const row = await strapi.db.query(VERSION_UID$1).update({
           where: { id: Number(ctx.params.id) },
           data: ctx.request?.body || {}
         });
@@ -3393,33 +2959,33 @@ var msg_version_controller_default = ({ strapi }) => {
     async delete(ctx) {
       await wrap(ctx, async () => {
         const id = Number(ctx.params.id);
-        const used = await strapi.db.query(JOB_UID2).count({ where: { version: id } });
+        const used = await strapi.db.query(JOB_UID$1).count({ where: { version: id } });
         if (used > 0) {
-          const e = new Error(`\u8BE5\u7248\u672C\u5DF2\u88AB ${used} \u4E2A\u6D88\u606F\u4EFB\u52A1\u5F15\u7528\uFF0C\u65E0\u6CD5\u5220\u9664`);
+          const e = new Error(`该版本已被 ${used} 个消息任务引用，无法删除`);
           e.status = 400;
           throw e;
         }
-        await strapi.db.query(VERSION_UID).delete({ where: { id } });
+        await strapi.db.query(VERSION_UID$1).delete({ where: { id } });
         return { data: { id } };
       });
     },
     async activate(ctx) {
       await wrap(ctx, async () => {
         const id = Number(ctx.params.id);
-        const row = await strapi.db.query(VERSION_UID).findOne({ where: { id } });
+        const row = await strapi.db.query(VERSION_UID$1).findOne({ where: { id } });
         if (!row) {
-          const e = new Error("\u7248\u672C\u4E0D\u5B58\u5728");
+          const e = new Error("版本不存在");
           e.status = 404;
           throw e;
         }
-        await strapi.db.query(VERSION_UID).update({ where: { id }, data: { status: "active" } });
-        return { data: await strapi.db.query(VERSION_UID).findOne({ where: { id } }) };
+        await strapi.db.query(VERSION_UID$1).update({ where: { id }, data: { status: "active" } });
+        return { data: await strapi.db.query(VERSION_UID$1).findOne({ where: { id } }) };
       });
     },
     async abStats(ctx) {
       await wrap(ctx, async () => {
         const templateId = await resolveTemplate(ctx.params.templateId);
-        const rows = await strapi.db.query(VERSION_UID).findMany({
+        const rows = await strapi.db.query(VERSION_UID$1).findMany({
           where: { template: templateId },
           orderBy: { id: "ASC" }
         });
@@ -3442,21 +3008,19 @@ var msg_version_controller_default = ({ strapi }) => {
     }
   };
 };
-
-// server/src/controllers/recommend-controller.ts
-var recommend_controller_default = ({ strapi }) => ({
+const recommendController = ({ strapi }) => ({
   /** C 端"猜你喜欢"：基于 sso-user 画像兴趣标签推荐 课程/文章/活动 */
   async my(ctx) {
     try {
-      const ssoUser = ctx.state?.ssoUser;
-      if (!ssoUser?.sub) {
+      const ssoUser2 = ctx.state?.ssoUser;
+      if (!ssoUser2?.sub) {
         ctx.status = 401;
-        return { error: "\u672A\u767B\u5F55" };
+        return { error: "未登录" };
       }
-      const user = await strapi.plugin("zhao-sso").service("sso-user").findByUuid(ssoUser.sub);
+      const user = await strapi.plugin("zhao-sso").service("sso-user").findByUuid(ssoUser2.sub);
       if (!user?.id) {
         ctx.status = 401;
-        return { error: "\u672A\u767B\u5F55" };
+        return { error: "未登录" };
       }
       const limit = Math.min(Number(ctx.query?.limit) || 5, 10);
       const svc = strapi.plugin("zhao-sso").service("sso-recommend");
@@ -3467,10 +3031,8 @@ var recommend_controller_default = ({ strapi }) => ({
     }
   }
 });
-
-// server/src/controllers/notice-controller.ts
-var JOB_UID3 = "plugin::zhao-sso.msg-job";
-var notice_controller_default = ({ strapi }) => {
+const JOB_UID = "plugin::zhao-sso.msg-job";
+const noticeController = ({ strapi }) => {
   return {
     /**
      * 我的站内信：读 provider=inapp && status=sent 的消息（按 sso-user 归属）
@@ -3489,10 +3051,10 @@ var notice_controller_default = ({ strapi }) => {
         };
         if (unreadOnly === "true" || unreadOnly === "1") where.readAt = { $null: true };
         const [total, unreadCount] = await Promise.all([
-          strapi.db.query(JOB_UID3).count({ where }),
-          strapi.db.query(JOB_UID3).count({ where: { ...where, readAt: { $null: true } } })
+          strapi.db.query(JOB_UID).count({ where }),
+          strapi.db.query(JOB_UID).count({ where: { ...where, readAt: { $null: true } } })
         ]);
-        const rows = await strapi.db.query(JOB_UID3).findMany({
+        const rows = await strapi.db.query(JOB_UID).findMany({
           where,
           orderBy: { sentAt: "desc" },
           offset: (pageNum - 1) * pageSizeNum,
@@ -3515,19 +3077,19 @@ var notice_controller_default = ({ strapi }) => {
       try {
         const ssoUserId = Number(ctx.state.user?.id || ctx.state.user?.documentId);
         const jobId = parseInt(ctx.params.id, 10);
-        const job = await strapi.db.query(JOB_UID3).findOne({ where: { id: jobId } });
+        const job = await strapi.db.query(JOB_UID).findOne({ where: { id: jobId } });
         if (!job) {
           ctx.status = 404;
-          ctx.body = { error: "\u6D88\u606F\u4E0D\u5B58\u5728" };
+          ctx.body = { error: "消息不存在" };
           return;
         }
         if ((job.user?.id ?? job.user) !== ssoUserId) {
           ctx.status = 403;
-          ctx.body = { error: "\u65E0\u6743\u64CD\u4F5C" };
+          ctx.body = { error: "无权操作" };
           return;
         }
         if (!job.readAt) {
-          await strapi.db.query(JOB_UID3).update({ where: { id: jobId }, data: { readAt: /* @__PURE__ */ new Date() } });
+          await strapi.db.query(JOB_UID).update({ where: { id: jobId }, data: { readAt: /* @__PURE__ */ new Date() } });
         }
         ctx.body = { data: { ok: true } };
       } catch (e) {
@@ -3537,9 +3099,7 @@ var notice_controller_default = ({ strapi }) => {
     }
   };
 };
-
-// server/src/controllers/msg-stats.ts
-var msg_stats_default = ({ strapi }) => ({
+const msgStats = ({ strapi }) => ({
   async sopStats(ctx) {
     const { from, to, scene } = ctx.query || {};
     try {
@@ -3601,9 +3161,7 @@ var msg_stats_default = ({ strapi }) => ({
     }
   }
 });
-
-// server/src/controllers/wx-callback-controller.ts
-var wx_callback_controller_default = ({ strapi }) => {
+const wxCallbackController = ({ strapi }) => {
   const svc = () => strapi.plugin("zhao-sso").service("sso-wx-callback");
   async function extractXml(ctx) {
     if (typeof ctx.request.rawBody === "string" && ctx.request.rawBody.trim()) {
@@ -3656,9 +3214,7 @@ var wx_callback_controller_default = ({ strapi }) => {
     }
   };
 };
-
-// server/src/controllers/wx-qrcode-controller.ts
-var wx_qrcode_controller_default = ({ strapi }) => {
+const wxQrcodeController = ({ strapi }) => {
   const svc = () => strapi.plugin("zhao-sso").service("sso-wx-qrcode");
   async function wrap(ctx, fn) {
     try {
@@ -3688,7 +3244,7 @@ var wx_qrcode_controller_default = ({ strapi }) => {
       const scene = String(ctx.query.scene || "").trim();
       if (!scene) {
         ctx.status = 400;
-        ctx.body = { error: "scene \u53C2\u6570\u5FC5\u586B" };
+        ctx.body = { error: "scene 参数必填" };
         return;
       }
       try {
@@ -3711,9 +3267,7 @@ var wx_qrcode_controller_default = ({ strapi }) => {
     }
   };
 };
-
-// server/src/controllers/wx-menu-controller.ts
-var wx_menu_controller_default = ({ strapi }) => {
+const wxMenuController = ({ strapi }) => {
   const svc = () => strapi.plugin("zhao-sso").service("sso-wx-menu");
   async function wrap(ctx, fn) {
     try {
@@ -3754,9 +3308,7 @@ var wx_menu_controller_default = ({ strapi }) => {
     }
   };
 };
-
-// server/src/controllers/wx-reply-controller.ts
-var wx_reply_controller_default = ({ strapi }) => {
+const wxReplyController = ({ strapi }) => {
   const svc = () => strapi.plugin("zhao-sso").service("sso-wx-reply");
   async function wrap(ctx, fn) {
     try {
@@ -3781,9 +3333,7 @@ var wx_reply_controller_default = ({ strapi }) => {
     }
   };
 };
-
-// server/src/controllers/wx-material-controller.ts
-var wx_material_controller_default = ({ strapi }) => {
+const wxMaterialController = ({ strapi }) => {
   const svc = () => strapi.plugin("zhao-sso").service("sso-wx-material");
   async function wrap(ctx, fn) {
     try {
@@ -3823,9 +3373,7 @@ var wx_material_controller_default = ({ strapi }) => {
     }
   };
 };
-
-// server/src/controllers/wx-article-controller.ts
-var wx_article_controller_default = ({ strapi }) => {
+const wxArticleController = ({ strapi }) => {
   const svc = () => strapi.plugin("zhao-sso").service("sso-wx-article");
   async function wrap(ctx, fn) {
     try {
@@ -3864,10 +3412,8 @@ var wx_article_controller_default = ({ strapi }) => {
     }
   };
 };
-
-// server/src/controllers/sop-manual.ts
-var TODO_UID = "plugin::zhao-sso.manual-sop-todo";
-var sop_manual_default = ({ strapi }) => ({
+const TODO_UID = "plugin::zhao-sso.manual-sop-todo";
+const sopManual = ({ strapi }) => ({
   async list(ctx) {
     try {
       const { status } = ctx.query;
@@ -3885,7 +3431,7 @@ var sop_manual_default = ({ strapi }) => ({
       const sop = strapi.plugin("zhao-sso").service("sso-sop");
       const resolveTargetUsers = (audience) => {
         const pt = strapi.plugin("zhao-point");
-        if (!pt) throw new Error("zhao-point \u63D2\u4EF6\u4E0D\u53EF\u7528\uFF0C\u65E0\u6CD5\u89E3\u6790\u76EE\u6807\u540D\u5355");
+        if (!pt) throw new Error("zhao-point 插件不可用，无法解析目标名单");
         return pt.service("activity-sop-audience").resolveAudience(audience);
       };
       const res = await sop.dispatchManualTodo(ctx.params.id, resolveTargetUsers);
@@ -3908,42 +3454,38 @@ var sop_manual_default = ({ strapi }) => ({
     }
   }
 });
-
-// server/src/controllers/index.ts
-var controllers_default = {
-  "auth-controller": auth_controller_default,
-  "oauth-controller": oauth_controller_default,
-  "user-controller": user_controller_default,
-  "channel-controller": channel_controller_default,
-  "admin-controller": admin_controller_default,
-  token: token_controller_default,
-  "auth-code": auth_code_controller_default,
-  binding: binding_controller_default,
-  "oauth-config": oauth_config_controller_default,
-  role: role_controller_default,
-  "invite-code": invite_code_controller_default,
-  "invite-usage": invite_usage_controller_default,
-  referral: referral_controller_default,
-  "sms-code": sms_code_controller_default,
-  message: message_controller_default,
-  sop: sop_controller_default,
-  profile: profile_controller_default,
-  partner: partner_controller_default,
-  "msg-version": msg_version_controller_default,
-  "recommend-controller": recommend_controller_default,
-  "notice-controller": notice_controller_default,
-  "msg-stats": msg_stats_default,
-  "wx-callback": wx_callback_controller_default,
-  "wx-qrcode": wx_qrcode_controller_default,
-  "wx-menu": wx_menu_controller_default,
-  "wx-reply": wx_reply_controller_default,
-  "wx-material": wx_material_controller_default,
-  "wx-article": wx_article_controller_default,
-  "sop-manual": sop_manual_default
+const controllers = {
+  "auth-controller": authController,
+  "oauth-controller": oauthController,
+  "user-controller": userController,
+  "channel-controller": channelController,
+  "admin-controller": adminController,
+  token: tokenController,
+  "auth-code": authCodeController,
+  binding: bindingController,
+  "oauth-config": oauthConfigController,
+  role: roleController,
+  "invite-code": inviteCodeController,
+  "invite-usage": inviteUsageController,
+  referral: referralController,
+  "sms-code": smsCodeController,
+  message: messageController,
+  sop: sopController,
+  profile: profileController,
+  partner: partnerController,
+  "msg-version": msgVersionController,
+  "recommend-controller": recommendController,
+  "notice-controller": noticeController,
+  "msg-stats": msgStats,
+  "wx-callback": wxCallbackController,
+  "wx-qrcode": wxQrcodeController,
+  "wx-menu": wxMenuController,
+  "wx-reply": wxReplyController,
+  "wx-material": wxMaterialController,
+  "wx-article": wxArticleController,
+  "sop-manual": sopManual
 };
-
-// server/src/routes/api.ts
-var api_default = () => ({
+const api = () => ({
   type: "content-api",
   routes: [
     // ===== 公开路由 =====
@@ -4170,9 +3712,7 @@ var api_default = () => ({
     }
   ]
 });
-
-// server/src/routes/admin.ts
-var hasZhaoAuth = () => {
+const hasZhaoAuth = () => {
   try {
     const s = globalThis.strapi;
     return !!(s && s.plugin && s.plugin("zhao-auth"));
@@ -4180,7 +3720,7 @@ var hasZhaoAuth = () => {
     return false;
   }
 };
-var adminRoute = (method, path, handler, permission) => ({
+const adminRoute = (method, path, handler, permission) => ({
   method,
   path: `/v1/admin${path}`,
   handler,
@@ -4195,7 +3735,7 @@ var adminRoute = (method, path, handler, permission) => ({
     ]
   }
 });
-var admin_default = () => ({
+const admin = () => ({
   type: "content-api",
   routes: [
     adminRoute("GET", "/dashboard", "admin-controller.dashboard", "sso.dashboard"),
@@ -4330,15 +3870,13 @@ var admin_default = () => ({
     adminRoute("GET", "/wx/templates", "wx-menu.listTemplates", "sso.msg.read")
   ]
 });
-
-// server/src/routes/partner.ts
-var partnerRoute = (method, path, handler) => ({
+const partnerRoute = (method, path, handler) => ({
   method,
   path: `/v1/partner${path}`,
   handler,
   config: { auth: false, policies: ["plugin::zhao-sso.sso-authenticated"] }
 });
-var partner_default = () => ({
+const partner = () => ({
   type: "content-api",
   routes: [
     partnerRoute("GET", "/my-customers", "partner.myCustomers"),
@@ -4349,19 +3887,13 @@ var partner_default = () => ({
     partnerRoute("PUT", "/follow-ups/:id", "partner.updateFollowUp")
   ]
 });
-
-// server/src/routes/index.ts
-var routes_default = {
+const routes = {
   "content-api": {
     type: "content-api",
-    routes: [...api_default().routes, ...admin_default().routes, ...partner_default().routes]
+    routes: [...api().routes, ...admin().routes, ...partner().routes]
   }
 };
-
-// server/src/services/sso-jwt.ts
-var import_jsonwebtoken = __toESM(require("jsonwebtoken"));
-var import_uuid = require("uuid");
-var sso_jwt_default = ({ strapi }) => {
+const ssoJwt = ({ strapi }) => {
   function throwErr(code, status, message) {
     const e = new Error(message);
     e.code = code;
@@ -4390,32 +3922,32 @@ var sso_jwt_default = ({ strapi }) => {
     const signPayload = {
       ...payload,
       type: "access",
-      jti: (0, import_uuid.v4)()
+      jti: uuid.v4()
     };
-    const options = {
+    const options2 = {
       algorithm: getAlgorithm(),
       expiresIn: getAccessTokenExpiry()
     };
-    return import_jsonwebtoken.default.sign(signPayload, getSecret(), options);
+    return jwt__default.default.sign(signPayload, getSecret(), options2);
   };
   const signRefreshToken = async (payload) => {
     const signPayload = {
       ...payload,
       type: "refresh",
-      jti: (0, import_uuid.v4)()
+      jti: uuid.v4()
     };
-    const options = {
+    const options2 = {
       algorithm: getAlgorithm(),
       expiresIn: getRefreshTokenExpiry()
     };
-    return import_jsonwebtoken.default.sign(signPayload, getSecret(), options);
+    return jwt__default.default.sign(signPayload, getSecret(), options2);
   };
   const signTokenPair = async (payload) => {
     const [accessToken, refreshToken] = await Promise.all([
       signAccessToken(payload),
       signRefreshToken(payload)
     ]);
-    const decoded = import_jsonwebtoken.default.decode(accessToken);
+    const decoded = jwt__default.default.decode(accessToken);
     const expiresIn = decoded.exp - decoded.iat;
     return {
       access_token: accessToken,
@@ -4425,7 +3957,7 @@ var sso_jwt_default = ({ strapi }) => {
     };
   };
   const verifyToken = async (token) => {
-    return import_jsonwebtoken.default.verify(token, getSecret(), { algorithms: [getAlgorithm()] });
+    return jwt__default.default.verify(token, getSecret(), { algorithms: [getAlgorithm()] });
   };
   const extractToken = (ctx) => {
     const authHeader = ctx.request?.headers?.authorization || ctx.headers?.authorization;
@@ -4443,22 +3975,17 @@ var sso_jwt_default = ({ strapi }) => {
     extractToken
   };
 };
-
-// server/src/services/sso-user.ts
-var import_bcryptjs3 = __toESM(require("bcryptjs"));
-var import_uuid2 = require("uuid");
-var USER_UID = "plugin::zhao-sso.sso-user";
-function sanitize2(user) {
+const USER_UID$4 = "plugin::zhao-sso.sso-user";
+function sanitize(user) {
   if (!user) return null;
   const { password_hash, ...safe } = user;
-  void password_hash;
   return safe;
 }
 function isPkeyViolation(e) {
   const msg = String(e?.message || e?.detail || "");
   return msg.includes("sso_users_pkey") || msg.includes("duplicate key") || e?.code === "23505";
 }
-var sso_user_default2 = ({ strapi }) => {
+const ssoUser = ({ strapi }) => {
   function throwErr(code, status, message) {
     const e = new Error(message);
     e.code = code;
@@ -4480,21 +4007,21 @@ var sso_user_default2 = ({ strapi }) => {
         const next = isCalled ? lastValue + 1 : lastValue;
         if (next <= maxId) {
           await knex.raw(`SELECT setval('sso_users_id_seq'::regclass, ?)`, [maxId]);
-          strapi.log.info(`[zhao-sso] sso_users \u5E8F\u5217\u81EA\u6108: next=${next} max=${maxId} -> next=${maxId + 1}`);
+          strapi.log.info(`[zhao-sso] sso_users 序列自愈: next=${next} max=${maxId} -> next=${maxId + 1}`);
         }
       } catch (e) {
-        strapi.log.warn(`[zhao-sso] sso_users \u5E8F\u5217\u540C\u6B65\u5931\u8D25: ${e?.message}`);
+        strapi.log.warn(`[zhao-sso] sso_users 序列同步失败: ${e?.message}`);
       }
     },
     /** 创建 sso_user：捕获主键冲突（序列失步）→ 同步序列 → 重试一次 */
     async createSsoUserWithSeqGuard(data) {
       try {
-        return await strapi.db.query(USER_UID).create({ data });
+        return await strapi.db.query(USER_UID$4).create({ data });
       } catch (e) {
         if (isPkeyViolation(e)) {
-          strapi.log.warn(`[zhao-sso] sso_users \u4E3B\u952E\u51B2\u7A81(\u5E8F\u5217\u5931\u6B65)\uFF0C\u540C\u6B65\u540E\u91CD\u8BD5: ${e?.message}`);
+          strapi.log.warn(`[zhao-sso] sso_users 主键冲突(序列失步)，同步后重试: ${e?.message}`);
           await this.syncSequence();
-          return await strapi.db.query(USER_UID).create({ data });
+          return await strapi.db.query(USER_UID$4).create({ data });
         }
         throw e;
       }
@@ -4503,9 +4030,9 @@ var sso_user_default2 = ({ strapi }) => {
       if (!data.username && !data.mobile && !data.email) {
         throwErr("SSO_USER_001", 400, "username/mobile/email at least one required");
       }
-      const password_hash = data.password ? await import_bcryptjs3.default.hash(data.password, 12) : null;
+      const password_hash = data.password ? await bcrypt__default.default.hash(data.password, 12) : null;
       const user = await this.createSsoUserWithSeqGuard({
-        uuid: (0, import_uuid2.v4)(),
+        uuid: uuid.v4(),
         username: data.username || null,
         mobile: data.mobile || null,
         email: data.email || null,
@@ -4521,21 +4048,21 @@ var sso_user_default2 = ({ strapi }) => {
       return user;
     },
     /** 确保 C 端 up_user 与 sso_user 同 id 对齐存在（隔离：写 up_users 归属 zhao-auth 中间层，zhao-sso 不直写他域表） */
-    async ensureUpUser(ssoId, info) {
+    async ensureUpUser(ssoId, info2) {
       try {
         const auth = strapi.plugin?.("zhao-auth")?.service?.("auth");
-        const r = auth?.ensureUserById ? await auth.ensureUserById(ssoId, info) : null;
+        const r = auth?.ensureUserById ? await auth.ensureUserById(ssoId, info2) : null;
         if (!r) {
-          strapi.log.warn(`[zhao-sso] zhao-auth.ensureUserById \u672A\u5C31\u7EEA\uFF0C\u8DF3\u8FC7 up_users \u5BF9\u9F50 sso=${ssoId}`);
+          strapi.log.warn(`[zhao-sso] zhao-auth.ensureUserById 未就绪，跳过 up_users 对齐 sso=${ssoId}`);
         }
         return r;
       } catch (e) {
-        strapi.log.warn(`[zhao-sso] up_users \u5BF9\u9F50\u5931\u8D25 sso=${ssoId}: ${e?.message || e}`);
+        strapi.log.warn(`[zhao-sso] up_users 对齐失败 sso=${ssoId}: ${e?.message || e}`);
         return null;
       }
     },
     async findByIdentifier(identifier) {
-      return strapi.db.query(USER_UID).findOne({
+      return strapi.db.query(USER_UID$4).findOne({
         where: {
           $or: [
             { email: identifier.toLowerCase() },
@@ -4545,20 +4072,20 @@ var sso_user_default2 = ({ strapi }) => {
         }
       });
     },
-    async findByUuid(uuid) {
-      const user = await strapi.db.query(USER_UID).findOne({ where: { uuid } });
-      return sanitize2(user);
+    async findByUuid(uuid2) {
+      const user = await strapi.db.query(USER_UID$4).findOne({ where: { uuid: uuid2 } });
+      return sanitize(user);
     },
     async verifyPassword(user, password) {
       if (!user.password_hash) {
-        const raw = await strapi.db.query(USER_UID).findOne({ where: { id: user.id }, select: ["password_hash"] });
+        const raw = await strapi.db.query(USER_UID$4).findOne({ where: { id: user.id }, select: ["password_hash"] });
         if (!raw?.password_hash) return false;
-        return import_bcryptjs3.default.compare(password, raw.password_hash);
+        return bcrypt__default.default.compare(password, raw.password_hash);
       }
-      return import_bcryptjs3.default.compare(password, user.password_hash);
+      return bcrypt__default.default.compare(password, user.password_hash);
     },
     async updateLoginInfo(userId, channelCode) {
-      const current = await strapi.db.query(USER_UID).findOne({ where: { id: userId } });
+      const current = await strapi.db.query(USER_UID$4).findOne({ where: { id: userId } });
       const updateData = {
         last_login_at: /* @__PURE__ */ new Date(),
         login_count: (current?.login_count || 0) + 1
@@ -4566,14 +4093,14 @@ var sso_user_default2 = ({ strapi }) => {
       if (channelCode) {
         updateData.last_login_channel = channelCode;
       }
-      return strapi.db.query(USER_UID).update({
+      return strapi.db.query(USER_UID$4).update({
         where: { id: userId },
         data: updateData
       });
     },
     async changePassword(userId, newPassword) {
-      const password_hash = await import_bcryptjs3.default.hash(newPassword, 12);
-      return strapi.db.query(USER_UID).update({
+      const password_hash = await bcrypt__default.default.hash(newPassword, 12);
+      return strapi.db.query(USER_UID$4).update({
         where: { id: userId },
         data: { password_hash, password_changed_at: /* @__PURE__ */ new Date() }
       });
@@ -4582,16 +4109,16 @@ var sso_user_default2 = ({ strapi }) => {
       return user.status === "blocked";
     },
     async findById(id) {
-      const user = await strapi.db.query(USER_UID).findOne({ where: { id } });
-      return sanitize2(user);
+      const user = await strapi.db.query(USER_UID$4).findOne({ where: { id } });
+      return sanitize(user);
     },
     async bindContact(userId, type, identifier, password) {
       const updateData = {};
       if (type === "mobile") updateData.mobile = identifier;
       if (type === "email") updateData.email = identifier;
       if (type === "username") updateData.username = identifier;
-      if (password) updateData.password_hash = await import_bcryptjs3.default.hash(password, 12);
-      return strapi.db.query(USER_UID).update({ where: { id: userId }, data: updateData });
+      if (password) updateData.password_hash = await bcrypt__default.default.hash(password, 12);
+      return strapi.db.query(USER_UID$4).update({ where: { id: userId }, data: updateData });
     },
     async bindThirdParty(userId, providerData) {
       return strapi.db.query("plugin::zhao-sso.sso-third-party-binding").create({
@@ -4612,23 +4139,23 @@ var sso_user_default2 = ({ strapi }) => {
       });
     },
     async count(where) {
-      return strapi.db.query(USER_UID).count({ where });
+      return strapi.db.query(USER_UID$4).count({ where });
     },
     async findMany(params) {
-      const users = await strapi.db.query(USER_UID).findMany({
+      const users = await strapi.db.query(USER_UID$4).findMany({
         where: params.where || {},
         orderBy: params.orderBy || { createdAt: "desc" },
         limit: params.limit,
         offset: params.offset
       });
-      return users.map(sanitize2);
+      return users.map(sanitize);
     },
     async findOneWithBindings(id) {
-      const user = await strapi.db.query(USER_UID).findOne({
+      const user = await strapi.db.query(USER_UID$4).findOne({
         where: { id },
         populate: { third_party_bindings: true }
       });
-      return sanitize2(user);
+      return sanitize(user);
     },
     async updateAdmin(id, body) {
       const allowedFields = ["status", "nickname", "username"];
@@ -4636,22 +4163,20 @@ var sso_user_default2 = ({ strapi }) => {
       for (const field of allowedFields) {
         if (body[field] !== void 0) data[field] = body[field];
       }
-      const user = await strapi.db.query(USER_UID).update({ where: { id }, data });
-      return sanitize2(user);
+      const user = await strapi.db.query(USER_UID$4).update({ where: { id }, data });
+      return sanitize(user);
     },
     /** 自助修改本人昵称（C 端个人中心用，白名单仅昵称） */
     async updateNickname(userId, nickname) {
       const name = String(nickname || "").trim().substring(0, 50);
-      if (!name) throwErr("SSO_NICKNAME_001", 400, "\u6635\u79F0\u4E0D\u80FD\u4E3A\u7A7A");
-      await strapi.db.query(USER_UID).update({ where: { id: userId }, data: { nickname: name } });
+      if (!name) throwErr("SSO_NICKNAME_001", 400, "昵称不能为空");
+      await strapi.db.query(USER_UID$4).update({ where: { id: userId }, data: { nickname: name } });
       return this.findById(userId);
     }
   };
 };
-
-// server/src/services/sso-login-log.ts
-var LOG_UID = "plugin::zhao-sso.sso-login-log";
-var sso_login_log_default2 = ({ strapi }) => ({
+const LOG_UID = "plugin::zhao-sso.sso-login-log";
+const ssoLoginLog = ({ strapi }) => ({
   async log(params) {
     return strapi.db.query(LOG_UID).create({
       data: {
@@ -4698,10 +4223,8 @@ var sso_login_log_default2 = ({ strapi }) => ({
     });
   }
 });
-
-// server/src/services/sso-channel.ts
-var CHANNEL_UID = "plugin::zhao-sso.sso-channel";
-var sso_channel_default2 = ({ strapi }) => ({
+const CHANNEL_UID = "plugin::zhao-sso.sso-channel";
+const ssoChannel = ({ strapi }) => ({
   async findByCode(channelCode) {
     return strapi.db.query(CHANNEL_UID).findOne({
       where: { channel_code: channelCode, is_active: true }
@@ -4760,12 +4283,8 @@ var sso_channel_default2 = ({ strapi }) => ({
     return report;
   }
 });
-
-// server/src/services/sso-oauth.ts
-var import_uuid3 = require("uuid");
-var import_bcryptjs4 = __toESM(require("bcryptjs"));
-var AUTH_CODE_UID = "plugin::zhao-sso.sso-auth-code";
-var APP_UID = "plugin::zhao-sso.sso-app";
+const AUTH_CODE_UID = "plugin::zhao-sso.sso-auth-code";
+const APP_UID$1 = "plugin::zhao-sso.sso-app";
 function parseDuration(str) {
   const match = str.match(/^(\d+)(m|d|h|s)$/);
   if (!match) return 10 * 60 * 1e3;
@@ -4784,7 +4303,7 @@ function parseDuration(str) {
       return 10 * 60 * 1e3;
   }
 }
-var sso_oauth_default = ({ strapi }) => {
+const ssoOauth = ({ strapi }) => {
   function throwErr(code, status, message) {
     const e = new Error(message);
     e.code = code;
@@ -4795,9 +4314,9 @@ var sso_oauth_default = ({ strapi }) => {
     async generateAuthCode(params) {
       const { userId, appCode, redirectUri, channelCode, inviteCode, scopes, isNew } = params;
       const app = await this.findApp(appCode);
-      if (!app || !app.is_active) throwErr("SSO_OAUTH_001", 404, "\u5E94\u7528\u4E0D\u5B58\u5728\u6216\u5DF2\u7981\u7528");
-      if (!this.validateRedirectUri(app, redirectUri)) throwErr("SSO_OAUTH_002", 400, "redirect_uri \u4E0D\u5728\u5141\u8BB8\u5217\u8868\u4E2D");
-      const code = (0, import_uuid3.v4)() + "-" + (0, import_uuid3.v4)();
+      if (!app || !app.is_active) throwErr("SSO_OAUTH_001", 404, "应用不存在或已禁用");
+      if (!this.validateRedirectUri(app, redirectUri)) throwErr("SSO_OAUTH_002", 400, "redirect_uri 不在允许列表中");
+      const code = uuid.v4() + "-" + uuid.v4();
       const pluginConfig = strapi.config.get("plugin::zhao-sso");
       const expiresIn = pluginConfig?.security?.authCodeExpiresIn || "10m";
       const expiresMs = parseDuration(expiresIn);
@@ -4820,8 +4339,8 @@ var sso_oauth_default = ({ strapi }) => {
     async exchangeCode(params) {
       const { code, appCode, appSecret, redirectUri } = params;
       const app = await this.findApp(appCode);
-      if (!app || !app.is_active) throwErr("SSO_OAUTH_001", 404, "\u5E94\u7528\u4E0D\u5B58\u5728\u6216\u5DF2\u7981\u7528");
-      if (!import_bcryptjs4.default.compareSync(appSecret, app.app_secret)) throwErr("SSO_OAUTH_003", 401, "app_secret \u9A8C\u8BC1\u5931\u8D25");
+      if (!app || !app.is_active) throwErr("SSO_OAUTH_001", 404, "应用不存在或已禁用");
+      if (!bcrypt__default.default.compareSync(appSecret, app.app_secret)) throwErr("SSO_OAUTH_003", 401, "app_secret 验证失败");
       return this.exchangeCodeInternal({ code, appCode, app, redirectUri });
     },
     /**
@@ -4830,19 +4349,19 @@ var sso_oauth_default = ({ strapi }) => {
      */
     async exchangeCodeInternal(params) {
       const { code, appCode, app, redirectUri } = params;
-      if (!app || !app.is_active) throwErr("SSO_OAUTH_001", 404, "\u5E94\u7528\u4E0D\u5B58\u5728\u6216\u5DF2\u7981\u7528");
-      if (!this.validateGrantType(app, "authorization_code")) throwErr("SSO_OAUTH_008", 400, "\u8BE5\u5E94\u7528\u672A\u5F00\u542F authorization_code \u6388\u6743");
-      if (!this.validateRedirectUri(app, redirectUri)) throwErr("SSO_OAUTH_002", 400, "redirect_uri \u4E0D\u5728\u5141\u8BB8\u5217\u8868\u4E2D");
+      if (!app || !app.is_active) throwErr("SSO_OAUTH_001", 404, "应用不存在或已禁用");
+      if (!this.validateGrantType(app, "authorization_code")) throwErr("SSO_OAUTH_008", 400, "该应用未开启 authorization_code 授权");
+      if (!this.validateRedirectUri(app, redirectUri)) throwErr("SSO_OAUTH_002", 400, "redirect_uri 不在允许列表中");
       const authCode = await strapi.db.query(AUTH_CODE_UID).findOne({
         where: { code, app_code: appCode },
         populate: ["user"]
       });
-      if (!authCode) throwErr("SSO_OAUTH_004", 404, "\u6388\u6743\u7801\u4E0D\u5B58\u5728");
-      if (authCode.used) throwErr("SSO_OAUTH_005", 400, "\u6388\u6743\u7801\u5DF2\u4F7F\u7528");
-      if (new Date(authCode.expires_at) < /* @__PURE__ */ new Date()) throwErr("SSO_OAUTH_006", 400, "\u6388\u6743\u7801\u5DF2\u8FC7\u671F");
+      if (!authCode) throwErr("SSO_OAUTH_004", 404, "授权码不存在");
+      if (authCode.used) throwErr("SSO_OAUTH_005", 400, "授权码已使用");
+      if (new Date(authCode.expires_at) < /* @__PURE__ */ new Date()) throwErr("SSO_OAUTH_006", 400, "授权码已过期");
       const storedBase = (authCode.redirect_uri || "").split("?")[0];
       const requestBase = (redirectUri || "").split("?")[0];
-      if (storedBase !== requestBase) throwErr("SSO_OAUTH_007", 400, "redirect_uri \u4E0D\u5339\u914D");
+      if (storedBase !== requestBase) throwErr("SSO_OAUTH_007", 400, "redirect_uri 不匹配");
       await strapi.db.query(AUTH_CODE_UID).update({
         where: { id: authCode.id },
         data: { used: true }
@@ -4856,7 +4375,7 @@ var sso_oauth_default = ({ strapi }) => {
       };
     },
     async findApp(appCode) {
-      return strapi.db.query(APP_UID).findOne({ where: { app_code: appCode } });
+      return strapi.db.query(APP_UID$1).findOne({ where: { app_code: appCode } });
     },
     /**
      * 校验 redirect_uri 是否在白名单中
@@ -4889,11 +4408,9 @@ var sso_oauth_default = ({ strapi }) => {
     }
   };
 };
-
-// server/src/services/sso-auth.ts
-var TOKEN_UID = "plugin::zhao-sso.sso-token";
-var USER_ROLE_UID = "plugin::zhao-sso.sso-user-app-role";
-var sso_auth_default = ({ strapi }) => {
+const TOKEN_UID = "plugin::zhao-sso.sso-token";
+const USER_ROLE_UID = "plugin::zhao-sso.sso-user-app-role";
+const ssoAuth$1 = ({ strapi }) => {
   function throwErr(code, status, message) {
     const e = new Error(message);
     e.code = code;
@@ -4915,13 +4432,13 @@ var sso_auth_default = ({ strapi }) => {
       });
       if (result.success) {
         if (!result.skip) {
-          strapi.log.info(`[zhao-sso] \u5206\u9500\u5173\u7CFB\u5EFA\u7ACB: userId=${inviteeId}, code=${inviteCode}, msg=${result.message}`);
+          strapi.log.info(`[zhao-sso] 分销关系建立: userId=${inviteeId}, code=${inviteCode}, msg=${result.message}`);
         }
       } else {
-        strapi.log.warn(`[zhao-sso] \u5206\u9500\u5173\u7CFB\u5EFA\u7ACB\u5931\u8D25: userId=${inviteeId}, code=${inviteCode}, msg=${result.message}`);
+        strapi.log.warn(`[zhao-sso] 分销关系建立失败: userId=${inviteeId}, code=${inviteCode}, msg=${result.message}`);
       }
     } catch (e) {
-      strapi.log.warn(`[zhao-sso] \u5206\u9500\u5173\u7CFB\u5EFA\u7ACB\u5F02\u5E38: ${e.message}`);
+      strapi.log.warn(`[zhao-sso] 分销关系建立异常: ${e.message}`);
     }
   };
   const getOwnInviteCode = async (ssoUserId, appCode) => {
@@ -4940,24 +4457,24 @@ var sso_auth_default = ({ strapi }) => {
       const failCount = await loginLogService().getRecentFailCount(ip, 5);
       if (failCount >= maxAttempts) {
         await loginLogService().log({ loginType: type, channelCode, appCode, ip, userAgent, success: false, failReason: "too_many_attempts" });
-        throwErr("SSO_AUTH_001", 429, "\u767B\u5F55\u5931\u8D25\u6B21\u6570\u8FC7\u591A\uFF0C\u8BF730\u5206\u949F\u540E\u91CD\u8BD5");
+        throwErr("SSO_AUTH_001", 429, "登录失败次数过多，请30分钟后重试");
       }
     }
     if (type === "password") {
-      if (!identifier || !password) throwErr("SSO_AUTH_002", 400, "identifier \u548C password \u5FC5\u586B");
+      if (!identifier || !password) throwErr("SSO_AUTH_002", 400, "identifier 和 password 必填");
       const user = await userService().findByIdentifier(identifier);
       if (!user) {
         await loginLogService().log({ loginType: type, channelCode, appCode, ip, userAgent, success: false, failReason: "user_not_found" });
-        throwErr("SSO_AUTH_003", 401, "\u7528\u6237\u540D/\u90AE\u7BB1/\u624B\u673A\u53F7\u6216\u5BC6\u7801\u9519\u8BEF");
+        throwErr("SSO_AUTH_003", 401, "用户名/邮箱/手机号或密码错误");
       }
       if (await userService().isBlocked(user)) {
         await loginLogService().log({ userId: user.id, loginType: type, channelCode, appCode, ip, userAgent, success: false, failReason: "user_blocked" });
-        throwErr("SSO_AUTH_004", 403, "\u8D26\u53F7\u5DF2\u88AB\u5C01\u7981");
+        throwErr("SSO_AUTH_004", 403, "账号已被封禁");
       }
       const valid = await userService().verifyPassword(user, password);
       if (!valid) {
         await loginLogService().log({ userId: user.id, loginType: type, channelCode, appCode, ip, userAgent, success: false, failReason: "wrong_password" });
-        throwErr("SSO_AUTH_003", 401, "\u7528\u6237\u540D/\u90AE\u7BB1/\u624B\u673A\u53F7\u6216\u5BC6\u7801\u9519\u8BEF");
+        throwErr("SSO_AUTH_003", 401, "用户名/邮箱/手机号或密码错误");
       }
       await userService().updateLoginInfo(user.id, channelCode);
       const roles = await getUserRoles(user.id, appCode);
@@ -4988,17 +4505,17 @@ var sso_auth_default = ({ strapi }) => {
       };
     }
     if (type === "sms") {
-      if (!identifier || !code) throwErr("SSO_AUTH_002", 400, "identifier(mobile) \u548C code \u5FC5\u586B");
+      if (!identifier || !code) throwErr("SSO_AUTH_002", 400, "identifier(mobile) 和 code 必填");
       const smsService = strapi.plugin("zhao-sso").service("sso-sms");
       await smsService.verifyCode(identifier, code, "login");
       const user = await userService().findByIdentifier(identifier);
       if (!user) {
         await loginLogService().log({ loginType: type, channelCode, appCode, ip, userAgent, success: false, failReason: "user_not_found" });
-        throwErr("SSO_AUTH_003", 401, "\u624B\u673A\u53F7\u672A\u6CE8\u518C");
+        throwErr("SSO_AUTH_003", 401, "手机号未注册");
       }
       if (await userService().isBlocked(user)) {
         await loginLogService().log({ userId: user.id, loginType: type, channelCode, appCode, ip, userAgent, success: false, failReason: "user_blocked" });
-        throwErr("SSO_AUTH_004", 403, "\u8D26\u53F7\u5DF2\u88AB\u5C01\u7981");
+        throwErr("SSO_AUTH_004", 403, "账号已被封禁");
       }
       await userService().updateLoginInfo(user.id, channelCode);
       const roles = await getUserRoles(user.id, appCode);
@@ -5028,7 +4545,7 @@ var sso_auth_default = ({ strapi }) => {
         }
       };
     }
-    throwErr("SSO_AUTH_005", 400, `\u4E0D\u652F\u6301\u7684\u767B\u5F55\u7C7B\u578B: ${type}`);
+    throwErr("SSO_AUTH_005", 400, `不支持的登录类型: ${type}`);
   };
   const register2 = async (params) => {
     const { appCode, channelCode, inviteCode, utmSource, utmMedium, utmCampaign } = params;
@@ -5080,14 +4597,14 @@ var sso_auth_default = ({ strapi }) => {
   };
   const verifyToken = async (token) => {
     const payload = await jwtService().verifyToken(token);
-    if (payload.type !== "access") throwErr("SSO_AUTH_006", 401, "\u65E0\u6548\u7684 access token");
+    if (payload.type !== "access") throwErr("SSO_AUTH_006", 401, "无效的 access token");
     const tokenRecord = await strapi.db.query(TOKEN_UID).findOne({
       where: { access_token_jti: payload.jti }
     });
-    if (tokenRecord?.revoked) throwErr("SSO_AUTH_007", 401, "Token \u5DF2\u88AB\u64A4\u9500");
+    if (tokenRecord?.revoked) throwErr("SSO_AUTH_007", 401, "Token 已被撤销");
     const user = await userService().findByUuid(payload.sub);
-    if (!user) throwErr("SSO_AUTH_008", 404, "\u7528\u6237\u4E0D\u5B58\u5728");
-    if (await userService().isBlocked(user)) throwErr("SSO_AUTH_004", 403, "\u8D26\u53F7\u5DF2\u88AB\u5C01\u7981");
+    if (!user) throwErr("SSO_AUTH_008", 404, "用户不存在");
+    if (await userService().isBlocked(user)) throwErr("SSO_AUTH_004", 403, "账号已被封禁");
     return { payload, user: sanitizeUser(user) };
   };
   const refreshToken = async (refreshToken2) => {
@@ -5096,28 +4613,28 @@ var sso_auth_default = ({ strapi }) => {
       payload = await jwtService().verifyToken(refreshToken2);
     } catch (e) {
       strapi.log.warn(`[zhao-sso] refresh verify failed: ${e?.message || e}`);
-      throwErr("SSO_AUTH_009", 401, "\u65E0\u6548\u7684 refresh token");
+      throwErr("SSO_AUTH_009", 401, "无效的 refresh token");
     }
-    if (payload.type !== "refresh") throwErr("SSO_AUTH_009", 401, "\u65E0\u6548\u7684 refresh token");
-    if (!payload.sub) throwErr("SSO_AUTH_009", 401, "\u65E0\u6548\u7684 refresh token");
+    if (payload.type !== "refresh") throwErr("SSO_AUTH_009", 401, "无效的 refresh token");
+    if (!payload.sub) throwErr("SSO_AUTH_009", 401, "无效的 refresh token");
     const tokenRecord = await strapi.db.query(TOKEN_UID).findOne({
       where: { refresh_token: refreshToken2 }
     });
-    if (!tokenRecord) throwErr("SSO_AUTH_010", 404, "Token \u8BB0\u5F55\u4E0D\u5B58\u5728");
-    if (tokenRecord.revoked) throwErr("SSO_AUTH_011", 401, "Refresh token \u5DF2\u88AB\u64A4\u9500");
-    if (new Date(tokenRecord.refresh_expires_at) < /* @__PURE__ */ new Date()) throwErr("SSO_AUTH_012", 401, "Refresh token \u5DF2\u8FC7\u671F");
+    if (!tokenRecord) throwErr("SSO_AUTH_010", 404, "Token 记录不存在");
+    if (tokenRecord.revoked) throwErr("SSO_AUTH_011", 401, "Refresh token 已被撤销");
+    if (new Date(tokenRecord.refresh_expires_at) < /* @__PURE__ */ new Date()) throwErr("SSO_AUTH_012", 401, "Refresh token 已过期");
     const appCode = payload.app_code || tokenRecord.app_code;
-    if (!appCode) throwErr("SSO_AUTH_009", 401, "\u65E0\u6548\u7684 refresh token");
+    if (!appCode) throwErr("SSO_AUTH_009", 401, "无效的 refresh token");
     const oauthService = strapi.plugin("zhao-sso").service("sso-oauth");
     const app = await oauthService.findApp(appCode);
-    if (!app || !app.is_active) throwErr("SSO_OAUTH_001", 404, "\u5E94\u7528\u4E0D\u5B58\u5728\u6216\u5DF2\u7981\u7528");
-    if (!oauthService.validateGrantType(app, "refresh_token")) throwErr("SSO_OAUTH_008", 400, "\u8BE5\u5E94\u7528\u672A\u5F00\u542F refresh_token \u6388\u6743");
+    if (!app || !app.is_active) throwErr("SSO_OAUTH_001", 404, "应用不存在或已禁用");
+    if (!oauthService.validateGrantType(app, "refresh_token")) throwErr("SSO_OAUTH_008", 400, "该应用未开启 refresh_token 授权");
     await strapi.db.query(TOKEN_UID).update({
       where: { id: tokenRecord.id },
       data: { revoked: true, revoked_at: /* @__PURE__ */ new Date() }
     });
     const user = await userService().findByUuid(payload.sub);
-    if (!user) throwErr("SSO_AUTH_008", 404, "\u7528\u6237\u4E0D\u5B58\u5728");
+    if (!user) throwErr("SSO_AUTH_008", 404, "用户不存在");
     const roles = await getUserRoles(user.id, appCode);
     const newTokenPair = await jwtService().signTokenPair({
       sub: user.uuid,
@@ -5163,19 +4680,13 @@ var sso_auth_default = ({ strapi }) => {
   };
   const sanitizeUser = (user) => {
     const { password_hash, ...safe } = user;
-    void password_hash;
     return safe;
   };
   return { login, register: register2, verifyToken, refreshToken, logout, getUserRoles, saveTokenRecord, sanitizeUser };
 };
-
-// server/src/services/sso-wechat.ts
-var import_crypto = __toESM(require("crypto"));
-var import_axios = __toESM(require("axios"));
-var import_uuid4 = require("uuid");
-var BINDING_UID = "plugin::zhao-sso.sso-third-party-binding";
-var USER_UID2 = "plugin::zhao-sso.sso-user";
-var sso_wechat_default = ({ strapi }) => {
+const BINDING_UID$4 = "plugin::zhao-sso.sso-third-party-binding";
+const USER_UID$3 = "plugin::zhao-sso.sso-user";
+const ssoWechat = ({ strapi }) => {
   const tokenCache = /* @__PURE__ */ new Map();
   const ticketCache = /* @__PURE__ */ new Map();
   function throwErr(code, status, message) {
@@ -5186,22 +4697,22 @@ var sso_wechat_default = ({ strapi }) => {
   }
   async function getConfig(appType) {
     const configService = strapi.plugin("zhao-sso").service("sso-oauth-config");
-    const config = await configService.findByProviderAndAppType("wechat", appType);
-    if (!config) throwErr("SSO_WECHAT_001", 500, `[zhao-sso] WeChat OAuth \u914D\u7F6E\u672A\u627E\u5230(\u8BF7\u5728\u540E\u53F0\u914D\u7F6E provider=wechat, appType=${appType})`);
-    return config;
+    const config2 = await configService.findByProviderAndAppType("wechat", appType);
+    if (!config2) throwErr("SSO_WECHAT_001", 500, `[zhao-sso] WeChat OAuth 配置未找到(请在后台配置 provider=wechat, appType=${appType})`);
+    return config2;
   }
-  async function getValidAccessToken(config) {
-    const cacheKey = config.appId.trim();
+  async function getValidAccessToken(config2) {
+    const cacheKey = config2.appId.trim();
     const cached = tokenCache.get(cacheKey);
     if (cached && cached.expiresAt > Date.now() + 6e4) {
       return cached.value;
     }
     const fetchToken = async () => {
-      const res = await import_axios.default.get("https://api.weixin.qq.com/cgi-bin/token", {
+      const res = await axios__default.default.get("https://api.weixin.qq.com/cgi-bin/token", {
         params: {
           grant_type: "client_credential",
-          appid: config.appId.trim(),
-          secret: config.appSecret
+          appid: config2.appId.trim(),
+          secret: config2.appSecret
         }
       });
       return res.data || {};
@@ -5226,7 +4737,7 @@ var sso_wechat_default = ({ strapi }) => {
     if (cached && cached.expiresAt > Date.now() + 6e4) {
       return cached.value;
     }
-    const res = await import_axios.default.get("https://api.weixin.qq.com/cgi-bin/ticket/getticket", {
+    const res = await axios__default.default.get("https://api.weixin.qq.com/cgi-bin/ticket/getticket", {
       params: { access_token: accessToken, type: "jsapi" }
     });
     const data = res.data || {};
@@ -5245,20 +4756,20 @@ var sso_wechat_default = ({ strapi }) => {
      * 公开获取已缓存/刷新后的全局 access_token（复用闭包 tokenCache），供二维码/菜单等调用
      */
     async getAccessToken(appType = "official_account") {
-      const config = await getConfig(appType);
-      return getValidAccessToken(config);
+      const config2 = await getConfig(appType);
+      return getValidAccessToken(config2);
     },
     /**
      * 使用调用方提供的 appId/appSecret 换取全局 access_token（复用 tokenCache）。
      * 供公众号动作从外部账号体系（如 zhao-studio publish-account.config）拿凭据时使用。
      */
-    async getAccessTokenByConfig(config) {
-      if (!config?.appId) throwErr("SSO_WECHAT_002", 400, "[zhao-sso] \u7F3A\u5C11\u516C\u4F17\u53F7 appId");
-      return getValidAccessToken(config);
+    async getAccessTokenByConfig(config2) {
+      if (!config2?.appId) throwErr("SSO_WECHAT_002", 400, "[zhao-sso] 缺少公众号 appId");
+      return getValidAccessToken(config2);
     },
     async getAuthorizeUrl(state, appType, scope, callbackUrl) {
-      const config = await getConfig(appType);
-      const cleanAppId = config.appId.trim();
+      const config2 = await getConfig(appType);
+      const cleanAppId = config2.appId.trim();
       if (appType === "mini_program") {
         return "";
       }
@@ -5284,17 +4795,17 @@ var sso_wechat_default = ({ strapi }) => {
       return `https://open.weixin.qq.com/connect/oauth2/authorize?${params.toString()}#wechat_redirect`;
     },
     async handleCallback(code, appType) {
-      const config = await getConfig(appType);
-      const cleanAppId = config.appId.trim();
+      const config2 = await getConfig(appType);
+      const cleanAppId = config2.appId.trim();
       let openid;
       let unionid = null;
       let tokenData = {};
       let userInfo = null;
       if (appType === "mini_program") {
-        const sessionRes = await import_axios.default.get("https://api.weixin.qq.com/sns/jscode2session", {
+        const sessionRes = await axios__default.default.get("https://api.weixin.qq.com/sns/jscode2session", {
           params: {
             appid: cleanAppId,
-            secret: config.appSecret,
+            secret: config2.appSecret,
             js_code: code,
             grant_type: "authorization_code"
           }
@@ -5306,10 +4817,10 @@ var sso_wechat_default = ({ strapi }) => {
         unionid = sessionRes.data.unionid || null;
         tokenData = sessionRes.data;
       } else {
-        const tokenRes = await import_axios.default.get("https://api.weixin.qq.com/sns/oauth2/access_token", {
+        const tokenRes = await axios__default.default.get("https://api.weixin.qq.com/sns/oauth2/access_token", {
           params: {
             appid: cleanAppId,
-            secret: config.appSecret,
+            secret: config2.appSecret,
             code,
             grant_type: "authorization_code"
           }
@@ -5321,7 +4832,7 @@ var sso_wechat_default = ({ strapi }) => {
         const wxAccessToken = tokenRes.data.access_token;
         let userInfoRes = {};
         try {
-          userInfoRes = await import_axios.default.get("https://api.weixin.qq.com/sns/userinfo", {
+          userInfoRes = await axios__default.default.get("https://api.weixin.qq.com/sns/userinfo", {
             params: { access_token: wxAccessToken, openid }
           });
         } catch {
@@ -5337,20 +4848,20 @@ var sso_wechat_default = ({ strapi }) => {
       }
       let binding = null;
       if (unionid) {
-        binding = await strapi.db.query(BINDING_UID).findOne({
+        binding = await strapi.db.query(BINDING_UID$4).findOne({
           where: { provider: "wechat", provider_union_id: unionid },
           populate: { user: true }
         });
       }
       if (!binding || !binding.user) {
-        binding = await strapi.db.query(BINDING_UID).findOne({
+        binding = await strapi.db.query(BINDING_UID$4).findOne({
           where: { provider: "wechat", provider_user_id: openid },
           populate: { user: true }
         });
       }
       if (binding) {
         if (!binding.user) {
-          await strapi.db.query(BINDING_UID).delete({ where: { id: binding.id } });
+          await strapi.db.query(BINDING_UID$4).delete({ where: { id: binding.id } });
         } else {
           const hasWxNick = !!userInfo?.nickname;
           const hasWxAvatar = !!userInfo?.headimgurl;
@@ -5358,23 +4869,23 @@ var sso_wechat_default = ({ strapi }) => {
           if (hasWxNick) backingUpdates.provider_nickname = userInfo.nickname;
           if (hasWxAvatar) backingUpdates.provider_avatar = userInfo.headimgurl;
           if (Object.keys(backingUpdates).length) {
-            await strapi.db.query(BINDING_UID).update({ where: { id: binding.id }, data: backingUpdates });
+            await strapi.db.query(BINDING_UID$4).update({ where: { id: binding.id }, data: backingUpdates });
           }
           if (hasWxNick && !binding.user.nickname) {
-            await strapi.db.query(USER_UID2).update({
+            await strapi.db.query(USER_UID$3).update({
               where: { id: binding.user.id },
               data: { nickname: userInfo.nickname }
             });
           }
           if (hasWxAvatar && !binding.user.avatar_url) {
-            await strapi.db.query(USER_UID2).update({
+            await strapi.db.query(USER_UID$3).update({
               where: { id: binding.user.id },
               data: { avatar_url: userInfo.headimgurl }
             });
           }
           try {
             const subscribe = await this.querySubscribe(openid, "wechat", appType);
-            await strapi.db.query(BINDING_UID).update({
+            await strapi.db.query(BINDING_UID$4).update({
               where: { id: binding.id },
               data: { subscribe, subscribe_at: /* @__PURE__ */ new Date(), subscribe_check_at: /* @__PURE__ */ new Date() }
             });
@@ -5407,7 +4918,7 @@ var sso_wechat_default = ({ strapi }) => {
             if (binding.user.nickname) patchUp.nickname = binding.user.nickname;
             await knex("up_users").where({ id: binding.user.id }).update(patchUp);
           } catch (e2) {
-            strapi.log.warn(`[zhao-sso] \u8001\u7528\u6237 up_users \u5BCC\u5B57\u6BB5\u8865\u9F50\u5931\u8D25 user=${binding.user.id}: ${e2?.message}`);
+            strapi.log.warn(`[zhao-sso] 老用户 up_users 富字段补齐失败 user=${binding.user.id}: ${e2?.message}`);
           }
           try {
             const sync = strapi.service("plugin::zhao-sso.channel-sync");
@@ -5426,11 +4937,11 @@ var sso_wechat_default = ({ strapi }) => {
         }
       }
       const rawNickname = (userInfo?.nickname || "wx_user").replace(/[^\w\u4e00-\u9fa5]/g, "").substring(0, 12) || "wx_user";
-      const shortId = (0, import_uuid4.v4)().replace(/-/g, "").substring(0, 8);
+      const shortId = uuid.v4().replace(/-/g, "").substring(0, 8);
       const username = `wx_${rawNickname}_${shortId}`;
       const userSvc = strapi.service("plugin::zhao-sso.sso-user");
       const user = await userSvc.createSsoUserWithSeqGuard({
-        uuid: (0, import_uuid4.v4)(),
+        uuid: uuid.v4(),
         username,
         nickname: userInfo?.nickname || null,
         avatar_url: userInfo?.headimgurl || null,
@@ -5462,9 +4973,9 @@ var sso_wechat_default = ({ strapi }) => {
         if (ownInviteCode) patch.invite_code = ownInviteCode;
         await knex("up_users").where({ id: user.id }).update(patch);
       } catch (e2) {
-        strapi.log.warn(`[zhao-sso] createUser \u5BCC\u5B57\u6BB5\u5BF9\u9F50\u5931\u8D25 user=${user.id}: ${e2?.message}`);
+        strapi.log.warn(`[zhao-sso] createUser 富字段对齐失败 user=${user.id}: ${e2?.message}`);
       }
-      await strapi.db.query(BINDING_UID).create({
+      await strapi.db.query(BINDING_UID$4).create({
         data: {
           user: { id: user.id },
           provider: "wechat",
@@ -5478,7 +4989,7 @@ var sso_wechat_default = ({ strapi }) => {
       });
       try {
         const subscribe = await this.querySubscribe(openid, "wechat", appType);
-        await strapi.db.query(BINDING_UID).update({
+        await strapi.db.query(BINDING_UID$4).update({
           where: { provider_user_id: openid },
           data: { subscribe, subscribe_at: /* @__PURE__ */ new Date(), subscribe_check_at: /* @__PURE__ */ new Date() }
         });
@@ -5495,15 +5006,15 @@ var sso_wechat_default = ({ strapi }) => {
       return { userId: user.id, isNew: true, ownInviteCode };
     },
     async getJssdkSignature(url, appType) {
-      const config = await getConfig(appType);
-      const accessToken = await getValidAccessToken(config);
+      const config2 = await getConfig(appType);
+      const accessToken = await getValidAccessToken(config2);
       const ticket = await getJsapiTicket(accessToken);
-      const nonceStr = (0, import_uuid4.v4)().replace(/-/g, "").substring(0, 16);
+      const nonceStr = uuid.v4().replace(/-/g, "").substring(0, 16);
       const timestamp = Math.floor(Date.now() / 1e3).toString();
       const raw = `jsapi_ticket=${ticket}&noncestr=${nonceStr}&timestamp=${timestamp}&url=${url}`;
-      const signature = import_crypto.default.createHash("sha1").update(raw).digest("hex");
+      const signature = crypto__namespace.default.createHash("sha1").update(raw).digest("hex");
       return {
-        appId: config.appId.trim(),
+        appId: config2.appId.trim(),
         timestamp,
         nonceStr,
         signature
@@ -5511,15 +5022,15 @@ var sso_wechat_default = ({ strapi }) => {
     },
     async getWechatLoginConfig(appType) {
       const configService = strapi.plugin("zhao-sso").service("sso-oauth-config");
-      const config = await configService.findByProviderAndAppType("wechat", appType);
-      if (!config) {
+      const config2 = await configService.findByProviderAndAppType("wechat", appType);
+      if (!config2) {
         return { enabled: false, appType, oauthScopes: [], appId: null };
       }
       return {
         enabled: true,
         appType,
-        oauthScopes: config.extraConfig?.oauthScopes || ["snsapi_userinfo"],
-        appId: config.appId
+        oauthScopes: config2.extraConfig?.oauthScopes || ["snsapi_userinfo"],
+        appId: config2.appId
       };
     },
     /**
@@ -5527,9 +5038,9 @@ var sso_wechat_default = ({ strapi }) => {
      * 仅已关注用户返回 nickname/headimgurl；未关注返回 subscribe=0 无资料。
      */
     async fetchWechatProfile(openid, appType = "official_account") {
-      const config = await getConfig(appType);
-      const accessToken = await getValidAccessToken(config);
-      const res = await import_axios.default.get("https://api.weixin.qq.com/cgi-bin/user/info", {
+      const config2 = await getConfig(appType);
+      const accessToken = await getValidAccessToken(config2);
+      const res = await axios__default.default.get("https://api.weixin.qq.com/cgi-bin/user/info", {
         params: { access_token: accessToken, openid },
         timeout: 1e4
       });
@@ -5550,14 +5061,9 @@ var sso_wechat_default = ({ strapi }) => {
     }
   };
 };
-
-// server/src/services/sso-alipay.ts
-var import_crypto2 = __toESM(require("crypto"));
-var import_axios2 = __toESM(require("axios"));
-var import_uuid5 = require("uuid");
-var BINDING_UID2 = "plugin::zhao-sso.sso-third-party-binding";
-var USER_UID3 = "plugin::zhao-sso.sso-user";
-var sso_alipay_default = ({ strapi }) => {
+const BINDING_UID$3 = "plugin::zhao-sso.sso-third-party-binding";
+const USER_UID$2 = "plugin::zhao-sso.sso-user";
+const ssoAlipay = ({ strapi }) => {
   function throwErr(code, status, message) {
     const e = new Error(message);
     e.code = code;
@@ -5566,19 +5072,19 @@ var sso_alipay_default = ({ strapi }) => {
   }
   async function getConfig() {
     const configService = strapi.plugin("zhao-sso").service("sso-oauth-config");
-    const config = await configService.findByProvider("alipay");
-    if (!config) throwErr("SSO_ALIPAY_001", 500, "[zhao-sso] Alipay OAuth \u914D\u7F6E\u672A\u627E\u5230(\u8BF7\u5728\u540E\u53F0\u914D\u7F6E provider=alipay)");
-    const privateKey = config.extraConfig?.privateKey;
-    if (!privateKey) throwErr("SSO_ALIPAY_002", 500, "Alipay OAuth privateKey \u672A\u914D\u7F6E(extraConfig.privateKey)");
-    return { ...config, privateKey };
+    const config2 = await configService.findByProvider("alipay");
+    if (!config2) throwErr("SSO_ALIPAY_001", 500, "[zhao-sso] Alipay OAuth 配置未找到(请在后台配置 provider=alipay)");
+    const privateKey = config2.extraConfig?.privateKey;
+    if (!privateKey) throwErr("SSO_ALIPAY_002", 500, "Alipay OAuth privateKey 未配置(extraConfig.privateKey)");
+    return { ...config2, privateKey };
   }
   return {
     async getAuthorizeUrl(state) {
-      const config = await getConfig();
+      const config2 = await getConfig();
       const serverUrl = strapi.config.get("server.url", "http://localhost:1337");
       const redirectUri = `${serverUrl}/api/zhao-sso/v1/auth/alipay/callback`;
       const params = new URLSearchParams({
-        app_id: config.appId,
+        app_id: config2.appId,
         redirect_uri: redirectUri,
         scope: "auth_user",
         state
@@ -5586,35 +5092,35 @@ var sso_alipay_default = ({ strapi }) => {
       return `https://openauth.alipay.com/oauth2/publicAppAuthorize.htm?${params.toString()}`;
     },
     async handleCallback(code) {
-      const config = await getConfig();
-      const tokenRes = await this.requestToken(config.appId, config.privateKey, code);
+      const config2 = await getConfig();
+      const tokenRes = await this.requestToken(config2.appId, config2.privateKey, code);
       const userId = tokenRes.user_id;
-      const binding = await strapi.db.query(BINDING_UID2).findOne({
+      const binding = await strapi.db.query(BINDING_UID$3).findOne({
         where: { provider: "alipay", provider_user_id: userId },
         populate: { user: true }
       });
       if (binding) {
         if (!binding.user) {
-          await strapi.db.query(BINDING_UID2).delete({ where: { id: binding.id } });
+          await strapi.db.query(BINDING_UID$3).delete({ where: { id: binding.id } });
         } else {
           return { userId: binding.user.id, isNew: false };
         }
       }
       let userInfo = {};
       try {
-        userInfo = await this.fetchUserInfo(config.appId, config.privateKey, tokenRes.access_token);
+        userInfo = await this.fetchUserInfo(config2.appId, config2.privateKey, tokenRes.access_token);
       } catch {
       }
-      const user = await strapi.db.query(USER_UID3).create({
+      const user = await strapi.db.query(USER_UID$2).create({
         data: {
-          uuid: (0, import_uuid5.v4)(),
+          uuid: uuid.v4(),
           nickname: userInfo.nick_name || null,
           avatar_url: userInfo.avatar || null,
           status: "active",
           login_count: 0
         }
       });
-      await strapi.db.query(BINDING_UID2).create({
+      await strapi.db.query(BINDING_UID$3).create({
         data: {
           user: { id: user.id },
           provider: "alipay",
@@ -5632,7 +5138,7 @@ var sso_alipay_default = ({ strapi }) => {
       const params = this.buildAlipayParams(appId, "alipay.system.oauth.token", bizContent);
       const sign = this.signParams(params, privateKey);
       params.sign = sign;
-      const res = await import_axios2.default.post("https://openapi.alipay.com/gateway.do", null, { params });
+      const res = await axios__default.default.post("https://openapi.alipay.com/gateway.do", null, { params });
       const respKey = "alipay_system_oauth_token_response";
       if (res.data[respKey]) return res.data[respKey];
       throwErr("SSO_ALIPAY_003", 502, `Alipay token error: ${JSON.stringify(res.data)}`);
@@ -5642,7 +5148,7 @@ var sso_alipay_default = ({ strapi }) => {
       const params = this.buildAlipayParams(appId, "alipay.user.info.share", bizContent);
       const sign = this.signParams(params, privateKey);
       params.sign = sign;
-      const res = await import_axios2.default.post("https://openapi.alipay.com/gateway.do", null, { params });
+      const res = await axios__default.default.post("https://openapi.alipay.com/gateway.do", null, { params });
       const respKey = "alipay_user_info_share_response";
       if (res.data[respKey]) return res.data[respKey];
       return {};
@@ -5660,21 +5166,18 @@ var sso_alipay_default = ({ strapi }) => {
     },
     signParams(params, privateKey) {
       const sorted = Object.keys(params).filter((k) => k !== "sign" && params[k]).sort().map((k) => `${k}=${params[k]}`).join("&");
-      const sign = import_crypto2.default.createSign("RSA-SHA256");
+      const sign = crypto__namespace.default.createSign("RSA-SHA256");
       sign.update(sorted);
       sign.end();
       return sign.sign(privateKey, "base64");
     }
   };
 };
-
-// server/src/services/channel-sync.ts
-var crypto3 = __toESM(require("crypto"));
-var createLocalChannelSync = ({ strapi }) => ({
+const createLocalChannelSync = ({ strapi }) => ({
   async syncUserInvite(ssoUserId, inviteCode, channelCode) {
     const userInviteService = strapi.plugin("zhao-channel").service("user-invite");
     if (!userInviteService || typeof userInviteService.createForUser !== "function") {
-      return { success: false, message: "zhao-channel user-invite \u670D\u52A1\u4E0D\u53EF\u7528" };
+      return { success: false, message: "zhao-channel user-invite 服务不可用" };
     }
     let ownInviteCode;
     try {
@@ -5687,14 +5190,14 @@ var createLocalChannelSync = ({ strapi }) => ({
     return { success: true };
   }
 });
-var createRemoteChannelSync = ({
+const createRemoteChannelSync = ({
   strapi,
-  config
+  config: config2
 }) => ({
   async syncUserInvite(ssoUserId, inviteCode, channelCode) {
-    const { remoteUrl, appCode, appSecret } = config;
+    const { remoteUrl, appCode, appSecret } = config2;
     if (!remoteUrl || !appCode || !appSecret) {
-      return { success: false, message: "RemoteChannelSync \u914D\u7F6E\u4E0D\u5B8C\u6574\uFF08remoteUrl/appCode/appSecret\uFF09" };
+      return { success: false, message: "RemoteChannelSync 配置不完整（remoteUrl/appCode/appSecret）" };
     }
     const url = `${remoteUrl.replace(/\/+$/, "")}/api/zhao-channel/v1/admin/user-invites/sync`;
     let ownInviteCode = inviteCode;
@@ -5708,7 +5211,7 @@ var createRemoteChannelSync = ({
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
         const timestamp = Date.now().toString();
-        const signature = crypto3.createHmac("sha256", appSecret).update(`${appCode}${timestamp}${body}`).digest("hex");
+        const signature = crypto__namespace.createHmac("sha256", appSecret).update(`${appCode}${timestamp}${body}`).digest("hex");
         const headers = {
           "Content-Type": "application/json",
           "X-App-Code": appCode,
@@ -5728,53 +5231,50 @@ var createRemoteChannelSync = ({
           const text = await response.text();
           return { success: false, message: `HTTP ${response.status}: ${text}` };
         }
-        strapi.log.warn(`[zhao-sso] RemoteChannelSync \u7B2C ${attempt + 1} \u6B21\u5931\u8D25: HTTP ${response.status}`);
+        strapi.log.warn(`[zhao-sso] RemoteChannelSync 第 ${attempt + 1} 次失败: HTTP ${response.status}`);
       } catch (e) {
-        strapi.log.warn(`[zhao-sso] RemoteChannelSync \u7B2C ${attempt + 1} \u6B21\u5F02\u5E38: ${e.message}`);
+        strapi.log.warn(`[zhao-sso] RemoteChannelSync 第 ${attempt + 1} 次异常: ${e.message}`);
       }
       if (attempt < maxRetries - 1) {
         await new Promise((resolve) => setTimeout(resolve, 1e3 * Math.pow(2, attempt)));
       }
     }
-    return { success: false, message: `RemoteChannelSync \u91CD\u8BD5 ${maxRetries} \u6B21\u540E\u4ECD\u5931\u8D25` };
+    return { success: false, message: `RemoteChannelSync 重试 ${maxRetries} 次后仍失败` };
   }
 });
-var channel_sync_default = ({ strapi }) => ({
+const channelSync = ({ strapi }) => ({
   getSync() {
-    const config = strapi.config.get("plugin::zhao-sso.channelSync") || strapi.plugin("zhao-sso")?.config("channelSync");
-    const configTyped = config;
+    const config2 = strapi.config.get("plugin::zhao-sso.channelSync") || strapi.plugin("zhao-sso")?.config("channelSync");
+    const configTyped = config2;
     const mode = configTyped?.mode || "local";
     if (mode === "off") return null;
     if (mode === "remote") return createRemoteChannelSync({ strapi, config: configTyped || {} });
     return createLocalChannelSync({ strapi });
   }
 });
-
-// server/src/services/sso-app.ts
-var import_bcryptjs5 = __toESM(require("bcryptjs"));
-var APP_UID2 = "plugin::zhao-sso.sso-app";
-var sso_app_default2 = ({ strapi }) => ({
+const APP_UID = "plugin::zhao-sso.sso-app";
+const ssoApp = ({ strapi }) => ({
   async count(where) {
-    return strapi.db.query(APP_UID2).count({ where });
+    return strapi.db.query(APP_UID).count({ where });
   },
   async findMany(params) {
-    return strapi.db.query(APP_UID2).findMany({
+    return strapi.db.query(APP_UID).findMany({
       orderBy: params?.orderBy || { app_code: "asc" }
     });
   },
   async create(data) {
     const secret = data.app_secret || process.env.SSO_DEFAULT_APP_SECRET;
     if (!secret) {
-      const e = new Error("app_secret \u5FC5\u586B\u6216\u8BBE\u7F6E SSO_DEFAULT_APP_SECRET \u73AF\u5883\u53D8\u91CF");
+      const e = new Error("app_secret 必填或设置 SSO_DEFAULT_APP_SECRET 环境变量");
       e.code = "SSO_APP_001";
       e.status = 400;
       throw e;
     }
-    return strapi.db.query(APP_UID2).create({
+    return strapi.db.query(APP_UID).create({
       data: {
         app_code: data.app_code,
         app_name: data.app_name,
-        app_secret: await import_bcryptjs5.default.hash(secret, 10),
+        app_secret: await bcrypt__default.default.hash(secret, 10),
         redirect_uris: data.redirect_uris || [],
         allowed_grant_types: data.allowed_grant_types || ["authorization_code", "refresh_token"],
         is_active: data.is_active !== void 0 ? data.is_active : true,
@@ -5789,23 +5289,21 @@ var sso_app_default2 = ({ strapi }) => ({
       if (body[field] !== void 0) data[field] = body[field];
     }
     if (data.app_secret) {
-      data.app_secret = await import_bcryptjs5.default.hash(data.app_secret, 10);
+      data.app_secret = await bcrypt__default.default.hash(data.app_secret, 10);
     }
-    return strapi.db.query(APP_UID2).update({ where: { id }, data });
+    return strapi.db.query(APP_UID).update({ where: { id }, data });
   },
   async findOne(id) {
-    return strapi.db.query(APP_UID2).findOne({ where: { id } });
+    return strapi.db.query(APP_UID).findOne({ where: { id } });
   },
   async delete(id) {
-    return strapi.db.query(APP_UID2).delete({ where: { id } });
+    return strapi.db.query(APP_UID).delete({ where: { id } });
   }
 });
-
-// server/src/services/sso-oauth-config.ts
-var CONFIG_UID = "plugin::zhao-sso.sso-oauth-config";
-var sso_oauth_config_default2 = ({ strapi }) => ({
+const CONFIG_UID$1 = "plugin::zhao-sso.sso-oauth-config";
+const ssoOauthConfig = ({ strapi }) => ({
   async findByProvider(provider) {
-    const row = await strapi.db.query(CONFIG_UID).findOne({
+    const row = await strapi.db.query(CONFIG_UID$1).findOne({
       where: { provider, is_enabled: true }
     });
     if (!row) return null;
@@ -5824,7 +5322,7 @@ var sso_oauth_config_default2 = ({ strapi }) => ({
     };
   },
   async findByProviderAndAppType(provider, appType) {
-    const row = await strapi.db.query(CONFIG_UID).findOne({
+    const row = await strapi.db.query(CONFIG_UID$1).findOne({
       where: { provider, app_type: appType, is_enabled: true }
     });
     if (!row) return null;
@@ -5843,13 +5341,13 @@ var sso_oauth_config_default2 = ({ strapi }) => ({
     };
   },
   async list() {
-    const rows = await strapi.db.query(CONFIG_UID).findMany({
+    const rows = await strapi.db.query(CONFIG_UID$1).findMany({
       orderBy: { provider: "ASC" }
     });
     return rows;
   },
   async create(data) {
-    return strapi.db.query(CONFIG_UID).create({
+    return strapi.db.query(CONFIG_UID$1).create({
       data: {
         name: data.name,
         provider: data.provider,
@@ -5865,18 +5363,14 @@ var sso_oauth_config_default2 = ({ strapi }) => ({
     });
   },
   async update(id, data) {
-    return strapi.db.query(CONFIG_UID).update({ where: { id }, data });
+    return strapi.db.query(CONFIG_UID$1).update({ where: { id }, data });
   },
   async delete(id) {
-    return strapi.db.query(CONFIG_UID).delete({ where: { id } });
+    return strapi.db.query(CONFIG_UID$1).delete({ where: { id } });
   }
 });
-
-// server/src/services/sso-sms.ts
-var import_crypto3 = __toESM(require("crypto"));
-var import_axios3 = __toESM(require("axios"));
-var CODE_UID = "plugin::zhao-sso.sso-sms-code";
-var sso_sms_default = ({ strapi }) => {
+const CODE_UID = "plugin::zhao-sso.sso-sms-code";
+const ssoSms = ({ strapi }) => {
   function throwErr(code, status, message) {
     const e = new Error(message);
     e.code = code;
@@ -5892,12 +5386,12 @@ var sso_sms_default = ({ strapi }) => {
      */
     async sendCode(mobile, scene = "login", ip) {
       if (!/^1[3-9]\d{9}$/.test(mobile)) {
-        throwErr("SSO_SMS_001", 400, "\u624B\u673A\u53F7\u683C\u5F0F\u4E0D\u6B63\u786E");
+        throwErr("SSO_SMS_001", 400, "手机号格式不正确");
       }
       const provider = process.env.SMS_PROVIDER || "mock";
       const ttlMinutes = 5;
       const expiresAt = new Date(Date.now() + ttlMinutes * 60 * 1e3);
-      const code = provider === "mock" ? "1234" : import_crypto3.default.randomInt(1e5, 999999).toString();
+      const code = provider === "mock" ? "1234" : crypto__namespace.default.randomInt(1e5, 999999).toString();
       await strapi.db.query(CODE_UID).create({
         data: { mobile, code, scene, expires_at: expiresAt, used: false, ip: ip || null, provider }
       });
@@ -5911,11 +5405,11 @@ var sso_sms_default = ({ strapi }) => {
         } else if (provider === "tencent") {
           await this.sendViaTencent(mobile, code);
         } else {
-          throwErr("SSO_SMS_008", 400, `\u4E0D\u652F\u6301\u7684 SMS provider: ${provider}`);
+          throwErr("SSO_SMS_008", 400, `不支持的 SMS provider: ${provider}`);
         }
         return { sent: true, provider, ttlMinutes };
       } catch (e) {
-        strapi.log.error(`[zhao-sso] SMS provider=${provider} \u53D1\u9001\u5931\u8D25: ${e.message}`);
+        strapi.log.error(`[zhao-sso] SMS provider=${provider} 发送失败: ${e.message}`);
         return { sent: false, provider, error: e.message, ttlMinutes };
       }
     },
@@ -5927,8 +5421,8 @@ var sso_sms_default = ({ strapi }) => {
         where: { mobile, code, scene, used: false },
         orderBy: { id: "DESC" }
       });
-      if (!record) throwErr("SSO_SMS_002", 400, "\u9A8C\u8BC1\u7801\u9519\u8BEF");
-      if (new Date(record.expires_at) < /* @__PURE__ */ new Date()) throwErr("SSO_SMS_003", 400, "\u9A8C\u8BC1\u7801\u5DF2\u8FC7\u671F");
+      if (!record) throwErr("SSO_SMS_002", 400, "验证码错误");
+      if (new Date(record.expires_at) < /* @__PURE__ */ new Date()) throwErr("SSO_SMS_003", 400, "验证码已过期");
       await strapi.db.query(CODE_UID).update({
         where: { id: record.id },
         data: { used: true }
@@ -5945,7 +5439,7 @@ var sso_sms_default = ({ strapi }) => {
       const signName = process.env.SMS_ALIYUN_SIGN_NAME;
       const templateCode = process.env.SMS_ALIYUN_TEMPLATE_CODE;
       if (!accessKeyId || !accessKeySecret || !signName || !templateCode) {
-        throwErr("SSO_SMS_006", 500, "\u963F\u91CC\u4E91 SMS \u914D\u7F6E\u7F3A\u5931");
+        throwErr("SSO_SMS_006", 500, "阿里云 SMS 配置缺失");
       }
       const percentEncode = (str) => encodeURIComponent(str).replace(/\+/g, "%20").replace(/\*/g, "%2A").replace(/%7E/g, "~");
       const params = {
@@ -5956,7 +5450,7 @@ var sso_sms_default = ({ strapi }) => {
         RegionId: "cn-hangzhou",
         SignName: signName,
         SignatureMethod: "HMAC-SHA1",
-        SignatureNonce: import_crypto3.default.randomUUID(),
+        SignatureNonce: crypto__namespace.default.randomUUID(),
         SignatureVersion: "1.0",
         TemplateCode: templateCode,
         TemplateParam: JSON.stringify({ code }),
@@ -5965,14 +5459,14 @@ var sso_sms_default = ({ strapi }) => {
       };
       const canonicalized = Object.keys(params).sort().map((k) => `${percentEncode(k)}=${percentEncode(params[k])}`).join("&");
       const stringToSign = `GET&${percentEncode("/")}&${percentEncode(canonicalized)}`;
-      const signature = import_crypto3.default.createHmac("sha1", `${accessKeySecret}&`).update(stringToSign).digest("base64");
+      const signature = crypto__namespace.default.createHmac("sha1", `${accessKeySecret}&`).update(stringToSign).digest("base64");
       const url = `https://dysmsapi.aliyuncs.com/?${canonicalized}&Signature=${percentEncode(signature)}`;
-      const resp = await import_axios3.default.get(url, { timeout: 1e4 });
+      const resp = await axios__default.default.get(url, { timeout: 1e4 });
       if (resp.data?.Code !== "OK") {
         throwErr(
           "SSO_SMS_006",
           500,
-          `\u963F\u91CC\u4E91 SMS \u53D1\u9001\u5931\u8D25: ${resp.data?.Message || resp.data?.Code || "unknown"}`
+          `阿里云 SMS 发送失败: ${resp.data?.Message || resp.data?.Code || "unknown"}`
         );
       }
       return resp.data;
@@ -5988,7 +5482,7 @@ var sso_sms_default = ({ strapi }) => {
       const signName = process.env.SMS_TENCENT_SIGN_NAME;
       const templateId = process.env.SMS_TENCENT_TEMPLATE_ID;
       if (!secretId || !secretKey || !sdkAppId || !signName || !templateId) {
-        throwErr("SSO_SMS_007", 500, "\u817E\u8BAF\u4E91 SMS \u914D\u7F6E\u7F3A\u5931");
+        throwErr("SSO_SMS_007", 500, "腾讯云 SMS 配置缺失");
       }
       const host = "sms.tencentcloudapi.com";
       const service = "sms";
@@ -6004,7 +5498,7 @@ var sso_sms_default = ({ strapi }) => {
         PhoneNumberSet: [`+86${mobile}`],
         TemplateParamSet: [code]
       });
-      const hashedPayload = import_crypto3.default.createHash("sha256").update(payload).digest("hex");
+      const hashedPayload = crypto__namespace.default.createHash("sha256").update(payload).digest("hex");
       const canonicalHeaders = `content-type:application/json; charset=utf-8
 host:${host}
 x-tc-action:${action.toLowerCase()}
@@ -6017,17 +5511,17 @@ ${canonicalHeaders}
 ${signedHeaders}
 ${hashedPayload}`;
       const credentialScope = `${date}/${service}/tc3_request`;
-      const hashedCanonicalRequest = import_crypto3.default.createHash("sha256").update(canonicalRequest).digest("hex");
+      const hashedCanonicalRequest = crypto__namespace.default.createHash("sha256").update(canonicalRequest).digest("hex");
       const stringToSign = `TC3-HMAC-SHA256
 ${timestamp}
 ${credentialScope}
 ${hashedCanonicalRequest}`;
-      const secretDate = import_crypto3.default.createHmac("sha256", secretKey).update(date).digest();
-      const secretService = import_crypto3.default.createHmac("sha256", secretDate).update(service).digest();
-      const secretSigning = import_crypto3.default.createHmac("sha256", secretService).update("tc3_request").digest();
-      const signature = import_crypto3.default.createHmac("sha256", secretSigning).update(stringToSign).digest("hex");
+      const secretDate = crypto__namespace.default.createHmac("sha256", secretKey).update(date).digest();
+      const secretService = crypto__namespace.default.createHmac("sha256", secretDate).update(service).digest();
+      const secretSigning = crypto__namespace.default.createHmac("sha256", secretService).update("tc3_request").digest();
+      const signature = crypto__namespace.default.createHmac("sha256", secretSigning).update(stringToSign).digest("hex");
       const authorization = `TC3-HMAC-SHA256 Credential=${secretId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
-      const resp = await import_axios3.default.post(`https://${host}`, payload, {
+      const resp = await axios__default.default.post(`https://${host}`, payload, {
         timeout: 1e4,
         headers: {
           "Content-Type": "application/json; charset=utf-8",
@@ -6043,7 +5537,7 @@ ${hashedCanonicalRequest}`;
         throwErr(
           "SSO_SMS_007",
           500,
-          `\u817E\u8BAF\u4E91 SMS \u53D1\u9001\u5931\u8D25: ${respData.Error.Message || respData.Error.Code}`
+          `腾讯云 SMS 发送失败: ${respData.Error.Message || respData.Error.Code}`
         );
       }
       const firstStatus = respData?.SendStatusSet?.[0];
@@ -6051,27 +5545,18 @@ ${hashedCanonicalRequest}`;
         throwErr(
           "SSO_SMS_007",
           500,
-          `\u817E\u8BAF\u4E91 SMS \u53D1\u9001\u5931\u8D25: ${firstStatus.Message || firstStatus.Code}`
+          `腾讯云 SMS 发送失败: ${firstStatus.Message || firstStatus.Code}`
         );
       }
       return respData;
     }
   };
 };
-
-// server/src/services/sso-invite.ts
-var import_uuid6 = require("uuid");
-var INVITE_CODE_UID = "plugin::zhao-sso.sso-invite-code";
-var REFERRAL_RELATION_UID = "plugin::zhao-sso.sso-referral-relation";
-var INVITE_USAGE_UID = "plugin::zhao-sso.sso-invite-usage";
-var USER_UID4 = "plugin::zhao-sso.sso-user";
-var sso_invite_default = ({ strapi }) => {
-  function throwErr(code, status, message) {
-    const e = new Error(message);
-    e.code = code;
-    e.status = status;
-    throw e;
-  }
+const INVITE_CODE_UID = "plugin::zhao-sso.sso-invite-code";
+const REFERRAL_RELATION_UID = "plugin::zhao-sso.sso-referral-relation";
+const INVITE_USAGE_UID = "plugin::zhao-sso.sso-invite-usage";
+const USER_UID$1 = "plugin::zhao-sso.sso-user";
+const ssoInvite = ({ strapi }) => {
   const validateInviteCode = async (code, appCode) => {
     if (!code || !appCode) return null;
     try {
@@ -6086,25 +5571,25 @@ var sso_invite_default = ({ strapi }) => {
       if (inviteCode.max_uses && inviteCode.use_count >= inviteCode.max_uses) return null;
       return inviteCode;
     } catch (e) {
-      strapi.log.warn(`[sso-invite] \u6821\u9A8C\u9080\u8BF7\u7801\u5931\u8D25: ${e.message}`);
+      strapi.log.warn(`[sso-invite] 校验邀请码失败: ${e.message}`);
       return null;
     }
   };
   const getOrCreateVirtualUser = async (inviteCodeRecord) => {
     if (inviteCodeRecord.creator && inviteCodeRecord.creator.id) {
-      const existing = await strapi.db.query(USER_UID4).findOne({
+      const existing = await strapi.db.query(USER_UID$1).findOne({
         where: { id: inviteCodeRecord.creator.id }
       });
       if (existing) return existing;
     }
     const virtualUsername = `virtual_${inviteCodeRecord.code}`;
-    const existingVirtual = await strapi.db.query(USER_UID4).findOne({
+    const existingVirtual = await strapi.db.query(USER_UID$1).findOne({
       where: { username: virtualUsername }
     });
     if (existingVirtual) return existingVirtual;
     const userSvc = strapi.service("plugin::zhao-sso.sso-user");
     return userSvc.createSsoUserWithSeqGuard({
-      uuid: (0, import_uuid6.v4)(),
+      uuid: uuid.v4(),
       username: virtualUsername,
       mobile: null,
       email: null,
@@ -6126,28 +5611,28 @@ var sso_invite_default = ({ strapi }) => {
   const buildReferralRelation = async (params) => {
     const { inviteeId, inviteCode, appCode, channelCode } = params;
     try {
-      const invitee = await strapi.db.query(USER_UID4).findOne({ where: { id: inviteeId } });
+      const invitee = await strapi.db.query(USER_UID$1).findOne({ where: { id: inviteeId } });
       if (!invitee) {
-        return { success: false, message: "\u88AB\u9080\u8BF7\u7528\u6237\u4E0D\u5B58\u5728" };
+        return { success: false, message: "被邀请用户不存在" };
       }
       if (invitee.invite_code_used && invitee.invited_by) {
-        return { success: true, message: "\u5DF2\u5EFA\u7ACB\u5206\u9500\u5173\u7CFB\uFF0C\u8DF3\u8FC7", skip: true };
+        return { success: true, message: "已建立分销关系，跳过", skip: true };
       }
       const inviteCodeRecord = await validateInviteCode(inviteCode, appCode);
       if (!inviteCodeRecord) {
-        strapi.log.info(`[sso-invite] \u9080\u8BF7\u7801\u65E0\u6548\u6216\u5DF2\u8FC7\u671F: code=${inviteCode}, appCode=${appCode}`);
-        return { success: false, message: "\u9080\u8BF7\u7801\u65E0\u6548\u6216\u5DF2\u8FC7\u671F" };
+        strapi.log.info(`[sso-invite] 邀请码无效或已过期: code=${inviteCode}, appCode=${appCode}`);
+        return { success: false, message: "邀请码无效或已过期" };
       }
       const inviter = await getOrCreateVirtualUser(inviteCodeRecord);
       if (!inviter) {
-        return { success: false, message: "\u65E0\u6CD5\u83B7\u53D6\u9080\u8BF7\u4EBA" };
+        return { success: false, message: "无法获取邀请人" };
       }
       if (inviter.id === inviteeId) {
-        return { success: false, message: "\u4E0D\u80FD\u9080\u8BF7\u81EA\u5DF1" };
+        return { success: false, message: "不能邀请自己" };
       }
       const level = await calculateLevel(inviter.id);
       const result = await strapi.db.transaction(async () => {
-        await strapi.db.query(USER_UID4).update({
+        await strapi.db.query(USER_UID$1).update({
           where: { id: inviteeId },
           data: {
             invite_code_used: inviteCode,
@@ -6179,11 +5664,11 @@ var sso_invite_default = ({ strapi }) => {
         return { level, inviterId: inviter.id };
       });
       strapi.log.info(
-        `[sso-invite] \u5206\u9500\u5173\u7CFB\u5EFA\u7ACB\u6210\u529F: invitee=${inviteeId}, inviter=${result.inviterId}, level=${result.level}, code=${inviteCode}`
+        `[sso-invite] 分销关系建立成功: invitee=${inviteeId}, inviter=${result.inviterId}, level=${result.level}, code=${inviteCode}`
       );
-      return { success: true, message: "\u5206\u9500\u5173\u7CFB\u5EFA\u7ACB\u6210\u529F" };
+      return { success: true, message: "分销关系建立成功" };
     } catch (e) {
-      strapi.log.warn(`[sso-invite] \u5EFA\u7ACB\u5206\u9500\u5173\u7CFB\u5931\u8D25: ${e.message}`);
+      strapi.log.warn(`[sso-invite] 建立分销关系失败: ${e.message}`);
       return { success: false, message: e.message };
     }
   };
@@ -6217,7 +5702,7 @@ var sso_invite_default = ({ strapi }) => {
       }
       return "";
     } catch (e) {
-      strapi.log.warn(`[sso-invite] \u751F\u6210\u9080\u8BF7\u7801\u5931\u8D25: ${e.message}`);
+      strapi.log.warn(`[sso-invite] 生成邀请码失败: ${e.message}`);
       return "";
     }
   };
@@ -6233,7 +5718,7 @@ var sso_invite_default = ({ strapi }) => {
         createdAt: r.createdAt ? new Date(r.createdAt).getTime() : 0
       }));
     } catch (e) {
-      strapi.log.warn(`[sso-invite] \u67E5\u8BE2\u9080\u7EA6\u843D\u5730\u5217\u8868\u5931\u8D25: ${e.message}`);
+      strapi.log.warn(`[sso-invite] 查询邀约落地列表失败: ${e.message}`);
       return [];
     }
   };
@@ -6245,12 +5730,10 @@ var sso_invite_default = ({ strapi }) => {
     listLandings
   };
 };
-
-// server/src/services/sso-align.ts
-var USER_UID5 = "plugin::zhao-sso.sso-user";
-var sso_align_default = ({ strapi }) => {
+const USER_UID = "plugin::zhao-sso.sso-user";
+const ssoAlign = ({ strapi }) => {
   async function backfillUsers(onlySsoUserIds) {
-    const q = strapi.db.query(USER_UID5);
+    const q = strapi.db.query(USER_UID);
     const users = onlySsoUserIds?.length ? await q.findMany({ where: { id: { $in: onlySsoUserIds } }, limit: 2e3 }) : await q.findMany({ limit: 2e3 });
     const knex = strapi.db.connection;
     const inviteSvc = strapi.plugin("zhao-sso").service("sso-invite");
@@ -6278,10 +5761,7 @@ var sso_align_default = ({ strapi }) => {
   }
   return { backfillUsers };
 };
-
-// server/src/services/channel/wechat-template.ts
-var import_axios4 = __toESM(require("axios"));
-var CONFIG_UID2 = "plugin::zhao-sso.sso-oauth-config";
+const CONFIG_UID = "plugin::zhao-sso.sso-oauth-config";
 function createWechatTemplateChannel({ strapi }) {
   function throwErr(code, status, message) {
     const e = new Error(message);
@@ -6292,14 +5772,14 @@ function createWechatTemplateChannel({ strapi }) {
   async function getAccessToken() {
     const provider = process.env.MSG_WECHAT_PROVIDER || "wechat";
     if (provider === "mock") return "mock_access_token";
-    const config = await strapi.db.query(CONFIG_UID2).findOne({
+    const config2 = await strapi.db.query(CONFIG_UID).findOne({
       where: { provider: "wechat", app_type: "official_account", is_enabled: true }
     });
-    if (!config) {
-      throwErr("SSO_MSG_WECHAT_001", 500, "[zhao-sso] \u672A\u627E\u5230\u516C\u4F17\u53F7(wechat/official_account)\u914D\u7F6E\uFF0C\u8BF7\u5728\u540E\u53F0\u914D\u7F6E");
+    if (!config2) {
+      throwErr("SSO_MSG_WECHAT_001", 500, "[zhao-sso] 未找到公众号(wechat/official_account)配置，请在后台配置");
     }
-    const res = await import_axios4.default.get("https://api.weixin.qq.com/cgi-bin/token", {
-      params: { grant_type: "client_credential", appid: config.app_id.trim(), secret: config.app_secret },
+    const res = await axios__default.default.get("https://api.weixin.qq.com/cgi-bin/token", {
+      params: { grant_type: "client_credential", appid: config2.app_id.trim(), secret: config2.app_secret },
       timeout: 1e4
     });
     const data = res.data || {};
@@ -6327,14 +5807,14 @@ function createWechatTemplateChannel({ strapi }) {
         data: opts.data
       };
       if (opts.url) body.url = opts.url;
-      const res = await import_axios4.default.post(
+      const res = await axios__default.default.post(
         `https://api.weixin.qq.com/cgi-bin/message/template/send?access_token=${accessToken}`,
         body,
         { timeout: 1e4 }
       );
       const data = res.data || {};
       if (data.errcode === 43101) {
-        throwErr("SSO_MSG_NOT_SUBSCRIBE", 420, "\u7528\u6237\u672A\u5173\u6CE8\u516C\u4F17\u53F7");
+        throwErr("SSO_MSG_NOT_SUBSCRIBE", 420, "用户未关注公众号");
       }
       if (data.errcode) {
         throwErr("SSO_MSG_WECHAT_020", 502, `WeChat template send error: ${data.errmsg}(${data.errcode})`);
@@ -6343,14 +5823,12 @@ function createWechatTemplateChannel({ strapi }) {
     }
   };
 }
-
-// server/src/services/sso-msg.ts
-var MSG_TEMPLATE_UID = "plugin::zhao-sso.msg-template";
-var MSG_JOB_UID = "plugin::zhao-sso.msg-job";
-var BINDING_UID3 = "plugin::zhao-sso.sso-third-party-binding";
-var VERSION_UID2 = "plugin::zhao-sso.msg-template-version";
-var MAX_RETRY = 3;
-var RETRY_DELAY_MS = 5 * 60 * 1e3;
+const MSG_TEMPLATE_UID$2 = "plugin::zhao-sso.msg-template";
+const MSG_JOB_UID$2 = "plugin::zhao-sso.msg-job";
+const BINDING_UID$2 = "plugin::zhao-sso.sso-third-party-binding";
+const VERSION_UID = "plugin::zhao-sso.msg-template-version";
+const MAX_RETRY = 3;
+const RETRY_DELAY_MS = 5 * 60 * 1e3;
 function pickVersion(versions) {
   const pool = (versions || []).filter((v) => (v.weight || 0) > 0);
   if (!pool.length) return null;
@@ -6367,7 +5845,7 @@ function appendUtm(link, code, jobId) {
   const sep = link.includes("?") ? "&" : "?";
   return `${link}${sep}utm_source=msg&utm_campaign=${encodeURIComponent(code)}&utm_content=${jobId}`;
 }
-var sso_msg_default = ({ strapi }) => {
+const ssoMsg = ({ strapi }) => {
   function throwErr(code, status, message) {
     const e = new Error(message);
     e.code = code;
@@ -6379,7 +5857,7 @@ var sso_msg_default = ({ strapi }) => {
       wechat: createWechatTemplateChannel({ strapi })
     };
     const ch = channels[provider];
-    if (!ch) throwErr("SSO_MSG_400", 400, `\u4E0D\u652F\u6301\u7684\u901A\u9053 provider=${provider}`);
+    if (!ch) throwErr("SSO_MSG_400", 400, `不支持的通道 provider=${provider}`);
     return ch;
   }
   function renderData(params, wxTemplateFields) {
@@ -6395,7 +5873,7 @@ var sso_msg_default = ({ strapi }) => {
   }
   async function resolveToTarget(userId, provider) {
     if (provider === "wechat") {
-      const bindings = await strapi.db.query(BINDING_UID3).findMany({
+      const bindings = await strapi.db.query(BINDING_UID$2).findMany({
         where: { provider: "wechat" },
         orderBy: { id: "DESC" },
         limit: 100,
@@ -6414,20 +5892,20 @@ var sso_msg_default = ({ strapi }) => {
      */
     async buildJob(opts) {
       const { user, scene, templateCode, params = {}, link, scheduledAt, dedupeKey } = opts;
-      const template = await strapi.db.query(MSG_TEMPLATE_UID).findOne({
+      const template = await strapi.db.query(MSG_TEMPLATE_UID$2).findOne({
         where: { code: templateCode, isEnabled: true }
       });
-      if (!template) throwErr("SSO_MSG_TEMPLATE_404", 404, `\u6D88\u606F\u6A21\u677F\u672A\u627E\u5230\u6216\u672A\u542F\u7528: ${templateCode}`);
-      const versions = await strapi.db.query(VERSION_UID2).findMany({
+      if (!template) throwErr("SSO_MSG_TEMPLATE_404", 404, `消息模板未找到或未启用: ${templateCode}`);
+      const versions = await strapi.db.query(VERSION_UID).findMany({
         where: { template: template.id, status: "active" }
       });
       const picked = pickVersion(versions);
       let useWxTemplateId = template.wxTemplateId;
-      let useWxTemplateFields = template.wxTemplateFields;
+      template.wxTemplateFields;
       let useLink = template.link || link;
       if (picked) {
         useWxTemplateId = picked.wxTemplateId || template.wxTemplateId;
-        useWxTemplateFields = picked.wxTemplateFields || template.wxTemplateFields;
+        picked.wxTemplateFields || template.wxTemplateFields;
         useLink = picked.link || template.link || link;
       }
       const provider = template.provider || "wechat";
@@ -6435,11 +5913,11 @@ var sso_msg_default = ({ strapi }) => {
         throwErr(
           "SSO_MSG_TEMPLATE_400",
           400,
-          `\u6A21\u677F ${templateCode} \u7F3A\u5C11\u5FAE\u4FE1\u6A21\u677FID(wx_template_id)\uFF0C\u62D2\u7EDD\u521B\u5EFA\u6D88\u606F\u4EFB\u52A1`
+          `模板 ${templateCode} 缺少微信模板ID(wx_template_id)，拒绝创建消息任务`
         );
       }
       const key = dedupeKey || `${scene}:${user}`;
-      const existing = await strapi.db.query(MSG_JOB_UID).findOne({
+      const existing = await strapi.db.query(MSG_JOB_UID$2).findOne({
         where: { dedupeKey: key }
       });
       if (existing && existing.status !== "sent" && existing.status !== "failed" && existing.status !== "cancelled") {
@@ -6461,10 +5939,10 @@ var sso_msg_default = ({ strapi }) => {
       };
       if (toTarget) jobData.toTarget = toTarget;
       if (scheduledAt) jobData.scheduledAt = scheduledAt;
-      const job = await strapi.db.query(MSG_JOB_UID).create({ data: jobData });
+      const job = await strapi.db.query(MSG_JOB_UID$2).create({ data: jobData });
       if (useLink && job?.id) {
         const finalLink = appendUtm(useLink, picked ? picked.code : template.code, job.id);
-        await strapi.db.query(MSG_JOB_UID).update({ where: { id: job.id }, data: { link: finalLink } });
+        await strapi.db.query(MSG_JOB_UID$2).update({ where: { id: job.id }, data: { link: finalLink } });
         job.link = finalLink;
       }
       return { job, skipped: false };
@@ -6477,13 +5955,13 @@ var sso_msg_default = ({ strapi }) => {
     async sendInApp(opts) {
       const { user, scene, params = {}, link, dedupeKey } = opts;
       const key = dedupeKey || `inapp:${scene}:${user}`;
-      const existing = await strapi.db.query(MSG_JOB_UID).findOne({
+      const existing = await strapi.db.query(MSG_JOB_UID$2).findOne({
         where: { dedupeKey: key }
       });
       if (existing && existing.status !== "failed" && existing.status !== "cancelled") {
         return { job: existing, skipped: true };
       }
-      const job = await strapi.db.query(MSG_JOB_UID).create({
+      const job = await strapi.db.query(MSG_JOB_UID$2).create({
         data: {
           user,
           scene,
@@ -6502,7 +5980,7 @@ var sso_msg_default = ({ strapi }) => {
      */
     async sendNow(opts) {
       const { job } = await this.buildJob(opts);
-      if (!job) throwErr("SSO_MSG_500", 500, "\u521B\u5EFA\u4EFB\u52A1\u5931\u8D25");
+      if (!job) throwErr("SSO_MSG_500", 500, "创建任务失败");
       return this.sendJob(job.id);
     },
     /**
@@ -6512,17 +5990,17 @@ var sso_msg_default = ({ strapi }) => {
      * 故渠道/模板ID/触达目标三项解析与校验一律前置，任一失败即置 failed 终态返回。
      */
     async sendJob(jobId) {
-      const job = await strapi.db.query(MSG_JOB_UID).findOne({
+      const job = await strapi.db.query(MSG_JOB_UID$2).findOne({
         where: { id: jobId },
         populate: { template: true, version: true, user: true }
       });
-      if (!job) throwErr("SSO_MSG_JOB_404", 404, "\u6D88\u606F\u4EFB\u52A1\u4E0D\u5B58\u5728");
+      if (!job) throwErr("SSO_MSG_JOB_404", 404, "消息任务不存在");
       if (job.status === "sent") return job;
-      if (!job.template) throwErr("SSO_MSG_JOB_500", 500, "\u4EFB\u52A1\u7F3A\u5C11\u6A21\u677F");
+      if (!job.template) throwErr("SSO_MSG_JOB_500", 500, "任务缺少模板");
       if (job.status === "failed" && job.retryCount >= MAX_RETRY) return job;
       const fail = async (reason, message, extra = {}) => {
-        strapi.log.warn(`[zhao-sso:msg] job ${job.id} \u7F6E failed(${reason}): ${message}`);
-        await strapi.db.query(MSG_JOB_UID).update({
+        strapi.log.warn(`[zhao-sso:msg] job ${job.id} 置 failed(${reason}): ${message}`);
+        await strapi.db.query(MSG_JOB_UID$2).update({
           where: { id: job.id },
           data: { status: "failed", result: { reason, message, ...extra } }
         });
@@ -6532,7 +6010,7 @@ var sso_msg_default = ({ strapi }) => {
       const quota = await strapi.plugin("zhao-sso").service("sso-quota").evaluate({ userId: qUserId, scene: job.scene, templateId: job.template?.id });
       if (!quota.allowed) {
         strapi.log.warn(`[zhao-sso:msg] sent blocked by quota (user=${qUserId}, scene=${job.scene}): ${quota.reason}`);
-        await strapi.db.query(MSG_JOB_UID).update({
+        await strapi.db.query(MSG_JOB_UID$2).update({
           where: { id: job.id },
           data: { status: "quota_limited", result: { reason: quota.reason, scene: job.scene, detail: quota.detail || null } }
         });
@@ -6547,20 +6025,20 @@ var sso_msg_default = ({ strapi }) => {
       const wxFields = job.version?.wxTemplateFields || job.template.wxTemplateFields;
       const wxTemplateId = job.version?.wxTemplateId || job.template.wxTemplateId;
       if (!wxTemplateId) {
-        return fail("missing_wx_template_id", "\u4EFB\u52A1\u7F3A\u5C11\u6A21\u677FID", { template: job.template?.code || null });
+        return fail("missing_wx_template_id", "任务缺少模板ID", { template: job.template?.code || null });
       }
       const data = renderData(job.params || {}, wxFields);
       let toTarget = job.toTarget;
       if (!toTarget) {
         toTarget = await resolveToTarget(job.user, job.provider);
         if (toTarget) {
-          await strapi.db.query(MSG_JOB_UID).update({ where: { id: job.id }, data: { toTarget } });
+          await strapi.db.query(MSG_JOB_UID$2).update({ where: { id: job.id }, data: { toTarget } });
         }
       }
       if (!toTarget) {
-        return fail("no_target", "\u672A\u89E3\u6790\u5230\u89E6\u8FBE\u76EE\u6807(openid)");
+        return fail("no_target", "未解析到触达目标(openid)");
       }
-      await strapi.db.query(MSG_JOB_UID).update({ where: { id: job.id }, data: { status: "sending" } });
+      await strapi.db.query(MSG_JOB_UID$2).update({ where: { id: job.id }, data: { status: "sending" } });
       try {
         const res = await channel.send({
           openid: toTarget,
@@ -6568,12 +6046,12 @@ var sso_msg_default = ({ strapi }) => {
           url: job.link || void 0,
           data
         });
-        await strapi.db.query(MSG_JOB_UID).update({
+        await strapi.db.query(MSG_JOB_UID$2).update({
           where: { id: job.id },
           data: { status: "sent", wxMsgId: String(res.msgId), sentAt: /* @__PURE__ */ new Date(), result: res.raw || null }
         });
         if (job.version?.id) {
-          await strapi.db.query(VERSION_UID2).update({
+          await strapi.db.query(VERSION_UID).update({
             where: { id: job.version.id },
             data: { sentCount: (job.version.sentCount || 0) + 1, successCount: (job.version.successCount || 0) + 1, lastUsedAt: /* @__PURE__ */ new Date() }
           });
@@ -6581,7 +6059,7 @@ var sso_msg_default = ({ strapi }) => {
       } catch (e) {
         const retryCount = (job.retryCount || 0) + 1;
         const retryable = retryCount <= MAX_RETRY && e?.code !== "SSO_MSG_NOT_SUBSCRIBE";
-        await strapi.db.query(MSG_JOB_UID).update({
+        await strapi.db.query(MSG_JOB_UID$2).update({
           where: { id: job.id },
           data: {
             status: retryable ? "pending" : "failed",
@@ -6594,11 +6072,11 @@ var sso_msg_default = ({ strapi }) => {
       return this.getJob(job.id);
     },
     async getJob(jobId) {
-      const job = await strapi.db.query(MSG_JOB_UID).findOne({
+      const job = await strapi.db.query(MSG_JOB_UID$2).findOne({
         where: { id: jobId },
         populate: { template: true, user: true }
       });
-      if (!job) throwErr("SSO_MSG_JOB_404", 404, "\u6D88\u606F\u4EFB\u52A1\u4E0D\u5B58\u5728");
+      if (!job) throwErr("SSO_MSG_JOB_404", 404, "消息任务不存在");
       return job;
     },
     /** 拉取待发送任务（供 cron 进程调度）。dueOnly=true 时只取已到发送时间的任务 */
@@ -6612,7 +6090,7 @@ var sso_msg_default = ({ strapi }) => {
           { nextRetryAt: { $lte: now } }
         ];
       }
-      return strapi.db.query(MSG_JOB_UID).findMany({
+      return strapi.db.query(MSG_JOB_UID$2).findMany({
         where,
         populate: { template: true },
         orderBy: { scheduledAt: "ASC" },
@@ -6621,14 +6099,14 @@ var sso_msg_default = ({ strapi }) => {
     },
     /** 查询/刷新用户公众号关注状态，落库到 sso-third-party-binding.subscribe */
     async refreshSubscribe(userId, appType = "official_account") {
-      const binding = await strapi.db.query(BINDING_UID3).findOne({
+      const binding = await strapi.db.query(BINDING_UID$2).findOne({
         where: { provider: "wechat", user: userId },
         orderBy: { id: "DESC" }
       });
-      if (!binding) throwErr("SSO_MSG_BINDING_404", 404, "\u8BE5\u7528\u6237\u65E0\u5FAE\u4FE1\u7ED1\u5B9A\uFF0C\u65E0\u6CD5\u67E5\u8BE2\u5173\u6CE8\u72B6\u6001");
+      if (!binding) throwErr("SSO_MSG_BINDING_404", 404, "该用户无微信绑定，无法查询关注状态");
       const wechatSvc = strapi.plugin("zhao-sso").service("sso-wechat");
       const subscribe = await wechatSvc.querySubscribe(binding.provider_user_id, binding.provider, appType) || 0;
-      await strapi.db.query(BINDING_UID3).update({
+      await strapi.db.query(BINDING_UID$2).update({
         where: { id: binding.id },
         data: {
           subscribe,
@@ -6640,11 +6118,9 @@ var sso_msg_default = ({ strapi }) => {
     }
   };
 };
-
-// server/src/services/sso-sop.ts
-var SOP_RULE_UID = "plugin::zhao-sso.sop-rule";
-var SSO_USER_UID = "plugin::zhao-sso.sso-user";
-var MANUAL_TODO_UID = "plugin::zhao-sso.manual-sop-todo";
+const SOP_RULE_UID$1 = "plugin::zhao-sso.sop-rule";
+const SSO_USER_UID$1 = "plugin::zhao-sso.sso-user";
+const MANUAL_TODO_UID = "plugin::zhao-sso.manual-sop-todo";
 function pick(obj, path) {
   if (!path) return void 0;
   return String(path).split(".").reduce((acc, key) => acc == null ? void 0 : acc[key], obj);
@@ -6662,7 +6138,7 @@ function renderLink(tpl, payload) {
   if (!tpl) return void 0;
   return tpl.replace(/\{(\w+)\}/g, (_, k) => payload[k] !== void 0 ? String(payload[k]) : "");
 }
-var sso_sop_default = ({ strapi }) => ({
+const ssoSop = ({ strapi }) => ({
   /**
    * 身份桥接：按标识(mobile 优先/username/email)把业务用户(up_users)解析为 sso-user。
    * 匹配不到(未做微信绑定/标识不一)返回 null，调用方跳过触达并记日志。
@@ -6676,7 +6152,7 @@ var sso_sop_default = ({ strapi }) => ({
     if (up.email) or.push({ email: String(up.email).toLowerCase() });
     if (up.mobile) or.push({ mobile: up.mobile });
     if (or.length === 0) return null;
-    return strapi.db.query(SSO_USER_UID).findOne({ where: { $or: or } });
+    return strapi.db.query(SSO_USER_UID$1).findOne({ where: { $or: or } });
   },
   /** 事件触发：业务埋点统一入口。
    * - 有 schedules：按业务精确排期逐条建任务（覆盖规则默认延迟）。
@@ -6688,7 +6164,7 @@ var sso_sop_default = ({ strapi }) => ({
     const results = [];
     let jobs = schedules || [];
     if (!schedules || schedules.length === 0) {
-      const rules = await strapi.db.query(SOP_RULE_UID).findMany({
+      const rules = await strapi.db.query(SOP_RULE_UID$1).findMany({
         where: { source: "event", event, enabled: true }
       });
       jobs = rules.map((r) => ({
@@ -6803,7 +6279,7 @@ var sso_sop_default = ({ strapi }) => ({
    */
   async dispatchManualTodo(todoId, resolveTargetUsers) {
     const todo = await strapi.db.query(MANUAL_TODO_UID).findOne({ where: { id: Number(todoId) } });
-    if (!todo) throw new Error("\u5F85\u529E\u4E0D\u5B58\u5728");
+    if (!todo) throw new Error("待办不存在");
     if (todo.status !== "open") return { sent: 0, skipped: 1, reason: `status=${todo.status}` };
     const msg = strapi.plugin("zhao-sso").service("sso-msg");
     const upUserIds = await resolveTargetUsers(todo.audience || {});
@@ -6837,31 +6313,29 @@ var sso_sop_default = ({ strapi }) => ({
     return { sent, skipped };
   }
 });
-
-// server/src/services/sso-profile.ts
-var PROFILE_UID2 = "plugin::zhao-sso.sso-user-profile";
-var SSO_USER_UID2 = "plugin::zhao-sso.sso-user";
-var BINDING_UID4 = "plugin::zhao-sso.sso-third-party-binding";
-var clamp = (n) => Math.max(0, Math.min(100, Math.round(n)));
+const PROFILE_UID = "plugin::zhao-sso.sso-user-profile";
+const SSO_USER_UID = "plugin::zhao-sso.sso-user";
+const BINDING_UID$1 = "plugin::zhao-sso.sso-third-party-binding";
+const clamp = (n) => Math.max(0, Math.min(100, Math.round(n)));
 function authGate(strapi) {
   return strapi.plugin && strapi.plugin("zhao-auth")?.service?.("auth") || null;
 }
 function thirdGate(strapi) {
   return strapi.plugin && strapi.plugin("zhao-third")?.service?.("third-party-account") || null;
 }
-function websiteGate(strapi) {
+function websiteGate$1(strapi) {
   return strapi.plugin && strapi.plugin("zhao-website")?.service?.("gate") || null;
 }
-function courseGate(strapi) {
+function courseGate$2(strapi) {
   return strapi.plugin && strapi.plugin("zhao-course")?.service?.("gate") || null;
 }
-function pointGate(strapi) {
+function pointGate$2(strapi) {
   return strapi.plugin && strapi.plugin("zhao-point")?.service?.("gate") || null;
 }
-var sso_profile_default = ({ strapi }) => ({
+const ssoProfile = ({ strapi }) => ({
   /** sso-user → up_user 反向桥接（按标识匹配；匹配不到返回 null） */
   async resolveUpUserForSsoUser(ssoUserId) {
-    const sso = await strapi.db.query(SSO_USER_UID2).findOne({
+    const sso = await strapi.db.query(SSO_USER_UID).findOne({
       where: { id: ssoUserId },
       select: ["id", "username", "email", "mobile"]
     });
@@ -6874,7 +6348,7 @@ var sso_profile_default = ({ strapi }) => ({
       const hit = authGate(strapi)?.findUpUserByMatch ? await authGate(strapi).findUpUserByMatch(or) : null;
       if (hit) return hit;
     }
-    const bindings = await strapi.db.query(BINDING_UID4).findMany({
+    const bindings = await strapi.db.query(BINDING_UID$1).findMany({
       where: { user: ssoUserId },
       select: ["provider_user_id", "provider_union_id"]
     });
@@ -6897,9 +6371,9 @@ var sso_profile_default = ({ strapi }) => ({
     if (!up) return { ...zero, user: ssoUserId, upUser: null, hasData: false };
     const userId = up.id;
     const days30 = new Date(Date.now() - 30 * 24 * 3600 * 1e3);
-    const g = websiteGate(strapi);
-    const cg = courseGate(strapi);
-    const pg = pointGate(strapi);
+    const g = websiteGate$1(strapi);
+    const cg = courseGate$2(strapi);
+    const pg = pointGate$2(strapi);
     const lp30 = cg?.countActiveLessons ? await cg.countActiveLessons(userId, days30) : 0;
     const visit30 = g?.countActive ? await g.countActive(userId, days30) : 0;
     const activity = clamp(lp30 * 10 + visit30 * 3);
@@ -6926,14 +6400,14 @@ var sso_profile_default = ({ strapi }) => ({
   async collectInterests(userId) {
     const days30 = new Date(Date.now() - 30 * 24 * 3600 * 1e3);
     const counts = {};
-    const cg = courseGate(strapi);
+    const cg = courseGate$2(strapi);
     for (const name of cg?.collectCourseInterests ? await cg.collectCourseInterests(userId, { since: days30 }) : []) {
       counts[name] = (counts[name] || 0) + 1;
     }
-    const g2 = websiteGate(strapi);
+    const g2 = websiteGate$1(strapi);
     const cats = g2?.collectArticleCategories ? await g2.collectArticleCategories(userId, { since: days30 }) : [];
     for (const name of cats) counts[name] = (counts[name] || 0) + 1;
-    const pg = pointGate(strapi);
+    const pg = pointGate$2(strapi);
     for (const t of pg?.collectActivityTypes ? await pg.collectActivityTypes(userId, { since: days30 }) : []) {
       counts[t] = (counts[t] || 0) + 1;
     }
@@ -6945,14 +6419,14 @@ var sso_profile_default = ({ strapi }) => ({
       (profile.completion || 0) * 0.25 + (profile.payment || 0) * 0.25 + (profile.activity || 0) * 0.2 + (profile.attendance || 0) * 0.15 + (profile.reading || 0) * 0.15
     );
     const segment = score >= 80 ? "S" : score >= 60 ? "A" : score >= 40 ? "B" : "C";
-    const reason = profile.hasData === false ? "\u65E0\u884C\u4E3A\u6570\u636E" : `\u7EFC\u5408\u5206${score}\uFF08\u5B8C\u8BFE${profile.completion}/\u4ED8\u8D39${profile.payment}/\u6D3B\u8DC3${profile.activity}\uFF09`;
+    const reason = profile.hasData === false ? "无行为数据" : `综合分${score}（完课${profile.completion}/付费${profile.payment}/活跃${profile.activity}）`;
     return { segment, segmentScore: score, segmentReason: reason };
   },
   /** 详情：实时聚合 + 打分 + 落库 sso-user-profile */
   async getProfile(ssoUserId) {
     const profile = await this.calculateProfile(ssoUserId);
     const seg = this.segmentOf(profile);
-    const existing = await strapi.db.query(PROFILE_UID2).findOne({ where: { user: ssoUserId } });
+    const existing = await strapi.db.query(PROFILE_UID).findOne({ where: { user: ssoUserId } });
     const data = {
       segment: seg.segment,
       segmentScore: seg.segmentScore,
@@ -6960,8 +6434,8 @@ var sso_profile_default = ({ strapi }) => ({
       dimensions: { ...profile },
       lastCalculatedAt: /* @__PURE__ */ new Date()
     };
-    if (existing) await strapi.db.query(PROFILE_UID2).update({ where: { id: existing.id }, data });
-    else await strapi.db.query(PROFILE_UID2).create({ data: { ...data, user: ssoUserId } });
+    if (existing) await strapi.db.query(PROFILE_UID).update({ where: { id: existing.id }, data });
+    else await strapi.db.query(PROFILE_UID).create({ data: { ...data, user: ssoUserId } });
     return { ...profile, ...seg };
   },
   /** 批量重算：遍历 up_users → sso-user → getProfile */
@@ -6971,7 +6445,7 @@ var sso_profile_default = ({ strapi }) => ({
     let n = 0;
     let sso = 0;
     for (const u of upUsers) {
-      const ssoUser = await strapi.db.query(SSO_USER_UID2).findOne({
+      const ssoUser2 = await strapi.db.query(SSO_USER_UID).findOne({
         where: {
           $or: [].concat(
             u.username ? [{ username: u.username }] : [],
@@ -6980,26 +6454,24 @@ var sso_profile_default = ({ strapi }) => ({
           )
         }
       });
-      if (!ssoUser) continue;
-      await this.getProfile(ssoUser.id);
+      if (!ssoUser2) continue;
+      await this.getProfile(ssoUser2.id);
       sso++;
       n++;
     }
     return { scanned: upUsers.length, calculated: n, matchedSso: sso };
   }
 });
-
-// server/src/services/sso-recommend.ts
-function courseGate2(strapi) {
+function courseGate$1(strapi) {
   return strapi.plugin && strapi.plugin("zhao-course")?.service?.("gate") || null;
 }
-function websiteGate2(strapi) {
+function websiteGate(strapi) {
   return strapi.plugin && strapi.plugin("zhao-website")?.service?.("gate") || null;
 }
-function pointGate2(strapi) {
+function pointGate$1(strapi) {
   return strapi.plugin && strapi.plugin("zhao-point")?.service?.("gate") || null;
 }
-var sso_recommend_default = ({ strapi }) => ({
+const ssoRecommend = ({ strapi }) => ({
   async recommendFor(ssoUserId, limit = 5) {
     const profile = await strapi.plugin("zhao-sso").service("sso-profile").getProfile(ssoUserId);
     const interests = Array.isArray(profile.interests) ? profile.interests : [];
@@ -7013,31 +6485,29 @@ var sso_recommend_default = ({ strapi }) => ({
   },
   /** 推荐课程：兴趣分类内，排除已购/已报名，按学员数排序；无兴趣 → 最新课程兜底 */
   async recCourses(interests, upUserId, limit) {
-    const g = courseGate2(strapi);
+    const g = courseGate$1(strapi);
     const enrolled = g?.listEnrolledCourseIds ? await g.listEnrolledCourseIds(upUserId || 0) : [];
     const rows = g?.recommendCourses ? await g.recommendCourses(interests, enrolled, limit) : [];
     return rows;
   },
   /** 推荐文章：兴趣分类内已发布文章，按发布时间排序；无兴趣 → 最新兜底 */
   async recArticles(interests, limit) {
-    const g = websiteGate2(strapi);
+    const g = websiteGate(strapi);
     const rows = g?.recommendArticles ? await g.recommendArticles(interests, limit) : [];
     return rows;
   },
   /** 推荐活动：兴趣类型内报名中的活动，排除已报名，按开始时间排序；无匹配 → 报名中兜底 */
   async recActivities(interests, upUserId, limit) {
-    const g = pointGate2(strapi);
+    const g = pointGate$1(strapi);
     const signed = g?.listSignedActivityIds ? await g.listSignedActivityIds(upUserId || 0) : [];
     const rows = g?.recommendActivities ? await g.recommendActivities(interests, signed, limit) : [];
     return rows;
   }
 });
-
-// server/src/services/sso-quota.ts
-var MSG_JOB_UID2 = "plugin::zhao-sso.msg-job";
-var MSG_TEMPLATE_UID2 = "plugin::zhao-sso.msg-template";
-var QUOTA_CONFIG_UID = "plugin::zhao-sso.sso-quota-config";
-var sso_quota_default = ({ strapi }) => {
+const MSG_JOB_UID$1 = "plugin::zhao-sso.msg-job";
+const MSG_TEMPLATE_UID$1 = "plugin::zhao-sso.msg-template";
+const QUOTA_CONFIG_UID = "plugin::zhao-sso.sso-quota-config";
+const ssoQuota = ({ strapi }) => {
   async function resolveConfig(templateId) {
     const cfg = await strapi.db.query(QUOTA_CONFIG_UID).findOne({}) || {};
     const defDaily = typeof cfg.maxDailyPerUser === "number" ? cfg.maxDailyPerUser : 10;
@@ -7045,7 +6515,7 @@ var sso_quota_default = ({ strapi }) => {
     let dailyCap = defDaily;
     let cooldownMinutes = defCool;
     if (templateId) {
-      const t = await strapi.db.query(MSG_TEMPLATE_UID2).findOne({ where: { id: templateId } });
+      const t = await strapi.db.query(MSG_TEMPLATE_UID$1).findOne({ where: { id: templateId } });
       if (t && typeof t.dailyCap === "number") dailyCap = t.dailyCap;
       if (t && typeof t.cooldownMinutes === "number") cooldownMinutes = t.cooldownMinutes;
     }
@@ -7063,13 +6533,13 @@ var sso_quota_default = ({ strapi }) => {
       const cfg = await resolveConfig(templateId || null);
       const dayStart = /* @__PURE__ */ new Date();
       dayStart.setHours(0, 0, 0, 0);
-      const sentCount = await strapi.db.query(MSG_JOB_UID2).count({
+      const sentCount = await strapi.db.query(MSG_JOB_UID$1).count({
         where: { user: { id: userId }, status: "sent", sentAt: { $gte: dayStart } }
       });
       if (sentCount >= cfg.dailyCap) {
         return { allowed: false, reason: "daily_cap", detail: { sentCount, dailyCap: cfg.dailyCap, source: cfg.source } };
       }
-      const recents = await strapi.db.query(MSG_JOB_UID2).findMany({
+      const recents = await strapi.db.query(MSG_JOB_UID$1).findMany({
         where: { scene, status: "sent" },
         orderBy: { sentAt: "DESC" },
         limit: 50,
@@ -7086,30 +6556,28 @@ var sso_quota_default = ({ strapi }) => {
     }
   };
 };
-
-// server/src/services/sso-stats.ts
-var SOP_RULE_UID2 = "plugin::zhao-sso.sop-rule";
-var MSG_JOB_UID3 = "plugin::zhao-sso.msg-job";
-var MSG_TEMPLATE_UID3 = "plugin::zhao-sso.msg-template";
-var MSG_VERSION_UID = "plugin::zhao-sso.msg-template-version";
-var DATE_MS = 864e5;
-function pointGate3(strapi) {
+const SOP_RULE_UID = "plugin::zhao-sso.sop-rule";
+const MSG_JOB_UID = "plugin::zhao-sso.msg-job";
+const MSG_TEMPLATE_UID = "plugin::zhao-sso.msg-template";
+const MSG_VERSION_UID = "plugin::zhao-sso.msg-template-version";
+const DATE_MS = 864e5;
+function pointGate(strapi) {
   return strapi.plugin && strapi.plugin("zhao-point")?.service?.("gate") || null;
 }
-function courseGate3(strapi) {
+function courseGate(strapi) {
   return strapi.plugin && strapi.plugin("zhao-course")?.service?.("gate") || null;
 }
-var sso_stats_default = ({ strapi }) => ({
+const ssoStats = ({ strapi }) => ({
   async getSopStats(opts) {
     const from = opts.from ? new Date(opts.from) : new Date(Date.now() - 30 * DATE_MS);
     const to = opts.to ? new Date(opts.to) : /* @__PURE__ */ new Date();
     if (from.getTime() > to.getTime()) {
-      const err = new Error("from \u4E0D\u80FD\u665A\u4E8E to");
+      const err = new Error("from 不能晚于 to");
       err.status = 400;
       throw err;
     }
     const range = { createdAt: { $gte: from, $lte: to } };
-    const rules = await strapi.db.query(SOP_RULE_UID2).findMany({});
+    const rules = await strapi.db.query(SOP_RULE_UID).findMany({});
     const ruleByScene = /* @__PURE__ */ new Map();
     for (const r of rules) {
       if (!ruleByScene.has(r.scene)) ruleByScene.set(r.scene, []);
@@ -7119,11 +6587,11 @@ var sso_stats_default = ({ strapi }) => ({
     if (opts.scene) {
       sceneSet.add(opts.scene);
     } else {
-      const jobScenes = await strapi.db.query(MSG_JOB_UID3).findMany({ select: ["scene"] });
+      const jobScenes = await strapi.db.query(MSG_JOB_UID).findMany({ select: ["scene"] });
       for (const s of jobScenes) sceneSet.add(s.scene);
     }
     const scenes = Array.from(sceneSet).filter((s) => opts.scene ? s === opts.scene : true);
-    const countBy = (scene, status) => status ? strapi.db.query(MSG_JOB_UID3).count({ where: { scene, status, ...range } }) : strapi.db.query(MSG_JOB_UID3).count({ where: { scene, ...range } });
+    const countBy = (scene, status) => status ? strapi.db.query(MSG_JOB_UID).count({ where: { scene, status, ...range } }) : strapi.db.query(MSG_JOB_UID).count({ where: { scene, ...range } });
     const rows = [];
     const summary = { sceneCount: 0, total: 0, sent: 0, failed: 0, quotaLimited: 0, pending: 0, sentRate: 0 };
     for (const s of scenes) {
@@ -7139,7 +6607,7 @@ var sso_stats_default = ({ strapi }) => ({
       const ruleList = ruleByScene.get(s) || [];
       for (const r of ruleList) {
         if (!r.templateCode) continue;
-        const tpl = await strapi.db.query(MSG_TEMPLATE_UID3).findOne({ where: { code: r.templateCode } });
+        const tpl = await strapi.db.query(MSG_TEMPLATE_UID).findOne({ where: { code: r.templateCode } });
         if (!tpl) continue;
         const vers = await strapi.db.query(MSG_VERSION_UID).findMany({ where: { template: tpl.id } });
         for (const v of vers) clicks += v.clickCount || 0;
@@ -7171,14 +6639,14 @@ var sso_stats_default = ({ strapi }) => ({
     const from = opts.from ? new Date(opts.from) : new Date(Date.now() - 30 * DATE_MS);
     const to = opts.to ? new Date(opts.to) : /* @__PURE__ */ new Date();
     if (from.getTime() > to.getTime()) {
-      const err = new Error("from \u4E0D\u80FD\u665A\u4E8E to");
+      const err = new Error("from 不能晚于 to");
       err.status = 400;
       throw err;
     }
-    const rule = await strapi.db.query(SOP_RULE_UID2).findOne({ where: { scene: "activity.repurchase" } });
+    const rule = await strapi.db.query(SOP_RULE_UID).findOne({ where: { scene: "activity.repurchase" } });
     const windowDays = Number(rule?.conversionWindowDays ?? 7) || 7;
     const windowMs = windowDays * DATE_MS;
-    const jobs = await strapi.db.query(MSG_JOB_UID3).findMany({
+    const jobs = await strapi.db.query(MSG_JOB_UID).findMany({
       where: { scene: "activity.repurchase", status: "sent", sentAt: { $gte: from, $lte: to } },
       populate: { user: { select: ["id"] } }
     });
@@ -7193,7 +6661,7 @@ var sso_stats_default = ({ strapi }) => ({
       const userId = up.id;
       const from2 = new Date(j.sentAt);
       const to2 = new Date(from2.getTime() + windowMs);
-      const cnt = await (pointGate3(strapi)?.countActiveSignups ? pointGate3(strapi).countActiveSignups(userId, from2, to2) : 0);
+      const cnt = await (pointGate(strapi)?.countActiveSignups ? pointGate(strapi).countActiveSignups(userId, from2, to2) : 0);
       if (cnt > 0) {
         conversions += cnt;
         convertedUserSet.add(userId);
@@ -7208,14 +6676,14 @@ var sso_stats_default = ({ strapi }) => ({
     const from = opts.from ? new Date(opts.from) : new Date(Date.now() - 30 * DATE_MS);
     const to = opts.to ? new Date(opts.to) : /* @__PURE__ */ new Date();
     if (from.getTime() > to.getTime()) {
-      const err = new Error("from \u4E0D\u80FD\u665A\u4E8E to");
+      const err = new Error("from 不能晚于 to");
       err.status = 400;
       throw err;
     }
-    const rule = await strapi.db.query(SOP_RULE_UID2).findOne({ where: { scene: "course.d7" } });
+    const rule = await strapi.db.query(SOP_RULE_UID).findOne({ where: { scene: "course.d7" } });
     const windowDays = Number(rule?.conversionWindowDays ?? 7) || 7;
     const windowMs = windowDays * DATE_MS;
-    const jobs = await strapi.db.query(MSG_JOB_UID3).findMany({
+    const jobs = await strapi.db.query(MSG_JOB_UID).findMany({
       where: { scene: "course.d7", status: "sent", sentAt: { $gte: from, $lte: to } },
       populate: { user: { select: ["id"] } }
     });
@@ -7230,7 +6698,7 @@ var sso_stats_default = ({ strapi }) => ({
       const userId = up.id;
       const from2 = new Date(j.sentAt);
       const to2 = new Date(from2.getTime() + windowMs);
-      const cnt = await (courseGate3(strapi)?.countNewEnrolls ? courseGate3(strapi).countNewEnrolls(userId, from2, to2) : 0);
+      const cnt = await (courseGate(strapi)?.countNewEnrolls ? courseGate(strapi).countNewEnrolls(userId, from2, to2) : 0);
       if (cnt > 0) {
         conversions += cnt;
         convertedUserSet.add(userId);
@@ -7245,14 +6713,14 @@ var sso_stats_default = ({ strapi }) => ({
     const from = opts.from ? new Date(opts.from) : new Date(Date.now() - 30 * DATE_MS);
     const to = opts.to ? new Date(opts.to) : /* @__PURE__ */ new Date();
     if (from.getTime() > to.getTime()) {
-      const err = new Error("from \u4E0D\u80FD\u665A\u4E8E to");
+      const err = new Error("from 不能晚于 to");
       err.status = 400;
       throw err;
     }
-    const rule = await strapi.db.query(SOP_RULE_UID2).findOne({ where: { scene: "course.d7" } });
+    const rule = await strapi.db.query(SOP_RULE_UID).findOne({ where: { scene: "course.d7" } });
     const windowDays = Number(rule?.conversionWindowDays ?? 7) || 7;
     const windowMs = windowDays * DATE_MS;
-    const jobs = await strapi.db.query(MSG_JOB_UID3).findMany({
+    const jobs = await strapi.db.query(MSG_JOB_UID).findMany({
       where: { scene: { $in: ["course.d7", "course.activate"] }, status: "sent", sentAt: { $gte: from, $lte: to } },
       populate: { user: { select: ["id"] } }
     });
@@ -7267,7 +6735,7 @@ var sso_stats_default = ({ strapi }) => ({
       const userId = up.id;
       const from2 = new Date(j.sentAt);
       const to2 = new Date(from2.getTime() + windowMs);
-      const cnt = await (courseGate3(strapi)?.countCompletedProgress ? courseGate3(strapi).countCompletedProgress(userId, from2, to2) : 0);
+      const cnt = await (courseGate(strapi)?.countCompletedProgress ? courseGate(strapi).countCompletedProgress(userId, from2, to2) : 0);
       if (cnt > 0) {
         conversions += cnt;
         convertedUserSet.add(userId);
@@ -7282,13 +6750,13 @@ var sso_stats_default = ({ strapi }) => ({
     const from = opts.from ? new Date(opts.from) : new Date(Date.now() - 30 * DATE_MS);
     const to = opts.to ? new Date(opts.to) : /* @__PURE__ */ new Date();
     if (from.getTime() > to.getTime()) {
-      const err = new Error("from \u4E0D\u80FD\u665A\u4E8E to");
+      const err = new Error("from 不能晚于 to");
       err.status = 400;
       throw err;
     }
     const page = Number(opts.page) || 1;
     const pageSize = Number(opts.pageSize) || 20;
-    const rule = await strapi.db.query(SOP_RULE_UID2).findOne({ where: { scene: "activity.repurchase" } });
+    const rule = await strapi.db.query(SOP_RULE_UID).findOne({ where: { scene: "activity.repurchase" } });
     const windowDays = Number(rule?.conversionWindowDays ?? 7) || 7;
     const windowMs = windowDays * DATE_MS;
     const base = { sentAt: { $gte: from, $lte: to } };
@@ -7302,7 +6770,7 @@ var sso_stats_default = ({ strapi }) => ({
         where.followStatus = opts.status;
       }
     }
-    const result = await strapi.db.query(MSG_JOB_UID3).findPage({
+    const result = await strapi.db.query(MSG_JOB_UID).findPage({
       where,
       populate: { user: true },
       orderBy: { sentAt: "desc" },
@@ -7327,7 +6795,7 @@ var sso_stats_default = ({ strapi }) => ({
       if (upId) {
         const touchTime = j.sentAt || j.scheduledAt || j.createdAt;
         if (touchTime) {
-          reorderedCount = await (pointGate3(strapi)?.countActiveSignups ? pointGate3(strapi).countActiveSignups(upId, new Date(touchTime), new Date(new Date(touchTime).getTime() + windowMs)) : 0);
+          reorderedCount = await (pointGate(strapi)?.countActiveSignups ? pointGate(strapi).countActiveSignups(upId, new Date(touchTime), new Date(new Date(touchTime).getTime() + windowMs)) : 0);
         }
       }
       rows.push({
@@ -7358,28 +6826,23 @@ var sso_stats_default = ({ strapi }) => ({
   },
   async updateRepurchaseFollow({ jobId, status, remark }) {
     if (!["none", "followed", "deal"].includes(status)) {
-      const err = new Error("status \u5FC5\u987B\u662F none/followed/deal \u4E4B\u4E00");
+      const err = new Error("status 必须是 none/followed/deal 之一");
       err.status = 400;
       throw err;
     }
-    const existing = await strapi.db.query(MSG_JOB_UID3).findOne({ where: { id: jobId } });
+    const existing = await strapi.db.query(MSG_JOB_UID).findOne({ where: { id: jobId } });
     if (!existing) {
-      const err = new Error("msg-job \u4E0D\u5B58\u5728");
+      const err = new Error("msg-job 不存在");
       err.status = 404;
       throw err;
     }
-    const updated = await strapi.db.query(MSG_JOB_UID3).update({
+    const updated = await strapi.db.query(MSG_JOB_UID).update({
       where: { id: jobId },
       data: { followStatus: status, ...remark !== void 0 ? { followRemark: remark } : {} }
     });
     return updated;
   }
 });
-
-// server/src/services/sso-wx-callback.ts
-var import_crypto4 = __toESM(require("crypto"));
-
-// server/src/utils/wechat-xml.ts
 function parseXml(xml) {
   if (typeof xml !== "string" || !xml.trim()) return {};
   if (/<!DOCTYPE|<!ENTITY/i.test(xml)) {
@@ -7402,17 +6865,15 @@ function buildXml(parts) {
   const inner = Object.entries(parts).map(([k, v]) => `<${k}>${cdata(v)}</${k}>`).join("");
   return `<xml>${inner}</xml>`;
 }
-
-// server/src/services/sso-wx-callback.ts
-var EVENT_UID = "plugin::zhao-sso.sso-wx-event";
-var BINDING_UID5 = "plugin::zhao-sso.sso-third-party-binding";
-var sso_wx_callback_default = ({ strapi }) => {
+const EVENT_UID$1 = "plugin::zhao-sso.sso-wx-event";
+const BINDING_UID = "plugin::zhao-sso.sso-third-party-binding";
+const ssoWxCallback = ({ strapi }) => {
   async function getExtraConfig() {
     const configService = strapi.plugin("zhao-sso").service("sso-oauth-config");
-    const config = await configService.findByProviderAndAppType("wechat", "official_account");
+    const config2 = await configService.findByProviderAndAppType("wechat", "official_account");
     return {
-      serverToken: config?.extraConfig?.serverToken || "",
-      welcomeReply: config?.extraConfig?.welcomeReply || ""
+      serverToken: config2?.extraConfig?.serverToken || "",
+      welcomeReply: config2?.extraConfig?.welcomeReply || ""
     };
   }
   async function verifySignature(params) {
@@ -7421,7 +6882,7 @@ var sso_wx_callback_default = ({ strapi }) => {
     const { serverToken } = await getExtraConfig();
     if (!serverToken) return false;
     const sorted = [serverToken, String(timestamp), String(nonce)].sort().join("");
-    const hash = import_crypto4.default.createHash("sha1").update(sorted).digest("hex");
+    const hash = crypto__namespace.default.createHash("sha1").update(sorted).digest("hex");
     return hash === signature;
   }
   function buildTextReply(openid, toUser, content) {
@@ -7478,6 +6939,34 @@ var sso_wx_callback_default = ({ strapi }) => {
         return buildTextReply(openid, toUser, rule.text || "");
     }
   }
+  async function askShoppingAssistant(text, openid, toUser, msgId, createTime) {
+    const url = process.env.WX_ASSISTANT_URL;
+    if (!url) return null;
+    const secret = process.env.ZHAO_SEARCH_SHARED_SECRET;
+    try {
+      const resp = await axios__default.default.post(
+        url,
+        {
+          openid,
+          text,
+          msgId: msgId || void 0,
+          createTime: createTime ? Number(createTime) || void 0 : void 0
+        },
+        { timeout: 3500, headers: secret ? { "x-zhao-secret": secret } : {} }
+      );
+      const data = resp?.data || {};
+      if (data.kind === "news" && Array.isArray(data.articles) && data.articles.length) {
+        return buildReplyXml({ reply_type: "news", articles: data.articles.slice(0, 8) }, openid, toUser);
+      }
+      if (data.kind === "text" && typeof data.content === "string" && data.content) {
+        return buildTextReply(openid, toUser, data.content);
+      }
+      return null;
+    } catch (e) {
+      strapi.log.warn(`[zhao-sso:wx-callback] shopping assistant call failed: ${e.message}`);
+      return null;
+    }
+  }
   return {
     /** 读取服务器配置（供后台展示 / server-url） */
     async getServerConfig() {
@@ -7500,7 +6989,7 @@ var sso_wx_callback_default = ({ strapi }) => {
         const sop = ssoPlug?.service("sso-sop");
         const admins = sop && typeof sop.adminNotifyUsers === "function" ? sop.adminNotifyUsers() : [];
         if (!admins || admins.length === 0) return "unauthorized";
-        const binding = await strapi.db.query(BINDING_UID5).findOne({
+        const binding = await strapi.db.query(BINDING_UID).findOne({
           where: { provider: "wechat", provider_user_id: openid },
           populate: { user: true }
         });
@@ -7547,7 +7036,7 @@ var sso_wx_callback_default = ({ strapi }) => {
         event = "text";
       }
       eventKey = eventKey || msg.EventKey || null;
-      const created = await strapi.db.query(EVENT_UID).create({
+      const created = await strapi.db.query(EVENT_UID$1).create({
         data: {
           openid,
           event,
@@ -7556,22 +7045,22 @@ var sso_wx_callback_default = ({ strapi }) => {
           payload: msg
         }
       });
-      const binding = await strapi.db.query(BINDING_UID5).findOne({
+      const binding = await strapi.db.query(BINDING_UID).findOne({
         where: { provider: "wechat", provider_user_id: openid },
         select: ["id"]
       });
       if (binding) {
-        await strapi.db.query(EVENT_UID).update({
+        await strapi.db.query(EVENT_UID$1).update({
           where: { id: created.id },
           data: { openid_bound: true }
         });
         if (event === "subscribe") {
-          await strapi.db.query(BINDING_UID5).update({
+          await strapi.db.query(BINDING_UID).update({
             where: { id: binding.id },
             data: { subscribe: 1, subscribe_at: /* @__PURE__ */ new Date(), subscribe_check_at: /* @__PURE__ */ new Date() }
           });
         } else if (event === "unsubscribe") {
-          await strapi.db.query(BINDING_UID5).update({
+          await strapi.db.query(BINDING_UID).update({
             where: { id: binding.id },
             data: { subscribe: 0, subscribe_check_at: /* @__PURE__ */ new Date() }
           });
@@ -7584,9 +7073,9 @@ var sso_wx_callback_default = ({ strapi }) => {
         if (replyMatch) {
           try {
             const status = await this.handleAdminMessageReply(openid, Number(replyMatch[1]), replyMatch[2].trim());
-            if (status === "ok") return buildTextReply(openid, toUser, "\u5DF2\u63D0\u4EA4\u56DE\u590D");
-            if (status === "unauthorized") return buildTextReply(openid, toUser, "\u65E0\u56DE\u590D\u6743\u9650");
-            return buildTextReply(openid, toUser, "\u7559\u8A00\u4E0D\u5B58\u5728\u6216\u5DF2\u56DE\u590D");
+            if (status === "ok") return buildTextReply(openid, toUser, "已提交回复");
+            if (status === "unauthorized") return buildTextReply(openid, toUser, "无回复权限");
+            return buildTextReply(openid, toUser, "留言不存在或已回复");
           } catch (e) {
             strapi.log.warn(`[zhao-sso:wx-callback] message reply parse failed: ${e.message}`);
             return "success";
@@ -7596,6 +7085,8 @@ var sso_wx_callback_default = ({ strapi }) => {
         if (rule && ruleUsable(rule)) {
           return buildReplyXml(rule, openid, toUser);
         }
+        const assistantXml = await askShoppingAssistant(text, openid, toUser, msg.MsgId, msg.CreateTime);
+        if (assistantXml) return assistantXml;
         return "success";
       }
       if (event === "subscribe") {
@@ -7612,13 +7103,10 @@ var sso_wx_callback_default = ({ strapi }) => {
     }
   };
 };
-
-// server/src/services/sso-wx-qrcode.ts
-var import_axios5 = __toESM(require("axios"));
-var QRCODE_UID = "plugin::zhao-sso.sso-wx-qrcode";
-var EVENT_UID2 = "plugin::zhao-sso.sso-wx-event";
-var isMock = () => process.env.MSG_WECHAT_PROVIDER === "mock";
-var sso_wx_qrcode_default2 = ({ strapi }) => {
+const QRCODE_UID = "plugin::zhao-sso.sso-wx-qrcode";
+const EVENT_UID = "plugin::zhao-sso.sso-wx-event";
+const isMock$3 = () => process.env.MSG_WECHAT_PROVIDER === "mock";
+const ssoWxQrcode = ({ strapi }) => {
   const wechat = () => strapi.plugin("zhao-sso").service("sso-wechat");
   function throwErr(code, status, message) {
     const e = new Error(message);
@@ -7636,7 +7124,7 @@ var sso_wx_qrcode_default2 = ({ strapi }) => {
   }
   async function fetchApi(path, body) {
     const accessToken = await wechat().getAccessToken("official_account");
-    const res = await import_axios5.default.post(`https://api.weixin.qq.com/cgi-bin/${path}`, body, {
+    const res = await axios__default.default.post(`https://api.weixin.qq.com/cgi-bin/${path}`, body, {
       params: { access_token: accessToken },
       timeout: 1e4
     });
@@ -7649,13 +7137,13 @@ var sso_wx_qrcode_default2 = ({ strapi }) => {
   return {
     /** 生成带参二维码（临时 QR_SCENE / 永久 QR_LIMIT_STR_SCENE） */
     async create(data) {
-      const kind = data.kind === "permanent" ? "permanent" : "temporary";
+      const kind2 = data.kind === "permanent" ? "permanent" : "temporary";
       let ticket;
-      if (isMock()) {
+      if (isMock$3()) {
         ticket = `mock_ticket_${Date.now()}`;
       } else {
-        const actionInfo = kind === "permanent" ? { scene: { scene_str: data.scene_key } } : { scene: { scene_id: hashSceneId(data.scene_key) } };
-        const body = kind === "permanent" ? { action_name: "QR_LIMIT_STR_SCENE", action_info: actionInfo } : {
+        const actionInfo = kind2 === "permanent" ? { scene: { scene_str: data.scene_key } } : { scene: { scene_id: hashSceneId(data.scene_key) } };
+        const body = kind2 === "permanent" ? { action_name: "QR_LIMIT_STR_SCENE", action_info: actionInfo } : {
           action_name: "QR_SCENE",
           expire_seconds: data.expire_seconds || 2592e3,
           action_info: actionInfo
@@ -7668,8 +7156,8 @@ var sso_wx_qrcode_default2 = ({ strapi }) => {
         data: {
           scene_key: data.scene_key,
           title: data.title || null,
-          kind,
-          expire_seconds: kind === "permanent" ? null : data.expire_seconds || 2592e3,
+          kind: kind2,
+          expire_seconds: kind2 === "permanent" ? null : data.expire_seconds || 2592e3,
           ticket,
           wx_url: wxUrl,
           qrcode_url: data.qrcode_url || null,
@@ -7693,7 +7181,7 @@ var sso_wx_qrcode_default2 = ({ strapi }) => {
     },
     async findOne(id) {
       const row = await strapi.db.query(QRCODE_UID).findOne({ where: { id } });
-      if (!row) throwErr("SSO_WX_QRCODE_404", 404, "\u4E8C\u7EF4\u7801\u8BB0\u5F55\u4E0D\u5B58\u5728");
+      if (!row) throwErr("SSO_WX_QRCODE_404", 404, "二维码记录不存在");
       return row;
     },
     /** 按 scene_key 精确查最近一条（带参二维码复用场景） */
@@ -7714,23 +7202,20 @@ var sso_wx_qrcode_default2 = ({ strapi }) => {
       const pageSize = Number(filters.pageSize || 20);
       const where = {};
       if (filters.openid) where.openid = { $contains: filters.openid };
-      const rows = await strapi.db.query(EVENT_UID2).findMany({
+      const rows = await strapi.db.query(EVENT_UID).findMany({
         where,
         orderBy: { createdAt: "desc" },
         limit: pageSize,
         offset: (page - 1) * pageSize
       });
-      const total = await strapi.db.query(EVENT_UID2).count({ where });
+      const total = await strapi.db.query(EVENT_UID).count({ where });
       return { data: rows, meta: { pagination: { page, pageSize, total } } };
     }
   };
 };
-
-// server/src/services/sso-wx-menu.ts
-var import_axios6 = __toESM(require("axios"));
-var MENU_UID = "plugin::zhao-sso.sso-wx-menu";
-var isMock2 = () => process.env.MSG_WECHAT_PROVIDER === "mock";
-var sso_wx_menu_default2 = ({ strapi }) => {
+const MENU_UID = "plugin::zhao-sso.sso-wx-menu";
+const isMock$2 = () => process.env.MSG_WECHAT_PROVIDER === "mock";
+const ssoWxMenu = ({ strapi }) => {
   const wechat = () => strapi.plugin("zhao-sso").service("sso-wechat");
   function throwErr(code, status, message) {
     const e = new Error(message);
@@ -7740,7 +7225,7 @@ var sso_wx_menu_default2 = ({ strapi }) => {
   }
   async function fetchApi(method, path, body) {
     const accessToken = await wechat().getAccessToken("official_account");
-    const res = await (0, import_axios6.default)({
+    const res = await axios__default.default({
       method,
       url: `https://api.weixin.qq.com/cgi-bin/${path}`,
       params: { access_token: accessToken },
@@ -7770,7 +7255,7 @@ var sso_wx_menu_default2 = ({ strapi }) => {
     },
     async findOne(id) {
       const row = await strapi.db.query(MENU_UID).findOne({ where: { id } });
-      if (!row) throwErr("SSO_WX_MENU_404", 404, "\u83DC\u5355\u8BB0\u5F55\u4E0D\u5B58\u5728");
+      if (!row) throwErr("SSO_WX_MENU_404", 404, "菜单记录不存在");
       return row;
     },
     async create(data) {
@@ -7797,7 +7282,7 @@ var sso_wx_menu_default2 = ({ strapi }) => {
     async publish(id) {
       const row = await this.findOne(id);
       const publish = async () => {
-        if (isMock2()) return { errcode: 0 };
+        if (isMock$2()) return { errcode: 0 };
         return fetchApi("POST", "menu/create", row.menu_json);
       };
       try {
@@ -7811,32 +7296,32 @@ var sso_wx_menu_default2 = ({ strapi }) => {
           where: { id },
           data: { publish_state: "failed", last_error: e.message || String(e) }
         });
-        throwErr("SSO_WX_MENU_PUBLISH", 502, e.message || "\u83DC\u5355\u4E0B\u53D1\u5931\u8D25");
+        throwErr("SSO_WX_MENU_PUBLISH", 502, e.message || "菜单下发失败");
       }
     },
     /** 删除线上菜单 */
     async deleteRemote() {
-      if (isMock2()) return { errcode: 0 };
+      if (isMock$2()) return { errcode: 0 };
       return fetchApi("GET", "menu/delete");
     },
     /** 获取线上菜单信息 */
     async getRemote() {
-      if (isMock2()) {
+      if (isMock$2()) {
         return { is_menu_open: 1, selfmenu_info: { button: [] } };
       }
       return fetchApi("GET", "get_current_selfmenu_info");
     },
     /** 公众号已添加模板只读列表（模板消息配置用） */
     async listTemplates() {
-      if (isMock2()) {
+      if (isMock$2()) {
         return {
           template_list: [
             {
               template_id: "mock_template_id_01",
-              title: "\u6D3B\u52A8\u901A\u77E5",
-              primary_industry: "IT\u79D1\u6280",
-              deputy_industry: "\u4E92\u8054\u7F51|\u7535\u5B50\u5546\u52A1",
-              content: "\u60A8\u6709\u65B0\u7684\u6D3B\u52A8\u901A\u77E5"
+              title: "活动通知",
+              primary_industry: "IT科技",
+              deputy_industry: "互联网|电子商务",
+              content: "您有新的活动通知"
             }
           ]
         };
@@ -7847,14 +7332,14 @@ var sso_wx_menu_default2 = ({ strapi }) => {
     async addFromLibrary(data) {
       const { templateIdShort, keywordNameList } = data || {};
       if (!templateIdShort || !String(templateIdShort).trim()) {
-        throwErr("SSO_WX_MENU_400", 400, "\u7F3A\u5C11\u6A21\u677F\u5E93\u7F16\u53F7 template_id_short");
+        throwErr("SSO_WX_MENU_400", 400, "缺少模板库编号 template_id_short");
       }
       const body = { template_id_short: String(templateIdShort).trim() };
       const kws = (Array.isArray(keywordNameList) ? keywordNameList : []).map((s) => String(s).trim()).filter(Boolean);
       if (kws.length) body.keyword_name_list = kws;
-      if (isMock2()) return { template_id: "mock_" + Date.now(), errcode: 0 };
+      if (isMock$2()) return { template_id: "mock_" + Date.now(), errcode: 0 };
       const accessToken = await wechat().getAccessToken("official_account");
-      const res = await (0, import_axios6.default)({
+      const res = await axios__default.default({
         method: "POST",
         url: "https://api.weixin.qq.com/cgi-bin/template/api_add_template",
         params: { access_token: accessToken },
@@ -7862,15 +7347,13 @@ var sso_wx_menu_default2 = ({ strapi }) => {
         timeout: 1e4
       });
       const w = res.data || {};
-      if (w.errcode) throwErr("SSO_WX_TPL_ADD", 400, `\u5FAE\u4FE1\u6DFB\u52A0\u6A21\u677F\u5931\u8D25(errcode=${w.errcode}): ${w.errmsg}`);
+      if (w.errcode) throwErr("SSO_WX_TPL_ADD", 400, `微信添加模板失败(errcode=${w.errcode}): ${w.errmsg}`);
       return { template_id: w.template_id, errcode: 0 };
     }
   };
 };
-
-// server/src/services/sso-wx-reply.ts
-var REPLY_UID = "plugin::zhao-sso.sso-wx-reply";
-var sso_wx_reply_default2 = ({ strapi }) => {
+const REPLY_UID = "plugin::zhao-sso.sso-wx-reply";
+const ssoWxReply = ({ strapi }) => {
   function throwErr(code, status, message) {
     const e = new Error(message);
     e.code = code;
@@ -7894,7 +7377,7 @@ var sso_wx_reply_default2 = ({ strapi }) => {
   }
   async function findOne(id) {
     const row = await strapi.db.query(REPLY_UID).findOne({ where: { id } });
-    if (!row) throwErr("SSO_WX_REPLY_404", 404, "\u56DE\u590D\u89C4\u5219\u4E0D\u5B58\u5728");
+    if (!row) throwErr("SSO_WX_REPLY_404", 404, "回复规则不存在");
     return row;
   }
   async function create(data) {
@@ -7960,13 +7443,9 @@ var sso_wx_reply_default2 = ({ strapi }) => {
     }
   };
 };
-
-// server/src/services/sso-wx-material.ts
-var import_axios7 = __toESM(require("axios"));
-var import_promises = __toESM(require("fs/promises"));
-var MATERIAL_UID = "plugin::zhao-sso.sso-wx-material";
-var isMock3 = () => process.env.MSG_WECHAT_PROVIDER === "mock";
-var sso_wx_material_default2 = ({ strapi }) => {
+const MATERIAL_UID = "plugin::zhao-sso.sso-wx-material";
+const isMock$1 = () => process.env.MSG_WECHAT_PROVIDER === "mock";
+const ssoWxMaterial = ({ strapi }) => {
   const wechat = () => strapi.plugin("zhao-sso").service("sso-wechat");
   function throwErr(code, status, message) {
     const e = new Error(message);
@@ -7975,18 +7454,18 @@ var sso_wx_material_default2 = ({ strapi }) => {
     throw e;
   }
   async function uploadMaterial(type, file) {
-    if (isMock3()) {
+    if (isMock$1()) {
       return { media_id: `mock_media_${Date.now()}`, wx_url: "" };
     }
     const accessToken = await wechat().getAccessToken("official_account");
-    const buf = await import_promises.default.readFile(file.filepath);
+    const buf = await fs__default.default.readFile(file.filepath);
     const form = new FormData();
     form.append(
       "media",
       new Blob([new Uint8Array(buf)], { type: file.type || "application/octet-stream" }),
       file.name || "upload"
     );
-    const res = await import_axios7.default.post("https://api.weixin.qq.com/cgi-bin/material/add_material", form, {
+    const res = await axios__default.default.post("https://api.weixin.qq.com/cgi-bin/material/add_material", form, {
       params: { access_token: accessToken, type },
       timeout: 3e4
     });
@@ -8012,15 +7491,15 @@ var sso_wx_material_default2 = ({ strapi }) => {
     },
     async findOne(id) {
       const row = await strapi.db.query(MATERIAL_UID).findOne({ where: { id } });
-      if (!row) throwErr("SSO_WX_MATERIAL_404", 404, "\u7D20\u6750\u8BB0\u5F55\u4E0D\u5B58\u5728");
+      if (!row) throwErr("SSO_WX_MATERIAL_404", 404, "素材记录不存在");
       return row;
     },
     /** 上传永久素材并落库，返回含 media_id / wx_url 的记录 */
     async create(data) {
       const type = data.type;
-      if (!type) throwErr("SSO_WX_MATERIAL_400", 400, "\u7F3A\u5C11\u7D20\u6750\u7C7B\u578B type");
+      if (!type) throwErr("SSO_WX_MATERIAL_400", 400, "缺少素材类型 type");
       const file = data.file;
-      if (!file || !file.filepath) throwErr("SSO_WX_MATERIAL_400", 400, "\u7F3A\u5C11\u4E0A\u4F20\u6587\u4EF6 file");
+      if (!file || !file.filepath) throwErr("SSO_WX_MATERIAL_400", 400, "缺少上传文件 file");
       let mediaId;
       let wxUrl = "";
       try {
@@ -8029,7 +7508,7 @@ var sso_wx_material_default2 = ({ strapi }) => {
         wxUrl = result.wx_url;
       } finally {
         try {
-          if (file.filepath) await import_promises.default.unlink(file.filepath);
+          if (file.filepath) await fs__default.default.unlink(file.filepath);
         } catch {
         }
       }
@@ -8046,9 +7525,9 @@ var sso_wx_material_default2 = ({ strapi }) => {
     /** 删除远程永久素材后删本地记录 */
     async remove(id) {
       const row = await this.findOne(id);
-      if (!isMock3() && row.media_id) {
+      if (!isMock$1() && row.media_id) {
         const accessToken = await wechat().getAccessToken("official_account");
-        const res = await import_axios7.default.post(
+        const res = await axios__default.default.post(
           "https://api.weixin.qq.com/cgi-bin/material/del_material",
           { media_id: row.media_id },
           { params: { access_token: accessToken }, timeout: 1e4 }
@@ -8064,9 +7543,9 @@ var sso_wx_material_default2 = ({ strapi }) => {
      */
     async syncFromWechat(type) {
       if (!["image", "voice", "video"].includes(type)) {
-        throwErr("SSO_WX_MATERIAL_400", 400, "\u4EC5\u652F\u6301\u540C\u6B65 image/voice/video \u7C7B\u578B");
+        throwErr("SSO_WX_MATERIAL_400", 400, "仅支持同步 image/voice/video 类型");
       }
-      if (isMock3()) return { added: 0, updated: 0, total: 0 };
+      if (isMock$1()) return { added: 0, updated: 0, total: 0 };
       const accessToken = await wechat().getAccessToken("official_account");
       let added = 0;
       let updated = 0;
@@ -8074,7 +7553,7 @@ var sso_wx_material_default2 = ({ strapi }) => {
       const pageSize = 20;
       let total = 0;
       while (true) {
-        const res = await import_axios7.default.post(
+        const res = await axios__default.default.post(
           "https://api.weixin.qq.com/cgi-bin/material/batchget_material",
           { type, offset, count: pageSize },
           { params: { access_token: accessToken }, timeout: 3e4 }
@@ -8106,13 +7585,10 @@ var sso_wx_material_default2 = ({ strapi }) => {
     }
   };
 };
-
-// server/src/services/sso-wx-article.ts
-var import_axios8 = __toESM(require("axios"));
-var ARTICLE_UID = "plugin::zhao-sso.sso-wx-article";
-var WECHAT_ACCOUNT_UID = "plugin::zhao-studio.publish-account";
-var isMock4 = () => process.env.MSG_WECHAT_PROVIDER === "mock";
-var sso_wx_article_default2 = ({ strapi }) => {
+const ARTICLE_UID = "plugin::zhao-sso.sso-wx-article";
+const WECHAT_ACCOUNT_UID = "plugin::zhao-studio.publish-account";
+const isMock = () => process.env.MSG_WECHAT_PROVIDER === "mock";
+const ssoWxArticle = ({ strapi }) => {
   const wechat = () => strapi.plugin("zhao-sso").service("sso-wechat");
   let ctxCache = null;
   async function pickWechatAccount() {
@@ -8132,7 +7608,7 @@ var sso_wx_article_default2 = ({ strapi }) => {
     }
   }
   async function resolveArticleContext() {
-    if (isMock4()) {
+    if (isMock()) {
       const picked2 = await pickWechatAccount();
       return { token: "mock_token", accountId: picked2.accountId };
     }
@@ -8169,7 +7645,7 @@ var sso_wx_article_default2 = ({ strapi }) => {
   }
   async function postApi(path, body) {
     const ctx = await resolveArticleContext();
-    const res = await import_axios8.default.post(`https://api.weixin.qq.com/cgi-bin/${path}`, body, {
+    const res = await axios__default.default.post(`https://api.weixin.qq.com/cgi-bin/${path}`, body, {
       params: { access_token: ctx.token },
       timeout: 15e3
     });
@@ -8210,14 +7686,14 @@ var sso_wx_article_default2 = ({ strapi }) => {
     },
     async findOne(id) {
       const row = await strapi.db.query(ARTICLE_UID).findOne({ where: { id } });
-      if (!row) throwErr("SSO_WX_ARTICLE_404", 404, "\u56FE\u6587\u8BB0\u5F55\u4E0D\u5B58\u5728");
+      if (!row) throwErr("SSO_WX_ARTICLE_404", 404, "图文记录不存在");
       return row;
     },
     /** 创建图文草稿：调 draft/add 写入 draft_id，本地 publish_state=draft */
     async create(data) {
-      if (!data.title) throwErr("SSO_WX_ARTICLE_400", 400, "\u7F3A\u5C11\u56FE\u6587\u6807\u9898 title");
+      if (!data.title) throwErr("SSO_WX_ARTICLE_400", 400, "缺少图文标题 title");
       let draftId;
-      if (isMock4()) {
+      if (isMock()) {
         draftId = `mock_draft_${Date.now()}`;
       } else {
         const resp = await postApi("draft/add", { articles: [articleItem(data)], api_version: 1 });
@@ -8242,12 +7718,12 @@ var sso_wx_article_default2 = ({ strapi }) => {
     async update(id, data) {
       const row = await this.findOne(id);
       if (row.publish_state === "published") {
-        throwErr("SSO_WX_ARTICLE_422", 400, "\u5DF2\u53D1\u5E03\u7684\u56FE\u6587\u4E0D\u53EF\u4FEE\u6539");
+        throwErr("SSO_WX_ARTICLE_422", 400, "已发布的图文不可修改");
       }
       const updateData = {};
       const keys = ["title", "author", "digest", "content", "thumb_media_id", "pic_url", "content_source_url", "show_cover_pic"];
       for (const k of keys) if (data[k] !== void 0) updateData[k] = data[k];
-      if (row.draft_id && !isMock4()) {
+      if (row.draft_id && !isMock()) {
         await postApi("draft/update", {
           media_id: row.draft_id,
           index: 0,
@@ -8259,9 +7735,9 @@ var sso_wx_article_default2 = ({ strapi }) => {
     /** 发布：校验已提草稿 → freepublish/submit 记 publish_id 置 publishing；旁路登记 zhao-studio 发布台账 */
     async publish(id) {
       const row = await this.findOne(id);
-      if (!row.draft_id) throwErr("SSO_WX_ARTICLE_400", 400, "\u8BF7\u5148\u521B\u5EFA\u56FE\u6587\u8349\u7A3F\u518D\u53D1\u5E03");
+      if (!row.draft_id) throwErr("SSO_WX_ARTICLE_400", 400, "请先创建图文草稿再发布");
       let publishId;
-      if (isMock4()) {
+      if (isMock()) {
         publishId = `mock_publish_${Date.now()}`;
       } else {
         const resp = await postApi("freepublish/submit", { media_id: row.draft_id });
@@ -8279,7 +7755,7 @@ var sso_wx_article_default2 = ({ strapi }) => {
     async status(id) {
       const row = await this.findOne(id);
       if (row.publish_state !== "publishing" || !row.publish_id) return row;
-      if (isMock4()) {
+      if (isMock()) {
         return strapi.db.query(ARTICLE_UID).update({
           where: { id },
           data: { publish_state: "published", wx_published_at: /* @__PURE__ */ new Date(), last_error: null }
@@ -8292,7 +7768,7 @@ var sso_wx_article_default2 = ({ strapi }) => {
         state = "published";
       } else if (resp.publish_status === 2 || resp.publish_status === 3) {
         state = "failed";
-        err = resp.fail_detail || `\u5FAE\u4FE1\u53D1\u5E03\u88AB\u62D2/\u64A4\u56DE(publish_status=${resp.publish_status})`;
+        err = resp.fail_detail || `微信发布被拒/撤回(publish_status=${resp.publish_status})`;
       }
       const updateData = { publish_state: state, last_error: err };
       if (state === "published") updateData.wx_published_at = /* @__PURE__ */ new Date();
@@ -8301,46 +7777,42 @@ var sso_wx_article_default2 = ({ strapi }) => {
     /** 删除：调 draft/delete 后删本地 */
     async remove(id) {
       const row = await this.findOne(id);
-      if (row.draft_id && !isMock4()) {
+      if (row.draft_id && !isMock()) {
         await postApi("draft/delete", { media_id: row.draft_id });
       }
       return strapi.db.query(ARTICLE_UID).delete({ where: { id } });
     }
   };
 };
-
-// server/src/services/index.ts
-var services_default = {
-  "sso-jwt": sso_jwt_default,
-  "sso-user": sso_user_default2,
-  "sso-login-log": sso_login_log_default2,
-  "sso-channel": sso_channel_default2,
-  "sso-oauth": sso_oauth_default,
-  "sso-auth": sso_auth_default,
-  "sso-wechat": sso_wechat_default,
-  "sso-alipay": sso_alipay_default,
-  "channel-sync": channel_sync_default,
-  "sso-app": sso_app_default2,
-  "sso-oauth-config": sso_oauth_config_default2,
-  "sso-sms": sso_sms_default,
-  "sso-invite": sso_invite_default,
-  "sso-align": sso_align_default,
-  "sso-msg": sso_msg_default,
-  "sso-sop": sso_sop_default,
-  "sso-profile": sso_profile_default,
-  "sso-recommend": sso_recommend_default,
-  "sso-quota": sso_quota_default,
-  "sso-stats": sso_stats_default,
-  "sso-wx-callback": sso_wx_callback_default,
-  "sso-wx-qrcode": sso_wx_qrcode_default2,
-  "sso-wx-menu": sso_wx_menu_default2,
-  "sso-wx-reply": sso_wx_reply_default2,
-  "sso-wx-material": sso_wx_material_default2,
-  "sso-wx-article": sso_wx_article_default2
+const services = {
+  "sso-jwt": ssoJwt,
+  "sso-user": ssoUser,
+  "sso-login-log": ssoLoginLog,
+  "sso-channel": ssoChannel,
+  "sso-oauth": ssoOauth,
+  "sso-auth": ssoAuth$1,
+  "sso-wechat": ssoWechat,
+  "sso-alipay": ssoAlipay,
+  "channel-sync": channelSync,
+  "sso-app": ssoApp,
+  "sso-oauth-config": ssoOauthConfig,
+  "sso-sms": ssoSms,
+  "sso-invite": ssoInvite,
+  "sso-align": ssoAlign,
+  "sso-msg": ssoMsg,
+  "sso-sop": ssoSop,
+  "sso-profile": ssoProfile,
+  "sso-recommend": ssoRecommend,
+  "sso-quota": ssoQuota,
+  "sso-stats": ssoStats,
+  "sso-wx-callback": ssoWxCallback,
+  "sso-wx-qrcode": ssoWxQrcode,
+  "sso-wx-menu": ssoWxMenu,
+  "sso-wx-reply": ssoWxReply,
+  "sso-wx-material": ssoWxMaterial,
+  "sso-wx-article": ssoWxArticle
 };
-
-// server/src/policies/fallback-authenticated.ts
-var fallbackAuthenticated = async (policyContext, _config, { strapi }) => {
+const fallbackAuthenticated = async (policyContext, _config, { strapi }) => {
   try {
     const zhaoAuth = strapi.plugin("zhao-auth");
     if (zhaoAuth) {
@@ -8364,15 +7836,12 @@ var fallbackAuthenticated = async (policyContext, _config, { strapi }) => {
   }
   return false;
 };
-var fallback_authenticated_default = fallbackAuthenticated;
-
-// server/src/policies/fallback-has-permission.ts
-var fallbackHasPermission = async (policyContext, config, { strapi }) => {
+const fallbackHasPermission = async (policyContext, config2, { strapi }) => {
   const user = policyContext.state?.user;
   if (!user?.id) {
     return false;
   }
-  const action = config?.action;
+  const action = config2?.action;
   if (!action) {
     return true;
   }
@@ -8400,17 +7869,12 @@ var fallbackHasPermission = async (policyContext, config, { strapi }) => {
   }
   return false;
 };
-var fallback_has_permission_default = fallbackHasPermission;
-
-// server/src/policies/index.ts
-var policies_default = {
-  "sso-authenticated": sso_authenticated_default,
-  "fallback-authenticated": fallback_authenticated_default,
-  "fallback-has-permission": fallback_has_permission_default
+const policies = {
+  "sso-authenticated": ssoAuthenticated,
+  "fallback-authenticated": fallbackAuthenticated,
+  "fallback-has-permission": fallbackHasPermission
 };
-
-// server/src/middlewares/sso-auth.ts
-var sso_auth_default2 = async (ctx, next) => {
+const ssoAuth = async (ctx, next) => {
   const authHeader = ctx.request?.headers?.authorization;
   if (authHeader && typeof authHeader === "string") {
     const parts = authHeader.split(" ");
@@ -8430,21 +7894,18 @@ var sso_auth_default2 = async (ctx, next) => {
   }
   await next();
 };
-
-// server/src/middlewares/index.ts
-var middlewares_default = {
-  "sso-auth": sso_auth_default2
+const middlewares = {
+  "sso-auth": ssoAuth
 };
-
-// server/src/index.ts
-var index_default = {
-  register: register_default,
-  bootstrap: bootstrap_default,
-  config: config_default,
-  contentTypes: content_types_default,
-  controllers: controllers_default,
-  routes: routes_default,
-  services: services_default,
-  policies: policies_default,
-  middlewares: middlewares_default
+const index = {
+  register,
+  bootstrap,
+  config,
+  contentTypes,
+  controllers,
+  routes,
+  services,
+  policies,
+  middlewares
 };
+exports.default = index;

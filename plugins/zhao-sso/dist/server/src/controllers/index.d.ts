@@ -137,6 +137,7 @@ declare const _default: {
         listJobs(ctx: any): Promise<void>;
         getJob(ctx: any): Promise<void>;
         sendNow(ctx: any): Promise<void>;
+        apiSend(ctx: any): Promise<void>;
         sendBatch(ctx: any): Promise<void>;
         retryJob(ctx: any): Promise<void>;
         refreshSubscribe(ctx: any): Promise<void>;
