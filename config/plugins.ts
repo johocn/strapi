@@ -203,6 +203,11 @@ const config = ({ env }: Core.Config.Shared.ConfigParams): Core.Config.Plugin =>
         enabled: true,
         resolve: "./plugins/zhao-logistics",
     },
+    // ============ MeiliSearch 统一知识库同步（服务间 shared secret 管理路由） ============
+    "zhao-search": {
+        enabled: true,
+        resolve: "./plugins/zhao-search",
+    },
 });
 
 export default config;
