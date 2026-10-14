@@ -29,7 +29,7 @@ const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
     },
     async afterUpdate(event: any) {
       if (!WATCHED.includes(event.model.uid)) return;
-      // 诊断日志（软删未移除排查）：记录 afterUpdate 的 result 形态与 keys
+      // 诊断日志（软删未移除排查）：记录 afterUpdate 的 result 形态与 params 关键项
       strapi.log.info(
         `[zhao-search] afterUpdate ${event.model.uid} result=${JSON.stringify({
           id: event.result?.id,
@@ -38,7 +38,11 @@ const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
           status: event.result?.status,
           publishedAt: event.result?.publishedAt,
           deletedAt: event.result?.deletedAt,
-        })} keys=${event.result ? Object.keys(event.result).join(",") : "NULL"}`,
+        })} keys=${event.result ? Object.keys(event.result).join(",") : "NULL"}` +
+          ` where=${JSON.stringify(event?.params?.where ?? null)}` +
+          ` filters=${JSON.stringify(event?.params?.filters ?? null)}` +
+          ` select=${JSON.stringify(event?.params?.select ?? null)}` +
+          ` populate=${event?.params?.populate ? "yes" : "no"}`,
       );
       await contentSync().syncOne(event.model.uid, event.result);
     },

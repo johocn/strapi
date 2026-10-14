@@ -173,7 +173,7 @@ const bootstrap = async ({ strapi }) => {
           status: event.result?.status,
           publishedAt: event.result?.publishedAt,
           deletedAt: event.result?.deletedAt
-        })} keys=${event.result ? Object.keys(event.result).join(",") : "NULL"}`
+        })} keys=${event.result ? Object.keys(event.result).join(",") : "NULL"} where=${JSON.stringify(event?.params?.where ?? null)} filters=${JSON.stringify(event?.params?.filters ?? null)} select=${JSON.stringify(event?.params?.select ?? null)} populate=${event?.params?.populate ? "yes" : "no"}`
       );
       await contentSync2().syncOne(event.model.uid, event.result);
     },
