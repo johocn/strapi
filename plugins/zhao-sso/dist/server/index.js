@@ -6939,7 +6939,7 @@ const ssoWxCallback = ({ strapi }) => {
         return buildTextReply(openid, toUser, rule.text || "");
     }
   }
-  async function askShoppingAssistant(text, openid, toUser, msgId, createTime) {
+  async function askShoppingAssistant(text, openid, toUser, msgId, createTime, boundPhone) {
     const url = process.env.WX_ASSISTANT_URL;
     if (!url) return null;
     const secret = process.env.ZHAO_SEARCH_SHARED_SECRET;
@@ -6952,7 +6952,9 @@ const ssoWxCallback = ({ strapi }) => {
           msgId: msgId || void 0,
           createTime: createTime ? Number(createTime) || void 0 : void 0,
           // 公众号绑定的商城渠道（vendure channel token），决定搜索/下单渠道；未配置时 vendure 回退默认渠道
-          channelToken: process.env.WX_ASSISTANT_CHANNEL_TOKEN || void 0
+          channelToken: process.env.WX_ASSISTANT_CHANNEL_TOKEN || void 0,
+          // sso 绑定用户手机号：vendure 侧顾客未绑定时自动建档（路径 A，免输入）
+          boundPhone: boundPhone || void 0
         },
         { timeout: 3500, headers: secret ? { "x-zhao-secret": secret } : {} }
       );
@@ -7087,7 +7089,18 @@ const ssoWxCallback = ({ strapi }) => {
         if (rule && ruleUsable(rule)) {
           return buildReplyXml(rule, openid, toUser);
         }
-        const assistantXml = await askShoppingAssistant(text, openid, toUser, msg.MsgId, msg.CreateTime);
+        let boundPhone;
+        try {
+          const bindRow = await strapi.db.query(BINDING_UID).findOne({
+            where: { provider: "wechat", provider_user_id: openid },
+            populate: { user: true }
+          });
+          const mobile = String(bindRow?.user?.mobile || "").trim();
+          if (/^1\d{10}$/.test(mobile)) boundPhone = mobile;
+        } catch (e) {
+          strapi.log.warn(`[zhao-sso:wx-callback] load bound phone failed: ${e.message}`);
+        }
+        const assistantXml = await askShoppingAssistant(text, openid, toUser, msg.MsgId, msg.CreateTime, boundPhone);
         if (assistantXml) return assistantXml;
         return "success";
       }

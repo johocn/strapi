@@ -130,6 +130,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     toUser: string,
     msgId?: string,
     createTime?: string,
+    boundPhone?: string,
   ): Promise<string | null> {
     const url = process.env.WX_ASSISTANT_URL;
     if (!url) return null;
@@ -144,6 +145,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
           createTime: createTime ? Number(createTime) || undefined : undefined,
           // 公众号绑定的商城渠道（vendure channel token），决定搜索/下单渠道；未配置时 vendure 回退默认渠道
           channelToken: process.env.WX_ASSISTANT_CHANNEL_TOKEN || undefined,
+          // sso 绑定用户手机号：vendure 侧顾客未绑定时自动建档（路径 A，免输入）
+          boundPhone: boundPhone || undefined,
         },
         { timeout: 3500, headers: secret ? { "x-zhao-secret": secret } : {} },
       );
@@ -294,7 +297,19 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
           return buildReplyXml(rule, openid, toUser);
         }
         // 关键字规则未命中 → 转调 vendure 购物助手（搜索/下单，返回被动回复 XML）
-        const assistantXml = await askShoppingAssistant(text, openid, toUser, msg.MsgId, msg.CreateTime);
+        // 附带 sso 绑定用户手机号：vendure 侧顾客未绑定时免输入自动建档（路径 A）
+        let boundPhone: string | undefined;
+        try {
+          const bindRow = await strapi.db.query(BINDING_UID).findOne({
+            where: { provider: "wechat", provider_user_id: openid },
+            populate: { user: true },
+          });
+          const mobile = String(bindRow?.user?.mobile || "").trim();
+          if (/^1\d{10}$/.test(mobile)) boundPhone = mobile;
+        } catch (e: any) {
+          strapi.log.warn(`[zhao-sso:wx-callback] load bound phone failed: ${e.message}`);
+        }
+        const assistantXml = await askShoppingAssistant(text, openid, toUser, msg.MsgId, msg.CreateTime, boundPhone);
         if (assistantXml) return assistantXml;
         return "success";
       }
