@@ -42,6 +42,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       let offset = 0;
       let count = 0;
       try {
+        // 全量 = 权威快照：先按类型清空两索引旧文档再写入，
+        // 否则已软删/下架的残留文档会永远留在索引里（upsert 只增不改删）
+        for (const locale of meili().locales) {
+          await meili().deleteByFilter(locale, `type = "${m.type}"`);
+        }
         for (;;) {
           const rows: any[] = await strapi.db.query(uid).findMany({
             where: queryWhere(m),

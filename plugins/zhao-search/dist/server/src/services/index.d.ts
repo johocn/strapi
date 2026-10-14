@@ -7,6 +7,7 @@ declare const _default: {
         ensureIndexes: () => Promise<void>;
         upsertDocuments: (locale: string, docs: import('./meili').KbDocument[]) => Promise<void>;
         deleteDocuments: (locale: string, ids: string[]) => Promise<void>;
+        deleteByFilter: (locale: string, filter: string) => Promise<void>;
         getStats: () => Promise<import('./meili').MeiliIndexStatus[]>;
         healthCheck: () => Promise<boolean>;
     };

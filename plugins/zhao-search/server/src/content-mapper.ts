@@ -73,6 +73,18 @@ export const CONTENT_MAP: Record<string, ContentTypeMap> = {
     tagsField: "tags",
     localized: true,
   },
+  // GEO 文章（zh-CN 原生内容，2026-10-14 纳入索引：修复 kb-zh 内容域 0 文档）
+  "plugin::zhao-website.geo-article": {
+    type: "geo-article",
+    titleField: "title",
+    bodyFields: ["content"],
+    publishedField: "publishedAt",
+    statusField: "status",
+    statusValue: "published",
+    deletedField: "deletedAt",
+    tagsField: "tags",
+    localized: true,
+  },
 };
 
 export const isPublishedEntry = (m: ContentTypeMap, entry: any): boolean => {

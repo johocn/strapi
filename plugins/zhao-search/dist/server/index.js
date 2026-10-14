@@ -100,6 +100,18 @@ const CONTENT_MAP = {
     deletedField: "deletedAt",
     tagsField: "tags",
     localized: true
+  },
+  // GEO 文章（zh-CN 原生内容，2026-10-14 纳入索引：修复 kb-zh 内容域 0 文档）
+  "plugin::zhao-website.geo-article": {
+    type: "geo-article",
+    titleField: "title",
+    bodyFields: ["content"],
+    publishedField: "publishedAt",
+    statusField: "status",
+    statusValue: "published",
+    deletedField: "deletedAt",
+    tagsField: "tags",
+    localized: true
   }
 };
 const isPublishedEntry = (m, entry) => {
@@ -243,6 +255,9 @@ const meili = ({ strapi }) => {
     if (!ids.length) return;
     await req("POST", `/indexes/${indexUid(locale)}/documents/delete-batch`, ids);
   };
+  const deleteByFilter = async (locale, filter) => {
+    await req("POST", `/indexes/${indexUid(locale)}/documents/delete`, { filter });
+  };
   const getStats = async () => {
     const s = await req("GET", "/stats");
     return locales.map((locale) => {
@@ -268,6 +283,7 @@ const meili = ({ strapi }) => {
     ensureIndexes,
     upsertDocuments,
     deleteDocuments,
+    deleteByFilter,
     getStats,
     healthCheck
   };
@@ -307,6 +323,9 @@ const contentSync = ({ strapi }) => {
       let offset = 0;
       let count = 0;
       try {
+        for (const locale of meili2().locales) {
+          await meili2().deleteByFilter(locale, `type = "${m.type}"`);
+        }
         for (; ; ) {
           const rows = await strapi.db.query(uid).findMany({
             where: queryWhere(m),

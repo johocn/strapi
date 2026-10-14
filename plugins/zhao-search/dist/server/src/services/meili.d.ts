@@ -25,6 +25,7 @@ declare const _default: ({ strapi }: {
     ensureIndexes: () => Promise<void>;
     upsertDocuments: (locale: string, docs: KbDocument[]) => Promise<void>;
     deleteDocuments: (locale: string, ids: string[]) => Promise<void>;
+    deleteByFilter: (locale: string, filter: string) => Promise<void>;
     getStats: () => Promise<MeiliIndexStatus[]>;
     healthCheck: () => Promise<boolean>;
 };

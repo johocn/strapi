@@ -68,6 +68,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     await req("POST", `/indexes/${indexUid(locale)}/documents/delete-batch`, ids);
   };
 
+  // 按 filter 删除（异步 task，同索引 FIFO：先删后写语义成立）。filter 需为 filterable 属性
+  const deleteByFilter = async (locale: string, filter: string): Promise<void> => {
+    await req("POST", `/indexes/${indexUid(locale)}/documents/delete`, { filter });
+  };
+
   const getStats = async (): Promise<MeiliIndexStatus[]> => {
     const s = await req("GET", "/stats");
     return locales.map((locale) => {
@@ -95,6 +100,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     ensureIndexes,
     upsertDocuments,
     deleteDocuments,
+    deleteByFilter,
     getStats,
     healthCheck,
   };
