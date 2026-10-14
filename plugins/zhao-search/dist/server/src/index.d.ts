@@ -38,10 +38,19 @@ declare const _default: {
         }) => {
             fullReindex(): Promise<{
                 ok: boolean;
-                error: string;
+                error: any;
+                counts?: undefined;
+                errors?: undefined;
+                durationMs?: undefined;
+            } | {
+                ok: boolean;
+                counts: Record<string, number>;
+                errors: string[];
+                durationMs: number;
+                error?: undefined;
             }>;
-            syncOne(_uid: string, _entry: any): Promise<void>;
-            removeOne(_uid: string, _entryId: any): Promise<void>;
+            syncOne(uid: string, entry: any): Promise<void>;
+            removeOne(uid: string, entryId: any): Promise<void>;
         };
     };
     routes: {

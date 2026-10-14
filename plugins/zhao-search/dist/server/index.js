@@ -45,8 +45,140 @@ const controllers = {
 };
 const register = (_) => {
 };
+const CONTENT_MAP = {
+  "plugin::zhao-website.article": {
+    type: "article",
+    titleField: "title",
+    bodyFields: ["content"],
+    publishedField: "publishedAt",
+    statusField: "status",
+    statusValue: "published",
+    deletedField: "deletedAt",
+    tagsField: "tags",
+    localized: true
+  },
+  "plugin::zhao-website.faq": {
+    type: "faq",
+    titleField: "question",
+    bodyFields: ["answer"],
+    publishedField: "publishedAt",
+    statusField: "status",
+    statusValue: "published",
+    deletedField: "deletedAt",
+    tagsField: "tags",
+    localized: true
+  },
+  "plugin::zhao-website.tutorial": {
+    type: "tutorial",
+    titleField: "title",
+    bodyFields: ["description"],
+    publishedField: "publishedAt",
+    statusField: "status",
+    statusValue: "published",
+    deletedField: "deletedAt",
+    tagsField: "tags",
+    localized: true
+  },
+  "plugin::zhao-website.case": {
+    type: "case",
+    titleField: "title",
+    bodyFields: ["challenge", "solution"],
+    publishedField: "publishedAt",
+    statusField: "status",
+    statusValue: "published",
+    deletedField: "deletedAt",
+    tagsField: "tags",
+    localized: true
+  },
+  "plugin::zhao-website.download": {
+    type: "download",
+    titleField: "name",
+    bodyFields: ["description"],
+    publishedField: "publishedAt",
+    statusField: "status",
+    statusValue: "published",
+    deletedField: "deletedAt",
+    tagsField: "tags",
+    localized: true
+  }
+};
+const isPublishedEntry = (m, entry) => {
+  if (!entry?.[m.publishedField]) return false;
+  if (m.statusField && entry[m.statusField] !== m.statusValue) return false;
+  if (m.deletedField && entry[m.deletedField]) return false;
+  return true;
+};
+const stripHtml = (s) => String(s ?? "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().slice(0, 5e3);
+const toIndexLocale = (locale) => String(locale ?? "").toLowerCase().startsWith("zh") ? "zh" : "en";
+const normalizeTags = (tags) => {
+  if (!Array.isArray(tags)) return [];
+  return tags.map(
+    (t) => typeof t === "string" || typeof t === "number" ? String(t) : String(t?.name ?? t?.documentId ?? t?.id ?? "")
+  ).filter(Boolean);
+};
+const toUpdatedAt = (entry) => {
+  const ts = new Date(entry?.updatedAt ?? Date.now()).getTime();
+  return Number.isFinite(ts) ? ts : Date.now();
+};
+const toDocument = (m, entry) => {
+  const docId = String(entry.documentId ?? entry.id);
+  const body = m.bodyFields.map((f) => stripHtml(entry[f])).filter(Boolean).join("\n").slice(0, 5e3);
+  return {
+    id: m.localized ? `${m.type}-${docId}-${toIndexLocale(entry.locale)}` : `${m.type}-${docId}`,
+    type: m.type,
+    sourceId: docId,
+    sourceSystem: "strapi",
+    url: `/kb/${m.type}/${docId}`,
+    channelId: String(entry.tenantId ?? "0"),
+    status: "published",
+    tags: normalizeTags(m.tagsField ? entry[m.tagsField] : void 0),
+    title: String(entry[m.titleField] ?? ""),
+    body,
+    updatedAt: toUpdatedAt(entry)
+  };
+};
+const toContentDocuments = (modelUid, entry) => {
+  const m = CONTENT_MAP[modelUid];
+  if (!m || !isPublishedEntry(m, entry)) return [];
+  const doc = toDocument(m, entry);
+  if (m.localized) return [{ locale: toIndexLocale(entry.locale), doc }];
+  return ["zh", "en"].map((locale) => ({ locale, doc }));
+};
+const documentIdsFor = (modelUid, entryId) => {
+  const m = CONTENT_MAP[modelUid];
+  if (!m || entryId == null) return [];
+  const docId = String(entryId);
+  return m.localized ? [`${m.type}-${docId}-zh`, `${m.type}-${docId}-en`] : [`${m.type}-${docId}`];
+};
+const WATCHED = Object.keys(CONTENT_MAP);
+const extractEntryId = (event) => {
+  const where = event?.params?.where ?? {};
+  return where.documentId ?? where.id ?? event?.params?.documentId ?? event?.result?.documentId ?? event?.result?.id;
+};
 const bootstrap = async ({ strapi }) => {
   strapi.log.info("[zhao-search] 插件已加载");
+  const contentSync2 = () => strapi.plugin("zhao-search").service("content-sync");
+  strapi.db.lifecycles.subscribe({
+    async afterCreate(event) {
+      if (!WATCHED.includes(event.model.uid)) return;
+      await contentSync2().syncOne(event.model.uid, event.result);
+    },
+    async afterUpdate(event) {
+      if (!WATCHED.includes(event.model.uid)) return;
+      await contentSync2().syncOne(event.model.uid, event.result);
+    },
+    async afterDelete(event) {
+      if (!WATCHED.includes(event.model.uid)) return;
+      await contentSync2().removeOne(event.model.uid, extractEntryId(event));
+    }
+  });
+  strapi.log.info(`[zhao-search] 已订阅 ${WATCHED.length} 个内容类型的增量同步`);
+  setImmediate(() => {
+    contentSync2().fullReindex().then((result) => {
+      if (result?.ok) strapi.log.info(`[zhao-search] 启动全量同步完成 ${JSON.stringify(result.counts)}`);
+      else strapi.log.warn(`[zhao-search] 启动全量同步未成功 ${JSON.stringify(result)}`);
+    }).catch((e) => strapi.log.warn(`[zhao-search] 启动全量同步失败（不影响启动）: ${e?.message || e}`));
+  });
 };
 const meili = ({ strapi }) => {
   const host = strapi.config.get("plugin::zhao-search.host") || process.env.MEILI_HOST || "http://127.0.0.1:7700";
@@ -116,16 +248,100 @@ const meili = ({ strapi }) => {
     healthCheck
   };
 };
-const contentSync = ({ strapi }) => ({
-  async fullReindex() {
-    strapi.log.warn("[zhao-search] fullReindex 尚未实现（Task 8）");
-    return { ok: false, error: "not_implemented" };
-  },
-  async syncOne(_uid, _entry) {
-  },
-  async removeOne(_uid, _entryId) {
-  }
-});
+const PAGE_SIZE = 200;
+const contentSync = ({ strapi }) => {
+  const logError = (msg, e) => strapi.log.error(`[zhao-search] ${msg}: ${e?.message || e}`);
+  const meili2 = () => strapi.plugin("zhao-search").service("meili");
+  const queryWhere = (m) => {
+    const where = { [m.publishedField]: { $ne: null } };
+    if (m.statusField) where[m.statusField] = m.statusValue;
+    if (m.deletedField) where[m.deletedField] = { $null: true };
+    return where;
+  };
+  const syncRows = async (uid, rows) => {
+    const docsByLocale = {};
+    for (const row of rows) {
+      for (const { locale, doc } of toContentDocuments(uid, row)) {
+        (docsByLocale[locale] ||= []).push(doc);
+      }
+    }
+    for (const [locale, docs] of Object.entries(docsByLocale)) {
+      await meili2().upsertDocuments(locale, docs);
+    }
+  };
+  const doFullReindex = async () => {
+    const startedAt = Date.now();
+    try {
+      await meili2().ensureIndexes();
+    } catch (e) {
+      logError("Meili 不可用，全量同步中止", e);
+      return { ok: false, error: e?.message || String(e) };
+    }
+    const counts = {};
+    const errors = [];
+    for (const [uid, m] of Object.entries(CONTENT_MAP)) {
+      let offset = 0;
+      let count = 0;
+      try {
+        for (; ; ) {
+          const rows = await strapi.db.query(uid).findMany({
+            where: queryWhere(m),
+            populate: m.tagsField ? { [m.tagsField]: true } : void 0,
+            limit: PAGE_SIZE,
+            offset,
+            orderBy: { id: "asc" }
+          });
+          await syncRows(uid, rows);
+          count += rows.length;
+          if (rows.length < PAGE_SIZE) break;
+          offset += PAGE_SIZE;
+        }
+        counts[m.type] = count;
+      } catch (e) {
+        errors.push(`${uid}: ${e?.message || e}`);
+        logError(`全量同步 ${uid} 失败`, e);
+      }
+    }
+    return { ok: errors.length === 0, counts, errors, durationMs: Date.now() - startedAt };
+  };
+  const doSyncOne = async (uid, entry) => {
+    if (!entry) return;
+    const docs = toContentDocuments(uid, entry);
+    if (docs.length) {
+      for (const { locale, doc } of docs) {
+        await meili2().upsertDocuments(locale, [doc]);
+        strapi.log.info(`[zhao-search] 已同步 ${doc.id}`);
+      }
+    } else {
+      await doRemoveOne(uid, entry.documentId ?? entry.id);
+    }
+  };
+  const doRemoveOne = async (uid, entryId) => {
+    if (entryId == null) return;
+    const ids = documentIdsFor(uid, entryId);
+    if (!ids.length) return;
+    for (const locale of meili2().locales) await meili2().deleteDocuments(locale, ids);
+  };
+  return {
+    async fullReindex() {
+      return doFullReindex();
+    },
+    async syncOne(uid, entry) {
+      try {
+        await doSyncOne(uid, entry);
+      } catch (e) {
+        logError(`增量同步失败 ${uid}`, e);
+      }
+    },
+    async removeOne(uid, entryId) {
+      try {
+        await doRemoveOne(uid, entryId);
+      } catch (e) {
+        logError(`索引删除失败 ${uid}`, e);
+      }
+    }
+  };
+};
 const services = {
   meili,
   "content-sync": contentSync
