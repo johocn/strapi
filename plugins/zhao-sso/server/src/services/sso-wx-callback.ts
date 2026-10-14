@@ -118,7 +118,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
   }
 
   /**
-   * 转调 vendure 购物助手决策接口（POST /shop-api/wechat-assistant/handle）：
+   * 转调 vendure 购物助手决策接口（POST {WX_ASSISTANT_URL}，生产为
+   * http://127.0.0.1:3020/wechat-assistant/handle，根路径无 /shop-api 前缀）：
    * 关键字规则未命中的文本消息交给购物助手处理（商品搜索/下单决策），
    * 返回组装好的被动回复 XML；未配置 WX_ASSISTANT_URL / 超时 / 异常 / 不处理返回 null。
    * 受微信回调 5 秒窗口约束：超时 3.5s，转调失败不阻塞回调（返回 success 静默）。
