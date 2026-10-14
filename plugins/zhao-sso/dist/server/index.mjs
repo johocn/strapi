@@ -6926,7 +6926,9 @@ const ssoWxCallback = ({ strapi }) => {
           openid,
           text,
           msgId: msgId || void 0,
-          createTime: createTime ? Number(createTime) || void 0 : void 0
+          createTime: createTime ? Number(createTime) || void 0 : void 0,
+          // 公众号绑定的商城渠道（vendure channel token），决定搜索/下单渠道；未配置时 vendure 回退默认渠道
+          channelToken: process.env.WX_ASSISTANT_CHANNEL_TOKEN || void 0
         },
         { timeout: 3500, headers: secret ? { "x-zhao-secret": secret } : {} }
       );

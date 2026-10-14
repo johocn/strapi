@@ -142,6 +142,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
           text,
           msgId: msgId || undefined,
           createTime: createTime ? Number(createTime) || undefined : undefined,
+          // 公众号绑定的商城渠道（vendure channel token），决定搜索/下单渠道；未配置时 vendure 回退默认渠道
+          channelToken: process.env.WX_ASSISTANT_CHANNEL_TOKEN || undefined,
         },
         { timeout: 3500, headers: secret ? { "x-zhao-secret": secret } : {} },
       );
