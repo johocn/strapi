@@ -102,6 +102,12 @@ declare const _default: {
             description?: string;
         }): Promise<any>;
         update(id: number, body: any): Promise<any>;
+        upsertByCode(data: {
+            channel_code: string;
+            channel_name?: string;
+            channel_type?: string;
+            description?: string;
+        }): Promise<any>;
         channelReport(): Promise<any[]>;
     };
     "sso-oauth": ({ strapi }: {

@@ -19,6 +19,13 @@ declare const _default: ({ strapi }: {
         description?: string;
     }): Promise<any>;
     update(id: number, body: any): Promise<any>;
+    /** 按渠道码 upsert：新建租户时由 Vendure 自动同步调用（防重），name 有值才覆盖 */
+    upsertByCode(data: {
+        channel_code: string;
+        channel_name?: string;
+        channel_type?: string;
+        description?: string;
+    }): Promise<any>;
     channelReport(): Promise<any[]>;
 };
 export default _default;

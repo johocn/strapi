@@ -38,6 +38,7 @@ declare const _default: {
         strapi: import('@strapi/types/dist/core').Strapi;
     }) => {
         track(ctx: any): Promise<void>;
+        internalUpsert(ctx: any): Promise<void>;
     };
     "admin-controller": ({ strapi }: {
         strapi: import('@strapi/types/dist/core').Strapi;

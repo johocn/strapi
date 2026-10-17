@@ -112,6 +112,13 @@ export default () => ({
       handler: "channel-controller.track",
       config: { auth: false },
     },
+    {
+      // 服务间渠道 upsert（Vendure 新建租户自动同步）：共享密钥头 x-sso-sync-token，不走 admin JWT
+      method: "POST",
+      path: "/v1/channel/internal-upsert",
+      handler: "channel-controller.internalUpsert",
+      config: { auth: false },
+    },
 
     // ===== 公众号接入验证 + 消息/事件回调（微信服务器直连，公开） =====
     {

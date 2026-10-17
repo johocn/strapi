@@ -62,6 +62,29 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     return strapi.db.query(CHANNEL_UID).update({ where: { id }, data });
   },
 
+  /** 按渠道码 upsert：新建租户时由 Vendure 自动同步调用（防重），name 有值才覆盖 */
+  async upsertByCode(data: { channel_code: string; channel_name?: string; channel_type?: string; description?: string }) {
+    const existing = await strapi.db.query(CHANNEL_UID).findOne({
+      where: { channel_code: data.channel_code },
+    });
+    if (existing) {
+      const patch: Record<string, any> = {};
+      if (data.channel_name) patch.channel_name = data.channel_name;
+      if (data.description) patch.description = data.description;
+      if (Object.keys(patch).length === 0) return existing;
+      return strapi.db.query(CHANNEL_UID).update({ where: { id: existing.id }, data: patch });
+    }
+    return strapi.db.query(CHANNEL_UID).create({
+      data: {
+        channel_code: data.channel_code,
+        channel_name: data.channel_name || data.channel_code,
+        channel_type: data.channel_type || "vendure",
+        is_active: true,
+        description: data.description || "vendure 租户渠道（自动同步）",
+      },
+    });
+  },
+
   async channelReport() {
     const channels = await strapi.db.query(CHANNEL_UID).findMany({ where: { is_active: true } });
     const userService = () => strapi.plugin("zhao-sso").service("sso-user");
