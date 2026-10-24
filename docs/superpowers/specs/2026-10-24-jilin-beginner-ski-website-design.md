@@ -304,6 +304,7 @@ scenarios       = [{研学},{团建},{亲子},{成人},{闺蜜小团}]
 - [ ] 20 条 FAQ 的业务答案确认
 - [ ] 《零基础滑雪学习手册》PDF（可先出简版）
 - [ ] 板块分类落地：`滑雪` 一级分类 + 二级标签
+- [ ] **GEO 录入材料**：4 条真值声明、8 个知识实体、6 条关系、教练档案、每篇信源 —— 明细见 **第 15 节**
 
 ### 11.5 后台配置
 
@@ -358,3 +359,86 @@ scenarios       = [{研学},{团建},{亲子},{成人},{闺蜜小团}]
 | 教练资质宣传不实（E-E-AT 反扣分） | 证书留档，页面仅展示真实持证信息 |
 | 淡季搜索权重下滑 | 非雪季持续做预售、室内四季雪、攻略内容 |
 | 商标被抢注 | A 期同步提交 Joyogo 商标（41/39 类） |
+
+---
+
+## 15. GEO 录入系统：材料准备清单
+
+### 15.1 这一节为什么不能省
+
+`geo-article` 在**状态改为 published 的瞬间会强制校验**（插件 `lifecycles.beforeUpdate` / `beforeCreate`），
+任一条不通过直接抛 `GEO_AUDIT_FAIL`，**文章发不出去**。所以录入不是「随便填」，而是**先备齐材料再录入**。
+
+### 15.2 发布硬门槛（8 组校验，逐条对应字段）
+
+| 组 | 字段 | 硬性要求 |
+|---|---|---|
+| 1 选型 | `faqQuestion` / `comparisonData` / `listItems` | geo-faq 必填 faqQuestion；local-comparison 必填 comparisonData；local-list 必填 listItems |
+| 2 标题 | `title` | **必须含地域词**（吉林/长春/船营/丰满/松花湖所在的区县等，插件内置词典） |
+| 3 核心模块 | `summaryPoints` `localTips` `infoBoundary` | 三块**全部必填且非空** |
+| 4 E-E-A-T | `sourceName` / `sourceUrl` / `truthBasis` / `mentionedEntities` / `author`或`authorName` | 信源至少 1 条；**真值声明至少 1 条**；**知识实体至少 1 个**；作者档案或作者名必有 |
+| 5 结构化 | `jsonLdType`（+ local-report 的 `businessData`） | geo-faq→FAQPage；local-list/local-comparison→ItemList；local-report→Article 或 LocalBusiness；geo-article→Article。**local-report 还必须填 businessData** |
+| 6 转化 | `ctaType` / `leadFormEnabled` | ctaType≠none 或 leadFormEnabled=true（这一条是 warning 级，但仍计入通过判定） |
+| 7 合规 | `riskType` | 必填且不能是 none；正文命中敏感词时必须选对应类型（见 15.5） |
+| 8 审核 | `reviewChecks` `reviewerName` `reviewedAt` | reviewChecks 的 **eaat / tech / compliance / business 四项全勾**；审核人、审核日期必填 |
+
+### 15.3 需要提前备好的 7 类材料
+
+| # | 材料 | 具体内容 | 对应字段 |
+|---|---|---|---|
+| 1 | **真值声明库**（先建后选） | 每条含：声明文案、唯一键、类别、规范值、权威来源链接、来源类型、核验日期 | `first-truth-policy`：claim / claimKey / claimCategory / canonicalValue / canonicalSourceUrl / canonicalSourceType / lastVerifiedAt |
+| 2 | **知识实体库** | 每个实体：类型、名称、slug、简介、官网链接、同义词链接、核验状态、核验日期 | `knowledge-entity`：entityType / name / slug / description / url / sameAs / verificationStatus / lastVerifiedAt |
+| 3 | **知识关系库** | 主体、谓语、客体、举证原文（仅后台可见）、来源链接 | `knowledge-relation`：subjectEntity / predicate / objectEntity / evidenceText / sourceUrl / lastVerifiedAt |
+| 4 | **作者档案 / 教练资质** | 姓名、头像、从业年限、持证情况、擅长零基础与儿童 | `author`：name / bio / avatar；文章侧 `authorName` + `authorBio` |
+| 5 | **权威信源清单** | 每篇至少 1 条：来源名称 + 公开链接 + 发布时间 | `sourceName` / `sourceUrl` / `sourcePublishedAt` |
+| 6 | **正文物料** | HTML 正文（文字/表格/图片/锚链接/引用标注）、封面图（建议 ≥1200×675） | `content` / `coverImage` |
+| 7 | **审核材料** | 审核人姓名、审核日期、四类自查结论 | `reviewerName` / `reviewedAt` / `reviewChecks` |
+
+### 15.4 滑雪板块：先备这 4 条真值 + 8 个实体
+
+**真值声明（4 条，全站复用）**
+
+| claimKey | claim | claimCategory | canonicalValue | 来源 |
+|---|---|---|---|---|
+| class-size | 小班 4–6 人，教练配比 1:4–6 | brand_claim | 4–6 人 / 1:4–6 | 内部教学 SOP |
+| coach-cert | 教练持证上岗 | certification | 持滑雪指导员证（证书编号可查） | 教练证书留档 |
+| free-retrain | 学不会免费复训 | brand_claim | 掌握犁式刹车+安全停止方为结业；未达标免费复训 | 教学服务协议 |
+| all-inclusive | 透明打包价，含雪票/装备/护具/保险/课时 | brand_claim | 无隐形消费，护具不另租，无教练小费 | 价格公示表 |
+
+> 注意：`canonicalValueType` 用 text；`comparisonMode` 用 contains（表述型）。
+> `lastVerifiedAt` 必填，否则 llms.txt 会把它当「未核验」，AI 不会引用。
+
+**知识实体（8 个起步）**
+
+| name | entityType | 说明 |
+|---|---|---|
+| 松花湖滑雪场 | Place | 教学点 |
+| 北大湖滑雪场 | Place | 教学点 |
+| 五家山滑雪场 | Place | 教学点 |
+| 吉林市 | Place | 所在城市 |
+| 犁式刹车 | DefinedTerm | 核心技能/结业标准 |
+| 零基础启蒙课 | Service | 课程实体 |
+| 滑雪护具套装 | Product | 头盔/护臀/护膝 |
+| Joyogo 滑雪学院 | Organization | 品牌主体，关联 brand-info |
+
+**知识关系（6 条起步）**：`位于`（雪场→吉林市）、`教授`（课程→犁式刹车）、`包含`（课程→护具套装）、`提供`（机构→课程）、`适用`（护具→零基础）、`同义`（犁式刹车→犁式制动）。
+
+### 15.5 三个最容易踩、且会直接卡发布的坑
+
+| 坑 | 现象 | 处理 |
+|---|---|---|
+| **敏感词命中** | 正文出现「保险」→ 系统按金融类判定，`riskType` 不是 `finance-*` 就校验不通过 | `riskType` 统一选 **`finance-insurance`**，`riskDisclaimer` 自填「本文所述保险为意外险，保障范围以保单条款为准」 |
+| **法律词冲突** | 正文出现「合同/法律/律师」→ 要求 `riskType=legal`，但与上面金融类**不能同时满足** | 正文统一把「合同」改成「**服务协议**」，不写「法律/律师」字样 |
+| **local-report 缺 businessData** | 报告类文章发布被拦 | 必须补 `businessData`：`[{period:"2026雪季", content:"共服务学员 N 人", caliber:"口径：自营课程报名人数"}]` |
+| 标题缺地域词 | 如「第一次滑雪怕摔怎么办」会被直接拦 | 标题一律带「吉林市/吉林/松花湖」等地域词 |
+
+### 15.6 录入顺序（照这个顺序做，不会返工）
+
+1. 建 `article-category`：滑雪
+2. 建 4 条真值声明（`first-truth-policy`）
+3. 建 8 个知识实体（`knowledge-entity`）→ 再建 6 条关系（`knowledge-relation`）
+4. 建教练档案（`author`）
+5. 录入 GEO 文章草稿（status=draft）
+6. 逐篇补：地域标题、三模块、信源、truthBasis、mentionedEntities、jsonLdType、businessData（报告类）、CTA
+7. 勾选 reviewChecks 四项 + 填审核人/审核日期
+8. 改 status=published（此时会自动过校验）

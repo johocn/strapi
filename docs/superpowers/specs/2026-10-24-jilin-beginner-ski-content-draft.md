@@ -189,8 +189,33 @@ H1      ：Joyogo 滑雪学院 · 吉林新手滑雪，第一次就学会
 
 # 四、GEO 文章（geo-article，6 篇）
 
-通用必填：`category = 滑雪`、`authorName` / `authorBio`、`sourceName` / `sourceUrl`、
-`truthBasis`、`internalLinks`、`ctaType`、`leadFormEnabled = true`、`metaDescription`（含本地场景词）。
+> **发布硬门槛**：`geo-article` 改为 `status = published` 时会强制校验，不达标直接报 `GEO_AUDIT_FAIL` 发不出去。
+> 每篇必须齐全：地域词标题、`summaryPoints` / `localTips` / `infoBoundary` 三模块、信源、真值声明、
+> 知识实体、作者、匹配的 `jsonLdType`、非 none 的 `riskType`、审核四勾 + 审核人 + 审核日期。
+> 物料准备与完整规则见设计文档第 15 节。
+
+## 4.0 每篇通用字段（复制这段，再填各自差异）
+
+```
+category          = 滑雪
+status            = draft            # 齐了再改 published
+authorName        = （教练姓名）
+authorBio         = （持证情况 + 从业年限 + 擅长零基础/儿童）
+sourceName        = （权威来源名称）
+sourceUrl         = （公开链接）
+sourcePublishedAt = （发布时间）
+riskType          = finance-insurance
+riskDisclaimer    = 本文所述保险为意外险，保障范围以保单条款为准；教学服务以签署的服务协议为准。
+reviewChecks      = {eaat: true, tech: true, compliance: true, business: true}
+reviewerName      = （审核人）
+reviewedAt        = （审核日期）
+metaDescription   = （必须含「吉林」本地场景词）
+leadFormEnabled   = true
+```
+
+> **两个措辞红线**：正文出现「保险」→ `riskType` 必须是 `finance-insurance`（已按此设置）；
+> 正文**不要写「合同 / 法律 / 律师」**，统一写「服务协议 / 合规说明」——否则会要求 `riskType=legal`，与金融类冲突导致发不出去。
+
 
 ## 4.1 local-list｜吉林市新手滑雪场怎么选（含五家山）
 
@@ -204,9 +229,14 @@ listItems       = [
   {"name":"北大湖滑雪场","desc":"雪质好、中高级道多，新手建议错峰","price":"含雪票教学从xx元起","link":"/products/lingji-qimeng"},
   {"name":"五家山滑雪场","desc":"相对小众、人流少，适合怕拥挤的初学者","price":"含雪票教学从xx元起","link":"/products/lingji-qimeng"}
 ]
-truthBasis      = [小班4–6人, 透明打包价]
-internalLinks   = [{课程中心:/products}, {常见问题:/faqs}]
-ctaType         = consult-appointment
+jsonLdType        = ItemList
+summaryPoints     = 三家都适合新手：松花湖配套最成熟、北大湖雪质最好但需错峰、五家山人流最少
+localTips         = 吉林市市区到松花湖最近；节假日初级道人最多，建议选工作日上午上雪
+infoBoundary      = 本文对比基于 2026 雪季公开票价与新手上雪体验，不含高级道、住宿与餐饮评价
+truthBasis        = [小班4–6人, 透明打包价]
+mentionedEntities = [松花湖滑雪场, 北大湖滑雪场, 五家山滑雪场, 吉林市]
+internalLinks     = [{课程中心:/products}, {常见问题:/faqs}]
+ctaType           = consult-appointment
 ```
 
 ## 4.2 local-comparison｜松花湖 vs 北大湖 vs 五家山
@@ -234,9 +264,14 @@ comparisonData  = [
     {"name":"北大湖","score":9,"note":"打包价无隐形消费"},
     {"name":"五家山","score":9,"note":"打包价无隐形消费"}]}
 ]
-truthBasis      = [教练持证]
-internalLinks   = [{旅游线:/products/lvyou-2tian}, {新手攻略:/local-list}]
-ctaType         = consult-appointment
+jsonLdType        = ItemList
+summaryPoints     = 新手友好度：松花湖 9 > 五家山 8 > 北大湖 7；怕拥挤优先五家山，图配套优先松花湖
+localTips         = 北大湖中高级道多，零基础务必错峰并固定在初级道区域练习；五家山坡缓人少更适合第一课
+infoBoundary      = 评分为 1–10 的主观体验分值，基于新手视角，不适用于进阶玩家选场
+truthBasis        = [教练持证]
+mentionedEntities = [松花湖滑雪场, 北大湖滑雪场, 五家山滑雪场]
+internalLinks     = [{旅游线:/products/lvyou-2tian}, {新手攻略:/local-list}]
+ctaType           = consult-appointment
 ```
 
 ## 4.3 geo-faq｜第一次滑雪怕摔、怕尴尬怎么办
@@ -244,10 +279,14 @@ ctaType         = consult-appointment
 ```
 type           = geo-faq
 faqQuestion    = 第一次滑雪怕摔、怕尴尬怎么办？
-title          = 第一次滑雪怕摔怕尴尬？四步让新手安全上雪
+title          = 吉林市第一次滑雪怕摔怕尴尬？四步让新手安全上雪
 metaDescription = 第一次滑雪怕摔怕尴尬？吉林新手教学四步：先学安全摔倒站起、全程护具、小班全是新手、从平地练起。
+jsonLdType     = FAQPage
 summaryPoints  = ①先学安全摔倒与站起 ②护臀护膝头盔全含 ③小班全是新手不尴尬 ④从平地练起再上初级道
+localTips      = 吉林市雪季 12 月至次年 3 月，新手建议选工作日上午人少时段；上雪前别空腹
+infoBoundary   = 以上为常见新手场景的通用建议，个体体能与年龄差异请以教练现场评估为准
 truthBasis     = [护具全含, 小班4–6人]
+mentionedEntities = [犁式刹车, 滑雪护具套装]
 internalLinks  = [{启蒙班:/products/lingji-qimeng}]
 ctaType        = consult-appointment
 ```
@@ -261,8 +300,13 @@ metaDescription = 吉林市亲子滑雪研学安排：6岁以上可学、亲子�
 serviceScope   = 服务吉林市区县，含松花湖/北大湖/五家山教学点，团体可安排接送
 sourceName     = 吉林市文旅局公开信息
 sourceUrl      = https://...
+jsonLdType     = Article
 summaryPoints  = 6岁以上可学；亲子班家长可陪同；研学团体有标准化课程与结业标准；打包价含保险
+localTips      = 吉林市研学团体建议提前 5 个工作日预约；儿童需自带保暖内衣与手套内衬
+infoBoundary   = 年龄与陪同规则为通用口径，具体团体方案按人数、场地与时段单独确认
+businessData   = [{period:"2026雪季", content:"研学团体单班上限 20 人", caliber:"口径：自营团体课程排班规则"}]
 truthBasis     = [透明打包价, 教练持证]
+mentionedEntities = [松花湖滑雪场, 北大湖滑雪场, 五家山滑雪场, 零基础启蒙课]
 internalLinks  = [{课程中心:/products}, {学员案例:/cases}]
 ctaType        = consult-appointment
 ```
@@ -274,8 +318,12 @@ type           = geo-article
 title          = 零基础到犁式刹车：标准教学四步法（吉林教学版）
 metaTitle      = 零基础滑雪多久学会？犁式刹车标准四步法（吉林教学版）
 metaDescription = 零基础滑雪多久能学会？吉林新手教学四步法：安全落地、平地推进、犁式制动、初级道控速，一节启蒙课掌握刹车。
+jsonLdType     = Article
 summaryPoints  = ①安全落地与摔倒 ②平地推进与站姿 ③犁式制动 ④初级道控速
+localTips      = 吉林市初级道上午雪面较硬更易控速；练习时避开中午人流高峰
+infoBoundary   = 四步法面向零基础成人，儿童与长者应按体能调整进度
 truthBasis     = [结业标准:掌握犁式刹车+安全停止, 学不会免费复训]
+mentionedEntities = [犁式刹车, 零基础启蒙课]
 internalLinks  = [{启蒙班:/products/lingji-qimeng}, {犁式刹车三步教学:/tutorials/lixi-shache}]
 ctaType        = consult-appointment
 ```
@@ -284,13 +332,18 @@ ctaType        = consult-appointment
 
 ```
 type           = local-report
-title          = 2 天学会滑雪+温泉雾凇：外地游客最省心行程
+title          = 吉林市 2 天学会滑雪+温泉雾凇：外地游客最省心行程
 metaDescription = 来吉林 2 天学会滑雪怎么安排？2天教学+接送+住宿+温泉/雾凇/民俗餐打包，装备全含，适合南方游客与周末高铁客。
 serviceScope   = 高铁/机场接送 + 2 天教学 + 住宿；温泉/雾凇/民俗餐可选
 sourceName     = 本地住宿与温泉合作方公开报价
 sourceUrl      = https://...
+jsonLdType     = Article
 summaryPoints  = Day1 上午线上预习+下午上雪1节课；Day2 上午复训1节+下午温泉或雾凇；装备全含，人来就行
+localTips      = 吉林市 12 月–次年 2 月雾凇出现概率最高，看雾凇需早出发；高铁到吉林站后由套餐接送
+infoBoundary   = 行程为示例排期，实际以当日雪场开放时间、天气与温泉预约情况调整
+businessData   = [{period:"2025–2026雪季", content:"2 天旅游线含 2 节教学课", caliber:"口径：打包产品课程配置"}]
 truthBasis     = [透明打包价, 学不会免费复训]
+mentionedEntities = [松花湖滑雪场, 零基础启蒙课, 吉林市]
 internalLinks  = [{旅游线:/products/lvyou-2tian}, {常见问题:/faqs}]
 ctaType        = consult-appointment
 ```
