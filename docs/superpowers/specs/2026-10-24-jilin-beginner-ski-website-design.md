@@ -1,108 +1,232 @@
-# 吉林市新手滑雪项目 · 网站需求与开发任务设计（zhao-website）
+# Joyogo（joyogo.com）· 吉林新手滑雪板块 · A 期网站需求设计
 
 > 日期：2026-10-24
-> 定位：吉林市新手滑雪学院官网。核心交付「学会滑雪」，而非卖雪票/拼高级道。
-> 底座：zhao-website 插件（SEO/AEO 内容资产 + 品牌展示 + 线索转化）。
+> 内容底座：zhao-website 插件（SEO/AEO 内容资产 + 品牌展示 + 线索转化）
+> 对应文案文档：[2026-10-24-jilin-beginner-ski-content-draft.md](./2026-10-24-jilin-beginner-ski-content-draft.md)
 
 ---
 
-## 0. 一句话定位
+## 0. 已定决策（本版依据）
 
-做一个「吉林市新手滑雪」内容官网：让第一次滑雪的人，在百度 / 豆包 / DeepSeek / 小红书
-搜「吉林零基础滑雪 / 新手滑雪教学」时第一个看到我们，看完愿意留电话/加微信，然后成交课程。
+| 决策项 | 结论 |
+|---|---|
+| 品牌命名 | **只用 Joyogo**，不设中文品牌名 |
+| A 期范围 | **只做国内站**（joyogo.com，中文），国外站延后到后续阶段 |
+| 服务器位置 | **joyogo.com 解析到境内服务器** → 必须完成 ICP 备案 |
+| 站点性质 | 多板块站点，**滑雪只是其中一个板块**（/ski） |
+| 多语言 | A 期**不做多语言**，`hreflangStrategy = none` |
+| 转化方式 | 首期 = 内容获客 + 留资加微私域成交，不接在线支付 |
 
-## 1. 三项目标（可衡量）
+---
+
+## 1. 品牌与定位
+
+### 1.1 品牌
+
+| 项 | 内容 |
+|---|---|
+| 品牌名 | **Joyogo** |
+| 域名 | joyogo.com |
+| 词源 | joy（喜悦）+ go（出发）+ go（再来一次）→ 快乐出发，快乐加倍 |
+| 特点 | 6 个字母、无数字无连字符、`joy\|go` 两组对称、可直接做英文品牌 |
+| 主广告语（英） | **Joy in every go.** |
+| 主广告语（中） | **「快乐出发，快乐加倍。」** |
+| 备用广告语 | 中文「说走就走，乐在其中。」；英文 "Go happy. Go Joyogo." |
+
+### 1.2 滑雪板块
+
+| 项 | 内容 |
+|---|---|
+| 板块对外名 | **Joyogo 滑雪学院**（英文副名 Joyogo Ski Academy，仅作业务描述，不另立品牌） |
+| 板块广告语 | **「第一次滑雪，交给 Joyogo。」** |
+| 英文版 | "Your first run starts here." |
+| 备用短句 | 「不怕摔，才敢滑。」 |
+| 核心定位 | 专做零基础入门教学，不做「卖雪票」、不拼高级道、不拼度假酒店 |
+
+### 1.3 一句话定位
+
+> Joyogo 旗下滑雪板块，只服务第一次滑雪的人：小班教学、学不会免费复训、透明打包价、教练持证、护具全含。
+
+---
+
+## 2. 域名与站点架构
+
+### 2.1 站点拓扑（A 期只落国内站）
+
+```
+joyogo.com                        ← 国内主站（zh-CN，多板块）
+├── /                             ← 首页（品牌 + 板块入口）
+├── /ski                          ← 滑雪板块首页（Joyogo 滑雪学院）
+│   ├── /ski/courses              ← 课程总览
+│   ├── /products/:slug           ← 课程详情（插件 product 路由）
+│   ├── /cases/:slug              ← 学员案例
+│   ├── /tutorials/:slug          ← 教程/复盘
+│   ├── /faqs/:slug               ← 常见问答
+│   ├── /local-list/:slug         ← 新手攻略·本地清单
+│   ├── /local-comparison/:slug    ← 新手攻略·场地对比
+│   ├── /local-report/:slug        ← 新手攻略·本地报告
+│   ├── /geo-faq/:slug            ← 新手攻略·问答
+│   └── /geo-article/:slug        ← 新手攻略·权威文章
+├── /about                        ← 关于我们（brand-info）
+└── /compliance                   ← 合规与安全
+
+（国外站：后续阶段，建议 go.joyogo.com 或独立域名，A 期不建）
+```
+
+### 2.2 三条来自插件源码的硬约束（必须提前知道）
+
+| 约束 | 事实 | 应对 |
+|---|---|---|
+| **内容池是站点级，不按板块隔离** | product / geo-article / faq / case / tutorial 都挂在 site 上，滑雪内容和其他板块会混在同一集合 | 用 `article-category` 建「滑雪」一级分类 + `tags` 二级标签，前端按分类过滤出 /ski 板块。**这是 A 期必须先定的规则** |
+| **结构化数据没有 Course** | schema-builder 只输出 Product / HowTo / FAQPage / LocalBusiness / WebSite / BreadcrumbList | 课程页用 `Product`；教学步骤用 `tutorial` 自动输出 `HowTo`；问答用 `FAQPage` |
+| **GEO 文章不带 hreflang** | sitemap 对 article/product 按 alternateLocales 生成语言链接，但 geo-article 明确不附加（避免 404） | A 期 `hreflangStrategy=none`；多语言等国外站建成后另议 |
+
+### 2.3 服务器与备案判断
+
+| 情况 | 结论 |
+|---|---|
+| joyogo.com → 境内服务器 | **必须 ICP 备案**，未备案无法用 80/443 对外提供网站服务 |
+| 国外站 → 境外服务器 | 不需备案（A 期不做） |
+
+---
+
+## 3. 备案与合规前置（A 期最长关键路径）
+
+服务器在国内，备案是**上线前绕不开的一步**，必须先启动：
+
+- [ ] 域名 joyogo.com 完成**实名认证**，且持有人与备案主体一致
+- [ ] 主体材料：营业执照、法人身份证、网站负责人身份证、负责人手机号与邮箱
+- [ ] 经营范围匹配：需含**体育培训/健身休闲** 或 **旅游服务** 相关项（不含则先做工商变更）
+- [ ] 服务器接入商（阿里云/腾讯云等）提供**备案服务码**
+- [ ] ICP 备案提交与核验（人脸核验/幕布拍照）
+- [ ] 备案通过后 30 日内完成**公安联网备案**
+- [ ] 页脚展示 ICP 备案号（`seo-config.icpNumber`）
+- [ ] 教学资质材料：与雪场的合作协议（松花湖/北大湖/五家山）、教练资质证书、保险保单
+- [ ] 免责声明、教学服务协议、复训规则边界、学员肖像权授权书
+
+> 提醒：备案期间网站不能对外访问，建议先在内网/测试环境完成内容搭建，备案一下来即可切正式域名。
+
+---
+
+## 4. 目标与指标（什么算做到「吉林头部」）
 
 | 目标 | 指标 |
 |---|---|
-| GEO 头部 | AI 搜索「吉林市零基础滑雪」等词时，本站内容进入 AI 引用前 3 |
-| 百度 SEO 头部 | 「吉林市滑雪教学」等词自然结果前 3 |
+| GEO 头部 | 豆包/DeepSeek/文心等 AI 搜索「吉林市零基础滑雪」「新手滑雪教学」时，本站内容进入 AI 引用前 3 |
+| 百度 SEO 头部 | 「吉林市滑雪教学」「零基础滑雪 吉林」「松花湖新手滑雪」等词自然结果前 3 |
 | 线索转化 | 月有效线索量、留资率、加微率 |
+| 板块隔离 | /ski 板块内容不与站内其他板块混淆，分类与 URL 清晰 |
 
-## 2. 学习场所（教学场地）
+---
 
-- 松花湖滑雪场（吉林市）
-- 北大湖滑雪场（吉林市）
-- 五家山滑雪场（吉林市）
-- 辐射客群：长春（庙香山、天定山等本地雪场）
-
-> 知识图谱实体、GEO 对比/清单内容均覆盖以上场地；对比维度以「新手友好度」为核心。
-
-## 3. 目标用户与场景
+## 5. 目标用户
 
 | 用户 | 诉求 | 网站必须回答 |
 |---|---|---|
 | 本地初学者（长春/吉林市上班族、亲子、学生） | 找靠谱课程、怕被坑、想反复练 | 多少钱全包？小班几人？学不会怎么办？周末能连续上吗？ |
 | 外地旅游小白（南方游客、高铁客、研学团） | 2–3 天学会 + 顺便玩 | 怎么过去？装备要不要自带？滑雪+温泉/雾凇怎么搭？ |
-| 家长 / 企业 HR / 旅行社（B 端分销） | 找标准化教学产品 | 有没有能直接卖的标准化课程和介绍？ |
+| B 端（家长/企业 HR/旅行社） | 找标准化教学产品 | 有没有能直接卖的标准化课程和介绍？ |
 
-## 4. 产品线
+---
 
-1. **分级课程**：启蒙班（0 基础 · 学会刹车停止）→ 基础班（犁式转弯 · 初级道控速）→ 进阶班（平行式 · 中级道）。
-2. **本地线**：周卡 / 月卡 / 周末连续课，主打就近反复练习。
-3. **旅游线**：2–3 天小白学会滑雪 + 吉林轻文旅（温泉/雾凇/民俗餐）打包。
-4. **保障**：小班 4–6 人、学不会免费复训、教练持证、护具全含、透明打包价（无隐形消费）。
-
-## 5. 站点结构
+## 6. 信息架构
 
 ```
-首页
-├── 课程中心（product）
-│   ├── 启蒙班 / 基础班 / 进阶班
-│   ├── 本地线（周卡/月卡）
-│   └── 旅游线（2–3 天打包）
-├── 教练团队（author）—— 资质 E-E-AT 背书
-├── 学员案例（case）—— 零基础前后对比
-├── 新手攻略（geo-article）—— 清单/对比/问答/报告/攻略
-├── 学习中心（tutorial + download）—— 预习/复盘 + 手册（留资）
-├── 常见问题（faq）
+Joyogo 首页
+├── 滑雪板块 /ski（A 期重点）
+│   ├── 课程中心（product）：启蒙班 / 基础班 / 进阶班 / 本地卡 / 旅游线
+│   ├── 教练团队（author）：资质与零基础教学经验
+│   ├── 学员案例（case）：零基础前后对比
+│   ├── 新手攻略（geo-article 五类）
+│   ├── 学习中心（tutorial + download）：预习/复盘 + 学习手册
+│   └── 常见问题（faq）
+├── 其他板块（A 期占位，内容后续补）
 ├── 关于我们（brand-info）
-├── 合规与安全（compliance）—— 免责/保险/护具/复训规则
-└── 留资转化（lead）
+└── 合规与安全（compliance）
 ```
 
-## 6. 内容字段填法（对应真实字段）
+---
 
-### 6.1 课程产品（product）
+## 7. 内容模型映射
+
+| 板块需求 | 插件内容类型 | 说明 |
+|---|---|---|
+| 课程页 | `product` | 价格、包含项、结业标准、班型 |
+| 新手攻略/权威内容 | `geo-article` | 5 个子类型：清单/对比/问答/报告/文章 |
+| 常见问答 | `faq` | 用户真实搜索词做 question |
+| 教学步骤 | `tutorial` | steps 自动转 HowTo |
+| 学员案例 | `case` | challenge/solution/results/testimonial |
+| 教练档案 | `author` | E-E-AT 权威性来源 |
+| 合规与安全 | `compliance` | 免责/保险/护具/复训规则 |
+| 学习手册 | `download` | requireLead=true，主力留资钩子 |
+| 留资 | `lead` | utm 自动带入，支持 referralCode |
+| 板块分类 | `article-category` | **滑雪=一级分类**，用于板块隔离 |
+| 权威背书 | `knowledge-entity` + `first-truth-policy` | 场地/课程/装备实体 + 真值声明 |
+
+---
+
+## 8. 字段填法
+
+### 8.1 课程（product）
 
 ```
-name            = 「零基础启蒙课 · 学会刹车安全停止」
-tagline         = 「4-6人小班 · 学不会免费复训」
-description     = 面向完全没上过雪的本地/游客小白
-price           = 499  （currency 默认 CNY）
-priceRange      = "299-899"
+name            = 零基础启蒙课 · 学会刹车安全停止
+tagline         = 4–6 人小班 · 学不会免费复训
+category        = 滑雪（板块隔离用）
+price           = 499        # currency 默认 CNY
+priceRange      = 299-499
 availability    = in_stock
-features        = [{课时, 班型, 装备, 保险, 保障}]
-specifications  = [{教练配比, 结业标准, 适合年龄}]
-scenarios       = [{研学, 团建, 亲子, 成人}]
+features        = [{课时:"2小时/次"},{班型:"4-6人小班"},{装备:"雪板雪鞋+头盔护臀护膝全含"},{保险:"含意外险"},{保障:"学不会免费复训"}]
+specifications  = [{教练配比:"1:4-6"},{结业标准:"掌握犁式刹车+安全停止"},{适合年龄:"6-55岁"},{场地:"松花湖/北大湖/五家山"}]
+scenarios       = [{研学},{团建},{亲子},{成人},{闺蜜小团}]
 ```
 
-> 结构化数据自动输出为 `Product`（非 Course）。「学不会免费复训」同时挂 features + compliance。
+### 8.2 GEO 文章（geo-article）
 
-### 6.2 GEO 文章（geo-article）
-
-按 `type` 五选一：
-
-| type | 必填字段 |
+| type | 专用必填字段 |
 |---|---|
-| local-list | listItems |
-| local-comparison | comparisonData |
-| geo-faq | faqQuestion |
-| local-report | serviceScope + sourceName |
-| geo-article | summaryPoints + truthBasis |
+| local-list | `listItems`：`[{name, desc, price, link}]` |
+| local-comparison | `comparisonData`：`[{dimension, items:[{name, score, note}]}]` |
+| geo-faq | `faqQuestion` |
+| local-report | `serviceScope` + `sourceName` + `sourceUrl` |
+| geo-article | `summaryPoints` + `truthBasis` |
 
-通用必填：`authorName/authorBio`（E-E-AT）、`sourceName/sourceUrl`（信源）、
-`truthBasis`（真值声明）、`internalLinks`（1–2 处内链）、`ctaType`、
-`leadFormEnabled=true`、`metaDescription`（含本地场景词）。
+所有 GEO 文章通用：`category=滑雪`、`authorName`/`authorBio`、`sourceName`/`sourceUrl`、
+`truthBasis`（小班4–6人 / 教练持证 / 学不会免费复训 / 透明打包价）、`internalLinks`（1–2 处）、
+`ctaType`、`leadFormEnabled=true`、`metaDescription`（含「吉林」本地场景词）。
 
-### 6.3 FAQ / tutorial / case / lead
+### 8.3 其余
 
-- faq：question 用用户真实搜索词，answer 直接回答 + 内链。
-- tutorial：steps 数组自动转 HowTo schema；difficulty=beginner；videoUrl 挂复盘视频。
-- case：challenge/solution/results/testimonial；results 只写客观事实，禁止保证类承诺。
-- lead：type（appointment/intent_order/quote/referral）、utm 自动带、referralCode 老带新。
+- `faq.question` 用用户真实搜索词；`answer` 直接给结论 + 内链课程页。
+- `tutorial.difficulty=beginner`，`steps` 为 `[{title, content}]`，挂 `videoUrl`。
+- `case.results` 只写客观事实（禁止「保证学会/保证不摔」）。
+- `lead.type` 用 `appointment` / `intent_order` / `quote` / `referral`。
 
-## 7. sitemap 收录规则
+---
+
+## 9. SEO / GEO 配置
+
+### 9.1 seo-config（国内站一份）
+
+| 字段 | 填什么 |
+|---|---|
+| defaultTitle / titleTemplate | 「Joyogo ｜ 吉林新手滑雪学院」模板 |
+| defaultDescription | 含「吉林市」「零基础滑雪」「小班教学」「学不会免费复训」 |
+| organizationName / organizationType | 公司全称 / `LocalBusiness` |
+| organizationAddress / organizationPhone | 实际地址与电话 |
+| areaServed | `["吉林市","长春市"]` |
+| geoRegion / geoPlacename | 吉林 / 吉林市 |
+| geoPosition | 纬度,经度（雪场或办公地坐标） |
+| baiduSiteVerification | 百度站长验证码 |
+| googleSiteVerification / bingSiteVerification | A 期可留空（国外站再做） |
+| enableSitemap / enableRobotsTxt | true / true |
+| aiCrawlerPolicy / allowedAiCrawlers | `allow_all` |
+| hreflangStrategy | **none**（A 期单语） |
+| defaultLocale | zh-CN |
+| icpNumber / publicSecurityRecord | 备案号 / 公安备案号 |
+| sitemapExcludeTypes | A 期不排除（7 类全收） |
+
+### 9.2 sitemap 自动收录规则
 
 | 内容类型 | URL 前缀 | 优先级 |
 |---|---|---|
@@ -114,37 +238,123 @@ scenarios       = [{研学, 团建, 亲子, 成人}]
 | geo-article | /geo-article、/geo-faq、/local-list、/local-comparison、/local-report | 0.8 |
 | knowledge-entity | /knowledge/ | 0.6 |
 
-> compliance、download 不在 sitemap 名单中；合规页靠文章内链导流，手册页靠 CTA 引流。
-> `sitemapExcludeTypes` 默认不排除任何类型。
+> `compliance` 与 `download` **不在** sitemap 名单内：合规页靠文章内链导流，手册页靠 CTA 引流。
+> 若前端用 `/ski/products/:slug` 这类带板块前缀的路径，需保证与 sitemap 生成的 `/products/:slug` 一致，否则会 404 —— **A 期建议板块前缀只用于板块列表页，详情页沿用插件固定前缀**。
 
-## 8. 关键词全表
+### 9.3 知识图谱与真值声明
 
-- 品类词 → 课程页：吉林市滑雪教学 / 零基础滑雪吉林 / 新手滑雪培训 / 滑雪一对一
-- 选址对比词 → comparison：松花湖 vs 北大湖 vs 五家山 新手
-- 价格词 → list/课程：吉林滑雪课多少钱 / 新手滑雪价格表
-- 恐惧词 → geo-faq/攻略：第一次滑雪怕摔 / 滑雪怕尴尬 / 滑雪会摔伤吗
-- 场景词 → report：亲子滑雪吉林 / 学生滑雪吉林 / 团建滑雪 / 滑雪研学吉林
-- 旅游打包词 → list/课程：吉林滑雪+温泉 / 滑雪+雾凇 / 南方人第一次滑雪吉林
-- 长尾词 → faq：零基础滑雪多久学会 / 滑雪要准备什么 / 滑雪保险怎么买
+- 实体：松花湖滑雪场、北大湖滑雪场、五家山滑雪场、犁式刹车、护具套装、各课程
+- 关系：`位于`（雪场→城市）、`教授`（课程→技能）、`包含`（课程→装备）
+- 真值声明：小班 4–6 人、教练持证、学不会免费复训、透明打包价
 
-## 9. 开发任务清单
+---
 
-阶段一（配置）：建站 site-config → seo-config 全局（含 geoRegion=吉林、geoPlacename=吉林市、
-geoPosition=经纬度、areaServed=[吉林市,长春市]、aiCrawlerPolicy=allow_all、百度验证/推送）→ brand-info。
+## 10. 关键词表（滑雪板块）
 
-阶段二（内容）：product 5、geo-article 20–30、faq 20、tutorial 6、case 6、compliance 4–6、author 8–10、download 1–2。
+| 意图 | 关键词 | 落位 |
+|---|---|---|
+| 品类 | 吉林市滑雪教学 / 零基础滑雪吉林 / 新手滑雪培训 / 吉林滑雪一对一 | 课程页 |
+| 选址对比 | 松花湖 vs 北大湖 vs 五家山 新手 / 吉林新手雪场推荐 | local-comparison |
+| 价格 | 吉林滑雪课多少钱 / 新手滑雪价格表 | local-list + 课程页 |
+| 恐惧 | 第一次滑雪怕摔 / 滑雪怕尴尬 / 滑雪会摔伤吗 | geo-faq |
+| 场景 | 亲子滑雪吉林 / 学生滑雪吉林 / 团建滑雪 / 滑雪研学吉林 | local-report |
+| 旅游打包 | 吉林滑雪+温泉 / 滑雪+雾凇 / 南方人第一次滑雪吉林 | local-list + 旅游线 |
+| 长尾 | 零基础滑雪多久学会 / 滑雪要准备什么 / 滑雪保险怎么买 | faq |
 
-阶段三（权威建设）：knowledge-entity（场地/课程/装备）+ knowledge-relation（位于/教授/包含）
-+ first-truth-policy（小班 4–6 人、教练持证、学不会免费复训、透明打包价）。
+---
 
-## 10. 关键决策
+## 11. A 期准备清单
 
-1. 转化模式：首期 = GEO 获客 + 留资加微私域成交（不配在线支付）。在线下单/预约排期走二期（zhao-deal/zhao-course 或小程序）。
-2. 地域：吉林市主战场（松花湖/北大湖/五家山），长春辐射。
-3. 前端接缝：URL 前缀须与 sitemap 一致；geo-article 五类路由需前端支持；compliance 收录靠内链。
+### 11.1 资质与合规（最先启动）
 
-## 11. 风险与合规
+- [ ] 营业执照（经营范围含体育培训或旅游服务）
+- [ ] 法人身份证、网站负责人身份证
+- [ ] 雪场教学合作协议 ×3（松花湖/北大湖/五家山）
+- [ ] 教练资质证书（每人扫描件）
+- [ ] 场地责任险 + 学员意外险保单
+- [ ] 免责声明 / 教学服务协议 / 复训规则边界
+- [ ] 学员肖像权授权书模板
+- [ ] 商标查询与申请（建议第 41 类、第 39 类，商标名 Joyogo）
 
-- 禁止收益/安全承诺话术（保证学会/保证不摔），一律客观事实表达。
-- 教学资质、免责、保险条款真实可查（E-E-AT 反扣分）。
-- 淡季：预售 + 室内四季雪 + 攻略内容持续发，防止搜索权重归零。
+### 11.2 账号与基础设施
+
+- [ ] 域名 joyogo.com 实名 + 解析管理权限
+- [ ] 境内服务器（完成部署环境）
+- [ ] ICP 备案 + 公安备案
+- [ ] 百度站长平台账号 + 站点验证
+- [ ] 百度统计账号
+- [ ] 官方邮箱 hi@joyogo.com、客服电话/微信
+
+### 11.3 品牌物料
+
+- [ ] Logo（横版/方版/深色底）+ favicon
+- [ ] 主色规范（建议深蓝 + 雪白 + 暖橙点缀）
+- [ ] 主广告语与板块广告语定稿（见第 1 节）
+- [ ] 公司全称、注册地址、统一社会信用代码
+- [ ] 微信二维码 / 公众号信息
+
+### 11.4 内容物料
+
+- [ ] 价格表定稿（5 个课程的实价与包含项）
+- [ ] 结业标准定稿（什么叫「学会」）
+- [ ] 复训规则定稿（几次、有效期、不适用情形）
+- [ ] 雪场实拍照片（三家各 10 张以上：初级道/装备区/教学场景）
+- [ ] 教练职业照（统一尺寸背景）
+- [ ] 学员前后对比照/视频（配授权书）
+- [ ] 20 条 FAQ 的业务答案确认
+- [ ] 《零基础滑雪学习手册》PDF（可先出简版）
+- [ ] 板块分类落地：`滑雪` 一级分类 + 二级标签
+
+### 11.5 后台配置
+
+- [ ] `site-config`：建 Joyogo 国内站（A 期仅一条）
+- [ ] `seo-config`：按 9.1 填全
+- [ ] `brand-info`：公司名、logo、地址、电话、微信码、资质证书
+- [ ] `article-category`：建「滑雪」一级分类及子标签
+- [ ] `product` 5 条、`faq` 20 条、`geo-article` 20–30 条、`tutorial` 6 条、`case` 6 条、`compliance` 4–6 条、`author` 8–10 条、`download` 1–2 份
+- [ ] `knowledge-entity` / `knowledge-relation` / `first-truth-policy` 建库
+
+### 11.6 前端与路由
+
+- [ ] Joyogo 首页 + `/ski` 板块页
+- [ ] 详情页路由与 sitemap 前缀对齐：`/products/:slug`、`/cases/:slug`、`/tutorials/:slug`、`/faqs/:slug`、`/articles/:slug`
+- [ ] GEO 五类路由支持：`/local-list`、`/local-comparison`、`/geo-faq`、`/local-report`、`/geo-article`
+- [ ] 板块过滤：按 category 拉 `/products`、`/geo-articles`
+- [ ] 留资表单接 `POST /v1/leads/submit`，自动带 utm（注意该接口限流 30 次/分钟/IP）
+- [ ] `/sitemap.xml`、`/robots.txt`、`/llms.txt` 三个出口验证可访问
+
+---
+
+## 12. A 期任务顺序
+
+1. 启动备案（并行等待）+ 定稿价格/结业标准/复训规则
+2. 建站与 seo-config / brand-info 配置
+3. 建「滑雪」分类，录入 5 个课程 + 20 条 FAQ
+4. 铺 GEO 文章与教程、案例、合规、教练档案
+5. 首页与 /ski 板块前端联调
+6. 备案下来 → 绑定正式域名 → 提交百度站长 → 开主动推送
+
+---
+
+## 13. 验收标准
+
+1. joyogo.com 可访问，首页 → /ski → 课程页 → 留资，全链路走通。
+2. `/sitemap.xml`、`/robots.txt`、`/llms.txt` 均可访问，sitemap 可见 5 个课程页。
+3. 百度站长平台抓取诊断成功，验证通过。
+4. 测试线索能在后台 `lead` 中查看，`utmSource` 有值。
+5. 首页与课程页结构化数据（Product / LocalBusiness / FAQPage）可被检测工具识别。
+6. 页脚展示 ICP 备案号。
+7. `/ski` 板块内容与其他板块通过 category 完全隔离，无串内容。
+
+---
+
+## 14. 风险与合规
+
+| 风险 | 应对 |
+|---|---|
+| 备案周期长，阻塞上线 | 先搭内网内容，备案一下来立即切域名 |
+| 内容池不隔离导致板块串内容 | 强制 category 规范 + 前端按分类过滤 + 上线前抽查 |
+| 承诺话术违规（保证学会/保证不摔） | 统一用客观事实表述，写进内容审校清单 |
+| 教练资质宣传不实（E-E-AT 反扣分） | 证书留档，页面仅展示真实持证信息 |
+| 淡季搜索权重下滑 | 非雪季持续做预售、室内四季雪、攻略内容 |
+| 商标被抢注 | A 期同步提交 Joyogo 商标（41/39 类） |

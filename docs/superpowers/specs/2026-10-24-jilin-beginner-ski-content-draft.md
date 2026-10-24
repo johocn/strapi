@@ -1,22 +1,60 @@
-# 吉林市新手滑雪项目 · 首期内容文案（B 方案）
+# Joyogo · 吉林新手滑雪板块 · A 期内容文案
 
 > 日期：2026-10-24
 > 配套设计文档：[2026-10-24-jilin-beginner-ski-website-design.md](./2026-10-24-jilin-beginner-ski-website-design.md)
-> 用途：可直接粘贴进 zhao-website 后台的课程 / FAQ / GEO 文章字段。
-> 说明：全部价格为示例价，上线前按实际定价替换；所有「xx」占位需填实际数字。
+> 品牌：**Joyogo**（不设中文名）｜板块：**Joyogo 滑雪学院**｜站点：joyogo.com（A 期只做国内站）
+> 用途：可直接粘贴进 zhao-website 后台。价格为示例价，上线前按实际定价替换；`xx` 为待填占位。
 
-## 学习场所
+## 前置约定
 
-- 松花湖滑雪场（吉林市）
-- 北大湖滑雪场（吉林市）
-- 五家山滑雪场（吉林市）
-- 辐射客群：长春（庙香山、天定山等）
+- 所有内容 `category` 统一设为 **滑雪**（板块隔离，前端 /ski 按此过滤）。
+- 所有详情页沿用插件固定前缀：`/products/:slug`、`/faqs/:slug`、`/local-list/:slug` 等。
+- 学习场所：松花湖滑雪场、北大湖滑雪场、五家山滑雪场（吉林市）；长春作辐射客群。
 
 ---
 
-# 一、课程产品（product，5 条）
+# 一、品牌与板块文案（首页 + /ski 板块页）
 
-## 1. 启蒙班 · 零基础上雪
+## 1.1 主品牌
+
+```
+主广告语（英）：Joy in every go.
+主广告语（中）：快乐出发，快乐加倍。
+备用           ：说走就走，乐在其中。/ Go happy. Go Joyogo.
+```
+
+## 1.2 滑雪板块
+
+```
+板块名        ：Joyogo 滑雪学院（英文副名 Joyogo Ski Academy）
+板块广告语    ：第一次滑雪，交给 Joyogo。
+英文          ：Your first run starts here.
+备用短句      ：不怕摔，才敢滑。
+一句话定位    ：只服务第一次滑雪的人——小班教学、学不会免费复训、透明打包价、教练持证、护具全含。
+```
+
+## 1.3 /ski 板块首页文案
+
+```
+H1      ：Joyogo 滑雪学院 · 吉林新手滑雪，第一次就学会
+副标题  ：4–6 人小班｜学不会免费复训｜雪票+装备+护具+保险全含，无隐形消费
+三个信任点：
+  ① 小班 4–6 人，教练配比 1:4–6
+  ② 教练持证，专带零基础与儿童
+  ③ 学不会免费复训，掌握犁式刹车再结业
+两条产品线入口：
+  本地线 —— 周卡/月卡，周末反复练（长春、吉林市）
+  旅游线 —— 2 天学会滑雪 + 温泉/雾凇打包（外地游客）
+主 CTA  ：免费领取《零基础滑雪避坑清单》
+```
+
+---
+
+# 二、课程产品（product，5 条）
+
+> 每条均需：`category = 滑雪`、`status = published`、`availability = in_stock`。
+
+## 2.1 启蒙班
 
 | 字段 | 内容 |
 |---|---|
@@ -25,13 +63,11 @@
 | description | 专为完全没上过雪的小白设计，不追求滑快，只求「能停住、不怕摔、敢站上雪道」。 |
 | priceRange | 299–499 元 |
 | price | 499 |
-| currency | CNY |
-| availability | in_stock |
 | features | 课时：2 小时/次；班型：4–6 人小班；装备：雪板雪鞋+头盔护臀护膝全含；保险：含意外险；保障：学不会免费复训 |
 | specifications | 教练配比 1:4–6；结业标准：掌握犁式刹车+安全停止；适合年龄 6–55 岁；场地：松花湖/北大湖/五家山任选 |
 | scenarios | 研学、亲子、成人上班族、闺蜜小团 |
 
-## 2. 基础班 · 犁式转弯控速
+## 2.2 基础班
 
 | 字段 | 内容 |
 |---|---|
@@ -44,7 +80,7 @@
 | specifications | 结业标准：初级道独立控速下滑+安全制动；前置：已掌握刹车停止；场地：松花湖/北大湖/五家山 |
 | scenarios | 本地复训、周末连续课 |
 
-## 3. 进阶班 · 平行式入门
+## 2.3 进阶班
 
 | 字段 | 内容 |
 |---|---|
@@ -57,7 +93,7 @@
 | specifications | 结业标准：中级道平行式连贯滑行；前置：基础班结业 |
 | scenarios | 进阶玩家、长期学员 |
 
-## 4. 本地线 · 周卡/月卡
+## 2.4 本地线 · 周卡/月卡
 
 | 字段 | 内容 |
 |---|---|
@@ -70,7 +106,7 @@
 | specifications | 适用：长春/吉林市本地学员；有效期：7 天 / 30 天 |
 | scenarios | 学生、上班族、亲子周末 |
 
-## 5. 旅游线 · 2–3 天学会滑雪+轻文旅
+## 2.5 旅游线
 
 | 字段 | 内容 |
 |---|---|
@@ -85,9 +121,9 @@
 
 ---
 
-# 二、常见问答（faq，20 条）
+# 三、常见问答（faq，20 条）
 
-格式：`question` / `answer`
+格式：`question` / `answer`，`category = 滑雪`。
 
 1. **吉林市零基础滑雪贵吗？**
    全包价 299 元起，含雪票+雪板雪鞋+头盔护具+保险+课时，无隐形消费，不需要单独租护具、无需教练小费。
@@ -151,12 +187,12 @@
 
 ---
 
-# 三、GEO 文章（geo-article，6 篇）
+# 四、GEO 文章（geo-article，6 篇）
 
-通用必填：`authorName` / `authorBio` / `sourceName` / `sourceUrl` / `truthBasis` /
-`internalLinks` / `ctaType` / `leadFormEnabled=true` / `metaDescription`（含本地场景词）。
+通用必填：`category = 滑雪`、`authorName` / `authorBio`、`sourceName` / `sourceUrl`、
+`truthBasis`、`internalLinks`、`ctaType`、`leadFormEnabled = true`、`metaDescription`（含本地场景词）。
 
-## 1. local-list｜吉林市新手滑雪场怎么选（含五家山）
+## 4.1 local-list｜吉林市新手滑雪场怎么选（含五家山）
 
 ```
 type            = local-list
@@ -164,42 +200,46 @@ title           = 吉林市新手滑雪场怎么选：松花湖、北大湖、�
 metaTitle       = 吉林市新手滑雪场推荐：松花湖/北大湖/五家山怎么选
 metaDescription = 吉林市零基础滑雪去哪家？松花湖、北大湖、五家山三家新手友好度、价格、人流量对比，附透明打包价。
 listItems       = [
-  {"name":"松花湖滑雪场","desc":"初级道独立、配套成熟，新手最友好","price":"含雪票教学从xx元起","link":"/products/..."},
-  {"name":"北大湖滑雪场","desc":"雪质好、中高级道多，新手建议错峰","price":"含雪票教学从xx元起","link":"/products/..."},
-  {"name":"五家山滑雪场","desc":"相对小众、人流少，适合怕拥挤的初学者","price":"含雪票教学从xx元起","link":"/products/..."}
+  {"name":"松花湖滑雪场","desc":"初级道独立、配套成熟，新手最友好","price":"含雪票教学从xx元起","link":"/products/lingji-qimeng"},
+  {"name":"北大湖滑雪场","desc":"雪质好、中高级道多，新手建议错峰","price":"含雪票教学从xx元起","link":"/products/lingji-qimeng"},
+  {"name":"五家山滑雪场","desc":"相对小众、人流少，适合怕拥挤的初学者","price":"含雪票教学从xx元起","link":"/products/lingji-qimeng"}
 ]
 truthBasis      = [小班4–6人, 透明打包价]
-internalLinks   = [{课程中心:/products/...}, {常见问题:/faqs/...}]
+internalLinks   = [{课程中心:/products}, {常见问题:/faqs}]
 ctaType         = consult-appointment
 ```
 
-## 2. local-comparison｜松花湖 vs 北大湖 vs 五家山
+## 4.2 local-comparison｜松花湖 vs 北大湖 vs 五家山
 
 ```
-type             = local-comparison
-title            = 松花湖 vs 北大湖 vs 五家山：新手该去哪个？
-metaTitle        = 松花湖vs北大湖vs五家山 新手滑雪对比（2026吉林）
-metaDescription  = 三家吉林市滑雪场新手向实测对比：新手友好度、人流量、交通便利、价格透明度，一次看清。
-comparisonData   = [
+type            = local-comparison
+title           = 松花湖 vs 北大湖 vs 五家山：新手该去哪个？
+metaTitle       = 松花湖vs北大湖vs五家山 新手滑雪对比（2026吉林）
+metaDescription = 三家吉林市滑雪场新手向实测对比：新手友好度、人流量、交通便利、价格透明度，一次看清。
+comparisonData  = [
   {"dimension":"新手友好度","items":[
     {"name":"松花湖","score":9,"note":"初级道独立，教练点位多"},
     {"name":"北大湖","score":7,"note":"雪质好但中高级道多"},
     {"name":"五家山","score":8,"note":"坡度平缓、人流少"}]},
   {"dimension":"人流量少","items":[
-    {"name":"五家山","score":9,...},{"name":"松花湖","score":6,...},{"name":"北大湖","score":7,...}]},
+    {"name":"五家山","score":9,"note":"偏小众，排队少"},
+    {"name":"北大湖","score":7,"note":"节假日较拥挤"},
+    {"name":"松花湖","score":6,"note":"热门，初级道高峰拥挤"}]},
   {"dimension":"交通便利","items":[
-    {"name":"松花湖","score":8,...},{"name":"北大湖","score":7,...},{"name":"五家山","score":7,...}]},
+    {"name":"松花湖","score":8,"note":"距吉林市区近"},
+    {"name":"北大湖","score":7,"note":"自驾为主"},
+    {"name":"五家山","score":7,"note":"自驾方便"}]},
   {"dimension":"价格透明","items":[
     {"name":"松花湖","score":9,"note":"打包价无隐形消费"},
     {"name":"北大湖","score":9,"note":"打包价无隐形消费"},
     {"name":"五家山","score":9,"note":"打包价无隐形消费"}]}
 ]
-truthBasis       = [教练持证]
-internalLinks    = [{旅游线课程:/products/...}, {新手攻略:/local-list/...}]
-ctaType          = consult-appointment
+truthBasis      = [教练持证]
+internalLinks   = [{旅游线:/products/lvyou-2tian}, {新手攻略:/local-list}]
+ctaType         = consult-appointment
 ```
 
-## 3. geo-faq｜第一次滑雪怕摔、怕尴尬怎么办
+## 4.3 geo-faq｜第一次滑雪怕摔、怕尴尬怎么办
 
 ```
 type           = geo-faq
@@ -208,11 +248,11 @@ title          = 第一次滑雪怕摔怕尴尬？四步让新手安全上雪
 metaDescription = 第一次滑雪怕摔怕尴尬？吉林新手教学四步：先学安全摔倒站起、全程护具、小班全是新手、从平地练起。
 summaryPoints  = ①先学安全摔倒与站起 ②护臀护膝头盔全含 ③小班全是新手不尴尬 ④从平地练起再上初级道
 truthBasis     = [护具全含, 小班4–6人]
-internalLinks  = [{启蒙班:/products/...}]
+internalLinks  = [{启蒙班:/products/lingji-qimeng}]
 ctaType        = consult-appointment
 ```
 
-## 4. local-report｜吉林市亲子滑雪研学怎么安排
+## 4.4 local-report｜吉林市亲子滑雪研学怎么安排
 
 ```
 type           = local-report
@@ -223,11 +263,11 @@ sourceName     = 吉林市文旅局公开信息
 sourceUrl      = https://...
 summaryPoints  = 6岁以上可学；亲子班家长可陪同；研学团体有标准化课程与结业标准；打包价含保险
 truthBasis     = [透明打包价, 教练持证]
-internalLinks  = [{课程中心:/products/...}, {学员案例:/cases/...}]
+internalLinks  = [{课程中心:/products}, {学员案例:/cases}]
 ctaType        = consult-appointment
 ```
 
-## 5. geo-article｜零基础到犁式刹车：标准教学四步法
+## 4.5 geo-article｜零基础到犁式刹车：标准教学四步法
 
 ```
 type           = geo-article
@@ -236,11 +276,11 @@ metaTitle      = 零基础滑雪多久学会？犁式刹车标准四步法（吉
 metaDescription = 零基础滑雪多久能学会？吉林新手教学四步法：安全落地、平地推进、犁式制动、初级道控速，一节启蒙课掌握刹车。
 summaryPoints  = ①安全落地与摔倒 ②平地推进与站姿 ③犁式制动 ④初级道控速
 truthBasis     = [结业标准:掌握犁式刹车+安全停止, 学不会免费复训]
-internalLinks   = [{启蒙班:/products/...}, {犁式刹车三步教学:/tutorials/...}]
+internalLinks  = [{启蒙班:/products/lingji-qimeng}, {犁式刹车三步教学:/tutorials/lixi-shache}]
 ctaType        = consult-appointment
 ```
 
-## 6. local-report｜2 天学会滑雪 + 温泉雾凇怎么安排
+## 4.6 local-report｜2 天学会滑雪 + 温泉雾凇怎么安排
 
 ```
 type           = local-report
@@ -251,24 +291,25 @@ sourceName     = 本地住宿与温泉合作方公开报价
 sourceUrl      = https://...
 summaryPoints  = Day1 上午线上预习+下午上雪1节课；Day2 上午复训1节+下午温泉或雾凇；装备全含，人来就行
 truthBasis     = [透明打包价, 学不会免费复训]
-internalLinks   = [{旅游线课程:/products/...}, {常见问题:/faqs/...}]
+internalLinks  = [{旅游线:/products/lvyou-2tian}, {常见问题:/faqs}]
 ctaType        = consult-appointment
 ```
 
 ---
 
-# 四、配套内容（首批同步准备）
+# 五、配套内容（首批同步准备）
 
-| 内容类型 | 数量 | 说明 |
+| 内容类型 | 数量 | 填写要点 |
 |---|---|---|
-| tutorial | 6 | 课前预习（装备穿戴、安全摔倒）+ 课后复盘（犁式刹车三步） |
-| case | 6 | 零基础前后对比，challenge/solution/results/testimonial 四段式 |
+| tutorial | 6 | 课前预习（装备穿戴、安全摔倒）+ 课后复盘（犁式刹车三步）；`difficulty=beginner`，`steps=[{title,content}]` |
+| case | 6 | `challenge`/`solution`/`results`/`testimonial` 四段式；results 只写客观事实 |
 | compliance | 4–6 | 免责声明、保险说明、护具配置、复训规则边界 |
 | author | 8–10 | 教练档案：持证情况、从业年限、是否擅长零基础/儿童 |
-| download | 1–2 | 《零基础滑雪学习手册》PDF，requireLead=true |
+| download | 1–2 | 《零基础滑雪学习手册》PDF，`requireLead=true` |
 
-## 合规红线（内容团队必读）
+## 内容合规红线
 
-- 禁止写「保证学会」「保证不摔」「绝对安全」类承诺，一律改为客观事实。
+- 禁止「保证学会」「保证不摔」「绝对安全」类承诺，统一改客观事实表述。
 - 「学不会免费复训」必须写明规则边界：什么算学会、复训次数、有效期。
 - 教练资质、保险条款必须真实可查。
+- 学员照片/视频必须取得肖像权授权。
