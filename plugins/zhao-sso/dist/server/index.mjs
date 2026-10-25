@@ -6979,16 +6979,36 @@ const ssoWxCallback = ({ strapi }) => {
         return buildTextReply(openid, toUser, rule.text || "");
     }
   }
-  async function askShoppingAssistant(text, openid, toUser, msgId, createTime, boundPhone) {
+  async function loadBoundPhone(openid) {
+    try {
+      const bindRow = await strapi.db.query(BINDING_UID).findOne({
+        where: { provider: "wechat", provider_user_id: openid },
+        populate: { user: true }
+      });
+      const mobile = String(bindRow?.user?.mobile || "").trim();
+      return /^1\d{10}$/.test(mobile) ? mobile : void 0;
+    } catch (e) {
+      strapi.log.warn(`[zhao-sso:wx-callback] load bound phone failed: ${e.message}`);
+      return void 0;
+    }
+  }
+  async function askShoppingAssistant(input, openid, toUser, msgId, createTime, boundPhone) {
     const url = process.env.WX_ASSISTANT_URL;
     if (!url) return null;
     const secret = process.env.ZHAO_SEARCH_SHARED_SECRET;
+    const isLocation = typeof input.latitude === "number" && typeof input.longitude === "number";
     try {
       const resp = await axios.post(
         url,
         {
           openid,
-          text,
+          // 位置消息：微信 Location_X=纬度、Location_Y=经度（GCJ-02），vendure 侧解析为收货地址
+          msgType: isLocation ? "location" : "text",
+          text: input.text || void 0,
+          latitude: isLocation ? input.latitude : void 0,
+          longitude: isLocation ? input.longitude : void 0,
+          scale: isLocation ? input.scale : void 0,
+          label: isLocation && input.label ? input.label : void 0,
           msgId: msgId || void 0,
           createTime: createTime ? Number(createTime) || void 0 : void 0,
           // 公众号绑定的商城渠道（vendure channel token），决定搜索/下单渠道；未配置时 vendure 回退默认渠道
@@ -7129,20 +7149,31 @@ const ssoWxCallback = ({ strapi }) => {
         if (rule && ruleUsable(rule)) {
           return buildReplyXml(rule, openid, toUser);
         }
-        let boundPhone;
-        try {
-          const bindRow = await strapi.db.query(BINDING_UID).findOne({
-            where: { provider: "wechat", provider_user_id: openid },
-            populate: { user: true }
-          });
-          const mobile = String(bindRow?.user?.mobile || "").trim();
-          if (/^1\d{10}$/.test(mobile)) boundPhone = mobile;
-        } catch (e) {
-          strapi.log.warn(`[zhao-sso:wx-callback] load bound phone failed: ${e.message}`);
-        }
-        const assistantXml = await askShoppingAssistant(text, openid, toUser, msg.MsgId, msg.CreateTime, boundPhone);
+        const boundPhone = await loadBoundPhone(openid);
+        const assistantXml = await askShoppingAssistant({ text }, openid, toUser, msg.MsgId, msg.CreateTime, boundPhone);
         if (assistantXml) return assistantXml;
         return "success";
+      }
+      if (msgType === "location") {
+        const latitude = Number(String(msg.Location_X || "").trim());
+        const longitude = Number(String(msg.Location_Y || "").trim());
+        if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return "success";
+        const scale = Number(String(msg.Scale || "").trim());
+        const boundPhone = await loadBoundPhone(openid);
+        const assistantXml = await askShoppingAssistant(
+          {
+            latitude,
+            longitude,
+            scale: Number.isFinite(scale) && scale > 0 ? scale : void 0,
+            label: String(msg.Label || "").trim() || void 0
+          },
+          openid,
+          toUser,
+          msg.MsgId,
+          msg.CreateTime,
+          boundPhone
+        );
+        return assistantXml || "success";
       }
       if (event === "subscribe") {
         const welcomeRule = await replySvc.findWelcome();

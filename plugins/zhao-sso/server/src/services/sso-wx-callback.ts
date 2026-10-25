@@ -117,15 +117,31 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     }
   }
 
+  /** 读取 sso 绑定用户手机号（购物助手建档路径 A：免输入自动建档） */
+  async function loadBoundPhone(openid: string): Promise<string | undefined> {
+    try {
+      const bindRow = await strapi.db.query(BINDING_UID).findOne({
+        where: { provider: "wechat", provider_user_id: openid },
+        populate: { user: true },
+      });
+      const mobile = String(bindRow?.user?.mobile || "").trim();
+      return /^1\d{10}$/.test(mobile) ? mobile : undefined;
+    } catch (e: any) {
+      strapi.log.warn(`[zhao-sso:wx-callback] load bound phone failed: ${e.message}`);
+      return undefined;
+    }
+  }
+
   /**
    * 转调 vendure 购物助手决策接口（POST {WX_ASSISTANT_URL}，生产为
    * http://127.0.0.1:3020/wechat-assistant/handle，根路径无 /shop-api 前缀）：
-   * 关键字规则未命中的文本消息交给购物助手处理（商品搜索/下单决策），
-   * 返回组装好的被动回复 XML；未配置 WX_ASSISTANT_URL / 超时 / 异常 / 不处理返回 null。
+   * 关键字规则未命中的文本消息、以及用户主动发送的位置消息交给购物助手处理
+   * （商品搜索/下单决策/定位解析），返回组装好的被动回复 XML；
+   * 未配置 WX_ASSISTANT_URL / 超时 / 异常 / 不处理返回 null。
    * 受微信回调 5 秒窗口约束：超时 3.5s，转调失败不阻塞回调（返回 success 静默）。
    */
   async function askShoppingAssistant(
-    text: string,
+    input: { text?: string; latitude?: number; longitude?: number; scale?: number; label?: string },
     openid: string,
     toUser: string,
     msgId?: string,
@@ -135,12 +151,19 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
     const url = process.env.WX_ASSISTANT_URL;
     if (!url) return null;
     const secret = process.env.ZHAO_SEARCH_SHARED_SECRET;
+    const isLocation = typeof input.latitude === "number" && typeof input.longitude === "number";
     try {
       const resp = await axios.post(
         url,
         {
           openid,
-          text,
+          // 位置消息：微信 Location_X=纬度、Location_Y=经度（GCJ-02），vendure 侧解析为收货地址
+          msgType: isLocation ? "location" : "text",
+          text: input.text || undefined,
+          latitude: isLocation ? input.latitude : undefined,
+          longitude: isLocation ? input.longitude : undefined,
+          scale: isLocation ? input.scale : undefined,
+          label: isLocation && input.label ? input.label : undefined,
           msgId: msgId || undefined,
           createTime: createTime ? Number(createTime) || undefined : undefined,
           // 公众号绑定的商城渠道（vendure channel token），决定搜索/下单渠道；未配置时 vendure 回退默认渠道
@@ -298,20 +321,35 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
         }
         // 关键字规则未命中 → 转调 vendure 购物助手（搜索/下单，返回被动回复 XML）
         // 附带 sso 绑定用户手机号：vendure 侧顾客未绑定时免输入自动建档（路径 A）
-        let boundPhone: string | undefined;
-        try {
-          const bindRow = await strapi.db.query(BINDING_UID).findOne({
-            where: { provider: "wechat", provider_user_id: openid },
-            populate: { user: true },
-          });
-          const mobile = String(bindRow?.user?.mobile || "").trim();
-          if (/^1\d{10}$/.test(mobile)) boundPhone = mobile;
-        } catch (e: any) {
-          strapi.log.warn(`[zhao-sso:wx-callback] load bound phone failed: ${e.message}`);
-        }
-        const assistantXml = await askShoppingAssistant(text, openid, toUser, msg.MsgId, msg.CreateTime, boundPhone);
+        const boundPhone = await loadBoundPhone(openid);
+        const assistantXml = await askShoppingAssistant({ text }, openid, toUser, msg.MsgId, msg.CreateTime, boundPhone);
         if (assistantXml) return assistantXml;
         return "success";
+      }
+
+      // 用户主动发送位置（MsgType=location）：Location_X=纬度、Location_Y=经度（GCJ-02），
+      // 交给购物助手复用为收货地址（无待处理的地址输入流程时仅缓存该位置）；
+      // Scale 是地图缩放级别而非定位精度，Label 为位置名称
+      if (msgType === "location") {
+        const latitude = Number(String(msg.Location_X || "").trim());
+        const longitude = Number(String(msg.Location_Y || "").trim());
+        if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return "success";
+        const scale = Number(String(msg.Scale || "").trim());
+        const boundPhone = await loadBoundPhone(openid);
+        const assistantXml = await askShoppingAssistant(
+          {
+            latitude,
+            longitude,
+            scale: Number.isFinite(scale) && scale > 0 ? scale : undefined,
+            label: String(msg.Label || "").trim() || undefined,
+          },
+          openid,
+          toUser,
+          msg.MsgId,
+          msg.CreateTime,
+          boundPhone,
+        );
+        return assistantXml || "success";
       }
 
       if (event === "subscribe") {
