@@ -52,7 +52,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => {
       });
       await req("PATCH", `/indexes/${uid}/settings`, {
         searchableAttributes: ["title", "body", "tags"],
-        filterableAttributes: ["type", "channelId", "status", "tags", "collectionIds"],
+        filterableAttributes: ["type", "channelId", "channelIds", "status", "tags", "collectionIds"],
         sortableAttributes: ["updatedAt", "price"],
       });
     }
