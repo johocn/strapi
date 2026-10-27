@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Joyogo 滑雪学院 · /ski 板块原型</title>
+<style>
+  /* ============ Design Tokens ============ */
+  :root{
+    --dark:#141413;          /* 主文字 / 深色底 */
+    --light:#faf9f5;         /* 页面底色 */
+    --gray-mid:#b0aea5;      /* 边框 / 次要元素 */
+    --gray-light:#e8e6dc;    /* 浅灰底 */
+    --orange:#d97757;        /* 主强调：CTA / 价格 */
+    --blue:#6a9bcc;          /* 次强调：链接 / 冰雪属性 */
+    --green:#788c5d;         /* 保障类徽章 */
+
+    --max:1200px;
+    --r-card:12px;
+    --r-btn:8px;
+    --shadow:0 2px 8px rgba(20,20,19,.06);
+    --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s5:48px; --s6:64px; --s7:96px;
+
+    --font-head:"Poppins","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+    --font-body:"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+    --font-serif:"Lora","Noto Serif SC","Songti SC",Georgia,serif;
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:var(--font-body);
+    background:var(--light);
+    color:var(--dark);
+    font-size:16px;
+    line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,h4{font-family:var(--font-head);line-height:1.25;font-weight:600}
+  h1{font-size:clamp(32px,4.4vw,56px)}
+  h2{font-size:clamp(24px,3vw,40px)}
+  h3{font-size:clamp(18px,2vw,24px)}
+  a{color:var(--blue);text-decoration:none}
+  a:hover{text-decoration:underline}
+  img{max-width:100%;display:block}
+  .container{max-width:var(--max);margin:0 auto;padding:0 var(--s3)}
+  section{padding:var(--s7) 0}
+  .section-head{max-width:720px;margin-bottom:var(--s5)}
+  .section-head p{color:#55534d;margin-top:var(--s1)}
+  .eyebrow{
+    font-family:var(--font-head);font-size:13px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--blue);margin-bottom:var(--s1)
+  }
+
+  /* ============ 占位样式（未备齐真实材料时使用） ============ */
+  .ph{
+    display:inline-block;padding:0 6px;border-radius:4px;
+    background:#fff3ee;border:1px dashed var(--orange);
+    color:#9c4b2f;font-size:.92em;
+  }
+  .ph-img{
+    position:relative;display:flex;align-items:center;justify-content:center;
+    background:
+      repeating-linear-gradient(135deg,#f1efe8 0 10px,#eae8e0 10px 20px);
+    border:1px dashed var(--gray-mid);border-radius:var(--r-card);
+    color:#6b6862;font-size:13px;text-align:center;padding:var(--s2);
+    min-height:160px;
+  }
+  .badge{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:4px 10px;border-radius:999px;
+    background:var(--gray-light);color:var(--dark);
+    font-size:13px;font-family:var(--font-head);white-space:nowrap;
+  }
+  .badge::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--green)}
+  .badge--pending{background:transparent;border:1px dashed var(--gray-mid);color:#7a7770}
+  .badge--pending::before{background:var(--gray-mid)}
+  .badge--blue::before{background:var(--blue)}
+
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    height:48px;padding:0 22px;border-radius:var(--r-btn);
+    font-family:var(--font-head);font-size:15px;font-weight:600;
+    border:1px solid transparent;cursor:pointer;
+    transition:transform .15s ease,box-shadow .15s ease,background .15s ease;
+  }
+  .btn:hover{text-decoration:none;transform:translateY(-1px)}
+  .btn-primary{background:var(--orange);color:var(--dark)}
+  .btn-primary:hover{box-shadow:0 6px 16px rgba(217,119,87,.28)}
+  .btn-ghost{background:transparent;color:inherit;border-color:currentColor}
+  .btn-white{background:var(--light);color:var(--dark)}
+  .btn-sm{height:40px;padding:0 16px;font-size:14px}
+
+  /* ============ Header ============ */
+  .site-header{
+    position:fixed;inset:0 0 auto 0;z-index:50;
+    transition:background .2s ease,border-color .2s ease;
+    border-bottom:1px solid transparent;
+  }
+  .site-header.is-solid{
+    background:rgba(250,249,245,.94);
+    backdrop-filter:blur(12px);
+    border-bottom-color:var(--gray-light);
+  }
+  .nav{display:flex;align-items:center;gap:var(--s3);height:72px}
+  .logo{font-family:var(--font-head);font-weight:600;font-size:20px;letter-spacing:-.02em;color:inherit}
+  .logo span{color:var(--orange)}
+  .nav-links{display:flex;gap:var(--s3);margin-left:auto}
+  .nav-links a{color:inherit;font-size:15px;opacity:.82}
+  .nav-links a:hover{opacity:1;text-decoration:none}
+  .nav-actions{display:flex;align-items:center;gap:var(--s2)}
+  .nav-phone{font-family:var(--font-head);font-size:15px;white-space:nowrap}
+  .menu-toggle{display:none;background:none;border:1px solid currentColor;border-radius:8px;
+    width:40px;height:40px;color:inherit;font-size:16px;cursor:pointer}
+
+  /* ============ Hero ============ */
+  .hero{
+    position:relative;color:var(--light);padding:160px 0 var(--s7);
+    background:
+      radial-gradient(900px 420px at 82% 8%,rgba(106,155,204,.30),transparent 70%),
+      radial-gradient(700px 380px at 8% 92%,rgba(217,119,87,.18),transparent 70%),
+      var(--dark);
+  }
+  .hero::after{
+    content:"";position:absolute;left:0;right:0;bottom:0;height:1px;background:rgba(250,249,245,.12)
+  }
+  .hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:var(--s5);align-items:center}
+  .hero h1{margin-bottom:var(--s2)}
+  .hero-sub{font-size:18px;color:#d9d6cd;max-width:520px;margin-bottom:var(--s4)}
+  .hero-cta{display:flex;flex-wrap:wrap;gap:var(--s2);margin-bottom:var(--s5)}
+  .trustbar{display:flex;flex-wrap:wrap;gap:var(--s2) var(--s4);align-items:center;
+    padding-top:var(--s3);border-top:1px solid rgba(250,249,245,.16)}
+  .trustbar .badge{background:rgba(250,249,245,.08);color:#efece4}
+  .trustbar .badge--pending{background:transparent;border-color:rgba(250,249,245,.35);color:#bdb9b0}
+  .hero-media{aspect-ratio:4/3}
+
+  /* ============ 产品线 ============ */
+  .lines{display:grid;grid-template-columns:1fr 1fr;gap:var(--s3)}
+  .line-card{
+    background:#fff;border:1px solid var(--gray-light);border-radius:var(--r-card);
+    box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column;
+  }
+  .line-card .ph-img{border:0;border-radius:0;aspect-ratio:16/9;min-height:0}
+  .line-body{padding:var(--s3);display:flex;flex-direction:column;gap:var(--s2);flex:1}
+  .line-body ul{list-style:none;display:grid;gap:6px;font-size:15px;color:#4a4842}
+  .line-body li::before{content:"—";color:var(--orange);margin-right:8px}
+  .line-foot{margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:var(--s2)}
+
+  /* ============ 课程 ============ */
+  .courses{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s3);margin-bottom:var(--s3)}
+  .course-card{background:#fff;border:1px solid var(--gray-light);border-radius:var(--r-card);
+    box-shadow:var(--shadow);padding:var(--s3);display:flex;flex-direction:column;gap:12px}
+  .course-card h3{font-size:20px}
+  .course-tag{font-size:13px;color:#6b6862}
+  .price{font-family:var(--font-head);font-size:26px;font-weight:600;letter-spacing:-.02em}
+  .price small{font-size:13px;font-weight:400;color:#6b6862;margin-left:4px}
+  .feature-list{list-style:none;display:grid;gap:6px;font-size:14px;color:#4a4842;margin:4px 0 8px}
+  .feature-list li{display:flex;gap:8px}
+  .feature-list li::before{content:"·";color:var(--blue);font-weight:700}
+  .course-card .btn{margin-top:auto;width:100%}
+  .wide-cards{display:grid;grid-template-columns:1fr 1fr;gap:var(--s3)}
+  .wide-card{background:var(--gray-light);border-radius:var(--r-card);padding:var(--s3);
+    display:flex;align-items:center;justify-content:space-between;gap:var(--s3);flex-wrap:wrap}
+
+  /* ============ 为什么选我们 ============ */
+  .why{background:var(--gray-light)}
+  .why-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--s3)}
+  .why-item{background:var(--light);border-radius:var(--r-card);padding:var(--s3);border:1px solid #dedbd2}
+  .why-item h4{font-family:var(--font-head);font-size:16px;margin-bottom:8px}
+  .why-item p{font-size:14px;color:#55534d}
+
+  /* ============ 场地 ============ */
+  .venues{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s3)}
+  .venue-card{border:1px solid var(--gray-light);border-radius:var(--r-card);overflow:hidden;background:#fff}
+  .venue-card .ph-img{border:0;border-radius:0;aspect-ratio:16/10;min-height:0}
+  .venue-body{padding:var(--s3)}
+  .venue-meta{display:flex;gap:var(--s1);flex-wrap:wrap;margin-top:var(--s2)}
+
+  /* ============ 案例 ============ */
+  .cases{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s3)}
+  .case-card{border:1px solid var(--gray-light);border-radius:var(--r-card);overflow:hidden;background:#fff}
+  .case-card .ph-img{border:0;border-radius:0;aspect-ratio:4/3;min-height:0}
+  .case-body{padding:var(--s3);font-size:14px;color:#4a4842}
+  .case-body blockquote{font-family:var(--font-serif);font-size:15px;color:var(--dark);margin-top:8px}
+
+  /* ============ 文章 ============ */
+  .articles{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s3)}
+  .article-card{background:#fff;border:1px solid var(--gray-light);border-radius:var(--r-card);
+    padding:var(--s3);display:flex;flex-direction:column;gap:8px;box-shadow:var(--shadow)}
+  .article-card h3{font-size:17px}
+  .article-card .badge{align-self:flex-start}
+  .article-card p{font-size:14px;color:#55534d}
+  .article-card .meta{font-size:13px;color:#7a7770;margin-top:auto}
+
+  /* ============ FAQ ============ */
+  .faq{background:var(--gray-light)}
+  .faq-list{max-width:860px;display:grid;gap:12px}
+  details{background:var(--light);border:1px solid #dedbd2;border-radius:var(--r-card)}
+  summary{
+    cursor:pointer;padding:18px var(--s3);font-family:var(--font-head);font-size:16px;
+    list-style:none;display:flex;justify-content:space-between;gap:var(--s2)
+  }
+  summary::-webkit-details-marker{display:none}
+  summary::after{content:"+";color:var(--blue);font-size:20px;line-height:1}
+  details[open] summary::after{content:"−"}
+  details p{padding:0 var(--s3) 20px;color:#4a4842;font-size:15px;max-width:72ch}
+
+  /* ============ 留资 ============ */
+  .lead{background:var(--dark);color:var(--light)}
+  .lead-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--s6);align-items:start}
+  .lead h2{margin-bottom:var(--s2)}
+  .lead-sub{color:#c9c5bc;margin-bottom:var(--s4);max-width:44ch}
+  .lead-points{list-style:none;display:grid;gap:10px;font-size:15px;color:#d9d6cd}
+  .lead-points li::before{content:"—";color:var(--orange);margin-right:8px}
+  form{background:rgba(250,249,245,.06);border:1px solid rgba(250,249,245,.16);
+    border-radius:var(--r-card);padding:var(--s3);display:grid;gap:var(--s2)}
+  label{display:grid;gap:6px;font-size:13px;color:#c9c5bc;font-family:var(--font-head)}
+  input,select{
+    height:44px;padding:0 12px;border-radius:var(--r-btn);
+    border:1px solid rgba(250,249,245,.24);background:rgba(250,249,245,.08);
+    color:var(--light);font-family:var(--font-body);font-size:15px;
+  }
+  input::placeholder{color:#a8a49c}
+  input:focus,select:focus,summary:focus-visible,.btn:focus-visible,a:focus-visible{
+    outline:2px solid var(--blue);outline-offset:2px
+  }
+  .form-note{font-size:12px;color:#a8a49c}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:var(--s2)}
+
+  /* ============ Footer ============ */
+  footer{padding:var(--s5) 0;background:var(--light);border-top:1px solid var(--gray-light);font-size:13px;color:#6b6862}
+  .footer-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:var(--s3)}
+  .footer-grid h4{font-family:var(--font-head);font-size:14px;color:var(--dark);margin-bottom:10px}
+  .footer-grid a{display:block;color:#6b6862;margin:6px 0}
+  .footer-legal{margin-top:var(--s4);padding-top:var(--s3);border-top:1px solid var(--gray-light);
+    display:flex;flex-wrap:wrap;gap:var(--s2) var(--s3);font-size:12px}
+
+  /* ============ 移动端底部咨询条 ============ */
+  .mobile-bar{
+    display:none;position:fixed;left:0;right:0;bottom:0;z-index:60;
+    background:var(--light);border-top:1px solid var(--gray-light);
+    padding:10px var(--s3);gap:12px
+  }
+  .mobile-bar .btn{flex:1;height:44px;font-size:14px}
+
+  /* ============ 响应式 ============ */
+  @media (max-width:1024px){
+    .hero-grid{grid-template-columns:1fr}
+    .hero-media{aspect-ratio:16/9}
+    .courses,.venues,.cases,.articles{grid-template-columns:1fr 1fr}
+    .why-grid{grid-template-columns:1fr 1fr}
+    .lead-grid{grid-template-columns:1fr;gap:var(--s4)}
+    .footer-grid{grid-template-columns:1fr 1fr}
+  }
+  @media (max-width:768px){
+    section{padding:var(--s6) 0}
+    .nav-links{display:none}
+    .nav-phone{display:none}
+    .menu-toggle{display:block}
+    .lines,.courses,.venues,.cases,.articles,.wide-cards{grid-template-columns:1fr}
+    .why-grid{grid-template-columns:1fr}
+    .row2{grid-template-columns:1fr}
+    .mobile-bar{display:flex}
+    body{padding-bottom:64px}
+    .footer-grid{grid-template-columns:1fr}
+    .site-header.is-open .nav-links{
+      display:flex;flex-direction:column;gap:14px;
+      position:absolute;top:72px;left:0;right:0;
+      background:var(--light);padding:var(--s2) var(--s3);
+      border-bottom:1px solid var(--gray-light);box-shadow:var(--shadow)
+    }
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{transition:none!important;scroll-behavior:auto!important}
+  }
+</style>
+</head>
+<body>
+
+<!-- ========== 顶部导航 ========== -->
+<header class="site-header is-solid" id="header">
+  <div class="container nav">
+    <a class="logo" href="#">Joyogo<span>.</span></a>
+    <nav class="nav-links" aria-label="主导航">
+      <a href="#courses">课程</a>
+      <a href="#venues">场地</a>
+      <a href="#cases">学员案例</a>
+      <a href="#articles">新手攻略</a>
+      <a href="#faq">常见问题</a>
+    </nav>
+    <div class="nav-actions">
+      <span class="nav-phone">电话 <span class="ph">待填：客服电话</span></span>
+      <button class="btn btn-primary btn-sm" type="button" onclick="document.getElementById('lead').scrollIntoView()">免费咨询</button>
+      <button class="menu-toggle" type="button" aria-label="打开菜单">☰</button>
+    </div>
+  </div>
+</header>
+
+<!-- ========== ① Hero ========== -->
+<section class="hero" id="top">
+  <div class="container hero-grid">
+    <div>
+      <p class="eyebrow">Joyogo 滑雪学院 · 吉林市</p>
+      <h1>第一次滑雪，<br>交给 Joyogo。</h1>
+      <p class="hero-sub">只服务零基础新手：4–6 人小班、教练全程带、护具全含、学不会可复训。</p>
+      <div class="hero-cta">
+        <a class="btn btn-primary" href="#lead">免费领取《新手避坑清单》</a>
+        <a class="btn btn-ghost" href="#courses">查看课程</a>
+      </div>
+      <div class="trustbar">
+        <span class="badge badge--pending">小班 4–6 人 · 待核验</span>
+        <span class="badge badge--pending">教练持证 · 待核验</span>
+        <span class="badge badge--pending">学不会免费复训 · 待核验</span>
+      </div>
+    </div>
+    <div class="ph-img hero-media">首屏主视觉占位<br>待补实拍：松花湖初级道教学场景<br>（不使用 AI 生成图冒充实拍）</div>
+  </div>
+</section>
+
+<!-- ========== ② 两条产品线 ========== -->
+<section id="lines">
+  <div class="container">
+    <div class="section-head">
+      <p class="eyebrow">两条产品线</p>
+      <h2>本地反复练，外地一次学会</h2>
+      <p>同一套教学标准，两条完全不同的购买路径，避免和低价雪票套餐内卷。</p>
+    </div>
+    <div class="lines">
+      <article class="line-card">
+        <div class="ph-img">待补实拍：本地学员周末上课</div>
+        <div class="line-body">
+          <h3>本地线 · 周卡 / 月卡</h3>
+          <p>长春、吉林市本地学员，周末反复练，按次预约。</p>
+          <ul>
+            <li>有效期内不限次预约教学</li>
+            <li>错峰时段优先排课</li>
+            <li>装备与护具全含</li>
+          </ul>
+          <div class="line-foot">
+            <span class="price"><span class="ph">待填：真实价格</span></span>
+            <a class="btn btn-primary btn-sm" href="#lead">咨询本地卡</a>
+          </div>
+        </div>
+      </article>
+
+      <article class="line-card">
+        <div class="ph-img">待补实拍：外地学员 2 天行程</div>
+        <div class="line-body">
+          <h3>旅游线 · 2 天学会滑雪 + 轻文旅</h3>
+          <p>南方游客、周末高铁客：教学 + 接送 + 住宿 + 温泉 / 雾凇可选。</p>
+          <ul>
+            <li>Day1 预习 + 上雪 1 节</li>
+            <li>Day2 复训 1 节 + 温泉或雾凇</li>
+            <li>装备全含，人来就行</li>
+          </ul>
+          <div class="line-foot">
+            <span class="price"><span class="ph">待填：真实价格</span></span>
+            <a class="btn btn-primary btn-sm" href="#lead">咨询旅游线</a>
+          </div>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ========== ③ 课程矩阵 ========== -->
+<section id="courses" style="background:var(--gray-light)">
+  <div class="container">
+    <div class="section-head">
+      <p class="eyebrow">课程中心</p>
+      <h2>分级教学，有结业标准</h2>
+      <p>启蒙 → 基础 → 进阶，每级都有明确「学会」的定义，不靠感觉判断。</p>
+    </div>
+
+    <div class="courses">
+      <article class="course-card">
+        <p class="course-tag">启蒙班 · 零基础</p>
+        <h3>学会刹车与安全停止</h3>
+        <p class="price"><span class="ph">待填：真实价格</span><small>全含价</small></p>
+        <ul class="feature-list">
+          <li>2 小时 / 次</li>
+          <li>4–6 人小班</li>
+          <li>雪板雪鞋 + 头盔护臀护膝</li>
+          <li>含意外险</li>
+          <li>结业标准：犁式刹车 + 安全停止</li>
+        </ul>
+        <a class="btn btn-primary" href="#lead">预约启蒙班</a>
+      </article>
+
+      <article class="course-card">
+        <p class="course-tag">基础班 · 初级道</p>
+        <h3>犁式转弯与控速</h3>
+        <p class="price"><span class="ph">待填：真实价格</span><small>全含价</small></p>
+        <ul class="feature-list">
+          <li>3 节课</li>
+          <li>小班 / 1v1 可选</li>
+          <li>装备与护具全含</li>
+          <li>前置：已掌握刹车</li>
+          <li>结业标准：初级道独立控速</li>
+        </ul>
+        <a class="btn btn-primary" href="#lead">预约基础班</a>
+      </article>
+
+      <article class="course-card">
+        <p class="course-tag">进阶班 · 中级道</p>
+        <h3>平行式入门</h3>
+        <p class="price"><span class="ph">待填：真实价格</span><small>全含价</small></p>
+        <ul class="feature-list">
+          <li>4 节课</li>
+          <li>私教 / 小班可选</li>
+          <li>中级道上雪</li>
+          <li>前置：基础班结业</li>
+          <li>结业标准：平行式连贯滑行</li>
+        </ul>
+        <a class="btn btn-primary" href="#lead">预约进阶班</a>
+      </article>
+    </div>
+
+    <div class="wide-cards">
+      <div class="wide-card">
+        <div>
+          <h3>本地畅滑卡</h3>
+          <p style="font-size:14px;color:#55534d">周卡 / 月卡，有效期内不限次预约</p>
+        </div>
+        <span class="price"><span class="ph">待填：真实价格</span></span>
+      </div>
+      <div class="wide-card">
+        <div>
+          <h3>2 天学会滑雪 · 旅游线</h3>
+          <p style="font-size:14px;color:#55534d">教学 + 接送 + 住宿 + 温泉/雾凇可选</p>
+        </div>
+        <span class="price"><span class="ph">待填：真实价格</span></span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== ④ 为什么选我们 ========== -->
+<section class="why" id="why">
+  <div class="container">
+    <div class="section-head">
+      <p class="eyebrow">为什么选我们</p>
+      <h2>把小白最怕的四件事，逐条解决</h2>
+    </div>
+    <div class="why-grid">
+      <div class="why-item">
+        <span class="badge badge--pending">待核验</span>
+        <h4>小班 4–6 人</h4>
+        <p>教练配比 1:4–6，避免大班被忽略。</p>
+      </div>
+      <div class="why-item">
+        <span class="badge badge--pending">待核验</span>
+        <h4>教练持证</h4>
+        <p>教练资质与擅长方向公开可查。</p>
+      </div>
+      <div class="why-item">
+        <span class="badge badge--pending">待核验</span>
+        <h4>学不会免费复训</h4>
+        <p>按结业标准判定，未达标可复训。</p>
+      </div>
+      <div class="why-item">
+        <span class="badge badge--pending">待核验</span>
+        <h4>透明打包价</h4>
+        <p>雪票、装备、护具、保险、课时全含，无隐形消费。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== ⑤ 场地 ========== -->
+<section id="venues">
+  <div class="container">
+    <div class="section-head">
+      <p class="eyebrow">学习场所</p>
+      <h2>三家雪场，按你的位置与人流排课</h2>
+      <p>松花湖、北大湖、五家山，均为吉林市新手友好场地。</p>
+    </div>
+    <div class="venues">
+      <article class="venue-card">
+        <div class="ph-img">待补实拍：松花湖初级道</div>
+        <div class="venue-body">
+          <h3>松花湖滑雪场</h3>
+          <p style="font-size:14px;color:#55534d">初级道独立，配套成熟，距市区较近。</p>
+          <div class="venue-meta">
+            <span class="badge badge--blue">适合首课</span>
+            <span class="badge badge--pending">距离：待填</span>
+          </div>
+        </div>
+      </article>
+      <article class="venue-card">
+        <div class="ph-img">待补实拍：北大湖初级道</div>
+        <div class="venue-body">
+          <h3>北大湖滑雪场</h3>
+          <p style="font-size:14px;color:#55534d">雪质好、中高级道多，新手建议错峰。</p>
+          <div class="venue-meta">
+            <span class="badge badge--blue">需错峰</span>
+            <span class="badge badge--pending">距离：待填</span>
+          </div>
+        </div>
+      </article>
+      <article class="venue-card">
+        <div class="ph-img">待补实拍：五家山初级道</div>
+        <div class="venue-body">
+          <h3>五家山滑雪场</h3>
+          <p style="font-size:14px;color:#55534d">相对小众、人流少，适合怕拥挤的初学者。</p>
+          <div class="venue-meta">
+            <span class="badge badge--blue">人流少</span>
+            <span class="badge badge--pending">距离：待填</span>
+          </div>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ========== ⑥ 学员案例 ========== -->
+<section id="cases" style="background:var(--gray-light)">
+  <div class="container">
+    <div class="section-head">
+      <p class="eyebrow">学员案例</p>
+      <h2>从不敢站上坡，到能自己停住</h2>
+      <p>案例图片与学员原话须取得肖像权授权后上线。</p>
+    </div>
+    <div class="cases">
+      <article class="case-card">
+        <div class="ph-img">待补：学员前后对比图（需授权）</div>
+        <div class="case-body">
+          <strong>成人零基础 · 2 节课</strong>
+          <blockquote>「上坡前腿都在抖，结课能自己刹车停下。」</blockquote>
+          <p class="meta"><span class="ph">待填：真实学员信息</span></p>
+        </div>
+      </article>
+      <article class="case-card">
+        <div class="ph-img">待补：亲子班课堂图（需授权）</div>
+        <div class="case-body">
+          <strong>亲子 · 家长陪同</strong>
+          <blockquote>「孩子第一节课没哭，第二节课自己滑下来了。」</blockquote>
+          <p class="meta"><span class="ph">待填：真实学员信息</span></p>
+        </div>
+      </article>
+      <article class="case-card">
+        <div class="ph-img">待补：外地游客行程图（需授权）</div>
+        <div class="case-body">
+          <strong>外地游客 · 2 天旅游线</strong>
+          <blockquote>「两天学会刹车，还去泡了温泉。」</blockquote>
+          <p class="meta"><span class="ph">待填：真实学员信息</span></p>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ========== ⑦ 新手攻略 ========== -->
+<section id="articles">
+  <div class="container">
+    <div class="section-head">
+      <p class="eyebrow">新手攻略</p>
+      <h2>来之前先看懂，少走弯路</h2>
+      <p>攻略按 GEO 内容规范撰写，标题带地域词，便于搜索引擎与 AI 引用。</p>
+    </div>
+    <div class="articles">
+      <article class="article-card">
+        <span class="badge badge--blue">本地清单</span>
+        <h3>吉林市新手滑雪场怎么选：松花湖、北大湖、五家山</h3>
+        <p>三家新手友好度、人流与交通对比。</p>
+        <p class="meta">/local-list</p>
+      </article>
+      <article class="article-card">
+        <span class="badge badge--blue">场地对比</span>
+        <h3>松花湖 vs 北大湖 vs 五家山，新手去哪个？</h3>
+        <p>四个维度打分，按需求选场。</p>
+        <p class="meta">/local-comparison</p>
+      </article>
+      <article class="article-card">
+        <span class="badge badge--blue">新手问答</span>
+        <h3>吉林市第一次滑雪怕摔怕尴尬怎么办？</h3>
+        <p>四步法：安全摔倒、护具、小班、平地起步。</p>
+        <p class="meta">/geo-faq</p>
+      </article>
+      <article class="article-card">
+        <span class="badge badge--blue">权威文章</span>
+        <h3>零基础到犁式刹车：标准教学四步法</h3>
+        <p>安全落地、平地推进、犁式制动、初级道控速。</p>
+        <p class="meta">/geo-article</p>
+      </article>
+      <article class="article-card">
+        <span class="badge badge--blue">本地报告</span>
+        <h3>吉林市亲子滑雪研学怎么安排</h3>
+        <p>年龄、陪同、团体课程与结业标准。</p>
+        <p class="meta">/local-report</p>
+      </article>
+      <article class="article-card">
+        <span class="badge badge--blue">本地报告</span>
+        <h3>吉林市 2 天学会滑雪 + 温泉雾凇行程</h3>
+        <p>两天教学与轻文旅的搭配方案。</p>
+        <p class="meta">/local-report</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ========== ⑧ 常见问题 ========== -->
+<section class="faq" id="faq">
+  <div class="container">
+    <div class="section-head">
+      <p class="eyebrow">常见问题</p>
+      <h2>新手最常问的 8 个问题</h2>
+    </div>
+    <div class="faq-list">
+      <details open>
+        <summary>吉林市零基础滑雪贵吗？</summary>
+        <p>课程为透明打包价，含雪票、雪板雪鞋、头盔护具、保险与课时，无隐形消费。具体价格见课程页 <span class="ph">待填：真实价格</span>。</p>
+      </details>
+      <details>
+        <summary>第一次滑雪会摔得很疼吗？</summary>
+        <p>第一节课先教「怎么安全地摔、怎么站起来」，全程配齐护臀护膝与头盔，从平地练起，摔是可控的。</p>
+      </details>
+      <details>
+        <summary>零基础多久能学会刹车？</summary>
+        <p>大多数成人一节启蒙课（约 2 小时）可以掌握犁式刹车与安全停止，具体进度因人而异。</p>
+      </details>
+      <details>
+        <summary>学不会怎么办？</summary>
+        <p>按结业标准判定，未达标可免费复训；复训次数与有效期以服务协议为准 <span class="ph">待填：复训规则</span>。</p>
+      </details>
+      <details>
+        <summary>小班几个人？</summary>
+        <p>启蒙与基础班为 4–6 人小班，教练配比 1:4–6，也可选 1v1。</p>
+      </details>
+      <details>
+        <summary>要自己带装备吗？</summary>
+        <p>不需要，雪板、雪鞋、头盔与护具全部包含，人来就行。</p>
+      </details>
+      <details>
+        <summary>松花湖、北大湖、五家山怎么选？</summary>
+        <p>三场均适合新手，我们会按你住的方位与当天人流排课，尽量避开初级道高峰时段。</p>
+      </details>
+      <details>
+        <summary>怎么报名？</summary>
+        <p>页面下方留下电话或微信，客服 1 对 1 帮你选课与排期。也可在页面底部直接拨打客服电话 <span class="ph">待填：客服电话</span>。</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ========== ⑨ 留资 ========== -->
+<section class="lead" id="lead">
+  <div class="container lead-grid">
+    <div>
+      <p class="eyebrow">免费咨询</p>
+      <h2>先聊聊，再决定上不上雪</h2>
+      <p class="lead-sub">留下联系方式，客服会先帮你判断：选哪家雪场、上哪个班、几天能学会。</p>
+      <ul class="lead-points">
+        <li>按你的位置与时间推荐场地和时段</li>
+        <li>说明全含价格与复训规则，不推销</li>
+        <li>外地游客可先给行程建议</li>
+      </ul>
+    </div>
+    <form onsubmit="event.preventDefault(); this.querySelector('.form-note').textContent='原型演示：未接入后端，真实环境将提交到 /v1/leads/submit';">
+      <div class="row2">
+        <label>姓名
+          <input type="text" name="name" placeholder="怎么称呼你" autocomplete="name">
+        </label>
+        <label>电话
+          <input type="tel" name="phone" placeholder="用于回电" autocomplete="tel">
+        </label>
+      </div>
+      <label>微信（选填）
+        <input type="text" name="wechat" placeholder="方便加微信">
+      </label>
+      <div class="row2">
+        <label>意向课程
+          <select name="course">
+            <option>启蒙班（零基础）</option>
+            <option>基础班</option>
+            <option>进阶班</option>
+            <option>本地周卡/月卡</option>
+            <option>2 天旅游线</option>
+          </select>
+        </label>
+        <label>上课城市
+          <select name="city">
+            <option>吉林市</option>
+            <option>长春</option>
+            <option>还没定</option>
+          </select>
+        </label>
+      </div>
+      <button class="btn btn-primary" type="submit">提交，等客服联系我</button>
+      <p class="form-note">提交即表示同意《服务协议》与隐私说明；我们不会外传你的联系方式。</p>
+    </form>
+  </div>
+</section>
+
+<!-- ========== ⑩ 页脚 ========== -->
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <h4>Joyogo 滑雪学院</h4>
+        <p>吉林市新手滑雪教学 · 松花湖 / 北大湖 / 五家山</p>
+      </div>
+      <div>
+        <h4>课程</h4>
+        <a href="#courses">启蒙班</a>
+        <a href="#courses">基础班</a>
+        <a href="#courses">进阶班</a>
+        <a href="#courses">本地卡 / 旅游线</a>
+      </div>
+      <div>
+        <h4>了解</h4>
+        <a href="#venues">学习场所</a>
+        <a href="#cases">学员案例</a>
+        <a href="#articles">新手攻略</a>
+        <a href="#faq">常见问题</a>
+      </div>
+      <div>
+        <h4>联系</h4>
+        <a href="#lead">免费咨询</a>
+        <p>电话：<span class="ph">待填：客服电话</span></p>
+        <p>地址：<span class="ph">待填：公司地址</span></p>
+      </div>
+    </div>
+    <div class="footer-legal">
+      <span>ICP 备案号：<span class="ph">待填：ICP备案号</span></span>
+      <span>公安备案：<span class="ph">待填：公安备案号</span></span>
+      <span>教学资质：<span class="ph">待补：资质公示</span></span>
+      <span>© 2026 Joyogo</span>
+    </div>
+  </div>
+</footer>
+
+<!-- 移动端固定咨询条 -->
+<div class="mobile-bar">
+  <a class="btn btn-ghost" href="tel:" style="border-color:var(--gray-mid)">拨打电话</a>
+  <a class="btn btn-primary" href="#lead">免费咨询</a>
+</div>
+
+<script>
+  // 滚动后导航加实底（本原型默认已加，保留逻辑便于接入真实站点）
+  const header = document.getElementById('header');
+  const toggle = document.querySelector('.menu-toggle');
+  toggle?.addEventListener('click', () => {
+    const open = header.classList.toggle('is-open');
+    toggle.setAttribute('aria-expanded', String(open));
+    toggle.textContent = open ? '✕' : '☰';
+  });
+  document.querySelectorAll('.nav-links a').forEach(a =>
+    a.addEventListener('click', () => {
+      header.classList.remove('is-open');
+      toggle.textContent = '☰';
+    })
+  );
+</script>
+</body>
+</html>
