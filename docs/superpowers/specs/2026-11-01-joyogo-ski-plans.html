@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Joyogo 滑雪板块 · 方案预览与选择</title>
+<!--
+  页面：滑雪板块方案汇总选择页（内部/客户预览用）
+  作用：把 7 套方案、13 个原型页汇总在一页，可切换桌面/手机预览，选中一套后生成可复制的确认结果。
+  规则：不改动任何原型页；本页只做索引、缩放预览与选择记录，纯前端，不写后端。
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Lora:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#f1efe7;--cream:#faf9f5;--white:#fff;--ink:#141413;
+  --clay:#b4512c;--clay-deep:#8f4526;--clay-wash:#f8ede6;
+  --yellow:#f6c445;--yellow-wash:#fdf3d2;--gold-ink:#4a3600;
+  --mute:#6f6d64;--soft:#b0aea5;--line:rgba(20,20,19,.12);--line-strong:rgba(20,20,19,.24);
+  --green-deep:#5c6f45;--green-wash:#eef1e6;
+  --disp:"Poppins","PingFang SC","Microsoft YaHei",Arial,sans-serif;
+  --body:"Lora","Songti SC","SimSun",Georgia,serif;
+  --ui:"PingFang SC","Microsoft YaHei",Arial,sans-serif;
+  --radius:18px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--cream);color:var(--ink);font-family:var(--ui);font-size:16px;line-height:1.7}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:1180px;margin:0 auto;padding:0 32px}
+
+.top{position:sticky;top:0;z-index:40;background:rgba(250,249,245,.94);backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:20px;height:72px}
+.brand{font-family:var(--disp);font-weight:600;font-size:20px}
+.brand span{color:var(--clay)}
+.sub{font-family:var(--ui);font-size:12.5px;letter-spacing:.04em;color:var(--mute);margin-left:auto}
+.mode{display:flex;border:1px solid var(--line-strong);border-radius:999px;overflow:hidden}
+.mode button{border:0;background:transparent;font-family:var(--ui);font-size:12.5px;color:var(--mute);
+  padding:8px 16px;cursor:pointer;transition:background .15s,color .15s}
+.mode button.on{background:var(--clay);color:#fff}
+.mode button:focus-visible{outline:2px solid var(--clay);outline-offset:-2px}
+
+.intro{padding:56px 0 8px}
+.intro .eyebrow{font-family:var(--ui);font-size:11.5px;letter-spacing:.16em;color:var(--clay-deep)}
+.intro h1{font-family:var(--disp);font-weight:600;font-size:clamp(28px,3.6vw,44px);line-height:1.2;margin:12px 0 16px;max-width:24ch}
+.intro p{font-family:var(--body);font-size:15px;color:var(--mute);max-width:62ch}
+.intro .notes{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
+.note{font-family:var(--ui);font-size:12px;color:var(--clay-deep);background:var(--clay-wash);
+  border:1px solid rgba(180,81,44,.18);border-radius:999px;padding:6px 14px}
+.note--safe{background:var(--green-wash);color:var(--green-deep);border-color:rgba(92,111,69,.24)}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(460px,1fr));gap:24px;padding:32px 0 120px}
+
+.card{background:var(--white);border:1px solid var(--line);border-radius:var(--radius);
+  overflow:hidden;display:flex;flex-direction:column;transition:transform .18s,box-shadow .18s,border-color .18s}
+.card:hover{transform:translateY(-3px);box-shadow:0 2px 4px rgba(20,20,19,.05),0 16px 40px rgba(20,20,19,.10)}
+.card.is-picked{border-color:rgba(180,81,44,.55);box-shadow:0 0 0 2px rgba(180,81,44,.22)}
+
+.shot{position:relative;overflow:hidden;background:var(--paper);border-bottom:1px solid var(--line)}
+.shot iframe{position:absolute;top:0;left:0;border:0;transform-origin:top left;background:#fff}
+.shot .veil{position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:flex-end;
+  padding:10px;background:linear-gradient(180deg,rgba(20,20,19,0) 55%,rgba(20,20,19,.05))}
+.shot .veil span{font-family:var(--ui);font-size:11.5px;letter-spacing:.04em;background:rgba(250,249,245,.94);
+  border:1px solid var(--line);border-radius:999px;padding:5px 12px;color:var(--clay-deep)}
+.shot.phone{margin:0 auto;border-left:1px solid var(--line);border-right:1px solid var(--line);border-radius:16px 16px 0 0}
+
+.body{padding:22px 24px 24px;display:flex;flex-direction:column;gap:12px;flex:1}
+.head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.no{font-family:var(--ui);font-size:11.5px;letter-spacing:.14em;color:var(--clay-deep)}
+.head h2{font-family:var(--disp);font-weight:600;font-size:24px;line-height:1.2}
+.chip{font-family:var(--ui);font-size:11.5px;letter-spacing:.04em;padding:4px 10px;border-radius:999px;
+  background:var(--yellow);color:var(--gold-ink)}
+.chip--line{background:transparent;border:1px dashed var(--line-strong);color:var(--mute)}
+.desc{font-family:var(--body);font-size:13.5px;color:var(--mute)}
+
+.meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:12px}
+.dots{display:flex;gap:6px;align-items:center}
+.dots i{width:14px;height:14px;border-radius:50%;display:block;border:1px solid rgba(20,20,19,.14)}
+.dots em{font-family:var(--ui);font-style:normal;font-size:11.5px;color:var(--soft);margin-left:4px}
+
+.links{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto}
+.links a{font-family:var(--ui);font-size:12px;color:var(--clay-deep);border:1px solid var(--line);
+  background:var(--cream);border-radius:999px;padding:5px 12px}
+.links a:hover{border-color:var(--clay);background:var(--clay-wash)}
+
+.pick{width:100%;height:44px;border:2px solid var(--clay);border-radius:999px;background:var(--clay);
+  color:#fff;font-family:var(--disp);font-size:13.5px;letter-spacing:.02em;cursor:pointer;
+  transition:background .18s,color .18s}
+.pick:hover{background:var(--clay-deep);border-color:var(--clay-deep)}
+.pick.is-on{background:transparent;color:var(--clay-deep)}
+.pick:focus-visible{outline:2px solid var(--clay);outline-offset:3px}
+
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:50;background:rgba(250,249,245,.96);
+  backdrop-filter:blur(14px);border-top:1px solid var(--line);transform:translateY(100%);
+  transition:transform .22s ease}
+.bar.is-on{transform:none}
+.bar .wrap{display:flex;align-items:center;gap:16px;min-height:76px;flex-wrap:wrap}
+.bar .picked{font-family:var(--ui);font-size:13px;color:var(--mute)}
+.bar .picked b{display:block;font-family:var(--disp);font-size:17px;color:var(--ink);font-weight:600}
+.bar .acts{margin-left:auto;display:flex;gap:10px}
+.bar button{height:42px;padding:0 20px;border-radius:999px;cursor:pointer;font-family:var(--ui);font-size:13px}
+.bar .copy{background:var(--ink);color:var(--cream);border:2px solid var(--ink)}
+.bar .copy:hover{background:#000}
+.bar .reset{background:transparent;border:2px solid var(--line-strong);color:var(--ink)}
+.bar .reset:hover{border-color:var(--clay);color:var(--clay-deep)}
+.toast{position:fixed;left:50%;bottom:96px;transform:translate(-50%,14px);z-index:60;opacity:0;
+  background:var(--ink);color:var(--cream);font-family:var(--ui);font-size:12.5px;padding:10px 18px;
+  border-radius:999px;pointer-events:none;transition:opacity .2s,transform .2s}
+.toast.is-on{opacity:1;transform:translate(-50%,0)}
+
+@media (max-width:720px){
+  .wrap{padding:0 20px}
+  .sub{display:none}
+  .grid{grid-template-columns:1fr;gap:18px}
+  .mode button{padding:7px 12px}
+  .bar .wrap{min-height:88px;gap:8px}
+  .bar .acts{margin-left:0;width:100%}
+  .bar .acts button{flex:1}
+  .intro{padding:36px 0 0}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="./2026-11-01-joyogo-ski-plans.html">JOYOGO<span>.</span></a>
+    <p class="sub">滑雪板块原型 · 7 套方案 / 13 个页面</p>
+    <div class="mode" role="group" aria-label="预览宽度">
+      <button type="button" class="on" data-mode="desktop">桌面</button>
+      <button type="button" data-mode="phone">手机</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="intro wrap">
+    <p class="eyebrow">PLAN REVIEW / 方案预览</p>
+    <h1>七套方案，<br>选一套往下做</h1>
+    <p>每张卡片是真实页面的等比缩小预览，可切桌面 / 手机宽度。点右上角「全屏打开」看完整页面；选中后底部会生成一段可直接复制的确认结果。</p>
+    <div class="notes">
+      <span class="note--safe note">预览不改动任何原型，均为原文件</span>
+      <span class="note">方案一至四只有首页</span>
+      <span class="note">方案五至七含首页 / 课程 / 文章三页</span>
+    </div>
+  </section>
+
+  <section class="grid wrap" id="grid">
+
+    <article class="card" data-id="p1" data-name="方案一 · 暖光卡片" data-pages="首页（仅 1 页）" data-file="2026-10-27-joyogo-ski-prototype.html">
+      <div class="shot" data-src="./2026-10-27-joyogo-ski-prototype.html"></div>
+      <div class="body">
+        <div class="head"><p class="no">方案一</p><h2>暖光卡片</h2><span class="chip chip--line">仅首页</span></div>
+        <p class="desc">暖白底 + 陶土橙，大圆角卡片、首屏双入口。最稳的一版，不挑人，适合直接对外。</p>
+        <div class="meta">
+          <div class="dots"><i style="background:#faf9f5"></i><i style="background:#d97757"></i><i style="background:#e8e6dc"></i><em>暖白 / 陶土 / 浅灰</em></div>
+        </div>
+        <div class="links"><a href="./2026-10-27-joyogo-ski-prototype.html" target="_blank" rel="noopener">首页 · 全屏打开</a></div>
+        <button class="pick" type="button">选这套</button>
+      </div>
+    </article>
+
+    <article class="card" data-id="p2" data-name="方案二 · 夜场沉浸" data-pages="首页（仅 1 页）" data-file="2026-10-27-joyogo-ski-prototype-dark.html">
+      <div class="shot" data-src="./2026-10-27-joyogo-ski-prototype-dark.html"></div>
+      <div class="body">
+        <div class="head"><p class="no">方案二</p><h2>夜场沉浸</h2><span class="chip chip--line">仅首页</span></div>
+        <p class="desc">深色夜空底 + 荧光描边，情绪最强，适合冬季夜场活动或专题页，不适合长文阅读。</p>
+        <div class="meta">
+          <div class="dots"><i style="background:#0b1a2b"></i><i style="background:#7cf5c8"></i><i style="background:#1d3a52"></i><em>深夜蓝 / 荧光绿</em></div>
+        </div>
+        <div class="links"><a href="./2026-10-27-joyogo-ski-prototype-dark.html" target="_blank" rel="noopener">首页 · 全屏打开</a></div>
+        <button class="pick" type="button">选这套</button>
+      </div>
+    </article>
+
+    <article class="card" data-id="p3" data-name="方案三 · 纸感编辑" data-pages="首页（仅 1 页）" data-file="2026-10-27-joyogo-ski-prototype-editorial.html">
+      <div class="shot" data-src="./2026-10-27-joyogo-ski-prototype-editorial.html"></div>
+      <div class="body">
+        <div class="head"><p class="no">方案三</p><h2>纸感编辑</h2><span class="chip chip--line">仅首页</span></div>
+        <p class="desc">衬线标题、杂志式分栏与细线，偏内容与可信度，适合以攻略、真值声明为主的内容站。</p>
+        <div class="meta">
+          <div class="dots"><i style="background:#f5f1e6"></i><i style="background:#20201d"></i><i style="background:#9a2f1f"></i><em>纸白 / 墨黑 / 砖红</em></div>
+        </div>
+        <div class="links"><a href="./2026-10-27-joyogo-ski-prototype-editorial.html" target="_blank" rel="noopener">首页 · 全屏打开</a></div>
+        <button class="pick" type="button">选这套</button>
+      </div>
+    </article>
+
+    <article class="card" data-id="p4" data-name="方案四 · 北欧留白" data-pages="首页（仅 1 页）" data-file="2026-10-27-joyogo-ski-prototype-minimal.html">
+      <div class="shot" data-src="./2026-10-27-joyogo-ski-prototype-minimal.html"></div>
+      <div class="body">
+        <div class="head"><p class="no">方案四</p><h2>北欧留白</h2><span class="chip chip--line">仅首页</span></div>
+        <p class="desc">极简构图、大留白、低信息密度，气质清爽，适合做高端小众定位，但说服信息要另找位置。</p>
+        <div class="meta">
+          <div class="dots"><i style="background:#ffffff"></i><i style="background:#dcdcd6"></i><i style="background:#2d2d2a"></i><em>纯白 / 浅灰 / 炭黑</em></div>
+        </div>
+        <div class="links"><a href="./2026-10-27-joyogo-ski-prototype-minimal.html" target="_blank" rel="noopener">首页 · 全屏打开</a></div>
+        <button class="pick" type="button">选这套</button>
+      </div>
+    </article>
+
+    <article class="card" data-id="p5" data-name="方案五 · 运动冲击" data-pages="首页 / 课程详情页 / GEO 文章页（3 页）" data-file="2026-10-27-joyogo-ski-prototype-energy.html">
+      <div class="shot" data-src="./2026-10-27-joyogo-ski-prototype-energy.html"></div>
+      <div class="body">
+        <div class="head"><p class="no">方案五</p><h2>运动冲击</h2><span class="chip">3 页完整</span></div>
+        <p class="desc">深蓝 + 荧光黄、斜切卡片、跑马灯，运动感最强。三页同一套 token，适合做赛事或青年向。</p>
+        <div class="meta">
+          <div class="dots"><i style="background:#071528"></i><i style="background:#e8ff3f"></i><i style="background:#d97757"></i><em>深海军蓝 / 荧光黄</em></div>
+        </div>
+        <div class="links">
+          <a href="./2026-10-27-joyogo-ski-prototype-energy.html" target="_blank" rel="noopener">首页</a>
+          <a href="./2026-10-27-joyogo-ski-prototype-energy-course.html" target="_blank" rel="noopener">课程页</a>
+          <a href="./2026-10-27-joyogo-ski-prototype-energy-article.html" target="_blank" rel="noopener">文章页</a>
+        </div>
+        <button class="pick" type="button">选这套</button>
+      </div>
+    </article>
+
+    <article class="card" data-id="p6" data-name="方案六 · 暖安全（2026-10-27）" data-pages="首页 / 课程详情页 / GEO 文章页（3 页）" data-file="2026-10-27-joyogo-ski-prototype-warm.html">
+      <div class="shot" data-src="./2026-10-27-joyogo-ski-prototype-warm.html"></div>
+      <div class="body">
+        <div class="head"><p class="no">方案六</p><h2>暖安全</h2><span class="chip">3 页完整</span></div>
+        <p class="desc">暖白 + 陶土 + 安心蓝，首屏后有「安心三步」叙事，蓝色只做结构与指引，语气最平稳。</p>
+        <div class="meta">
+          <div class="dots"><i style="background:#faf9f5"></i><i style="background:#d97757"></i><i style="background:#3f668c"></i><em>暖白 / 陶土 / 安心蓝</em></div>
+        </div>
+        <div class="links">
+          <a href="./2026-10-27-joyogo-ski-prototype-warm.html" target="_blank" rel="noopener">首页</a>
+          <a href="./2026-10-27-joyogo-ski-prototype-warm-course.html" target="_blank" rel="noopener">课程页</a>
+          <a href="./2026-10-27-joyogo-ski-prototype-warm-article.html" target="_blank" rel="noopener">文章页</a>
+        </div>
+        <button class="pick" type="button">选这套</button>
+      </div>
+    </article>
+
+    <article class="card" data-id="p7" data-name="方案七 · 暖黄陶土（2026-10-30 · 当前定稿）" data-pages="首页 / 课程详情页 / GEO 文章页（3 页）" data-file="2026-10-30-joyogo-ski-prototype-amber.html">
+      <div class="shot" data-src="./2026-10-30-joyogo-ski-prototype-amber.html"></div>
+      <div class="body">
+        <div class="head"><p class="no">方案七</p><h2>暖黄陶土</h2><span class="chip">3 页完整</span></div>
+        <p class="desc">暖白 + 陶土 + 暖黄，蓝色全部退出；选板型模块用沙色底板分层，当前推荐方向。</p>
+        <div class="meta">
+          <div class="dots"><i style="background:#faf9f5"></i><i style="background:#b4512c"></i><i style="background:#f6c445"></i><em>暖白 / 陶土橙 / 暖黄</em></div>
+        </div>
+        <div class="links">
+          <a href="./2026-10-30-joyogo-ski-prototype-amber.html" target="_blank" rel="noopener">首页</a>
+          <a href="./2026-10-30-joyogo-ski-prototype-amber-course.html" target="_blank" rel="noopener">课程页</a>
+          <a href="./2026-10-30-joyogo-ski-prototype-amber-article.html" target="_blank" rel="noopener">文章页</a>
+        </div>
+        <button class="pick" type="button">选这套</button>
+      </div>
+    </article>
+
+  </section>
+</main>
+
+<div class="bar" id="bar" aria-live="polite">
+  <div class="wrap">
+    <p class="picked">已选方案<b id="pickedName">—</b></p>
+    <div class="acts">
+      <button class="reset" id="reset" type="button">重新选择</button>
+      <button class="copy" id="copy" type="button">复制选择结果</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status">已复制，可直接粘贴给客户或对接人</div>
+
+<script>
+(function(){
+  var MODES = { desktop:{w:1440,h:900}, phone:{w:390,h:844} };
+  var mode = 'desktop';
+  var cards = Array.prototype.slice.call(document.querySelectorAll('.card'));
+  var bar = document.getElementById('bar');
+  var pickedName = document.getElementById('pickedName');
+  var selected = null;
+
+  // 1. 建缩略预览
+  cards.forEach(function(card){
+    var shot = card.querySelector('.shot');
+    var frame = document.createElement('iframe');
+    frame.src = shot.dataset.src;
+    frame.title = card.dataset.name + ' 预览';
+    frame.setAttribute('scrolling','no');
+    frame.setAttribute('aria-hidden','true');
+    shot.appendChild(frame);
+    var veil = document.createElement('a');
+    veil.className = 'veil';
+    veil.href = shot.dataset.src;
+    veil.target = '_blank';
+    veil.rel = 'noopener';
+    veil.innerHTML = '<span>全屏打开 ↗</span>';
+    shot.appendChild(veil);
+    shot.dataset.frame = '1';
+  });
+
+  // 2. 缩放布局
+  function layout(){
+    cards.forEach(function(card){
+      var shot = card.querySelector('.shot');
+      var frame = shot.querySelector('iframe');
+      var m = MODES[mode];
+      var scale;
+      if(mode === 'desktop'){
+        shot.classList.remove('phone');
+        shot.style.width = '';
+        scale = shot.clientWidth / m.w;
+      }else{
+        shot.classList.add('phone');
+        scale = 0.72;
+        shot.style.width = (m.w * scale) + 'px';
+      }
+      frame.style.width = m.w + 'px';
+      frame.style.height = m.h + 'px';
+      frame.style.transform = 'scale(' + scale + ')';
+      shot.style.height = (m.h * scale) + 'px';
+    });
+  }
+  window.addEventListener('resize', layout);
+  layout();
+  window.addEventListener('load', layout);
+
+  // 3. 桌面 / 手机切换
+  document.querySelectorAll('.mode button').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      mode = btn.dataset.mode;
+      document.querySelectorAll('.mode button').forEach(function(b){ b.classList.toggle('on', b === btn); });
+      layout();
+    });
+  });
+
+  // 4. 选择
+  cards.forEach(function(card){
+    var btn = card.querySelector('.pick');
+    btn.addEventListener('click', function(){
+      if(card.classList.contains('is-picked')){
+        clear();
+        return;
+      }
+      cards.forEach(function(c){
+        c.classList.remove('is-picked');
+        c.querySelector('.pick').classList.remove('is-on');
+        c.querySelector('.pick').textContent = '选这套';
+      });
+      card.classList.add('is-picked');
+      btn.classList.add('is-on');
+      btn.textContent = '已选这套 · 点此取消';
+      selected = card;
+      pickedName.textContent = card.dataset.name;
+      bar.classList.add('is-on');
+      document.body.style.paddingBottom = '110px';
+    });
+  });
+
+  function clear(){
+    cards.forEach(function(c){
+      c.classList.remove('is-picked');
+      var b = c.querySelector('.pick');
+      b.classList.remove('is-on');
+      b.textContent = '选这套';
+    });
+    selected = null;
+    pickedName.textContent = '—';
+    bar.classList.remove('is-on');
+    document.body.style.paddingBottom = '';
+  }
+  document.getElementById('reset').addEventListener('click', clear);
+
+  // 5. 复制结果
+  var toast = document.getElementById('toast');
+  function showToast(){
+    toast.classList.add('is-on');
+    setTimeout(function(){ toast.classList.remove('is-on'); }, 1800);
+  }
+  document.getElementById('copy').addEventListener('click', function(){
+    if(!selected) return;
+    var text = [
+      'Joyogo 滑雪板块 · 方案确认',
+      '方案：' + selected.dataset.name,
+      '页面：' + selected.dataset.pages,
+      '首页文件：' + selected.dataset.file
+    ].join('\n');
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(showToast, fallback);
+    }else{
+      fallback();
+    }
+    function fallback(){
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try{ document.execCommand('copy'); showToast(); }catch(e){}
+      document.body.removeChild(ta);
+    }
+  });
+})();
+</script>
+</body>
+</html>
