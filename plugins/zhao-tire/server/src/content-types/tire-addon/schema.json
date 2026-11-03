@@ -1,0 +1,41 @@
+{
+  "kind": "collectionType",
+  "collectionName": "zhao_tire_addons",
+  "info": {
+    "singularName": "tire-addon",
+    "pluralName": "tire-addons",
+    "displayName": "增值项"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "content-manager": { "visible": true },
+    "content-type-builder": { "visible": false }
+  },
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "code": {
+      "type": "uid",
+      "targetField": "name",
+      "required": true
+    },
+    "price": {
+      "type": "integer"
+    },
+    "unitText": {
+      "type": "string"
+    },
+    "enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "sort": {
+      "type": "integer",
+      "default": 0
+    }
+  }
+}

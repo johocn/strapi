@@ -1,0 +1,93 @@
+{
+  "kind": "singleType",
+  "collectionName": "zhao_tire_config",
+  "info": {
+    "singularName": "tire-config",
+    "pluralName": "tire-configs",
+    "displayName": "站点配置"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "content-manager": { "visible": true },
+    "content-type-builder": { "visible": false }
+  },
+  "attributes": {
+    "bannerTitle": {
+      "type": "string"
+    },
+    "bannerSubtitle": {
+      "type": "string"
+    },
+    "bannerImage": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": ["images"]
+    },
+    "serviceIntro": {
+      "type": "richtext"
+    },
+    "warehouseConditions": {
+      "type": "text"
+    },
+    "guarantees": {
+      "type": "json"
+    },
+    "serviceAreaText": {
+      "type": "text"
+    },
+    "warehouseAddress": {
+      "type": "string"
+    },
+    "warehouseLat": {
+      "type": "float"
+    },
+    "warehouseLng": {
+      "type": "float"
+    },
+    "mapUrl": {
+      "type": "string"
+    },
+    "contactPhone": {
+      "type": "string"
+    },
+    "wechatQr": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": ["images"]
+    },
+    "dailyPickupLimitMorning": {
+      "type": "integer",
+      "default": 6
+    },
+    "dailyPickupLimitAfternoon": {
+      "type": "integer",
+      "default": 6
+    },
+    "paymentOnlineEnabled": {
+      "type": "boolean",
+      "default": false
+    },
+    "depositEnabled": {
+      "type": "boolean",
+      "default": false
+    },
+    "depositRatio": {
+      "type": "integer",
+      "default": 30
+    },
+    "agreementText": {
+      "type": "richtext"
+    },
+    "maxStorageDate": {
+      "type": "date"
+    },
+    "announcement": {
+      "type": "string"
+    },
+    "smsTemplateOverride": {
+      "type": "json"
+    }
+  }
+}

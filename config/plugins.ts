@@ -195,6 +195,11 @@ const config = ({ env }: Core.Config.Shared.ConfigParams): Core.Config.Plugin =>
         enabled: true,
         resolve: "./plugins/zhao-studio",
     },
+    // ============ 雪地胎寄存（H5 预约 + 后台订单/仓储） ============
+    "zhao-tire": {
+        enabled: true,
+        resolve: "./plugins/zhao-tire",
+    },
     "zhao-website": {
         enabled: true,
         resolve: "./plugins/zhao-website",

@@ -1,0 +1,54 @@
+{
+  "kind": "collectionType",
+  "collectionName": "zhao_tire_sms_logs",
+  "info": {
+    "singularName": "tire-sms-log",
+    "pluralName": "tire-sms-logs",
+    "displayName": "短信通知"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "content-manager": { "visible": true },
+    "content-type-builder": { "visible": false }
+  },
+  "attributes": {
+    "order": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-tire.tire-order"
+    },
+    "type": {
+      "type": "enumeration",
+      "enum": [
+        "order_created",
+        "accepted",
+        "inbound",
+        "due_7",
+        "due_3",
+        "outbound_done",
+        "manual"
+      ]
+    },
+    "phone": {
+      "type": "string"
+    },
+    "content": {
+      "type": "text"
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": ["pending", "sent", "skipped"],
+      "default": "pending"
+    },
+    "sentAt": {
+      "type": "datetime"
+    },
+    "operator": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "admin::user"
+    }
+  }
+}

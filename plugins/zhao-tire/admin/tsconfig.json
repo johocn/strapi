@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "jsx": "react-jsx",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "moduleDetection": "force",
+    "baseUrl": ".",
+    "paths": {
+      "@strapi/strapi": ["../../../node_modules/@strapi/strapi"],
+      "@strapi/design-system": ["../../../node_modules/@strapi/design-system"],
+      "@strapi/icons": ["../../../node_modules/@strapi/icons"]
+    }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

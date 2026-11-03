@@ -1,0 +1,57 @@
+{
+  "kind": "collectionType",
+  "collectionName": "zhao_tire_packages",
+  "info": {
+    "singularName": "tire-package",
+    "pluralName": "tire-packages",
+    "displayName": "寄存套餐"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "content-manager": { "visible": true },
+    "content-type-builder": { "visible": false }
+  },
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true
+    },
+    "code": {
+      "type": "uid",
+      "targetField": "name",
+      "required": true
+    },
+    "baseMonths": {
+      "type": "integer",
+      "default": 6
+    },
+    "storePrice": {
+      "type": "integer"
+    },
+    "pickupPrice": {
+      "type": "integer"
+    },
+    "extraMonthPrice": {
+      "type": "integer"
+    },
+    "overdueDayPrice": {
+      "type": "integer"
+    },
+    "durationText": {
+      "type": "string"
+    },
+    "highlights": {
+      "type": "json"
+    },
+    "enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "sort": {
+      "type": "integer",
+      "default": 0
+    }
+  }
+}
