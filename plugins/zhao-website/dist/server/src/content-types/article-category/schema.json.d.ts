@@ -101,6 +101,12 @@ declare const _default: {
     "deletedAt": {
       "type": "datetime",
       "default": null
+    },
+    "section": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-website.section",
+      "inversedBy": "categories"
     }
   }
 }

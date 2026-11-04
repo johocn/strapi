@@ -138,6 +138,10 @@ declare const _default: {
     "site-info": {
         info(ctx: any): Promise<void>;
     };
+    section: {
+        list(ctx: any): Promise<void>;
+        detail(ctx: any): Promise<any>;
+    };
     "seo-meta": {
         meta(ctx: any): Promise<void>;
     };

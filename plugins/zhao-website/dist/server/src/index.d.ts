@@ -153,6 +153,10 @@ declare const _default: {
         "site-info": {
             info(ctx: any): Promise<void>;
         };
+        section: {
+            list(ctx: any): Promise<void>;
+            detail(ctx: any): Promise<any>;
+        };
         "seo-meta": {
             meta(ctx: any): Promise<void>;
         };
@@ -847,6 +851,12 @@ declare const _default: {
             }>;
             violations(siteId: number): Promise<any[]>;
         };
+        section: ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            find(siteId: number, query?: any): Promise<any[]>;
+            findOne(siteId: number, slug: string, locale?: string): Promise<any>;
+        };
     };
     contentTypes: {
         "seo-config": {
@@ -1392,6 +1402,12 @@ declare const _default: {
                         type: string;
                         default: any;
                     };
+                    section: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        inversedBy: string;
+                    };
                 };
             };
         };
@@ -1505,6 +1521,12 @@ declare const _default: {
                     deletedAt: {
                         type: string;
                         default: any;
+                    };
+                    section: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        inversedBy: string;
                     };
                 };
             };
@@ -1697,6 +1719,12 @@ declare const _default: {
                     deletedAt: {
                         type: string;
                         default: any;
+                    };
+                    section: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        inversedBy: string;
                     };
                 };
             };
@@ -2051,6 +2079,12 @@ declare const _default: {
                         type: string;
                         default: any;
                     };
+                    section: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        inversedBy: string;
+                    };
                 };
             };
         };
@@ -2189,6 +2223,12 @@ declare const _default: {
                         type: string;
                         default: any;
                     };
+                    section: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        inversedBy: string;
+                    };
                 };
             };
         };
@@ -2291,6 +2331,12 @@ declare const _default: {
                     deletedAt: {
                         type: string;
                         default: any;
+                    };
+                    section: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        inversedBy: string;
                     };
                 };
             };
@@ -3730,6 +3776,12 @@ declare const _default: {
                         type: string;
                         default: any;
                     };
+                    section: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        inversedBy: string;
+                    };
                 };
             };
             lifecycles: ({ strapi }: {
@@ -3809,6 +3861,140 @@ declare const _default: {
                         default: any;
                     };
                     geoArticles: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                };
+            };
+        };
+        section: {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                    description: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                pluginOptions: {
+                    i18n: {
+                        localized: boolean;
+                    };
+                    "content-manager": {
+                        visible: boolean;
+                    };
+                    "content-type-builder": {
+                        visible: boolean;
+                    };
+                };
+                attributes: {
+                    site: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        required: boolean;
+                        inversedBy: string;
+                    };
+                    name: {
+                        type: string;
+                        maxLength: number;
+                        required: boolean;
+                        localized: boolean;
+                    };
+                    slug: {
+                        type: string;
+                        targetField: string;
+                        required: boolean;
+                        localized: boolean;
+                    };
+                    description: {
+                        type: string;
+                        localized: boolean;
+                    };
+                    icon: {
+                        type: string;
+                        multiple: boolean;
+                        required: boolean;
+                        allowedTypes: string[];
+                    };
+                    cover: {
+                        type: string;
+                        multiple: boolean;
+                        required: boolean;
+                        allowedTypes: string[];
+                    };
+                    themeConfig: {
+                        type: string;
+                        default: {
+                            mode: string;
+                            theme: string;
+                        };
+                    };
+                    order: {
+                        type: string;
+                        default: number;
+                    };
+                    status: {
+                        type: string;
+                        default: boolean;
+                    };
+                    seoTitle: {
+                        type: string;
+                        maxLength: number;
+                        localized: boolean;
+                    };
+                    seoDescription: {
+                        type: string;
+                        maxLength: number;
+                        localized: boolean;
+                    };
+                    deletedAt: {
+                        type: string;
+                        default: any;
+                    };
+                    articles: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    geoArticles: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    tutorials: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    faqs: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    products: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    downloads: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                        mappedBy: string;
+                    };
+                    categories: {
                         type: string;
                         relation: string;
                         target: string;

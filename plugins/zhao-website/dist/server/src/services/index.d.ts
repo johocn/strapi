@@ -644,5 +644,11 @@ declare const _default: {
         }>;
         violations(siteId: number): Promise<any[]>;
     };
+    section: ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        find(siteId: number, query?: any): Promise<any[]>;
+        findOne(siteId: number, slug: string, locale?: string): Promise<any>;
+    };
 };
 export default _default;

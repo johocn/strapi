@@ -1,0 +1,49 @@
+declare const _default: {
+  "kind": "collectionType",
+  "collectionName": "zhao_website_sections",
+  "info": {
+    "singularName": "section",
+    "pluralName": "sections",
+    "displayName": "业务板块",
+    "description": "站点下的业务分区（滑雪、温泉等）"
+  },
+  "options": { "draftAndPublish": false },
+  "pluginOptions": {
+    "i18n": { "localized": true },
+    "content-manager": { "visible": true },
+    "content-type-builder": { "visible": false }
+  },
+  "attributes": {
+    "site": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::zhao-common.site-config",
+      "required": true,
+      "inversedBy": "website_sections"
+    },
+    "name": { "type": "string", "maxLength": 100, "required": true, "localized": true },
+    "slug": { "type": "uid", "targetField": "name", "required": true, "localized": true },
+    "description": { "type": "text", "localized": true },
+    "icon": { "type": "media", "multiple": false, "required": false, "allowedTypes": ["images"] },
+    "cover": { "type": "media", "multiple": false, "required": false, "allowedTypes": ["images"] },
+    "themeConfig": {
+      "type": "json",
+      "default": { "mode": "inherit", "theme": "amber" }
+    },
+    "order": { "type": "integer", "default": 0 },
+    "status": { "type": "boolean", "default": true },
+    "seoTitle": { "type": "string", "maxLength": 60, "localized": true },
+    "seoDescription": { "type": "string", "maxLength": 160, "localized": true },
+    "deletedAt": { "type": "datetime", "default": null },
+    "articles": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.article", "mappedBy": "section" },
+    "geoArticles": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.geo-article", "mappedBy": "section" },
+    "tutorials": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.tutorial", "mappedBy": "section" },
+    "faqs": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.faq", "mappedBy": "section" },
+    "products": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.product", "mappedBy": "section" },
+    "downloads": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.download", "mappedBy": "section" },
+    "categories": { "type": "relation", "relation": "oneToMany", "target": "plugin::zhao-website.article-category", "mappedBy": "section" }
+  }
+}
+;
+
+export default _default;

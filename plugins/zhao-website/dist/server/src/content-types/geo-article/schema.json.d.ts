@@ -121,7 +121,12 @@ declare const _default: {
       "description": "type=local-comparison 评分维度：[{dimension, items:[{name, score, note}]}]" },
     "listItems": { "type": "json", "default": [],
       "description": "type=local-list 清单条目：[{name, desc, price, link}]" },
-    "deletedAt": { "type": "datetime", "default": null }
+    "deletedAt": { "type": "datetime", "default": null },
+    "section": {
+      "type": "relation", "relation": "manyToOne",
+      "target": "plugin::zhao-website.section",
+      "inversedBy": "geoArticles"
+    }
   }
 }
 ;
