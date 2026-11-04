@@ -378,6 +378,12 @@ declare const _default: {
       "relation": "oneToMany",
       "target": "plugin::zhao-website.author",
       "mappedBy": "site"
+    },
+    "website_sections": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::zhao-website.section",
+      "mappedBy": "site"
     }
   }
 }
