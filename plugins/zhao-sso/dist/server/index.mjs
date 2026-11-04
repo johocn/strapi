@@ -793,6 +793,17 @@ const contentTypes = {
   "sso-wx-material": ssoWxMaterial$1,
   "sso-wx-article": ssoWxArticle$1
 };
+function smsLoginEnabled() {
+  const flag = process.env.SSO_SMS_LOGIN_ENABLED;
+  if (flag !== void 0 && flag !== "") {
+    return flag === "true" || flag === "1";
+  }
+  return process.env.NODE_ENV !== "production";
+}
+function smsLoginDisabled(ctx) {
+  ctx.status = 403;
+  ctx.body = { code: "SMS_LOGIN_DISABLED", error: "短信验证码登录已关闭" };
+}
 const authController = ({ strapi }) => ({
   async login(ctx) {
     const body = ctx.request.body?.data || ctx.request.body;
@@ -805,6 +816,10 @@ const authController = ({ strapi }) => ({
     if (!app_code) {
       ctx.status = 400;
       ctx.body = { error: "app_code 必填" };
+      return;
+    }
+    if (type === "sms" && !smsLoginEnabled()) {
+      smsLoginDisabled(ctx);
       return;
     }
     const authService = strapi.plugin("zhao-sso").service("sso-auth");
@@ -827,6 +842,10 @@ const authController = ({ strapi }) => ({
     }
   },
   async sendSms(ctx) {
+    if (!smsLoginEnabled()) {
+      smsLoginDisabled(ctx);
+      return;
+    }
     const body = ctx.request.body?.data || ctx.request.body;
     const { mobile, scene } = body;
     if (!mobile) {

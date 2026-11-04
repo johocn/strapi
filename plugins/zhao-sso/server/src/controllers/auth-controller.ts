@@ -1,5 +1,23 @@
 import type { Core } from "@strapi/strapi";
 
+/**
+ * 短信验证码登录环境开关。
+ * - 显式设置 SSO_SMS_LOGIN_ENABLED=true/1 时开启，false/0 时关闭；
+ * - 未设置时：生产环境默认关闭（避免 mock 固定码 1234 被用于登录），非生产默认开启。
+ */
+function smsLoginEnabled(): boolean {
+  const flag = process.env.SSO_SMS_LOGIN_ENABLED;
+  if (flag !== undefined && flag !== "") {
+    return flag === "true" || flag === "1";
+  }
+  return process.env.NODE_ENV !== "production";
+}
+
+function smsLoginDisabled(ctx: any) {
+  ctx.status = 403;
+  ctx.body = { code: "SMS_LOGIN_DISABLED", error: "短信验证码登录已关闭" };
+}
+
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async login(ctx: any) {
     const body = ctx.request.body?.data || ctx.request.body;
@@ -7,6 +25,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
     if (!type) { ctx.status = 400; ctx.body = { error: "type 必填" }; return; }
     if (!app_code) { ctx.status = 400; ctx.body = { error: "app_code 必填" }; return; }
+    if (type === "sms" && !smsLoginEnabled()) { smsLoginDisabled(ctx); return; }
 
     const authService = strapi.plugin("zhao-sso").service("sso-auth");
 
@@ -30,6 +49,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   },
 
   async sendSms(ctx: any) {
+    if (!smsLoginEnabled()) { smsLoginDisabled(ctx); return; }
+
     const body = ctx.request.body?.data || ctx.request.body;
     const { mobile, scene } = body;
 
