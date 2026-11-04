@@ -36,7 +36,7 @@ www.joho.cn 是综合站点，滑雪只是首个专题板块，后续会有温�
 
 | 字段 | 类型 | 约束 | 说明 |
 |---|---|---|---|
-| site | relation manyToOne → `plugin::zhao-common.site-config` | 必填，inversedBy `sections` | 板块归属站点 |
+| site | relation manyToOne → `plugin::zhao-common.site-config` | 必填，inversedBy `website_sections` | 板块归属站点 |
 | name | string(100) | 必填、localized | 板块名 |
 | slug | uid(name) | 必填、localized | 前台路径段 |
 | description | text | localized | 板块简介 |

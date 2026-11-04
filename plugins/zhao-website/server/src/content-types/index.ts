@@ -22,6 +22,7 @@ import redirectRule from "./redirect-rule/schema.json";
 import inviteTrace from "./invite-trace/schema.json";
 import geoArticle from "./geo-article/schema.json";
 import author from "./author/schema.json";
+import section from "./section/schema.json";
 import geoArticleLifecycles from "./geo-article/lifecycles";
 
 export default {
@@ -49,4 +50,5 @@ export default {
   "invite-trace": { schema: inviteTrace },
   "geo-article": { schema: geoArticle, lifecycles: geoArticleLifecycles },
   "author": { schema: author },
+  "section": { schema: section },
 };
