@@ -7,9 +7,9 @@
 <title>主题配置 | Joyogo 滑雪板块</title>
 <!--
   页面：后台主题配置（静态版）
-  作用：四套主题预览、本机全站切换、生成 theme.config.js 配置片段。
-  说明：静态站点无写库能力，「全站生效」= 替换 theme.config.js 的 default 值；
-        本页的「设为默认」只在当前浏览器立即生效（localStorage），用于评审与验收。
+  作用：四套主题预览、站点默认切换、生成 theme.config.js 配置片段。
+  说明：静态站点无写库能力，「设为默认」写入站点默认（演示期用 localStorage 模拟）；
+        正式站由 Strapi 的 site-config.themeConfig.defaultTheme 承载。
 -->
 <style>
   :root{
@@ -33,7 +33,8 @@
   .state{display:flex;flex-wrap:wrap;gap:10px 26px;align-items:center;margin-top:24px;
     padding:16px 20px;background:var(--card);border:1px solid var(--line);border-radius:14px;font-size:13px}
   .state b{color:var(--clay-deep)}
-  .state .btn{margin-left:auto}
+  .state .btn{margin-left:0}
+  .state .btn:first-of-type{margin-left:auto}
 
   .btn{display:inline-flex;align-items:center;justify-content:center;height:40px;padding:0 20px;
     border-radius:999px;border:2px solid var(--clay);background:var(--clay);color:#fff;
@@ -101,13 +102,14 @@
     <span>本机覆盖：<b id="locName">无</b></span>
     <span>当前生效：<b id="curName">—</b></span>
     <button class="btn btn-line btn-sm" id="reset" type="button">清除本机覆盖</button>
+    <button class="btn btn-line btn-sm" id="resetDefault" type="button">恢复内置默认</button>
   </div>
 
   <div class="grid" id="grid"></div>
 
   <section class="cfg">
     <h2>全站生效</h2>
-    <p>静态站点没有写库能力：把下面这段里的 <code>default</code> 改成目标主题，替换服务器上的 <code>theme.config.js</code>，所有访客即按该主题渲染。本页的「设为默认」只对当前浏览器生效，用于评审验收。</p>
+    <p>点击任意卡片的「设为默认」，会把该主题写为<b>站点默认</b>：站点内所有「继承站点默认」的板块随之切换，已单独指定主题的板块不受影响。静态演示期以浏览器本地存储模拟站点配置；正式站由 Strapi 的 <code>site-config.themeConfig.defaultTheme</code> 承载，下方片段即替换目标。</p>
     <pre id="cfgText">window.JOYOGO_THEME = { default: 'amber' }</pre>
     <div class="row">
       <button class="btn" id="copy" type="button">复制配置片段</button>
@@ -129,6 +131,7 @@
   var grid = document.getElementById('grid');
   var toastEl = document.getElementById('toast');
   var cfgText = document.getElementById('cfgText');
+  var stamp = 0;
 
   function nameOf(id){
     var t = JoyogoTheme.list().filter(function(x){return x.id===id;})[0];
@@ -142,7 +145,7 @@
     clearTimeout(toast.t); toast.t = setTimeout(function(){ toastEl.classList.remove('on'); }, 1800);
   }
   function cfgLine(){
-    return "window.JOYOGO_THEME = { default: '" + JoyogoTheme.current() + "' };";
+    return "window.JOYOGO_THEME = { default: '" + JoyogoTheme.defaultTheme() + "' };";
   }
   function render(){
     grid.innerHTML = '';
@@ -158,7 +161,7 @@
           '<div class="sw">' + colors.map(function(c){return '<i style="background:' + c + '"></i>';}).join('') + '</div>' +
           '<div class="swcap"><span>背景</span><span>卡片</span><span>文字</span><span>主色</span><span>辅助色</span></div>' +
         '</div>' +
-        '<div class="shot"><iframe src="./home.html?theme=' + t.id + '" title="' + t.name + ' 预览" loading="lazy" scrolling="no"></iframe></div>' +
+        '<div class="shot"><iframe src="./home.html?theme=' + t.id + '&v=' + stamp + '" title="' + t.name + ' 预览" loading="lazy" scrolling="no"></iframe></div>' +
         '<div class="acts">' +
           '<button class="btn" type="button" data-set="' + t.id + '">设为默认</button>' +
           '<button class="btn btn-line" type="button" data-open="' + t.id + '">全屏预览</button>' +
@@ -175,9 +178,10 @@
     var set = e.target.getAttribute && e.target.getAttribute('data-set');
     var open = e.target.getAttribute && e.target.getAttribute('data-open');
     if(set){
-      JoyogoTheme.preview(set);
+      JoyogoTheme.setSiteDefault(set);
+      stamp++;
       render();
-      toast('已在本机全站生效：' + nameOf(set) + '（复制配置片段可对全部访客生效）');
+      toast('已将「' + nameOf(set) + '」设为全站默认，预览已刷新');
     }
     if(open){ window.open('./home.html?theme=' + open, '_blank'); }
   });
@@ -186,12 +190,17 @@
     JoyogoTheme.reset(); render(); toast('已清除本机覆盖，回到后台默认：' + nameOf(JoyogoTheme.defaultTheme()));
   });
 
+  document.getElementById('resetDefault').addEventListener('click', function(){
+    JoyogoTheme.clearSiteDefault(); stamp++; render();
+    toast('已恢复内置默认：' + nameOf(JoyogoTheme.builtinDefault()));
+  });
+
   document.getElementById('openHome').addEventListener('click', function(){
     window.open('./home.html', '_blank');
   });
 
   document.getElementById('copy').addEventListener('click', function(){
-    var text = 'default: ' + JoyogoTheme.current();
+    var text = 'default: ' + JoyogoTheme.defaultTheme();
     function done(){ toast('已复制：' + text); }
     if(navigator.clipboard && navigator.clipboard.writeText){
       navigator.clipboard.writeText(cfgText.textContent).then(done, fallback);
