@@ -1,5 +1,5 @@
 type Method = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
-type Allow = "read" | "full" | "storage";
+type Allow = "read" | "full" | "storage" | "payment";
 
 const adminRoute = (
   method: Method,
@@ -48,7 +48,8 @@ export default () => ({
       "admin-order.outbound",
       "storage"
     ),
-    adminRoute("POST", "/orders/:id/payment", "admin-order.payment", "full"),
+    adminRoute("POST", "/orders/:id/payment", "admin-order.payment", "payment"),
+    adminRoute("POST", "/orders/:id/refund", "admin-order.refund", "full"),
     adminRoute(
       "POST",
       "/orders/:id/approve-outbound",
@@ -61,6 +62,10 @@ export default () => ({
       "admin-order.rejectOutbound",
       "full"
     ),
+
+    // 支付流水 / 确认到账
+    adminRoute("GET", "/payments", "admin-payment.find", "read"),
+    adminRoute("POST", "/payments/:id/confirm", "admin-payment.confirm", "payment"),
 
     // 库存
     adminRoute("GET", "/inventory", "admin-inventory.find", "read"),
@@ -132,6 +137,19 @@ export default () => ({
       "admin-content.galleryRemove",
       "full"
     ),
+
+    // 邀请码管理
+    adminRoute("GET", "/referral-codes", "admin-referral.find", "full"),
+    adminRoute("PATCH", "/referral-codes/:id", "admin-referral.update", "full"),
+    adminRoute("POST", "/referral-codes/:id/grant-free", "admin-referral.grantFree", "full"),
+    adminRoute("GET", "/share-records", "admin-referral.shareRecords", "read"),
+    adminRoute(
+      "GET",
+      "/share-records/export.csv",
+      "admin-referral.exportShareRecords",
+      "read"
+    ),
+    adminRoute("GET", "/rewards", "admin-referral.rewards", "read"),
 
     // 短信通知
     adminRoute("GET", "/sms-logs", "admin-sms.find", "full"),

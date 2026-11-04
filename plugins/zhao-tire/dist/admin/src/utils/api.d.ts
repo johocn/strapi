@@ -10,10 +10,12 @@ export type PermissionState = {
     me: Me | null;
     canFull: boolean;
     canStorage: boolean;
+    canPayment: boolean;
     error?: string;
 };
 export declare const canFullAccess: (roleCodes: string[]) => boolean;
 export declare const canStorageAccess: (roleCodes: string[]) => boolean;
+export declare const canPaymentAccess: (roleCodes: string[]) => boolean;
 export declare const errorMessage: (error: unknown) => string;
 export declare const absoluteMediaUrl: (url?: string | null) => string;
 export declare function useTireApi(): {
@@ -36,6 +38,13 @@ export declare function useTireApi(): {
     updateConfig: (body: any) => Promise<any>;
     listSmsLogs: (params: Record<string, any>) => Promise<any>;
     updateSmsLog: (id: number, body: any) => Promise<any>;
+    listReferralCodes: (params: Record<string, any>) => Promise<any>;
+    grantFreeToReferral: (id: number, count: number) => Promise<any>;
+    listPayments: (params: Record<string, any>) => Promise<any>;
+    confirmPayment: (id: number) => Promise<any>;
+    listShareRecords: (params: Record<string, any>) => Promise<any>;
+    exportShareRecords: (params: Record<string, any>) => Promise<Blob>;
+    listRewards: (params: Record<string, any>) => Promise<any>;
     uploadImage: (file: File) => Promise<{
         id: number;
         url: string;

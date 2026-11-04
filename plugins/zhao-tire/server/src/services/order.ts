@@ -12,6 +12,20 @@ const MAX_ORDER_NO_ATTEMPTS = 3;
 const PHONE_PATTERN = /^1[3-9]\d{9}$/;
 const RENEWABLE_STATUS = ["stored", "pending_outbound"];
 
+/** 生成全局唯一的 6 位出库核销码 */
+const generateRedemptionCode = async (
+  strapi: Core.Strapi
+): Promise<string> => {
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    const exists = await strapi.db.query(ORDER_UID).findOne({
+      where: { redemptionCode: code },
+    });
+    if (!exists) return code;
+  }
+  throw createError("INTERNAL_ERROR", 500, "核销码生成失败，请重试");
+};
+
 const DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
   timeZone: TIMEZONE,
   year: "numeric",
@@ -389,6 +403,41 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       },
       addons,
     });
+
+    const paymentMethods = ["wechat", "store_pay", "pickup_pay", "deposit", "full"];
+    const paymentMethod = paymentMethods.includes(String(payload.paymentMethod))
+      ? String(payload.paymentMethod)
+      : serviceType === "pickup"
+        ? "pickup_pay"
+        : "store_pay";
+
+    // 邀请奖励：仅抵扣基础套餐费（增值服务、逾期费不参与）
+    const referralService: any = strapi.plugin("zhao-tire").service("referral");
+    let rewardInfo: any = null;
+    let finalAmountPackage = amountPackage;
+    let isFree = false;
+    let freeReason: string | undefined = undefined;
+    if (payload.useFreeReward === true) {
+      rewardInfo = await referralService.reserveReward(phone, amountPackage);
+      if (rewardInfo) {
+        finalAmountPackage = Math.max(0, amountPackage - rewardInfo.discount);
+        isFree = finalAmountPackage + amountAddon <= 0;
+        freeReason = "referral_3";
+      }
+    }
+    const finalAmountTotal = finalAmountPackage + amountAddon;
+
+    // 邀请码校验（非必填，但若填了需有效且不能自己邀自己）
+    const referralCode = String(payload.referralCode || "").trim().toUpperCase();
+    let referrerPhone: string | undefined = undefined;
+    if (referralCode) {
+      const rc = await referralService.validate(referralCode);
+      if (rc.phone === phone) {
+        throw createError("VALIDATION_FAILED", 400, "不能使用自己的邀请码");
+      }
+      referrerPhone = rc.phone;
+    }
+
     const packageSnapshot = {
       id: packageDoc.id,
       name: packageDoc.name,
@@ -402,6 +451,34 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     };
     const expireAt = expectedReturnDate;
     const now = new Date().toISOString();
+
+    const timelineEvents: any[] = [
+      {
+        at: now,
+        event: "created",
+        detail: `订单已提交（${serviceType === "store" ? "到店送存" : "上门取送"}）`,
+      },
+    ];
+    if (rewardInfo) {
+      timelineEvents.push({
+        at: now,
+        event: "free_applied",
+        detail: `邀请奖励抵扣基础套餐费 ${rewardInfo.discount} 分（券 ${rewardInfo.rewardNo}）`,
+      });
+    } else if (isFree) {
+      timelineEvents.push({
+        at: now,
+        event: "free_applied",
+        detail: "免单生效",
+      });
+    }
+    if (referralCode) {
+      timelineEvents.push({
+        at: now,
+        event: "referral_applied",
+        detail: `使用邀请码 ${referralCode}`,
+      });
+    }
 
     const baseData = compact({
       clientToken,
@@ -422,24 +499,24 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       months,
       packageSnapshot,
       addons,
-      amountPackage,
+      amountPackage: finalAmountPackage,
       amountAddon,
-      amountTotal,
-      paymentMethod: "store_pay",
-      paymentStatus: "unpaid",
-      paidAmount: 0,
+      amountTotal: finalAmountTotal,
+      paymentMethod: isFree ? "full" : paymentMethod,
+      paymentStatus: isFree ? "paid" : "unpaid",
+      paidAmount: isFree ? finalAmountTotal : 0,
+      rewardNo: rewardInfo?.rewardNo || undefined,
+      rewardAmount: rewardInfo?.discount || 0,
       status: "pending_accept",
       outboundRequestStatus: "none",
       note: String(payload.note || "").trim() || undefined,
       agreementAcceptedAt: now,
+      referralCode: referralCode || undefined,
+      referrerPhone,
+      isFree,
+      freeReason,
       renewals: [],
-      timeline: [
-        {
-          at: now,
-          event: "created",
-          detail: `订单已提交（${serviceType === "store" ? "到店送存" : "上门取送"}）`,
-        },
-      ],
+      timeline: timelineEvents,
     });
 
     const orderNoService: any = strapi.plugin("zhao-tire").service("order-no");
@@ -459,6 +536,9 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
           where: { clientToken },
         });
         if (duplicated) {
+          if (rewardInfo?.rewardNo) {
+            await referralService.releaseReward(rewardInfo.rewardNo);
+          }
           return {
             orderNo: duplicated.orderNo,
             amountTotal: duplicated.amountTotal,
@@ -484,12 +564,39 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       throw lastError || createError("DUPLICATE_REQUEST", 409, "订单创建失败");
     }
 
+    if (rewardInfo?.rewardNo) {
+      const bound = await referralService.bindReward(rewardInfo.rewardNo, created.orderNo);
+      if (!bound) {
+        strapi.log.warn(
+          `[zhao-tire] reward ${rewardInfo.rewardNo} 绑定订单 ${created.orderNo} 失败`
+        );
+      }
+    }
+
+    if (referralCode) {
+      try {
+        await referralService.attachReferral(created, referralCode, {
+          openid: payload.openid,
+          deviceId: payload.deviceId,
+          ip: payload.ip,
+        });
+      } catch (error) {
+        strapi.log.warn(`[zhao-tire] attachReferral skipped: ${error}`);
+      }
+    }
+
     await notifySafely(strapi, "order_created", created);
 
     return {
       orderNo: created.orderNo,
       amountTotal: created.amountTotal,
       status: created.status,
+      isFree: created.isFree,
+      freeReason: created.freeReason || null,
+      referralCode: created.referralCode || null,
+      paymentMethod: created.paymentMethod,
+      rewardNo: created.rewardNo || null,
+      rewardAmount: Number(created.rewardAmount) || 0,
     };
   },
 
@@ -545,6 +652,26 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       paymentMethod: order.paymentMethod,
       paymentStatus: order.paymentStatus,
       paidAmount: Number(order.paidAmount) || 0,
+      outstandingAmount: Math.max(
+        0,
+        (Number(order.amountTotal) || 0) - (Number(order.paidAmount) || 0)
+      ),
+      canPayOnline:
+        order.paymentStatus !== "paid" &&
+        order.paymentMethod === "wechat" &&
+        order.status !== "canceled" &&
+        order.status !== "rejected",
+      rewardNo: order.rewardNo || null,
+      rewardAmount: Number(order.rewardAmount) || 0,
+      redemptionCode:
+        order.status === "stored" || order.status === "pending_outbound"
+          ? order.redemptionCode || null
+          : null,
+      redemptionCodeUsedAt: order.redemptionCodeUsedAt || null,
+      referralCode: order.referralCode || null,
+      referrerPhone: order.referrerPhone ? maskPhone(order.referrerPhone) : null,
+      isFree: Boolean(order.isFree),
+      freeReason: order.freeReason || null,
       outboundRequestStatus: order.outboundRequestStatus || "none",
       outboundRequestedAt: order.outboundRequestedAt || null,
       outboundNote: order.outboundNote || "",
@@ -717,6 +844,11 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     }
 
     const inboundAt = new Date().toISOString();
+    const config = await getConfig(strapi);
+    const redemptionCode =
+      config.redemptionCodeEnabled === false
+        ? undefined
+        : await generateRedemptionCode(strapi);
     const timeline = appendTimeline(
       order,
       "inbound",
@@ -727,6 +859,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       status: "stored",
       inboundAt,
       locationCode,
+      redemptionCode,
       inboundPhotos: ids.map((id) => ({ id })),
       storageOperator: payload.operatorId
         ? { id: payload.operatorId }
@@ -739,21 +872,81 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       data,
     });
 
+    // 被邀请人首单入库成功 → 邀请有效，满 3 人发 1 次免单
+    try {
+      const referralService: any = strapi.plugin("zhao-tire").service("referral");
+      const result = await referralService.markValidOnInbound(orderNo);
+      if (result?.rewarded) {
+        strapi.log.info(
+          `[zhao-tire] referral milestone: ${result.referrerPhone} 满 3 个有效邀请，已发放奖励 ${result.reward?.reward?.rewardNo || ""}`
+        );
+      }
+    } catch (error) {
+      strapi.log.warn(`[zhao-tire] markValidOnInbound skipped: ${error}`);
+    }
+
     await notifySafely(strapi, "inbound", {
       ...order,
       status: "stored",
       locationCode,
     });
 
-    return { orderNo: order.orderNo, status: "stored", inboundAt, locationCode };
+    return {
+      orderNo: order.orderNo,
+      status: "stored",
+      inboundAt,
+      locationCode,
+      redemptionCode: redemptionCode || null,
+    };
   },
 
   async outbound(
     orderNo: string,
-    payload: { photos?: unknown; operatorId?: number } = {}
+    payload: { photos?: unknown; operatorId?: number; redemptionCode?: string } = {}
   ) {
     const order = await requireOrder(strapi, orderNo);
     assertStatus(order, ["pending_outbound"], "当前订单状态不可出库");
+
+    if (order.redemptionCodeUsedAt) {
+      throw createError("STATE_INVALID", 400, "该订单已核销出库，请勿重复操作");
+    }
+
+    // 未结清不得出库
+    const total = Number(order.amountTotal) || 0;
+    const paid = Number(order.paidAmount) || 0;
+    const outstanding = Math.max(0, total - paid);
+    if (order.isFree !== true && outstanding > 0) {
+      // 逾期费口径尚未纳入收银：此处先只统计并留钩子，不阻断出库
+      const snapshot = order.packageSnapshot || {};
+      const expireAt = toDateOnly(order.expireAt) || toDateOnly(order.expectedReturnDate);
+      const overdueDays = expireAt ? Math.max(0, -daysDiff(todayDateString(), expireAt)) : 0;
+      const overdueFee = overdueDays * (Number(snapshot.overdueDayPrice) || 0);
+      if (overdueFee > 0) {
+        strapi.log.warn(
+          `[zhao-tire] order ${orderNo} overdue fee hook: ${overdueDays} day(s), ${overdueFee} fen (not enforced)`
+        );
+      }
+      throw createError("PAYMENT_REQUIRED", 400, "订单尚未结清，请先完成收款", {
+        amountTotal: total,
+        paidAmount: paid,
+        outstanding,
+        overdueFee,
+      });
+    }
+
+    // 核销码校验（防重复出库）
+    const config = await getConfig(strapi);
+    if (config.redemptionCodeEnabled !== false && order.redemptionCode) {
+      const provided = String(payload.redemptionCode || "")
+        .replace(/\s/g, "")
+        .trim();
+      if (!provided) {
+        throw createError("REDEMPTION_CODE_REQUIRED", 400, "请扫描或输入出库核销码");
+      }
+      if (provided !== String(order.redemptionCode)) {
+        throw createError("REDEMPTION_CODE_INVALID", 400, "核销码不正确");
+      }
+    }
 
     const ids = photoIds(payload.photos);
     if (ids.length === 0) {
@@ -764,7 +957,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     const timeline = appendTimeline(
       order,
       "outbound_done",
-      "轮胎已出库，订单完成",
+      "轮胎已出库（核销码已验证），订单完成",
       payload.operatorId
     );
     await strapi.db.query(ORDER_UID).update({
@@ -773,6 +966,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         status: "completed",
         outboundAt,
         outboundPhotos: ids.map((id) => ({ id })),
+        redemptionCodeUsedAt: outboundAt,
         timeline,
       },
     });
@@ -934,7 +1128,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     return { orderNo: order.orderNo, updated: updatedFields };
   },
 
-  /** 后台收款登记 */
+  /** 后台收款登记：所有到账统一落 tire-payment 流水 */
   async registerPayment(
     orderNo: string,
     payload: any = {},
@@ -949,18 +1143,30 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     const method = String(
       payload?.paymentMethod || payload?.method || order.paymentMethod || "store_pay"
     );
-    if (!["store_pay", "deposit", "full"].includes(method)) {
+    if (!["store_pay", "pickup_pay", "wechat", "deposit", "full"].includes(method)) {
       throw createError("VALIDATION_FAILED", 400, "支付方式不合法");
     }
 
-    const paidAmount = (Number(order.paidAmount) || 0) + amount;
-    const total = Number(order.amountTotal) || 0;
-    const paymentStatus =
-      total > 0 && paidAmount >= total ? "paid" : "deposit_paid";
+    const paymentService: any = strapi.plugin("zhao-tire").service("payment");
+    const result = await paymentService.recordManual({
+      order,
+      amount,
+      channel: method,
+      idempotencyKey: payload?.idempotencyKey || payload?.clientToken,
+      operatorId,
+      operatorName: payload?.operatorName,
+      note: payload?.note,
+      status: payload?.status === "pending" ? "pending" : "paid",
+    });
+
+    const paymentStatus = result.order?.paymentStatus || order.paymentStatus;
+    const paidAmount = result.order?.paidAmount ?? (Number(order.paidAmount) || 0);
     const timeline = appendTimeline(
       order,
       "payment",
-      `收款登记 ${amount} 分（${method}），累计 ${paidAmount} 分`,
+      result.pending
+        ? `收款登记待确认 ${amount} 分（${method}，流水 ${result.payment.paymentNo}）`
+        : `收款到账 ${amount} 分（${method}，流水 ${result.payment.paymentNo}），累计 ${paidAmount} 分`,
       operatorId
     );
 
@@ -969,6 +1175,14 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       data: { paymentMethod: method, paymentStatus, paidAmount, timeline },
     });
 
-    return { orderNo: order.orderNo, paymentMethod: method, paymentStatus, paidAmount };
+    return {
+      orderNo: order.orderNo,
+      paymentMethod: method,
+      paymentStatus,
+      paidAmount,
+      paymentNo: result.payment?.paymentNo,
+      pending: Boolean(result.pending),
+      duplicated: Boolean(result.duplicated),
+    };
   },
 });

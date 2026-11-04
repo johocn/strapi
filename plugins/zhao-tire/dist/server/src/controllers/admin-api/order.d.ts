@@ -9,6 +9,7 @@ declare const _default: {
     inbound(ctx: any): Promise<void>;
     outbound(ctx: any): Promise<void>;
     payment(ctx: any): Promise<void>;
+    refund(ctx: any): Promise<void>;
     exportExcel(ctx: any): Promise<void>;
 };
 export default _default;

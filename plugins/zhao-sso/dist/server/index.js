@@ -211,6 +211,25 @@ const bootstrap = async ({ strapi }) => {
     });
     strapi.log.info("[zhao-sso] Default app created (app_code=default)");
   }
+  if (defaultApp) {
+    const REQUIRED_REDIRECT_URIS = [
+      "https://www.joho.cn/tire/*",
+      "https://www.joho.cn/tire"
+    ];
+    const currentUris = Array.isArray(defaultApp.redirect_uris) ? defaultApp.redirect_uris : [];
+    const missing = REQUIRED_REDIRECT_URIS.filter(
+      (uri) => !currentUris.includes(uri)
+    );
+    if (missing.length > 0) {
+      await strapi.db.query("plugin::zhao-sso.sso-app").update({
+        where: { id: defaultApp.id },
+        data: { redirect_uris: [...currentUris, ...missing] }
+      });
+      strapi.log.info(
+        `[zhao-sso] default app redirect_uris 已补齐: ${missing.join(", ")}`
+      );
+    }
+  }
   const wealthApp = await strapi.db.query("plugin::zhao-sso.sso-app").findOne({
     where: { app_code: "wealth" }
   });

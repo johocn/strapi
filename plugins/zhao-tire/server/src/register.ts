@@ -7,6 +7,8 @@ const actions = [
   { section: "plugins", pluginName: "zhao-tire", uid: "order.update", displayName: "修改订单" },
   { section: "plugins", pluginName: "zhao-tire", uid: "order.inbound", displayName: "入库登记" },
   { section: "plugins", pluginName: "zhao-tire", uid: "order.outbound", displayName: "出库登记" },
+  { section: "plugins", pluginName: "zhao-tire", uid: "order.payment", displayName: "收款登记" },
+  { section: "plugins", pluginName: "zhao-tire", uid: "payment.read", displayName: "查看支付流水" },
   { section: "plugins", pluginName: "zhao-tire", uid: "order.export", displayName: "导出订单" },
   { section: "plugins", pluginName: "zhao-tire", uid: "package.manage", displayName: "管理套餐" },
   { section: "plugins", pluginName: "zhao-tire", uid: "config.manage", displayName: "管理站点配置" },

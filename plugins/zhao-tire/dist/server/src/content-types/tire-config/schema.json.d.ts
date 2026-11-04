@@ -77,6 +77,26 @@ declare const _default: {
       "type": "integer",
       "default": 30
     },
+    "referralRewardCap": {
+      "type": "integer",
+      "default": 6900
+    },
+    "referralRewardValidDays": {
+      "type": "integer",
+      "default": 365
+    },
+    "referralRewardYearLimit": {
+      "type": "integer",
+      "default": 4
+    },
+    "referralDailyBindLimit": {
+      "type": "integer",
+      "default": 5
+    },
+    "redemptionCodeEnabled": {
+      "type": "boolean",
+      "default": true
+    },
     "agreementText": {
       "type": "richtext"
     },

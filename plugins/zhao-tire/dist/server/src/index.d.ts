@@ -26,6 +26,21 @@ declare const _default: {
             agreement(ctx: any): Promise<void>;
             faqs(ctx: any): Promise<void>;
         };
+        my: {
+            me(ctx: any): Promise<void>;
+            orders(ctx: any): Promise<void>;
+            referral(ctx: any): Promise<void>;
+            rewards(ctx: any): Promise<void>;
+            shareRecords(ctx: any): Promise<void>;
+        };
+        referral: {
+            preview(ctx: any): Promise<void>;
+        };
+        pay: {
+            prepay(ctx: any): Promise<void>;
+            notify(ctx: any): Promise<void>;
+            mockPay(ctx: any): Promise<void>;
+        };
         "admin-order": {
             find(ctx: any): Promise<void>;
             findOne(ctx: any): Promise<void>;
@@ -37,6 +52,7 @@ declare const _default: {
             inbound(ctx: any): Promise<void>;
             outbound(ctx: any): Promise<void>;
             payment(ctx: any): Promise<void>;
+            refund(ctx: any): Promise<void>;
             exportExcel(ctx: any): Promise<void>;
         };
         "admin-inventory": {
@@ -61,6 +77,18 @@ declare const _default: {
         "admin-me": {
             find(ctx: any): Promise<void>;
         };
+        "admin-referral": {
+            find(ctx: any): Promise<void>;
+            update(ctx: any): Promise<void>;
+            grantFree(ctx: any): Promise<void>;
+            shareRecords(ctx: any): Promise<void>;
+            exportShareRecords(ctx: any): Promise<void>;
+            rewards(ctx: any): Promise<void>;
+        };
+        "admin-payment": {
+            find(ctx: any): Promise<void>;
+            confirm(ctx: any): Promise<void>;
+        };
     };
     routes: {
         "content-api": {
@@ -81,7 +109,7 @@ declare const _default: {
                     policies: {
                         name: string;
                         config: {
-                            allow: "full" | "read" | "storage";
+                            allow: "full" | "payment" | "read" | "storage";
                         };
                     }[];
                 };
@@ -130,10 +158,22 @@ declare const _default: {
                 amountTotal: any;
                 status: any;
                 duplicated: boolean;
+                isFree?: undefined;
+                freeReason?: undefined;
+                referralCode?: undefined;
+                paymentMethod?: undefined;
+                rewardNo?: undefined;
+                rewardAmount?: undefined;
             } | {
                 orderNo: any;
                 amountTotal: any;
                 status: any;
+                isFree: any;
+                freeReason: any;
+                referralCode: any;
+                paymentMethod: any;
+                rewardNo: any;
+                rewardAmount: number;
                 duplicated?: undefined;
             }>;
             detail(orderNo: string, phone: string): Promise<{
@@ -161,6 +201,16 @@ declare const _default: {
                 paymentMethod: any;
                 paymentStatus: any;
                 paidAmount: number;
+                outstandingAmount: number;
+                canPayOnline: boolean;
+                rewardNo: any;
+                rewardAmount: number;
+                redemptionCode: any;
+                redemptionCodeUsedAt: any;
+                referralCode: any;
+                referrerPhone: string;
+                isFree: boolean;
+                freeReason: any;
                 outboundRequestStatus: any;
                 outboundRequestedAt: any;
                 outboundNote: any;
@@ -210,10 +260,12 @@ declare const _default: {
                 status: string;
                 inboundAt: string;
                 locationCode: string;
+                redemptionCode: string;
             }>;
             outbound(orderNo: string, payload?: {
                 photos?: unknown;
                 operatorId?: number;
+                redemptionCode?: string;
             }): Promise<{
                 orderNo: any;
                 status: string;
@@ -241,8 +293,11 @@ declare const _default: {
             registerPayment(orderNo: string, payload?: any, operatorId?: number): Promise<{
                 orderNo: any;
                 paymentMethod: string;
-                paymentStatus: string;
-                paidAmount: number;
+                paymentStatus: any;
+                paidAmount: any;
+                paymentNo: any;
+                pending: boolean;
+                duplicated: boolean;
             }>;
         };
         site: ({ strapi }: {
@@ -334,6 +389,280 @@ declare const _default: {
                     total: number;
                     pageCount: number;
                 };
+            }>;
+        };
+        referral: ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            ensureForPhone(phone: string, nickname?: string): Promise<any>;
+            validate(referralCode: string): Promise<any>;
+            attachReferral(order: any, referralCode: string, extra?: {
+                openid?: string;
+                deviceId?: string;
+                ip?: string;
+            }): Promise<any>;
+            markValidOnInbound(orderNo: string): Promise<{
+                duplicated: boolean;
+                record: any;
+                skipped?: undefined;
+                reason?: undefined;
+                referralCode?: undefined;
+                referrerPhone?: undefined;
+                completedCount?: undefined;
+                rewarded?: undefined;
+                reward?: undefined;
+                pendingFreeCount?: undefined;
+                recordId?: undefined;
+            } | {
+                skipped: boolean;
+                reason: any;
+                record: any;
+                duplicated?: undefined;
+                referralCode?: undefined;
+                referrerPhone?: undefined;
+                completedCount?: undefined;
+                rewarded?: undefined;
+                reward?: undefined;
+                pendingFreeCount?: undefined;
+                recordId?: undefined;
+            } | {
+                referralCode: any;
+                referrerPhone: any;
+                completedCount: number;
+                rewarded: boolean;
+                reward: any;
+                pendingFreeCount: number;
+                recordId: any;
+                duplicated?: undefined;
+                record?: undefined;
+                skipped?: undefined;
+                reason?: undefined;
+            }>;
+            issueReward(rc: any, options?: {
+                source?: string;
+                note?: string;
+                force?: boolean;
+            }): Promise<{
+                issued: boolean;
+                debt: boolean;
+                reason: string;
+                reward?: undefined;
+                amount?: undefined;
+            } | {
+                issued: boolean;
+                reason: string;
+                debt?: undefined;
+                reward?: undefined;
+                amount?: undefined;
+            } | {
+                issued: boolean;
+                reward: any;
+                amount: number;
+                debt?: undefined;
+                reason?: undefined;
+            }>;
+            reserveReward(phone: string, amountPackage: number): Promise<{
+                rewardNo: any;
+                discount: number;
+                amount: number;
+                reward: any;
+            }>;
+            bindReward(rewardNo: string, orderNo: string): Promise<any>;
+            releaseReward(rewardNo: string): Promise<any>;
+            listRewards(phone: string): Promise<{
+                rewards: {
+                    rewardNo: any;
+                    amount: number;
+                    source: any;
+                    status: any;
+                    issuedAt: any;
+                    expiresAt: any;
+                    usedOrderNo: any;
+                }[];
+                available: {
+                    rewardNo: any;
+                    amount: number;
+                    source: any;
+                    status: any;
+                    issuedAt: any;
+                    expiresAt: any;
+                    usedOrderNo: any;
+                }[];
+            }>;
+            rollbackForOrder(orderNo: string): Promise<{
+                rolledBack: boolean;
+                completedCount?: undefined;
+                pendingFreeCount?: undefined;
+                debtCount?: undefined;
+            } | {
+                rolledBack: boolean;
+                completedCount: number;
+                pendingFreeCount: number;
+                debtCount: number;
+            }>;
+            restoreUsedReward(order: any): Promise<{
+                rewardNo: any;
+            }>;
+            markCompleted(orderNo: string): Promise<{
+                duplicated: boolean;
+                record: any;
+                skipped?: undefined;
+                reason?: undefined;
+                referralCode?: undefined;
+                referrerPhone?: undefined;
+                completedCount?: undefined;
+                rewarded?: undefined;
+                reward?: undefined;
+                pendingFreeCount?: undefined;
+                recordId?: undefined;
+            } | {
+                skipped: boolean;
+                reason: any;
+                record: any;
+                duplicated?: undefined;
+                referralCode?: undefined;
+                referrerPhone?: undefined;
+                completedCount?: undefined;
+                rewarded?: undefined;
+                reward?: undefined;
+                pendingFreeCount?: undefined;
+                recordId?: undefined;
+            } | {
+                referralCode: any;
+                referrerPhone: any;
+                completedCount: number;
+                rewarded: boolean;
+                reward: any;
+                pendingFreeCount: number;
+                recordId: any;
+                duplicated?: undefined;
+                record?: undefined;
+                skipped?: undefined;
+                reason?: undefined;
+            }>;
+            consumeFree(phone: string): Promise<boolean>;
+            getProfile(phone: string): Promise<any>;
+        };
+        payment: ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            findOrder(orderNo: string): Promise<any>;
+            outstandingOf(order: any): number;
+            ensurePending(params: {
+                order: any;
+                amount: number;
+                channel: string;
+                idempotencyKey: string;
+                provider?: string;
+                externalNo?: string;
+                raw?: any;
+                note?: string;
+            }): Promise<any>;
+            settle(paymentNo: string, options?: {
+                externalNo?: string;
+                raw?: any;
+            }): Promise<{
+                duplicated: boolean;
+                payment: any;
+                order?: undefined;
+            } | {
+                duplicated: boolean;
+                payment: any;
+                order: {
+                    orderNo: any;
+                    paidAmount: any;
+                    paymentStatus: string;
+                };
+            }>;
+            recordManual(params: {
+                order: any;
+                amount: number;
+                channel: string;
+                idempotencyKey?: string;
+                operatorId?: number | string;
+                operatorName?: string;
+                note?: string;
+                status?: "pending" | "paid";
+            }): Promise<{
+                duplicated: boolean;
+                payment: any;
+                order?: undefined;
+            } | {
+                duplicated: boolean;
+                payment: any;
+                order: {
+                    orderNo: any;
+                    paidAmount: any;
+                    paymentStatus: string;
+                };
+            } | {
+                duplicated: boolean;
+                payment: any;
+                pending: boolean;
+            }>;
+            list(query: {
+                page?: number;
+                pageSize?: number;
+                status?: string;
+                orderNo?: string;
+                channel?: string;
+            }): Promise<{
+                data: any[];
+                meta: {
+                    page: number;
+                    pageSize: number;
+                    total: number;
+                    pageCount: number;
+                };
+            }>;
+            refund(params: {
+                order: any;
+                amount: number;
+                operatorId?: number | string;
+                operatorName?: string;
+                note?: string;
+            }): Promise<{
+                payment: any;
+                order: {
+                    orderNo: any;
+                    paidAmount: number;
+                    paymentStatus: string;
+                };
+                rollback: any;
+            }>;
+        };
+        pay: ({ strapi }: {
+            strapi: import('@strapi/types/dist/core').Strapi;
+        }) => {
+            provider(): "mock" | "wechat";
+            mockSecret(): string;
+            publicBase(): string;
+            prepay(payload: any): Promise<{
+                paid: boolean;
+                paymentNo: any;
+                amount: any;
+                provider?: undefined;
+                mock?: undefined;
+                payUrl?: undefined;
+                orderNo?: undefined;
+            } | {
+                paymentNo: any;
+                amount: any;
+                provider: "mock";
+                mock: boolean;
+                payUrl: string;
+                orderNo: any;
+                paid?: undefined;
+            }>;
+            notify(payload: any, signature: string): Promise<{
+                ok: boolean;
+                duplicated: any;
+                paidAmount: any;
+            }>;
+            mockPay(paymentNo: string): Promise<{
+                ok: boolean;
+                duplicated: any;
+                paidAmount: any;
             }>;
         };
     };
@@ -568,6 +897,21 @@ declare const _default: {
                         type: string;
                         default: number;
                     };
+                    rewardNo: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    rewardAmount: {
+                        type: string;
+                        default: number;
+                    };
+                    redemptionCode: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    redemptionCodeUsedAt: {
+                        type: string;
+                    };
                     status: {
                         type: string;
                         enum: string[];
@@ -613,6 +957,21 @@ declare const _default: {
                     };
                     agreementAcceptedAt: {
                         type: string;
+                    };
+                    referralCode: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    referrerPhone: {
+                        type: string;
+                    };
+                    isFree: {
+                        type: string;
+                        default: boolean;
+                    };
+                    freeReason: {
+                        type: string;
+                        enum: string[];
                     };
                     renewals: {
                         type: string;
@@ -876,6 +1235,26 @@ declare const _default: {
                         type: string;
                         default: number;
                     };
+                    referralRewardCap: {
+                        type: string;
+                        default: number;
+                    };
+                    referralRewardValidDays: {
+                        type: string;
+                        default: number;
+                    };
+                    referralRewardYearLimit: {
+                        type: string;
+                        default: number;
+                    };
+                    referralDailyBindLimit: {
+                        type: string;
+                        default: number;
+                    };
+                    redemptionCodeEnabled: {
+                        type: string;
+                        default: boolean;
+                    };
                     agreementText: {
                         type: string;
                     };
@@ -887,6 +1266,297 @@ declare const _default: {
                     };
                     smsTemplateOverride: {
                         type: string;
+                    };
+                };
+            };
+        };
+        "tire-referral-code": {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                pluginOptions: {
+                    "content-manager": {
+                        visible: boolean;
+                    };
+                    "content-type-builder": {
+                        visible: boolean;
+                    };
+                };
+                attributes: {
+                    code: {
+                        type: string;
+                        required: boolean;
+                        unique: boolean;
+                        maxLength: number;
+                    };
+                    phone: {
+                        type: string;
+                        required: boolean;
+                        unique: boolean;
+                    };
+                    nickname: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    usedCount: {
+                        type: string;
+                        default: number;
+                    };
+                    completedCount: {
+                        type: string;
+                        default: number;
+                    };
+                    pendingFreeCount: {
+                        type: string;
+                        default: number;
+                    };
+                    totalFreeCount: {
+                        type: string;
+                        default: number;
+                    };
+                    debtCount: {
+                        type: string;
+                        default: number;
+                    };
+                };
+            };
+        };
+        "tire-payment": {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                pluginOptions: {
+                    "content-manager": {
+                        visible: boolean;
+                    };
+                    "content-type-builder": {
+                        visible: boolean;
+                    };
+                };
+                attributes: {
+                    paymentNo: {
+                        type: string;
+                        required: boolean;
+                        unique: boolean;
+                        maxLength: number;
+                    };
+                    orderNo: {
+                        type: string;
+                        required: boolean;
+                        maxLength: number;
+                    };
+                    orderId: {
+                        type: string;
+                    };
+                    channel: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    amount: {
+                        type: string;
+                        required: boolean;
+                    };
+                    status: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    externalNo: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    idempotencyKey: {
+                        type: string;
+                        required: boolean;
+                        unique: boolean;
+                        maxLength: number;
+                    };
+                    provider: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    operator: {
+                        type: string;
+                        relation: string;
+                        target: string;
+                    };
+                    operatorName: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    paidAt: {
+                        type: string;
+                    };
+                    note: {
+                        type: string;
+                    };
+                    raw: {
+                        type: string;
+                    };
+                    refundedAmount: {
+                        type: string;
+                        default: number;
+                    };
+                    refundNote: {
+                        type: string;
+                    };
+                };
+            };
+        };
+        "tire-share-record": {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                pluginOptions: {
+                    "content-manager": {
+                        visible: boolean;
+                    };
+                    "content-type-builder": {
+                        visible: boolean;
+                    };
+                };
+                attributes: {
+                    shareCode: {
+                        type: string;
+                        required: boolean;
+                        maxLength: number;
+                    };
+                    referrerPhone: {
+                        type: string;
+                        required: boolean;
+                    };
+                    inviteePhone: {
+                        type: string;
+                    };
+                    inviteeOpenid: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    deviceId: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    ip: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    orderNo: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    orderId: {
+                        type: string;
+                    };
+                    status: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    dedupeKey: {
+                        type: string;
+                        required: boolean;
+                        unique: boolean;
+                        maxLength: number;
+                    };
+                    riskReason: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    boundAt: {
+                        type: string;
+                    };
+                    validAt: {
+                        type: string;
+                    };
+                };
+            };
+        };
+        "tire-referral-reward": {
+            schema: {
+                kind: string;
+                collectionName: string;
+                info: {
+                    singularName: string;
+                    pluralName: string;
+                    displayName: string;
+                };
+                options: {
+                    draftAndPublish: boolean;
+                };
+                pluginOptions: {
+                    "content-manager": {
+                        visible: boolean;
+                    };
+                    "content-type-builder": {
+                        visible: boolean;
+                    };
+                };
+                attributes: {
+                    rewardNo: {
+                        type: string;
+                        required: boolean;
+                        unique: boolean;
+                        maxLength: number;
+                    };
+                    phone: {
+                        type: string;
+                        required: boolean;
+                    };
+                    amount: {
+                        type: string;
+                        default: number;
+                    };
+                    source: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    status: {
+                        type: string;
+                        enum: string[];
+                        default: string;
+                    };
+                    issuedAt: {
+                        type: string;
+                    };
+                    expiresAt: {
+                        type: string;
+                    };
+                    usedOrderNo: {
+                        type: string;
+                        maxLength: number;
+                    };
+                    usedAt: {
+                        type: string;
+                    };
+                    note: {
+                        type: string;
+                        maxLength: number;
                     };
                 };
             };

@@ -17,7 +17,7 @@ declare const _default: {
                 policies: {
                     name: string;
                     config: {
-                        allow: "full" | "read" | "storage";
+                        allow: "full" | "payment" | "read" | "storage";
                     };
                 }[];
             };

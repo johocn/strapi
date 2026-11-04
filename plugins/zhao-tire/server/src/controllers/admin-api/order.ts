@@ -272,6 +272,7 @@ export default {
       ctx.body = await orderService().outbound(order.orderNo, {
         photos: photoIds,
         operatorId: operatorId(ctx),
+        redemptionCode: body?.redemptionCode || body?.code || body?.redeemCode,
       });
     } catch (error) {
       sendError(ctx, error);
@@ -286,6 +287,28 @@ export default {
         readBody(ctx),
         operatorId(ctx)
       );
+    } catch (error) {
+      sendError(ctx, error);
+    }
+  },
+
+  async refund(ctx: any) {
+    try {
+      const order = await findOrderById(ctx.params.id);
+      const body = readBody(ctx);
+      const paymentService: any = strapi
+        .plugin("zhao-tire")
+        .service("payment");
+      const user = ctx.state?.user;
+      ctx.body = await paymentService.refund({
+        order,
+        amount: Number(body?.amount) || 0,
+        note: body?.note,
+        operatorId: operatorId(ctx),
+        operatorName: user
+          ? String(user.username || user.email || user.id || "")
+          : undefined,
+      });
     } catch (error) {
       sendError(ctx, error);
     }

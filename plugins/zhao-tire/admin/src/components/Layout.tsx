@@ -9,6 +9,7 @@ import {
   AppstoreOutlined,
   DatabaseOutlined,
   FileTextOutlined,
+  MoneyCollectOutlined,
   MessageOutlined,
   ShoppingCartOutlined,
   TeamOutlined,
@@ -16,6 +17,7 @@ import {
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   canFullAccess,
+  canPaymentAccess,
   canStorageAccess,
   errorMessage,
   useTireApi,
@@ -29,6 +31,7 @@ const defaultState: PermissionState = {
   me: null,
   canFull: false,
   canStorage: false,
+  canPayment: false,
 };
 
 const PermissionContext = createContext<PermissionState>(defaultState);
@@ -53,6 +56,7 @@ export const PermissionProvider = ({
           me,
           canFull: canFullAccess(me.roleCodes),
           canStorage: canStorageAccess(me.roleCodes),
+          canPayment: canPaymentAccess(me.roleCodes),
         });
       })
       .catch((error) => {
@@ -62,6 +66,7 @@ export const PermissionProvider = ({
           me: null,
           canFull: false,
           canStorage: false,
+          canPayment: false,
           error: errorMessage(error),
         });
       });
@@ -79,7 +84,13 @@ export const PermissionProvider = ({
 
 const MENU_ITEMS = [
   { key: "orders", icon: <ShoppingCartOutlined />, label: "订单管理" },
-  { key: "inventory", icon: <DatabaseOutlined />, label: "仓储库存" },
+  { key: "inventory", icon: <DatabaseOutlined />, label: "仓储库存", storageOnly: true },
+  {
+    key: "payments",
+    icon: <MoneyCollectOutlined />,
+    label: "收银对账",
+    paymentOnly: true,
+  },
   {
     key: "catalog",
     icon: <AppstoreOutlined />,
@@ -116,7 +127,10 @@ const PluginLayout = ({ children }: { children?: React.ReactNode }) => {
   const selectedKey = relative.replace(/^\//, "").split("/")[0] || "orders";
 
   const items = MENU_ITEMS.filter(
-    (item) => !item.fullOnly || permissions.canFull
+    (item: any) =>
+      (!item.fullOnly || permissions.canFull) &&
+      (!item.storageOnly || permissions.canStorage) &&
+      (!item.paymentOnly || permissions.canPayment)
   ).map((item) => ({
     key: item.key,
     icon: item.icon,

@@ -1,5 +1,5 @@
 type Method = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
-type Allow = "read" | "full" | "storage";
+type Allow = "read" | "full" | "storage" | "payment";
 declare const _default: () => {
     type: "content-api";
     routes: {

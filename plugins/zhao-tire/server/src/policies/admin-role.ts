@@ -3,6 +3,8 @@ import jwt from "jsonwebtoken";
 const FULL_ACCESS_ROLES = ["strapi-super-admin", "tire-admin"];
 const WAREHOUSE_ROLE = "tire-warehouse";
 const WAREHOUSE_ALLOWED = ["read", "storage"];
+const CASHIER_ROLE = "tire-cashier";
+const CASHIER_ALLOWED = ["read", "payment"];
 
 const deny = (ctx: any, status: 401 | 403) => {
   const code = status === 401 ? "UNAUTHORIZED" : "FORBIDDEN";
@@ -71,6 +73,14 @@ export default async (
   if (
     roleCodes.includes(WAREHOUSE_ROLE) &&
     WAREHOUSE_ALLOWED.includes(allow)
+  ) {
+    return true;
+  }
+
+  // 门店收银员：只能查看与收款登记/确认到账，不能出入库、不能退款
+  if (
+    roleCodes.includes(CASHIER_ROLE) &&
+    CASHIER_ALLOWED.includes(allow)
   ) {
     return true;
   }

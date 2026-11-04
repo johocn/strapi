@@ -1,0 +1,88 @@
+declare const _default: {
+  "kind": "collectionType",
+  "collectionName": "zhao_tire_payments",
+  "info": {
+    "singularName": "tire-payment",
+    "pluralName": "tire-payments",
+    "displayName": "支付流水"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "content-manager": { "visible": true },
+    "content-type-builder": { "visible": false }
+  },
+  "attributes": {
+    "paymentNo": {
+      "type": "string",
+      "required": true,
+      "unique": true,
+      "maxLength": 40
+    },
+    "orderNo": {
+      "type": "string",
+      "required": true,
+      "maxLength": 40
+    },
+    "orderId": {
+      "type": "integer"
+    },
+    "channel": {
+      "type": "enumeration",
+      "enum": ["wechat", "store_pay", "pickup_pay", "deposit", "full", "mock"],
+      "default": "store_pay"
+    },
+    "amount": {
+      "type": "integer",
+      "required": true
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": ["pending", "paid", "failed", "canceled", "refunded"],
+      "default": "pending"
+    },
+    "externalNo": {
+      "type": "string",
+      "maxLength": 64
+    },
+    "idempotencyKey": {
+      "type": "string",
+      "required": true,
+      "unique": true,
+      "maxLength": 128
+    },
+    "provider": {
+      "type": "string",
+      "maxLength": 32
+    },
+    "operator": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "admin::user"
+    },
+    "operatorName": {
+      "type": "string",
+      "maxLength": 64
+    },
+    "paidAt": {
+      "type": "datetime"
+    },
+    "note": {
+      "type": "text"
+    },
+    "raw": {
+      "type": "json"
+    },
+    "refundedAmount": {
+      "type": "integer",
+      "default": 0
+    },
+    "refundNote": {
+      "type": "text"
+    }
+  }
+}
+;
+
+export default _default;

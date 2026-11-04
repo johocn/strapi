@@ -101,7 +101,7 @@ declare const _default: {
     },
     "paymentMethod": {
       "type": "enumeration",
-      "enum": ["store_pay", "deposit", "full"],
+      "enum": ["store_pay", "pickup_pay", "wechat", "deposit", "full"],
       "default": "store_pay"
     },
     "paymentStatus": {
@@ -112,6 +112,21 @@ declare const _default: {
     "paidAmount": {
       "type": "integer",
       "default": 0
+    },
+    "rewardNo": {
+      "type": "string",
+      "maxLength": 40
+    },
+    "rewardAmount": {
+      "type": "integer",
+      "default": 0
+    },
+    "redemptionCode": {
+      "type": "string",
+      "maxLength": 16
+    },
+    "redemptionCodeUsedAt": {
+      "type": "datetime"
     },
     "status": {
       "type": "enumeration",
@@ -166,6 +181,21 @@ declare const _default: {
     },
     "agreementAcceptedAt": {
       "type": "datetime"
+    },
+    "referralCode": {
+      "type": "string",
+      "maxLength": 12
+    },
+    "referrerPhone": {
+      "type": "string"
+    },
+    "isFree": {
+      "type": "boolean",
+      "default": false
+    },
+    "freeReason": {
+      "type": "enumeration",
+      "enum": ["referral_3", "manual"]
     },
     "renewals": {
       "type": "json"

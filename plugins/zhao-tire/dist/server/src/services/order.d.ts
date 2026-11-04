@@ -16,10 +16,22 @@ declare const _default: ({ strapi }: {
         amountTotal: any;
         status: any;
         duplicated: boolean;
+        isFree?: undefined;
+        freeReason?: undefined;
+        referralCode?: undefined;
+        paymentMethod?: undefined;
+        rewardNo?: undefined;
+        rewardAmount?: undefined;
     } | {
         orderNo: any;
         amountTotal: any;
         status: any;
+        isFree: any;
+        freeReason: any;
+        referralCode: any;
+        paymentMethod: any;
+        rewardNo: any;
+        rewardAmount: number;
         duplicated?: undefined;
     }>;
     detail(orderNo: string, phone: string): Promise<{
@@ -47,6 +59,16 @@ declare const _default: ({ strapi }: {
         paymentMethod: any;
         paymentStatus: any;
         paidAmount: number;
+        outstandingAmount: number;
+        canPayOnline: boolean;
+        rewardNo: any;
+        rewardAmount: number;
+        redemptionCode: any;
+        redemptionCodeUsedAt: any;
+        referralCode: any;
+        referrerPhone: string;
+        isFree: boolean;
+        freeReason: any;
         outboundRequestStatus: any;
         outboundRequestedAt: any;
         outboundNote: any;
@@ -96,10 +118,12 @@ declare const _default: ({ strapi }: {
         status: string;
         inboundAt: string;
         locationCode: string;
+        redemptionCode: string;
     }>;
     outbound(orderNo: string, payload?: {
         photos?: unknown;
         operatorId?: number;
+        redemptionCode?: string;
     }): Promise<{
         orderNo: any;
         status: string;
@@ -125,12 +149,15 @@ declare const _default: ({ strapi }: {
         orderNo: any;
         updated: string[];
     }>;
-    /** 后台收款登记 */
+    /** 后台收款登记：所有到账统一落 tire-payment 流水 */
     registerPayment(orderNo: string, payload?: any, operatorId?: number): Promise<{
         orderNo: any;
         paymentMethod: string;
-        paymentStatus: string;
-        paidAmount: number;
+        paymentStatus: any;
+        paidAmount: any;
+        paymentNo: any;
+        pending: boolean;
+        duplicated: boolean;
     }>;
 };
 export default _default;

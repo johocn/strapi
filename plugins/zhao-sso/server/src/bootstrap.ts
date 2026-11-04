@@ -141,6 +141,29 @@ const bootstrap = async ({ strapi }: { strapi: Core.Strapi }) => {
     strapi.log.info("[zhao-sso] Default app created (app_code=default)");
   }
 
+  // H5（www.joho.cn/tire/）回调白名单：幂等补齐，避免老库缺少该域名导致 token 无法落地
+  if (defaultApp) {
+    const REQUIRED_REDIRECT_URIS = [
+      "https://www.joho.cn/tire/*",
+      "https://www.joho.cn/tire",
+    ];
+    const currentUris: string[] = Array.isArray(defaultApp.redirect_uris)
+      ? defaultApp.redirect_uris
+      : [];
+    const missing = REQUIRED_REDIRECT_URIS.filter(
+      (uri) => !currentUris.includes(uri)
+    );
+    if (missing.length > 0) {
+      await strapi.db.query("plugin::zhao-sso.sso-app").update({
+        where: { id: defaultApp.id },
+        data: { redirect_uris: [...currentUris, ...missing] },
+      });
+      strapi.log.info(
+        `[zhao-sso] default app redirect_uris 已补齐: ${missing.join(", ")}`
+      );
+    }
+  }
+
   // 确保 'wealth' 应用存在（理财应用）
   const wealthApp = await strapi.db.query("plugin::zhao-sso.sso-app").findOne({
     where: { app_code: "wealth" },

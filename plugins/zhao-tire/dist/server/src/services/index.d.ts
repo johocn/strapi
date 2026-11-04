@@ -40,10 +40,22 @@ declare const _default: {
             amountTotal: any;
             status: any;
             duplicated: boolean;
+            isFree?: undefined;
+            freeReason?: undefined;
+            referralCode?: undefined;
+            paymentMethod?: undefined;
+            rewardNo?: undefined;
+            rewardAmount?: undefined;
         } | {
             orderNo: any;
             amountTotal: any;
             status: any;
+            isFree: any;
+            freeReason: any;
+            referralCode: any;
+            paymentMethod: any;
+            rewardNo: any;
+            rewardAmount: number;
             duplicated?: undefined;
         }>;
         detail(orderNo: string, phone: string): Promise<{
@@ -71,6 +83,16 @@ declare const _default: {
             paymentMethod: any;
             paymentStatus: any;
             paidAmount: number;
+            outstandingAmount: number;
+            canPayOnline: boolean;
+            rewardNo: any;
+            rewardAmount: number;
+            redemptionCode: any;
+            redemptionCodeUsedAt: any;
+            referralCode: any;
+            referrerPhone: string;
+            isFree: boolean;
+            freeReason: any;
             outboundRequestStatus: any;
             outboundRequestedAt: any;
             outboundNote: any;
@@ -120,10 +142,12 @@ declare const _default: {
             status: string;
             inboundAt: string;
             locationCode: string;
+            redemptionCode: string;
         }>;
         outbound(orderNo: string, payload?: {
             photos?: unknown;
             operatorId?: number;
+            redemptionCode?: string;
         }): Promise<{
             orderNo: any;
             status: string;
@@ -151,8 +175,11 @@ declare const _default: {
         registerPayment(orderNo: string, payload?: any, operatorId?: number): Promise<{
             orderNo: any;
             paymentMethod: string;
-            paymentStatus: string;
-            paidAmount: number;
+            paymentStatus: any;
+            paidAmount: any;
+            paymentNo: any;
+            pending: boolean;
+            duplicated: boolean;
         }>;
     };
     site: ({ strapi }: {
@@ -244,6 +271,280 @@ declare const _default: {
                 total: number;
                 pageCount: number;
             };
+        }>;
+    };
+    referral: ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        ensureForPhone(phone: string, nickname?: string): Promise<any>;
+        validate(referralCode: string): Promise<any>;
+        attachReferral(order: any, referralCode: string, extra?: {
+            openid?: string;
+            deviceId?: string;
+            ip?: string;
+        }): Promise<any>;
+        markValidOnInbound(orderNo: string): Promise<{
+            duplicated: boolean;
+            record: any;
+            skipped?: undefined;
+            reason?: undefined;
+            referralCode?: undefined;
+            referrerPhone?: undefined;
+            completedCount?: undefined;
+            rewarded?: undefined;
+            reward?: undefined;
+            pendingFreeCount?: undefined;
+            recordId?: undefined;
+        } | {
+            skipped: boolean;
+            reason: any;
+            record: any;
+            duplicated?: undefined;
+            referralCode?: undefined;
+            referrerPhone?: undefined;
+            completedCount?: undefined;
+            rewarded?: undefined;
+            reward?: undefined;
+            pendingFreeCount?: undefined;
+            recordId?: undefined;
+        } | {
+            referralCode: any;
+            referrerPhone: any;
+            completedCount: number;
+            rewarded: boolean;
+            reward: any;
+            pendingFreeCount: number;
+            recordId: any;
+            duplicated?: undefined;
+            record?: undefined;
+            skipped?: undefined;
+            reason?: undefined;
+        }>;
+        issueReward(rc: any, options?: {
+            source?: string;
+            note?: string;
+            force?: boolean;
+        }): Promise<{
+            issued: boolean;
+            debt: boolean;
+            reason: string;
+            reward?: undefined;
+            amount?: undefined;
+        } | {
+            issued: boolean;
+            reason: string;
+            debt?: undefined;
+            reward?: undefined;
+            amount?: undefined;
+        } | {
+            issued: boolean;
+            reward: any;
+            amount: number;
+            debt?: undefined;
+            reason?: undefined;
+        }>;
+        reserveReward(phone: string, amountPackage: number): Promise<{
+            rewardNo: any;
+            discount: number;
+            amount: number;
+            reward: any;
+        }>;
+        bindReward(rewardNo: string, orderNo: string): Promise<any>;
+        releaseReward(rewardNo: string): Promise<any>;
+        listRewards(phone: string): Promise<{
+            rewards: {
+                rewardNo: any;
+                amount: number;
+                source: any;
+                status: any;
+                issuedAt: any;
+                expiresAt: any;
+                usedOrderNo: any;
+            }[];
+            available: {
+                rewardNo: any;
+                amount: number;
+                source: any;
+                status: any;
+                issuedAt: any;
+                expiresAt: any;
+                usedOrderNo: any;
+            }[];
+        }>;
+        rollbackForOrder(orderNo: string): Promise<{
+            rolledBack: boolean;
+            completedCount?: undefined;
+            pendingFreeCount?: undefined;
+            debtCount?: undefined;
+        } | {
+            rolledBack: boolean;
+            completedCount: number;
+            pendingFreeCount: number;
+            debtCount: number;
+        }>;
+        restoreUsedReward(order: any): Promise<{
+            rewardNo: any;
+        }>;
+        markCompleted(orderNo: string): Promise<{
+            duplicated: boolean;
+            record: any;
+            skipped?: undefined;
+            reason?: undefined;
+            referralCode?: undefined;
+            referrerPhone?: undefined;
+            completedCount?: undefined;
+            rewarded?: undefined;
+            reward?: undefined;
+            pendingFreeCount?: undefined;
+            recordId?: undefined;
+        } | {
+            skipped: boolean;
+            reason: any;
+            record: any;
+            duplicated?: undefined;
+            referralCode?: undefined;
+            referrerPhone?: undefined;
+            completedCount?: undefined;
+            rewarded?: undefined;
+            reward?: undefined;
+            pendingFreeCount?: undefined;
+            recordId?: undefined;
+        } | {
+            referralCode: any;
+            referrerPhone: any;
+            completedCount: number;
+            rewarded: boolean;
+            reward: any;
+            pendingFreeCount: number;
+            recordId: any;
+            duplicated?: undefined;
+            record?: undefined;
+            skipped?: undefined;
+            reason?: undefined;
+        }>;
+        consumeFree(phone: string): Promise<boolean>;
+        getProfile(phone: string): Promise<any>;
+    };
+    payment: ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        findOrder(orderNo: string): Promise<any>;
+        outstandingOf(order: any): number;
+        ensurePending(params: {
+            order: any;
+            amount: number;
+            channel: string;
+            idempotencyKey: string;
+            provider?: string;
+            externalNo?: string;
+            raw?: any;
+            note?: string;
+        }): Promise<any>;
+        settle(paymentNo: string, options?: {
+            externalNo?: string;
+            raw?: any;
+        }): Promise<{
+            duplicated: boolean;
+            payment: any;
+            order?: undefined;
+        } | {
+            duplicated: boolean;
+            payment: any;
+            order: {
+                orderNo: any;
+                paidAmount: any;
+                paymentStatus: string;
+            };
+        }>;
+        recordManual(params: {
+            order: any;
+            amount: number;
+            channel: string;
+            idempotencyKey?: string;
+            operatorId?: number | string;
+            operatorName?: string;
+            note?: string;
+            status?: "pending" | "paid";
+        }): Promise<{
+            duplicated: boolean;
+            payment: any;
+            order?: undefined;
+        } | {
+            duplicated: boolean;
+            payment: any;
+            order: {
+                orderNo: any;
+                paidAmount: any;
+                paymentStatus: string;
+            };
+        } | {
+            duplicated: boolean;
+            payment: any;
+            pending: boolean;
+        }>;
+        list(query: {
+            page?: number;
+            pageSize?: number;
+            status?: string;
+            orderNo?: string;
+            channel?: string;
+        }): Promise<{
+            data: any[];
+            meta: {
+                page: number;
+                pageSize: number;
+                total: number;
+                pageCount: number;
+            };
+        }>;
+        refund(params: {
+            order: any;
+            amount: number;
+            operatorId?: number | string;
+            operatorName?: string;
+            note?: string;
+        }): Promise<{
+            payment: any;
+            order: {
+                orderNo: any;
+                paidAmount: number;
+                paymentStatus: string;
+            };
+            rollback: any;
+        }>;
+    };
+    pay: ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        provider(): "mock" | "wechat";
+        mockSecret(): string;
+        publicBase(): string;
+        prepay(payload: any): Promise<{
+            paid: boolean;
+            paymentNo: any;
+            amount: any;
+            provider?: undefined;
+            mock?: undefined;
+            payUrl?: undefined;
+            orderNo?: undefined;
+        } | {
+            paymentNo: any;
+            amount: any;
+            provider: "mock";
+            mock: boolean;
+            payUrl: string;
+            orderNo: any;
+            paid?: undefined;
+        }>;
+        notify(payload: any, signature: string): Promise<{
+            ok: boolean;
+            duplicated: any;
+            paidAmount: any;
+        }>;
+        mockPay(paymentNo: string): Promise<{
+            ok: boolean;
+            duplicated: any;
+            paidAmount: any;
         }>;
     };
 };

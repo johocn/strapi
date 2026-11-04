@@ -39,7 +39,9 @@ export const PAYMENT_TEXT: Record<string, string> = {
 };
 
 export const PAYMENT_METHOD_TEXT: Record<string, string> = {
+  wechat: "微信支付",
   store_pay: "到店支付",
+  pickup_pay: "取货付款",
   deposit: "定金",
   full: "全额",
 };

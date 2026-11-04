@@ -118,6 +118,7 @@ const OrderActionDrawer = ({
   const [paymentMethod, setPaymentMethod] = useState(
     order.paymentMethod || "store_pay"
   );
+  const [redemptionCode, setRedemptionCode] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -164,8 +165,14 @@ const OrderActionDrawer = ({
           message.warning("请至少上传一张出库照片");
           return;
         }
-        await api.submitOrderPhotos(order.id, "outbound", photos);
-        message.success("出库成功");
+        if (!redemptionCode.trim()) {
+          message.warning("请扫描或输入客户的出库核销码");
+          return;
+        }
+        await api.submitOrderPhotos(order.id, "outbound", photos, {
+          redemptionCode: redemptionCode.trim(),
+        });
+        message.success("出库成功，核销码已失效");
       } else if (type === "reject") {
         if (!reason.trim()) {
           message.warning("请填写拒绝原因");
@@ -263,7 +270,23 @@ const OrderActionDrawer = ({
                 maxLength={32}
               />
             </div>
-          ) : null}
+          ) : (
+            <div>
+              <div style={{ marginBottom: 8 }}>出库核销码</div>
+              <Input
+                value={redemptionCode}
+                onChange={(event) => setRedemptionCode(event.target.value)}
+                placeholder="请扫描或输入客户出示的 6 位核销码"
+                maxLength={16}
+                status={order.paymentStatus !== "paid" ? "warning" : undefined}
+              />
+              {order.paymentStatus !== "paid" ? (
+                <Text type="danger" style={{ fontSize: 12 }}>
+                  该订单尚未结清（应收 {money(order.amountTotal)}，已收 {money(order.paidAmount)}），需先收款后才能出库。
+                </Text>
+              ) : null}
+            </div>
+          )}
           <div>
             <div style={{ marginBottom: 8 }}>
               {type === "inbound" ? "入库照片" : "出库照片"}
@@ -292,7 +315,8 @@ const OrderActionDrawer = ({
       {type === "payment" ? (
         <Space direction="vertical" size={16} style={{ width: "100%" }}>
           <div>
-            订单总额 {money(order.amountTotal)}，已收 {money(order.paidAmount)}
+            订单总额 {money(order.amountTotal)}，已收 {money(order.paidAmount)}，待收{" "}
+            {money(Math.max(0, (order.amountTotal || 0) - (order.paidAmount || 0)))}
           </div>
           <div>
             <div style={{ marginBottom: 8 }}>收款金额（元）</div>

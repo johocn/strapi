@@ -5,6 +5,7 @@ import { Routes, Route } from "react-router-dom";
 import { PluginLayout, PermissionProvider } from "../components/Layout";
 import OrdersPage from "./OrdersPage";
 import InventoryPage from "./InventoryPage";
+import PaymentsPage from "./PaymentsPage";
 import CatalogPage from "./CatalogPage";
 import CustomersPage from "./CustomersPage";
 import MessagesPage from "./MessagesPage";
@@ -21,6 +22,7 @@ const App = () => (
           <Route index element={<OrdersPage />} />
           <Route path="orders" element={<OrdersPage />} />
           <Route path="inventory" element={<InventoryPage />} />
+          <Route path="payments" element={<PaymentsPage />} />
           <Route path="catalog" element={<CatalogPage />} />
           <Route path="customers" element={<CustomersPage />} />
           <Route path="messages" element={<MessagesPage />} />

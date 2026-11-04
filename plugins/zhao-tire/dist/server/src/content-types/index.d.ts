@@ -229,6 +229,21 @@ declare const _default: {
                     type: string;
                     default: number;
                 };
+                rewardNo: {
+                    type: string;
+                    maxLength: number;
+                };
+                rewardAmount: {
+                    type: string;
+                    default: number;
+                };
+                redemptionCode: {
+                    type: string;
+                    maxLength: number;
+                };
+                redemptionCodeUsedAt: {
+                    type: string;
+                };
                 status: {
                     type: string;
                     enum: string[];
@@ -274,6 +289,21 @@ declare const _default: {
                 };
                 agreementAcceptedAt: {
                     type: string;
+                };
+                referralCode: {
+                    type: string;
+                    maxLength: number;
+                };
+                referrerPhone: {
+                    type: string;
+                };
+                isFree: {
+                    type: string;
+                    default: boolean;
+                };
+                freeReason: {
+                    type: string;
+                    enum: string[];
                 };
                 renewals: {
                     type: string;
@@ -537,6 +567,26 @@ declare const _default: {
                     type: string;
                     default: number;
                 };
+                referralRewardCap: {
+                    type: string;
+                    default: number;
+                };
+                referralRewardValidDays: {
+                    type: string;
+                    default: number;
+                };
+                referralRewardYearLimit: {
+                    type: string;
+                    default: number;
+                };
+                referralDailyBindLimit: {
+                    type: string;
+                    default: number;
+                };
+                redemptionCodeEnabled: {
+                    type: string;
+                    default: boolean;
+                };
                 agreementText: {
                     type: string;
                 };
@@ -548,6 +598,297 @@ declare const _default: {
                 };
                 smsTemplateOverride: {
                     type: string;
+                };
+            };
+        };
+    };
+    "tire-referral-code": {
+        schema: {
+            kind: string;
+            collectionName: string;
+            info: {
+                singularName: string;
+                pluralName: string;
+                displayName: string;
+            };
+            options: {
+                draftAndPublish: boolean;
+            };
+            pluginOptions: {
+                "content-manager": {
+                    visible: boolean;
+                };
+                "content-type-builder": {
+                    visible: boolean;
+                };
+            };
+            attributes: {
+                code: {
+                    type: string;
+                    required: boolean;
+                    unique: boolean;
+                    maxLength: number;
+                };
+                phone: {
+                    type: string;
+                    required: boolean;
+                    unique: boolean;
+                };
+                nickname: {
+                    type: string;
+                    maxLength: number;
+                };
+                usedCount: {
+                    type: string;
+                    default: number;
+                };
+                completedCount: {
+                    type: string;
+                    default: number;
+                };
+                pendingFreeCount: {
+                    type: string;
+                    default: number;
+                };
+                totalFreeCount: {
+                    type: string;
+                    default: number;
+                };
+                debtCount: {
+                    type: string;
+                    default: number;
+                };
+            };
+        };
+    };
+    "tire-payment": {
+        schema: {
+            kind: string;
+            collectionName: string;
+            info: {
+                singularName: string;
+                pluralName: string;
+                displayName: string;
+            };
+            options: {
+                draftAndPublish: boolean;
+            };
+            pluginOptions: {
+                "content-manager": {
+                    visible: boolean;
+                };
+                "content-type-builder": {
+                    visible: boolean;
+                };
+            };
+            attributes: {
+                paymentNo: {
+                    type: string;
+                    required: boolean;
+                    unique: boolean;
+                    maxLength: number;
+                };
+                orderNo: {
+                    type: string;
+                    required: boolean;
+                    maxLength: number;
+                };
+                orderId: {
+                    type: string;
+                };
+                channel: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
+                amount: {
+                    type: string;
+                    required: boolean;
+                };
+                status: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
+                externalNo: {
+                    type: string;
+                    maxLength: number;
+                };
+                idempotencyKey: {
+                    type: string;
+                    required: boolean;
+                    unique: boolean;
+                    maxLength: number;
+                };
+                provider: {
+                    type: string;
+                    maxLength: number;
+                };
+                operator: {
+                    type: string;
+                    relation: string;
+                    target: string;
+                };
+                operatorName: {
+                    type: string;
+                    maxLength: number;
+                };
+                paidAt: {
+                    type: string;
+                };
+                note: {
+                    type: string;
+                };
+                raw: {
+                    type: string;
+                };
+                refundedAmount: {
+                    type: string;
+                    default: number;
+                };
+                refundNote: {
+                    type: string;
+                };
+            };
+        };
+    };
+    "tire-share-record": {
+        schema: {
+            kind: string;
+            collectionName: string;
+            info: {
+                singularName: string;
+                pluralName: string;
+                displayName: string;
+            };
+            options: {
+                draftAndPublish: boolean;
+            };
+            pluginOptions: {
+                "content-manager": {
+                    visible: boolean;
+                };
+                "content-type-builder": {
+                    visible: boolean;
+                };
+            };
+            attributes: {
+                shareCode: {
+                    type: string;
+                    required: boolean;
+                    maxLength: number;
+                };
+                referrerPhone: {
+                    type: string;
+                    required: boolean;
+                };
+                inviteePhone: {
+                    type: string;
+                };
+                inviteeOpenid: {
+                    type: string;
+                    maxLength: number;
+                };
+                deviceId: {
+                    type: string;
+                    maxLength: number;
+                };
+                ip: {
+                    type: string;
+                    maxLength: number;
+                };
+                orderNo: {
+                    type: string;
+                    maxLength: number;
+                };
+                orderId: {
+                    type: string;
+                };
+                status: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
+                dedupeKey: {
+                    type: string;
+                    required: boolean;
+                    unique: boolean;
+                    maxLength: number;
+                };
+                riskReason: {
+                    type: string;
+                    maxLength: number;
+                };
+                boundAt: {
+                    type: string;
+                };
+                validAt: {
+                    type: string;
+                };
+            };
+        };
+    };
+    "tire-referral-reward": {
+        schema: {
+            kind: string;
+            collectionName: string;
+            info: {
+                singularName: string;
+                pluralName: string;
+                displayName: string;
+            };
+            options: {
+                draftAndPublish: boolean;
+            };
+            pluginOptions: {
+                "content-manager": {
+                    visible: boolean;
+                };
+                "content-type-builder": {
+                    visible: boolean;
+                };
+            };
+            attributes: {
+                rewardNo: {
+                    type: string;
+                    required: boolean;
+                    unique: boolean;
+                    maxLength: number;
+                };
+                phone: {
+                    type: string;
+                    required: boolean;
+                };
+                amount: {
+                    type: string;
+                    default: number;
+                };
+                source: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
+                status: {
+                    type: string;
+                    enum: string[];
+                    default: string;
+                };
+                issuedAt: {
+                    type: string;
+                };
+                expiresAt: {
+                    type: string;
+                };
+                usedOrderNo: {
+                    type: string;
+                    maxLength: number;
+                };
+                usedAt: {
+                    type: string;
+                };
+                note: {
+                    type: string;
+                    maxLength: number;
                 };
             };
         };

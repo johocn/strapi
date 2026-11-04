@@ -15,6 +15,7 @@ export type PermissionState = {
   me: Me | null;
   canFull: boolean;
   canStorage: boolean;
+  canPayment: boolean;
   error?: string;
 };
 
@@ -23,6 +24,9 @@ export const canFullAccess = (roleCodes: string[]): boolean =>
 
 export const canStorageAccess = (roleCodes: string[]): boolean =>
   canFullAccess(roleCodes) || roleCodes.includes("tire-warehouse");
+
+export const canPaymentAccess = (roleCodes: string[]): boolean =>
+  canFullAccess(roleCodes) || roleCodes.includes("tire-cashier");
 
 export const errorMessage = (error: unknown): string => {
   if (isFetchError(error)) {
@@ -268,6 +272,65 @@ export function useTireApi() {
     return payload;
   }, []);
 
+  const listReferralCodes = useCallback(
+    async (params: Record<string, any>) => {
+      const { data } = await get(`${API_BASE}/referral-codes`, { params });
+      return data as any;
+    },
+    [get]
+  );
+
+  const grantFreeToReferral = useCallback(
+    async (id: number, count: number) => {
+      const { data } = await post(`${API_BASE}/referral-codes/${id}/grant-free`, { count });
+      return data as any;
+    },
+    [post]
+  );
+
+  const listPayments = useCallback(
+    async (params: Record<string, any>) => {
+      const { data } = await get(`${API_BASE}/payments`, { params });
+      return data as any;
+    },
+    [get]
+  );
+
+  const confirmPayment = useCallback(
+    async (id: number) => {
+      const { data } = await post(`${API_BASE}/payments/${id}/confirm`, {});
+      return data as any;
+    },
+    [post]
+  );
+
+  const listShareRecords = useCallback(
+    async (params: Record<string, any>) => {
+      const { data } = await get(`${API_BASE}/share-records`, { params });
+      return data as any;
+    },
+    [get]
+  );
+
+  const exportShareRecords = useCallback(
+    async (params: Record<string, any>) => {
+      const { data } = await get(`${API_BASE}/share-records/export.csv`, {
+        params,
+        responseType: "blob",
+      });
+      return data as unknown as Blob;
+    },
+    [get]
+  );
+
+  const listRewards = useCallback(
+    async (params: Record<string, any>) => {
+      const { data } = await get(`${API_BASE}/rewards`, { params });
+      return data as any;
+    },
+    [get]
+  );
+
   const uploadImage = useCallback(
     async (file: File) => {
       const formData = new FormData();
@@ -304,6 +367,13 @@ export function useTireApi() {
     updateConfig,
     listSmsLogs,
     updateSmsLog,
+    listReferralCodes,
+    grantFreeToReferral,
+    listPayments,
+    confirmPayment,
+    listShareRecords,
+    exportShareRecords,
+    listRewards,
     uploadImage,
   };
 }

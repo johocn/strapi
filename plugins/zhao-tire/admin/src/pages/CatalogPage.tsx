@@ -10,6 +10,7 @@ import {
   Space,
   Switch,
   Table,
+  Tabs,
   Typography,
   message,
 } from "antd";
@@ -25,15 +26,28 @@ import {
 const { Text } = Typography;
 
 type CatalogType = "packages" | "addons";
+type TabKey = "packages" | "addons" | "referral";
 
 const CatalogPage = () => {
   const api = useTireApi();
+  const [tab, setTab] = useState<TabKey>("packages");
+
+  // 套餐/增值项
   const [packages, setPackages] = useState<any[]>([]);
   const [addons, setAddons] = useState<any[]>([]);
   const [config, setConfig] = useState<any>({});
   const [configDraft, setConfigDraft] = useState<any>({});
   const [loading, setLoading] = useState(false);
   const [savingConfig, setSavingConfig] = useState(false);
+
+  // 邀请码
+  const [referrals, setReferrals] = useState<any[]>([]);
+  const [referralLoading, setReferralLoading] = useState(false);
+  const [referralSearch, setReferralSearch] = useState("");
+  const [grantModalOpen, setGrantModalOpen] = useState(false);
+  const [grantTarget, setGrantTarget] = useState<any>(null);
+  const [grantCount, setGrantCount] = useState(1);
+  const [granting, setGranting] = useState(false);
 
   const [modalType, setModalType] = useState<CatalogType | null>(null);
   const [editing, setEditing] = useState<any>(null);
@@ -59,9 +73,35 @@ const CatalogPage = () => {
     }
   };
 
+  const loadReferrals = async () => {
+    setReferralLoading(true);
+    try {
+      const params: Record<string, any> = { pageSize: 200 };
+      if (referralSearch.trim()) {
+        const kw = referralSearch.trim();
+        // 根据是否纯数字判断按手机号还是按 code 搜索
+        if (/^\d+$/.test(kw)) {
+          params.phone = kw;
+        } else {
+          params.code = kw.toUpperCase();
+        }
+      }
+      const result = await api.listReferralCodes(params);
+      setReferrals(Array.isArray(result?.data) ? result.data : Array.isArray(result) ? result : []);
+    } catch (error) {
+      message.error(`加载邀请码失败：${errorMessage(error)}`);
+    } finally {
+      setReferralLoading(false);
+    }
+  };
+
   useEffect(() => {
     loadAll();
   }, []);
+
+  useEffect(() => {
+    if (tab === "referral") loadReferrals();
+  }, [tab]);
 
   const openCreate = (type: CatalogType) => {
     setEditing(null);
@@ -177,6 +217,29 @@ const CatalogPage = () => {
       message.error(`保存失败：${errorMessage(error)}`);
     } finally {
       setSavingConfig(false);
+    }
+  };
+
+  // 邀请码相关方法
+  const openGrantModal = (record: any) => {
+    setGrantTarget(record);
+    setGrantCount(1);
+    setGrantModalOpen(true);
+  };
+
+  const handleGrantFree = async () => {
+    if (!grantTarget) return;
+    setGranting(true);
+    try {
+      await api.grantFreeToReferral(Number(grantTarget.id), grantCount);
+      message.success(`已为 ${grantTarget.nickname || grantTarget.phone} 发放 ${grantCount} 次免单额度`);
+      setGrantModalOpen(false);
+      setGrantTarget(null);
+      await loadReferrals();
+    } catch (error) {
+      message.error(`发放失败：${errorMessage(error)}`);
+    } finally {
+      setGranting(false);
     }
   };
 
@@ -320,52 +383,174 @@ const CatalogPage = () => {
     },
   ];
 
+  const referralColumns = [
+    {
+      title: "邀请码",
+      dataIndex: "code",
+      width: 130,
+      render: (value: string) => <Text code strong style={{ fontSize: 15 }}>{value}</Text>,
+    },
+    { title: "手机号", dataIndex: "phone", width: 130 },
+    {
+      title: "昵称",
+      dataIndex: "nickname",
+      width: 140,
+      render: (value: string) => value || "-",
+    },
+    {
+      title: "使用次数",
+      dataIndex: "usedCount",
+      width: 90,
+      align: "right" as const,
+      render: (v: number) => v || 0,
+    },
+    {
+      title: "达成交易",
+      dataIndex: "completedCount",
+      width: 100,
+      align: "right" as const,
+      render: (v: number) => (
+        <Text strong>
+          {v || 0}
+          <Text type="secondary" style={{ fontWeight: "normal" }}> / 3</Text>
+        </Text>
+      ),
+    },
+    {
+      title: "待发免单",
+      dataIndex: "pendingFreeCount",
+      width: 100,
+      align: "right" as const,
+      render: (v: number) =>
+        v > 0 ? (
+          <Text type="success" strong style={{ fontSize: 15 }}>{v}</Text>
+        ) : (
+          <Text type="secondary">0</Text>
+        ),
+    },
+    {
+      title: "累计奖励",
+      dataIndex: "totalFreeCount",
+      width: 100,
+      align: "right" as const,
+      render: (v: number) => v || 0,
+    },
+    {
+      title: "操作",
+      width: 160,
+      fixed: "right" as const,
+      render: (_: any, record: any) => (
+        <Button
+          size="small"
+          type="primary"
+          ghost
+          onClick={() => openGrantModal(record)}
+        >
+          发放免单
+        </Button>
+      ),
+    },
+  ];
+
   return (
     <Space direction="vertical" size={16} style={{ width: "100%" }}>
-      <Card
-        title="寄存套餐"
-        extra={
-          <Space>
-            <Button icon={<ReloadOutlined />} onClick={loadAll}>
-              刷新
-            </Button>
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => openCreate("packages")}>
-              新增套餐
-            </Button>
-          </Space>
-        }
-      >
-        <Table
-          rowKey="id"
-          size="middle"
-          loading={loading}
-          columns={packageColumns as any}
-          dataSource={packages}
-          pagination={false}
-          scroll={{ x: 1500 }}
-        />
-      </Card>
-
-      <Card
-        title="增值项"
-        extra={
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => openCreate("addons")}
-          >
-            新增增值项
-          </Button>
-        }
-      >
-        <Table
-          rowKey="id"
-          size="middle"
-          loading={loading}
-          columns={addonColumns as any}
-          dataSource={addons}
-          pagination={false}
-          scroll={{ x: 900 }}
+      <Card>
+        <Tabs
+          activeKey={tab}
+          onChange={(k) => setTab(k as TabKey)}
+          items={[
+            {
+              key: "packages",
+              label: "寄存套餐",
+              children: (
+                <>
+                  <div style={{ marginBottom: 16, textAlign: "right" }}>
+                    <Space>
+                      <Button icon={<ReloadOutlined />} onClick={loadAll}>
+                        刷新
+                      </Button>
+                      <Button
+                        type="primary"
+                        icon={<PlusOutlined />}
+                        onClick={() => openCreate("packages")}
+                      >
+                        新增套餐
+                      </Button>
+                    </Space>
+                  </div>
+                  <Table
+                    rowKey="id"
+                    size="middle"
+                    loading={loading}
+                    columns={packageColumns as any}
+                    dataSource={packages}
+                    pagination={false}
+                    scroll={{ x: 1500 }}
+                  />
+                </>
+              ),
+            },
+            {
+              key: "addons",
+              label: "增值项",
+              children: (
+                <>
+                  <div style={{ marginBottom: 16, textAlign: "right" }}>
+                    <Button
+                      type="primary"
+                      icon={<PlusOutlined />}
+                      onClick={() => openCreate("addons")}
+                    >
+                      新增增值项
+                    </Button>
+                  </div>
+                  <Table
+                    rowKey="id"
+                    size="middle"
+                    loading={loading}
+                    columns={addonColumns as any}
+                    dataSource={addons}
+                    pagination={false}
+                    scroll={{ x: 900 }}
+                  />
+                </>
+              ),
+            },
+            {
+              key: "referral",
+              label: "邀请码管理",
+              children: (
+                <>
+                  <div style={{ marginBottom: 16, display: "flex", gap: 12, alignItems: "center" }}>
+                    <Input.Search
+                      placeholder="按邀请码或手机号搜索"
+                      allowClear
+                      style={{ width: 280 }}
+                      value={referralSearch}
+                      onChange={(e) => setReferralSearch(e.target.value)}
+                      onSearch={loadReferrals}
+                      enterButton
+                    />
+                    <Button icon={<ReloadOutlined />} onClick={loadReferrals}>
+                      刷新
+                    </Button>
+                    <Text type="secondary">
+                      共 {referrals.length} 条 · 满 3 笔交易自动发 1 次免单
+                    </Text>
+                  </div>
+                  <Table
+                    rowKey="id"
+                    size="middle"
+                    loading={referralLoading}
+                    columns={referralColumns as any}
+                    dataSource={referrals}
+                    pagination={false}
+                    scroll={{ x: 1000 }}
+                  />
+                </>
+              ),
+            },
+          ]}
         />
       </Card>
 
@@ -509,6 +694,52 @@ const CatalogPage = () => {
             </>
           )}
         </Form>
+      </Modal>
+
+      {/* 发放免单 Modal */}
+      <Modal
+        open={grantModalOpen}
+        title="发放免单额度"
+        onCancel={() => {
+          setGrantModalOpen(false);
+          setGrantTarget(null);
+        }}
+        onOk={handleGrantFree}
+        confirmLoading={granting}
+        width={420}
+      >
+        {grantTarget && (
+          <div style={{ padding: "8px 0" }}>
+            <div style={{ marginBottom: 12 }}>
+              <Text strong>邀请码：</Text>
+              <Text code>{grantTarget.code}</Text>
+            </div>
+            <div style={{ marginBottom: 12 }}>
+              <Text strong>手机号：</Text>
+              {grantTarget.phone}
+            </div>
+            <div style={{ marginBottom: 12 }}>
+              <Text strong>昵称：</Text>
+              {grantTarget.nickname || "-"}
+            </div>
+            <div style={{ marginBottom: 16 }}>
+              <Text strong>当前可用免单：</Text>
+              <Text type="success" strong style={{ fontSize: 16, marginLeft: 8 }}>
+                {grantTarget.pendingFreeCount || 0} 次
+              </Text>
+            </div>
+            <div>
+              <Text strong>发放次数：</Text>
+              <InputNumber
+                min={1}
+                max={100}
+                value={grantCount}
+                onChange={(v) => setGrantCount(Number(v) || 1)}
+                style={{ marginLeft: 12 }}
+              />
+            </div>
+          </div>
+        )}
       </Modal>
     </Space>
   );

@@ -9,6 +9,9 @@ import exportService from "./export";
 import catalog from "./catalog";
 import inventory from "./inventory";
 import customer from "./customer";
+import referral from "./referral";
+import payment from "./payment";
+import pay from "./pay";
 
 export default {
   pricing,
@@ -22,4 +25,7 @@ export default {
   catalog,
   inventory,
   customer,
+  referral,
+  payment,
+  pay,
 };

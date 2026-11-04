@@ -1,0 +1,53 @@
+{
+  "kind": "collectionType",
+  "collectionName": "zhao_tire_referral_codes",
+  "info": {
+    "singularName": "tire-referral-code",
+    "pluralName": "tire-referral-codes",
+    "displayName": "邀请码"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "content-manager": { "visible": true },
+    "content-type-builder": { "visible": false }
+  },
+  "attributes": {
+    "code": {
+      "type": "string",
+      "required": true,
+      "unique": true,
+      "maxLength": 12
+    },
+    "phone": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "nickname": {
+      "type": "string",
+      "maxLength": 64
+    },
+    "usedCount": {
+      "type": "integer",
+      "default": 0
+    },
+    "completedCount": {
+      "type": "integer",
+      "default": 0
+    },
+    "pendingFreeCount": {
+      "type": "integer",
+      "default": 0
+    },
+    "totalFreeCount": {
+      "type": "integer",
+      "default": 0
+    },
+    "debtCount": {
+      "type": "integer",
+      "default": 0
+    }
+  }
+}

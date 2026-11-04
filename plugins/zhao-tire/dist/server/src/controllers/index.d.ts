@@ -13,6 +13,21 @@ declare const _default: {
         agreement(ctx: any): Promise<void>;
         faqs(ctx: any): Promise<void>;
     };
+    my: {
+        me(ctx: any): Promise<void>;
+        orders(ctx: any): Promise<void>;
+        referral(ctx: any): Promise<void>;
+        rewards(ctx: any): Promise<void>;
+        shareRecords(ctx: any): Promise<void>;
+    };
+    referral: {
+        preview(ctx: any): Promise<void>;
+    };
+    pay: {
+        prepay(ctx: any): Promise<void>;
+        notify(ctx: any): Promise<void>;
+        mockPay(ctx: any): Promise<void>;
+    };
     "admin-order": {
         find(ctx: any): Promise<void>;
         findOne(ctx: any): Promise<void>;
@@ -24,6 +39,7 @@ declare const _default: {
         inbound(ctx: any): Promise<void>;
         outbound(ctx: any): Promise<void>;
         payment(ctx: any): Promise<void>;
+        refund(ctx: any): Promise<void>;
         exportExcel(ctx: any): Promise<void>;
     };
     "admin-inventory": {
@@ -47,6 +63,18 @@ declare const _default: {
     };
     "admin-me": {
         find(ctx: any): Promise<void>;
+    };
+    "admin-referral": {
+        find(ctx: any): Promise<void>;
+        update(ctx: any): Promise<void>;
+        grantFree(ctx: any): Promise<void>;
+        shareRecords(ctx: any): Promise<void>;
+        exportShareRecords(ctx: any): Promise<void>;
+        rewards(ctx: any): Promise<void>;
+    };
+    "admin-payment": {
+        find(ctx: any): Promise<void>;
+        confirm(ctx: any): Promise<void>;
     };
 };
 export default _default;
