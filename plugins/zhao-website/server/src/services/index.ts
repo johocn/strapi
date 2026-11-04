@@ -34,6 +34,7 @@ import inviteTrace from "./invite-trace";
 import ecoHook from "./eco-hook";
 import knowledgeAudit from "./knowledge-audit";
 import knowledgeHealth from "./knowledge-health";
+import section from "./section";
 
 export default {
   "seo-config": seoConfig,
@@ -72,4 +73,5 @@ export default {
   "eco-hook": ecoHook,
   "knowledge-audit": knowledgeAudit,
   "knowledge-health": knowledgeHealth,
+  "section": section,
 };

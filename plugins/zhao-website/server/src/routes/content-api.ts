@@ -45,6 +45,8 @@ export default () => ({
     publicRoute("GET", "/llms-full.txt", "seo-output.llmsFullTxt"),
     publicRoute("GET", "/manifest.json", "seo-output.manifest"),
     publicRoute("GET", "/site-info", "site-info.info"),
+    publicRoute("GET", "/sections", "section.list"),
+    publicRoute("GET", "/sections/:slug", "section.detail"),
     publicRoute("GET", "/seo-meta", "seo-meta.meta"),
     publicRoute("GET", "/knowledge-graph.json", "knowledge-graph.exportGraph"),
     publicRoute("GET", "/knowledge-graph/:slug", "knowledge-graph.exportEntity"),

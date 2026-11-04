@@ -12,6 +12,7 @@ import siteInfo from "./content-api/site-info";
 import seoMeta from "./content-api/seo-meta";
 import feed from "./content-api/feed";
 import contentKnowledgeGraph from "./content-api/knowledge-graph";
+import section from "./content-api/section";
 
 import adminArticle from "./admin-api/article";
 import adminSeoConfig from "./admin-api/seo-config";
@@ -49,6 +50,7 @@ export default {
   lead,
   "seo-output": seoOutput,
   "site-info": siteInfo,
+  section,
   "seo-meta": seoMeta,
   feed,
   "invite-trace": inviteTrace,
