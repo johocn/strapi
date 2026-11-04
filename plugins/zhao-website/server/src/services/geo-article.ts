@@ -1,5 +1,6 @@
 import type { Core } from "@strapi/strapi";
 import { generateUniqueSlug } from "./utils/slug";
+import { resolveSectionFilter, getSectionSlug } from "./utils/section-filter";
 
 const UID = "plugin::zhao-website.geo-article";
 const MANY_TO_ONE = ["author", "editor", "reviewer", "category"];
@@ -47,9 +48,10 @@ function coerceRelationIds(data: any): any {
 
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async find(siteId: number, query: any = {}) {
-    const { page = 1, pageSize = 20, type, q, locale } = query;
+    const { page = 1, pageSize = 20, type, section, q, locale } = query;
     const extra: any = {};
     if (type) extra.type = type;
+    if (section) extra.section = await resolveSectionFilter(strapi, siteId, section);
     if (q) extra.title = { $containsi: q };
     const filterService = strapi.plugin("zhao-website").service("content-filter");
     const where = await filterService.buildWhere(siteId, UID, extra, locale);
@@ -117,7 +119,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
 
   async create(siteId: number, data: any) {
     // slug 未传时按标题生成唯一 slug；locale 未传时注入 zh-CN（防 locale=NULL 前端页不生成）
-    const slug = data.slug || (await generateUniqueSlug(strapi, UID, siteId, data.title || "untitled"));
+    const prefix = await getSectionSlug(strapi, siteId, data.section);
+    const slug = data.slug || (await generateUniqueSlug(strapi, UID, siteId, data.title || "untitled", undefined, prefix));
     // 双层防护第 1 层：创建阶段强制非 published（published 只能经 publish 端点触发门禁）
     const status = data.status && data.status !== "published" ? data.status : "draft";
     const payload = coerceRelationIds({ ...data, site: siteId, slug, status, locale: data.locale || "zh-CN" });

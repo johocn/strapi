@@ -3,15 +3,17 @@ import { generateUniqueSlug } from "./utils/slug";
 import { applyStatusChange, STATUS, isValidStatus } from "./utils/status";
 import { firstTruthValidate } from "./utils/first-truth-validate";
 import { resolveCategoryFilter } from "./utils/category-filter";
+import { resolveSectionFilter, getSectionSlug } from "./utils/section-filter";
 
 const UID = "plugin::zhao-website.faq";
 
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async find(siteId: number, query: any = {}) {
-    const { page = 1, pageSize = 20, category, tag, status, isFeatured, q } = query;
+    const { page = 1, pageSize = 20, category, tag, section, status, isFeatured, q } = query;
     const extra: any = {};
     if (status) extra.status = status;
     if (category) extra.category = await resolveCategoryFilter(strapi, siteId, category);
+    if (section) extra.section = await resolveSectionFilter(strapi, siteId, section);
     if (isFeatured !== undefined) extra.isFeatured = isFeatured === "true" || isFeatured === true;
 
     const filterService = strapi.plugin("zhao-website").service("content-filter");
@@ -114,7 +116,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   },
 
   async create(siteId: number, data: any) {
-    const slug = data.slug || await generateUniqueSlug(strapi, UID, siteId, data.question || "untitled");
+    const prefix = await getSectionSlug(strapi, siteId, data.section);
+    const slug = data.slug || await generateUniqueSlug(strapi, UID, siteId, data.question || "untitled", undefined, prefix);
     // 真值校验（warning 级允许）
     const validation = await firstTruthValidate(siteId, data);
     if (validation.hasError) {
@@ -138,7 +141,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     }
     let updateData = { ...data };
     if (data.slug && data.slug !== existing.slug) {
-      updateData.slug = await generateUniqueSlug(strapi, UID, siteId, data.slug, documentId);
+      const prefix = await getSectionSlug(strapi, siteId, data.section ?? existing.section);
+      updateData.slug = await generateUniqueSlug(strapi, UID, siteId, data.slug, documentId, prefix);
     }
     if (data.status && isValidStatus(data.status)) {
       updateData = applyStatusChange(updateData, data.status);
