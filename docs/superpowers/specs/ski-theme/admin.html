@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>主题配置 | Joyogo 滑雪板块</title>
+<!--
+  页面：后台主题配置（静态版）
+  作用：四套主题预览、本机全站切换、生成 theme.config.js 配置片段。
+  说明：静态站点无写库能力，「全站生效」= 替换 theme.config.js 的 default 值；
+        本页的「设为默认」只在当前浏览器立即生效（localStorage），用于评审与验收。
+-->
+<style>
+  :root{
+    --paper:#faf9f5; --card:#fff; --ink:#141413; --mute:#6f6d64; --soft:#b0aea5;
+    --line:rgba(20,20,19,.12); --line-strong:rgba(20,20,19,.24);
+    --clay:#b4512c; --clay-deep:#8f4526; --clay-wash:#f8ede6; --yellow:#f6c445; --gold:#4a3600;
+    --ui:"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;
+    --disp:"Poppins","PingFang SC","Microsoft YaHei",Arial,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);font-family:var(--ui);font-size:15px;line-height:1.7}
+  .hd{position:sticky;top:0;z-index:10;background:rgba(250,249,245,.94);backdrop-filter:blur(12px);
+    border-bottom:1px solid var(--line)}
+  .hd .wrap{max-width:1180px;margin:0 auto;padding:0 32px;height:68px;display:flex;align-items:center;gap:20px}
+  .brand{font-family:var(--disp);font-weight:600;font-size:20px}
+  .brand b{color:var(--clay)}
+  .hd .tag{margin-left:auto;font-size:12px;color:var(--mute);letter-spacing:.06em}
+  main{max-width:1180px;margin:0 auto;padding:44px 32px 96px}
+  h1{font-family:var(--disp);font-size:clamp(26px,3.4vw,40px);line-height:1.2;margin-bottom:14px}
+  .lead{font-size:14.5px;color:var(--mute);max-width:66ch}
+  .state{display:flex;flex-wrap:wrap;gap:10px 26px;align-items:center;margin-top:24px;
+    padding:16px 20px;background:var(--card);border:1px solid var(--line);border-radius:14px;font-size:13px}
+  .state b{color:var(--clay-deep)}
+  .state .btn{margin-left:auto}
+
+  .btn{display:inline-flex;align-items:center;justify-content:center;height:40px;padding:0 20px;
+    border-radius:999px;border:2px solid var(--clay);background:var(--clay);color:#fff;
+    font-family:var(--disp);font-size:13px;cursor:pointer;transition:background .18s,border-color .18s}
+  .btn:hover{background:var(--clay-deep);border-color:var(--clay-deep)}
+  .btn-line{background:transparent;color:var(--ink);border-color:var(--line-strong)}
+  .btn-line:hover{background:transparent;color:var(--clay-deep);border-color:var(--clay)}
+  .btn-sm{height:34px;padding:0 16px;font-size:12px}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:32px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;
+    display:flex;flex-direction:column}
+  .card.is-def{border-color:var(--clay);box-shadow:0 2px 4px rgba(20,20,19,.04),0 16px 40px rgba(20,20,19,.08)}
+  .card .body{padding:22px 24px 0}
+  .card h2{font-family:var(--disp);font-size:18px;display:flex;align-items:center;gap:10px}
+  .badge{font-size:10.5px;letter-spacing:.08em;background:var(--yellow);color:var(--gold);padding:3px 9px;border-radius:999px}
+  .badge--off{background:transparent;border:1px dashed var(--line-strong);color:var(--mute)}
+  .card p{font-size:13px;color:var(--mute);margin-top:6px}
+  .sw{display:flex;gap:0;margin-top:16px;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .sw i{flex:1;height:46px;display:block}
+  .swcap{display:flex;gap:14px;margin-top:8px;font-size:11px;color:var(--soft);flex-wrap:wrap}
+  .shot{margin:18px 24px 0;border:1px solid var(--line);border-radius:12px;overflow:hidden;
+    background:#e9e7e0;position:relative;height:300px}
+  .shot iframe{position:absolute;top:0;left:0;width:1440px;height:1000px;border:0;
+    transform:scale(.40);transform-origin:0 0}
+  .card .acts{display:flex;gap:10px;padding:18px 24px 22px;flex-wrap:wrap}
+
+  .cfg{margin-top:44px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:28px 30px}
+  .cfg h2{font-family:var(--disp);font-size:19px;margin-bottom:10px}
+  .cfg p{font-size:13px;color:var(--mute);max-width:76ch}
+  pre{margin-top:16px;background:#141413;color:#f2efe7;border-radius:12px;padding:16px 18px;
+    font-family:Consolas,"Courier New",monospace;font-size:12.5px;line-height:1.8;overflow:auto}
+  .cfg .row{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+
+  #toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,20px);opacity:0;pointer-events:none;
+    background:#141413;color:#faf9f5;font-size:13px;padding:10px 18px;border-radius:999px;
+    transition:opacity .18s,transform .18s;z-index:20}
+  #toast.on{opacity:1;transform:translate(-50%,0)}
+
+  @media (max-width:900px){
+    .grid{grid-template-columns:1fr}
+    main{padding:32px 20px 80px}
+    .hd .wrap{padding:0 20px}
+    .hd .tag{display:none}
+  }
+</style>
+<script src="./theme.config.js"></script>
+<script src="./theme.js"></script>
+</head>
+<body>
+
+<header class="hd">
+  <div class="wrap">
+    <span class="brand">JOYOGO<b>.</b></span>
+    <span class="tag">滑雪板块 · 主题配置</span>
+  </div>
+</header>
+
+<main>
+  <h1>四套主题，一套结构</h1>
+  <p class="lead">页面结构、栏目顺序、功能布局与交互逻辑完全一致，只有配色变量不同。切换只改变颜色、圆角与阴影强度，不改变任何尺寸与元素位置。</p>
+
+  <div class="state">
+    <span>后台默认：<b id="defName">—</b></span>
+    <span>本机覆盖：<b id="locName">无</b></span>
+    <span>当前生效：<b id="curName">—</b></span>
+    <button class="btn btn-line btn-sm" id="reset" type="button">清除本机覆盖</button>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <section class="cfg">
+    <h2>全站生效</h2>
+    <p>静态站点没有写库能力：把下面这段里的 <code>default</code> 改成目标主题，替换服务器上的 <code>theme.config.js</code>，所有访客即按该主题渲染。本页的「设为默认」只对当前浏览器生效，用于评审验收。</p>
+    <pre id="cfgText">window.JOYOGO_THEME = { default: 'amber' }</pre>
+    <div class="row">
+      <button class="btn" id="copy" type="button">复制配置片段</button>
+      <button class="btn btn-line" id="openHome" type="button">打开首页</button>
+    </div>
+  </section>
+</main>
+
+<div id="toast"></div>
+
+<script>
+(function(){
+  var SWATCH = {
+    nordic:['#fcfcfb','#ffffff','#111214','#3f6f93','#dbe7ee'],
+    energy:['#071528','#0d2140','#f7f5ee','#e8ff3f','#d97757'],
+    warm:  ['#faf9f5','#ffffff','#141413','#2f7fd0','#f6c445'],
+    amber: ['#faf9f5','#ffffff','#141413','#b4512c','#f6c445']
+  };
+  var grid = document.getElementById('grid');
+  var toastEl = document.getElementById('toast');
+  var cfgText = document.getElementById('cfgText');
+
+  function nameOf(id){
+    var t = JoyogoTheme.list().filter(function(x){return x.id===id;})[0];
+    return t ? t.name : id;
+  }
+  function localTheme(){
+    try{ return localStorage.getItem('joyogo-ski-theme') || '无'; }catch(e){ return '无'; }
+  }
+  function toast(msg){
+    toastEl.textContent = msg; toastEl.classList.add('on');
+    clearTimeout(toast.t); toast.t = setTimeout(function(){ toastEl.classList.remove('on'); }, 1800);
+  }
+  function cfgLine(){
+    return "window.JOYOGO_THEME = { default: '" + JoyogoTheme.current() + "' };";
+  }
+  function render(){
+    grid.innerHTML = '';
+    JoyogoTheme.list().forEach(function(t){
+      var isDef = t.id === JoyogoTheme.current();
+      var card = document.createElement('article');
+      card.className = 'card' + (isDef ? ' is-def' : '');
+      var colors = SWATCH[t.id] || [];
+      card.innerHTML =
+        '<div class="body">' +
+          '<h2>' + t.name + (isDef ? '<span class="badge">当前生效</span>' : '<span class="badge badge--off">未启用</span>') + '</h2>' +
+          '<p>' + t.desc + '</p>' +
+          '<div class="sw">' + colors.map(function(c){return '<i style="background:' + c + '"></i>';}).join('') + '</div>' +
+          '<div class="swcap"><span>背景</span><span>卡片</span><span>文字</span><span>主色</span><span>辅助色</span></div>' +
+        '</div>' +
+        '<div class="shot"><iframe src="./home.html?theme=' + t.id + '" title="' + t.name + ' 预览" loading="lazy" scrolling="no"></iframe></div>' +
+        '<div class="acts">' +
+          '<button class="btn" type="button" data-set="' + t.id + '">设为默认</button>' +
+          '<button class="btn btn-line" type="button" data-open="' + t.id + '">全屏预览</button>' +
+        '</div>';
+      grid.appendChild(card);
+    });
+    document.getElementById('defName').textContent = nameOf(JoyogoTheme.defaultTheme());
+    document.getElementById('locName').textContent = localTheme();
+    document.getElementById('curName').textContent = nameOf(JoyogoTheme.current());
+    cfgText.textContent = cfgLine();
+  }
+
+  grid.addEventListener('click', function(e){
+    var set = e.target.getAttribute && e.target.getAttribute('data-set');
+    var open = e.target.getAttribute && e.target.getAttribute('data-open');
+    if(set){
+      JoyogoTheme.preview(set);
+      render();
+      toast('已在本机全站生效：' + nameOf(set) + '（复制配置片段可对全部访客生效）');
+    }
+    if(open){ window.open('./home.html?theme=' + open, '_blank'); }
+  });
+
+  document.getElementById('reset').addEventListener('click', function(){
+    JoyogoTheme.reset(); render(); toast('已清除本机覆盖，回到后台默认：' + nameOf(JoyogoTheme.defaultTheme()));
+  });
+
+  document.getElementById('openHome').addEventListener('click', function(){
+    window.open('./home.html', '_blank');
+  });
+
+  document.getElementById('copy').addEventListener('click', function(){
+    var text = 'default: ' + JoyogoTheme.current();
+    function done(){ toast('已复制：' + text); }
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(cfgText.textContent).then(done, fallback);
+    } else { fallback(); }
+    function fallback(){
+      var ta = document.createElement('textarea');
+      ta.value = cfgText.textContent; document.body.appendChild(ta); ta.select();
+      try{ document.execCommand('copy'); }catch(e){}
+      document.body.removeChild(ta); done();
+    }
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>

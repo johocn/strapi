@@ -1,0 +1,261 @@
+/* =========================================================
+   Joyogo 滑雪板块 · 四套主题配色（仅变量，不改结构与布局）
+   用法：<html data-theme="nordic|energy|warm|amber">
+   约定：每个主题必须完整定义下列全部变量，缺一即视为配置错误。
+   ========================================================= */
+
+/* ---------- 方案四 · 北欧留白（冷白 / 石板灰 / 冰蓝，锐角无重阴影） ---------- */
+[data-theme="nordic"]{
+  --bg:#fcfcfb;
+  --bg-alt:#f4f3f0;
+  --surface:#ffffff;
+  --sand:#f2f4f6;
+  --peach:#eef3f7;
+  --surface-alpha:rgba(255,255,255,.78);
+
+  --ink:#111214;
+  --text-body:#34383c;
+  --text-strong:#232629;
+  --mute:#8a8984;
+  --soft:#b7b5af;
+
+  --line:#e7e5e0;
+  --line-strong:#d5d3cd;
+  --rule-soft:#e2e0db;
+
+  --primary:#3f6f93;
+  --primary-deep:#2f5876;
+  --primary-wash:#eef3f6;
+  --primary-ink:#2f5876;
+  --on-primary:#ffffff;
+
+  --accent:#dbe7ee;
+  --accent-ink:#2f5876;
+  --accent-wash:#f2f6f9;
+
+  --green-wash:#f1f4f0;
+  --green-deep:#6b7a68;
+  --green-text:#4a5448;
+  --green-line:rgba(107,122,104,.30);
+  --green-line-soft:rgba(107,122,104,.24);
+
+  --numeral:#dedcd6;
+  --hedge:rgba(17,18,20,.04);
+  --tex-fill:rgba(17,18,20,.035);
+  --ph-bg:#f4f4f1;
+  --ph-stripe-a:rgba(17,18,20,.035);
+  --ph-stripe-b:rgba(17,18,20,.015);
+  --ph-ink:#9a9892;
+
+  --header-bg:rgba(252,252,251,.94);
+  --subnav-bg:rgba(244,243,240,.94);
+  --mbar-bg:rgba(252,252,251,.96);
+  --overlay-line:rgba(252,252,251,.18);
+  --hero-veil:rgba(244,243,240,.60);
+  --hero-tint-a:rgba(63,111,147,.08);
+  --hero-tint-b:rgba(221,231,238,.35);
+  --card-tint:rgba(63,111,147,.05);
+  --price-tint:rgba(63,111,147,.12);
+  --footer-bg:#111214;
+  --footer-text:#b7b5af;
+  --footer-head:#fcfcfb;
+
+  --shadow:0 1px 2px rgba(17,18,20,.03),0 6px 18px rgba(17,18,20,.05);
+  --shadow-lift:0 2px 5px rgba(17,18,20,.05),0 12px 28px rgba(17,18,20,.08);
+  --radius:2px;
+  --radius-sm:2px;
+  --focus:var(--primary);
+}
+
+/* ---------- 方案五 · 运动冲击（深墨蓝 / 荧光黄 / 直角） ---------- */
+[data-theme="energy"]{
+  --bg:#071528;
+  --bg-alt:#0a1a31;
+  --surface:#0d2140;
+  --sand:#0b1c36;
+  --peach:#102542;
+  --surface-alpha:rgba(13,33,64,.80);
+
+  --ink:#f7f5ee;
+  --text-body:#dfe6ef;
+  --text-strong:#eef2f7;
+  --mute:#8ea3bd;
+  --soft:#607699;
+
+  --line:rgba(247,245,238,.14);
+  --line-strong:rgba(247,245,238,.28);
+  --rule-soft:rgba(247,245,238,.18);
+
+  --primary:#e8ff3f;
+  --primary-deep:#c9e21a;
+  --primary-wash:rgba(232,255,63,.14);
+  --primary-ink:#e8ff3f;
+  --on-primary:#071528;
+
+  --accent:#d97757;
+  --accent-ink:#2a1208;
+  --accent-wash:rgba(217,119,87,.18);
+
+  --green-wash:rgba(155,191,107,.14);
+  --green-deep:#9bbf6b;
+  --green-text:#c8d7b6;
+  --green-line:rgba(155,191,107,.32);
+  --green-line-soft:rgba(155,191,107,.24);
+
+  --numeral:rgba(247,245,238,.24);
+  --hedge:rgba(247,245,238,.06);
+  --tex-fill:rgba(247,245,238,.05);
+  --ph-bg:#0f2747;
+  --ph-stripe-a:rgba(247,245,238,.05);
+  --ph-stripe-b:rgba(247,245,238,.02);
+  --ph-ink:#7f94ad;
+
+  --header-bg:rgba(7,21,40,.92);
+  --subnav-bg:rgba(10,26,49,.94);
+  --mbar-bg:rgba(7,21,40,.96);
+  --overlay-line:rgba(247,245,238,.18);
+  --hero-veil:rgba(11,28,54,.55);
+  --hero-tint-a:rgba(232,255,63,.07);
+  --hero-tint-b:rgba(217,119,87,.10);
+  --card-tint:rgba(232,255,63,.05);
+  --price-tint:rgba(232,255,63,.10);
+  --footer-bg:#040e1b;
+  --footer-text:#8ea3bd;
+  --footer-head:#f7f5ee;
+
+  --shadow:0 1px 2px rgba(0,0,0,.30),0 10px 26px rgba(0,0,0,.35);
+  --shadow-lift:0 2px 6px rgba(0,0,0,.35),0 16px 40px rgba(0,0,0,.45);
+  --radius:0px;
+  --radius-sm:0px;
+  --focus:var(--primary);
+}
+
+/* ---------- 方案六 · 暖安全（暖白底 / 天空蓝主色 / 暖黄标记） ---------- */
+[data-theme="warm"]{
+  --bg:#faf9f5;
+  --bg-alt:#f4f6f9;
+  --surface:#ffffff;
+  --sand:#e9f3fc;
+  --peach:#eef4fb;
+  --surface-alpha:rgba(255,255,255,.74);
+
+  --ink:#141413;
+  --text-body:#33322d;
+  --text-strong:#2c2c28;
+  --mute:#6f6d64;
+  --soft:#b0aea5;
+
+  --line:rgba(20,20,19,.12);
+  --line-strong:rgba(20,20,19,.24);
+  --rule-soft:rgba(20,20,19,.16);
+
+  --primary:#2f7fd0;
+  --primary-deep:#1b5b96;
+  --primary-wash:#eaf3fb;
+  --primary-ink:#1b5b96;
+  --on-primary:#ffffff;
+
+  --accent:#f6c445;
+  --accent-ink:#4a3600;
+  --accent-wash:#fdf3d2;
+
+  --green-wash:#eef1e6;
+  --green-deep:#5c6f45;
+  --green-text:#40463a;
+  --green-line:rgba(120,140,93,.35);
+  --green-line-soft:rgba(92,111,69,.28);
+
+  --numeral:#d6d0c2;
+  --hedge:rgba(20,20,19,.04);
+  --tex-fill:rgba(20,20,19,.035);
+  --ph-bg:#f3f1ea;
+  --ph-stripe-a:rgba(20,20,19,.045);
+  --ph-stripe-b:rgba(20,20,19,.02);
+  --ph-ink:#8a877c;
+
+  --header-bg:rgba(250,249,245,.92);
+  --subnav-bg:rgba(233,243,252,.94);
+  --mbar-bg:rgba(250,249,245,.96);
+  --overlay-line:rgba(250,249,245,.16);
+  --hero-veil:rgba(233,243,252,.55);
+  --hero-tint-a:rgba(47,127,208,.10);
+  --hero-tint-b:rgba(246,196,69,.10);
+  --card-tint:rgba(47,127,208,.06);
+  --price-tint:rgba(47,127,208,.14);
+  --footer-bg:#141413;
+  --footer-text:#b0aea5;
+  --footer-head:#faf9f5;
+
+  --shadow:0 1px 2px rgba(20,20,19,.04),0 10px 28px rgba(20,20,19,.06);
+  --shadow-lift:0 2px 4px rgba(20,20,19,.05),0 16px 40px rgba(20,20,19,.10);
+  --radius:18px;
+  --radius-sm:12px;
+  --focus:var(--primary);
+}
+
+/* ---------- 方案七 · 暖黄陶土（暖白底 / 陶土橙主色 / 暖黄标记，定稿） ---------- */
+[data-theme="amber"]{
+  --bg:#faf9f5;
+  --bg-alt:#f1efe7;
+  --surface:#ffffff;
+  --sand:#f9f0e2;
+  --peach:#f8e9e1;
+  --surface-alpha:rgba(255,255,255,.72);
+
+  --ink:#141413;
+  --text-body:#33322d;
+  --text-strong:#2c2c28;
+  --mute:#6f6d64;
+  --soft:#b0aea5;
+
+  --line:rgba(20,20,19,.12);
+  --line-strong:rgba(20,20,19,.24);
+  --rule-soft:rgba(20,20,19,.16);
+
+  --primary:#b4512c;
+  --primary-deep:#8f4526;
+  --primary-wash:#f8ede6;
+  --primary-ink:#a8543a;
+  --on-primary:#ffffff;
+
+  --accent:#f6c445;
+  --accent-ink:#4a3600;
+  --accent-wash:#fdf3d2;
+
+  --green-wash:#eef1e6;
+  --green-deep:#5c6f45;
+  --green-text:#40463a;
+  --green-line:rgba(120,140,93,.35);
+  --green-line-soft:rgba(92,111,69,.28);
+
+  --numeral:#d6d0c2;
+  --hedge:rgba(20,20,19,.04);
+  --tex-fill:rgba(20,20,19,.035);
+  --ph-bg:#f3f1ea;
+  --ph-stripe-a:rgba(20,20,19,.045);
+  --ph-stripe-b:rgba(20,20,19,.02);
+  --ph-ink:#8a877c;
+
+  --header-bg:rgba(250,249,245,.92);
+  --subnav-bg:rgba(241,239,231,.94);
+  --mbar-bg:rgba(250,249,245,.96);
+  --overlay-line:rgba(250,249,245,.16);
+  --hero-veil:rgba(249,240,226,.55);
+  --hero-tint-a:rgba(217,119,87,.10);
+  --hero-tint-b:rgba(246,196,69,.09);
+  --card-tint:rgba(217,119,87,.06);
+  --price-tint:rgba(217,119,87,.16);
+  --footer-bg:#141413;
+  --footer-text:#b0aea5;
+  --footer-head:#faf9f5;
+
+  --shadow:0 1px 2px rgba(20,20,19,.04),0 10px 28px rgba(20,20,19,.06);
+  --shadow-lift:0 2px 4px rgba(20,20,19,.05),0 16px 40px rgba(20,20,19,.10);
+  --radius:18px;
+  --radius-sm:12px;
+  --focus:var(--primary);
+}
+
+/* 深色主题下修正浏览器原生控件与选中色 */
+[data-theme="energy"]{color-scheme:dark}
+[data-theme="energy"] ::selection{background:var(--primary);color:var(--on-primary)}
