@@ -80,7 +80,7 @@ export function missingWechatPayKeys(
     if (!config.mchSerialNo) missing.push(WECHAT_PAY_ENV.mchSerialNo);
     if (!config.privateKey) missing.push(WECHAT_PAY_ENV.privateKey);
   }
-  if (scope !== "prepay" && !config.notifyUrl) missing.push(WECHAT_PAY_ENV.notifyUrl);
+  if (scope === "notify" && !config.notifyUrl) missing.push(WECHAT_PAY_ENV.notifyUrl);
   return missing;
 }
 
@@ -427,14 +427,19 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   },
 
   /**
-   * 微信退款骨架：只发起 APIv3 退款受理，不直接改订单状态。
-   * 订单状态回滚仍交由 paymentService.refund 串联（下一轮接入）。
+   * 微信退款：先做幂等与可退余额校验，APIv3 受理成功后联动 paymentService.refund
+   * 回滚本地流水（refunded_amount/status）与订单已收金额；整单退清时沿用邀请计数与券的回滚。
+   * 同一 refundNo 重复请求直接返回原结果，不重复调用微信、不重复扣减。
    */
   async refund(params: {
     order: any;
     amount: number;
     paymentNo: string;
     reason?: string;
+    refundNo?: string;
+    operatorId?: number | string;
+    operatorName?: string;
+    note?: string;
   }) {
     const config = this.assertConfigured("refund");
     const amount = toNumber(params.amount);
@@ -444,19 +449,54 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
       where: { paymentNo: String(params.paymentNo || "") },
     });
     if (!payment) throwErr("PAYMENT_NOT_FOUND", 404, "支付流水不存在");
+
+    const outRefundNo =
+      String(params.refundNo || "").trim() || `REF-${payment.paymentNo}-${Date.now()}`;
+    const paymentService: any = strapi.service("plugin::zhao-tire.payment");
+
+    const existing: any = await strapi.db.query(PAYMENT_UID).findOne({
+      where: { idempotencyKey: outRefundNo },
+    });
+    if (existing) {
+      const order = await paymentService.findOrder(payment.orderNo);
+      return {
+        refundNo: outRefundNo,
+        paymentNo: payment.paymentNo,
+        amount: toNumber(existing.refundedAmount) || amount,
+        status: "DUPLICATED",
+        duplicated: true,
+        orderNo: order.orderNo,
+        order: {
+          orderNo: order.orderNo,
+          paidAmount: toNumber(order.paidAmount),
+          paymentStatus: order.paymentStatus,
+        },
+      };
+    }
+
     if (payment.status !== "paid") {
       throwErr("PAYMENT_STATE_INVALID", 400, "该流水当前状态不可退款", {
         status: payment.status,
       });
     }
-    if (amount > toNumber(payment.amount)) {
-      throwErr("REFUND_EXCEEDED", 400, "退款金额超过该笔支付金额", {
-        paid: toNumber(payment.amount),
+    const refundable =
+      toNumber(payment.amount) - toNumber(payment.refundedAmount);
+    if (amount > refundable) {
+      throwErr("REFUND_EXCEEDED", 400, "退款金额超过该笔支付可退金额", {
+        refundable,
+        amount,
+      });
+    }
+
+    const order = await paymentService.findOrder(payment.orderNo);
+    if (amount > toNumber(order.paidAmount)) {
+      throwErr("REFUND_EXCEEDED", 400, "退款金额超过订单已收金额", {
+        paid: toNumber(order.paidAmount),
+        amount,
       });
     }
 
     const urlPath = "/v3/refund/domestic/refunds";
-    const outRefundNo = `REF-${payment.paymentNo}-${Date.now()}`;
     const body = JSON.stringify({
       out_trade_no: payment.paymentNo,
       out_refund_no: outRefundNo,
@@ -491,12 +531,27 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         { status: response.status, code: parsed?.code }
       );
     }
+
+    const linked = await paymentService.refund({
+      order,
+      amount,
+      sourcePaymentNo: payment.paymentNo,
+      refundNo: outRefundNo,
+      provider: "wechat",
+      operatorId: params.operatorId,
+      operatorName: params.operatorName,
+      note: params.note || params.reason,
+    });
+
     return {
       refundNo: outRefundNo,
       paymentNo: payment.paymentNo,
       amount,
       status: String(parsed?.status || "PROCESSING"),
-      orderNo: params.order?.orderNo || payment.orderNo,
+      duplicated: Boolean(linked?.duplicated),
+      orderNo: order.orderNo,
+      order: linked?.order,
+      rollback: linked?.rollback || null,
     };
   },
 });

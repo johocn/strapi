@@ -236,22 +236,69 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     };
   },
 
-  /** 退款：回滚累计金额，整单退清时回滚邀请与奖励 */
+  /**
+   * 退款：回滚订单累计金额与来源流水，整单退清时回滚邀请有效计数与奖励券。
+   * - 幂等：同一 idempotencyKey / refundNo 重复请求直接返回原流水，不重复扣减；
+   * - 超额：退款总额不得超过订单已收金额，指定来源流水时还不得超过该笔可退余额；
+   * - 部分退款后来源流水保持 paid，退满后置为 refunded。
+   */
   async refund(params: {
     order: any;
     amount: number;
+    sourcePaymentNo?: string;
+    refundNo?: string;
+    idempotencyKey?: string;
+    provider?: string;
     operatorId?: number | string;
     operatorName?: string;
     note?: string;
   }) {
-    const order = params.order;
-    const paid = toNumber(order.paidAmount);
-    const amount = Math.round(params.amount);
+    const amount = Math.round(toNumber(params.amount));
     if (!Number.isFinite(amount) || amount <= 0) {
       throwErr("AMOUNT_INVALID", 400, "退款金额必须大于 0");
     }
+
+    const order = await this.findOrder(String(params.order?.orderNo || ""));
+    const idempotencyKey =
+      String(params.idempotencyKey || "").trim() ||
+      String(params.refundNo || "").trim() ||
+      `refund:${order.orderNo}:${params.sourcePaymentNo || "manual"}:${amount}`;
+
+    const existing: any = await strapi.db.query(PAYMENT_UID).findOne({
+      where: { idempotencyKey },
+    });
+    if (existing) {
+      return {
+        duplicated: true,
+        payment: existing,
+        order: {
+          orderNo: order.orderNo,
+          paidAmount: toNumber(order.paidAmount),
+          paymentStatus: order.paymentStatus,
+        },
+        rollback: null,
+      };
+    }
+
+    const paid = toNumber(order.paidAmount);
     if (amount > paid) {
       throwErr("REFUND_EXCEEDED", 400, "退款金额超过已收金额", { paid });
+    }
+
+    let sourcePayment: any = null;
+    if (params.sourcePaymentNo) {
+      sourcePayment = await strapi.db.query(PAYMENT_UID).findOne({
+        where: { paymentNo: String(params.sourcePaymentNo) },
+      });
+      if (!sourcePayment) throwErr("PAYMENT_NOT_FOUND", 404, "支付流水不存在");
+      const refundable =
+        toNumber(sourcePayment.amount) - toNumber(sourcePayment.refundedAmount);
+      if (amount > refundable) {
+        throwErr("REFUND_EXCEEDED", 400, "退款金额超过该笔支付可退金额", {
+          refundable,
+          amount,
+        });
+      }
     }
 
     const total = toNumber(order.amountTotal);
@@ -265,11 +312,12 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         paymentNo: generatePaymentNo(),
         orderNo: order.orderNo,
         orderId: order.id,
-        channel: order.paymentMethod || "store_pay",
+        channel: sourcePayment?.channel || order.paymentMethod || "store_pay",
         amount: -amount,
         status: "refunded",
-        idempotencyKey: `refund:${order.orderNo}:${amount}:${Date.now()}`,
-        provider: "manual",
+        idempotencyKey,
+        provider: params.provider || "manual",
+        externalNo: String(params.refundNo || "").slice(0, 64) || null,
         operatorName: params.operatorName || null,
         operator: params.operatorId || null,
         refundedAmount: amount,
@@ -278,6 +326,20 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         note: "退款",
       },
     });
+
+    let sourceRefundedAmount = 0;
+    if (sourcePayment) {
+      sourceRefundedAmount = toNumber(sourcePayment.refundedAmount) + amount;
+      await strapi.db.query(PAYMENT_UID).update({
+        where: { id: sourcePayment.id },
+        data: {
+          refundedAmount: sourceRefundedAmount,
+          status:
+            sourceRefundedAmount >= toNumber(sourcePayment.amount) ? "refunded" : "paid",
+          refundNote: params.note || sourcePayment.refundNote || null,
+        },
+      });
+    }
 
     await strapi.db.query(ORDER_UID).update({
       where: { id: order.id },
@@ -296,7 +358,18 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     }
 
     return {
+      duplicated: false,
       payment,
+      sourcePayment: sourcePayment
+        ? {
+            paymentNo: sourcePayment.paymentNo,
+            refundedAmount: sourceRefundedAmount,
+            status:
+              sourceRefundedAmount >= toNumber(sourcePayment.amount)
+                ? "refunded"
+                : "paid",
+          }
+        : null,
       order: { orderNo: order.orderNo, paidAmount, paymentStatus },
       rollback,
     };

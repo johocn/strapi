@@ -619,11 +619,31 @@ declare const _default: {
             refund(params: {
                 order: any;
                 amount: number;
+                sourcePaymentNo?: string;
+                refundNo?: string;
+                idempotencyKey?: string;
+                provider?: string;
                 operatorId?: number | string;
                 operatorName?: string;
                 note?: string;
             }): Promise<{
+                duplicated: boolean;
                 payment: any;
+                order: {
+                    orderNo: any;
+                    paidAmount: number;
+                    paymentStatus: any;
+                };
+                rollback: any;
+                sourcePayment?: undefined;
+            } | {
+                duplicated: boolean;
+                payment: any;
+                sourcePayment: {
+                    paymentNo: any;
+                    refundedAmount: number;
+                    status: string;
+                };
                 order: {
                     orderNo: any;
                     paidAmount: number;
@@ -728,12 +748,32 @@ declare const _default: {
                 amount: number;
                 paymentNo: string;
                 reason?: string;
+                refundNo?: string;
+                operatorId?: number | string;
+                operatorName?: string;
+                note?: string;
             }): Promise<{
                 refundNo: string;
                 paymentNo: any;
                 amount: number;
                 status: string;
+                duplicated: boolean;
                 orderNo: any;
+                order: {
+                    orderNo: any;
+                    paidAmount: number;
+                    paymentStatus: any;
+                };
+                rollback?: undefined;
+            } | {
+                refundNo: string;
+                paymentNo: any;
+                amount: number;
+                status: string;
+                duplicated: boolean;
+                orderNo: any;
+                order: any;
+                rollback: any;
             }>;
         };
     };

@@ -282,3 +282,182 @@ describe("wechat-pay notify", () => {
     expect(strapi.__settle).not.toHaveBeenCalled();
   });
 });
+
+describe("wechat-pay refund 联动", () => {
+  const originalFetch = (globalThis as any).fetch;
+
+  function setRefundConfig() {
+    const pair = crypto.generateKeyPairSync("rsa", { modulusLength: 2048 });
+    process.env[WECHAT_PAY_ENV.appId] = "wx_test_appid";
+    process.env[WECHAT_PAY_ENV.mchId] = "1107_test_mch";
+    process.env[WECHAT_PAY_ENV.mchSerialNo] = "serial_test";
+    process.env[WECHAT_PAY_ENV.privateKey] = pair.privateKey
+      .export({ type: "pkcs8", format: "pem" })
+      .toString();
+  }
+
+  function createRefundStrapi(options: {
+    payment?: any;
+    existingRefund?: any;
+    refund?: jest.Mock;
+    order?: any;
+  } = {}) {
+    const updates: any[] = [];
+    const payment = options.payment || {
+      id: 11,
+      paymentNo: "PAY-TEST-1",
+      orderNo: "T-1",
+      amount: 100,
+      refundedAmount: 0,
+      status: "paid",
+      channel: "wechat",
+    };
+    const order = options.order || {
+      id: 7,
+      orderNo: "T-1",
+      amountTotal: 100,
+      paidAmount: 100,
+      paymentStatus: "paid",
+    };
+    const refund =
+      options.refund ||
+      jest.fn(async () => ({
+        duplicated: false,
+        order: { orderNo: "T-1", paidAmount: 0, paymentStatus: "unpaid" },
+        rollback: { rolledBack: true },
+      }));
+
+    const strapi: any = {
+      service(name: string) {
+        if (name.endsWith(".payment")) {
+          return { findOrder: jest.fn(async () => order), refund };
+        }
+        if (name.endsWith(".wechat-pay")) return strapi.__wechatPay;
+        return {};
+      },
+      db: {
+        query(uid: string) {
+          return {
+            findOne: jest.fn(async ({ where }: any) => {
+              if (where?.idempotencyKey) return options.existingRefund || null;
+              return payment;
+            }),
+            update: jest.fn(async (params: any) => {
+              updates.push({ uid, ...params });
+              return params.data;
+            }),
+          };
+        },
+      },
+      log: { warn: jest.fn() },
+      __updates: updates,
+      __refund: refund,
+    };
+    strapi.__wechatPay = wechatPayFactory({ strapi });
+    return strapi;
+  }
+
+  afterEach(() => {
+    (globalThis as any).fetch = originalFetch;
+  });
+
+  test("受理成功后联动 payment.refund：回退订单金额并返回回滚结果", async () => {
+    setRefundConfig();
+    const strapi = createRefundStrapi();
+    const service: any = strapi.__wechatPay;
+    const fetchMock = jest.fn(async () => ({
+      ok: true,
+      status: 200,
+      text: async () => JSON.stringify({ status: "PROCESSING", refund_id: "WX-REF-1" }),
+    }));
+    (globalThis as any).fetch = fetchMock;
+
+    const result = await service.refund({
+      order: { orderNo: "T-1" },
+      amount: 100,
+      paymentNo: "PAY-TEST-1",
+      refundNo: "REF-TEST",
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(String(fetchMock.mock.calls[0][0])).toContain("/v3/refund/domestic/refunds");
+    expect(strapi.__refund).toHaveBeenCalledWith(
+      expect.objectContaining({
+        amount: 100,
+        sourcePaymentNo: "PAY-TEST-1",
+        refundNo: "REF-TEST",
+        provider: "wechat",
+      })
+    );
+    expect(result).toMatchObject({
+      refundNo: "REF-TEST",
+      paymentNo: "PAY-TEST-1",
+      duplicated: false,
+      status: "PROCESSING",
+      order: { orderNo: "T-1", paidAmount: 0, paymentStatus: "unpaid" },
+      rollback: { rolledBack: true },
+    });
+  });
+
+  test("同一退款号重放：不调用微信、不重复扣减", async () => {
+    setRefundConfig();
+    const fetchMock = jest.fn();
+    (globalThis as any).fetch = fetchMock;
+    const strapi = createRefundStrapi({
+      existingRefund: {
+        id: 101,
+        idempotencyKey: "REF-TEST",
+        refundedAmount: 100,
+        status: "refunded",
+      },
+      order: { id: 7, orderNo: "T-1", paidAmount: 0, paymentStatus: "unpaid" },
+    });
+    const service: any = strapi.__wechatPay;
+
+    const result = await service.refund({
+      order: { orderNo: "T-1" },
+      amount: 100,
+      paymentNo: "PAY-TEST-1",
+      refundNo: "REF-TEST",
+    });
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(strapi.__refund).not.toHaveBeenCalled();
+    expect(result).toMatchObject({
+      refundNo: "REF-TEST",
+      duplicated: true,
+      status: "DUPLICATED",
+      order: { orderNo: "T-1", paidAmount: 0, paymentStatus: "unpaid" },
+    });
+  });
+
+  test("超过来源流水可退余额：不调用微信、不改单", async () => {
+    setRefundConfig();
+    const fetchMock = jest.fn();
+    (globalThis as any).fetch = fetchMock;
+    const strapi = createRefundStrapi({
+      payment: {
+        id: 11,
+        paymentNo: "PAY-TEST-1",
+        orderNo: "T-1",
+        amount: 100,
+        refundedAmount: 60,
+        status: "paid",
+        channel: "wechat",
+      },
+    });
+    const service: any = strapi.__wechatPay;
+
+    await expect(
+      service.refund({ order: { orderNo: "T-1" }, amount: 100, paymentNo: "PAY-TEST-1" })
+    ).rejects.toMatchObject({
+      code: "REFUND_EXCEEDED",
+      status: 400,
+      details: { refundable: 40, amount: 100 },
+    });
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(strapi.__refund).not.toHaveBeenCalled();
+    expect(strapi.__updates).toHaveLength(0);
+  });
+});

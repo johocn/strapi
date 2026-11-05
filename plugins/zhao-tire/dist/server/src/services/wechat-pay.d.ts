@@ -128,20 +128,41 @@ declare const _default: ({ strapi }: {
     }): boolean;
     decryptResource(config: WechatPayConfig, resource: any): any;
     /**
-     * 微信退款骨架：只发起 APIv3 退款受理，不直接改订单状态。
-     * 订单状态回滚仍交由 paymentService.refund 串联（下一轮接入）。
+     * 微信退款：先做幂等与可退余额校验，APIv3 受理成功后联动 paymentService.refund
+     * 回滚本地流水（refunded_amount/status）与订单已收金额；整单退清时沿用邀请计数与券的回滚。
+     * 同一 refundNo 重复请求直接返回原结果，不重复调用微信、不重复扣减。
      */
     refund(params: {
         order: any;
         amount: number;
         paymentNo: string;
         reason?: string;
+        refundNo?: string;
+        operatorId?: number | string;
+        operatorName?: string;
+        note?: string;
     }): Promise<{
         refundNo: string;
         paymentNo: any;
         amount: number;
         status: string;
+        duplicated: boolean;
         orderNo: any;
+        order: {
+            orderNo: any;
+            paidAmount: number;
+            paymentStatus: any;
+        };
+        rollback?: undefined;
+    } | {
+        refundNo: string;
+        paymentNo: any;
+        amount: number;
+        status: string;
+        duplicated: boolean;
+        orderNo: any;
+        order: any;
+        rollback: any;
     }>;
 };
 export default _default;

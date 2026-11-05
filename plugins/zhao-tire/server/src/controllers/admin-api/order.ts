@@ -296,18 +296,39 @@ export default {
     try {
       const order = await findOrderById(ctx.params.id);
       const body = readBody(ctx);
+      const user = ctx.state?.user;
+      const operatorName = user
+        ? String(user.username || user.email || user.id || "")
+        : undefined;
+
+      // 指定支付流水时走微信原路退款（受理成功后联动本地回滚）；否则登记人工退款
+      const paymentNo = String(body?.paymentNo || "").trim();
+      if (paymentNo) {
+        const wechatPay: any = strapi
+          .plugin("zhao-tire")
+          .service("wechat-pay");
+        ctx.body = await wechatPay.refund({
+          order,
+          amount: Number(body?.amount) || 0,
+          paymentNo,
+          reason: body?.reason || body?.note,
+          refundNo: body?.refundNo,
+          note: body?.note,
+          operatorId: operatorId(ctx),
+          operatorName,
+        });
+        return;
+      }
+
       const paymentService: any = strapi
         .plugin("zhao-tire")
         .service("payment");
-      const user = ctx.state?.user;
       ctx.body = await paymentService.refund({
         order,
         amount: Number(body?.amount) || 0,
         note: body?.note,
         operatorId: operatorId(ctx),
-        operatorName: user
-          ? String(user.username || user.email || user.id || "")
-          : undefined,
+        operatorName,
       });
     } catch (error) {
       sendError(ctx, error);

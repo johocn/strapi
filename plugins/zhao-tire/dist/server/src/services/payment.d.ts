@@ -79,15 +79,40 @@ declare const _default: ({ strapi }: {
             pageCount: number;
         };
     }>;
-    /** 退款：回滚累计金额，整单退清时回滚邀请与奖励 */
+    /**
+     * 退款：回滚订单累计金额与来源流水，整单退清时回滚邀请有效计数与奖励券。
+     * - 幂等：同一 idempotencyKey / refundNo 重复请求直接返回原流水，不重复扣减；
+     * - 超额：退款总额不得超过订单已收金额，指定来源流水时还不得超过该笔可退余额；
+     * - 部分退款后来源流水保持 paid，退满后置为 refunded。
+     */
     refund(params: {
         order: any;
         amount: number;
+        sourcePaymentNo?: string;
+        refundNo?: string;
+        idempotencyKey?: string;
+        provider?: string;
         operatorId?: number | string;
         operatorName?: string;
         note?: string;
     }): Promise<{
+        duplicated: boolean;
         payment: any;
+        order: {
+            orderNo: any;
+            paidAmount: number;
+            paymentStatus: any;
+        };
+        rollback: any;
+        sourcePayment?: undefined;
+    } | {
+        duplicated: boolean;
+        payment: any;
+        sourcePayment: {
+            paymentNo: any;
+            refundedAmount: number;
+            status: string;
+        };
         order: {
             orderNo: any;
             paidAmount: number;
