@@ -12,6 +12,7 @@ import customer from "./customer";
 import referral from "./referral";
 import payment from "./payment";
 import pay from "./pay";
+import wechatPay from "./wechat-pay";
 
 export default {
   pricing,
@@ -28,4 +29,5 @@ export default {
   referral,
   payment,
   pay,
+  "wechat-pay": wechatPay,
 };

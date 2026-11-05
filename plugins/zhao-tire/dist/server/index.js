@@ -67,7 +67,7 @@ const register = ({ strapi: strapi2 }) => {
     strapi2.log.warn(`[zhao-tire] permission actions register failed: ${err}`);
   }
 };
-const ORDER_UID$b = "plugin::zhao-tire.tire-order";
+const ORDER_UID$c = "plugin::zhao-tire.tire-order";
 const TIMEZONE_OFFSET_MS$2 = 8 * 60 * 60 * 1e3;
 const REMIND_OFFSETS = [
   { days: 7, type: "due_7" },
@@ -79,7 +79,7 @@ const runExpiryReminder = async ({ strapi: strapi2 }) => {
   let total = 0;
   for (const target of REMIND_OFFSETS) {
     const expireAt = dateAfter$1(target.days);
-    const orders = await strapi2.db.query(ORDER_UID$b).findMany({
+    const orders = await strapi2.db.query(ORDER_UID$c).findMany({
       where: { status: "stored", expireAt }
     });
     for (const order2 of orders) {
@@ -21659,7 +21659,7 @@ const calcPrice = ({ serviceType, months, packageDoc, addons }) => {
   return { amountPackage, amountAddon, amountTotal: amountPackage + amountAddon };
 };
 const pricing = () => ({ calcPrice });
-const ORDER_UID$a = "plugin::zhao-tire.tire-order";
+const ORDER_UID$b = "plugin::zhao-tire.tire-order";
 const PACKAGE_UID$2 = "plugin::zhao-tire.tire-package";
 const ADDON_UID$1 = "plugin::zhao-tire.tire-addon";
 const CONFIG_UID$6 = "plugin::zhao-tire.tire-config";
@@ -21671,7 +21671,7 @@ const RENEWABLE_STATUS = ["stored", "pending_outbound"];
 const generateRedemptionCode = async (strapi2) => {
   for (let attempt = 0; attempt < 10; attempt += 1) {
     const code = String(Math.floor(1e5 + Math.random() * 9e5));
-    const exists = await strapi2.db.query(ORDER_UID$a).findOne({
+    const exists = await strapi2.db.query(ORDER_UID$b).findOne({
       where: { redemptionCode: code }
     });
     if (!exists) return code;
@@ -21766,7 +21766,7 @@ const getConfig = async (strapi2) => {
 };
 const findOrder = async (strapi2, orderNo2, populate2) => {
   if (!orderNo2) return null;
-  return strapi2.db.query(ORDER_UID$a).findOne({
+  return strapi2.db.query(ORDER_UID$b).findOne({
     where: { orderNo: String(orderNo2) },
     ...populate2 ? { populate: populate2 } : {}
   });
@@ -21919,7 +21919,7 @@ const order$1 = ({ strapi: strapi2 }) => ({
         throw createError("VALIDATION_FAILED", 400, "请选择上门时段");
       }
     }
-    const existing = await strapi2.db.query(ORDER_UID$a).findOne({
+    const existing = await strapi2.db.query(ORDER_UID$b).findOne({
       where: { clientToken }
     });
     if (existing) {
@@ -22079,13 +22079,13 @@ const order$1 = ({ strapi: strapi2 }) => ({
     for (let attempt = 0; attempt < MAX_ORDER_NO_ATTEMPTS; attempt += 1) {
       const orderNo2 = await orderNoService.generate();
       try {
-        created = await strapi2.db.query(ORDER_UID$a).create({
+        created = await strapi2.db.query(ORDER_UID$b).create({
           data: { ...baseData, orderNo: orderNo2 }
         });
         break;
       } catch (error2) {
         lastError = error2;
-        const duplicated = await strapi2.db.query(ORDER_UID$a).findOne({
+        const duplicated = await strapi2.db.query(ORDER_UID$b).findOne({
           where: { clientToken }
         });
         if (duplicated) {
@@ -22255,7 +22255,7 @@ const order$1 = ({ strapi: strapi2 }) => ({
       "renewed",
       `续费 ${extendMonths} 个月，应付 ${amount} 分`
     );
-    await strapi2.db.query(ORDER_UID$a).update({
+    await strapi2.db.query(ORDER_UID$b).update({
       where: { id: order2.id },
       data: { expireAt: newExpireAt, renewals, timeline }
     });
@@ -22283,7 +22283,7 @@ const order$1 = ({ strapi: strapi2 }) => ({
       "outbound_requested",
       outboundNote ? `出库申请：${outboundNote}` : "出库申请"
     );
-    await strapi2.db.query(ORDER_UID$a).update({
+    await strapi2.db.query(ORDER_UID$b).update({
       where: { id: order2.id },
       data: {
         outboundRequestStatus: "pending",
@@ -22307,7 +22307,7 @@ const order$1 = ({ strapi: strapi2 }) => ({
       "商家已接单",
       operatorId2
     );
-    await strapi2.db.query(ORDER_UID$a).update({
+    await strapi2.db.query(ORDER_UID$b).update({
       where: { id: order2.id },
       data: { status: "accepted", timeline }
     });
@@ -22323,7 +22323,7 @@ const order$1 = ({ strapi: strapi2 }) => ({
       reason ? `拒绝原因：${reason}` : "商家已拒绝",
       operatorId2
     );
-    await strapi2.db.query(ORDER_UID$a).update({
+    await strapi2.db.query(ORDER_UID$b).update({
       where: { id: order2.id },
       data: { status: "rejected", timeline }
     });
@@ -22338,7 +22338,7 @@ const order$1 = ({ strapi: strapi2 }) => ({
       reason ? `取消原因：${reason}` : "订单已取消",
       operatorId2
     );
-    await strapi2.db.query(ORDER_UID$a).update({
+    await strapi2.db.query(ORDER_UID$b).update({
       where: { id: order2.id },
       data: { status: "canceled", timeline }
     });
@@ -22373,7 +22373,7 @@ const order$1 = ({ strapi: strapi2 }) => ({
       storageOperator: payload.operatorId ? { id: payload.operatorId } : void 0,
       timeline
     });
-    await strapi2.db.query(ORDER_UID$a).update({
+    await strapi2.db.query(ORDER_UID$b).update({
       where: { id: order2.id },
       data
     });
@@ -22448,7 +22448,7 @@ const order$1 = ({ strapi: strapi2 }) => ({
       "轮胎已出库（核销码已验证），订单完成",
       payload.operatorId
     );
-    await strapi2.db.query(ORDER_UID$a).update({
+    await strapi2.db.query(ORDER_UID$b).update({
       where: { id: order2.id },
       data: {
         status: "completed",
@@ -22479,7 +22479,7 @@ const order$1 = ({ strapi: strapi2 }) => ({
       "出库申请已通过",
       operatorId2
     );
-    await strapi2.db.query(ORDER_UID$a).update({
+    await strapi2.db.query(ORDER_UID$b).update({
       where: { id: order2.id },
       data: {
         status: "pending_outbound",
@@ -22505,7 +22505,7 @@ const order$1 = ({ strapi: strapi2 }) => ({
       reason ? `出库申请驳回：${reason}` : "出库申请已驳回",
       operatorId2
     );
-    await strapi2.db.query(ORDER_UID$a).update({
+    await strapi2.db.query(ORDER_UID$b).update({
       where: { id: order2.id },
       data: {
         outboundRequestStatus: "none",
@@ -22592,7 +22592,7 @@ const order$1 = ({ strapi: strapi2 }) => ({
       `后台修改：${updatedFields.join(", ")}`,
       operatorId2
     );
-    await strapi2.db.query(ORDER_UID$a).update({
+    await strapi2.db.query(ORDER_UID$b).update({
       where: { id: order2.id },
       data
     });
@@ -22630,7 +22630,7 @@ const order$1 = ({ strapi: strapi2 }) => ({
       result.pending ? `收款登记待确认 ${amount} 分（${method}，流水 ${result.payment.paymentNo}）` : `收款到账 ${amount} 分（${method}，流水 ${result.payment.paymentNo}），累计 ${paidAmount} 分`,
       operatorId2
     );
-    await strapi2.db.query(ORDER_UID$a).update({
+    await strapi2.db.query(ORDER_UID$b).update({
       where: { id: order2.id },
       data: { paymentMethod: method, paymentStatus, paidAmount, timeline }
     });
@@ -22726,7 +22726,7 @@ const content = {
     }
   }
 };
-const ORDER_UID$9 = "plugin::zhao-tire.tire-order";
+const ORDER_UID$a = "plugin::zhao-tire.tire-order";
 const SHARE_UID$2 = "plugin::zhao-tire.tire-share-record";
 const PHONE_PATTERN$1 = /^1[3-9]\d{9}$/;
 const dateOnly = (value) => {
@@ -22784,7 +22784,7 @@ const my = {
   async orders(ctx) {
     try {
       const user = await requireUser(ctx);
-      const rows = await strapi.db.query(ORDER_UID$9).findMany({ where: { phone: user.phone }, orderBy: { createdAt: "DESC" } });
+      const rows = await strapi.db.query(ORDER_UID$a).findMany({ where: { phone: user.phone }, orderBy: { createdAt: "DESC" } });
       ctx.body = { ...user, orders: rows.map(toSummary) };
     } catch (error2) {
       sendError(ctx, error2);
@@ -22922,7 +22922,7 @@ const pay$1 = {
     }
   }
 };
-const ORDER_UID$8 = "plugin::zhao-tire.tire-order";
+const ORDER_UID$9 = "plugin::zhao-tire.tire-order";
 const orderService = () => strapi.plugin("zhao-tire").service("order");
 const readBody$1 = (ctx) => {
   const body = ctx.request?.body;
@@ -22942,7 +22942,7 @@ const operatorId$2 = (ctx) => {
 };
 const findOrderById = async (rawId) => {
   const id = requireId$2(rawId);
-  const order2 = await strapi.db.query(ORDER_UID$8).findOne({ where: { id } });
+  const order2 = await strapi.db.query(ORDER_UID$9).findOne({ where: { id } });
   if (!order2) {
     throw createError("ORDER_NOT_FOUND", 404, "订单不存在");
   }
@@ -22995,7 +22995,7 @@ const uploadPhotos = async (orderId, field, files) => {
   }
   const uploadService = strapi.plugin("upload").service("upload");
   const uploaded = await uploadService.upload({
-    data: { refId: orderId, ref: ORDER_UID$8, field },
+    data: { refId: orderId, ref: ORDER_UID$9, field },
     files
   });
   return (uploaded || []).map((file) => Number(file?.id)).filter((id) => Number.isInteger(id) && id > 0);
@@ -23011,14 +23011,14 @@ const adminOrder = {
       );
       const where = buildOrderWhere(query);
       const [data, total] = await Promise.all([
-        strapi.db.query(ORDER_UID$8).findMany({
+        strapi.db.query(ORDER_UID$9).findMany({
           where,
           orderBy: { createdAt: "DESC" },
           populate: { inboundPhotos: true, outboundPhotos: true },
           limit: pageSize,
           offset: (page - 1) * pageSize
         }),
-        strapi.db.query(ORDER_UID$8).count({ where })
+        strapi.db.query(ORDER_UID$9).count({ where })
       ]);
       ctx.body = {
         data,
@@ -23035,7 +23035,7 @@ const adminOrder = {
   },
   async findOne(ctx) {
     try {
-      const order2 = await strapi.db.query(ORDER_UID$8).findOne({
+      const order2 = await strapi.db.query(ORDER_UID$9).findOne({
         where: { id: requireId$2(ctx.params.id) },
         populate: {
           inboundPhotos: true,
@@ -23654,7 +23654,7 @@ const adminReferral = {
     }
   }
 };
-const PAYMENT_UID$1 = "plugin::zhao-tire.tire-payment";
+const PAYMENT_UID$2 = "plugin::zhao-tire.tire-payment";
 const paymentService = () => strapi.plugin("zhao-tire").service("payment");
 const operatorName = (ctx) => {
   const user = ctx.state?.user;
@@ -23685,7 +23685,7 @@ const adminPayment = {
       if (!Number.isInteger(id) || id <= 0) {
         throw createError("VALIDATION_FAILED", 400, "流水 id 不合法");
       }
-      const payment2 = await strapi.db.query(PAYMENT_UID$1).findOne({
+      const payment2 = await strapi.db.query(PAYMENT_UID$2).findOne({
         where: { id }
       });
       if (!payment2) throw createError("PAYMENT_NOT_FOUND", 404, "支付流水不存在");
@@ -23892,7 +23892,7 @@ const routes = {
     routes: [...contentApi().routes, ...adminApi().routes]
   }
 };
-const ORDER_UID$7 = "plugin::zhao-tire.tire-order";
+const ORDER_UID$8 = "plugin::zhao-tire.tire-order";
 const CONFIG_UID$4 = "plugin::zhao-tire.tire-config";
 const EXCLUDED_STATUS = ["canceled", "rejected"];
 const LIMIT_FIELD = {
@@ -23909,7 +23909,7 @@ const getLimit = async (strapi2, slot2) => {
   return Number.isFinite(limit) && limit > 0 ? limit : 6;
 };
 const countOrders = async (strapi2, date2, slot2) => {
-  return strapi2.db.query(ORDER_UID$7).count({
+  return strapi2.db.query(ORDER_UID$8).count({
     where: {
       pickupDate: date2,
       pickupSlot: slot2,
@@ -23948,7 +23948,7 @@ const slot = ({ strapi: strapi2 }) => ({
     return usage;
   }
 });
-const ORDER_UID$6 = "plugin::zhao-tire.tire-order";
+const ORDER_UID$7 = "plugin::zhao-tire.tire-order";
 const TIMEZONE = "Asia/Shanghai";
 const DAY_FORMATTER = new Intl.DateTimeFormat("en-US", {
   timeZone: TIMEZONE,
@@ -23972,7 +23972,7 @@ const orderNo = ({ strapi: strapi2 }) => ({
   /** 按当日已有单量生成下一个单号；唯一冲突由调用方重试 */
   async generate(now = /* @__PURE__ */ new Date()) {
     const prefix = `XT${dayStamp(now)}`;
-    const count = await strapi2.db.query(ORDER_UID$6).count({
+    const count = await strapi2.db.query(ORDER_UID$7).count({
       where: { orderNo: { $startsWith: prefix } }
     });
     return formatOrderNo(now, count + 1);
@@ -24289,7 +24289,7 @@ const smsProvider = ({ strapi: strapi2 }) => ({
     return getProviderName(strapi2);
   }
 });
-const ORDER_UID$5 = "plugin::zhao-tire.tire-order";
+const ORDER_UID$6 = "plugin::zhao-tire.tire-order";
 const STATUS_TEXT = {
   pending_accept: "待接单",
   accepted: "待入库",
@@ -24327,7 +24327,7 @@ const toTime = (value) => {
 const toYuan = (value) => Math.round(Number(value) || 0) / 100;
 const exportService = ({ strapi: strapi2 }) => ({
   async ordersExcel(query = {}) {
-    const orders = await strapi2.db.query(ORDER_UID$5).findMany({
+    const orders = await strapi2.db.query(ORDER_UID$6).findMany({
       where: buildOrderWhere(query),
       orderBy: { createdAt: "DESC" },
       populate: { inboundPhotos: true }
@@ -24585,7 +24585,7 @@ const catalog = ({ strapi: strapi2 }) => ({
     return strapi2.documents(CONFIG_UID$1).create({ data });
   }
 });
-const ORDER_UID$4 = "plugin::zhao-tire.tire-order";
+const ORDER_UID$5 = "plugin::zhao-tire.tire-order";
 const ACTIVE_STATUSES$1 = ["stored", "pending_outbound"];
 const TIMEZONE_OFFSET_MS = 8 * 60 * 60 * 1e3;
 const DAY_MS = 24 * 60 * 60 * 1e3;
@@ -24627,14 +24627,14 @@ const inventory = ({ strapi: strapi2 }) => ({
       ];
     }
     const [data, total] = await Promise.all([
-      strapi2.db.query(ORDER_UID$4).findMany({
+      strapi2.db.query(ORDER_UID$5).findMany({
         where,
         orderBy: { expireAt: "ASC" },
         populate: { inboundPhotos: true },
         limit: pageSize,
         offset: (page - 1) * pageSize
       }),
-      strapi2.db.query(ORDER_UID$4).count({ where })
+      strapi2.db.query(ORDER_UID$5).count({ where })
     ]);
     return {
       data: data.map(withRemaining),
@@ -24658,7 +24658,7 @@ const inventory = ({ strapi: strapi2 }) => ({
     if (locationCode) {
       where.locationCode = { $containsi: locationCode };
     }
-    const data = await strapi2.db.query(ORDER_UID$4).findMany({
+    const data = await strapi2.db.query(ORDER_UID$5).findMany({
       where,
       orderBy: { expireAt: "ASC" },
       populate: { inboundPhotos: true }
@@ -24676,7 +24676,7 @@ const inventory = ({ strapi: strapi2 }) => ({
     if (ids.length === 0) {
       throw createError("VALIDATION_FAILED", 400, "请选择需要提醒的订单");
     }
-    const orders = await strapi2.db.query(ORDER_UID$4).findMany({
+    const orders = await strapi2.db.query(ORDER_UID$5).findMany({
       where: { id: { $in: ids } }
     });
     const notify2 = strapi2.plugin("zhao-tire").service("notify");
@@ -24707,7 +24707,7 @@ const inventory = ({ strapi: strapi2 }) => ({
     };
   }
 });
-const ORDER_UID$3 = "plugin::zhao-tire.tire-order";
+const ORDER_UID$4 = "plugin::zhao-tire.tire-order";
 const ACTIVE_STATUSES = ["stored", "pending_outbound"];
 const customer = ({ strapi: strapi2 }) => ({
   async list(query = {}) {
@@ -24725,7 +24725,7 @@ const customer = ({ strapi: strapi2 }) => ({
         { plateNo: { $containsi: keyword } }
       ];
     }
-    const orders = await strapi2.db.query(ORDER_UID$3).findMany({
+    const orders = await strapi2.db.query(ORDER_UID$4).findMany({
       where,
       orderBy: { createdAt: "DESC" }
     });
@@ -24778,7 +24778,7 @@ const customer = ({ strapi: strapi2 }) => ({
   }
 });
 const RC_UID = "plugin::zhao-tire.tire-referral-code";
-const ORDER_UID$2 = "plugin::zhao-tire.tire-order";
+const ORDER_UID$3 = "plugin::zhao-tire.tire-order";
 const SHARE_UID = "plugin::zhao-tire.tire-share-record";
 const REWARD_UID = "plugin::zhao-tire.tire-referral-reward";
 const PACKAGE_UID = "plugin::zhao-tire.tire-package";
@@ -24791,7 +24791,7 @@ const DEFAULT_REWARD_CAP = 6900;
 const DEFAULT_REWARD_VALID_DAYS = 365;
 const DEFAULT_REWARD_YEAR_LIMIT = 4;
 const DEFAULT_DAILY_BIND_LIMIT = 5;
-function throwErr$2(code, status, message) {
+function throwErr$3(code, status, message) {
   const e = new Error(message);
   e.code = code;
   e.status = status;
@@ -24815,23 +24815,23 @@ function generateRewardNo() {
   const rand = Math.floor(Math.random() * 1e4).toString().padStart(4, "0");
   return `RW${stamp}${rand}`;
 }
-const toNumber$2 = (value, fallback = 0) => {
+const toNumber$3 = (value, fallback = 0) => {
   const num = Number(value);
   return Number.isFinite(num) ? num : fallback;
 };
 async function readConfig(strapi2) {
   const config2 = await strapi2.db.query(CONFIG_UID).findOne() || {};
   return {
-    rewardCap: toNumber$2(config2.referralRewardCap, DEFAULT_REWARD_CAP),
-    rewardValidDays: toNumber$2(
+    rewardCap: toNumber$3(config2.referralRewardCap, DEFAULT_REWARD_CAP),
+    rewardValidDays: toNumber$3(
       config2.referralRewardValidDays,
       DEFAULT_REWARD_VALID_DAYS
     ),
-    rewardYearLimit: toNumber$2(
+    rewardYearLimit: toNumber$3(
       config2.referralRewardYearLimit,
       DEFAULT_REWARD_YEAR_LIMIT
     ),
-    dailyBindLimit: toNumber$2(
+    dailyBindLimit: toNumber$3(
       config2.referralDailyBindLimit,
       DEFAULT_DAILY_BIND_LIMIT
     )
@@ -24872,7 +24872,7 @@ async function basePackageFee(strapi2) {
     orderBy: { sort: "ASC" }
   });
   for (const pkg of packages || []) {
-    const price = toNumber$2(pkg.storePrice) || toNumber$2(pkg.pickupPrice);
+    const price = toNumber$3(pkg.storePrice) || toNumber$3(pkg.pickupPrice);
     if (price > 0) return price;
   }
   return 0;
@@ -24886,17 +24886,17 @@ const referral = ({ strapi: strapi2 }) => ({
   /** 获取或创建某手机号的邀请码（返回邀请码 + 计数 + 奖励情况） */
   async ensureForPhone(phone, nickname) {
     if (!PHONE_PATTERN.test(phone)) {
-      throwErr$2("VALIDATION_FAILED", 400, "手机号不合法");
+      throwErr$3("VALIDATION_FAILED", 400, "手机号不合法");
     }
     return ensureCode(strapi2, phone, nickname);
   },
   /** 校验邀请码是否存在，返回码的归属手机号；不存在抛错 */
   async validate(referralCode) {
     const code = String(referralCode || "").trim().toUpperCase();
-    if (!code) throwErr$2("VALIDATION_FAILED", 400, "邀请码不能为空");
-    if (code.length !== INVITE_CODE_LEN) throwErr$2("VALIDATION_FAILED", 400, "邀请码格式错误");
+    if (!code) throwErr$3("VALIDATION_FAILED", 400, "邀请码不能为空");
+    if (code.length !== INVITE_CODE_LEN) throwErr$3("VALIDATION_FAILED", 400, "邀请码格式错误");
     const row = await strapi2.db.query(RC_UID).findOne({ where: { code } });
-    if (!row) throwErr$2("REFERRAL_CODE_INVALID", 400, "邀请码不存在");
+    if (!row) throwErr$3("REFERRAL_CODE_INVALID", 400, "邀请码不存在");
     return row;
   },
   /**
@@ -24913,12 +24913,12 @@ const referral = ({ strapi: strapi2 }) => ({
     if (!code) return null;
     const rc = await this.validate(code);
     if (rc.phone === phone) {
-      throwErr$2("REFERRAL_SELF", 400, "不能使用自己的邀请码");
+      throwErr$3("REFERRAL_SELF", 400, "不能使用自己的邀请码");
     }
     const openid = String(extra.openid || "").trim().slice(0, 128);
     const deviceId = String(extra.deviceId || "").trim().slice(0, 128);
     const ip = String(extra.ip || "").trim().slice(0, 64);
-    const previous = await strapi2.db.query(ORDER_UID$2).count({
+    const previous = await strapi2.db.query(ORDER_UID$3).count({
       where: {
         phone,
         id: { $ne: order2.id }
@@ -24971,21 +24971,21 @@ const referral = ({ strapi: strapi2 }) => ({
         boundAt: boundAt.toISOString()
       }
     });
-    await strapi2.db.query(ORDER_UID$2).update({
+    await strapi2.db.query(ORDER_UID$3).update({
       where: { id: order2.id },
       data: { referralCode: rc.code, referrerPhone: rc.phone }
     });
     if (status === "bound") {
       await strapi2.db.query(RC_UID).update({
         where: { id: rc.id },
-        data: { usedCount: toNumber$2(rc.usedCount) + 1 }
+        data: { usedCount: toNumber$3(rc.usedCount) + 1 }
       });
     }
     return record2;
   },
   /** 被邀请人入库成功：把邀请置为有效并触发「每满 3 人发 1 次」 */
   async markValidOnInbound(orderNo2) {
-    const order2 = await strapi2.db.query(ORDER_UID$2).findOne({ where: { orderNo: orderNo2 } });
+    const order2 = await strapi2.db.query(ORDER_UID$3).findOne({ where: { orderNo: orderNo2 } });
     if (!order2) return null;
     let record2 = await strapi2.db.query(SHARE_UID).findOne({
       where: { orderNo: orderNo2 },
@@ -25011,9 +25011,9 @@ const referral = ({ strapi: strapi2 }) => ({
       where: { phone: record2.referrerPhone }
     });
     if (!rc) rc = await ensureCode(strapi2, record2.referrerPhone);
-    const completed = toNumber$2(rc.completedCount) + 1;
-    let pendingFree = toNumber$2(rc.pendingFreeCount);
-    let totalFree = toNumber$2(rc.totalFreeCount);
+    const completed = toNumber$3(rc.completedCount) + 1;
+    let pendingFree = toNumber$3(rc.pendingFreeCount);
+    let totalFree = toNumber$3(rc.totalFreeCount);
     const rewarded = completed >= REFERRAL_THRESHOLD && completed % REFERRAL_THRESHOLD === 0;
     let reward = null;
     if (rewarded) {
@@ -25023,7 +25023,7 @@ const referral = ({ strapi: strapi2 }) => ({
         totalFree += 1;
       }
     }
-    const debtCount = toNumber$2(rc.debtCount) + (reward?.debt ? 1 : 0);
+    const debtCount = toNumber$3(rc.debtCount) + (reward?.debt ? 1 : 0);
     await strapi2.db.query(RC_UID).update({
       where: { id: rc.id },
       data: { completedCount: completed, pendingFreeCount: pendingFree, totalFreeCount: totalFree, debtCount }
@@ -25047,7 +25047,7 @@ const referral = ({ strapi: strapi2 }) => ({
   async issueReward(rc, options2 = {}) {
     const config2 = await readConfig(strapi2);
     const phone = String(rc.phone || "");
-    if (!options2.force && toNumber$2(rc.debtCount) > 0) {
+    if (!options2.force && toNumber$3(rc.debtCount) > 0) {
       return { issued: false, debt: true, reason: "debt_offset" };
     }
     if (!options2.force) {
@@ -25105,7 +25105,7 @@ const referral = ({ strapi: strapi2 }) => ({
         data: { status: "reserved", usedAt: now.toISOString() }
       });
       if (!claimed) continue;
-      const amount = toNumber$2(row.amount);
+      const amount = toNumber$3(row.amount);
       const discount = amount > 0 ? Math.min(amount, amountPackage) : amountPackage;
       return { rewardNo: row.rewardNo, discount, amount, reward: claimed };
     }
@@ -25130,7 +25130,7 @@ const referral = ({ strapi: strapi2 }) => ({
   /** 查询某手机号的可用奖励券（前端展示） */
   async listRewards(phone) {
     if (!PHONE_PATTERN.test(phone)) {
-      throwErr$2("VALIDATION_FAILED", 400, "手机号不合法");
+      throwErr$3("VALIDATION_FAILED", 400, "手机号不合法");
     }
     const now = /* @__PURE__ */ new Date();
     const rows = await strapi2.db.query(REWARD_UID).findMany({
@@ -25142,7 +25142,7 @@ const referral = ({ strapi: strapi2 }) => ({
       const expired = row.status === "available" && row.expiresAt && new Date(row.expiresAt).getTime() <= now.getTime();
       return {
         rewardNo: row.rewardNo,
-        amount: toNumber$2(row.amount),
+        amount: toNumber$3(row.amount),
         source: row.source,
         status: expired ? "expired" : row.status,
         issuedAt: row.issuedAt,
@@ -25170,10 +25170,10 @@ const referral = ({ strapi: strapi2 }) => ({
       where: { phone: record2.referrerPhone }
     });
     if (!rc) return { rolledBack: true };
-    const completed = Math.max(0, toNumber$2(rc.completedCount) - 1);
-    let pendingFree = Math.max(0, toNumber$2(rc.pendingFreeCount));
-    let debtCount = toNumber$2(rc.debtCount);
-    const milestoneBroken = toNumber$2(rc.completedCount) >= REFERRAL_THRESHOLD && toNumber$2(rc.completedCount) % REFERRAL_THRESHOLD === 0;
+    const completed = Math.max(0, toNumber$3(rc.completedCount) - 1);
+    let pendingFree = Math.max(0, toNumber$3(rc.pendingFreeCount));
+    let debtCount = toNumber$3(rc.debtCount);
+    const milestoneBroken = toNumber$3(rc.completedCount) >= REFERRAL_THRESHOLD && toNumber$3(rc.completedCount) % REFERRAL_THRESHOLD === 0;
     if (milestoneBroken) {
       const latest = await strapi2.db.query(REWARD_UID).findOne({
         where: { phone: rc.phone, source: "referral_3", status: { $in: ["available", "reserved"] } },
@@ -25212,7 +25212,7 @@ const referral = ({ strapi: strapi2 }) => ({
     if (rc) {
       await strapi2.db.query(RC_UID).update({
         where: { id: rc.id },
-        data: { pendingFreeCount: toNumber$2(rc.pendingFreeCount) + 1 }
+        data: { pendingFreeCount: toNumber$3(rc.pendingFreeCount) + 1 }
       });
     }
     return { rewardNo: reward.rewardNo };
@@ -25235,7 +25235,7 @@ const referral = ({ strapi: strapi2 }) => ({
     if (rc) {
       await strapi2.db.query(RC_UID).update({
         where: { id: rc.id },
-        data: { pendingFreeCount: Math.max(0, toNumber$2(rc.pendingFreeCount) - 1) }
+        data: { pendingFreeCount: Math.max(0, toNumber$3(rc.pendingFreeCount) - 1) }
       });
     }
     return true;
@@ -25243,7 +25243,7 @@ const referral = ({ strapi: strapi2 }) => ({
   /** 查询某手机号的邀请码详情 + 奖励进度（前端"我的邀请码"页用） */
   async getProfile(phone) {
     if (!PHONE_PATTERN.test(phone)) {
-      throwErr$2("VALIDATION_FAILED", 400, "手机号不合法");
+      throwErr$3("VALIDATION_FAILED", 400, "手机号不合法");
     }
     const rc = await strapi2.db.query(RC_UID).findOne({ where: { phone } });
     if (!rc) {
@@ -25252,14 +25252,14 @@ const referral = ({ strapi: strapi2 }) => ({
     return rc;
   }
 });
-const PAYMENT_UID = "plugin::zhao-tire.tire-payment";
-const ORDER_UID$1 = "plugin::zhao-tire.tire-order";
+const PAYMENT_UID$1 = "plugin::zhao-tire.tire-payment";
+const ORDER_UID$2 = "plugin::zhao-tire.tire-order";
 const CHANNELS = ["wechat", "store_pay", "pickup_pay", "deposit", "full", "mock"];
-const toNumber$1 = (value, fallback = 0) => {
+const toNumber$2 = (value, fallback = 0) => {
   const num = Number(value);
   return Number.isFinite(num) ? num : fallback;
 };
-function throwErr$1(code, status, message, details) {
+function throwErr$2(code, status, message, details) {
   const error2 = new Error(message);
   error2.code = code;
   error2.status = status;
@@ -25277,31 +25277,31 @@ function generatePaymentNo() {
 }
 const payment = ({ strapi: strapi2 }) => ({
   async findOrder(orderNo2) {
-    const order2 = await strapi2.db.query(ORDER_UID$1).findOne({ where: { orderNo: orderNo2 } });
-    if (!order2) throwErr$1("ORDER_NOT_FOUND", 404, "订单不存在");
+    const order2 = await strapi2.db.query(ORDER_UID$2).findOne({ where: { orderNo: orderNo2 } });
+    if (!order2) throwErr$2("ORDER_NOT_FOUND", 404, "订单不存在");
     return order2;
   },
   outstandingOf(order2) {
-    return Math.max(0, toNumber$1(order2.amountTotal) - toNumber$1(order2.paidAmount));
+    return Math.max(0, toNumber$2(order2.amountTotal) - toNumber$2(order2.paidAmount));
   },
   /** 创建 pending 流水（幂等键已存在则直接返回原流水） */
   async ensurePending(params) {
     const channel = CHANNELS.includes(params.channel) ? params.channel : "store_pay";
-    const existing = await strapi2.db.query(PAYMENT_UID).findOne({
+    const existing = await strapi2.db.query(PAYMENT_UID$1).findOne({
       where: { idempotencyKey: params.idempotencyKey }
     });
     if (existing) return existing;
     if (params.amount <= 0) {
-      throwErr$1("AMOUNT_INVALID", 400, "支付金额必须大于 0");
+      throwErr$2("AMOUNT_INVALID", 400, "支付金额必须大于 0");
     }
     const outstanding = this.outstandingOf(params.order);
     if (params.amount > outstanding) {
-      throwErr$1("AMOUNT_EXCEEDED", 400, "支付金额超过订单未结金额", {
+      throwErr$2("AMOUNT_EXCEEDED", 400, "支付金额超过订单未结金额", {
         outstanding,
         amount: params.amount
       });
     }
-    return strapi2.db.query(PAYMENT_UID).create({
+    return strapi2.db.query(PAYMENT_UID$1).create({
       data: {
         paymentNo: generatePaymentNo(),
         orderNo: params.order.orderNo,
@@ -25324,24 +25324,24 @@ const payment = ({ strapi: strapi2 }) => ({
    * - 金额上限：流水金额不得超过订单未结金额
    */
   async settle(paymentNo, options2 = {}) {
-    const payment2 = await strapi2.db.query(PAYMENT_UID).findOne({
+    const payment2 = await strapi2.db.query(PAYMENT_UID$1).findOne({
       where: { paymentNo }
     });
-    if (!payment2) throwErr$1("PAYMENT_NOT_FOUND", 404, "支付流水不存在");
+    if (!payment2) throwErr$2("PAYMENT_NOT_FOUND", 404, "支付流水不存在");
     if (payment2.status === "paid") {
       return { duplicated: true, payment: payment2 };
     }
     if (payment2.status !== "pending") {
-      throwErr$1("PAYMENT_STATE_INVALID", 400, "该流水当前状态不可确认", {
+      throwErr$2("PAYMENT_STATE_INVALID", 400, "该流水当前状态不可确认", {
         status: payment2.status
       });
     }
     const order2 = await this.findOrder(payment2.orderNo);
-    const total = toNumber$1(order2.amountTotal);
-    const paid = toNumber$1(order2.paidAmount);
+    const total = toNumber$2(order2.amountTotal);
+    const paid = toNumber$2(order2.paidAmount);
     const outstanding = Math.max(0, total - paid);
     if (payment2.amount > outstanding) {
-      throwErr$1("AMOUNT_EXCEEDED", 400, "支付金额超过订单未结金额", {
+      throwErr$2("AMOUNT_EXCEEDED", 400, "支付金额超过订单未结金额", {
         outstanding,
         amount: payment2.amount
       });
@@ -25349,7 +25349,7 @@ const payment = ({ strapi: strapi2 }) => ({
     const paidAmount = paid + payment2.amount;
     const paymentStatus = total <= 0 || paidAmount >= total ? "paid" : paidAmount > 0 ? "deposit_paid" : "unpaid";
     const paidAt = (/* @__PURE__ */ new Date()).toISOString();
-    const updatedPayment = await strapi2.db.query(PAYMENT_UID).update({
+    const updatedPayment = await strapi2.db.query(PAYMENT_UID$1).update({
       where: { id: payment2.id, status: "pending" },
       data: {
         status: "paid",
@@ -25359,13 +25359,13 @@ const payment = ({ strapi: strapi2 }) => ({
       }
     });
     if (!updatedPayment) {
-      const again = await strapi2.db.query(PAYMENT_UID).findOne({
+      const again = await strapi2.db.query(PAYMENT_UID$1).findOne({
         where: { paymentNo }
       });
       if (again?.status === "paid") return { duplicated: true, payment: again };
-      throwErr$1("PAYMENT_STATE_INVALID", 409, "流水状态已被修改，请刷新后重试");
+      throwErr$2("PAYMENT_STATE_INVALID", 409, "流水状态已被修改，请刷新后重试");
     }
-    await strapi2.db.query(ORDER_UID$1).update({
+    await strapi2.db.query(ORDER_UID$2).update({
       where: { id: order2.id },
       data: { paidAmount, paymentStatus }
     });
@@ -25379,7 +25379,7 @@ const payment = ({ strapi: strapi2 }) => ({
   async recordManual(params) {
     const channel = CHANNELS.includes(params.channel) ? params.channel : "store_pay";
     const idempotencyKey = params.idempotencyKey || `manual:${params.order.orderNo}:${channel}:${params.amount}:${params.operatorId || 0}:${Date.now()}`;
-    const existing = await strapi2.db.query(PAYMENT_UID).findOne({
+    const existing = await strapi2.db.query(PAYMENT_UID$1).findOne({
       where: { idempotencyKey }
     });
     if (existing) {
@@ -25388,15 +25388,15 @@ const payment = ({ strapi: strapi2 }) => ({
       }
       return { duplicated: true, payment: existing };
     }
-    if (params.amount <= 0) throwErr$1("AMOUNT_INVALID", 400, "收款金额必须大于 0");
+    if (params.amount <= 0) throwErr$2("AMOUNT_INVALID", 400, "收款金额必须大于 0");
     const outstanding = this.outstandingOf(params.order);
     if (params.amount > outstanding) {
-      throwErr$1("AMOUNT_EXCEEDED", 400, "收款金额超过订单未结金额", {
+      throwErr$2("AMOUNT_EXCEEDED", 400, "收款金额超过订单未结金额", {
         outstanding,
         amount: params.amount
       });
     }
-    const payment2 = await strapi2.db.query(PAYMENT_UID).create({
+    const payment2 = await strapi2.db.query(PAYMENT_UID$1).create({
       data: {
         paymentNo: generatePaymentNo(),
         orderNo: params.order.orderNo,
@@ -25424,13 +25424,13 @@ const payment = ({ strapi: strapi2 }) => ({
     if (query.orderNo) where.orderNo = query.orderNo;
     if (query.channel) where.channel = query.channel;
     const [rows, total] = await Promise.all([
-      strapi2.db.query(PAYMENT_UID).findMany({
+      strapi2.db.query(PAYMENT_UID$1).findMany({
         where,
         orderBy: { id: "DESC" },
         limit: pageSize,
         offset: (page - 1) * pageSize
       }),
-      strapi2.db.query(PAYMENT_UID).count({ where })
+      strapi2.db.query(PAYMENT_UID$1).count({ where })
     ]);
     return {
       data: rows,
@@ -25440,19 +25440,19 @@ const payment = ({ strapi: strapi2 }) => ({
   /** 退款：回滚累计金额，整单退清时回滚邀请与奖励 */
   async refund(params) {
     const order2 = params.order;
-    const paid = toNumber$1(order2.paidAmount);
+    const paid = toNumber$2(order2.paidAmount);
     const amount = Math.round(params.amount);
     if (!Number.isFinite(amount) || amount <= 0) {
-      throwErr$1("AMOUNT_INVALID", 400, "退款金额必须大于 0");
+      throwErr$2("AMOUNT_INVALID", 400, "退款金额必须大于 0");
     }
     if (amount > paid) {
-      throwErr$1("REFUND_EXCEEDED", 400, "退款金额超过已收金额", { paid });
+      throwErr$2("REFUND_EXCEEDED", 400, "退款金额超过已收金额", { paid });
     }
-    const total = toNumber$1(order2.amountTotal);
+    const total = toNumber$2(order2.amountTotal);
     const paidAmount = paid - amount;
     const paymentStatus = paidAmount <= 0 ? "unpaid" : paidAmount >= total ? "paid" : "deposit_paid";
     const refundedAt = (/* @__PURE__ */ new Date()).toISOString();
-    const payment2 = await strapi2.db.query(PAYMENT_UID).create({
+    const payment2 = await strapi2.db.query(PAYMENT_UID$1).create({
       data: {
         paymentNo: generatePaymentNo(),
         orderNo: order2.orderNo,
@@ -25470,7 +25470,7 @@ const payment = ({ strapi: strapi2 }) => ({
         note: "退款"
       }
     });
-    await strapi2.db.query(ORDER_UID$1).update({
+    await strapi2.db.query(ORDER_UID$2).update({
       where: { id: order2.id },
       data: { paidAmount, paymentStatus }
     });
@@ -25479,7 +25479,7 @@ const payment = ({ strapi: strapi2 }) => ({
       const referralService = strapi2.service("plugin::zhao-tire.referral");
       await referralService.restoreUsedReward(order2);
       rollback = await referralService.rollbackForOrder(order2.orderNo);
-      await strapi2.db.query(ORDER_UID$1).update({
+      await strapi2.db.query(ORDER_UID$2).update({
         where: { id: order2.id },
         data: { rewardNo: null, rewardAmount: 0 }
       });
@@ -25491,12 +25491,12 @@ const payment = ({ strapi: strapi2 }) => ({
     };
   }
 });
-const ORDER_UID = "plugin::zhao-tire.tire-order";
-const toNumber = (value, fallback = 0) => {
+const ORDER_UID$1 = "plugin::zhao-tire.tire-order";
+const toNumber$1 = (value, fallback = 0) => {
   const num = Number(value);
   return Number.isFinite(num) ? num : fallback;
 };
-function throwErr(code, status, message, details) {
+function throwErr$1(code, status, message, details) {
   const error2 = new Error(message);
   error2.code = code;
   error2.status = status;
@@ -25537,19 +25537,19 @@ const pay = ({ strapi: strapi2 }) => ({
   async prepay(payload) {
     const provider = this.provider();
     const orderNo2 = String(payload?.orderNo || "").trim();
-    if (!orderNo2) throwErr("VALIDATION_FAILED", 400, "orderNo 不能为空");
-    const order2 = await strapi2.db.query(ORDER_UID).findOne({ where: { orderNo: orderNo2 } });
-    if (!order2) throwErr("ORDER_NOT_FOUND", 404, "订单不存在");
+    if (!orderNo2) throwErr$1("VALIDATION_FAILED", 400, "orderNo 不能为空");
+    const order2 = await strapi2.db.query(ORDER_UID$1).findOne({ where: { orderNo: orderNo2 } });
+    if (!order2) throwErr$1("ORDER_NOT_FOUND", 404, "订单不存在");
     const paymentService2 = strapi2.service("plugin::zhao-tire.payment");
     const outstanding = paymentService2.outstandingOf(order2);
     if (outstanding <= 0) {
-      throwErr("ORDER_ALREADY_PAID", 400, "订单已结清，无需支付", {
+      throwErr$1("ORDER_ALREADY_PAID", 400, "订单已结清，无需支付", {
         paymentStatus: order2.paymentStatus
       });
     }
     if (provider === "wechat") {
-      const wechatPay = strapi2.service("plugin::zhao-tire.wechat-pay");
-      return wechatPay.prepay({
+      const wechatPay2 = strapi2.service("plugin::zhao-tire.wechat-pay");
+      return wechatPay2.prepay({
         order: order2,
         amount: outstanding,
         openid: payload?.openid,
@@ -25582,22 +25582,22 @@ const pay = ({ strapi: strapi2 }) => ({
   /** 支付异步回调：mock 用 HMAC，微信走 APIv3 验签/解密；失败均不改单 */
   async notify(payload, signature, rawBody, headers) {
     if (this.provider() === "wechat") {
-      const wechatPay = strapi2.service("plugin::zhao-tire.wechat-pay");
-      return wechatPay.notify({
+      const wechatPay2 = strapi2.service("plugin::zhao-tire.wechat-pay");
+      return wechatPay2.notify({
         headers,
         rawBody: rawBody || JSON.stringify(payload || {}),
         body: payload
       });
     }
     const sign = String(signature || "").trim();
-    if (!sign) throwErr("INVALID_SIGNATURE", 401, "缺少 X-Mock-Sign 签名");
+    if (!sign) throwErr$1("INVALID_SIGNATURE", 401, "缺少 X-Mock-Sign 签名");
     const body = {
       paymentNo: String(payload?.paymentNo || ""),
-      amount: toNumber(payload?.amount),
+      amount: toNumber$1(payload?.amount),
       externalNo: payload?.externalNo ? String(payload.externalNo) : void 0,
       status: payload?.status ? String(payload.status) : "paid"
     };
-    if (!body.paymentNo) throwErr("VALIDATION_FAILED", 400, "paymentNo 不能为空");
+    if (!body.paymentNo) throwErr$1("VALIDATION_FAILED", 400, "paymentNo 不能为空");
     const expected = signMockPayload(
       {
         paymentNo: body.paymentNo,
@@ -25608,15 +25608,15 @@ const pay = ({ strapi: strapi2 }) => ({
       this.mockSecret()
     );
     if (sign.length !== expected.length) {
-      throwErr("INVALID_SIGNATURE", 401, "签名不匹配");
+      throwErr$1("INVALID_SIGNATURE", 401, "签名不匹配");
     }
     const valid = crypto__default.default.timingSafeEqual(
       Buffer.from(sign),
       Buffer.from(expected)
     );
-    if (!valid) throwErr("INVALID_SIGNATURE", 401, "签名不匹配");
+    if (!valid) throwErr$1("INVALID_SIGNATURE", 401, "签名不匹配");
     if (body.status !== "paid") {
-      throwErr("PAYMENT_STATE_INVALID", 400, "mock 回调仅支持 paid 状态");
+      throwErr$1("PAYMENT_STATE_INVALID", 400, "mock 回调仅支持 paid 状态");
     }
     const paymentService2 = strapi2.service("plugin::zhao-tire.payment");
     const result = await paymentService2.settle(body.paymentNo, {
@@ -25628,7 +25628,7 @@ const pay = ({ strapi: strapi2 }) => ({
   /** H5 mock 收银台确认支付（仅 PAY_PROVIDER=mock 时可用） */
   async mockPay(paymentNo) {
     if (this.provider() !== "mock") {
-      throwErr("PAY_PROVIDER_UNAVAILABLE", 501, "当前支付通道不支持模拟支付");
+      throwErr$1("PAY_PROVIDER_UNAVAILABLE", 501, "当前支付通道不支持模拟支付");
     }
     const paymentService2 = strapi2.service("plugin::zhao-tire.payment");
     const result = await paymentService2.settle(String(paymentNo || ""), {
@@ -25636,6 +25636,410 @@ const pay = ({ strapi: strapi2 }) => ({
       raw: { source: "mock-h5" }
     });
     return { ok: true, duplicated: result.duplicated, paidAmount: result.order?.paidAmount };
+  }
+});
+const ORDER_UID = "plugin::zhao-tire.tire-order";
+const PAYMENT_UID = "plugin::zhao-tire.tire-payment";
+const WECHAT_PAY_ENV = {
+  appId: "WECHAT_PAY_APPID",
+  mchId: "WECHAT_PAY_MCHID",
+  apiV3Key: "WECHAT_PAY_API_V3_KEY",
+  mchSerialNo: "WECHAT_PAY_MCH_SERIAL_NO",
+  privateKey: "WECHAT_PAY_PRIVATE_KEY",
+  platformPublicKey: "WECHAT_PAY_PLATFORM_PUBLIC_KEY",
+  notifyUrl: "WECHAT_PAY_NOTIFY_URL",
+  apiBase: "WECHAT_PAY_API_BASE"
+};
+const toNumber = (value, fallback = 0) => {
+  const num = Number(value);
+  return Number.isFinite(num) ? num : fallback;
+};
+function throwErr(code, status, message, details) {
+  const error2 = new Error(message);
+  error2.code = code;
+  error2.status = status;
+  if (details) error2.details = details;
+  throw error2;
+}
+function normalizePem(value) {
+  return String(value || "").replace(/\\n/g, "\n").trim();
+}
+function readWechatPayConfig(env2 = process.env) {
+  const publicBase = String(env2.PAY_PUBLIC_BASE || "https://www.joho.cn").replace(/\/$/, "");
+  return {
+    appId: String(env2[WECHAT_PAY_ENV.appId] || "").trim(),
+    mchId: String(env2[WECHAT_PAY_ENV.mchId] || "").trim(),
+    apiV3Key: String(env2[WECHAT_PAY_ENV.apiV3Key] || "").trim(),
+    mchSerialNo: String(env2[WECHAT_PAY_ENV.mchSerialNo] || "").trim(),
+    privateKey: normalizePem(env2[WECHAT_PAY_ENV.privateKey]),
+    platformPublicKey: normalizePem(env2[WECHAT_PAY_ENV.platformPublicKey]),
+    notifyUrl: String(
+      env2[WECHAT_PAY_ENV.notifyUrl] || `${publicBase}/api/zhao-tire/v1/pay/wechat/notify`
+    ).trim(),
+    apiBase: String(env2[WECHAT_PAY_ENV.apiBase] || "https://api.mch.weixin.qq.com").replace(
+      /\/$/,
+      ""
+    )
+  };
+}
+function missingWechatPayKeys(config2, scope = "prepay") {
+  const missing = [];
+  if (!config2.appId) missing.push(WECHAT_PAY_ENV.appId);
+  if (!config2.mchId) missing.push(WECHAT_PAY_ENV.mchId);
+  if (scope === "notify") {
+    if (!config2.apiV3Key) missing.push(WECHAT_PAY_ENV.apiV3Key);
+    if (!config2.platformPublicKey) missing.push(WECHAT_PAY_ENV.platformPublicKey);
+  } else {
+    if (!config2.mchSerialNo) missing.push(WECHAT_PAY_ENV.mchSerialNo);
+    if (!config2.privateKey) missing.push(WECHAT_PAY_ENV.privateKey);
+  }
+  if (scope !== "prepay" && !config2.notifyUrl) missing.push(WECHAT_PAY_ENV.notifyUrl);
+  return missing;
+}
+function maskOpenid(openid) {
+  const value = String(openid || "");
+  if (value.length <= 10) return value ? `${value.slice(0, 2)}****` : "";
+  return `${value.slice(0, 6)}****${value.slice(-4)}`;
+}
+function buildSignMessage(method, urlPath, timestamp, nonce, body) {
+  return `${method}
+${urlPath}
+${timestamp}
+${nonce}
+${body}
+`;
+}
+function signWithPrivateKey(message, privateKey) {
+  return crypto__default.default.sign("RSA-SHA256", Buffer.from(message), privateKey).toString("base64");
+}
+function buildAuthorizationHeader(config2, method, urlPath, body, timestamp = String(Math.floor(Date.now() / 1e3)), nonce = crypto__default.default.randomBytes(16).toString("hex")) {
+  const signature = signWithPrivateKey(
+    buildSignMessage(method, urlPath, timestamp, nonce, body),
+    config2.privateKey
+  );
+  return `WECHATPAY2-SHA256-RSA2048 mchid="${config2.mchId}",nonce_str="${nonce}",signature="${signature}",timestamp="${timestamp}",serial_no="${config2.mchSerialNo}"`;
+}
+function verifyWechatNotifySignature(config2, params) {
+  const { timestamp, nonce, rawBody, signature } = params;
+  if (!timestamp || !nonce || !signature || !config2.platformPublicKey) return false;
+  try {
+    return crypto__default.default.verify(
+      "RSA-SHA256",
+      Buffer.from(`${timestamp}
+${nonce}
+${rawBody}
+`),
+      config2.platformPublicKey,
+      Buffer.from(signature, "base64")
+    );
+  } catch {
+    return false;
+  }
+}
+function decryptWechatNotifyResource(config2, resource) {
+  const key = Buffer.from(config2.apiV3Key, "utf8");
+  if (key.length !== 32) {
+    throwErr("PAY_PROVIDER_NOT_CONFIGURED", 503, "微信支付 APIv3 密钥未配置或长度不正确");
+  }
+  const ciphertext = Buffer.from(String(resource?.ciphertext || ""), "base64");
+  if (ciphertext.length <= 16) {
+    throwErr("VALIDATION_FAILED", 400, "微信支付回调密文不合法");
+  }
+  const authTag = ciphertext.subarray(ciphertext.length - 16);
+  const payload = ciphertext.subarray(0, ciphertext.length - 16);
+  try {
+    const decipher = crypto__default.default.createDecipheriv(
+      "aes-256-gcm",
+      key,
+      Buffer.from(String(resource?.nonce || ""), "utf8")
+    );
+    decipher.setAuthTag(authTag);
+    if (resource?.associated_data) {
+      decipher.setAAD(Buffer.from(String(resource.associated_data), "utf8"));
+    }
+    const text = Buffer.concat([decipher.update(payload), decipher.final()]).toString("utf8");
+    return JSON.parse(text);
+  } catch {
+    throwErr("VALIDATION_FAILED", 400, "微信支付回调解密失败");
+  }
+}
+function readHeader(headers, name) {
+  if (!headers) return "";
+  return String(headers[name] ?? headers[name.toLowerCase()] ?? "").trim();
+}
+const wechatPay = ({ strapi: strapi2 }) => ({
+  readConfig() {
+    return readWechatPayConfig();
+  },
+  missingKeys(scope = "prepay") {
+    return missingWechatPayKeys(this.readConfig(), scope);
+  },
+  /** 密钥缺失时返回可读错误，调用方在任何落库前调用 */
+  assertConfigured(scope = "prepay") {
+    const config2 = this.readConfig();
+    const missing = missingWechatPayKeys(config2, scope);
+    if (missing.length > 0) {
+      throwErr(
+        "PAY_PROVIDER_NOT_CONFIGURED",
+        503,
+        `微信支付暂未配置（缺少 ${missing.join("、")}），请联系门店`,
+        { missingKeys: missing }
+      );
+    }
+    return config2;
+  },
+  buildJsapiPayParams(prepayId, config2) {
+    const timeStamp = String(Math.floor(Date.now() / 1e3));
+    const nonceStr = crypto__default.default.randomBytes(16).toString("hex");
+    const packageStr = `prepay_id=${prepayId}`;
+    const paySign = signWithPrivateKey(
+      `${config2.appId}
+${timeStamp}
+${nonceStr}
+${packageStr}
+`,
+      config2.privateKey
+    );
+    return {
+      appId: config2.appId,
+      timeStamp,
+      nonceStr,
+      package: packageStr,
+      signType: "RSA",
+      paySign
+    };
+  },
+  /** 调用 /v3/pay/transactions/jsapi；测试可覆盖本方法，避免真实网络请求 */
+  async createJsapiTransaction(params) {
+    const { config: config2, order: order2, payment: payment2, amount, openid } = params;
+    const urlPath = "/v3/pay/transactions/jsapi";
+    const body = JSON.stringify({
+      appid: config2.appId,
+      mchid: config2.mchId,
+      description: `雪地胎寄存-${order2.orderNo}`.slice(0, 120),
+      out_trade_no: payment2.paymentNo,
+      notify_url: config2.notifyUrl,
+      amount: { total: amount, currency: "CNY" },
+      payer: { openid }
+    });
+    const fetchFn = globalThis.fetch;
+    if (typeof fetchFn !== "function") {
+      throwErr("WECHAT_PREPAY_FAILED", 500, "当前运行环境缺少 fetch，无法请求微信支付");
+    }
+    const response = await fetchFn(`${config2.apiBase}${urlPath}`, {
+      method: "POST",
+      headers: {
+        Authorization: buildAuthorizationHeader(config2, "POST", urlPath, body),
+        "Content-Type": "application/json",
+        Accept: "application/json"
+      },
+      body
+    });
+    const text = await response.text();
+    let parsed = {};
+    try {
+      parsed = text ? JSON.parse(text) : {};
+    } catch {
+      parsed = {};
+    }
+    if (!response.ok || !parsed?.prepay_id) {
+      throwErr(
+        "WECHAT_PREPAY_FAILED",
+        502,
+        `微信支付下单失败（${parsed?.code || response.status}）`,
+        { status: response.status, code: parsed?.code, message: parsed?.message }
+      );
+    }
+    return String(parsed.prepay_id);
+  },
+  /**
+   * 微信 JSAPI 下单：
+   * - 未配置 / 未绑定 openid 时在任何落库前报可读错误；
+   * - 成功后创建/复用 pending 流水（同一幂等键不重复下单）；
+   * - 流水 externalNo 存 prepay_id，便于重复点击复用。
+   */
+  async prepay(params) {
+    const config2 = this.assertConfigured("prepay");
+    const order2 = params.order;
+    const openid = String(params.openid || "").trim();
+    if (!openid) {
+      throwErr(
+        "WECHAT_OPENID_REQUIRED",
+        400,
+        "当前账号未绑定微信，请在微信内打开并授权登录后重试"
+      );
+    }
+    const amount = toNumber(params.amount);
+    if (amount <= 0) {
+      throwErr("AMOUNT_INVALID", 400, "支付金额必须大于 0");
+    }
+    const paymentService2 = strapi2.service("plugin::zhao-tire.payment");
+    const idempotencyKey = String(params.idempotencyKey || "").trim() || `wechat:${order2.orderNo}:${amount}:${maskOpenid(openid)}`;
+    const payment2 = await paymentService2.ensurePending({
+      order: order2,
+      amount,
+      channel: "wechat",
+      idempotencyKey,
+      provider: "wechat",
+      payerOpenid: openid,
+      raw: { provider: "wechat", openidMasked: maskOpenid(openid) }
+    });
+    if (payment2.status === "paid") {
+      return { paid: true, paymentNo: payment2.paymentNo, amount: payment2.amount };
+    }
+    let prepayId = String(payment2.externalNo || "").trim();
+    if (!prepayId) {
+      prepayId = await this.createJsapiTransaction({
+        config: config2,
+        order: order2,
+        payment: payment2,
+        amount,
+        openid
+      });
+      await strapi2.db.query(PAYMENT_UID).update({
+        where: { id: payment2.id },
+        data: {
+          externalNo: prepayId,
+          raw: {
+            provider: "wechat",
+            openidMasked: maskOpenid(openid),
+            prepayId
+          }
+        }
+      });
+    }
+    if (order2?.id && !order2.wechatOpenid) {
+      await strapi2.db.query(ORDER_UID).update({
+        where: { id: order2.id },
+        data: { wechatOpenid: openid }
+      });
+    }
+    return {
+      paymentNo: payment2.paymentNo,
+      amount,
+      provider: "wechat",
+      mock: false,
+      orderNo: order2.orderNo,
+      openidMasked: maskOpenid(openid),
+      payParams: this.buildJsapiPayParams(prepayId, config2)
+    };
+  },
+  /** 微信支付异步回调：验签 + 解密 + 幂等 settle；任一步失败都不改单 */
+  async notify(params) {
+    const config2 = this.assertConfigured("notify");
+    const headers = params.headers || {};
+    const timestamp = readHeader(headers, "wechatpay-timestamp");
+    const nonce = readHeader(headers, "wechatpay-nonce");
+    const signature = readHeader(headers, "wechatpay-signature");
+    if (!timestamp || !nonce || !signature) {
+      throwErr("INVALID_SIGNATURE", 401, "缺少微信支付回调签名头");
+    }
+    const valid = this.verifySignature({
+      config: config2,
+      timestamp,
+      nonce,
+      rawBody: String(params.rawBody || ""),
+      signature
+    });
+    if (!valid) throwErr("INVALID_SIGNATURE", 401, "微信支付回调验签失败");
+    const resource = params.body?.resource;
+    if (!resource) throwErr("VALIDATION_FAILED", 400, "回调缺少 resource");
+    const decrypted = this.decryptResource(config2, resource);
+    if (String(decrypted?.mchid || "") !== config2.mchId || String(decrypted?.appid || "") !== config2.appId) {
+      throwErr("INVALID_SIGNATURE", 401, "微信支付回调商户信息不匹配");
+    }
+    if (String(decrypted?.trade_state || "").toUpperCase() !== "SUCCESS") {
+      return { ok: true, ignored: true, tradeState: String(decrypted?.trade_state || "") };
+    }
+    const paymentNo = String(decrypted?.out_trade_no || "").trim();
+    if (!paymentNo) throwErr("VALIDATION_FAILED", 400, "回调缺少 out_trade_no");
+    const paymentService2 = strapi2.service("plugin::zhao-tire.payment");
+    const result = await paymentService2.settle(paymentNo, {
+      externalNo: decrypted.transaction_id || void 0,
+      raw: {
+        source: "wechat-notify",
+        tradeState: decrypted.trade_state,
+        amount: decrypted.amount,
+        transactionId: decrypted.transaction_id
+      }
+    });
+    return {
+      ok: true,
+      duplicated: result.duplicated,
+      paidAmount: result.order?.paidAmount
+    };
+  },
+  verifySignature(params) {
+    return verifyWechatNotifySignature(params.config, params);
+  },
+  decryptResource(config2, resource) {
+    return decryptWechatNotifyResource(config2, resource);
+  },
+  /**
+   * 微信退款骨架：只发起 APIv3 退款受理，不直接改订单状态。
+   * 订单状态回滚仍交由 paymentService.refund 串联（下一轮接入）。
+   */
+  async refund(params) {
+    const config2 = this.assertConfigured("refund");
+    const amount = toNumber(params.amount);
+    if (amount <= 0) throwErr("AMOUNT_INVALID", 400, "退款金额必须大于 0");
+    const payment2 = await strapi2.db.query(PAYMENT_UID).findOne({
+      where: { paymentNo: String(params.paymentNo || "") }
+    });
+    if (!payment2) throwErr("PAYMENT_NOT_FOUND", 404, "支付流水不存在");
+    if (payment2.status !== "paid") {
+      throwErr("PAYMENT_STATE_INVALID", 400, "该流水当前状态不可退款", {
+        status: payment2.status
+      });
+    }
+    if (amount > toNumber(payment2.amount)) {
+      throwErr("REFUND_EXCEEDED", 400, "退款金额超过该笔支付金额", {
+        paid: toNumber(payment2.amount)
+      });
+    }
+    const urlPath = "/v3/refund/domestic/refunds";
+    const outRefundNo = `REF-${payment2.paymentNo}-${Date.now()}`;
+    const body = JSON.stringify({
+      out_trade_no: payment2.paymentNo,
+      out_refund_no: outRefundNo,
+      reason: String(params.reason || "雪地胎寄存退款").slice(0, 80),
+      amount: { refund: amount, total: toNumber(payment2.amount), currency: "CNY" }
+    });
+    const fetchFn = globalThis.fetch;
+    if (typeof fetchFn !== "function") {
+      throwErr("WECHAT_PREPAY_FAILED", 500, "当前运行环境缺少 fetch，无法请求微信支付");
+    }
+    const response = await fetchFn(`${config2.apiBase}${urlPath}`, {
+      method: "POST",
+      headers: {
+        Authorization: buildAuthorizationHeader(config2, "POST", urlPath, body),
+        "Content-Type": "application/json",
+        Accept: "application/json"
+      },
+      body
+    });
+    const text = await response.text();
+    let parsed = {};
+    try {
+      parsed = text ? JSON.parse(text) : {};
+    } catch {
+      parsed = {};
+    }
+    if (!response.ok) {
+      throwErr(
+        "PAY_PROVIDER_UNAVAILABLE",
+        502,
+        `微信退款受理失败（${parsed?.code || response.status}）`,
+        { status: response.status, code: parsed?.code }
+      );
+    }
+    return {
+      refundNo: outRefundNo,
+      paymentNo: payment2.paymentNo,
+      amount,
+      status: String(parsed?.status || "PROCESSING"),
+      orderNo: params.order?.orderNo || payment2.orderNo
+    };
   }
 });
 const services = {
@@ -25652,7 +26056,8 @@ const services = {
   customer,
   referral,
   payment,
-  pay
+  pay,
+  "wechat-pay": wechatPay
 };
 const FULL_ACCESS_ROLES = ["strapi-super-admin", "tire-admin"];
 const WAREHOUSE_ROLE = "tire-warehouse";

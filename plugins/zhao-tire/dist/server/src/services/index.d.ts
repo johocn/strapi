@@ -528,5 +528,95 @@ declare const _default: {
             paidAmount: any;
         }>;
     };
+    "wechat-pay": ({ strapi }: {
+        strapi: import('@strapi/types/dist/core').Strapi;
+    }) => {
+        readConfig(): import('./wechat-pay').WechatPayConfig;
+        missingKeys(scope?: import('./wechat-pay').WechatPayScope): string[];
+        assertConfigured(scope?: import('./wechat-pay').WechatPayScope): import('./wechat-pay').WechatPayConfig;
+        buildJsapiPayParams(prepayId: string, config: import('./wechat-pay').WechatPayConfig): {
+            appId: string;
+            timeStamp: string;
+            nonceStr: string;
+            package: string;
+            signType: string;
+            paySign: string;
+        };
+        createJsapiTransaction(params: {
+            config: import('./wechat-pay').WechatPayConfig;
+            order: any;
+            payment: any;
+            amount: number;
+            openid: string;
+        }): Promise<string>;
+        prepay(params: {
+            order: any;
+            amount: number;
+            openid?: string;
+            idempotencyKey?: string;
+        }): Promise<{
+            paid: boolean;
+            paymentNo: any;
+            amount: any;
+            provider?: undefined;
+            mock?: undefined;
+            orderNo?: undefined;
+            openidMasked?: undefined;
+            payParams?: undefined;
+        } | {
+            paymentNo: any;
+            amount: number;
+            provider: string;
+            mock: boolean;
+            orderNo: any;
+            openidMasked: string;
+            payParams: {
+                appId: string;
+                timeStamp: string;
+                nonceStr: string;
+                package: string;
+                signType: string;
+                paySign: string;
+            };
+            paid?: undefined;
+        }>;
+        notify(params: {
+            headers: any;
+            rawBody: string;
+            body: any;
+        }): Promise<{
+            ok: boolean;
+            ignored: boolean;
+            tradeState: string;
+            duplicated?: undefined;
+            paidAmount?: undefined;
+        } | {
+            ok: boolean;
+            duplicated: any;
+            paidAmount: any;
+            ignored?: undefined;
+            tradeState?: undefined;
+        }>;
+        verifySignature(params: {
+            config: import('./wechat-pay').WechatPayConfig;
+            timestamp: string;
+            nonce: string;
+            rawBody: string;
+            signature: string;
+        }): boolean;
+        decryptResource(config: import('./wechat-pay').WechatPayConfig, resource: any): any;
+        refund(params: {
+            order: any;
+            amount: number;
+            paymentNo: string;
+            reason?: string;
+        }): Promise<{
+            refundNo: string;
+            paymentNo: any;
+            amount: number;
+            status: string;
+            orderNo: any;
+        }>;
+    };
 };
 export default _default;
