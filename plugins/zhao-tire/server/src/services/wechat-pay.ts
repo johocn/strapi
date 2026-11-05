@@ -56,7 +56,7 @@ export function readWechatPayConfig(env: NodeJS.ProcessEnv = process.env): Wecha
     privateKey: normalizePem(env[WECHAT_PAY_ENV.privateKey]),
     platformPublicKey: normalizePem(env[WECHAT_PAY_ENV.platformPublicKey]),
     notifyUrl: String(
-      env[WECHAT_PAY_ENV.notifyUrl] || `${publicBase}/api/zhao-tire/v1/pay/wechat/notify`
+      env[WECHAT_PAY_ENV.notifyUrl] || `${publicBase}/api/zhao-tire/v1/pay/notify`
     ).trim(),
     apiBase: String(env[WECHAT_PAY_ENV.apiBase] || "https://api.mch.weixin.qq.com").replace(
       /\/$/,

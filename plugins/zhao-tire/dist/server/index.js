@@ -22902,11 +22902,12 @@ const pay$1 = {
   async notify(ctx) {
     try {
       const signature = ctx.get?.("x-mock-sign") || ctx.request?.headers?.["x-mock-sign"] || "";
-      const rawBody = ctx.request?.rawBody;
+      const unparsed = ctx.request?.body?.[Symbol.for("unparsedBody")];
+      const rawBody = typeof unparsed === "string" ? unparsed : typeof ctx.request?.rawBody === "string" ? ctx.request.rawBody : void 0;
       ctx.body = await payService().notify(
         ctx.request.body || {},
         signature,
-        typeof rawBody === "string" ? rawBody : void 0,
+        rawBody,
         ctx.request?.headers || {}
       );
     } catch (error2) {
@@ -25674,7 +25675,7 @@ function readWechatPayConfig(env2 = process.env) {
     privateKey: normalizePem(env2[WECHAT_PAY_ENV.privateKey]),
     platformPublicKey: normalizePem(env2[WECHAT_PAY_ENV.platformPublicKey]),
     notifyUrl: String(
-      env2[WECHAT_PAY_ENV.notifyUrl] || `${publicBase}/api/zhao-tire/v1/pay/wechat/notify`
+      env2[WECHAT_PAY_ENV.notifyUrl] || `${publicBase}/api/zhao-tire/v1/pay/notify`
     ).trim(),
     apiBase: String(env2[WECHAT_PAY_ENV.apiBase] || "https://api.mch.weixin.qq.com").replace(
       /\/$/,

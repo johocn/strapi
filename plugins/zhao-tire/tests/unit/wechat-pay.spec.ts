@@ -1,4 +1,10 @@
-import wechatPayFactory, { WECHAT_PAY_ENV, maskOpenid } from "../../server/src/services/wechat-pay";
+import crypto from "crypto";
+import wechatPayFactory, {
+  WECHAT_PAY_ENV,
+  maskOpenid,
+  readWechatPayConfig,
+  verifyWechatNotifySignature,
+} from "../../server/src/services/wechat-pay";
 
 const ENV_KEYS = Object.values(WECHAT_PAY_ENV);
 
@@ -154,6 +160,39 @@ describe("wechat-pay prepay", () => {
     expect(service.createJsapiTransaction).not.toHaveBeenCalled();
     expect(result.paymentNo).toBe("PAY-TEST-1");
     expect(result.payParams.package).toBe("prepay_id=prepay_id_existing");
+  });
+});
+
+describe("wechat-pay 验签与配置", () => {
+  test("回调默认地址指向 /pay/notify", () => {
+    const config = readWechatPayConfig({ PAY_PUBLIC_BASE: "https://example.com" } as any);
+    expect(config.notifyUrl).toBe("https://example.com/api/zhao-tire/v1/pay/notify");
+  });
+
+  test("原始报文签名：正确通过，篡改报文或缺失平台公钥均失败", () => {
+    const pair = crypto.generateKeyPairSync("rsa", { modulusLength: 2048 });
+    const config: any = {
+      platformPublicKey: pair.publicKey.export({ type: "spki", format: "pem" }).toString(),
+    };
+    const timestamp = "1700000000";
+    const nonce = "abc";
+    const rawBody = '{"id":"x"}';
+    const signature = crypto
+      .sign("RSA-SHA256", Buffer.from(`${timestamp}\n${nonce}\n${rawBody}\n`), pair.privateKey)
+      .toString("base64");
+
+    expect(verifyWechatNotifySignature(config, { timestamp, nonce, rawBody, signature })).toBe(true);
+    expect(
+      verifyWechatNotifySignature(config, { timestamp, nonce, rawBody: `${rawBody} `, signature })
+    ).toBe(false);
+    expect(
+      verifyWechatNotifySignature({ platformPublicKey: "" } as any, {
+        timestamp,
+        nonce,
+        rawBody,
+        signature,
+      })
+    ).toBe(false);
   });
 });
 

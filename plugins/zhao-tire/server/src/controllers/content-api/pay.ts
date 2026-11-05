@@ -15,11 +15,14 @@ export default {
     try {
       const signature =
         ctx.get?.("x-mock-sign") || ctx.request?.headers?.["x-mock-sign"] || "";
-      const rawBody = ctx.request?.rawBody;
+      // APIv3 验签必须使用原始报文：koa-body includeUnparsed 会挂在 body 的 Symbol 上
+      const unparsed = ctx.request?.body?.[Symbol.for("unparsedBody")];
+      const rawBody =
+        typeof unparsed === "string" ? unparsed : typeof ctx.request?.rawBody === "string" ? ctx.request.rawBody : undefined;
       ctx.body = await payService().notify(
         ctx.request.body || {},
         signature,
-        typeof rawBody === "string" ? rawBody : undefined,
+        rawBody,
         ctx.request?.headers || {}
       );
     } catch (error) {
