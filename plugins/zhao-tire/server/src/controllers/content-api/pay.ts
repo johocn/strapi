@@ -15,7 +15,13 @@ export default {
     try {
       const signature =
         ctx.get?.("x-mock-sign") || ctx.request?.headers?.["x-mock-sign"] || "";
-      ctx.body = await payService().notify(ctx.request.body || {}, signature);
+      const rawBody = ctx.request?.rawBody;
+      ctx.body = await payService().notify(
+        ctx.request.body || {},
+        signature,
+        typeof rawBody === "string" ? rawBody : undefined,
+        ctx.request?.headers || {}
+      );
     } catch (error) {
       sendError(ctx, error);
     }

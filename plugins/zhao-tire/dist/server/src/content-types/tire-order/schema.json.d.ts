@@ -189,6 +189,11 @@ declare const _default: {
     "referrerPhone": {
       "type": "string"
     },
+    "wechatOpenid": {
+      "type": "string",
+      "maxLength": 64,
+      "private": true
+    },
     "isFree": {
       "type": "boolean",
       "default": false

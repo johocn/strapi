@@ -56,6 +56,11 @@ declare const _default: {
       "type": "string",
       "maxLength": 32
     },
+    "payerOpenid": {
+      "type": "string",
+      "maxLength": 64,
+      "private": true
+    },
     "operator": {
       "type": "relation",
       "relation": "manyToOne",

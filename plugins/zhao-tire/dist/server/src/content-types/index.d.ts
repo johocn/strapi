@@ -297,6 +297,11 @@ declare const _default: {
                 referrerPhone: {
                     type: string;
                 };
+                wechatOpenid: {
+                    type: string;
+                    maxLength: number;
+                    private: boolean;
+                };
                 isFree: {
                     type: string;
                     default: boolean;
@@ -723,6 +728,11 @@ declare const _default: {
                 provider: {
                     type: string;
                     maxLength: number;
+                };
+                payerOpenid: {
+                    type: string;
+                    maxLength: number;
+                    private: boolean;
                 };
                 operator: {
                     type: string;

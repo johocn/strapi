@@ -437,6 +437,7 @@ declare const _default: {
             idempotencyKey: string;
             provider?: string;
             externalNo?: string;
+            payerOpenid?: string;
             raw?: any;
             note?: string;
         }): Promise<any>;
@@ -519,28 +520,8 @@ declare const _default: {
         provider(): "mock" | "wechat";
         mockSecret(): string;
         publicBase(): string;
-        prepay(payload: any): Promise<{
-            paid: boolean;
-            paymentNo: any;
-            amount: any;
-            provider?: undefined;
-            mock?: undefined;
-            payUrl?: undefined;
-            orderNo?: undefined;
-        } | {
-            paymentNo: any;
-            amount: any;
-            provider: "mock";
-            mock: boolean;
-            payUrl: string;
-            orderNo: any;
-            paid?: undefined;
-        }>;
-        notify(payload: any, signature: string): Promise<{
-            ok: boolean;
-            duplicated: any;
-            paidAmount: any;
-        }>;
+        prepay(payload: any): Promise<any>;
+        notify(payload: any, signature: string, rawBody?: string, headers?: any): Promise<any>;
         mockPay(paymentNo: string): Promise<{
             ok: boolean;
             duplicated: any;

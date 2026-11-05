@@ -21435,7 +21435,7 @@ const collectionName$9 = "zhao_tire_orders";
 const info$9 = { "singularName": "tire-order", "pluralName": "tire-orders", "displayName": "寄存订单" };
 const options$9 = { "draftAndPublish": false };
 const pluginOptions$9 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": false } };
-const attributes$9 = { "orderNo": { "type": "string", "required": true, "unique": true }, "clientToken": { "type": "string", "required": true, "unique": true }, "source": { "type": "enumeration", "enum": ["h5"], "default": "h5" }, "customerName": { "type": "string", "required": true }, "phone": { "type": "string", "required": true }, "plateNo": { "type": "string" }, "carType": { "type": "enumeration", "enum": ["sedan", "suv", "pickup"] }, "tireSpec": { "type": "string" }, "withWheelRim": { "type": "boolean", "default": false }, "serviceType": { "type": "enumeration", "enum": ["store", "pickup"], "required": true }, "returnMethod": { "type": "enumeration", "enum": ["pickup_delivery"] }, "pickupDate": { "type": "date" }, "pickupSlot": { "type": "enumeration", "enum": ["morning", "afternoon"] }, "storageStartDate": { "type": "date", "required": true }, "expectedReturnDate": { "type": "date", "required": true }, "expireAt": { "type": "date" }, "months": { "type": "integer" }, "packageSnapshot": { "type": "json" }, "addons": { "type": "json" }, "amountPackage": { "type": "integer", "default": 0 }, "amountAddon": { "type": "integer", "default": 0 }, "amountTotal": { "type": "integer", "default": 0 }, "paymentMethod": { "type": "enumeration", "enum": ["store_pay", "pickup_pay", "wechat", "deposit", "full"], "default": "store_pay" }, "paymentStatus": { "type": "enumeration", "enum": ["unpaid", "deposit_paid", "paid"], "default": "unpaid" }, "paidAmount": { "type": "integer", "default": 0 }, "rewardNo": { "type": "string", "maxLength": 40 }, "rewardAmount": { "type": "integer", "default": 0 }, "redemptionCode": { "type": "string", "maxLength": 16 }, "redemptionCodeUsedAt": { "type": "datetime" }, "status": { "type": "enumeration", "enum": ["pending_accept", "accepted", "stored", "pending_outbound", "completed", "rejected", "canceled"], "default": "pending_accept" }, "outboundRequestStatus": { "type": "enumeration", "enum": ["none", "pending", "approved", "rejected"], "default": "none" }, "outboundRequestedAt": { "type": "datetime" }, "outboundNote": { "type": "text" }, "inboundPhotos": { "type": "media", "multiple": true, "allowedTypes": ["images"] }, "outboundPhotos": { "type": "media", "multiple": true, "allowedTypes": ["images"] }, "locationCode": { "type": "string" }, "inboundAt": { "type": "datetime" }, "outboundAt": { "type": "datetime" }, "storageOperator": { "type": "relation", "relation": "manyToOne", "target": "admin::user" }, "note": { "type": "text" }, "agreementAcceptedAt": { "type": "datetime" }, "referralCode": { "type": "string", "maxLength": 12 }, "referrerPhone": { "type": "string" }, "isFree": { "type": "boolean", "default": false }, "freeReason": { "type": "enumeration", "enum": ["referral_3", "manual"] }, "renewals": { "type": "json" }, "timeline": { "type": "json" } };
+const attributes$9 = { "orderNo": { "type": "string", "required": true, "unique": true }, "clientToken": { "type": "string", "required": true, "unique": true }, "source": { "type": "enumeration", "enum": ["h5"], "default": "h5" }, "customerName": { "type": "string", "required": true }, "phone": { "type": "string", "required": true }, "plateNo": { "type": "string" }, "carType": { "type": "enumeration", "enum": ["sedan", "suv", "pickup"] }, "tireSpec": { "type": "string" }, "withWheelRim": { "type": "boolean", "default": false }, "serviceType": { "type": "enumeration", "enum": ["store", "pickup"], "required": true }, "returnMethod": { "type": "enumeration", "enum": ["pickup_delivery"] }, "pickupDate": { "type": "date" }, "pickupSlot": { "type": "enumeration", "enum": ["morning", "afternoon"] }, "storageStartDate": { "type": "date", "required": true }, "expectedReturnDate": { "type": "date", "required": true }, "expireAt": { "type": "date" }, "months": { "type": "integer" }, "packageSnapshot": { "type": "json" }, "addons": { "type": "json" }, "amountPackage": { "type": "integer", "default": 0 }, "amountAddon": { "type": "integer", "default": 0 }, "amountTotal": { "type": "integer", "default": 0 }, "paymentMethod": { "type": "enumeration", "enum": ["store_pay", "pickup_pay", "wechat", "deposit", "full"], "default": "store_pay" }, "paymentStatus": { "type": "enumeration", "enum": ["unpaid", "deposit_paid", "paid"], "default": "unpaid" }, "paidAmount": { "type": "integer", "default": 0 }, "rewardNo": { "type": "string", "maxLength": 40 }, "rewardAmount": { "type": "integer", "default": 0 }, "redemptionCode": { "type": "string", "maxLength": 16 }, "redemptionCodeUsedAt": { "type": "datetime" }, "status": { "type": "enumeration", "enum": ["pending_accept", "accepted", "stored", "pending_outbound", "completed", "rejected", "canceled"], "default": "pending_accept" }, "outboundRequestStatus": { "type": "enumeration", "enum": ["none", "pending", "approved", "rejected"], "default": "none" }, "outboundRequestedAt": { "type": "datetime" }, "outboundNote": { "type": "text" }, "inboundPhotos": { "type": "media", "multiple": true, "allowedTypes": ["images"] }, "outboundPhotos": { "type": "media", "multiple": true, "allowedTypes": ["images"] }, "locationCode": { "type": "string" }, "inboundAt": { "type": "datetime" }, "outboundAt": { "type": "datetime" }, "storageOperator": { "type": "relation", "relation": "manyToOne", "target": "admin::user" }, "note": { "type": "text" }, "agreementAcceptedAt": { "type": "datetime" }, "referralCode": { "type": "string", "maxLength": 12 }, "referrerPhone": { "type": "string" }, "wechatOpenid": { "type": "string", "maxLength": 64, "private": true }, "isFree": { "type": "boolean", "default": false }, "freeReason": { "type": "enumeration", "enum": ["referral_3", "manual"] }, "renewals": { "type": "json" }, "timeline": { "type": "json" } };
 const tireOrder = {
   kind: kind$9,
   collectionName: collectionName$9,
@@ -21533,7 +21533,7 @@ const collectionName$2 = "zhao_tire_payments";
 const info$2 = { "singularName": "tire-payment", "pluralName": "tire-payments", "displayName": "支付流水" };
 const options$2 = { "draftAndPublish": false };
 const pluginOptions$2 = { "content-manager": { "visible": true }, "content-type-builder": { "visible": false } };
-const attributes$2 = { "paymentNo": { "type": "string", "required": true, "unique": true, "maxLength": 40 }, "orderNo": { "type": "string", "required": true, "maxLength": 40 }, "orderId": { "type": "integer" }, "channel": { "type": "enumeration", "enum": ["wechat", "store_pay", "pickup_pay", "deposit", "full", "mock"], "default": "store_pay" }, "amount": { "type": "integer", "required": true }, "status": { "type": "enumeration", "enum": ["pending", "paid", "failed", "canceled", "refunded"], "default": "pending" }, "externalNo": { "type": "string", "maxLength": 64 }, "idempotencyKey": { "type": "string", "required": true, "unique": true, "maxLength": 128 }, "provider": { "type": "string", "maxLength": 32 }, "operator": { "type": "relation", "relation": "manyToOne", "target": "admin::user" }, "operatorName": { "type": "string", "maxLength": 64 }, "paidAt": { "type": "datetime" }, "note": { "type": "text" }, "raw": { "type": "json" }, "refundedAmount": { "type": "integer", "default": 0 }, "refundNote": { "type": "text" } };
+const attributes$2 = { "paymentNo": { "type": "string", "required": true, "unique": true, "maxLength": 40 }, "orderNo": { "type": "string", "required": true, "maxLength": 40 }, "orderId": { "type": "integer" }, "channel": { "type": "enumeration", "enum": ["wechat", "store_pay", "pickup_pay", "deposit", "full", "mock"], "default": "store_pay" }, "amount": { "type": "integer", "required": true }, "status": { "type": "enumeration", "enum": ["pending", "paid", "failed", "canceled", "refunded"], "default": "pending" }, "externalNo": { "type": "string", "maxLength": 64 }, "idempotencyKey": { "type": "string", "required": true, "unique": true, "maxLength": 128 }, "provider": { "type": "string", "maxLength": 32 }, "payerOpenid": { "type": "string", "maxLength": 64, "private": true }, "operator": { "type": "relation", "relation": "manyToOne", "target": "admin::user" }, "operatorName": { "type": "string", "maxLength": 64 }, "paidAt": { "type": "datetime" }, "note": { "type": "text" }, "raw": { "type": "json" }, "refundedAmount": { "type": "integer", "default": 0 }, "refundNote": { "type": "text" } };
 const tirePayment = {
   kind: kind$2,
   collectionName: collectionName$2,
@@ -22870,7 +22870,13 @@ const pay$1 = {
   async notify(ctx) {
     try {
       const signature = ctx.get?.("x-mock-sign") || ctx.request?.headers?.["x-mock-sign"] || "";
-      ctx.body = await payService().notify(ctx.request.body || {}, signature);
+      const rawBody = ctx.request?.rawBody;
+      ctx.body = await payService().notify(
+        ctx.request.body || {},
+        signature,
+        typeof rawBody === "string" ? rawBody : void 0,
+        ctx.request?.headers || {}
+      );
     } catch (error2) {
       sendError(ctx, error2);
     }
@@ -25273,6 +25279,7 @@ const payment = ({ strapi: strapi2 }) => ({
         status: "pending",
         idempotencyKey: params.idempotencyKey,
         provider: params.provider || "manual",
+        payerOpenid: params.payerOpenid || null,
         externalNo: params.externalNo || null,
         note: params.note || null,
         raw: params.raw || null
@@ -25494,25 +25501,27 @@ const pay = ({ strapi: strapi2 }) => ({
   publicBase() {
     return String(process.env.PAY_PUBLIC_BASE || "https://www.joho.cn").replace(/\/$/, "");
   },
-  /** 下单支付：创建 pending 流水并返回 mock 收银台地址 */
+  /** 下单支付：创建 pending 流水并返回收银台参数（mock 或微信 JSAPI） */
   async prepay(payload) {
     const provider = this.provider();
     const orderNo2 = String(payload?.orderNo || "").trim();
     if (!orderNo2) throwErr("VALIDATION_FAILED", 400, "orderNo 不能为空");
     const order2 = await strapi2.db.query(ORDER_UID).findOne({ where: { orderNo: orderNo2 } });
     if (!order2) throwErr("ORDER_NOT_FOUND", 404, "订单不存在");
-    if (provider === "wechat") {
-      throwErr(
-        "PAY_PROVIDER_UNAVAILABLE",
-        501,
-        "微信支付通道未接入：缺少 JSAPI 网页授权与商户平台回调配置"
-      );
-    }
     const paymentService2 = strapi2.service("plugin::zhao-tire.payment");
     const outstanding = paymentService2.outstandingOf(order2);
     if (outstanding <= 0) {
       throwErr("ORDER_ALREADY_PAID", 400, "订单已结清，无需支付", {
         paymentStatus: order2.paymentStatus
+      });
+    }
+    if (provider === "wechat") {
+      const wechatPay = strapi2.service("plugin::zhao-tire.wechat-pay");
+      return wechatPay.prepay({
+        order: order2,
+        amount: outstanding,
+        openid: payload?.openid,
+        idempotencyKey: payload?.idempotencyKey
       });
     }
     const channel = payload?.channel === "pickup_pay" ? "pickup_pay" : "wechat";
@@ -25538,10 +25547,15 @@ const pay = ({ strapi: strapi2 }) => ({
       orderNo: order2.orderNo
     };
   },
-  /** mock 异步回调：HMAC-SHA256 校验通过后才置 paid，重放幂等 */
-  async notify(payload, signature) {
-    if (this.provider() !== "mock") {
-      throwErr("PAY_PROVIDER_UNAVAILABLE", 501, "当前支付通道不支持 mock 回调");
+  /** 支付异步回调：mock 用 HMAC，微信走 APIv3 验签/解密；失败均不改单 */
+  async notify(payload, signature, rawBody, headers) {
+    if (this.provider() === "wechat") {
+      const wechatPay = strapi2.service("plugin::zhao-tire.wechat-pay");
+      return wechatPay.notify({
+        headers,
+        rawBody: rawBody || JSON.stringify(payload || {}),
+        body: payload
+      });
     }
     const sign = String(signature || "").trim();
     if (!sign) throwErr("INVALID_SIGNATURE", 401, "缺少 X-Mock-Sign 签名");

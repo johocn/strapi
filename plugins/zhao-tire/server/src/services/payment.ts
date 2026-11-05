@@ -49,6 +49,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     idempotencyKey: string;
     provider?: string;
     externalNo?: string;
+    payerOpenid?: string;
     raw?: any;
     note?: string;
   }) {
@@ -79,6 +80,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         status: "pending",
         idempotencyKey: params.idempotencyKey,
         provider: params.provider || "manual",
+        payerOpenid: params.payerOpenid || null,
         externalNo: params.externalNo || null,
         note: params.note || null,
         raw: params.raw || null,

@@ -12,6 +12,7 @@ declare const _default: ({ strapi }: {
         idempotencyKey: string;
         provider?: string;
         externalNo?: string;
+        payerOpenid?: string;
         raw?: any;
         note?: string;
     }): Promise<any>;

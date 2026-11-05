@@ -57,7 +57,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     return String(process.env.PAY_PUBLIC_BASE || "https://www.joho.cn").replace(/\/$/, "");
   },
 
-  /** 下单支付：创建 pending 流水并返回 mock 收银台地址 */
+  /** 下单支付：创建 pending 流水并返回收银台参数（mock 或微信 JSAPI） */
   async prepay(payload: any) {
     const provider = this.provider();
     const orderNo = String(payload?.orderNo || "").trim();
@@ -66,19 +66,21 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     const order = await strapi.db.query(ORDER_UID).findOne({ where: { orderNo } });
     if (!order) throwErr("ORDER_NOT_FOUND", 404, "订单不存在");
 
-    if (provider === "wechat") {
-      throwErr(
-        "PAY_PROVIDER_UNAVAILABLE",
-        501,
-        "微信支付通道未接入：缺少 JSAPI 网页授权与商户平台回调配置"
-      );
-    }
-
     const paymentService: any = strapi.service("plugin::zhao-tire.payment");
     const outstanding = paymentService.outstandingOf(order);
     if (outstanding <= 0) {
       throwErr("ORDER_ALREADY_PAID", 400, "订单已结清，无需支付", {
         paymentStatus: order.paymentStatus,
+      });
+    }
+
+    if (provider === "wechat") {
+      const wechatPay: any = strapi.service("plugin::zhao-tire.wechat-pay");
+      return wechatPay.prepay({
+        order,
+        amount: outstanding,
+        openid: payload?.openid,
+        idempotencyKey: payload?.idempotencyKey,
       });
     }
 
@@ -111,10 +113,15 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     };
   },
 
-  /** mock 异步回调：HMAC-SHA256 校验通过后才置 paid，重放幂等 */
-  async notify(payload: any, signature: string) {
-    if (this.provider() !== "mock") {
-      throwErr("PAY_PROVIDER_UNAVAILABLE", 501, "当前支付通道不支持 mock 回调");
+  /** 支付异步回调：mock 用 HMAC，微信走 APIv3 验签/解密；失败均不改单 */
+  async notify(payload: any, signature: string, rawBody?: string, headers?: any) {
+    if (this.provider() === "wechat") {
+      const wechatPay: any = strapi.service("plugin::zhao-tire.wechat-pay");
+      return wechatPay.notify({
+        headers,
+        rawBody: rawBody || JSON.stringify(payload || {}),
+        body: payload,
+      });
     }
     const sign = String(signature || "").trim();
     if (!sign) throwErr("INVALID_SIGNATURE", 401, "缺少 X-Mock-Sign 签名");
