@@ -251,8 +251,25 @@ const bootstrap = async ({ strapi }) => {
     }
   });
   if (!isTest) logger.info("[zhao-oss] Upload lifecycle hooks registered successfully");
+  if (!isTest) {
+    const signSecret = String(process.env.ZHAO_MEDIA_SIGN_SECRET || "").trim();
+    if (signSecret.length < 32) {
+      logger.error(
+        "[zhao-oss] ZHAO_MEDIA_SIGN_SECRET 未配置或长度不足 32：媒体播放签名已禁用（签发/校验均拒绝）"
+      );
+    }
+  }
+  const PROTECTED_STATIC_EXT = /\.(mp4|m3u8|ts|webm|mov|mkv|mp3|m4a|aac|wav|flac|ogg|pdf)$/i;
   strapi.server.use(async (ctx, next) => {
     if ((ctx.method === "GET" || ctx.method === "HEAD") && ctx.path.startsWith("/static/")) {
+      if (PROTECTED_STATIC_EXT.test(ctx.path)) {
+        ctx.status = 403;
+        ctx.body = {
+          code: "MEDIA_FORBIDDEN",
+          message: "受保护媒体请通过签名播放接口访问"
+        };
+        return;
+      }
       const publicDir = strapi.dirs.static.public;
       const relativePath = decodeURIComponent(ctx.path.slice("/static".length));
       const filePath = path__namespace.resolve(publicDir, "." + relativePath);
@@ -350,6 +367,13 @@ const config = {
     syncDelete: true,
     fallbackToLocal: true,
     enableUrlRewrite: true,
+    // 上传限制（可用 ZHAO_OSS_MAX_*_BYTES 环境变量覆盖）
+    uploadMaxImageBytes: 10 * 1024 * 1024,
+    uploadMaxVideoBytes: 200 * 1024 * 1024,
+    uploadMaxAudioBytes: 50 * 1024 * 1024,
+    uploadMaxDocBytes: 20 * 1024 * 1024,
+    uploadMaxArchiveBytes: 20 * 1024 * 1024,
+    uploadMaxTotalBytes: 300 * 1024 * 1024,
     providers: []
   },
   validator() {
@@ -768,15 +792,35 @@ const apiController = ({ strapi }) => ({
         ctx.body = { error: "No files provided" };
         return;
       }
-      const file = Object.values(files)[0];
+      const allFiles = Object.values(files);
+      const declaredTotal = allFiles.reduce((sum, item) => sum + Number(item?.size || 0), 0);
+      const pluginConfig = strapi.config?.get?.("plugin::zhao-oss") || {};
+      const envTotalLimit = Number(process.env.ZHAO_OSS_MAX_TOTAL_BYTES);
+      const configuredTotalLimit = Number(pluginConfig.uploadMaxTotalBytes);
+      const totalLimit = envTotalLimit > 0 ? envTotalLimit : configuredTotalLimit > 0 ? configuredTotalLimit : 300 * 1024 * 1024;
+      if (declaredTotal > totalLimit) {
+        ctx.status = 413;
+        ctx.body = { error: `上传被拒绝：本次上传总大小 ${(declaredTotal / (1024 * 1024)).toFixed(1)}MB 超过上限 ${(totalLimit / (1024 * 1024)).toFixed(1)}MB（可通过 ZHAO_OSS_MAX_TOTAL_BYTES 调整）` };
+        return;
+      }
+      const file = allFiles[0];
       const fs2 = require("fs/promises");
       const filePath = file.filepath ?? file.path;
       const fileBuffer = filePath ? await fs2.readFile(filePath) : file.buffer;
       const originalName = file.originalFilename ?? file.name ?? "";
       const mimeType = file.mimetype ?? file.type ?? "application/octet-stream";
-      const fileSize = file.size || fileBuffer.length;
+      const fileSize = fileBuffer.length;
       const mediaService2 = strapi.plugin("zhao-oss").service("media-service");
-      const body = ctx.request.body?.data || ctx.request.body;
+      let body = ctx.request.body?.data ?? ctx.request.body;
+      if (typeof body === "string") {
+        try {
+          body = JSON.parse(body);
+        } catch {
+          ctx.status = 400;
+          ctx.body = { error: "上传被拒绝：data 字段不是合法 JSON" };
+          return;
+        }
+      }
       const result = await mediaService2.uploadFile({
         fileBuffer,
         originalName,
@@ -1571,6 +1615,178 @@ const urlResolver = ({ strapi }) => {
 const FOLDER_UID = "plugin::upload.folder";
 const FILE_UID = "plugin::upload.file";
 const SYNC_RECORD_UID = "plugin::zhao-oss.sync-record";
+const MB = 1024 * 1024;
+function assertSafeFolderInput(input) {
+  const raw = typeof input === "string" ? input.trim() : "";
+  if (!raw) return "/general";
+  if (raw.includes("\0") || raw.includes("\\")) {
+    throw httpError(400, "上传被拒绝：文件夹路径包含非法字符（不允许反斜杠或空字符）");
+  }
+  if (/^[a-zA-Z]:/.test(raw) || raw.startsWith("//") || raw.startsWith("~")) {
+    throw httpError(400, "上传被拒绝：文件夹路径不允许使用绝对路径（盘符 / UNC / ~）");
+  }
+  const segments = raw.split("/");
+  if (segments[0] === "") segments.shift();
+  if (segments.length === 0) return "/";
+  if (segments.length > 8) {
+    throw httpError(400, "上传被拒绝：文件夹层级过深（最多 8 层）");
+  }
+  for (const segment of segments) {
+    if (!segment) {
+      throw httpError(400, "上传被拒绝：文件夹路径包含空目录段");
+    }
+    if (segment === "." || segment === "..") {
+      throw httpError(400, "上传被拒绝：文件夹路径不允许包含 . 或 .. 段");
+    }
+    if (!/^[\p{L}\p{N}_-]{1,64}$/u.test(segment)) {
+      throw httpError(400, "上传被拒绝：文件夹名仅允许中英文、数字、下划线和短横线，且不超过 64 字符");
+    }
+  }
+  return `/${segments.join("/")}`;
+}
+function assertSafeStoredPath(storedPath) {
+  const raw = String(storedPath || "/").trim();
+  if (!raw || raw === "/") return "/";
+  if (raw.includes("\0") || raw.includes("\\")) {
+    throw httpError(400, "上传被拒绝：文件夹路径包含非法字符");
+  }
+  const segments = raw.split("/").filter(Boolean);
+  for (const segment of segments) {
+    if (segment === "." || segment === "..") {
+      throw httpError(400, "上传被拒绝：文件夹路径不允许包含 . 或 .. 段");
+    }
+  }
+  return `/${segments.join("/")}`;
+}
+async function assertInsidePublicRoot(uploadRoot, targetDir) {
+  const resolvedTarget = path__namespace.resolve(targetDir);
+  if (resolvedTarget !== uploadRoot && !resolvedTarget.startsWith(uploadRoot + path__namespace.sep)) {
+    throw httpError(400, "上传被拒绝：目标目录超出 public 根目录");
+  }
+  await fs__namespace.mkdir(resolvedTarget, { recursive: true });
+  const realTarget = await fs__namespace.realpath(resolvedTarget).catch(() => resolvedTarget);
+  const realRoot = await fs__namespace.realpath(uploadRoot).catch(() => uploadRoot);
+  if (realTarget !== realRoot && !realTarget.startsWith(realRoot + path__namespace.sep)) {
+    throw httpError(400, "上传被拒绝：目标目录超出 public 根目录");
+  }
+  return resolvedTarget;
+}
+function httpError(status, message) {
+  const err = new Error(message);
+  err.status = status;
+  return err;
+}
+const EXT_RULES = {
+  jpg: { mime: "image/jpeg", family: "image" },
+  jpeg: { mime: "image/jpeg", family: "image" },
+  png: { mime: "image/png", family: "image" },
+  gif: { mime: "image/gif", family: "image" },
+  webp: { mime: "image/webp", family: "image" },
+  bmp: { mime: "image/bmp", family: "image" },
+  avif: { mime: "image/avif", family: "image" },
+  mp4: { mime: "video/mp4", family: "video" },
+  m4v: { mime: "video/x-m4v", family: "video" },
+  mov: { mime: "video/quicktime", family: "video" },
+  webm: { mime: "video/webm", family: "video" },
+  mp3: { mime: "audio/mpeg", family: "audio" },
+  m4a: { mime: "audio/mp4", family: "audio" },
+  aac: { mime: "audio/aac", family: "audio" },
+  wav: { mime: "audio/wav", family: "audio" },
+  ogg: { mime: "audio/ogg", family: "audio" },
+  flac: { mime: "audio/flac", family: "audio" },
+  pdf: { mime: "application/pdf", family: "doc" },
+  doc: { mime: "application/msword", family: "doc" },
+  docx: { mime: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", family: "doc" },
+  xls: { mime: "application/vnd.ms-excel", family: "doc" },
+  xlsx: { mime: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", family: "doc" },
+  ppt: { mime: "application/vnd.ms-powerpoint", family: "doc" },
+  pptx: { mime: "application/vnd.openxmlformats-officedocument.presentationml.presentation", family: "doc" },
+  txt: { mime: "text/plain", family: "doc" },
+  csv: { mime: "text/csv", family: "doc" },
+  zip: { mime: "application/zip", family: "archive" }
+};
+const EXT_ALLOWLIST_TEXT = "jpg/jpeg/png/gif/webp/bmp/avif、mp4/m4v/mov/webm、mp3/m4a/aac/wav/ogg/flac、pdf/doc/docx/xls/xlsx/ppt/pptx/txt/csv/zip";
+const SNIFF_RULES = {
+  jpg: ["jpeg"],
+  jpeg: ["jpeg"],
+  png: ["png"],
+  gif: ["gif"],
+  webp: ["webp"],
+  bmp: ["bmp"],
+  avif: ["avif", "isobmff"],
+  mp4: ["isobmff"],
+  m4v: ["isobmff"],
+  mov: ["isobmff"],
+  webm: ["matroska"],
+  mp3: ["mp3"],
+  m4a: ["isobmff"],
+  aac: ["aac"],
+  wav: ["wav"],
+  ogg: ["ogg"],
+  flac: ["flac"],
+  pdf: ["pdf"],
+  doc: ["ole"],
+  xls: ["ole"],
+  ppt: ["ole"],
+  docx: ["zip"],
+  xlsx: ["zip"],
+  pptx: ["zip"],
+  zip: ["zip"],
+  txt: ["text"],
+  csv: ["text"]
+};
+function sniffMagic(buffer) {
+  const ascii = (start, len) => buffer.subarray(start, start + len).toString("latin1");
+  if (buffer.length >= 3 && buffer[0] === 255 && buffer[1] === 216 && buffer[2] === 255) return "jpeg";
+  if (buffer.length >= 8 && buffer[0] === 137 && ascii(1, 3) === "PNG") return "png";
+  if (buffer.length >= 6 && ascii(0, 3) === "GIF") return "gif";
+  if (buffer.length >= 12 && ascii(0, 4) === "RIFF") {
+    const tag = ascii(8, 4);
+    if (tag === "WEBP") return "webp";
+    if (tag === "WAVE") return "wav";
+  }
+  if (buffer.length >= 2 && buffer[0] === 66 && buffer[1] === 77) return "bmp";
+  if (buffer.length >= 12 && ascii(4, 4) === "ftyp") {
+    const brand = ascii(8, 4);
+    if (brand === "avif" || brand === "avis") return "avif";
+    return "isobmff";
+  }
+  if (buffer.length >= 4 && buffer[0] === 26 && buffer[1] === 69 && buffer[2] === 223 && buffer[3] === 163) {
+    return "matroska";
+  }
+  if (buffer.length >= 4 && ascii(0, 4) === "OggS") return "ogg";
+  if (buffer.length >= 4 && ascii(0, 4) === "fLaC") return "flac";
+  if (buffer.length >= 5 && ascii(0, 5) === "%PDF-") return "pdf";
+  if (buffer.length >= 4 && ascii(0, 2) === "PK" && buffer[2] === 3 && buffer[3] === 4) return "zip";
+  if (buffer.length >= 4 && buffer[0] === 208 && buffer[1] === 207 && buffer[2] === 17 && buffer[3] === 224) {
+    return "ole";
+  }
+  if (buffer.length >= 3 && ascii(0, 3) === "ID3") return "mp3";
+  if (buffer.length >= 2 && buffer[0] === 255 && (buffer[1] & 240) === 240) {
+    const layer = buffer[1] >> 1 & 3;
+    return layer === 0 ? "aac" : "mp3";
+  }
+  if (looksLikeText(buffer)) return "text";
+  return "unknown";
+}
+function looksLikeText(buffer) {
+  const sample = Math.min(buffer.length, 4096);
+  if (sample <= 0) return false;
+  let printable = 0;
+  for (let i = 0; i < sample; i += 1) {
+    const code = buffer[i];
+    if (code === 0) return false;
+    if (code === 9 || code === 10 || code === 13 || code >= 32 && code <= 126 || code >= 128) {
+      printable += 1;
+    }
+  }
+  return printable / sample > 0.9;
+}
+function formatBytes(bytes) {
+  if (bytes >= MB) return `${(bytes / MB).toFixed(1)}MB`;
+  if (bytes >= 1024) return `${(bytes / 1024).toFixed(1)}KB`;
+  return `${bytes}B`;
+}
 function isNumericPath(p) {
   if (!p || p === "/") return true;
   const segs = p.split("/").filter(Boolean);
@@ -1660,35 +1876,83 @@ const mediaService = ({ strapi }) => ({
   async uploadFile(params) {
     const { fileBuffer, originalName, customName, mimeType, fileSize, folderInput = "/general", folderIdInput, siteId, category, uploader } = params;
     const fileHash = crypto__namespace.createHash("md5").update(fileBuffer).digest("hex");
-    const ext = originalName ? `.${originalName.split(".").pop()}` : "";
+    const rawExt = path__namespace.extname(originalName || "").toLowerCase().replace(/^\./, "");
+    if (!rawExt) {
+      throw httpError(400, `上传被拒绝：文件缺少扩展名，允许的类型为 ${EXT_ALLOWLIST_TEXT}`);
+    }
+    const rule = EXT_RULES[rawExt];
+    if (!rule) {
+      throw httpError(400, `上传被拒绝：不支持的文件类型 .${rawExt}，允许的类型为 ${EXT_ALLOWLIST_TEXT}`);
+    }
+    const ext = `.${rawExt}`;
     const fileName = customName || originalName || `file_${Date.now()}`;
-    let folderRecord = null;
-    let strapiFolderPath = "/";
-    let storagePath = folderInput;
-    if (folderIdInput) {
-      folderRecord = await strapi.db.query(FOLDER_UID).findOne({ where: { id: parseInt(folderIdInput) } });
-      if (folderRecord) {
-        strapiFolderPath = folderRecord.path;
-        storagePath = await this.buildHumanPath(folderRecord.id);
-      }
-    } else if (folderInput && folderInput !== "/") {
-      folderRecord = await this.ensureFolderByPath(folderInput);
-      if (folderRecord) {
-        strapiFolderPath = folderRecord.path;
-        storagePath = folderInput;
+    const declaredMime = (mimeType || "").toLowerCase().split(";")[0].trim();
+    if (declaredMime && declaredMime !== "application/octet-stream") {
+      const declaredPrefix = declaredMime.split("/")[0];
+      const allowedPrefixes = rule.family === "image" ? ["image"] : rule.family === "video" ? ["video"] : rule.family === "audio" ? ["audio"] : rule.family === "archive" ? ["application"] : ["application", "text"];
+      if (!allowedPrefixes.includes(declaredPrefix)) {
+        throw httpError(400, `上传被拒绝：文件 .${rawExt} 的 Content-Type「${declaredMime}」不在允许范围`);
       }
     }
-    const uploadDir = strapi.dirs.static.public;
-    const targetDir = path__namespace.join(uploadDir, storagePath);
-    await fs__namespace.mkdir(targetDir, { recursive: true });
+    const detected = sniffMagic(fileBuffer);
+    const expectedSniffs = SNIFF_RULES[rawExt] || [];
+    if (!expectedSniffs.includes(detected)) {
+      throw httpError(400, `上传被拒绝：文件内容与扩展名 .${rawExt} 不符（服务端检测为 ${detected}）`);
+    }
+    const pluginConfig = strapi.config?.get?.("plugin::zhao-oss") || {};
+    const familyConfigKey = {
+      image: "uploadMaxImageBytes",
+      video: "uploadMaxVideoBytes",
+      audio: "uploadMaxAudioBytes",
+      doc: "uploadMaxDocBytes",
+      archive: "uploadMaxArchiveBytes"
+    };
+    const familyLabel = { image: "图片", video: "视频", audio: "音频", doc: "文档", archive: "压缩包" };
+    const envLimit = Number(process.env[`ZHAO_OSS_MAX_${rule.family.toUpperCase()}_BYTES`]);
+    const configuredLimit = Number(pluginConfig[familyConfigKey[rule.family]]);
+    const fallbackLimit = { image: 10 * MB, video: 200 * MB, audio: 50 * MB, doc: 20 * MB, archive: 20 * MB };
+    const sizeLimit = envLimit > 0 ? envLimit : configuredLimit > 0 ? configuredLimit : fallbackLimit[rule.family];
+    const actualSize = fileBuffer.length;
+    if (actualSize > sizeLimit) {
+      throw httpError(413, `上传被拒绝：${familyLabel[rule.family]} ${formatBytes(actualSize)} 超过上限 ${formatBytes(sizeLimit)}（可通过 ZHAO_OSS_MAX_${rule.family.toUpperCase()}_BYTES 调整）`);
+    }
+    let folderRecord = null;
+    let strapiFolderPath = "/";
+    let storagePath = "/general";
+    const hasFolderId = folderIdInput !== void 0 && folderIdInput !== null && String(folderIdInput).trim() !== "";
+    if (hasFolderId) {
+      const rawFolderId = String(folderIdInput).trim();
+      if (!/^\d+$/.test(rawFolderId) || Number(rawFolderId) <= 0) {
+        throw httpError(400, "上传被拒绝：folderId 非法");
+      }
+      folderRecord = await strapi.db.query(FOLDER_UID).findOne({ where: { id: Number(rawFolderId) } });
+      if (!folderRecord) {
+        throw httpError(400, "上传被拒绝：指定的文件夹不存在");
+      }
+      strapiFolderPath = folderRecord.path;
+      storagePath = assertSafeStoredPath(await this.buildHumanPath(folderRecord.id));
+    } else {
+      storagePath = assertSafeFolderInput(folderInput);
+      if (storagePath !== "/") {
+        folderRecord = await this.ensureFolderByPath(storagePath);
+        if (folderRecord) {
+          strapiFolderPath = folderRecord.path;
+        }
+      }
+    }
+    const uploadRoot = path__namespace.resolve(strapi.dirs.static.public);
+    const targetDir = await assertInsidePublicRoot(
+      uploadRoot,
+      path__namespace.join(uploadRoot, storagePath.replace(/^\/+/, ""))
+    );
     const localFileName = `${fileHash}${ext}`;
     const localFilePath = path__namespace.join(targetDir, localFileName);
     await fs__namespace.writeFile(localFilePath, fileBuffer);
-    const localUrl = `/static${storagePath}/${localFileName}`;
+    const localUrl = `/static${storagePath === "/" ? "" : storagePath}/${localFileName}`;
     let width = null;
     let height = null;
     let formats = {};
-    if (mimeType.startsWith("image/")) {
+    if (rule.mime.startsWith("image/")) {
       try {
         const metadata = await sharp__default.default(fileBuffer).metadata();
         width = metadata.width ?? null;
@@ -1707,8 +1971,8 @@ const mediaService = ({ strapi }) => ({
         const result = await provider.upload({
           buffer: fileBuffer,
           filename: `${storagePath}/${localFileName}`,
-          mimeType,
-          fileSize
+          mimeType: rule.mime,
+          fileSize: actualSize
         });
         ossUrl = result.url;
         ossPublicUrl = provider.signUrl(result.key);
@@ -1728,8 +1992,8 @@ const mediaService = ({ strapi }) => ({
         formats,
         hash: fileHash,
         ext,
-        mime: mimeType,
-        size: fileSize,
+        mime: rule.mime,
+        size: actualSize,
         url: ossUrl || localUrl,
         previewUrl: null,
         provider: providerName,
@@ -1937,8 +2201,12 @@ const mediaService = ({ strapi }) => ({
    * 创建文件夹
    */
   async createFolder(name, parentId = null) {
+    const safeName = typeof name === "string" ? name.trim() : "";
+    if (!/^[\p{L}\p{N}_-]{1,64}$/u.test(safeName)) {
+      throw httpError(400, "创建文件夹失败：名称仅允许中英文、数字、下划线和短横线，且不超过 64 字符");
+    }
     const existing = await strapi.db.query(FOLDER_UID).findOne({
-      where: { name, parent: parentId || null }
+      where: { name: safeName, parent: parentId || null }
     });
     if (existing) {
       return { id: existing.id, documentId: existing.documentId, name: existing.name, path: existing.path };
@@ -1952,7 +2220,7 @@ const mediaService = ({ strapi }) => ({
     }
     const folderPath = parentPath === "/" ? `/${pathId}` : `${parentPath}/${pathId}`;
     const folder = await strapi.db.query(FOLDER_UID).create({
-      data: { name, pathId, path: folderPath, parent: parentFolder?.id || null }
+      data: { name: safeName, pathId, path: folderPath, parent: parentFolder?.id || null }
     });
     return { id: folder.id, documentId: folder.documentId, name: folder.name, path: folder.path };
   },
@@ -2088,14 +2356,19 @@ const mediaService = ({ strapi }) => ({
 const STREAM_ROUTE = "/zhao-oss/v1/media/stream";
 const TTL_SEC = 30 * 60;
 const PROTECTED_PREFIXES = ["/static", "/uploads"];
+const MIN_SECRET_LENGTH = 32;
 function getSecret() {
-  return process.env.ZHAO_MEDIA_SIGN_SECRET || "zhao-media-sign-v1";
+  const secret = String(process.env.ZHAO_MEDIA_SIGN_SECRET || "").trim();
+  return secret.length >= MIN_SECRET_LENGTH ? secret : null;
 }
 function sign(pathStr, exp) {
-  return crypto__namespace.createHmac("sha256", getSecret()).update(`${pathStr}:${exp}`).digest("hex");
+  const secret = getSecret();
+  if (!secret) return null;
+  return crypto__namespace.createHmac("sha256", secret).update(`${pathStr}:${exp}`).digest("hex");
 }
 function verifySig(pathStr, exp, sig) {
   const expected = sign(pathStr, exp);
+  if (!expected) return false;
   const a = Buffer.from(expected);
   const b = Buffer.from(sig || "");
   if (a.length !== b.length) return false;
@@ -2145,6 +2418,14 @@ const mediaStream = ({ strapi }) => {
   const logger = strapi.plugin("zhao-common")?.service("logger") || strapi.log;
   const mediaStream2 = {
     async issueStreamUrl(input) {
+      if (!getSecret()) {
+        logger.error(
+          "[zhao-oss] ZHAO_MEDIA_SIGN_SECRET 未配置或长度不足 32，拒绝签发媒体播放令牌"
+        );
+        const error = new Error("媒体播放鉴权未配置");
+        error.status = 503;
+        throw error;
+      }
       try {
         const publicDir = strapi.dirs.static.public;
         const urlPath = toUrlPath(input);

@@ -88,6 +88,18 @@ export interface PluginConfig {
   fallbackToLocal: boolean;
   /** 是否启用 URL 自动重写（查询时将本地 URL 替换为 OSS URL） */
   enableUrlRewrite: boolean;
+  /** 单张图片大小上限（字节） */
+  uploadMaxImageBytes?: number;
+  /** 单个视频大小上限（字节） */
+  uploadMaxVideoBytes?: number;
+  /** 单个音频大小上限（字节） */
+  uploadMaxAudioBytes?: number;
+  /** 单个文档大小上限（字节） */
+  uploadMaxDocBytes?: number;
+  /** 单个压缩包大小上限（字节） */
+  uploadMaxArchiveBytes?: number;
+  /** 单次上传总大小上限（字节） */
+  uploadMaxTotalBytes?: number;
   /** OSS 提供者配置列表 */
   providers: OssProviderConfig[];
 }

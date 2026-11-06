@@ -8,6 +8,202 @@ const FOLDER_UID = "plugin::upload.folder";
 const FILE_UID = "plugin::upload.file";
 const SYNC_RECORD_UID = "plugin::zhao-oss.sync-record";
 
+const MB = 1024 * 1024;
+
+/** 文件夹路径安全校验：仅允许中英文、数字、下划线、短横线，禁止 . / .. / 绝对路径 / 分隔符 */
+function assertSafeFolderInput(input: unknown): string {
+  const raw = typeof input === "string" ? input.trim() : "";
+  if (!raw) return "/general";
+  if (raw.includes("\0") || raw.includes("\\")) {
+    throw httpError(400, "上传被拒绝：文件夹路径包含非法字符（不允许反斜杠或空字符）");
+  }
+  if (/^[a-zA-Z]:/.test(raw) || raw.startsWith("//") || raw.startsWith("~")) {
+    throw httpError(400, "上传被拒绝：文件夹路径不允许使用绝对路径（盘符 / UNC / ~）");
+  }
+  const segments = raw.split("/");
+  if (segments[0] === "") segments.shift();
+  if (segments.length === 0) return "/";
+  if (segments.length > 8) {
+    throw httpError(400, "上传被拒绝：文件夹层级过深（最多 8 层）");
+  }
+  for (const segment of segments) {
+    if (!segment) {
+      throw httpError(400, "上传被拒绝：文件夹路径包含空目录段");
+    }
+    if (segment === "." || segment === "..") {
+      throw httpError(400, "上传被拒绝：文件夹路径不允许包含 . 或 .. 段");
+    }
+    if (!/^[\p{L}\p{N}_-]{1,64}$/u.test(segment)) {
+      throw httpError(400, "上传被拒绝：文件夹名仅允许中英文、数字、下划线和短横线，且不超过 64 字符");
+    }
+  }
+  return `/${segments.join("/")}`;
+}
+
+/** folderId 数据库路径的安全校验：只做穿越防护（目录名可能含空格等历史字符） */
+function assertSafeStoredPath(storedPath: string): string {
+  const raw = String(storedPath || "/").trim();
+  if (!raw || raw === "/") return "/";
+  if (raw.includes("\0") || raw.includes("\\")) {
+    throw httpError(400, "上传被拒绝：文件夹路径包含非法字符");
+  }
+  const segments = raw.split("/").filter(Boolean);
+  for (const segment of segments) {
+    if (segment === "." || segment === "..") {
+      throw httpError(400, "上传被拒绝：文件夹路径不允许包含 . 或 .. 段");
+    }
+  }
+  return `/${segments.join("/")}`;
+}
+
+/** 校验目标目录必须落在 public 根内（含软链接实际路径） */
+async function assertInsidePublicRoot(uploadRoot: string, targetDir: string): Promise<string> {
+  const resolvedTarget = path.resolve(targetDir);
+  if (resolvedTarget !== uploadRoot && !resolvedTarget.startsWith(uploadRoot + path.sep)) {
+    throw httpError(400, "上传被拒绝：目标目录超出 public 根目录");
+  }
+  await fs.mkdir(resolvedTarget, { recursive: true });
+  const realTarget = await fs.realpath(resolvedTarget).catch(() => resolvedTarget);
+  const realRoot = await fs.realpath(uploadRoot).catch(() => uploadRoot);
+  if (realTarget !== realRoot && !realTarget.startsWith(realRoot + path.sep)) {
+    throw httpError(400, "上传被拒绝：目标目录超出 public 根目录");
+  }
+  return resolvedTarget;
+}
+
+function httpError(status: number, message: string): Error {
+  const err = new Error(message);
+  (err as any).status = status;
+  return err;
+}
+
+/** 扩展名 → 规范 MIME + 归类（用于大小上限） */
+type MediaFamily = "image" | "video" | "audio" | "doc" | "archive";
+interface ExtRule {
+  mime: string;
+  family: MediaFamily;
+}
+
+const EXT_RULES: Record<string, ExtRule> = {
+  jpg: { mime: "image/jpeg", family: "image" },
+  jpeg: { mime: "image/jpeg", family: "image" },
+  png: { mime: "image/png", family: "image" },
+  gif: { mime: "image/gif", family: "image" },
+  webp: { mime: "image/webp", family: "image" },
+  bmp: { mime: "image/bmp", family: "image" },
+  avif: { mime: "image/avif", family: "image" },
+  mp4: { mime: "video/mp4", family: "video" },
+  m4v: { mime: "video/x-m4v", family: "video" },
+  mov: { mime: "video/quicktime", family: "video" },
+  webm: { mime: "video/webm", family: "video" },
+  mp3: { mime: "audio/mpeg", family: "audio" },
+  m4a: { mime: "audio/mp4", family: "audio" },
+  aac: { mime: "audio/aac", family: "audio" },
+  wav: { mime: "audio/wav", family: "audio" },
+  ogg: { mime: "audio/ogg", family: "audio" },
+  flac: { mime: "audio/flac", family: "audio" },
+  pdf: { mime: "application/pdf", family: "doc" },
+  doc: { mime: "application/msword", family: "doc" },
+  docx: { mime: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", family: "doc" },
+  xls: { mime: "application/vnd.ms-excel", family: "doc" },
+  xlsx: { mime: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", family: "doc" },
+  ppt: { mime: "application/vnd.ms-powerpoint", family: "doc" },
+  pptx: { mime: "application/vnd.openxmlformats-officedocument.presentationml.presentation", family: "doc" },
+  txt: { mime: "text/plain", family: "doc" },
+  csv: { mime: "text/csv", family: "doc" },
+  zip: { mime: "application/zip", family: "archive" },
+};
+
+const EXT_ALLOWLIST_TEXT = "jpg/jpeg/png/gif/webp/bmp/avif、mp4/m4v/mov/webm、mp3/m4a/aac/wav/ogg/flac、pdf/doc/docx/xls/xlsx/ppt/pptx/txt/csv/zip";
+
+/** 扩展名允许的嗅探结果（服务端不信任客户端 Content-Type） */
+const SNIFF_RULES: Record<string, string[]> = {
+  jpg: ["jpeg"],
+  jpeg: ["jpeg"],
+  png: ["png"],
+  gif: ["gif"],
+  webp: ["webp"],
+  bmp: ["bmp"],
+  avif: ["avif", "isobmff"],
+  mp4: ["isobmff"],
+  m4v: ["isobmff"],
+  mov: ["isobmff"],
+  webm: ["matroska"],
+  mp3: ["mp3"],
+  m4a: ["isobmff"],
+  aac: ["aac"],
+  wav: ["wav"],
+  ogg: ["ogg"],
+  flac: ["flac"],
+  pdf: ["pdf"],
+  doc: ["ole"],
+  xls: ["ole"],
+  ppt: ["ole"],
+  docx: ["zip"],
+  xlsx: ["zip"],
+  pptx: ["zip"],
+  zip: ["zip"],
+  txt: ["text"],
+  csv: ["text"],
+};
+
+/** 魔数嗅探（只看文件头，够用且无额外依赖） */
+function sniffMagic(buffer: Buffer): string {
+  const ascii = (start: number, len: number) => buffer.subarray(start, start + len).toString("latin1");
+
+  if (buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) return "jpeg";
+  if (buffer.length >= 8 && buffer[0] === 0x89 && ascii(1, 3) === "PNG") return "png";
+  if (buffer.length >= 6 && ascii(0, 3) === "GIF") return "gif";
+  if (buffer.length >= 12 && ascii(0, 4) === "RIFF") {
+    const tag = ascii(8, 4);
+    if (tag === "WEBP") return "webp";
+    if (tag === "WAVE") return "wav";
+  }
+  if (buffer.length >= 2 && buffer[0] === 0x42 && buffer[1] === 0x4d) return "bmp";
+  if (buffer.length >= 12 && ascii(4, 4) === "ftyp") {
+    const brand = ascii(8, 4);
+    if (brand === "avif" || brand === "avis") return "avif";
+    return "isobmff";
+  }
+  if (buffer.length >= 4 && buffer[0] === 0x1a && buffer[1] === 0x45 && buffer[2] === 0xdf && buffer[3] === 0xa3) {
+    return "matroska";
+  }
+  if (buffer.length >= 4 && ascii(0, 4) === "OggS") return "ogg";
+  if (buffer.length >= 4 && ascii(0, 4) === "fLaC") return "flac";
+  if (buffer.length >= 5 && ascii(0, 5) === "%PDF-") return "pdf";
+  if (buffer.length >= 4 && ascii(0, 2) === "PK" && buffer[2] === 0x03 && buffer[3] === 0x04) return "zip";
+  if (buffer.length >= 4 && buffer[0] === 0xd0 && buffer[1] === 0xcf && buffer[2] === 0x11 && buffer[3] === 0xe0) {
+    return "ole";
+  }
+  if (buffer.length >= 3 && ascii(0, 3) === "ID3") return "mp3";
+  if (buffer.length >= 2 && buffer[0] === 0xff && (buffer[1] & 0xf0) === 0xf0) {
+    const layer = (buffer[1] >> 1) & 0x03;
+    return layer === 0 ? "aac" : "mp3";
+  }
+  if (looksLikeText(buffer)) return "text";
+  return "unknown";
+}
+
+function looksLikeText(buffer: Buffer): boolean {
+  const sample = Math.min(buffer.length, 4096);
+  if (sample <= 0) return false;
+  let printable = 0;
+  for (let i = 0; i < sample; i += 1) {
+    const code = buffer[i];
+    if (code === 0) return false;
+    if (code === 9 || code === 10 || code === 13 || (code >= 32 && code <= 126) || code >= 0x80) {
+      printable += 1;
+    }
+  }
+  return printable / sample > 0.9;
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes >= MB) return `${(bytes / MB).toFixed(1)}MB`;
+  if (bytes >= 1024) return `${(bytes / 1024).toFixed(1)}KB`;
+  return `${bytes}B`;
+}
+
 /**
  * 判断路径是否为纯数字路径（如 /3/4）
  * 根目录 / 视为数字路径
@@ -143,39 +339,93 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     const { fileBuffer, originalName, customName, mimeType, fileSize, folderInput = "/general", folderIdInput, siteId, category, uploader } = params;
 
     const fileHash = crypto.createHash("md5").update(fileBuffer).digest("hex");
-    const ext = originalName ? `.${originalName.split(".").pop()}` : "";
+    const rawExt = path.extname(originalName || "").toLowerCase().replace(/^\./, "");
+    if (!rawExt) {
+      throw httpError(400, `上传被拒绝：文件缺少扩展名，允许的类型为 ${EXT_ALLOWLIST_TEXT}`);
+    }
+    const rule = EXT_RULES[rawExt];
+    if (!rule) {
+      throw httpError(400, `上传被拒绝：不支持的文件类型 .${rawExt}，允许的类型为 ${EXT_ALLOWLIST_TEXT}`);
+    }
+    const ext = `.${rawExt}`;
     const fileName = customName || originalName || `file_${Date.now()}`;
 
-    let folderRecord: any = null;
-    let strapiFolderPath = "/";
-    let storagePath = folderInput;
-
-    if (folderIdInput) {
-      folderRecord = await strapi.db.query(FOLDER_UID).findOne({ where: { id: parseInt(folderIdInput) } });
-      if (folderRecord) {
-        strapiFolderPath = folderRecord.path;
-        storagePath = await this.buildHumanPath(folderRecord.id);
-      }
-    } else if (folderInput && folderInput !== "/") {
-      folderRecord = await this.ensureFolderByPath(folderInput);
-      if (folderRecord) {
-        strapiFolderPath = folderRecord.path;
-        storagePath = folderInput;
+    // 客户端声明的 MIME 只做一致性校验，最终入库使用扩展名对应的规范 MIME
+    const declaredMime = (mimeType || "").toLowerCase().split(";")[0].trim();
+    if (declaredMime && declaredMime !== "application/octet-stream") {
+      const declaredPrefix = declaredMime.split("/")[0];
+      const allowedPrefixes = rule.family === "image" ? ["image"] : rule.family === "video" ? ["video"] : rule.family === "audio" ? ["audio"] : rule.family === "archive" ? ["application"] : ["application", "text"];
+      if (!allowedPrefixes.includes(declaredPrefix)) {
+        throw httpError(400, `上传被拒绝：文件 .${rawExt} 的 Content-Type「${declaredMime}」不在允许范围`);
       }
     }
 
-    const uploadDir = strapi.dirs.static.public;
-    const targetDir = path.join(uploadDir, storagePath);
-    await fs.mkdir(targetDir, { recursive: true });
+    // 服务端魔数嗅探：内容必须与扩展名匹配，杜绝 html/svg/js 改后缀上传
+    const detected = sniffMagic(fileBuffer);
+    const expectedSniffs = SNIFF_RULES[rawExt] || [];
+    if (!expectedSniffs.includes(detected)) {
+      throw httpError(400, `上传被拒绝：文件内容与扩展名 .${rawExt} 不符（服务端检测为 ${detected}）`);
+    }
+
+    // 单文件大小上限（按类别可配置，环境变量优先）
+    const pluginConfig = ((strapi as any).config?.get?.("plugin::zhao-oss") || {}) as any;
+    const familyConfigKey: Record<MediaFamily, string> = {
+      image: "uploadMaxImageBytes",
+      video: "uploadMaxVideoBytes",
+      audio: "uploadMaxAudioBytes",
+      doc: "uploadMaxDocBytes",
+      archive: "uploadMaxArchiveBytes",
+    };
+    const familyLabel: Record<MediaFamily, string> = { image: "图片", video: "视频", audio: "音频", doc: "文档", archive: "压缩包" };
+    const envLimit = Number(process.env[`ZHAO_OSS_MAX_${rule.family.toUpperCase()}_BYTES`]);
+    const configuredLimit = Number(pluginConfig[familyConfigKey[rule.family]]);
+    const fallbackLimit: Record<MediaFamily, number> = { image: 10 * MB, video: 200 * MB, audio: 50 * MB, doc: 20 * MB, archive: 20 * MB };
+    const sizeLimit = envLimit > 0 ? envLimit : configuredLimit > 0 ? configuredLimit : fallbackLimit[rule.family];
+    const actualSize = fileBuffer.length;
+    if (actualSize > sizeLimit) {
+      throw httpError(413, `上传被拒绝：${familyLabel[rule.family]} ${formatBytes(actualSize)} 超过上限 ${formatBytes(sizeLimit)}（可通过 ZHAO_OSS_MAX_${rule.family.toUpperCase()}_BYTES 调整）`);
+    }
+
+    let folderRecord: any = null;
+    let strapiFolderPath = "/";
+    let storagePath = "/general";
+    const hasFolderId = folderIdInput !== undefined && folderIdInput !== null && String(folderIdInput).trim() !== "";
+
+    if (hasFolderId) {
+      const rawFolderId = String(folderIdInput).trim();
+      if (!/^\d+$/.test(rawFolderId) || Number(rawFolderId) <= 0) {
+        throw httpError(400, "上传被拒绝：folderId 非法");
+      }
+      folderRecord = await strapi.db.query(FOLDER_UID).findOne({ where: { id: Number(rawFolderId) } });
+      if (!folderRecord) {
+        throw httpError(400, "上传被拒绝：指定的文件夹不存在");
+      }
+      strapiFolderPath = folderRecord.path;
+      storagePath = assertSafeStoredPath(await this.buildHumanPath(folderRecord.id));
+    } else {
+      storagePath = assertSafeFolderInput(folderInput);
+      if (storagePath !== "/") {
+        folderRecord = await this.ensureFolderByPath(storagePath);
+        if (folderRecord) {
+          strapiFolderPath = folderRecord.path;
+        }
+      }
+    }
+
+    const uploadRoot = path.resolve(strapi.dirs.static.public);
+    const targetDir = await assertInsidePublicRoot(
+      uploadRoot,
+      path.join(uploadRoot, storagePath.replace(/^\/+/, "")),
+    );
     const localFileName = `${fileHash}${ext}`;
     const localFilePath = path.join(targetDir, localFileName);
     await fs.writeFile(localFilePath, fileBuffer);
-    const localUrl = `/static${storagePath}/${localFileName}`;
+    const localUrl = `/static${storagePath === "/" ? "" : storagePath}/${localFileName}`;
 
     let width: number | null = null;
     let height: number | null = null;
     let formats: Record<string, any> = {};
-    if (mimeType.startsWith("image/")) {
+    if (rule.mime.startsWith("image/")) {
       try {
         const metadata = await sharp(fileBuffer).metadata();
         width = metadata.width ?? null;
@@ -198,8 +448,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         const result = await provider.upload({
           buffer: fileBuffer,
           filename: `${storagePath}/${localFileName}`,
-          mimeType,
-          fileSize,
+          mimeType: rule.mime,
+          fileSize: actualSize,
         });
         ossUrl = result.url;
         ossPublicUrl = provider.signUrl(result.key);
@@ -220,8 +470,8 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         formats,
         hash: fileHash,
         ext,
-        mime: mimeType,
-        size: fileSize,
+        mime: rule.mime,
+        size: actualSize,
         url: ossUrl || localUrl,
         previewUrl: null,
         provider: providerName,
@@ -320,7 +570,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     required: boolean;
     items: Array<{ id: number; documentId: string; title: string }>;
   }>> {
-    const pluginConfig = strapi.config.get("plugin::zhao-oss");
+    const pluginConfig = strapi.config.get("plugin::zhao-oss") as any;
     const referenceMap: Array<{
       uid: string;
       field: string;
@@ -481,8 +731,12 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
    * 创建文件夹
    */
   async createFolder(name: string, parentId: number | null = null): Promise<{ id: number; documentId: string; name: string; path: string }> {
+    const safeName = typeof name === "string" ? name.trim() : "";
+    if (!/^[\p{L}\p{N}_-]{1,64}$/u.test(safeName)) {
+      throw httpError(400, "创建文件夹失败：名称仅允许中英文、数字、下划线和短横线，且不超过 64 字符");
+    }
     const existing = await strapi.db.query(FOLDER_UID).findOne({
-      where: { name, parent: parentId || null },
+      where: { name: safeName, parent: parentId || null },
     });
 
     if (existing) {
@@ -501,7 +755,7 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     const folderPath = parentPath === "/" ? `/${pathId}` : `${parentPath}/${pathId}`;
 
     const folder = await strapi.db.query(FOLDER_UID).create({
-      data: { name, pathId, path: folderPath, parent: parentFolder?.id || null },
+      data: { name: safeName, pathId, path: folderPath, parent: parentFolder?.id || null },
     });
 
     return { id: folder.id, documentId: folder.documentId, name: folder.name, path: folder.path };

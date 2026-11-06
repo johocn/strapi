@@ -95,7 +95,8 @@ describe('api-controller 测试', () => {
         originalName: 'test.jpg',
         customName: 'renamed.jpg',
         mimeType: 'image/jpeg',
-        fileSize: 1024,
+        // fileSize 以服务端读取到的实际字节数为准，不信任客户端上报值
+        fileSize: expect.any(Number),
         folderInput: '/course/covers',
         folderIdInput: '7',
       });

@@ -29,16 +29,37 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         return;
       }
 
-      const file = Object.values(files)[0] as any;
+      const allFiles = Object.values(files) as any[];
+      const declaredTotal = allFiles.reduce((sum, item) => sum + Number(item?.size || 0), 0);
+      const pluginConfig = ((strapi as any).config?.get?.("plugin::zhao-oss") || {}) as any;
+      const envTotalLimit = Number(process.env.ZHAO_OSS_MAX_TOTAL_BYTES);
+      const configuredTotalLimit = Number(pluginConfig.uploadMaxTotalBytes);
+      const totalLimit = envTotalLimit > 0 ? envTotalLimit : configuredTotalLimit > 0 ? configuredTotalLimit : 300 * 1024 * 1024;
+      if (declaredTotal > totalLimit) {
+        ctx.status = 413;
+        ctx.body = { error: `上传被拒绝：本次上传总大小 ${(declaredTotal / (1024 * 1024)).toFixed(1)}MB 超过上限 ${(totalLimit / (1024 * 1024)).toFixed(1)}MB（可通过 ZHAO_OSS_MAX_TOTAL_BYTES 调整）` };
+        return;
+      }
+
+      const file = allFiles[0];
       const fs = require("fs/promises");
       const filePath = file.filepath ?? file.path;
       const fileBuffer: Buffer = filePath ? await fs.readFile(filePath) : file.buffer;
       const originalName = file.originalFilename ?? file.name ?? "";
       const mimeType = file.mimetype ?? file.type ?? "application/octet-stream";
-      const fileSize = file.size || fileBuffer.length;
+      const fileSize = fileBuffer.length;
 
       const mediaService = strapi.plugin("zhao-oss").service("media-service");
-      const body = ctx.request.body?.data || ctx.request.body;
+      let body: any = ctx.request.body?.data ?? ctx.request.body;
+      if (typeof body === "string") {
+        try {
+          body = JSON.parse(body);
+        } catch {
+          ctx.status = 400;
+          ctx.body = { error: "上传被拒绝：data 字段不是合法 JSON" };
+          return;
+        }
+      }
       const result = await mediaService.uploadFile({
         fileBuffer,
         originalName,
