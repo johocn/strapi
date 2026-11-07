@@ -26,6 +26,12 @@ const hasPermission = async (policyContext: any, config: any, { strapi }: { stra
     return true;
   }
 
+  // admin 面板 token（非超管角色）不再回退到 up_users 权限查询：
+  // admin_users.id 与 up_users.id 不同源，回退可能命中无关账号造成越权
+  if ((user as any).isAdminPanel) {
+    return false;
+  }
+
   try {
     const permissionService = strapi.plugin("zhao-auth").service("permission");
     // 传入 tenantDocumentId（由 tenant-context-injector policy 或 site-resolver 设置）

@@ -90,17 +90,32 @@ const isAuthenticated = async (policyContext: any, config: any, { strapi }: { st
             if (payload?.id) {
               const adminUser: any = await strapi.db.query("admin::user").findOne({
                 where: { id: payload.id },
+                populate: ["roles"],
               });
               if (adminUser) {
-                // admin 面板用户直接视为 admin 角色（与 has-permission 的 zhaoRoles 放行一致）
+                // 按 admin_users.roles 实际映射，仅超管映射为 zhaoRoles=admin；
+                // 其余角色（编辑/作者等）不再被当作 admin，避免任意后台 token 越权
+                const adminRoleCodes = (adminUser.roles || [])
+                  .map((role: any) => String(role?.code || ""))
+                  .filter(Boolean);
+                const ADMIN_ROLE_MAP: Record<string, string[]> = {
+                  "strapi-super-admin": ["admin", "super-admin"],
+                };
+                const zhaoRoles = Array.from(
+                  new Set(
+                    adminRoleCodes.flatMap(
+                      (code: string) => ADMIN_ROLE_MAP[code] || []
+                    )
+                  )
+                );
                 const user = {
                   id: adminUser.id,
                   documentId: adminUser.documentId,
                   username: adminUser.username,
                   email: adminUser.email,
                   isAdminPanel: true,
-                  roles: ["admin"],
-                  zhaoRoles: ["admin"],
+                  roles: zhaoRoles,
+                  zhaoRoles,
                 };
                 ctx.state.user = user;
                 ctx.user = user;

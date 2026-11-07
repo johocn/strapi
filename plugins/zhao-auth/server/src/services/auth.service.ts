@@ -428,7 +428,8 @@ export default ({ strapi }: { strapi: Core.Strapi }): AuthService & Record<strin
   async localLogin(identifier: string, password: string) {
     const user = await this.findUserForLogin(identifier);
     if (!user) {
-      return { success: false, error: "账号不存在或已注销" };
+      // 统一失败文案，避免通过返回信息枚举账号
+      return { success: false, error: "账号或密码错误" };
     }
 
     // 密码验证：本地用户验 up_users.password；
@@ -451,7 +452,7 @@ export default ({ strapi }: { strapi: Core.Strapi }): AuthService & Record<strin
       }
     }
     if (!isValidPassword) {
-      return { success: false, error: "密码错误" };
+      return { success: false, error: "账号或密码错误" };
     }
 
     if (user.blocked) {

@@ -1,4 +1,10 @@
 import type { Core } from "@strapi/strapi";
+import {
+  clientIp,
+  isLoginRateLimited,
+  recordLoginAttempt,
+  loginRateLimitBody,
+} from "../utils/login-rate-limit";
 
 export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async register(ctx: any) {
@@ -62,37 +68,14 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     }
   },
 
-  async resetPassword(ctx: any) {
-    const body = ctx.request.body?.data || ctx.request.body;
-    const { identifier, password } = body;
-
-    if (!identifier || !password) {
-      ctx.status = 400; ctx.body = { error: "请提供 identifier 和 password" }; return;
-    }
-
-    if (password.length < 6) {
-      ctx.status = 400; ctx.body = { error: "密码长度至少 6 位" }; return;
-    }
-
-    try {
-      const authService = strapi.plugin("zhao-auth").service("auth");
-      const user = await authService.findUserByIdentifier(identifier, identifier);
-
-      if (!user) {
-        ctx.status = 400; ctx.body = { error: "用户不存在" }; return;
-      }
-
-      await authService.updateUserPassword(user.id, password);
-      ctx.body = { success: true, message: "密码重置成功" };
-    } catch (error: any) {
-      strapi.log.error(`[zhao-auth] 重置密码失败：${error.message}`);
-      ctx.status = (error as any).status || 400; ctx.body = { error: "密码重置失败，请稍后重试" };
-    }
-  },
-
   async adminLocal(ctx: any) {
     try {
       const { identifier, password } = ctx.request.body;
+      const ip = clientIp(ctx);
+      if (isLoginRateLimited(ip, identifier)) {
+        ctx.status = 429; ctx.body = loginRateLimitBody; return;
+      }
+      recordLoginAttempt(ip, identifier);
       if (!identifier || !password) {
         ctx.status = 400; ctx.body = { error: "请提供 identifier 和 password" }; return;
       }
@@ -146,7 +129,13 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
         return;
       }
 
-      const { identifier, password } = ctx.request.body;
+      const body = ctx.request.body || {};
+      const { identifier, password } = body;
+      const ip = clientIp(ctx);
+      if (isLoginRateLimited(ip, identifier)) {
+        ctx.status = 429; ctx.body = loginRateLimitBody; return;
+      }
+      recordLoginAttempt(ip, identifier);
       if (!identifier || !password) {
         ctx.status = 400; ctx.body = { error: "请提供 identifier 和 password" }; return;
       }

@@ -333,7 +333,7 @@ const authService = ({ strapi: strapi2 }) => {
     async localLogin(identifier, password) {
       const user = await this.findUserForLogin(identifier);
       if (!user) {
-        return { success: false, error: "账号不存在或已注销" };
+        return { success: false, error: "账号或密码错误" };
       }
       let isValidPassword = false;
       if (user.password) {
@@ -352,7 +352,7 @@ const authService = ({ strapi: strapi2 }) => {
         }
       }
       if (!isValidPassword) {
-        return { success: false, error: "密码错误" };
+        return { success: false, error: "账号或密码错误" };
       }
       if (user.blocked) {
         return { success: false, error: "账户已被锁定，请联系管理员" };
@@ -3726,11 +3726,11 @@ const roleChannelService = ({ strapi: strapi2 }) => ({
     return { success: true, role, deleted: records.length };
   }
 });
-const SITE_CONFIG_UID = "plugin::zhao-common.site-config";
+const SITE_CONFIG_UID$1 = "plugin::zhao-common.site-config";
 const tenantService = ({ strapi: strapi2 }) => ({
   async getMyTenants(userId, roles) {
     if (roles.includes("admin")) {
-      const all = await strapi2.db.query(SITE_CONFIG_UID).findMany({
+      const all = await strapi2.db.query(SITE_CONFIG_UID$1).findMany({
         select: ["id", "documentId", "siteName", "domain", "featureFlags", "updatedAt"],
         populate: {
           channels: { select: ["id"] },
@@ -3767,7 +3767,7 @@ const tenantService = ({ strapi: strapi2 }) => ({
       ...new Set(links.map((l) => l.site_config_id))
     ].filter(Boolean);
     if (siteIds.length === 0) return [];
-    const sites = await strapi2.db.query(SITE_CONFIG_UID).findMany({
+    const sites = await strapi2.db.query(SITE_CONFIG_UID$1).findMany({
       where: { id: { $in: siteIds } },
       select: ["id", "documentId", "siteName", "domain", "featureFlags", "updatedAt"],
       populate: {
@@ -4052,6 +4052,37 @@ const roleManagementController = ({ strapi: strapi2 }) => ({
     }
   }
 });
+const WINDOW_MS = 15 * 60 * 1e3;
+const MAX_ATTEMPTS = 5;
+const MAX_BUCKETS = 1e4;
+const buckets = /* @__PURE__ */ new Map();
+const clientIp = (ctx) => String(ctx?.request?.ip || ctx?.ip || ctx?.["ips"]?.[0] || "unknown");
+const bucketKey = (ip, identifier) => `${ip}|${String(identifier || "").trim().toLowerCase()}`;
+const prune = (now) => {
+  if (buckets.size <= MAX_BUCKETS) return;
+  for (const [key, timestamps] of buckets) {
+    if (timestamps.every((at) => now - at >= WINDOW_MS)) buckets.delete(key);
+  }
+};
+const isLoginRateLimited = (ip, identifier) => {
+  const now = Date.now();
+  const key = bucketKey(ip, identifier);
+  const recent = (buckets.get(key) || []).filter((at) => now - at < WINDOW_MS);
+  buckets.set(key, recent);
+  return recent.length >= MAX_ATTEMPTS;
+};
+const recordLoginAttempt = (ip, identifier) => {
+  const now = Date.now();
+  const key = bucketKey(ip, identifier);
+  const recent = (buckets.get(key) || []).filter((at) => now - at < WINDOW_MS);
+  recent.push(now);
+  buckets.set(key, recent);
+  prune(now);
+};
+const loginRateLimitBody = {
+  code: "RATE_LIMITED",
+  error: "登录尝试过于频繁，请 15 分钟后再试"
+};
 const authController = ({ strapi: strapi2 }) => ({
   async register(ctx) {
     try {
@@ -4110,38 +4141,16 @@ const authController = ({ strapi: strapi2 }) => ({
       ctx.body = { error: error.message };
     }
   },
-  async resetPassword(ctx) {
-    const body = ctx.request.body?.data || ctx.request.body;
-    const { identifier, password } = body;
-    if (!identifier || !password) {
-      ctx.status = 400;
-      ctx.body = { error: "请提供 identifier 和 password" };
-      return;
-    }
-    if (password.length < 6) {
-      ctx.status = 400;
-      ctx.body = { error: "密码长度至少 6 位" };
-      return;
-    }
-    try {
-      const authService2 = strapi2.plugin("zhao-auth").service("auth");
-      const user = await authService2.findUserByIdentifier(identifier, identifier);
-      if (!user) {
-        ctx.status = 400;
-        ctx.body = { error: "用户不存在" };
-        return;
-      }
-      await authService2.updateUserPassword(user.id, password);
-      ctx.body = { success: true, message: "密码重置成功" };
-    } catch (error) {
-      strapi2.log.error(`[zhao-auth] 重置密码失败：${error.message}`);
-      ctx.status = error.status || 400;
-      ctx.body = { error: "密码重置失败，请稍后重试" };
-    }
-  },
   async adminLocal(ctx) {
     try {
       const { identifier, password } = ctx.request.body;
+      const ip = clientIp(ctx);
+      if (isLoginRateLimited(ip, identifier)) {
+        ctx.status = 429;
+        ctx.body = loginRateLimitBody;
+        return;
+      }
+      recordLoginAttempt(ip, identifier);
       if (!identifier || !password) {
         ctx.status = 400;
         ctx.body = { error: "请提供 identifier 和 password" };
@@ -4192,7 +4201,15 @@ const authController = ({ strapi: strapi2 }) => ({
         ctx.body = { mode: "sso", sso_login_url: sso.loginUrl, message: "SSO 认证已启用，请通过 SSO 登录" };
         return;
       }
-      const { identifier, password } = ctx.request.body;
+      const body = ctx.request.body || {};
+      const { identifier, password } = body;
+      const ip = clientIp(ctx);
+      if (isLoginRateLimited(ip, identifier)) {
+        ctx.status = 429;
+        ctx.body = loginRateLimitBody;
+        return;
+      }
+      recordLoginAttempt(ip, identifier);
       if (!identifier || !password) {
         ctx.status = 400;
         ctx.body = { error: "请提供 identifier 和 password" };
@@ -4969,17 +4986,29 @@ const isAuthenticated = async (policyContext, config2, { strapi: strapi2 }) => {
             const payload = require("jsonwebtoken").verify(token, adminSecret);
             if (payload?.id) {
               const adminUser = await strapi2.db.query("admin::user").findOne({
-                where: { id: payload.id }
+                where: { id: payload.id },
+                populate: ["roles"]
               });
               if (adminUser) {
+                const adminRoleCodes = (adminUser.roles || []).map((role) => String(role?.code || "")).filter(Boolean);
+                const ADMIN_ROLE_MAP = {
+                  "strapi-super-admin": ["admin", "super-admin"]
+                };
+                const zhaoRoles = Array.from(
+                  new Set(
+                    adminRoleCodes.flatMap(
+                      (code) => ADMIN_ROLE_MAP[code] || []
+                    )
+                  )
+                );
                 const user = {
                   id: adminUser.id,
                   documentId: adminUser.documentId,
                   username: adminUser.username,
                   email: adminUser.email,
                   isAdminPanel: true,
-                  roles: ["admin"],
-                  zhaoRoles: ["admin"]
+                  roles: zhaoRoles,
+                  zhaoRoles
                 };
                 ctx.state.user = user;
                 ctx.user = user;
@@ -4998,11 +5027,28 @@ const isAuthenticated = async (policyContext, config2, { strapi: strapi2 }) => {
     reject401();
   }
 };
+const SITE_CONFIG_UID = "plugin::zhao-common.site-config";
 const tenantContextInjector = async (policyContext, config2, { strapi: strapi2 }) => {
   const user = policyContext.state?.user;
   const currentTenantId = user?.currentTenantId;
   if (currentTenantId) {
-    policyContext.state.siteDocumentId = currentTenantId;
+    const value = String(currentTenantId);
+    try {
+      const query = strapi2?.db?.query(SITE_CONFIG_UID);
+      let site = query ? await query.findOne({ where: { documentId: value } }) : null;
+      if (!site && /^\d+$/.test(value) && query) {
+        site = await query.findOne({ where: { id: Number(value) } });
+      }
+      if (site) {
+        policyContext.state.siteDocumentId = site.documentId;
+        policyContext.state.siteId = site.id;
+      } else {
+        policyContext.state.siteDocumentId = value;
+      }
+    } catch (error) {
+      policyContext.state.siteDocumentId = value;
+      strapi2?.log?.warn?.(`[tenant-context-injector] 站点查询失败: ${error}`);
+    }
   }
   return true;
 };
@@ -5018,6 +5064,9 @@ const hasPermission$1 = async (policyContext, config2, { strapi: strapi2 }) => {
   const userRoles = Array.isArray(user.zhaoRoles) ? user.zhaoRoles : Array.isArray(user.roles) ? user.roles : [];
   if (userRoles.includes("admin")) {
     return true;
+  }
+  if (user.isAdminPanel) {
+    return false;
   }
   try {
     const permissionService2 = strapi2.plugin("zhao-auth").service("permission");
@@ -5143,6 +5192,32 @@ const policies = {
   "has-channel-scope": hasChannelScope,
   "has-tenant-access": hasTenantAccess
 };
+const LEGACY_DEFAULT_PASSWORD = "Admin@12345";
+async function detectLegacyDefaultPassword(strapi2) {
+  try {
+    const knex = strapi2.db.connection;
+    const users = await knex("up_users").select("id", "username", "email", "password").whereNotNull("password");
+    const hits = [];
+    for (const u of users) {
+      if (!u.password) continue;
+      try {
+        if (bcrypt.compareSync(LEGACY_DEFAULT_PASSWORD, u.password)) {
+          hits.push(`id=${u.id} username=${u.username} email=${u.email}`);
+        }
+      } catch {
+      }
+    }
+    if (hits.length) {
+      strapi2.log.error(
+        `zhao-auth: [安全告警] 检测到 ${hits.length} 个账号仍在使用历史默认口令 ${LEGACY_DEFAULT_PASSWORD}，请立即修改: ${hits.join("; ")}`
+      );
+    }
+  } catch (error) {
+    strapi2.log.warn(
+      `zhao-auth: 默认口令自检失败: ${error?.message || String(error)}`
+    );
+  }
+}
 async function ensureAdminUser(strapi2) {
   try {
     const knex = strapi2.db.connection;
@@ -5155,7 +5230,19 @@ async function ensureAdminUser(strapi2) {
     }
     const username = process.env.INIT_ADMIN_USERNAME || "admin";
     const email = process.env.INIT_ADMIN_EMAIL || "admin@example.com";
-    const password = process.env.INIT_ADMIN_PASSWORD || "Admin@12345";
+    const password = process.env.INIT_ADMIN_PASSWORD;
+    if (!password) {
+      strapi2.log.warn(
+        "zhao-auth: 未配置 INIT_ADMIN_PASSWORD，已跳过 admin 用户自动初始化（不再使用内置默认口令）。如需创建，请配置强口令后重启。"
+      );
+      return;
+    }
+    if (password.length < 16) {
+      strapi2.log.warn(
+        "zhao-auth: INIT_ADMIN_PASSWORD 长度不足 16 位，已跳过 admin 用户自动初始化。请配置至少 16 位的强口令后重启。"
+      );
+      return;
+    }
     const dup = await knex("up_users").where("username", username).orWhere("email", email).select("id", "username", "email").first();
     if (dup) {
       strapi2.log.warn(
@@ -5180,7 +5267,7 @@ async function ensureAdminUser(strapi2) {
       published_at: now
     });
     strapi2.log.info(
-      `zhao-auth: ✅ 已创建第一个 admin 用户（username=${username}, email=${email}）。请尽快修改默认密码。`
+      `zhao-auth: ✅ 已创建第一个 admin 用户（username=${username}, email=${email}），口令来自 INIT_ADMIN_PASSWORD。`
     );
   } catch (error) {
     strapi2.log.warn(
@@ -5199,6 +5286,7 @@ const bootstrap = async ({ strapi: strapi2 }) => {
         );
       }
       await ensureAdminUser(strapi2);
+      await detectLegacyDefaultPassword(strapi2);
     } catch (error) {
       strapi2.log.warn(
         `zhao-auth: 角色初始化失败（可能是 content-type 尚未就绪，可通过 POST /api/zhao-auth/v1/admin/permissions/init 手动触发）: ${error?.message || String(error)}`
@@ -5272,7 +5360,6 @@ const contentApi = () => ({
     publicRoute("POST", "/login", "auth.login"),
     publicRoute("POST", "/admin/auth/local", "auth.adminLocal"),
     publicRoute("POST", "/register", "auth.register"),
-    publicRoute("POST", "/reset-password", "auth.resetPassword"),
     userRoute("POST", "/auth/switch-tenant", "auth.switchTenant"),
     userRoute("POST", "/auth/sync-sso-profile", "auth.syncSsoProfile"),
     userRoute("GET", "/my/roles", "role-management.getMyRoles"),
