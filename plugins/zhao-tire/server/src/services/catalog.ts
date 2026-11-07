@@ -19,6 +19,7 @@ const COLLECTIONS: Record<CollectionName, CollectionDef> = {
       "name",
       "code",
       "baseMonths",
+      "freeDays",
       "storePrice",
       "pickupPrice",
       "extraMonthPrice",
@@ -68,6 +69,9 @@ const CONFIG_FIELDS = [
   "depositEnabled",
   "depositRatio",
   "agreementText",
+  "agreementVersion",
+  "smsReminderEnabled",
+  "overdueAutoStartDate",
   "maxStorageDate",
   "announcement",
   "smsTemplateOverride",
@@ -196,6 +200,18 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
   async updateConfig(payload: any = {}) {
     const input = payload?.data ?? payload;
     const data = pickFields(input, CONFIG_FIELDS);
+
+    if (data.agreementVersion !== undefined) {
+      const version = String(data.agreementVersion ?? "").trim();
+      if (version && !/^\d{4}\.\d{2}\.\d{2}-\d+$/.test(version)) {
+        throw createError(
+          "VALIDATION_FAILED",
+          400,
+          "条款版本号格式应为 YYYY.MM.DD-N，例如 2026.11.05-1"
+        );
+      }
+      data.agreementVersion = version || null;
+    }
 
     for (const media of CONFIG_MEDIA_FIELDS) {
       if (input?.[media.inputKey] !== undefined) {

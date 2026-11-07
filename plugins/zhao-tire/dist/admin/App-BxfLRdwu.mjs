@@ -1,14 +1,10 @@
-"use strict";
-Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
-const jsxRuntime = require("react/jsx-runtime");
-const antd = require("antd");
-const zhCN = require("antd/locale/zh_CN");
-const reactRouterDom = require("react-router-dom");
-const react = require("react");
-const icons = require("@ant-design/icons");
-const admin = require("@strapi/strapi/admin");
-const _interopDefault = (e) => e && e.__esModule ? e : { default: e };
-const zhCN__default = /* @__PURE__ */ _interopDefault(zhCN);
+import { jsx, jsxs, Fragment } from "react/jsx-runtime";
+import { Layout, Menu, Spin, Alert, Tag, Upload, Typography, Modal, Space, Image, Button, message, Card, Select, DatePicker, Input, Table, Drawer, Descriptions, Timeline, Popconfirm, Form, InputNumber, Switch, Segmented, Tabs, Row, Col, Statistic, Tooltip, Collapse, ConfigProvider } from "antd";
+import zhCN from "antd/locale/zh_CN";
+import { useNavigate, useLocation, Routes, Route } from "react-router-dom";
+import { useCallback, useState, useEffect, createContext, useContext, useMemo } from "react";
+import { ShoppingCartOutlined, WarningOutlined, DatabaseOutlined, MoneyCollectOutlined, AppstoreOutlined, TeamOutlined, MessageOutlined, FileTextOutlined, PlusOutlined, DeleteOutlined, UploadOutlined, ReloadOutlined, DownloadOutlined, EditOutlined, ScanOutlined, SearchOutlined, BellOutlined, CopyOutlined, SendOutlined, ArrowUpOutlined, ArrowDownOutlined, SaveOutlined } from "@ant-design/icons";
+import { useFetchClient, isFetchError } from "@strapi/strapi/admin";
 const API_BASE = "/api/zhao-tire/v1/admin";
 const ME_URL = `${API_BASE}/me`;
 const FULL_ROLES = ["strapi-super-admin", "tire-admin"];
@@ -16,11 +12,11 @@ const canFullAccess = (roleCodes) => roleCodes.some((code) => FULL_ROLES.include
 const canStorageAccess = (roleCodes) => canFullAccess(roleCodes) || roleCodes.includes("tire-warehouse");
 const canPaymentAccess = (roleCodes) => canFullAccess(roleCodes) || roleCodes.includes("tire-cashier");
 const errorMessage = (error) => {
-  if (admin.isFetchError(error)) {
+  if (isFetchError(error)) {
     const payload = error.response?.data;
-    const message = payload?.message || payload?.error?.message || payload?.data?.message || error.message;
+    const message2 = payload?.message || payload?.error?.message || payload?.data?.message || error.message;
     const code = payload?.code || payload?.error?.name;
-    return code ? `${message}（${code}）` : String(message);
+    return code ? `${message2}（${code}）` : String(message2);
   }
   if (error instanceof Error) return error.message;
   return String(error);
@@ -60,8 +56,8 @@ const patchJson = async (url, body) => {
   });
   const payload = await response.json().catch(() => null);
   if (!response.ok) {
-    const message = payload?.message || payload?.error?.message || `请求失败（${response.status}）`;
-    throw new Error(message);
+    const message2 = payload?.message || payload?.error?.message || `请求失败（${response.status}）`;
+    throw new Error(message2);
   }
   return payload;
 };
@@ -70,8 +66,8 @@ const absoluteMediaUrl = (url) => {
   return url.startsWith("http") ? url : backendUrl(url);
 };
 function useTireApi() {
-  const { get, post, put, del } = admin.useFetchClient();
-  const getMe = react.useCallback(async () => {
+  const { get, post, put, del } = useFetchClient();
+  const getMe = useCallback(async () => {
     try {
       const { data } = await get(ME_URL);
       const payload = data?.data ?? data ?? {};
@@ -89,35 +85,35 @@ function useTireApi() {
       };
     }
   }, [get]);
-  const listOrders = react.useCallback(
+  const listOrders = useCallback(
     async (params) => {
       const { data } = await get(`${API_BASE}/orders`, { params });
       return data;
     },
     [get]
   );
-  const getOrder = react.useCallback(
+  const getOrder = useCallback(
     async (id) => {
       const { data } = await get(`${API_BASE}/orders/${id}`);
       return data?.data ?? data;
     },
     [get]
   );
-  const updateOrder = react.useCallback(
+  const updateOrder = useCallback(
     async (id, body) => {
       const { data } = await patchJson(`${API_BASE}/orders/${id}`, body);
       return data;
     },
     []
   );
-  const orderAction = react.useCallback(
+  const orderAction = useCallback(
     async (id, action, body = {}) => {
       const { data } = await post(`${API_BASE}/orders/${id}/${action}`, body);
       return data;
     },
     [post]
   );
-  const submitOrderPhotos = react.useCallback(
+  const submitOrderPhotos = useCallback(
     async (id, action, files, extra = {}) => {
       const formData = new FormData();
       Object.entries(extra).forEach(([key, value]) => {
@@ -131,7 +127,7 @@ function useTireApi() {
     },
     [post]
   );
-  const exportOrders = react.useCallback(
+  const exportOrders = useCallback(
     async (params) => {
       const { data } = await get(`${API_BASE}/orders/export.xlsx`, {
         params,
@@ -141,120 +137,120 @@ function useTireApi() {
     },
     [get]
   );
-  const listInventory = react.useCallback(
+  const listInventory = useCallback(
     async (params) => {
       const { data } = await get(`${API_BASE}/inventory`, { params });
       return data;
     },
     [get]
   );
-  const listExpiring = react.useCallback(
+  const listExpiring = useCallback(
     async (params) => {
       const { data } = await get(`${API_BASE}/inventory/expiring`, { params });
       return data;
     },
     [get]
   );
-  const remindInventory = react.useCallback(
+  const remindInventory = useCallback(
     async (ids) => {
       const { data } = await post(`${API_BASE}/inventory/remind`, { ids });
       return data;
     },
     [post]
   );
-  const listCustomers = react.useCallback(
+  const listCustomers = useCallback(
     async (params) => {
       const { data } = await get(`${API_BASE}/customers`, { params });
       return data;
     },
     [get]
   );
-  const listCollection = react.useCallback(
+  const listCollection = useCallback(
     async (name) => {
       const { data } = await get(`${API_BASE}/${name}`);
       return (data?.data ?? data) || [];
     },
     [get]
   );
-  const createCollection = react.useCallback(
+  const createCollection = useCallback(
     async (name, body) => {
       const { data } = await post(`${API_BASE}/${name}`, body);
       return data;
     },
     [post]
   );
-  const updateCollection = react.useCallback(
+  const updateCollection = useCallback(
     async (name, id, body) => {
       const { data } = await put(`${API_BASE}/${name}/${id}`, body);
       return data;
     },
     [put]
   );
-  const removeCollection = react.useCallback(
+  const removeCollection = useCallback(
     async (name, id) => {
       const { data } = await del(`${API_BASE}/${name}/${id}`);
       return data;
     },
     [del]
   );
-  const getConfig = react.useCallback(async () => {
+  const getConfig = useCallback(async () => {
     const { data } = await get(`${API_BASE}/config`);
     return data?.data ?? data ?? {};
   }, [get]);
-  const updateConfig = react.useCallback(
+  const updateConfig = useCallback(
     async (body) => {
       const { data } = await put(`${API_BASE}/config`, body);
       return data?.data ?? data;
     },
     [put]
   );
-  const listSmsLogs = react.useCallback(
+  const listSmsLogs = useCallback(
     async (params) => {
       const { data } = await get(`${API_BASE}/sms-logs`, { params });
       return data;
     },
     [get]
   );
-  const updateSmsLog = react.useCallback(async (id, body) => {
+  const updateSmsLog = useCallback(async (id, body) => {
     const payload = await patchJson(`${API_BASE}/sms-logs/${id}`, body);
     return payload;
   }, []);
-  const listReferralCodes = react.useCallback(
+  const listReferralCodes = useCallback(
     async (params) => {
       const { data } = await get(`${API_BASE}/referral-codes`, { params });
       return data;
     },
     [get]
   );
-  const grantFreeToReferral = react.useCallback(
+  const grantFreeToReferral = useCallback(
     async (id, count) => {
       const { data } = await post(`${API_BASE}/referral-codes/${id}/grant-free`, { count });
       return data;
     },
     [post]
   );
-  const listPayments = react.useCallback(
+  const listPayments = useCallback(
     async (params) => {
       const { data } = await get(`${API_BASE}/payments`, { params });
       return data;
     },
     [get]
   );
-  const confirmPayment = react.useCallback(
+  const confirmPayment = useCallback(
     async (id) => {
       const { data } = await post(`${API_BASE}/payments/${id}/confirm`, {});
       return data;
     },
     [post]
   );
-  const listShareRecords = react.useCallback(
+  const listShareRecords = useCallback(
     async (params) => {
       const { data } = await get(`${API_BASE}/share-records`, { params });
       return data;
     },
     [get]
   );
-  const exportShareRecords = react.useCallback(
+  const exportShareRecords = useCallback(
     async (params) => {
       const { data } = await get(`${API_BASE}/share-records/export.csv`, {
         params,
@@ -264,14 +260,57 @@ function useTireApi() {
     },
     [get]
   );
-  const listRewards = react.useCallback(
+  const listRewards = useCallback(
     async (params) => {
       const { data } = await get(`${API_BASE}/rewards`, { params });
       return data;
     },
     [get]
   );
-  const uploadImage = react.useCallback(
+  const listHoldFunds = useCallback(
+    async (params) => {
+      const { data } = await get(`${API_BASE}/hold-funds`, { params });
+      return data;
+    },
+    [get]
+  );
+  const claimHoldFund = useCallback(
+    async (id, body = {}) => {
+      const { data } = await post(`${API_BASE}/hold-funds/${id}/claim`, body);
+      return data;
+    },
+    [post]
+  );
+  const scanOverdue = useCallback(async () => {
+    const { data } = await post(`${API_BASE}/overdue/scan`, {});
+    return data;
+  }, [post]);
+  const getAgreementHistory = useCallback(async () => {
+    const { data } = await get(`${API_BASE}/agreement-history`);
+    return data?.data ?? data;
+  }, [get]);
+  const appendAgreementVersion = useCallback(
+    async (body) => {
+      const { data } = await post(`${API_BASE}/agreement-history`, body);
+      return data;
+    },
+    [post]
+  );
+  const listStationMessages = useCallback(
+    async (params = {}) => {
+      const { data } = await get(`${API_BASE}/station-messages`, { params });
+      return data;
+    },
+    [get]
+  );
+  const readStationMessage = useCallback(
+    async (id) => {
+      const data = await patchJson(`${API_BASE}/station-messages/${id}/read`, {});
+      return data;
+    },
+    []
+  );
+  const uploadImage = useCallback(
     async (file) => {
       const formData = new FormData();
       formData.append("files", file);
@@ -285,6 +324,17 @@ function useTireApi() {
       };
     },
     [post]
+  );
+  const uploadImages = useCallback(
+    async (files) => {
+      const uploaded = [];
+      for (const file of files) {
+        const item = await uploadImage(file);
+        if (item.id) uploaded.push({ id: item.id, url: item.url });
+      }
+      return uploaded;
+    },
+    [uploadImage]
   );
   return {
     getMe,
@@ -313,10 +363,18 @@ function useTireApi() {
     listShareRecords,
     exportShareRecords,
     listRewards,
-    uploadImage
+    uploadImage,
+    uploadImages,
+    listHoldFunds,
+    claimHoldFund,
+    scanOverdue,
+    getAgreementHistory,
+    appendAgreementVersion,
+    listStationMessages,
+    readStationMessage
   };
 }
-const { Sider, Content } = antd.Layout;
+const { Sider, Content } = Layout;
 const defaultState = {
   loading: true,
   me: null,
@@ -324,14 +382,14 @@ const defaultState = {
   canStorage: false,
   canPayment: false
 };
-const PermissionContext = react.createContext(defaultState);
-const usePermissions = () => react.useContext(PermissionContext);
+const PermissionContext = createContext(defaultState);
+const usePermissions = () => useContext(PermissionContext);
 const PermissionProvider = ({
   children
 }) => {
   const { getMe } = useTireApi();
-  const [state, setState] = react.useState(defaultState);
-  react.useEffect(() => {
+  const [state, setState] = useState(defaultState);
+  useEffect(() => {
     let alive = true;
     getMe().then((me) => {
       if (!alive) return;
@@ -357,45 +415,46 @@ const PermissionProvider = ({
       alive = false;
     };
   }, [getMe]);
-  return /* @__PURE__ */ jsxRuntime.jsx(PermissionContext.Provider, { value: state, children });
+  return /* @__PURE__ */ jsx(PermissionContext.Provider, { value: state, children });
 };
 const MENU_ITEMS = [
-  { key: "orders", icon: /* @__PURE__ */ jsxRuntime.jsx(icons.ShoppingCartOutlined, {}), label: "订单管理" },
-  { key: "inventory", icon: /* @__PURE__ */ jsxRuntime.jsx(icons.DatabaseOutlined, {}), label: "仓储库存", storageOnly: true },
+  { key: "orders", icon: /* @__PURE__ */ jsx(ShoppingCartOutlined, {}), label: "订单管理" },
+  { key: "overdue", icon: /* @__PURE__ */ jsx(WarningOutlined, {}), label: "逾期处置", fullOnly: true },
+  { key: "inventory", icon: /* @__PURE__ */ jsx(DatabaseOutlined, {}), label: "仓储库存", storageOnly: true },
   {
     key: "payments",
-    icon: /* @__PURE__ */ jsxRuntime.jsx(icons.MoneyCollectOutlined, {}),
+    icon: /* @__PURE__ */ jsx(MoneyCollectOutlined, {}),
     label: "收银对账",
     paymentOnly: true
   },
   {
     key: "catalog",
-    icon: /* @__PURE__ */ jsxRuntime.jsx(icons.AppstoreOutlined, {}),
+    icon: /* @__PURE__ */ jsx(AppstoreOutlined, {}),
     label: "套餐配置",
     fullOnly: true
   },
   {
     key: "customers",
-    icon: /* @__PURE__ */ jsxRuntime.jsx(icons.TeamOutlined, {}),
+    icon: /* @__PURE__ */ jsx(TeamOutlined, {}),
     label: "客户管理",
     fullOnly: true
   },
   {
     key: "messages",
-    icon: /* @__PURE__ */ jsxRuntime.jsx(icons.MessageOutlined, {}),
+    icon: /* @__PURE__ */ jsx(MessageOutlined, {}),
     label: "消息通知",
     fullOnly: true
   },
   {
     key: "content",
-    icon: /* @__PURE__ */ jsxRuntime.jsx(icons.FileTextOutlined, {}),
+    icon: /* @__PURE__ */ jsx(FileTextOutlined, {}),
     label: "站点内容",
     fullOnly: true
   }
 ];
 const PluginLayout = ({ children }) => {
-  const navigate = reactRouterDom.useNavigate();
-  const location = reactRouterDom.useLocation();
+  const navigate = useNavigate();
+  const location = useLocation();
   const permissions = usePermissions();
   const relative = location.pathname.split("/plugins/zhao-tire")[1] || "";
   const selectedKey = relative.replace(/^\//, "").split("/")[0] || "orders";
@@ -406,9 +465,9 @@ const PluginLayout = ({ children }) => {
     icon: item.icon,
     label: item.label
   }));
-  return /* @__PURE__ */ jsxRuntime.jsxs(antd.Layout, { style: { minHeight: "calc(100vh - 70px)" }, children: [
-    /* @__PURE__ */ jsxRuntime.jsx(Sider, { width: 208, theme: "light", children: /* @__PURE__ */ jsxRuntime.jsx(
-      antd.Menu,
+  return /* @__PURE__ */ jsxs(Layout, { style: { minHeight: "calc(100vh - 70px)" }, children: [
+    /* @__PURE__ */ jsx(Sider, { width: 208, theme: "light", children: /* @__PURE__ */ jsx(
+      Menu,
       {
         mode: "inline",
         selectedKeys: [selectedKey],
@@ -417,7 +476,7 @@ const PluginLayout = ({ children }) => {
         onClick: ({ key }) => navigate(`/plugins/zhao-tire/${key}`)
       }
     ) }),
-    /* @__PURE__ */ jsxRuntime.jsx(
+    /* @__PURE__ */ jsx(
       Content,
       {
         style: {
@@ -425,9 +484,9 @@ const PluginLayout = ({ children }) => {
           background: "#F5F7FA",
           overflowX: "auto"
         },
-        children: permissions.loading ? /* @__PURE__ */ jsxRuntime.jsx("div", { style: { padding: 48, textAlign: "center" }, children: /* @__PURE__ */ jsxRuntime.jsx(antd.Spin, {}) }) : /* @__PURE__ */ jsxRuntime.jsxs(jsxRuntime.Fragment, { children: [
-          permissions.error ? /* @__PURE__ */ jsxRuntime.jsx(
-            antd.Alert,
+        children: permissions.loading ? /* @__PURE__ */ jsx("div", { style: { padding: 48, textAlign: "center" }, children: /* @__PURE__ */ jsx(Spin, {}) }) : /* @__PURE__ */ jsxs(Fragment, { children: [
+          permissions.error ? /* @__PURE__ */ jsx(
+            Alert,
             {
               type: "warning",
               showIcon: true,
@@ -450,9 +509,9 @@ var hasRequiredDayjs_min;
 function requireDayjs_min() {
   if (hasRequiredDayjs_min) return dayjs_min$1.exports;
   hasRequiredDayjs_min = 1;
-  (function(module2, exports2) {
+  (function(module, exports) {
     !(function(t, e) {
-      module2.exports = e();
+      module.exports = e();
     })(dayjs_min, (function() {
       var t = 1e3, e = 6e4, n = 36e5, r = "millisecond", i = "second", s = "minute", u = "hour", a = "day", o = "week", c = "month", f = "quarter", h = "year", d = "date", l = "Invalid Date", $ = /^(\d{4})[-/]?(\d{1,2})?[-/]?(\d{0,2})[Tt\s]*(\d{1,2})?:?(\d{1,2})?:?(\d{1,2})?[.:]?(\d+)?$/, y = /\[([^\]]+)]|YYYY|YY|M{1,4}|D{1,2}|d{1,4}|H{1,2}|h{1,2}|a|A|m{1,2}|s{1,2}|Z{1,2}|SSS/g, M = { name: "en", weekdays: "Sunday_Monday_Tuesday_Wednesday_Thursday_Friday_Saturday".split("_"), months: "January_February_March_April_May_June_July_August_September_October_November_December".split("_"), ordinal: function(t2) {
         var e2 = ["th", "st", "nd", "rd"], n2 = t2 % 100;
@@ -735,6 +794,10 @@ const STATUS_TEXT$1 = {
   accepted: "待入库",
   stored: "寄存中",
   pending_outbound: "待出库",
+  overdue: "已逾期",
+  notice: "已催告",
+  pending_disposal: "待处置",
+  disposed: "已处置",
   completed: "已完成",
   rejected: "已拒绝",
   canceled: "已取消"
@@ -744,6 +807,10 @@ const STATUS_COLOR = {
   accepted: "blue",
   stored: "green",
   pending_outbound: "cyan",
+  overdue: "orange",
+  notice: "volcano",
+  pending_disposal: "magenta",
+  disposed: "purple",
   completed: "default",
   rejected: "red",
   canceled: "default"
@@ -766,8 +833,10 @@ const PAYMENT_METHOD_TEXT = {
   wechat: "微信支付",
   store_pay: "到店支付",
   pickup_pay: "取货付款",
+  cash: "现金",
   deposit: "定金",
-  full: "全额"
+  full: "全额",
+  disposal: "处置抵扣"
 };
 const SLOT_TEXT = {
   morning: "上午",
@@ -791,7 +860,30 @@ const TIMELINE_TEXT = {
   outbound_done: "出库完成",
   renewed: "续费",
   payment: "收款登记",
-  updated: "后台修改"
+  updated: "后台修改",
+  overdue: "转入逾期",
+  overdue_settled: "逾期结算",
+  overdue_deducted: "逾期费减免",
+  notice: "发送催告",
+  notice_proof: "补传催告凭证",
+  pending_disposal: "转入待处置",
+  disposed: "处置登记",
+  hold_claimed: "挂账申领"
+};
+const DISPOSAL_METHOD_TEXT = {
+  discount: "折价",
+  sale: "变卖",
+  scrap: "报废"
+};
+const HOLD_STATUS_TEXT = {
+  held: "挂账中",
+  claimed: "已申领",
+  expired: "已过期"
+};
+const HOLD_STATUS_COLOR = {
+  held: "orange",
+  claimed: "green",
+  expired: "default"
 };
 const SMS_TYPE_TEXT = {
   order_created: "下单成功",
@@ -844,11 +936,11 @@ const linesToArray = (text) => String(text || "").split("\n").map((line) => line
 const StatusTag = ({ status, prefix }) => {
   const key = String(status || "");
   const color = STATUS_COLOR[key];
-  return /* @__PURE__ */ jsxRuntime.jsx(antd.Tag, { color, bordered: color !== "default", children: prefix ? `${prefix}${STATUS_TEXT$1[key] || key || "-"}` : STATUS_TEXT$1[key] || key || "-" });
+  return /* @__PURE__ */ jsx(Tag, { color, bordered: color !== "default", children: prefix ? `${prefix}${STATUS_TEXT$1[key] || key || "-"}` : STATUS_TEXT$1[key] || key || "-" });
 };
 const PhotoUploader = ({ max = 6, disabled, onChange }) => {
-  const [fileList, setFileList] = react.useState([]);
-  const [preview, setPreview] = react.useState("");
+  const [fileList, setFileList] = useState([]);
+  const [preview, setPreview] = useState("");
   const handleChange = ({ fileList: next }) => {
     const limited = (next || []).slice(0, max).map((item) => ({
       ...item,
@@ -858,9 +950,9 @@ const PhotoUploader = ({ max = 6, disabled, onChange }) => {
     const files = limited.map((item) => item.originFileObj).filter(Boolean);
     onChange?.(files);
   };
-  return /* @__PURE__ */ jsxRuntime.jsxs(jsxRuntime.Fragment, { children: [
-    /* @__PURE__ */ jsxRuntime.jsx(
-      antd.Upload,
+  return /* @__PURE__ */ jsxs(Fragment, { children: [
+    /* @__PURE__ */ jsx(
+      Upload,
       {
         accept: "image/*",
         multiple: true,
@@ -871,76 +963,77 @@ const PhotoUploader = ({ max = 6, disabled, onChange }) => {
         beforeUpload: () => false,
         onChange: handleChange,
         onPreview: (file) => setPreview(file.thumbUrl || file.url || ""),
-        children: fileList.length >= max ? null : /* @__PURE__ */ jsxRuntime.jsxs("div", { children: [
-          /* @__PURE__ */ jsxRuntime.jsx(icons.PlusOutlined, {}),
-          /* @__PURE__ */ jsxRuntime.jsx("div", { style: { marginTop: 6, fontSize: 12 }, children: "上传照片" })
+        children: fileList.length >= max ? null : /* @__PURE__ */ jsxs("div", { children: [
+          /* @__PURE__ */ jsx(PlusOutlined, {}),
+          /* @__PURE__ */ jsx("div", { style: { marginTop: 6, fontSize: 12 }, children: "上传照片" })
         ] })
       }
     ),
-    /* @__PURE__ */ jsxRuntime.jsxs(antd.Typography.Text, { type: "secondary", style: { fontSize: 12 }, children: [
+    /* @__PURE__ */ jsxs(Typography.Text, { type: "secondary", style: { fontSize: 12 }, children: [
       "最多 ",
       max,
       " 张，支持 JPG/PNG；提交时随表单一起上传。"
     ] }),
-    /* @__PURE__ */ jsxRuntime.jsx(
-      antd.Modal,
+    /* @__PURE__ */ jsx(
+      Modal,
       {
         open: !!preview,
         footer: null,
         onCancel: () => setPreview(""),
         width: 720,
-        children: preview ? /* @__PURE__ */ jsxRuntime.jsx("img", { src: preview, style: { width: "100%" }, alt: "预览" }) : null
+        children: preview ? /* @__PURE__ */ jsx("img", { src: preview, style: { width: "100%" }, alt: "预览" }) : null
       }
     )
   ] });
 };
 const MediaPicker = ({ value, onChange, disabled, hint }) => {
   const { uploadImage } = useTireApi();
-  const [uploading, setUploading] = react.useState(false);
+  const [uploading, setUploading] = useState(false);
   const beforeUpload = async (file) => {
     setUploading(true);
     try {
       const uploaded = await uploadImage(file);
       if (!uploaded.id) throw new Error("上传返回的图片 id 为空");
       onChange?.({ id: uploaded.id, url: uploaded.url });
-      antd.message.success("图片已上传");
+      message.success("图片已上传");
     } catch (error) {
-      antd.message.error(`上传失败：${errorMessage(error)}`);
+      message.error(`上传失败：${errorMessage(error)}`);
     } finally {
       setUploading(false);
     }
-    return antd.Upload.LIST_IGNORE;
+    return Upload.LIST_IGNORE;
   };
-  return /* @__PURE__ */ jsxRuntime.jsxs(antd.Space, { direction: "vertical", size: 8, style: { width: "100%" }, children: [
-    value?.url ? /* @__PURE__ */ jsxRuntime.jsxs(antd.Space, { align: "start", children: [
-      /* @__PURE__ */ jsxRuntime.jsx(antd.Image, { src: value.url, width: 96, height: 96, style: { objectFit: "cover" } }),
-      !disabled ? /* @__PURE__ */ jsxRuntime.jsx(
-        antd.Button,
+  return /* @__PURE__ */ jsxs(Space, { direction: "vertical", size: 8, style: { width: "100%" }, children: [
+    value?.url ? /* @__PURE__ */ jsxs(Space, { align: "start", children: [
+      /* @__PURE__ */ jsx(Image, { src: value.url, width: 96, height: 96, style: { objectFit: "cover" } }),
+      !disabled ? /* @__PURE__ */ jsx(
+        Button,
         {
           size: "small",
           danger: true,
-          icon: /* @__PURE__ */ jsxRuntime.jsx(icons.DeleteOutlined, {}),
+          icon: /* @__PURE__ */ jsx(DeleteOutlined, {}),
           onClick: () => onChange?.(null),
           children: "移除"
         }
       ) : null
     ] }) : null,
-    !disabled ? /* @__PURE__ */ jsxRuntime.jsx(
-      antd.Upload,
+    !disabled ? /* @__PURE__ */ jsx(
+      Upload,
       {
         accept: "image/*",
         showUploadList: false,
         beforeUpload,
         disabled: uploading,
-        children: /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { icon: /* @__PURE__ */ jsxRuntime.jsx(icons.UploadOutlined, {}), loading: uploading, children: "选择图片" })
+        children: /* @__PURE__ */ jsx(Button, { icon: /* @__PURE__ */ jsx(UploadOutlined, {}), loading: uploading, children: "选择图片" })
       }
     ) : null,
-    hint ? /* @__PURE__ */ jsxRuntime.jsx(antd.Typography.Text, { type: "secondary", style: { fontSize: 12 }, children: hint }) : null
+    hint ? /* @__PURE__ */ jsx(Typography.Text, { type: "secondary", style: { fontSize: 12 }, children: hint }) : null
   ] });
 };
-const { RangePicker } = antd.DatePicker;
-const { CheckableTag } = antd.Tag;
-const { Text: Text$6 } = antd.Typography;
+const { RangePicker } = DatePicker;
+const { CheckableTag } = Tag;
+const { Text: Text$7 } = Typography;
+const pendingRenewalsOf = (order) => Array.isArray(order?.renewals) ? order.renewals.map((item, index) => ({ ...item, index })).filter((item) => item?.status === "pending") : [];
 const STATUS_FILTERS = [
   { value: "", label: "全部" },
   ...Object.keys(STATUS_TEXT$1).map((key) => ({
@@ -959,7 +1052,8 @@ const ACTION_TITLE = {
   edit: "修改订单",
   reject: "拒绝订单",
   "reject-outbound": "驳回出库申请",
-  payment: "收款登记"
+  payment: "收款登记",
+  "renew-confirm": "确认续费"
 };
 const ACTION_CONFIRM = {
   inbound: "确认入库",
@@ -967,7 +1061,8 @@ const ACTION_CONFIRM = {
   edit: "保存修改",
   reject: "确认拒绝",
   "reject-outbound": "确认驳回",
-  payment: "登记收款"
+  payment: "登记收款",
+  "renew-confirm": "确认续费"
 };
 const OrderActionDrawer = ({
   action,
@@ -976,19 +1071,40 @@ const OrderActionDrawer = ({
 }) => {
   const { type, order } = action;
   const api = useTireApi();
-  const [form] = antd.Form.useForm();
-  const [photos, setPhotos] = react.useState([]);
-  const [locationCode, setLocationCode] = react.useState(order.locationCode || "");
-  const [reason, setReason] = react.useState("");
-  const [amountYuan, setAmountYuan] = react.useState(
+  const [form] = Form.useForm();
+  const [photos, setPhotos] = useState([]);
+  const [locationCode, setLocationCode] = useState(order.locationCode || "");
+  const [reason, setReason] = useState("");
+  const [amountYuan, setAmountYuan] = useState(
     Math.max(0, ((order.amountTotal || 0) - (order.paidAmount || 0)) / 100)
   );
-  const [paymentMethod, setPaymentMethod] = react.useState(
+  const [paymentMethod, setPaymentMethod] = useState(
     order.paymentMethod || "store_pay"
   );
-  const [redemptionCode, setRedemptionCode] = react.useState("");
-  const [submitting, setSubmitting] = react.useState(false);
-  react.useEffect(() => {
+  const [redemptionCode, setRedemptionCode] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [confirmingIndex, setConfirmingIndex] = useState(null);
+  const pendingRenewals = pendingRenewalsOf(order);
+  const confirmRenewal = async (index) => {
+    setConfirmingIndex(index);
+    try {
+      const result = await api.orderAction(order.id, "renew/confirm", {
+        index
+      });
+      message.success(
+        `续费已确认：到期日 ${dateText(
+          result?.previousExpireAt
+        )} → ${dateText(result?.expireAt)}`
+      );
+      onDone();
+      onClose();
+    } catch (error) {
+      message.error(`确认续费失败：${errorMessage(error)}`);
+    } finally {
+      setConfirmingIndex(null);
+    }
+  };
+  useEffect(() => {
     if (type !== "edit") return;
     form.setFieldsValue({
       customerName: order.customerName,
@@ -1011,57 +1127,57 @@ const OrderActionDrawer = ({
     try {
       if (type === "inbound") {
         if (!locationCode.trim()) {
-          antd.message.warning("请填写仓位编号");
+          message.warning("请填写仓位编号");
           return;
         }
         if (photos.length === 0) {
-          antd.message.warning("请至少上传一张入库照片");
+          message.warning("请至少上传一张入库照片");
           return;
         }
         await api.submitOrderPhotos(order.id, "inbound", photos, {
           locationCode: locationCode.trim()
         });
-        antd.message.success("入库成功");
+        message.success("入库成功");
       } else if (type === "outbound") {
         if (photos.length === 0) {
-          antd.message.warning("请至少上传一张出库照片");
+          message.warning("请至少上传一张出库照片");
           return;
         }
         if (!redemptionCode.trim()) {
-          antd.message.warning("请扫描或输入客户的出库核销码");
+          message.warning("请扫描或输入客户的出库核销码");
           return;
         }
         await api.submitOrderPhotos(order.id, "outbound", photos, {
           redemptionCode: redemptionCode.trim()
         });
-        antd.message.success("出库成功，核销码已失效");
+        message.success("出库成功，核销码已失效");
       } else if (type === "reject") {
         if (!reason.trim()) {
-          antd.message.warning("请填写拒绝原因");
+          message.warning("请填写拒绝原因");
           return;
         }
         await api.orderAction(order.id, "reject", { reason: reason.trim() });
-        antd.message.success("已拒绝订单");
+        message.success("已拒绝订单");
       } else if (type === "reject-outbound") {
         if (!reason.trim()) {
-          antd.message.warning("请填写驳回原因");
+          message.warning("请填写驳回原因");
           return;
         }
         await api.orderAction(order.id, "reject-outbound", {
           reason: reason.trim()
         });
-        antd.message.success("已驳回出库申请");
+        message.success("已驳回出库申请");
       } else if (type === "payment") {
         const amount = yuanToCents(amountYuan);
         if (amount <= 0) {
-          antd.message.warning("收款金额必须大于 0");
+          message.warning("收款金额必须大于 0");
           return;
         }
         await api.orderAction(order.id, "payment", {
           amount,
           paymentMethod
         });
-        antd.message.success("收款已登记");
+        message.success("收款已登记");
       } else if (type === "edit") {
         const values = await form.validateFields();
         const payload = {
@@ -1090,31 +1206,31 @@ const OrderActionDrawer = ({
           );
         }
         await api.updateOrder(order.id, payload);
-        antd.message.success("订单已更新");
+        message.success("订单已更新");
       }
       onDone();
       onClose();
     } catch (error) {
-      antd.message.error(`操作失败：${errorMessage(error)}`);
+      message.error(`操作失败：${errorMessage(error)}`);
     } finally {
       setSubmitting(false);
     }
   };
-  return /* @__PURE__ */ jsxRuntime.jsxs(
-    antd.Drawer,
+  return /* @__PURE__ */ jsxs(
+    Drawer,
     {
       title: `${ACTION_TITLE[type]} · ${order.orderNo}`,
       open: true,
       width: type === "edit" ? 560 : 480,
       onClose,
       styles: { body: { padding: 24 } },
-      footer: /* @__PURE__ */ jsxRuntime.jsxs(antd.Space, { style: { float: "right" }, children: [
-        /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { onClick: onClose, children: "取消" }),
-        /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { type: "primary", loading: submitting, onClick: submit, children: ACTION_CONFIRM[type] })
+      footer: type === "renew-confirm" ? /* @__PURE__ */ jsx(Button, { onClick: onClose, children: "关闭" }) : /* @__PURE__ */ jsxs(Space, { style: { float: "right" }, children: [
+        /* @__PURE__ */ jsx(Button, { onClick: onClose, children: "取消" }),
+        /* @__PURE__ */ jsx(Button, { type: "primary", loading: submitting, onClick: submit, children: ACTION_CONFIRM[type] })
       ] }),
       children: [
-        type === "inbound" || type === "outbound" ? /* @__PURE__ */ jsxRuntime.jsxs(antd.Space, { direction: "vertical", size: 16, style: { width: "100%" }, children: [
-          /* @__PURE__ */ jsxRuntime.jsxs("div", { children: [
+        type === "inbound" || type === "outbound" ? /* @__PURE__ */ jsxs(Space, { direction: "vertical", size: 16, style: { width: "100%" }, children: [
+          /* @__PURE__ */ jsxs("div", { children: [
             "客户：",
             order.customerName,
             "（",
@@ -1122,10 +1238,10 @@ const OrderActionDrawer = ({
             "），车牌 ",
             order.plateNo || "-"
           ] }),
-          type === "inbound" ? /* @__PURE__ */ jsxRuntime.jsxs("div", { children: [
-            /* @__PURE__ */ jsxRuntime.jsx("div", { style: { marginBottom: 8 }, children: "仓位编号" }),
-            /* @__PURE__ */ jsxRuntime.jsx(
-              antd.Input,
+          type === "inbound" ? /* @__PURE__ */ jsxs("div", { children: [
+            /* @__PURE__ */ jsx("div", { style: { marginBottom: 8 }, children: "仓位编号" }),
+            /* @__PURE__ */ jsx(
+              Input,
               {
                 value: locationCode,
                 onChange: (event) => setLocationCode(event.target.value),
@@ -1133,10 +1249,10 @@ const OrderActionDrawer = ({
                 maxLength: 32
               }
             )
-          ] }) : /* @__PURE__ */ jsxRuntime.jsxs("div", { children: [
-            /* @__PURE__ */ jsxRuntime.jsx("div", { style: { marginBottom: 8 }, children: "出库核销码" }),
-            /* @__PURE__ */ jsxRuntime.jsx(
-              antd.Input,
+          ] }) : /* @__PURE__ */ jsxs("div", { children: [
+            /* @__PURE__ */ jsx("div", { style: { marginBottom: 8 }, children: "出库核销码" }),
+            /* @__PURE__ */ jsx(
+              Input,
               {
                 value: redemptionCode,
                 onChange: (event) => setRedemptionCode(event.target.value),
@@ -1145,7 +1261,7 @@ const OrderActionDrawer = ({
                 status: order.paymentStatus !== "paid" ? "warning" : void 0
               }
             ),
-            order.paymentStatus !== "paid" ? /* @__PURE__ */ jsxRuntime.jsxs(Text$6, { type: "danger", style: { fontSize: 12 }, children: [
+            order.paymentStatus !== "paid" ? /* @__PURE__ */ jsxs(Text$7, { type: "danger", style: { fontSize: 12 }, children: [
               "该订单尚未结清（应收 ",
               money$1(order.amountTotal),
               "，已收 ",
@@ -1153,15 +1269,15 @@ const OrderActionDrawer = ({
               "），需先收款后才能出库。"
             ] }) : null
           ] }),
-          /* @__PURE__ */ jsxRuntime.jsxs("div", { children: [
-            /* @__PURE__ */ jsxRuntime.jsx("div", { style: { marginBottom: 8 }, children: type === "inbound" ? "入库照片" : "出库照片" }),
-            /* @__PURE__ */ jsxRuntime.jsx(PhotoUploader, { max: 4, onChange: setPhotos })
+          /* @__PURE__ */ jsxs("div", { children: [
+            /* @__PURE__ */ jsx("div", { style: { marginBottom: 8 }, children: type === "inbound" ? "入库照片" : "出库照片" }),
+            /* @__PURE__ */ jsx(PhotoUploader, { max: 4, onChange: setPhotos })
           ] })
         ] }) : null,
-        type === "reject" || type === "reject-outbound" ? /* @__PURE__ */ jsxRuntime.jsxs(antd.Space, { direction: "vertical", size: 12, style: { width: "100%" }, children: [
-          /* @__PURE__ */ jsxRuntime.jsx(Text$6, { type: "secondary", children: type === "reject" ? "拒绝后订单状态变为「已拒绝」。" : "驳回后客户可重新提交出库申请。" }),
-          /* @__PURE__ */ jsxRuntime.jsx(
-            antd.Input.TextArea,
+        type === "reject" || type === "reject-outbound" ? /* @__PURE__ */ jsxs(Space, { direction: "vertical", size: 12, style: { width: "100%" }, children: [
+          /* @__PURE__ */ jsx(Text$7, { type: "secondary", children: type === "reject" ? "拒绝后订单状态变为「已拒绝」。" : "驳回后客户可重新提交出库申请。" }),
+          /* @__PURE__ */ jsx(
+            Input.TextArea,
             {
               rows: 4,
               value: reason,
@@ -1170,8 +1286,8 @@ const OrderActionDrawer = ({
             }
           )
         ] }) : null,
-        type === "payment" ? /* @__PURE__ */ jsxRuntime.jsxs(antd.Space, { direction: "vertical", size: 16, style: { width: "100%" }, children: [
-          /* @__PURE__ */ jsxRuntime.jsxs("div", { children: [
+        type === "payment" ? /* @__PURE__ */ jsxs(Space, { direction: "vertical", size: 16, style: { width: "100%" }, children: [
+          /* @__PURE__ */ jsxs("div", { children: [
             "订单总额 ",
             money$1(order.amountTotal),
             "，已收 ",
@@ -1180,10 +1296,10 @@ const OrderActionDrawer = ({
             " ",
             money$1(Math.max(0, (order.amountTotal || 0) - (order.paidAmount || 0)))
           ] }),
-          /* @__PURE__ */ jsxRuntime.jsxs("div", { children: [
-            /* @__PURE__ */ jsxRuntime.jsx("div", { style: { marginBottom: 8 }, children: "收款金额（元）" }),
-            /* @__PURE__ */ jsxRuntime.jsx(
-              antd.InputNumber,
+          /* @__PURE__ */ jsxs("div", { children: [
+            /* @__PURE__ */ jsx("div", { style: { marginBottom: 8 }, children: "收款金额（元）" }),
+            /* @__PURE__ */ jsx(
+              InputNumber,
               {
                 min: 0,
                 precision: 2,
@@ -1194,10 +1310,10 @@ const OrderActionDrawer = ({
               }
             )
           ] }),
-          /* @__PURE__ */ jsxRuntime.jsxs("div", { children: [
-            /* @__PURE__ */ jsxRuntime.jsx("div", { style: { marginBottom: 8 }, children: "支付方式" }),
-            /* @__PURE__ */ jsxRuntime.jsx(
-              antd.Select,
+          /* @__PURE__ */ jsxs("div", { children: [
+            /* @__PURE__ */ jsx("div", { style: { marginBottom: 8 }, children: "支付方式" }),
+            /* @__PURE__ */ jsx(
+              Select,
               {
                 value: paymentMethod,
                 onChange: setPaymentMethod,
@@ -1210,18 +1326,69 @@ const OrderActionDrawer = ({
             )
           ] })
         ] }) : null,
-        type === "edit" ? /* @__PURE__ */ jsxRuntime.jsxs(antd.Form, { form, layout: "vertical", children: [
-          /* @__PURE__ */ jsxRuntime.jsx(
-            antd.Form.Item,
+        type === "renew-confirm" ? pendingRenewals.length === 0 ? /* @__PURE__ */ jsx(Text$7, { type: "secondary", children: "当前没有待确认的续费申请。" }) : /* @__PURE__ */ jsxs(Space, { direction: "vertical", size: 16, style: { width: "100%" }, children: [
+          /* @__PURE__ */ jsx(Text$7, { type: "secondary", children: "客户在 H5 提交续费后需门店确认收款；确认后到期日立即顺延，并通知客户。" }),
+          pendingRenewals.map((item) => /* @__PURE__ */ jsxs(
+            Card,
+            {
+              size: "small",
+              title: `续费申请 · 提交于 ${dateTimeText(item.requestedAt)}`,
+              children: [
+                /* @__PURE__ */ jsxs(Descriptions, { column: 2, size: "small", children: [
+                  /* @__PURE__ */ jsxs(Descriptions.Item, { label: "续费月数", children: [
+                    item.months,
+                    " 个月"
+                  ] }),
+                  /* @__PURE__ */ jsx(Descriptions.Item, { label: "应收金额", children: money$1(item.amount) }),
+                  /* @__PURE__ */ jsx(Descriptions.Item, { label: "操作来源", children: item.source || "-" }),
+                  /* @__PURE__ */ jsx(Descriptions.Item, { label: "提交时间", children: dateTimeText(item.requestedAt) }),
+                  /* @__PURE__ */ jsx(Descriptions.Item, { label: "当前到期日", children: dateText(order.expireAt) }),
+                  /* @__PURE__ */ jsx(Descriptions.Item, { label: "顺延后到期日", children: dateText(item.expectedExpireAt) })
+                ] }),
+                /* @__PURE__ */ jsx(
+                  Popconfirm,
+                  {
+                    title: "确认已收款并顺延到期日？",
+                    description: `续费 ${item.months} 个月（${money$1(
+                      item.amount
+                    )}），确认后到期日顺延至 ${dateText(
+                      item.expectedExpireAt
+                    )}，客户将收到通知。`,
+                    okText: "确认续费",
+                    cancelText: "取消",
+                    onConfirm: () => confirmRenewal(item.index),
+                    children: /* @__PURE__ */ jsxs(
+                      Button,
+                      {
+                        type: "primary",
+                        size: "small",
+                        loading: confirmingIndex === item.index,
+                        children: [
+                          "确认续费（",
+                          money$1(item.amount),
+                          "）"
+                        ]
+                      }
+                    )
+                  }
+                )
+              ]
+            },
+            item.index
+          ))
+        ] }) : null,
+        type === "edit" ? /* @__PURE__ */ jsxs(Form, { form, layout: "vertical", children: [
+          /* @__PURE__ */ jsx(
+            Form.Item,
             {
               name: "customerName",
               label: "客户姓名",
               rules: [{ required: true, message: "请填写客户姓名" }],
-              children: /* @__PURE__ */ jsxRuntime.jsx(antd.Input, {})
+              children: /* @__PURE__ */ jsx(Input, {})
             }
           ),
-          /* @__PURE__ */ jsxRuntime.jsx(
-            antd.Form.Item,
+          /* @__PURE__ */ jsx(
+            Form.Item,
             {
               name: "phone",
               label: "手机号",
@@ -1229,12 +1396,12 @@ const OrderActionDrawer = ({
                 { required: true, message: "请填写手机号" },
                 { pattern: /^1[3-9]\d{9}$/, message: "手机号格式不正确" }
               ],
-              children: /* @__PURE__ */ jsxRuntime.jsx(antd.Input, { maxLength: 11 })
+              children: /* @__PURE__ */ jsx(Input, { maxLength: 11 })
             }
           ),
-          /* @__PURE__ */ jsxRuntime.jsx(antd.Form.Item, { name: "plateNo", label: "车牌号", children: /* @__PURE__ */ jsxRuntime.jsx(antd.Input, {}) }),
-          /* @__PURE__ */ jsxRuntime.jsx(antd.Form.Item, { name: "carType", label: "车型", children: /* @__PURE__ */ jsxRuntime.jsx(
-            antd.Select,
+          /* @__PURE__ */ jsx(Form.Item, { name: "plateNo", label: "车牌号", children: /* @__PURE__ */ jsx(Input, {}) }),
+          /* @__PURE__ */ jsx(Form.Item, { name: "carType", label: "车型", children: /* @__PURE__ */ jsx(
+            Select,
             {
               options: Object.keys(CAR_TEXT).map((value) => ({
                 value,
@@ -1242,10 +1409,10 @@ const OrderActionDrawer = ({
               }))
             }
           ) }),
-          /* @__PURE__ */ jsxRuntime.jsx(antd.Form.Item, { name: "tireSpec", label: "轮胎规格", children: /* @__PURE__ */ jsxRuntime.jsx(antd.Input, {}) }),
-          /* @__PURE__ */ jsxRuntime.jsx(antd.Form.Item, { name: "withWheelRim", label: "带轮毂", valuePropName: "checked", children: /* @__PURE__ */ jsxRuntime.jsx(antd.Switch, {}) }),
-          /* @__PURE__ */ jsxRuntime.jsx(antd.Form.Item, { name: "serviceType", label: "服务类型", children: /* @__PURE__ */ jsxRuntime.jsx(
-            antd.Select,
+          /* @__PURE__ */ jsx(Form.Item, { name: "tireSpec", label: "轮胎规格", children: /* @__PURE__ */ jsx(Input, {}) }),
+          /* @__PURE__ */ jsx(Form.Item, { name: "withWheelRim", label: "带轮毂", valuePropName: "checked", children: /* @__PURE__ */ jsx(Switch, {}) }),
+          /* @__PURE__ */ jsx(Form.Item, { name: "serviceType", label: "服务类型", children: /* @__PURE__ */ jsx(
+            Select,
             {
               options: Object.keys(SERVICE_TEXT).map((value) => ({
                 value,
@@ -1253,9 +1420,9 @@ const OrderActionDrawer = ({
               }))
             }
           ) }),
-          /* @__PURE__ */ jsxRuntime.jsx(antd.Form.Item, { name: "pickupDate", label: "上门日期", children: /* @__PURE__ */ jsxRuntime.jsx(antd.DatePicker, { style: { width: "100%" } }) }),
-          /* @__PURE__ */ jsxRuntime.jsx(antd.Form.Item, { name: "pickupSlot", label: "上门时段", children: /* @__PURE__ */ jsxRuntime.jsx(
-            antd.Select,
+          /* @__PURE__ */ jsx(Form.Item, { name: "pickupDate", label: "上门日期", children: /* @__PURE__ */ jsx(DatePicker, { style: { width: "100%" } }) }),
+          /* @__PURE__ */ jsx(Form.Item, { name: "pickupSlot", label: "上门时段", children: /* @__PURE__ */ jsx(
+            Select,
             {
               allowClear: true,
               options: Object.keys(SLOT_TEXT).map((value) => ({
@@ -1264,10 +1431,10 @@ const OrderActionDrawer = ({
               }))
             }
           ) }),
-          /* @__PURE__ */ jsxRuntime.jsx(antd.Form.Item, { name: "storageStartDate", label: "寄存开始日", children: /* @__PURE__ */ jsxRuntime.jsx(antd.DatePicker, { style: { width: "100%" } }) }),
-          /* @__PURE__ */ jsxRuntime.jsx(antd.Form.Item, { name: "expectedReturnDate", label: "预计取回日", children: /* @__PURE__ */ jsxRuntime.jsx(antd.DatePicker, { style: { width: "100%" } }) }),
-          /* @__PURE__ */ jsxRuntime.jsx(antd.Form.Item, { name: "locationCode", label: "仓位编号", children: /* @__PURE__ */ jsxRuntime.jsx(antd.Input, {}) }),
-          /* @__PURE__ */ jsxRuntime.jsx(antd.Form.Item, { name: "note", label: "备注", children: /* @__PURE__ */ jsxRuntime.jsx(antd.Input.TextArea, { rows: 3 }) })
+          /* @__PURE__ */ jsx(Form.Item, { name: "storageStartDate", label: "寄存开始日", children: /* @__PURE__ */ jsx(DatePicker, { style: { width: "100%" } }) }),
+          /* @__PURE__ */ jsx(Form.Item, { name: "expectedReturnDate", label: "预计取回日", children: /* @__PURE__ */ jsx(DatePicker, { style: { width: "100%" } }) }),
+          /* @__PURE__ */ jsx(Form.Item, { name: "locationCode", label: "仓位编号", children: /* @__PURE__ */ jsx(Input, {}) }),
+          /* @__PURE__ */ jsx(Form.Item, { name: "note", label: "备注", children: /* @__PURE__ */ jsx(Input.TextArea, { rows: 3 }) })
         ] }) : null
       ]
     }
@@ -1276,16 +1443,16 @@ const OrderActionDrawer = ({
 const OrdersPage = () => {
   const api = useTireApi();
   const { canFull, canStorage } = usePermissions();
-  const [filters, setFilters] = react.useState({});
-  const [page, setPage] = react.useState(1);
-  const [pageSize, setPageSize] = react.useState(20);
-  const [rows, setRows] = react.useState([]);
-  const [total, setTotal] = react.useState(0);
-  const [loading, setLoading] = react.useState(false);
-  const [detail, setDetail] = react.useState(null);
-  const [detailOpen, setDetailOpen] = react.useState(false);
-  const [detailLoading, setDetailLoading] = react.useState(false);
-  const [action, setAction] = react.useState(null);
+  const [filters, setFilters] = useState({});
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const [rows, setRows] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [detail, setDetail] = useState(null);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [action, setAction] = useState(null);
   const loadOrders = async () => {
     setLoading(true);
     try {
@@ -1293,12 +1460,12 @@ const OrdersPage = () => {
       setRows(result?.data || []);
       setTotal(Number(result?.pagination?.total) || 0);
     } catch (error) {
-      antd.message.error(`加载订单失败：${errorMessage(error)}`);
+      message.error(`加载订单失败：${errorMessage(error)}`);
     } finally {
       setLoading(false);
     }
   };
-  react.useEffect(() => {
+  useEffect(() => {
     loadOrders();
   }, [
     page,
@@ -1315,7 +1482,7 @@ const OrdersPage = () => {
     try {
       setDetail(await api.getOrder(order.id));
     } catch (error) {
-      antd.message.error(`加载订单详情失败：${errorMessage(error)}`);
+      message.error(`加载订单详情失败：${errorMessage(error)}`);
     } finally {
       setDetailLoading(false);
     }
@@ -1329,11 +1496,11 @@ const OrdersPage = () => {
   const runAction = async (record, actionName, body = {}, success = "操作成功") => {
     try {
       await api.orderAction(record.id, actionName, body);
-      antd.message.success(success);
+      message.success(success);
       await loadOrders();
       if (detailOpen && detail?.id === record.id) await refreshDetail(record);
     } catch (error) {
-      antd.message.error(`操作失败：${errorMessage(error)}`);
+      message.error(`操作失败：${errorMessage(error)}`);
     }
   };
   const handleExport = async () => {
@@ -1345,7 +1512,7 @@ const OrdersPage = () => {
       link.click();
       URL.revokeObjectURL(link.href);
     } catch (error) {
-      antd.message.error(`导出失败：${errorMessage(error)}`);
+      message.error(`导出失败：${errorMessage(error)}`);
     }
   };
   const handleDone = async () => {
@@ -1362,14 +1529,14 @@ const OrdersPage = () => {
       title: "订单号",
       dataIndex: "orderNo",
       width: 150,
-      render: (value, record) => /* @__PURE__ */ jsxRuntime.jsx("a", { onClick: () => openDetail(record), children: value })
+      render: (value, record) => /* @__PURE__ */ jsx("a", { onClick: () => openDetail(record), children: value })
     },
     {
       title: "客户",
       width: 170,
-      render: (_, record) => /* @__PURE__ */ jsxRuntime.jsxs("div", { children: [
-        /* @__PURE__ */ jsxRuntime.jsx("div", { children: record.customerName }),
-        /* @__PURE__ */ jsxRuntime.jsx(Text$6, { type: "secondary", children: record.phone })
+      render: (_, record) => /* @__PURE__ */ jsxs("div", { children: [
+        /* @__PURE__ */ jsx("div", { children: record.customerName }),
+        /* @__PURE__ */ jsx(Text$7, { type: "secondary", children: record.phone })
       ] })
     },
     {
@@ -1388,9 +1555,10 @@ const OrdersPage = () => {
       title: "状态",
       dataIndex: "status",
       width: 110,
-      render: (value, record) => /* @__PURE__ */ jsxRuntime.jsxs(antd.Space, { direction: "vertical", size: 0, children: [
-        /* @__PURE__ */ jsxRuntime.jsx(StatusTag, { status: value }),
-        record.status === "stored" && record.outboundRequestStatus === "pending" ? /* @__PURE__ */ jsxRuntime.jsx(Text$6, { style: { fontSize: 12, color: "#E0523F" }, children: "出库申请待审" }) : null
+      render: (value, record) => /* @__PURE__ */ jsxs(Space, { direction: "vertical", size: 0, children: [
+        /* @__PURE__ */ jsx(StatusTag, { status: value }),
+        record.status === "stored" && record.outboundRequestStatus === "pending" ? /* @__PURE__ */ jsx(Text$7, { style: { fontSize: 12, color: "#E0523F" }, children: "出库申请待审" }) : null,
+        pendingRenewalsOf(record).length > 0 ? /* @__PURE__ */ jsx(Text$7, { style: { fontSize: 12, color: "#E0523F" }, children: "续费待确认" }) : null
       ] })
     },
     {
@@ -1398,9 +1566,9 @@ const OrdersPage = () => {
       dataIndex: "amountTotal",
       width: 110,
       align: "right",
-      render: (value, record) => /* @__PURE__ */ jsxRuntime.jsxs(antd.Space, { direction: "vertical", size: 0, style: { alignItems: "flex-end" }, children: [
-        /* @__PURE__ */ jsxRuntime.jsx("span", { children: money$1(value) }),
-        /* @__PURE__ */ jsxRuntime.jsx(Text$6, { type: "secondary", style: { fontSize: 12 }, children: PAYMENT_TEXT[record.paymentStatus] || record.paymentStatus })
+      render: (value, record) => /* @__PURE__ */ jsxs(Space, { direction: "vertical", size: 0, style: { alignItems: "flex-end" }, children: [
+        /* @__PURE__ */ jsx("span", { children: money$1(value) }),
+        /* @__PURE__ */ jsx(Text$7, { type: "secondary", style: { fontSize: 12 }, children: PAYMENT_TEXT[record.paymentStatus] || record.paymentStatus })
       ] })
     },
     {
@@ -1409,9 +1577,9 @@ const OrdersPage = () => {
       render: (_, record) => {
         const days = daysLeft(record.expireAt);
         const isActive = record.status === "stored" || record.status === "pending_outbound";
-        return /* @__PURE__ */ jsxRuntime.jsxs(antd.Space, { direction: "vertical", size: 0, children: [
-          /* @__PURE__ */ jsxRuntime.jsx("span", { children: dateText(record.expireAt) }),
-          isActive ? /* @__PURE__ */ jsxRuntime.jsx(Text$6, { style: { fontSize: 12, color: remainingColor(days) }, children: remainingText(days) }) : null
+        return /* @__PURE__ */ jsxs(Space, { direction: "vertical", size: 0, children: [
+          /* @__PURE__ */ jsx("span", { children: dateText(record.expireAt) }),
+          isActive ? /* @__PURE__ */ jsx(Text$7, { style: { fontSize: 12, color: remainingColor(days) }, children: remainingText(days) }) : null
         ] });
       }
     },
@@ -1420,19 +1588,19 @@ const OrdersPage = () => {
       key: "actions",
       width: 260,
       fixed: "right",
-      render: (_, record) => /* @__PURE__ */ jsxRuntime.jsxs(antd.Space, { wrap: true, size: 4, children: [
-        /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { size: "small", type: "link", onClick: () => openDetail(record), children: "详情" }),
-        record.status === "pending_accept" && canFull ? /* @__PURE__ */ jsxRuntime.jsxs(jsxRuntime.Fragment, { children: [
-          /* @__PURE__ */ jsxRuntime.jsx(
-            antd.Popconfirm,
+      render: (_, record) => /* @__PURE__ */ jsxs(Space, { wrap: true, size: 4, children: [
+        /* @__PURE__ */ jsx(Button, { size: "small", type: "link", onClick: () => openDetail(record), children: "详情" }),
+        record.status === "pending_accept" && canFull ? /* @__PURE__ */ jsxs(Fragment, { children: [
+          /* @__PURE__ */ jsx(
+            Popconfirm,
             {
               title: "确认接单？",
               onConfirm: () => runAction(record, "accept", {}, "已接单"),
-              children: /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { size: "small", type: "link", children: "接单" })
+              children: /* @__PURE__ */ jsx(Button, { size: "small", type: "link", children: "接单" })
             }
           ),
-          /* @__PURE__ */ jsxRuntime.jsx(
-            antd.Button,
+          /* @__PURE__ */ jsx(
+            Button,
             {
               size: "small",
               type: "link",
@@ -1442,8 +1610,8 @@ const OrdersPage = () => {
             }
           )
         ] }) : null,
-        record.status === "accepted" && canStorage ? /* @__PURE__ */ jsxRuntime.jsx(
-          antd.Button,
+        record.status === "accepted" && canStorage ? /* @__PURE__ */ jsx(
+          Button,
           {
             size: "small",
             type: "link",
@@ -1451,17 +1619,17 @@ const OrdersPage = () => {
             children: "入库"
           }
         ) : null,
-        record.status === "stored" && record.outboundRequestStatus === "pending" && canFull ? /* @__PURE__ */ jsxRuntime.jsxs(jsxRuntime.Fragment, { children: [
-          /* @__PURE__ */ jsxRuntime.jsx(
-            antd.Popconfirm,
+        record.status === "stored" && record.outboundRequestStatus === "pending" && canFull ? /* @__PURE__ */ jsxs(Fragment, { children: [
+          /* @__PURE__ */ jsx(
+            Popconfirm,
             {
               title: "通过该出库申请？",
               onConfirm: () => runAction(record, "approve-outbound", {}, "已通过出库申请"),
-              children: /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { size: "small", type: "link", children: "通过出库" })
+              children: /* @__PURE__ */ jsx(Button, { size: "small", type: "link", children: "通过出库" })
             }
           ),
-          /* @__PURE__ */ jsxRuntime.jsx(
-            antd.Button,
+          /* @__PURE__ */ jsx(
+            Button,
             {
               size: "small",
               type: "link",
@@ -1471,8 +1639,8 @@ const OrdersPage = () => {
             }
           )
         ] }) : null,
-        record.status === "pending_outbound" && canStorage ? /* @__PURE__ */ jsxRuntime.jsx(
-          antd.Button,
+        record.status === "pending_outbound" && canStorage ? /* @__PURE__ */ jsx(
+          Button,
           {
             size: "small",
             type: "link",
@@ -1480,36 +1648,49 @@ const OrdersPage = () => {
             children: "出库"
           }
         ) : null,
-        canFull ? /* @__PURE__ */ jsxRuntime.jsxs(jsxRuntime.Fragment, { children: [
-          /* @__PURE__ */ jsxRuntime.jsx(
-            antd.Button,
+        canFull ? /* @__PURE__ */ jsxs(Fragment, { children: [
+          /* @__PURE__ */ jsx(
+            Button,
             {
               size: "small",
               type: "link",
-              icon: /* @__PURE__ */ jsxRuntime.jsx(icons.EditOutlined, {}),
+              icon: /* @__PURE__ */ jsx(EditOutlined, {}),
               onClick: () => setAction({ type: "edit", order: record }),
               children: "改单"
             }
           ),
-          /* @__PURE__ */ jsxRuntime.jsx(
-            antd.Button,
+          /* @__PURE__ */ jsx(
+            Button,
             {
               size: "small",
               type: "link",
               onClick: () => setAction({ type: "payment", order: record }),
               children: "收款"
             }
-          )
+          ),
+          pendingRenewalsOf(record).length > 0 ? /* @__PURE__ */ jsxs(
+            Button,
+            {
+              size: "small",
+              type: "link",
+              onClick: () => setAction({ type: "renew-confirm", order: record }),
+              children: [
+                "确认续费（",
+                pendingRenewalsOf(record).length,
+                "）"
+              ]
+            }
+          ) : null
         ] }) : null
       ] })
     }
   ];
   const detailPhotos = (photos) => {
     if (!photos || photos.length === 0) {
-      return /* @__PURE__ */ jsxRuntime.jsx(Text$6, { type: "secondary", children: "暂无照片" });
+      return /* @__PURE__ */ jsx(Text$7, { type: "secondary", children: "暂无照片" });
     }
-    return /* @__PURE__ */ jsxRuntime.jsx(antd.Image.PreviewGroup, { children: /* @__PURE__ */ jsxRuntime.jsx(antd.Space, { wrap: true, children: photos.map((photo) => /* @__PURE__ */ jsxRuntime.jsx(
-      antd.Image,
+    return /* @__PURE__ */ jsx(Image.PreviewGroup, { children: /* @__PURE__ */ jsx(Space, { wrap: true, children: photos.map((photo) => /* @__PURE__ */ jsx(
+      Image,
       {
         src: absoluteMediaUrl(photo.url),
         width: 88,
@@ -1519,8 +1700,8 @@ const OrdersPage = () => {
       photo.id
     )) }) });
   };
-  return /* @__PURE__ */ jsxRuntime.jsxs(jsxRuntime.Fragment, { children: [
-    /* @__PURE__ */ jsxRuntime.jsxs(
+  return /* @__PURE__ */ jsxs(Fragment, { children: [
+    /* @__PURE__ */ jsxs(
       "div",
       {
         style: {
@@ -1530,14 +1711,14 @@ const OrdersPage = () => {
           marginBottom: 16
         },
         children: [
-          /* @__PURE__ */ jsxRuntime.jsx(
-            antd.Card,
+          /* @__PURE__ */ jsx(
+            Card,
             {
               style: { width: 240, flex: "0 0 240px" },
               styles: { body: { padding: 16 } },
-              children: /* @__PURE__ */ jsxRuntime.jsxs(antd.Space, { direction: "vertical", size: 12, style: { width: "100%" }, children: [
-                /* @__PURE__ */ jsxRuntime.jsx(Text$6, { strong: true, children: "订单状态" }),
-                /* @__PURE__ */ jsxRuntime.jsx(antd.Space, { wrap: true, size: 4, children: STATUS_FILTERS.map((item) => /* @__PURE__ */ jsxRuntime.jsx(
+              children: /* @__PURE__ */ jsxs(Space, { direction: "vertical", size: 12, style: { width: "100%" }, children: [
+                /* @__PURE__ */ jsx(Text$7, { strong: true, children: "订单状态" }),
+                /* @__PURE__ */ jsx(Space, { wrap: true, size: 4, children: STATUS_FILTERS.map((item) => /* @__PURE__ */ jsx(
                   CheckableTag,
                   {
                     checked: (filters.status || "") === item.value,
@@ -1552,9 +1733,9 @@ const OrdersPage = () => {
                   },
                   item.value || "all"
                 )) }),
-                /* @__PURE__ */ jsxRuntime.jsx(Text$6, { strong: true, children: "服务类型" }),
-                /* @__PURE__ */ jsxRuntime.jsx(
-                  antd.Select,
+                /* @__PURE__ */ jsx(Text$7, { strong: true, children: "服务类型" }),
+                /* @__PURE__ */ jsx(
+                  Select,
                   {
                     allowClear: true,
                     placeholder: "全部服务",
@@ -1570,8 +1751,8 @@ const OrdersPage = () => {
                     }))
                   }
                 ),
-                /* @__PURE__ */ jsxRuntime.jsx(Text$6, { strong: true, children: "下单日期" }),
-                /* @__PURE__ */ jsxRuntime.jsx(
+                /* @__PURE__ */ jsx(Text$7, { strong: true, children: "下单日期" }),
+                /* @__PURE__ */ jsx(
                   RangePicker,
                   {
                     style: { width: "100%" },
@@ -1586,9 +1767,9 @@ const OrdersPage = () => {
                     }
                   }
                 ),
-                /* @__PURE__ */ jsxRuntime.jsx(Text$6, { strong: true, children: "关键词" }),
-                /* @__PURE__ */ jsxRuntime.jsx(
-                  antd.Input.Search,
+                /* @__PURE__ */ jsx(Text$7, { strong: true, children: "关键词" }),
+                /* @__PURE__ */ jsx(
+                  Input.Search,
                   {
                     allowClear: true,
                     placeholder: "订单号 / 手机号 / 车牌 / 姓名",
@@ -1602,15 +1783,15 @@ const OrdersPage = () => {
                     }
                   }
                 ),
-                /* @__PURE__ */ jsxRuntime.jsxs(antd.Space, { wrap: true, children: [
-                  /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { icon: /* @__PURE__ */ jsxRuntime.jsx(icons.ReloadOutlined, {}), onClick: () => loadOrders(), children: "刷新" }),
-                  canFull ? /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { icon: /* @__PURE__ */ jsxRuntime.jsx(icons.DownloadOutlined, {}), onClick: handleExport, children: "导出 Excel" }) : null
+                /* @__PURE__ */ jsxs(Space, { wrap: true, children: [
+                  /* @__PURE__ */ jsx(Button, { icon: /* @__PURE__ */ jsx(ReloadOutlined, {}), onClick: () => loadOrders(), children: "刷新" }),
+                  canFull ? /* @__PURE__ */ jsx(Button, { icon: /* @__PURE__ */ jsx(DownloadOutlined, {}), onClick: handleExport, children: "导出 Excel" }) : null
                 ] })
               ] })
             }
           ),
-          /* @__PURE__ */ jsxRuntime.jsx("div", { style: { flex: 1, minWidth: 0 }, children: /* @__PURE__ */ jsxRuntime.jsx(
-            antd.Table,
+          /* @__PURE__ */ jsx("div", { style: { flex: 1, minWidth: 0 }, children: /* @__PURE__ */ jsx(
+            Table,
             {
               rowKey: "id",
               size: "middle",
@@ -1634,8 +1815,8 @@ const OrdersPage = () => {
         ]
       }
     ),
-    /* @__PURE__ */ jsxRuntime.jsx(
-      antd.Drawer,
+    /* @__PURE__ */ jsx(
+      Drawer,
       {
         title: detail ? `订单详情 · ${detail.orderNo}` : "订单详情",
         open: detailOpen,
@@ -1643,80 +1824,127 @@ const OrdersPage = () => {
         onClose: () => setDetailOpen(false),
         loading: detailLoading,
         styles: { body: { padding: 24 } },
-        extra: detail ? /* @__PURE__ */ jsxRuntime.jsx(StatusTag, { status: detail.status }) : null,
-        children: detail ? /* @__PURE__ */ jsxRuntime.jsxs(antd.Space, { direction: "vertical", size: 20, style: { width: "100%" }, children: [
-          /* @__PURE__ */ jsxRuntime.jsxs(antd.Descriptions, { column: 2, size: "small", bordered: true, title: "客户与车辆", children: [
-            /* @__PURE__ */ jsxRuntime.jsx(antd.Descriptions.Item, { label: "客户姓名", children: detail.customerName }),
-            /* @__PURE__ */ jsxRuntime.jsx(antd.Descriptions.Item, { label: "手机号", children: detail.phone }),
-            /* @__PURE__ */ jsxRuntime.jsx(antd.Descriptions.Item, { label: "车牌号", children: detail.plateNo || "-" }),
-            /* @__PURE__ */ jsxRuntime.jsx(antd.Descriptions.Item, { label: "车型", children: CAR_TEXT[detail.carType] || detail.carType }),
-            /* @__PURE__ */ jsxRuntime.jsx(antd.Descriptions.Item, { label: "轮胎规格", children: detail.tireSpec || "-" }),
-            /* @__PURE__ */ jsxRuntime.jsx(antd.Descriptions.Item, { label: "带轮毂", children: detail.withWheelRim ? "是" : "否" })
+        extra: detail ? /* @__PURE__ */ jsx(StatusTag, { status: detail.status }) : null,
+        children: detail ? /* @__PURE__ */ jsxs(Space, { direction: "vertical", size: 20, style: { width: "100%" }, children: [
+          /* @__PURE__ */ jsxs(Descriptions, { column: 2, size: "small", bordered: true, title: "客户与车辆", children: [
+            /* @__PURE__ */ jsx(Descriptions.Item, { label: "客户姓名", children: detail.customerName }),
+            /* @__PURE__ */ jsx(Descriptions.Item, { label: "手机号", children: detail.phone }),
+            /* @__PURE__ */ jsx(Descriptions.Item, { label: "车牌号", children: detail.plateNo || "-" }),
+            /* @__PURE__ */ jsx(Descriptions.Item, { label: "车型", children: CAR_TEXT[detail.carType] || detail.carType }),
+            /* @__PURE__ */ jsx(Descriptions.Item, { label: "轮胎规格", children: detail.tireSpec || "-" }),
+            /* @__PURE__ */ jsx(Descriptions.Item, { label: "带轮毂", children: detail.withWheelRim ? "是" : "否" })
           ] }),
-          /* @__PURE__ */ jsxRuntime.jsxs(antd.Descriptions, { column: 2, size: "small", bordered: true, title: "服务与寄存", children: [
-            /* @__PURE__ */ jsxRuntime.jsx(antd.Descriptions.Item, { label: "服务类型", children: SERVICE_TEXT[detail.serviceType] || detail.serviceType }),
-            /* @__PURE__ */ jsxRuntime.jsx(antd.Descriptions.Item, { label: "取回方式", children: detail.returnMethod || "-" }),
-            /* @__PURE__ */ jsxRuntime.jsx(antd.Descriptions.Item, { label: "上门日期", children: dateText(detail.pickupDate) }),
-            /* @__PURE__ */ jsxRuntime.jsx(antd.Descriptions.Item, { label: "上门时段", children: SLOT_TEXT[detail.pickupSlot] || "-" }),
-            /* @__PURE__ */ jsxRuntime.jsx(antd.Descriptions.Item, { label: "寄存开始日", children: dateText(detail.storageStartDate) }),
-            /* @__PURE__ */ jsxRuntime.jsx(antd.Descriptions.Item, { label: "预计取回日", children: dateText(detail.expectedReturnDate) }),
-            /* @__PURE__ */ jsxRuntime.jsxs(antd.Descriptions.Item, { label: "寄存月数", children: [
+          /* @__PURE__ */ jsxs(Descriptions, { column: 2, size: "small", bordered: true, title: "服务与寄存", children: [
+            /* @__PURE__ */ jsx(Descriptions.Item, { label: "服务类型", children: SERVICE_TEXT[detail.serviceType] || detail.serviceType }),
+            /* @__PURE__ */ jsx(Descriptions.Item, { label: "取回方式", children: detail.returnMethod || "-" }),
+            /* @__PURE__ */ jsx(Descriptions.Item, { label: "上门日期", children: dateText(detail.pickupDate) }),
+            /* @__PURE__ */ jsx(Descriptions.Item, { label: "上门时段", children: SLOT_TEXT[detail.pickupSlot] || "-" }),
+            /* @__PURE__ */ jsx(Descriptions.Item, { label: "寄存开始日", children: dateText(detail.storageStartDate) }),
+            /* @__PURE__ */ jsx(Descriptions.Item, { label: "预计取回日", children: dateText(detail.expectedReturnDate) }),
+            /* @__PURE__ */ jsxs(Descriptions.Item, { label: "寄存月数", children: [
               detail.months || 0,
               " 个月"
             ] }),
-            /* @__PURE__ */ jsxRuntime.jsx(antd.Descriptions.Item, { label: "到期日", children: dateText(detail.expireAt) }),
-            /* @__PURE__ */ jsxRuntime.jsx(antd.Descriptions.Item, { label: "仓位编号", children: detail.locationCode || "-" }),
-            /* @__PURE__ */ jsxRuntime.jsx(antd.Descriptions.Item, { label: "入库时间", children: dateTimeText(detail.inboundAt) }),
-            /* @__PURE__ */ jsxRuntime.jsx(antd.Descriptions.Item, { label: "出库时间", children: dateTimeText(detail.outboundAt) }),
-            /* @__PURE__ */ jsxRuntime.jsx(antd.Descriptions.Item, { label: "出库申请", children: OUTBOUND_TEXT[detail.outboundRequestStatus] || detail.outboundRequestStatus || "-" }),
-            /* @__PURE__ */ jsxRuntime.jsx(antd.Descriptions.Item, { label: "申请时间", children: dateTimeText(detail.outboundRequestedAt) }),
-            /* @__PURE__ */ jsxRuntime.jsx(antd.Descriptions.Item, { label: "出库备注", children: detail.outboundNote || "-" })
+            /* @__PURE__ */ jsx(Descriptions.Item, { label: "到期日", children: dateText(detail.expireAt) }),
+            /* @__PURE__ */ jsx(Descriptions.Item, { label: "仓位编号", children: detail.locationCode || "-" }),
+            /* @__PURE__ */ jsx(Descriptions.Item, { label: "入库时间", children: dateTimeText(detail.inboundAt) }),
+            /* @__PURE__ */ jsx(Descriptions.Item, { label: "出库时间", children: dateTimeText(detail.outboundAt) }),
+            /* @__PURE__ */ jsx(Descriptions.Item, { label: "出库申请", children: OUTBOUND_TEXT[detail.outboundRequestStatus] || detail.outboundRequestStatus || "-" }),
+            /* @__PURE__ */ jsx(Descriptions.Item, { label: "申请时间", children: dateTimeText(detail.outboundRequestedAt) }),
+            /* @__PURE__ */ jsx(Descriptions.Item, { label: "出库备注", children: detail.outboundNote || "-" })
           ] }),
-          /* @__PURE__ */ jsxRuntime.jsxs(antd.Descriptions, { column: 2, size: "small", bordered: true, title: "费用", children: [
-            /* @__PURE__ */ jsxRuntime.jsx(antd.Descriptions.Item, { label: "套餐费", children: money$1(detail.amountPackage) }),
-            /* @__PURE__ */ jsxRuntime.jsx(antd.Descriptions.Item, { label: "增值费", children: money$1(detail.amountAddon) }),
-            /* @__PURE__ */ jsxRuntime.jsx(antd.Descriptions.Item, { label: "订单总额", children: money$1(detail.amountTotal) }),
-            /* @__PURE__ */ jsxRuntime.jsx(antd.Descriptions.Item, { label: "已收金额", children: money$1(detail.paidAmount) }),
-            /* @__PURE__ */ jsxRuntime.jsx(antd.Descriptions.Item, { label: "支付方式", children: PAYMENT_METHOD_TEXT[detail.paymentMethod] || detail.paymentMethod }),
-            /* @__PURE__ */ jsxRuntime.jsx(antd.Descriptions.Item, { label: "支付状态", children: PAYMENT_TEXT[detail.paymentStatus] || detail.paymentStatus }),
-            /* @__PURE__ */ jsxRuntime.jsx(antd.Descriptions.Item, { label: "套餐快照", span: 2, children: /* @__PURE__ */ jsxRuntime.jsx("pre", { style: { margin: 0, whiteSpace: "pre-wrap" }, children: JSON.stringify(detail.packageSnapshot || {}, null, 2) }) }),
-            /* @__PURE__ */ jsxRuntime.jsx(antd.Descriptions.Item, { label: "增值项", span: 2, children: Array.isArray(detail.addons) && detail.addons.length > 0 ? detail.addons.map((item) => `${item.name} ${money$1(item.price)}`).join("、") : "-" }),
-            /* @__PURE__ */ jsxRuntime.jsx(antd.Descriptions.Item, { label: "续费记录", span: 2, children: /* @__PURE__ */ jsxRuntime.jsx("pre", { style: { margin: 0, whiteSpace: "pre-wrap" }, children: JSON.stringify(detail.renewals || [], null, 2) }) })
+          /* @__PURE__ */ jsxs(Descriptions, { column: 2, size: "small", bordered: true, title: "费用", children: [
+            /* @__PURE__ */ jsx(Descriptions.Item, { label: "套餐费", children: money$1(detail.amountPackage) }),
+            /* @__PURE__ */ jsx(Descriptions.Item, { label: "增值费", children: money$1(detail.amountAddon) }),
+            /* @__PURE__ */ jsx(Descriptions.Item, { label: "订单总额", children: money$1(detail.amountTotal) }),
+            /* @__PURE__ */ jsx(Descriptions.Item, { label: "已收金额", children: money$1(detail.paidAmount) }),
+            /* @__PURE__ */ jsx(Descriptions.Item, { label: "支付方式", children: PAYMENT_METHOD_TEXT[detail.paymentMethod] || detail.paymentMethod }),
+            /* @__PURE__ */ jsx(Descriptions.Item, { label: "支付状态", children: PAYMENT_TEXT[detail.paymentStatus] || detail.paymentStatus }),
+            /* @__PURE__ */ jsx(Descriptions.Item, { label: "套餐快照", span: 2, children: /* @__PURE__ */ jsx("pre", { style: { margin: 0, whiteSpace: "pre-wrap" }, children: JSON.stringify(detail.packageSnapshot || {}, null, 2) }) }),
+            /* @__PURE__ */ jsx(Descriptions.Item, { label: "增值项", span: 2, children: Array.isArray(detail.addons) && detail.addons.length > 0 ? detail.addons.map((item) => `${item.name} ${money$1(item.price)}`).join("、") : "-" }),
+            /* @__PURE__ */ jsx(Descriptions.Item, { label: "续费记录", span: 2, children: Array.isArray(detail.renewals) && detail.renewals.length > 0 ? /* @__PURE__ */ jsxs(
+              Space,
+              {
+                direction: "vertical",
+                size: 8,
+                style: { width: "100%" },
+                children: [
+                  detail.renewals.map((item, index) => /* @__PURE__ */ jsxs("div", { children: [
+                    /* @__PURE__ */ jsx(
+                      Tag,
+                      {
+                        color: item.status === "pending" ? "orange" : item.status === "confirmed" ? "green" : "default",
+                        children: item.status === "pending" ? "待确认" : item.status === "confirmed" ? "已确认" : item.status || "-"
+                      }
+                    ),
+                    item.months,
+                    " 个月 · ",
+                    money$1(item.amount),
+                    " · 提交",
+                    " ",
+                    dateTimeText(item.requestedAt),
+                    item.status === "pending" ? /* @__PURE__ */ jsxs(Text$7, { type: "secondary", children: [
+                      " ",
+                      "· 顺延后 ",
+                      dateText(item.expectedExpireAt)
+                    ] }) : null,
+                    item.status === "confirmed" && item.newExpireAt ? /* @__PURE__ */ jsxs(Text$7, { type: "secondary", children: [
+                      " ",
+                      "· 已顺延至 ",
+                      dateText(item.newExpireAt)
+                    ] }) : null,
+                    item.source ? /* @__PURE__ */ jsxs(Text$7, { type: "secondary", children: [
+                      " · 来源 ",
+                      item.source
+                    ] }) : null
+                  ] }, index)),
+                  canFull && pendingRenewalsOf(detail).length > 0 ? /* @__PURE__ */ jsx(
+                    Button,
+                    {
+                      size: "small",
+                      type: "primary",
+                      onClick: () => setAction({ type: "renew-confirm", order: detail }),
+                      children: "去确认续费"
+                    }
+                  ) : null
+                ]
+              }
+            ) : /* @__PURE__ */ jsx(Text$7, { type: "secondary", children: "暂无续费记录" }) })
           ] }),
-          /* @__PURE__ */ jsxRuntime.jsx(antd.Card, { size: "small", title: "入库照片", children: detailPhotos(detail.inboundPhotos) }),
-          /* @__PURE__ */ jsxRuntime.jsx(antd.Card, { size: "small", title: "出库照片", children: detailPhotos(detail.outboundPhotos) }),
-          /* @__PURE__ */ jsxRuntime.jsx(antd.Card, { size: "small", title: "操作记录", children: Array.isArray(detail.timeline) && detail.timeline.length > 0 ? /* @__PURE__ */ jsxRuntime.jsx(
-            antd.Timeline,
+          /* @__PURE__ */ jsx(Card, { size: "small", title: "入库照片", children: detailPhotos(detail.inboundPhotos) }),
+          /* @__PURE__ */ jsx(Card, { size: "small", title: "出库照片", children: detailPhotos(detail.outboundPhotos) }),
+          /* @__PURE__ */ jsx(Card, { size: "small", title: "操作记录", children: Array.isArray(detail.timeline) && detail.timeline.length > 0 ? /* @__PURE__ */ jsx(
+            Timeline,
             {
               items: detail.timeline.map((item, index) => ({
                 key: index,
                 color: "blue",
-                children: /* @__PURE__ */ jsxRuntime.jsxs("div", { children: [
-                  /* @__PURE__ */ jsxRuntime.jsxs("div", { children: [
+                children: /* @__PURE__ */ jsxs("div", { children: [
+                  /* @__PURE__ */ jsxs("div", { children: [
                     TIMELINE_TEXT[item.event] || item.event,
                     " ·",
                     " ",
                     dateTimeText(item.at)
                   ] }),
-                  item.detail ? /* @__PURE__ */ jsxRuntime.jsx(Text$6, { type: "secondary", children: item.detail }) : null
+                  item.detail ? /* @__PURE__ */ jsx(Text$7, { type: "secondary", children: item.detail }) : null
                 ] })
               }))
             }
-          ) : /* @__PURE__ */ jsxRuntime.jsx(Text$6, { type: "secondary", children: "暂无记录" }) }),
-          /* @__PURE__ */ jsxRuntime.jsxs(antd.Descriptions, { column: 2, size: "small", bordered: true, title: "其他信息", children: [
-            /* @__PURE__ */ jsxRuntime.jsx(antd.Descriptions.Item, { label: "订单 ID", children: detail.id }),
-            /* @__PURE__ */ jsxRuntime.jsx(antd.Descriptions.Item, { label: "来源", children: detail.source || "-" }),
-            /* @__PURE__ */ jsxRuntime.jsx(antd.Descriptions.Item, { label: "下单令牌", children: detail.clientToken || "-" }),
-            /* @__PURE__ */ jsxRuntime.jsx(antd.Descriptions.Item, { label: "入库操作员", children: detail.storageOperator?.firstname || detail.storageOperator?.email || "-" }),
-            /* @__PURE__ */ jsxRuntime.jsx(antd.Descriptions.Item, { label: "创建时间", children: dateTimeText(detail.createdAt) }),
-            /* @__PURE__ */ jsxRuntime.jsx(antd.Descriptions.Item, { label: "更新时间", children: dateTimeText(detail.updatedAt) }),
-            /* @__PURE__ */ jsxRuntime.jsx(antd.Descriptions.Item, { label: "协议同意时间", children: dateTimeText(detail.agreementAcceptedAt) }),
-            /* @__PURE__ */ jsxRuntime.jsx(antd.Descriptions.Item, { label: "备注", children: detail.note || "-" })
+          ) : /* @__PURE__ */ jsx(Text$7, { type: "secondary", children: "暂无记录" }) }),
+          /* @__PURE__ */ jsxs(Descriptions, { column: 2, size: "small", bordered: true, title: "其他信息", children: [
+            /* @__PURE__ */ jsx(Descriptions.Item, { label: "订单 ID", children: detail.id }),
+            /* @__PURE__ */ jsx(Descriptions.Item, { label: "来源", children: detail.source || "-" }),
+            /* @__PURE__ */ jsx(Descriptions.Item, { label: "下单令牌", children: detail.clientToken || "-" }),
+            /* @__PURE__ */ jsx(Descriptions.Item, { label: "入库操作员", children: detail.storageOperator?.firstname || detail.storageOperator?.email || "-" }),
+            /* @__PURE__ */ jsx(Descriptions.Item, { label: "创建时间", children: dateTimeText(detail.createdAt) }),
+            /* @__PURE__ */ jsx(Descriptions.Item, { label: "更新时间", children: dateTimeText(detail.updatedAt) }),
+            /* @__PURE__ */ jsx(Descriptions.Item, { label: "协议同意时间", children: dateTimeText(detail.agreementAcceptedAt) }),
+            /* @__PURE__ */ jsx(Descriptions.Item, { label: "备注", children: detail.note || "-" })
           ] })
         ] }) : null
       }
     ),
-    action ? /* @__PURE__ */ jsxRuntime.jsx(
+    action ? /* @__PURE__ */ jsx(
       OrderActionDrawer,
       {
         action,
@@ -1726,24 +1954,523 @@ const OrdersPage = () => {
     ) : null
   ] });
 };
-const { Text: Text$5 } = antd.Typography;
+const { Text: Text$6 } = Typography;
+const TABS = [
+  { value: "overdue", label: "已逾期" },
+  { value: "notice", label: "已催告" },
+  { value: "pending_disposal", label: "待处置" },
+  { value: "disposed", label: "已处置" }
+];
+const OverduePage = () => {
+  const api = useTireApi();
+  const { canFull, canPayment } = usePermissions();
+  const [tab, setTab] = useState("overdue");
+  const [loading, setLoading] = useState(false);
+  const [rows, setRows] = useState([]);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [detail, setDetail] = useState(null);
+  const [drawer, setDrawer] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [photos, setPhotos] = useState([]);
+  const [funds, setFunds] = useState([]);
+  const [fundLoading, setFundLoading] = useState(false);
+  const load = async (nextPage = page, nextTab = tab) => {
+    setLoading(true);
+    try {
+      const result = await api.listOrders({
+        status: nextTab,
+        page: nextPage,
+        pageSize: 20
+      });
+      setRows(Array.isArray(result?.data) ? result.data : []);
+      setTotal(Number(result?.pagination?.total) || 0);
+      setPage(nextPage);
+    } catch (error) {
+      message.error(errorMessage(error));
+    } finally {
+      setLoading(false);
+    }
+  };
+  const loadFunds = async () => {
+    setFundLoading(true);
+    try {
+      const result = await api.listHoldFunds({ page: 1, pageSize: 20 });
+      setFunds(Array.isArray(result?.data) ? result.data : []);
+    } catch (error) {
+      message.error(errorMessage(error));
+    } finally {
+      setFundLoading(false);
+    }
+  };
+  useEffect(() => {
+    load(1, tab);
+  }, [tab]);
+  useEffect(() => {
+    loadFunds();
+  }, []);
+  const openDetail = async (row) => {
+    setDrawer({ id: row.id, orderNo: row.orderNo });
+    setPhotos([]);
+    try {
+      const order = await api.getOrder(row.id);
+      setDetail(order);
+    } catch (error) {
+      message.error(errorMessage(error));
+    }
+  };
+  const refreshDetail = async () => {
+    if (!drawer?.id) return;
+    try {
+      const order = await api.getOrder(drawer.id);
+      setDetail(order);
+      await load(page, tab);
+    } catch (error) {
+      message.error(errorMessage(error));
+    }
+  };
+  const uploadProof = async () => {
+    if (photos.length === 0) return [];
+    const uploaded = await api.uploadImages(photos);
+    if (uploaded.length !== photos.length) {
+      throw new Error("部分凭证上传失败，请重试");
+    }
+    return uploaded.map((item) => item.id);
+  };
+  const runAction = async (action, body, successText) => {
+    if (!drawer?.id) return;
+    setSubmitting(true);
+    try {
+      const proofIds = await uploadProof();
+      const payload = proofIds.length > 0 ? { ...body, proofIds } : body;
+      await api.orderAction(drawer.id, action, payload);
+      message.success(successText);
+      setPhotos([]);
+      await refreshDetail();
+    } catch (error) {
+      message.error(errorMessage(error));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+  const quote = detail?.overdue?.billing;
+  const settlement = detail?.overdue?.settlement;
+  const status = String(detail?.status || "");
+  const columns = [
+    {
+      title: "订单号",
+      dataIndex: "orderNo",
+      render: (value) => /* @__PURE__ */ jsx(Text$6, { copyable: true, children: value })
+    },
+    { title: "客户", dataIndex: "customerName", render: (v) => v || "-" },
+    { title: "车牌", dataIndex: "plateNo", render: (v) => v || "-" },
+    {
+      title: "状态",
+      dataIndex: "status",
+      render: (value) => /* @__PURE__ */ jsx(StatusTag, { status: value })
+    },
+    {
+      title: "免费期结束",
+      dataIndex: "freeUntil",
+      render: (value, row) => dateText(value || row.expireAt)
+    },
+    {
+      title: "逾期天数",
+      dataIndex: "overdueDays",
+      render: (value) => Number(value) > 0 ? `${value} 天` : "-"
+    },
+    {
+      title: "应计逾期费",
+      dataIndex: "overdueFee",
+      render: (value) => money$1(value)
+    },
+    {
+      title: "未结逾期费",
+      render: (_, row) => money$1(
+        Math.max(
+          0,
+          Number(row.overdueFeePayable) - Number(row.overdueFeePaid)
+        )
+      )
+    },
+    {
+      title: "操作",
+      render: (_, row) => /* @__PURE__ */ jsx(Button, { size: "small", type: "link", onClick: () => openDetail(row), children: "查看/处理" })
+    }
+  ];
+  const fundColumns = [
+    { title: "订单号", dataIndex: "orderNo" },
+    { title: "挂账金额", dataIndex: "amount", render: (v) => money$1(v) },
+    {
+      title: "已申领",
+      dataIndex: "claimedAmount",
+      render: (v) => money$1(v)
+    },
+    {
+      title: "状态",
+      dataIndex: "status",
+      render: (value) => /* @__PURE__ */ jsx(Tag, { color: HOLD_STATUS_COLOR[value] || "default", children: HOLD_STATUS_TEXT[value] || value })
+    },
+    { title: "保留至", dataIndex: "expireAt", render: (v) => dateText(v) },
+    {
+      title: "操作",
+      render: (_, row) => canFull && row.status === "held" ? /* @__PURE__ */ jsx(
+        Popconfirm,
+        {
+          title: `确认客户已领取 ${money$1(
+            Math.max(0, Number(row.amount) - Number(row.claimedAmount))
+          )}？`,
+          onConfirm: async () => {
+            try {
+              await api.claimHoldFund(row.id, {});
+              message.success("已标记申领");
+              await loadFunds();
+            } catch (error) {
+              message.error(errorMessage(error));
+            }
+          },
+          children: /* @__PURE__ */ jsx(Button, { size: "small", type: "link", children: "标记申领" })
+        }
+      ) : /* @__PURE__ */ jsx(Text$6, { type: "secondary", children: "-" })
+    }
+  ];
+  return /* @__PURE__ */ jsxs(Space, { direction: "vertical", size: 16, style: { width: "100%" }, children: [
+    /* @__PURE__ */ jsxs(
+      Card,
+      {
+        title: "逾期与处置",
+        extra: /* @__PURE__ */ jsxs(Space, { children: [
+          /* @__PURE__ */ jsx(
+            Segmented,
+            {
+              value: tab,
+              options: TABS,
+              onChange: (value) => {
+                setTab(String(value));
+                setPage(1);
+              }
+            }
+          ),
+          canFull ? /* @__PURE__ */ jsx(
+            Button,
+            {
+              icon: /* @__PURE__ */ jsx(ScanOutlined, {}),
+              onClick: async () => {
+                try {
+                  const result = await api.scanOverdue();
+                  message.success(
+                    `扫描完成（起始日 ${result?.autoStartDate || "-"}）：新逾期 ${result?.overdue || 0} 单，提醒 ${result?.reminders || 0} 条，跳过老单 ${result?.skippedLegacy || 0} 单`
+                  );
+                  await load(1, tab);
+                } catch (error) {
+                  message.error(errorMessage(error));
+                }
+              },
+              children: "立即扫描"
+            }
+          ) : null,
+          /* @__PURE__ */ jsx(Button, { icon: /* @__PURE__ */ jsx(ReloadOutlined, {}), onClick: () => load(page, tab), children: "刷新" })
+        ] }),
+        children: [
+          /* @__PURE__ */ jsx(
+            Alert,
+            {
+              type: "info",
+              showIcon: true,
+              style: { marginBottom: 12 },
+              message: "上线闸门：自动推进仅对「起始日之后入库」的订单生效",
+              description: "上线前入库的老订单不会被自动推进，只能人工操作；若提示缺少条款版本或协议同意时间，请先补录 agreementVersion 再催告/处置。"
+            }
+          ),
+          /* @__PURE__ */ jsx(
+            Table,
+            {
+              rowKey: "id",
+              size: "small",
+              loading,
+              dataSource: rows,
+              columns,
+              pagination: {
+                current: page,
+                pageSize: 20,
+                total,
+                onChange: (next) => load(next, tab)
+              }
+            }
+          )
+        ]
+      }
+    ),
+    /* @__PURE__ */ jsx(
+      Card,
+      {
+        title: "处置挂账（保留 1 年，可申领）",
+        extra: /* @__PURE__ */ jsx(Button, { icon: /* @__PURE__ */ jsx(ReloadOutlined, {}), onClick: loadFunds, children: "刷新" }),
+        children: /* @__PURE__ */ jsx(
+          Table,
+          {
+            rowKey: "id",
+            size: "small",
+            loading: fundLoading,
+            dataSource: funds,
+            columns: fundColumns,
+            pagination: false
+          }
+        )
+      }
+    ),
+    /* @__PURE__ */ jsx(
+      Drawer,
+      {
+        open: !!drawer,
+        width: 680,
+        title: `逾期处置 · ${detail?.orderNo || ""}`,
+        onClose: () => {
+          setDrawer(null);
+          setDetail(null);
+        },
+        children: detail ? /* @__PURE__ */ jsxs(Space, { direction: "vertical", size: 16, style: { width: "100%" }, children: [
+          /* @__PURE__ */ jsxs(Descriptions, { size: "small", column: 2, bordered: true, children: [
+            /* @__PURE__ */ jsx(Descriptions.Item, { label: "状态", children: /* @__PURE__ */ jsx(StatusTag, { status: detail.status }) }),
+            /* @__PURE__ */ jsxs(Descriptions.Item, { label: "客户", children: [
+              detail.customerName || "-",
+              "（",
+              detail.phone || "-",
+              "）"
+            ] }),
+            /* @__PURE__ */ jsx(Descriptions.Item, { label: "车牌", children: detail.plateNo || "-" }),
+            /* @__PURE__ */ jsxs(Descriptions.Item, { label: "免费期", children: [
+              quote?.freeDays || detail.freeDays || 180,
+              " 天，至",
+              " ",
+              dateText(quote?.freeUntil || detail.freeUntil || detail.expireAt)
+            ] }),
+            /* @__PURE__ */ jsxs(Descriptions.Item, { label: "逾期天数", children: [
+              quote?.days ?? detail.overdueDays ?? 0,
+              " 天（宽限 ",
+              quote?.graceDays || 7,
+              " 天）"
+            ] }),
+            /* @__PURE__ */ jsxs(Descriptions.Item, { label: "应计逾期费", children: [
+              money$1(quote?.fee ?? detail.overdueFee),
+              "（单套 ",
+              money$1(quote?.feePerSet),
+              "，封顶 ",
+              money$1(quote?.capPerSet),
+              "）"
+            ] }),
+            /* @__PURE__ */ jsx(Descriptions.Item, { label: "未结保管费", children: money$1(settlement?.storageUnpaid) }),
+            /* @__PURE__ */ jsx(Descriptions.Item, { label: "未结逾期费", children: money$1(settlement?.overdueUnpaid) }),
+            /* @__PURE__ */ jsx(Descriptions.Item, { label: "协议版本", children: detail.agreementVersionInbound || detail.agreementVersionOrder || "-" }),
+            /* @__PURE__ */ jsx(Descriptions.Item, { label: "协议同意时间", children: dateTimeText(detail.agreementAcceptedAt) }),
+            detail.noticeDeadline ? /* @__PURE__ */ jsx(Descriptions.Item, { label: "催告履行期至", children: dateText(detail.noticeDeadline) }) : null,
+            detail.disposedAt ? /* @__PURE__ */ jsx(Descriptions.Item, { label: "处置时间", children: dateTimeText(detail.disposedAt) }) : null
+          ] }),
+          status === "overdue" || status === "notice" ? /* @__PURE__ */ jsxs(Card, { size: "small", title: "取货结算（后台记账）", children: [
+            /* @__PURE__ */ jsxs(Space, { wrap: true, children: [
+              /* @__PURE__ */ jsx(
+                Select,
+                {
+                  value: detail.paymentMethod || "store_pay",
+                  style: { width: 160 },
+                  options: Object.entries(PAYMENT_METHOD_TEXT).filter(([key]) => key !== "disposal").map(([value, label]) => ({ value, label })),
+                  onChange: (value) => setDetail({ ...detail, paymentMethod: value })
+                }
+              ),
+              /* @__PURE__ */ jsx(
+                Button,
+                {
+                  type: "primary",
+                  disabled: !canPayment,
+                  loading: submitting,
+                  onClick: () => runAction(
+                    "overdue/settle",
+                    { paymentMethod: detail.paymentMethod || "store_pay" },
+                    "取货结算完成"
+                  ),
+                  children: "结算并登记收款"
+                }
+              )
+            ] }),
+            /* @__PURE__ */ jsx(Text$6, { type: "secondary", style: { display: "block", marginTop: 8 }, children: "收款方式由取货人选择，微信/到店/现金均为后台记账，不触发线上支付回调。" })
+          ] }) : null,
+          canFull && ["stored", "overdue"].includes(status) ? /* @__PURE__ */ jsxs(Card, { size: "small", title: "逾期费减免（仅运营管理员，必须留痕）", children: [
+            /* @__PURE__ */ jsxs(
+              Form,
+              {
+                layout: "inline",
+                onFinish: (values) => runAction(
+                  "overdue/deduct",
+                  {
+                    amount: yuanToCents(values.amountYuan),
+                    reason: values.reason
+                  },
+                  "减免已登记"
+                ),
+                children: [
+                  /* @__PURE__ */ jsx(
+                    Form.Item,
+                    {
+                      name: "amountYuan",
+                      label: "减免金额",
+                      rules: [{ required: true, message: "请输入金额" }],
+                      children: /* @__PURE__ */ jsx(InputNumber, { min: 0.01, precision: 2, suffix: "元" })
+                    }
+                  ),
+                  /* @__PURE__ */ jsx(
+                    Form.Item,
+                    {
+                      name: "reason",
+                      label: "原因",
+                      rules: [{ required: true, message: "请填写原因" }],
+                      children: /* @__PURE__ */ jsx(Input, { placeholder: "减免依据/审批说明", style: { width: 220 } })
+                    }
+                  ),
+                  /* @__PURE__ */ jsx(Button, { htmlType: "submit", loading: submitting, children: "登记减免" })
+                ]
+              }
+            ),
+            (detail.overdueDeductions || []).length > 0 ? /* @__PURE__ */ jsx("div", { style: { marginTop: 8 }, children: (detail.overdueDeductions || []).map((item, index) => /* @__PURE__ */ jsxs(Text$6, { type: "secondary", style: { display: "block" }, children: [
+              dateTimeText(item.at),
+              " · ",
+              item.operatorName || "-",
+              " 减免",
+              " ",
+              money$1(item.deductedAmount),
+              "（",
+              item.reason,
+              "）"
+            ] }, index)) }) : null
+          ] }) : null,
+          canFull && status === "overdue" ? /* @__PURE__ */ jsxs(Card, { size: "small", title: "发送书面催告（需上传凭证）", children: [
+            /* @__PURE__ */ jsx(PhotoUploader, { onChange: setPhotos }),
+            /* @__PURE__ */ jsx(Space, { style: { marginTop: 12 }, children: /* @__PURE__ */ jsx(
+              Button,
+              {
+                type: "primary",
+                loading: submitting,
+                disabled: photos.length === 0,
+                onClick: () => runAction("overdue/notice", {}, "催告已发送"),
+                children: "发送催告"
+              }
+            ) })
+          ] }) : null,
+          canFull && status === "notice" ? /* @__PURE__ */ jsx(Card, { size: "small", title: "催告状态", children: /* @__PURE__ */ jsxs(Space, { direction: "vertical", children: [
+            /* @__PURE__ */ jsxs(Text$6, { children: [
+              "履行期至：",
+              dateText(detail.noticeDeadline)
+            ] }),
+            detail.noticeContent ? /* @__PURE__ */ jsx(Text$6, { type: "secondary", children: detail.noticeContent }) : null,
+            /* @__PURE__ */ jsx(
+              Popconfirm,
+              {
+                title: "催告满 60 日仍未取货？确认转入待处置",
+                onConfirm: () => runAction(
+                  "overdue/pending-disposal",
+                  {},
+                  "已转入待处置"
+                ),
+                children: /* @__PURE__ */ jsx(Button, { children: submitting ? "处理中" : "转入待处置" })
+              }
+            )
+          ] }) }) : null,
+          canFull && status === "pending_disposal" ? /* @__PURE__ */ jsx(Card, { size: "small", title: "处置登记", children: /* @__PURE__ */ jsxs(
+            Form,
+            {
+              layout: "vertical",
+              onFinish: (values) => runAction(
+                "overdue/dispose",
+                {
+                  method: values.method,
+                  amount: yuanToCents(values.amountYuan),
+                  approver: values.approver,
+                  remark: values.remark
+                },
+                "处置登记完成"
+              ),
+              children: [
+                /* @__PURE__ */ jsx(
+                  Form.Item,
+                  {
+                    name: "method",
+                    label: "处置方式",
+                    rules: [{ required: true, message: "请选择方式" }],
+                    children: /* @__PURE__ */ jsx(
+                      Select,
+                      {
+                        style: { width: 200 },
+                        options: Object.entries(DISPOSAL_METHOD_TEXT).map(
+                          ([value, label]) => ({ value, label })
+                        )
+                      }
+                    )
+                  }
+                ),
+                /* @__PURE__ */ jsx(
+                  Form.Item,
+                  {
+                    name: "amountYuan",
+                    label: "处置所得",
+                    rules: [{ required: true, message: "请输入金额" }],
+                    children: /* @__PURE__ */ jsx(InputNumber, { min: 0, precision: 2, suffix: "元" })
+                  }
+                ),
+                /* @__PURE__ */ jsx(
+                  Form.Item,
+                  {
+                    name: "approver",
+                    label: "审批人",
+                    rules: [{ required: true, message: "请填写审批人" }],
+                    children: /* @__PURE__ */ jsx(Input, { style: { width: 260 } })
+                  }
+                ),
+                /* @__PURE__ */ jsx(Form.Item, { name: "remark", label: "备注", children: /* @__PURE__ */ jsx(Input.TextArea, { rows: 2 }) }),
+                /* @__PURE__ */ jsx(PhotoUploader, { onChange: setPhotos }),
+                /* @__PURE__ */ jsx(
+                  Button,
+                  {
+                    htmlType: "submit",
+                    type: "primary",
+                    style: { marginTop: 12 },
+                    loading: submitting,
+                    disabled: photos.length === 0,
+                    children: "提交处置"
+                  }
+                )
+              ]
+            }
+          ) }) : null,
+          status === "disposed" && detail.settlement ? /* @__PURE__ */ jsx(Card, { size: "small", title: "处置结算", children: /* @__PURE__ */ jsxs(Descriptions, { size: "small", column: 2, children: [
+            /* @__PURE__ */ jsx(Descriptions.Item, { label: "处置方式", children: DISPOSAL_METHOD_TEXT[detail.disposal?.method] || "-" }),
+            /* @__PURE__ */ jsx(Descriptions.Item, { label: "处置所得", children: money$1(detail.settlement.disposalAmount) }),
+            /* @__PURE__ */ jsx(Descriptions.Item, { label: "抵扣逾期费", children: money$1(detail.settlement.offsetOverdue) }),
+            /* @__PURE__ */ jsx(Descriptions.Item, { label: "抵扣保管费", children: money$1(detail.settlement.offsetStorage) }),
+            /* @__PURE__ */ jsx(Descriptions.Item, { label: "挂账余款", children: money$1(detail.settlement.holdAmount) }),
+            /* @__PURE__ */ jsx(Descriptions.Item, { label: "挂账保留至", children: dateText(detail.settlement.holdUntil) })
+          ] }) }) : null
+        ] }) : null
+      }
+    )
+  ] });
+};
+const { Text: Text$5 } = Typography;
 const InventoryPage = () => {
   const api = useTireApi();
   const { canFull } = usePermissions();
-  const [tab, setTab] = react.useState("stored");
-  const [locationCode, setLocationCode] = react.useState("");
-  const [keyword, setKeyword] = react.useState("");
-  const [query, setQuery] = react.useState(
+  const [tab, setTab] = useState("stored");
+  const [locationCode, setLocationCode] = useState("");
+  const [keyword, setKeyword] = useState("");
+  const [query, setQuery] = useState(
     {}
   );
-  const [days, setDays] = react.useState(30);
-  const [page, setPage] = react.useState(1);
-  const [pageSize, setPageSize] = react.useState(20);
-  const [rows, setRows] = react.useState([]);
-  const [total, setTotal] = react.useState(0);
-  const [loading, setLoading] = react.useState(false);
-  const [selectedKeys, setSelectedKeys] = react.useState([]);
-  const [reminding, setReminding] = react.useState(false);
+  const [days, setDays] = useState(30);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const [rows, setRows] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [selectedKeys, setSelectedKeys] = useState([]);
+  const [reminding, setReminding] = useState(false);
   const load = async () => {
     setLoading(true);
     try {
@@ -1771,12 +2498,12 @@ const InventoryPage = () => {
         setTotal(list.length);
       }
     } catch (error) {
-      antd.message.error(`加载库存失败：${errorMessage(error)}`);
+      message.error(`加载库存失败：${errorMessage(error)}`);
     } finally {
       setLoading(false);
     }
   };
-  react.useEffect(() => {
+  useEffect(() => {
     load();
   }, [
     tab,
@@ -1803,7 +2530,7 @@ const InventoryPage = () => {
   };
   const remind = async () => {
     if (selectedKeys.length === 0) {
-      antd.message.warning("请先勾选需要提醒的订单");
+      message.warning("请先勾选需要提醒的订单");
       return;
     }
     setReminding(true);
@@ -1811,13 +2538,13 @@ const InventoryPage = () => {
       const result = await api.remindInventory(
         selectedKeys.map((key) => Number(key))
       );
-      antd.message.success(
+      message.success(
         `已生成提醒：排队 ${result?.queued || 0} 条，跳过 ${result?.skipped || 0} 条`
       );
       setSelectedKeys([]);
       await load();
     } catch (error) {
-      antd.message.error(`生成提醒失败：${errorMessage(error)}`);
+      message.error(`生成提醒失败：${errorMessage(error)}`);
     } finally {
       setReminding(false);
     }
@@ -1837,9 +2564,9 @@ const InventoryPage = () => {
     {
       title: "客户",
       width: 170,
-      render: (_, record) => /* @__PURE__ */ jsxRuntime.jsxs("div", { children: [
-        /* @__PURE__ */ jsxRuntime.jsx("div", { children: record.customerName }),
-        /* @__PURE__ */ jsxRuntime.jsx(Text$5, { type: "secondary", children: record.phone })
+      render: (_, record) => /* @__PURE__ */ jsxs("div", { children: [
+        /* @__PURE__ */ jsx("div", { children: record.customerName }),
+        /* @__PURE__ */ jsx(Text$5, { type: "secondary", children: record.phone })
       ] })
     },
     {
@@ -1870,15 +2597,15 @@ const InventoryPage = () => {
       title: "剩余",
       dataIndex: "remainingDays",
       width: 110,
-      render: (value) => /* @__PURE__ */ jsxRuntime.jsx(Text$5, { style: { color: remainingColor(value), fontWeight: 500 }, children: remainingText(value) })
+      render: (value) => /* @__PURE__ */ jsx(Text$5, { style: { color: remainingColor(value), fontWeight: 500 }, children: remainingText(value) })
     },
     {
       title: "状态",
       dataIndex: "status",
       width: 100,
-      render: (value, record) => /* @__PURE__ */ jsxRuntime.jsxs(antd.Space, { direction: "vertical", size: 0, children: [
-        /* @__PURE__ */ jsxRuntime.jsx(StatusTag, { status: value }),
-        record.outboundRequestStatus === "pending" ? /* @__PURE__ */ jsxRuntime.jsx(Text$5, { style: { fontSize: 12, color: WARM }, children: "出库待审" }) : null
+      render: (value, record) => /* @__PURE__ */ jsxs(Space, { direction: "vertical", size: 0, children: [
+        /* @__PURE__ */ jsx(StatusTag, { status: value }),
+        record.outboundRequestStatus === "pending" ? /* @__PURE__ */ jsx(Text$5, { style: { fontSize: 12, color: WARM }, children: "出库待审" }) : null
       ] })
     },
     {
@@ -1894,10 +2621,10 @@ const InventoryPage = () => {
       render: (value) => value || "-"
     }
   ];
-  return /* @__PURE__ */ jsxRuntime.jsxs(antd.Space, { direction: "vertical", size: 16, style: { width: "100%" }, children: [
-    /* @__PURE__ */ jsxRuntime.jsx(antd.Card, { styles: { body: { padding: 16 } }, children: /* @__PURE__ */ jsxRuntime.jsxs(antd.Space, { wrap: true, size: 12, children: [
-      /* @__PURE__ */ jsxRuntime.jsx(
-        antd.Input,
+  return /* @__PURE__ */ jsxs(Space, { direction: "vertical", size: 16, style: { width: "100%" }, children: [
+    /* @__PURE__ */ jsx(Card, { styles: { body: { padding: 16 } }, children: /* @__PURE__ */ jsxs(Space, { wrap: true, size: 12, children: [
+      /* @__PURE__ */ jsx(
+        Input,
         {
           allowClear: true,
           placeholder: "仓位编号",
@@ -1907,8 +2634,8 @@ const InventoryPage = () => {
           style: { width: 160 }
         }
       ),
-      /* @__PURE__ */ jsxRuntime.jsx(
-        antd.Input,
+      /* @__PURE__ */ jsx(
+        Input,
         {
           allowClear: true,
           placeholder: "手机号 / 车牌 / 订单号",
@@ -1918,19 +2645,19 @@ const InventoryPage = () => {
           style: { width: 240 }
         }
       ),
-      /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { type: "primary", icon: /* @__PURE__ */ jsxRuntime.jsx(icons.SearchOutlined, {}), onClick: search, children: "查询" }),
-      /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { onClick: reset, children: "重置" }),
-      /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { icon: /* @__PURE__ */ jsxRuntime.jsx(icons.ReloadOutlined, {}), onClick: () => load(), children: "刷新" }),
-      canFull ? /* @__PURE__ */ jsxRuntime.jsx(
-        antd.Popconfirm,
+      /* @__PURE__ */ jsx(Button, { type: "primary", icon: /* @__PURE__ */ jsx(SearchOutlined, {}), onClick: search, children: "查询" }),
+      /* @__PURE__ */ jsx(Button, { onClick: reset, children: "重置" }),
+      /* @__PURE__ */ jsx(Button, { icon: /* @__PURE__ */ jsx(ReloadOutlined, {}), onClick: () => load(), children: "刷新" }),
+      canFull ? /* @__PURE__ */ jsx(
+        Popconfirm,
         {
           title: `为已选 ${selectedKeys.length} 单生成提醒？`,
           onConfirm: remind,
           disabled: selectedKeys.length === 0,
-          children: /* @__PURE__ */ jsxRuntime.jsxs(
-            antd.Button,
+          children: /* @__PURE__ */ jsxs(
+            Button,
             {
-              icon: /* @__PURE__ */ jsxRuntime.jsx(icons.BellOutlined, {}),
+              icon: /* @__PURE__ */ jsx(BellOutlined, {}),
               loading: reminding,
               disabled: selectedKeys.length === 0,
               children: [
@@ -1943,9 +2670,9 @@ const InventoryPage = () => {
         }
       ) : null
     ] }) }),
-    /* @__PURE__ */ jsxRuntime.jsxs(antd.Card, { styles: { body: { paddingTop: 8 } }, children: [
-      /* @__PURE__ */ jsxRuntime.jsx(
-        antd.Tabs,
+    /* @__PURE__ */ jsxs(Card, { styles: { body: { paddingTop: 8 } }, children: [
+      /* @__PURE__ */ jsx(
+        Tabs,
         {
           activeKey: tab,
           onChange: (key) => {
@@ -1963,10 +2690,10 @@ const InventoryPage = () => {
               label: "临期超期"
             }
           ],
-          tabBarExtraContent: tab === "expiring" ? /* @__PURE__ */ jsxRuntime.jsxs(antd.Space, { children: [
-            /* @__PURE__ */ jsxRuntime.jsx(Text$5, { type: "secondary", children: "预警范围" }),
-            /* @__PURE__ */ jsxRuntime.jsx(
-              antd.Select,
+          tabBarExtraContent: tab === "expiring" ? /* @__PURE__ */ jsxs(Space, { children: [
+            /* @__PURE__ */ jsx(Text$5, { type: "secondary", children: "预警范围" }),
+            /* @__PURE__ */ jsx(
+              Select,
               {
                 value: days,
                 onChange: (value) => {
@@ -1986,13 +2713,13 @@ const InventoryPage = () => {
           ] }) : null
         }
       ),
-      tab === "expiring" ? /* @__PURE__ */ jsxRuntime.jsxs(Text$5, { type: "secondary", children: [
+      tab === "expiring" ? /* @__PURE__ */ jsxs(Text$5, { type: "secondary", children: [
         "共 ",
         total,
         " 单（含超期，按到期日升序）"
       ] }) : null,
-      /* @__PURE__ */ jsxRuntime.jsx(
-        antd.Table,
+      /* @__PURE__ */ jsx(
+        Table,
         {
           rowKey: "id",
           size: "middle",
@@ -2059,36 +2786,36 @@ const downloadBlob = (blob, filename) => {
 };
 const PaymentsPage = () => {
   const api = useTireApi();
-  const [activeTab, setActiveTab] = react.useState("todo");
-  const [loading, setLoading] = react.useState(false);
-  const [pendingRows, setPendingRows] = react.useState([]);
-  const [pendingTotal, setPendingTotal] = react.useState(0);
-  const [pendingAmount, setPendingAmount] = react.useState(0);
-  const [confirmingId, setConfirmingId] = react.useState(null);
-  const [ledger, setLedger] = react.useState({
+  const [activeTab, setActiveTab] = useState("todo");
+  const [loading, setLoading] = useState(false);
+  const [pendingRows, setPendingRows] = useState([]);
+  const [pendingTotal, setPendingTotal] = useState(0);
+  const [pendingAmount, setPendingAmount] = useState(0);
+  const [confirmingId, setConfirmingId] = useState(null);
+  const [ledger, setLedger] = useState({
     rows: [],
     total: 0
   });
-  const [ledgerPage, setLedgerPage] = react.useState(1);
-  const [ledgerStatus, setLedgerStatus] = react.useState();
-  const [ledgerOrderNo, setLedgerOrderNo] = react.useState("");
-  const [shares, setShares] = react.useState({
+  const [ledgerPage, setLedgerPage] = useState(1);
+  const [ledgerStatus, setLedgerStatus] = useState();
+  const [ledgerOrderNo, setLedgerOrderNo] = useState("");
+  const [shares, setShares] = useState({
     rows: [],
     total: 0
   });
-  const [sharePage, setSharePage] = react.useState(1);
-  const [shareStatus, setShareStatus] = react.useState();
-  const [shareReferrer, setShareReferrer] = react.useState("");
-  const [shareInvitee, setShareInvitee] = react.useState("");
-  const [shareRange, setShareRange] = react.useState(null);
-  const loadPending = react.useCallback(async () => {
+  const [sharePage, setSharePage] = useState(1);
+  const [shareStatus, setShareStatus] = useState();
+  const [shareReferrer, setShareReferrer] = useState("");
+  const [shareInvitee, setShareInvitee] = useState("");
+  const [shareRange, setShareRange] = useState(null);
+  const loadPending = useCallback(async () => {
     const result = await api.listPayments({ status: "pending", pageSize: 100 });
     const rows = result?.data || [];
     setPendingRows(rows);
     setPendingTotal(Number(result?.meta?.total) || rows.length);
     setPendingAmount(rows.reduce((sum, row) => sum + (Number(row.amount) || 0), 0));
   }, [api]);
-  const loadLedger = react.useCallback(
+  const loadLedger = useCallback(
     async (page = ledgerPage) => {
       const result = await api.listPayments({
         page,
@@ -2104,7 +2831,7 @@ const PaymentsPage = () => {
     },
     [api, ledgerPage, ledgerStatus, ledgerOrderNo]
   );
-  const shareParams = react.useCallback(
+  const shareParams = useCallback(
     (page = sharePage) => ({
       page,
       pageSize: 20,
@@ -2116,7 +2843,7 @@ const PaymentsPage = () => {
     }),
     [sharePage, shareStatus, shareReferrer, shareInvitee, shareRange]
   );
-  const loadShares = react.useCallback(
+  const loadShares = useCallback(
     async (page = sharePage) => {
       const result = await api.listShareRecords(shareParams(page));
       setShares({
@@ -2127,27 +2854,27 @@ const PaymentsPage = () => {
     },
     [api, shareParams, sharePage]
   );
-  const refreshAll = react.useCallback(async () => {
+  const refreshAll = useCallback(async () => {
     setLoading(true);
     try {
       await Promise.all([loadPending(), loadLedger(1), loadShares(1)]);
     } catch (error) {
-      antd.message.error(errorMessage(error));
+      message.error(errorMessage(error));
     } finally {
       setLoading(false);
     }
   }, [loadPending, loadLedger, loadShares]);
-  react.useEffect(() => {
+  useEffect(() => {
     refreshAll();
   }, []);
   const confirmPayment = async (row) => {
     setConfirmingId(row.id);
     try {
       await api.confirmPayment(row.id);
-      antd.message.success(`流水 ${row.paymentNo} 已确认到账`);
+      message.success(`流水 ${row.paymentNo} 已确认到账`);
       await Promise.all([loadPending(), loadLedger(1)]);
     } catch (error) {
-      antd.message.error(errorMessage(error));
+      message.error(errorMessage(error));
     } finally {
       setConfirmingId(null);
     }
@@ -2156,18 +2883,18 @@ const PaymentsPage = () => {
     try {
       const blob = await api.exportShareRecords(shareParams(1));
       downloadBlob(blob, `邀请记录-${dayjs().format("YYYYMMDD")}.csv`);
-      antd.message.success("邀请记录已导出");
+      message.success("邀请记录已导出");
     } catch (error) {
-      antd.message.error(errorMessage(error));
+      message.error(errorMessage(error));
     }
   };
-  const pendingColumns = react.useMemo(
+  const pendingColumns = useMemo(
     () => [
       {
         title: "流水号",
         dataIndex: "paymentNo",
         width: 190,
-        render: (value) => /* @__PURE__ */ jsxRuntime.jsx("span", { style: { fontFamily: "monospace" }, children: value })
+        render: (value) => /* @__PURE__ */ jsx("span", { style: { fontFamily: "monospace" }, children: value })
       },
       { title: "订单号", dataIndex: "orderNo", width: 170 },
       {
@@ -2181,7 +2908,7 @@ const PaymentsPage = () => {
         dataIndex: "amount",
         width: 110,
         align: "right",
-        render: (value) => /* @__PURE__ */ jsxRuntime.jsx("strong", { children: money(value) })
+        render: (value) => /* @__PURE__ */ jsx("strong", { children: money(value) })
       },
       {
         title: "创建时间",
@@ -2192,8 +2919,8 @@ const PaymentsPage = () => {
       {
         title: "操作",
         width: 130,
-        render: (_, row) => /* @__PURE__ */ jsxRuntime.jsx(
-          antd.Button,
+        render: (_, row) => /* @__PURE__ */ jsx(
+          Button,
           {
             type: "primary",
             size: "small",
@@ -2211,7 +2938,7 @@ const PaymentsPage = () => {
       title: "流水号",
       dataIndex: "paymentNo",
       width: 190,
-      render: (value) => /* @__PURE__ */ jsxRuntime.jsx("span", { style: { fontFamily: "monospace" }, children: value })
+      render: (value) => /* @__PURE__ */ jsx("span", { style: { fontFamily: "monospace" }, children: value })
     },
     { title: "订单号", dataIndex: "orderNo", width: 170 },
     {
@@ -2225,13 +2952,13 @@ const PaymentsPage = () => {
       dataIndex: "amount",
       width: 100,
       align: "right",
-      render: (value) => /* @__PURE__ */ jsxRuntime.jsx("span", { style: { color: value < 0 ? "#DC2626" : void 0 }, children: money(value) })
+      render: (value) => /* @__PURE__ */ jsx("span", { style: { color: value < 0 ? "#DC2626" : void 0 }, children: money(value) })
     },
     {
       title: "状态",
       dataIndex: "status",
       width: 100,
-      render: (value) => /* @__PURE__ */ jsxRuntime.jsx(antd.Tag, { color: value === "paid" ? "green" : value === "pending" ? "orange" : "default", children: STATUS_TEXT[value] || value })
+      render: (value) => /* @__PURE__ */ jsx(Tag, { color: value === "paid" ? "green" : value === "pending" ? "orange" : "default", children: STATUS_TEXT[value] || value })
     },
     { title: "操作人", dataIndex: "operatorName", width: 110, render: (value) => value || "-" },
     { title: "到账时间", dataIndex: "paidAt", width: 160, render: (value) => fmtTime(value) },
@@ -2251,7 +2978,7 @@ const PaymentsPage = () => {
     {
       title: "入库生效",
       width: 100,
-      render: (_, row) => /* @__PURE__ */ jsxRuntime.jsx(antd.Tag, { color: row.status === "valid" ? "green" : "default", children: row.status === "valid" ? "是" : "否" })
+      render: (_, row) => /* @__PURE__ */ jsx(Tag, { color: row.status === "valid" ? "green" : "default", children: row.status === "valid" ? "是" : "否" })
     },
     {
       title: "状态",
@@ -2259,7 +2986,7 @@ const PaymentsPage = () => {
       width: 100,
       render: (value) => {
         const meta = SHARE_STATUS_TEXT[value] || { text: value, color: "default" };
-        return /* @__PURE__ */ jsxRuntime.jsx(antd.Tag, { color: meta.color, children: meta.text });
+        return /* @__PURE__ */ jsx(Tag, { color: meta.color, children: meta.text });
       }
     },
     {
@@ -2278,14 +3005,14 @@ const PaymentsPage = () => {
       render: (value) => value || "-"
     }
   ];
-  return /* @__PURE__ */ jsxRuntime.jsxs("div", { children: [
-    /* @__PURE__ */ jsxRuntime.jsxs(antd.Row, { gutter: 16, style: { marginBottom: 16 }, children: [
-      /* @__PURE__ */ jsxRuntime.jsx(antd.Col, { span: 8, children: /* @__PURE__ */ jsxRuntime.jsx(antd.Card, { children: /* @__PURE__ */ jsxRuntime.jsx(antd.Statistic, { title: "待确认流水", value: pendingTotal, suffix: "笔" }) }) }),
-      /* @__PURE__ */ jsxRuntime.jsx(antd.Col, { span: 8, children: /* @__PURE__ */ jsxRuntime.jsx(antd.Card, { children: /* @__PURE__ */ jsxRuntime.jsx(antd.Statistic, { title: "待确认金额", value: pendingAmount / 100, precision: 2, prefix: "¥" }) }) }),
-      /* @__PURE__ */ jsxRuntime.jsx(antd.Col, { span: 8, children: /* @__PURE__ */ jsxRuntime.jsx(antd.Card, { children: /* @__PURE__ */ jsxRuntime.jsx(antd.Statistic, { title: "台账记录", value: ledger.total, suffix: "笔" }) }) })
+  return /* @__PURE__ */ jsxs("div", { children: [
+    /* @__PURE__ */ jsxs(Row, { gutter: 16, style: { marginBottom: 16 }, children: [
+      /* @__PURE__ */ jsx(Col, { span: 8, children: /* @__PURE__ */ jsx(Card, { children: /* @__PURE__ */ jsx(Statistic, { title: "待确认流水", value: pendingTotal, suffix: "笔" }) }) }),
+      /* @__PURE__ */ jsx(Col, { span: 8, children: /* @__PURE__ */ jsx(Card, { children: /* @__PURE__ */ jsx(Statistic, { title: "待确认金额", value: pendingAmount / 100, precision: 2, prefix: "¥" }) }) }),
+      /* @__PURE__ */ jsx(Col, { span: 8, children: /* @__PURE__ */ jsx(Card, { children: /* @__PURE__ */ jsx(Statistic, { title: "台账记录", value: ledger.total, suffix: "笔" }) }) })
     ] }),
-    /* @__PURE__ */ jsxRuntime.jsxs(
-      antd.Card,
+    /* @__PURE__ */ jsxs(
+      Card,
       {
         tabList: [
           { key: "todo", label: "待办确认" },
@@ -2294,19 +3021,19 @@ const PaymentsPage = () => {
         ],
         activeTabKey: activeTab,
         onTabChange: setActiveTab,
-        tabBarExtraContent: /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { loading, onClick: refreshAll, children: "刷新" }),
+        tabBarExtraContent: /* @__PURE__ */ jsx(Button, { loading, onClick: refreshAll, children: "刷新" }),
         children: [
-          activeTab === "todo" ? /* @__PURE__ */ jsxRuntime.jsxs(jsxRuntime.Fragment, { children: [
-            /* @__PURE__ */ jsxRuntime.jsxs(antd.Descriptions, { size: "small", column: 2, style: { marginBottom: 12 }, children: [
-              /* @__PURE__ */ jsxRuntime.jsx(antd.Descriptions.Item, { label: "说明", children: "mock 支付回调或 H5 支付成功后，待确认流水会在确认到账前保持 pending。" }),
-              /* @__PURE__ */ jsxRuntime.jsxs(antd.Descriptions.Item, { label: "待确认合计", children: [
+          activeTab === "todo" ? /* @__PURE__ */ jsxs(Fragment, { children: [
+            /* @__PURE__ */ jsxs(Descriptions, { size: "small", column: 2, style: { marginBottom: 12 }, children: [
+              /* @__PURE__ */ jsx(Descriptions.Item, { label: "说明", children: "mock 支付回调或 H5 支付成功后，待确认流水会在确认到账前保持 pending。" }),
+              /* @__PURE__ */ jsxs(Descriptions.Item, { label: "待确认合计", children: [
                 pendingTotal,
                 " 笔 / ",
                 money(pendingAmount)
               ] })
             ] }),
-            /* @__PURE__ */ jsxRuntime.jsx(
-              antd.Table,
+            /* @__PURE__ */ jsx(
+              Table,
               {
                 rowKey: "id",
                 size: "small",
@@ -2318,10 +3045,10 @@ const PaymentsPage = () => {
               }
             )
           ] }) : null,
-          activeTab === "ledger" ? /* @__PURE__ */ jsxRuntime.jsxs(jsxRuntime.Fragment, { children: [
-            /* @__PURE__ */ jsxRuntime.jsxs(antd.Space, { style: { marginBottom: 12 }, wrap: true, children: [
-              /* @__PURE__ */ jsxRuntime.jsx(
-                antd.Select,
+          activeTab === "ledger" ? /* @__PURE__ */ jsxs(Fragment, { children: [
+            /* @__PURE__ */ jsxs(Space, { style: { marginBottom: 12 }, wrap: true, children: [
+              /* @__PURE__ */ jsx(
+                Select,
                 {
                   allowClear: true,
                   placeholder: "状态",
@@ -2334,8 +3061,8 @@ const PaymentsPage = () => {
                   }))
                 }
               ),
-              /* @__PURE__ */ jsxRuntime.jsx(
-                antd.Input,
+              /* @__PURE__ */ jsx(
+                Input,
                 {
                   placeholder: "按订单号搜索",
                   value: ledgerOrderNo,
@@ -2344,10 +3071,10 @@ const PaymentsPage = () => {
                   onPressEnter: () => loadLedger(1)
                 }
               ),
-              /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { type: "primary", onClick: () => loadLedger(1), children: "查询" })
+              /* @__PURE__ */ jsx(Button, { type: "primary", onClick: () => loadLedger(1), children: "查询" })
             ] }),
-            /* @__PURE__ */ jsxRuntime.jsx(
-              antd.Table,
+            /* @__PURE__ */ jsx(
+              Table,
               {
                 rowKey: "id",
                 size: "small",
@@ -2365,10 +3092,10 @@ const PaymentsPage = () => {
               }
             )
           ] }) : null,
-          activeTab === "shares" ? /* @__PURE__ */ jsxRuntime.jsxs(jsxRuntime.Fragment, { children: [
-            /* @__PURE__ */ jsxRuntime.jsxs(antd.Space, { style: { marginBottom: 12 }, wrap: true, children: [
-              /* @__PURE__ */ jsxRuntime.jsx(
-                antd.Select,
+          activeTab === "shares" ? /* @__PURE__ */ jsxs(Fragment, { children: [
+            /* @__PURE__ */ jsxs(Space, { style: { marginBottom: 12 }, wrap: true, children: [
+              /* @__PURE__ */ jsx(
+                Select,
                 {
                   allowClear: true,
                   placeholder: "状态",
@@ -2381,8 +3108,8 @@ const PaymentsPage = () => {
                   }))
                 }
               ),
-              /* @__PURE__ */ jsxRuntime.jsx(
-                antd.Input,
+              /* @__PURE__ */ jsx(
+                Input,
                 {
                   placeholder: "分享人手机号",
                   value: shareReferrer,
@@ -2390,8 +3117,8 @@ const PaymentsPage = () => {
                   onChange: (event) => setShareReferrer(event.target.value)
                 }
               ),
-              /* @__PURE__ */ jsxRuntime.jsx(
-                antd.Input,
+              /* @__PURE__ */ jsx(
+                Input,
                 {
                   placeholder: "被邀请人手机号",
                   value: shareInvitee,
@@ -2399,12 +3126,12 @@ const PaymentsPage = () => {
                   onChange: (event) => setShareInvitee(event.target.value)
                 }
               ),
-              /* @__PURE__ */ jsxRuntime.jsx(antd.DatePicker.RangePicker, { value: shareRange, onChange: (value) => setShareRange(value) }),
-              /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { type: "primary", onClick: () => loadShares(1), children: "查询" }),
-              /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { onClick: exportShares, children: "导出 CSV" })
+              /* @__PURE__ */ jsx(DatePicker.RangePicker, { value: shareRange, onChange: (value) => setShareRange(value) }),
+              /* @__PURE__ */ jsx(Button, { type: "primary", onClick: () => loadShares(1), children: "查询" }),
+              /* @__PURE__ */ jsx(Button, { onClick: exportShares, children: "导出 CSV" })
             ] }),
-            /* @__PURE__ */ jsxRuntime.jsx(
-              antd.Table,
+            /* @__PURE__ */ jsx(
+              Table,
               {
                 rowKey: "id",
                 size: "small",
@@ -2428,27 +3155,27 @@ const PaymentsPage = () => {
     )
   ] });
 };
-const { Text: Text$4 } = antd.Typography;
+const { Text: Text$4 } = Typography;
 const CatalogPage = () => {
   const api = useTireApi();
-  const [tab, setTab] = react.useState("packages");
-  const [packages, setPackages] = react.useState([]);
-  const [addons, setAddons] = react.useState([]);
-  const [config, setConfig] = react.useState({});
-  const [configDraft, setConfigDraft] = react.useState({});
-  const [loading, setLoading] = react.useState(false);
-  const [savingConfig, setSavingConfig] = react.useState(false);
-  const [referrals, setReferrals] = react.useState([]);
-  const [referralLoading, setReferralLoading] = react.useState(false);
-  const [referralSearch, setReferralSearch] = react.useState("");
-  const [grantModalOpen, setGrantModalOpen] = react.useState(false);
-  const [grantTarget, setGrantTarget] = react.useState(null);
-  const [grantCount, setGrantCount] = react.useState(1);
-  const [granting, setGranting] = react.useState(false);
-  const [modalType, setModalType] = react.useState(null);
-  const [editing, setEditing] = react.useState(null);
-  const [saving, setSaving] = react.useState(false);
-  const [form] = antd.Form.useForm();
+  const [tab, setTab] = useState("packages");
+  const [packages, setPackages] = useState([]);
+  const [addons, setAddons] = useState([]);
+  const [config, setConfig] = useState({});
+  const [configDraft, setConfigDraft] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [savingConfig, setSavingConfig] = useState(false);
+  const [referrals, setReferrals] = useState([]);
+  const [referralLoading, setReferralLoading] = useState(false);
+  const [referralSearch, setReferralSearch] = useState("");
+  const [grantModalOpen, setGrantModalOpen] = useState(false);
+  const [grantTarget, setGrantTarget] = useState(null);
+  const [grantCount, setGrantCount] = useState(1);
+  const [granting, setGranting] = useState(false);
+  const [modalType, setModalType] = useState(null);
+  const [editing, setEditing] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [form] = Form.useForm();
   const loadAll = async () => {
     setLoading(true);
     try {
@@ -2462,7 +3189,7 @@ const CatalogPage = () => {
       setConfig(siteConfig || {});
       setConfigDraft(siteConfig || {});
     } catch (error) {
-      antd.message.error(`加载套餐配置失败：${errorMessage(error)}`);
+      message.error(`加载套餐配置失败：${errorMessage(error)}`);
     } finally {
       setLoading(false);
     }
@@ -2482,15 +3209,15 @@ const CatalogPage = () => {
       const result = await api.listReferralCodes(params);
       setReferrals(Array.isArray(result?.data) ? result.data : Array.isArray(result) ? result : []);
     } catch (error) {
-      antd.message.error(`加载邀请码失败：${errorMessage(error)}`);
+      message.error(`加载邀请码失败：${errorMessage(error)}`);
     } finally {
       setReferralLoading(false);
     }
   };
-  react.useEffect(() => {
+  useEffect(() => {
     loadAll();
   }, []);
-  react.useEffect(() => {
+  useEffect(() => {
     if (tab === "referral") loadReferrals();
   }, [tab]);
   const openCreate = (type) => {
@@ -2542,6 +3269,7 @@ const CatalogPage = () => {
           name: values.name,
           code: values.code,
           baseMonths: Number(values.baseMonths) || 0,
+          freeDays: values.freeDays ? Number(values.freeDays) : null,
           storePrice: yuanToCents(values.storePrice),
           pickupPrice: yuanToCents(values.pickupPrice),
           extraMonthPrice: yuanToCents(values.extraMonthPrice),
@@ -2563,16 +3291,16 @@ const CatalogPage = () => {
       }
       if (editing) {
         await api.updateCollection(modalType, Number(editing.id), payload);
-        antd.message.success("已保存");
+        message.success("已保存");
       } else {
         await api.createCollection(modalType, payload);
-        antd.message.success("已新增");
+        message.success("已新增");
       }
       setModalType(null);
       setEditing(null);
       await loadAll();
     } catch (error) {
-      antd.message.error(`保存失败：${errorMessage(error)}`);
+      message.error(`保存失败：${errorMessage(error)}`);
     } finally {
       setSaving(false);
     }
@@ -2580,10 +3308,10 @@ const CatalogPage = () => {
   const removeCatalog = async (type, record) => {
     try {
       await api.removeCollection(type, Number(record.id));
-      antd.message.success("已删除");
+      message.success("已删除");
       await loadAll();
     } catch (error) {
-      antd.message.error(`删除失败：${errorMessage(error)}`);
+      message.error(`删除失败：${errorMessage(error)}`);
     }
   };
   const saveConfig = async () => {
@@ -2592,13 +3320,16 @@ const CatalogPage = () => {
       const updated = await api.updateConfig({
         paymentOnlineEnabled: Boolean(configDraft.paymentOnlineEnabled),
         depositEnabled: Boolean(configDraft.depositEnabled),
-        depositRatio: Number(configDraft.depositRatio) || 0
+        depositRatio: Number(configDraft.depositRatio) || 0,
+        agreementVersion: String(configDraft.agreementVersion || "").trim(),
+        smsReminderEnabled: Boolean(configDraft.smsReminderEnabled),
+        overdueAutoStartDate: String(configDraft.overdueAutoStartDate || "").slice(0, 10) || null
       });
       setConfig(updated || configDraft);
       setConfigDraft(updated || configDraft);
-      antd.message.success("支付配置已保存");
+      message.success("支付配置已保存");
     } catch (error) {
-      antd.message.error(`保存失败：${errorMessage(error)}`);
+      message.error(`保存失败：${errorMessage(error)}`);
     } finally {
       setSavingConfig(false);
     }
@@ -2613,12 +3344,12 @@ const CatalogPage = () => {
     setGranting(true);
     try {
       await api.grantFreeToReferral(Number(grantTarget.id), grantCount);
-      antd.message.success(`已为 ${grantTarget.nickname || grantTarget.phone} 发放 ${grantCount} 次免单额度`);
+      message.success(`已为 ${grantTarget.nickname || grantTarget.phone} 发放 ${grantCount} 次免单额度`);
       setGrantModalOpen(false);
       setGrantTarget(null);
       await loadReferrals();
     } catch (error) {
-      antd.message.error(`发放失败：${errorMessage(error)}`);
+      message.error(`发放失败：${errorMessage(error)}`);
     } finally {
       setGranting(false);
     }
@@ -2629,7 +3360,7 @@ const CatalogPage = () => {
       title: "标识",
       dataIndex: "code",
       width: 130,
-      render: (value) => /* @__PURE__ */ jsxRuntime.jsx(Text$4, { code: true, children: value })
+      render: (value) => /* @__PURE__ */ jsx(Text$4, { code: true, children: value })
     },
     {
       title: "基础月数",
@@ -2686,20 +3417,20 @@ const CatalogPage = () => {
       title: "启用",
       dataIndex: "enabled",
       width: 80,
-      render: (value) => value ? /* @__PURE__ */ jsxRuntime.jsx(Text$4, { type: "success", children: "启用" }) : /* @__PURE__ */ jsxRuntime.jsx(Text$4, { type: "secondary", children: "停用" })
+      render: (value) => value ? /* @__PURE__ */ jsx(Text$4, { type: "success", children: "启用" }) : /* @__PURE__ */ jsx(Text$4, { type: "secondary", children: "停用" })
     },
     {
       title: "操作",
       width: 140,
       fixed: "right",
-      render: (_, record) => /* @__PURE__ */ jsxRuntime.jsxs(antd.Space, { size: 4, children: [
-        /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { size: "small", type: "link", onClick: () => openEdit("packages", record), children: "编辑" }),
-        /* @__PURE__ */ jsxRuntime.jsx(
-          antd.Popconfirm,
+      render: (_, record) => /* @__PURE__ */ jsxs(Space, { size: 4, children: [
+        /* @__PURE__ */ jsx(Button, { size: "small", type: "link", onClick: () => openEdit("packages", record), children: "编辑" }),
+        /* @__PURE__ */ jsx(
+          Popconfirm,
           {
             title: "删除该套餐？",
             onConfirm: () => removeCatalog("packages", record),
-            children: /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { size: "small", type: "link", danger: true, children: "删除" })
+            children: /* @__PURE__ */ jsx(Button, { size: "small", type: "link", danger: true, children: "删除" })
           }
         )
       ] })
@@ -2711,7 +3442,7 @@ const CatalogPage = () => {
       title: "标识",
       dataIndex: "code",
       width: 140,
-      render: (value) => /* @__PURE__ */ jsxRuntime.jsx(Text$4, { code: true, children: value })
+      render: (value) => /* @__PURE__ */ jsx(Text$4, { code: true, children: value })
     },
     {
       title: "价格",
@@ -2731,20 +3462,20 @@ const CatalogPage = () => {
       title: "启用",
       dataIndex: "enabled",
       width: 80,
-      render: (value) => value ? /* @__PURE__ */ jsxRuntime.jsx(Text$4, { type: "success", children: "启用" }) : /* @__PURE__ */ jsxRuntime.jsx(Text$4, { type: "secondary", children: "停用" })
+      render: (value) => value ? /* @__PURE__ */ jsx(Text$4, { type: "success", children: "启用" }) : /* @__PURE__ */ jsx(Text$4, { type: "secondary", children: "停用" })
     },
     {
       title: "操作",
       width: 140,
       fixed: "right",
-      render: (_, record) => /* @__PURE__ */ jsxRuntime.jsxs(antd.Space, { size: 4, children: [
-        /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { size: "small", type: "link", onClick: () => openEdit("addons", record), children: "编辑" }),
-        /* @__PURE__ */ jsxRuntime.jsx(
-          antd.Popconfirm,
+      render: (_, record) => /* @__PURE__ */ jsxs(Space, { size: 4, children: [
+        /* @__PURE__ */ jsx(Button, { size: "small", type: "link", onClick: () => openEdit("addons", record), children: "编辑" }),
+        /* @__PURE__ */ jsx(
+          Popconfirm,
           {
             title: "删除该增值项？",
             onConfirm: () => removeCatalog("addons", record),
-            children: /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { size: "small", type: "link", danger: true, children: "删除" })
+            children: /* @__PURE__ */ jsx(Button, { size: "small", type: "link", danger: true, children: "删除" })
           }
         )
       ] })
@@ -2755,7 +3486,7 @@ const CatalogPage = () => {
       title: "邀请码",
       dataIndex: "code",
       width: 130,
-      render: (value) => /* @__PURE__ */ jsxRuntime.jsx(Text$4, { code: true, strong: true, style: { fontSize: 15 }, children: value })
+      render: (value) => /* @__PURE__ */ jsx(Text$4, { code: true, strong: true, style: { fontSize: 15 }, children: value })
     },
     { title: "手机号", dataIndex: "phone", width: 130 },
     {
@@ -2776,9 +3507,9 @@ const CatalogPage = () => {
       dataIndex: "completedCount",
       width: 100,
       align: "right",
-      render: (v) => /* @__PURE__ */ jsxRuntime.jsxs(Text$4, { strong: true, children: [
+      render: (v) => /* @__PURE__ */ jsxs(Text$4, { strong: true, children: [
         v || 0,
-        /* @__PURE__ */ jsxRuntime.jsx(Text$4, { type: "secondary", style: { fontWeight: "normal" }, children: " / 3" })
+        /* @__PURE__ */ jsx(Text$4, { type: "secondary", style: { fontWeight: "normal" }, children: " / 3" })
       ] })
     },
     {
@@ -2786,7 +3517,7 @@ const CatalogPage = () => {
       dataIndex: "pendingFreeCount",
       width: 100,
       align: "right",
-      render: (v) => v > 0 ? /* @__PURE__ */ jsxRuntime.jsx(Text$4, { type: "success", strong: true, style: { fontSize: 15 }, children: v }) : /* @__PURE__ */ jsxRuntime.jsx(Text$4, { type: "secondary", children: "0" })
+      render: (v) => v > 0 ? /* @__PURE__ */ jsx(Text$4, { type: "success", strong: true, style: { fontSize: 15 }, children: v }) : /* @__PURE__ */ jsx(Text$4, { type: "secondary", children: "0" })
     },
     {
       title: "累计奖励",
@@ -2799,8 +3530,8 @@ const CatalogPage = () => {
       title: "操作",
       width: 160,
       fixed: "right",
-      render: (_, record) => /* @__PURE__ */ jsxRuntime.jsx(
-        antd.Button,
+      render: (_, record) => /* @__PURE__ */ jsx(
+        Button,
         {
           size: "small",
           type: "primary",
@@ -2811,9 +3542,9 @@ const CatalogPage = () => {
       )
     }
   ];
-  return /* @__PURE__ */ jsxRuntime.jsxs(antd.Space, { direction: "vertical", size: 16, style: { width: "100%" }, children: [
-    /* @__PURE__ */ jsxRuntime.jsx(antd.Card, { children: /* @__PURE__ */ jsxRuntime.jsx(
-      antd.Tabs,
+  return /* @__PURE__ */ jsxs(Space, { direction: "vertical", size: 16, style: { width: "100%" }, children: [
+    /* @__PURE__ */ jsx(Card, { children: /* @__PURE__ */ jsx(
+      Tabs,
       {
         activeKey: tab,
         onChange: (k) => setTab(k),
@@ -2821,21 +3552,21 @@ const CatalogPage = () => {
           {
             key: "packages",
             label: "寄存套餐",
-            children: /* @__PURE__ */ jsxRuntime.jsxs(jsxRuntime.Fragment, { children: [
-              /* @__PURE__ */ jsxRuntime.jsx("div", { style: { marginBottom: 16, textAlign: "right" }, children: /* @__PURE__ */ jsxRuntime.jsxs(antd.Space, { children: [
-                /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { icon: /* @__PURE__ */ jsxRuntime.jsx(icons.ReloadOutlined, {}), onClick: loadAll, children: "刷新" }),
-                /* @__PURE__ */ jsxRuntime.jsx(
-                  antd.Button,
+            children: /* @__PURE__ */ jsxs(Fragment, { children: [
+              /* @__PURE__ */ jsx("div", { style: { marginBottom: 16, textAlign: "right" }, children: /* @__PURE__ */ jsxs(Space, { children: [
+                /* @__PURE__ */ jsx(Button, { icon: /* @__PURE__ */ jsx(ReloadOutlined, {}), onClick: loadAll, children: "刷新" }),
+                /* @__PURE__ */ jsx(
+                  Button,
                   {
                     type: "primary",
-                    icon: /* @__PURE__ */ jsxRuntime.jsx(icons.PlusOutlined, {}),
+                    icon: /* @__PURE__ */ jsx(PlusOutlined, {}),
                     onClick: () => openCreate("packages"),
                     children: "新增套餐"
                   }
                 )
               ] }) }),
-              /* @__PURE__ */ jsxRuntime.jsx(
-                antd.Table,
+              /* @__PURE__ */ jsx(
+                Table,
                 {
                   rowKey: "id",
                   size: "middle",
@@ -2851,18 +3582,18 @@ const CatalogPage = () => {
           {
             key: "addons",
             label: "增值项",
-            children: /* @__PURE__ */ jsxRuntime.jsxs(jsxRuntime.Fragment, { children: [
-              /* @__PURE__ */ jsxRuntime.jsx("div", { style: { marginBottom: 16, textAlign: "right" }, children: /* @__PURE__ */ jsxRuntime.jsx(
-                antd.Button,
+            children: /* @__PURE__ */ jsxs(Fragment, { children: [
+              /* @__PURE__ */ jsx("div", { style: { marginBottom: 16, textAlign: "right" }, children: /* @__PURE__ */ jsx(
+                Button,
                 {
                   type: "primary",
-                  icon: /* @__PURE__ */ jsxRuntime.jsx(icons.PlusOutlined, {}),
+                  icon: /* @__PURE__ */ jsx(PlusOutlined, {}),
                   onClick: () => openCreate("addons"),
                   children: "新增增值项"
                 }
               ) }),
-              /* @__PURE__ */ jsxRuntime.jsx(
-                antd.Table,
+              /* @__PURE__ */ jsx(
+                Table,
                 {
                   rowKey: "id",
                   size: "middle",
@@ -2878,10 +3609,10 @@ const CatalogPage = () => {
           {
             key: "referral",
             label: "邀请码管理",
-            children: /* @__PURE__ */ jsxRuntime.jsxs(jsxRuntime.Fragment, { children: [
-              /* @__PURE__ */ jsxRuntime.jsxs("div", { style: { marginBottom: 16, display: "flex", gap: 12, alignItems: "center" }, children: [
-                /* @__PURE__ */ jsxRuntime.jsx(
-                  antd.Input.Search,
+            children: /* @__PURE__ */ jsxs(Fragment, { children: [
+              /* @__PURE__ */ jsxs("div", { style: { marginBottom: 16, display: "flex", gap: 12, alignItems: "center" }, children: [
+                /* @__PURE__ */ jsx(
+                  Input.Search,
                   {
                     placeholder: "按邀请码或手机号搜索",
                     allowClear: true,
@@ -2892,15 +3623,15 @@ const CatalogPage = () => {
                     enterButton: true
                   }
                 ),
-                /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { icon: /* @__PURE__ */ jsxRuntime.jsx(icons.ReloadOutlined, {}), onClick: loadReferrals, children: "刷新" }),
-                /* @__PURE__ */ jsxRuntime.jsxs(Text$4, { type: "secondary", children: [
+                /* @__PURE__ */ jsx(Button, { icon: /* @__PURE__ */ jsx(ReloadOutlined, {}), onClick: loadReferrals, children: "刷新" }),
+                /* @__PURE__ */ jsxs(Text$4, { type: "secondary", children: [
                   "共 ",
                   referrals.length,
                   " 条 · 满 3 笔交易自动发 1 次免单"
                 ] })
               ] }),
-              /* @__PURE__ */ jsxRuntime.jsx(
-                antd.Table,
+              /* @__PURE__ */ jsx(
+                Table,
                 {
                   rowKey: "id",
                   size: "middle",
@@ -2916,11 +3647,11 @@ const CatalogPage = () => {
         ]
       }
     ) }),
-    /* @__PURE__ */ jsxRuntime.jsx(antd.Card, { title: "支付开关", children: /* @__PURE__ */ jsxRuntime.jsxs(antd.Space, { size: 24, wrap: true, align: "center", children: [
-      /* @__PURE__ */ jsxRuntime.jsxs(antd.Space, { children: [
-        /* @__PURE__ */ jsxRuntime.jsx(Text$4, { children: "在线支付" }),
-        /* @__PURE__ */ jsxRuntime.jsx(
-          antd.Switch,
+    /* @__PURE__ */ jsx(Card, { title: "支付开关", children: /* @__PURE__ */ jsxs(Space, { size: 24, wrap: true, align: "center", children: [
+      /* @__PURE__ */ jsxs(Space, { children: [
+        /* @__PURE__ */ jsx(Text$4, { children: "在线支付" }),
+        /* @__PURE__ */ jsx(
+          Switch,
           {
             checked: Boolean(configDraft.paymentOnlineEnabled),
             onChange: (checked) => setConfigDraft((prev) => ({
@@ -2930,20 +3661,20 @@ const CatalogPage = () => {
           }
         )
       ] }),
-      /* @__PURE__ */ jsxRuntime.jsxs(antd.Space, { children: [
-        /* @__PURE__ */ jsxRuntime.jsx(Text$4, { children: "支持定金" }),
-        /* @__PURE__ */ jsxRuntime.jsx(
-          antd.Switch,
+      /* @__PURE__ */ jsxs(Space, { children: [
+        /* @__PURE__ */ jsx(Text$4, { children: "支持定金" }),
+        /* @__PURE__ */ jsx(
+          Switch,
           {
             checked: Boolean(configDraft.depositEnabled),
             onChange: (checked) => setConfigDraft((prev) => ({ ...prev, depositEnabled: checked }))
           }
         )
       ] }),
-      /* @__PURE__ */ jsxRuntime.jsxs(antd.Space, { children: [
-        /* @__PURE__ */ jsxRuntime.jsx(Text$4, { children: "定金比例（%）" }),
-        /* @__PURE__ */ jsxRuntime.jsx(
-          antd.InputNumber,
+      /* @__PURE__ */ jsxs(Space, { children: [
+        /* @__PURE__ */ jsx(Text$4, { children: "定金比例（%）" }),
+        /* @__PURE__ */ jsx(
+          InputNumber,
           {
             min: 0,
             max: 100,
@@ -2955,14 +3686,71 @@ const CatalogPage = () => {
           }
         )
       ] }),
-      /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { type: "primary", loading: savingConfig, onClick: saveConfig, children: "保存支付配置" }),
-      /* @__PURE__ */ jsxRuntime.jsxs(Text$4, { type: "secondary", children: [
+      /* @__PURE__ */ jsx(Button, { type: "primary", loading: savingConfig, onClick: saveConfig, children: "保存支付配置" }),
+      /* @__PURE__ */ jsxs(Text$4, { type: "secondary", children: [
         "当前线上状态：",
         config.paymentOnlineEnabled ? "已开启" : "已关闭"
       ] })
     ] }) }),
-    /* @__PURE__ */ jsxRuntime.jsx(
-      antd.Modal,
+    /* @__PURE__ */ jsxs(Card, { title: "协议版本与提醒", children: [
+      /* @__PURE__ */ jsxs(Space, { size: 24, wrap: true, align: "center", children: [
+        /* @__PURE__ */ jsxs(Space, { children: [
+          /* @__PURE__ */ jsx(Text$4, { children: "条款版本号" }),
+          /* @__PURE__ */ jsx(
+            Input,
+            {
+              style: { width: 180 },
+              placeholder: "YYYY.MM.DD-N",
+              value: String(configDraft.agreementVersion || ""),
+              onChange: (event) => setConfigDraft((prev) => ({
+                ...prev,
+                agreementVersion: event.target.value
+              }))
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsxs(Space, { children: [
+          /* @__PURE__ */ jsx(Text$4, { children: "短信提醒（默认关）" }),
+          /* @__PURE__ */ jsx(
+            Switch,
+            {
+              checked: Boolean(configDraft.smsReminderEnabled),
+              onChange: (checked) => setConfigDraft((prev) => ({
+                ...prev,
+                smsReminderEnabled: checked
+              }))
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsxs(Space, { children: [
+          /* @__PURE__ */ jsx(Text$4, { children: "逾期自动推进起始日" }),
+          /* @__PURE__ */ jsx(
+            Input,
+            {
+              type: "date",
+              style: { width: 160 },
+              value: String(configDraft.overdueAutoStartDate || "").slice(0, 10),
+              onChange: (event) => setConfigDraft((prev) => ({
+                ...prev,
+                overdueAutoStartDate: event.target.value
+              }))
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsx(Button, { type: "primary", loading: savingConfig, onClick: saveConfig, children: "保存协议配置" }),
+        /* @__PURE__ */ jsxs(Text$4, { type: "secondary", children: [
+          "历史版本",
+          " ",
+          Array.isArray(config.agreementHistory) ? config.agreementHistory.length : 0,
+          " ",
+          "条"
+        ] })
+      ] }),
+      /* @__PURE__ */ jsx(Text$4, { type: "secondary", style: { display: "block", marginTop: 8 }, children: "版本号手工维护，不自动生成；入库时快照版本，老订单不追溯，处置以入库版本为准。" }),
+      /* @__PURE__ */ jsx(Text$4, { type: "secondary", style: { display: "block", marginTop: 4 }, children: "起始日为空时按当天生效：仅该日期之后入库的订单参与逾期自动推进，更早的老订单只能人工操作。" })
+    ] }),
+    /* @__PURE__ */ jsx(
+      Modal,
       {
         open: !!modalType,
         title: `${editing ? "编辑" : "新增"}${modalType === "packages" ? "套餐" : "增值项"}`,
@@ -2973,18 +3761,18 @@ const CatalogPage = () => {
         onOk: saveCatalog,
         confirmLoading: saving,
         width: 560,
-        children: /* @__PURE__ */ jsxRuntime.jsxs(antd.Form, { form, layout: "vertical", children: [
-          /* @__PURE__ */ jsxRuntime.jsx(
-            antd.Form.Item,
+        children: /* @__PURE__ */ jsxs(Form, { form, layout: "vertical", children: [
+          /* @__PURE__ */ jsx(
+            Form.Item,
             {
               name: "name",
               label: "名称",
               rules: [{ required: true, message: "请填写名称" }],
-              children: /* @__PURE__ */ jsxRuntime.jsx(antd.Input, {})
+              children: /* @__PURE__ */ jsx(Input, {})
             }
           ),
-          /* @__PURE__ */ jsxRuntime.jsx(
-            antd.Form.Item,
+          /* @__PURE__ */ jsx(
+            Form.Item,
             {
               name: "code",
               label: "标识（英文/数字）",
@@ -2992,54 +3780,63 @@ const CatalogPage = () => {
                 { required: true, message: "请填写标识" },
                 { pattern: /^[a-z0-9-_]+$/, message: "仅支持小写字母、数字、- 和 _" }
               ],
-              children: /* @__PURE__ */ jsxRuntime.jsx(antd.Input, { placeholder: "如 six_month" })
+              children: /* @__PURE__ */ jsx(Input, { placeholder: "如 six_month" })
             }
           ),
-          modalType === "packages" ? /* @__PURE__ */ jsxRuntime.jsxs(jsxRuntime.Fragment, { children: [
-            /* @__PURE__ */ jsxRuntime.jsxs(antd.Space, { size: 16, style: { display: "flex" }, children: [
-              /* @__PURE__ */ jsxRuntime.jsx(antd.Form.Item, { name: "baseMonths", label: "基础月数", style: { width: 200 }, children: /* @__PURE__ */ jsxRuntime.jsx(antd.InputNumber, { min: 1, max: 60, style: { width: "100%" } }) }),
-              /* @__PURE__ */ jsxRuntime.jsx(antd.Form.Item, { name: "sort", label: "排序", style: { width: 160 }, children: /* @__PURE__ */ jsxRuntime.jsx(antd.InputNumber, { style: { width: "100%" } }) }),
-              /* @__PURE__ */ jsxRuntime.jsx(antd.Form.Item, { name: "enabled", label: "启用", valuePropName: "checked", children: /* @__PURE__ */ jsxRuntime.jsx(antd.Switch, {}) })
+          modalType === "packages" ? /* @__PURE__ */ jsxs(Fragment, { children: [
+            /* @__PURE__ */ jsxs(Space, { size: 16, style: { display: "flex" }, children: [
+              /* @__PURE__ */ jsx(Form.Item, { name: "baseMonths", label: "基础月数", style: { width: 200 }, children: /* @__PURE__ */ jsx(InputNumber, { min: 1, max: 60, style: { width: "100%" } }) }),
+              /* @__PURE__ */ jsx(
+                Form.Item,
+                {
+                  name: "freeDays",
+                  label: "免费寄存天数（留空按基础月数×30，默认 180）",
+                  style: { width: 320 },
+                  children: /* @__PURE__ */ jsx(InputNumber, { min: 1, max: 3650, style: { width: "100%" } })
+                }
+              ),
+              /* @__PURE__ */ jsx(Form.Item, { name: "sort", label: "排序", style: { width: 160 }, children: /* @__PURE__ */ jsx(InputNumber, { style: { width: "100%" } }) }),
+              /* @__PURE__ */ jsx(Form.Item, { name: "enabled", label: "启用", valuePropName: "checked", children: /* @__PURE__ */ jsx(Switch, {}) })
             ] }),
-            /* @__PURE__ */ jsxRuntime.jsxs(antd.Space, { size: 16, style: { display: "flex" }, children: [
-              /* @__PURE__ */ jsxRuntime.jsx(antd.Form.Item, { name: "storePrice", label: "到店价（元）", style: { width: 200 }, children: /* @__PURE__ */ jsxRuntime.jsx(antd.InputNumber, { min: 0, precision: 2, step: 0.01, style: { width: "100%" } }) }),
-              /* @__PURE__ */ jsxRuntime.jsx(antd.Form.Item, { name: "pickupPrice", label: "上门价（元）", style: { width: 200 }, children: /* @__PURE__ */ jsxRuntime.jsx(antd.InputNumber, { min: 0, precision: 2, step: 0.01, style: { width: "100%" } }) })
+            /* @__PURE__ */ jsxs(Space, { size: 16, style: { display: "flex" }, children: [
+              /* @__PURE__ */ jsx(Form.Item, { name: "storePrice", label: "到店价（元）", style: { width: 200 }, children: /* @__PURE__ */ jsx(InputNumber, { min: 0, precision: 2, step: 0.01, style: { width: "100%" } }) }),
+              /* @__PURE__ */ jsx(Form.Item, { name: "pickupPrice", label: "上门价（元）", style: { width: 200 }, children: /* @__PURE__ */ jsx(InputNumber, { min: 0, precision: 2, step: 0.01, style: { width: "100%" } }) })
             ] }),
-            /* @__PURE__ */ jsxRuntime.jsxs(antd.Space, { size: 16, style: { display: "flex" }, children: [
-              /* @__PURE__ */ jsxRuntime.jsx(
-                antd.Form.Item,
+            /* @__PURE__ */ jsxs(Space, { size: 16, style: { display: "flex" }, children: [
+              /* @__PURE__ */ jsx(
+                Form.Item,
                 {
                   name: "extraMonthPrice",
                   label: "超月单价（元）",
                   style: { width: 200 },
-                  children: /* @__PURE__ */ jsxRuntime.jsx(antd.InputNumber, { min: 0, precision: 2, step: 0.01, style: { width: "100%" } })
+                  children: /* @__PURE__ */ jsx(InputNumber, { min: 0, precision: 2, step: 0.01, style: { width: "100%" } })
                 }
               ),
-              /* @__PURE__ */ jsxRuntime.jsx(
-                antd.Form.Item,
+              /* @__PURE__ */ jsx(
+                Form.Item,
                 {
                   name: "overdueDayPrice",
                   label: "超期日价（元）",
                   style: { width: 200 },
-                  children: /* @__PURE__ */ jsxRuntime.jsx(antd.InputNumber, { min: 0, precision: 2, step: 0.01, style: { width: "100%" } })
+                  children: /* @__PURE__ */ jsx(InputNumber, { min: 0, precision: 2, step: 0.01, style: { width: "100%" } })
                 }
               )
             ] }),
-            /* @__PURE__ */ jsxRuntime.jsx(antd.Form.Item, { name: "durationText", label: "时长文案", children: /* @__PURE__ */ jsxRuntime.jsx(antd.Input, { placeholder: "如 6 个月（180 天）" }) }),
-            /* @__PURE__ */ jsxRuntime.jsx(antd.Form.Item, { name: "highlightsText", label: "亮点（每行一条）", children: /* @__PURE__ */ jsxRuntime.jsx(antd.Input.TextArea, { rows: 4 }) })
-          ] }) : /* @__PURE__ */ jsxRuntime.jsxs(jsxRuntime.Fragment, { children: [
-            /* @__PURE__ */ jsxRuntime.jsxs(antd.Space, { size: 16, style: { display: "flex" }, children: [
-              /* @__PURE__ */ jsxRuntime.jsx(antd.Form.Item, { name: "price", label: "价格（元）", style: { width: 200 }, children: /* @__PURE__ */ jsxRuntime.jsx(antd.InputNumber, { min: 0, precision: 2, step: 0.01, style: { width: "100%" } }) }),
-              /* @__PURE__ */ jsxRuntime.jsx(antd.Form.Item, { name: "sort", label: "排序", style: { width: 160 }, children: /* @__PURE__ */ jsxRuntime.jsx(antd.InputNumber, { style: { width: "100%" } }) }),
-              /* @__PURE__ */ jsxRuntime.jsx(antd.Form.Item, { name: "enabled", label: "启用", valuePropName: "checked", children: /* @__PURE__ */ jsxRuntime.jsx(antd.Switch, {}) })
+            /* @__PURE__ */ jsx(Form.Item, { name: "durationText", label: "时长文案", children: /* @__PURE__ */ jsx(Input, { placeholder: "如 6 个月（180 天）" }) }),
+            /* @__PURE__ */ jsx(Form.Item, { name: "highlightsText", label: "亮点（每行一条）", children: /* @__PURE__ */ jsx(Input.TextArea, { rows: 4 }) })
+          ] }) : /* @__PURE__ */ jsxs(Fragment, { children: [
+            /* @__PURE__ */ jsxs(Space, { size: 16, style: { display: "flex" }, children: [
+              /* @__PURE__ */ jsx(Form.Item, { name: "price", label: "价格（元）", style: { width: 200 }, children: /* @__PURE__ */ jsx(InputNumber, { min: 0, precision: 2, step: 0.01, style: { width: "100%" } }) }),
+              /* @__PURE__ */ jsx(Form.Item, { name: "sort", label: "排序", style: { width: 160 }, children: /* @__PURE__ */ jsx(InputNumber, { style: { width: "100%" } }) }),
+              /* @__PURE__ */ jsx(Form.Item, { name: "enabled", label: "启用", valuePropName: "checked", children: /* @__PURE__ */ jsx(Switch, {}) })
             ] }),
-            /* @__PURE__ */ jsxRuntime.jsx(antd.Form.Item, { name: "unitText", label: "单位说明", children: /* @__PURE__ */ jsxRuntime.jsx(antd.Input, { placeholder: "如 每次 / 每套" }) })
+            /* @__PURE__ */ jsx(Form.Item, { name: "unitText", label: "单位说明", children: /* @__PURE__ */ jsx(Input, { placeholder: "如 每次 / 每套" }) })
           ] })
         ] })
       }
     ),
-    /* @__PURE__ */ jsxRuntime.jsx(
-      antd.Modal,
+    /* @__PURE__ */ jsx(
+      Modal,
       {
         open: grantModalOpen,
         title: "发放免单额度",
@@ -3050,30 +3847,30 @@ const CatalogPage = () => {
         onOk: handleGrantFree,
         confirmLoading: granting,
         width: 420,
-        children: grantTarget && /* @__PURE__ */ jsxRuntime.jsxs("div", { style: { padding: "8px 0" }, children: [
-          /* @__PURE__ */ jsxRuntime.jsxs("div", { style: { marginBottom: 12 }, children: [
-            /* @__PURE__ */ jsxRuntime.jsx(Text$4, { strong: true, children: "邀请码：" }),
-            /* @__PURE__ */ jsxRuntime.jsx(Text$4, { code: true, children: grantTarget.code })
+        children: grantTarget && /* @__PURE__ */ jsxs("div", { style: { padding: "8px 0" }, children: [
+          /* @__PURE__ */ jsxs("div", { style: { marginBottom: 12 }, children: [
+            /* @__PURE__ */ jsx(Text$4, { strong: true, children: "邀请码：" }),
+            /* @__PURE__ */ jsx(Text$4, { code: true, children: grantTarget.code })
           ] }),
-          /* @__PURE__ */ jsxRuntime.jsxs("div", { style: { marginBottom: 12 }, children: [
-            /* @__PURE__ */ jsxRuntime.jsx(Text$4, { strong: true, children: "手机号：" }),
+          /* @__PURE__ */ jsxs("div", { style: { marginBottom: 12 }, children: [
+            /* @__PURE__ */ jsx(Text$4, { strong: true, children: "手机号：" }),
             grantTarget.phone
           ] }),
-          /* @__PURE__ */ jsxRuntime.jsxs("div", { style: { marginBottom: 12 }, children: [
-            /* @__PURE__ */ jsxRuntime.jsx(Text$4, { strong: true, children: "昵称：" }),
+          /* @__PURE__ */ jsxs("div", { style: { marginBottom: 12 }, children: [
+            /* @__PURE__ */ jsx(Text$4, { strong: true, children: "昵称：" }),
             grantTarget.nickname || "-"
           ] }),
-          /* @__PURE__ */ jsxRuntime.jsxs("div", { style: { marginBottom: 16 }, children: [
-            /* @__PURE__ */ jsxRuntime.jsx(Text$4, { strong: true, children: "当前可用免单：" }),
-            /* @__PURE__ */ jsxRuntime.jsxs(Text$4, { type: "success", strong: true, style: { fontSize: 16, marginLeft: 8 }, children: [
+          /* @__PURE__ */ jsxs("div", { style: { marginBottom: 16 }, children: [
+            /* @__PURE__ */ jsx(Text$4, { strong: true, children: "当前可用免单：" }),
+            /* @__PURE__ */ jsxs(Text$4, { type: "success", strong: true, style: { fontSize: 16, marginLeft: 8 }, children: [
               grantTarget.pendingFreeCount || 0,
               " 次"
             ] })
           ] }),
-          /* @__PURE__ */ jsxRuntime.jsxs("div", { children: [
-            /* @__PURE__ */ jsxRuntime.jsx(Text$4, { strong: true, children: "发放次数：" }),
-            /* @__PURE__ */ jsxRuntime.jsx(
-              antd.InputNumber,
+          /* @__PURE__ */ jsxs("div", { children: [
+            /* @__PURE__ */ jsx(Text$4, { strong: true, children: "发放次数：" }),
+            /* @__PURE__ */ jsx(
+              InputNumber,
               {
                 min: 1,
                 max: 100,
@@ -3088,17 +3885,17 @@ const CatalogPage = () => {
     )
   ] });
 };
-const { Text: Text$3 } = antd.Typography;
+const { Text: Text$3 } = Typography;
 const CustomersPage = () => {
   const api = useTireApi();
-  const [keyword, setKeyword] = react.useState("");
-  const [query, setQuery] = react.useState(void 0);
-  const [page, setPage] = react.useState(1);
-  const [pageSize, setPageSize] = react.useState(20);
-  const [rows, setRows] = react.useState([]);
-  const [total, setTotal] = react.useState(0);
-  const [loading, setLoading] = react.useState(false);
-  const [current, setCurrent] = react.useState(null);
+  const [keyword, setKeyword] = useState("");
+  const [query, setQuery] = useState(void 0);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const [rows, setRows] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [current, setCurrent] = useState(null);
   const load = async () => {
     setLoading(true);
     try {
@@ -3110,12 +3907,12 @@ const CustomersPage = () => {
       setRows(result?.data || []);
       setTotal(Number(result?.pagination?.total) || 0);
     } catch (error) {
-      antd.message.error(`加载客户失败：${errorMessage(error)}`);
+      message.error(`加载客户失败：${errorMessage(error)}`);
     } finally {
       setLoading(false);
     }
   };
-  react.useEffect(() => {
+  useEffect(() => {
     load();
   }, [page, pageSize, query]);
   const columns = [
@@ -3131,7 +3928,7 @@ const CustomersPage = () => {
       title: "在存数",
       dataIndex: "storedCount",
       width: 100,
-      render: (value) => value > 0 ? /* @__PURE__ */ jsxRuntime.jsx(Text$3, { style: { color: "#2563EB" }, children: value }) : /* @__PURE__ */ jsxRuntime.jsx(Text$3, { type: "secondary", children: "0" })
+      render: (value) => value > 0 ? /* @__PURE__ */ jsx(Text$3, { style: { color: "#2563EB" }, children: value }) : /* @__PURE__ */ jsx(Text$3, { type: "secondary", children: "0" })
     },
     {
       title: "累计金额",
@@ -3151,7 +3948,7 @@ const CustomersPage = () => {
       title: "操作",
       width: 120,
       fixed: "right",
-      render: (_, record) => /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { size: "small", type: "link", onClick: () => setCurrent(record), children: "历史订单" })
+      render: (_, record) => /* @__PURE__ */ jsx(Button, { size: "small", type: "link", onClick: () => setCurrent(record), children: "历史订单" })
     }
   ];
   const orderColumns = [
@@ -3160,7 +3957,7 @@ const CustomersPage = () => {
       title: "状态",
       dataIndex: "status",
       width: 100,
-      render: (value) => /* @__PURE__ */ jsxRuntime.jsx(StatusTag, { status: value })
+      render: (value) => /* @__PURE__ */ jsx(StatusTag, { status: value })
     },
     {
       title: "服务",
@@ -3200,10 +3997,10 @@ const CustomersPage = () => {
       render: (value) => money$1(value)
     }
   ];
-  return /* @__PURE__ */ jsxRuntime.jsxs(jsxRuntime.Fragment, { children: [
-    /* @__PURE__ */ jsxRuntime.jsx(antd.Card, { styles: { body: { padding: 16 } }, style: { marginBottom: 16 }, children: /* @__PURE__ */ jsxRuntime.jsxs(antd.Space, { wrap: true, size: 12, children: [
-      /* @__PURE__ */ jsxRuntime.jsx(
-        antd.Input,
+  return /* @__PURE__ */ jsxs(Fragment, { children: [
+    /* @__PURE__ */ jsx(Card, { styles: { body: { padding: 16 } }, style: { marginBottom: 16 }, children: /* @__PURE__ */ jsxs(Space, { wrap: true, size: 12, children: [
+      /* @__PURE__ */ jsx(
+        Input,
         {
           allowClear: true,
           placeholder: "手机号 / 姓名 / 车牌",
@@ -3216,11 +4013,11 @@ const CustomersPage = () => {
           style: { width: 260 }
         }
       ),
-      /* @__PURE__ */ jsxRuntime.jsx(
-        antd.Button,
+      /* @__PURE__ */ jsx(
+        Button,
         {
           type: "primary",
-          icon: /* @__PURE__ */ jsxRuntime.jsx(icons.SearchOutlined, {}),
+          icon: /* @__PURE__ */ jsx(SearchOutlined, {}),
           onClick: () => {
             setPage(1);
             setQuery(keyword.trim() || void 0);
@@ -3228,8 +4025,8 @@ const CustomersPage = () => {
           children: "查询"
         }
       ),
-      /* @__PURE__ */ jsxRuntime.jsx(
-        antd.Button,
+      /* @__PURE__ */ jsx(
+        Button,
         {
           onClick: () => {
             setKeyword("");
@@ -3239,10 +4036,10 @@ const CustomersPage = () => {
           children: "重置"
         }
       ),
-      /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { icon: /* @__PURE__ */ jsxRuntime.jsx(icons.ReloadOutlined, {}), onClick: () => load(), children: "刷新" })
+      /* @__PURE__ */ jsx(Button, { icon: /* @__PURE__ */ jsx(ReloadOutlined, {}), onClick: () => load(), children: "刷新" })
     ] }) }),
-    /* @__PURE__ */ jsxRuntime.jsx(
-      antd.Table,
+    /* @__PURE__ */ jsx(
+      Table,
       {
         rowKey: "phone",
         size: "middle",
@@ -3263,16 +4060,16 @@ const CustomersPage = () => {
         }
       }
     ),
-    /* @__PURE__ */ jsxRuntime.jsx(
-      antd.Drawer,
+    /* @__PURE__ */ jsx(
+      Drawer,
       {
         title: current ? `历史订单 · ${current.customerName || current.phone}` : "历史订单",
         open: !!current,
         width: 720,
         onClose: () => setCurrent(null),
         styles: { body: { padding: 24 } },
-        children: current ? /* @__PURE__ */ jsxRuntime.jsxs(antd.Space, { direction: "vertical", size: 12, style: { width: "100%" }, children: [
-          /* @__PURE__ */ jsxRuntime.jsxs(Text$3, { type: "secondary", children: [
+        children: current ? /* @__PURE__ */ jsxs(Space, { direction: "vertical", size: 12, style: { width: "100%" }, children: [
+          /* @__PURE__ */ jsxs(Text$3, { type: "secondary", children: [
             "手机号 ",
             current.phone,
             "，共 ",
@@ -3281,8 +4078,8 @@ const CustomersPage = () => {
             " ",
             money$1(current.totalAmount)
           ] }),
-          /* @__PURE__ */ jsxRuntime.jsx(
-            antd.Table,
+          /* @__PURE__ */ jsx(
+            Table,
             {
               rowKey: "id",
               size: "small",
@@ -3297,7 +4094,7 @@ const CustomersPage = () => {
     )
   ] });
 };
-const { Text: Text$2 } = antd.Typography;
+const { Text: Text$2 } = Typography;
 const DEFAULT_TEMPLATES = {
   order_created: "{name}您好，您的雪地胎寄存订单 {orderNo} 已下单成功，请在订单页保存二维码。",
   accepted: "{name}您好，您的雪地胎寄存订单 {orderNo} 已接单，{pickupText}，请保持电话畅通。",
@@ -3311,7 +4108,7 @@ const TEMPLATE_KEYS = Object.keys(DEFAULT_TEMPLATES);
 const copyText = async (text) => {
   try {
     await navigator.clipboard.writeText(text);
-    antd.message.success("已复制到剪贴板");
+    message.success("已复制到剪贴板");
   } catch {
     const textarea = document.createElement("textarea");
     textarea.value = text;
@@ -3321,24 +4118,44 @@ const copyText = async (text) => {
     textarea.select();
     document.execCommand("copy");
     document.body.removeChild(textarea);
-    antd.message.success("已复制到剪贴板");
+    message.success("已复制到剪贴板");
   }
 };
 const MessagesPage = () => {
   const api = useTireApi();
-  const [filters, setFilters] = react.useState({});
-  const [page, setPage] = react.useState(1);
-  const [pageSize, setPageSize] = react.useState(20);
-  const [rows, setRows] = react.useState([]);
-  const [total, setTotal] = react.useState(0);
-  const [loading, setLoading] = react.useState(false);
-  const [templates, setTemplates] = react.useState({
+  const [stationRows, setStationRows] = useState([]);
+  const [stationLoading, setStationLoading] = useState(false);
+  const [stationPage, setStationPage] = useState(1);
+  const [stationTotal, setStationTotal] = useState(0);
+  const loadStation = async (nextPage = stationPage) => {
+    setStationLoading(true);
+    try {
+      const result = await api.listStationMessages({
+        page: nextPage,
+        pageSize: 20
+      });
+      setStationRows(Array.isArray(result?.data) ? result.data : []);
+      setStationTotal(Number(result?.pagination?.total) || 0);
+      setStationPage(nextPage);
+    } catch (error) {
+      message.error(`加载站内信失败：${errorMessage(error)}`);
+    } finally {
+      setStationLoading(false);
+    }
+  };
+  const [filters, setFilters] = useState({});
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const [rows, setRows] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [templates, setTemplates] = useState({
     ...DEFAULT_TEMPLATES
   });
-  const [templateLoading, setTemplateLoading] = react.useState(true);
-  const [savingTemplates, setSavingTemplates] = react.useState(false);
-  const [editing, setEditing] = react.useState(null);
-  const [contentDraft, setContentDraft] = react.useState("");
+  const [templateLoading, setTemplateLoading] = useState(true);
+  const [savingTemplates, setSavingTemplates] = useState(false);
+  const [editing, setEditing] = useState(null);
+  const [contentDraft, setContentDraft] = useState("");
   const loadLogs = async () => {
     setLoading(true);
     try {
@@ -3353,7 +4170,7 @@ const MessagesPage = () => {
       setRows(result?.data || []);
       setTotal(Number(result?.pagination?.total) || 0);
     } catch (error) {
-      antd.message.error(`加载通知失败：${errorMessage(error)}`);
+      message.error(`加载通知失败：${errorMessage(error)}`);
     } finally {
       setLoading(false);
     }
@@ -3373,12 +4190,12 @@ const MessagesPage = () => {
       }
       setTemplates(merged);
     } catch (error) {
-      antd.message.error(`加载模板失败：${errorMessage(error)}`);
+      message.error(`加载模板失败：${errorMessage(error)}`);
     } finally {
       setTemplateLoading(false);
     }
   };
-  react.useEffect(() => {
+  useEffect(() => {
     loadLogs();
   }, [
     page,
@@ -3387,8 +4204,9 @@ const MessagesPage = () => {
     filters.type,
     filters.keyword
   ]);
-  react.useEffect(() => {
+  useEffect(() => {
     loadTemplates();
+    loadStation(1);
   }, []);
   const updateStatus = async (record, status) => {
     try {
@@ -3396,10 +4214,10 @@ const MessagesPage = () => {
         status,
         ...record.content ? { content: record.content } : {}
       });
-      antd.message.success(status === "sent" ? "已标记为已发送" : "已跳过");
+      message.success(status === "sent" ? "已标记为已发送" : "已跳过");
       await loadLogs();
     } catch (error) {
-      antd.message.error(`操作失败：${errorMessage(error)}`);
+      message.error(`操作失败：${errorMessage(error)}`);
     }
   };
   const saveContent = async () => {
@@ -3409,11 +4227,11 @@ const MessagesPage = () => {
         status: editing.status,
         content: contentDraft
       });
-      antd.message.success("文案已更新");
+      message.success("文案已更新");
       setEditing(null);
       await loadLogs();
     } catch (error) {
-      antd.message.error(`保存失败：${errorMessage(error)}`);
+      message.error(`保存失败：${errorMessage(error)}`);
     }
   };
   const saveTemplates = async () => {
@@ -3427,10 +4245,10 @@ const MessagesPage = () => {
         }
       });
       await api.updateConfig({ smsTemplateOverride: override });
-      antd.message.success("模板文案已保存");
+      message.success("模板文案已保存");
       await loadTemplates();
     } catch (error) {
-      antd.message.error(`保存失败：${errorMessage(error)}`);
+      message.error(`保存失败：${errorMessage(error)}`);
     } finally {
       setSavingTemplates(false);
     }
@@ -3456,7 +4274,7 @@ const MessagesPage = () => {
       title: "文案",
       dataIndex: "content",
       width: 360,
-      render: (value) => /* @__PURE__ */ jsxRuntime.jsx(antd.Tooltip, { title: value, children: /* @__PURE__ */ jsxRuntime.jsx(
+      render: (value) => /* @__PURE__ */ jsx(Tooltip, { title: value, children: /* @__PURE__ */ jsx(
         "div",
         {
           style: {
@@ -3473,7 +4291,7 @@ const MessagesPage = () => {
       title: "状态",
       dataIndex: "status",
       width: 100,
-      render: (value) => /* @__PURE__ */ jsxRuntime.jsx(antd.Tag, { color: SMS_STATUS_COLOR[value], children: SMS_STATUS_TEXT[value] || value })
+      render: (value) => /* @__PURE__ */ jsx(Tag, { color: SMS_STATUS_COLOR[value], children: SMS_STATUS_TEXT[value] || value })
     },
     {
       title: "创建时间",
@@ -3485,23 +4303,23 @@ const MessagesPage = () => {
       title: "操作",
       width: 220,
       fixed: "right",
-      render: (_, record) => /* @__PURE__ */ jsxRuntime.jsxs(antd.Space, { size: 2, wrap: true, children: [
-        /* @__PURE__ */ jsxRuntime.jsx(
-          antd.Button,
+      render: (_, record) => /* @__PURE__ */ jsxs(Space, { size: 2, wrap: true, children: [
+        /* @__PURE__ */ jsx(
+          Button,
           {
             size: "small",
             type: "link",
-            icon: /* @__PURE__ */ jsxRuntime.jsx(icons.CopyOutlined, {}),
+            icon: /* @__PURE__ */ jsx(CopyOutlined, {}),
             onClick: () => copyText(record.content || ""),
             children: "复制"
           }
         ),
-        /* @__PURE__ */ jsxRuntime.jsx(
-          antd.Button,
+        /* @__PURE__ */ jsx(
+          Button,
           {
             size: "small",
             type: "link",
-            icon: /* @__PURE__ */ jsxRuntime.jsx(icons.EditOutlined, {}),
+            icon: /* @__PURE__ */ jsx(EditOutlined, {}),
             onClick: () => {
               setEditing(record);
               setContentDraft(record.content || "");
@@ -3509,31 +4327,31 @@ const MessagesPage = () => {
             children: "编辑"
           }
         ),
-        record.status === "pending" ? /* @__PURE__ */ jsxRuntime.jsxs(jsxRuntime.Fragment, { children: [
-          /* @__PURE__ */ jsxRuntime.jsx(
-            antd.Popconfirm,
+        record.status === "pending" ? /* @__PURE__ */ jsxs(Fragment, { children: [
+          /* @__PURE__ */ jsx(
+            Popconfirm,
             {
               title: "确认该通知已发送？",
               onConfirm: () => updateStatus(record, "sent"),
-              children: /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { size: "small", type: "link", icon: /* @__PURE__ */ jsxRuntime.jsx(icons.SendOutlined, {}), children: "已发" })
+              children: /* @__PURE__ */ jsx(Button, { size: "small", type: "link", icon: /* @__PURE__ */ jsx(SendOutlined, {}), children: "已发" })
             }
           ),
-          /* @__PURE__ */ jsxRuntime.jsx(
-            antd.Popconfirm,
+          /* @__PURE__ */ jsx(
+            Popconfirm,
             {
               title: "跳过该通知？",
               onConfirm: () => updateStatus(record, "skipped"),
-              children: /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { size: "small", type: "link", danger: true, children: "跳过" })
+              children: /* @__PURE__ */ jsx(Button, { size: "small", type: "link", danger: true, children: "跳过" })
             }
           )
         ] }) : null
       ] })
     }
   ];
-  return /* @__PURE__ */ jsxRuntime.jsxs(antd.Space, { direction: "vertical", size: 16, style: { width: "100%" }, children: [
-    /* @__PURE__ */ jsxRuntime.jsx(antd.Card, { styles: { body: { padding: 16 } }, children: /* @__PURE__ */ jsxRuntime.jsxs(antd.Space, { wrap: true, size: 12, children: [
-      /* @__PURE__ */ jsxRuntime.jsx(
-        antd.Select,
+  return /* @__PURE__ */ jsxs(Space, { direction: "vertical", size: 16, style: { width: "100%" }, children: [
+    /* @__PURE__ */ jsx(Card, { styles: { body: { padding: 16 } }, children: /* @__PURE__ */ jsxs(Space, { wrap: true, size: 12, children: [
+      /* @__PURE__ */ jsx(
+        Select,
         {
           allowClear: true,
           placeholder: "状态",
@@ -3549,8 +4367,8 @@ const MessagesPage = () => {
           }))
         }
       ),
-      /* @__PURE__ */ jsxRuntime.jsx(
-        antd.Select,
+      /* @__PURE__ */ jsx(
+        Select,
         {
           allowClear: true,
           placeholder: "通知类型",
@@ -3566,8 +4384,8 @@ const MessagesPage = () => {
           }))
         }
       ),
-      /* @__PURE__ */ jsxRuntime.jsx(
-        antd.Input.Search,
+      /* @__PURE__ */ jsx(
+        Input.Search,
         {
           allowClear: true,
           placeholder: "手机号 / 订单号",
@@ -3581,10 +4399,10 @@ const MessagesPage = () => {
           }
         }
       ),
-      /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { icon: /* @__PURE__ */ jsxRuntime.jsx(icons.ReloadOutlined, {}), onClick: () => loadLogs(), children: "刷新" })
+      /* @__PURE__ */ jsx(Button, { icon: /* @__PURE__ */ jsx(ReloadOutlined, {}), onClick: () => loadLogs(), children: "刷新" })
     ] }) }),
-    /* @__PURE__ */ jsxRuntime.jsx(
-      antd.Table,
+    /* @__PURE__ */ jsx(
+      Table,
       {
         rowKey: "id",
         size: "middle",
@@ -3605,21 +4423,107 @@ const MessagesPage = () => {
         }
       }
     ),
-    /* @__PURE__ */ jsxRuntime.jsx(
-      antd.Card,
+    /* @__PURE__ */ jsx(
+      Card,
+      {
+        title: "站内信（逾期提醒走此通道，短信默认关闭）",
+        extra: /* @__PURE__ */ jsx(Button, { icon: /* @__PURE__ */ jsx(ReloadOutlined, {}), onClick: () => loadStation(stationPage), children: "刷新" }),
+        children: /* @__PURE__ */ jsx(
+          Table,
+          {
+            rowKey: "id",
+            size: "small",
+            loading: stationLoading,
+            dataSource: stationRows,
+            pagination: {
+              current: stationPage,
+              pageSize: 20,
+              total: stationTotal,
+              onChange: (next) => loadStation(next)
+            },
+            columns: [
+              {
+                title: "级别",
+                dataIndex: "level",
+                width: 90,
+                render: (value) => /* @__PURE__ */ jsx(
+                  Tag,
+                  {
+                    color: value === "urgent" ? "red" : value === "warning" ? "orange" : "default",
+                    children: value === "urgent" ? "紧急" : value === "warning" ? "提醒" : "普通"
+                  }
+                )
+              },
+              { title: "标题", dataIndex: "title", width: 200 },
+              {
+                title: "内容",
+                dataIndex: "content",
+                render: (value) => /* @__PURE__ */ jsx(Tooltip, { title: value, children: /* @__PURE__ */ jsx(
+                  "div",
+                  {
+                    style: {
+                      maxWidth: 420,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap"
+                    },
+                    children: value
+                  }
+                ) })
+              },
+              { title: "订单号", dataIndex: "orderNo", width: 150 },
+              {
+                title: "状态",
+                dataIndex: "status",
+                width: 90,
+                render: (value) => value === "read" ? /* @__PURE__ */ jsx(Tag, { color: "green", children: "已读" }) : /* @__PURE__ */ jsx(Tag, { color: "orange", children: "未读" })
+              },
+              {
+                title: "时间",
+                dataIndex: "createdAt",
+                width: 150,
+                render: (value) => dateTimeText(value)
+              },
+              {
+                title: "操作",
+                width: 100,
+                render: (_, record) => record.status === "read" ? /* @__PURE__ */ jsx(Text$2, { type: "secondary", children: "-" }) : /* @__PURE__ */ jsx(
+                  Button,
+                  {
+                    size: "small",
+                    type: "link",
+                    onClick: async () => {
+                      try {
+                        await api.readStationMessage(record.id);
+                        await loadStation(stationPage);
+                      } catch (error) {
+                        message.error(errorMessage(error));
+                      }
+                    },
+                    children: "标记已读"
+                  }
+                )
+              }
+            ]
+          }
+        )
+      }
+    ),
+    /* @__PURE__ */ jsx(
+      Card,
       {
         title: "模板文案",
-        extra: /* @__PURE__ */ jsxRuntime.jsxs(antd.Space, { children: [
-          /* @__PURE__ */ jsxRuntime.jsx(
-            antd.Button,
+        extra: /* @__PURE__ */ jsxs(Space, { children: [
+          /* @__PURE__ */ jsx(
+            Button,
             {
               onClick: () => setTemplates({ ...DEFAULT_TEMPLATES }),
               disabled: savingTemplates,
               children: "恢复默认"
             }
           ),
-          /* @__PURE__ */ jsxRuntime.jsx(
-            antd.Button,
+          /* @__PURE__ */ jsx(
+            Button,
             {
               type: "primary",
               loading: savingTemplates,
@@ -3628,19 +4532,19 @@ const MessagesPage = () => {
             }
           )
         ] }),
-        children: /* @__PURE__ */ jsxRuntime.jsxs(antd.Space, { direction: "vertical", size: 8, style: { width: "100%" }, children: [
-          /* @__PURE__ */ jsxRuntime.jsxs(Text$2, { type: "secondary", children: [
+        children: /* @__PURE__ */ jsxs(Space, { direction: "vertical", size: 8, style: { width: "100%" }, children: [
+          /* @__PURE__ */ jsxs(Text$2, { type: "secondary", children: [
             "可用变量：",
             "{name} {orderNo} {expireAt} {daysLeft} {locationCode} {pickupText} {content}"
           ] }),
-          /* @__PURE__ */ jsxRuntime.jsx(
-            antd.Collapse,
+          /* @__PURE__ */ jsx(
+            Collapse,
             {
               items: TEMPLATE_KEYS.map((key) => ({
                 key,
                 label: SMS_TYPE_TEXT[key] || key,
-                children: /* @__PURE__ */ jsxRuntime.jsx(
-                  antd.Input.TextArea,
+                children: /* @__PURE__ */ jsx(
+                  Input.TextArea,
                   {
                     rows: 3,
                     value: templates[key],
@@ -3657,8 +4561,8 @@ const MessagesPage = () => {
         ] })
       }
     ),
-    /* @__PURE__ */ jsxRuntime.jsx(
-      antd.Modal,
+    /* @__PURE__ */ jsx(
+      Modal,
       {
         open: !!editing,
         title: editing ? `编辑文案 · ${SMS_TYPE_TEXT[editing.type] || editing.type}` : "编辑文案",
@@ -3666,8 +4570,8 @@ const MessagesPage = () => {
         onOk: saveContent,
         okText: "保存",
         width: 560,
-        children: /* @__PURE__ */ jsxRuntime.jsx(
-          antd.Input.TextArea,
+        children: /* @__PURE__ */ jsx(
+          Input.TextArea,
           {
             rows: 5,
             value: contentDraft,
@@ -3678,7 +4582,7 @@ const MessagesPage = () => {
     )
   ] });
 };
-const { Text: Text$1 } = antd.Typography;
+const { Text: Text$1 } = Typography;
 const moveItem = async (api, name, list, record, direction) => {
   const sorted = [...list].sort(
     (a, b) => (Number(a.sort) || 0) - (Number(b.sort) || 0)
@@ -3693,30 +4597,30 @@ const moveItem = async (api, name, list, record, direction) => {
     await api.updateCollection(name, Number(record.id), {
       sort: Number(target.sort) || 0
     });
-    antd.message.success("排序已更新");
+    message.success("排序已更新");
   } catch (error) {
-    antd.message.error(`排序失败：${errorMessage(error)}`);
+    message.error(`排序失败：${errorMessage(error)}`);
   }
 };
 const FaqManager = ({ name, title, onChanged }) => {
   const api = useTireApi();
-  const [list, setList] = react.useState([]);
-  const [loading, setLoading] = react.useState(false);
-  const [editing, setEditing] = react.useState(null);
-  const [open, setOpen] = react.useState(false);
-  const [saving, setSaving] = react.useState(false);
-  const [form] = antd.Form.useForm();
+  const [list, setList] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [editing, setEditing] = useState(null);
+  const [open, setOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [form] = Form.useForm();
   const load = async () => {
     setLoading(true);
     try {
       setList(await api.listCollection(name));
     } catch (error) {
-      antd.message.error(`加载${title}失败：${errorMessage(error)}`);
+      message.error(`加载${title}失败：${errorMessage(error)}`);
     } finally {
       setLoading(false);
     }
   };
-  react.useEffect(() => {
+  useEffect(() => {
     load();
   }, []);
   const openCreate = () => {
@@ -3745,12 +4649,12 @@ const FaqManager = ({ name, title, onChanged }) => {
       } else {
         await api.createCollection(name, payload);
       }
-      antd.message.success("已保存");
+      message.success("已保存");
       setOpen(false);
       await load();
       onChanged?.();
     } catch (error) {
-      antd.message.error(`保存失败：${errorMessage(error)}`);
+      message.error(`保存失败：${errorMessage(error)}`);
     } finally {
       setSaving(false);
     }
@@ -3758,11 +4662,11 @@ const FaqManager = ({ name, title, onChanged }) => {
   const remove = async (record) => {
     try {
       await api.removeCollection(name, Number(record.id));
-      antd.message.success("已删除");
+      message.success("已删除");
       await load();
       onChanged?.();
     } catch (error) {
-      antd.message.error(`删除失败：${errorMessage(error)}`);
+      message.error(`删除失败：${errorMessage(error)}`);
     }
   };
   const columns = [
@@ -3776,60 +4680,60 @@ const FaqManager = ({ name, title, onChanged }) => {
       title: "回答",
       dataIndex: "answer",
       width: 420,
-      render: (value) => /* @__PURE__ */ jsxRuntime.jsx("div", { style: { whiteSpace: "pre-wrap" }, children: value || "-" })
+      render: (value) => /* @__PURE__ */ jsx("div", { style: { whiteSpace: "pre-wrap" }, children: value || "-" })
     },
     { title: "排序", dataIndex: "sort", width: 80 },
     {
       title: "启用",
       dataIndex: "enabled",
       width: 80,
-      render: (value) => value ? /* @__PURE__ */ jsxRuntime.jsx(Text$1, { type: "success", children: "启用" }) : /* @__PURE__ */ jsxRuntime.jsx(Text$1, { type: "secondary", children: "停用" })
+      render: (value) => value ? /* @__PURE__ */ jsx(Text$1, { type: "success", children: "启用" }) : /* @__PURE__ */ jsx(Text$1, { type: "secondary", children: "停用" })
     },
     {
       title: "操作",
       width: 220,
       fixed: "right",
-      render: (_, record) => /* @__PURE__ */ jsxRuntime.jsxs(antd.Space, { size: 2, children: [
-        /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { size: "small", type: "link", onClick: () => openEdit(record), children: "编辑" }),
-        /* @__PURE__ */ jsxRuntime.jsx(
-          antd.Button,
+      render: (_, record) => /* @__PURE__ */ jsxs(Space, { size: 2, children: [
+        /* @__PURE__ */ jsx(Button, { size: "small", type: "link", onClick: () => openEdit(record), children: "编辑" }),
+        /* @__PURE__ */ jsx(
+          Button,
           {
             size: "small",
             type: "link",
-            icon: /* @__PURE__ */ jsxRuntime.jsx(icons.ArrowUpOutlined, {}),
+            icon: /* @__PURE__ */ jsx(ArrowUpOutlined, {}),
             onClick: async () => {
               await moveItem(api, name, list, record, -1);
               await load();
             }
           }
         ),
-        /* @__PURE__ */ jsxRuntime.jsx(
-          antd.Button,
+        /* @__PURE__ */ jsx(
+          Button,
           {
             size: "small",
             type: "link",
-            icon: /* @__PURE__ */ jsxRuntime.jsx(icons.ArrowDownOutlined, {}),
+            icon: /* @__PURE__ */ jsx(ArrowDownOutlined, {}),
             onClick: async () => {
               await moveItem(api, name, list, record, 1);
               await load();
             }
           }
         ),
-        /* @__PURE__ */ jsxRuntime.jsx(antd.Popconfirm, { title: "删除该问答？", onConfirm: () => remove(record), children: /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { size: "small", type: "link", danger: true, children: "删除" }) })
+        /* @__PURE__ */ jsx(Popconfirm, { title: "删除该问答？", onConfirm: () => remove(record), children: /* @__PURE__ */ jsx(Button, { size: "small", type: "link", danger: true, children: "删除" }) })
       ] })
     }
   ];
-  return /* @__PURE__ */ jsxRuntime.jsxs(jsxRuntime.Fragment, { children: [
-    /* @__PURE__ */ jsxRuntime.jsx(
-      antd.Card,
+  return /* @__PURE__ */ jsxs(Fragment, { children: [
+    /* @__PURE__ */ jsx(
+      Card,
       {
         title,
-        extra: /* @__PURE__ */ jsxRuntime.jsxs(antd.Space, { children: [
-          /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { icon: /* @__PURE__ */ jsxRuntime.jsx(icons.ReloadOutlined, {}), onClick: load, children: "刷新" }),
-          /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { type: "primary", icon: /* @__PURE__ */ jsxRuntime.jsx(icons.PlusOutlined, {}), onClick: openCreate, children: "新增问答" })
+        extra: /* @__PURE__ */ jsxs(Space, { children: [
+          /* @__PURE__ */ jsx(Button, { icon: /* @__PURE__ */ jsx(ReloadOutlined, {}), onClick: load, children: "刷新" }),
+          /* @__PURE__ */ jsx(Button, { type: "primary", icon: /* @__PURE__ */ jsx(PlusOutlined, {}), onClick: openCreate, children: "新增问答" })
         ] }),
-        children: /* @__PURE__ */ jsxRuntime.jsx(
-          antd.Table,
+        children: /* @__PURE__ */ jsx(
+          Table,
           {
             rowKey: "id",
             size: "middle",
@@ -3842,8 +4746,8 @@ const FaqManager = ({ name, title, onChanged }) => {
         )
       }
     ),
-    /* @__PURE__ */ jsxRuntime.jsx(
-      antd.Modal,
+    /* @__PURE__ */ jsx(
+      Modal,
       {
         open,
         title: editing ? "编辑问答" : "新增问答",
@@ -3851,28 +4755,28 @@ const FaqManager = ({ name, title, onChanged }) => {
         onOk: submit,
         confirmLoading: saving,
         width: 620,
-        children: /* @__PURE__ */ jsxRuntime.jsxs(antd.Form, { form, layout: "vertical", children: [
-          /* @__PURE__ */ jsxRuntime.jsx(
-            antd.Form.Item,
+        children: /* @__PURE__ */ jsxs(Form, { form, layout: "vertical", children: [
+          /* @__PURE__ */ jsx(
+            Form.Item,
             {
               name: "question",
               label: "问题",
               rules: [{ required: true, message: "请填写问题" }],
-              children: /* @__PURE__ */ jsxRuntime.jsx(antd.Input, {})
+              children: /* @__PURE__ */ jsx(Input, {})
             }
           ),
-          /* @__PURE__ */ jsxRuntime.jsx(
-            antd.Form.Item,
+          /* @__PURE__ */ jsx(
+            Form.Item,
             {
               name: "answer",
               label: "回答",
               rules: [{ required: true, message: "请填写回答" }],
-              children: /* @__PURE__ */ jsxRuntime.jsx(antd.Input.TextArea, { rows: 5 })
+              children: /* @__PURE__ */ jsx(Input.TextArea, { rows: 5 })
             }
           ),
-          /* @__PURE__ */ jsxRuntime.jsxs(antd.Space, { size: 16, style: { display: "flex" }, children: [
-            /* @__PURE__ */ jsxRuntime.jsx(antd.Form.Item, { name: "sort", label: "排序", style: { width: 160 }, children: /* @__PURE__ */ jsxRuntime.jsx(antd.InputNumber, { style: { width: "100%" } }) }),
-            /* @__PURE__ */ jsxRuntime.jsx(antd.Form.Item, { name: "enabled", label: "启用", valuePropName: "checked", children: /* @__PURE__ */ jsxRuntime.jsx(antd.Switch, {}) })
+          /* @__PURE__ */ jsxs(Space, { size: 16, style: { display: "flex" }, children: [
+            /* @__PURE__ */ jsx(Form.Item, { name: "sort", label: "排序", style: { width: 160 }, children: /* @__PURE__ */ jsx(InputNumber, { style: { width: "100%" } }) }),
+            /* @__PURE__ */ jsx(Form.Item, { name: "enabled", label: "启用", valuePropName: "checked", children: /* @__PURE__ */ jsx(Switch, {}) })
           ] })
         ] })
       }
@@ -3881,23 +4785,23 @@ const FaqManager = ({ name, title, onChanged }) => {
 };
 const ReviewManager = ({ name, title, onChanged }) => {
   const api = useTireApi();
-  const [list, setList] = react.useState([]);
-  const [loading, setLoading] = react.useState(false);
-  const [editing, setEditing] = react.useState(null);
-  const [open, setOpen] = react.useState(false);
-  const [saving, setSaving] = react.useState(false);
-  const [form] = antd.Form.useForm();
+  const [list, setList] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [editing, setEditing] = useState(null);
+  const [open, setOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [form] = Form.useForm();
   const load = async () => {
     setLoading(true);
     try {
       setList(await api.listCollection(name));
     } catch (error) {
-      antd.message.error(`加载${title}失败：${errorMessage(error)}`);
+      message.error(`加载${title}失败：${errorMessage(error)}`);
     } finally {
       setLoading(false);
     }
   };
-  react.useEffect(() => {
+  useEffect(() => {
     load();
   }, []);
   const openCreate = () => {
@@ -3927,12 +4831,12 @@ const ReviewManager = ({ name, title, onChanged }) => {
       } else {
         await api.createCollection(name, payload);
       }
-      antd.message.success("已保存");
+      message.success("已保存");
       setOpen(false);
       await load();
       onChanged?.();
     } catch (error) {
-      antd.message.error(`保存失败：${errorMessage(error)}`);
+      message.error(`保存失败：${errorMessage(error)}`);
     } finally {
       setSaving(false);
     }
@@ -3940,11 +4844,11 @@ const ReviewManager = ({ name, title, onChanged }) => {
   const remove = async (record) => {
     try {
       await api.removeCollection(name, Number(record.id));
-      antd.message.success("已删除");
+      message.success("已删除");
       await load();
       onChanged?.();
     } catch (error) {
-      antd.message.error(`删除失败：${errorMessage(error)}`);
+      message.error(`删除失败：${errorMessage(error)}`);
     }
   };
   const columns = [
@@ -3953,7 +4857,7 @@ const ReviewManager = ({ name, title, onChanged }) => {
       title: "评价内容",
       dataIndex: "content",
       width: 420,
-      render: (value) => /* @__PURE__ */ jsxRuntime.jsx("div", { style: { whiteSpace: "pre-wrap" }, children: value || "-" })
+      render: (value) => /* @__PURE__ */ jsx("div", { style: { whiteSpace: "pre-wrap" }, children: value || "-" })
     },
     {
       title: "评分",
@@ -3965,54 +4869,54 @@ const ReviewManager = ({ name, title, onChanged }) => {
       title: "首页展示",
       dataIndex: "showOnHome",
       width: 100,
-      render: (value) => value ? /* @__PURE__ */ jsxRuntime.jsx(Text$1, { type: "success", children: "是" }) : /* @__PURE__ */ jsxRuntime.jsx(Text$1, { type: "secondary", children: "否" })
+      render: (value) => value ? /* @__PURE__ */ jsx(Text$1, { type: "success", children: "是" }) : /* @__PURE__ */ jsx(Text$1, { type: "secondary", children: "否" })
     },
     { title: "排序", dataIndex: "sort", width: 80 },
     {
       title: "操作",
       width: 220,
       fixed: "right",
-      render: (_, record) => /* @__PURE__ */ jsxRuntime.jsxs(antd.Space, { size: 2, children: [
-        /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { size: "small", type: "link", onClick: () => openEdit(record), children: "编辑" }),
-        /* @__PURE__ */ jsxRuntime.jsx(
-          antd.Button,
+      render: (_, record) => /* @__PURE__ */ jsxs(Space, { size: 2, children: [
+        /* @__PURE__ */ jsx(Button, { size: "small", type: "link", onClick: () => openEdit(record), children: "编辑" }),
+        /* @__PURE__ */ jsx(
+          Button,
           {
             size: "small",
             type: "link",
-            icon: /* @__PURE__ */ jsxRuntime.jsx(icons.ArrowUpOutlined, {}),
+            icon: /* @__PURE__ */ jsx(ArrowUpOutlined, {}),
             onClick: async () => {
               await moveItem(api, name, list, record, -1);
               await load();
             }
           }
         ),
-        /* @__PURE__ */ jsxRuntime.jsx(
-          antd.Button,
+        /* @__PURE__ */ jsx(
+          Button,
           {
             size: "small",
             type: "link",
-            icon: /* @__PURE__ */ jsxRuntime.jsx(icons.ArrowDownOutlined, {}),
+            icon: /* @__PURE__ */ jsx(ArrowDownOutlined, {}),
             onClick: async () => {
               await moveItem(api, name, list, record, 1);
               await load();
             }
           }
         ),
-        /* @__PURE__ */ jsxRuntime.jsx(antd.Popconfirm, { title: "删除该评价？", onConfirm: () => remove(record), children: /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { size: "small", type: "link", danger: true, children: "删除" }) })
+        /* @__PURE__ */ jsx(Popconfirm, { title: "删除该评价？", onConfirm: () => remove(record), children: /* @__PURE__ */ jsx(Button, { size: "small", type: "link", danger: true, children: "删除" }) })
       ] })
     }
   ];
-  return /* @__PURE__ */ jsxRuntime.jsxs(jsxRuntime.Fragment, { children: [
-    /* @__PURE__ */ jsxRuntime.jsx(
-      antd.Card,
+  return /* @__PURE__ */ jsxs(Fragment, { children: [
+    /* @__PURE__ */ jsx(
+      Card,
       {
         title,
-        extra: /* @__PURE__ */ jsxRuntime.jsxs(antd.Space, { children: [
-          /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { icon: /* @__PURE__ */ jsxRuntime.jsx(icons.ReloadOutlined, {}), onClick: load, children: "刷新" }),
-          /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { type: "primary", icon: /* @__PURE__ */ jsxRuntime.jsx(icons.PlusOutlined, {}), onClick: openCreate, children: "新增评价" })
+        extra: /* @__PURE__ */ jsxs(Space, { children: [
+          /* @__PURE__ */ jsx(Button, { icon: /* @__PURE__ */ jsx(ReloadOutlined, {}), onClick: load, children: "刷新" }),
+          /* @__PURE__ */ jsx(Button, { type: "primary", icon: /* @__PURE__ */ jsx(PlusOutlined, {}), onClick: openCreate, children: "新增评价" })
         ] }),
-        children: /* @__PURE__ */ jsxRuntime.jsx(
-          antd.Table,
+        children: /* @__PURE__ */ jsx(
+          Table,
           {
             rowKey: "id",
             size: "middle",
@@ -4025,8 +4929,8 @@ const ReviewManager = ({ name, title, onChanged }) => {
         )
       }
     ),
-    /* @__PURE__ */ jsxRuntime.jsx(
-      antd.Modal,
+    /* @__PURE__ */ jsx(
+      Modal,
       {
         open,
         title: editing ? "编辑评价" : "新增评价",
@@ -4034,13 +4938,13 @@ const ReviewManager = ({ name, title, onChanged }) => {
         onOk: submit,
         confirmLoading: saving,
         width: 620,
-        children: /* @__PURE__ */ jsxRuntime.jsxs(antd.Form, { form, layout: "vertical", children: [
-          /* @__PURE__ */ jsxRuntime.jsx(antd.Form.Item, { name: "nickname", label: "昵称", children: /* @__PURE__ */ jsxRuntime.jsx(antd.Input, { maxLength: 40 }) }),
-          /* @__PURE__ */ jsxRuntime.jsx(antd.Form.Item, { name: "content", label: "评价内容", children: /* @__PURE__ */ jsxRuntime.jsx(antd.Input.TextArea, { rows: 4 }) }),
-          /* @__PURE__ */ jsxRuntime.jsxs(antd.Space, { size: 16, style: { display: "flex" }, children: [
-            /* @__PURE__ */ jsxRuntime.jsx(antd.Form.Item, { name: "rating", label: "评分", style: { width: 160 }, children: /* @__PURE__ */ jsxRuntime.jsx(antd.InputNumber, { min: 1, max: 5, style: { width: "100%" } }) }),
-            /* @__PURE__ */ jsxRuntime.jsx(antd.Form.Item, { name: "sort", label: "排序", style: { width: 160 }, children: /* @__PURE__ */ jsxRuntime.jsx(antd.InputNumber, { style: { width: "100%" } }) }),
-            /* @__PURE__ */ jsxRuntime.jsx(antd.Form.Item, { name: "showOnHome", label: "首页展示", valuePropName: "checked", children: /* @__PURE__ */ jsxRuntime.jsx(antd.Switch, {}) })
+        children: /* @__PURE__ */ jsxs(Form, { form, layout: "vertical", children: [
+          /* @__PURE__ */ jsx(Form.Item, { name: "nickname", label: "昵称", children: /* @__PURE__ */ jsx(Input, { maxLength: 40 }) }),
+          /* @__PURE__ */ jsx(Form.Item, { name: "content", label: "评价内容", children: /* @__PURE__ */ jsx(Input.TextArea, { rows: 4 }) }),
+          /* @__PURE__ */ jsxs(Space, { size: 16, style: { display: "flex" }, children: [
+            /* @__PURE__ */ jsx(Form.Item, { name: "rating", label: "评分", style: { width: 160 }, children: /* @__PURE__ */ jsx(InputNumber, { min: 1, max: 5, style: { width: "100%" } }) }),
+            /* @__PURE__ */ jsx(Form.Item, { name: "sort", label: "排序", style: { width: 160 }, children: /* @__PURE__ */ jsx(InputNumber, { style: { width: "100%" } }) }),
+            /* @__PURE__ */ jsx(Form.Item, { name: "showOnHome", label: "首页展示", valuePropName: "checked", children: /* @__PURE__ */ jsx(Switch, {}) })
           ] })
         ] })
       }
@@ -4049,24 +4953,24 @@ const ReviewManager = ({ name, title, onChanged }) => {
 };
 const GalleryManager = ({ name, title, onChanged }) => {
   const api = useTireApi();
-  const [list, setList] = react.useState([]);
-  const [loading, setLoading] = react.useState(false);
-  const [editing, setEditing] = react.useState(null);
-  const [open, setOpen] = react.useState(false);
-  const [saving, setSaving] = react.useState(false);
-  const [image, setImage] = react.useState(null);
-  const [form] = antd.Form.useForm();
+  const [list, setList] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [editing, setEditing] = useState(null);
+  const [open, setOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [image, setImage] = useState(null);
+  const [form] = Form.useForm();
   const load = async () => {
     setLoading(true);
     try {
       setList(await api.listCollection(name));
     } catch (error) {
-      antd.message.error(`加载${title}失败：${errorMessage(error)}`);
+      message.error(`加载${title}失败：${errorMessage(error)}`);
     } finally {
       setLoading(false);
     }
   };
-  react.useEffect(() => {
+  useEffect(() => {
     load();
   }, []);
   const openCreate = () => {
@@ -4098,12 +5002,12 @@ const GalleryManager = ({ name, title, onChanged }) => {
       } else {
         await api.createCollection(name, payload);
       }
-      antd.message.success("已保存");
+      message.success("已保存");
       setOpen(false);
       await load();
       onChanged?.();
     } catch (error) {
-      antd.message.error(`保存失败：${errorMessage(error)}`);
+      message.error(`保存失败：${errorMessage(error)}`);
     } finally {
       setSaving(false);
     }
@@ -4111,11 +5015,11 @@ const GalleryManager = ({ name, title, onChanged }) => {
   const remove = async (record) => {
     try {
       await api.removeCollection(name, Number(record.id));
-      antd.message.success("已删除");
+      message.success("已删除");
       await load();
       onChanged?.();
     } catch (error) {
-      antd.message.error(`删除失败：${errorMessage(error)}`);
+      message.error(`删除失败：${errorMessage(error)}`);
     }
   };
   const columns = [
@@ -4123,15 +5027,15 @@ const GalleryManager = ({ name, title, onChanged }) => {
       title: "图片",
       dataIndex: "image",
       width: 120,
-      render: (value) => value?.url ? /* @__PURE__ */ jsxRuntime.jsx(
-        antd.Image,
+      render: (value) => value?.url ? /* @__PURE__ */ jsx(
+        Image,
         {
           src: absoluteMediaUrl(value.url),
           width: 72,
           height: 72,
           style: { objectFit: "cover", borderRadius: 4 }
         }
-      ) : /* @__PURE__ */ jsxRuntime.jsx(Text$1, { type: "secondary", children: "未设置" })
+      ) : /* @__PURE__ */ jsx(Text$1, { type: "secondary", children: "未设置" })
     },
     {
       title: "说明",
@@ -4144,47 +5048,47 @@ const GalleryManager = ({ name, title, onChanged }) => {
       title: "操作",
       width: 220,
       fixed: "right",
-      render: (_, record) => /* @__PURE__ */ jsxRuntime.jsxs(antd.Space, { size: 2, children: [
-        /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { size: "small", type: "link", onClick: () => openEdit(record), children: "编辑" }),
-        /* @__PURE__ */ jsxRuntime.jsx(
-          antd.Button,
+      render: (_, record) => /* @__PURE__ */ jsxs(Space, { size: 2, children: [
+        /* @__PURE__ */ jsx(Button, { size: "small", type: "link", onClick: () => openEdit(record), children: "编辑" }),
+        /* @__PURE__ */ jsx(
+          Button,
           {
             size: "small",
             type: "link",
-            icon: /* @__PURE__ */ jsxRuntime.jsx(icons.ArrowUpOutlined, {}),
+            icon: /* @__PURE__ */ jsx(ArrowUpOutlined, {}),
             onClick: async () => {
               await moveItem(api, name, list, record, -1);
               await load();
             }
           }
         ),
-        /* @__PURE__ */ jsxRuntime.jsx(
-          antd.Button,
+        /* @__PURE__ */ jsx(
+          Button,
           {
             size: "small",
             type: "link",
-            icon: /* @__PURE__ */ jsxRuntime.jsx(icons.ArrowDownOutlined, {}),
+            icon: /* @__PURE__ */ jsx(ArrowDownOutlined, {}),
             onClick: async () => {
               await moveItem(api, name, list, record, 1);
               await load();
             }
           }
         ),
-        /* @__PURE__ */ jsxRuntime.jsx(antd.Popconfirm, { title: "删除该图片？", onConfirm: () => remove(record), children: /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { size: "small", type: "link", danger: true, children: "删除" }) })
+        /* @__PURE__ */ jsx(Popconfirm, { title: "删除该图片？", onConfirm: () => remove(record), children: /* @__PURE__ */ jsx(Button, { size: "small", type: "link", danger: true, children: "删除" }) })
       ] })
     }
   ];
-  return /* @__PURE__ */ jsxRuntime.jsxs(jsxRuntime.Fragment, { children: [
-    /* @__PURE__ */ jsxRuntime.jsx(
-      antd.Card,
+  return /* @__PURE__ */ jsxs(Fragment, { children: [
+    /* @__PURE__ */ jsx(
+      Card,
       {
         title,
-        extra: /* @__PURE__ */ jsxRuntime.jsxs(antd.Space, { children: [
-          /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { icon: /* @__PURE__ */ jsxRuntime.jsx(icons.ReloadOutlined, {}), onClick: load, children: "刷新" }),
-          /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { type: "primary", icon: /* @__PURE__ */ jsxRuntime.jsx(icons.PlusOutlined, {}), onClick: openCreate, children: "新增图片" })
+        extra: /* @__PURE__ */ jsxs(Space, { children: [
+          /* @__PURE__ */ jsx(Button, { icon: /* @__PURE__ */ jsx(ReloadOutlined, {}), onClick: load, children: "刷新" }),
+          /* @__PURE__ */ jsx(Button, { type: "primary", icon: /* @__PURE__ */ jsx(PlusOutlined, {}), onClick: openCreate, children: "新增图片" })
         ] }),
-        children: /* @__PURE__ */ jsxRuntime.jsx(
-          antd.Table,
+        children: /* @__PURE__ */ jsx(
+          Table,
           {
             rowKey: "id",
             size: "middle",
@@ -4197,8 +5101,8 @@ const GalleryManager = ({ name, title, onChanged }) => {
         )
       }
     ),
-    /* @__PURE__ */ jsxRuntime.jsx(
-      antd.Modal,
+    /* @__PURE__ */ jsx(
+      Modal,
       {
         open,
         title: editing ? "编辑图片" : "新增图片",
@@ -4206,8 +5110,8 @@ const GalleryManager = ({ name, title, onChanged }) => {
         onOk: submit,
         confirmLoading: saving,
         width: 520,
-        children: /* @__PURE__ */ jsxRuntime.jsxs(antd.Form, { form, layout: "vertical", children: [
-          /* @__PURE__ */ jsxRuntime.jsx(antd.Form.Item, { label: "图片", required: true, children: /* @__PURE__ */ jsxRuntime.jsx(
+        children: /* @__PURE__ */ jsxs(Form, { form, layout: "vertical", children: [
+          /* @__PURE__ */ jsx(Form.Item, { label: "图片", required: true, children: /* @__PURE__ */ jsx(
             MediaPicker,
             {
               value: image,
@@ -4215,21 +5119,21 @@ const GalleryManager = ({ name, title, onChanged }) => {
               hint: "建议使用横向或方形图片，单张不超过 5MB。"
             }
           ) }),
-          /* @__PURE__ */ jsxRuntime.jsx(antd.Form.Item, { name: "caption", label: "图片说明", children: /* @__PURE__ */ jsxRuntime.jsx(antd.Input, { maxLength: 80 }) }),
-          /* @__PURE__ */ jsxRuntime.jsx(antd.Form.Item, { name: "sort", label: "排序", children: /* @__PURE__ */ jsxRuntime.jsx(antd.InputNumber, { style: { width: 160 } }) })
+          /* @__PURE__ */ jsx(Form.Item, { name: "caption", label: "图片说明", children: /* @__PURE__ */ jsx(Input, { maxLength: 80 }) }),
+          /* @__PURE__ */ jsx(Form.Item, { name: "sort", label: "排序", children: /* @__PURE__ */ jsx(InputNumber, { style: { width: 160 } }) })
         ] })
       }
     )
   ] });
 };
-const { Text } = antd.Typography;
+const { Text } = Typography;
 const ContentPage = () => {
   const api = useTireApi();
-  const [form] = antd.Form.useForm();
-  const [loading, setLoading] = react.useState(false);
-  const [saving, setSaving] = react.useState(false);
-  const [bannerImage, setBannerImage] = react.useState(null);
-  const [wechatQr, setWechatQr] = react.useState(null);
+  const [form] = Form.useForm();
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [bannerImage, setBannerImage] = useState(null);
+  const [wechatQr, setWechatQr] = useState(null);
   const load = async () => {
     setLoading(true);
     try {
@@ -4249,6 +5153,7 @@ const ContentPage = () => {
         dailyPickupLimitMorning: config.dailyPickupLimitMorning ?? 6,
         dailyPickupLimitAfternoon: config.dailyPickupLimitAfternoon ?? 6,
         agreementText: config.agreementText || "",
+        agreementVersion: config.agreementVersion || "",
         maxStorageDate: config.maxStorageDate ? dayjs(config.maxStorageDate) : null,
         announcement: config.announcement || ""
       });
@@ -4265,12 +5170,12 @@ const ContentPage = () => {
         } : null
       );
     } catch (error) {
-      antd.message.error(`加载站点内容失败：${errorMessage(error)}`);
+      message.error(`加载站点内容失败：${errorMessage(error)}`);
     } finally {
       setLoading(false);
     }
   };
-  react.useEffect(() => {
+  useEffect(() => {
     load();
   }, []);
   const save = async () => {
@@ -4281,11 +5186,11 @@ const ContentPage = () => {
       try {
         guarantees = JSON.parse(rawGuarantees);
       } catch {
-        antd.message.error("保障内容必须是合法的 JSON 数组");
+        message.error("保障内容必须是合法的 JSON 数组");
         return;
       }
       if (!Array.isArray(guarantees)) {
-        antd.message.error("保障内容必须是 JSON 数组");
+        message.error("保障内容必须是 JSON 数组");
         return;
       }
     }
@@ -4306,29 +5211,30 @@ const ContentPage = () => {
         dailyPickupLimitMorning: Number(values.dailyPickupLimitMorning) || 0,
         dailyPickupLimitAfternoon: Number(values.dailyPickupLimitAfternoon) || 0,
         agreementText: values.agreementText || "",
+        agreementVersion: String(values.agreementVersion || "").trim() || null,
         maxStorageDate: values.maxStorageDate ? values.maxStorageDate.format("YYYY-MM-DD") : null,
         announcement: values.announcement || "",
         bannerImageId: bannerImage?.id ?? null,
         wechatQrId: wechatQr?.id ?? null
       });
-      antd.message.success("站点内容已保存");
+      message.success("站点内容已保存");
       await load();
     } catch (error) {
-      antd.message.error(`保存失败：${errorMessage(error)}`);
+      message.error(`保存失败：${errorMessage(error)}`);
     } finally {
       setSaving(false);
     }
   };
-  const siteForm = /* @__PURE__ */ jsxRuntime.jsx(
-    antd.Card,
+  const siteForm = /* @__PURE__ */ jsx(
+    Card,
     {
       title: "站点内容",
       loading,
-      extra: /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { type: "primary", icon: /* @__PURE__ */ jsxRuntime.jsx(icons.SaveOutlined, {}), loading: saving, onClick: save, children: "保存站点内容" }),
-      children: /* @__PURE__ */ jsxRuntime.jsx(antd.Form, { form, layout: "vertical", children: /* @__PURE__ */ jsxRuntime.jsxs(antd.Row, { gutter: 16, children: [
-        /* @__PURE__ */ jsxRuntime.jsx(antd.Col, { span: 12, children: /* @__PURE__ */ jsxRuntime.jsx(antd.Form.Item, { name: "bannerTitle", label: "Banner 主标题", children: /* @__PURE__ */ jsxRuntime.jsx(antd.Input, { maxLength: 60 }) }) }),
-        /* @__PURE__ */ jsxRuntime.jsx(antd.Col, { span: 12, children: /* @__PURE__ */ jsxRuntime.jsx(antd.Form.Item, { name: "bannerSubtitle", label: "Banner 副标题", children: /* @__PURE__ */ jsxRuntime.jsx(antd.Input, { maxLength: 120 }) }) }),
-        /* @__PURE__ */ jsxRuntime.jsx(antd.Col, { span: 8, children: /* @__PURE__ */ jsxRuntime.jsx(antd.Form.Item, { label: "Banner 图片", children: /* @__PURE__ */ jsxRuntime.jsx(
+      extra: /* @__PURE__ */ jsx(Button, { type: "primary", icon: /* @__PURE__ */ jsx(SaveOutlined, {}), loading: saving, onClick: save, children: "保存站点内容" }),
+      children: /* @__PURE__ */ jsx(Form, { form, layout: "vertical", children: /* @__PURE__ */ jsxs(Row, { gutter: 16, children: [
+        /* @__PURE__ */ jsx(Col, { span: 12, children: /* @__PURE__ */ jsx(Form.Item, { name: "bannerTitle", label: "Banner 主标题", children: /* @__PURE__ */ jsx(Input, { maxLength: 60 }) }) }),
+        /* @__PURE__ */ jsx(Col, { span: 12, children: /* @__PURE__ */ jsx(Form.Item, { name: "bannerSubtitle", label: "Banner 副标题", children: /* @__PURE__ */ jsx(Input, { maxLength: 120 }) }) }),
+        /* @__PURE__ */ jsx(Col, { span: 8, children: /* @__PURE__ */ jsx(Form.Item, { label: "Banner 图片", children: /* @__PURE__ */ jsx(
           MediaPicker,
           {
             value: bannerImage,
@@ -4336,7 +5242,7 @@ const ContentPage = () => {
             hint: "建议尺寸 750 × 420，横图。"
           }
         ) }) }),
-        /* @__PURE__ */ jsxRuntime.jsx(antd.Col, { span: 8, children: /* @__PURE__ */ jsxRuntime.jsx(antd.Form.Item, { label: "客服微信二维码", children: /* @__PURE__ */ jsxRuntime.jsx(
+        /* @__PURE__ */ jsx(Col, { span: 8, children: /* @__PURE__ */ jsx(Form.Item, { label: "客服微信二维码", children: /* @__PURE__ */ jsx(
           MediaPicker,
           {
             value: wechatQr,
@@ -4344,41 +5250,56 @@ const ContentPage = () => {
             hint: "用于订单页展示客服二维码。"
           }
         ) }) }),
-        /* @__PURE__ */ jsxRuntime.jsxs(antd.Col, { span: 8, children: [
-          /* @__PURE__ */ jsxRuntime.jsx(antd.Form.Item, { name: "contactPhone", label: "客服电话", children: /* @__PURE__ */ jsxRuntime.jsx(antd.Input, { maxLength: 20 }) }),
-          /* @__PURE__ */ jsxRuntime.jsx(antd.Form.Item, { name: "announcement", label: "公告", children: /* @__PURE__ */ jsxRuntime.jsx(antd.Input, { maxLength: 100 }) })
+        /* @__PURE__ */ jsxs(Col, { span: 8, children: [
+          /* @__PURE__ */ jsx(Form.Item, { name: "contactPhone", label: "客服电话", children: /* @__PURE__ */ jsx(Input, { maxLength: 20 }) }),
+          /* @__PURE__ */ jsx(Form.Item, { name: "announcement", label: "公告", children: /* @__PURE__ */ jsx(Input, { maxLength: 100 }) })
         ] }),
-        /* @__PURE__ */ jsxRuntime.jsx(antd.Col, { span: 12, children: /* @__PURE__ */ jsxRuntime.jsx(antd.Form.Item, { name: "serviceIntro", label: "服务说明", children: /* @__PURE__ */ jsxRuntime.jsx(antd.Input.TextArea, { rows: 5 }) }) }),
-        /* @__PURE__ */ jsxRuntime.jsx(antd.Col, { span: 12, children: /* @__PURE__ */ jsxRuntime.jsx(antd.Form.Item, { name: "warehouseConditions", label: "寄存条件", children: /* @__PURE__ */ jsxRuntime.jsx(antd.Input.TextArea, { rows: 5 }) }) }),
-        /* @__PURE__ */ jsxRuntime.jsx(antd.Col, { span: 12, children: /* @__PURE__ */ jsxRuntime.jsx(
-          antd.Form.Item,
+        /* @__PURE__ */ jsx(Col, { span: 12, children: /* @__PURE__ */ jsx(Form.Item, { name: "serviceIntro", label: "服务说明", children: /* @__PURE__ */ jsx(Input.TextArea, { rows: 5 }) }) }),
+        /* @__PURE__ */ jsx(Col, { span: 12, children: /* @__PURE__ */ jsx(Form.Item, { name: "warehouseConditions", label: "寄存条件", children: /* @__PURE__ */ jsx(Input.TextArea, { rows: 5 }) }) }),
+        /* @__PURE__ */ jsx(Col, { span: 12, children: /* @__PURE__ */ jsx(
+          Form.Item,
           {
             name: "guaranteesText",
             label: "服务保障（JSON 数组）",
             extra: '示例：[{"title":"专业仓储","desc":"恒温干燥"}]',
-            children: /* @__PURE__ */ jsxRuntime.jsx(antd.Input.TextArea, { rows: 6 })
+            children: /* @__PURE__ */ jsx(Input.TextArea, { rows: 6 })
           }
         ) }),
-        /* @__PURE__ */ jsxRuntime.jsx(antd.Col, { span: 12, children: /* @__PURE__ */ jsxRuntime.jsx(antd.Form.Item, { name: "serviceAreaText", label: "服务区域", children: /* @__PURE__ */ jsxRuntime.jsx(antd.Input.TextArea, { rows: 6 }) }) }),
-        /* @__PURE__ */ jsxRuntime.jsx(antd.Col, { span: 12, children: /* @__PURE__ */ jsxRuntime.jsx(antd.Form.Item, { name: "warehouseAddress", label: "仓库地址", children: /* @__PURE__ */ jsxRuntime.jsx(antd.Input, {}) }) }),
-        /* @__PURE__ */ jsxRuntime.jsx(antd.Col, { span: 6, children: /* @__PURE__ */ jsxRuntime.jsx(antd.Form.Item, { name: "warehouseLat", label: "纬度", children: /* @__PURE__ */ jsxRuntime.jsx(antd.InputNumber, { style: { width: "100%" }, step: 1e-6 }) }) }),
-        /* @__PURE__ */ jsxRuntime.jsx(antd.Col, { span: 6, children: /* @__PURE__ */ jsxRuntime.jsx(antd.Form.Item, { name: "warehouseLng", label: "经度", children: /* @__PURE__ */ jsxRuntime.jsx(antd.InputNumber, { style: { width: "100%" }, step: 1e-6 }) }) }),
-        /* @__PURE__ */ jsxRuntime.jsx(antd.Col, { span: 12, children: /* @__PURE__ */ jsxRuntime.jsx(antd.Form.Item, { name: "mapUrl", label: "地图链接", children: /* @__PURE__ */ jsxRuntime.jsx(antd.Input, {}) }) }),
-        /* @__PURE__ */ jsxRuntime.jsx(antd.Col, { span: 6, children: /* @__PURE__ */ jsxRuntime.jsx(antd.Form.Item, { name: "dailyPickupLimitMorning", label: "上午上门名额", children: /* @__PURE__ */ jsxRuntime.jsx(antd.InputNumber, { min: 0, style: { width: "100%" } }) }) }),
-        /* @__PURE__ */ jsxRuntime.jsx(antd.Col, { span: 6, children: /* @__PURE__ */ jsxRuntime.jsx(antd.Form.Item, { name: "dailyPickupLimitAfternoon", label: "下午上门名额", children: /* @__PURE__ */ jsxRuntime.jsx(antd.InputNumber, { min: 0, style: { width: "100%" } }) }) }),
-        /* @__PURE__ */ jsxRuntime.jsx(antd.Col, { span: 12, children: /* @__PURE__ */ jsxRuntime.jsx(antd.Form.Item, { name: "maxStorageDate", label: "最晚寄存期限", children: /* @__PURE__ */ jsxRuntime.jsx(antd.DatePicker, { style: { width: "100%" } }) }) }),
-        /* @__PURE__ */ jsxRuntime.jsxs(antd.Col, { span: 24, children: [
-          /* @__PURE__ */ jsxRuntime.jsx(antd.Form.Item, { name: "agreementText", label: "协议文案", children: /* @__PURE__ */ jsxRuntime.jsx(antd.Input.TextArea, { rows: 10 }) }),
-          /* @__PURE__ */ jsxRuntime.jsxs(antd.Space, { children: [
-            /* @__PURE__ */ jsxRuntime.jsx(Text, { type: "secondary", children: "协议支持纯文本，换行会保留在页面上。" }),
-            /* @__PURE__ */ jsxRuntime.jsx(antd.Button, { onClick: load, children: "重新加载" })
+        /* @__PURE__ */ jsx(Col, { span: 12, children: /* @__PURE__ */ jsx(Form.Item, { name: "serviceAreaText", label: "服务区域", children: /* @__PURE__ */ jsx(Input.TextArea, { rows: 6 }) }) }),
+        /* @__PURE__ */ jsx(Col, { span: 12, children: /* @__PURE__ */ jsx(Form.Item, { name: "warehouseAddress", label: "仓库地址", children: /* @__PURE__ */ jsx(Input, {}) }) }),
+        /* @__PURE__ */ jsx(Col, { span: 6, children: /* @__PURE__ */ jsx(Form.Item, { name: "warehouseLat", label: "纬度", children: /* @__PURE__ */ jsx(InputNumber, { style: { width: "100%" }, step: 1e-6 }) }) }),
+        /* @__PURE__ */ jsx(Col, { span: 6, children: /* @__PURE__ */ jsx(Form.Item, { name: "warehouseLng", label: "经度", children: /* @__PURE__ */ jsx(InputNumber, { style: { width: "100%" }, step: 1e-6 }) }) }),
+        /* @__PURE__ */ jsx(Col, { span: 12, children: /* @__PURE__ */ jsx(Form.Item, { name: "mapUrl", label: "地图链接", children: /* @__PURE__ */ jsx(Input, {}) }) }),
+        /* @__PURE__ */ jsx(Col, { span: 6, children: /* @__PURE__ */ jsx(Form.Item, { name: "dailyPickupLimitMorning", label: "上午上门名额", children: /* @__PURE__ */ jsx(InputNumber, { min: 0, style: { width: "100%" } }) }) }),
+        /* @__PURE__ */ jsx(Col, { span: 6, children: /* @__PURE__ */ jsx(Form.Item, { name: "dailyPickupLimitAfternoon", label: "下午上门名额", children: /* @__PURE__ */ jsx(InputNumber, { min: 0, style: { width: "100%" } }) }) }),
+        /* @__PURE__ */ jsx(Col, { span: 12, children: /* @__PURE__ */ jsx(Form.Item, { name: "maxStorageDate", label: "最晚寄存期限", children: /* @__PURE__ */ jsx(DatePicker, { style: { width: "100%" } }) }) }),
+        /* @__PURE__ */ jsx(Col, { span: 12, children: /* @__PURE__ */ jsx(
+          Form.Item,
+          {
+            name: "agreementVersion",
+            label: "条款版本号",
+            extra: "格式 YYYY.MM.DD-N，例如 2026.11.05-1。保存后仅对新下单/新入库订单生效，不追溯已存在订单。",
+            rules: [
+              {
+                pattern: /^\d{4}\.\d{2}\.\d{2}-\d+$/,
+                message: "版本号格式应为 YYYY.MM.DD-N，例如 2026.11.05-1"
+              }
+            ],
+            children: /* @__PURE__ */ jsx(Input, { maxLength: 20, placeholder: "2026.11.05-1" })
+          }
+        ) }),
+        /* @__PURE__ */ jsxs(Col, { span: 24, children: [
+          /* @__PURE__ */ jsx(Form.Item, { name: "agreementText", label: "协议文案", children: /* @__PURE__ */ jsx(Input.TextArea, { rows: 10 }) }),
+          /* @__PURE__ */ jsxs(Space, { children: [
+            /* @__PURE__ */ jsx(Text, { type: "secondary", children: "协议支持纯文本，换行会保留在页面上。" }),
+            /* @__PURE__ */ jsx(Button, { onClick: load, children: "重新加载" })
           ] })
         ] })
       ] }) })
     }
   );
-  return /* @__PURE__ */ jsxRuntime.jsx(
-    antd.Tabs,
+  return /* @__PURE__ */ jsx(
+    Tabs,
     {
       defaultActiveKey: "site",
       items: [
@@ -4386,38 +5307,55 @@ const ContentPage = () => {
         {
           key: "faq",
           label: "常见问答",
-          children: /* @__PURE__ */ jsxRuntime.jsx(FaqManager, { name: "faqs", title: "常见问答" })
+          children: /* @__PURE__ */ jsx(FaqManager, { name: "faqs", title: "常见问答" })
         },
         {
           key: "review",
           label: "用户评价",
-          children: /* @__PURE__ */ jsxRuntime.jsx(ReviewManager, { name: "reviews", title: "用户评价" })
+          children: /* @__PURE__ */ jsx(ReviewManager, { name: "reviews", title: "用户评价" })
         },
         {
           key: "gallery",
           label: "实拍相册",
-          children: /* @__PURE__ */ jsxRuntime.jsx(GalleryManager, { name: "gallery", title: "实拍相册" })
+          children: /* @__PURE__ */ jsx(GalleryManager, { name: "gallery", title: "实拍相册" })
         }
       ]
     }
   );
 };
-const App = () => /* @__PURE__ */ jsxRuntime.jsx(
-  antd.ConfigProvider,
+const FullOnly = ({ children }) => {
+  const permissions = usePermissions();
+  if (permissions.loading) return null;
+  if (!permissions.canFull) {
+    return /* @__PURE__ */ jsx("div", { style: { padding: 24 }, children: "无权限访问：逾期处置仅限运营管理员。" });
+  }
+  return /* @__PURE__ */ jsx(Fragment, { children });
+};
+const App = () => /* @__PURE__ */ jsx(
+  ConfigProvider,
   {
-    locale: zhCN__default.default,
+    locale: zhCN,
     theme: { token: { colorPrimary: "#2563EB", borderRadius: 6 } },
-    children: /* @__PURE__ */ jsxRuntime.jsx(PermissionProvider, { children: /* @__PURE__ */ jsxRuntime.jsx(PluginLayout, { children: /* @__PURE__ */ jsxRuntime.jsxs(reactRouterDom.Routes, { children: [
-      /* @__PURE__ */ jsxRuntime.jsx(reactRouterDom.Route, { index: true, element: /* @__PURE__ */ jsxRuntime.jsx(OrdersPage, {}) }),
-      /* @__PURE__ */ jsxRuntime.jsx(reactRouterDom.Route, { path: "orders", element: /* @__PURE__ */ jsxRuntime.jsx(OrdersPage, {}) }),
-      /* @__PURE__ */ jsxRuntime.jsx(reactRouterDom.Route, { path: "inventory", element: /* @__PURE__ */ jsxRuntime.jsx(InventoryPage, {}) }),
-      /* @__PURE__ */ jsxRuntime.jsx(reactRouterDom.Route, { path: "payments", element: /* @__PURE__ */ jsxRuntime.jsx(PaymentsPage, {}) }),
-      /* @__PURE__ */ jsxRuntime.jsx(reactRouterDom.Route, { path: "catalog", element: /* @__PURE__ */ jsxRuntime.jsx(CatalogPage, {}) }),
-      /* @__PURE__ */ jsxRuntime.jsx(reactRouterDom.Route, { path: "customers", element: /* @__PURE__ */ jsxRuntime.jsx(CustomersPage, {}) }),
-      /* @__PURE__ */ jsxRuntime.jsx(reactRouterDom.Route, { path: "messages", element: /* @__PURE__ */ jsxRuntime.jsx(MessagesPage, {}) }),
-      /* @__PURE__ */ jsxRuntime.jsx(reactRouterDom.Route, { path: "content", element: /* @__PURE__ */ jsxRuntime.jsx(ContentPage, {}) }),
-      /* @__PURE__ */ jsxRuntime.jsx(reactRouterDom.Route, { path: "*", element: /* @__PURE__ */ jsxRuntime.jsx("div", { children: "页面建设中" }) })
+    children: /* @__PURE__ */ jsx(PermissionProvider, { children: /* @__PURE__ */ jsx(PluginLayout, { children: /* @__PURE__ */ jsxs(Routes, { children: [
+      /* @__PURE__ */ jsx(Route, { index: true, element: /* @__PURE__ */ jsx(OrdersPage, {}) }),
+      /* @__PURE__ */ jsx(Route, { path: "orders", element: /* @__PURE__ */ jsx(OrdersPage, {}) }),
+      /* @__PURE__ */ jsx(
+        Route,
+        {
+          path: "overdue",
+          element: /* @__PURE__ */ jsx(FullOnly, { children: /* @__PURE__ */ jsx(OverduePage, {}) })
+        }
+      ),
+      /* @__PURE__ */ jsx(Route, { path: "inventory", element: /* @__PURE__ */ jsx(InventoryPage, {}) }),
+      /* @__PURE__ */ jsx(Route, { path: "payments", element: /* @__PURE__ */ jsx(PaymentsPage, {}) }),
+      /* @__PURE__ */ jsx(Route, { path: "catalog", element: /* @__PURE__ */ jsx(CatalogPage, {}) }),
+      /* @__PURE__ */ jsx(Route, { path: "customers", element: /* @__PURE__ */ jsx(CustomersPage, {}) }),
+      /* @__PURE__ */ jsx(Route, { path: "messages", element: /* @__PURE__ */ jsx(MessagesPage, {}) }),
+      /* @__PURE__ */ jsx(Route, { path: "content", element: /* @__PURE__ */ jsx(ContentPage, {}) }),
+      /* @__PURE__ */ jsx(Route, { path: "*", element: /* @__PURE__ */ jsx("div", { children: "页面建设中" }) })
     ] }) }) })
   }
 );
-exports.default = App;
+export {
+  App as default
+};

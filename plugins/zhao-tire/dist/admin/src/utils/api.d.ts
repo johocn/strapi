@@ -50,5 +50,16 @@ export declare function useTireApi(): {
         url: string;
         name: string;
     }>;
+    uploadImages: (files: File[]) => Promise<{
+        id: number;
+        url: string;
+    }[]>;
+    listHoldFunds: (params: Record<string, any>) => Promise<any>;
+    claimHoldFund: (id: number, body?: any) => Promise<any>;
+    scanOverdue: () => Promise<any>;
+    getAgreementHistory: () => Promise<any>;
+    appendAgreementVersion: (body: any) => Promise<any>;
+    listStationMessages: (params?: Record<string, any>) => Promise<any>;
+    readStationMessage: (id: number) => Promise<any>;
 };
 export type TireApi = ReturnType<typeof useTireApi>;

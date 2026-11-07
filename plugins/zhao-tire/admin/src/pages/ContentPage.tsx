@@ -52,6 +52,7 @@ const ContentPage = () => {
         dailyPickupLimitMorning: config.dailyPickupLimitMorning ?? 6,
         dailyPickupLimitAfternoon: config.dailyPickupLimitAfternoon ?? 6,
         agreementText: config.agreementText || "",
+        agreementVersion: config.agreementVersion || "",
         maxStorageDate: config.maxStorageDate
           ? dayjs(config.maxStorageDate)
           : null,
@@ -119,6 +120,7 @@ const ContentPage = () => {
         dailyPickupLimitAfternoon:
           Number(values.dailyPickupLimitAfternoon) || 0,
         agreementText: values.agreementText || "",
+        agreementVersion: String(values.agreementVersion || "").trim() || null,
         maxStorageDate: values.maxStorageDate
           ? values.maxStorageDate.format("YYYY-MM-DD")
           : null,
@@ -240,6 +242,21 @@ const ContentPage = () => {
           <Col span={12}>
             <Form.Item name="maxStorageDate" label="最晚寄存期限">
               <DatePicker style={{ width: "100%" }} />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item
+              name="agreementVersion"
+              label="条款版本号"
+              extra="格式 YYYY.MM.DD-N，例如 2026.11.05-1。保存后仅对新下单/新入库订单生效，不追溯已存在订单。"
+              rules={[
+                {
+                  pattern: /^\d{4}\.\d{2}\.\d{2}-\d+$/,
+                  message: "版本号格式应为 YYYY.MM.DD-N，例如 2026.11.05-1",
+                },
+              ]}
+            >
+              <Input maxLength={20} placeholder="2026.11.05-1" />
             </Form.Item>
           </Col>
           <Col span={24}>

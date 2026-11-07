@@ -66,6 +66,12 @@ export default ({ strapi }: { strapi: Core.Strapi }) => ({
     const order = await strapi.db.query(ORDER_UID).findOne({ where: { orderNo } });
     if (!order) throwErr("ORDER_NOT_FOUND", 404, "订单不存在");
 
+    // 归属校验：必须提供与订单一致的手机号，避免凭 orderNo 查询未结金额/发起支付
+    const phone = String(payload?.phone || "").trim();
+    if (!phone || phone !== String(order.phone || "").trim()) {
+      throwErr("PHONE_MISMATCH", 403, "手机号与订单不匹配");
+    }
+
     const paymentService: any = strapi.service("plugin::zhao-tire.payment");
     const outstanding = paymentService.outstandingOf(order);
     if (outstanding <= 0) {
