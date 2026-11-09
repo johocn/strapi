@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Joyogo 滑雪板块 · 原型目录</title>
+<!--
+  页面：ski-demo 演示目录（内部/客户预览用）
+  作用：汇总 7 套首页方案、6 个内容页、4 个主题演示页，以及方案对比页的入口。
+  规则：不改动任何原型页；本页只做索引与跳转，纯静态。
+-->
+<style>
+:root{
+  --paper:#f1efe7;--cream:#faf9f5;--white:#fff;--ink:#141413;
+  --clay:#b4512c;--clay-deep:#8f4526;--clay-wash:#f8ede6;
+  --yellow:#f6c445;--gold-ink:#4a3600;
+  --mute:#6f6d64;--soft:#b0aea5;--line:rgba(20,20,19,.12);--line-strong:rgba(20,20,19,.24);
+  --radius:18px;
+  --disp:"Poppins","PingFang SC","Microsoft YaHei",Arial,sans-serif;
+  --body:"Lora","Songti SC","SimSun",Georgia,serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--cream);color:var(--ink);font-family:var(--disp);font-size:16px;line-height:1.7}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:1180px;margin:0 auto;padding:0 32px}
+
+.top{position:sticky;top:0;z-index:40;background:rgba(250,249,245,.94);backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:20px;height:72px}
+.brand{font-weight:600;font-size:20px}
+.brand span{color:var(--clay)}
+.sub{font-size:12.5px;letter-spacing:.04em;color:var(--mute);margin-left:auto}
+
+.intro{padding:56px 0 8px}
+.intro .eyebrow{font-size:11.5px;letter-spacing:.16em;color:var(--clay-deep)}
+.intro h1{font-weight:600;font-size:clamp(28px,3.6vw,42px);line-height:1.2;margin:12px 0 16px;max-width:24ch}
+.intro p{font-family:var(--body);font-size:15px;color:var(--mute);max-width:62ch}
+.intro .notes{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
+.note{font-size:12px;color:var(--clay-deep);background:var(--clay-wash);
+  border:1px solid rgba(180,81,44,.18);border-radius:999px;padding:6px 14px}
+
+.group{padding:36px 0 4px}
+.group-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:12px}
+.group-head h2{font-weight:600;font-size:22px}
+.group-head em{font-style:normal;font-size:12.5px;color:var(--soft)}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;padding:20px 0 8px}
+.card{display:flex;flex-direction:column;gap:8px;background:var(--white);border:1px solid var(--line);
+  border-radius:var(--radius);padding:20px 22px;transition:transform .18s,box-shadow .18s,border-color .18s}
+.card:hover{transform:translateY(-2px);border-color:rgba(180,81,44,.45);
+  box-shadow:0 2px 4px rgba(20,20,19,.05),0 14px 34px rgba(20,20,19,.09)}
+.card .tag{font-size:11px;letter-spacing:.12em;color:var(--clay-deep)}
+.card .tag.is-plan{background:var(--yellow);color:var(--gold-ink);border-radius:999px;padding:2px 10px;align-self:flex-start}
+.card h3{font-weight:600;font-size:18px;line-height:1.35}
+.card p{font-family:var(--body);font-size:13px;color:var(--mute)}
+.card .path{margin-top:auto;font-family:ui-monospace,Consolas,monospace;font-size:11.5px;color:var(--soft);
+  word-break:break-all}
+
+.foot{border-top:1px solid var(--line);margin-top:48px;padding:24px 0 72px;color:var(--soft);font-size:12.5px}
+
+@media (max-width:720px){
+  .wrap{padding:0 20px}
+  .sub{display:none}
+  .grid{grid-template-columns:1fr}
+  .intro{padding:36px 0 0}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <div class="brand">Joyogo <span>滑雪板块</span></div>
+    <div class="sub">原型目录 · 内部预览</div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="intro">
+    <div class="eyebrow">DEMO INDEX</div>
+    <h1>原型目录</h1>
+    <p>7 套首页方案、6 个内容页变体、4 个主题演示页。用于对比皮肤差异与内容结构，均为静态原型。</p>
+    <div class="notes">
+      <span class="note">共 17 个页面</span>
+      <span class="note">不改动原型文件</span>
+    </div>
+  </section>
+
+  <section class="group">
+    <div class="group-head"><h2>首页方案</h2><em>7 套皮肤</em></div>
+    <div class="grid">
+      <a class="card" href="2026-10-27-joyogo-ski-prototype.html">
+        <span class="tag">方案一</span>
+        <h3>/ski 板块原型</h3>
+        <p>板块首页的基础结构：入口、课程与文章混排。</p>
+        <span class="path">2026-10-27-joyogo-ski-prototype.html</span>
+      </a>
+      <a class="card" href="2026-10-27-joyogo-ski-prototype-dark.html">
+        <span class="tag">方案二</span>
+        <h3>深色沉浸版</h3>
+        <p>深色底 + 高对比，突出雪场氛围与视觉冲击。</p>
+        <span class="path">2026-10-27-joyogo-ski-prototype-dark.html</span>
+      </a>
+      <a class="card" href="2026-10-27-joyogo-ski-prototype-editorial.html">
+        <span class="tag">方案三</span>
+        <h3>纸感编辑版</h3>
+        <p>纸质排版与衬线标题，偏内容与杂志感。</p>
+        <span class="path">2026-10-27-joyogo-ski-prototype-editorial.html</span>
+      </a>
+      <a class="card" href="2026-10-27-joyogo-ski-prototype-minimal.html">
+        <span class="tag">方案四</span>
+        <h3>极简留白</h3>
+        <p>大留白、轻装饰，信息层级最简。</p>
+        <span class="path">2026-10-27-joyogo-ski-prototype-minimal.html</span>
+      </a>
+      <a class="card" href="2026-10-27-joyogo-ski-prototype-energy.html">
+        <span class="tag">方案五</span>
+        <h3>运动冲击</h3>
+        <p>大字号与强节奏，适合活动与转化导向。</p>
+        <span class="path">2026-10-27-joyogo-ski-prototype-energy.html</span>
+      </a>
+      <a class="card" href="2026-10-27-joyogo-ski-prototype-warm.html">
+        <span class="tag">方案六</span>
+        <h3>暖安全皮肤</h3>
+        <p>暖色主调，强调零基础友好的安全感。</p>
+        <span class="path">2026-10-27-joyogo-ski-prototype-warm.html</span>
+      </a>
+      <a class="card" href="2026-10-30-joyogo-ski-prototype-amber.html">
+        <span class="tag is-plan">方案七 · 当前默认</span>
+        <h3>暖黄陶土皮肤</h3>
+        <p>治愈系国风：陶土红 + 暖黄，最终收敛方向。</p>
+        <span class="path">2026-10-30-joyogo-ski-prototype-amber.html</span>
+      </a>
+    </div>
+  </section>
+
+  <section class="group">
+    <div class="group-head"><h2>内容页 · 文章</h2><em>同一篇文章的皮肤差异</em></div>
+    <div class="grid">
+      <a class="card" href="2026-10-27-joyogo-ski-prototype-warm-article.html">
+        <span class="tag">暖安全</span>
+        <h3>吉林市新手滑雪场怎么选</h3>
+        <p>暖色皮肤下的 GEO 文章页。</p>
+        <span class="path">2026-10-27-joyogo-ski-prototype-warm-article.html</span>
+      </a>
+      <a class="card" href="2026-10-27-joyogo-ski-prototype-energy-article.html">
+        <span class="tag">运动冲击</span>
+        <h3>吉林市新手滑雪场怎么选</h3>
+        <p>强对比皮肤下的 GEO 文章页。</p>
+        <span class="path">2026-10-27-joyogo-ski-prototype-energy-article.html</span>
+      </a>
+      <a class="card" href="2026-10-30-joyogo-ski-prototype-amber-article.html">
+        <span class="tag">暖黄陶土</span>
+        <h3>吉林市新手滑雪场怎么选</h3>
+        <p>默认皮肤下的 GEO 文章页。</p>
+        <span class="path">2026-10-30-joyogo-ski-prototype-amber-article.html</span>
+      </a>
+    </div>
+  </section>
+
+  <section class="group">
+    <div class="group-head"><h2>内容页 · 课程</h2><em>同一门课的皮肤差异</em></div>
+    <div class="grid">
+      <a class="card" href="2026-10-27-joyogo-ski-prototype-warm-course.html">
+        <span class="tag">暖安全</span>
+        <h3>启蒙班 · 第一次滑雪的第一节课</h3>
+        <p>暖色皮肤下的课程详情页。</p>
+        <span class="path">2026-10-27-joyogo-ski-prototype-warm-course.html</span>
+      </a>
+      <a class="card" href="2026-10-27-joyogo-ski-prototype-energy-course.html">
+        <span class="tag">运动冲击</span>
+        <h3>启蒙班 · 第一次滑雪的第一节课</h3>
+        <p>强对比皮肤下的课程详情页。</p>
+        <span class="path">2026-10-27-joyogo-ski-prototype-energy-course.html</span>
+      </a>
+      <a class="card" href="2026-10-30-joyogo-ski-prototype-amber-course.html">
+        <span class="tag">暖黄陶土</span>
+        <h3>启蒙班 · 第一次滑雪的第一节课</h3>
+        <p>默认皮肤下的课程详情页。</p>
+        <span class="path">2026-10-30-joyogo-ski-prototype-amber-course.html</span>
+      </a>
+    </div>
+  </section>
+
+  <section class="group">
+    <div class="group-head"><h2>主题演示</h2><em>可切换皮肤的演示页</em></div>
+    <div class="grid">
+      <a class="card" href="themes/home.html">
+        <span class="tag">主题</span>
+        <h3>首页（可切换）</h3>
+        <p>跟随 URL / 本机 / 站点默认皮肤渲染。</p>
+        <span class="path">themes/home.html</span>
+      </a>
+      <a class="card" href="themes/article.html">
+        <span class="tag">主题</span>
+        <h3>文章页（可切换）</h3>
+        <p>文章内容的皮肤联动演示。</p>
+        <span class="path">themes/article.html</span>
+      </a>
+      <a class="card" href="themes/course.html">
+        <span class="tag">主题</span>
+        <h3>课程页（可切换）</h3>
+        <p>课程内容的皮肤联动演示。</p>
+        <span class="path">themes/course.html</span>
+      </a>
+      <a class="card" href="themes/admin.html">
+        <span class="tag is-plan">控制台</span>
+        <h3>主题配置 / 设为默认</h3>
+        <p>预览、设为全站默认、恢复内置默认。</p>
+        <span class="path">themes/admin.html</span>
+      </a>
+    </div>
+  </section>
+
+  <section class="group">
+    <div class="group-head"><h2>方案对比</h2><em>汇总预览与选择</em></div>
+    <div class="grid">
+      <a class="card" href="2026-11-01-joyogo-ski-plans.html">
+        <span class="tag is-plan">汇总页</span>
+        <h3>方案预览与选择</h3>
+        <p>13 个原型页的缩放预览，可桌面/手机切换并记录选择。</p>
+        <span class="path">2026-11-01-joyogo-ski-plans.html</span>
+      </a>
+    </div>
+  </section>
+
+  <footer class="foot">Joyogo 滑雪板块 · 静态原型目录 · 仅供内部预览</footer>
+</main>
+
+</body>
+</html>
